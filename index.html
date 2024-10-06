@@ -204,6 +204,7 @@
         audioSelect.addEventListener('change', initializeAudio);
         darkModeToggle.addEventListener('click', () => {
             darkMode = !darkMode;
+            gl.uniform1i(darkModeLocation, darkMode); // Update the uniform in the shader
         });
         vibrationToggle.addEventListener('click', () => {
             vibrationsEnabled = !vibrationsEnabled;
@@ -296,6 +297,7 @@
                     gl.uniform1f(midFreqLocation, midFreq);
                     gl.uniform1f(highFreqLocation, highFreq);
                     gl.uniform3f(orientationLocation, orientation.alpha / 360.0, orientation.beta / 90.0, orientation.gamma / 90.0);
+
                     gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
                     gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
 
