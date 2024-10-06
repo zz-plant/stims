@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Metallic Ball Visualizer</title>
+    <title>Sound to Tactile Sensation Visualizer with WebGPU and WebGL</title>
     <style>
         body, html {
             margin: 0;
@@ -19,230 +19,245 @@
     </style>
 </head>
 <body>
-    <canvas id="glCanvas"></canvas>
-    <script>
-        const canvas = document.getElementById('glCanvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    <canvas id="gpuCanvas"></canvas>
+    <script type="module">
+        import { GPUBufferUsage, GPUShaderStage } from 'https://cdn.jsdelivr.net/npm/@webgpu/types@1.0.0/dist/index.js';
 
-        if (!gl) {
-            console.error('WebGL not supported');
-            throw new Error('WebGL not supported');
-        }
+        // Check for WebGPU support
+        if (!navigator.gpu) {
+            console.error('WebGPU is not supported by your browser. Falling back to WebGL.');
+            // Fallback to WebGL if WebGPU is not supported
+            const canvas = document.getElementById('gpuCanvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-        // Resize canvas
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // Compile shader
-        function compileShader(source, type) {
-            const shader = gl.createShader(type);
-            gl.shaderSource(shader, source);
-            gl.compileShader(shader);
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error('Shader compile failed: ' + gl.getShaderInfoLog(shader));
-                gl.deleteShader(shader);
-                throw new Error('Shader compile error');
+            if (!gl) {
+                console.error('WebGL not supported');
+                throw new Error('WebGL not supported');
             }
-            return shader;
-        }
 
-        // Vertex shader source
-        const vertexShaderSource = `
-            attribute vec3 a_position;
-            attribute vec3 a_normal;
-            uniform mat4 u_modelViewMatrix;
-            uniform mat4 u_projectionMatrix;
-            varying vec3 v_normal;
-            varying vec3 v_position;
-            void main() {
-                v_normal = a_normal;
-                v_position = (u_modelViewMatrix * vec4(a_position, 1.0)).xyz;
-                gl_Position = u_projectionMatrix * vec4(a_position, 1.0);
+            // Resize canvas
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
             }
-        `;
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
 
-        // Fragment shader source for metallic ball effect
-        const fragmentShaderSource = `
-            precision mediump float;
-            uniform vec3 u_lightDirection;
-            uniform vec3 u_cameraPosition;
-            uniform float u_time;
-            varying vec3 v_normal;
-            varying vec3 v_position;
-
-            void main() {
-                vec3 normal = normalize(v_normal);
-                vec3 lightDir = normalize(u_lightDirection);
-                vec3 viewDir = normalize(u_cameraPosition - v_position);
-
-                // Metallic shading
-                float diff = max(dot(normal, lightDir), 0.0);
-                vec3 reflectDir = reflect(-lightDir, normal);
-                float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-                vec3 color = vec3(0.4, 0.4, 0.4) * diff + vec3(1.0, 1.0, 1.0) * spec * 0.5;
-
-                // Adding time-based color variation for subtle beauty
-                color += 0.1 * sin(u_time * 0.5) * vec3(0.8, 0.6, 0.5);
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `;
-
-        // Create and link program
-        const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
-        const fragmentShader = compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER);
-        const program = gl.createProgram();
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
-
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error('Program link failed: ' + gl.getProgramInfoLog(program));
-            throw new Error('Program link error');
-        }
-        gl.useProgram(program);
-
-        // Set up geometry for a sphere
-        function createSphere(radius, latitudeBands, longitudeBands) {
-            const positions = [];
-            const normals = [];
-            const indices = [];
-
-            for (let lat = 0; lat <= latitudeBands; ++lat) {
-                const theta = lat * Math.PI / latitudeBands;
-                const sinTheta = Math.sin(theta);
-                const cosTheta = Math.cos(theta);
-
-                for (let lon = 0; lon <= longitudeBands; ++lon) {
-                    const phi = lon * 2 * Math.PI / longitudeBands;
-                    const sinPhi = Math.sin(phi);
-                    const cosPhi = Math.cos(phi);
-
-                    const x = cosPhi * sinTheta;
-                    const y = cosTheta;
-                    const z = sinPhi * sinTheta;
-
-                    positions.push(radius * x);
-                    positions.push(radius * y);
-                    positions.push(radius * z);
-
-                    normals.push(x);
-                    normals.push(y);
-                    normals.push(z);
+            // Compile shader
+            function compileShader(source, type) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    console.error('Shader compile failed: ' + gl.getShaderInfoLog(shader));
+                    gl.deleteShader(shader);
+                    throw new Error('Shader compile error');
                 }
+                return shader;
             }
 
-            for (let lat = 0; lat < latitudeBands; ++lat) {
-                for (let lon = 0; lon < longitudeBands; ++lon) {
-                    const first = (lat * (longitudeBands + 1)) + lon;
-                    const second = first + longitudeBands + 1;
-
-                    indices.push(first);
-                    indices.push(second);
-                    indices.push(first + 1);
-
-                    indices.push(second);
-                    indices.push(second + 1);
-                    indices.push(first + 1);
+            // Vertex shader source
+            const vertexShaderSource = `
+                attribute vec2 a_position;
+                varying vec2 v_uv;
+                void main() {
+                    v_uv = a_position * 0.5 + 0.5;
+                    gl_Position = vec4(a_position, 0.0, 1.0);
                 }
+            `;
+
+            // Fragment shader source
+            const fragmentShaderSource = `
+                precision mediump float;
+                uniform float u_time;
+                uniform float u_low_freq;
+                uniform float u_mid_freq;
+                uniform float u_high_freq;
+                varying vec2 v_uv;
+                void main() {
+                    vec2 uv = v_uv - 0.5;
+                    float dist = length(uv);
+                    float angle = atan(uv.y, uv.x);
+                    float lowPattern = 0.5 + 0.5 * sin(10.0 * dist - u_time + angle * 5.0) * u_low_freq;
+                    float midPattern = 0.5 + 0.5 * cos(15.0 * dist - u_time * 1.5 + angle * 4.0) * u_mid_freq;
+                    float highPattern = 0.5 + 0.5 * sin(20.0 * dist - u_time * 2.0 + angle * 6.0) * u_high_freq;
+                    float combined = mix(lowPattern, midPattern, 0.5) + highPattern * 0.5;
+                    gl_FragColor = vec4(vec3(combined), 1.0);
+                }
+            `;
+
+            // Create and link program
+            const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
+            const fragmentShader = compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER);
+            const program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                console.error('Program link failed: ' + gl.getProgramInfoLog(program));
+                throw new Error('Program link error');
             }
+            gl.useProgram(program);
 
-            return { positions, normals, indices };
-        }
+            // Set up geometry
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                -1, -1,
+                1, -1,
+                -1, 1,
+                -1, 1,
+                1, -1,
+                1, 1,
+            ]), gl.STATIC_DRAW);
 
-        const sphereData = createSphere(1, 30, 30);
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereData.positions), gl.STATIC_DRAW);
+            const positionLocation = gl.getAttribLocation(program, 'a_position');
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-        const normalBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereData.normals), gl.STATIC_DRAW);
+            // Set up uniforms
+            const timeLocation = gl.getUniformLocation(program, 'u_time');
+            const lowFreqLocation = gl.getUniformLocation(program, 'u_low_freq');
+            const midFreqLocation = gl.getUniformLocation(program, 'u_mid_freq');
+            const highFreqLocation = gl.getUniformLocation(program, 'u_high_freq');
 
-        const indexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sphereData.indices), gl.STATIC_DRAW);
+            // Audio setup for beat detection and frequency analysis
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(stream => {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
 
-        const positionLocation = gl.getAttribLocation(program, 'a_position');
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(positionLocation);
+                function updateAudioData() {
+                    analyser.getByteFrequencyData(dataArray);
+                    const lowFreq = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
+                    const midFreq = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
+                    const highFreq = dataArray.slice(2 * bufferLength / 3, bufferLength).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
 
-        const normalLocation = gl.getAttribLocation(program, 'a_normal');
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-        gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(normalLocation);
+                    // Beat detection based on low frequency threshold
+                    if (lowFreq > 0.5) {
+                        canvas.style.transform = 'scale(1.05)';
+                        setTimeout(() => {
+                            canvas.style.transform = 'scale(1)';
+                        }, 100);
+                    }
 
-        // Set up uniforms
-        const modelViewMatrixLocation = gl.getUniformLocation(program, 'u_modelViewMatrix');
-        const projectionMatrixLocation = gl.getUniformLocation(program, 'u_projectionMatrix');
-        const lightDirectionLocation = gl.getUniformLocation(program, 'u_lightDirection');
-        const cameraPositionLocation = gl.getUniformLocation(program, 'u_cameraPosition');
-        const timeLocation = gl.getUniformLocation(program, 'u_time');
+                    gl.uniform1f(lowFreqLocation, lowFreq);
+                    gl.uniform1f(midFreqLocation, midFreq);
+                    gl.uniform1f(highFreqLocation, highFreq);
 
-        const lightDirection = [1.0, 1.0, 1.0];
-        const cameraPosition = [0.0, 0.0, 5.0];
+                    requestAnimationFrame(updateAudioData);
+                }
+                updateAudioData();
+            }).catch(err => {
+                console.error('Error accessing microphone: ' + err);
+            });
 
-        // Set up projection matrix
-        const fieldOfView = Math.PI / 4;
-        const aspect = canvas.width / canvas.height;
-        const zNear = 0.1;
-        const zFar = 100.0;
-        const projectionMatrix = mat4.create();
-        mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
+            // Render loop
+            function render(time) {
+                time *= 0.001; // Convert time to seconds
 
-        // Set up model view matrix
-        const modelViewMatrix = mat4.create();
-        mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]);
+                // Set uniforms
+                gl.uniform1f(timeLocation, time);
 
-        // Animation variables
-        let ballPosition = [0, 0];
-        let ballVelocity = [0.02, 0.015];
+                // Draw
+                gl.clearColor(0, 0, 0, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-        // Render loop
-        function render(time) {
-            time *= 0.001; // Convert time to seconds
-
-            // Update ball position and handle collisions with screen edges
-            ballPosition[0] += ballVelocity[0];
-            ballPosition[1] += ballVelocity[1];
-
-            if (ballPosition[0] > 1.5 || ballPosition[0] < -1.5) {
-                ballVelocity[0] = -ballVelocity[0];
-                navigator.vibrate([50, 100, 50]); // Vibrate with a pattern on collision with edge
+                requestAnimationFrame(render);
             }
-            if (ballPosition[1] > 1.5 || ballPosition[1] < -1.5) {
-                ballVelocity[1] = -ballVelocity[1];
-                navigator.vibrate([50, 100, 50]); // Vibrate with a pattern on collision with edge
-            }
-
-            // Update model view matrix for ball position
-            mat4.identity(modelViewMatrix);
-            mat4.translate(modelViewMatrix, modelViewMatrix, [ballPosition[0], ballPosition[1], -5.0]);
-
-            // Clear canvas
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-            // Set uniforms
-            gl.uniformMatrix4fv(modelViewMatrixLocation, false, modelViewMatrix);
-            gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);
-            gl.uniform3fv(lightDirectionLocation, lightDirection);
-            gl.uniform3fv(cameraPositionLocation, cameraPosition);
-            gl.uniform1f(timeLocation, time);
-
-            // Draw sphere
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-            gl.drawElements(gl.TRIANGLES, sphereData.indices.length, gl.UNSIGNED_SHORT, 0);
-
             requestAnimationFrame(render);
+        } else {
+            // Set up WebGPU
+            const canvas = document.getElementById('gpuCanvas');
+            const adapter = await navigator.gpu.requestAdapter();
+            const device = await adapter.requestDevice();
+            const context = canvas.getContext('webgpu');
+            const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+            context.configure({ device, format: presentationFormat });
+
+            // Create shaders with advanced capabilities like compute shaders
+            const shaderModule = device.createShaderModule({
+                code: `
+                @vertex fn vertex_main(@builtin(vertex_index) index: u32) -> @builtin(position) vec4<f32> {
+                    var positions = array<vec2<f32>, 3>(
+                        vec2<f32>(0.0, 0.5),
+                        vec2<f32>(-0.5, -0.5),
+                        vec2<f32>(0.5, -0.5)
+                    );
+                    return vec4<f32>(positions[index], 0.0, 1.0);
+                }
+
+                @fragment fn fragment_main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
+                    let uv = pos.xy * 0.5 + vec2<f32>(0.5);
+                    let dist = length(uv - vec2<f32>(0.5));
+                    let angle = atan2(uv.y - 0.5, uv.x - 0.5);
+                    let pattern = 0.5 + 0.5 * sin(10.0 * dist - angle * 5.0);
+                    let color = vec3<f32>(0.0, 1.0, 0.0) * pattern;
+                    return vec4<f32>(color, 1.0);
+                }
+
+                @compute fn compute_main(@builtin(global_invocation_id) id: vec3<u32>) {
+                    // Simple computation (e.g., calculating pixel values for visualization)
+                    let value: f32 = f32(id.x % 256u) / 255.0;
+                    // Here, you could apply a Fast Fourier Transform (FFT) or any other GPU computation for visual feedback
+                }
+                `
+            });
+
+            // Set up render pipeline
+            const pipeline = device.createRenderPipeline({
+                layout: "auto",
+                vertex: {
+                    module: shaderModule,
+                    entryPoint: "vertex_main",
+                },
+                fragment: {
+                    module: shaderModule,
+                    entryPoint: "fragment_main",
+                    targets: [{ format: presentationFormat }],
+                },
+                primitive: {
+                    topology: "triangle-list",
+                },
+            });
+
+            // Set up a command encoder for rendering
+            function render() {
+                const commandEncoder = device.createCommandEncoder();
+                const textureView = context.getCurrentTexture().createView();
+
+                const renderPassDescriptor = {
+                    colorAttachments: [
+                        {
+                            view: textureView,
+                            loadValue: { r: 0, g: 0, b: 0, a: 1 },
+                            storeOp: "store",
+                        },
+                    ],
+                };
+
+                const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+                passEncoder.setPipeline(pipeline);
+                passEncoder.draw(3, 1, 0, 0);
+                passEncoder.end();
+
+                device.queue.submit([commandEncoder.finish()]);
+            }
+
+            // Animation loop
+            function frame() {
+                render();
+                requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
         }
-        requestAnimationFrame(render);
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
 </body>
 </html>
