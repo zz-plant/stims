@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Advanced Bitcrushed Fluid Visualizer for Concerts</title>
+    <title>Sound to Tactile Sensation Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -61,7 +61,7 @@
             }
         `;
 
-        // Fragment shader source for advanced visual effects
+        // Fragment shader source for visual effects
         const fragmentShaderSource = `
             precision mediump float;
             uniform float u_time;
@@ -184,6 +184,15 @@
             function updateAudioData() {
                 analyser.getByteFrequencyData(dataArray);
                 audioLevel = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength / 256.0;
+
+                // Trigger haptic feedback based on audio level
+                if (navigator.vibrate) {
+                    const intensity = Math.min(Math.floor(audioLevel * 100), 500); // Limit vibration intensity
+                    if (intensity > 10) {
+                        navigator.vibrate([intensity]);
+                    }
+                }
+
                 requestAnimationFrame(updateAudioData);
             }
             updateAudioData();
