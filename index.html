@@ -185,7 +185,7 @@
                 analyser.getByteFrequencyData(dataArray);
                 audioLevel = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength / 256.0;
 
-                // Trigger haptic feedback with more variation based on audio frequency bands
+                // Trigger haptic feedback with stronger variation based on audio frequency bands
                 if (navigator.vibrate) {
                     const lowFrequency = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
                     const midFrequency = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
@@ -193,13 +193,13 @@
 
                     const vibrationPattern = [];
                     if (lowFrequency > 10) {
-                        vibrationPattern.push(Math.min(Math.floor(lowFrequency * 5), 300)); // Reduced vibration intensity for efficiency
+                        vibrationPattern.push(Math.min(Math.floor(lowFrequency * 20), 500)); // Increased vibration intensity for better feedback
                     }
                     if (midFrequency > 10) {
-                        vibrationPattern.push(Math.min(Math.floor(midFrequency * 3), 200)); // Reduced vibration intensity for efficiency
+                        vibrationPattern.push(Math.min(Math.floor(midFrequency * 15), 400)); // Increased vibration intensity for better feedback
                     }
                     if (highFrequency > 10) {
-                        vibrationPattern.push(Math.min(Math.floor(highFrequency * 1.5), 100)); // Reduced vibration intensity for efficiency
+                        vibrationPattern.push(Math.min(Math.floor(highFrequency * 10), 300)); // Increased vibration intensity for better feedback
                     }
 
                     if (vibrationPattern.length > 0) {
