@@ -59,13 +59,14 @@
             }
         `;
 
-        // Fragment shader source for fluid flow effect
+        // Fragment shader source for enhanced fluid flow effect
         const fragmentShaderSource = `
             precision mediump float;
             uniform float u_time;
             uniform vec2 u_resolution;
             uniform float u_audio;
             uniform vec3 u_orientation;
+            uniform vec2 u_touch;
             
             vec2 rotate(vec2 v, float a) {
                 float s = sin(a);
@@ -84,11 +85,15 @@
                 // Apply orientation-based distortion
                 flow.x += u_orientation.x * 0.2;
                 flow.y += u_orientation.y * 0.2;
+
+                // Apply touch interaction
+                float touch_dist = length(flow - u_touch);
+                flow += 0.1 / (touch_dist + 0.01) * vec2(sin(u_time), cos(u_time));
                 
-                // Add fluid-like distortion
-                for (int i = 0; i < 5; i++) {
+                // Add fluid-like distortion with audio reactivity
+                for (int i = 0; i < 8; i++) {
                     flow = rotate(flow, sin(time + length(flow) * 5.0 + float(i) * 0.5) * 0.5);
-                    flow += vec2(sin(flow.y * 10.0 + time), cos(flow.x * 10.0 + time)) * 0.05;
+                    flow += vec2(sin(flow.y * 10.0 + time + u_audio * 3.0), cos(flow.x * 10.0 + time + u_audio * 2.0)) * 0.05;
                 }
                 
                 float metallic = abs(sin(length(flow) * 10.0 + u_audio * 5.0 - time)) * 0.8 + 0.2;
@@ -133,9 +138,11 @@
         const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
         const audioLocation = gl.getUniformLocation(program, 'u_audio');
         const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
+        const touchLocation = gl.getUniformLocation(program, 'u_touch');
 
         let audioLevel = 0.0;
         let orientation = { alpha: 0, beta: 0, gamma: 0 };
+        let touch = [0.0, 0.0];
 
         // Set up microphone input
         navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(stream => {
@@ -164,6 +171,15 @@
             orientation.gamma = event.gamma;
         });
 
+        // Set up touch interaction
+        canvas.addEventListener('touchmove', (event) => {
+            const touchEvent = event.touches[0];
+            touch = [
+                (touchEvent.clientX / window.innerWidth) * 2.0 - 1.0,
+                1.0 - (touchEvent.clientY / window.innerHeight) * 2.0
+            ];
+        });
+
         // Render loop
         function render(time) {
             time *= 0.001; // Convert time to seconds
@@ -184,6 +200,9 @@
                 orientation.alpha / 360.0  // Z-axis rotation normalized to [0, 1]
             ];
             gl.uniform3fv(orientationLocation, orientationVec);
+
+            // Set touch uniform
+            gl.uniform2fv(touchLocation, touch);
 
             // Draw
             gl.drawArrays(gl.TRIANGLES, 0, 6);
