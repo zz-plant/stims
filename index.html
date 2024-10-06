@@ -25,6 +25,7 @@
     </style>
 </head>
 <body>
+    <canvas id="gpuCanvas"></canvas>
     <div id="controls">
         <select id="audioSelect">
             <option value="mic">Microphone</option>
@@ -33,7 +34,6 @@
         <button id="darkModeToggle">Toggle Dark Mode</button>
         <button id="vibrationToggle">Toggle Vibrations</button>
     </div>
-    <canvas id="gpuCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gpuCanvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -92,7 +92,7 @@
             }
         `;
 
-        let fragmentShaderSource = `
+        const fragmentShaderSource = `
             precision mediump float;
             uniform float u_time;
             uniform float u_low_freq;
@@ -196,7 +196,7 @@
         const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
         const darkModeLocation = gl.getUniformLocation(program, 'u_dark_mode');
 
-        // Event listeners for user input and toggles
+        let audioContext, analyser, source;
         const audioSelect = document.getElementById('audioSelect');
         const darkModeToggle = document.getElementById('darkModeToggle');
         const vibrationToggle = document.getElementById('vibrationToggle');
@@ -208,7 +208,6 @@
         vibrationToggle.addEventListener('click', () => {
             vibrationsEnabled = !vibrationsEnabled;
         });
-        initializeAudio();
 
         function initializeAudio() {
             if (audioContext) {
@@ -247,13 +246,6 @@
                     }
                 }
 
-                function vibrateBasedOnVisuals(lowFreq, midFreq, highFreq, dist) {
-                    const vibrateIntensity = Math.max(lowFreq, midFreq, highFreq) * (1.0 - dist);
-                    if (vibrationsEnabled && navigator.vibrate && vibrateIntensity > 0.5) {
-                        navigator.vibrate([Math.floor(vibrateIntensity * 200), 50, Math.floor(vibrateIntensity * 200)]);
-                    }
-                }
-
                 let orientation = { alpha: 0, beta: 0, gamma: 0 };
                 window.addEventListener('deviceorientation', (event) => {
                     orientation.alpha = event.alpha;
@@ -286,14 +278,47 @@
                         if (i < touchList.length) {
                             const touch = touchList[i];
                             touches[i].x = (touch.clientX / window.innerWidth) * 2.0 - 1.0;
+                            touches[i].y = 1.0 - (touch.clientY / window.innerHeight) * 2.0;
                         } else {
                             touches[i].x = 0;
                             touches[i].y = 0;
                         }
                     }
                 }
+
+                function updateAudioData() {
+                    analyser.getByteFrequencyData(dataArray);
+                    const lowFreq = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
+                    const midFreq = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
+                    const highFreq = dataArray.slice(2 * bufferLength / 3, bufferLength).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
+
+                    gl.uniform1f(lowFreqLocation, lowFreq);
+                    gl.uniform1f(midFreqLocation, midFreq);
+                    gl.uniform1f(highFreqLocation, highFreq);
+                    gl.uniform3f(orientationLocation, orientation.alpha / 360.0, orientation.beta / 90.0, orientation.gamma / 90.0);
+                    gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
+                    gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
+
+                    vibrateBasedOnAudio(lowFreq, midFreq, highFreq);
+
+                    requestAnimationFrame(updateAudioData);
+                }
+                updateAudioData();
+            }).catch(err => {
+                console.error('Error accessing microphone: ' + err);
             });
         }
+
+        // Render loop
+        function render(time) {
+            time *= 0.001; // Convert time to seconds
+            gl.uniform1f(timeLocation, time);
+            gl.clearColor(0, 0, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
     </script>
 </body>
 </html>
