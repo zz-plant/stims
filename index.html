@@ -105,25 +105,26 @@
                 float bitcrushed_z = bitcrush(z, 8.0);
 
                 // Low-contrast color with chromatic aberration and glitch effect
-                vec3 color = vec3(bitcrushed_z * 0.2, bitcrushed_z * 0.3, bitcrushed_z * 0.4);
-                color.r += 0.05 * sin(u_time + flow.x * 20.0);
-                color.g += 0.05 * cos(u_time + flow.y * 20.0);
+                vec3 color = vec3(bitcrushed_z * 0.4, bitcrushed_z * 0.5, bitcrushed_z * 0.6);
+                color.r += 0.08 * sin(u_time + flow.x * 20.0);
+                color.g += 0.08 * cos(u_time + flow.y * 20.0);
+                color.b += 0.04 * sin(u_time * 0.5);
                 
-                // Add particle-like effect
-                float particle = sin(flow.x * 20.0 + u_time * 5.0) * cos(flow.y * 20.0 + u_time * 5.0);
-                color += 0.1 * vec3(particle, particle, particle);
+                // Add subtle particle-like effect
+                float particle = sin(flow.x * 25.0 + u_time * 4.0) * cos(flow.y * 25.0 + u_time * 4.0);
+                color += 0.05 * vec3(particle, particle * 0.8, particle * 0.6);
                 
                 // Fractal zoom effect for depth
-                for (int i = 0; i < 2; i++) { // Reduced number of iterations to save battery
+                for (int i = 0; i < 3; i++) {
                     flow = rotate(flow, sin(time * 2.0 + float(i) * 1.5) * 0.5);
-                    flow *= 1.1; // Reduced scaling to lower computation
-                    float fractal = abs(sin(length(flow) * 5.0 + u_time * 0.5));
-                    color += 0.03 * vec3(fractal, fractal, fractal); // Lower intensity for battery efficiency
+                    flow *= 1.2;
+                    float fractal = abs(sin(length(flow) * 5.0 + u_time * 0.3));
+                    color += 0.04 * vec3(fractal, fractal * 0.9, fractal * 0.7);
                 }
                 
-                // Glitchy pixel-sorted lines
-                if (mod(gl_FragCoord.y, 15.0) < 1.0) { // Increased interval to reduce frequency of effect
-                    color = mix(color, vec3(0.0), 0.5);
+                // Soft glitchy horizontal lines for extra visual interest
+                if (mod(gl_FragCoord.y + sin(u_time * 0.2) * 5.0, 20.0) < 1.5) {
+                    color = mix(color, vec3(0.2, 0.2, 0.25), 0.3);
                 }
                 
                 gl_FragColor = vec4(color, 1.0);
@@ -185,7 +186,7 @@
                 analyser.getByteFrequencyData(dataArray);
                 audioLevel = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength / 256.0;
 
-                // Trigger haptic feedback with stronger variation based on audio frequency bands
+                // Trigger haptic feedback with rolling marble-like sensation
                 if (navigator.vibrate) {
                     const lowFrequency = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
                     const midFrequency = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
@@ -193,17 +194,23 @@
 
                     const vibrationPattern = [];
                     if (lowFrequency > 10) {
-                        vibrationPattern.push(Math.min(Math.floor(lowFrequency * 20), 500)); // Increased vibration intensity for better feedback
+                        vibrationPattern.push(Math.min(Math.floor(lowFrequency * 40), 500)); // Enhanced intensity for rolling effect
                     }
                     if (midFrequency > 10) {
-                        vibrationPattern.push(Math.min(Math.floor(midFrequency * 15), 400)); // Increased vibration intensity for better feedback
+                        vibrationPattern.push(Math.min(Math.floor(midFrequency * 35), 400)); // Enhanced intensity for rolling effect
                     }
                     if (highFrequency > 10) {
-                        vibrationPattern.push(Math.min(Math.floor(highFrequency * 10), 300)); // Increased vibration intensity for better feedback
+                        vibrationPattern.push(Math.min(Math.floor(highFrequency * 30), 300)); // Enhanced intensity for rolling effect
                     }
 
+                    // Add gaps to create a rolling marble-like sensation
                     if (vibrationPattern.length > 0) {
-                        navigator.vibrate(vibrationPattern);
+                        const marblePattern = [];
+                        vibrationPattern.forEach((value, index) => {
+                            marblePattern.push(value);
+                            marblePattern.push(30 + Math.sin(index * 0.5) * 20); // Short pause with subtle variation to simulate rolling sensation
+                        });
+                        navigator.vibrate(marblePattern);
                     }
                 }
 
