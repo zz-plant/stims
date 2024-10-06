@@ -213,11 +213,11 @@
 
             if (ballPosition[0] > 1.5 || ballPosition[0] < -1.5) {
                 ballVelocity[0] = -ballVelocity[0];
-                navigator.vibrate(100); // Vibrate on collision with edge
+                navigator.vibrate([50, 100, 50]); // Vibrate with a pattern on collision with edge
             }
             if (ballPosition[1] > 1.5 || ballPosition[1] < -1.5) {
                 ballVelocity[1] = -ballVelocity[1];
-                navigator.vibrate(100); // Vibrate on collision with edge
+                navigator.vibrate([50, 100, 50]); // Vibrate with a pattern on collision with edge
             }
 
             // Update model view matrix for ball position
