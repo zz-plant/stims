@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sound to Tactile Sensation Visualizer with WebGL</title>
+    <title>Trippy Synesthetic Visualizer with WebGL</title>
     <style>
         body, html {
             margin: 0;
@@ -24,7 +24,6 @@
         <option value="mic">Microphone</option>
         <option value="device">Device Audio</option>
     </select>
-    <video id="cameraFeed" style="display:none;" autoplay></video>
     <script>
         // Fallback to WebGL
         const canvas = document.getElementById('gpuCanvas');
@@ -84,42 +83,45 @@
                 float dist = length(uv);
                 float angle = atan(uv.y, uv.x);
 
-                // Background color shift over time
-                vec3 baseColor = vec3(0.3 + 0.3 * sin(u_time * 0.5), 0.3 + 0.3 * cos(u_time * 0.3), 0.5 + 0.5 * sin(u_time * 0.7));
+                // Background color shifting and dynamic gradients
+                vec3 baseColor = vec3(
+                    0.5 + 0.5 * sin(u_time + angle),
+                    0.5 + 0.5 * cos(u_time + angle * 2.0),
+                    0.5 + 0.5 * sin(u_time * 0.5 + angle * 3.0)
+                );
 
-                // Visual elements responding to different frequency bands
-                float lowPattern = 0.5 + 0.5 * sin(10.0 * dist - u_time + angle * 5.0) * (u_low_freq + 0.2);
-                float midPattern = 0.5 + 0.5 * cos(15.0 * dist - u_time * 1.5 + angle * 4.0) * (u_mid_freq + 0.2);
-                float highPattern = 0.5 + 0.5 * sin(20.0 * dist - u_time * 2.0 + angle * 6.0) * (u_high_freq + 0.2);
+                // Low frequency pulsing waves
+                float lowWave = 0.5 + 0.5 * sin(15.0 * dist - u_time + angle * 3.0) * (u_low_freq + 0.3);
+                vec3 lowColor = vec3(lowWave * 0.5, lowWave * 0.3, lowWave);
 
-                // Adding ripple effects from touches
+                // Mid frequency oscillations
+                float midOscillation = 0.5 + 0.5 * cos(20.0 * dist - u_time * 1.5 + angle * 4.0) * (u_mid_freq + 0.4);
+                vec3 midColor = vec3(midOscillation * 0.3, midOscillation, midOscillation * 0.6);
+
+                // High frequency sparks
+                float highSpark = 0.5 + 0.5 * sin(25.0 * dist - u_time * 2.0 + angle * 6.0) * (u_high_freq + 0.5);
+                vec3 highColor = vec3(highSpark, highSpark * 0.5, highSpark * 0.2);
+
+                // Blend low, mid, and high colors together for synesthetic experience
+                vec3 color = baseColor + lowColor + midColor + highColor;
+
+                // Add ripple effects from multi-touch interactions
                 float touchEffect0 = 0.0;
                 float touchEffect1 = 0.0;
                 if (length(u_touch0) > 0.0) {
-                    touchEffect0 = 0.1 / length(uv - (u_touch0 - 0.5));
+                    touchEffect0 = 0.2 / length(uv - (u_touch0 - 0.5));
                 }
                 if (length(u_touch1) > 0.0) {
-                    touchEffect1 = 0.1 / length(uv - (u_touch1 - 0.5));
+                    touchEffect1 = 0.2 / length(uv - (u_touch1 - 0.5));
                 }
+                color += vec3(touchEffect0 + touchEffect1);
 
-                // Orientation-based distortion
-                float orientationEffect = sin(u_orientation.x * uv.x * 5.0 + u_time * 0.5) * 0.05 * u_orientation.y;
+                // Orientation-based distortion to make visuals more fluid and trippy
+                float orientationEffect = sin(u_orientation.x * uv.x * 10.0 + u_time) * 0.1 * u_orientation.y;
                 uv += vec2(orientationEffect, orientationEffect);
 
-                // Fluid-like distortion effect with mid frequencies
-                float fluidDistortion = sin(uv.x * 10.0 + u_time * 0.5) * u_mid_freq * 0.05;
-                uv += vec2(fluidDistortion, fluidDistortion);
-
-                // Add radial gradient for more visual interest
-                float radialGradient = smoothstep(0.4, 0.0, dist);
-
-                // Combine color and effects
-                float combinedLowMid = mix(lowPattern, midPattern, 0.5);
-                float combinedHighTouch = highPattern * 0.5 + touchEffect0 + touchEffect1;
-                float combined = combinedLowMid + combinedHighTouch;
-                vec3 color = baseColor + vec3(combined * u_low_freq, combined * u_mid_freq, combined * u_high_freq);
-
-                // Apply radial gradient
+                // Kaleidoscope-like radial gradient
+                float radialGradient = smoothstep(0.5, 0.0, dist);
                 color *= radialGradient;
 
                 gl_FragColor = vec4(color, 1.0);
@@ -177,11 +179,7 @@
                 audioContext.close();
             }
 
-            navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'environment' } }).then(stream => {
-                // Rear-facing camera setup
-                const videoElement = document.getElementById('cameraFeed');
-                videoElement.srcObject = stream;
-
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
 
@@ -284,7 +282,7 @@
                 }
                 updateAudioData();
             }).catch(err => {
-                console.error('Error accessing microphone or camera: ' + err);
+                console.error('Error accessing microphone: ' + err);
             });
         }
 
