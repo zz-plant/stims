@@ -104,12 +104,12 @@
             uniform bool u_dark_mode;
             varying vec2 v_uv;
 
-            // Function to generate noise based on coordinates
+            // Function to create smoother noise patterns
             float noise(vec2 p) {
                 return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
             }
 
-            // Function to generate smoother fractal noise
+            // Fractal Brownian Motion for smooth distortion
             float fbm(vec2 p) {
                 float f = 0.0;
                 f += 0.5000 * noise(p); p *= 2.02;
@@ -124,57 +124,49 @@
                 float dist = length(uv);
                 float angle = atan(uv.y, uv.x);
 
-                // Create a fluid wave effect that oscillates smoothly to simulate "breathing"
-                float breathingEffect = sin(u_time * 0.5 + dist * 6.0) * 0.5 +
-                                        cos(u_time * 0.7 + dist * 4.0) * 0.3 +
-                                        sin(u_time * 0.9 + dist * 8.0) * 0.2;
+                // Add flowing distortions to the visuals
+                float flow = sin(u_time + dist * 10.0 + fbm(uv * 10.0)) * 0.1;
+                uv += flow * 0.2;
 
-                // Use fbm to add fluid-like "melting" distortions
-                float fbmValue = fbm(uv * 5.0 + u_time * 0.5 + breathingEffect);
-
-                // Create a base color that smoothly shifts and breathes
+                // Create a base color with smooth gradient transitions
                 vec3 baseColor = vec3(
-                    0.5 + 0.5 * sin(u_time + angle + fbmValue * 4.0),
-                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + fbmValue * 3.0),
-                    0.5 + 0.5 * sin(u_time * 0.75 + angle * 1.5 + fbmValue * 2.0)
+                    0.5 + 0.5 * sin(u_time + angle + u_low_freq * 5.0),
+                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + u_mid_freq * 4.0),
+                    0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0 + u_high_freq * 6.0)
                 );
 
-                // Reduce brightness for dark mode
+                // Modify brightness for dark mode
                 if (u_dark_mode) {
-                    baseColor *= 0.3;
+                    baseColor *= 0.2;
                 }
 
-                // Add rainbow ripple effects from touch interactions
-                float touchRipple0 = 0.0;
-                float touchRipple1 = 0.0;
-                if (length(u_touch0) > 0.0) {
-                    touchRipple0 = 0.3 / length(uv - (u_touch0 - 0.5));
-                }
-                if (length(u_touch1) > 0.0) {
-                    touchRipple1 = 0.3 / length(uv - (u_touch1 - 0.5));
-                }
-                baseColor += vec3(touchRipple0 + touchRipple1);
+                // Add fluid-like "melting" distortions
+                float fbmValue = fbm(uv * 6.0 + u_time * 0.8);
+                baseColor.rgb += fbmValue * 0.15;
 
-                // Apply orientation-based distortion for more fluid, shifting visuals
-                float orientationDistortion = sin(u_orientation.x * uv.x * 10.0 + u_time * 0.5) * u_orientation.y;
-                uv += vec2(orientationDistortion, orientationDistortion * cos(u_orientation.z * uv.y * 20.0));
-
-                // Add a pulsating radial gradient for more depth and breathing effect
-                float radialGradient = smoothstep(0.6, 0.0, dist) * (1.0 + sin(u_time * 2.0 + dist * 15.0) * 0.1);
+                // Create radial gradient glow effect
+                float radialGradient = smoothstep(0.8, 0.1, dist) * (1.0 + sin(u_time * 2.5 + dist * 20.0) * 0.2);
                 baseColor *= radialGradient;
 
-                // Add glow around the center for an "expanding/contracting" breathing effect
-                float glow = exp(-dist * 10.0) * (u_low_freq + u_mid_freq + u_high_freq);
+                // Add glow effect to simulate bright blooming visuals
+                float glow = exp(-dist * 8.0) * (u_low_freq + u_mid_freq + u_high_freq);
                 if (u_dark_mode) {
                     glow *= 0.1;
                 }
-                baseColor += vec3(glow * 0.5, glow * 0.8, glow * 1.0);
+                baseColor += vec3(glow * 0.5, glow * 0.7, glow * 1.0);
 
-                // Apply a melting effect by distorting the texture with noise
-                float meltingEffect = fbm(uv * 8.0 + u_time * 0.2);
-                baseColor.rgb += meltingEffect * 0.1;
+                // Adding a touch ripple effect to create interactive distortion
+                float touchEffect0 = 0.0;
+                float touchEffect1 = 0.0;
+                if (length(u_touch0) > 0.0) {
+                    touchEffect0 = 0.3 / length(uv - (u_touch0 - 0.5));
+                }
+                if (length(u_touch1) > 0.0) {
+                    touchEffect1 = 0.3 / length(uv - (u_touch1 - 0.5));
+                }
+                baseColor += vec3(touchEffect0 + touchEffect1);
 
-                // Final output color
+                // Final output color with increased brightness for glowing effect
                 gl_FragColor = vec4(baseColor, 1.0);
             }
         `;
@@ -214,7 +206,6 @@
         audioSelect.addEventListener('change', initializeAudio);
         darkModeToggle.addEventListener('click', () => {
             darkMode = !darkMode;
-            gl.uniform1i(darkModeLocation, darkMode); // Update the uniform in the shader
         });
         vibrationToggle.addEventListener('click', () => {
             vibrationsEnabled = !vibrationsEnabled;
