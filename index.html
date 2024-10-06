@@ -78,6 +78,10 @@
             uniform vec3 u_orientation;
             varying vec2 v_uv;
             
+            float noise(vec2 p) {
+                return sin(p.x * 12.9898 + p.y * 78.233) * 43758.5453 - floor(sin(p.x * 12.9898 + p.y * 78.233) * 43758.5453);
+            }
+
             void main() {
                 vec2 uv = v_uv - 0.5;
                 float dist = length(uv);
@@ -85,21 +89,23 @@
 
                 // Background color shifting and dynamic gradients
                 vec3 baseColor = vec3(
-                    0.5 + 0.5 * sin(u_time + angle),
-                    0.5 + 0.5 * cos(u_time + angle * 2.0),
-                    0.5 + 0.5 * sin(u_time * 0.5 + angle * 3.0)
+                    0.5 + 0.5 * sin(u_time + angle + u_low_freq * 5.0),
+                    0.5 + 0.5 * cos(u_time + angle * 2.0 + u_mid_freq * 3.0),
+                    0.5 + 0.5 * sin(u_time * 0.5 + angle * 3.0 + u_high_freq * 7.0)
                 );
 
                 // Low frequency pulsing waves
                 float lowWave = 0.5 + 0.5 * sin(15.0 * dist - u_time + angle * 3.0) * (u_low_freq + 0.3);
                 vec3 lowColor = vec3(lowWave * 0.5, lowWave * 0.3, lowWave);
 
-                // Mid frequency oscillations
+                // Mid frequency oscillations with noise distortion
                 float midOscillation = 0.5 + 0.5 * cos(20.0 * dist - u_time * 1.5 + angle * 4.0) * (u_mid_freq + 0.4);
+                midOscillation += noise(uv * 10.0) * 0.2 * u_mid_freq;
                 vec3 midColor = vec3(midOscillation * 0.3, midOscillation, midOscillation * 0.6);
 
-                // High frequency sparks
+                // High frequency sparks with strobe effect
                 float highSpark = 0.5 + 0.5 * sin(25.0 * dist - u_time * 2.0 + angle * 6.0) * (u_high_freq + 0.5);
+                highSpark += step(0.9, fract(sin(u_time * 10.0) * 43758.5453)) * 0.3 * u_high_freq;
                 vec3 highColor = vec3(highSpark, highSpark * 0.5, highSpark * 0.2);
 
                 // Blend low, mid, and high colors together for synesthetic experience
@@ -120,9 +126,13 @@
                 float orientationEffect = sin(u_orientation.x * uv.x * 10.0 + u_time) * 0.1 * u_orientation.y;
                 uv += vec2(orientationEffect, orientationEffect);
 
-                // Kaleidoscope-like radial gradient
-                float radialGradient = smoothstep(0.5, 0.0, dist);
+                // Kaleidoscope-like radial gradient with more vivid effects
+                float radialGradient = smoothstep(0.6, 0.0, dist) * (1.0 + sin(u_time * 5.0 + dist * 15.0) * 0.1);
                 color *= radialGradient;
+
+                // Add more glow and blur for a dreamy, synesthetic feel
+                float glow = exp(-10.0 * dist) * (u_low_freq + u_mid_freq + u_high_freq);
+                color += vec3(glow * 0.4, glow * 0.6, glow * 0.8);
 
                 gl_FragColor = vec4(color, 1.0);
             }
