@@ -114,15 +114,15 @@
                 color += 0.1 * vec3(particle, particle, particle);
                 
                 // Fractal zoom effect for depth
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < 2; i++) { // Reduced number of iterations to save battery
                     flow = rotate(flow, sin(time * 2.0 + float(i) * 1.5) * 0.5);
-                    flow *= 1.2;
+                    flow *= 1.1; // Reduced scaling to lower computation
                     float fractal = abs(sin(length(flow) * 5.0 + u_time * 0.5));
-                    color += 0.05 * vec3(fractal, fractal, fractal);
+                    color += 0.03 * vec3(fractal, fractal, fractal); // Lower intensity for battery efficiency
                 }
                 
                 // Glitchy pixel-sorted lines
-                if (mod(gl_FragCoord.y, 10.0) < 1.0) {
+                if (mod(gl_FragCoord.y, 15.0) < 1.0) { // Increased interval to reduce frequency of effect
                     color = mix(color, vec3(0.0), 0.5);
                 }
                 
@@ -185,11 +185,25 @@
                 analyser.getByteFrequencyData(dataArray);
                 audioLevel = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength / 256.0;
 
-                // Trigger haptic feedback based on audio level
+                // Trigger haptic feedback with more variation based on audio frequency bands
                 if (navigator.vibrate) {
-                    const intensity = Math.min(Math.floor(audioLevel * 100), 500); // Limit vibration intensity
-                    if (intensity > 10) {
-                        navigator.vibrate([intensity]);
+                    const lowFrequency = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
+                    const midFrequency = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
+                    const highFrequency = dataArray.slice(2 * bufferLength / 3, bufferLength).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
+
+                    const vibrationPattern = [];
+                    if (lowFrequency > 10) {
+                        vibrationPattern.push(Math.min(Math.floor(lowFrequency * 5), 300)); // Reduced vibration intensity for efficiency
+                    }
+                    if (midFrequency > 10) {
+                        vibrationPattern.push(Math.min(Math.floor(midFrequency * 3), 200)); // Reduced vibration intensity for efficiency
+                    }
+                    if (highFrequency > 10) {
+                        vibrationPattern.push(Math.min(Math.floor(highFrequency * 1.5), 100)); // Reduced vibration intensity for efficiency
+                    }
+
+                    if (vibrationPattern.length > 0) {
+                        navigator.vibrate(vibrationPattern);
                     }
                 }
 
