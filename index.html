@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sound to Tactile Sensation Visualizer</title>
+    <title>3D Metallic Ball Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -53,80 +53,41 @@
 
         // Vertex shader source
         const vertexShaderSource = `
-            attribute vec2 a_position;
-            varying vec2 v_uv;
+            attribute vec3 a_position;
+            attribute vec3 a_normal;
+            uniform mat4 u_modelViewMatrix;
+            uniform mat4 u_projectionMatrix;
+            varying vec3 v_normal;
+            varying vec3 v_position;
             void main() {
-                v_uv = a_position * 0.5 + 0.5;
-                gl_Position = vec4(a_position, 0.0, 1.0);
+                v_normal = a_normal;
+                v_position = (u_modelViewMatrix * vec4(a_position, 1.0)).xyz;
+                gl_Position = u_projectionMatrix * vec4(a_position, 1.0);
             }
         `;
 
-        // Fragment shader source for visual effects
+        // Fragment shader source for metallic ball effect
         const fragmentShaderSource = `
             precision mediump float;
+            uniform vec3 u_lightDirection;
+            uniform vec3 u_cameraPosition;
             uniform float u_time;
-            uniform vec2 u_resolution;
-            uniform float u_audio;
-            uniform vec3 u_orientation;
-            uniform vec2 u_touch;
-            varying vec2 v_uv;
-
-            vec2 rotate(vec2 v, float a) {
-                float s = sin(a);
-                float c = cos(a);
-                return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
-            }
-            
-            float bitcrush(float value, float bits) {
-                return floor(value * bits) / bits;
-            }
+            varying vec3 v_normal;
+            varying vec3 v_position;
 
             void main() {
-                vec2 uv = v_uv - 0.5;
-                uv.x *= u_resolution.x / u_resolution.y;
-                float time = u_time * 0.1;
-                vec2 flow = uv;
-                
-                // Apply orientation-based distortion
-                flow.x += u_orientation.x * 0.1;
-                flow.y += u_orientation.y * 0.1;
-                
-                // Apply touch interaction
-                float touch_dist = length(flow - u_touch);
-                flow += 0.05 / (touch_dist + 0.01) * vec2(sin(u_time), cos(u_time));
-                
-                // Add fluid-like distortion with audio reactivity and z-axis
-                for (int i = 0; i < 8; i++) {
-                    flow = rotate(flow, sin(time + length(flow) * 3.0 + float(i) * 0.3) * 0.5);
-                    flow += vec2(sin(flow.y * 8.0 + time + u_audio * 2.0), cos(flow.x * 8.0 + time + u_audio * 1.5)) * 0.03;
-                }
-                
-                float z = sin(length(flow) * 10.0 - u_time * 0.5 + u_audio * 2.0) * 0.5 + 0.5;
-                float bitcrushed_z = bitcrush(z, 8.0);
+                vec3 normal = normalize(v_normal);
+                vec3 lightDir = normalize(u_lightDirection);
+                vec3 viewDir = normalize(u_cameraPosition - v_position);
 
-                // Low-contrast color with chromatic aberration and glitch effect
-                vec3 color = vec3(bitcrushed_z * 0.4, bitcrushed_z * 0.5, bitcrushed_z * 0.6);
-                color.r += 0.08 * sin(u_time + flow.x * 20.0);
-                color.g += 0.08 * cos(u_time + flow.y * 20.0);
-                color.b += 0.04 * sin(u_time * 0.5);
-                
-                // Add subtle particle-like effect
-                float particle = sin(flow.x * 25.0 + u_time * 4.0) * cos(flow.y * 25.0 + u_time * 4.0);
-                color += 0.05 * vec3(particle, particle * 0.8, particle * 0.6);
-                
-                // Fractal zoom effect for depth
-                for (int i = 0; i < 3; i++) {
-                    flow = rotate(flow, sin(time * 2.0 + float(i) * 1.5) * 0.5);
-                    flow *= 1.2;
-                    float fractal = abs(sin(length(flow) * 5.0 + u_time * 0.3));
-                    color += 0.04 * vec3(fractal, fractal * 0.9, fractal * 0.7);
-                }
-                
-                // Soft glitchy horizontal lines for extra visual interest
-                if (mod(gl_FragCoord.y + sin(u_time * 0.2) * 5.0, 20.0) < 1.5) {
-                    color = mix(color, vec3(0.2, 0.2, 0.25), 0.3);
-                }
-                
+                // Metallic shading
+                float diff = max(dot(normal, lightDir), 0.0);
+                vec3 reflectDir = reflect(-lightDir, normal);
+                float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+                vec3 color = vec3(0.4, 0.4, 0.4) * diff + vec3(1.0, 1.0, 1.0) * spec * 0.5;
+
+                // Adding time-based color variation for subtle beauty
+                color += 0.1 * sin(u_time * 0.5) * vec3(0.8, 0.6, 0.5);
                 gl_FragColor = vec4(color, 1.0);
             }
         `;
@@ -145,128 +106,143 @@
         }
         gl.useProgram(program);
 
-        // Set up geometry
+        // Set up geometry for a sphere
+        function createSphere(radius, latitudeBands, longitudeBands) {
+            const positions = [];
+            const normals = [];
+            const indices = [];
+
+            for (let lat = 0; lat <= latitudeBands; ++lat) {
+                const theta = lat * Math.PI / latitudeBands;
+                const sinTheta = Math.sin(theta);
+                const cosTheta = Math.cos(theta);
+
+                for (let lon = 0; lon <= longitudeBands; ++lon) {
+                    const phi = lon * 2 * Math.PI / longitudeBands;
+                    const sinPhi = Math.sin(phi);
+                    const cosPhi = Math.cos(phi);
+
+                    const x = cosPhi * sinTheta;
+                    const y = cosTheta;
+                    const z = sinPhi * sinTheta;
+
+                    positions.push(radius * x);
+                    positions.push(radius * y);
+                    positions.push(radius * z);
+
+                    normals.push(x);
+                    normals.push(y);
+                    normals.push(z);
+                }
+            }
+
+            for (let lat = 0; lat < latitudeBands; ++lat) {
+                for (let lon = 0; lon < longitudeBands; ++lon) {
+                    const first = (lat * (longitudeBands + 1)) + lon;
+                    const second = first + longitudeBands + 1;
+
+                    indices.push(first);
+                    indices.push(second);
+                    indices.push(first + 1);
+
+                    indices.push(second);
+                    indices.push(second + 1);
+                    indices.push(first + 1);
+                }
+            }
+
+            return { positions, normals, indices };
+        }
+
+        const sphereData = createSphere(1, 30, 30);
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            -1, -1,
-            1, -1,
-            -1, 1,
-            -1, 1,
-            1, -1,
-            1, 1,
-        ]), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereData.positions), gl.STATIC_DRAW);
+
+        const normalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereData.normals), gl.STATIC_DRAW);
+
+        const indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sphereData.indices), gl.STATIC_DRAW);
 
         const positionLocation = gl.getAttribLocation(program, 'a_position');
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(positionLocation);
-        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+        const normalLocation = gl.getAttribLocation(program, 'a_normal');
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(normalLocation);
 
         // Set up uniforms
+        const modelViewMatrixLocation = gl.getUniformLocation(program, 'u_modelViewMatrix');
+        const projectionMatrixLocation = gl.getUniformLocation(program, 'u_projectionMatrix');
+        const lightDirectionLocation = gl.getUniformLocation(program, 'u_lightDirection');
+        const cameraPositionLocation = gl.getUniformLocation(program, 'u_cameraPosition');
         const timeLocation = gl.getUniformLocation(program, 'u_time');
-        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
-        const audioLocation = gl.getUniformLocation(program, 'u_audio');
-        const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
-        const touchLocation = gl.getUniformLocation(program, 'u_touch');
 
-        let audioLevel = 0.0;
-        let orientation = { alpha: 0, beta: 0, gamma: 0 };
-        let touch = [0.0, 0.0];
+        const lightDirection = [1.0, 1.0, 1.0];
+        const cameraPosition = [0.0, 0.0, 5.0];
 
-        // Set up microphone input
-        navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(stream => {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const analyser = audioContext.createAnalyser();
-            const source = audioContext.createMediaStreamSource(stream);
-            source.connect(analyser);
-            analyser.fftSize = 256;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
+        // Set up projection matrix
+        const fieldOfView = Math.PI / 4;
+        const aspect = canvas.width / canvas.height;
+        const zNear = 0.1;
+        const zFar = 100.0;
+        const projectionMatrix = mat4.create();
+        mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
-            function updateAudioData() {
-                analyser.getByteFrequencyData(dataArray);
-                audioLevel = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength / 256.0;
+        // Set up model view matrix
+        const modelViewMatrix = mat4.create();
+        mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -5.0]);
 
-                // Trigger haptic feedback with rolling marble-like sensation
-                if (navigator.vibrate) {
-                    const lowFrequency = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
-                    const midFrequency = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
-                    const highFrequency = dataArray.slice(2 * bufferLength / 3, bufferLength).reduce((sum, value) => sum + value, 0) / (bufferLength / 3);
-
-                    const vibrationPattern = [];
-                    if (lowFrequency > 10) {
-                        vibrationPattern.push(Math.min(Math.floor(lowFrequency * 40), 500)); // Enhanced intensity for rolling effect
-                    }
-                    if (midFrequency > 10) {
-                        vibrationPattern.push(Math.min(Math.floor(midFrequency * 35), 400)); // Enhanced intensity for rolling effect
-                    }
-                    if (highFrequency > 10) {
-                        vibrationPattern.push(Math.min(Math.floor(highFrequency * 30), 300)); // Enhanced intensity for rolling effect
-                    }
-
-                    // Add gaps to create a rolling marble-like sensation
-                    if (vibrationPattern.length > 0) {
-                        const marblePattern = [];
-                        vibrationPattern.forEach((value, index) => {
-                            marblePattern.push(value);
-                            marblePattern.push(30 + Math.sin(index * 0.5) * 20); // Short pause with subtle variation to simulate rolling sensation
-                        });
-                        navigator.vibrate(marblePattern);
-                    }
-                }
-
-                requestAnimationFrame(updateAudioData);
-            }
-            updateAudioData();
-        }).catch(err => {
-            console.error('Error accessing microphone: ' + err);
-        });
-
-        // Set up device orientation
-        window.addEventListener('deviceorientation', (event) => {
-            orientation.alpha = event.alpha;
-            orientation.beta = event.beta;
-            orientation.gamma = event.gamma;
-        });
-
-        // Set up touch interaction
-        canvas.addEventListener('touchmove', (event) => {
-            const touchEvent = event.touches[0];
-            touch = [
-                (touchEvent.clientX / window.innerWidth) * 2.0 - 1.0,
-                1.0 - (touchEvent.clientY / window.innerHeight) * 2.0
-            ];
-        });
+        // Animation variables
+        let ballPosition = [0, 0];
+        let ballVelocity = [0.02, 0.015];
 
         // Render loop
         function render(time) {
             time *= 0.001; // Convert time to seconds
 
+            // Update ball position and handle collisions with screen edges
+            ballPosition[0] += ballVelocity[0];
+            ballPosition[1] += ballVelocity[1];
+
+            if (ballPosition[0] > 1.5 || ballPosition[0] < -1.5) {
+                ballVelocity[0] = -ballVelocity[0];
+                navigator.vibrate(100); // Vibrate on collision with edge
+            }
+            if (ballPosition[1] > 1.5 || ballPosition[1] < -1.5) {
+                ballVelocity[1] = -ballVelocity[1];
+                navigator.vibrate(100); // Vibrate on collision with edge
+            }
+
+            // Update model view matrix for ball position
+            mat4.identity(modelViewMatrix);
+            mat4.translate(modelViewMatrix, modelViewMatrix, [ballPosition[0], ballPosition[1], -5.0]);
+
             // Clear canvas
             gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
             // Set uniforms
+            gl.uniformMatrix4fv(modelViewMatrixLocation, false, modelViewMatrix);
+            gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);
+            gl.uniform3fv(lightDirectionLocation, lightDirection);
+            gl.uniform3fv(cameraPositionLocation, cameraPosition);
             gl.uniform1f(timeLocation, time);
-            gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-            gl.uniform1f(audioLocation, audioLevel);
 
-            // Normalize orientation values and set uniform
-            const orientationVec = [
-                orientation.gamma / 90.0,  // X-axis tilt normalized to [-1, 1]
-                orientation.beta / 90.0,   // Y-axis tilt normalized to [-1, 1]
-                orientation.alpha / 360.0  // Z-axis rotation normalized to [0, 1]
-            ];
-            gl.uniform3fv(orientationLocation, orientationVec);
-
-            // Set touch uniform
-            gl.uniform2fv(touchLocation, touch);
-
-            // Draw
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            // Draw sphere
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+            gl.drawElements(gl.TRIANGLES, sphereData.indices.length, gl.UNSIGNED_SHORT, 0);
 
             requestAnimationFrame(render);
         }
         requestAnimationFrame(render);
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
 </body>
 </html>
