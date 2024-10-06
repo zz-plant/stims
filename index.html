@@ -103,9 +103,20 @@
             uniform vec3 u_orientation;
             uniform bool u_dark_mode;
             varying vec2 v_uv;
-            
+
+            // Function to generate noise based on coordinates
             float noise(vec2 p) {
-                return sin(p.x * 12.9898 + p.y * 78.233) * 43758.5453 - floor(sin(p.x * 12.9898 + p.y * 78.233) * 43758.5453);
+                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+
+            // Function to generate smoother fractal noise
+            float fbm(vec2 p) {
+                float f = 0.0;
+                f += 0.5000 * noise(p); p *= 2.02;
+                f += 0.2500 * noise(p); p *= 2.03;
+                f += 0.1250 * noise(p); p *= 2.01;
+                f += 0.0625 * noise(p);
+                return f;
             }
 
             void main() {
@@ -113,59 +124,58 @@
                 float dist = length(uv);
                 float angle = atan(uv.y, uv.x);
 
+                // Create a fluid wave effect using low, mid, and high frequencies
+                float waveEffect = sin(u_time + dist * 20.0) * u_low_freq +
+                                cos(u_time * 1.5 + dist * 30.0) * u_mid_freq +
+                                sin(u_time * 2.0 + dist * 40.0) * u_high_freq;
+                
+                // Combine noise with the wave effect
+                float fbmValue = fbm(uv * 10.0 + waveEffect * 2.0);
+
+                // Create a base color with smooth transitions across RGB channels
                 vec3 baseColor = vec3(
-                    0.5 + 0.5 * sin(u_time + angle + u_low_freq * 5.0),
-                    0.5 + 0.5 * cos(u_time + angle * 2.0 + u_mid_freq * 3.0),
-                    0.5 + 0.5 * sin(u_time * 0.5 + angle * 3.0 + u_high_freq * 7.0)
+                    0.5 + 0.5 * sin(u_time + angle + fbmValue * 10.0),
+                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 1.5 + fbmValue * 15.0),
+                    0.5 + 0.5 * sin(u_time * 0.75 + angle * 2.0 + fbmValue * 20.0)
                 );
 
+                // Reduce brightness for dark mode
                 if (u_dark_mode) {
-                    baseColor *= 0.2;
+                    baseColor *= 0.3;
                 }
 
-                float lowWave = 0.5 + 0.5 * sin(15.0 * dist - u_time + angle * 3.0) * (u_low_freq + 0.3);
-                vec3 lowColor = vec3(lowWave * 0.5, lowWave * 0.3, lowWave);
-
-                float midOscillation = 0.5 + 0.5 * cos(20.0 * dist - u_time * 1.5 + angle * 4.0) * (u_mid_freq + 0.4);
-                midOscillation += noise(uv * 10.0) * 0.2 * u_mid_freq;
-                vec3 midColor = vec3(midOscillation * 0.3, midOscillation, midOscillation * 0.6);
-
-                float highSpark = 0.5 + 0.5 * sin(25.0 * dist - u_time * 2.0 + angle * 6.0) * (u_high_freq + 0.5);
-                highSpark += step(0.9, fract(sin(u_time * 10.0) * 43758.5453)) * 0.3 * u_high_freq;
-                vec3 highColor = vec3(highSpark, highSpark * 0.5, highSpark * 0.2);
-
-                if (u_dark_mode) {
-                    highColor *= 0.1;
-                }
-
-                vec3 color = baseColor + lowColor + midColor + highColor;
-
-                float touchEffect0 = 0.0;
-                float touchEffect1 = 0.0;
+                // Add a rainbow ripple effect based on touch interactions
+                float touchRipple0 = 0.0;
+                float touchRipple1 = 0.0;
                 if (length(u_touch0) > 0.0) {
-                    touchEffect0 = 0.2 / length(uv - (u_touch0 - 0.5));
+                    touchRipple0 = 0.3 / length(uv - (u_touch0 - 0.5));
                 }
                 if (length(u_touch1) > 0.0) {
-                    touchEffect1 = 0.2 / length(uv - (u_touch1 - 0.5));
+                    touchRipple1 = 0.3 / length(uv - (u_touch1 - 0.5));
                 }
-                color += vec3(touchEffect0 + touchEffect1);
+                baseColor += vec3(touchRipple0 + touchRipple1);
 
-                float orientationEffect = sin(u_orientation.x * uv.x * 20.0 + u_time) * 0.3 * u_orientation.y;
-                uv += vec2(orientationEffect, orientationEffect * cos(u_orientation.z * uv.y * 10.0));
+                // Add orientation-based distortion to make visuals more fluid and dynamic
+                float orientationDistortion = sin(u_orientation.x * uv.x * 10.0 + u_time) * u_orientation.y;
+                uv += vec2(orientationDistortion, orientationDistortion * cos(u_orientation.z * uv.y * 20.0));
 
-                float radialGradient = smoothstep(0.6, 0.0, dist) * (1.0 + sin(u_time * 5.0 + dist * 15.0) * 0.1);
-                color *= radialGradient;
+                // Apply a pulsating radial gradient for added depth
+                float radialGradient = smoothstep(0.6, 0.0, dist) * (1.0 + sin(u_time * 10.0 + dist * 20.0) * 0.1);
+                baseColor *= radialGradient;
 
-                float glow = exp(-10.0 * dist) * (u_low_freq + u_mid_freq + u_high_freq);
+                // Add glow and extra brightness to the center for a trippy "black hole" effect
+                float glow = exp(-dist * 20.0) * (u_low_freq + u_mid_freq + u_high_freq);
                 if (u_dark_mode) {
                     glow *= 0.1;
                 }
-                color += vec3(glow * 0.4, glow * 0.6, glow * 0.8);
+                baseColor += vec3(glow * 0.5, glow * 0.8, glow * 1.0);
 
-                float glazeTexture = sin(uv.x * 30.0 + u_time) * cos(uv.y * 30.0 + u_time);
-                color += vec3(0.1, 0.05, 0.02) * glazeTexture * 0.3;
+                // Add dynamic noise-based distortions to further warp the visuals
+                float distortion = fbm(uv * 20.0 + u_time * 0.5);
+                baseColor.rgb += distortion * 0.1;
 
-                gl_FragColor = vec4(color, 1.0);
+                // Output final color
+                gl_FragColor = vec4(baseColor, 1.0);
             }
         `;
 
