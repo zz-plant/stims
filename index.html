@@ -110,10 +110,18 @@
                 float fluidDistortion = sin(uv.x * 10.0 + u_time * 0.5) * u_mid_freq * 0.05;
                 uv += vec2(fluidDistortion, fluidDistortion);
 
+                // Add radial gradient for more visual interest
+                float radialGradient = smoothstep(0.4, 0.0, dist);
+
+                // Combine color and effects
                 float combinedLowMid = mix(lowPattern, midPattern, 0.5);
                 float combinedHighTouch = highPattern * 0.5 + touchEffect0 + touchEffect1;
                 float combined = combinedLowMid + combinedHighTouch;
                 vec3 color = baseColor + vec3(combined * u_low_freq, combined * u_mid_freq, combined * u_high_freq);
+
+                // Apply radial gradient
+                color *= radialGradient;
+
                 gl_FragColor = vec4(color, 1.0);
             }
         `;
@@ -180,11 +188,12 @@
                 if (audioSelect.value === 'mic') {
                     source = audioContext.createMediaStreamSource(stream);
                 } else {
+                    // Use the audio context's `createMediaElementSource` to capture device audio
                     const audioElement = new Audio();
-                    audioElement.src = 'path/to/your/audio/file.mp3'; // Placeholder for device audio file path
                     audioElement.crossOrigin = 'anonymous';
-                    audioElement.play();
                     source = audioContext.createMediaElementSource(audioElement);
+                    source.connect(audioContext.destination); // To allow playback
+                    audioElement.play();
                 }
 
                 source.connect(analyser);
