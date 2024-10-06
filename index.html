@@ -124,19 +124,19 @@
                 float dist = length(uv);
                 float angle = atan(uv.y, uv.x);
 
-                // Create a fluid wave effect using low, mid, and high frequencies
-                float waveEffect = sin(u_time + dist * 20.0) * u_low_freq +
-                                cos(u_time * 1.5 + dist * 30.0) * u_mid_freq +
-                                sin(u_time * 2.0 + dist * 40.0) * u_high_freq;
-                
-                // Combine noise with the wave effect
-                float fbmValue = fbm(uv * 10.0 + waveEffect * 2.0);
+                // Create a fluid wave effect that oscillates smoothly to simulate "breathing"
+                float breathingEffect = sin(u_time * 0.5 + dist * 6.0) * 0.5 +
+                                        cos(u_time * 0.7 + dist * 4.0) * 0.3 +
+                                        sin(u_time * 0.9 + dist * 8.0) * 0.2;
 
-                // Create a base color with smooth transitions across RGB channels
+                // Use fbm to add fluid-like "melting" distortions
+                float fbmValue = fbm(uv * 5.0 + u_time * 0.5 + breathingEffect);
+
+                // Create a base color that smoothly shifts and breathes
                 vec3 baseColor = vec3(
-                    0.5 + 0.5 * sin(u_time + angle + fbmValue * 10.0),
-                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 1.5 + fbmValue * 15.0),
-                    0.5 + 0.5 * sin(u_time * 0.75 + angle * 2.0 + fbmValue * 20.0)
+                    0.5 + 0.5 * sin(u_time + angle + fbmValue * 4.0),
+                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + fbmValue * 3.0),
+                    0.5 + 0.5 * sin(u_time * 0.75 + angle * 1.5 + fbmValue * 2.0)
                 );
 
                 // Reduce brightness for dark mode
@@ -144,7 +144,7 @@
                     baseColor *= 0.3;
                 }
 
-                // Add a rainbow ripple effect based on touch interactions
+                // Add rainbow ripple effects from touch interactions
                 float touchRipple0 = 0.0;
                 float touchRipple1 = 0.0;
                 if (length(u_touch0) > 0.0) {
@@ -155,26 +155,26 @@
                 }
                 baseColor += vec3(touchRipple0 + touchRipple1);
 
-                // Add orientation-based distortion to make visuals more fluid and dynamic
-                float orientationDistortion = sin(u_orientation.x * uv.x * 10.0 + u_time) * u_orientation.y;
+                // Apply orientation-based distortion for more fluid, shifting visuals
+                float orientationDistortion = sin(u_orientation.x * uv.x * 10.0 + u_time * 0.5) * u_orientation.y;
                 uv += vec2(orientationDistortion, orientationDistortion * cos(u_orientation.z * uv.y * 20.0));
 
-                // Apply a pulsating radial gradient for added depth
-                float radialGradient = smoothstep(0.6, 0.0, dist) * (1.0 + sin(u_time * 10.0 + dist * 20.0) * 0.1);
+                // Add a pulsating radial gradient for more depth and breathing effect
+                float radialGradient = smoothstep(0.6, 0.0, dist) * (1.0 + sin(u_time * 2.0 + dist * 15.0) * 0.1);
                 baseColor *= radialGradient;
 
-                // Add glow and extra brightness to the center for a trippy "black hole" effect
-                float glow = exp(-dist * 20.0) * (u_low_freq + u_mid_freq + u_high_freq);
+                // Add glow around the center for an "expanding/contracting" breathing effect
+                float glow = exp(-dist * 10.0) * (u_low_freq + u_mid_freq + u_high_freq);
                 if (u_dark_mode) {
                     glow *= 0.1;
                 }
                 baseColor += vec3(glow * 0.5, glow * 0.8, glow * 1.0);
 
-                // Add dynamic noise-based distortions to further warp the visuals
-                float distortion = fbm(uv * 20.0 + u_time * 0.5);
-                baseColor.rgb += distortion * 0.1;
+                // Apply a melting effect by distorting the texture with noise
+                float meltingEffect = fbm(uv * 8.0 + u_time * 0.2);
+                baseColor.rgb += meltingEffect * 0.1;
 
-                // Output final color
+                // Final output color
                 gl_FragColor = vec4(baseColor, 1.0);
             }
         `;
