@@ -224,6 +224,13 @@
                     }
                 }
 
+                function vibrateBasedOnVisuals(lowFreq, midFreq, highFreq, dist) {
+                    const vibrateIntensity = Math.max(lowFreq, midFreq, highFreq) * (1.0 - dist);
+                    if (navigator.vibrate && vibrateIntensity > 0.5) {
+                        navigator.vibrate([Math.floor(vibrateIntensity * 200), 50, Math.floor(vibrateIntensity * 200)]);
+                    }
+                }
+
                 // Device orientation-based distortion
                 let orientation = { alpha: 0, beta: 0, gamma: 0 };
                 window.addEventListener('deviceorientation', (event) => {
@@ -287,6 +294,7 @@
                     gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
 
                     vibrateBasedOnAudio(lowFreq, midFreq, highFreq);
+                    vibrateBasedOnVisuals(lowFreq, midFreq, highFreq, Math.random());
 
                     requestAnimationFrame(updateAudioData);
                 }
