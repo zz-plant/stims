@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Trippy Fluid Flow Visualizer for Concerts</title>
+    <title>Advanced Bitcrushed Fluid Visualizer for Concerts</title>
     <style>
         body, html {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background-color: black;
+            background-color: #000000; /* OLED black */
         }
         canvas {
             display: block;
@@ -54,12 +54,14 @@
         // Vertex shader source
         const vertexShaderSource = `
             attribute vec2 a_position;
+            varying vec2 v_uv;
             void main() {
+                v_uv = a_position * 0.5 + 0.5;
                 gl_Position = vec4(a_position, 0.0, 1.0);
             }
         `;
 
-        // Fragment shader source for enhanced fluid flow effect
+        // Fragment shader source for advanced visual effects
         const fragmentShaderSource = `
             precision mediump float;
             uniform float u_time;
@@ -67,37 +69,62 @@
             uniform float u_audio;
             uniform vec3 u_orientation;
             uniform vec2 u_touch;
-            
+            varying vec2 v_uv;
+
             vec2 rotate(vec2 v, float a) {
                 float s = sin(a);
                 float c = cos(a);
                 return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
             }
             
+            float bitcrush(float value, float bits) {
+                return floor(value * bits) / bits;
+            }
+
             void main() {
-                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-                uv -= 0.5;
+                vec2 uv = v_uv - 0.5;
                 uv.x *= u_resolution.x / u_resolution.y;
-                
-                float time = u_time * 0.2;
+                float time = u_time * 0.1;
                 vec2 flow = uv;
                 
                 // Apply orientation-based distortion
-                flow.x += u_orientation.x * 0.2;
-                flow.y += u_orientation.y * 0.2;
-
+                flow.x += u_orientation.x * 0.1;
+                flow.y += u_orientation.y * 0.1;
+                
                 // Apply touch interaction
                 float touch_dist = length(flow - u_touch);
-                flow += 0.1 / (touch_dist + 0.01) * vec2(sin(u_time), cos(u_time));
+                flow += 0.05 / (touch_dist + 0.01) * vec2(sin(u_time), cos(u_time));
                 
-                // Add fluid-like distortion with audio reactivity
+                // Add fluid-like distortion with audio reactivity and z-axis
                 for (int i = 0; i < 8; i++) {
-                    flow = rotate(flow, sin(time + length(flow) * 5.0 + float(i) * 0.5) * 0.5);
-                    flow += vec2(sin(flow.y * 10.0 + time + u_audio * 3.0), cos(flow.x * 10.0 + time + u_audio * 2.0)) * 0.05;
+                    flow = rotate(flow, sin(time + length(flow) * 3.0 + float(i) * 0.3) * 0.5);
+                    flow += vec2(sin(flow.y * 8.0 + time + u_audio * 2.0), cos(flow.x * 8.0 + time + u_audio * 1.5)) * 0.03;
                 }
                 
-                float metallic = abs(sin(length(flow) * 10.0 + u_audio * 5.0 - time)) * 0.8 + 0.2;
-                vec3 color = vec3(metallic * 0.6, 0.3 + 0.7 * metallic, 1.0 - metallic);
+                float z = sin(length(flow) * 10.0 - u_time * 0.5 + u_audio * 2.0) * 0.5 + 0.5;
+                float bitcrushed_z = bitcrush(z, 8.0);
+
+                // Low-contrast color with chromatic aberration and glitch effect
+                vec3 color = vec3(bitcrushed_z * 0.2, bitcrushed_z * 0.3, bitcrushed_z * 0.4);
+                color.r += 0.05 * sin(u_time + flow.x * 20.0);
+                color.g += 0.05 * cos(u_time + flow.y * 20.0);
+                
+                // Add particle-like effect
+                float particle = sin(flow.x * 20.0 + u_time * 5.0) * cos(flow.y * 20.0 + u_time * 5.0);
+                color += 0.1 * vec3(particle, particle, particle);
+                
+                // Fractal zoom effect for depth
+                for (int i = 0; i < 3; i++) {
+                    flow = rotate(flow, sin(time * 2.0 + float(i) * 1.5) * 0.5);
+                    flow *= 1.2;
+                    float fractal = abs(sin(length(flow) * 5.0 + u_time * 0.5));
+                    color += 0.05 * vec3(fractal, fractal, fractal);
+                }
+                
+                // Glitchy pixel-sorted lines
+                if (mod(gl_FragCoord.y, 10.0) < 1.0) {
+                    color = mix(color, vec3(0.0), 0.5);
+                }
                 
                 gl_FragColor = vec4(color, 1.0);
             }
