@@ -71,6 +71,7 @@
             uniform float u_high_freq;
             uniform vec2 u_touch0;
             uniform vec2 u_touch1;
+            uniform vec3 u_orientation;
             varying vec2 v_uv;
             void main() {
                 vec2 uv = v_uv - 0.5;
@@ -92,14 +93,16 @@
                     touchEffect1 = 0.1 / length(uv - (u_touch1 - 0.5));
                 }
 
-                // Combining different visual elements
-                float combinedLowMid = mix(lowPattern, midPattern, 0.5);
-                float combinedHighTouch = highPattern * 0.5 + touchEffect0 + touchEffect1;
+                // Orientation-based distortion
+                float orientationEffect = sin(u_orientation.x * uv.x * 5.0 + u_time * 0.5) * 0.05 * u_orientation.y;
+                uv += vec2(orientationEffect, orientationEffect);
 
                 // Fluid-like distortion effect with mid frequencies
                 float fluidDistortion = sin(uv.x * 10.0 + u_time * 0.5) * u_mid_freq * 0.05;
                 uv += vec2(fluidDistortion, fluidDistortion);
 
+                float combinedLowMid = mix(lowPattern, midPattern, 0.5);
+                float combinedHighTouch = highPattern * 0.5 + touchEffect0 + touchEffect1;
                 float combined = combinedLowMid + combinedHighTouch;
                 vec3 color = vec3(combined * u_low_freq, combined * u_mid_freq, combined * u_high_freq);
                 gl_FragColor = vec4(color, 1.0);
@@ -143,6 +146,7 @@
         const highFreqLocation = gl.getUniformLocation(program, 'u_high_freq');
         const touch0Location = gl.getUniformLocation(program, 'u_touch0');
         const touch1Location = gl.getUniformLocation(program, 'u_touch1');
+        const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
 
         // Audio setup for beat detection and frequency analysis
         navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(stream => {
@@ -234,6 +238,7 @@
                 gl.uniform1f(lowFreqLocation, lowFreq);
                 gl.uniform1f(midFreqLocation, midFreq);
                 gl.uniform1f(highFreqLocation, highFreq);
+                gl.uniform3f(orientationLocation, orientation.alpha / 360.0, orientation.beta / 90.0, orientation.gamma / 90.0);
 
                 gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
                 gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
