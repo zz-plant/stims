@@ -21,13 +21,28 @@
             top: 10px;
             left: 10px;
             z-index: 10;
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .control-button {
+            padding: 5px 10px;
+            background: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <canvas id="gpuCanvas"></canvas>
     <div id="controls">
-        <button id="darkModeToggle">Toggle Dark Mode</button>
+        <button id="darkModeToggle" class="control-button">Toggle Dark Mode</button>
+        <button id="vibrationToggle" class="control-button">Toggle Vibrations</button>
+        <button id="resetConfig" class="control-button">Reset Configuration</button>
+        <button id="randomizeConfig" class="control-button">Randomize Configuration</button>
     </div>
     <script>
         const canvas = document.getElementById('gpuCanvas');
@@ -40,9 +55,9 @@
         }
 
         let darkMode = false;
+        let vibrationsEnabled = true;
         let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
         let deviceMotion = { x: 0, y: 0, z: 0 };
-        let audioContext, analyser, source;
 
         // Resize canvas function
         function resizeCanvas() {
@@ -94,9 +109,6 @@
         const fragmentShaderSource = `
             precision mediump float;
             uniform float u_time;
-            uniform float u_low_freq;
-            uniform float u_mid_freq;
-            uniform float u_high_freq;
             uniform vec2 u_touch0;
             uniform vec2 u_touch1;
             uniform bool u_dark_mode;
@@ -126,9 +138,9 @@
                 uv += flow * 0.2;
 
                 vec3 baseColor = vec3(
-                    0.5 + 0.5 * sin(u_time + angle + u_orientation.x + u_low_freq),
-                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + u_orientation.y + u_mid_freq),
-                    0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0 + u_orientation.z + u_high_freq)
+                    0.5 + 0.5 * sin(u_time + angle + u_orientation.x),
+                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + u_orientation.y),
+                    0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0 + u_orientation.z)
                 );
 
                 if (u_dark_mode) {
@@ -182,9 +194,6 @@
         gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
         const timeLocation = gl.getUniformLocation(program, 'u_time');
-        const lowFreqLocation = gl.getUniformLocation(program, 'u_low_freq');
-        const midFreqLocation = gl.getUniformLocation(program, 'u_mid_freq');
-        const highFreqLocation = gl.getUniformLocation(program, 'u_high_freq');
         const touch0Location = gl.getUniformLocation(program, 'u_touch0');
         const touch1Location = gl.getUniformLocation(program, 'u_touch1');
         const darkModeLocation = gl.getUniformLocation(program, 'u_dark_mode');
@@ -192,9 +201,49 @@
         const motionLocation = gl.getUniformLocation(program, 'u_motion');
 
         const darkModeToggle = document.getElementById('darkModeToggle');
+        const vibrationToggle = document.getElementById('vibrationToggle');
+        const resetConfig = document.getElementById('resetConfig');
+        const randomizeConfig = document.getElementById('randomizeConfig');
+
         darkModeToggle.addEventListener('click', () => {
             darkMode = !darkMode;
+            updateURLParams();
         });
+
+        vibrationToggle.addEventListener('click', () => {
+            vibrationsEnabled = !vibrationsEnabled;
+            updateURLParams();
+        });
+
+        resetConfig.addEventListener('click', () => {
+            darkMode = false;
+            vibrationsEnabled = true;
+            updateURLParams();
+        });
+
+        randomizeConfig.addEventListener('click', () => {
+            darkMode = Math.random() > 0.5;
+            vibrationsEnabled = Math.random() > 0.5;
+            deviceOrientation.alpha = Math.random() * 360;
+            deviceOrientation.beta = Math.random() * 180 - 90;
+            deviceOrientation.gamma = Math.random() * 180 - 90;
+            updateURLParams();
+        });
+
+        function updateURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            params.set('darkMode', darkMode);
+            params.set('vibrationsEnabled', vibrationsEnabled);
+            window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+        }
+
+        function loadURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            darkMode = params.get('darkMode') === 'true';
+            vibrationsEnabled = params.get('vibrationsEnabled') === 'true';
+        }
+
+        loadURLParams();
 
         let touches = [
             { x: 0.0, y: 0.0 },
@@ -240,39 +289,6 @@
             deviceMotion.y = event.accelerationIncludingGravity.y;
             deviceMotion.z = event.accelerationIncludingGravity.z;
         });
-
-        function initializeAudio() {
-            if (audioContext) {
-                audioContext.close();
-            }
-
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                analyser.fftSize = 256;
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-
-                function updateAudioData() {
-                    analyser.getByteFrequencyData(dataArray);
-                    const lowFreq = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
-                    const midFreq = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
-                    const highFreq = dataArray.slice(2 * bufferLength / 3, bufferLength).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
-
-                    gl.uniform1f(lowFreqLocation, lowFreq);
-                    gl.uniform1f(midFreqLocation, midFreq);
-                    gl.uniform1f(highFreqLocation, highFreq);
-
-                    requestAnimationFrame(updateAudioData);
-                }
-                updateAudioData();
-            }).catch(err => {
-                console.error('Error accessing microphone: ' + err);
-            });
-        }
-        initializeAudio();
 
         // Render loop
         function render(time) {
