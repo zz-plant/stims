@@ -43,14 +43,10 @@
   const gl = canvas.getContext('webgl');
   const decibelMeter = document.getElementById('decibelMeter');
   const bpmDisplay = document.getElementById('bpm');
-  const keyDisplay = document.getElementById('key');
   let audioContext, analyser, microphone;
   let bufferLength, dataArray;
-  let particles = [];
-  let ripples = [];
   let lastPeakTime = 0;
   let peaks = [];
-  let key = 'Unknown';
 
   // WebGL shader setup
   const vertexShaderSource = `
@@ -64,7 +60,6 @@
     precision mediump float;
     uniform float u_time;
     uniform vec2 u_resolution;
-    uniform sampler2D u_texture;
     void main() {
       vec2 uv = gl_FragCoord.xy / u_resolution;
       vec3 color = 0.5 + 0.5 * cos(u_time + uv.xyx + vec3(0, 2, 4));
