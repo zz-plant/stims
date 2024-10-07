@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mobile WebGL Fidget Cube</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+            background-color: #1a1a1a;
+            font-family: 'Roboto', sans-serif;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+            max-width: 300px;
+            transition: opacity 0.3s ease-in-out;
+        }
+        #instructions.hidden {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="webgl-canvas"></canvas>
+    <div id="instructions">Use touch gestures to rotate the cube. Tilt your phone to interact with it in an immersive way. Tap the screen to change colors!</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
+    <script>
+        const canvas = document.getElementById('webgl-canvas');
+        const gl = canvas.getContext('webgl2', { antialias: true });
+
+        if (!gl) {
+            alert('WebGL 2 is not available in your browser.');
+        }
+
+        // Set canvas resolution dynamically for high-res displays
+        const highRes = window.devicePixelRatio > 1 ? 2 : 1;
+        canvas.width = window.innerWidth * highRes;
+        canvas.height = window.innerHeight * highRes;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        // Handle resizing
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth * highRes;
+            canvas.height = window.innerHeight * highRes;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        });
+
+        // Vertex shader source code
+        const vertexShaderSource = `#version 300 es
+        precision mediump float;
+        
+        in vec4 a_position;
+        in vec3 a_normal;
+
+        uniform mat4 u_projectionMatrix;
+        uniform mat4 u_modelViewMatrix;
+        uniform mat4 u_normalMatrix;
+
+        out vec3 v_normal;
+
+        void main() {
+            gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
+            v_normal = mat3(u_normalMatrix) * a_normal;
+        }`;
+
+        // Fragment shader source code
+        const fragmentShaderSource = `#version 300 es
+        precision mediump float;
+
+        in vec3 v_normal;
+        out vec4 outColor;
+
+        uniform vec3 u_lightDirection;
+        uniform vec3 u_color;
+
+        void main() {
+            vec3 normal = normalize(v_normal);
+            float light = max(dot(normal, u_lightDirection), 0.0);
+            outColor = vec4(u_color * (0.3 + light * 0.7), 1.0);
+        }`;
+
+        // Shader setup
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        function createProgram(gl, vertexShader, fragmentShader) {
+            const program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                console.error(gl.getProgramInfoLog(program));
+                gl.deleteProgram(program);
+                return null;
+            }
+            return program;
+        }
+
+        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+        const program = createProgram(gl, vertexShader, fragmentShader);
+
+        // Cube data setup
+        const positions = new Float32Array([
+            // front
+            -1, -1,  1,   1, -1,  1,   1,  1,  1,  -1,  1,  1,
+            // back
+            -1, -1, -1,  -1,  1, -1,   1,  1, -1,   1, -1, -1,
+            // top
+            -1,  1, -1,  -1,  1,  1,   1,  1,  1,   1,  1, -1,
+            // bottom
+            -1, -1, -1,   1, -1, -1,   1, -1,  1,  -1, -1,  1,
+            // right
+             1, -1, -1,   1,  1, -1,   1,  1,  1,   1, -1,  1,
+            // left
+            -1, -1, -1,  -1, -1,  1,  -1,  1,  1,  -1,  1, -1,
+        ]);
+
+        const normals = new Float32Array([
+            // front
+             0,  0,  1,   0,  0,  1,   0,  0,  1,   0,  0,  1,
+            // back
+             0,  0, -1,   0,  0, -1,   0,  0, -1,   0,  0, -1,
+            // top
+             0,  1,  0,   0,  1,  0,   0,  1,  0,   0,  1,  0,
+            // bottom
+             0, -1,  0,   0, -1,  0,   0, -1,  0,   0, -1,  0,
+            // right
+             1,  0,  0,   1,  0,  0,   1,  0,  0,   1,  0,  0,
+            // left
+            -1,  0,  0,  -1,  0,  0,  -1,  0,  0,  -1,  0,  0,
+        ]);
+
+        // Buffer setup
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+        const normalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+
+        const vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
+
+        // Position attribute setup
+        const positionLocation = gl.getAttribLocation(program, 'a_position');
+        gl.enableVertexAttribArray(positionLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
+
+        // Normal attribute setup
+        const normalLocation = gl.getAttribLocation(program, 'a_normal');
+        gl.enableVertexAttribArray(normalLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
+
+        // Animation variables
+        let rotationX = 0;
+        let rotationY = 0;
+        let currentRotationX = 0;
+        let currentRotationY = 0;
+        let currentColor = [0.3, 0.6, 1.0];
+
+        // Handle touch input for interaction
+        let touchStartX, touchStartY;
+        canvas.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - touchStartX;
+            const deltaY = touch.clientY - touchStartY;
+
+            rotationX += deltaX * 0.005;
+            rotationY += deltaY * 0.005;
+
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+        });
+
+        // Gyro-based rotation (if supported)
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', (event) => {
+                const { beta, gamma } = event;
+                rotationX += gamma * 0.001;
+                rotationY += beta * 0.001;
+            });
+        }
+
+        // Handle tap to change color
+        canvas.addEventListener('click', () => {
+            currentColor = [Math.random(), Math.random(), Math.random()];
+            vibrate(100);
+        });
+
+        // Vibration feedback for user interactions
+        function vibrate(duration) {
+            if (navigator.vibrate) {
+                navigator.vibrate(duration);
+            }
+        }
+
+        // Add vibration feedback for touch and tap events
+        canvas.addEventListener('touchstart', () => vibrate(50));
+
+        // Render loop
+        function drawScene(time) {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.enable(gl.DEPTH_TEST);
+
+            // Set up projection and model-view matrices
+            const aspect = canvas.width / canvas.height;
+            const projectionMatrix = mat4.create();
+            mat4.perspective(projectionMatrix, Math.PI / 4, aspect, 0.1, 100);
+
+            const modelViewMatrix = mat4.create();
+            mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -6]);
+
+            // Smooth rotation update
+            currentRotationX += (rotationX - currentRotationX) * 0.1;
+            currentRotationY += (rotationY - currentRotationY) * 0.1;
+
+            mat4.rotate(modelViewMatrix, modelViewMatrix, currentRotationX, [0, 1, 0]);
+            mat4.rotate(modelViewMatrix, modelViewMatrix, currentRotationY, [1, 0, 0]);
+
+            const normalMatrix = mat4.create();
+            mat4.invert(normalMatrix, modelViewMatrix);
+            mat4.transpose(normalMatrix, normalMatrix);
+
+            // Use shader program and set uniforms
+            gl.useProgram(program);
+            gl.uniformMatrix4fv(gl.getUniformLocation(program, 'u_projectionMatrix'), false, projectionMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(program, 'u_modelViewMatrix'), false, modelViewMatrix);
+            gl.uniformMatrix4fv(gl.getUniformLocation(program, 'u_normalMatrix'), false, normalMatrix);
+            gl.uniform3fv(gl.getUniformLocation(program, 'u_lightDirection'), [-0.5, -1.0, -0.5]);
+            gl.uniform3fv(gl.getUniformLocation(program, 'u_color'), currentColor);
+
+            // Draw the cube
+            gl.bindVertexArray(vao);
+            gl.drawArrays(gl.TRIANGLES, 0, 36);
+
+            requestAnimationFrame(drawScene);
+        }
+
+        requestAnimationFrame(drawScene);
+    </script>
+</body>
+</html>
