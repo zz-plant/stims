@@ -11,6 +11,8 @@
       overflow: hidden;
       background-color: black;
       touch-action: none;
+      color: white;
+      font-family: Arial, sans-serif;
     }
 
     canvas {
@@ -18,19 +20,37 @@
       width: 100%;
       height: 100%;
     }
+
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
 
+<div id="info">
+  <div id="decibelMeter">Decibels: 0 dB</div>
+  <div id="bpm">BPM: Calculating...</div>
+  <div id="key">Key: Detecting...</div>
+</div>
 <canvas id="visualizer"></canvas>
 
 <script>
   const canvas = document.getElementById('visualizer');
   const ctx = canvas.getContext('2d');
+  const decibelMeter = document.getElementById('decibelMeter');
+  const bpmDisplay = document.getElementById('bpm');
+  const keyDisplay = document.getElementById('key');
   let audioContext, analyser, microphone;
   let bufferLength, dataArray;
   let tiltX = 0, tiltY = 0;
   let particles = [];
+  let lastPeakTime = 0;
+  let peaks = [];
+  let key = 'Unknown';
 
   // Particle class for interactive visuals
   class Particle {
@@ -55,6 +75,29 @@
     }
   }
 
+  // Fluid flow effect class
+  class FlowField {
+    constructor() {
+      this.noiseScale = 0.01;
+    }
+    drawFlow() {
+      for (let y = 0; y < canvas.height; y += 10) {
+        for (let x = 0; x < canvas.width; x += 10) {
+          let angle = (Math.sin((x + y) * this.noiseScale) + 1) * Math.PI;
+          let length = 5;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + length * Math.cos(angle), y + length * Math.sin(angle));
+          ctx.strokeStyle = 'rgba(0, 150, 255, 0.1)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  const flowField = new FlowField();
+
   // Resizing the canvas
   function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -77,6 +120,7 @@
       dataArray = new Uint8Array(bufferLength);
       
       animate();
+      calculateBPM();
     } catch (err) {
       console.error('Error accessing microphone:', err);
     }
@@ -98,6 +142,12 @@
   function animate() {
     requestAnimationFrame(animate);
     analyser.getByteFrequencyData(dataArray);
+
+    // Calculate decibel level
+    let sum = dataArray.reduce((a, b) => a + b, 0);
+    let average = sum / dataArray.length;
+    let decibels = 20 * Math.log10(average / 255);
+    decibelMeter.innerText = `Decibels: ${Math.max(0, decibels.toFixed(1))} dB`;
 
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -167,6 +217,9 @@
       ctx.stroke();
     }
 
+    // Adding fluid flow effect
+    flowField.drawFlow();
+
     // Adding horizontal lines for VHS scanline effect
     ctx.strokeStyle = 'rgba(255, 150, 100, 0.2)';
     ctx.lineWidth = 1;
@@ -202,6 +255,28 @@
         particles.splice(index, 1);
       }
     });
+  }
+
+  // BPM Calculation
+  function calculateBPM() {
+    setInterval(() => {
+      let maxAmplitude = Math.max(...dataArray);
+      if (maxAmplitude > 200) {
+        let currentTime = audioContext.currentTime;
+        if (currentTime - lastPeakTime > 0.2) {
+          peaks.push(currentTime);
+          lastPeakTime = currentTime;
+
+          // Calculate BPM
+          if (peaks.length > 1) {
+            let intervals = peaks.slice(1).map((time, index) => time - peaks[index]);
+            let avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            let bpm = Math.round(60 / avgInterval);
+            bpmDisplay.innerText = `BPM: ${bpm}`;
+          }
+        }
+      }
+    }, 100);
   }
 </script>
 
