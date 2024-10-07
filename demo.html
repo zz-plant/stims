@@ -75,21 +75,21 @@
     }
   }
 
-  // Fluid flow effect class
+  // Geometric FlowField for fluid and dynamic visuals
   class FlowField {
     constructor() {
       this.noiseScale = 0.01;
     }
     drawFlow() {
-      for (let y = 0; y < canvas.height; y += 10) {
-        for (let x = 0; x < canvas.width; x += 10) {
+      for (let y = 0; y < canvas.height; y += 15) {
+        for (let x = 0; x < canvas.width; x += 15) {
           let angle = (Math.sin((x + y) * this.noiseScale) + 1) * Math.PI;
-          let length = 5;
+          let length = 10;
           ctx.beginPath();
           ctx.moveTo(x, y);
           ctx.lineTo(x + length * Math.cos(angle), y + length * Math.sin(angle));
-          ctx.strokeStyle = 'rgba(0, 150, 255, 0.1)';
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(0, 150, 255, 0.2)';
+          ctx.lineWidth = 2;
           ctx.stroke();
         }
       }
@@ -114,7 +114,7 @@
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       microphone = audioContext.createMediaStreamSource(stream);
       microphone.connect(analyser);
-      analyser.fftSize = 1024;
+      analyser.fftSize = 2048;
 
       bufferLength = analyser.frequencyBinCount;
       dataArray = new Uint8Array(bufferLength);
@@ -156,26 +156,30 @@
     const tiltFactorX = Math.sin((tiltX / 180) * Math.PI) * 100;
     const tiltFactorY = Math.sin((tiltY / 90) * Math.PI) * 100;
 
-    // Drawing the central visual with more reactivity and variation
-    const gradient = ctx.createRadialGradient(canvas.width / 2 + tiltFactorX, canvas.height / 2 + tiltFactorY, 100, canvas.width / 2, canvas.height / 2, canvas.width / 2);
-    gradient.addColorStop(0, 'rgba(255, 150, 0, 1)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = gradient;
+    // Draw central geometric visuals with touch interactivity
+    ctx.save();
+    ctx.translate(canvas.width / 2 + tiltFactorX, canvas.height / 2 + tiltFactorY);
+    for (let i = 0; i < 6; i++) {
+      ctx.rotate((Math.PI / 3));
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(dataArray[i] * 2, 0);
+      ctx.strokeStyle = `hsl(${(i * 60)}, 100%, 50%)`;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    }
+    ctx.restore();
 
-    ctx.beginPath();
-    ctx.arc(canvas.width / 2 + tiltFactorX, canvas.height / 2 + tiltFactorY, dataArray[0] * 2, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Add more visual effects, such as spirals and glow effects, based on frequency data
+    // Add radial patterns based on frequency data
     let radius = Math.max(dataArray[0] * 3, 100);
     for (let i = 0; i < bufferLength; i++) {
       let angle = (i / bufferLength) * 2 * Math.PI;
       let x = canvas.width / 2 + radius * Math.cos(angle) + tiltFactorX;
       let y = canvas.height / 2 + radius * Math.sin(angle) + tiltFactorY;
       ctx.beginPath();
-      ctx.arc(x, y, dataArray[i] / 6, 0, 2 * Math.PI);
+      ctx.rect(x, y, dataArray[i] / 6, dataArray[i] / 6);
       ctx.fillStyle = `hsl(${(i * 360) / bufferLength + dataArray[i] / 2}, 100%, 60%)`;
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 10;
       ctx.shadowColor = `hsl(${(i * 360) / bufferLength + dataArray[i] / 2}, 100%, 60%)`;
       ctx.fill();
 
@@ -185,7 +189,7 @@
       }
     }
 
-    // Adding wave-like pattern for more variation
+    // Adding geometric wave-like pattern for more variation
     ctx.beginPath();
     ctx.moveTo(0, canvas.height / 2 + tiltFactorY);
     for (let i = 0; i < bufferLength; i++) {
@@ -193,10 +197,10 @@
       let y = (canvas.height / 2 + tiltFactorY) + dataArray[i] * 0.7 * Math.sin(i * 0.08);
       ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = 'rgba(255, 100, 0, 0.8)';
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(100, 200, 255, 0.8)';
+    ctx.lineWidth = 3;
     ctx.shadowBlur = 20;
-    ctx.shadowColor = 'rgba(255, 150, 0, 1)';
+    ctx.shadowColor = 'rgba(100, 200, 255, 1)';
     ctx.stroke();
 
     // Adding radial spikes for an extra layer of reactivity
@@ -210,15 +214,24 @@
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(endX, endY);
-      ctx.strokeStyle = `rgba(${dataArray[i]}, ${100 + dataArray[i]}, 0, 0.9)`;
-      ctx.lineWidth = 3;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = `rgba(${dataArray[i]}, ${100 + dataArray[i]}, 0, 1)`;
+      ctx.strokeStyle = `rgba(${dataArray[i]}, ${100 + dataArray[i]}, 150, 0.9)`;
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = `rgba(${dataArray[i]}, ${100 + dataArray[i]}, 150, 1)`;
       ctx.stroke();
     }
 
-    // Adding fluid flow effect
+    // Adding geometric fluid flow effect
     flowField.drawFlow();
+
+    // Adding concentric circles for further geometric appeal
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, radius / (i + 1), 0, 2 * Math.PI);
+      ctx.stroke();
+    }
 
     // Adding horizontal lines for VHS scanline effect
     ctx.strokeStyle = 'rgba(255, 150, 100, 0.2)';
@@ -242,7 +255,7 @@
       let y = canvas.height - barHeight;
 
       ctx.fillStyle = `hsl(${(i * 360) / bufferLength}, 100%, 50%)`;
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 10;
       ctx.shadowColor = `hsl(${(i * 360) / bufferLength}, 100%, 50%)`;
       ctx.fillRect(x, y, canvas.width / bufferLength, barHeight);
     }
@@ -256,6 +269,15 @@
       }
     });
   }
+
+  // Add touch interaction to create particles
+  canvas.addEventListener('touchmove', (e) => {
+    const touches = e.touches;
+    for (let i = 0; i < touches.length; i++) {
+      const touch = touches[i];
+      particles.push(new Particle(touch.clientX, touch.clientY));
+    }
+  });
 
   // BPM Calculation
   function calculateBPM() {
