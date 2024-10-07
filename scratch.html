@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive WebGL Light Effect with Physics</title>
+    <title>Interactive WebGL Light Effect with Advanced Physics</title>
     <style>
         body {
             margin: 0;
@@ -43,21 +43,37 @@
     `;
     
     const fragmentShaderSource = `
-        precision mediump float;
+        precision highp float;
         uniform float u_time;
         uniform vec2 u_resolution;
         uniform vec2 u_mouse;
         uniform vec3 u_acceleration;
         
+        float noise(vec2 p) {
+            return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+        }
+        
+        float fbm(vec2 p) {
+            float value = 0.0;
+            float amplitude = 0.5;
+            for (int i = 0; i < 5; i++) {
+                value += amplitude * noise(p);
+                p *= 2.0;
+                amplitude *= 0.5;
+            }
+            return value;
+        }
+        
         void main() {
             vec2 st = gl_FragCoord.xy / u_resolution;
-            vec2 toCenter = vec2(0.5, 0.5) - st;
-            float angle = atan(toCenter.y, toCenter.x) + u_time + u_acceleration.x * 0.5;
-            float len = length(toCenter) * (2.0 + u_acceleration.y * 0.2);
+            vec2 dynamicCenter = vec2(0.5 + 0.2 * sin(u_time * 0.3), 0.5 + 0.2 * cos(u_time * 0.2));
+            vec2 toCenter = dynamicCenter - st;
+            float len = length(toCenter) * (1.8 + sin(u_acceleration.y * 0.5 + u_time) * 0.3);
+            float angle = atan(toCenter.y, toCenter.x) + fbm(st * 5.0 + u_time * 0.1 + u_acceleration.xy);
             
-            vec3 color = vec3(0.5 + 0.5 * cos(angle + u_time + u_mouse.x * 0.05),
-                              0.5 + 0.5 * sin(len - u_time + u_mouse.y * 0.05),
-                              0.7 + 0.3 * cos(angle * 2.0 + u_time));
+            vec3 color = vec3(0.6 + 0.4 * cos(angle + u_time * 0.8 + u_mouse.x * 0.03 + fbm(st * 10.0)),
+                              0.6 + 0.4 * sin(len - u_time * 0.6 + u_mouse.y * 0.03 + fbm(st * 10.0)),
+                              0.8 + 0.2 * cos(angle * 1.5 + u_time * 0.7 + fbm(st * 15.0)));
             
             gl_FragColor = vec4(color, 1.0);
         }
