@@ -8,6 +8,9 @@
         body {
             margin: 0;
             overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             background-color: #000;
         }
         canvas {
@@ -17,9 +20,12 @@
 </head>
 <body>
     <script type="module">
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
-        import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/OrbitControls.js';
-        import { AudioAnalyser } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/audio/AudioAnalyser.js';
+        // Planisphere Music Visualizer using WebGL
+
+        // Import necessary modules
+        import * as THREE from 'three';
+        import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js';
+        import { AudioAnalyser } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/audio/AudioAnalyser.js';
 
         // Basic setup
         let scene, camera, renderer, controls;
@@ -39,6 +45,7 @@
             // Set up the renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio); // Optimize for mobile
             document.body.appendChild(renderer.domElement);
 
             // Add controls
@@ -120,6 +127,20 @@
 
             // Handle window resize
             window.addEventListener('resize', onWindowResize, false);
+
+            // Make the experience mobile-friendly
+            window.addEventListener('touchstart', function(event) {
+                if (event.touches.length === 1) {
+                    event.preventDefault();
+                    controls.enabled = false;
+                }
+            }, false);
+
+            window.addEventListener('touchend', function(event) {
+                if (event.touches.length === 0) {
+                    controls.enabled = true;
+                }
+            }, false);
 
             animate();
         }
