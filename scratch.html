@@ -76,12 +76,12 @@
         uniform vec3 u_colorOffset;
         uniform vec2 u_touch;
         
-        // Function to create dynamic gradients with more vivid colors
-        vec3 vibrantGradient(vec2 uv, float timeOffset) {
-            vec3 color = vec3(0.5 + 0.5 * sin(uv.x * 10.0 + u_audioData * 8.0 + timeOffset),
-                              0.5 + 0.5 * cos(uv.y * 10.0 + u_audioData * 8.0 + timeOffset),
-                              0.5 + 0.5 * sin((uv.x + uv.y) * 6.0 + u_audioData * 8.0 + timeOffset));
-            return color + u_colorOffset;
+        // Function to create dynamic gradients with more muted colors for dark environments
+        vec3 mutedGradient(vec2 uv, float timeOffset) {
+            vec3 color = vec3(0.3 + 0.3 * sin(uv.x * 8.0 + u_audioData * 6.0 + timeOffset),
+                              0.3 + 0.3 * cos(uv.y * 8.0 + u_audioData * 6.0 + timeOffset),
+                              0.3 + 0.3 * sin((uv.x + uv.y) * 5.0 + u_audioData * 6.0 + timeOffset));
+            return color + u_colorOffset * 0.5;
         }
         
         void main() {
@@ -91,20 +91,20 @@
             
             // Calculate distance from touch point for ripple and bloom effect
             float dist = distance(uv, u_touch);
-            float ripple = sin(dist * 15.0 - u_time * 5.0) * 0.15;
-            float bloom = 0.3 / (dist * dist + 0.1); // Add bloom effect to simulate light spreading
+            float ripple = sin(dist * 12.0 - u_time * 4.0) * 0.1;
+            float bloom = 0.2 / (dist * dist + 0.15); // Add bloom effect to simulate light spreading, but keep it subtle
             uv += ripple; // Add ripple effect to the UV coordinates
             
-            // Dynamic color gradient with vivid transitions
-            vec3 color = vibrantGradient(uv, u_time * 0.7) * u_audioData;
+            // Dynamic color gradient with muted transitions for low-light environments
+            vec3 color = mutedGradient(uv, u_time * 0.5) * u_audioData;
             
-            // Add pulsating glow based on time and audio data
-            color += vec3(0.5 + 0.5 * sin(u_time * 0.6 + u_audioData * 3.0), 
-                          0.5 + 0.5 * cos(u_time * 0.7 + u_audioData * 4.0), 
-                          0.5 + 0.5 * sin(u_time * 0.8 + u_audioData * 2.0));
+            // Add pulsating glow based on time and audio data, with reduced intensity
+            color += vec3(0.3 + 0.3 * sin(u_time * 0.4 + u_audioData * 2.0), 
+                          0.3 + 0.3 * cos(u_time * 0.5 + u_audioData * 3.0), 
+                          0.3 + 0.3 * sin(u_time * 0.6 + u_audioData * 1.5));
             
-            // Apply bloom effect for enhanced visuals
-            color += bloom;
+            // Apply bloom effect for enhanced visuals, but keep it soft
+            color += bloom * 0.5;
             
             // Output the color
             gl_FragColor = vec4(color, 1.0);
@@ -197,7 +197,7 @@
     });
 
     document.getElementById("randomizeColors").addEventListener("click", () => {
-        colorOffset = [Math.random(), Math.random(), Math.random()];
+        colorOffset = [Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5]; // Reduced brightness for dark environments
     });
 
     // Device Orientation Interaction
@@ -229,7 +229,7 @@
         for (let i = 0; i < event.touches.length; i++) {
             const x = (event.touches[i].clientX / canvas.width) * 2.0 - 1.0;
             const y = -(event.touches[i].clientY / canvas.height) * 2.0 + 1.0;
-            colorOffset = [Math.random(), Math.random(), Math.random()];
+            colorOffset = [Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5]; // Muted sparkle effect
             touchPoint = [x, y];
             vibrate(20); // Provide subtle feedback for each touch point
         }
