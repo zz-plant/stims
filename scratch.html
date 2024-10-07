@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL Sensory Experience with Audio Responsiveness</title>
+    <title>Dreamy Visuals with Audio Responsiveness</title>
     <style>
         body {
             margin: 0;
@@ -51,7 +51,7 @@
         alert("Unable to initialize WebGL. Your browser may not support it.");
         throw new Error("WebGL not supported");
     }
-    
+
     function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -73,11 +73,28 @@
         uniform vec2 u_resolution;
         uniform float u_audioData;
         
+        // Function to create smoother gradients
+        vec3 smoothGradient(vec2 uv, float timeOffset) {
+            vec3 color = vec3(0.5 + 0.5 * sin(uv.x * 6.0 + u_audioData * 5.0 + timeOffset),
+                              0.5 + 0.5 * cos(uv.y * 6.0 + u_audioData * 5.0 + timeOffset),
+                              0.5 + 0.5 * sin((uv.x + uv.y) * 3.0 + u_audioData * 5.0 + timeOffset));
+            return color;
+        }
+        
         void main() {
-            vec2 st = gl_FragCoord.xy / u_resolution;
-            vec3 color = vec3(0.5 + 0.5 * sin(u_time + st.x * u_audioData),
-                              0.5 + 0.5 * cos(u_time + st.y * u_audioData),
-                              0.5 + 0.5 * sin(u_time + u_audioData));
+            vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+            uv -= 0.5; // Center the coordinates
+            uv *= 2.0; // Zoom out slightly
+            
+            // Smoother fluid motion based on audio and time
+            vec3 color = smoothGradient(uv, u_time * 0.5) * u_audioData;
+            
+            // Add subtle color pulsing based on time and audio data
+            color += vec3(0.5 + 0.5 * sin(u_time * 0.3 + u_audioData * 2.0), 
+                          0.5 + 0.5 * cos(u_time * 0.4 + u_audioData * 3.0), 
+                          0.5 + 0.5 * sin(u_time * 0.5 + u_audioData * 1.5));
+            
+            // Output the color
             gl_FragColor = vec4(color, 1.0);
         }
     `;
