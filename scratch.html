@@ -40,10 +40,6 @@
 </head>
 <body>
 <canvas id="glCanvas"></canvas>
-<div id="controls">
-    <button id="startAudio">Start Audio Interaction</button>
-    <button id="randomizeColors">Randomize Colors</button>
-</div>
 <script>
     const canvas = document.getElementById("glCanvas");
     const gl = canvas.getContext("webgl");
@@ -192,9 +188,7 @@
         }
     }
     
-    document.getElementById("startAudio").addEventListener("click", () => {
-        setupAudio();
-    });
+    setupAudio(); // Automatically start audio input without button press
 
     document.getElementById("randomizeColors").addEventListener("click", () => {
         colorOffset = [Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5]; // Reduced brightness for dark environments
