@@ -10,8 +10,6 @@
             overflow: hidden;
             height: 100%;
             background-color: #000000; /* OLED black */
-            font-family: Arial, sans-serif;
-            color: white;
         }
         canvas {
             display: block;
@@ -23,26 +21,6 @@
             top: 10px;
             left: 10px;
             z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 8px;
-        }
-        button, select {
-            margin: 5px;
-            padding: 8px;
-            border: none;
-            border-radius: 4px;
-            background: #444;
-            color: white;
-            cursor: pointer;
-        }
-        button:hover, select:hover {
-            background: #666;
-        }
-        select {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
         }
     </style>
 </head>
@@ -50,12 +28,6 @@
     <canvas id="gpuCanvas"></canvas>
     <div id="controls">
         <button id="darkModeToggle">Toggle Dark Mode</button>
-        <select id="effectSelect">
-            <option value="0">Effect 1</option>
-            <option value="1">Effect 2</option>
-            <option value="2">Effect 3</option>
-        </select>
-        <button id="resetButton">Reset Orientation</button>
     </div>
     <script>
         const canvas = document.getElementById('gpuCanvas');
@@ -70,7 +42,7 @@
         let darkMode = false;
         let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
         let deviceMotion = { x: 0, y: 0, z: 0 };
-        let effectIndex = 0;
+        let audioContext, analyser, source;
 
         // Resize canvas function
         function resizeCanvas() {
@@ -122,12 +94,14 @@
         const fragmentShaderSource = `
             precision mediump float;
             uniform float u_time;
+            uniform float u_low_freq;
+            uniform float u_mid_freq;
+            uniform float u_high_freq;
             uniform vec2 u_touch0;
             uniform vec2 u_touch1;
             uniform bool u_dark_mode;
             uniform vec3 u_orientation;
             uniform vec3 u_motion;
-            uniform int u_effect_index;
             varying vec2 v_uv;
 
             float noise(vec2 p) {
@@ -151,26 +125,11 @@
                 float flow = sin(u_time + dist * 10.0 + fbm(uv * 10.0)) * 0.1;
                 uv += flow * 0.2;
 
-                vec3 baseColor;
-                if (u_effect_index == 0) {
-                    baseColor = vec3(
-                        0.5 + 0.5 * sin(u_time + angle + u_orientation.x),
-                        0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + u_orientation.y),
-                        0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0 + u_orientation.z)
-                    );
-                } else if (u_effect_index == 1) {
-                    baseColor = vec3(
-                        0.5 + 0.5 * cos(u_time + angle * u_motion.x),
-                        0.5 + 0.5 * sin(u_time * 2.0 + angle * u_motion.y),
-                        0.5 + 0.5 * cos(u_time * 1.5 + angle * u_motion.z)
-                    );
-                } else {
-                    baseColor = vec3(
-                        0.5 + 0.5 * sin(u_time * 1.2 + uv.x * u_orientation.x),
-                        0.5 + 0.5 * cos(u_time * 1.8 + uv.y * u_orientation.y),
-                        0.5 + 0.5 * sin(u_time * 2.5 + dist * u_motion.z)
-                    );
-                }
+                vec3 baseColor = vec3(
+                    0.5 + 0.5 * sin(u_time + angle + u_orientation.x + u_low_freq),
+                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + u_orientation.y + u_mid_freq),
+                    0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0 + u_orientation.z + u_high_freq)
+                );
 
                 if (u_dark_mode) {
                     baseColor *= 0.2;
@@ -223,27 +182,18 @@
         gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
         const timeLocation = gl.getUniformLocation(program, 'u_time');
+        const lowFreqLocation = gl.getUniformLocation(program, 'u_low_freq');
+        const midFreqLocation = gl.getUniformLocation(program, 'u_mid_freq');
+        const highFreqLocation = gl.getUniformLocation(program, 'u_high_freq');
         const touch0Location = gl.getUniformLocation(program, 'u_touch0');
         const touch1Location = gl.getUniformLocation(program, 'u_touch1');
         const darkModeLocation = gl.getUniformLocation(program, 'u_dark_mode');
         const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
         const motionLocation = gl.getUniformLocation(program, 'u_motion');
-        const effectIndexLocation = gl.getUniformLocation(program, 'u_effect_index');
 
         const darkModeToggle = document.getElementById('darkModeToggle');
-        const effectSelect = document.getElementById('effectSelect');
-        const resetButton = document.getElementById('resetButton');
-
         darkModeToggle.addEventListener('click', () => {
             darkMode = !darkMode;
-        });
-
-        effectSelect.addEventListener('change', (event) => {
-            effectIndex = parseInt(event.target.value);
-        });
-
-        resetButton.addEventListener('click', () => {
-            deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
         });
 
         let touches = [
@@ -291,6 +241,39 @@
             deviceMotion.z = event.accelerationIncludingGravity.z;
         });
 
+        function initializeAudio() {
+            if (audioContext) {
+                audioContext.close();
+            }
+
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                function updateAudioData() {
+                    analyser.getByteFrequencyData(dataArray);
+                    const lowFreq = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
+                    const midFreq = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
+                    const highFreq = dataArray.slice(2 * bufferLength / 3, bufferLength).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
+
+                    gl.uniform1f(lowFreqLocation, lowFreq);
+                    gl.uniform1f(midFreqLocation, midFreq);
+                    gl.uniform1f(highFreqLocation, highFreq);
+
+                    requestAnimationFrame(updateAudioData);
+                }
+                updateAudioData();
+            }).catch(err => {
+                console.error('Error accessing microphone: ' + err);
+            });
+        }
+        initializeAudio();
+
         // Render loop
         function render(time) {
             time *= 0.001; // Convert time to seconds
@@ -300,7 +283,6 @@
             gl.uniform1i(darkModeLocation, darkMode);
             gl.uniform3f(orientationLocation, deviceOrientation.alpha, deviceOrientation.beta, deviceOrientation.gamma);
             gl.uniform3f(motionLocation, deviceMotion.x, deviceMotion.y, deviceMotion.z);
-            gl.uniform1i(effectIndexLocation, effectIndex);
 
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
