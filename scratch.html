@@ -42,6 +42,7 @@
 <canvas id="glCanvas"></canvas>
 <div id="controls">
     <button id="startAudio">Start Audio Interaction</button>
+    <button id="randomizeColors">Randomize Colors</button>
 </div>
 <script>
     const canvas = document.getElementById("glCanvas");
@@ -72,13 +73,15 @@
         uniform float u_time;
         uniform vec2 u_resolution;
         uniform float u_audioData;
+        uniform vec3 u_colorOffset;
+        uniform vec2 u_touch;
         
-        // Function to create smoother gradients
-        vec3 smoothGradient(vec2 uv, float timeOffset) {
-            vec3 color = vec3(0.5 + 0.5 * sin(uv.x * 6.0 + u_audioData * 5.0 + timeOffset),
-                              0.5 + 0.5 * cos(uv.y * 6.0 + u_audioData * 5.0 + timeOffset),
-                              0.5 + 0.5 * sin((uv.x + uv.y) * 3.0 + u_audioData * 5.0 + timeOffset));
-            return color;
+        // Function to create dynamic gradients with more vivid colors
+        vec3 vibrantGradient(vec2 uv, float timeOffset) {
+            vec3 color = vec3(0.5 + 0.5 * sin(uv.x * 10.0 + u_audioData * 8.0 + timeOffset),
+                              0.5 + 0.5 * cos(uv.y * 10.0 + u_audioData * 8.0 + timeOffset),
+                              0.5 + 0.5 * sin((uv.x + uv.y) * 6.0 + u_audioData * 8.0 + timeOffset));
+            return color + u_colorOffset;
         }
         
         void main() {
@@ -86,13 +89,22 @@
             uv -= 0.5; // Center the coordinates
             uv *= 2.0; // Zoom out slightly
             
-            // Smoother fluid motion based on audio and time
-            vec3 color = smoothGradient(uv, u_time * 0.5) * u_audioData;
+            // Calculate distance from touch point for ripple and bloom effect
+            float dist = distance(uv, u_touch);
+            float ripple = sin(dist * 15.0 - u_time * 5.0) * 0.15;
+            float bloom = 0.3 / (dist * dist + 0.1); // Add bloom effect to simulate light spreading
+            uv += ripple; // Add ripple effect to the UV coordinates
             
-            // Add subtle color pulsing based on time and audio data
-            color += vec3(0.5 + 0.5 * sin(u_time * 0.3 + u_audioData * 2.0), 
-                          0.5 + 0.5 * cos(u_time * 0.4 + u_audioData * 3.0), 
-                          0.5 + 0.5 * sin(u_time * 0.5 + u_audioData * 1.5));
+            // Dynamic color gradient with vivid transitions
+            vec3 color = vibrantGradient(uv, u_time * 0.7) * u_audioData;
+            
+            // Add pulsating glow based on time and audio data
+            color += vec3(0.5 + 0.5 * sin(u_time * 0.6 + u_audioData * 3.0), 
+                          0.5 + 0.5 * cos(u_time * 0.7 + u_audioData * 4.0), 
+                          0.5 + 0.5 * sin(u_time * 0.8 + u_audioData * 2.0));
+            
+            // Apply bloom effect for enhanced visuals
+            color += bloom;
             
             // Output the color
             gl_FragColor = vec4(color, 1.0);
@@ -145,11 +157,15 @@
     const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
     const timeUniformLocation = gl.getUniformLocation(program, "u_time");
     const audioDataUniformLocation = gl.getUniformLocation(program, "u_audioData");
+    const colorOffsetUniformLocation = gl.getUniformLocation(program, "u_colorOffset");
+    const touchUniformLocation = gl.getUniformLocation(program, "u_touch");
     
     gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
 
     let time = 0.0;
     let audioData = 0.0;
+    let colorOffset = [0.0, 0.0, 0.0];
+    let touchPoint = [0.0, 0.0];
     
     async function setupAudio() {
         try {
@@ -180,6 +196,10 @@
         setupAudio();
     });
 
+    document.getElementById("randomizeColors").addEventListener("click", () => {
+        colorOffset = [Math.random(), Math.random(), Math.random()];
+    });
+
     // Device Orientation Interaction
     if (window.DeviceOrientationEvent) {
         window.addEventListener('deviceorientation', (event) => {
@@ -187,6 +207,14 @@
             audioData += (Math.abs(beta) + Math.abs(gamma)) * 0.001; // Use device tilt as an additional factor for color variation
         });
     }
+
+    // Touch Interaction for Visual Effects
+    canvas.addEventListener('touchmove', (event) => {
+        const touch = event.touches[0];
+        const x = (touch.clientX / canvas.width) * 2.0 - 1.0;
+        const y = -(touch.clientY / canvas.height) * 2.0 + 1.0;
+        touchPoint = [x, y];
+    });
 
     // Touch Vibration Feedback
     function vibrate(duration) {
@@ -196,10 +224,23 @@
     }
     canvas.addEventListener('touchstart', () => vibrate(50));
 
+    // Multi-Touch Sparkle Effect
+    canvas.addEventListener('touchstart', (event) => {
+        for (let i = 0; i < event.touches.length; i++) {
+            const x = (event.touches[i].clientX / canvas.width) * 2.0 - 1.0;
+            const y = -(event.touches[i].clientY / canvas.height) * 2.0 + 1.0;
+            colorOffset = [Math.random(), Math.random(), Math.random()];
+            touchPoint = [x, y];
+            vibrate(20); // Provide subtle feedback for each touch point
+        }
+    });
+
     function render() {
-        time += 0.01;
+        time += 0.02;
         gl.uniform1f(timeUniformLocation, time);
         gl.uniform1f(audioDataUniformLocation, audioData);
+        gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
+        gl.uniform2fv(touchUniformLocation, touchPoint);
         
         // Draw the scene
         gl.clear(gl.COLOR_BUFFER_BIT);
