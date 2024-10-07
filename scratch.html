@@ -180,6 +180,22 @@
         setupAudio();
     });
 
+    // Device Orientation Interaction
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (event) => {
+            const { alpha, beta, gamma } = event;
+            audioData += (Math.abs(beta) + Math.abs(gamma)) * 0.001; // Use device tilt as an additional factor for color variation
+        });
+    }
+
+    // Touch Vibration Feedback
+    function vibrate(duration) {
+        if (navigator.vibrate) {
+            navigator.vibrate(duration);
+        }
+    }
+    canvas.addEventListener('touchstart', () => vibrate(50));
+
     function render() {
         time += 0.01;
         gl.uniform1f(timeUniformLocation, time);
