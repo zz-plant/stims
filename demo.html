@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planisphere Music Visualizer</title>
+    <title>Soothing Planisphere Music Visualizer</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
+            background-color: black;
+            touch-action: none;
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #000;
             font-family: Arial, sans-serif;
         }
         canvas {
@@ -31,10 +32,19 @@
 </head>
 <body>
     <div id="error-message" style="display: none;"></div>
+    <canvas id="glCanvas"></canvas>
     <script type="module">
         import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
         import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js';
         import { AudioAnalyser } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/audio/AudioAnalyser.js';
+
+        const canvas = document.getElementById("glCanvas");
+        const gl = canvas.getContext("webgl");
+
+        if (!gl) {
+            alert("Unable to initialize WebGL. Your browser may not support it.");
+            throw new Error("WebGL not supported");
+        }
 
         let scene, camera, renderer, controls;
         let particles, analyser, planets = [], path = [];
@@ -46,34 +56,185 @@
             errorMessageDiv.innerText = message;
         }
 
-        function initScene() {
-            scene = new THREE.Scene();
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const vertexShaderSource = `
+            attribute vec4 a_position;
+            void main() {
+                gl_Position = a_position;
+            }
+        `;
+        
+        const fragmentShaderSource = `
+            precision highp float;
+            uniform float u_time;
+            uniform vec2 u_resolution;
+            uniform float u_audioData;
+            uniform vec3 u_colorOffset;
+            uniform vec2 u_touch;
+            
+            // Function to create dynamic gradients with more muted colors for dark environments
+            vec3 mutedGradient(vec2 uv, float timeOffset) {
+                vec3 color = vec3(0.3 + 0.3 * sin(uv.x * 8.0 + u_audioData * 6.0 + timeOffset),
+                                  0.3 + 0.3 * cos(uv.y * 8.0 + u_audioData * 6.0 + timeOffset),
+                                  0.3 + 0.3 * sin((uv.x + uv.y) * 5.0 + u_audioData * 6.0 + timeOffset));
+                return color + u_colorOffset * 0.5;
+            }
+            
+            void main() {
+                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+                uv -= 0.5; // Center the coordinates
+                uv *= 2.0; // Zoom out slightly
+                
+                // Calculate distance from touch point for ripple and bloom effect
+                float dist = distance(uv, u_touch);
+                float ripple = sin(dist * 12.0 - u_time * 4.0) * 0.1;
+                float bloom = 0.2 / (dist * dist + 0.15); // Add bloom effect to simulate light spreading, but keep it subtle
+                uv += ripple; // Add ripple effect to the UV coordinates
+                
+                // Dynamic color gradient with muted transitions for low-light environments
+                vec3 color = mutedGradient(uv, u_time * 0.5) * u_audioData;
+                
+                // Add pulsating glow based on time and audio data, with reduced intensity
+                color += vec3(0.3 + 0.3 * sin(u_time * 0.4 + u_audioData * 2.0), 
+                              0.3 + 0.3 * cos(u_time * 0.5 + u_audioData * 3.0), 
+                              0.3 + 0.3 * sin(u_time * 0.6 + u_audioData * 1.5));
+                
+                // Apply bloom effect for enhanced visuals, but keep it soft
+                color += bloom * 0.5;
+                
+                // Output the color
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+        
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+        
+        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+        
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error(gl.getProgramInfoLog(program));
+            gl.deleteProgram(program);
+            throw new Error("Program failed to link");
+        }
+        
+        gl.useProgram(program);
+        
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        const positions = [
+            -1.0, -1.0,
+             1.0, -1.0,
+            -1.0,  1.0,
+            -1.0,  1.0,
+             1.0, -1.0,
+             1.0,  1.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+        
+        const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+        gl.enableVertexAttribArray(positionAttributeLocation);
+        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+        
+        const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+        const timeUniformLocation = gl.getUniformLocation(program, "u_time");
+        const audioDataUniformLocation = gl.getUniformLocation(program, "u_audioData");
+        const colorOffsetUniformLocation = gl.getUniformLocation(program, "u_colorOffset");
+        const touchUniformLocation = gl.getUniformLocation(program, "u_touch");
+        
+        gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+
+        let time = 0.0;
+        let audioData = 0.0;
+        let colorOffset = [0.0, 0.0, 0.0];
+        let touchPoint = [0.0, 0.0];
+        
+        async function setupAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const listener = new THREE.AudioListener();
+                const audioContext = listener.context;
+                const source = audioContext.createMediaStreamSource(stream);
+                const audio = new THREE.Audio(listener);
+                audio.setNodeSource(source);
+                analyser = new AudioAnalyser(audio, 128);
+                getAudioData();
+            } catch (err) {
+                showError('Unable to access the microphone. Please allow microphone permissions and reload the page.');
+                console.error("Error capturing audio: ", err);
+            }
         }
 
-        function initCamera() {
+        function getAudioData() {
+            requestAnimationFrame(getAudioData);
+            if (analyser) {
+                const data = analyser.getFrequencyData();
+                const average = data.reduce((sum, value) => sum + value, 0) / data.length;
+                audioData = average / 128.0;  // Normalize the value
+            }
+        }
+        
+        setupAudio(); // Automatically start audio input without button press
+
+        function initThreeJSScene() {
+            scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
             camera.position.set(0, 2, 10);
-        }
-
-        function initRenderer() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for better performance on mobile
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.outputEncoding = THREE.sRGBEncoding;
             document.body.appendChild(renderer.domElement);
-        }
-
-        function initControls() {
+            
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.enablePan = false;
             controls.enableZoom = false;
             controls.maxPolarAngle = Math.PI / 2;
+
+            initParticles();
+            initPlanets();
+            initPath();
+            initLighting();
+
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('touchstart', event => {
+                if (event.touches.length === 1) {
+                    event.preventDefault();
+                    controls.enabled = false;
+                }
+            }, false);
+            window.addEventListener('touchend', event => {
+                if (event.touches.length === 0) {
+                    controls.enabled = true;
+                }
+            }, false);
         }
 
         function initParticles() {
-            const particleCount = 5000;
+            const particleCount = 10000;
             const particleGeometry = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount * 3; i++) {
@@ -82,21 +243,21 @@
             particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             const particleMaterial = new THREE.PointsMaterial({
                 color: 0xffffff,
-                size: 0.2,
+                size: 0.1,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.5
             });
             particles = new THREE.Points(particleGeometry, particleMaterial);
             scene.add(particles);
         }
 
         function initPlanets() {
-            const planetCount = 50;
+            const planetCount = 30;
             for (let i = 0; i < planetCount; i++) {
                 const geometry = new THREE.SphereGeometry(Math.random() * 2 + 0.5, 32, 32);
                 const material = new THREE.MeshStandardMaterial({
                     color: new THREE.Color(`hsl(${Math.random() * 360}, 100%, 50%)`),
-                    roughness: 0.7,
+                    roughness: 0.5,
                     metalness: 0.3
                 });
                 const planet = new THREE.Mesh(geometry, material);
@@ -115,7 +276,7 @@
             for (let i = 0; i < pathLength; i++) {
                 const pathSegment = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.5, 0.5, 50, 32),
-                    new THREE.MeshBasicMaterial({ color: 0x333333, opacity: 0.5, transparent: true })
+                    new THREE.MeshBasicMaterial({ color: 0x333333, opacity: 0.3, transparent: true })
                 );
                 pathSegment.position.set(0, -2, -i * 50);
                 pathSegment.rotation.x = Math.PI / 2;
@@ -127,30 +288,9 @@
         function initLighting() {
             const ambientLight = new THREE.AmbientLight(0x404040, 1);
             scene.add(ambientLight);
-            const pointLight = new THREE.PointLight(0xffffff, 1, 100);
+            const pointLight = new THREE.PointLight(0xffffff, 0.8, 100);
             pointLight.position.set(10, 10, 10);
             scene.add(pointLight);
-        }
-
-        function initAudio() {
-            const listener = new THREE.AudioListener();
-            camera.add(listener);
-            const audio = new THREE.Audio(listener);
-
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                const audioContext = listener.context;
-                const source = audioContext.createMediaStreamSource(stream);
-                audio.setNodeSource(source);
-                analyser = new AudioAnalyser(audio, 128);
-                startVisualizer();
-            }).catch(err => {
-                showError('Unable to access the microphone. Please allow microphone permissions and reload the page.');
-                console.error('Unable to access the microphone', err);
-            });
-        }
-
-        function startVisualizer() {
-            animate();
         }
 
         function onWindowResize() {
@@ -166,16 +306,15 @@
                 const data = analyser.getFrequencyData();
                 const bass = data.slice(0, 8).reduce((a, b) => a + b) / 8;
                 const mid = data.slice(8, 16).reduce((a, b) => a + b) / 8;
-                const treble = data.slice(16, data.length).reduce((a, b) => a + b) / (data.length - 16);
 
-                speed = 0.05 + bass / 512;
+                speed = 0.03 + bass / 512;
                 const bassScale = bass / 256;
-                particles.scale.set(bassScale + 0.8, bassScale + 0.8, bassScale + 0.8);
-                particles.material.size = bassScale * 0.5 + 0.2;
+                particles.scale.set(bassScale + 0.5, bassScale + 0.5, bassScale + 0.5);
+                particles.material.size = bassScale * 0.3 + 0.1;
 
                 planets.forEach((planet, index) => {
-                    planet.rotation.y += 0.005 + mid / 1024;
-                    planet.rotation.x += 0.002 + (index % 2 === 0 ? mid / 2048 : 0);
+                    planet.rotation.y += 0.003 + mid / 1024;
+                    planet.rotation.x += 0.001 + (index % 2 === 0 ? mid / 2048 : 0);
                 });
 
                 camera.position.z -= speed;
@@ -185,43 +324,14 @@
             }
 
             particles.rotation.y += 0.001;
-            particles.rotation.x += 0.0005;
+            particles.rotation.x += 0.0003;
 
             controls.update();
             renderer.render(scene, camera);
         }
 
-        function init() {
-            try {
-                initScene();
-                initCamera();
-                initRenderer();
-                initControls();
-                initParticles();
-                initPlanets();
-                initPath();
-                initLighting();
-                initAudio();
-
-                window.addEventListener('resize', onWindowResize, false);
-                window.addEventListener('touchstart', event => {
-                    if (event.touches.length === 1) {
-                        event.preventDefault();
-                        controls.enabled = false;
-                    }
-                }, false);
-                window.addEventListener('touchend', event => {
-                    if (event.touches.length === 0) {
-                        controls.enabled = true;
-                    }
-                }, false);
-            } catch (error) {
-                showError('An error occurred while initializing the visualizer. Please try reloading the page.');
-                console.error('Initialization error:', error);
-            }
-        }
-
-        init();
+        initThreeJSScene();
+        animate();
     </script>
 </body>
 </html>
