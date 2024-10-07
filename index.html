@@ -40,6 +40,7 @@
 
         if (!gl) {
             console.error('WebGL not supported');
+            alert('WebGL not supported');
             throw new Error('WebGL not supported');
         }
 
@@ -77,6 +78,7 @@
             gl.linkProgram(program);
             if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
                 console.error('Program link failed: ' + gl.getProgramInfoLog(program));
+                gl.deleteProgram(program);
                 throw new Error('Program link error');
             }
             return program;
@@ -104,12 +106,10 @@
             uniform bool u_dark_mode;
             varying vec2 v_uv;
 
-            // Function to create smoother noise patterns
             float noise(vec2 p) {
                 return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
             }
 
-            // Fractal Brownian Motion for smooth distortion
             float fbm(vec2 p) {
                 float f = 0.0;
                 f += 0.5000 * noise(p); p *= 2.02;
@@ -124,38 +124,31 @@
                 float dist = length(uv);
                 float angle = atan(uv.y, uv.x);
 
-                // Add flowing distortions to the visuals
                 float flow = sin(u_time + dist * 10.0 + fbm(uv * 10.0)) * 0.1;
                 uv += flow * 0.2;
 
-                // Create a base color with smooth gradient transitions
                 vec3 baseColor = vec3(
                     0.5 + 0.5 * sin(u_time + angle + u_low_freq * 5.0),
                     0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + u_mid_freq * 4.0),
                     0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0 + u_high_freq * 6.0)
                 );
 
-                // Modify brightness for dark mode
                 if (u_dark_mode) {
                     baseColor *= 0.2;
                 }
 
-                // Add fluid-like "melting" distortions
                 float fbmValue = fbm(uv * 6.0 + u_time * 0.8);
                 baseColor.rgb += fbmValue * 0.15;
 
-                // Create radial gradient glow effect
                 float radialGradient = smoothstep(0.8, 0.1, dist) * (1.0 + sin(u_time * 2.5 + dist * 20.0) * 0.2);
                 baseColor *= radialGradient;
 
-                // Add glow effect to simulate bright blooming visuals
                 float glow = exp(-dist * 8.0) * (u_low_freq + u_mid_freq + u_high_freq);
                 if (u_dark_mode) {
                     glow *= 0.1;
                 }
                 baseColor += vec3(glow * 0.5, glow * 0.7, glow * 1.0);
 
-                // Adding a touch ripple effect to create interactive distortion
                 float touchEffect0 = 0.0;
                 float touchEffect1 = 0.0;
                 if (length(u_touch0) > 0.0) {
@@ -166,7 +159,6 @@
                 }
                 baseColor += vec3(touchEffect0 + touchEffect1);
 
-                // Final output color with increased brightness for glowing effect
                 gl_FragColor = vec4(baseColor, 1.0);
             }
         `;
@@ -216,27 +208,10 @@
                 audioContext.close();
             }
 
-            navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'environment' } }).then(stream => {
-                // Rear-facing camera setup
-                const videoElement = document.getElementById('cameraFeed');
-                videoElement.srcObject = stream;
-                videoElement.style.display = 'none';
-                videoElement.autoplay = true;
-                document.body.appendChild(videoElement);
-
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
-
-                if (audioSelect.value === 'mic') {
-                    source = audioContext.createMediaStreamSource(stream);
-                } else {
-                    const audioElement = new Audio();
-                    audioElement.crossOrigin = 'anonymous';
-                    source = audioContext.createMediaElementSource(audioElement);
-                    source.connect(audioContext.destination);
-                    audioElement.play();
-                }
-
+                source = audioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
                 analyser.fftSize = 256;
                 const bufferLength = analyser.frequencyBinCount;
@@ -305,9 +280,9 @@
                     gl.uniform1f(midFreqLocation, midFreq);
                     gl.uniform1f(highFreqLocation, highFreq);
                     gl.uniform3f(orientationLocation, orientation.alpha / 360.0, orientation.beta / 90.0, orientation.gamma / 90.0);
+
                     gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
                     gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
-                    gl.uniform1i(darkModeLocation, darkMode);
 
                     vibrateBasedOnAudio(lowFreq, midFreq, highFreq);
 
@@ -315,7 +290,7 @@
                 }
                 updateAudioData();
             }).catch(err => {
-                console.error('Error accessing microphone or camera: ' + err);
+                console.error('Error accessing microphone: ' + err);
             });
         }
 
@@ -330,6 +305,5 @@
         }
         requestAnimationFrame(render);
     </script>
-    <video id="cameraFeed" style="display:none;" autoplay></video>
 </body>
 </html>
