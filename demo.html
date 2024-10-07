@@ -37,12 +37,19 @@
             cursor: pointer;
             font-weight: bold;
             color: #000;
+            transition: background 0.3s, transform 0.2s;
+        }
+        .control-button.active {
+            background: #00cc66;
+            color: #ffffff;
         }
         .control-button:hover {
             background: #dddddd;
+            transform: scale(1.05);
         }
         .control-slider {
             width: 150px;
+            transition: all 0.3s ease;
         }
         .control-label {
             color: #ffffff;
@@ -208,14 +215,17 @@
         // Event Listeners
         document.getElementById('darkModeToggle').addEventListener('click', () => {
             darkMode = !darkMode;
+            document.getElementById('darkModeToggle').classList.toggle('active', darkMode);
         });
 
         document.getElementById('vibrationToggle').addEventListener('click', () => {
             vibrationsEnabled = !vibrationsEnabled;
+            document.getElementById('vibrationToggle').classList.toggle('active', vibrationsEnabled);
         });
 
         document.getElementById('audioSyncToggle').addEventListener('click', () => {
             audioSync = !audioSync;
+            document.getElementById('audioSyncToggle').classList.toggle('active', audioSync);
         });
 
         document.getElementById('resetConfig').addEventListener('click', () => {
@@ -226,6 +236,9 @@
             intensity = 1.0;
             document.getElementById('sensitivitySlider').value = 1.0;
             document.getElementById('intensitySlider').value = 1.0;
+            document.getElementById('darkModeToggle').classList.remove('active');
+            document.getElementById('vibrationToggle').classList.add('active');
+            document.getElementById('audioSyncToggle').classList.add('active');
         });
 
         document.getElementById('sensitivitySlider').addEventListener('input', (event) => {
