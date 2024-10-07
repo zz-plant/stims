@@ -42,6 +42,11 @@
         <button id="darkModeToggle" class="control-button">Toggle Dark Mode</button>
         <button id="vibrationToggle" class="control-button">Toggle Vibrations</button>
         <button id="resetConfig" class="control-button">Reset Configuration</button>
+        <button id="audioToggle" class="control-button">Toggle Audio Sync</button>
+        <button id="preset1" class="control-button">Preset 1</button>
+        <button id="preset2" class="control-button">Preset 2</button>
+        <button id="saveConfig" class="control-button">Save Configuration</button>
+        <button id="loadConfig" class="control-button">Load Configuration</button>
     </div>
     <script>
         const canvas = document.getElementById('gpuCanvas');
@@ -55,6 +60,7 @@
 
         let darkMode = false;
         let vibrationsEnabled = true;
+        let audioSync = false;
         let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
         let deviceMotion = { x: 0, y: 0, z: 0 };
 
@@ -202,6 +208,9 @@
         const darkModeToggle = document.getElementById('darkModeToggle');
         const vibrationToggle = document.getElementById('vibrationToggle');
         const resetConfig = document.getElementById('resetConfig');
+        const audioToggle = document.getElementById('audioToggle');
+        const saveConfig = document.getElementById('saveConfig');
+        const loadConfig = document.getElementById('loadConfig');
 
         darkModeToggle.addEventListener('click', () => {
             darkMode = !darkMode;
@@ -213,16 +222,48 @@
             updateURLParams();
         });
 
+        audioToggle.addEventListener('click', () => {
+            audioSync = !audioSync;
+            updateURLParams();
+        });
+
         resetConfig.addEventListener('click', () => {
             darkMode = false;
             vibrationsEnabled = true;
+            audioSync = false;
             updateURLParams();
+        });
+
+        saveConfig.addEventListener('click', () => {
+            const config = {
+                darkMode,
+                vibrationsEnabled,
+                audioSync,
+            };
+            const configStr = JSON.stringify(config);
+            localStorage.setItem('visualizerConfig', configStr);
+            alert('Configuration saved!');
+        });
+
+        loadConfig.addEventListener('click', () => {
+            const configStr = localStorage.getItem('visualizerConfig');
+            if (configStr) {
+                const config = JSON.parse(configStr);
+                darkMode = config.darkMode;
+                vibrationsEnabled = config.vibrationsEnabled;
+                audioSync = config.audioSync;
+                updateURLParams();
+                alert('Configuration loaded!');
+            } else {
+                alert('No saved configuration found.');
+            }
         });
 
         function updateURLParams() {
             const params = new URLSearchParams(window.location.search);
             params.set('darkMode', darkMode);
             params.set('vibrationsEnabled', vibrationsEnabled);
+            params.set('audioSync', audioSync);
             window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
         }
 
@@ -230,6 +271,7 @@
             const params = new URLSearchParams(window.location.search);
             darkMode = params.get('darkMode') === 'true';
             vibrationsEnabled = params.get('vibrationsEnabled') === 'true';
+            audioSync = params.get('audioSync') === 'true';
         }
 
         loadURLParams();
