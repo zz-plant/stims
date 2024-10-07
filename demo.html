@@ -10,17 +10,20 @@
       padding: 0;
       overflow: hidden;
       background-color: black;
+      touch-action: none;
     }
 
     canvas {
       display: block;
+      width: 100%;
+      height: 100%;
     }
   </style>
 </head>
 <body>
 
 <canvas id="visualizer"></canvas>
-<input type="file" id="audioInput" accept="audio/*" />
+<input type="file" id="audioInput" accept="audio/*" style="position: absolute; top: 10px; left: 10px; z-index: 1;" />
 
 <script>
   const canvas = document.getElementById('visualizer');
@@ -41,6 +44,7 @@
   document.getElementById('audioInput').addEventListener('change', function(e) {
     const audioFile = e.target.files[0];
     if (audioFile) {
+      console.log('Audio file selected:', audioFile.name);
       const audio = new Audio(URL.createObjectURL(audioFile));
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioContext.createAnalyser();
@@ -52,8 +56,14 @@
       bufferLength = analyser.frequencyBinCount;
       dataArray = new Uint8Array(bufferLength);
       
-      audio.play();
-      animate();
+      audio.play().then(() => {
+        console.log('Audio is playing');
+        animate();
+      }).catch(err => {
+        console.error('Error playing audio:', err);
+      });
+    } else {
+      console.error('No audio file selected');
     }
   });
 
@@ -63,6 +73,8 @@
       tiltX = event.beta || 0; // -180 to 180
       tiltY = event.gamma || 0; // -90 to 90
     });
+  } else {
+    console.warn('DeviceOrientationEvent is not supported by this browser');
   }
 
   // Visualizer animation
