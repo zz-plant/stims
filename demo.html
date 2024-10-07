@@ -142,10 +142,15 @@
                 const source = audioContext.createMediaStreamSource(stream);
                 audio.setNodeSource(source);
                 analyser = new AudioAnalyser(audio, 128);
+                startVisualizer();
             }).catch(err => {
                 showError('Unable to access the microphone. Please allow microphone permissions and reload the page.');
                 console.error('Unable to access the microphone', err);
             });
+        }
+
+        function startVisualizer() {
+            animate();
         }
 
         function onWindowResize() {
@@ -210,8 +215,6 @@
                         controls.enabled = true;
                     }
                 }, false);
-
-                animate();
             } catch (error) {
                 showError('An error occurred while initializing the visualizer. Please try reloading the page.');
                 console.error('Initialization error:', error);
