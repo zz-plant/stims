@@ -23,12 +23,12 @@
 <body>
 
 <canvas id="visualizer"></canvas>
-<input type="file" id="audioInput" accept="audio/*" style="position: absolute; top: 10px; left: 10px; z-index: 1;" />
+<button id="startButton" style="position: absolute; top: 10px; left: 10px; z-index: 1;">Start Visualizer</button>
 
 <script>
   const canvas = document.getElementById('visualizer');
   const ctx = canvas.getContext('2d');
-  let audioContext, analyser, audioSrc;
+  let audioContext, analyser, microphone;
   let bufferLength, dataArray;
   let tiltX = 0, tiltY = 0;
 
@@ -40,30 +40,22 @@
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
-  // Function to handle music input
-  document.getElementById('audioInput').addEventListener('change', function(e) {
-    const audioFile = e.target.files[0];
-    if (audioFile) {
-      console.log('Audio file selected:', audioFile.name);
-      const audio = new Audio(URL.createObjectURL(audioFile));
+  // Function to handle microphone input
+  document.getElementById('startButton').addEventListener('click', async function() {
+    try {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioContext.createAnalyser();
-      audioSrc = audioContext.createMediaElementSource(audio);
-      audioSrc.connect(analyser);
-      analyser.connect(audioContext.destination);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      microphone = audioContext.createMediaStreamSource(stream);
+      microphone.connect(analyser);
       analyser.fftSize = 1024;
 
       bufferLength = analyser.frequencyBinCount;
       dataArray = new Uint8Array(bufferLength);
       
-      audio.play().then(() => {
-        console.log('Audio is playing');
-        animate();
-      }).catch(err => {
-        console.error('Error playing audio:', err);
-      });
-    } else {
-      console.error('No audio file selected');
+      animate();
+    } catch (err) {
+      console.error('Error accessing microphone:', err);
     }
   });
 
