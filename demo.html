@@ -12,59 +12,108 @@
             justify-content: center;
             align-items: center;
             background-color: #000;
+            font-family: Arial, sans-serif;
         }
         canvas {
             display: block;
         }
+        #error-message {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ff0000;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
+    <div id="error-message" style="display: none;"></div>
     <script type="module">
-        // Planisphere Music Visualizer using WebGL
-
-        // Import necessary modules
-        import * as THREE from 'three';
+        import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
         import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js';
         import { AudioAnalyser } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/audio/AudioAnalyser.js';
+        import { EffectComposer } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-        // Basic setup
-        let scene, camera, renderer, controls;
+        let scene, camera, renderer, controls, composer;
         let particles, analyser, planets = [], path = [];
         let speed = 0.05;
+        const errorMessageDiv = document.getElementById('error-message');
+
+        function showError(message) {
+            errorMessageDiv.style.display = 'block';
+            errorMessageDiv.innerText = message;
+        }
 
         function init() {
-            // Set up the scene
+            try {
+                initScene();
+                initCamera();
+                initRenderer();
+                initComposer();
+                initControls();
+                initParticles();
+                initPlanets();
+                initPath();
+                initLighting();
+                initAudio();
+
+                window.addEventListener('resize', onWindowResize);
+                window.addEventListener('touchstart', handleTouchStart);
+                window.addEventListener('touchend', handleTouchEnd);
+
+                animate();
+            } catch (error) {
+                showError('An error occurred while initializing the visualizer. Please try reloading the page.');
+                console.error('Initialization error:', error);
+            }
+        }
+
+        function initScene() {
             scene = new THREE.Scene();
-            
-            // Set up the camera
-            camera = new THREE.PerspectiveCamera(
-                75, window.innerWidth / window.innerHeight, 0.1, 1000
-            );
+        }
+
+        function initCamera() {
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
             camera.position.set(0, 2, 10);
-            
-            // Set up the renderer
+        }
+
+        function initRenderer() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio); // Optimize for mobile
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.outputEncoding = THREE.sRGBEncoding;
             document.body.appendChild(renderer.domElement);
+        }
 
-            // Add controls
+        function initComposer() {
+            composer = new EffectComposer(renderer);
+            const renderPass = new RenderPass(scene, camera);
+            composer.addPass(renderPass);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            composer.addPass(bloomPass);
+        }
+
+        function initControls() {
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.enablePan = false;
             controls.enableZoom = false;
             controls.maxPolarAngle = Math.PI / 2;
+        }
 
-            // Set up particles
+        function initParticles() {
             const particleCount = 5000;
-            const particleGeometry = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
-            
             for (let i = 0; i < particleCount * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 200; // Spread particles around
+                positions[i] = (Math.random() - 0.5) * 200;
             }
-            
+            const particleGeometry = new THREE.BufferGeometry();
             particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             const particleMaterial = new THREE.PointsMaterial({
                 color: 0xffffff,
@@ -72,15 +121,19 @@
                 transparent: true,
                 opacity: 0.8
             });
-            
             particles = new THREE.Points(particleGeometry, particleMaterial);
             scene.add(particles);
+        }
 
-            // Set up planets (spheres) to simulate flying through galaxies
+        function initPlanets() {
             const planetCount = 50;
             for (let i = 0; i < planetCount; i++) {
                 const geometry = new THREE.SphereGeometry(Math.random() * 2 + 0.5, 32, 32);
-                const material = new THREE.MeshStandardMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 100%, 50%)`) });
+                const material = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color(`hsl(${Math.random() * 360}, 100%, 50%)`),
+                    roughness: 0.7,
+                    metalness: 0.3
+                });
                 const planet = new THREE.Mesh(geometry, material);
                 planet.position.set(
                     (Math.random() - 0.5) * 100,
@@ -90,8 +143,9 @@
                 scene.add(planet);
                 planets.push(planet);
             }
+        }
 
-            // Set up path for an audiosurf-like experience
+        function initPath() {
             const pathLength = 200;
             for (let i = 0; i < pathLength; i++) {
                 const pathSegment = new THREE.Mesh(
@@ -103,89 +157,83 @@
                 scene.add(pathSegment);
                 path.push(pathSegment);
             }
+        }
 
-            // Set up lighting
+        function initLighting() {
             const ambientLight = new THREE.AmbientLight(0x404040, 1);
             scene.add(ambientLight);
-            const pointLight = new THREE.PointLight(0xffffff, 1);
+            const pointLight = new THREE.PointLight(0xffffff, 1, 100);
             pointLight.position.set(10, 10, 10);
+            pointLight.castShadow = true;
             scene.add(pointLight);
+        }
 
-            // Set up audio analyser using device microphone
+        function initAudio() {
             const listener = new THREE.AudioListener();
             camera.add(listener);
             const audio = new THREE.Audio(listener);
 
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
                 const audioContext = listener.context;
                 const source = audioContext.createMediaStreamSource(stream);
                 audio.setNodeSource(source);
                 analyser = new AudioAnalyser(audio, 128);
-            }).catch(function (err) {
+            }).catch(err => {
+                showError('Unable to access the microphone. Please allow microphone permissions and reload the page.');
                 console.error('Unable to access the microphone', err);
             });
-
-            // Handle window resize
-            window.addEventListener('resize', onWindowResize, false);
-
-            // Make the experience mobile-friendly
-            window.addEventListener('touchstart', function(event) {
-                if (event.touches.length === 1) {
-                    event.preventDefault();
-                    controls.enabled = false;
-                }
-            }, false);
-
-            window.addEventListener('touchend', function(event) {
-                if (event.touches.length === 0) {
-                    controls.enabled = true;
-                }
-            }, false);
-
-            animate();
         }
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function handleTouchStart(event) {
+            if (event.touches.length === 1) {
+                event.preventDefault();
+                controls.enabled = false;
+            }
+        }
+
+        function handleTouchEnd(event) {
+            if (event.touches.length === 0) {
+                controls.enabled = true;
+            }
         }
 
         function animate() {
             requestAnimationFrame(animate);
 
             if (analyser) {
-                // Update particles, planets, and path based on audio
                 const data = analyser.getFrequencyData();
                 const bass = data.slice(0, 8).reduce((a, b) => a + b) / 8;
                 const mid = data.slice(8, 16).reduce((a, b) => a + b) / 8;
-                const treble = data.slice(16, data.length).reduce((a, b) => a + b) / (data.length - 16);
+                const treble = data.slice(16).reduce((a, b) => a + b) / (data.length - 16);
 
-                // Map bass to speed and particle pulsation
                 speed = 0.05 + bass / 512;
                 const bassScale = bass / 256;
                 particles.scale.set(bassScale + 0.8, bassScale + 0.8, bassScale + 0.8);
                 particles.material.size = bassScale * 0.5 + 0.2;
 
-                // Map mid frequencies to planet rotations
                 planets.forEach((planet, index) => {
                     planet.rotation.y += 0.005 + mid / 1024;
                     planet.rotation.x += 0.002 + (index % 2 === 0 ? mid / 2048 : 0);
                 });
 
-                // Map treble frequencies to camera movement (simulate flying through space)
                 camera.position.z -= speed;
                 if (camera.position.z < -1500) {
-                    camera.position.z = 10; // Reset position to create loop effect
+                    camera.position.z = 10;
                 }
             }
 
-            // Rotate particles slowly for a mesmerizing effect
             particles.rotation.y += 0.001;
             particles.rotation.x += 0.0005;
 
             controls.update();
-            renderer.render(scene, camera);
+            composer.render();
         }
 
         init();
