@@ -35,11 +35,8 @@
         import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
         import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js';
         import { AudioAnalyser } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/audio/AudioAnalyser.js';
-        import { EffectComposer } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-        let scene, camera, renderer, controls, composer;
+        let scene, camera, renderer, controls;
         let particles, analyser, planets = [], path = [];
         let speed = 0.05;
         const errorMessageDiv = document.getElementById('error-message');
@@ -47,30 +44,6 @@
         function showError(message) {
             errorMessageDiv.style.display = 'block';
             errorMessageDiv.innerText = message;
-        }
-
-        function init() {
-            try {
-                initScene();
-                initCamera();
-                initRenderer();
-                initComposer();
-                initControls();
-                initParticles();
-                initPlanets();
-                initPath();
-                initLighting();
-                initAudio();
-
-                window.addEventListener('resize', onWindowResize);
-                window.addEventListener('touchstart', handleTouchStart);
-                window.addEventListener('touchend', handleTouchEnd);
-
-                animate();
-            } catch (error) {
-                showError('An error occurred while initializing the visualizer. Please try reloading the page.');
-                console.error('Initialization error:', error);
-            }
         }
 
         function initScene() {
@@ -85,17 +58,9 @@
         function initRenderer() {
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for better performance on mobile
             renderer.outputEncoding = THREE.sRGBEncoding;
             document.body.appendChild(renderer.domElement);
-        }
-
-        function initComposer() {
-            composer = new EffectComposer(renderer);
-            const renderPass = new RenderPass(scene, camera);
-            composer.addPass(renderPass);
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            composer.addPass(bloomPass);
         }
 
         function initControls() {
@@ -109,11 +74,11 @@
 
         function initParticles() {
             const particleCount = 5000;
+            const particleGeometry = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount * 3; i++) {
                 positions[i] = (Math.random() - 0.5) * 200;
             }
-            const particleGeometry = new THREE.BufferGeometry();
             particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             const particleMaterial = new THREE.PointsMaterial({
                 color: 0xffffff,
@@ -164,7 +129,6 @@
             scene.add(ambientLight);
             const pointLight = new THREE.PointLight(0xffffff, 1, 100);
             pointLight.position.set(10, 10, 10);
-            pointLight.castShadow = true;
             scene.add(pointLight);
         }
 
@@ -188,20 +152,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function handleTouchStart(event) {
-            if (event.touches.length === 1) {
-                event.preventDefault();
-                controls.enabled = false;
-            }
-        }
-
-        function handleTouchEnd(event) {
-            if (event.touches.length === 0) {
-                controls.enabled = true;
-            }
         }
 
         function animate() {
@@ -211,7 +161,7 @@
                 const data = analyser.getFrequencyData();
                 const bass = data.slice(0, 8).reduce((a, b) => a + b) / 8;
                 const mid = data.slice(8, 16).reduce((a, b) => a + b) / 8;
-                const treble = data.slice(16).reduce((a, b) => a + b) / (data.length - 16);
+                const treble = data.slice(16, data.length).reduce((a, b) => a + b) / (data.length - 16);
 
                 speed = 0.05 + bass / 512;
                 const bassScale = bass / 256;
@@ -233,7 +183,39 @@
             particles.rotation.x += 0.0005;
 
             controls.update();
-            composer.render();
+            renderer.render(scene, camera);
+        }
+
+        function init() {
+            try {
+                initScene();
+                initCamera();
+                initRenderer();
+                initControls();
+                initParticles();
+                initPlanets();
+                initPath();
+                initLighting();
+                initAudio();
+
+                window.addEventListener('resize', onWindowResize, false);
+                window.addEventListener('touchstart', event => {
+                    if (event.touches.length === 1) {
+                        event.preventDefault();
+                        controls.enabled = false;
+                    }
+                }, false);
+                window.addEventListener('touchend', event => {
+                    if (event.touches.length === 0) {
+                        controls.enabled = true;
+                    }
+                }, false);
+
+                animate();
+            } catch (error) {
+                showError('An error occurred while initializing the visualizer. Please try reloading the page.');
+                console.error('Initialization error:', error);
+            }
         }
 
         init();
