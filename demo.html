@@ -1,342 +1,395 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Enhanced WebGL Synesthetic Visualizer</title>
-    <style>
-        body, html {
-            margin: 0;
-            overflow: hidden;
-            height: 100%;
-            background-color: #000000; /* OLED black */
-        }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-        }
-        #controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 10;
-            display: flex;
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 8px;
-        }
-        .control-button {
-            padding: 5px 10px;
-            background: #ffffff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced WebGL Synesthetic Visualizer with Ambient Audio</title>
+  <style>
+    body, html {
+      margin: 0;
+      overflow: hidden;
+      height: 100%;
+      background-color: #000000;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .control-button, .control-slider {
+      padding: 5px 10px;
+      background: #ffffff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .control-slider {
+      width: 150px;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="gpuCanvas"></canvas>
-    <div id="controls">
-        <button id="darkModeToggle" class="control-button">Toggle Dark Mode</button>
-        <button id="vibrationToggle" class="control-button">Toggle Vibrations</button>
-        <button id="resetConfig" class="control-button">Reset Configuration</button>
-        <button id="audioToggle" class="control-button">Toggle Audio Sync</button>
-        <button id="preset1" class="control-button">Preset 1</button>
-        <button id="preset2" class="control-button">Preset 2</button>
-        <button id="saveConfig" class="control-button">Save Configuration</button>
-        <button id="loadConfig" class="control-button">Load Configuration</button>
-    </div>
-    <script>
-        const canvas = document.getElementById('gpuCanvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-        if (!gl) {
-            console.error('WebGL not supported');
-            alert('WebGL not supported');
-            throw new Error('WebGL not supported');
+<div id="controls">
+  <button id="darkModeToggle" class="control-button">Toggle Dark Mode</button>
+  <button id="vibrationToggle" class="control-button">Toggle Vibrations</button>
+  <button id="audioSyncToggle" class="control-button">Toggle Audio Sync</button>
+  <button id="resetConfig" class="control-button">Reset Configuration</button>
+  <button id="preset1" class="control-button">Preset 1</button>
+  <button id="preset2" class="control-button">Preset 2</button>
+  <label>
+    Sensitivity:
+    <input type="range" id="sensitivitySlider" class="control-slider" min="0.5" max="5" value="1" step="0.1">
+  </label>
+  <label>
+    Intensity:
+    <input type="range" id="intensitySlider" class="control-slider" min="0.5" max="5" value="1" step="0.1">
+  </label>
+</div>
+<canvas id="gpuCanvas"></canvas>
+
+<script>
+  (async function() {
+    'use strict';
+
+    const canvas = document.getElementById('gpuCanvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) {
+      alert('WebGL not supported');
+      return;
+    }
+
+    // Global Variables
+    let audioContext, analyser, microphone;
+    let bufferLength, dataArray;
+    let darkMode = false;
+    let vibrationsEnabled = true;
+    let audioSync = true;
+    let sensitivity = 1.0;
+    let intensity = 1.0;
+    let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
+    let deviceMotion = { x: 0, y: 0, z: 0 };
+    let touches = [{ x: 0.0, y: 0.0 }, { x: 0.0, y: 0.0 }];
+
+    // Resize Canvas
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Shader Sources
+    const vertexShaderSource = `
+      attribute vec2 a_position;
+      varying vec2 v_uv;
+      void main() {
+        v_uv = a_position * 0.5 + 0.5;
+        gl_Position = vec4(a_position, 0.0, 1.0);
+      }
+    `;
+
+    const fragmentShaderSource = `
+      precision mediump float;
+      uniform float u_time;
+      uniform vec2 u_resolution;
+      uniform vec2 u_touch[2];
+      uniform bool u_dark_mode;
+      uniform vec3 u_orientation;
+      uniform vec3 u_motion;
+      uniform float u_audioData[64];
+      uniform float u_sensitivity;
+      uniform float u_intensity;
+      varying vec2 v_uv;
+
+      // Noise Functions
+      float random (in vec2 st) {
+        return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+      }
+      float noise (in vec2 st) {
+        vec2 i = floor(st);
+        vec2 f = fract(st);
+
+        float a = random(i);
+        float b = random(i + vec2(1.0, 0.0));
+        float c = random(i + vec2(0.0, 1.0));
+        float d = random(i + vec2(1.0, 1.0));
+
+        vec2 u = f*f*(3.0-2.0*f);
+
+        return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+      }
+
+      void main() {
+        vec2 uv = v_uv * u_resolution.xy / min(u_resolution.x, u_resolution.y);
+        float time = u_time * 0.1 * u_sensitivity;
+
+        // Audio Data Influence
+        float audioInfluence = 0.0;
+        for(int i = 0; i < 64; i++) {
+          audioInfluence += u_audioData[i];
+        }
+        audioInfluence /= 64.0;
+        audioInfluence *= u_intensity;
+
+        // Noise and Flow Fields
+        float n = noise(uv * 3.0 + time);
+        float angle = n * 3.1416 * 2.0;
+        vec2 flow = vec2(cos(angle), sin(angle));
+
+        // Base Color
+        vec3 color = vec3(0.0);
+        color.r = sin(uv.x * 3.0 + time + audioInfluence);
+        color.g = cos(uv.y * 3.0 + time + audioInfluence);
+        color.b = sin((uv.x + uv.y) * 3.0 + time + audioInfluence);
+
+        // Touch Effects
+        for(int i = 0; i < 2; i++) {
+          vec2 touch = u_touch[i];
+          float dist = length(uv - touch * u_resolution.xy / min(u_resolution.x, u_resolution.y));
+          color += 0.1 / dist;
         }
 
-        let darkMode = false;
-        let vibrationsEnabled = true;
-        let audioSync = false;
-        let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
-        let deviceMotion = { x: 0, y: 0, z: 0 };
+        // Device Motion Influence
+        color += vec3(u_motion.x, u_motion.y, u_motion.z) * 0.05;
 
-        // Resize canvas function
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // Shader functions
-        function compileShader(source, type) {
-            const shader = gl.createShader(type);
-            gl.shaderSource(shader, source);
-            gl.compileShader(shader);
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error('Shader compile failed: ' + gl.getShaderInfoLog(shader));
-                gl.deleteShader(shader);
-                throw new Error('Shader compile error');
-            }
-            return shader;
+        // Dark Mode Adjustment
+        if(u_dark_mode) {
+          color = vec3(1.0) - color;
         }
 
-        function createShaderProgram(vertexSource, fragmentSource) {
-            const vertexShader = compileShader(vertexSource, gl.VERTEX_SHADER);
-            const fragmentShader = compileShader(fragmentSource, gl.FRAGMENT_SHADER);
-            const program = gl.createProgram();
-            gl.attachShader(program, vertexShader);
-            gl.attachShader(program, fragmentShader);
-            gl.linkProgram(program);
-            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-                console.error('Program link failed: ' + gl.getProgramInfoLog(program));
-                gl.deleteProgram(program);
-                throw new Error('Program link error');
-            }
-            return program;
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `;
+
+    // Shader Compilation
+    function compileShader(gl, source, type) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader compile failed:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    }
+
+    // Shader Program Creation
+    function createShaderProgram(gl, vertexSource, fragmentSource) {
+      const vertexShader = compileShader(gl, vertexSource, gl.VERTEX_SHADER);
+      const fragmentShader = compileShader(gl, fragmentSource, gl.FRAGMENT_SHADER);
+      if (!vertexShader || !fragmentShader) return null;
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Program link failed:', gl.getProgramInfoLog(program));
+        gl.deleteProgram(program);
+        return null;
+      }
+      return program;
+    }
+
+    // Create Shader Program
+    const program = createShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
+    if (!program) return;
+    gl.useProgram(program);
+
+    // Attribute and Uniform Locations
+    const positionLocation = gl.getAttribLocation(program, 'a_position');
+    const timeLocation = gl.getUniformLocation(program, 'u_time');
+    const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+    const touchLocation = gl.getUniformLocation(program, 'u_touch');
+    const darkModeLocation = gl.getUniformLocation(program, 'u_dark_mode');
+    const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
+    const motionLocation = gl.getUniformLocation(program, 'u_motion');
+    const audioDataLocation = gl.getUniformLocation(program, 'u_audioData');
+    const sensitivityLocation = gl.getUniformLocation(program, 'u_sensitivity');
+    const intensityLocation = gl.getUniformLocation(program, 'u_intensity');
+
+    // Position Buffer Setup
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    const positions = new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1,
+    ]);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+    // Event Listeners
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const vibrationToggle = document.getElementById('vibrationToggle');
+    const audioSyncToggle = document.getElementById('audioSyncToggle');
+    const resetConfig = document.getElementById('resetConfig');
+    const preset1 = document.getElementById('preset1');
+    const preset2 = document.getElementById('preset2');
+    const sensitivitySlider = document.getElementById('sensitivitySlider');
+    const intensitySlider = document.getElementById('intensitySlider');
+
+    darkModeToggle.addEventListener('click', () => {
+      darkMode = !darkMode;
+    });
+
+    vibrationToggle.addEventListener('click', () => {
+      vibrationsEnabled = !vibrationsEnabled;
+    });
+
+    audioSyncToggle.addEventListener('click', () => {
+      audioSync = !audioSync;
+    });
+
+    resetConfig.addEventListener('click', () => {
+      darkMode = false;
+      vibrationsEnabled = true;
+      audioSync = true;
+      sensitivity = 1.0;
+      intensity = 1.0;
+      sensitivitySlider.value = 1.0;
+      intensitySlider.value = 1.0;
+    });
+
+    sensitivitySlider.addEventListener('input', (event) => {
+      sensitivity = parseFloat(event.target.value);
+    });
+
+    intensitySlider.addEventListener('input', (event) => {
+      intensity = parseFloat(event.target.value);
+    });
+
+    preset1.addEventListener('click', () => {
+      darkMode = false;
+      sensitivity = 1.5;
+      intensity = 2.0;
+      sensitivitySlider.value = 1.5;
+      intensitySlider.value = 2.0;
+    });
+
+    preset2.addEventListener('click', () => {
+      darkMode = true;
+      sensitivity = 0.8;
+      intensity = 1.2;
+      sensitivitySlider.value = 0.8;
+      intensitySlider.value = 1.2;
+    });
+
+    // Access Microphone
+    async function startMicrophone() {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        microphone = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 128;
+        bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        microphone.connect(analyser);
+      } catch (err) {
+        console.error('Error accessing microphone:', err);
+      }
+    }
+
+    startMicrophone();
+
+    // Touch Events
+    canvas.addEventListener('touchstart', handleTouch);
+    canvas.addEventListener('touchmove', handleTouch);
+    canvas.addEventListener('touchend', handleTouch);
+
+    function handleTouch(event) {
+      updateTouches(event.touches);
+      if (vibrationsEnabled) navigator.vibrate(50);
+      event.preventDefault();
+    }
+
+    function updateTouches(touchList) {
+      for (let i = 0; i < touches.length; i++) {
+        if (i < touchList.length) {
+          const touch = touchList[i];
+          touches[i].x = touch.clientX;
+          touches[i].y = canvas.height - touch.clientY;
+        } else {
+          touches[i].x = -1000;
+          touches[i].y = -1000;
         }
+      }
+    }
 
-        // Vertex and fragment shaders
-        const vertexShaderSource = `
-            attribute vec2 a_position;
-            varying vec2 v_uv;
-            void main() {
-                v_uv = a_position * 0.5 + 0.5;
-                gl_Position = vec4(a_position, 0.0, 1.0);
-            }
-        `;
+    // Device Orientation and Motion
+    window.addEventListener('deviceorientation', (event) => {
+      deviceOrientation.alpha = event.alpha || 0;
+      deviceOrientation.beta = event.beta || 0;
+      deviceOrientation.gamma = event.gamma || 0;
+    });
 
-        const fragmentShaderSource = `
-            precision mediump float;
-            uniform float u_time;
-            uniform vec2 u_touch0;
-            uniform vec2 u_touch1;
-            uniform bool u_dark_mode;
-            uniform vec3 u_orientation;
-            uniform vec3 u_motion;
-            varying vec2 v_uv;
+    window.addEventListener('devicemotion', (event) => {
+      deviceMotion.x = event.accelerationIncludingGravity.x || 0;
+      deviceMotion.y = event.accelerationIncludingGravity.y || 0;
+      deviceMotion.z = event.accelerationIncludingGravity.z || 0;
+    });
 
-            float noise(vec2 p) {
-                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
-            }
+    // Render Loop
+    function render(time) {
+      time *= 0.001; // Convert to seconds
 
-            float fbm(vec2 p) {
-                float f = 0.0;
-                f += 0.5000 * noise(p); p *= 2.02;
-                f += 0.2500 * noise(p); p *= 2.03;
-                f += 0.1250 * noise(p); p *= 2.01;
-                f += 0.0625 * noise(p);
-                return f;
-            }
+      // Update Uniforms
+      gl.uniform1f(timeLocation, time);
+      gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+      gl.uniform1i(darkModeLocation, darkMode);
+      gl.uniform3f(orientationLocation, deviceOrientation.alpha, deviceOrientation.beta, deviceOrientation.gamma);
+      gl.uniform3f(motionLocation, deviceMotion.x, deviceMotion.y, deviceMotion.z);
+      gl.uniform1f(sensitivityLocation, sensitivity);
+      gl.uniform1f(intensityLocation, intensity);
 
-            void main() {
-                vec2 uv = v_uv - 0.5;
-                float dist = length(uv);
-                float angle = atan(uv.y, uv.x);
+      const touchArray = [];
+      for (let i = 0; i < touches.length; i++) {
+        touchArray.push(touches[i].x, touches[i].y);
+      }
+      gl.uniform2fv(touchLocation, new Float32Array(touchArray));
 
-                float flow = sin(u_time + dist * 10.0 + fbm(uv * 10.0)) * 0.1;
-                uv += flow * 0.2;
-
-                vec3 baseColor = vec3(
-                    0.5 + 0.5 * sin(u_time + angle + u_orientation.x),
-                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + u_orientation.y),
-                    0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0 + u_orientation.z)
-                );
-
-                if (u_dark_mode) {
-                    baseColor *= 0.2;
-                }
-
-                float fbmValue = fbm(uv * 6.0 + u_time * 0.8);
-                baseColor.rgb += fbmValue * 0.15;
-
-                float radialGradient = smoothstep(0.8, 0.1, dist) * (1.0 + sin(u_time * 2.5 + dist * 20.0) * 0.2);
-                baseColor *= radialGradient;
-
-                float glow = exp(-dist * 8.0);
-                if (u_dark_mode) {
-                    glow *= 0.1;
-                }
-                baseColor += vec3(glow * 0.5, glow * 0.7, glow * 1.0);
-
-                float touchEffect0 = 0.0;
-                float touchEffect1 = 0.0;
-                if (length(u_touch0) > 0.0) {
-                    touchEffect0 = 0.3 / length(uv - (u_touch0 - 0.5));
-                }
-                if (length(u_touch1) > 0.0) {
-                    touchEffect1 = 0.3 / length(uv - (u_touch1 - 0.5));
-                }
-                baseColor += vec3(touchEffect0 + touchEffect1);
-
-                baseColor += vec3(u_motion.x, u_motion.y, u_motion.z) * 0.1;
-
-                gl_FragColor = vec4(baseColor, 1.0);
-            }
-        `;
-
-        const program = createShaderProgram(vertexShaderSource, fragmentShaderSource);
-        gl.useProgram(program);
-
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            -1, -1,
-            1, -1,
-            -1, 1,
-            -1, 1,
-            1, -1,
-            1, 1,
-        ]), gl.STATIC_DRAW);
-
-        const positionLocation = gl.getAttribLocation(program, 'a_position');
-        gl.enableVertexAttribArray(positionLocation);
-        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        const timeLocation = gl.getUniformLocation(program, 'u_time');
-        const touch0Location = gl.getUniformLocation(program, 'u_touch0');
-        const touch1Location = gl.getUniformLocation(program, 'u_touch1');
-        const darkModeLocation = gl.getUniformLocation(program, 'u_dark_mode');
-        const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
-        const motionLocation = gl.getUniformLocation(program, 'u_motion');
-
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const vibrationToggle = document.getElementById('vibrationToggle');
-        const resetConfig = document.getElementById('resetConfig');
-        const audioToggle = document.getElementById('audioToggle');
-        const saveConfig = document.getElementById('saveConfig');
-        const loadConfig = document.getElementById('loadConfig');
-
-        darkModeToggle.addEventListener('click', () => {
-            darkMode = !darkMode;
-            updateURLParams();
-        });
-
-        vibrationToggle.addEventListener('click', () => {
-            vibrationsEnabled = !vibrationsEnabled;
-            updateURLParams();
-        });
-
-        audioToggle.addEventListener('click', () => {
-            audioSync = !audioSync;
-            updateURLParams();
-        });
-
-        resetConfig.addEventListener('click', () => {
-            darkMode = false;
-            vibrationsEnabled = true;
-            audioSync = false;
-            updateURLParams();
-        });
-
-        saveConfig.addEventListener('click', () => {
-            const config = {
-                darkMode,
-                vibrationsEnabled,
-                audioSync,
-            };
-            const configStr = JSON.stringify(config);
-            localStorage.setItem('visualizerConfig', configStr);
-            alert('Configuration saved!');
-        });
-
-        loadConfig.addEventListener('click', () => {
-            const configStr = localStorage.getItem('visualizerConfig');
-            if (configStr) {
-                const config = JSON.parse(configStr);
-                darkMode = config.darkMode;
-                vibrationsEnabled = config.vibrationsEnabled;
-                audioSync = config.audioSync;
-                updateURLParams();
-                alert('Configuration loaded!');
-            } else {
-                alert('No saved configuration found.');
-            }
-        });
-
-        function updateURLParams() {
-            const params = new URLSearchParams(window.location.search);
-            params.set('darkMode', darkMode);
-            params.set('vibrationsEnabled', vibrationsEnabled);
-            params.set('audioSync', audioSync);
-            window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+      // Audio Data
+      if (audioSync && analyser) {
+        analyser.getByteFrequencyData(dataArray);
+        const audioData = new Float32Array(64);
+        for (let i = 0; i < 64; i++) {
+          audioData[i] = dataArray[i] / 255.0;
         }
+        gl.uniform1fv(audioDataLocation, audioData);
+      } else {
+        gl.uniform1fv(audioDataLocation, new Float32Array(64));
+      }
 
-        function loadURLParams() {
-            const params = new URLSearchParams(window.location.search);
-            darkMode = params.get('darkMode') === 'true';
-            vibrationsEnabled = params.get('vibrationsEnabled') === 'true';
-            audioSync = params.get('audioSync') === 'true';
-        }
+      // Draw
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLES, 0, positions.length / 2);
 
-        loadURLParams();
+      requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
 
-        let touches = [
-            { x: 0.0, y: 0.0 },
-            { x: 0.0, y: 0.0 }
-        ];
+  })();
+</script>
 
-        canvas.addEventListener('touchstart', (event) => {
-            updateTouches(event.touches);
-            event.preventDefault();
-        });
-
-        canvas.addEventListener('touchmove', (event) => {
-            updateTouches(event.touches);
-            event.preventDefault();
-        });
-
-        canvas.addEventListener('touchend', (event) => {
-            updateTouches(event.touches);
-            event.preventDefault();
-        });
-
-        function updateTouches(touchList) {
-            for (let i = 0; i < touches.length; i++) {
-                if (i < touchList.length) {
-                    const touch = touchList[i];
-                    touches[i].x = (touch.clientX / window.innerWidth) * 2.0 - 1.0;
-                    touches[i].y = 1.0 - (touch.clientY / window.innerHeight) * 2.0;
-                } else {
-                    touches[i].x = 0;
-                    touches[i].y = 0;
-                }
-            }
-        }
-
-        window.addEventListener('deviceorientation', (event) => {
-            deviceOrientation.alpha = event.alpha;
-            deviceOrientation.beta = event.beta;
-            deviceOrientation.gamma = event.gamma;
-        });
-
-        window.addEventListener('devicemotion', (event) => {
-            deviceMotion.x = event.accelerationIncludingGravity.x;
-            deviceMotion.y = event.accelerationIncludingGravity.y;
-            deviceMotion.z = event.accelerationIncludingGravity.z;
-        });
-
-        // Render loop
-        function render(time) {
-            time *= 0.001; // Convert time to seconds
-            gl.uniform1f(timeLocation, time);
-            gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
-            gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
-            gl.uniform1i(darkModeLocation, darkMode);
-            gl.uniform3f(orientationLocation, deviceOrientation.alpha, deviceOrientation.beta, deviceOrientation.gamma);
-            gl.uniform3f(motionLocation, deviceMotion.x, deviceMotion.y, deviceMotion.z);
-
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-            requestAnimationFrame(render);
-        }
-        requestAnimationFrame(render);
-    </script>
 </body>
 </html>
