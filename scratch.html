@@ -63,9 +63,6 @@
         <button id="startAudio">Start Audio Interaction</button>
         <button id="randomizeColors">Randomize Colors</button>
     </div>
-    <div class="ui">
-        <button id="playSound">Play Sound & Visualize</button>
-    </div>
 
     <script>
         // Particle Effect Canvas Setup
@@ -110,16 +107,6 @@
             requestAnimationFrame(animateParticles);
         }
         animateParticles();
-
-        document.getElementById("playSound").addEventListener("click", () => {
-            const audio = new Audio("https://www.soundjay.com/button/beep-07.wav");
-            audio.play();
-
-            const particleCount = 100;
-            for (let i = 0; i < particleCount; i++) {
-                particles.push(createParticle(visualizerCanvas.width / 2, visualizerCanvas.height / 2));
-            }
-        });
 
         window.addEventListener("resize", () => {
             visualizerCanvas.width = window.innerWidth;
