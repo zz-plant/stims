@@ -58,10 +58,12 @@
   });
 
   // Device orientation handling
-  window.addEventListener('deviceorientation', (event) => {
-    tiltX = event.beta; // -180 to 180
-    tiltY = event.gamma; // -90 to 90
-  });
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', (event) => {
+      tiltX = event.beta || 0; // -180 to 180
+      tiltY = event.gamma || 0; // -90 to 90
+    });
+  }
 
   // Visualizer animation
   function animate() {
@@ -83,8 +85,8 @@
     ctx.putImageData(imageData, 0, 0);
 
     // Adding reactivity based on device orientation
-    const tiltFactorX = Math.sin((tiltX / 180) * Math.PI) * 50;
-    const tiltFactorY = Math.sin((tiltY / 90) * Math.PI) * 50;
+    const tiltFactorX = Math.sin((tiltX / 180) * Math.PI) * 100;
+    const tiltFactorY = Math.sin((tiltY / 90) * Math.PI) * 100;
 
     // Drawing the visuals with more reactivity and variation
     const gradient = ctx.createRadialGradient(canvas.width / 2 + tiltFactorX, canvas.height / 2 + tiltFactorY, 100, canvas.width / 2, canvas.height / 2, canvas.width / 2);
