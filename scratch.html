@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive WebGL Sensory Experience</title>
+    <title>Interactive WebGL Sensory Experience with Isometric Toggle</title>
     <style>
         body {
             margin: 0;
@@ -36,6 +36,17 @@
             display: block;
             margin-bottom: 5px;
         }
+        #controls button {
+            margin-top: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        #controls button:hover {
+            background-color: #555;
+        }
     </style>
 </head>
 <body>
@@ -44,6 +55,7 @@
     <label>Speed: <input type="range" id="speed" min="0.1" max="3.0" step="0.1" value="1.0"></label>
     <label>Noise Scale: <input type="range" id="noiseScale" min="1.0" max="10.0" step="0.5" value="5.0"></label>
     <label>Color Intensity: <input type="range" id="colorIntensity" min="0.5" max="2.0" step="0.1" value="1.0"></label>
+    <button id="toggleIsometric">Toggle Isometric</button>
 </div>
 <script>
     const canvas = document.getElementById("glCanvas");
@@ -53,6 +65,10 @@
         alert("Unable to initialize WebGL. Your browser may not support it.");
         throw new Error("WebGL not supported");
     }
+    
+    let isIsometric = false;
+    let memoryFactor = 0.0; // This will simulate memory in the interaction
+    let responseIntensity = 1.0; // Initial intensity of responses
     
     function resizeCanvas() {
         canvas.width = window.innerWidth;
@@ -64,8 +80,20 @@
     
     const vertexShaderSource = `
         attribute vec4 a_position;
+        uniform bool u_isometric;
+        
+        vec4 applyIsometric(vec4 position) {
+            mat4 isometricMatrix = mat4(
+                1.0,  0.5, 0.0, 0.0,
+                0.0, -0.5, 1.0, 0.0,
+                0.0,  0.5, 1.0, 0.0,
+                0.0,  0.0, 0.0, 1.0
+            );
+            return isometricMatrix * position;
+        }
+        
         void main() {
-            gl_Position = a_position;
+            gl_Position = u_isometric ? applyIsometric(a_position) : a_position;
         }
     `;
     
@@ -78,6 +106,8 @@
         uniform float u_speed;
         uniform float u_noiseScale;
         uniform float u_colorIntensity;
+        uniform float u_memoryFactor;
+        uniform float u_responseIntensity;
         
         float noise(vec2 p) {
             return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
@@ -110,14 +140,12 @@
         
         void main() {
             vec2 st = gl_FragCoord.xy / u_resolution;
-            vec2 dynamicCenter = vec2(0.5 + 0.15 * sin(u_time * 0.5 + u_acceleration.x), 0.5 + 0.15 * cos(u_time * 0.5 + u_acceleration.y));
-            vec2 toCenter = dynamicCenter - st;
-            float len = length(toCenter) * (1.4 + sin(u_acceleration.y * 0.3 + u_time) * 0.3);
-            float angle = atan(toCenter.y, toCenter.x) + fbm(st * 4.0 + u_time * 0.05 * u_speed + u_acceleration.xy);
+            st += vec2(0.5, 0.5) * u_memoryFactor; // Memory factor affects the noise function
             
-            vec3 color = vec3(0.5 + 0.5 * cos(angle + u_time * 0.7 * u_speed + u_mouse.x * 0.04 + fbm(st * 5.0)),
-                              0.4 + 0.6 * sin(len - u_time * 0.6 * u_speed + u_mouse.y * 0.04 + fbm(st * 7.0)),
-                              0.7 + 0.3 * cos(angle * 1.3 + u_time * 0.6 * u_speed + fbm(st * 9.0)));
+            // Adjust noise and color intensity based on response intensity
+            vec3 color = vec3(0.5 + 0.5 * cos(fbm(st * 5.0) * u_time * u_responseIntensity),
+                              0.5 + 0.5 * sin(fbm(st * 7.0) * u_time * u_responseIntensity),
+                              0.5 + 0.5 * cos(fbm(st * 9.0) * u_time * u_responseIntensity));
             
             gl_FragColor = vec4(color * u_colorIntensity, 1.0);
         }
@@ -173,6 +201,13 @@
     const speedUniformLocation = gl.getUniformLocation(program, "u_speed");
     const noiseScaleUniformLocation = gl.getUniformLocation(program, "u_noiseScale");
     const colorIntensityUniformLocation = gl.getUniformLocation(program, "u_colorIntensity");
+    const memoryFactorUniformLocation = gl.getUniformLocation(program, "u_memoryFactor");
+    const responseIntensityUniformLocation = gl.getUniformLocation(program, "u_responseIntensity");
+    
+    document.getElementById("toggleIsometric").addEventListener("click", () => {
+        isIsometric = !isIsometric;
+        gl.uniform1i(gl.getUniformLocation(program, "u_isometric"), isIsometric);
+    });
     
     let mouse = [0, 0];
     let acceleration = [0, 0, 0];
@@ -182,21 +217,23 @@
     
     document.getElementById("speed").addEventListener("input", (e) => {
         speed = parseFloat(e.target.value);
-        navigator.vibrate(20); // Haptic feedback for user input
+        responseIntensity = speed; // Speed directly affects the intensity of responses
     });
     
     document.getElementById("noiseScale").addEventListener("input", (e) => {
         noiseScale = parseFloat(e.target.value);
-        navigator.vibrate(20); // Haptic feedback for user input
+        gl.uniform1f(noiseScaleUniformLocation, noiseScale);
     });
     
     document.getElementById("colorIntensity").addEventListener("input", (e) => {
         colorIntensity = parseFloat(e.target.value);
-        navigator.vibrate(20); // Haptic feedback for user input
+        gl.uniform1f(colorIntensityUniformLocation, colorIntensity);
     });
 
     canvas.addEventListener("mousemove", (e) => {
         mouse = [e.clientX / window.innerWidth, e.clientY / window.innerHeight];
+        memoryFactor += 0.01; // Increase memory as the user interacts
+        gl.uniform2f(mouseUniformLocation, mouse[0], mouse[1]);
     });
 
     window.addEventListener("devicemotion", (e) => {
@@ -205,20 +242,17 @@
             e.accelerationIncludingGravity.y || 0,
             e.accelerationIncludingGravity.z || 0,
         ];
+        memoryFactor += 0.05; // Device motion increases memory more quickly
     });
 
     function render(time) {
         time *= 0.001; // Convert to seconds
         
-        // Set the uniform values
-        gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+        // Update time and memory factor
         gl.uniform1f(timeUniformLocation, time);
-        gl.uniform2f(mouseUniformLocation, mouse[0], mouse[1]);
-        gl.uniform3f(accelerationUniformLocation, acceleration[0], acceleration[1], acceleration[2]);
-        gl.uniform1f(speedUniformLocation, speed);
-        gl.uniform1f(noiseScaleUniformLocation, noiseScale);
-        gl.uniform1f(colorIntensityUniformLocation, colorIntensity);
-        
+        gl.uniform1f(memoryFactorUniformLocation, memoryFactor);
+        gl.uniform1f(responseIntensityUniformLocation, responseIntensity);
+
         // Draw the scene
         gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
