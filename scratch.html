@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive WebGL Light Effect with Advanced Physics</title>
+    <title>Interactive WebGL Sensory Experience</title>
     <style>
         body {
             margin: 0;
@@ -14,10 +14,37 @@
         canvas {
             display: block;
         }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+        }
+        #controls input[type=range] {
+            width: 150px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        #controls label {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
 <canvas id="glCanvas"></canvas>
+<div id="controls">
+    <label>Speed: <input type="range" id="speed" min="0.1" max="3.0" step="0.1" value="1.0"></label>
+    <label>Noise Scale: <input type="range" id="noiseScale" min="1.0" max="10.0" step="0.5" value="5.0"></label>
+    <label>Color Intensity: <input type="range" id="colorIntensity" min="0.5" max="2.0" step="0.1" value="1.0"></label>
+</div>
 <script>
     const canvas = document.getElementById("glCanvas");
     const gl = canvas.getContext("webgl");
@@ -48,16 +75,33 @@
         uniform vec2 u_resolution;
         uniform vec2 u_mouse;
         uniform vec3 u_acceleration;
+        uniform float u_speed;
+        uniform float u_noiseScale;
+        uniform float u_colorIntensity;
         
         float noise(vec2 p) {
             return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
         }
         
+        float smoothNoise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            
+            float a = noise(i);
+            float b = noise(i + vec2(1.0, 0.0));
+            float c = noise(i + vec2(0.0, 1.0));
+            float d = noise(i + vec2(1.0, 1.0));
+            
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            
+            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+        }
+        
         float fbm(vec2 p) {
             float value = 0.0;
             float amplitude = 0.5;
-            for (int i = 0; i < 5; i++) {
-                value += amplitude * noise(p);
+            for (int i = 0; i < 6; i++) {
+                value += amplitude * smoothNoise(p * u_noiseScale);
                 p *= 2.0;
                 amplitude *= 0.5;
             }
@@ -66,16 +110,16 @@
         
         void main() {
             vec2 st = gl_FragCoord.xy / u_resolution;
-            vec2 dynamicCenter = vec2(0.5 + 0.2 * sin(u_time * 0.3), 0.5 + 0.2 * cos(u_time * 0.2));
+            vec2 dynamicCenter = vec2(0.5 + 0.15 * sin(u_time * 0.5 + u_acceleration.x), 0.5 + 0.15 * cos(u_time * 0.5 + u_acceleration.y));
             vec2 toCenter = dynamicCenter - st;
-            float len = length(toCenter) * (1.8 + sin(u_acceleration.y * 0.5 + u_time) * 0.3);
-            float angle = atan(toCenter.y, toCenter.x) + fbm(st * 5.0 + u_time * 0.1 + u_acceleration.xy);
+            float len = length(toCenter) * (1.4 + sin(u_acceleration.y * 0.3 + u_time) * 0.3);
+            float angle = atan(toCenter.y, toCenter.x) + fbm(st * 4.0 + u_time * 0.05 * u_speed + u_acceleration.xy);
             
-            vec3 color = vec3(0.6 + 0.4 * cos(angle + u_time * 0.8 + u_mouse.x * 0.03 + fbm(st * 10.0)),
-                              0.6 + 0.4 * sin(len - u_time * 0.6 + u_mouse.y * 0.03 + fbm(st * 10.0)),
-                              0.8 + 0.2 * cos(angle * 1.5 + u_time * 0.7 + fbm(st * 15.0)));
+            vec3 color = vec3(0.5 + 0.5 * cos(angle + u_time * 0.7 * u_speed + u_mouse.x * 0.04 + fbm(st * 5.0)),
+                              0.4 + 0.6 * sin(len - u_time * 0.6 * u_speed + u_mouse.y * 0.04 + fbm(st * 7.0)),
+                              0.7 + 0.3 * cos(angle * 1.3 + u_time * 0.6 * u_speed + fbm(st * 9.0)));
             
-            gl_FragColor = vec4(color, 1.0);
+            gl_FragColor = vec4(color * u_colorIntensity, 1.0);
         }
     `;
     
@@ -126,48 +170,63 @@
     const timeUniformLocation = gl.getUniformLocation(program, "u_time");
     const mouseUniformLocation = gl.getUniformLocation(program, "u_mouse");
     const accelerationUniformLocation = gl.getUniformLocation(program, "u_acceleration");
+    const speedUniformLocation = gl.getUniformLocation(program, "u_speed");
+    const noiseScaleUniformLocation = gl.getUniformLocation(program, "u_noiseScale");
+    const colorIntensityUniformLocation = gl.getUniformLocation(program, "u_colorIntensity");
     
     let mouse = [0, 0];
     let acceleration = [0, 0, 0];
+    let speed = 1.0;
+    let noiseScale = 5.0;
+    let colorIntensity = 1.0;
     
-    canvas.addEventListener('mousemove', (e) => {
-        mouse = [e.clientX / canvas.width, e.clientY / canvas.height];
+    document.getElementById("speed").addEventListener("input", (e) => {
+        speed = parseFloat(e.target.value);
+        navigator.vibrate(20); // Haptic feedback for user input
     });
     
-    canvas.addEventListener('touchmove', (e) => {
-        const touch = e.touches[0];
-        mouse = [touch.clientX / canvas.width, touch.clientY / canvas.height];
-        e.preventDefault();
+    document.getElementById("noiseScale").addEventListener("input", (e) => {
+        noiseScale = parseFloat(e.target.value);
+        navigator.vibrate(20); // Haptic feedback for user input
     });
     
-    canvas.addEventListener('touchstart', (e) => {
-        const touch = e.touches[0];
-        mouse = [touch.clientX / canvas.width, touch.clientY / canvas.height];
-        e.preventDefault();
+    document.getElementById("colorIntensity").addEventListener("input", (e) => {
+        colorIntensity = parseFloat(e.target.value);
+        navigator.vibrate(20); // Haptic feedback for user input
     });
-    
-    if (window.DeviceMotionEvent) {
-        window.addEventListener('devicemotion', (event) => {
-            acceleration = [event.accelerationIncludingGravity.x || 0,
-                           event.accelerationIncludingGravity.y || 0,
-                           event.accelerationIncludingGravity.z || 0];
-        });
-    }
-    
+
+    canvas.addEventListener("mousemove", (e) => {
+        mouse = [e.clientX / window.innerWidth, e.clientY / window.innerHeight];
+    });
+
+    window.addEventListener("devicemotion", (e) => {
+        acceleration = [
+            e.accelerationIncludingGravity.x || 0,
+            e.accelerationIncludingGravity.y || 0,
+            e.accelerationIncludingGravity.z || 0,
+        ];
+    });
+
     function render(time) {
-        time *= 0.002;
+        time *= 0.001; // Convert to seconds
+        
+        // Set the uniform values
         gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
         gl.uniform1f(timeUniformLocation, time);
         gl.uniform2f(mouseUniformLocation, mouse[0], mouse[1]);
         gl.uniform3f(accelerationUniformLocation, acceleration[0], acceleration[1], acceleration[2]);
+        gl.uniform1f(speedUniformLocation, speed);
+        gl.uniform1f(noiseScaleUniformLocation, noiseScale);
+        gl.uniform1f(colorIntensityUniformLocation, colorIntensity);
         
+        // Draw the scene
         gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
-        
         gl.drawArrays(gl.TRIANGLES, 0, 6);
-        
+
         requestAnimationFrame(render);
     }
+
     requestAnimationFrame(render);
 </script>
 </body>
