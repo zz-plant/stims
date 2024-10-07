@@ -241,7 +241,6 @@
 
         canvas.addEventListener('touchstart', (event) => {
             updateTouches(event.touches);
-            if (vibrationsEnabled) navigator.vibrate(50);
             event.preventDefault();
         });
 
@@ -253,10 +252,6 @@
         canvas.addEventListener('touchend', (event) => {
             updateTouches(event.touches);
             event.preventDefault();
-        });
-
-        canvas.addEventListener('click', () => {
-            if (vibrationsEnabled) navigator.vibrate(100);
         });
 
         function updateTouches(touchList) {
