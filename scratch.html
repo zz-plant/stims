@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive WebGL Sensory Experience with Isometric Toggle</title>
+    <title>WebGL Sensory Experience with Audio Responsiveness</title>
     <style>
         body {
             margin: 0;
@@ -36,39 +36,21 @@
             display: block;
             margin-bottom: 5px;
         }
-        #controls button {
-            margin-top: 10px;
-            background-color: #333;
-            color: #fff;
-            border: none;
-            padding: 8px 12px;
-            cursor: pointer;
-        }
-        #controls button:hover {
-            background-color: #555;
-        }
     </style>
 </head>
 <body>
 <canvas id="glCanvas"></canvas>
 <div id="controls">
-    <label>Speed: <input type="range" id="speed" min="0.1" max="3.0" step="0.1" value="1.0"></label>
-    <label>Noise Scale: <input type="range" id="noiseScale" min="1.0" max="10.0" step="0.5" value="5.0"></label>
-    <label>Color Intensity: <input type="range" id="colorIntensity" min="0.5" max="2.0" step="0.1" value="1.0"></label>
-    <button id="toggleIsometric">Toggle Isometric</button>
+    <button id="startAudio">Start Audio Interaction</button>
 </div>
 <script>
     const canvas = document.getElementById("glCanvas");
     const gl = canvas.getContext("webgl");
-    
+
     if (!gl) {
         alert("Unable to initialize WebGL. Your browser may not support it.");
         throw new Error("WebGL not supported");
     }
-    
-    let isIsometric = false;
-    let memoryFactor = 0.0; // This will simulate memory in the interaction
-    let responseIntensity = 1.0; // Initial intensity of responses
     
     function resizeCanvas() {
         canvas.width = window.innerWidth;
@@ -80,20 +62,8 @@
     
     const vertexShaderSource = `
         attribute vec4 a_position;
-        uniform bool u_isometric;
-        
-        vec4 applyIsometric(vec4 position) {
-            mat4 isometricMatrix = mat4(
-                1.0,  0.5, 0.0, 0.0,
-                0.0, -0.5, 1.0, 0.0,
-                0.0,  0.5, 1.0, 0.0,
-                0.0,  0.0, 0.0, 1.0
-            );
-            return isometricMatrix * position;
-        }
-        
         void main() {
-            gl_Position = u_isometric ? applyIsometric(a_position) : a_position;
+            gl_Position = a_position;
         }
     `;
     
@@ -101,53 +71,14 @@
         precision highp float;
         uniform float u_time;
         uniform vec2 u_resolution;
-        uniform vec2 u_mouse;
-        uniform vec3 u_acceleration;
-        uniform float u_speed;
-        uniform float u_noiseScale;
-        uniform float u_colorIntensity;
-        uniform float u_memoryFactor;
-        uniform float u_responseIntensity;
-        
-        float noise(vec2 p) {
-            return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
-        }
-        
-        float smoothNoise(vec2 p) {
-            vec2 i = floor(p);
-            vec2 f = fract(p);
-            
-            float a = noise(i);
-            float b = noise(i + vec2(1.0, 0.0));
-            float c = noise(i + vec2(0.0, 1.0));
-            float d = noise(i + vec2(1.0, 1.0));
-            
-            vec2 u = f * f * (3.0 - 2.0 * f);
-            
-            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-        }
-        
-        float fbm(vec2 p) {
-            float value = 0.0;
-            float amplitude = 0.5;
-            for (int i = 0; i < 6; i++) {
-                value += amplitude * smoothNoise(p * u_noiseScale);
-                p *= 2.0;
-                amplitude *= 0.5;
-            }
-            return value;
-        }
+        uniform float u_audioData;
         
         void main() {
             vec2 st = gl_FragCoord.xy / u_resolution;
-            st += vec2(0.5, 0.5) * u_memoryFactor; // Memory factor affects the noise function
-            
-            // Adjust noise and color intensity based on response intensity
-            vec3 color = vec3(0.5 + 0.5 * cos(fbm(st * 5.0) * u_time * u_responseIntensity),
-                              0.5 + 0.5 * sin(fbm(st * 7.0) * u_time * u_responseIntensity),
-                              0.5 + 0.5 * cos(fbm(st * 9.0) * u_time * u_responseIntensity));
-            
-            gl_FragColor = vec4(color * u_colorIntensity, 1.0);
+            vec3 color = vec3(0.5 + 0.5 * sin(u_time + st.x * u_audioData),
+                              0.5 + 0.5 * cos(u_time + st.y * u_audioData),
+                              0.5 + 0.5 * sin(u_time + u_audioData));
+            gl_FragColor = vec4(color, 1.0);
         }
     `;
     
@@ -196,65 +127,48 @@
     
     const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
     const timeUniformLocation = gl.getUniformLocation(program, "u_time");
-    const mouseUniformLocation = gl.getUniformLocation(program, "u_mouse");
-    const accelerationUniformLocation = gl.getUniformLocation(program, "u_acceleration");
-    const speedUniformLocation = gl.getUniformLocation(program, "u_speed");
-    const noiseScaleUniformLocation = gl.getUniformLocation(program, "u_noiseScale");
-    const colorIntensityUniformLocation = gl.getUniformLocation(program, "u_colorIntensity");
-    const memoryFactorUniformLocation = gl.getUniformLocation(program, "u_memoryFactor");
-    const responseIntensityUniformLocation = gl.getUniformLocation(program, "u_responseIntensity");
+    const audioDataUniformLocation = gl.getUniformLocation(program, "u_audioData");
     
-    document.getElementById("toggleIsometric").addEventListener("click", () => {
-        isIsometric = !isIsometric;
-        gl.uniform1i(gl.getUniformLocation(program, "u_isometric"), isIsometric);
-    });
+    gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+
+    let time = 0.0;
+    let audioData = 0.0;
     
-    let mouse = [0, 0];
-    let acceleration = [0, 0, 0];
-    let speed = 1.0;
-    let noiseScale = 5.0;
-    let colorIntensity = 1.0;
+    async function setupAudio() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const audioContext = new AudioContext();
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            
+            function getAudioData() {
+                analyser.getByteFrequencyData(dataArray);
+                let average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+                audioData = average / 128.0;  // Normalize the value
+                requestAnimationFrame(getAudioData);
+            }
+            
+            getAudioData();
+        } catch (err) {
+            console.error("Error capturing audio: ", err);
+            alert("Audio input is not available.");
+        }
+    }
     
-    document.getElementById("speed").addEventListener("input", (e) => {
-        speed = parseFloat(e.target.value);
-        responseIntensity = speed; // Speed directly affects the intensity of responses
-    });
-    
-    document.getElementById("noiseScale").addEventListener("input", (e) => {
-        noiseScale = parseFloat(e.target.value);
-        gl.uniform1f(noiseScaleUniformLocation, noiseScale);
-    });
-    
-    document.getElementById("colorIntensity").addEventListener("input", (e) => {
-        colorIntensity = parseFloat(e.target.value);
-        gl.uniform1f(colorIntensityUniformLocation, colorIntensity);
+    document.getElementById("startAudio").addEventListener("click", () => {
+        setupAudio();
     });
 
-    canvas.addEventListener("mousemove", (e) => {
-        mouse = [e.clientX / window.innerWidth, e.clientY / window.innerHeight];
-        memoryFactor += 0.01; // Increase memory as the user interacts
-        gl.uniform2f(mouseUniformLocation, mouse[0], mouse[1]);
-    });
-
-    window.addEventListener("devicemotion", (e) => {
-        acceleration = [
-            e.accelerationIncludingGravity.x || 0,
-            e.accelerationIncludingGravity.y || 0,
-            e.accelerationIncludingGravity.z || 0,
-        ];
-        memoryFactor += 0.05; // Device motion increases memory more quickly
-    });
-
-    function render(time) {
-        time *= 0.001; // Convert to seconds
-        
-        // Update time and memory factor
+    function render() {
+        time += 0.01;
         gl.uniform1f(timeUniformLocation, time);
-        gl.uniform1f(memoryFactorUniformLocation, memoryFactor);
-        gl.uniform1f(responseIntensityUniformLocation, responseIntensity);
-
+        gl.uniform1f(audioDataUniformLocation, audioData);
+        
         // Draw the scene
-        gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
