@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Music Reactive Visuals</title>
+  <title>Music Reactive Visuals - Enhanced with WebGL</title>
   <style>
     body, html {
       margin: 0;
@@ -40,68 +40,88 @@
 
 <script>
   const canvas = document.getElementById('visualizer');
-  const ctx = canvas.getContext('2d');
+  const gl = canvas.getContext('webgl');
   const decibelMeter = document.getElementById('decibelMeter');
   const bpmDisplay = document.getElementById('bpm');
   const keyDisplay = document.getElementById('key');
   let audioContext, analyser, microphone;
   let bufferLength, dataArray;
-  let tiltX = 0, tiltY = 0;
   let particles = [];
+  let ripples = [];
   let lastPeakTime = 0;
   let peaks = [];
   let key = 'Unknown';
 
-  // Particle class for interactive visuals
-  class Particle {
-    constructor(x, y) {
-      this.x = x;
-      this.y = y;
-      this.size = Math.random() * 5 + 1;
-      this.speedX = Math.random() * 3 - 1.5;
-      this.speedY = Math.random() * 3 - 1.5;
-      this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+  // WebGL shader setup
+  const vertexShaderSource = `
+    attribute vec2 a_position;
+    void main() {
+      gl_Position = vec4(a_position, 0, 1);
     }
-    update() {
-      this.x += this.speedX;
-      this.y += this.speedY;
-      if (this.size > 0.2) this.size -= 0.1;
+  `;
+
+  const fragmentShaderSource = `
+    precision mediump float;
+    uniform float u_time;
+    uniform vec2 u_resolution;
+    uniform sampler2D u_texture;
+    void main() {
+      vec2 uv = gl_FragCoord.xy / u_resolution;
+      vec3 color = 0.5 + 0.5 * cos(u_time + uv.xyx + vec3(0, 2, 4));
+      gl_FragColor = vec4(color, 1.0);
     }
-    draw() {
-      ctx.fillStyle = this.color;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fill();
+  `;
+
+  function createShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error('Error compiling shader:', gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
     }
+    return shader;
   }
 
-  // Geometric FlowField for fluid and dynamic visuals
-  class FlowField {
-    constructor() {
-      this.noiseScale = 0.01;
+  function createProgram(gl, vertexShader, fragmentShader) {
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Error linking program:', gl.getProgramInfoLog(program));
+      gl.deleteProgram(program);
+      return null;
     }
-    drawFlow() {
-      for (let y = 0; y < canvas.height; y += 15) {
-        for (let x = 0; x < canvas.width; x += 15) {
-          let angle = (Math.sin((x + y) * this.noiseScale) + 1) * Math.PI;
-          let length = 10;
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + length * Math.cos(angle), y + length * Math.sin(angle));
-          ctx.strokeStyle = 'rgba(0, 150, 255, 0.2)';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-      }
-    }
+    return program;
   }
 
-  const flowField = new FlowField();
+  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+  const program = createProgram(gl, vertexShader, fragmentShader);
+
+  const positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
+  const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
+  const timeUniformLocation = gl.getUniformLocation(program, 'u_time');
+
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  const positions = [
+    -1, -1,
+    1, -1,
+    -1, 1,
+    -1, 1,
+    1, -1,
+    1, 1,
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
   // Resizing the canvas
   function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   }
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
@@ -128,18 +148,8 @@
 
   startVisualizer();
 
-  // Device orientation handling
-  if (window.DeviceOrientationEvent) {
-    window.addEventListener('deviceorientation', (event) => {
-      tiltX = event.beta || 0; // -180 to 180
-      tiltY = event.gamma || 0; // -90 to 90
-    });
-  } else {
-    console.warn('DeviceOrientationEvent is not supported by this browser');
-  }
-
   // Visualizer animation
-  function animate() {
+  function animate(time) {
     requestAnimationFrame(animate);
     analyser.getByteFrequencyData(dataArray);
 
@@ -149,135 +159,21 @@
     let decibels = 20 * Math.log10(average / 255);
     decibelMeter.innerText = `Decibels: ${Math.max(0, decibels.toFixed(1))} dB`;
 
-    // Clear the canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // WebGL rendering
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
-    // Adding reactivity based on device orientation
-    const tiltFactorX = Math.sin((tiltX / 180) * Math.PI) * 100;
-    const tiltFactorY = Math.sin((tiltY / 90) * Math.PI) * 100;
+    gl.useProgram(program);
 
-    // Draw central geometric visuals with touch interactivity
-    ctx.save();
-    ctx.translate(canvas.width / 2 + tiltFactorX, canvas.height / 2 + tiltFactorY);
-    for (let i = 0; i < 6; i++) {
-      ctx.rotate((Math.PI / 3));
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(dataArray[i] * 2, 0);
-      ctx.strokeStyle = `hsl(${(i * 60)}, 100%, 50%)`;
-      ctx.lineWidth = 4;
-      ctx.stroke();
-    }
-    ctx.restore();
+    gl.enableVertexAttribArray(positionAttributeLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
 
-    // Add radial patterns based on frequency data
-    let radius = Math.max(dataArray[0] * 3, 100);
-    for (let i = 0; i < bufferLength; i++) {
-      let angle = (i / bufferLength) * 2 * Math.PI;
-      let x = canvas.width / 2 + radius * Math.cos(angle) + tiltFactorX;
-      let y = canvas.height / 2 + radius * Math.sin(angle) + tiltFactorY;
-      ctx.beginPath();
-      ctx.rect(x, y, dataArray[i] / 6, dataArray[i] / 6);
-      ctx.fillStyle = `hsl(${(i * 360) / bufferLength + dataArray[i] / 2}, 100%, 60%)`;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = `hsl(${(i * 360) / bufferLength + dataArray[i] / 2}, 100%, 60%)`;
-      ctx.fill();
+    gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
+    gl.uniform1f(timeUniformLocation, time * 0.001);
 
-      // Add particles for interactive play
-      if (Math.random() > 0.97) {
-        particles.push(new Particle(x, y));
-      }
-    }
-
-    // Adding geometric wave-like pattern for more variation
-    ctx.beginPath();
-    ctx.moveTo(0, canvas.height / 2 + tiltFactorY);
-    for (let i = 0; i < bufferLength; i++) {
-      let x = (i / bufferLength) * canvas.width;
-      let y = (canvas.height / 2 + tiltFactorY) + dataArray[i] * 0.7 * Math.sin(i * 0.08);
-      ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = 'rgba(100, 200, 255, 0.8)';
-    ctx.lineWidth = 3;
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = 'rgba(100, 200, 255, 1)';
-    ctx.stroke();
-
-    // Adding radial spikes for an extra layer of reactivity
-    for (let i = 0; i < bufferLength; i += 5) {
-      let spikeLength = dataArray[i] * 1.5;
-      let spikeAngle = (i / bufferLength) * 2 * Math.PI;
-      let startX = canvas.width / 2 + tiltFactorX;
-      let startY = canvas.height / 2 + tiltFactorY;
-      let endX = startX + spikeLength * Math.cos(spikeAngle);
-      let endY = startY + spikeLength * Math.sin(spikeAngle);
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX, endY);
-      ctx.strokeStyle = `rgba(${dataArray[i]}, ${100 + dataArray[i]}, 150, 0.9)`;
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = `rgba(${dataArray[i]}, ${100 + dataArray[i]}, 150, 1)`;
-      ctx.stroke();
-    }
-
-    // Adding geometric fluid flow effect
-    flowField.drawFlow();
-
-    // Adding concentric circles for further geometric appeal
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 5; i++) {
-      ctx.beginPath();
-      ctx.arc(canvas.width / 2, canvas.height / 2, radius / (i + 1), 0, 2 * Math.PI);
-      ctx.stroke();
-    }
-
-    // Adding horizontal lines for VHS scanline effect
-    ctx.strokeStyle = 'rgba(255, 150, 100, 0.2)';
-    ctx.lineWidth = 1;
-    for (let y = 0; y < canvas.height; y += 5) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
-
-    // Adding a slight color distortion to simulate VHS tracking issues
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(canvas, 2, 2, canvas.width - 4, canvas.height - 4);
-    ctx.globalCompositeOperation = 'source-over';
-
-    // Adding spectrograph effect with more graphical appeal
-    for (let i = 0; i < bufferLength; i++) {
-      let barHeight = dataArray[i] / 1.5;
-      let x = (i / bufferLength) * canvas.width;
-      let y = canvas.height - barHeight;
-
-      ctx.fillStyle = `hsl(${(i * 360) / bufferLength}, 100%, 50%)`;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = `hsl(${(i * 360) / bufferLength}, 100%, 50%)`;
-      ctx.fillRect(x, y, canvas.width / bufferLength, barHeight);
-    }
-
-    // Update and draw particles for interactive stimulation
-    particles.forEach((particle, index) => {
-      particle.update();
-      particle.draw();
-      if (particle.size <= 0.2) {
-        particles.splice(index, 1);
-      }
-    });
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
-
-  // Add touch interaction to create particles
-  canvas.addEventListener('touchmove', (e) => {
-    const touches = e.touches;
-    for (let i = 0; i < touches.length; i++) {
-      const touch = touches[i];
-      particles.push(new Particle(touch.clientX, touch.clientY));
-    }
-  });
 
   // BPM Calculation
   function calculateBPM() {
