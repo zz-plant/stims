@@ -173,6 +173,7 @@
         // Event Listeners
         document.getElementById('darkModeToggle').addEventListener('click', () => {
             darkMode = !darkMode;
+            document.body.style.backgroundColor = darkMode ? '#ffffff' : '#000000';
         });
 
         document.getElementById('vibrationToggle').addEventListener('click', () => {
@@ -191,6 +192,24 @@
             intensity = 1.0;
             document.getElementById('sensitivitySlider').value = 1.0;
             document.getElementById('intensitySlider').value = 1.0;
+            document.body.style.backgroundColor = '#000000';
+        });
+
+        document.getElementById('preset1').addEventListener('click', () => {
+            darkMode = false;
+            sensitivity = 1.5;
+            intensity = 2.0;
+            document.getElementById('sensitivitySlider').value = 1.5;
+            document.getElementById('intensitySlider').value = 2.0;
+        });
+
+        document.getElementById('preset2').addEventListener('click', () => {
+            darkMode = true;
+            sensitivity = 0.8;
+            intensity = 1.2;
+            document.getElementById('sensitivitySlider').value = 0.8;
+            document.getElementById('intensitySlider').value = 1.2;
+            document.body.style.backgroundColor = '#ffffff';
         });
 
         document.getElementById('sensitivitySlider').addEventListener('input', (event) => {
