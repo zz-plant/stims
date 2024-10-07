@@ -1,276 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Mobile WebGL Fidget Cube</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            touch-action: none;
-            background-color: #1a1a1a;
-            font-family: 'Roboto', sans-serif;
-        }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-        }
-        #instructions {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #fff;
-            font-size: 16px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
-            max-width: 300px;
-            transition: opacity 0.3s ease-in-out;
-        }
-        #instructions.hidden {
-            opacity: 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Reactive Visuals</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: black;
+    }
+
+    canvas {
+      display: block;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="webgl-canvas"></canvas>
-    <div id="instructions">Use touch gestures to rotate the cube. Tilt your phone to interact with it in an immersive way. Tap the screen to change colors!</div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
-    <script>
-        const canvas = document.getElementById('webgl-canvas');
-        const gl = canvas.getContext('webgl2', { antialias: true });
 
-        if (!gl) {
-            alert('WebGL 2 is not available in your browser.');
-        }
+<canvas id="visualizer"></canvas>
+<input type="file" id="audioInput" accept="audio/*" />
 
-        // Set canvas resolution dynamically for high-res displays
-        const highRes = window.devicePixelRatio > 1 ? 2 : 1;
-        canvas.width = window.innerWidth * highRes;
-        canvas.height = window.innerHeight * highRes;
-        gl.viewport(0, 0, canvas.width, canvas.height);
+<script>
+  const canvas = document.getElementById('visualizer');
+  const ctx = canvas.getContext('2d');
+  let audioContext, analyser, audioSrc;
+  let bufferLength, dataArray;
+  let tiltX = 0, tiltY = 0;
 
-        // Handle resizing
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth * highRes;
-            canvas.height = window.innerHeight * highRes;
-            gl.viewport(0, 0, canvas.width, canvas.height);
-        });
+  // Resizing the canvas
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
 
-        // Vertex shader source code
-        const vertexShaderSource = `#version 300 es
-        precision mediump float;
-        
-        in vec4 a_position;
-        in vec3 a_normal;
+  // Function to handle music input
+  document.getElementById('audioInput').addEventListener('change', function(e) {
+    const audioFile = e.target.files[0];
+    if (audioFile) {
+      const audio = new Audio(URL.createObjectURL(audioFile));
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      audioSrc = audioContext.createMediaElementSource(audio);
+      audioSrc.connect(analyser);
+      analyser.connect(audioContext.destination);
+      analyser.fftSize = 1024;
 
-        uniform mat4 u_projectionMatrix;
-        uniform mat4 u_modelViewMatrix;
-        uniform mat4 u_normalMatrix;
+      bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+      
+      audio.play();
+      animate();
+    }
+  });
 
-        out vec3 v_normal;
+  // Device orientation handling
+  window.addEventListener('deviceorientation', (event) => {
+    tiltX = event.beta; // -180 to 180
+    tiltY = event.gamma; // -90 to 90
+  });
 
-        void main() {
-            gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
-            v_normal = mat3(u_normalMatrix) * a_normal;
-        }`;
+  // Visualizer animation
+  function animate() {
+    requestAnimationFrame(animate);
+    analyser.getByteFrequencyData(dataArray);
 
-        // Fragment shader source code
-        const fragmentShaderSource = `#version 300 es
-        precision mediump float;
+    // Adding old VHS-like effects with a molten effect
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        in vec3 v_normal;
-        out vec4 outColor;
+    // Add noise/grain effect
+    let imageData = ctx.createImageData(canvas.width, canvas.height);
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      let noise = Math.random() * 50;
+      imageData.data[i] = noise;
+      imageData.data[i + 1] = noise;
+      imageData.data[i + 2] = noise;
+      imageData.data[i + 3] = 10;
+    }
+    ctx.putImageData(imageData, 0, 0);
 
-        uniform vec3 u_lightDirection;
-        uniform vec3 u_color;
+    // Adding reactivity based on device orientation
+    const tiltFactorX = Math.sin((tiltX / 180) * Math.PI) * 50;
+    const tiltFactorY = Math.sin((tiltY / 90) * Math.PI) * 50;
 
-        void main() {
-            vec3 normal = normalize(v_normal);
-            float light = max(dot(normal, u_lightDirection), 0.0);
-            outColor = vec4(u_color * (0.3 + light * 0.7), 1.0);
-        }`;
+    // Drawing the visuals with more reactivity and variation
+    const gradient = ctx.createRadialGradient(canvas.width / 2 + tiltFactorX, canvas.height / 2 + tiltFactorY, 100, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+    gradient.addColorStop(0, 'rgba(255, 150, 0, 1)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = gradient;
 
-        // Shader setup
-        function createShader(gl, type, source) {
-            const shader = gl.createShader(type);
-            gl.shaderSource(shader, source);
-            gl.compileShader(shader);
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error(gl.getShaderInfoLog(shader));
-                gl.deleteShader(shader);
-                return null;
-            }
-            return shader;
-        }
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2 + tiltFactorX, canvas.height / 2 + tiltFactorY, dataArray[0] * 2, 0, 2 * Math.PI);
+    ctx.fill();
 
-        function createProgram(gl, vertexShader, fragmentShader) {
-            const program = gl.createProgram();
-            gl.attachShader(program, vertexShader);
-            gl.attachShader(program, fragmentShader);
-            gl.linkProgram(program);
-            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-                console.error(gl.getProgramInfoLog(program));
-                gl.deleteProgram(program);
-                return null;
-            }
-            return program;
-        }
+    // Add more visual effects, such as spirals, glow effects, or distortions, based on frequency data
+    let radius = Math.max(dataArray[0] * 3, 100);
+    for (let i = 0; i < bufferLength; i++) {
+      let angle = (i / bufferLength) * 2 * Math.PI;
+      let x = canvas.width / 2 + radius * Math.cos(angle) + tiltFactorX;
+      let y = canvas.height / 2 + radius * Math.sin(angle) + tiltFactorY;
+      ctx.beginPath();
+      ctx.arc(x, y, dataArray[i] / 6, 0, 2 * Math.PI);
+      ctx.fillStyle = `hsl(${(i * 360) / bufferLength + dataArray[i] / 2}, 100%, 60%)`;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = `hsl(${(i * 360) / bufferLength + dataArray[i] / 2}, 100%, 60%)`;
+      ctx.fill();
+    }
 
-        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-        const program = createProgram(gl, vertexShader, fragmentShader);
+    // Adding wave-like pattern for more variation with molten effect
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height / 2 + tiltFactorY);
+    for (let i = 0; i < bufferLength; i++) {
+      let x = (i / bufferLength) * canvas.width;
+      let y = (canvas.height / 2 + tiltFactorY) + dataArray[i] * 0.7 * Math.sin(i * 0.08);
+      ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(255, 100, 0, 0.8)';
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = 'rgba(255, 150, 0, 1)';
+    ctx.stroke();
 
-        // Cube data setup
-        const positions = new Float32Array([
-            // front
-            -1, -1,  1,   1, -1,  1,   1,  1,  1,  -1,  1,  1,
-            // back
-            -1, -1, -1,  -1,  1, -1,   1,  1, -1,   1, -1, -1,
-            // top
-            -1,  1, -1,  -1,  1,  1,   1,  1,  1,   1,  1, -1,
-            // bottom
-            -1, -1, -1,   1, -1, -1,   1, -1,  1,  -1, -1,  1,
-            // right
-             1, -1, -1,   1,  1, -1,   1,  1,  1,   1, -1,  1,
-            // left
-            -1, -1, -1,  -1, -1,  1,  -1,  1,  1,  -1,  1, -1,
-        ]);
+    // Adding radial spikes for an extra layer of reactivity, resembling molten splashes
+    for (let i = 0; i < bufferLength; i += 5) {
+      let spikeLength = dataArray[i] * 1.5;
+      let spikeAngle = (i / bufferLength) * 2 * Math.PI;
+      let startX = canvas.width / 2 + tiltFactorX;
+      let startY = canvas.height / 2 + tiltFactorY;
+      let endX = startX + spikeLength * Math.cos(spikeAngle);
+      let endY = startY + spikeLength * Math.sin(spikeAngle);
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.strokeStyle = `rgba(${dataArray[i]}, ${100 + dataArray[i]}, 0, 0.9)`;
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = `rgba(${dataArray[i]}, ${100 + dataArray[i]}, 0, 1)`;
+      ctx.stroke();
+    }
 
-        const normals = new Float32Array([
-            // front
-             0,  0,  1,   0,  0,  1,   0,  0,  1,   0,  0,  1,
-            // back
-             0,  0, -1,   0,  0, -1,   0,  0, -1,   0,  0, -1,
-            // top
-             0,  1,  0,   0,  1,  0,   0,  1,  0,   0,  1,  0,
-            // bottom
-             0, -1,  0,   0, -1,  0,   0, -1,  0,   0, -1,  0,
-            // right
-             1,  0,  0,   1,  0,  0,   1,  0,  0,   1,  0,  0,
-            // left
-            -1,  0,  0,  -1,  0,  0,  -1,  0,  0,  -1,  0,  0,
-        ]);
+    // Adding horizontal lines for VHS scanline effect
+    ctx.strokeStyle = 'rgba(255, 150, 100, 0.2)';
+    ctx.lineWidth = 1;
+    for (let y = 0; y < canvas.height; y += 5) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
 
-        // Buffer setup
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+    // Adding a slight color distortion to simulate VHS tracking issues and molten flow
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(canvas, 2, 2, canvas.width - 4, canvas.height - 4);
+    ctx.globalCompositeOperation = 'source-over';
 
-        const normalBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+    // Adding spectrograph effect with more graphical appeal
+    for (let i = 0; i < bufferLength; i++) {
+      let barHeight = dataArray[i] / 1.5;
+      let x = (i / bufferLength) * canvas.width;
+      let y = canvas.height - barHeight;
 
-        const vao = gl.createVertexArray();
-        gl.bindVertexArray(vao);
+      ctx.fillStyle = `hsl(${(i * 360) / bufferLength}, 100%, 50%)`;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = `hsl(${(i * 360) / bufferLength}, 100%, 50%)`;
+      ctx.fillRect(x, y, canvas.width / bufferLength, barHeight);
+    }
+  }
+</script>
 
-        // Position attribute setup
-        const positionLocation = gl.getAttribLocation(program, 'a_position');
-        gl.enableVertexAttribArray(positionLocation);
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-
-        // Normal attribute setup
-        const normalLocation = gl.getAttribLocation(program, 'a_normal');
-        gl.enableVertexAttribArray(normalLocation);
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-        gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
-
-        // Animation variables
-        let rotationX = 0;
-        let rotationY = 0;
-        let currentRotationX = 0;
-        let currentRotationY = 0;
-        let currentColor = [0.3, 0.6, 1.0];
-
-        // Handle touch input for interaction
-        let touchStartX, touchStartY;
-        canvas.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            const deltaX = touch.clientX - touchStartX;
-            const deltaY = touch.clientY - touchStartY;
-
-            rotationX += deltaX * 0.005;
-            rotationY += deltaY * 0.005;
-
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-        });
-
-        // Gyro-based rotation (if supported)
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (event) => {
-                const { beta, gamma } = event;
-                rotationX += gamma * 0.001;
-                rotationY += beta * 0.001;
-            });
-        }
-
-        // Handle tap to change color
-        canvas.addEventListener('click', () => {
-            currentColor = [Math.random(), Math.random(), Math.random()];
-            vibrate(100);
-        });
-
-        // Vibration feedback for user interactions
-        function vibrate(duration) {
-            if (navigator.vibrate) {
-                navigator.vibrate(duration);
-            }
-        }
-
-        // Add vibration feedback for touch and tap events
-        canvas.addEventListener('touchstart', () => vibrate(50));
-
-        // Render loop
-        function drawScene(time) {
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.enable(gl.DEPTH_TEST);
-
-            // Set up projection and model-view matrices
-            const aspect = canvas.width / canvas.height;
-            const projectionMatrix = mat4.create();
-            mat4.perspective(projectionMatrix, Math.PI / 4, aspect, 0.1, 100);
-
-            const modelViewMatrix = mat4.create();
-            mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -6]);
-
-            // Smooth rotation update
-            currentRotationX += (rotationX - currentRotationX) * 0.1;
-            currentRotationY += (rotationY - currentRotationY) * 0.1;
-
-            mat4.rotate(modelViewMatrix, modelViewMatrix, currentRotationX, [0, 1, 0]);
-            mat4.rotate(modelViewMatrix, modelViewMatrix, currentRotationY, [1, 0, 0]);
-
-            const normalMatrix = mat4.create();
-            mat4.invert(normalMatrix, modelViewMatrix);
-            mat4.transpose(normalMatrix, normalMatrix);
-
-            // Use shader program and set uniforms
-            gl.useProgram(program);
-            gl.uniformMatrix4fv(gl.getUniformLocation(program, 'u_projectionMatrix'), false, projectionMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(program, 'u_modelViewMatrix'), false, modelViewMatrix);
-            gl.uniformMatrix4fv(gl.getUniformLocation(program, 'u_normalMatrix'), false, normalMatrix);
-            gl.uniform3fv(gl.getUniformLocation(program, 'u_lightDirection'), [-0.5, -1.0, -0.5]);
-            gl.uniform3fv(gl.getUniformLocation(program, 'u_color'), currentColor);
-
-            // Draw the cube
-            gl.bindVertexArray(vao);
-            gl.drawArrays(gl.TRIANGLES, 0, 36);
-
-            requestAnimationFrame(drawScene);
-        }
-
-        requestAnimationFrame(drawScene);
-    </script>
 </body>
 </html>
