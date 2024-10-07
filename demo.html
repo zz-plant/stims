@@ -111,13 +111,48 @@
             uniform float u_intensity;
             varying vec2 v_uv;
 
+            float noise(vec2 p) {
+                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+
+            float fbm(vec2 p) {
+                float f = 0.0;
+                f += 0.5000 * noise(p); p *= 2.02;
+                f += 0.2500 * noise(p); p *= 2.03;
+                f += 0.1250 * noise(p); p *= 2.01;
+                f += 0.0625 * noise(p);
+                return f;
+            }
+
             void main() {
                 vec2 uv = v_uv - 0.5;
                 float dist = length(uv);
-                float colorIntensity = sin(u_time + dist * 10.0) * 0.5 + 0.5;
-                vec3 color = vec3(colorIntensity, 0.5 + 0.5 * cos(u_time * 1.5), 0.5 + 0.5 * sin(u_time * 0.8));
-                color *= u_intensity;
-                gl_FragColor = vec4(color, 1.0);
+                float angle = atan(uv.y, uv.x);
+
+                float flow = sin(u_time + dist * 10.0 + fbm(uv * 10.0)) * 0.1;
+                uv += flow * 0.2;
+
+                vec3 baseColor = vec3(
+                    0.5 + 0.5 * sin(u_time + angle),
+                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0),
+                    0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0)
+                );
+
+                baseColor *= u_intensity;
+
+                float fbmValue = fbm(uv * 6.0 + u_time * 0.8);
+                baseColor.rgb += fbmValue * 0.3;
+
+                float radialGradient = smoothstep(0.8, 0.1, dist) * (1.0 + sin(u_time * 2.5 + dist * 20.0) * 0.2);
+                baseColor *= radialGradient;
+
+                float glow = exp(-dist * 8.0);
+                baseColor += vec3(glow * 0.5, glow * 0.7, glow * 1.0);
+
+                float scanline = sin(uv.y * 800.0 + u_time * 10.0) * 0.05;
+                baseColor -= scanline;
+
+                gl_FragColor = vec4(baseColor, 1.0);
             }
         `;
 
@@ -173,7 +208,6 @@
         // Event Listeners
         document.getElementById('darkModeToggle').addEventListener('click', () => {
             darkMode = !darkMode;
-            document.body.style.backgroundColor = darkMode ? '#ffffff' : '#000000';
         });
 
         document.getElementById('vibrationToggle').addEventListener('click', () => {
@@ -192,24 +226,6 @@
             intensity = 1.0;
             document.getElementById('sensitivitySlider').value = 1.0;
             document.getElementById('intensitySlider').value = 1.0;
-            document.body.style.backgroundColor = '#000000';
-        });
-
-        document.getElementById('preset1').addEventListener('click', () => {
-            darkMode = false;
-            sensitivity = 1.5;
-            intensity = 2.0;
-            document.getElementById('sensitivitySlider').value = 1.5;
-            document.getElementById('intensitySlider').value = 2.0;
-        });
-
-        document.getElementById('preset2').addEventListener('click', () => {
-            darkMode = true;
-            sensitivity = 0.8;
-            intensity = 1.2;
-            document.getElementById('sensitivitySlider').value = 0.8;
-            document.getElementById('intensitySlider').value = 1.2;
-            document.body.style.backgroundColor = '#ffffff';
         });
 
         document.getElementById('sensitivitySlider').addEventListener('input', (event) => {
