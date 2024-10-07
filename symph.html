@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everyday Symphony Demo</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .ui {
+            position: absolute;
+            bottom: 20px;
+            text-align: center;
+            z-index: 2;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            background: #444;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="visualizer"></canvas>
+    <div class="ui">
+        <button id="playSound">Play Sound & Visualize</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("visualizer");
+        const ctx = canvas.getContext("2d");
+        const button = document.getElementById("playSound");
+        let particles = [];
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        function createParticle(x, y) {
+            return {
+                x: x,
+                y: y,
+                size: Math.random() * 8 + 1,
+                speedX: Math.random() * 3 - 1.5,
+                speedY: Math.random() * 3 - 1.5,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`
+            };
+        }
+
+        function handleParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                ctx.fillStyle = particles[i].color;
+                ctx.beginPath();
+                ctx.arc(particles[i].x, particles[i].y, particles[i].size, 0, Math.PI * 2);
+                ctx.fill();
+                particles[i].x += particles[i].speedX;
+                particles[i].y += particles[i].speedY;
+                particles[i].size *= 0.95;
+
+                if (particles[i].size < 0.5) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            handleParticles();
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        button.addEventListener("click", () => {
+            const audio = new Audio("https://www.soundjay.com/button/beep-07.wav");
+            audio.play();
+
+            const particleCount = 100;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(createParticle(canvas.width / 2, canvas.height / 2));
+            }
+        });
+
+        window.addEventListener("resize", () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
