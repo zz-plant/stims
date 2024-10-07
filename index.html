@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Trippy Synesthetic Visualizer with WebGL</title>
+    <title>Enhanced WebGL Synesthetic Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -27,12 +27,7 @@
 <body>
     <canvas id="gpuCanvas"></canvas>
     <div id="controls">
-        <select id="audioSelect">
-            <option value="mic">Microphone</option>
-            <option value="device">Device Audio</option>
-        </select>
         <button id="darkModeToggle">Toggle Dark Mode</button>
-        <button id="vibrationToggle">Toggle Vibrations</button>
     </div>
     <script>
         const canvas = document.getElementById('gpuCanvas');
@@ -45,7 +40,8 @@
         }
 
         let darkMode = false;
-        let vibrationsEnabled = true;
+        let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
+        let deviceMotion = { x: 0, y: 0, z: 0 };
 
         // Resize canvas function
         function resizeCanvas() {
@@ -97,13 +93,11 @@
         const fragmentShaderSource = `
             precision mediump float;
             uniform float u_time;
-            uniform float u_low_freq;
-            uniform float u_mid_freq;
-            uniform float u_high_freq;
             uniform vec2 u_touch0;
             uniform vec2 u_touch1;
-            uniform vec3 u_orientation;
             uniform bool u_dark_mode;
+            uniform vec3 u_orientation;
+            uniform vec3 u_motion;
             varying vec2 v_uv;
 
             float noise(vec2 p) {
@@ -128,9 +122,9 @@
                 uv += flow * 0.2;
 
                 vec3 baseColor = vec3(
-                    0.5 + 0.5 * sin(u_time + angle + u_low_freq * 5.0),
-                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + u_mid_freq * 4.0),
-                    0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0 + u_high_freq * 6.0)
+                    0.5 + 0.5 * sin(u_time + angle + u_orientation.x),
+                    0.5 + 0.5 * cos(u_time * 1.5 + angle * 2.0 + u_orientation.y),
+                    0.5 + 0.5 * sin(u_time * 0.8 + angle * 3.0 + u_orientation.z)
                 );
 
                 if (u_dark_mode) {
@@ -143,7 +137,7 @@
                 float radialGradient = smoothstep(0.8, 0.1, dist) * (1.0 + sin(u_time * 2.5 + dist * 20.0) * 0.2);
                 baseColor *= radialGradient;
 
-                float glow = exp(-dist * 8.0) * (u_low_freq + u_mid_freq + u_high_freq);
+                float glow = exp(-dist * 8.0);
                 if (u_dark_mode) {
                     glow *= 0.1;
                 }
@@ -158,6 +152,8 @@
                     touchEffect1 = 0.3 / length(uv - (u_touch1 - 0.5));
                 }
                 baseColor += vec3(touchEffect0 + touchEffect1);
+
+                baseColor += vec3(u_motion.x, u_motion.y, u_motion.z) * 0.1;
 
                 gl_FragColor = vec4(baseColor, 1.0);
             }
@@ -182,122 +178,72 @@
         gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
         const timeLocation = gl.getUniformLocation(program, 'u_time');
-        const lowFreqLocation = gl.getUniformLocation(program, 'u_low_freq');
-        const midFreqLocation = gl.getUniformLocation(program, 'u_mid_freq');
-        const highFreqLocation = gl.getUniformLocation(program, 'u_high_freq');
         const touch0Location = gl.getUniformLocation(program, 'u_touch0');
         const touch1Location = gl.getUniformLocation(program, 'u_touch1');
-        const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
         const darkModeLocation = gl.getUniformLocation(program, 'u_dark_mode');
+        const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
+        const motionLocation = gl.getUniformLocation(program, 'u_motion');
 
-        let audioContext, analyser, source;
-        const audioSelect = document.getElementById('audioSelect');
         const darkModeToggle = document.getElementById('darkModeToggle');
-        const vibrationToggle = document.getElementById('vibrationToggle');
-
-        audioSelect.addEventListener('change', initializeAudio);
         darkModeToggle.addEventListener('click', () => {
             darkMode = !darkMode;
         });
-        vibrationToggle.addEventListener('click', () => {
-            vibrationsEnabled = !vibrationsEnabled;
+
+        let touches = [
+            { x: 0.0, y: 0.0 },
+            { x: 0.0, y: 0.0 }
+        ];
+
+        canvas.addEventListener('touchstart', (event) => {
+            updateTouches(event.touches);
+            event.preventDefault();
         });
 
-        function initializeAudio() {
-            if (audioContext) {
-                audioContext.close();
+        canvas.addEventListener('touchmove', (event) => {
+            updateTouches(event.touches);
+            event.preventDefault();
+        });
+
+        canvas.addEventListener('touchend', (event) => {
+            updateTouches(event.touches);
+            event.preventDefault();
+        });
+
+        function updateTouches(touchList) {
+            for (let i = 0; i < touches.length; i++) {
+                if (i < touchList.length) {
+                    const touch = touchList[i];
+                    touches[i].x = (touch.clientX / window.innerWidth) * 2.0 - 1.0;
+                    touches[i].y = 1.0 - (touch.clientY / window.innerHeight) * 2.0;
+                } else {
+                    touches[i].x = 0;
+                    touches[i].y = 0;
+                }
             }
-
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                analyser.fftSize = 256;
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-
-                let lastVibrateTime = 0;
-
-                function vibrateBasedOnAudio(lowFreq, midFreq, highFreq) {
-                    const intensity = Math.max(lowFreq, midFreq, highFreq);
-                    const currentTime = Date.now();
-                    if (vibrationsEnabled && intensity > 0.7 && currentTime - lastVibrateTime > 500) {
-                        if (navigator.vibrate) {
-                            navigator.vibrate([intensity * 100, 50, intensity * 100]);
-                        }
-                        lastVibrateTime = currentTime;
-                    }
-                }
-
-                let orientation = { alpha: 0, beta: 0, gamma: 0 };
-                window.addEventListener('deviceorientation', (event) => {
-                    orientation.alpha = event.alpha;
-                    orientation.beta = event.beta;
-                    orientation.gamma = event.gamma;
-                });
-
-                let touches = [
-                    { x: 0.0, y: 0.0 },
-                    { x: 0.0, y: 0.0 }
-                ];
-
-                canvas.addEventListener('touchstart', (event) => {
-                    updateTouches(event.touches);
-                    event.preventDefault();
-                });
-
-                canvas.addEventListener('touchmove', (event) => {
-                    updateTouches(event.touches);
-                    event.preventDefault();
-                });
-
-                canvas.addEventListener('touchend', (event) => {
-                    updateTouches(event.touches);
-                    event.preventDefault();
-                });
-
-                function updateTouches(touchList) {
-                    for (let i = 0; i < touches.length; i++) {
-                        if (i < touchList.length) {
-                            const touch = touchList[i];
-                            touches[i].x = (touch.clientX / window.innerWidth) * 2.0 - 1.0;
-                            touches[i].y = 1.0 - (touch.clientY / window.innerHeight) * 2.0;
-                        } else {
-                            touches[i].x = 0;
-                            touches[i].y = 0;
-                        }
-                    }
-                }
-
-                function updateAudioData() {
-                    analyser.getByteFrequencyData(dataArray);
-                    const lowFreq = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
-                    const midFreq = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
-                    const highFreq = dataArray.slice(2 * bufferLength / 3, bufferLength).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
-
-                    gl.uniform1f(lowFreqLocation, lowFreq);
-                    gl.uniform1f(midFreqLocation, midFreq);
-                    gl.uniform1f(highFreqLocation, highFreq);
-                    gl.uniform3f(orientationLocation, orientation.alpha / 360.0, orientation.beta / 90.0, orientation.gamma / 90.0);
-
-                    gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
-                    gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
-
-                    vibrateBasedOnAudio(lowFreq, midFreq, highFreq);
-
-                    requestAnimationFrame(updateAudioData);
-                }
-                updateAudioData();
-            }).catch(err => {
-                console.error('Error accessing microphone: ' + err);
-            });
         }
+
+        window.addEventListener('deviceorientation', (event) => {
+            deviceOrientation.alpha = event.alpha;
+            deviceOrientation.beta = event.beta;
+            deviceOrientation.gamma = event.gamma;
+        });
+
+        window.addEventListener('devicemotion', (event) => {
+            deviceMotion.x = event.accelerationIncludingGravity.x;
+            deviceMotion.y = event.accelerationIncludingGravity.y;
+            deviceMotion.z = event.accelerationIncludingGravity.z;
+        });
 
         // Render loop
         function render(time) {
             time *= 0.001; // Convert time to seconds
             gl.uniform1f(timeLocation, time);
+            gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
+            gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
+            gl.uniform1i(darkModeLocation, darkMode);
+            gl.uniform3f(orientationLocation, deviceOrientation.alpha, deviceOrientation.beta, deviceOrientation.gamma);
+            gl.uniform3f(motionLocation, deviceMotion.x, deviceMotion.y, deviceMotion.z);
+
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
