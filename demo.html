@@ -3,20 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soothing Planisphere Music Visualizer</title>
+    <title>Everyday Symphony Demo</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: black;
-            touch-action: none;
+            background: #000;
             display: flex;
             justify-content: center;
             align-items: center;
+            height: 100vh;
             font-family: Arial, sans-serif;
+            color: white;
         }
         canvas {
-            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .ui {
+            position: absolute;
+            bottom: 20px;
+            text-align: center;
+            z-index: 2;
+        }
+        button {
+            padding: 10px;
+            border: none;
+            background: #444;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background: #666;
         }
         #error-message {
             position: absolute;
@@ -32,37 +54,88 @@
 </head>
 <body>
     <div id="error-message" style="display: none;"></div>
+    <canvas id="visualizer"></canvas>
     <canvas id="glCanvas"></canvas>
-    <script type="module">
-        import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
-        import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js';
-        import { AudioAnalyser } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/audio/AudioAnalyser.js';
+    <div class="ui">
+        <button id="playSound">Play Sound & Visualize</button>
+    </div>
 
-        const canvas = document.getElementById("glCanvas");
-        const gl = canvas.getContext("webgl");
+    <script>
+        const canvas = document.getElementById("visualizer");
+        const ctx = canvas.getContext("2d");
+        const glCanvas = document.getElementById("glCanvas");
+        const gl = glCanvas.getContext("webgl");
+        const ctx2d = glCanvas.getContext("2d");
+        const button = document.getElementById("playSound");
+        let particles = [];
 
         if (!gl) {
             alert("Unable to initialize WebGL. Your browser may not support it.");
             throw new Error("WebGL not supported");
         }
 
-        let scene, camera, renderer, controls;
-        let particles, analyser, planets = [], path = [];
-        let speed = 0.05;
-        const errorMessageDiv = document.getElementById('error-message');
-
-        function showError(message) {
-            errorMessageDiv.style.display = 'block';
-            errorMessageDiv.innerText = message;
-        }
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        glCanvas.width = window.innerWidth;
+        glCanvas.height = window.innerHeight;
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            glCanvas.width = window.innerWidth;
+            glCanvas.height = window.innerHeight;
             gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
+
+        function createParticle(x, y) {
+            return {
+                x: x,
+                y: y,
+                size: Math.random() * 10 + 2,
+                speedX: Math.random() * 2 - 1,
+                speedY: Math.random() * 2 - 1,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                alpha: 1
+            };
+        }
+
+        function handleParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                ctx.fillStyle = `rgba(${particles[i].color},${particles[i].alpha})`;
+                ctx.beginPath();
+                ctx.arc(particles[i].x, particles[i].y, particles[i].size, 0, Math.PI * 2);
+                ctx.fill();
+                particles[i].x += particles[i].speedX;
+                particles[i].y += particles[i].speedY;
+                particles[i].size *= 0.98;
+                particles[i].alpha -= 0.01;
+
+                if (particles[i].size < 0.5 || particles[i].alpha <= 0) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            handleParticles();
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        button.addEventListener("click", () => {
+            const audio = new Audio("https://www.soundjay.com/button/beep-07.wav");
+            audio.play();
+
+            const particleCount = 100;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(createParticle(canvas.width / 2, canvas.height / 2));
+            }
+            setupAudio();
+        });
 
         const vertexShaderSource = `
             attribute vec4 a_position;
@@ -79,37 +152,29 @@
             uniform vec3 u_colorOffset;
             uniform vec2 u_touch;
             
-            // Function to create dynamic gradients with more muted colors for dark environments
-            vec3 mutedGradient(vec2 uv, float timeOffset) {
-                vec3 color = vec3(0.3 + 0.3 * sin(uv.x * 8.0 + u_audioData * 6.0 + timeOffset),
-                                  0.3 + 0.3 * cos(uv.y * 8.0 + u_audioData * 6.0 + timeOffset),
-                                  0.3 + 0.3 * sin((uv.x + uv.y) * 5.0 + u_audioData * 6.0 + timeOffset));
-                return color + u_colorOffset * 0.5;
+            vec3 dreamyGradient(vec2 uv, float timeOffset) {
+                vec3 color = vec3(0.5 + 0.5 * sin(uv.x * 15.0 + u_audioData * 6.0 + timeOffset),
+                                  0.5 + 0.5 * cos(uv.y * 15.0 + u_audioData * 6.0 + timeOffset),
+                                  0.6 + 0.4 * sin((uv.x + uv.y) * 12.0 + u_audioData * 6.0 + timeOffset));
+                return color + u_colorOffset * 0.7;
             }
             
             void main() {
                 vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-                uv -= 0.5; // Center the coordinates
-                uv *= 2.0; // Zoom out slightly
+                uv -= 0.5;
+                uv *= 2.5;
                 
-                // Calculate distance from touch point for ripple and bloom effect
                 float dist = distance(uv, u_touch);
-                float ripple = sin(dist * 12.0 - u_time * 4.0) * 0.1;
-                float bloom = 0.2 / (dist * dist + 0.15); // Add bloom effect to simulate light spreading, but keep it subtle
-                uv += ripple; // Add ripple effect to the UV coordinates
+                float ripple = sin(dist * 20.0 - u_time * 3.0) * 0.2;
+                float bloom = 0.3 / (dist * dist + 0.2);
+                uv += ripple;
                 
-                // Dynamic color gradient with muted transitions for low-light environments
-                vec3 color = mutedGradient(uv, u_time * 0.5) * u_audioData;
+                vec3 color = dreamyGradient(uv, u_time * 0.8) * u_audioData;
+                color += vec3(0.5 + 0.5 * sin(u_time * 0.5 + u_audioData * 2.0), 
+                              0.5 + 0.5 * cos(u_time * 0.6 + u_audioData * 3.0), 
+                              0.6 + 0.4 * sin(u_time * 0.7 + u_audioData * 1.5));
+                color += bloom * 0.6;
                 
-                // Add pulsating glow based on time and audio data, with reduced intensity
-                color += vec3(0.3 + 0.3 * sin(u_time * 0.4 + u_audioData * 2.0), 
-                              0.3 + 0.3 * cos(u_time * 0.5 + u_audioData * 3.0), 
-                              0.3 + 0.3 * sin(u_time * 0.6 + u_audioData * 1.5));
-                
-                // Apply bloom effect for enhanced visuals, but keep it soft
-                color += bloom * 0.5;
-                
-                // Output the color
                 gl_FragColor = vec4(color, 1.0);
             }
         `;
@@ -163,25 +228,26 @@
         const colorOffsetUniformLocation = gl.getUniformLocation(program, "u_colorOffset");
         const touchUniformLocation = gl.getUniformLocation(program, "u_touch");
         
-        gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+        gl.uniform2f(resolutionUniformLocation, glCanvas.width, glCanvas.height);
 
         let time = 0.0;
         let audioData = 0.0;
         let colorOffset = [0.0, 0.0, 0.0];
         let touchPoint = [0.0, 0.0];
-        
+        let analyser;
+
         async function setupAudio() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const listener = new THREE.AudioListener();
-                const audioContext = listener.context;
+                const audioContext = new AudioContext();
                 const source = audioContext.createMediaStreamSource(stream);
-                const audio = new THREE.Audio(listener);
-                audio.setNodeSource(source);
-                analyser = new AudioAnalyser(audio, 128);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
                 getAudioData();
             } catch (err) {
-                showError('Unable to access the microphone. Please allow microphone permissions and reload the page.');
+                document.getElementById("error-message").style.display = "block";
+                document.getElementById("error-message").innerText = 'Unable to access the microphone. Please allow microphone permissions and reload the page.';
                 console.error("Error capturing audio: ", err);
             }
         }
@@ -189,149 +255,54 @@
         function getAudioData() {
             requestAnimationFrame(getAudioData);
             if (analyser) {
-                const data = analyser.getFrequencyData();
-                const average = data.reduce((sum, value) => sum + value, 0) / data.length;
-                audioData = average / 128.0;  // Normalize the value
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+                audioData = average / 128.0;
+                updateSpectrograph(dataArray);
             }
         }
-        
-        setupAudio(); // Automatically start audio input without button press
 
-        function initThreeJSScene() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.set(0, 2, 10);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.outputEncoding = THREE.sRGBEncoding;
-            document.body.appendChild(renderer.domElement);
+        function updateSpectrograph(dataArray) {
+            ctx2d.clearRect(0, 0, glCanvas.width, glCanvas.height);
+            const gradient = ctx2d.createLinearGradient(0, 0, glCanvas.width, glCanvas.height);
+            gradient.addColorStop(0, '#ff6ec7');
+            gradient.addColorStop(0.5, '#8e44ad');
+            gradient.addColorStop(1, '#3498db');
+            ctx2d.fillStyle = gradient;
+            const barWidth = (glCanvas.width / dataArray.length) * 1.5;
+            let barHeight;
+            let x = 0;
             
-            controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.enablePan = false;
-            controls.enableZoom = false;
-            controls.maxPolarAngle = Math.PI / 2;
-
-            initParticles();
-            initPlanets();
-            initPath();
-            initLighting();
-
-            window.addEventListener('resize', onWindowResize, false);
-            window.addEventListener('touchstart', event => {
-                if (event.touches.length === 1) {
-                    event.preventDefault();
-                    controls.enabled = false;
-                }
-            }, false);
-            window.addEventListener('touchend', event => {
-                if (event.touches.length === 0) {
-                    controls.enabled = true;
-                }
-            }, false);
-        }
-
-        function initParticles() {
-            const particleCount = 10000;
-            const particleGeometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(particleCount * 3);
-            for (let i = 0; i < particleCount * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 200;
-            }
-            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            const particleMaterial = new THREE.PointsMaterial({
-                color: 0xffffff,
-                size: 0.1,
-                transparent: true,
-                opacity: 0.5
-            });
-            particles = new THREE.Points(particleGeometry, particleMaterial);
-            scene.add(particles);
-        }
-
-        function initPlanets() {
-            const planetCount = 30;
-            for (let i = 0; i < planetCount; i++) {
-                const geometry = new THREE.SphereGeometry(Math.random() * 2 + 0.5, 32, 32);
-                const material = new THREE.MeshStandardMaterial({
-                    color: new THREE.Color(`hsl(${Math.random() * 360}, 100%, 50%)`),
-                    roughness: 0.5,
-                    metalness: 0.3
-                });
-                const planet = new THREE.Mesh(geometry, material);
-                planet.position.set(
-                    (Math.random() - 0.5) * 100,
-                    (Math.random() - 0.5) * 20,
-                    -i * 50 - 50
-                );
-                scene.add(planet);
-                planets.push(planet);
+            for (let i = 0; i < dataArray.length; i++) {
+                barHeight = dataArray[i] / 2;
+                ctx2d.fillRect(x, glCanvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
             }
         }
 
-        function initPath() {
-            const pathLength = 200;
-            for (let i = 0; i < pathLength; i++) {
-                const pathSegment = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.5, 0.5, 50, 32),
-                    new THREE.MeshBasicMaterial({ color: 0x333333, opacity: 0.3, transparent: true })
-                );
-                pathSegment.position.set(0, -2, -i * 50);
-                pathSegment.rotation.x = Math.PI / 2;
-                scene.add(pathSegment);
-                path.push(pathSegment);
-            }
+        function render() {
+            time += 0.02;
+            gl.uniform1f(timeUniformLocation, time);
+            gl.uniform1f(audioDataUniformLocation, audioData);
+            gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
+            gl.uniform2fv(touchUniformLocation, touchPoint);
+            
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            requestAnimationFrame(render);
         }
 
-        function initLighting() {
-            const ambientLight = new THREE.AmbientLight(0x404040, 1);
-            scene.add(ambientLight);
-            const pointLight = new THREE.PointLight(0xffffff, 0.8, 100);
-            pointLight.position.set(10, 10, 10);
-            scene.add(pointLight);
-        }
+        requestAnimationFrame(render);
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (analyser) {
-                const data = analyser.getFrequencyData();
-                const bass = data.slice(0, 8).reduce((a, b) => a + b) / 8;
-                const mid = data.slice(8, 16).reduce((a, b) => a + b) / 8;
-
-                speed = 0.03 + bass / 512;
-                const bassScale = bass / 256;
-                particles.scale.set(bassScale + 0.5, bassScale + 0.5, bassScale + 0.5);
-                particles.material.size = bassScale * 0.3 + 0.1;
-
-                planets.forEach((planet, index) => {
-                    planet.rotation.y += 0.003 + mid / 1024;
-                    planet.rotation.x += 0.001 + (index % 2 === 0 ? mid / 2048 : 0);
-                });
-
-                camera.position.z -= speed;
-                if (camera.position.z < -1500) {
-                    camera.position.z = 10;
-                }
-            }
-
-            particles.rotation.y += 0.001;
-            particles.rotation.x += 0.0003;
-
-            controls.update();
-            renderer.render(scene, camera);
-        }
-
-        initThreeJSScene();
-        animate();
+        // Handle touch input
+        glCanvas.addEventListener('touchmove', (event) => {
+            const touch = event.touches[0];
+            const x = (touch.clientX / glCanvas.width) * 2.0 - 1.0;
+            const y = -(touch.clientY / glCanvas.height) * 2.0 + 1.0;
+            touchPoint = [x, y];
+        });
     </script>
 </body>
 </html>
