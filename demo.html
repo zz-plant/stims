@@ -80,7 +80,7 @@
 
         function handleParticles() {
             for (let i = 0; i < particles.length; i++) {
-                ctx.fillStyle = `rgba(${particles[i].color},${particles[i].alpha})`;
+                ctx.fillStyle = `hsla(${particles[i].color}, ${particles[i].alpha})`;
                 ctx.beginPath();
                 ctx.arc(particles[i].x, particles[i].y, particles[i].size, 0, Math.PI * 2);
                 ctx.fill();
@@ -113,8 +113,6 @@
                 source.connect(analyser);
                 getAudioData();
             } catch (err) {
-                document.getElementById("error-message").style.display = "block";
-                document.getElementById("error-message").innerText = 'Unable to access the microphone. Please allow microphone permissions and reload the page.';
                 console.error("Error capturing audio: ", err);
             }
         }
