@@ -62,7 +62,6 @@
         const togglePauseButton = document.getElementById('toggle-pause');
         const sensitivityInput = document.getElementById('sensitivity');
         const colorModeSelect = document.getElementById('color-mode');
-colorModeSelect.value = 'default';
 
         if (!gl) {
             alert('Unable to initialize WebGL. Your browser may not support it.');
@@ -97,13 +96,15 @@ colorModeSelect.value = 'default';
                                 1.0 - (0.5 + 0.5 * cos(uv.y * 10.0 + u_audioData * 4.0 + time)),
                                 1.0 - (0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + u_audioData * 4.0 + time)));
                 } else if (u_colorMode == 2) {
-                    return vec3(0.5 + 0.8 * cos(uv.x * 20.0 + u_audioData * 8.0 + time),
-                                0.3 + 0.7 * sin(uv.y * 20.0 + u_audioData * 8.0 + time),
-                                0.4 + 0.6 * cos((uv.x + uv.y) * 15.0 + u_audioData * 8.0 + time));
+                    return vec3(0.8 + 0.2 * cos(uv.x * 20.0 + u_audioData * 8.0 + time),
+                                0.6 + 0.4 * sin(uv.y * 20.0 + u_audioData * 8.0 + time),
+                                0.7 + 0.3 * cos((uv.x + uv.y) * 15.0 + u_audioData * 8.0 + time));
                 } else {
                     return vec3(0.5 + 0.5 * sin(uv.x * 10.0 + u_audioData * 4.0 + time),
                                 0.5 + 0.5 * cos(uv.y * 10.0 + u_audioData * 4.0 + time),
                                 0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + u_audioData * 4.0 + time));
+                }
+            }
                 }
             }
                 }
