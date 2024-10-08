@@ -91,18 +91,44 @@
             uniform int u_colorMode;
 
             vec3 getColor(float time, vec2 uv) {
+                uv -= 0.5;
+                uv *= 2.0;
+                float angle = atan(uv.y, uv.x);
+                float radius = length(uv);
+
+                vec3 color;
                 if (u_colorMode == 1) {
-                    return vec3(1.0 - (0.5 + 0.5 * sin(uv.x * 10.0 + u_audioData * 4.0 + time)),
-                                1.0 - (0.5 + 0.5 * cos(uv.y * 10.0 + u_audioData * 4.0 + time)),
-                                1.0 - (0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + u_audioData * 4.0 + time)));
+                    color = vec3(
+                        1.0 - (0.5 + 0.5 * sin(radius * 10.0 + u_audioData * 4.0 + time + angle)),
+                        1.0 - (0.5 + 0.5 * cos(radius * 10.0 + u_audioData * 4.0 + time - angle)),
+                        1.0 - (0.5 + 0.5 * sin(radius * 5.0 + u_audioData * 4.0 + time))
+                    );
                 } else if (u_colorMode == 2) {
-                    return vec3(0.8 + 0.2 * cos(uv.x * 20.0 + u_audioData * 8.0 + time),
-                                0.6 + 0.4 * sin(uv.y * 20.0 + u_audioData * 8.0 + time),
-                                0.7 + 0.3 * cos((uv.x + uv.y) * 15.0 + u_audioData * 8.0 + time));
+                    color = vec3(
+                        0.8 + 0.2 * cos(radius * 20.0 + u_audioData * 8.0 + time + angle),
+                        0.6 + 0.4 * sin(radius * 20.0 + u_audioData * 8.0 + time - angle),
+                        0.7 + 0.3 * cos(radius * 15.0 + u_audioData * 8.0 + time)
+                    );
                 } else {
-                    return vec3(0.5 + 0.5 * sin(uv.x * 10.0 + u_audioData * 4.0 + time),
-                                0.5 + 0.5 * cos(uv.y * 10.0 + u_audioData * 4.0 + time),
-                                0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + u_audioData * 4.0 + time));
+                    color = vec3(
+                        0.5 + 0.5 * sin(radius * 10.0 + u_audioData * 4.0 + time + angle),
+                        0.5 + 0.5 * cos(radius * 10.0 + u_audioData * 4.0 + time - angle),
+                        0.5 + 0.5 * sin(radius * 5.0 + u_audioData * 4.0 + time)
+                    );
+                }
+
+                return color;
+            }
+                } else if (u_colorMode == 2) {
+                    return vec3(0.8 + 0.2 * cos(radius * 20.0 + u_audioData * 8.0 + time + angle),
+                                0.6 + 0.4 * sin(radius * 20.0 + u_audioData * 8.0 + time - angle),
+                                0.7 + 0.3 * cos((radius * 15.0) + u_audioData * 8.0 + time));
+                } else {
+                    return vec3(0.5 + 0.5 * sin(radius * 10.0 + u_audioData * 4.0 + time + angle),
+                                0.5 + 0.5 * cos(radius * 10.0 + u_audioData * 4.0 + time - angle),
+                                0.5 + 0.5 * sin((radius * 5.0) + u_audioData * 4.0 + time));
+                }
+            }
                 }
             }
                 }
