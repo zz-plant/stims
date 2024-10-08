@@ -125,12 +125,36 @@
                 camera.lookAt(torusKnot.position);
 
                 // Apply rotations to create a dynamic movement
-                torusKnot.rotation.x += 0.01;
-                torusKnot.rotation.y += 0.01;
+                torusKnot.rotation.x += 0.01 + (upperMax / 5000);
+                torusKnot.rotation.y += 0.01 + (lowerMax / 5000);
 
                 // Rotate particles for more visual interest
-                particles.rotation.y += 0.001;
-                particles.rotation.x += 0.0005;
+                particles.rotation.y += 0.001 + (upperMax / 20000);
+                particles.rotation.x += 0.0005 + (lowerMax / 20000);
+
+                // Add pulse effect to lighting for more "juice"
+                pointLight1.intensity = 1 + (lowerMax / 255);
+                pointLight2.intensity = 1 + (upperMax / 255);
+
+                // Add subtle camera shake for satisfaction
+                camera.position.x += (Math.random() - 0.5) * 0.1;
+                camera.position.y += (Math.random() - 0.5) * 0.1;
+
+                // Add particle burst when music intensity spikes
+                if (upperMax > 200) {
+                    const burstGeometry = new THREE.SphereGeometry(2, 8, 8);
+                    const burstMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                    const burst = new THREE.Mesh(burstGeometry, burstMaterial);
+                    burst.position.set(
+                        (Math.random() - 0.5) * 50,
+                        (Math.random() - 0.5) * 50,
+                        camera.position.z - 20
+                    );
+                    scene.add(burst);
+                    setTimeout(() => {
+                        scene.remove(burst);
+                    }, 500);
+                }
 
                 // Move the camera forward to simulate movement
                 camera.position.z -= speed;
@@ -152,6 +176,13 @@
                         ring.position.y = Math.random() * 100 - 50;
                     }
                 });
+
+                // Haptic feedback when torus collides with viewer/screen edges
+                if (Math.abs(camera.position.x) > 15 || Math.abs(camera.position.y) > 10) {
+                    if ("vibrate" in navigator) {
+                        navigator.vibrate(100);
+                    }
+                }
 
                 renderer.render(scene, camera);
             }
