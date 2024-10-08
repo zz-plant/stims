@@ -173,10 +173,35 @@
                 }
 
                 // Rotate and move rings to keep the scene dynamic
-                rings.forEach(ring => {
+                rings.forEach((ring, index) => {
                     ring.rotation.x += 0.01;
                     ring.rotation.y += 0.01;
                     ring.position.z += 0.5;
+
+                    // Check if the camera is "catching" a ring
+                    const ringDistance = camera.position.distanceTo(ring.position);
+                    if (ringDistance < 10) { // Approximate catching distance
+                        // Add visual effect when catching a ring
+                        const ringCatchGeometry = new THREE.SphereGeometry(5, 32, 32);
+                        const ringCatchMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, opacity: 0.8, transparent: true });
+                        const ringCatchEffect = new THREE.Mesh(ringCatchGeometry, ringCatchMaterial);
+                        ringCatchEffect.position.copy(ring.position);
+                        scene.add(ringCatchEffect);
+
+                        // Add burst effect
+                        const burstGeometry = new THREE.SphereGeometry(3, 16, 16);
+                        const burstMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+                        const burst = new THREE.Mesh(burstGeometry, burstMaterial);
+                        burst.position.copy(ring.position);
+                        scene.add(burst);
+
+                        // Remove ring and add effects
+                        setTimeout(() => {
+                            scene.remove(ringCatchEffect);
+                            scene.remove(burst);
+                            ring.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, -200);
+                        }, 300);
+                    }
 
                     if (ring.position.z > 50) {
                         ring.position.z = -200;
