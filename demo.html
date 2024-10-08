@@ -21,25 +21,6 @@
             top: 0;
             left: 0;
         }
-        .ui {
-            position: absolute;
-            bottom: 20px;
-            text-align: center;
-            z-index: 2;
-        }
-        button {
-            padding: 10px;
-            border: none;
-            background: #444;
-            color: white;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 5px;
-            transition: background 0.3s ease;
-        }
-        button:hover {
-            background: #666;
-        }
         #error-message {
             position: absolute;
             top: 20px;
@@ -56,9 +37,6 @@
     <div id="error-message" style="display: none;"></div>
     <canvas id="visualizer"></canvas>
     <canvas id="glCanvas"></canvas>
-    <div class="ui">
-        <button id="playSound">Play Sound & Visualize</button>
-    </div>
 
     <script>
         const canvas = document.getElementById("visualizer");
@@ -66,7 +44,6 @@
         const glCanvas = document.getElementById("glCanvas");
         const gl = glCanvas.getContext("webgl");
         const ctx2d = glCanvas.getContext("2d");
-        const button = document.getElementById("playSound");
         let particles = [];
 
         if (!gl) {
@@ -126,16 +103,23 @@
         }
         animateParticles();
 
-        button.addEventListener("click", () => {
-            const audio = new Audio("https://www.soundjay.com/button/beep-07.wav");
-            audio.play();
-
-            const particleCount = 100;
-            for (let i = 0; i < particleCount; i++) {
-                particles.push(createParticle(canvas.width / 2, canvas.height / 2));
+        async function setupAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                getAudioData();
+            } catch (err) {
+                document.getElementById("error-message").style.display = "block";
+                document.getElementById("error-message").innerText = 'Unable to access the microphone. Please allow microphone permissions and reload the page.';
+                console.error("Error capturing audio: ", err);
             }
-            setupAudio();
-        });
+        }
+
+        setupAudio();
 
         const vertexShaderSource = `
             attribute vec4 a_position;
@@ -236,22 +220,6 @@
         let touchPoint = [0.0, 0.0];
         let analyser;
 
-        async function setupAudio() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new AudioContext();
-                const source = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                source.connect(analyser);
-                getAudioData();
-            } catch (err) {
-                document.getElementById("error-message").style.display = "block";
-                document.getElementById("error-message").innerText = 'Unable to access the microphone. Please allow microphone permissions and reload the page.';
-                console.error("Error capturing audio: ", err);
-            }
-        }
-
         function getAudioData() {
             requestAnimationFrame(getAudioData);
             if (analyser) {
@@ -303,6 +271,18 @@
             const y = -(touch.clientY / glCanvas.height) * 2.0 + 1.0;
             touchPoint = [x, y];
         });
+
+        // Handle device orientation for additional reactivity
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', (event) => {
+                const { alpha, beta, gamma } = event;
+                colorOffset = [
+                    Math.sin(alpha * Math.PI / 180) * 0.5,
+                    Math.sin(beta * Math.PI / 180) * 0.5,
+                    Math.sin(gamma * Math.PI / 180) * 0.5
+                ];
+            });
+        }
     </script>
 </body>
 </html>
