@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL Sound Visualizer - Dreamy Windows 95 Aesthetic</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f1faee; /* Soft pastel background */
+        }
+        .title {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+            color: #1d3557;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">Dreamy Windows 95 Sound Visualizer</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+    <script src="https://unpkg.com/three/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Web Audio API setup
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+            const source = audioCtx.createMediaStreamSource(stream);
+            source.connect(analyser);
+            visualize();
+        }).catch(function(err) {
+            console.error('Error accessing microphone: ' + err);
+        });
+
+        // WebGL / Three.js setup
+        let scene = new THREE.Scene();
+        let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.z = 300;
+
+        let renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        let controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Create a group of particles
+        const particles = new THREE.Group();
+        const particleCount = 512;
+        const particlesArray = [];
+
+        for (let i = 0; i < particleCount; i++) {
+            const geometry = new THREE.SphereGeometry(2, 16, 16);
+            const material = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(Math.random(), 0.5, 0.8),
+                transparent: true,
+                opacity: 0.7,
+            });
+            const particle = new THREE.Mesh(geometry, material);
+            particle.position.x = (Math.random() - 0.5) * 400;
+            particle.position.y = (Math.random() - 0.5) * 400;
+            particle.position.z = (Math.random() - 0.5) * 400;
+            particles.add(particle);
+            particlesArray.push(particle);
+        }
+
+        scene.add(particles);
+
+        // Resize window handling
+        window.addEventListener('resize', function() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // Visualizer Function
+        function visualize() {
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function animate() {
+                analyser.getByteFrequencyData(dataArray);
+
+                // Animate particles based on frequency data
+                particlesArray.forEach((particle, i) => {
+                    const scale = (dataArray[i] / 256) + 0.1;
+                    particle.scale.set(scale, scale, scale);
+                    particle.material.opacity = scale * 0.7;
+                });
+
+                // Rotate the particle group for the dreamy effect
+                particles.rotation.x += 0.001;
+                particles.rotation.y += 0.002;
+
+                // Render the scene
+                controls.update();
+                renderer.render(scene, camera);
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>
