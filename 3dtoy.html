@@ -159,6 +159,14 @@
                 // Move the camera forward to simulate movement
                 camera.position.z -= speed;
 
+                // Check for collision with the torus and trigger haptic feedback
+                const distance = camera.position.distanceTo(torusKnot.position);
+                if (distance < 15) { // Approximate collision distance
+                    if (window.navigator.vibrate) {
+                        window.navigator.vibrate(100); // Vibrate for 100ms on collision
+                    }
+                }
+
                 // Reset position to keep the user feeling like they're in a never-ending space
                 if (camera.position.z < -100) {
                     camera.position.z = 60;
@@ -176,13 +184,6 @@
                         ring.position.y = Math.random() * 100 - 50;
                     }
                 });
-
-                // Haptic feedback when torus collides with viewer/screen edges
-                if (Math.abs(camera.position.x) > 15 || Math.abs(camera.position.y) > 10) {
-                    if ("vibrate" in navigator) {
-                        navigator.vibrate(100);
-                    }
-                }
 
                 renderer.render(scene, camera);
             }
