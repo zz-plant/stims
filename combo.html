@@ -3,312 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Immersive 3D Music Visualizer with Transitions</title>
+    <title>AI-Powered Immersive Music Visualizer</title>
     <style>
-        body, html {
+        html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background-color: black;
-            font-family: Arial, sans-serif;
+            background: #000;
+            font-family: 'Courier New', Courier, monospace;
         }
         canvas {
             display: block;
         }
-        #controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-        }
-        #controls label {
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
-        #controls input[type=range], #controls select {
-            width: 150px;
-            margin-bottom: 10px;
-        }
     </style>
 </head>
 <body>
-    <canvas id="glCanvas"></canvas>
-    <div id="controls">
-        <button id="startAudio">Start Audio Interaction</button>
-        <label>
-            Sensitivity: 
-            <input type="range" id="sensitivity" min="0.5" max="2.0" step="0.1" value="1.0">
-        </label>
-        <label>
-            Visual Mode: 
-            <select id="visualMode">
-                <option value="waves">Waves</option>
-                <option value="particles">Particles</option>
-                <option value="knot">Torus Knot</option>
-            </select>
-        </label>
-    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tensorflow/tf.min.js"></script>
     <script>
-        // Get canvas and WebGL context
-        const canvas = document.getElementById("glCanvas");
-        const gl = canvas.getContext("webgl");
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x0a0a0a, 1);
+        document.body.appendChild(renderer.domElement);
 
-        // Resize canvas
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        // Camera initial position
+        camera.position.set(0, 10, 30);
+        camera.lookAt(0, 0, 0);
 
-        // Shaders for different modes
-        const shaders = {
-            waves: {
-                fragment: `
-                    precision mediump float;
-                    uniform float u_time;
-                    uniform float u_audioData;
-                    uniform vec2 u_resolution;
-                    varying vec2 v_uv;
-
-                    void main() {
-                        vec2 uv = v_uv - 0.5;
-                        uv *= 2.0;
-
-                        float dist = length(uv);
-                        float angle = atan(uv.y, uv.x);
-
-                        float wave = sin(dist * 10.0 - u_time * 2.0 + u_audioData * 5.0);
-                        vec3 color = vec3(0.5 + 0.5 * sin(angle + wave), 0.5 + 0.5 * cos(angle + wave), 1.0 - dist);
-                        color *= 1.0 + u_audioData * 2.0;
-
-                        gl_FragColor = vec4(color, 1.0);
-                    }
-                `,
-            },
-            particles: {
-                fragment: `
-                    precision mediump float;
-                    uniform float u_time;
-                    uniform float u_audioData;
-                    uniform vec2 u_resolution;
-                    varying vec2 v_uv;
-
-                    void main() {
-                        vec2 uv = v_uv - 0.5;
-                        uv *= 2.0;
-
-                        float dist = length(uv);
-                        float particle = step(0.95, fract(sin(dist * 20.0 + u_time * 4.0) * 43758.5453));
-
-                        vec3 color = vec3(particle * u_audioData);
-                        gl_FragColor = vec4(color, 1.0);
-                    }
-                `,
-            },
-            knot: {
-                fragment: `
-                    precision mediump float;
-                    uniform float u_time;
-                    uniform float u_audioData;
-                    uniform vec2 u_resolution;
-                    varying vec2 v_uv;
-
-                    void main() {
-                        vec2 uv = v_uv - 0.5;
-                        uv *= 2.0;
-
-                        float dist = length(uv);
-                        float ripple = sin(dist * 15.0 - u_time * 3.0) * 0.5;
-
-                        vec3 color = vec3(0.5 + 0.5 * sin(u_time * ripple), 0.5 + 0.5 * cos(u_time + dist), 1.0);
-                        gl_FragColor = vec4(color, 1.0);
-                    }
-                `,
-            },
-        };
-
-        let currentProgram, nextProgram;
-        let currentTime = 0.0;
-        let transitionProgress = 0.0;
-        const transitionDuration = 1.5; // 1.5 seconds transition
-        let isTransitioning = false;
-
-        // Create and compile shader
-        function createShader(gl, type, source) {
-            const shader = gl.createShader(type);
-            gl.shaderSource(shader, source);
-            gl.compileShader(shader);
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error(gl.getShaderInfoLog(shader));
-                gl.deleteShader(shader);
-                return null;
-            }
-            return shader;
-        }
-
-        // Set up geometry
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            -1, -1,
-             1, -1,
-            -1,  1,
-            -1,  1,
-             1, -1,
-             1,  1,
-        ]), gl.STATIC_DRAW);
-
-        let analyser;
-        let time = 0.0;
-        let audioData = 0.0;
-
-        // Create WebGL program
-        function createProgram(fragmentShaderSource) {
-            const vertexShaderSource = `
-                attribute vec2 a_position;
-                varying vec2 v_uv;
+        // Adding procedural geometry - dynamic fractal elements
+        const fractalMaterial = new THREE.ShaderMaterial({
+            vertexShader: `
+                varying vec3 vPos;
                 void main() {
-                    v_uv = a_position * 0.5 + 0.5;
-                    gl_Position = vec4(a_position, 0.0, 1.0);
+                    vPos = position;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
-            `;
-            const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-
-            const program = gl.createProgram();
-            gl.attachShader(program, vertexShader);
-            gl.attachShader(program, fragmentShader);
-            gl.linkProgram(program);
-
-            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-                console.error(gl.getProgramInfoLog(program));
-                gl.deleteProgram(program);
-                throw new Error("Program failed to link");
-            }
-
-            return program;
-        }
-
-        function useProgram(program) {
-            currentProgram = program;
-            gl.useProgram(currentProgram);
-
-            const positionLocation = gl.getAttribLocation(currentProgram, 'a_position');
-            gl.enableVertexAttribArray(positionLocation);
-            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-            const resolutionLocation = gl.getUniformLocation(currentProgram, 'u_resolution');
-            gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-        }
-
-        function switchMode(mode) {
-            const fragmentShaderSource = shaders[mode].fragment;
-            nextProgram = createProgram(fragmentShaderSource);
-            isTransitioning = true;
-            transitionProgress = 0.0;
-        }
-
-        // Audio setup
-        async function setupAudio() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new AudioContext();
-                const source = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                source.connect(analyser);
-                getAudioData();
-            } catch (err) {
-                alert('Unable to access microphone. Please allow microphone permissions.');
-                console.error("Error capturing audio: ", err);
-            }
-        }
-
-        function getAudioData() {
-            requestAnimationFrame(getAudioData);
-            if (analyser) {
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(dataArray);
-                const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-                audioData = average / 128.0; // Normalize
-            }
-        }
-
-        // Transition handling
-        function handleTransition() {
-            if (isTransitioning) {
-                transitionProgress += 1.0 / (transitionDuration * 60); // Assume 60 FPS
-
-                if (transitionProgress >= 1.0) {
-                    transitionProgress = 1.0;
-                    isTransitioning = false;
-                    useProgram(nextProgram);
+            `,
+            fragmentShader: `
+                varying vec3 vPos;
+                uniform float u_time;
+                uniform vec3 u_color;
+                void main() {
+                    float intensity = length(vPos) * 0.1;
+                    float glow = 0.5 + 0.5 * sin(u_time + length(vPos));
+                    vec3 color = u_color * glow * intensity;
+                    gl_FragColor = vec4(color, 1.0);
                 }
-
-                const blendFactor = transitionProgress;
-                const timeLocation1 = gl.getUniformLocation(currentProgram, 'u_time');
-                const audioDataLocation1 = gl.getUniformLocation(currentProgram, 'u_audioData');
-                gl.uniform1f(timeLocation1, time);
-                gl.uniform1f(audioDataLocation1, audioData);
-
-                gl.clear(gl.COLOR_BUFFER_BIT);
-                gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-                // Set next program for blending
-                gl.useProgram(nextProgram);
-                const timeLocation2 = gl.getUniformLocation(nextProgram, 'u_time');
-                const audioDataLocation2 = gl.getUniformLocation(nextProgram, 'u_audioData');
-                gl.uniform1f(timeLocation2, time);
-                gl.uniform1f(audioDataLocation2, audioData);
-
-                gl.enable(gl.BLEND);
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-                gl.drawArrays(gl.TRIANGLES, 0, 6);
-                gl.disable(gl.BLEND);
-
-                // Reset program to current one
-                gl.useProgram(currentProgram);
-            }
-        }
-
-        // Render loop
-        function render() {
-            time += 0.01;
-
-            const timeLocation = gl.getUniformLocation(currentProgram, 'u_time');
-            const audioDataLocation = gl.getUniformLocation(currentProgram, 'u_audioData');
-            gl.uniform1f(timeLocation, time);
-            gl.uniform1f(audioDataLocation, audioData);
-
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-            handleTransition();
-
-            requestAnimationFrame(render);
-        }
-
-        // Event listeners
-        document.getElementById("startAudio").addEventListener("click", setupAudio);
-
-        document.getElementById("visualMode").addEventListener("change", (event) => {
-            const mode = event.target.value;
-            switchMode(mode);
+            `,
+            uniforms: {
+                u_time: { value: 0.0 },
+                u_color: { value: new THREE.Color(0x00ffcc) },
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending
         });
 
-        // Initial setup
-        switchMode("waves");
-        requestAnimationFrame(render);
+        const fractalGeometry = new THREE.IcosahedronGeometry(10, 5);
+        const fractalMesh = new THREE.Mesh(fractalGeometry, fractalMaterial);
+        scene.add(fractalMesh);
+
+        // Adding lighting for a modern neon look
+        const light = new THREE.PointLight(0xff77cc, 5, 200);
+        light.position.set(20, 30, 20);
+        scene.add(light);
+
+        const directionalLight = new THREE.DirectionalLight(0x00ffcc, 1);
+        directionalLight.position.set(-10, 50, -10);
+        scene.add(directionalLight);
+
+        // Environment particles - adding depth to the scene
+        const particleCount = 8000;
+        const particlesGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3 + 0] = (Math.random() - 0.5) * 200;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 200;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 200;
+        }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5, opacity: 0.8, transparent: true });
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particles);
+
+        // Audio setup with modern Web Audio API
+        let analyser;
+        let dataArray;
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audioSource = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 512;
+            audioSource.connect(analyser);
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        }).catch(function (err) {
+            console.error('Error accessing microphone: ', err);
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            if (analyser && dataArray) {
+                analyser.getByteFrequencyData(dataArray);
+                let avgFreq = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+                fractalMaterial.uniforms.u_time.value += 0.05;
+                fractalMaterial.uniforms.u_color.value.setHSL(avgFreq / 255, 0.8, 0.5);
+            }
+
+            // Rotate fractal for added dynamic effect
+            fractalMesh.rotation.x += 0.002;
+            fractalMesh.rotation.y += 0.003;
+
+            // Particles slight movement for atmospheric effect
+            particles.rotation.y += 0.0005;
+            particles.rotation.x += 0.0002;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
