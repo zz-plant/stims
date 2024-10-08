@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immersive 3D Music Visualizer</title>
+    <style>
+        body, html {
+            margin: 0;
+            overflow: hidden;
+            height: 100%;
+            background-color: black;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+        }
+        #controls label {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        #controls input[type=range], #controls select {
+            width: 150px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="glCanvas"></canvas>
+    <div id="controls">
+        <button id="startAudio">Start Audio Interaction</button>
+        <label>
+            Sensitivity: 
+            <input type="range" id="sensitivity" min="0.5" max="2.0" step="0.1" value="1.0">
+        </label>
+        <label>
+            Visual Mode: 
+            <select id="visualMode">
+                <option value="waves">Waves</option>
+                <option value="particles">Particles</option>
+                <option value="knot">Torus Knot</option>
+            </select>
+        </label>
+    </div>
+    <script>
+        // Get canvas and WebGL context
+        const canvas = document.getElementById("glCanvas");
+        const gl = canvas.getContext("webgl");
+
+        // Resize canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Shader sources
+        const vertexShaderSource = `
+            attribute vec2 a_position;
+            varying vec2 v_uv;
+            void main() {
+                v_uv = a_position * 0.5 + 0.5;
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
+
+        const fragmentShaderSource = `
+            precision mediump float;
+            uniform float u_time;
+            uniform float u_audioData;
+            uniform vec2 u_resolution;
+            varying vec2 v_uv;
+
+            void main() {
+                vec2 uv = v_uv - 0.5;
+                uv *= 2.0; // Scale up
+
+                float dist = length(uv);
+                float angle = atan(uv.y, uv.x);
+
+                // Create audio-reactive ripples
+                float wave = sin(dist * 10.0 - u_time * 2.0 + u_audioData * 5.0);
+                wave += 0.5 * cos(dist * 20.0 + u_time * 1.5);
+                
+                // Generate base color
+                vec3 color = vec3(0.5 + 0.5 * sin(angle + wave), 0.5 + 0.5 * cos(angle + wave), 1.0 - dist);
+                color *= 1.0 + u_audioData * 2.0;
+
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        // Create and compile shader
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+        // Link shaders to create program
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error(gl.getProgramInfoLog(program));
+            gl.deleteProgram(program);
+            throw new Error("Program failed to link");
+        }
+
+        gl.useProgram(program);
+
+        // Set up geometry
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1, -1,
+             1, -1,
+            -1,  1,
+            -1,  1,
+             1, -1,
+             1,  1,
+        ]), gl.STATIC_DRAW);
+
+        const positionLocation = gl.getAttribLocation(program, 'a_position');
+        gl.enableVertexAttribArray(positionLocation);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+        const timeLocation = gl.getUniformLocation(program, 'u_time');
+        const audioDataLocation = gl.getUniformLocation(program, 'u_audioData');
+        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+
+        gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+
+        let time = 0.0;
+        let audioData = 0.0;
+        let analyser;
+
+        async function setupAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                getAudioData();
+            } catch (err) {
+                alert('Unable to access microphone. Please allow microphone permissions.');
+                console.error("Error capturing audio: ", err);
+            }
+        }
+
+        function getAudioData() {
+            requestAnimationFrame(getAudioData);
+            if (analyser) {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+                audioData = average / 128.0; // Normalize
+            }
+        }
+
+        // Render loop
+        function render() {
+            time += 0.01;
+            gl.uniform1f(timeLocation, time);
+            gl.uniform1f(audioDataLocation, audioData);
+
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+
+        // Event listeners
+        document.getElementById("startAudio").addEventListener("click", setupAudio);
+
+        // Sensitivity adjustment (for future use)
+        document.getElementById("sensitivity").addEventListener("input", (event) => {
+            // You can connect this to the audio sensitivity in the future
+            const sensitivity = event.target.value;
+        });
+
+        // Visual mode switcher
+        document.getElementById("visualMode").addEventListener("change", (event) => {
+            const mode = event.target.value;
+            // Here, you can change the fragment shader or logic for different visual modes
+            if (mode === 'particles') {
+                console.log('Switching to particles mode');
+            } else if (mode === 'waves') {
+                console.log('Switching to waves mode');
+            } else if (mode === 'knot') {
+                console.log('Switching to torus knot mode');
+            }
+        });
+    </script>
+</body>
+</html>
