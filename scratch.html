@@ -3,27 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Visuals with Audio Responsiveness</title>
+    <title>Sensory Integrated Dreamy Visuals</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background-color: black;
             touch-action: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-            color: white;
         }
         canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
             display: block;
         }
-        #controls, .ui {
+        #controls {
             position: absolute;
             top: 10px;
             left: 10px;
@@ -33,19 +24,10 @@
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
         }
-        #controls input[type=range], button {
+        #controls input[type=range] {
             width: 150px;
             margin-bottom: 10px;
-            padding: 10px;
-            border: none;
-            background: #444;
-            color: white;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-        button:hover {
-            background: #666;
+            transition: all 0.2s;
         }
         #controls label {
             color: #ffffff;
@@ -57,232 +39,182 @@
     </style>
 </head>
 <body>
-    <canvas id="glCanvas"></canvas>
-    <canvas id="visualizer"></canvas>
-    <div id="controls">
-        <button id="startAudio">Start Audio Interaction</button>
-        <button id="randomizeColors">Randomize Colors</button>
-    </div>
+<canvas id="glCanvas"></canvas>
+<div id="controls">
+    <button id="startAudio">Start Audio Interaction</button>
+</div>
+<script>
+    const canvas = document.getElementById("glCanvas");
+    const gl = canvas.getContext("webgl");
 
-    <script>
-        // Particle Effect Canvas Setup
-        const visualizerCanvas = document.getElementById("visualizer");
-        const ctx = visualizerCanvas.getContext("2d");
-        let particles = [];
+    if (!gl) {
+        alert("Unable to initialize WebGL. Your browser may not support it.");
+        throw new Error("WebGL not supported");
+    }
 
-        visualizerCanvas.width = window.innerWidth;
-        visualizerCanvas.height = window.innerHeight;
-
-        function createParticle(x, y) {
-            return {
-                x: x,
-                y: y,
-                size: Math.random() * 8 + 1,
-                speedX: Math.random() * 3 - 1.5,
-                speedY: Math.random() * 3 - 1.5,
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`
-            };
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    const vertexShaderSource = `
+        attribute vec4 a_position;
+        void main() {
+            gl_Position = a_position;
         }
+    `;
+    
+    const fragmentShaderSource = `
+        precision highp float;
+        uniform float u_time;
+        uniform vec2 u_resolution;
+        uniform float u_lowFreq;
+        uniform float u_midFreq;
+        uniform float u_highFreq;
+        uniform vec2 u_mousePos;
+        
+        // Function to create smooth color gradients with layers
+        vec3 smoothLayer(vec2 uv, float timeOffset, float frequencyFactor) {
+            vec3 color = vec3(0.5 + 0.5 * sin(uv.x * 3.0 + frequencyFactor * 4.0 + timeOffset),
+                              0.5 + 0.5 * cos(uv.y * 3.0 + frequencyFactor * 4.0 + timeOffset),
+                              0.5 + 0.5 * sin((uv.x + uv.y) * 2.0 + frequencyFactor * 2.0 + timeOffset));
+            return color;
+        }
+        
+        void main() {
+            vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+            uv -= 0.5;
+            uv *= 2.0; // Zoom out slightly
+            
+            // Layered visual with different frequencies affecting different layers
+            vec3 lowLayer = smoothLayer(uv, u_time * 0.2, u_lowFreq);
+            vec3 midLayer = smoothLayer(uv + vec2(0.1, 0.1), u_time * 0.4, u_midFreq);
+            vec3 highLayer = smoothLayer(uv - vec2(0.2, 0.2), u_time * 0.8, u_highFreq);
+            
+            vec3 finalColor = lowLayer + midLayer + highLayer;
 
-        function handleParticles() {
-            for (let i = 0; i < particles.length; i++) {
-                ctx.fillStyle = particles[i].color;
-                ctx.beginPath();
-                ctx.arc(particles[i].x, particles[i].y, particles[i].size, 0, Math.PI * 2);
-                ctx.fill();
-                particles[i].x += particles[i].speedX;
-                particles[i].y += particles[i].speedY;
-                particles[i].size *= 0.95;
+            // Interactive touch-based ripples
+            float distToMouse = distance(uv, u_mousePos);
+            finalColor += 0.5 * vec3(1.0, 0.8, 0.6) * smoothstep(0.0, 1.0, 1.0 - distToMouse);
 
-                if (particles[i].size < 0.5) {
-                    particles.splice(i, 1);
-                    i--;
-                }
+            gl_FragColor = vec4(finalColor, 1.0);
+        }
+    `;
+    
+    function createShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error(gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    }
+    
+    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(program));
+        gl.deleteProgram(program);
+        throw new Error("Program failed to link");
+    }
+    
+    gl.useProgram(program);
+    
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    const positions = [
+        -1.0, -1.0,
+         1.0, -1.0,
+        -1.0,  1.0,
+        -1.0,  1.0,
+         1.0, -1.0,
+         1.0,  1.0
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    
+    const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+    gl.enableVertexAttribArray(positionAttributeLocation);
+    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    
+    const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+    const timeUniformLocation = gl.getUniformLocation(program, "u_time");
+    const lowFreqUniformLocation = gl.getUniformLocation(program, "u_lowFreq");
+    const midFreqUniformLocation = gl.getUniformLocation(program, "u_midFreq");
+    const highFreqUniformLocation = gl.getUniformLocation(program, "u_highFreq");
+    const mousePosUniformLocation = gl.getUniformLocation(program, "u_mousePos");
+    
+    gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+
+    let time = 0.0;
+    let lowFreq = 0.0;
+    let midFreq = 0.0;
+    let highFreq = 0.0;
+    let mousePos = [0.0, 0.0];
+    
+    async function setupAudio() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const audioContext = new AudioContext();
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 512;
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            
+            function getAudioData() {
+                analyser.getByteFrequencyData(dataArray);
+                
+                // Process audio data into frequency bands
+                lowFreq = dataArray.slice(0, 32).reduce((a, b) => a + b) / 32.0 / 255.0;
+                midFreq = dataArray.slice(32, 128).reduce((a, b) => a + b) / 96.0 / 255.0;
+                highFreq = dataArray.slice(128).reduce((a, b) => a + b) / (dataArray.length - 128) / 255.0;
+                
+                requestAnimationFrame(getAudioData);
             }
+            
+            getAudioData();
+        } catch (err) {
+            console.error("Error capturing audio: ", err);
+            alert("Audio input is not available.");
         }
+    }
+    
+    document.getElementById("startAudio").addEventListener("click", () => {
+        setupAudio();
+    });
 
-        function animateParticles() {
-            ctx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
-            handleParticles();
-            requestAnimationFrame(animateParticles);
-        }
-        animateParticles();
+    canvas.addEventListener("mousemove", (e) => {
+        mousePos = [(e.clientX / canvas.width) * 2.0 - 1.0, 1.0 - (e.clientY / canvas.height) * 2.0];
+    });
 
-        window.addEventListener("resize", () => {
-            visualizerCanvas.width = window.innerWidth;
-            visualizerCanvas.height = window.innerHeight;
-        });
-
-        // WebGL Canvas Setup
-        const glCanvas = document.getElementById("glCanvas");
-        const gl = glCanvas.getContext("webgl");
-
-        if (!gl) {
-            alert("Unable to initialize WebGL. Your browser may not support it.");
-            throw new Error("WebGL not supported");
-        }
-
-        function resizeGLCanvas() {
-            glCanvas.width = window.innerWidth;
-            glCanvas.height = window.innerHeight;
-            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        }
-        window.addEventListener('resize', resizeGLCanvas);
-        resizeGLCanvas();
-
-        const vertexShaderSource = `
-            attribute vec4 a_position;
-            void main() {
-                gl_Position = a_position;
-            }
-        `;
-
-        const fragmentShaderSource = `
-            precision highp float;
-            uniform float u_time;
-            uniform vec2 u_resolution;
-            uniform float u_audioData;
-            uniform vec3 u_colorOffset;
-            uniform vec2 u_touch;
-
-            vec3 mutedGradient(vec2 uv, float timeOffset) {
-                vec3 color = vec3(0.3 + 0.3 * sin(uv.x * 8.0 + u_audioData * 6.0 + timeOffset),
-                                  0.3 + 0.3 * cos(uv.y * 8.0 + u_audioData * 6.0 + timeOffset),
-                                  0.3 + 0.3 * sin((uv.x + uv.y) * 5.0 + u_audioData * 6.0 + timeOffset));
-                return color + u_colorOffset * 0.5;
-            }
-
-            void main() {
-                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-                uv -= 0.5;
-                uv *= 2.0;
-
-                float dist = distance(uv, u_touch);
-                float ripple = sin(dist * 12.0 - u_time * 4.0) * 0.1;
-                float bloom = 0.2 / (dist * dist + 0.15);
-                uv += ripple;
-
-                vec3 color = mutedGradient(uv, u_time * 0.5) * u_audioData;
-                color += vec3(0.3 + 0.3 * sin(u_time * 0.4 + u_audioData * 2.0), 
-                              0.3 + 0.3 * cos(u_time * 0.5 + u_audioData * 3.0), 
-                              0.3 + 0.3 * sin(u_time * 0.6 + u_audioData * 1.5));
-                color += bloom * 0.5;
-
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `;
-
-        function createShader(gl, type, source) {
-            const shader = gl.createShader(type);
-            gl.shaderSource(shader, source);
-            gl.compileShader(shader);
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error(gl.getShaderInfoLog(shader));
-                gl.deleteShader(shader);
-                return null;
-            }
-            return shader;
-        }
-
-        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-
-        const program = gl.createProgram();
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error(gl.getProgramInfoLog(program));
-            gl.deleteProgram(program);
-            throw new Error("Program failed to link");
-        }
-
-        gl.useProgram(program);
-
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        const positions = [
-            -1.0, -1.0,
-             1.0, -1.0,
-            -1.0,  1.0,
-            -1.0,  1.0,
-             1.0, -1.0,
-             1.0,  1.0
-        ];
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-        const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-        gl.enableVertexAttribArray(positionAttributeLocation);
-        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-
-        const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
-        const timeUniformLocation = gl.getUniformLocation(program, "u_time");
-        const audioDataUniformLocation = gl.getUniformLocation(program, "u_audioData");
-        const colorOffsetUniformLocation = gl.getUniformLocation(program, "u_colorOffset");
-        const touchUniformLocation = gl.getUniformLocation(program, "u_touch");
-
-        gl.uniform2f(resolutionUniformLocation, glCanvas.width, glCanvas.height);
-
-        let time = 0.0;
-        let audioData = 0.0;
-        let colorOffset = [0.0, 0.0, 0.0];
-        let touchPoint = [0.0, 0.0];
-
-        async function setupAudio() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new AudioContext();
-                const analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-                function getAudioData() {
-                    analyser.getByteFrequencyData(dataArray);
-                    let average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-                    audioData = average / 128.0;
-                    requestAnimationFrame(getAudioData);
-                }
-
-                getAudioData();
-            } catch (err) {
-                console.error("Error capturing audio: ", err);
-                alert("Audio input is not available.");
-            }
-        }
-
-        document.getElementById("startAudio").addEventListener("click", () => {
-            setupAudio();
-        });
-
-        document.getElementById("randomizeColors").addEventListener("click", () => {
-            colorOffset = [Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5];
-        });
-
-        // Touch Interaction for Visual Effects
-        glCanvas.addEventListener('touchmove', (event) => {
-            const touch = event.touches[0];
-            const x = (touch.clientX / glCanvas.width) * 2.0 - 1.0;
-            const y = -(touch.clientY / glCanvas.height) * 2.0 + 1.0;
-            touchPoint = [x, y];
-        });
-
-        function render() {
-            time += 0.02;
-            gl.uniform1f(timeUniformLocation, time);
-            gl.uniform1f(audioDataUniformLocation, audioData);
-            gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
-            gl.uniform2fv(touchUniformLocation, touchPoint);
-
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-            requestAnimationFrame(render);
-        }
+    function render() {
+        time += 0.01;
+        gl.uniform1f(timeUniformLocation, time);
+        gl.uniform1f(lowFreqUniformLocation, lowFreq);
+        gl.uniform1f(midFreqUniformLocation, midFreq);
+        gl.uniform1f(highFreqUniformLocation, highFreq);
+        gl.uniform2f(mousePosUniformLocation, mousePos[0], mousePos[1]);
+        
+        // Draw the scene
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
 
         requestAnimationFrame(render);
-    </script>
+    }
+
+    requestAnimationFrame(render);
+</script>
 </body>
 </html>
