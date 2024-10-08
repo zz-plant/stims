@@ -59,6 +59,7 @@
         camera.position.z = 60;
 
         let speed = 0.1; // Speed of movement through the "dimension"
+        let ringAcceleration = 0.01; // Acceleration factor for rings
 
         // Adding some fine detail with particle effects
         const particlesGeometry = new THREE.BufferGeometry();
@@ -121,7 +122,7 @@
                 camera.position.x = Math.sin(overallAvg / 20) * 10;
                 camera.position.y = Math.cos(overallAvg / 20) * 5;
 
-                // Ensure torus is always visible
+                // Ensure torus is always visible by adjusting camera position to keep it in view
                 camera.lookAt(torusKnot.position);
 
                 // Apply rotations to create a dynamic movement
@@ -135,26 +136,6 @@
                 // Add pulse effect to lighting for more "juice"
                 pointLight1.intensity = 1 + (lowerMax / 255) * 2;
                 pointLight2.intensity = 1 + (upperMax / 255) * 2;
-
-                // Add subtle camera shake for satisfaction
-                camera.position.x += (Math.random() - 0.5) * 0.5;
-                camera.position.y += (Math.random() - 0.5) * 0.5;
-
-                // Add particle burst when music intensity spikes
-                if (upperMax > 200) {
-                    const burstGeometry = new THREE.SphereGeometry(2, 16, 16);
-                    const burstMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, emissive: 0xff5500, emissiveIntensity: 1, transparent: true, opacity: 0.9 });
-                    const burst = new THREE.Mesh(burstGeometry, burstMaterial);
-                    burst.position.set(
-                        (Math.random() - 0.5) * 50,
-                        (Math.random() - 0.5) * 50,
-                        camera.position.z - 20
-                    );
-                    scene.add(burst);
-                    setTimeout(() => {
-                        scene.remove(burst);
-                    }, 500);
-                }
 
                 // Move the camera forward to simulate movement
                 camera.position.z -= speed;
@@ -177,7 +158,7 @@
                 rings.forEach((ring, index) => {
                     ring.rotation.x += 0.01;
                     ring.rotation.y += 0.01;
-                    ring.position.z += 0.5;
+                    ring.position.z += 0.5 + ringAcceleration; // Accelerate rings towards the camera
 
                     // Check if the camera is "catching" a ring
                     const ringDistance = camera.position.distanceTo(ring.position);
@@ -189,8 +170,14 @@
                         ring.position.z = -200;
                         ring.position.x = Math.random() * 100 - 50;
                         ring.position.y = Math.random() * 100 - 50;
+                        ringAcceleration = 0.01; // Reset acceleration
                     }
                 });
+
+                // Reduce judder by smoothing camera movement
+                camera.position.x = THREE.MathUtils.lerp(camera.position.x, Math.sin(overallAvg / 20) * 10, 0.1);
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, Math.cos(overallAvg / 20) * 5, 0.1);
+                camera.position.z = THREE.MathUtils.lerp(camera.position.z, camera.position.z - speed, 0.1);
 
                 renderer.render(scene, camera);
             }
@@ -215,36 +202,4 @@
                 const particleBurstGeometry = new THREE.BufferGeometry();
                 const particleBurstCount = 50;
                 const particleBurstPositions = new Float32Array(particleBurstCount * 3);
-                for (let i = 0; i < particleBurstCount * 3; i++) {
-                    particleBurstPositions[i] = ring.position.x + (Math.random() - 0.5) * 10;
-                    particleBurstPositions[++i] = ring.position.y + (Math.random() - 0.5) * 10;
-                    particleBurstPositions[++i] = ring.position.z + (Math.random() - 0.5) * 10;
-                }
-                particleBurstGeometry.setAttribute('position', new THREE.BufferAttribute(particleBurstPositions, 3));
-                const particleBurstMaterial = new THREE.PointsMaterial({ color: 0xffd700, size: 1.5, transparent: true, opacity: 0.8 });
-                const particleBurst = new THREE.Points(particleBurstGeometry, particleBurstMaterial);
-                scene.add(particleBurst);
-
-                // Remove ring and add effects
-                setTimeout(() => {
-                    scene.remove(ringCatchEffect);
-                    scene.remove(burst);
-                    scene.remove(particleBurst);
-                    ring.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, -200);
-                }, 500);
-            }
-
-            animate();
-        }).catch(function(err) {
-            console.error('The following error occurred: ' + err);
-        });
-
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-</body>
-</html>
+                for (let i = 0; i < particleBurstCount *
