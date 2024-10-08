@@ -58,7 +58,7 @@
         // Positioning the camera for the dimensional effect
         camera.position.z = 60;
 
-        let speed = 0.1; // Speed of movement through the "dimension"
+        let speed = 0.2; // Speed of movement through the "dimension"
 
         // Adding some fine detail with particle effects
         const particlesGeometry = new THREE.BufferGeometry();
@@ -136,10 +136,6 @@
                 pointLight1.intensity = 1 + (lowerMax / 255) * 2;
                 pointLight2.intensity = 1 + (upperMax / 255) * 2;
 
-                // Reduce camera shake for satisfaction
-                camera.position.x += (Math.random() - 0.5) * 0.2;
-                camera.position.y += (Math.random() - 0.5) * 0.2;
-
                 // Add particle burst when music intensity spikes
                 if (upperMax > 200) {
                     const burstGeometry = new THREE.SphereGeometry(2, 16, 16);
@@ -159,14 +155,19 @@
                 // Move the camera forward to simulate movement
                 camera.position.z -= speed;
 
+                // Ensure the torus does not get too far away
+                if (camera.position.z - torusKnot.position.z > 50) {
+                    torusKnot.position.z = camera.position.z - 30;
+                }
+
                 // Rotate and move rings to keep the scene dynamic
                 rings.forEach((ring, index) => {
                     ring.rotation.x += 0.01;
                     ring.rotation.y += 0.01;
-                    ring.position.z += 0.8; // Accelerate rings towards the camera
+                    ring.position.z += 1.0; // Accelerate rings towards the camera
 
                     // Trigger explosion effect before the ring hits the camera
-                    if (ring.position.z > 0) {
+                    if (ring.position.z > 10) {
                         explodeRing(ring);
                     }
 
