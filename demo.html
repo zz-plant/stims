@@ -89,7 +89,7 @@ colorModeSelect.value = 'default';
             uniform float u_time;
             uniform vec2 u_resolution;
             uniform float u_audioData;
-            uniform float u_colorMode;
+            uniform int u_colorMode;
 
             vec3 getColor(float time, vec2 uv) {
                 if (u_colorMode == 1) {
@@ -204,7 +204,7 @@ colorModeSelect.value = 'default';
             time += 0.02;
             gl.uniform1f(timeUniformLocation, time);
             gl.uniform1f(audioDataUniformLocation, audioData);
-            gl.uniform1f(colorModeUniformLocation, colorMode);
+            gl.uniform1i(colorModeUniformLocation, colorMode);
 
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -228,7 +228,7 @@ colorModeSelect.value = 'default';
         });
 
         colorModeSelect.addEventListener('change', (event) => {
-            colorMode = parseFloat(event.target.value);
+            colorMode = parseInt(event.target.value);
         });
     </script>
 </body>
