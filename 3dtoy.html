@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transport to Another Dimension</title>
+    <title>Transport to Another Dimension - Enhanced</title>
     <style>
         html, body {
             margin: 0;
@@ -88,6 +88,42 @@
             rings.push(ring);
         }
 
+        // Adding new procedural shapes
+        const shapes = [];
+        function createRandomShape() {
+            const shapeType = Math.floor(Math.random() * 3);
+            let shape;
+            let shapeMaterial = new THREE.MeshStandardMaterial({
+                color: Math.random() * 0xffffff,
+                emissive: Math.random() * 0x222222,
+                metalness: 0.7,
+                roughness: 0.4
+            });
+
+            switch (shapeType) {
+                case 0:
+                    shape = new THREE.SphereGeometry(5, 32, 32);
+                    break;
+                case 1:
+                    shape = new THREE.BoxGeometry(7, 7, 7);
+                    break;
+                case 2:
+                    shape = new THREE.ConeGeometry(5, 15, 32);
+                    break;
+            }
+
+            const mesh = new THREE.Mesh(shape, shapeMaterial);
+            mesh.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * -500);
+            mesh.rotation.x = Math.random() * Math.PI;
+            mesh.rotation.y = Math.random() * Math.PI;
+            scene.add(mesh);
+            shapes.push(mesh);
+        }
+
+        for (let i = 0; i < 5; i++) {
+            createRandomShape();
+        }
+
         // Setup audio for interaction from microphone
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -170,6 +206,24 @@
                     rings.forEach((ring) => {
                         ring.material.color.setHex(Math.random() * 0xffffff);
                     });
+                }
+
+                // Rotate and move shapes to keep the scene dynamic
+                shapes.forEach((shape) => {
+                    shape.rotation.x += 0.01;
+                    shape.rotation.y += 0.01;
+                    shape.position.z += 1.5; // Move shapes towards the camera
+
+                    if (shape.position.z > 10) {
+                        shape.position.z = -500;
+                        shape.position.x = Math.random() * 100 - 50;
+                        shape.position.y = Math.random() * 100 - 50;
+                    }
+                });
+
+                // Occasionally create new shapes to add surprise elements
+                if (Math.random() > 0.99) {
+                    createRandomShape();
                 }
 
                 // Render scene
