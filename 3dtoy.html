@@ -9,6 +9,8 @@
             margin: 0;
             overflow: hidden;
             height: 100%;
+            background: #000;
+            font-family: 'Courier New', Courier, monospace;
         }
         canvas {
             display: block;
@@ -21,28 +23,57 @@
         // Scene setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x0a0a0a, 1);
         document.body.appendChild(renderer.domElement);
 
         // Torus geometry to create a surreal tunnel effect
-        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
-        const material = new THREE.MeshStandardMaterial({ color: 0x7f7fff, emissive: 0x111166, wireframe: false });
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x0affef, 
+            emissive: 0x001133, 
+            emissiveIntensity: 0.7, 
+            metalness: 0.9, 
+            roughness: 0.3 
+        });
         const torusKnot = new THREE.Mesh(geometry, material);
         scene.add(torusKnot);
 
-        // Lighting for effect
-        const pointLight = new THREE.PointLight(0xffffff);
-        pointLight.position.set(25, 50, 25);
-        scene.add(pointLight);
+        // Lighting for cyberpunk effect
+        const pointLight1 = new THREE.PointLight(0xff0099, 2, 100);
+        pointLight1.position.set(20, 30, 20);
+        scene.add(pointLight1);
 
-        const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+        const pointLight2 = new THREE.PointLight(0x00ffff, 2, 100);
+        pointLight2.position.set(-20, -30, 20);
+        scene.add(pointLight2);
+
+        const ambientLight = new THREE.AmbientLight(0x222244); // soft blue/purple light
         scene.add(ambientLight);
 
-        // Positioning the camera for the dimensional effect
-        camera.position.z = 50;
+        // Adding some fog for depth and mystery
+        scene.fog = new THREE.Fog(0x000000, 50, 200);
 
-        let speed = 0.02; // Speed of movement through the "dimension"
+        // Positioning the camera for the dimensional effect
+        camera.position.z = 60;
+
+        let speed = 0.1; // Speed of movement through the "dimension"
+
+        // Adding some fine detail with particle effects
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 5000;
+        const positions = new Float32Array(particlesCount * 3);
+
+        for (let i = 0; i < particlesCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 500;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const particlesMaterial = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.5, opacity: 0.8, transparent: true });
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particles);
 
         // Animation loop
         function animate() {
@@ -57,7 +88,7 @@
 
             // Reset position to keep the user feeling like they're in a never-ending space
             if (camera.position.z < -100) {
-                camera.position.z = 50;
+                camera.position.z = 60;
             }
 
             renderer.render(scene, camera);
