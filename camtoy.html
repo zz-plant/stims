@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transport to Another Dimension</title>
+    <style>
+        html, body {
+            margin: 0;
+            overflow: hidden;
+            height: 100%;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Torus geometry to create a surreal tunnel effect
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+        const material = new THREE.MeshStandardMaterial({ color: 0x7f7fff, emissive: 0x111166, wireframe: false });
+        const torusKnot = new THREE.Mesh(geometry, material);
+        scene.add(torusKnot);
+
+        // Lighting for effect
+        const pointLight = new THREE.PointLight(0xffffff);
+        pointLight.position.set(25, 50, 25);
+        scene.add(pointLight);
+
+        const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+        scene.add(ambientLight);
+
+        // Positioning the camera for the dimensional effect
+        camera.position.z = 50;
+
+        let speed = 0.02; // Speed of movement through the "dimension"
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Apply rotations to create a dynamic movement
+            torusKnot.rotation.x += 0.01;
+            torusKnot.rotation.y += 0.01;
+
+            // Move the camera forward to simulate movement
+            camera.position.z -= speed;
+
+            // Reset position to keep the user feeling like they're in a never-ending space
+            if (camera.position.z < -100) {
+                camera.position.z = 50;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
