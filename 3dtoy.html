@@ -19,9 +19,6 @@
 </head>
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/EffectComposer.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/RenderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/UnrealBloomPass.js"></script>
     <script>
         // Scene setup
         const scene = new THREE.Scene();
@@ -30,19 +27,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
-
-        // Effect Composer for post-processing
-        const composer = new THREE.EffectComposer(renderer);
-        const renderPass = new THREE.RenderPass(scene, camera);
-        composer.addPass(renderPass);
-
-        const bloomPass = new THREE.UnrealBloomPass(
-            new THREE.Vector2(window.innerWidth, window.innerHeight),
-            1.5, // Strength
-            0.4, // Radius
-            0.85 // Threshold
-        );
-        composer.addPass(bloomPass);
 
         // Torus geometry to create a surreal tunnel effect
         const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
@@ -90,6 +74,19 @@
         const particlesMaterial = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.5, opacity: 0.8, transparent: true });
         const particles = new THREE.Points(particlesGeometry, particlesMaterial);
         scene.add(particles);
+
+        // Adding interactive rings
+        const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xffaa00, side: THREE.DoubleSide });
+        const rings = [];
+        for (let i = 0; i < 5; i++) {
+            const ringGeometry = new THREE.RingGeometry(5, 10, 32);
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            ring.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * -200);
+            ring.rotation.x = Math.random() * Math.PI;
+            ring.rotation.y = Math.random() * Math.PI;
+            scene.add(ring);
+            rings.push(ring);
+        }
 
         // Setup audio for interaction from microphone
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
@@ -147,8 +144,21 @@
                     torusKnot.position.z = camera.position.z - 30;
                 }
 
-                // Render with post-processing
-                composer.render();
+                // Rotate and move rings to keep the scene dynamic
+                rings.forEach((ring, index) => {
+                    ring.rotation.x += 0.01;
+                    ring.rotation.y += 0.01;
+                    ring.position.z += 1.0; // Move rings towards the camera
+
+                    if (ring.position.z > 10) {
+                        ring.position.z = -200;
+                        ring.position.x = Math.random() * 100 - 50;
+                        ring.position.y = Math.random() * 100 - 50;
+                    }
+                });
+
+                // Render scene
+                renderer.render(scene, camera);
             }
 
             animate();
@@ -161,7 +171,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
 </body>
