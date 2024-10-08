@@ -88,7 +88,28 @@
         const particles = new THREE.Points(particlesGeometry, particlesMaterial);
         scene.add(particles);
 
-        // Audio setup with modern Web Audio API
+        // Adding a torus knot for the surreal tunnel effect
+        const torusGeometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
+        const torusMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x0affef, 
+            emissive: 0x001133, 
+            emissiveIntensity: 0.7, 
+            metalness: 0.9, 
+            roughness: 0.3 
+        });
+        const torusKnot = new THREE.Mesh(torusGeometry, torusMaterial);
+        scene.add(torusKnot);
+
+        // Adding additional point lights for a cyberpunk effect
+        const pointLight1 = new THREE.PointLight(0xff0099, 2, 100);
+        pointLight1.position.set(20, 30, 20);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x00ffff, 2, 100);
+        pointLight2.position.set(-20, -30, 20);
+        scene.add(pointLight2);
+
+        // Setup audio with modern Web Audio API
         let analyser;
         let dataArray;
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
@@ -110,6 +131,11 @@
                 let avgFreq = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
                 fractalMaterial.uniforms.u_time.value += 0.05;
                 fractalMaterial.uniforms.u_color.value.setHSL(avgFreq / 255, 0.8, 0.5);
+
+                // Update torus knot scale and rotation based on audio
+                torusKnot.scale.set(1 + avgFreq / 255, 1 + avgFreq / 255, 1 + avgFreq / 255);
+                torusKnot.rotation.x += 0.01;
+                torusKnot.rotation.y += 0.01;
             }
 
             // Rotate fractal for added dynamic effect
