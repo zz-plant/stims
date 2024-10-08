@@ -133,17 +133,17 @@
                 particles.rotation.x += 0.0005 + (lowerMax / 20000);
 
                 // Add pulse effect to lighting for more "juice"
-                pointLight1.intensity = 1 + (lowerMax / 255);
-                pointLight2.intensity = 1 + (upperMax / 255);
+                pointLight1.intensity = 1 + (lowerMax / 255) * 2;
+                pointLight2.intensity = 1 + (upperMax / 255) * 2;
 
                 // Add subtle camera shake for satisfaction
-                camera.position.x += (Math.random() - 0.5) * 0.1;
-                camera.position.y += (Math.random() - 0.5) * 0.1;
+                camera.position.x += (Math.random() - 0.5) * 0.5;
+                camera.position.y += (Math.random() - 0.5) * 0.5;
 
                 // Add particle burst when music intensity spikes
                 if (upperMax > 200) {
-                    const burstGeometry = new THREE.SphereGeometry(2, 8, 8);
-                    const burstMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                    const burstGeometry = new THREE.SphereGeometry(2, 16, 16);
+                    const burstMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, emissive: 0xff5500, emissiveIntensity: 1, transparent: true, opacity: 0.9 });
                     const burst = new THREE.Mesh(burstGeometry, burstMaterial);
                     burst.position.set(
                         (Math.random() - 0.5) * 50,
@@ -163,13 +163,14 @@
                 const distance = camera.position.distanceTo(torusKnot.position);
                 if (distance < 15) { // Approximate collision distance
                     if (window.navigator.vibrate) {
-                        window.navigator.vibrate(100); // Vibrate for 100ms on collision
+                        window.navigator.vibrate(200); // Vibrate for 200ms on collision
                     }
-                }
 
-                // Reset position to keep the user feeling like they're in a never-ending space
-                if (camera.position.z < -100) {
-                    camera.position.z = 60;
+                    // Add flash effect for collision
+                    renderer.setClearColor(0xff5500, 1);
+                    setTimeout(() => {
+                        renderer.setClearColor(0x0a0a0a, 1);
+                    }, 100);
                 }
 
                 // Rotate and move rings to keep the scene dynamic
@@ -183,24 +184,39 @@
                     if (ringDistance < 10) { // Approximate catching distance
                         // Add visual effect when catching a ring
                         const ringCatchGeometry = new THREE.SphereGeometry(5, 32, 32);
-                        const ringCatchMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, opacity: 0.8, transparent: true });
+                        const ringCatchMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, opacity: 0.8, transparent: true, emissive: 0xffff33, emissiveIntensity: 1 });
                         const ringCatchEffect = new THREE.Mesh(ringCatchGeometry, ringCatchMaterial);
                         ringCatchEffect.position.copy(ring.position);
                         scene.add(ringCatchEffect);
 
                         // Add burst effect
-                        const burstGeometry = new THREE.SphereGeometry(3, 16, 16);
-                        const burstMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+                        const burstGeometry = new THREE.SphereGeometry(4, 16, 16);
+                        const burstMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 1, transparent: true, opacity: 0.9 });
                         const burst = new THREE.Mesh(burstGeometry, burstMaterial);
                         burst.position.copy(ring.position);
                         scene.add(burst);
+
+                        // Add glowing particles on ring catch
+                        const particleBurstGeometry = new THREE.BufferGeometry();
+                        const particleBurstCount = 50;
+                        const particleBurstPositions = new Float32Array(particleBurstCount * 3);
+                        for (let i = 0; i < particleBurstCount * 3; i++) {
+                            particleBurstPositions[i] = ring.position.x + (Math.random() - 0.5) * 10;
+                            particleBurstPositions[++i] = ring.position.y + (Math.random() - 0.5) * 10;
+                            particleBurstPositions[++i] = ring.position.z + (Math.random() - 0.5) * 10;
+                        }
+                        particleBurstGeometry.setAttribute('position', new THREE.BufferAttribute(particleBurstPositions, 3));
+                        const particleBurstMaterial = new THREE.PointsMaterial({ color: 0xffd700, size: 1.5, transparent: true, opacity: 0.8 });
+                        const particleBurst = new THREE.Points(particleBurstGeometry, particleBurstMaterial);
+                        scene.add(particleBurst);
 
                         // Remove ring and add effects
                         setTimeout(() => {
                             scene.remove(ringCatchEffect);
                             scene.remove(burst);
+                            scene.remove(particleBurst);
                             ring.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, -200);
-                        }, 300);
+                        }, 500);
                     }
 
                     if (ring.position.z > 50) {
