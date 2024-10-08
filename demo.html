@@ -62,6 +62,7 @@
         const togglePauseButton = document.getElementById('toggle-pause');
         const sensitivityInput = document.getElementById('sensitivity');
         const colorModeSelect = document.getElementById('color-mode');
+colorModeSelect.value = 'default';
 
         if (!gl) {
             alert('Unable to initialize WebGL. Your browser may not support it.');
@@ -88,7 +89,7 @@
             uniform float u_time;
             uniform vec2 u_resolution;
             uniform float u_audioData;
-            uniform int u_colorMode;
+            uniform float u_colorMode;
 
             vec3 getColor(float time, vec2 uv) {
                 if (u_colorMode == 1) {
@@ -203,7 +204,7 @@
             time += 0.02;
             gl.uniform1f(timeUniformLocation, time);
             gl.uniform1f(audioDataUniformLocation, audioData);
-            gl.uniform1i(colorModeUniformLocation, colorMode);
+            gl.uniform1f(colorModeUniformLocation, colorMode);
 
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -227,7 +228,7 @@
         });
 
         colorModeSelect.addEventListener('change', (event) => {
-            colorMode = parseInt(event.target.value);
+            colorMode = parseFloat(event.target.value);
         });
     </script>
 </body>
