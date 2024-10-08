@@ -40,10 +40,22 @@
         button:hover {
             background: #666;
         }
+        #error-message {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ff0000;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
+    <div id="error-message" style="display: none;"></div>
     <canvas id="visualizer"></canvas>
+    <canvas id="glCanvas"></canvas>
     <div class="ui">
         <button id="playSound">Play Sound & Visualize</button>
     </div>
@@ -51,19 +63,39 @@
     <script>
         const canvas = document.getElementById("visualizer");
         const ctx = canvas.getContext("2d");
+        const glCanvas = document.getElementById("glCanvas");
+        const gl = glCanvas.getContext("webgl");
+        const ctx2d = glCanvas.getContext("2d");
         const button = document.getElementById("playSound");
         let particles = [];
 
+        if (!gl) {
+            alert("Unable to initialize WebGL. Your browser may not support it.");
+            throw new Error("WebGL not supported");
+        }
+
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        glCanvas.width = window.innerWidth;
+        glCanvas.height = window.innerHeight;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            glCanvas.width = window.innerWidth;
+            glCanvas.height = window.innerHeight;
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
         function createParticle(x, y) {
             return {
                 x: x,
                 y: y,
-                size: Math.random() * 8 + 1,
-                speedX: Math.random() * 3 - 1.5,
-                speedY: Math.random() * 3 - 1.5,
+                size: Math.random() * 5 + 1,
+                speedX: Math.random() * 1.5 - 0.75,
+                speedY: Math.random() * 1.5 - 0.75,
                 color: `hsl(${Math.random() * 360}, 100%, 50%)`
             };
         }
@@ -76,7 +108,7 @@
                 ctx.fill();
                 particles[i].x += particles[i].speedX;
                 particles[i].y += particles[i].speedY;
-                particles[i].size *= 0.95;
+                particles[i].size *= 0.98;
 
                 if (particles[i].size < 0.5) {
                     particles.splice(i, 1);
@@ -85,46 +117,23 @@
             }
         }
 
-        function animate() {
+        function animateParticles() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             handleParticles();
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateParticles);
         }
-        animate();
+        animateParticles();
 
         button.addEventListener("click", () => {
             const audio = new Audio("https://www.soundjay.com/button/beep-07.wav");
             audio.play();
 
-            const particleCount = 100;
+            const particleCount = 50;
             for (let i = 0; i < particleCount; i++) {
                 particles.push(createParticle(canvas.width / 2, canvas.height / 2));
             }
+            setupAudio();
         });
-
-        window.addEventListener("resize", () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-
-        // WebGL Section
-        const glCanvas = document.createElement("canvas");
-        glCanvas.id = "glCanvas";
-        document.body.appendChild(glCanvas);
-        const gl = glCanvas.getContext("webgl");
-
-        if (!gl) {
-            alert("Unable to initialize WebGL. Your browser may not support it.");
-            throw new Error("WebGL not supported");
-        }
-
-        function resizeGLCanvas() {
-            glCanvas.width = window.innerWidth;
-            glCanvas.height = window.innerHeight;
-            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        }
-        window.addEventListener('resize', resizeGLCanvas);
-        resizeGLCanvas();
 
         const vertexShaderSource = `
             attribute vec4 a_position;
@@ -132,7 +141,7 @@
                 gl_Position = a_position;
             }
         `;
-
+        
         const fragmentShaderSource = `
             precision highp float;
             uniform float u_time;
@@ -140,34 +149,34 @@
             uniform float u_audioData;
             uniform vec3 u_colorOffset;
             uniform vec2 u_touch;
-
-            vec3 mutedGradient(vec2 uv, float timeOffset) {
-                vec3 color = vec3(0.3 + 0.3 * sin(uv.x * 8.0 + u_audioData * 6.0 + timeOffset),
-                                  0.3 + 0.3 * cos(uv.y * 8.0 + u_audioData * 6.0 + timeOffset),
-                                  0.3 + 0.3 * sin((uv.x + uv.y) * 5.0 + u_audioData * 6.0 + timeOffset));
+            
+            vec3 dreamyGradient(vec2 uv, float timeOffset) {
+                vec3 color = vec3(0.4 + 0.4 * sin(uv.x * 10.0 + u_audioData * 6.0 + timeOffset),
+                                  0.4 + 0.4 * cos(uv.y * 10.0 + u_audioData * 6.0 + timeOffset),
+                                  0.5 + 0.4 * sin((uv.x + uv.y) * 8.0 + u_audioData * 6.0 + timeOffset));
                 return color + u_colorOffset * 0.5;
             }
-
+            
             void main() {
                 vec2 uv = gl_FragCoord.xy / u_resolution.xy;
                 uv -= 0.5;
-                uv *= 2.0;
-
+                uv *= 1.5;
+                
                 float dist = distance(uv, u_touch);
-                float ripple = sin(dist * 12.0 - u_time * 4.0) * 0.1;
-                float bloom = 0.2 / (dist * dist + 0.15);
+                float ripple = sin(dist * 10.0 - u_time * 3.0) * 0.1;
+                float bloom = 0.2 / (dist * dist + 0.25);
                 uv += ripple;
-
-                vec3 color = mutedGradient(uv, u_time * 0.5) * u_audioData;
+                
+                vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData;
                 color += vec3(0.3 + 0.3 * sin(u_time * 0.4 + u_audioData * 2.0), 
                               0.3 + 0.3 * cos(u_time * 0.5 + u_audioData * 3.0), 
-                              0.3 + 0.3 * sin(u_time * 0.6 + u_audioData * 1.5));
+                              0.4 + 0.3 * sin(u_time * 0.6 + u_audioData * 1.5));
                 color += bloom * 0.5;
-
+                
                 gl_FragColor = vec4(color, 1.0);
             }
         `;
-
+        
         function createShader(gl, type, source) {
             const shader = gl.createShader(type);
             gl.shaderSource(shader, source);
@@ -179,10 +188,10 @@
             }
             return shader;
         }
-
+        
         const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
         const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-
+        
         const program = gl.createProgram();
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
@@ -192,9 +201,9 @@
             gl.deleteProgram(program);
             throw new Error("Program failed to link");
         }
-
+        
         gl.useProgram(program);
-
+        
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         const positions = [
@@ -206,60 +215,77 @@
              1.0,  1.0
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
+        
         const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
         gl.enableVertexAttribArray(positionAttributeLocation);
         gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-
+        
         const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
         const timeUniformLocation = gl.getUniformLocation(program, "u_time");
         const audioDataUniformLocation = gl.getUniformLocation(program, "u_audioData");
         const colorOffsetUniformLocation = gl.getUniformLocation(program, "u_colorOffset");
         const touchUniformLocation = gl.getUniformLocation(program, "u_touch");
-
+        
         gl.uniform2f(resolutionUniformLocation, glCanvas.width, glCanvas.height);
 
         let time = 0.0;
         let audioData = 0.0;
         let colorOffset = [0.0, 0.0, 0.0];
         let touchPoint = [0.0, 0.0];
+        let analyser;
 
         async function setupAudio() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const audioContext = new AudioContext();
-                const analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
                 const source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 128;
                 source.connect(analyser);
-
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-                function getAudioData() {
-                    analyser.getByteFrequencyData(dataArray);
-                    let average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-                    audioData = average / 128.0;
-                    requestAnimationFrame(getAudioData);
-                }
-
                 getAudioData();
             } catch (err) {
+                document.getElementById("error-message").style.display = "block";
+                document.getElementById("error-message").innerText = 'Unable to access the microphone. Please allow microphone permissions and reload the page.';
                 console.error("Error capturing audio: ", err);
-                alert("Audio input is not available.");
             }
         }
 
-        document.getElementById("playSound").addEventListener("click", () => {
-            setupAudio();
-        });
+        function getAudioData() {
+            requestAnimationFrame(getAudioData);
+            if (analyser) {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+                audioData = average / 128.0;
+                updateSpectrograph(dataArray);
+            }
+        }
+
+        function updateSpectrograph(dataArray) {
+            ctx2d.clearRect(0, 0, glCanvas.width, glCanvas.height);
+            const gradient = ctx2d.createLinearGradient(0, 0, glCanvas.width, glCanvas.height);
+            gradient.addColorStop(0, '#ff6ec7');
+            gradient.addColorStop(0.5, '#8e44ad');
+            gradient.addColorStop(1, '#3498db');
+            ctx2d.fillStyle = gradient;
+            const barWidth = (glCanvas.width / dataArray.length) * 1.5;
+            let barHeight;
+            let x = 0;
+            
+            for (let i = 0; i < dataArray.length; i++) {
+                barHeight = dataArray[i] / 2;
+                ctx2d.fillRect(x, glCanvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        }
 
         function render() {
-            time += 0.02;
+            time += 0.015;
             gl.uniform1f(timeUniformLocation, time);
             gl.uniform1f(audioDataUniformLocation, audioData);
             gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
             gl.uniform2fv(touchUniformLocation, touchPoint);
-
+            
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -267,6 +293,14 @@
         }
 
         requestAnimationFrame(render);
+
+        // Handle touch input
+        glCanvas.addEventListener('touchmove', (event) => {
+            const touch = event.touches[0];
+            const x = (touch.clientX / glCanvas.width) * 2.0 - 1.0;
+            const y = -(touch.clientY / glCanvas.height) * 2.0 + 1.0;
+            touchPoint = [x, y];
+        });
     </script>
 </body>
 </html>
