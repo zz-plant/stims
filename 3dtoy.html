@@ -19,20 +19,16 @@
 </head>
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/BloomPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/FilmPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/postprocessing/UnrealBloomPass.js"></script>
     <script>
         // Scene setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x0a0a0a, 1);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
         // Effect Composer for post-processing
@@ -40,11 +36,13 @@
         const renderPass = new THREE.RenderPass(scene, camera);
         composer.addPass(renderPass);
 
-        const bloomPass = new THREE.BloomPass(1.5, 25, 4.0, 256);
+        const bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            1.5, // Strength
+            0.4, // Radius
+            0.85 // Threshold
+        );
         composer.addPass(bloomPass);
-
-        const filmPass = new THREE.FilmPass(0.35, 0.025, 648, false);
-        composer.addPass(filmPass);
 
         // Torus geometry to create a surreal tunnel effect
         const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
@@ -93,31 +91,6 @@
         const particles = new THREE.Points(particlesGeometry, particlesMaterial);
         scene.add(particles);
 
-        // Shader-based effect for the torus knot
-        const torusShaderMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 1.0 },
-                color: { value: new THREE.Color(0xff00ff) }
-            },
-            vertexShader: `
-                varying vec3 vNormal;
-                void main() {
-                    vNormal = normal;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform float time;
-                uniform vec3 color;
-                varying vec3 vNormal;
-                void main() {
-                    float intensity = sin(time + vNormal.y * 5.0) * 0.5 + 0.5;
-                    gl_FragColor = vec4(color * intensity, 1.0);
-                }
-            `
-        });
-        torusKnot.material = torusShaderMaterial;
-
         // Setup audio for interaction from microphone
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -146,7 +119,6 @@
                 // Adjust torus properties based on music
                 torusKnot.scale.set(1 + lowerMax / 255, 1 + lowerMax / 255, 1 + lowerMax / 255);
                 torusKnot.rotation.z += upperMax / 10000;
-                torusShaderMaterial.uniforms.time.value += 0.05;
 
                 // Apply dynamic camera movement based on music
                 camera.position.x = Math.sin(overallAvg / 20) * 10;
