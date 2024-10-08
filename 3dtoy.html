@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transport to Another Dimension - Enhanced</title>
+    <title>Transport to Another Dimension</title>
     <style>
         html, body {
             margin: 0;
@@ -78,10 +78,10 @@
         // Adding interactive rings
         const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xffaa00, side: THREE.DoubleSide });
         const rings = [];
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 10; i++) {
             const ringGeometry = new THREE.RingGeometry(5, 10, 32);
             const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-            ring.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * -200);
+            ring.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * -500);
             ring.rotation.x = Math.random() * Math.PI;
             ring.rotation.y = Math.random() * Math.PI;
             scene.add(ring);
@@ -151,11 +151,26 @@
                     ring.position.z += 1.0; // Move rings towards the camera
 
                     if (ring.position.z > 10) {
-                        ring.position.z = -200;
+                        ring.position.z = -500;
                         ring.position.x = Math.random() * 100 - 50;
                         ring.position.y = Math.random() * 100 - 50;
                     }
+
+                    // Introduce procedural serendipity
+                    if (Math.random() > 0.995) {
+                        ring.material.color.setHex(Math.random() * 0xffffff);
+                        ring.scale.set(1 + Math.random(), 1 + Math.random(), 1);
+                        ring.rotation.x += Math.random() * 0.5;
+                        ring.rotation.y += Math.random() * 0.5;
+                    }
                 });
+
+                // Add random color changes to rings for visual diversity
+                if (Math.random() > 0.98) {
+                    rings.forEach((ring) => {
+                        ring.material.color.setHex(Math.random() * 0xffffff);
+                    });
+                }
 
                 // Render scene
                 renderer.render(scene, camera);
