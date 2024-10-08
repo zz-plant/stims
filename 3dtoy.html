@@ -121,6 +121,9 @@
                 camera.position.x = Math.sin(overallAvg / 20) * 10;
                 camera.position.y = Math.cos(overallAvg / 20) * 5;
 
+                // Ensure torus is always visible
+                camera.lookAt(torusKnot.position);
+
                 // Apply rotations to create a dynamic movement
                 torusKnot.rotation.x += 0.01;
                 torusKnot.rotation.y += 0.01;
