@@ -96,8 +96,8 @@
                 float angle = atan(uv.y, uv.x);
                 float radius = length(uv);
 
-                float wave = sin(time * 0.5 + radius * 5.0 + u_audioData * 2.0);
-                float offset = cos(time * 0.3 + angle * 4.0 + u_audioData * 1.5);
+                float wave = 0.5 * sin(time * 0.5 + radius * 5.0 + u_audioData * 2.0);
+                float offset = 0.5 * cos(time * 0.3 + angle * 4.0 + u_audioData * 1.5);
 
                 vec3 baseColor = vec3(0.5 + 0.5 * cos(time + radius * 3.0),
                                      0.5 + 0.5 * sin(time + angle * 2.0),
@@ -106,25 +106,26 @@
                 vec3 dreamyColor;
                 if (u_colorMode == 1) {
                     dreamyColor = vec3(
-                        0.7 + 0.3 * sin(radius * 8.0 + time * 0.6 + wave),
-                        0.7 + 0.3 * cos(angle * 10.0 + time * 0.4 + offset),
-                        0.8 + 0.2 * sin(radius * 6.0 + angle * 3.0 + time * 0.5)
+                        0.6 + 0.4 * sin(radius * 8.0 + time * 0.6 + wave),
+                        0.6 + 0.4 * cos(angle * 10.0 + time * 0.4 + offset),
+                        0.7 + 0.3 * sin(radius * 6.0 + angle * 3.0 + time * 0.5)
                     );
                 } else if (u_colorMode == 2) {
                     dreamyColor = vec3(
-                        0.6 + 0.4 * cos(radius * 12.0 + time * 0.7 + wave * 1.5),
+                        0.5 + 0.5 * cos(radius * 12.0 + time * 0.7 + wave * 1.5),
                         0.5 + 0.5 * sin(angle * 15.0 + time * 0.8 + offset * 1.2),
-                        0.7 + 0.3 * cos(radius * 10.0 + time * 0.9 + wave * 2.0)
+                        0.6 + 0.4 * cos(radius * 10.0 + time * 0.9 + wave * 2.0)
                     );
                 } else {
-                    dreamyColor = baseColor + 0.2 * vec3(
+                    dreamyColor = baseColor + 0.1 * vec3(
                         sin(radius * 4.0 + angle * 5.0 + time * 0.3),
                         cos(radius * 5.0 + angle * 6.0 + time * 0.4),
                         sin(radius * 6.0 + angle * 7.0 + time * 0.5)
                     );
                 }
 
-                return dreamyColor;
+                return max(dreamyColor, 0.1);
+            }
             }
             }
                 } else if (u_colorMode == 2) {
