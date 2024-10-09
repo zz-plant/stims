@@ -48,20 +48,20 @@
 <div id="controls">
     <button id="startAudio">Start Audio Interaction</button>
 </div>
-<svg id="stickFigure" width="100" height="300" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-    <text id="face" x="50" y="40" text-anchor="middle" alignment-baseline="middle" fill="white">
+<svg id="stickFigure" width="200" height="400" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <text id="face" x="100" y="60" text-anchor="middle" alignment-baseline="middle" fill="white">
         😀
     </text>
-    <line id="neck" x1="50" y1="60" x2="50" y2="80" stroke="white" stroke-width="4" />
-    <line id="body" x1="50" y1="80" x2="50" y2="200" stroke="white" stroke-width="4" />
-    <line id="leftUpperArm" x1="50" y1="100" x2="20" y2="130" stroke="white" stroke-width="4" />
-    <line id="leftLowerArm" x1="20" y1="130" x2="10" y2="180" stroke="white" stroke-width="4" />
-    <line id="rightUpperArm" x1="50" y1="100" x2="80" y2="130" stroke="white" stroke-width="4" />
-    <line id="rightLowerArm" x1="80" y1="130" x2="90" y2="180" stroke="white" stroke-width="4" />
-    <line id="leftUpperLeg" x1="50" y1="200" x2="40" y2="250" stroke="white" stroke-width="4" />
-    <line id="leftLowerLeg" x1="40" y1="250" x2="30" y2="300" stroke="white" stroke-width="4" />
-    <line id="rightUpperLeg" x1="50" y1="200" x2="60" y2="250" stroke="white" stroke-width="4" />
-    <line id="rightLowerLeg" x1="60" y1="250" x2="70" y2="300" stroke="white" stroke-width="4" />
+    <rect id="torso" x="80" y="70" width="40" height="130" fill="white" />
+    <line id="neck" x1="100" y1="60" x2="100" y2="70" stroke="white" stroke-width="4" />
+    <line id="leftUpperArm" x1="80" y1="90" x2="40" y2="150" stroke="white" stroke-width="6" />
+    <line id="leftLowerArm" x1="40" y1="150" x2="20" y2="210" stroke="white" stroke-width="6" />
+    <line id="rightUpperArm" x1="120" y1="90" x2="160" y2="150" stroke="white" stroke-width="6" />
+    <line id="rightLowerArm" x1="160" y1="150" x2="180" y2="210" stroke="white" stroke-width="6" />
+    <line id="leftUpperLeg" x1="100" y1="200" x2="70" y2="300" stroke="white" stroke-width="8" />
+    <line id="leftLowerLeg" x1="70" y1="300" x2="50" y2="380" stroke="white" stroke-width="8" />
+    <line id="rightUpperLeg" x1="100" y1="200" x2="130" y2="300" stroke="white" stroke-width="8" />
+    <line id="rightLowerLeg" x1="130" y1="300" x2="150" y2="380" stroke="white" stroke-width="8" />
 </svg>
 <script>
     const canvas = document.getElementById("glCanvas");
@@ -252,8 +252,7 @@
 
         // Animate the stick figure with more advanced dancing
         const stickFigure = document.getElementById("stickFigure");
-        const neck = document.getElementById("neck");
-        const body = document.getElementById("body");
+        const torso = document.getElementById("torso");
         const leftUpperArm = document.getElementById("leftUpperArm");
         const leftLowerArm = document.getElementById("leftLowerArm");
         const rightUpperArm = document.getElementById("rightUpperArm");
@@ -267,33 +266,33 @@
         const legAngle = Math.sin(time * 3 + lowFreq * 12) * 30 + gravity[1] * 8;
         const bodyWiggle = Math.sin(time * 2 + highFreq * 10) * 5;
 
-        leftUpperArm.setAttribute("x2", 50 - 30 * Math.cos(armAngle * Math.PI / 180));
-        leftUpperArm.setAttribute("y2", 100 + 50 * Math.sin(armAngle * Math.PI / 180));
+        leftUpperArm.setAttribute("x2", 100 - 60 * Math.cos(armAngle * Math.PI / 180));
+        leftUpperArm.setAttribute("y2", 90 + 60 * Math.sin(armAngle * Math.PI / 180));
         leftLowerArm.setAttribute("x1", leftUpperArm.getAttribute("x2"));
         leftLowerArm.setAttribute("y1", leftUpperArm.getAttribute("y2"));
-        leftLowerArm.setAttribute("x2", leftUpperArm.getAttribute("x2") - 20 * Math.cos(armAngle * Math.PI / 180));
-        leftLowerArm.setAttribute("y2", parseFloat(leftUpperArm.getAttribute("y2")) + 50 * Math.sin(armAngle * Math.PI / 180));
+        leftLowerArm.setAttribute("x2", leftUpperArm.getAttribute("x2") - 40 * Math.cos(armAngle * Math.PI / 180));
+        leftLowerArm.setAttribute("y2", parseFloat(leftUpperArm.getAttribute("y2")) + 60 * Math.sin(armAngle * Math.PI / 180));
 
-        rightUpperArm.setAttribute("x2", 50 + 30 * Math.cos(armAngle * Math.PI / 180));
-        rightUpperArm.setAttribute("y2", 100 + 50 * Math.sin(armAngle * Math.PI / 180));
+        rightUpperArm.setAttribute("x2", 100 + 60 * Math.cos(armAngle * Math.PI / 180));
+        rightUpperArm.setAttribute("y2", 90 + 60 * Math.sin(armAngle * Math.PI / 180));
         rightLowerArm.setAttribute("x1", rightUpperArm.getAttribute("x2"));
         rightLowerArm.setAttribute("y1", rightUpperArm.getAttribute("y2"));
-        rightLowerArm.setAttribute("x2", parseFloat(rightUpperArm.getAttribute("x2")) + 20 * Math.cos(armAngle * Math.PI / 180));
-        rightLowerArm.setAttribute("y2", parseFloat(rightUpperArm.getAttribute("y2")) + 50 * Math.sin(armAngle * Math.PI / 180));
+        rightLowerArm.setAttribute("x2", parseFloat(rightUpperArm.getAttribute("x2")) + 40 * Math.cos(armAngle * Math.PI / 180));
+        rightLowerArm.setAttribute("y2", parseFloat(rightUpperArm.getAttribute("y2")) + 60 * Math.sin(armAngle * Math.PI / 180));
 
-        leftUpperLeg.setAttribute("x2", 50 - 20 * Math.cos(legAngle * Math.PI / 180));
-        leftUpperLeg.setAttribute("y2", 200 + 50 * Math.sin(legAngle * Math.PI / 180));
+        leftUpperLeg.setAttribute("x2", 100 - 40 * Math.cos(legAngle * Math.PI / 180));
+        leftUpperLeg.setAttribute("y2", 200 + 100 * Math.sin(legAngle * Math.PI / 180));
         leftLowerLeg.setAttribute("x1", leftUpperLeg.getAttribute("x2"));
         leftLowerLeg.setAttribute("y1", leftUpperLeg.getAttribute("y2"));
-        leftLowerLeg.setAttribute("x2", parseFloat(leftUpperLeg.getAttribute("x2")) - 10 * Math.cos(legAngle * Math.PI / 180));
-        leftLowerLeg.setAttribute("y2", parseFloat(leftUpperLeg.getAttribute("y2")) + 50 * Math.sin(legAngle * Math.PI / 180));
+        leftLowerLeg.setAttribute("x2", parseFloat(leftUpperLeg.getAttribute("x2")) - 20 * Math.cos(legAngle * Math.PI / 180));
+        leftLowerLeg.setAttribute("y2", parseFloat(leftUpperLeg.getAttribute("y2")) + 80 * Math.sin(legAngle * Math.PI / 180));
 
-        rightUpperLeg.setAttribute("x2", 50 + 20 * Math.cos(legAngle * Math.PI / 180));
-        rightUpperLeg.setAttribute("y2", 200 + 50 * Math.sin(legAngle * Math.PI / 180));
+        rightUpperLeg.setAttribute("x2", 100 + 40 * Math.cos(legAngle * Math.PI / 180));
+        rightUpperLeg.setAttribute("y2", 200 + 100 * Math.sin(legAngle * Math.PI / 180));
         rightLowerLeg.setAttribute("x1", rightUpperLeg.getAttribute("x2"));
         rightLowerLeg.setAttribute("y1", rightUpperLeg.getAttribute("y2"));
-        rightLowerLeg.setAttribute("x2", parseFloat(rightUpperLeg.getAttribute("x2")) + 10 * Math.cos(legAngle * Math.PI / 180));
-        rightLowerLeg.setAttribute("y2", parseFloat(rightUpperLeg.getAttribute("y2")) + 50 * Math.sin(legAngle * Math.PI / 180));
+        rightLowerLeg.setAttribute("x2", parseFloat(rightUpperLeg.getAttribute("x2")) + 20 * Math.cos(legAngle * Math.PI / 180));
+        rightLowerLeg.setAttribute("y2", parseFloat(rightUpperLeg.getAttribute("y2")) + 80 * Math.sin(legAngle * Math.PI / 180));
 
         // Update stick figure position with slight body wiggle
         stickFigurePosition.x += velocity.x;
@@ -305,16 +304,16 @@
         if (stickFigurePosition.x <= 50) {
             stickFigurePosition.x = 50;
             velocity.x *= -1;
-        } else if (stickFigurePosition.x >= window.innerWidth - 50) {
-            stickFigurePosition.x = window.innerWidth - 50;
+        } else if (stickFigurePosition.x >= window.innerWidth - 150) {
+            stickFigurePosition.x = window.innerWidth - 150;
             velocity.x *= -1;
         }
 
         if (stickFigurePosition.y <= 0) {
             stickFigurePosition.y = 0;
             velocity.y *= -1;
-        } else if (stickFigurePosition.y >= window.innerHeight - 300) {
-            stickFigurePosition.y = window.innerHeight - 300;
+        } else if (stickFigurePosition.y >= window.innerHeight - 400) {
+            stickFigurePosition.y = window.innerHeight - 400;
             velocity.y *= -1;
         }
 
