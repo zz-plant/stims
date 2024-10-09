@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liquid Audio Reactive Visualizer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -16,21 +16,10 @@
 </head>
 
 <body>
-    <script id="fragmentShader" type="x-shader/x-fragment">
-        uniform float time;
-        uniform sampler2D pointTexture;
-        varying vec3 vColor;
+    <script type="module">
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
 
-        void main() {
-            vec2 uv = gl_PointCoord.xy - 0.5;
-            float alpha = 1.0 - length(uv);
-            alpha = smoothstep(0.0, 1.0, alpha);
-            gl_FragColor = vec4(vColor, alpha);
-        }
-    </script>
-
-    <script>
-        // Set up the Three.js scene
+        // Set up Three.js scene
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 5;
@@ -39,7 +28,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Create the particle system
+        // Particle system
         const particleCount = 5000;
         const particles = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
@@ -58,9 +47,9 @@
         particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        const particleMaterial = new THREE.ShaderMaterial({
+        const particleMaterial = new THREE.PointsMaterial({
             vertexColors: true,
-            fragmentShader: document.getElementById('fragmentShader').textContent,
+            size: 0.05,
             transparent: true,
             blending: THREE.AdditiveBlending,
         });
@@ -80,9 +69,11 @@
             .then(function (stream) {
                 const source = audioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
+                console.log("Microphone access granted.");
             })
             .catch(function (err) {
                 console.error('Error accessing the microphone:', err);
+                alert("Error accessing microphone. Please check permissions and try again.");
             });
 
         // Animate the particles with liquid-like movements
