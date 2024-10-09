@@ -53,7 +53,7 @@ Simply visit [no.toil.fyi](https://no.toil.fyi) to access and enjoy the collecti
   - Adjustable color schemes and sensitivity settings.
   - Responsive visuals that change based on real-time audio input.
 
-### 6. [**index.html**](https://no.toil.fyi/seary.html)
+### 6. [**seary.html**](https://no.toil.fyi/seary.html)
 - **Description**: A trippy, synesthetic visualizer that reacts to both microphone and device audio input, providing a hypnotic, kaleidoscopic effect.
 - **Technologies**: WebGL, microphone and device audio input.
 - **Key Features**:
