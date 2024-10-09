@@ -35,12 +35,11 @@
         }
         #stickFigure {
             position: absolute;
-            top: 50%;
-            left: 50%;
             transform: translate(-50%, -50%);
+            z-index: 5;
         }
         #face {
-            font-size: 40px;
+            font-size: 50px;
             cursor: pointer;
         }
     </style>
@@ -50,20 +49,20 @@
 <div id="controls">
     <button id="startAudio">Start Audio Interaction</button>
 </div>
-<svg id="stickFigure" width="200" height="400">
-    <text id="face" x="100" y="60" text-anchor="middle" alignment-baseline="middle" fill="white">
+<svg id="stickFigure" width="600" height="1200">
+    <text id="face" x="300" y="100" text-anchor="middle" alignment-baseline="middle" fill="white">
         😀
     </text>
-    <rect id="torso" x="80" y="70" width="40" height="130" fill="white" />
-    <line id="neck" x1="100" y1="60" x2="100" y2="70" stroke="white" stroke-width="4" />
-    <line id="leftUpperArm" x1="80" y1="90" x2="40" y2="150" stroke="white" stroke-width="6" />
-    <line id="leftLowerArm" x1="40" y1="150" x2="20" y2="210" stroke="white" stroke-width="6" />
-    <line id="rightUpperArm" x1="120" y1="90" x2="160" y2="150" stroke="white" stroke-width="6" />
-    <line id="rightLowerArm" x1="160" y1="150" x2="180" y2="210" stroke="white" stroke-width="6" />
-    <line id="leftUpperLeg" x1="100" y1="200" x2="70" y2="300" stroke="white" stroke-width="8" />
-    <line id="leftLowerLeg" x1="70" y1="300" x2="50" y2="380" stroke="white" stroke-width="8" />
-    <line id="rightUpperLeg" x1="100" y1="200" x2="130" y2="300" stroke="white" stroke-width="8" />
-    <line id="rightLowerLeg" x1="130" y1="300" x2="150" y2="380" stroke="white" stroke-width="8" />
+    <rect id="torso" x="280" y="120" width="40" height="400" fill="white" />
+    <line id="neck" x1="300" y1="100" x2="300" y2="120" stroke="white" stroke-width="4" />
+    <line id="leftUpperArm" x1="280" y1="150" x2="180" y2="300" stroke="white" stroke-width="6" />
+    <line id="leftLowerArm" x1="180" y1="300" x2="140" y2="440" stroke="white" stroke-width="6" />
+    <line id="rightUpperArm" x1="320" y1="150" x2="420" y2="300" stroke="white" stroke-width="6" />
+    <line id="rightLowerArm" x1="420" y1="300" x2="460" y2="440" stroke="white" stroke-width="6" />
+    <line id="leftUpperLeg" x1="300" y1="520" x2="240" y2="800" stroke="white" stroke-width="8" />
+    <line id="leftLowerLeg" x1="240" y1="800" x2="200" y2="1100" stroke="white" stroke-width="8" />
+    <line id="rightUpperLeg" x1="300" y1="520" x2="360" y2="800" stroke="white" stroke-width="8" />
+    <line id="rightLowerLeg" x1="360" y1="800" x2="400" y2="1100" stroke="white" stroke-width="8" />
 </svg>
 <script>
     const canvas = document.getElementById("glCanvas");
@@ -223,23 +222,23 @@
         const armAngle = lowFreq * 60 + midFreq * 40;
         const legAngle = midFreq * 60 + highFreq * 40;
 
-        leftUpperArm.setAttribute("x2", 40 + armAngle);
-        rightUpperArm.setAttribute("x2", 160 - armAngle);
-        leftLowerArm.setAttribute("y2", 150 + armAngle);
-        rightLowerArm.setAttribute("y2", 150 + armAngle);
+        leftUpperArm.setAttribute("x2", 180 - armAngle);
+        rightUpperArm.setAttribute("x2", 420 + armAngle);
+        leftLowerArm.setAttribute("y2", 300 + armAngle);
+        rightLowerArm.setAttribute("y2", 300 + armAngle);
 
-        leftUpperLeg.setAttribute("x2", 70 - legAngle);
-        rightUpperLeg.setAttribute("x2", 130 + legAngle);
-        leftLowerLeg.setAttribute("y2", 300 + legAngle);
-        rightLowerLeg.setAttribute("y2", 300 + legAngle);
+        leftUpperLeg.setAttribute("x2", 240 - legAngle);
+        rightUpperLeg.setAttribute("x2", 360 + legAngle);
+        leftLowerLeg.setAttribute("y2", 800 + legAngle);
+        rightLowerLeg.setAttribute("y2", 800 + legAngle);
     }
 
     function moveStickFigure() {
         const stickFigure = document.getElementById("stickFigure");
         const maxX = window.innerWidth - stickFigure.clientWidth;
         const maxY = window.innerHeight - stickFigure.clientHeight;
-        const x = Math.sin(time * 0.5) * maxX * 0.4 + maxX / 2;
-        const y = Math.cos(time * 0.5) * maxY * 0.4 + maxY / 2;
+        const x = Math.sin(time * 0.3) * maxX * 0.4 + maxX / 2;
+        const y = Math.cos(time * 0.3) * maxY * 0.4 + maxY / 2;
         stickFigure.style.transform = `translate(${x}px, ${y}px)`;
     }
     
