@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL Audio Visualizer (Mic Input)</title>
+    <title>Retrofuturistic WebGL Visualizer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
@@ -14,14 +14,14 @@
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
 
         let scene, camera, renderer;
-        let analyser, dataArray, particleSystem, lowLayer, midLayer;
+        let analyser, dataArray, hexagonLayer, sphereLayer, particleSystem;
         let audioContext, source;
 
         async function init() {
             // Set up scene and camera
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 50;
+            camera.position.z = 80;
 
             // Set up WebGL renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -47,17 +47,35 @@
         }
 
         function createVisualLayers() {
-            // Low Frequency Layer (Pulsating Circle)
-            const lowGeometry = new THREE.CircleGeometry(10, 32);
-            const lowMaterial = new THREE.MeshBasicMaterial({ color: 0xff2222, transparent: true, opacity: 0.6 });
-            lowLayer = new THREE.Mesh(lowGeometry, lowMaterial);
-            scene.add(lowLayer);
+            // Hexagonal Layer for mid frequencies
+            const hexagonGeometry = new THREE.IcosahedronGeometry(15, 1); // Geodesic dome look
+            const hexagonMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });
+            hexagonLayer = new THREE.Mesh(hexagonGeometry, hexagonMaterial);
+            scene.add(hexagonLayer);
 
-            // Mid Frequency Layer (Rotating Torus)
-            const midGeometry = new THREE.TorusGeometry(20, 1, 16, 100);
-            const midMaterial = new THREE.MeshBasicMaterial({ color: 0x22ff22, wireframe: true });
-            midLayer = new THREE.Mesh(midGeometry, midMaterial);
-            scene.add(midLayer);
+            // Neon Sphere Layer for low frequencies
+            const sphereGeometry = new THREE.SphereGeometry(10, 64, 64);
+            const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true });
+            sphereLayer = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            scene.add(sphereLayer);
+
+            // High-frequency Particle System (Neon)
+            const particleCount = 1500;
+            const particles = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            for (let i = 0; i < particleCount * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 200;
+            }
+            particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x22ff22,
+                size: 2,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+            });
+            particleSystem = new THREE.Points(particles, particleMaterial);
+            scene.add(particleSystem);
         }
 
         async function getMicrophoneInput() {
@@ -94,14 +112,18 @@
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
-                // Low Layer: Pulsating
-                lowLayer.scale.set(1 + dataArray[20] / 255, 1 + dataArray[20] / 255, 1);
-                lowLayer.material.color.setHSL(dataArray[20] / 255, 1.0, 0.5);
+                // Hexagon Layer: Slow rotation and pulsation (Mid Frequencies)
+                hexagonLayer.rotation.x += 0.01 * (dataArray[100] / 255);
+                hexagonLayer.rotation.y += 0.01 * (dataArray[100] / 255);
+                hexagonLayer.scale.set(1 + dataArray[100] / 255, 1 + dataArray[100] / 255, 1);
 
-                // Mid Layer: Rotating
-                midLayer.rotation.x += 0.01 * (dataArray[100] / 255);
-                midLayer.rotation.y += 0.01 * (dataArray[100] / 255);
-                midLayer.material.color.setHSL(dataArray[100] / 255, 0.5, 0.5);
+                // Sphere Layer: Breathing/pulsating (Low Frequencies)
+                sphereLayer.scale.set(1 + dataArray[20] / 255, 1 + dataArray[20] / 255, 1);
+                sphereLayer.material.color.setHSL(dataArray[20] / 255, 1.0, 0.5);
+
+                // Particle System: High Frequencies
+                particleSystem.material.size = (dataArray[150] / 255) * 5;
+                particleSystem.material.color.setHSL(dataArray[150] / 255, 1.0, 0.5);
             }
 
             // Render the scene
