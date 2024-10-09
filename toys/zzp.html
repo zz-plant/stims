@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Audio-Reactive Toy</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
     <style>
         body {
             margin: 0;
@@ -21,10 +22,10 @@
     <canvas id="toy-canvas"></canvas>
 
     <script type="module">
-        import { initScene, initCamera, initRenderer } from './assets/js/core/scene-setup.js';
-        import { initLighting, initAmbientLight } from './assets/js/lighting/lighting-setup.js';
-        import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
-        import { applyAudioRotation, applyAudioScale } from './assets/js/utils/animation-utils.js';
+        import { initScene, initCamera, initRenderer } from '../assets/js/core/scene-setup.js';
+        import { initLighting, initAmbientLight } from '../assets/js/lighting/lighting-setup.js';
+        import { initAudio, getFrequencyData } from '../assets/js/utils/audio-handler.js';
+        import { applyAudioRotation, applyAudioScale } from '../assets/js/utils/animation-utils.js';
 
         let scene, camera, renderer, torus;
 
