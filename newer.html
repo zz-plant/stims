@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced WebGPU Visualizer</title>
+    <title>Synesthetic Audio Visualizer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
@@ -15,7 +15,7 @@
         import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.min.js';
 
         let scene, camera, renderer;
-        let analyser, dataArray, torusKnot, octahedron, particleSystem, dodecahedron, light1, light2;
+        let analyser, dataArray, torusKnot, octahedron, particleSystem, light1, light2, fractalShape;
         let audioContext, source;
 
         async function init() {
@@ -24,7 +24,7 @@
                 return;
             }
 
-            // Create Scene and Camera
+            // Scene and Camera
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 120;
@@ -34,8 +34,8 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Create Dynamic Geometry and Particle Systems
-            createGeometry();
+            // Create Geometries and Light Effects
+            createVisualElements();
 
             // Get Audio Input from Microphone
             try {
@@ -49,33 +49,26 @@
             animate();
         }
 
-        function createGeometry() {
+        function createVisualElements() {
             // Geometry: Torus Knot (Mid frequencies)
             const torusKnotGeometry = new THREE.TorusKnotGeometry(8, 2, 100, 16);
             const torusKnotMaterial = new THREE.MeshStandardMaterial({ color: 0xff8800, wireframe: true });
             torusKnot = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
             scene.add(torusKnot);
 
-            // Geometry: Octahedron (Low frequencies)
-            const octahedronGeometry = new THREE.OctahedronGeometry(10);
-            const octahedronMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff99, wireframe: true });
-            octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
-            octahedron.position.set(-25, 0, 0);
-            scene.add(octahedron);
-
-            // Geometry: Dodecahedron (High frequencies)
-            const dodecahedronGeometry = new THREE.DodecahedronGeometry(7);
-            const dodecahedronMaterial = new THREE.MeshStandardMaterial({ color: 0x0077ff, wireframe: true });
-            dodecahedron = new THREE.Mesh(dodecahedronGeometry, dodecahedronMaterial);
-            dodecahedron.position.set(25, 0, 0);
-            scene.add(dodecahedron);
+            // Geometry: Organic Fractal Shape
+            const fractalGeometry = new THREE.IcosahedronGeometry(10, 2); // Fractal-like shape
+            const fractalMaterial = new THREE.MeshStandardMaterial({ color: 0x0077ff, wireframe: true });
+            fractalShape = new THREE.Mesh(fractalGeometry, fractalMaterial);
+            fractalShape.position.set(0, 0, 0);
+            scene.add(fractalShape);
 
             // Particle System
-            const particleCount = 3000;
+            const particleCount = 4000;
             const particles = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 150;
+                positions[i] = (Math.random() - 0.5) * 200;
             }
             particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
@@ -88,12 +81,12 @@
             particleSystem = new THREE.Points(particles, particleMaterial);
             scene.add(particleSystem);
 
-            // Add Dynamic Moving Lights
+            // Dynamic Moving Lights
             light1 = new THREE.PointLight(0xff0000, 2, 100);
             light1.position.set(0, 50, 50);
             scene.add(light1);
 
-            light2 = new THREE.PointLight(0x0000ff, 2, 100);
+            light2 = new THREE.PointLight(0x00ff00, 2, 100);
             light2.position.set(50, 0, 50);
             scene.add(light2);
         }
@@ -128,30 +121,25 @@
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
-                // Respond to Mid Frequencies (Torus Knot)
+                // Mid Frequencies for Torus Knot
                 const midFreq = dataArray[100] / 255;
                 torusKnot.rotation.x += 0.02 + midFreq * 0.1;
                 torusKnot.rotation.y += 0.02 + midFreq * 0.1;
 
-                // Low Frequencies (Octahedron)
-                const lowFreq = dataArray[20] / 255;
-                octahedron.rotation.x += 0.01 + lowFreq * 0.05;
-                octahedron.scale.set(1 + lowFreq * 1.5, 1 + lowFreq * 1.5, 1);
+                // Fractal-like shape distortion
+                const fractalFreq = dataArray[80] / 255;
+                fractalShape.scale.set(1 + fractalFreq * 0.8, 1 + fractalFreq * 0.8, 1);
 
-                // High Frequencies (Dodecahedron)
+                // Particle System bursts and trails
                 const highFreq = dataArray[150] / 255;
-                dodecahedron.rotation.z += 0.02 + highFreq * 0.1;
-                dodecahedron.scale.set(1 + highFreq * 1.2, 1 + highFreq * 1.2, 1);
+                particleSystem.material.size = 2 + highFreq * 4;
+                particleSystem.material.color.setHSL(highFreq, 1.0, 0.7);
 
-                // Particle System bursts
-                particleSystem.material.size = 2 + highFreq * 5;
-                particleSystem.material.color.setHSL(highFreq, 1.0, 0.5);
+                // Moving lights with trailing effect
+                light1.position.x = Math.sin(midFreq * Math.PI * 2) * 40;
+                light2.position.y = Math.cos(highFreq * Math.PI * 2) * 40;
 
-                // Moving lights reacting to mid and high frequencies
-                light1.position.x = Math.sin(midFreq * Math.PI * 2) * 30;
-                light2.position.y = Math.cos(highFreq * Math.PI * 2) * 30;
-
-                // Background color based on bass and treble
+                // Background color inversions
                 const bass = dataArray[20] / 255;
                 const treble = dataArray[150] / 255;
                 const bgColor = new THREE.Color(`hsl(${bass * 360}, 100%, ${50 + treble * 50}%)`);
