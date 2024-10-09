@@ -60,7 +60,7 @@ Simply visit [no.toil.fyi](https://no.toil.fyi) to access and enjoy the collecti
   - Multi-touch interaction and device orientation effects.
   - Dynamic, colorful visuals with responsive audio analysis.
 
-### 7. [**scratch.html**](https://no.toil.fyi/scratch.html)
+### 7. [**stickman.html**](https://no.toil.fyi/stickman.html)
 - **Description**: A playful visual toy with a stick figure that interacts with audio input for a lighthearted and fun experience.
 - **Technologies**: WebGL, SVG, microphone input.
 - **Key Features**:
