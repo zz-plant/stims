@@ -2,313 +2,245 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sensory-Integrated Audio Visualizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transport to Another Dimension - Enhanced</title>
     <style>
-        body, html {
+        html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background-color: black;
-            touch-action: none;
+            background: #000;
+            font-family: 'Courier New', Courier, monospace;
         }
-        #startButton {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 12px 24px;
-            font-size: 16px;
-            cursor: pointer;
-            z-index: 1;
+        canvas {
+            display: block;
         }
     </style>
 </head>
 <body>
-    <canvas id="glCanvas"></canvas>
-    <button id="startButton">Start Audio Visualization</button>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        const canvas = document.getElementById('glCanvas');
-        const gl = canvas.getContext('webgl');
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
 
-        if (!gl) {
-            alert('WebGL not supported in this browser.');
-            throw new Error('WebGL not supported');
+        // Torus geometry to create a surreal tunnel effect
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x0affef, 
+            emissive: 0x001133, 
+            emissiveIntensity: 0.7, 
+            metalness: 0.9, 
+            roughness: 0.3 
+        });
+        const torusKnot = new THREE.Mesh(geometry, material);
+        scene.add(torusKnot);
+
+        // Lighting for cyberpunk effect
+        const pointLight1 = new THREE.PointLight(0xff0099, 2, 100);
+        pointLight1.position.set(20, 30, 20);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x00ffff, 2, 100);
+        pointLight2.position.set(-20, -30, 20);
+        scene.add(pointLight2);
+
+        const ambientLight = new THREE.AmbientLight(0x222244); // soft blue/purple light
+        scene.add(ambientLight);
+
+        // Adding some fog for depth and mystery
+        scene.fog = new THREE.Fog(0x000000, 50, 200);
+
+        // Positioning the camera for the dimensional effect
+        camera.position.z = 60;
+
+        let speed = 0.2; // Speed of movement through the "dimension"
+
+        // Adding some fine detail with particle effects
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 5000;
+        const positions = new Float32Array(particlesCount * 3);
+
+        for (let i = 0; i < particlesCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 500;
         }
 
-        // Resize canvas to fit the window
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-        // Vertex shader source code
-        const vertexShaderSource = `
-            attribute vec2 a_position;
-            varying vec2 v_uv;
-            void main() {
-                v_uv = a_position * 0.5 + 0.5;
-                gl_Position = vec4(a_position, 0.0, 1.0);
-            }
-        `;
+        const particlesMaterial = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.5, opacity: 0.8, transparent: true });
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particles);
 
-        // Fragment shader source code
-        const fragmentShaderSource = `
-            precision highp float;
-            varying vec2 v_uv;
-            uniform float u_time;
-            uniform vec2 u_resolution;
-            uniform float u_bass;
-            uniform float u_mid;
-            uniform float u_treble;
-            uniform vec2 u_mouse;
-            uniform vec2 u_touch;
-            uniform vec3 u_orientation;
-
-            float random(vec2 st) {
-                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-            }
-
-            float noise(vec2 st) {
-                vec2 i = floor(st);
-                vec2 f = fract(st);
-
-                float a = random(i);
-                float b = random(i + vec2(1.0, 0.0));
-                float c = random(i + vec2(0.0, 1.0));
-                float d = random(i + vec2(1.0, 1.0));
-
-                vec2 u = f * f * (3.0 - 2.0 * f);
-
-                return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-            }
-
-            void main() {
-                vec2 uv = v_uv;
-                vec2 centeredUv = uv - 0.5;
-
-                float time = u_time * 0.5;
-
-                // Apply device orientation to distort the UV coordinates
-                centeredUv += u_orientation.xy * 0.05;
-
-                // Generate noise patterns
-                float n = noise(centeredUv * 5.0 + time);
-                float n2 = noise(centeredUv * 10.0 - time);
-
-                // Create dynamic color patterns based on audio frequencies
-                float bassEffect = u_bass * 2.0;
-                float midEffect = u_mid * 2.0;
-                float trebleEffect = u_treble * 2.0;
-
-                vec3 color = vec3(0.0);
-
-                // Apply bass effect
-                color.r += smoothstep(0.4, 0.6, n + bassEffect * 0.5);
-
-                // Apply mid effect
-                color.g += smoothstep(0.3, 0.7, n2 + midEffect * 0.5);
-
-                // Apply treble effect
-                color.b += smoothstep(0.2, 0.8, n + trebleEffect * 0.5);
-
-                // Add radial gradient
-                float radius = length(centeredUv) * 2.0;
-                color *= smoothstep(1.0, 0.0, radius);
-
-                // Add mouse interaction effect
-                float mouseDist = length(centeredUv - (u_mouse - 0.5));
-                color += vec3(0.2 / (mouseDist + 0.1));
-
-                // Add touch interaction effect
-                float touchDist = length(centeredUv - (u_touch - 0.5));
-                color += vec3(0.2 / (touchDist + 0.1));
-
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `;
-
-        // Compile shader and create program
-        function createShader(gl, type, source) {
-            const shader = gl.createShader(type);
-            gl.shaderSource(shader, source);
-            gl.compileShader(shader);
-
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error('Shader compile failed:', gl.getShaderInfoLog(shader));
-                gl.deleteShader(shader);
-                throw new Error('Shader compile failed');
-            }
-            return shader;
+        // Adding interactive rings
+        const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xffaa00, side: THREE.DoubleSide });
+        const rings = [];
+        for (let i = 0; i < 10; i++) {
+            const ringGeometry = new THREE.RingGeometry(5, 10, 32);
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            ring.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * -500);
+            ring.rotation.x = Math.random() * Math.PI;
+            ring.rotation.y = Math.random() * Math.PI;
+            scene.add(ring);
+            rings.push(ring);
         }
 
-        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-
-        // Create and link the program
-        const program = gl.createProgram();
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
-
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error('Program link failed:', gl.getProgramInfoLog(program));
-            gl.deleteProgram(program);
-            throw new Error('Program link failed');
-        }
-
-        gl.useProgram(program);
-
-        // Set up geometry data (full-screen quad)
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        const positions = [
-            -1, -1, // Bottom left
-             1, -1, // Bottom right
-            -1,  1, // Top left
-            -1,  1, // Top left
-             1, -1, // Bottom right
-             1,  1, // Top right
-        ];
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-        const positionLocation = gl.getAttribLocation(program, 'a_position');
-        gl.enableVertexAttribArray(positionLocation);
-        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        // Get uniform locations
-        const timeLocation = gl.getUniformLocation(program, 'u_time');
-        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
-        const bassLocation = gl.getUniformLocation(program, 'u_bass');
-        const midLocation = gl.getUniformLocation(program, 'u_mid');
-        const trebleLocation = gl.getUniformLocation(program, 'u_treble');
-        const mouseLocation = gl.getUniformLocation(program, 'u_mouse');
-        const touchLocation = gl.getUniformLocation(program, 'u_touch');
-        const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
-
-        // Set static uniforms
-        gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-
-        // Initialize variables
-        let startTime = null;
-        let bass = 0.0;
-        let mid = 0.0;
-        let treble = 0.0;
-        let mousePosition = [0.5, 0.5];
-        let touchPosition = [0.5, 0.5];
-        let audioAnalyser = null;
-        let lastVibrateTime = 0;
-        let orientation = [0.0, 0.0, 0.0];
-
-        // Audio setup
-        function setupAudio() {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioContext.createMediaStreamSource(stream);
-                audioAnalyser = audioContext.createAnalyser();
-                audioAnalyser.fftSize = 256;
-                source.connect(audioAnalyser);
-            }).catch(err => {
-                alert('Microphone access denied.');
-                console.error('Error accessing microphone:', err);
+        // Adding new procedural shapes
+        const shapes = [];
+        function createRandomShape() {
+            const shapeType = Math.floor(Math.random() * 3);
+            let shape;
+            let shapeMaterial = new THREE.MeshStandardMaterial({
+                color: Math.random() * 0xffffff,
+                emissive: Math.random() * 0x222222,
+                metalness: 0.7,
+                roughness: 0.4
             });
-        }
 
-        // Start audio on button click
-        const startButton = document.getElementById('startButton');
-        startButton.addEventListener('click', () => {
-            setupAudio();
-            startButton.style.display = 'none';
-        });
-
-        // Handle mouse movement
-        canvas.addEventListener('mousemove', event => {
-            const rect = canvas.getBoundingClientRect();
-            mousePosition = [
-                (event.clientX - rect.left) / canvas.width,
-                1.0 - (event.clientY - rect.top) / canvas.height,
-            ];
-        });
-
-        // Handle touch movement
-        canvas.addEventListener('touchmove', event => {
-            event.preventDefault();
-            const touch = event.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            touchPosition = [
-                (touch.clientX - rect.left) / canvas.width,
-                1.0 - (touch.clientY - rect.top) / canvas.height,
-            ];
-        }, { passive: false });
-
-        // Handle device orientation
-        window.addEventListener('deviceorientation', event => {
-            const gamma = event.gamma || 0; // Left to right tilt in degrees [-90,90]
-            const beta = event.beta || 0;   // Front to back tilt in degrees [-180,180]
-            const alpha = event.alpha || 0; // Compass direction
-
-            // Normalize the orientation values
-            orientation = [
-                gamma / 90.0,  // X-axis
-                beta / 180.0,  // Y-axis
-                alpha / 360.0  // Z-axis
-            ];
-        });
-
-        // Render loop
-        function render(currentTime) {
-            if (!startTime) startTime = currentTime;
-            const elapsedTime = (currentTime - startTime) / 1000.0;
-
-            // Update uniforms
-            gl.uniform1f(timeLocation, elapsedTime);
-            gl.uniform2f(mouseLocation, mousePosition[0], mousePosition[1]);
-            gl.uniform2f(touchLocation, touchPosition[0], touchPosition[1]);
-            gl.uniform3f(orientationLocation, orientation[0], orientation[1], orientation[2]);
-
-            if (audioAnalyser) {
-                const bufferLength = audioAnalyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-                audioAnalyser.getByteFrequencyData(dataArray);
-
-                // Divide frequency data into bass, mid, and treble
-                const bassData = dataArray.slice(0, bufferLength / 4);
-                const midData = dataArray.slice(bufferLength / 4, bufferLength / 2);
-                const trebleData = dataArray.slice(bufferLength / 2);
-
-                // Calculate average values
-                const bassAvg = bassData.reduce((a, b) => a + b, 0) / bassData.length / 255.0;
-                const midAvg = midData.reduce((a, b) => a + b, 0) / midData.length / 255.0;
-                const trebleAvg = trebleData.reduce((a, b) => a + b, 0) / trebleData.length / 255.0;
-
-                // Smooth the values
-                bass += (bassAvg - bass) * 0.1;
-                mid += (midAvg - mid) * 0.1;
-                treble += (trebleAvg - treble) * 0.1;
-
-                gl.uniform1f(bassLocation, bass);
-                gl.uniform1f(midLocation, mid);
-                gl.uniform1f(trebleLocation, treble);
-
-                // Haptic feedback based on bass levels
-                const currentTimeMs = performance.now();
-                if (bass > 0.5 && currentTimeMs - lastVibrateTime > 500) {
-                    if (navigator.vibrate) {
-                        navigator.vibrate(100);
-                    }
-                    lastVibrateTime = currentTimeMs;
-                }
+            switch (shapeType) {
+                case 0:
+                    shape = new THREE.SphereGeometry(5, 32, 32);
+                    break;
+                case 1:
+                    shape = new THREE.BoxGeometry(7, 7, 7);
+                    break;
+                case 2:
+                    shape = new THREE.ConeGeometry(5, 15, 32);
+                    break;
             }
 
-            // Clear and draw
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-            requestAnimationFrame(render);
+            const mesh = new THREE.Mesh(shape, shapeMaterial);
+            mesh.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * -500);
+            mesh.rotation.x = Math.random() * Math.PI;
+            mesh.rotation.y = Math.random() * Math.PI;
+            scene.add(mesh);
+            shapes.push(mesh);
         }
-        requestAnimationFrame(render);
+
+        for (let i = 0; i < 5; i++) {
+            createRandomShape();
+        }
+
+        // Setup audio for interaction from microphone
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audioSource = audioContext.createMediaStreamSource(stream);
+            const analyser = audioContext.createAnalyser();
+
+            audioSource.connect(analyser);
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Get audio data
+                analyser.getByteFrequencyData(dataArray);
+                const lowerHalfArray = dataArray.slice(0, (dataArray.length / 2) - 1);
+                const upperHalfArray = dataArray.slice((dataArray.length / 2) - 1, dataArray.length - 1);
+
+                // Normalize the frequency data
+                const overallAvg = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+                const lowerMax = Math.max(...lowerHalfArray);
+                const upperMax = Math.max(...upperHalfArray);
+
+                // Adjust torus properties based on music
+                torusKnot.scale.set(1 + lowerMax / 255, 1 + lowerMax / 255, 1 + lowerMax / 255);
+                torusKnot.rotation.z += upperMax / 10000;
+
+                // Apply dynamic camera movement based on music
+                camera.position.x = Math.sin(overallAvg / 20) * 10;
+                camera.position.y = Math.cos(overallAvg / 20) * 5;
+
+                // Ensure torus is always visible by making the camera look at it
+                camera.lookAt(torusKnot.position);
+
+                // Apply rotations to create a dynamic movement
+                torusKnot.rotation.x += 0.01 + (upperMax / 5000);
+                torusKnot.rotation.y += 0.01 + (lowerMax / 5000);
+
+                // Rotate particles for more visual interest
+                particles.rotation.y += 0.001 + (upperMax / 20000);
+                particles.rotation.x += 0.0005 + (lowerMax / 20000);
+
+                // Add pulse effect to lighting for more "juice"
+                pointLight1.intensity = 1 + (lowerMax / 255) * 2;
+                pointLight2.intensity = 1 + (upperMax / 255) * 2;
+
+                // Move the camera forward to simulate movement
+                camera.position.z -= speed;
+
+                // Ensure the torus does not get too far away
+                if (camera.position.z - torusKnot.position.z > 50) {
+                    torusKnot.position.z = camera.position.z - 30;
+                }
+
+                // Rotate and move rings to keep the scene dynamic
+                rings.forEach((ring, index) => {
+                    ring.rotation.x += 0.01;
+                    ring.rotation.y += 0.01;
+                    ring.position.z += 1.0; // Move rings towards the camera
+
+                    if (ring.position.z > 10) {
+                        ring.position.z = -500;
+                        ring.position.x = Math.random() * 100 - 50;
+                        ring.position.y = Math.random() * 100 - 50;
+                    }
+
+                    // Introduce procedural serendipity
+                    if (Math.random() > 0.995) {
+                        ring.material.color.setHex(Math.random() * 0xffffff);
+                        ring.scale.set(1 + Math.random(), 1 + Math.random(), 1);
+                        ring.rotation.x += Math.random() * 0.5;
+                        ring.rotation.y += Math.random() * 0.5;
+                    }
+                });
+
+                // Add random color changes to rings for visual diversity
+                if (Math.random() > 0.98) {
+                    rings.forEach((ring) => {
+                        ring.material.color.setHex(Math.random() * 0xffffff);
+                    });
+                }
+
+                // Rotate and move shapes to keep the scene dynamic
+                shapes.forEach((shape) => {
+                    shape.rotation.x += 0.01;
+                    shape.rotation.y += 0.01;
+                    shape.position.z += 1.5; // Move shapes towards the camera
+
+                    if (shape.position.z > 10) {
+                        shape.position.z = -500;
+                        shape.position.x = Math.random() * 100 - 50;
+                        shape.position.y = Math.random() * 100 - 50;
+                    }
+                });
+
+                // Occasionally create new shapes to add surprise elements
+                if (Math.random() > 0.99) {
+                    createRandomShape();
+                }
+
+                // Render scene
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        }).catch(function(err) {
+            console.error('The following error occurred: ' + err);
+        });
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
