@@ -118,8 +118,8 @@
                 hexagonLayer.scale.set(1 + (dataArray[100] / 50), 1 + (dataArray[100] / 50), 1);
 
                 // Pulse sphere with low frequencies
-                sphereLayer.scale.set(1 + (dataArray[20] / 25), 1 + (dataArray[20] / 25), 1);  // Increase effect
-                sphereLayer.material.color.setHSL(dataArray[20] / 255, 1.0, 0.5);
+                sphereLayer.scale.set(1 + (dataArray[20] / 10), 1 + (dataArray[20] / 10), 1);  // Increase sensitivity
+                sphereLayer.material.color.setHSL(dataArray[20] / 255, 1.0, 0.5);  // Color adjustment
 
                 // Particle system reacting to high frequencies
                 particleSystem.material.size = (dataArray[150] / 255) * 5;
@@ -128,8 +128,8 @@
                 // Background color reacting to audio
                 const bass = dataArray[20] / 255;
                 const treble = dataArray[150] / 255;
-                const color = new THREE.Color(`hsl(${Math.floor(bass * 360)}, 100%, ${Math.floor(treble * 50 + 25)}%)`);
-                renderer.setClearColor(color, 1);  // Dynamic background color based on audio
+                const bgColor = new THREE.Color(`hsl(${bass * 360}, 100%, ${50 + treble * 50}%)`);
+                renderer.setClearColor(bgColor, 1);  // Adjust clear color (background)
             }
 
             // Render the scene
