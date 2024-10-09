@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Interactive Star Guitar Visualizer</title>
+    <title>Star Guitar Inspired Visualizer</title>
     <style>
         html, body {
             margin: 0;
@@ -13,67 +13,24 @@
         canvas {
             display: block;
         }
-        #helpOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            text-align: center;
-        }
-        #helpOverlay button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #444;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-        }
-        #helpOverlay button:hover {
-            background: #555;
-        }
     </style>
 </head>
 <body>
-    <div id="helpOverlay">
-        <h1>Welcome to the Interactive Visualizer!</h1>
-        <p>Use mouse or touch gestures to interact:</p>
-        <ul>
-            <li><strong>Mouse:</strong> Click and drag to rotate, scroll to zoom.</li>
-            <li><strong>Touch:</strong> Swipe to rotate, pinch to zoom.</li>
-            <li><strong>Mobile:</strong> Tilt your device to change the view.</li>
-        </ul>
-        <button id="startButton">Start Visualizer</button>
-    </div>
     <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Include Hammer.js for touch gestures -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script>
-        // Global variables
+        // Scene setup
         let scene, camera, renderer, clock;
         let analyser, frequencyData;
-        let lastAudioUpdateTime = 0;
-        const audioUpdateInterval = 50; // Update every 50ms
-        let cameraRotation = { x: 0, y: 0 };
-        let isDeviceOrientationAvailable = false;
-        let sensitivity = 0.005; // Default sensitivity
-        let cameraShakeAmplitude = 0;
-        let beatThreshold = 150;
         let lastBeatTime = 0;
-        let minBeatInterval = 500; // Minimum interval between beats in milliseconds
-        let scenery = [];
-        let cloudParticles = [];
+        const minBeatInterval = 500; // Minimum interval between beats in milliseconds
+        const scenery = [];
+        const beatThreshold = 150;
+        const modularElements = [];
+        const modularElementSpacing = 20;
+        const cameraSpeed = 10;
 
         function init() {
-            // Scene setup
             scene = new THREE.Scene();
             scene.fog = new THREE.Fog(0x000000, 10, 200);
 
@@ -85,12 +42,10 @@
                 1000
             );
             camera.position.set(0, 2, 5);
-            camera.rotation.order = 'YXZ'; // Use YXZ order for proper clamping
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
 
             // Lighting setup
@@ -99,108 +54,71 @@
 
             const directionalLight = new THREE.DirectionalLight(0xffcc88, 0.8);
             directionalLight.position.set(0, 50, -50);
-            directionalLight.castShadow = true;
             scene.add(directionalLight);
 
             // Initialize scene elements
-            createSky();
-            createGround();
-            createRoad();
-            createScenery();
+            createInitialScenery();
+            createModularElements();
 
             // Initialize clock
             clock = new THREE.Clock();
 
-            // Setup interactions
-            setupInteraction();
-
-            // Show help overlay
-            document.getElementById('startButton').addEventListener('click', function() {
-                document.getElementById('helpOverlay').style.display = 'none';
-                setupAudio();
-                animate();
-            });
+            // Setup audio
+            setupAudio();
 
             // Handle window resize
             window.addEventListener('resize', onWindowResize, false);
+
+            animate();
         }
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        function createSky() {
-            // Skybox or background setup
-            const loader = new THREE.TextureLoader();
-            loader.load('https://threejs.org/examples/textures/skybox/py.jpg', function(texture) {
-                const skyMaterial = new THREE.MeshBasicMaterial({
-                    map: texture,
-                    side: THREE.BackSide
-                });
-                const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
-                const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-                scene.add(sky);
-            });
-        }
-
-        function createGround() {
-            const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
-            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
-            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-            ground.rotation.x = -Math.PI / 2;
-            ground.receiveShadow = true;
-            scene.add(ground);
-        }
-
-        function createRoad() {
-            const roadGeometry = new THREE.PlaneGeometry(10, 1000);
-            const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
-            const road = new THREE.Mesh(roadGeometry, roadMaterial);
-            road.rotation.x = -Math.PI / 2;
-            road.position.y = 0.01;
-            road.receiveShadow = true;
-            scene.add(road);
-        }
-
-        function createScenery() {
-            const treeGeometry = new THREE.ConeGeometry(1, 4, 8);
-            const treeMaterial = new THREE.MeshLambertMaterial({ color: 0x228822 });
-
+        function createInitialScenery() {
+            // Create repeating scenery elements like trees, buildings, and train tracks
             for (let i = 0; i < 100; i++) {
-                const tree = new THREE.Mesh(treeGeometry, treeMaterial);
-                tree.position.set(
-                    Math.random() * 200 - 100,
-                    2,
-                    -Math.random() * 1000
-                );
-                tree.castShadow = true;
-                tree.userData.isDynamicColor = true; // Mark for color changes
-                scene.add(tree);
-                scenery.push(tree);
+                createSynchronizedSceneryElement(-i * 20);
+            }
+        }
+
+        function createSynchronizedSceneryElement(zPosition) {
+            const geometry = new THREE.BoxGeometry(1, Math.random() * 5 + 2, 1);
+            const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
+            const element = new THREE.Mesh(geometry, material);
+            element.position.set(
+                Math.random() * 40 - 20, // Random X position for variety
+                geometry.parameters.height / 2,
+                zPosition // Place at specified z position
+            );
+            element.castShadow = true;
+            scene.add(element);
+            scenery.push(element);
+        }
+
+        function createModularElements() {
+            // Create modular repeating elements like train tracks, poles, and tunnels
+            const trackGeometry = new THREE.BoxGeometry(5, 0.1, modularElementSpacing);
+            const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            for (let i = 0; i < 200; i++) {
+                const track = new THREE.Mesh(trackGeometry, trackMaterial);
+                track.position.set(0, 0, -i * modularElementSpacing);
+                track.receiveShadow = true;
+                scene.add(track);
+                modularElements.push(track);
             }
 
-            // Create clouds
-            const cloudGeometry = new THREE.PlaneGeometry(500, 500);
-            const cloudMaterial = new THREE.MeshLambertMaterial({
-                map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/cloud.png'),
-                transparent: true,
-                opacity: 0.5,
-                depthWrite: false,
-            });
-
-            for (let i = 0; i < 25; i++) {
-                const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
-                cloud.position.set(
-                    Math.random() * 1000 - 500,
-                    Math.random() * 50 + 50,
-                    Math.random() * 1000 - 500
-                );
-                cloud.rotation.z = Math.random() * 2 * Math.PI;
-                scene.add(cloud);
-                cloudParticles.push(cloud);
+            const poleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 10, 16);
+            const poleMaterial = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+            for (let i = 0; i < 100; i++) {
+                const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+                pole.position.set(-10, 5, -i * modularElementSpacing * 2);
+                pole.castShadow = true;
+                scene.add(pole);
+                modularElements.push(pole);
             }
         }
 
@@ -224,30 +142,25 @@
                 });
         }
 
+        function handleBeatDetection() {
+            const overallLevel = frequencyData.reduce((a, b) => a + b, 0) / frequencyData.length;
+            if (overallLevel > beatThreshold && Date.now() - lastBeatTime > minBeatInterval) {
+                lastBeatTime = Date.now();
+                createSynchronizedSceneryElement(camera.position.z - 100);
+            }
+        }
+
         function updateSceneryWithSound() {
-            const now = Date.now();
-            if (analyser && now - lastAudioUpdateTime > audioUpdateInterval) {
-                lastAudioUpdateTime = now;
+            if (analyser) {
                 analyser.getByteFrequencyData(frequencyData);
-
-                // Process frequency data
-                const bass = getFrequencyRangeValue(0, 10);
-                const mid = getFrequencyRangeValue(11, 40);
-                const treble = getFrequencyRangeValue(41, 60);
-
-                // Update camera shake based on bass
-                cameraShakeAmplitude = bass / 5000;
-
-                // Update object colors based on mid frequencies
-                const colorValue = Math.min(1, mid / 255);
-                updateObjectColors(colorValue);
-
-                // Update cloud opacity based on treble frequencies
-                const opacityValue = Math.min(1, treble / 255);
-                updateCloudOpacity(opacityValue);
-
-                // Beat detection and object spawning
                 handleBeatDetection();
+
+                // Update modular elements color and intensity based on frequency data
+                const mid = getFrequencyRangeValue(11, 40);
+                const colorValue = Math.min(1, mid / 255);
+                modularElements.forEach(element => {
+                    element.material.color.setHSL(colorValue, 0.7, 0.5);
+                });
             }
         }
 
@@ -257,180 +170,29 @@
             return sum / slice.length;
         }
 
-        function updateObjectColors(value) {
-            scenery.forEach(obj => {
-                if (obj.material && obj.userData.isDynamicColor) {
-                    obj.material.color.setHSL(value, 0.7, 0.5);
-                }
-            });
-        }
-
-        function updateCloudOpacity(value) {
-            cloudParticles.forEach(cloud => {
-                cloud.material.opacity = 0.5 + value * 0.5;
-            });
-        }
-
-        function handleBeatDetection() {
-            const overallLevel = frequencyData.reduce((a, b) => a + b, 0) / frequencyData.length;
-            if (overallLevel > beatThreshold && Date.now() - lastBeatTime > minBeatInterval) {
-                lastBeatTime = Date.now();
-                createSynchronizedObject();
-            }
-        }
-
-        function createSynchronizedObject() {
-            const geometry = new THREE.SphereGeometry(1, 16, 16);
-            const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
-            const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.set(
-                Math.random() * 20 - 10,
-                Math.random() * 5 + 1,
-                camera.position.z - 10
-            );
-            sphere.castShadow = true;
-            scene.add(sphere);
-
-            // Add to scenery for movement and eventual removal
-            scenery.push(sphere);
-
-            // Remove the object after some time to prevent clutter
-            setTimeout(() => {
-                scene.remove(sphere);
-                const index = scenery.indexOf(sphere);
-                if (index > -1) {
-                    scenery.splice(index, 1);
-                }
-            }, 5000);
-        }
-
-        function setupInteraction() {
-            // Mouse controls
-            setupMouseControls();
-
-            // Touch controls
-            setupTouchControls();
-
-            // Device orientation
-            setupDeviceOrientation();
-        }
-
-        function setupMouseControls() {
-            let isMouseDown = false;
-            let previousMousePosition = { x: 0, y: 0 };
-
-            renderer.domElement.addEventListener('mousedown', function (e) {
-                isMouseDown = true;
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            });
-
-            renderer.domElement.addEventListener('mousemove', function (e) {
-                if (isMouseDown) {
-                    const deltaMove = {
-                        x: e.clientX - previousMousePosition.x,
-                        y: e.clientY - previousMousePosition.y
-                    };
-
-                    cameraRotation.y -= deltaMove.x * sensitivity;
-                    cameraRotation.x -= deltaMove.y * sensitivity;
-                    clampCameraRotation();
-
-                    previousMousePosition = { x: e.clientX, y: e.clientY };
-                }
-            });
-
-            document.addEventListener('mouseup', function () {
-                isMouseDown = false;
-            });
-
-            // Mouse wheel for zoom
-            document.addEventListener('wheel', function (e) {
-                camera.position.z += e.deltaY * 0.01;
-                camera.position.z = Math.max(1, Math.min(100, camera.position.z));
-            });
-        }
-
-        function setupTouchControls() {
-            const hammer = new Hammer(renderer.domElement);
-            hammer.get('pinch').set({ enable: true });
-            hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
-
-            let initialPinchDistance = null;
-            let initialCameraPositionZ = camera.position.z;
-            let isPinching = false;
-
-            hammer.on('pinchstart', function (ev) {
-                isPinching = true;
-                initialPinchDistance = ev.scale;
-                initialCameraPositionZ = camera.position.z;
-            });
-
-            hammer.on('pinchend', function () {
-                isPinching = false;
-            });
-
-            hammer.on('pinch', function (ev) {
-                if (isPinching) {
-                    const scaleFactor = initialPinchDistance / ev.scale;
-                    camera.position.z = initialCameraPositionZ * scaleFactor;
-                    camera.position.z = Math.max(1, Math.min(100, camera.position.z));
-                }
-            });
-
-            hammer.on('pan', function (ev) {
-                if (!isPinching) {
-                    cameraRotation.y -= ev.deltaX * sensitivity * 0.1;
-                    cameraRotation.x -= ev.deltaY * sensitivity * 0.1;
-                    clampCameraRotation();
-                }
-            });
-        }
-
-        function setupDeviceOrientation() {
-            if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientation', function (event) {
-                    if (event.beta !== null && event.gamma !== null) {
-                        isDeviceOrientationAvailable = true;
-                        const beta = THREE.Math.degToRad(event.beta); // X-axis
-                        const gamma = THREE.Math.degToRad(event.gamma); // Y-axis
-                        camera.rotation.x = beta;
-                        camera.rotation.y = gamma;
-                    }
-                }, true);
-            } else {
-                console.warn('DeviceOrientationEvent is not supported');
-            }
-        }
-
-        function clampCameraRotation() {
-            const maxRotationX = Math.PI / 2; // Limit to 90 degrees up/down
-            cameraRotation.x = Math.max(-maxRotationX, Math.min(maxRotationX, cameraRotation.x));
-            camera.rotation.x = cameraRotation.x;
-            camera.rotation.y = cameraRotation.y;
-        }
-
         function animate() {
             requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Move the camera forward
+            camera.position.z -= delta * cameraSpeed;
 
             // Update scenery with sound
             updateSceneryWithSound();
 
-            // Apply camera shake
-            if (cameraShakeAmplitude > 0) {
-                const shakeX = (Math.random() - 0.5) * cameraShakeAmplitude;
-                const shakeY = (Math.random() - 0.5) * cameraShakeAmplitude;
-                const shakeZ = (Math.random() - 0.5) * cameraShakeAmplitude;
-                camera.position.x += shakeX;
-                camera.position.y += shakeY;
-                camera.position.z += shakeZ;
-            }
-
             // Move scenery elements forward
-            const delta = clock.getDelta();
             scenery.forEach(obj => {
-                obj.position.z += delta * 20;
+                obj.position.z += delta * cameraSpeed;
                 if (obj.position.z > camera.position.z + 50) {
-                    obj.position.z -= 1000;
+                    obj.position.z -= 2000; // Loop scenery elements to create repetition
+                }
+            });
+
+            // Move modular elements forward to create a repeating pattern
+            modularElements.forEach(obj => {
+                obj.position.z += delta * cameraSpeed;
+                if (obj.position.z > camera.position.z + 50) {
+                    obj.position.z -= 2000;
                 }
             });
 
