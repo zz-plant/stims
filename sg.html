@@ -90,7 +90,7 @@
         }
 
         function createSynchronizedScenery() {
-            // Create repeating scenery elements like buildings and poles closer to the camera
+            // Create repeating scenery elements like buildings, poles, cars, and trees closer to the camera
             for (let i = 0; i < 50; i++) {
                 const zPosition = -i * 40;
 
@@ -112,6 +112,24 @@
                 pole.castShadow = true;
                 scene.add(pole);
                 scenery.push(pole);
+
+                // Create cars that pop out of the earth in response to bass frequencies
+                const carGeometry = new THREE.BoxGeometry(5, 2, 3);
+                const carMaterial = new THREE.MeshLambertMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 70%, 50%)`) });
+                const car = new THREE.Mesh(carGeometry, carMaterial);
+                car.position.set(Math.random() < 0.5 ? -20 : 20, -1, zPosition + 100); // Start below ground level
+                car.castShadow = true;
+                scene.add(car);
+                scenery.push(car);
+
+                // Create trees that pop out of the earth in response to treble frequencies
+                const treeGeometry = new THREE.ConeGeometry(3, 10, 16);
+                const treeMaterial = new THREE.MeshLambertMaterial({ color: 0x228b22 });
+                const tree = new THREE.Mesh(treeGeometry, treeMaterial);
+                tree.position.set(Math.random() < 0.5 ? -25 : 25, -5, zPosition + 100); // Start below ground level
+                tree.castShadow = true;
+                scene.add(tree);
+                scenery.push(tree);
             }
         }
 
@@ -190,6 +208,20 @@
                     }
                 });
 
+                // Make cars pop out of the earth in response to bass frequencies
+                scenery.forEach(obj => {
+                    if (obj.geometry.type === 'BoxGeometry' && obj.geometry.parameters.height === 2) {
+                        obj.position.y = -1 + bass / 100;
+                    }
+                });
+
+                // Make trees pop out of the earth in response to treble frequencies
+                scenery.forEach(obj => {
+                    if (obj.geometry.type === 'ConeGeometry') {
+                        obj.position.y = -5 + treble / 50;
+                    }
+                });
+
                 // Update the movement of clouds based on higher frequencies
                 distantScenery.forEach(obj => {
                     if (obj.geometry.type === 'SphereGeometry') {
@@ -200,7 +232,7 @@
 
                 // Update building colors based on mid frequencies
                 scenery.forEach(obj => {
-                    if (obj.geometry.type === 'BoxGeometry') {
+                    if (obj.geometry.type === 'BoxGeometry' && obj.geometry.parameters.height !== 2) {
                         const colorValue = Math.min(1, mid / 255);
                         obj.material.color.setHSL(colorValue * 360, 0.8, 0.5);
                     }
