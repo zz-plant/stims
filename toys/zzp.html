@@ -21,25 +21,22 @@
     <canvas id="toy-canvas"></canvas>
 
     <script type="module">
-        import { initScene, initPerspectiveCamera, initRenderer } from './assets/js/core/scene-setup.js';
-        import { initPointLight, initAmbientLight } from './assets/js/lighting-setup.js';
+        import { initScene, initCamera, initRenderer } from './assets/js/core/scene-setup.js';
+        import { initLighting, initAmbientLight } from './assets/js/lighting/lighting-setup.js';
         import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
         import { applyAudioRotation, applyAudioScale } from './assets/js/utils/animation-utils.js';
 
         let scene, camera, renderer, torus;
 
         async function init() {
-            // Initialize scene, camera, and renderer
             scene = initScene();
-            camera = initPerspectiveCamera();
+            camera = initCamera();
             const canvas = document.getElementById('toy-canvas');
             renderer = initRenderer(canvas);
 
-            // Add lighting
-            initPointLight(scene, 0xffffff, 1, { x: 10, y: 10, z: 10 });
-            initAmbientLight(scene, 0x404040, 0.5);
+            initLighting(scene, { color: 0xffffff, intensity: 1 });
+            initAmbientLight(scene, { color: 0x404040, intensity: 0.5 });
 
-            // Create a 3D torus
             const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
             const material = new THREE.MeshStandardMaterial({
                 color: 0x0077ff,
@@ -50,17 +47,15 @@
             torus = new THREE.Mesh(geometry, material);
             scene.add(torus);
 
-            // Initialize audio
             const { analyser, dataArray } = await initAudio();
 
-            // Animation loop
             function animate() {
                 requestAnimationFrame(animate);
 
                 if (analyser) {
                     const audioData = getFrequencyData(analyser, dataArray);
-                    applyAudioRotation(torus, audioData, 0.05); // Reacts to audio
-                    applyAudioScale(torus, audioData, 50);      // Scaling effect based on audio
+                    applyAudioRotation(torus, audioData, 0.05);
+                    applyAudioScale(torus, audioData, 50);
                 }
 
                 renderer.render(scene, camera);
@@ -71,7 +66,6 @@
 
         init();
 
-        // Handle window resizing
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
