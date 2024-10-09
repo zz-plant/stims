@@ -269,28 +269,38 @@
         const rightUpperLeg = document.getElementById("rightUpperLeg");
         const rightLowerLeg = document.getElementById("rightLowerLeg");
 
-        const armAngle = Math.sin(time * 3 + midFreq * 10) * 30 + gravity[0] * 5;
-        const legAngle = Math.sin(time * 2 + lowFreq * 10) * 20 + gravity[1] * 5;
+        const armAngle = Math.sin(time * 3 + midFreq * 10) * 15 + gravity[0] * 5;
+        const legAngle = Math.sin(time * 2 + lowFreq * 10) * 10 + gravity[1] * 5;
 
+        // Update arm positions
         leftUpperArm.setAttribute("x2", 50 - 30 * Math.cos(armAngle * Math.PI / 180));
-        leftUpperArm.setAttribute("y2", 80 + 50 * Math.sin(armAngle * Math.PI / 180));
-        leftLowerArm.setAttribute("x2", leftUpperArm.getAttribute("x2") - 10 * Math.cos(armAngle * Math.PI / 180));
-        leftLowerArm.setAttribute("y2", leftUpperArm.getAttribute("y2") + 50 * Math.sin(armAngle * Math.PI / 180));
+        leftUpperArm.setAttribute("y2", 80 + 30 * Math.sin(armAngle * Math.PI / 180));
+        leftLowerArm.setAttribute("x1", leftUpperArm.getAttribute("x2"));
+        leftLowerArm.setAttribute("y1", leftUpperArm.getAttribute("y2"));
+        leftLowerArm.setAttribute("x2", leftUpperArm.getAttribute("x2") - 20 * Math.cos(armAngle * Math.PI / 180));
+        leftLowerArm.setAttribute("y2", leftUpperArm.getAttribute("y2") + 30 * Math.sin(armAngle * Math.PI / 180));
 
         rightUpperArm.setAttribute("x2", 50 + 30 * Math.cos(armAngle * Math.PI / 180));
-        rightUpperArm.setAttribute("y2", 80 + 50 * Math.sin(armAngle * Math.PI / 180));
-        rightLowerArm.setAttribute("x2", rightUpperArm.getAttribute("x2") + 10 * Math.cos(armAngle * Math.PI / 180));
-        rightLowerArm.setAttribute("y2", rightUpperArm.getAttribute("y2") + 50 * Math.sin(armAngle * Math.PI / 180));
+        rightUpperArm.setAttribute("y2", 80 + 30 * Math.sin(armAngle * Math.PI / 180));
+        rightLowerArm.setAttribute("x1", rightUpperArm.getAttribute("x2"));
+        rightLowerArm.setAttribute("y1", rightUpperArm.getAttribute("y2"));
+        rightLowerArm.setAttribute("x2", rightUpperArm.getAttribute("x2") + 20 * Math.cos(armAngle * Math.PI / 180));
+        rightLowerArm.setAttribute("y2", rightUpperArm.getAttribute("y2") + 30 * Math.sin(armAngle * Math.PI / 180));
 
+        // Update leg positions
         leftUpperLeg.setAttribute("x2", 50 - 20 * Math.cos(legAngle * Math.PI / 180));
-        leftUpperLeg.setAttribute("y2", 200 + 50 * Math.sin(legAngle * Math.PI / 180));
-        leftLowerLeg.setAttribute("x2", leftUpperLeg.getAttribute("x2") - 10 * Math.cos(legAngle * Math.PI / 180));
-        leftLowerLeg.setAttribute("y2", leftUpperLeg.getAttribute("y2") + 50 * Math.sin(legAngle * Math.PI / 180));
+        leftUpperLeg.setAttribute("y2", 200 + 40 * Math.sin(legAngle * Math.PI / 180));
+        leftLowerLeg.setAttribute("x1", leftUpperLeg.getAttribute("x2"));
+        leftLowerLeg.setAttribute("y1", leftUpperLeg.getAttribute("y2"));
+        leftLowerLeg.setAttribute("x2", leftUpperLeg.getAttribute("x2") - 20 * Math.cos(legAngle * Math.PI / 180));
+        leftLowerLeg.setAttribute("y2", leftUpperLeg.getAttribute("y2") + 30 * Math.sin(legAngle * Math.PI / 180));
 
         rightUpperLeg.setAttribute("x2", 50 + 20 * Math.cos(legAngle * Math.PI / 180));
-        rightUpperLeg.setAttribute("y2", 200 + 50 * Math.sin(legAngle * Math.PI / 180));
-        rightLowerLeg.setAttribute("x2", rightUpperLeg.getAttribute("x2") + 10 * Math.cos(legAngle * Math.PI / 180));
-        rightLowerLeg.setAttribute("y2", rightUpperLeg.getAttribute("y2") + 50 * Math.sin(legAngle * Math.PI / 180));
+        rightUpperLeg.setAttribute("y2", 200 + 40 * Math.sin(legAngle * Math.PI / 180));
+        rightLowerLeg.setAttribute("x1", rightUpperLeg.getAttribute("x2"));
+        rightLowerLeg.setAttribute("y1", rightUpperLeg.getAttribute("y2"));
+        rightLowerLeg.setAttribute("x2", rightUpperLeg.getAttribute("x2") + 20 * Math.cos(legAngle * Math.PI / 180));
+        rightLowerLeg.setAttribute("y2", rightUpperLeg.getAttribute("y2") + 30 * Math.sin(legAngle * Math.PI / 180));
 
         // Update stick figure position
         stickFigurePosition.x += velocity.x;
