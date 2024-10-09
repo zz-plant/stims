@@ -13,12 +13,12 @@
     <canvas id="toy-canvas"></canvas>
 
     <script type="module">
-        import { initScene } from './assets/js/scene-setup.js';
-        import { initCamera } from './assets/js/scene-setup.js';
-        import { initRenderer } from './assets/js/renderer-setup.js';
-        import { initLighting, initAmbientLight } from './assets/js/lighting-setup.js';
-        import { initMicrophone, getFrequencyData } from './assets/js/microphone.js';
-        import { applyAudioRotation, applyAudioScale } from './assets/js/animation-utils.js';
+        import { initScene } from './assets/js/core/scene-setup.js';
+        import { initCamera } from './assets/js/core/scene-setup.js';
+        import { initRenderer } from './assets/js/core/renderer-setup.js';
+        import { initLighting, initAmbientLight } from './assets/js/lighting/lighting-setup.js';
+        import { initMicrophone, getFrequencyData } from './assets/js/utils/microphone.js';
+        import { applyAudioRotation, applyAudioScale } from './assets/js/utils/animation-utils.js';
 
         let scene, camera, renderer, torus;
 
