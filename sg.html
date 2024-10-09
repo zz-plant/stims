@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Star Guitar Inspired Visualizer - Enhanced</title>
+    <title>Star Guitar Inspired Visualizer - Enhanced and Beautified</title>
     <style>
         html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: linear-gradient(to bottom, #87ceeb, #000); /* Gradient sky background */
+            background: linear-gradient(to bottom, #1e3c72, #2a5298, #000); /* Deep blue gradient for a richer sky */
         }
         canvas {
             display: block;
@@ -24,12 +24,12 @@
         let analyser, frequencyData;
         const scenery = [];
         const distantScenery = [];
-        const cameraSpeed = 15;
+        const cameraSpeed = 12;
 
         function init() {
             // Scene setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x87ceeb, 10, 300); // Add sky blue fog for sky effect
+            scene.fog = new THREE.Fog(0x1e3c72, 50, 400); // Add deep blue fog for sky depth
 
             // Camera setup
             camera = new THREE.PerspectiveCamera(
@@ -38,25 +38,28 @@
                 0.1,
                 1000
             );
-            camera.position.set(0, 2, 15);
+            camera.position.set(0, 5, 30);
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
             // Lighting setup
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            const ambientLight = new THREE.AmbientLight(0xe0e0e0, 0.8);
             scene.add(ambientLight);
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            directionalLight.position.set(0, 50, -50);
+            directionalLight.position.set(0, 100, -100);
+            directionalLight.castShadow = true;
             scene.add(directionalLight);
 
             // Initialize scene elements
             createRailwayTracks();
             createSynchronizedScenery();
             createDistantElements();
+            createStars();
 
             // Initialize clock
             clock = new THREE.Clock();
@@ -79,7 +82,7 @@
         function createRailwayTracks() {
             // Create railway tracks
             const trackGeometry = new THREE.BoxGeometry(5, 0.1, 2000);
-            const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+            const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
             const track = new THREE.Mesh(trackGeometry, trackMaterial);
             track.position.set(0, 0, -1000);
             track.receiveShadow = true;
@@ -89,22 +92,23 @@
         function createSynchronizedScenery() {
             // Create repeating scenery elements like buildings and poles
             for (let i = 0; i < 100; i++) {
-                const zPosition = -i * 20;
+                const zPosition = -i * 30;
 
-                // Create buildings with varied colors
-                const buildingGeometry = new THREE.BoxGeometry(5, Math.random() * 10 + 5, 5);
-                const buildingMaterial = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
+                // Create buildings with varied colors and subtle lighting
+                const buildingGeometry = new THREE.BoxGeometry(10, Math.random() * 20 + 10, 10);
+                const buildingMaterial = new THREE.MeshPhongMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 50%, 50%)`) });
                 const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-                building.position.set(Math.random() < 0.5 ? -10 : 10, buildingGeometry.parameters.height / 2, zPosition);
+                building.position.set(Math.random() < 0.5 ? -15 : 15, buildingGeometry.parameters.height / 2, zPosition);
                 building.castShadow = true;
+                building.receiveShadow = true;
                 scene.add(building);
                 scenery.push(building);
 
-                // Create poles
-                const poleGeometry = new THREE.CylinderGeometry(0.2, 0.2, 10, 16);
-                const poleMaterial = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+                // Create glowing poles
+                const poleGeometry = new THREE.CylinderGeometry(0.3, 0.3, 20, 16);
+                const poleMaterial = new THREE.MeshLambertMaterial({ color: 0xfff8dc, emissive: 0xffffcc, emissiveIntensity: 0.4 });
                 const pole = new THREE.Mesh(poleGeometry, poleMaterial);
-                pole.position.set(Math.random() < 0.5 ? -5 : 5, 5, zPosition);
+                pole.position.set(Math.random() < 0.5 ? -8 : 8, 10, zPosition);
                 pole.castShadow = true;
                 scene.add(pole);
                 scenery.push(pole);
@@ -112,27 +116,43 @@
         }
 
         function createDistantElements() {
-            // Create distant hills or mountains
+            // Create distant hills or mountains with softer colors
             for (let i = 0; i < 50; i++) {
-                const hillGeometry = new THREE.ConeGeometry(Math.random() * 10 + 15, Math.random() * 20 + 10, 32);
-                const hillMaterial = new THREE.MeshLambertMaterial({ color: 0x3e3e3e });
+                const hillGeometry = new THREE.ConeGeometry(Math.random() * 15 + 20, Math.random() * 40 + 20, 32);
+                const hillMaterial = new THREE.MeshLambertMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 30%, 30%)`) });
                 const hill = new THREE.Mesh(hillGeometry, hillMaterial);
-                hill.position.set(Math.random() * 200 - 100, -5, -i * 100 - 200);
+                hill.position.set(Math.random() * 400 - 200, -10, -i * 150 - 300);
                 hill.receiveShadow = true;
                 scene.add(hill);
                 distantScenery.push(hill);
             }
 
             // Create moving clouds
-            for (let i = 0; i < 20; i++) {
-                const cloudGeometry = new THREE.SphereGeometry(Math.random() * 5 + 5, 16, 16);
+            for (let i = 0; i < 30; i++) {
+                const cloudGeometry = new THREE.SphereGeometry(Math.random() * 10 + 15, 16, 16);
                 const cloudMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
                 const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
-                cloud.position.set(Math.random() * 200 - 100, Math.random() * 20 + 20, -i * 150 - 300);
-                cloud.castShadow = true;
+                cloud.position.set(Math.random() * 400 - 200, Math.random() * 50 + 50, -i * 200 - 400);
                 scene.add(cloud);
                 distantScenery.push(cloud);
             }
+        }
+
+        function createStars() {
+            // Add starry sky effect
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+
+            const starVertices = [];
+            for (let i = 0; i < 1000; i++) {
+                starVertices.push((Math.random() - 0.5) * 2000);
+                starVertices.push(Math.random() * 800 - 100);
+                starVertices.push((Math.random() - 0.5) * 2000);
+            }
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
         }
 
         function setupAudio() {
@@ -173,7 +193,7 @@
                 // Update the movement of clouds based on higher frequencies
                 distantScenery.forEach(obj => {
                     if (obj.geometry.type === 'SphereGeometry') {
-                        obj.position.x += (Math.random() - 0.5) * 0.1 * treble / 255;
+                        obj.position.x += (Math.random() - 0.5) * 0.2 * treble / 255;
                         obj.position.z += (Math.random() - 0.5) * 0.1 * treble / 255;
                     }
                 });
@@ -182,7 +202,7 @@
                 scenery.forEach(obj => {
                     if (obj.geometry.type === 'BoxGeometry') {
                         const colorValue = Math.min(1, mid / 255);
-                        obj.material.color.setHSL(colorValue, 0.7, 0.5);
+                        obj.material.color.setHSL(colorValue * 360, 0.8, 0.5);
                     }
                 });
             }
@@ -200,7 +220,7 @@
 
             // Move the camera forward
             camera.position.z -= delta * cameraSpeed;
-            camera.position.y = 2; // Keep the camera above the road
+            camera.position.y = 5; // Keep the camera above the road
 
             // Update scenery with sound
             updateSceneryWithSound();
@@ -208,16 +228,16 @@
             // Move scenery elements
             scenery.forEach(obj => {
                 obj.position.z += delta * cameraSpeed;
-                if (obj.position.z > camera.position.z + 50) {
-                    obj.position.z -= 2000; // Reposition for continuous scenery
+                if (obj.position.z > camera.position.z + 100) {
+                    obj.position.z -= 3000; // Reposition for continuous scenery
                 }
             });
 
             // Move distant scenery elements at a slower speed for parallax effect
             distantScenery.forEach(obj => {
-                obj.position.z += delta * cameraSpeed * 0.5;
-                if (obj.position.z > camera.position.z + 100) {
-                    obj.position.z -= 5000; // Reposition for continuous distant background
+                obj.position.z += delta * cameraSpeed * 0.3;
+                if (obj.position.z > camera.position.z + 300) {
+                    obj.position.z -= 6000; // Reposition for continuous distant background
                 }
             });
 
