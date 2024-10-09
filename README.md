@@ -16,7 +16,7 @@ Simply visit [no.toil.fyi](https://no.toil.fyi) to access and enjoy the collecti
 
 ## Available Toys
 
-### 1. **3dtoy.html**
+### 1. [**3dtoy.html**](https://no.toil.fyi/3dtoy.html)
 - **Description**: A 3D interactive visual toy featuring a surreal torus knot, dynamic particle effects, and responsive procedural shapes.
 - **Technologies**: Three.js, WebGL, microphone audio interaction.
 - **Key Features**:
@@ -24,14 +24,14 @@ Simply visit [no.toil.fyi](https://no.toil.fyi) to access and enjoy the collecti
   - Dynamic camera movement and lighting effects.
   - Procedural generation of shapes and rings for visual diversity.
   
-### 2. **95.html**
+### 2. [**95.html**](https://no.toil.fyi/95.html)
 - **Description**: A weirdcore-inspired visualizer with fluid, shifting patterns and colors, perfect for creating a trippy sensory experience.
 - **Technologies**: WebGL, GLSL shaders, microphone input.
 - **Key Features**:
   - Real-time visual patterns that distort and react to audio input.
   - Random noise generation for unpredictable visuals.
 
-### 3. **brand.html / brand2.html**
+### 3. [**brand.html**](https://no.toil.fyi/brand.html) / [**brand2.html**](https://no.toil.fyi/brand2.html)
 - **Description**: A visual toy inspired by *Star Guitar*, featuring procedurally generated scenery like buildings, tracks, and modular elements. The visuals react to audio beats, creating a calming, rhythmic experience.
 - **Technologies**: Three.js, WebGL, microphone input.
 - **Key Features**:
@@ -39,42 +39,42 @@ Simply visit [no.toil.fyi](https://no.toil.fyi) to access and enjoy the collecti
   - Dynamic fog and lighting effects.
   - Procedural elements like buildings, trees, and train tracks.
 
-### 4. **combo.html**
+### 4. [**combo.html**](https://no.toil.fyi/combo.html)
 - **Description**: Combines fractal geometry, particle effects, and a torus knot that reacts to audio input for a mesmerizing visual experience.
 - **Technologies**: Three.js, TensorFlow.js, microphone input.
 - **Key Features**:
   - Fractal geometry and particle effects.
   - Audio-responsive color changes and dynamic scaling.
 
-### 5. **demo.html**
+### 5. [**demo.html**](https://no.toil.fyi/demo.html)
 - **Description**: A customizable visual toy where users can adjust color modes and sensitivity to audio input.
 - **Technologies**: WebGL, microphone input.
 - **Key Features**:
   - Adjustable color schemes and sensitivity settings.
   - Responsive visuals that change based on real-time audio input.
 
-### 6. **index.html**
+### 6. [**index.html**](https://no.toil.fyi/index.html)
 - **Description**: A trippy, synesthetic visualizer that reacts to both microphone and device audio input, providing a hypnotic, kaleidoscopic effect.
 - **Technologies**: WebGL, microphone and device audio input.
 - **Key Features**:
   - Multi-touch interaction and device orientation effects.
   - Dynamic, colorful visuals with responsive audio analysis.
 
-### 7. **scratch.html**
+### 7. [**scratch.html**](https://no.toil.fyi/scratch.html)
 - **Description**: A playful visual toy with a stick figure that interacts with audio input for a lighthearted and fun experience.
 - **Technologies**: WebGL, SVG, microphone input.
 - **Key Features**:
   - Stick figure animations that react to audio.
   - Smooth, dynamic color transitions and audio-reactive movements.
 
-### 8. **sum.html**
+### 8. [**sum.html**](https://no.toil.fyi/sum.html)
 - **Description**: Another synesthetic visualizer with multi-touch and sound interaction. Combines smooth, flowing visuals with real-time audio analysis.
 - **Technologies**: WebGL, microphone/device audio input.
 - **Key Features**:
   - Responsive visuals that react to sound and touch.
   - Dynamic colors and shifting patterns.
 
-### 9. **symph.html**
+### 9. [**symph.html**](https://no.toil.fyi/symph.html)
 - **Description**: A dreamy spectrograph visualizer that blends WebGL and 2D canvas visuals, reacting to music or sound input to create stunning visualizations.
 - **Technologies**: WebGL, 2D Canvas, microphone input.
 - **Key Features**:
