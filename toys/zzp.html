@@ -4,51 +4,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZZP 3D Toy</title>
-    <link rel="stylesheet" href="/assets/css/styles.css">
+    <title>New Audio-Reactive Toy</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
 </head>
 
 <body>
     <canvas id="toy-canvas"></canvas>
+
     <script type="module">
-        import * as THREE from '/assets/js/core/scene-setup.js';
-        import { initAudio, getFrequencyData } from '/assets/js/utils/audio-handler.js';
-        import { applyAudioRotation } from '/assets/js/utils/animation-utils.js';
+        import { initScene, initPerspectiveCamera, initRenderer } from './assets/js/core/scene-setup.js';
+        import { initPointLight, initAmbientLight } from './assets/js/lighting-setup.js';
+        import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
+        import { applyAudioRotation, applyAudioScale } from './assets/js/utils/animation-utils.js';
 
-        async function initToy() {
-            const container = document.getElementById('toy-canvas');
+        let scene, camera, renderer, torus;
 
-            // Set up scene, camera, and renderer
-            const scene = THREE.initScene();
-            const camera = THREE.initPerspectiveCamera();
-            const renderer = THREE.initRenderer(container);
+        async function init() {
+            // Initialize scene, camera, and renderer
+            scene = initScene();
+            camera = initPerspectiveCamera();
+            const canvas = document.getElementById('toy-canvas');
+            renderer = initRenderer(canvas);
 
-            // Create a TorusKnot geometry and add it to the scene
-            const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
+            // Add lighting
+            initPointLight(scene, 0xffffff, 1, { x: 10, y: 10, z: 10 });
+            initAmbientLight(scene, 0x404040, 0.5);
+
+            // Create a 3D torus
+            const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
             const material = new THREE.MeshStandardMaterial({
-                color: 0x00ff00,
-                emissive: 0x001133,
-                metalness: 0.9,
-                roughness: 0.3,
+                color: 0x0077ff,
+                emissive: 0x111111,
+                metalness: 0.5,
+                roughness: 0.5
             });
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
+            torus = new THREE.Mesh(geometry, material);
+            scene.add(torus);
 
             // Initialize audio
             const { analyser, dataArray } = await initAudio();
 
-            // Animate function
+            // Animation loop
             function animate() {
                 requestAnimationFrame(animate);
-                const audioData = getFrequencyData(analyser, dataArray);
-                applyAudioRotation(mesh, audioData);
+
+                if (analyser) {
+                    const audioData = getFrequencyData(analyser, dataArray);
+                    applyAudioRotation(torus, audioData, 0.05); // Reacts to audio
+                    applyAudioScale(torus, audioData, 50);      // Scaling effect based on audio
+                }
+
                 renderer.render(scene, camera);
             }
 
             animate();
         }
 
-        initToy();
+        init();
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 
