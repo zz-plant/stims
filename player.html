@@ -3,18 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stim Web Toys</title>
-    <script src="https://cdn.jsdelivr.net/npm/js-yaml@3.13.1/dist/js-yaml.min.js"></script>
-    <script src="assets/js/app.js"></script>
-</head>
+    <title>Stim Webtoys Player</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <script type="module" src="assets/js/app.js"></script>
+    </head>
 <body>
-    <canvas id="toy-canvas"></canvas>
-    <input id="sensitivity" type="range" min="1" max="100" value="50">
-
+    <div id="container">
+        <canvas id="toyCanvas"></canvas>
+        <div id="controls">
+            <label for="sensitivity">Sensitivity:</label>
+            <input type="range" id="sensitivity" name="sensitivity" min="1" max="100" value="50">
+        </div>
+    </div>
+    
     <script>
-        // Dynamically load the YAML config file for a specific toy
-        const yamlFile = 'toys/zzp/Spinning Cube Grid.yaml';  // Change this dynamically if needed
-        startApp('toy-canvas', yamlFile);
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvasId = 'toyCanvas';
+            const yamlConfigUrl = 'toys/zzp/Spinning Cube Grid.yaml';
+            startApp(canvasId, yamlConfigUrl);
+        });
     </script>
 </body>
 </html>
