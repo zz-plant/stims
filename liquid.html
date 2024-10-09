@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquid Audio Reactive Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        uniform float time;
+        uniform sampler2D pointTexture;
+        varying vec3 vColor;
+
+        void main() {
+            vec2 uv = gl_PointCoord.xy - 0.5;
+            float alpha = 1.0 - length(uv);
+            alpha = smoothstep(0.0, 1.0, alpha);
+            gl_FragColor = vec4(vColor, alpha);
+        }
+    </script>
+
+    <script>
+        // Set up the Three.js scene
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Create the particle system
+        const particleCount = 5000;
+        const particles = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 20;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+
+            colors[i * 3] = Math.random();
+            colors[i * 3 + 1] = Math.random();
+            colors[i * 3 + 2] = Math.random();
+        }
+
+        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const particleMaterial = new THREE.ShaderMaterial({
+            vertexColors: true,
+            fragmentShader: document.getElementById('fragmentShader').textContent,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+        });
+
+        const particleSystem = new THREE.Points(particles, particleMaterial);
+        scene.add(particleSystem);
+
+        // Audio Setup
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        // Get microphone input
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function (stream) {
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+            })
+            .catch(function (err) {
+                console.error('Error accessing the microphone:', err);
+            });
+
+        // Animate the particles with liquid-like movements
+        function animate() {
+            requestAnimationFrame(animate);
+
+            analyser.getByteFrequencyData(dataArray);
+            const averageFrequency = dataArray.reduce((a, b) => a + b) / bufferLength;
+
+            const positions = particleSystem.geometry.attributes.position.array;
+            const time = Date.now() * 0.0001;
+
+            for (let i = 0; i < particleCount; i++) {
+                const index = i * 3;
+                positions[index + 1] += Math.sin(time + i * 0.01) * 0.01 * (averageFrequency / 100);
+                positions[index + 2] += Math.cos(time + i * 0.01) * 0.01 * (averageFrequency / 100);
+            }
+
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+
+</html>
