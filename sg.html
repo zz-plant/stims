@@ -24,7 +24,7 @@
         let analyser, frequencyData;
         const scenery = [];
         const distantScenery = [];
-        const cameraSpeed = 10;
+        const cameraSpeed = 15;
 
         function init() {
             // Scene setup
@@ -160,6 +160,8 @@
             if (analyser) {
                 analyser.getByteFrequencyData(frequencyData);
                 const bass = getFrequencyRangeValue(0, 10);
+                const mid = getFrequencyRangeValue(11, 40);
+                const treble = getFrequencyRangeValue(41, 60);
 
                 // Update the height of poles based on the bass frequency
                 scenery.forEach(obj => {
@@ -169,11 +171,18 @@
                 });
 
                 // Update the movement of clouds based on higher frequencies
-                const treble = getFrequencyRangeValue(41, 60);
                 distantScenery.forEach(obj => {
                     if (obj.geometry.type === 'SphereGeometry') {
                         obj.position.x += (Math.random() - 0.5) * 0.1 * treble / 255;
                         obj.position.z += (Math.random() - 0.5) * 0.1 * treble / 255;
+                    }
+                });
+
+                // Update building colors based on mid frequencies
+                scenery.forEach(obj => {
+                    if (obj.geometry.type === 'BoxGeometry') {
+                        const colorValue = Math.min(1, mid / 255);
+                        obj.material.color.setHSL(colorValue, 0.7, 0.5);
                     }
                 });
             }
