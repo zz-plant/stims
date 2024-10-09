@@ -40,10 +40,31 @@
             75% { transform: translateY(-1px); }
             100% { transform: translateY(0); }
         }
+
+        /* Eerie shimmer effect styling */
+        .shimmer-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            mix-blend-mode: overlay;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 40%);
+            opacity: 0.15;
+            animation: shimmerMovement 3s infinite alternate;
+        }
+
+        @keyframes shimmerMovement {
+            0% { transform: translate(-10px, -10px) scale(1.05); }
+            50% { transform: translate(10px, 10px) scale(1.1); }
+            100% { transform: translate(-10px, -10px) scale(1.05); }
+        }
     </style>
 </head>
 <body>
     <div class="vhs-effect"></div>
+    <div class="shimmer-effect"></div>
     <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -77,11 +98,11 @@
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.domElement.style.filter = 'blur(1px) contrast(1.2)'; // Add slight blur and contrast for VHS feel
+            renderer.domElement.style.filter = 'blur(1px) contrast(1.2) saturate(0.8)'; // Add slight blur, contrast, and saturation for eerie VHS feel
             document.body.appendChild(renderer.domElement);
 
             // Lighting setup
-            const ambientLight = new THREE.AmbientLight(0xddddff, 0.6);
+            const ambientLight = new THREE.AmbientLight(0xddddff, 0.4);
             scene.add(ambientLight);
 
             directionalLight = new THREE.DirectionalLight(0xffcc88, 1.2);
