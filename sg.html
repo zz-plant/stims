@@ -2,40 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Interactive Star Guitar Visualizer - Car Ride Experience</title>
+    <title>Unicode Optimized Visualizer</title>
     <style>
         html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: linear-gradient(to bottom, #1e3c72, #2a5298, #000);
+            background: linear-gradient(to bottom, #1e3c72, #2a5298, #000); /* Deep blue gradient for sky */
         }
         canvas {
             display: block;
+        }
+        .unicode-element {
+            position: absolute;
+            font-size: 30px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            user-select: none;
         }
     </style>
 </head>
 <body>
     <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Include Hammer.js for touch gestures -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script>
-        let scene, camera, renderer;
-        let clock;
+        let scene, camera, renderer, clock;
         let analyser, frequencyData;
-        const scenery = [];
-        const carElements = [];
-        const emojiElements = [];
-        const cameraSpeedBase = 15;
+        const cameraSpeedBase = 10;
         let cameraSpeed = cameraSpeedBase;
-        let cameraShakeAmplitude = 0.05;
-        let cameraShakeFrequency = 0.005;
+        const unicodeElements = [];
+        let lastEmojiCreationTime = 0;
 
         function init() {
             // Scene setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x1e3c72, 50, 400);
+            scene.fog = new THREE.Fog(0x1e3c72, 50, 400); // Add fog for depth perception
 
             // Camera setup
             camera = new THREE.PerspectiveCamera(
@@ -45,37 +46,18 @@
                 1000
             );
             camera.position.set(0, 2, 10);
-            camera.rotation.y = 0.0;
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
-
-            // Lighting setup
-            const ambientLight = new THREE.AmbientLight(0xe0e0e0, 1.0);
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(0, 100, -100);
-            directionalLight.castShadow = true;
-            scene.add(directionalLight);
-
-            // Initialize scene elements
-            createRoad();
-            createStars();
-            createScenery();
 
             // Initialize clock
             clock = new THREE.Clock();
 
-            // Setup audio
+            // Setup audio input
             setupAudio();
-
-            // Setup interaction
-            setupInteraction();
 
             // Handle window resize
             window.addEventListener('resize', onWindowResize, false);
@@ -87,48 +69,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function createRoad() {
-            // Create road
-            const roadGeometry = new THREE.PlaneGeometry(2000, 20);
-            const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
-            const road = new THREE.Mesh(roadGeometry, roadMaterial);
-            road.rotation.x = -Math.PI / 2;
-            road.position.y = 0;
-            scene.add(road);
-
-            // Create road stripes
-            const stripeGeometry = new THREE.PlaneGeometry(2, 10);
-            const stripeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
-            for (let i = 0; i < 100; i++) {
-                const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
-                stripe.rotation.x = -Math.PI / 2;
-                stripe.position.y = 0.01;
-                stripe.position.z = -i * 20;
-                scene.add(stripe);
-            }
-        }
-
-        function createStars() {
-            // Add starry sky effect
-            const starGeometry = new THREE.BufferGeometry();
-            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
-
-            const starVertices = [];
-            for (let i = 0; i < 1000; i++) {
-                starVertices.push((Math.random() - 0.5) * 2000);
-                starVertices.push(Math.random() * 800 - 100);
-                starVertices.push((Math.random() - 0.5) * 2000);
-            }
-            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-
-            const stars = new THREE.Points(starGeometry, starMaterial);
-            scene.add(stars);
-        }
-
-        function createScenery() {
-            // Initial scenery setup (optional)
         }
 
         function setupAudio() {
@@ -152,86 +92,47 @@
                 });
         }
 
-        function updateSceneryWithSound() {
+        function updateUnicodeWithSound() {
             if (analyser) {
                 analyser.getByteFrequencyData(frequencyData);
                 const bass = getFrequencyRangeValue(0, 10);
-                const mid = getFrequencyRangeValue(11, 40);
-                const treble = getFrequencyRangeValue(41, 60);
 
-                // Map bass frequencies to camera speed and shake
+                // Adjust camera speed based on bass frequencies
                 cameraSpeed = cameraSpeedBase + bass / 50;
-                cameraShakeAmplitude = bass / 5000;
 
-                // Create trees/buildings in response to bass frequencies
-                if (bass > 150) {
-                    createTreeOrBuilding();
-                }
-
-                // Create cars in response to mid frequencies
-                if (mid > 120) {
-                    createCar();
-                }
-
-                // Create emoji elements in response to treble frequencies
-                if (treble > 100) {
-                    createEmoji();
+                // Create new Unicode element in response to bass frequencies
+                if (bass > 150 && Date.now() - lastEmojiCreationTime > 300) {
+                    createUnicodeElement();
+                    lastEmojiCreationTime = Date.now();
                 }
             }
         }
 
-        function createTreeOrBuilding() {
-            const isTree = Math.random() > 0.5;
-            let geometry, material;
+        function createUnicodeElement() {
+            const unicodeChars = ['🌲', '🚗', '🚙', '🏢', '🌵', '🚧', '🌟', '🚓', '🚑', '🚕', '🚒', '🦄', '🐘'];
+            const char = unicodeChars[Math.floor(Math.random() * unicodeChars.length)];
+            const unicodeElement = document.createElement('div');
+            unicodeElement.textContent = char;
+            unicodeElement.className = 'unicode-element';
+            unicodeElement.style.fontSize = `${Math.random() * 40 + 20}px`;
+            unicodeElement.style.left = `${Math.random() * window.innerWidth}px`;
+            unicodeElement.style.top = `${Math.random() * window.innerHeight / 2}px`;
+            document.body.appendChild(unicodeElement);
 
-            if (isTree) {
-                geometry = new THREE.ConeGeometry(2, 10, 16);
-                material = new THREE.MeshLambertMaterial({ color: 0x228b22 });
-            } else {
-                const buildingHeight = Math.random() * 20 + 10;
-                geometry = new THREE.BoxGeometry(5, buildingHeight, 5);
-                material = new THREE.MeshLambertMaterial({ color: 0x8b8b8b });
-            }
+            // Animate the element (move it upward and remove it after it leaves the view)
+            const moveUp = () => {
+                const topPos = parseFloat(unicodeElement.style.top);
+                if (topPos > -50) {
+                    unicodeElement.style.top = `${topPos - 2}px`;
+                    requestAnimationFrame(moveUp);
+                } else {
+                    unicodeElement.remove();
+                    unicodeElements.splice(unicodeElements.indexOf(unicodeElement), 1);
+                }
+            };
+            moveUp();
 
-            const element = new THREE.Mesh(geometry, material);
-            element.position.set(Math.random() < 0.5 ? -20 : 20, geometry.parameters.height / 2 || 5, camera.position.z - 100);
-            element.castShadow = true;
-            scene.add(element);
-            scenery.push(element);
-        }
-
-        function createCar() {
-            const carGeometry = new THREE.BoxGeometry(4, 2, 8);
-            const carMaterial = new THREE.MeshLambertMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 70%, 50%)`) });
-            const car = new THREE.Mesh(carGeometry, carMaterial);
-            car.position.set(Math.random() < 0.5 ? -2 : 2, 1, camera.position.z - 50);
-            car.castShadow = true;
-            scene.add(car);
-            carElements.push(car);
-        }
-
-        function createEmoji() {
-            const emojis = ['🚗', '🚙', '🌲', '🌳', '🌵', '🌼', '🦄', '🐦', '🐘', '✨', '🌟', '☁️', '⛅'];
-            const emoji = document.createElement('div');
-            emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-            emoji.style.position = 'absolute';
-            emoji.style.fontSize = `${Math.random() * 30 + 20}px`;
-            emoji.style.left = `${Math.random() * window.innerWidth}px`;
-            emoji.style.top = `${Math.random() * window.innerHeight / 2}px`;
-            emoji.style.opacity = '0';
-            emoji.style.transition = 'opacity 1s';
-            document.body.appendChild(emoji);
-
-            requestAnimationFrame(() => {
-                emoji.style.opacity = '1';
-            });
-
-            setTimeout(() => {
-                emoji.style.opacity = '0';
-                setTimeout(() => {
-                    emoji.remove();
-                }, 1000);
-            }, 2000);
+            unicodeElements.push(unicodeElement);
         }
 
         function getFrequencyRangeValue(start, end) {
@@ -240,118 +141,18 @@
             return sum / slice.length;
         }
 
-        function setupInteraction() {
-            // Mouse movement
-            let isMouseDown = false;
-            let previousMousePosition = { x: 0, y: 0 };
-
-            renderer.domElement.addEventListener('mousedown', function (e) {
-                isMouseDown = true;
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            });
-
-            renderer.domElement.addEventListener('mousemove', function (e) {
-                if (isMouseDown) {
-                    const deltaMove = {
-                        x: e.clientX - previousMousePosition.x,
-                        y: e.clientY - previousMousePosition.y
-                    };
-
-                    const deltaRotationQuaternion = new THREE.Quaternion()
-                        .setFromEuler(new THREE.Euler(
-                            -deltaMove.y * 0.005,
-                            -deltaMove.x * 0.005,
-                            0,
-                            'XYZ'
-                        ));
-
-                    camera.quaternion.multiplyQuaternions(deltaRotationQuaternion, camera.quaternion);
-                    previousMousePosition = { x: e.clientX, y: e.clientY };
-                }
-            });
-
-            document.addEventListener('mouseup', function () {
-                isMouseDown = false;
-            });
-
-            // Mouse wheel for zoom
-            document.addEventListener('wheel', function (e) {
-                camera.position.z += e.deltaY * 0.01;
-                camera.position.z = Math.max(5, Math.min(100, camera.position.z));
-            });
-
-            // Touch inputs using Hammer.js
-            const hammer = new Hammer(renderer.domElement);
-            hammer.get('pinch').set({ enable: true });
-            hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
-
-            let initialPinchDistance = null;
-            let initialCameraPositionZ = camera.position.z;
-
-            hammer.on('pan', function (ev) {
-                const deltaRotationQuaternion = new THREE.Quaternion()
-                    .setFromEuler(new THREE.Euler(
-                        -ev.deltaY * 0.0005,
-                        -ev.deltaX * 0.0005,
-                        0,
-                        'XYZ'
-                    ));
-                camera.quaternion.multiplyQuaternions(deltaRotationQuaternion, camera.quaternion);
-            });
-
-            hammer.on('pinchstart', function (ev) {
-                initialPinchDistance = ev.scale;
-                initialCameraPositionZ = camera.position.z;
-            });
-
-            hammer.on('pinch', function (ev) {
-                const scaleFactor = initialPinchDistance / ev.scale;
-                camera.position.z = initialCameraPositionZ * scaleFactor;
-                camera.position.z = Math.max(5, Math.min(100, camera.position.z));
-            });
-
-            // Device motion (for mobile devices)
-            if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientation', function (event) {
-                    const beta = event.beta ? THREE.Math.degToRad(event.beta) : 0;
-                    const gamma = event.gamma ? THREE.Math.degToRad(event.gamma) : 0;
-                    camera.rotation.x = beta;
-                    camera.rotation.y = gamma;
-                }, true);
-            }
-        }
-
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
 
-            // Move the camera forward
+            // Move camera forward
             camera.position.z -= delta * cameraSpeed;
-            camera.position.y = 2 + Math.sin(Date.now() * cameraShakeFrequency) * cameraShakeAmplitude;
+            camera.position.y = 2; // Keep camera steady
 
-            // Update scenery with sound
-            updateSceneryWithSound();
+            // Update Unicode elements based on sound input
+            updateUnicodeWithSound();
 
-            // Move scenery elements
-            for (let i = scenery.length - 1; i >= 0; i--) {
-                const obj = scenery[i];
-                obj.position.z += delta * cameraSpeed;
-                if (obj.position.z > camera.position.z + 100) {
-                    scene.remove(obj);
-                    scenery.splice(i, 1);
-                }
-            }
-
-            // Move cars on the road
-            for (let i = carElements.length - 1; i >= 0; i--) {
-                const car = carElements[i];
-                car.position.z += delta * cameraSpeed * 1.5;
-                if (car.position.z > camera.position.z + 50) {
-                    scene.remove(car);
-                    carElements.splice(i, 1);
-                }
-            }
-
+            // Render the scene
             renderer.render(scene, camera);
         }
 
