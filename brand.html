@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Star Guitar Visualizer with Road Stripes</title>
+    <title>Star Guitar Visualizer with Road Stripes and Perspective Towers</title>
     <style>
         html, body {
             margin: 0;
@@ -115,12 +115,21 @@
         const scenery = [];
 
         // Function to create buildings
-        function createBuilding(x, z, height = null) {
+        function createBuilding(x, z, height = null, isSpectrograph = false) {
             const buildingHeight = height || Math.random() * 5 + 2;
             const geometry = new THREE.BoxGeometry(1, buildingHeight, 1);
-            const material = new THREE.MeshLambertMaterial({ color: 0x888888 });
+            const material = new THREE.MeshLambertMaterial({ color: isSpectrograph ? 0xff0000 : 0x888888 });
             const building = new THREE.Mesh(geometry, material);
             building.position.set(x, buildingHeight / 2 - 1.5, z);
+
+            if (isSpectrograph) {
+                // Store initial positions for perspective adjustment
+                building.userData = {
+                    initialX: x,
+                    initialZ: z,
+                };
+            }
+
             scene.add(building);
             scenery.push(building);
         }
@@ -157,7 +166,7 @@
         for (let i = 0; i < 50; i++) {
             const z = -Math.random() * 300;
             const side = Math.random() > 0.5 ? 1 : -1;
-            const x = side * (Math.random() * 10 + 5);
+            const x = side * (Math.random() * 10 + roadWidth / 2 + 1); // Ensure it's outside the road
             const type = Math.random();
             if (type < 0.5) {
                 createBuilding(x, z);
@@ -205,6 +214,14 @@
             for (let i = scenery.length - 1; i >= 0; i--) {
                 const obj = scenery[i];
                 obj.position.z += speed;
+
+                // Adjust x position for perspective effect (only for spectrograph towers)
+                if (obj.userData && obj.userData.initialX !== undefined) {
+                    const zFactor = (obj.position.z + 300) / 300; // Normalized between 0 (far) and 1 (near)
+                    const spreadMultiplier = 1 + 2 * (1 - zFactor); // Increase spread as it gets closer
+                    obj.position.x = obj.userData.initialX * spreadMultiplier;
+                }
+
                 if (obj.position.z > 5) {
                     // Remove objects that have passed the camera
                     scene.remove(obj);
@@ -222,9 +239,10 @@
                 for (let i = 0; i < barCount; i++) {
                     const frequency = frequencyData[i];
                     const height = Math.max(frequency / 20, 0.1);
-                    const x = startX + i * barSpacing;
+                    const xNormalized = (i / (barCount - 1)) * 2 - 1; // Normalize between -1 and 1
+                    const x = xNormalized * 2; // Initial x position (narrow at horizon)
                     const z = -300; // Horizon position
-                    createBuilding(x, z, height);
+                    createBuilding(x, z, height, true);
                 }
             }
 
