@@ -3,86 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Webtoys</title>
-    <style>
-        body, html {
-            margin: 0;
-            overflow: hidden;
-            height: 100%;
-            background-color: #000;
-        }
-        canvas {
-            display: block;
-        }
-        #controls {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            color: #fff;
-        }
-        button {
-            margin: 5px;
-            padding: 10px;
-        }
-    </style>
+    <title>Stim Web Toys</title>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@3.13.1/dist/js-yaml.min.js"></script>
+    <script src="assets/js/app.js"></script>
 </head>
 <body>
-    <div id="controls"></div>
-    <canvas id="gpuCanvas"></canvas>
-
-    <!-- Include js-yaml from a CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <canvas id="toy-canvas"></canvas>
+    <input id="sensitivity" type="range" min="1" max="100" value="50">
 
     <script>
-        let currentVisualizer = null;
-
-        // Object to store visualizer classes
-        const visualizers = {
-            ThreeDToy: class {
-                init() { console.log('3D Toy loaded'); /* Add your Three.js code */ }
-                stop() { console.log('3D Toy stopped'); /* Clean up resources */ }
-            },
-            Weirdcore: class {
-                init() { console.log('Weirdcore loaded'); /* Add your Weirdcore code */ }
-                stop() { console.log('Weirdcore stopped'); /* Clean up resources */ }
-            },
-            Brand: class {
-                init() { console.log('Brand Visualizer loaded'); /* Add your Brand Visualizer code */ }
-                stop() { console.log('Brand Visualizer stopped'); /* Clean up resources */ }
-            }
-        };
-
-        // Function to load and parse YAML
-        async function loadYamlConfig() {
-            const response = await fetch('visualizers.yaml');
-            const yamlText = await response.text();
-            const yamlData = jsyaml.load(yamlText);
-            generateButtons(yamlData.visualizers);
-        }
-
-        // Function to dynamically generate buttons from YAML
-        function generateButtons(visualizerList) {
-            const controlsDiv = document.getElementById('controls');
-            visualizerList.forEach(viz => {
-                const button = document.createElement('button');
-                button.textContent = viz.name;
-                button.onclick = () => loadVisualizer(viz.class);
-                controlsDiv.appendChild(button);
-            });
-        }
-
-        // Function to load the selected visualizer
-        function loadVisualizer(type) {
-            if (currentVisualizer) currentVisualizer.stop();
-            const VisualizerClass = visualizers[type];
-            currentVisualizer = new VisualizerClass();
-            currentVisualizer.init();
-        }
-
-        // Load the YAML configuration on page load
-        loadYamlConfig();
+        // Dynamically load the YAML config file for a specific toy
+        const yamlFile = 'toys/zzp/Spinning Cube Grid.yaml';  // Change this dynamically if needed
+        startApp('toy-canvas', yamlFile);
     </script>
 </body>
 </html>
