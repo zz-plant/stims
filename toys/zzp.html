@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZZP 3D Toy</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+
+<body>
+    <canvas id="toy-canvas"></canvas>
+    <script type="module">
+        import * as THREE from '/assets/js/core/scene-setup.js';
+        import { initAudio, getFrequencyData } from '/assets/js/utils/audio-handler.js';
+        import { applyAudioRotation } from '/assets/js/utils/animation-utils.js';
+
+        async function initToy() {
+            const container = document.getElementById('toy-canvas');
+
+            // Set up scene, camera, and renderer
+            const scene = THREE.initScene();
+            const camera = THREE.initPerspectiveCamera();
+            const renderer = THREE.initRenderer(container);
+
+            // Create a TorusKnot geometry and add it to the scene
+            const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x00ff00,
+                emissive: 0x001133,
+                metalness: 0.9,
+                roughness: 0.3,
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            // Initialize audio
+            const { analyser, dataArray } = await initAudio();
+
+            // Animate function
+            function animate() {
+                requestAnimationFrame(animate);
+                const audioData = getFrequencyData(analyser, dataArray);
+                applyAudioRotation(mesh, audioData);
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        }
+
+        initToy();
+    </script>
+</body>
+
+</html>
