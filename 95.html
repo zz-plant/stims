@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Organic Music Visualizer</title>
+    <title>Dreamy Biological Music Visualizer</title>
     <style>
         html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: #001f3f;
+            background: #1b1b2f;
             font-family: 'Courier New', Courier, monospace;
         }
         canvas {
@@ -18,91 +18,115 @@
     </style>
 </head>
 <body>
-    <canvas id="visualizerCanvas"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        const canvas = document.getElementById('visualizerCanvas');
-        const ctx = canvas.getContext('2d');
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-        // Resize canvas to fill window
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // Create ambient light for a soft background glow
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // soft light
+        scene.add(ambientLight);
+
+        // Torus Knot Geometry - organic, biological shape
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x0affef,
+            emissive: 0x112233,
+            metalness: 0.6,
+            roughness: 0.4,
+            wireframe: false
+        });
+        const torusKnot = new THREE.Mesh(geometry, material);
+        scene.add(torusKnot);
+
+        // Lighting for the scene
+        const pointLight1 = new THREE.PointLight(0xff0099, 2, 150);
+        pointLight1.position.set(50, 50, 50);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x00ffff, 2, 150);
+        pointLight2.position.set(-50, -50, 50);
+        scene.add(pointLight2);
+
+        // Particle system - for dreamy biological feel
+        const particleGeometry = new THREE.BufferGeometry();
+        const particleCount = 2000;
+        const particlePositions = new Float32Array(particleCount * 3);
+
+        for (let i = 0; i < particleCount * 3; i++) {
+            particlePositions[i] = (Math.random() - 0.5) * 500;
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
 
-        // Setup audio input
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 1024;
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
 
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then((stream) => {
-                const source = audioCtx.createMediaStreamSource(stream);
-                source.connect(analyser);
-                animate();
-            })
-            .catch((err) => {
-                console.error('Error accessing microphone: ' + err);
-            });
+        const particleMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 1.5,
+            opacity: 0.8,
+            transparent: true,
+            depthWrite: false
+        });
 
-        // Animation parameters
-        let time = 0;
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
+        const particles = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particles);
 
-        function animate() {
-            requestAnimationFrame(animate);
-            analyser.getByteFrequencyData(dataArray);
+        // Camera position
+        camera.position.z = 100;
 
-            // Calculate average amplitude for smooth response
-            const averageAmplitude = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+        // Audio setup - get audio data from user's microphone
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-            // Clear the canvas with a fade for dreamy effect
-            ctx.fillStyle = 'rgba(0, 31, 63, 0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
 
-            // Set up for the visuals
-            const midX = canvas.width / 2;
-            const midY = canvas.height / 2;
-            const amplitude = averageAmplitude / 256 * 150;
-            const frequency = 0.01;
+                analyser.getByteFrequencyData(dataArray);
+                const lowerHalfArray = dataArray.slice(0, (dataArray.length / 2) - 1);
+                const upperHalfArray = dataArray.slice((dataArray.length / 2) - 1, dataArray.length - 1);
 
-            // Draw organic, pulsating blob
-            ctx.beginPath();
-            ctx.moveTo(midX, midY);
-            for (let i = 0; i <= Math.PI * 2; i += 0.02) {
-                const radius = amplitude + 50 * Math.sin(i * 3 + time) + 20 * Math.cos(i * 7 + time * 0.5);
-                const x = midX + Math.cos(i) * radius;
-                const y = midY + Math.sin(i) * radius;
-                ctx.lineTo(x, y);
+                const lowerMax = Math.max(...lowerHalfArray);
+                const upperMax = Math.max(...upperHalfArray);
+                const overallAvg = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+
+                // Update torus knot based on audio
+                const scale = 1 + lowerMax / 256;
+                torusKnot.scale.set(scale, scale, scale);
+                torusKnot.rotation.x += 0.005 + (upperMax / 10000);
+                torusKnot.rotation.y += 0.005 + (lowerMax / 10000);
+                torusKnot.material.emissiveIntensity = 0.5 + (overallAvg / 256);
+
+                // Update particles to create a more ethereal effect
+                particles.rotation.y += 0.001;
+                particles.rotation.x += 0.0005;
+                particleMaterial.size = 1 + (overallAvg / 256);
+
+                // Dynamic point light intensity for a dreamy effect
+                pointLight1.intensity = 1 + (lowerMax / 256) * 1.5;
+                pointLight2.intensity = 1 + (upperMax / 256) * 1.5;
+
+                renderer.render(scene, camera);
             }
-            ctx.closePath();
+            animate();
+        }).catch(function(err) {
+            console.error('The following error occurred: ' + err);
+        });
 
-            // Fill with gradient for a dreamy, organic look
-            const gradient = ctx.createRadialGradient(midX, midY, amplitude * 0.1, midX, midY, amplitude * 1.5);
-            gradient.addColorStop(0, `rgba(0, 200, 255, 0.7)`);
-            gradient.addColorStop(1, `rgba(0, 100, 150, 0.2)`);
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            // Draw glowing orbs
-            const orbCount = 8;
-            for (let i = 0; i < orbCount; i++) {
-                const angle = (i / orbCount) * Math.PI * 2 + time * 0.1;
-                const orbX = midX + Math.cos(angle) * (amplitude * 1.5);
-                const orbY = midY + Math.sin(angle) * (amplitude * 1.5);
-                const orbSize = 5 + Math.sin(time * 0.5 + i) * 3;
-
-                ctx.beginPath();
-                ctx.arc(orbX, orbY, orbSize, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, 0.6)`;
-                ctx.fill();
-            }
-
-            // Increment time for smooth organic movement
-            time += 0.02;
-        }
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
