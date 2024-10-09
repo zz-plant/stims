@@ -2,113 +2,139 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy, Mesmerizing Music Visualizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Weirdcore Synesthetic Visualizer</title>
     <style>
-        html, body {
+        body, html {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: #000;
-            font-family: 'Courier New', Courier, monospace;
+            background-color: #000000; /* OLED black */
         }
         canvas {
             display: block;
+            width: 100vw;
+            height: 100vh;
         }
     </style>
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <canvas id="gpuCanvas"></canvas>
     <script>
-        // Scene setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        document.body.appendChild(renderer.domElement);
+        const canvas = document.getElementById('gpuCanvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-        // Torus Knot Geometry that morphs with the audio data
-        const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x7f00ff, 
-            emissive: 0x550088, 
-            metalness: 0.7, 
-            roughness: 0.2, 
-            side: THREE.DoubleSide 
-        });
-        const torusKnot = new THREE.Mesh(geometry, material);
-        scene.add(torusKnot);
-
-        // Lighting
-        const pointLight = new THREE.PointLight(0xff00ff, 2, 500);
-        pointLight.position.set(50, 50, 50);
-        scene.add(pointLight);
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        scene.add(ambientLight);
-
-        // Particle system
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 1000;
-        const positions = new Float32Array(particlesCount * 3);
-        for (let i = 0; i < particlesCount * 3; i++) {
-            positions[i] = (Math.random() - 0.5) * 500;
+        if (!gl) {
+            console.error('WebGL not supported');
+            throw new Error('WebGL not supported');
         }
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particlesMaterial = new THREE.PointsMaterial({ color: 0x00ffff, size: 1, transparent: true });
-        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particles);
 
-        // Camera positioning
-        camera.position.z = 100;
+        // Resize canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-        // Web Audio API setup
-        let analyser;
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const source = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            source.connect(analyser);
+        // Compile shader
+        function compileShader(source, type) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('Shader compile failed: ' + gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                throw new Error('Shader compile error');
+            }
+            return shader;
+        }
 
-            animate();
-        }).catch(err => {
-            console.error('Error accessing audio stream:', err);
-        });
+        // Simple shaders for weirdcore effect
+        const vertexShaderSource = `
+            attribute vec2 a_position;
+            varying vec2 v_uv;
+            void main() {
+                v_uv = a_position * 0.5 + 0.5;
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
+        const fragmentShaderSource = `
+            precision mediump float;
+            varying vec2 v_uv;
+            uniform float u_time;
 
-        // Animate function
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (analyser) {
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(dataArray);
-                const lowerHalfArray = dataArray.slice(0, dataArray.length / 2);
-                const avgFreq = lowerHalfArray.reduce((a, b) => a + b) / lowerHalfArray.length;
-                
-                // Modify geometry vertices based on frequency data
-                const time = performance.now() * 0.001;
-                geometry.vertices.forEach((vertex, i) => {
-                    const offset = avgFreq * 0.005;
-                    vertex.normalize().multiplyScalar(10 + offset * Math.sin(i + time));
-                });
-                geometry.verticesNeedUpdate = true;
+            // Function to generate random noise
+            float random(vec2 co) {
+                return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
             }
 
-            // Rotate objects for a dreamy, mesmerizing effect
-            torusKnot.rotation.x += 0.005;
-            torusKnot.rotation.y += 0.01;
-            particles.rotation.y += 0.002;
+            void main() {
+                // Distorted UV coordinates for a fluid effect
+                vec2 uv = v_uv;
+                uv.x += 0.1 * sin(uv.y * 10.0 + u_time * 0.5);
+                uv.y += 0.1 * cos(uv.x * 10.0 - u_time * 0.5);
+                
+                // Generate noise based on UV coordinates
+                float noise = random(uv * u_time * 0.1);
 
-            renderer.render(scene, camera);
+                // Create weirdcore colors
+                vec3 color = vec3(
+                    0.5 + 0.5 * sin(uv.x * 10.0 + u_time + noise),
+                    0.5 + 0.5 * cos(uv.y * 15.0 - u_time * 0.8 + noise),
+                    0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + u_time * 0.3)
+                );
+
+                // Add random flicker for unsettling effect
+                color *= 0.8 + 0.2 * random(uv * u_time);
+
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        // Create and link program
+        const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
+        const fragmentShader = compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER);
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error('Program link failed: ' + gl.getProgramInfoLog(program));
+            throw new Error('Program link error');
         }
+        gl.useProgram(program);
 
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        // Set up geometry
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1, -1,
+            1, -1,
+            -1, 1,
+            -1, 1,
+            1, -1,
+            1, 1,
+        ]), gl.STATIC_DRAW);
+
+        const positionLocation = gl.getAttribLocation(program, 'a_position');
+        gl.enableVertexAttribArray(positionLocation);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+        // Set up uniform for time
+        const timeLocation = gl.getUniformLocation(program, 'u_time');
+
+        // Render loop
+        function render(time) {
+            gl.uniform1f(timeLocation, time * 0.001);
+            gl.clearColor(0, 0, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
     </script>
 </body>
 </html>
