@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Star Guitar Inspired Visualizer - Enhanced and Beautified</title>
+    <title>Star Guitar Inspired Visualizer</title>
     <style>
         html, body {
             margin: 0;
@@ -38,7 +38,8 @@
                 0.1,
                 1000
             );
-            camera.position.set(0, 5, 0);
+            camera.position.set(-10, 5, 20); // Adjusted position to create a passenger-like perspective
+            camera.rotation.y = -0.3; // Slightly rotate to the right to simulate a passenger view
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
