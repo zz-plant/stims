@@ -82,9 +82,9 @@
 
                 // Create weirdcore colors
                 vec3 color = vec3(
-                    0.5 + 0.5 * sin(uv.x * 10.0 + u_time + noise + u_amplitude),
-                    0.5 + 0.5 * cos(uv.y * 15.0 - u_time * 0.8 + noise + u_amplitude),
-                    0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + u_time * 0.3 + u_amplitude)
+                    0.5 + 0.5 * sin(uv.x * 10.0 + u_time + noise + u_amplitude * 5.0),
+                    0.5 + 0.5 * cos(uv.y * 15.0 - u_time * 0.8 + noise + u_amplitude * 5.0),
+                    0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + u_time * 0.3 + u_amplitude * 5.0)
                 );
 
                 // Add random flicker for unsettling effect
@@ -131,7 +131,7 @@
         // Audio setup for sound reactivity
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
+        analyser.fftSize = 128;
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
@@ -160,7 +160,7 @@
             for (let i = 0; i < dataArray.length; i++) {
                 amplitude += dataArray[i];
             }
-            amplitude = amplitude / dataArray.length / 128.0; // Normalize amplitude
+            amplitude = Math.pow((amplitude / dataArray.length) / 128.0, 2.0); // Increase sensitivity and make it more obvious
 
             // Combine audio amplitude with touch/gyroscope amplitude
             amplitude += touchAmplitude;
