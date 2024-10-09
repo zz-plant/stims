@@ -111,6 +111,7 @@
             // Check if audio is being captured
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
+                console.log(dataArray);  // Debugging the frequency data
 
                 // Hexagon Layer: Slow rotation and pulsation (Mid Frequencies)
                 hexagonLayer.rotation.x += 0.01 * (dataArray[100] / 255);
@@ -124,6 +125,9 @@
                 // Particle System: High Frequencies
                 particleSystem.material.size = (dataArray[150] / 255) * 5;
                 particleSystem.material.color.setHSL(dataArray[150] / 255, 1.0, 0.5);
+            } else {
+                // Simple animation to test rotation
+                hexagonLayer.rotation.z += 0.01;  // Add basic rotation for testing
             }
 
             // Render the scene
