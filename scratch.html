@@ -249,7 +249,7 @@
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-        // Animate the stick figure
+        // Animate the stick figure with more advanced dancing
         const stickFigure = document.getElementById("stickFigure");
         const body = document.getElementById("body");
         const leftUpperArm = document.getElementById("leftUpperArm");
@@ -261,8 +261,9 @@
         const rightUpperLeg = document.getElementById("rightUpperLeg");
         const rightLowerLeg = document.getElementById("rightLowerLeg");
 
-        const armAngle = Math.sin(time * 3 + midFreq * 10) * 30 + gravity[0] * 5;
-        const legAngle = Math.sin(time * 2 + lowFreq * 10) * 20 + gravity[1] * 5;
+        const armAngle = Math.sin(time * 4 + midFreq * 15) * 45 + gravity[0] * 8;
+        const legAngle = Math.sin(time * 3 + lowFreq * 12) * 30 + gravity[1] * 8;
+        const bodyWiggle = Math.sin(time * 2 + highFreq * 10) * 5;
 
         leftUpperArm.setAttribute("x2", 50 - 30 * Math.cos(armAngle * Math.PI / 180));
         leftUpperArm.setAttribute("y2", 80 + 50 * Math.sin(armAngle * Math.PI / 180));
@@ -292,9 +293,11 @@
         rightLowerLeg.setAttribute("x2", parseFloat(rightUpperLeg.getAttribute("x2")) + 10 * Math.cos(legAngle * Math.PI / 180));
         rightLowerLeg.setAttribute("y2", parseFloat(rightUpperLeg.getAttribute("y2")) + 50 * Math.sin(legAngle * Math.PI / 180));
 
-        // Update stick figure position
+        // Update stick figure position with slight body wiggle
         stickFigurePosition.x += velocity.x;
         stickFigurePosition.y += velocity.y;
+
+        stickFigure.style.transform = `translate(-50%, -50%) rotate(${bodyWiggle}deg)`;
 
         // Keep the stick figure within the screen bounds
         if (stickFigurePosition.x <= 50) {
