@@ -21,7 +21,6 @@ function init() {
   // Set up renderer
   renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('toy-canvas') });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
 
   // Add a cube to the scene
   const geometry = new THREE.BoxGeometry();
