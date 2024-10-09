@@ -4,88 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webtoy Central Navigation</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #000;
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transition: background-color 0.5s ease;
-        }
-        header {
-            padding: 20px;
-            background-color: #333;
-            color: #fff;
-            width: 100%;
-        }
-        #search-container {
-            margin: 20px 0;
-        }
-        #search-bar {
-            padding: 10px;
-            width: 80%;
-            max-width: 500px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        #webtoy-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 1200px;
-        }
-        .webtoy-card {
-            background-color: #111;
-            margin: 10px;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
-            width: 200px;
-            transition: transform 0.3s;
-        }
-        .webtoy-card:hover {
-            transform: scale(1.05);
-        }
-        .webtoy-card h3 {
-            margin-top: 0;
-            font-size: 1.2em;
-        }
-        .webtoy-card a {
-            color: #1e90ff;
-            text-decoration: none;
-        }
-        .webtoy-card a:hover {
-            text-decoration: underline;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const searchBar = document.getElementById("search-bar");
             const webtoyCards = document.querySelectorAll(".webtoy-card");
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const analyser = audioContext.createAnalyser();
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                function updateBackground() {
-                    analyser.getByteFrequencyData(dataArray);
-                    const avgFrequency = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-                    const red = Math.min(255, avgFrequency * 2);
-                    const green = Math.min(255, avgFrequency / 2);
-                    const blue = Math.min(255, 255 - avgFrequency);
-                    document.body.style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
-                    requestAnimationFrame(updateBackground);
-                }
-                updateBackground();
-            }).catch(error => {
-                console.error("Error accessing audio input: ", error);
-            });
 
             searchBar.addEventListener("input", function(event) {
                 const query = event.target.value.toLowerCase();
@@ -110,31 +33,31 @@
     </div>
     <div id="webtoy-container">
         <div class="webtoy-card">
-            <h3><a href="https://no.toil.fyi/3dtoy.html">3D Toy</a></h3>
+            <h3><a href="3dtoy.html">3D Toy</a></h3>
             <p>A 3D interactive visual toy featuring a surreal torus knot, dynamic particle effects, and responsive procedural shapes.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="https://no.toil.fyi/95.html">95 Visualizer</a></h3>
+            <h3><a href="95.html">95 Visualizer</a></h3>
             <p>A weirdcore-inspired visualizer with fluid, shifting patterns and colors, perfect for creating a trippy sensory experience.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="https://no.toil.fyi/brand.html">Brand Visualizer</a></h3>
+            <h3><a href="brand.html">Brand Visualizer</a></h3>
             <p>A visual toy inspired by *Star Guitar*, featuring procedurally generated scenery like buildings, tracks, and modular elements.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="https://no.toil.fyi/demo.html">Demo Toy</a></h3>
+            <h3><a href="demo.html">Demo Toy</a></h3>
             <p>A customizable visual toy where users can adjust color modes and sensitivity to audio input.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="https://no.toil.fyi/seary.html">Index Visualizer</a></h3>
-            <p>A trippy, synesthetic visualizer that reacts to both microphone and device audio input, providing a hypnotic, kaleidoscopic effect.</p>
+            <h3><a href="seary.html">Seary Visualizer</a></h3>
+            <p>A synesthetic visualizer that reacts to both microphone and device audio input, providing a hypnotic, kaleidoscopic effect.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="https://no.toil.fyi/scratch.html">Scratch Toy</a></h3>
+            <h3><a href="stickman.html">Stickman Toy</a></h3>
             <p>A playful visual toy with a stick figure that interacts with audio input for a lighthearted and fun experience.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="https://no.toil.fyi/symph.html">Symph Visualizer</a></h3>
+            <h3><a href="symph.html">Symph Visualizer</a></h3>
             <p>A dreamy spectrograph visualizer that blends WebGL and 2D canvas visuals, reacting to music or sound input to create stunning visualizations.</p>
         </div>
     </div>
