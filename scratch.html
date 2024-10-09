@@ -52,10 +52,11 @@
     <text id="face" x="50" y="40" text-anchor="middle" alignment-baseline="middle" fill="white">
         😀
     </text>
-    <line id="body" x1="50" y1="60" x2="50" y2="200" stroke="white" stroke-width="4" />
-    <line id="leftUpperArm" x1="50" y1="80" x2="20" y2="130" stroke="white" stroke-width="4" />
+    <line id="neck" x1="50" y1="60" x2="50" y2="80" stroke="white" stroke-width="4" />
+    <line id="body" x1="50" y1="80" x2="50" y2="200" stroke="white" stroke-width="4" />
+    <line id="leftUpperArm" x1="50" y1="100" x2="20" y2="130" stroke="white" stroke-width="4" />
     <line id="leftLowerArm" x1="20" y1="130" x2="10" y2="180" stroke="white" stroke-width="4" />
-    <line id="rightUpperArm" x1="50" y1="80" x2="80" y2="130" stroke="white" stroke-width="4" />
+    <line id="rightUpperArm" x1="50" y1="100" x2="80" y2="130" stroke="white" stroke-width="4" />
     <line id="rightLowerArm" x1="80" y1="130" x2="90" y2="180" stroke="white" stroke-width="4" />
     <line id="leftUpperLeg" x1="50" y1="200" x2="40" y2="250" stroke="white" stroke-width="4" />
     <line id="leftLowerLeg" x1="40" y1="250" x2="30" y2="300" stroke="white" stroke-width="4" />
@@ -251,6 +252,7 @@
 
         // Animate the stick figure with more advanced dancing
         const stickFigure = document.getElementById("stickFigure");
+        const neck = document.getElementById("neck");
         const body = document.getElementById("body");
         const leftUpperArm = document.getElementById("leftUpperArm");
         const leftLowerArm = document.getElementById("leftLowerArm");
@@ -266,14 +268,14 @@
         const bodyWiggle = Math.sin(time * 2 + highFreq * 10) * 5;
 
         leftUpperArm.setAttribute("x2", 50 - 30 * Math.cos(armAngle * Math.PI / 180));
-        leftUpperArm.setAttribute("y2", 80 + 50 * Math.sin(armAngle * Math.PI / 180));
+        leftUpperArm.setAttribute("y2", 100 + 50 * Math.sin(armAngle * Math.PI / 180));
         leftLowerArm.setAttribute("x1", leftUpperArm.getAttribute("x2"));
         leftLowerArm.setAttribute("y1", leftUpperArm.getAttribute("y2"));
         leftLowerArm.setAttribute("x2", leftUpperArm.getAttribute("x2") - 20 * Math.cos(armAngle * Math.PI / 180));
         leftLowerArm.setAttribute("y2", parseFloat(leftUpperArm.getAttribute("y2")) + 50 * Math.sin(armAngle * Math.PI / 180));
 
         rightUpperArm.setAttribute("x2", 50 + 30 * Math.cos(armAngle * Math.PI / 180));
-        rightUpperArm.setAttribute("y2", 80 + 50 * Math.sin(armAngle * Math.PI / 180));
+        rightUpperArm.setAttribute("y2", 100 + 50 * Math.sin(armAngle * Math.PI / 180));
         rightLowerArm.setAttribute("x1", rightUpperArm.getAttribute("x2"));
         rightLowerArm.setAttribute("y1", rightUpperArm.getAttribute("y2"));
         rightLowerArm.setAttribute("x2", parseFloat(rightUpperArm.getAttribute("x2")) + 20 * Math.cos(armAngle * Math.PI / 180));
