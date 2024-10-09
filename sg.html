@@ -8,7 +8,7 @@
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: #000;
+            background: #87ceeb; /* Sky blue background */
         }
         canvas {
             display: block;
@@ -92,7 +92,7 @@
                 0.1,
                 1000
             );
-            camera.position.set(0, 2, 5);
+            camera.position.set(0, 2, 15); // Keep the camera above the road
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -123,6 +123,9 @@
             window.addEventListener('resize', onWindowResize, false);
 
             animate();
+
+            // Setup touch input
+            setupTouchInput();
         }
 
         function onWindowResize() {
@@ -135,6 +138,10 @@
             // Create repeating scenery elements with different shapes
             for (let i = 0; i < 100; i++) {
                 createSynchronizedSceneryElement(-i * 20);
+            }
+            // Add additional scenery elements that react to audio or touch
+            for (let i = 0; i < 10; i++) {
+                createReactiveSceneryElement(-i * 40);
             }
         }
 
@@ -154,6 +161,21 @@
                 zPosition // Place at specified z position
             );
             element.castShadow = true;
+            scene.add(element);
+            scenery.push(element);
+        }
+
+        function createReactiveSceneryElement(zPosition) {
+            const geometry = new THREE.TorusGeometry(Math.random() * 1 + 0.5, 0.3, 16, 100);
+            const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
+            const element = new THREE.Mesh(geometry, material);
+            element.position.set(
+                Math.random() * 40 - 20, // Random X position for variety
+                Math.random() * 5 + 1, // Random Y position for height
+                zPosition // Place at specified z position
+            );
+            element.castShadow = true;
+            element.userData.isReactive = true;
             scene.add(element);
             scenery.push(element);
         }
@@ -202,6 +224,18 @@
                 });
         }
 
+        function setupTouchInput() {
+            window.addEventListener('touchstart', (event) => {
+                for (let touch of event.touches) {
+                    scenery.forEach(obj => {
+                        if (obj.userData.isReactive) {
+                            obj.material.color.set(Math.random() * 0xffffff); // Change color on touch
+                        }
+                    });
+                }
+            });
+        }
+
         // Improved beat detection using low frequency energy peaks
         function handleBeatDetection() {
             const bassLevel = getFrequencyRangeValue(0, 10);
@@ -235,6 +269,14 @@
                     element.material.color.setHSL(colorValue, 0.7, 0.5);
                 });
 
+                // Update reactive elements based on treble frequencies
+                const trebleValue = Math.min(1, treble / 255);
+                scenery.forEach(element => {
+                    if (element.userData.isReactive) {
+                        element.scale.set(1 + trebleValue * 0.5, 1 + trebleValue * 0.5, 1 + trebleValue * 0.5); // Scale reactive elements
+                    }
+                });
+
                 // Smoothly adjust directional light intensity
                 const targetIntensity = 0.8 + (treble / 255) * 1.2;
                 directionalLight.intensity += (targetIntensity - directionalLight.intensity) * 0.1; // Use interpolation for smooth transitions
@@ -253,10 +295,10 @@
 
             // Move the camera forward
             camera.position.z -= delta * cameraSpeed;
+            camera.position.y = 2; // Keep the camera above the road
 
             // Apply camera shake
             camera.position.x += cameraShakeOffset.x;
-            camera.position.y += cameraShakeOffset.y;
             cameraShakeOffset.x *= cameraShakeDecay;
             cameraShakeOffset.y *= cameraShakeDecay;
 
