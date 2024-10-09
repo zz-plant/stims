@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Immersive Music Visualizer - Emoji & 3D Elements</title>
+    <title>Star Guitar Inspired Visualizer - Car Ride Experience</title>
     <style>
         html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: linear-gradient(to bottom, #1e3c72, #2a5298, #000); /* Deep blue gradient for a richer sky */
+            background: linear-gradient(to bottom, #1e3c72, #2a5298, #000); /* Deep blue gradient for sky */
         }
         canvas {
             display: block;
@@ -23,8 +23,8 @@
         let clock;
         let analyser, frequencyData;
         const scenery = [];
-        const emojis = ['🌳', '🚗', '🌟', '🌱']; // Tree, Car, Star, Plant
-        const cameraSpeed = 12;
+        const carElements = [];
+        const cameraSpeed = 15;
 
         function init() {
             // Scene setup
@@ -38,8 +38,8 @@
                 0.1,
                 1000
             );
-            camera.position.set(0, 1.5, 5); // Adjusted position to create a passenger-like perspective
-            camera.rotation.y = 0.05; // Slightly rotate to the right to simulate a passenger view
+            camera.position.set(0, 2, 10); // Adjusted position to create a car-like perspective
+            camera.rotation.y = 0.05; // Slightly rotate to the right to simulate being in a car
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -57,10 +57,8 @@
             scene.add(directionalLight);
 
             // Initialize scene elements
-            createRailwayTracks();
-            createSynchronizedScenery();
-            createEmojiElements();
-            createDynamicSky();
+            createRoad();
+            createStars();
 
             // Initialize clock
             clock = new THREE.Clock();
@@ -80,74 +78,31 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        function createRailwayTracks() {
-            // Create railway tracks
-            const trackGeometry = new THREE.BoxGeometry(window.innerWidth / 100, 0.1, 2000);
-            const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
-            const track = new THREE.Mesh(trackGeometry, trackMaterial);
-            track.position.set(0, 0, -1000);
-            track.receiveShadow = true;
-            scene.add(track);
-
-            // Add subtle road markings
-            const lineGeometry = new THREE.PlaneGeometry(0.1, 2000);
-            const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            for (let i = -2; i <= 2; i += 2) {
-                const line = new THREE.Mesh(lineGeometry, lineMaterial);
-                line.position.set(i, 0.05, -1000);
-                line.rotation.x = -Math.PI / 2;
-                scene.add(line);
-            }
+        function createRoad() {
+            // Create road
+            const roadGeometry = new THREE.PlaneGeometry(2000, 20);
+            const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const road = new THREE.Mesh(roadGeometry, roadMaterial);
+            road.rotation.x = -Math.PI / 2;
+            road.position.y = 0;
+            scene.add(road);
         }
 
-        function createSynchronizedScenery() {
-            // Create repeating 3D scenery elements closer to the camera
-            for (let i = 0; i < 30; i++) {
-                const zPosition = -i * 40;
+        function createStars() {
+            // Add starry sky effect
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
 
-                // Create 3D trees
-                const treeGeometry = new THREE.ConeGeometry(3, 10, 16);
-                const treeMaterial = new THREE.MeshLambertMaterial({ color: 0x228b22 });
-                const tree = new THREE.Mesh(treeGeometry, treeMaterial);
-                tree.position.set(Math.random() < 0.5 ? -25 : 25, 0, zPosition + 50);
-                tree.castShadow = true;
-                scene.add(tree);
-                scenery.push(tree);
+            const starVertices = [];
+            for (let i = 0; i < 1000; i++) {
+                starVertices.push((Math.random() - 0.5) * 2000);
+                starVertices.push(Math.random() * 800 - 100);
+                starVertices.push((Math.random() - 0.5) * 2000);
             }
-        }
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
 
-        function createEmojiElements() {
-            // Create emoji elements closer to the camera
-            for (let i = 0; i < 30; i++) {
-                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-                const emojiDiv = document.createElement('div');
-                emojiDiv.style.position = 'absolute';
-                emojiDiv.style.fontSize = '24px';
-                emojiDiv.style.color = 'white';
-                emojiDiv.innerText = emoji;
-                emojiDiv.style.top = `${Math.random() * 100}vh`;
-                emojiDiv.style.left = `${Math.random() * 100}vw`;
-                document.body.appendChild(emojiDiv);
-
-                // Animate emoji with CSS animation (falling effect)
-                emojiDiv.animate([
-                    { transform: `translateY(-100vh)` },
-                    { transform: `translateY(100vh)` }
-                ], {
-                    duration: 10000 + Math.random() * 5000,
-                    iterations: Infinity
-                });
-            }
-        }
-
-        function createDynamicSky() {
-            // Create dynamic sky elements - moving clouds and sky color adjustments
-            const skyGeometry = new THREE.PlaneGeometry(2000, 1000);
-            const skyMaterial = new THREE.MeshLambertMaterial({ color: 0x87ceeb, side: THREE.DoubleSide });
-            const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-            sky.position.set(0, 500, -1000);
-            sky.rotation.x = Math.PI / 2;
-            scene.add(sky);
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
         }
 
         function setupAudio() {
@@ -178,13 +133,45 @@
                 const mid = getFrequencyRangeValue(11, 40);
                 const treble = getFrequencyRangeValue(41, 60);
 
-                // Make trees scale with the bass frequencies
-                scenery.forEach(obj => {
-                    if (obj.geometry.type === 'ConeGeometry') {
-                        obj.scale.y = 1 + bass / 255;
-                    }
-                });
+                // Create trees/buildings in response to bass frequencies
+                if (bass > 150) {
+                    createTreeOrBuilding();
+                }
+
+                // Create cars in response to mid frequencies
+                if (mid > 120) {
+                    createCar();
+                }
             }
+        }
+
+        function createTreeOrBuilding() {
+            const isTree = Math.random() > 0.5;
+            let geometry, material;
+
+            if (isTree) {
+                geometry = new THREE.ConeGeometry(2, 10, 16);
+                material = new THREE.MeshLambertMaterial({ color: 0x228b22 });
+            } else {
+                geometry = new THREE.BoxGeometry(5, Math.random() * 20 + 10, 5);
+                material = new THREE.MeshLambertMaterial({ color: 0x8b8b8b });
+            }
+
+            const element = new THREE.Mesh(geometry, material);
+            element.position.set(Math.random() < 0.5 ? -20 : 20, geometry.parameters.height / 2, camera.position.z - 50);
+            element.castShadow = true;
+            scene.add(element);
+            scenery.push(element);
+        }
+
+        function createCar() {
+            const carGeometry = new THREE.BoxGeometry(4, 2, 8);
+            const carMaterial = new THREE.MeshLambertMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 70%, 50%)`) });
+            const car = new THREE.Mesh(carGeometry, carMaterial);
+            car.position.set(Math.random() < 0.5 ? -2 : 2, 1, camera.position.z - 50);
+            car.castShadow = true;
+            scene.add(car);
+            carElements.push(car);
         }
 
         function getFrequencyRangeValue(start, end) {
@@ -199,16 +186,26 @@
 
             // Move the camera forward
             camera.position.z -= delta * cameraSpeed;
-            camera.position.y = 1.5; // Keep the camera above the road
+            camera.position.y = 2; // Keep the camera above the road
 
             // Update scenery with sound
             updateSceneryWithSound();
 
-            // Move scenery elements closer to the camera for greater effect
+            // Move scenery elements
             scenery.forEach(obj => {
                 obj.position.z += delta * cameraSpeed;
                 if (obj.position.z > camera.position.z + 100) {
-                    obj.position.z -= 2000; // Reposition for continuous scenery closer to the user
+                    scene.remove(obj);
+                    scenery.splice(scenery.indexOf(obj), 1); // Remove from array when out of view
+                }
+            });
+
+            // Move cars on the road
+            carElements.forEach(car => {
+                car.position.z += delta * cameraSpeed * 1.5;
+                if (car.position.z > camera.position.z + 50) {
+                    scene.remove(car);
+                    carElements.splice(carElements.indexOf(car), 1);
                 }
             });
 
