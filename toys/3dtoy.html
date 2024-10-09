@@ -14,7 +14,7 @@
 
     <script type="module">
         import { initScene } from './assets/js/core/scene-setup.js';
-        import { initCamera } from './assets/js/core/scene-setup.js';
+        import { initCamera } from './assets/js/core/camera-setup.js';
         import { initRenderer } from './assets/js/core/renderer-setup.js';
         import { initLighting, initAmbientLight } from './assets/js/lighting/lighting-setup.js';
         import { initMicrophone, getFrequencyData } from './assets/js/utils/microphone.js';
@@ -40,7 +40,8 @@
                 const analyser = await initMicrophone();
                 animate(analyser);
             } catch (error) {
-                console.error("Microphone access denied");
+                console.error("Microphone access denied. Using fallback animation.");
+                animateWithoutAudio();
             }
         }
 
@@ -54,6 +55,16 @@
             }
 
             renderer.render(scene, camera);
+        }
+
+        function animateWithoutAudio() {
+            function animate() {
+                requestAnimationFrame(animate);
+                torus.rotation.x += 0.01;
+                torus.rotation.y += 0.01;
+                renderer.render(scene, camera);
+            }
+            animate();
         }
 
         init();
