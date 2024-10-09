@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Reactive Webtoy</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+        }
+        button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="toy-canvas"></canvas>
+    <button id="startAudio">Start Audio Interaction</button>
+
+    <script type="module">
+        // Import shared assets for scene setup
+        import { initScene, initCamera, initRenderer } from './assets/js/core/scene-setup.js';
+        import { initLighting, initAmbientLight } from './assets/js/lighting-setup.js';
+        import { applyAudioRotation, applyAudioScale } from './assets/js/utils/animation-utils.js';
+
+        let scene, camera, renderer, torus;
+
+        // Initialize 3D scene
+        function init3DScene() {
+            const canvas = document.getElementById('toy-canvas');
+            scene = initScene();
+            camera = initCamera({ position: { x: 0, y: 0, z: 50 } });
+            renderer = initRenderer(canvas, { antialias: true });
+
+            // Add lighting
+            initLighting(scene, { color: 0xffffff, intensity: 1 });
+            initAmbientLight(scene, { color: 0x222222, intensity: 0.5 });
+
+            // Create torus geometry
+            const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+            const material = new THREE.MeshStandardMaterial({ color: 0x0077ff });
+            torus = new THREE.Mesh(geometry, material);
+            scene.add(torus);
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Handle window resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Request microphone access and initialize audio context
+        async function initAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                const audioSource = audioContext.createMediaStreamSource(stream);
+                audioSource.connect(analyser);
+
+                console.log("Microphone access granted.");
+                return { analyser, dataArray };
+            } catch (error) {
+                console.error("Microphone access denied or error occurred: ", error);
+                alert("Please allow microphone access to use the audio feature. A fallback animation will run.");
+                return null;
+            }
+        }
+
+        // Fallback animation if microphone access is denied
+        function generateFallbackAudioData() {
+            return Math.abs(Math.sin(Date.now() * 0.001)) * 128 + 128;  // Synthetic audio data for fallback
+        }
+
+        // Animation loop with audio interaction
+        function animateWithAudio(analyser, dataArray) {
+            function animate() {
+                requestAnimationFrame(animate);
+
+                analyser.getByteFrequencyData(dataArray);
+                const audioData = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+
+                // Apply audio-based transformations
+                applyAudioRotation(torus, audioData, 0.05);
+                applyAudioScale(torus, audioData, 50);
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        // Fallback animation loop
+        function animateWithoutAudio() {
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const audioData = generateFallbackAudioData();
+                applyAudioRotation(torus, audioData, 0.05);
+                applyAudioScale(torus, audioData, 50);
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        // Start the toy with or without audio interaction
+        document.getElementById('startAudio').addEventListener('click', async function() {
+            init3DScene();
+            const audioSetup = await initAudio();
+            if (audioSetup) {
+                const { analyser, dataArray } = audioSetup;
+                animateWithAudio(analyser, dataArray);
+            } else {
+                animateWithoutAudio();
+            }
+        });
+    </script>
+</body>
+</html>
