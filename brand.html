@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>3D Audio Visualizer with Webcam Texture</title>
+    <title>Sensory-Integrated Audio Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -19,10 +19,6 @@
             font-size: 16px;
             cursor: pointer;
             z-index: 1;
-        }
-        /* Hide the button after clicking */
-        #startButton.hidden {
-            display: none;
         }
     </style>
 </head>
@@ -43,36 +39,98 @@
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
         // Vertex shader source code
         const vertexShaderSource = `
-            attribute vec3 a_position;
-            attribute vec2 a_texCoord;
-            uniform mat4 u_modelViewMatrix;
-            uniform mat4 u_projectionMatrix;
-            varying vec2 v_texCoord;
+            attribute vec2 a_position;
+            varying vec2 v_uv;
             void main() {
-                gl_Position = u_projectionMatrix * u_modelViewMatrix * vec4(a_position, 1.0);
-                v_texCoord = a_texCoord;
+                v_uv = a_position * 0.5 + 0.5;
+                gl_Position = vec4(a_position, 0.0, 1.0);
             }
         `;
 
         // Fragment shader source code
         const fragmentShaderSource = `
             precision highp float;
-            varying vec2 v_texCoord;
-            uniform sampler2D u_webcamTexture;
+            varying vec2 v_uv;
+            uniform float u_time;
+            uniform vec2 u_resolution;
+            uniform float u_bass;
+            uniform float u_mid;
+            uniform float u_treble;
+            uniform vec2 u_mouse;
+            uniform vec2 u_touch;
+            uniform vec3 u_orientation;
+
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            float noise(vec2 st) {
+                vec2 i = floor(st);
+                vec2 f = fract(st);
+
+                float a = random(i);
+                float b = random(i + vec2(1.0, 0.0));
+                float c = random(i + vec2(0.0, 1.0));
+                float d = random(i + vec2(1.0, 1.0));
+
+                vec2 u = f * f * (3.0 - 2.0 * f);
+
+                return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+            }
+
             void main() {
-                vec4 color = texture2D(u_webcamTexture, v_texCoord);
-                gl_FragColor = color;
+                vec2 uv = v_uv;
+                vec2 centeredUv = uv - 0.5;
+
+                float time = u_time * 0.5;
+
+                // Apply device orientation to distort the UV coordinates
+                centeredUv += u_orientation.xy * 0.05;
+
+                // Generate noise patterns
+                float n = noise(centeredUv * 5.0 + time);
+                float n2 = noise(centeredUv * 10.0 - time);
+
+                // Create dynamic color patterns based on audio frequencies
+                float bassEffect = u_bass * 2.0;
+                float midEffect = u_mid * 2.0;
+                float trebleEffect = u_treble * 2.0;
+
+                vec3 color = vec3(0.0);
+
+                // Apply bass effect
+                color.r += smoothstep(0.4, 0.6, n + bassEffect * 0.5);
+
+                // Apply mid effect
+                color.g += smoothstep(0.3, 0.7, n2 + midEffect * 0.5);
+
+                // Apply treble effect
+                color.b += smoothstep(0.2, 0.8, n + trebleEffect * 0.5);
+
+                // Add radial gradient
+                float radius = length(centeredUv) * 2.0;
+                color *= smoothstep(1.0, 0.0, radius);
+
+                // Add mouse interaction effect
+                float mouseDist = length(centeredUv - (u_mouse - 0.5));
+                color += vec3(0.2 / (mouseDist + 0.1));
+
+                // Add touch interaction effect
+                float touchDist = length(centeredUv - (u_touch - 0.5));
+                color += vec3(0.2 / (touchDist + 0.1));
+
+                gl_FragColor = vec4(color, 1.0);
             }
         `;
 
-        // Function to create shader and program
+        // Compile shader and create program
         function createShader(gl, type, source) {
             const shader = gl.createShader(type);
             gl.shaderSource(shader, source);
@@ -103,101 +161,45 @@
 
         gl.useProgram(program);
 
-        // Define the cube vertices and texture coordinates
-        const positions = new Float32Array([
-            // Front face
-            -1.0, -1.0,  1.0, // Bottom-left
-             1.0, -1.0,  1.0, // Bottom-right
-             1.0,  1.0,  1.0, // Top-right
-            -1.0,  1.0,  1.0, // Top-left
-            // Back face
-            -1.0, -1.0, -1.0, // ...
-             1.0, -1.0, -1.0,
-             1.0,  1.0, -1.0,
-            -1.0,  1.0, -1.0,
-        ]);
-
-        const texCoords = new Float32Array([
-            // Front face
-            0.0, 1.0, // Bottom-left
-            1.0, 1.0, // Bottom-right
-            1.0, 0.0, // Top-right
-            0.0, 0.0, // Top-left
-            // Back face
-            1.0, 1.0, // ...
-            0.0, 1.0,
-            0.0, 0.0,
-            1.0, 0.0,
-        ]);
-
-        const indices = new Uint16Array([
-            // Front face
-            0, 1, 2,   0, 2, 3,
-            // Back face
-            4, 5, 6,   4, 6, 7,
-            // Top face
-            3, 2, 6,   3, 6, 7,
-            // Bottom face
-            0, 1, 5,   0, 5, 4,
-            // Right face
-            1, 2, 6,   1, 6, 5,
-            // Left face
-            0, 3, 7,   0, 7, 4,
-        ]);
-
-        // Create buffers
+        // Set up geometry data (full-screen quad)
         const positionBuffer = gl.createBuffer();
-        const texCoordBuffer = gl.createBuffer();
-        const indexBuffer = gl.createBuffer();
-
-        // Bind positions
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+        const positions = [
+            -1, -1, // Bottom left
+             1, -1, // Bottom right
+            -1,  1, // Top left
+            -1,  1, // Top left
+             1, -1, // Bottom right
+             1,  1, // Top right
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
         const positionLocation = gl.getAttribLocation(program, 'a_position');
         gl.enableVertexAttribArray(positionLocation);
-        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-
-        // Bind texture coordinates
-        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
-        const texCoordLocation = gl.getAttribLocation(program, 'a_texCoord');
-        gl.enableVertexAttribArray(texCoordLocation);
-        gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
-
-        // Bind indices
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
         // Get uniform locations
-        const modelViewMatrixLocation = gl.getUniformLocation(program, 'u_modelViewMatrix');
-        const projectionMatrixLocation = gl.getUniformLocation(program, 'u_projectionMatrix');
-        const webcamTextureLocation = gl.getUniformLocation(program, 'u_webcamTexture');
+        const timeLocation = gl.getUniformLocation(program, 'u_time');
+        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+        const bassLocation = gl.getUniformLocation(program, 'u_bass');
+        const midLocation = gl.getUniformLocation(program, 'u_mid');
+        const trebleLocation = gl.getUniformLocation(program, 'u_treble');
+        const mouseLocation = gl.getUniformLocation(program, 'u_mouse');
+        const touchLocation = gl.getUniformLocation(program, 'u_touch');
+        const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
 
-        // Create a texture for the webcam feed
-        const webcamTexture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, webcamTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 2, 2, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        // Set static uniforms
+        gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
 
-        // Set texture parameters
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-
-        // Create a video element to capture webcam feed
-        const video = document.createElement('video');
-        video.autoplay = true;
-        video.playsInline = true;
-        video.style.display = 'none';
-        document.body.appendChild(video);
-
-        // Variables for animation
-        let rotation = [0, 0, 0];
-        let lastTime = 0;
-
-        // Variables for audio
+        // Initialize variables
+        let startTime = null;
+        let bass = 0.0;
+        let mid = 0.0;
+        let treble = 0.0;
+        let mousePosition = [0.5, 0.5];
+        let touchPosition = [0.5, 0.5];
         let audioAnalyser = null;
-
-        // Variables for device orientation
+        let lastVibrateTime = 0;
         let orientation = [0.0, 0.0, 0.0];
 
         // Audio setup
@@ -214,112 +216,99 @@
             });
         }
 
-        // Webcam setup
-        function setupWebcam() {
-            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-                video.srcObject = stream;
-                video.play();
-                requestAnimationFrame(render);
-            }).catch(err => {
-                alert('Webcam access denied.');
-                console.error('Error accessing webcam:', err);
-            });
-        }
-
-        // Start audio and webcam on button click
+        // Start audio on button click
         const startButton = document.getElementById('startButton');
         startButton.addEventListener('click', () => {
             setupAudio();
-            setupWebcam();
-            startButton.classList.add('hidden');
+            startButton.style.display = 'none';
         });
 
-        // Handle device orientation
-        window.addEventListener('deviceorientation', event => {
-            const gamma = event.gamma || 0; // Left to right tilt [-90,90]
-            const beta = event.beta || 0;   // Front to back tilt [-180,180]
-            const alpha = event.alpha || 0; // Compass direction [0,360]
-
-            orientation = [
-                beta * Math.PI / 180,   // X-axis rotation
-                gamma * Math.PI / 180,  // Y-axis rotation
-                alpha * Math.PI / 180   // Z-axis rotation
+        // Handle mouse movement
+        canvas.addEventListener('mousemove', event => {
+            const rect = canvas.getBoundingClientRect();
+            mousePosition = [
+                (event.clientX - rect.left) / canvas.width,
+                1.0 - (event.clientY - rect.top) / canvas.height,
             ];
         });
 
-        // Include the glMatrix library for matrix operations
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js';
-        document.head.appendChild(script);
+        // Handle touch movement
+        canvas.addEventListener('touchmove', event => {
+            event.preventDefault();
+            const touch = event.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            touchPosition = [
+                (touch.clientX - rect.left) / canvas.width,
+                1.0 - (touch.clientY - rect.top) / canvas.height,
+            ];
+        }, { passive: false });
 
-        script.onload = function() {
-            // Start rendering if the webcam is already set up
-            if (video.readyState >= 2) {
-                requestAnimationFrame(render);
-            }
-        };
+        // Handle device orientation
+        window.addEventListener('deviceorientation', event => {
+            const gamma = event.gamma || 0; // Left to right tilt in degrees [-90,90]
+            const beta = event.beta || 0;   // Front to back tilt in degrees [-180,180]
+            const alpha = event.alpha || 0; // Compass direction
+
+            // Normalize the orientation values
+            orientation = [
+                gamma / 90.0,  // X-axis
+                beta / 180.0,  // Y-axis
+                alpha / 360.0  // Z-axis
+            ];
+        });
 
         // Render loop
         function render(currentTime) {
-            const deltaTime = currentTime - lastTime;
-            lastTime = currentTime;
+            if (!startTime) startTime = currentTime;
+            const elapsedTime = (currentTime - startTime) / 1000.0;
 
-            // Clear the canvas
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.enable(gl.DEPTH_TEST);
+            // Update uniforms
+            gl.uniform1f(timeLocation, elapsedTime);
+            gl.uniform2f(mouseLocation, mousePosition[0], mousePosition[1]);
+            gl.uniform2f(touchLocation, touchPosition[0], touchPosition[1]);
+            gl.uniform3f(orientationLocation, orientation[0], orientation[1], orientation[2]);
 
-            // Update the webcam texture
-            if (video.readyState >= 2) {
-                gl.bindTexture(gl.TEXTURE_2D, webcamTexture);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
-            }
-
-            // Calculate rotation based on time and device orientation
-            rotation[0] += deltaTime * 0.0005 + orientation[0] * 0.1;
-            rotation[1] += deltaTime * 0.0003 + orientation[1] * 0.1;
-            rotation[2] += deltaTime * 0.0004 + orientation[2] * 0.1;
-
-            // Update rotation based on audio (e.g., bass frequency)
             if (audioAnalyser) {
                 const bufferLength = audioAnalyser.frequencyBinCount;
                 const dataArray = new Uint8Array(bufferLength);
                 audioAnalyser.getByteFrequencyData(dataArray);
 
-                // Use bass frequencies to affect the rotation speed
-                const bass = dataArray.slice(0, bufferLength / 4);
-                const bassAvg = bass.reduce((a, b) => a + b, 0) / bass.length / 255.0;
-                rotation[1] += bassAvg * 0.05;
+                // Divide frequency data into bass, mid, and treble
+                const bassData = dataArray.slice(0, bufferLength / 4);
+                const midData = dataArray.slice(bufferLength / 4, bufferLength / 2);
+                const trebleData = dataArray.slice(bufferLength / 2);
+
+                // Calculate average values
+                const bassAvg = bassData.reduce((a, b) => a + b, 0) / bassData.length / 255.0;
+                const midAvg = midData.reduce((a, b) => a + b, 0) / midData.length / 255.0;
+                const trebleAvg = trebleData.reduce((a, b) => a + b, 0) / trebleData.length / 255.0;
+
+                // Smooth the values
+                bass += (bassAvg - bass) * 0.1;
+                mid += (midAvg - mid) * 0.1;
+                treble += (trebleAvg - treble) * 0.1;
+
+                gl.uniform1f(bassLocation, bass);
+                gl.uniform1f(midLocation, mid);
+                gl.uniform1f(trebleLocation, treble);
+
+                // Haptic feedback based on bass levels
+                const currentTimeMs = performance.now();
+                if (bass > 0.5 && currentTimeMs - lastVibrateTime > 500) {
+                    if (navigator.vibrate) {
+                        navigator.vibrate(100);
+                    }
+                    lastVibrateTime = currentTimeMs;
+                }
             }
 
-            // Set up projection matrix
-            const fieldOfView = 45 * Math.PI / 180;
-            const aspect = canvas.clientWidth / canvas.clientHeight;
-            const zNear = 0.1;
-            const zFar = 100.0;
-            const projectionMatrix = mat4.create();
-            mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
-
-            // Set up model view matrix
-            const modelViewMatrix = mat4.create();
-            mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -6.0]);
-            mat4.rotateX(modelViewMatrix, modelViewMatrix, rotation[0]);
-            mat4.rotateY(modelViewMatrix, modelViewMatrix, rotation[1]);
-            mat4.rotateZ(modelViewMatrix, modelViewMatrix, rotation[2]);
-
-            // Set uniforms
-            gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);
-            gl.uniformMatrix4fv(modelViewMatrixLocation, false, modelViewMatrix);
-
-            // Set texture uniform
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, webcamTexture);
-            gl.uniform1i(webcamTextureLocation, 0);
-
-            // Draw the cube
-            gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+            // Clear and draw
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
 
             requestAnimationFrame(render);
         }
+        requestAnimationFrame(render);
     </script>
 </body>
 </html>
