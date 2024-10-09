@@ -32,90 +32,78 @@
     <button id="startAudio">Start Audio Interaction</button>
 
     <script type="module">
-        import { initScene, initCamera, initRenderer } from './assets/js/core/scene-setup.js';
-        import { initLighting, initAmbientLight } from './assets/js/lighting/lighting-setup.js';
-        import { applyAudioRotation, applyAudioScale } from './assets/js/utils/animation-utils.js';
+    import { initScene, initCamera, initRenderer } from './assets/js/core/scene-setup.js';
+    import { initLighting, initAmbientLight } from './assets/js/lighting/lighting-setup.js';
+    import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
+    import { applyAudioRotation, applyAudioScale } from './assets/js/utils/animation-utils.js';
 
-        let scene, camera, renderer, torus;
+    let scene, camera, renderer, torus;
 
-        function init3DScene() {
-            const canvas = document.getElementById('toy-canvas');
-            scene = initScene();
-            camera = initCamera({ position: { x: 0, y: 0, z: 50 } });
-            renderer = initRenderer(canvas);
+    function init3DScene() {
+        const canvas = document.getElementById('toy-canvas');
+        scene = initScene();
+        camera = initCamera({ position: { x: 0, y: 0, z: 50 } });
+        renderer = initRenderer(canvas);
 
-            initLighting(scene, { color: 0xffffff, intensity: 1 });
-            initAmbientLight(scene, { color: 0x222222, intensity: 0.5 });
+        initLighting(scene, { color: 0xffffff, intensity: 1 });
+        initAmbientLight(scene, { color: 0x222222, intensity: 0.5 });
 
-            const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
-            const material = new THREE.MeshStandardMaterial({ color: 0x0077ff });
-            torus = new THREE.Mesh(geometry, material);
-            scene.add(torus);
+        const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+        const material = new THREE.MeshStandardMaterial({ color: 0x0077ff });
+        torus = new THREE.Mesh(geometry, material);
+        scene.add(torus);
 
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            window.addEventListener('resize', onWindowResize);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    async function initAudioInteraction() {
+        try {
+            const { analyser, dataArray } = await initAudio();
+            animateWithAudio(analyser, dataArray);
+        } catch (error) {
+            console.error("Microphone access denied or error occurred:", error);
+            alert("Please allow microphone access to use the audio feature. A fallback animation will run.");
+            animateWithoutAudio();
         }
+    }
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+    function animateWithAudio(analyser, dataArray) {
+        function animate() {
+            requestAnimationFrame(animate);
+
+            analyser.getByteFrequencyData(dataArray);
+            const audioData = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+
+            applyAudioRotation(torus, audioData, 0.05);
+            applyAudioScale(torus, audioData, 50);
+
+            renderer.render(scene, camera);
         }
+        animate();
+    }
 
-        async function initAudio() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new AudioContext();
-                const analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-                const audioSource = audioContext.createMediaStreamSource(stream);
-                audioSource.connect(analyser);
-
-                return { analyser, dataArray };
-            } catch (error) {
-                console.error("Microphone access denied or error occurred: ", error);
-                alert("Please allow microphone access to use the audio feature. A fallback animation will run.");
-                return null;
-            }
+    function animateWithoutAudio() {
+        function animate() {
+            requestAnimationFrame(animate);
+            torus.rotation.x += 0.01;
+            torus.rotation.y += 0.01;
+            renderer.render(scene, camera);
         }
+        animate();
+    }
 
-        function animateWithAudio(analyser, dataArray) {
-            function animate() {
-                requestAnimationFrame(animate);
+    document.getElementById('startAudio').addEventListener('click', async function() {
+        init3DScene();
+        await initAudioInteraction();
+    });
+</script>
 
-                analyser.getByteFrequencyData(dataArray);
-                const audioData = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-
-                applyAudioRotation(torus, audioData, 0.05);
-                applyAudioScale(torus, audioData, 50);
-
-                renderer.render(scene, camera);
-            }
-            animate();
-        }
-
-        function animateWithoutAudio() {
-            function animate() {
-                requestAnimationFrame(animate);
-                torus.rotation.x += 0.01;
-                torus.rotation.y += 0.01;
-                renderer.render(scene, camera);
-            }
-            animate();
-        }
-
-        document.getElementById('startAudio').addEventListener('click', async function() {
-            init3DScene();
-            const audioSetup = await initAudio();
-            if (audioSetup) {
-                const { analyser, dataArray } = audioSetup;
-                animateWithAudio(analyser, dataArray);
-            } else {
-                animateWithoutAudio();
-            }
-        });
-    </script>
 </body>
 </html>
