@@ -1,7 +1,0 @@
-visualizers:
-  - name: ThreeDToy
-    class: ThreeDToy
-  - name: Weirdcore
-    class: Weirdcore
-  - name: Brand
-    class: Brand
