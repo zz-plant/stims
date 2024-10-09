@@ -125,7 +125,7 @@ To run the stim toys locally, clone this repository and open the HTML files in y
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/kanavjain/stims.git
+   git clone https://github.com/zz-plant/stims.git
    cd stims
    ```
 
