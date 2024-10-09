@@ -65,6 +65,7 @@
             varying vec2 v_uv;
             uniform float u_time;
             uniform float u_amplitude;
+            uniform vec2 u_mouse;
 
             // Function to generate random noise
             float random(vec2 co) {
@@ -76,6 +77,7 @@
                 vec2 uv = v_uv;
                 uv.x += 0.1 * sin(uv.y * 10.0 + u_time * 0.5 + u_amplitude);
                 uv.y += 0.1 * cos(uv.x * 10.0 - u_time * 0.5 + u_amplitude);
+                uv += 0.05 * sin(u_mouse.x * uv.yx * 10.0 + u_time); // Add mouse influence
                 
                 // Generate noise based on UV coordinates
                 float noise = random(uv * u_time * 0.1);
@@ -124,9 +126,10 @@
         gl.enableVertexAttribArray(positionLocation);
         gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-        // Set up uniform for time and amplitude
+        // Set up uniforms for time, amplitude, and mouse
         const timeLocation = gl.getUniformLocation(program, 'u_time');
         const amplitudeLocation = gl.getUniformLocation(program, 'u_amplitude');
+        const mouseLocation = gl.getUniformLocation(program, 'u_mouse');
 
         // Audio setup for sound reactivity
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -153,6 +156,14 @@
             touchAmplitude = (gamma / 90.0) * 0.5; // Use gamma (left-to-right tilt) to influence amplitude
         });
 
+        // Mouse movement setup for interactivity
+        let mouseX = 0;
+        let mouseY = 0;
+        window.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX / window.innerWidth;
+            mouseY = event.clientY / window.innerHeight;
+        });
+
         // Render loop
         function render(time) {
             analyser.getByteFrequencyData(dataArray);
@@ -167,6 +178,7 @@
 
             gl.uniform1f(timeLocation, time * 0.001);
             gl.uniform1f(amplitudeLocation, amplitude);
+            gl.uniform2f(mouseLocation, mouseX, mouseY);
 
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
