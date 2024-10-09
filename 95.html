@@ -64,6 +64,7 @@
             precision mediump float;
             varying vec2 v_uv;
             uniform float u_time;
+            uniform float u_amplitude;
 
             // Function to generate random noise
             float random(vec2 co) {
@@ -73,17 +74,17 @@
             void main() {
                 // Distorted UV coordinates for a fluid effect
                 vec2 uv = v_uv;
-                uv.x += 0.1 * sin(uv.y * 10.0 + u_time * 0.5);
-                uv.y += 0.1 * cos(uv.x * 10.0 - u_time * 0.5);
+                uv.x += 0.1 * sin(uv.y * 10.0 + u_time * 0.5 + u_amplitude);
+                uv.y += 0.1 * cos(uv.x * 10.0 - u_time * 0.5 + u_amplitude);
                 
                 // Generate noise based on UV coordinates
                 float noise = random(uv * u_time * 0.1);
 
                 // Create weirdcore colors
                 vec3 color = vec3(
-                    0.5 + 0.5 * sin(uv.x * 10.0 + u_time + noise),
-                    0.5 + 0.5 * cos(uv.y * 15.0 - u_time * 0.8 + noise),
-                    0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + u_time * 0.3)
+                    0.5 + 0.5 * sin(uv.x * 10.0 + u_time + noise + u_amplitude),
+                    0.5 + 0.5 * cos(uv.y * 15.0 - u_time * 0.8 + noise + u_amplitude),
+                    0.5 + 0.5 * sin((uv.x + uv.y) * 5.0 + u_time * 0.3 + u_amplitude)
                 );
 
                 // Add random flicker for unsettling effect
@@ -123,12 +124,35 @@
         gl.enableVertexAttribArray(positionLocation);
         gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-        // Set up uniform for time
+        // Set up uniform for time and amplitude
         const timeLocation = gl.getUniformLocation(program, 'u_time');
+        const amplitudeLocation = gl.getUniformLocation(program, 'u_amplitude');
+
+        // Audio setup for sound reactivity
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            analyser.fftSize = 256;
+        }).catch((err) => {
+            console.error('Audio input error: ', err);
+        });
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
         // Render loop
         function render(time) {
+            analyser.getByteFrequencyData(dataArray);
+            let amplitude = 0.0;
+            for (let i = 0; i < dataArray.length; i++) {
+                amplitude += dataArray[i];
+            }
+            amplitude = amplitude / dataArray.length / 256.0; // Normalize amplitude
+
             gl.uniform1f(timeLocation, time * 0.001);
+            gl.uniform1f(amplitudeLocation, amplitude);
+
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
