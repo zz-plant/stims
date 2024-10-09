@@ -86,13 +86,21 @@
 
         async function getMicrophoneInput() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            source = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            const bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
-            source.connect(analyser);
+
+            // Request microphone access
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log("Microphone access granted.");
+                source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                source.connect(analyser);
+            } catch (err) {
+                console.error("Error accessing microphone:", err);
+                alert("Microphone access was blocked. Please enable it and reload.");
+            }
         }
 
         function onWindowResize() {
