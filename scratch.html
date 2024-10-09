@@ -8,7 +8,8 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: black;
+            background-color: #1a1a1a; /* Softer dark gray to reduce strain */
+            color: #e0e0e0; /* Lighter text for better readability */
             touch-action: none;
         }
         canvas {
@@ -19,7 +20,7 @@
             top: 10px;
             left: 10px;
             z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(20, 20, 20, 0.9); /* Darker background for less brightness */
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
@@ -30,7 +31,7 @@
             transition: all 0.2s;
         }
         #controls label {
-            color: #ffffff;
+            color: #e0e0e0; /* Lighter text for better readability */
             font-size: 14px;
             font-weight: bold;
             display: block;
@@ -78,9 +79,9 @@
         
         // Function to create smooth color gradients with layers
         vec3 smoothLayer(vec2 uv, float timeOffset, float frequencyFactor) {
-            vec3 color = vec3(0.5 + 0.5 * sin(uv.x * 3.0 + frequencyFactor * 4.0 + timeOffset),
-                              0.5 + 0.5 * cos(uv.y * 3.0 + frequencyFactor * 4.0 + timeOffset),
-                              0.5 + 0.5 * sin((uv.x + uv.y) * 2.0 + frequencyFactor * 2.0 + timeOffset));
+            vec3 color = vec3(0.3 + 0.3 * sin(uv.x * 3.0 + frequencyFactor * 4.0 + timeOffset),
+                              0.3 + 0.3 * cos(uv.y * 3.0 + frequencyFactor * 4.0 + timeOffset),
+                              0.3 + 0.3 * sin((uv.x + uv.y) * 2.0 + frequencyFactor * 2.0 + timeOffset));
             return color;
         }
         
@@ -98,7 +99,7 @@
 
             // Interactive touch-based ripples
             float distToMouse = distance(uv, u_mousePos);
-            finalColor += 0.5 * vec3(1.0, 0.8, 0.6) * smoothstep(0.0, 1.0, 1.0 - distToMouse);
+            finalColor += 0.3 * vec3(1.0, 0.8, 0.6) * smoothstep(0.0, 1.0, 1.0 - distToMouse);
 
             gl_FragColor = vec4(finalColor, 1.0);
         }
