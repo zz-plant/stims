@@ -2,15 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transport to Another Dimension - Star Guitar Inspired</title>
+    <title>Star Guitar Inspired Visualizer</title>
     <style>
         html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
             background: #000;
-            font-family: 'Courier New', Courier, monospace;
         }
         canvas {
             display: block;
@@ -18,69 +16,134 @@
     </style>
 </head>
 <body>
+    <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // Scene setup
         const scene = new THREE.Scene();
+
+        // Fog for depth perception
+        scene.fog = new THREE.Fog(0x000000, 10, 200);
+
+        // Camera setup
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 5);
+        camera.rotation.x = -0.05;
+
+        // Renderer setup
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // Background gradient
-        const gradientCanvas = document.createElement('canvas');
-        gradientCanvas.width = 32;
-        gradientCanvas.height = window.innerHeight;
-        const gradientCtx = gradientCanvas.getContext('2d');
-        const gradient = gradientCtx.createLinearGradient(0, 0, 0, window.innerHeight);
-        gradient.addColorStop(0, '#001f3f');
-        gradient.addColorStop(1, '#0074D9');
-        gradientCtx.fillStyle = gradient;
-        gradientCtx.fillRect(0, 0, gradientCanvas.width, gradientCanvas.height);
-        scene.background = new THREE.CanvasTexture(gradientCanvas);
-
-        // Elements inspired by Star Guitar video
-        const elements = [];
-        function createElement(geometry, material, speed, yPosition) {
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.z = -500;
-            mesh.position.y = yPosition;
-            elements.push({ mesh, speed });
-            scene.add(mesh);
-        }
-
-        const material1 = new THREE.MeshBasicMaterial({ color: 0xffd700 });
-        const material2 = new THREE.MeshBasicMaterial({ color: 0xff6347 });
-        const material3 = new THREE.MeshBasicMaterial({ color: 0x4682b4 });
-
-        // Create repeated elements for rhythmic movement
-        for (let i = 0; i < 20; i++) {
-            createElement(new THREE.BoxGeometry(10, 10, 10), material1, 0.5, Math.random() * 50 - 25);
-            createElement(new THREE.CylinderGeometry(5, 5, 20, 32), material2, 1.0, Math.random() * 50 - 25);
-            createElement(new THREE.SphereGeometry(7, 32, 32), material3, 0.7, Math.random() * 50 - 25);
-        }
-
-        // Lighting for a dynamic effect
-        const ambientLight = new THREE.AmbientLight(0x404040, 2); // soft light
+        // Lighting setup
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xffffff, 1, 1000);
-        pointLight.position.set(50, 50, 50);
-        scene.add(pointLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(0, 50, -50);
+        scene.add(directionalLight);
 
-        // Positioning the camera
-        camera.position.z = 100;
+        // Train track setup
+        const trackWidth = 2;
+        const trackLength = 200;
+        const trackGeometry = new THREE.PlaneGeometry(trackWidth, trackLength, 1, 100);
+        const trackMaterial = new THREE.MeshPhongMaterial({ color: 0x444444 });
+        const track = new THREE.Mesh(trackGeometry, trackMaterial);
+        track.rotation.x = -Math.PI / 2;
+        track.position.y = -1.5;
+        scene.add(track);
+
+        // Scenery elements
+        const scenery = [];
+        const loader = new THREE.TextureLoader();
+
+        // Function to create buildings
+        function createBuilding(x, z) {
+            const geometry = new THREE.BoxGeometry(1, Math.random() * 5 + 2, 1);
+            const material = new THREE.MeshPhongMaterial({ color: 0x888888 });
+            const building = new THREE.Mesh(geometry, material);
+            building.position.set(x, geometry.parameters.height / 2 - 1.5, z);
+            scene.add(building);
+            scenery.push(building);
+        }
+
+        // Function to create trees
+        function createTree(x, z) {
+            const trunkGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1);
+            const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.set(x, -1, z);
+
+            const leavesGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+            const leavesMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
+            const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+            leaves.position.set(x, -0.5, z);
+
+            scene.add(trunk);
+            scene.add(leaves);
+            scenery.push(trunk, leaves);
+        }
+
+        // Function to create billboards
+        function createBillboard(x, z) {
+            const geometry = new THREE.PlaneGeometry(2, 1);
+            const material = new THREE.MeshPhongMaterial({
+                map: loader.load('https://via.placeholder.com/200x100.png?text=Billboard'),
+                side: THREE.DoubleSide
+            });
+            const billboard = new THREE.Mesh(geometry, material);
+            billboard.position.set(x, -1, z);
+            billboard.rotation.y = Math.PI / 2;
+            scene.add(billboard);
+            scenery.push(billboard);
+        }
+
+        // Populate scenery
+        for (let i = 0; i < 100; i++) {
+            const z = -Math.random() * 300;
+            const side = Math.random() > 0.5 ? 1 : -1;
+            const x = side * (Math.random() * 10 + 5);
+            const type = Math.random();
+            if (type < 0.5) {
+                createBuilding(x, z);
+            } else if (type < 0.8) {
+                createTree(x, z);
+            } else {
+                createBillboard(x, z);
+            }
+        }
+
+        // Audio setup
+        let analyser;
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audioSource = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            audioSource.connect(analyser);
+        }).catch((err) => {
+            console.error('Audio input error: ', err);
+        });
 
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
 
-            // Move elements forward to simulate train movement
-            elements.forEach(({ mesh, speed }) => {
-                mesh.position.z += speed;
-                if (mesh.position.z > 100) {
-                    mesh.position.z = -500;
+            let bass = 0;
+            if (analyser) {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                bass = dataArray.slice(0, 10).reduce((a, b) => a + b, 0) / 10;
+            }
+
+            const speed = 0.5 + bass / 100;
+
+            // Move scenery elements towards the camera
+            scenery.forEach((obj) => {
+                obj.position.z += speed;
+                if (obj.position.z > 5) {
+                    obj.position.z -= 300;
+                    obj.position.x = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 5);
                 }
             });
 
