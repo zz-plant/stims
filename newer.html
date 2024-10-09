@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL Audio Visualizer (Mic Input)</title>
+    <title>WebGL Audio Visualizer (Chrome Android Compatible)</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -12,11 +12,8 @@
 <body>
     <script type="module">
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
-        import { UnrealBloomPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/examples/jsm/postprocessing/UnrealBloomPass.js';
-        import { EffectComposer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/examples/jsm/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/examples/jsm/postprocessing/RenderPass.js';
 
-        let scene, camera, renderer, composer;
+        let scene, camera, renderer;
         let analyser, dataArray, particleSystem, lowLayer, midLayer, highLayer;
         let audioContext, source;
 
@@ -28,14 +25,6 @@
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
-
-            // Postprocessing Composer
-            composer = new EffectComposer(renderer);
-            const renderPass = new RenderPass(scene, camera);
-            composer.addPass(renderPass);
-
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            composer.addPass(bloomPass);
 
             // Create visual layers
             createVisualLayers();
@@ -107,7 +96,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         }
 
         function animate() {
@@ -130,7 +118,7 @@
                 particleSystem.material.color.setHSL(dataArray[150] / 255, 1.0, 0.5);
             }
 
-            composer.render();
+            renderer.render(scene, camera);
         }
 
         init();
