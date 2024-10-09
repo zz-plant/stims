@@ -46,11 +46,11 @@
 </div>
 <svg id="stickFigure" width="100" height="200" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
     <circle cx="50" cy="20" r="20" fill="white" />
-    <line x1="50" y1="40" x2="50" y2="120" stroke="white" stroke-width="4" />
-    <line x1="50" y1="60" x2="20" y2="100" stroke="white" stroke-width="4" />
-    <line x1="50" y1="60" x2="80" y2="100" stroke="white" stroke-width="4" />
-    <line x1="50" y1="120" x2="20" y2="180" stroke="white" stroke-width="4" />
-    <line x1="50" y1="120" x2="80" y2="180" stroke="white" stroke-width="4" />
+    <line id="body" x1="50" y1="40" x2="50" y2="120" stroke="white" stroke-width="4" />
+    <line id="leftArm" x1="50" y1="60" x2="20" y2="100" stroke="white" stroke-width="4" />
+    <line id="rightArm" x1="50" y1="60" x2="80" y2="100" stroke="white" stroke-width="4" />
+    <line id="leftLeg" x1="50" y1="120" x2="20" y2="180" stroke="white" stroke-width="4" />
+    <line id="rightLeg" x1="50" y1="120" x2="80" y2="180" stroke="white" stroke-width="4" />
 </svg>
 <script>
     const canvas = document.getElementById("glCanvas");
@@ -222,8 +222,24 @@
 
         // Animate the stick figure
         const stickFigure = document.getElementById("stickFigure");
-        const angle = Math.sin(time) * 10;
-        stickFigure.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+        const body = document.getElementById("body");
+        const leftArm = document.getElementById("leftArm");
+        const rightArm = document.getElementById("rightArm");
+        const leftLeg = document.getElementById("leftLeg");
+        const rightLeg = document.getElementById("rightLeg");
+
+        const armAngle = Math.sin(time * 3 + midFreq * 10) * 20;
+        const legAngle = Math.sin(time * 2 + lowFreq * 10) * 15;
+
+        leftArm.setAttribute("x2", 50 - 30 * Math.cos(armAngle * Math.PI / 180));
+        leftArm.setAttribute("y2", 60 + 40 * Math.sin(armAngle * Math.PI / 180));
+        rightArm.setAttribute("x2", 50 + 30 * Math.cos(armAngle * Math.PI / 180));
+        rightArm.setAttribute("y2", 60 + 40 * Math.sin(armAngle * Math.PI / 180));
+
+        leftLeg.setAttribute("x2", 50 - 30 * Math.cos(legAngle * Math.PI / 180));
+        leftLeg.setAttribute("y2", 120 + 60 * Math.sin(legAngle * Math.PI / 180));
+        rightLeg.setAttribute("x2", 50 + 30 * Math.cos(legAngle * Math.PI / 180));
+        rightLeg.setAttribute("y2", 120 + 60 * Math.sin(legAngle * Math.PI / 180));
 
         requestAnimationFrame(render);
     }
