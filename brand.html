@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Star Guitar Visualizer with Road Stripes and Perspective Towers</title>
+    <title>Enhanced Star Guitar Visualizer</title>
     <style>
         html, body {
             margin: 0;
@@ -38,14 +38,16 @@
         // Renderer setup
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; // Enable shadows
         document.body.appendChild(renderer.domElement);
 
         // Lighting setup
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xddddff, 0.6);
         scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffddaa, 0.8);
+        const directionalLight = new THREE.DirectionalLight(0xffcc88, 0.8);
         directionalLight.position.set(0, 50, -50);
+        directionalLight.castShadow = true; // Enable shadows
         scene.add(directionalLight);
 
         // Gradient Sky
@@ -80,6 +82,7 @@
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = -1.5;
+        ground.receiveShadow = true;
         scene.add(ground);
 
         // Road with stripes
@@ -98,6 +101,7 @@
         const road = new THREE.Mesh(roadGeo, roadMat);
         road.rotation.x = -Math.PI / 2;
         road.position.y = -1.49;
+        road.receiveShadow = true;
         scene.add(road);
 
         // Create stripes
@@ -121,13 +125,18 @@
             const material = new THREE.MeshLambertMaterial({ color: isSpectrograph ? 0xff0000 : 0x888888 });
             const building = new THREE.Mesh(geometry, material);
             building.position.set(x, buildingHeight / 2 - 1.5, z);
+            building.castShadow = true;
+            building.receiveShadow = true;
 
             if (isSpectrograph) {
                 // Store initial positions for perspective adjustment
                 building.userData = {
                     initialX: x,
                     initialZ: z,
+                    layer: 'midground',
                 };
+            } else {
+                building.userData = { layer: 'midground' };
             }
 
             scene.add(building);
@@ -140,11 +149,17 @@
             const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
             const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
             trunk.position.set(x, -1, z);
+            trunk.castShadow = true;
 
             const leavesGeometry = new THREE.ConeGeometry(0.5, 1.5, 8);
             const leavesMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
             const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
             leaves.position.set(x, 0, z);
+            leaves.castShadow = true;
+            leaves.receiveShadow = true;
+
+            trunk.userData = { layer: 'foreground' };
+            leaves.userData = { layer: 'foreground' };
 
             scene.add(trunk);
             scene.add(leaves);
@@ -158,22 +173,58 @@
             const billboard = new THREE.Mesh(geometry, material);
             billboard.position.set(x, 0, z);
             billboard.rotation.y = Math.PI / 2;
+            billboard.castShadow = true;
+            billboard.receiveShadow = true;
+            billboard.userData = { layer: 'foreground' };
+
             scene.add(billboard);
             scenery.push(billboard);
+        }
+
+        // Function to create pylons
+        function createPylon(x, z) {
+            const geometry = new THREE.BoxGeometry(0.2, 5, 0.2);
+            const material = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+            const pylon = new THREE.Mesh(geometry, material);
+            pylon.position.set(x, 2.5 - 1.5, z);
+            pylon.castShadow = true;
+            pylon.receiveShadow = true;
+            pylon.userData = { layer: 'background' };
+
+            scene.add(pylon);
+            scenery.push(pylon);
+        }
+
+        // Function to create bridges
+        function createBridge(z) {
+            const geometry = new THREE.BoxGeometry(10, 1, 2);
+            const material = new THREE.MeshLambertMaterial({ color: 0x666666 });
+            const bridge = new THREE.Mesh(geometry, material);
+            bridge.position.set(0, -1, z);
+            bridge.castShadow = true;
+            bridge.receiveShadow = true;
+            bridge.userData = { layer: 'midground' };
+
+            scene.add(bridge);
+            scenery.push(bridge);
         }
 
         // Populate initial scenery
         for (let i = 0; i < 50; i++) {
             const z = -Math.random() * 300;
             const side = Math.random() > 0.5 ? 1 : -1;
-            const x = side * (Math.random() * 10 + roadWidth / 2 + 1); // Ensure it's outside the road
+            const x = side * (Math.random() * 10 + roadWidth / 2 + 1);
             const type = Math.random();
-            if (type < 0.5) {
+            if (type < 0.4) {
                 createBuilding(x, z);
-            } else if (type < 0.8) {
+            } else if (type < 0.6) {
                 createTree(x, z);
-            } else {
+            } else if (type < 0.8) {
                 createBillboard(x, z);
+            } else if (type < 0.9) {
+                createPylon(x, z);
+            } else {
+                createBridge(z);
             }
         }
 
@@ -182,7 +233,11 @@
         let audioContext;
         let frequencyData;
         let lastSpectrographTime = 0;
-        const spectrographInterval = 500; // Generate new towers every 500ms
+        const spectrographInterval = 300; // Generate new towers every 300ms
+
+        let lastBeatTime = 0;
+        const beatThreshold = 200;
+        const minBeatInterval = 300;
 
         navigator.mediaDevices
             .getUserMedia({ audio: true })
@@ -198,6 +253,11 @@
                 console.error('Audio input error: ', err);
             });
 
+        // Camera shake variables
+        let cameraBaseY = camera.position.y;
+        let cameraShakeAmplitude = 0.05;
+        let cameraShakeFrequency = 0.005;
+
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
@@ -206,6 +266,16 @@
             if (analyser) {
                 analyser.getByteFrequencyData(frequencyData);
                 bass = frequencyData.slice(0, 10).reduce((a, b) => a + b, 0) / 10;
+
+                // Simple beat detection
+                const lowerHalfArray = frequencyData.slice(0, frequencyData.length / 2 - 1);
+                const total = lowerHalfArray.reduce((sum, value) => sum + value, 0);
+                const average = total / lowerHalfArray.length;
+
+                if (average > beatThreshold && Date.now() - lastBeatTime > minBeatInterval) {
+                    lastBeatTime = Date.now();
+                    createSynchronizedObject();
+                }
             }
 
             const speed = 0.5 + bass / 100;
@@ -213,12 +283,18 @@
             // Move scenery elements towards the camera
             for (let i = scenery.length - 1; i >= 0; i--) {
                 const obj = scenery[i];
-                obj.position.z += speed;
+                let layerSpeed = speed;
+                if (obj.userData.layer === 'foreground') {
+                    layerSpeed = speed * 1.2;
+                } else if (obj.userData.layer === 'background') {
+                    layerSpeed = speed * 0.8;
+                }
+                obj.position.z += layerSpeed;
 
-                // Adjust x position for perspective effect (only for spectrograph towers)
+                // Adjust x position for perspective effect (spectrograph towers)
                 if (obj.userData && obj.userData.initialX !== undefined) {
-                    const zFactor = (obj.position.z + 300) / 300; // Normalized between 0 (far) and 1 (near)
-                    const spreadMultiplier = 1 + 2 * (1 - zFactor); // Increase spread as it gets closer
+                    const zFactor = (obj.position.z + 300) / 300;
+                    const spreadMultiplier = 1 + 2 * (1 - zFactor);
                     obj.position.x = obj.userData.initialX * spreadMultiplier;
                 }
 
@@ -233,15 +309,14 @@
             if (analyser && Date.now() - lastSpectrographTime > spectrographInterval) {
                 lastSpectrographTime = Date.now();
                 const barCount = 32;
-                const barSpacing = 0.5;
-                const startX = -((barCount - 1) * barSpacing) / 2;
+                const startX = -((barCount - 1) * 0.5) / 2;
 
                 for (let i = 0; i < barCount; i++) {
                     const frequency = frequencyData[i];
                     const height = Math.max(frequency / 20, 0.1);
-                    const xNormalized = (i / (barCount - 1)) * 2 - 1; // Normalize between -1 and 1
-                    const x = xNormalized * 2; // Initial x position (narrow at horizon)
-                    const z = -300; // Horizon position
+                    const xNormalized = (i / (barCount - 1)) * 2 - 1;
+                    const x = xNormalized * 2;
+                    const z = -300;
                     createBuilding(x, z, height, true);
                 }
             }
@@ -254,6 +329,9 @@
                 }
             });
 
+            // Camera shake to simulate train movement
+            camera.position.y = cameraBaseY + Math.sin(Date.now() * cameraShakeFrequency) * cameraShakeAmplitude;
+
             renderer.render(scene, camera);
         }
 
@@ -265,6 +343,24 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // Function to create synchronized objects
+        function createSynchronizedObject() {
+            const type = Math.random();
+            const z = -300;
+            const side = Math.random() > 0.5 ? 1 : -1;
+            const x = side * (Math.random() * 10 + roadWidth / 2 + 1);
+
+            if (type < 0.3) {
+                createBuilding(x, z);
+            } else if (type < 0.6) {
+                createTree(x, z);
+            } else if (type < 0.8) {
+                createPylon(x, z);
+            } else {
+                createBillboard(x, z);
+            }
+        }
     </script>
 </body>
 </html>
