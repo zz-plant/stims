@@ -1,7 +1,6 @@
-import * as THREE from 'three';
-
-export function initRenderer(canvas, { antialias = true, size = { width: window.innerWidth, height: window.innerHeight } } = {}) {
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias });
-    renderer.setSize(size.width, size.height);
+// renderer-setup.js
+export function initRenderer(canvas, config = { antialias: true }) {
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: config.antialias });
+    renderer.setSize(window.innerWidth, window.innerHeight);
     return renderer;
 }
