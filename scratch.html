@@ -79,9 +79,9 @@
         
         // Function to create smooth color gradients with layers
         vec3 smoothLayer(vec2 uv, float timeOffset, float frequencyFactor) {
-            vec3 color = vec3(0.3 + 0.3 * sin(uv.x * 3.0 + frequencyFactor * 4.0 + timeOffset),
-                              0.3 + 0.3 * cos(uv.y * 3.0 + frequencyFactor * 4.0 + timeOffset),
-                              0.3 + 0.3 * sin((uv.x + uv.y) * 2.0 + frequencyFactor * 2.0 + timeOffset));
+            vec3 color = vec3(0.2 + 0.2 * sin(uv.x * 3.0 + frequencyFactor * 4.0 + timeOffset),
+                              0.2 + 0.2 * cos(uv.y * 3.0 + frequencyFactor * 4.0 + timeOffset),
+                              0.2 + 0.2 * sin((uv.x + uv.y) * 2.0 + frequencyFactor * 2.0 + timeOffset));
             return color;
         }
         
@@ -99,7 +99,7 @@
 
             // Interactive touch-based ripples
             float distToMouse = distance(uv, u_mousePos);
-            finalColor += 0.3 * vec3(1.0, 0.8, 0.6) * smoothstep(0.0, 1.0, 1.0 - distToMouse);
+            finalColor += 0.2 * vec3(1.0, 0.8, 0.6) * smoothstep(0.0, 1.0, 1.0 - distToMouse);
 
             gl_FragColor = vec4(finalColor, 1.0);
         }
