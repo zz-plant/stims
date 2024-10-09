@@ -38,7 +38,7 @@
                 0.1,
                 1000
             );
-            camera.position.set(0, 5, 30);
+            camera.position.set(0, 5, 0);
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -90,25 +90,25 @@
         }
 
         function createSynchronizedScenery() {
-            // Create repeating scenery elements like buildings and poles
-            for (let i = 0; i < 100; i++) {
-                const zPosition = -i * 30;
+            // Create repeating scenery elements like buildings and poles closer to the camera
+            for (let i = 0; i < 50; i++) {
+                const zPosition = -i * 40;
 
-                // Create buildings with varied colors and subtle lighting
+                // Create buildings with varied colors and subtle lighting closer to the camera
                 const buildingGeometry = new THREE.BoxGeometry(10, Math.random() * 20 + 10, 10);
                 const buildingMaterial = new THREE.MeshPhongMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 50%, 50%)`) });
                 const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-                building.position.set(Math.random() < 0.5 ? -15 : 15, buildingGeometry.parameters.height / 2, zPosition);
+                building.position.set(Math.random() < 0.5 ? -15 : 15, buildingGeometry.parameters.height / 2, zPosition + 100);
                 building.castShadow = true;
                 building.receiveShadow = true;
                 scene.add(building);
                 scenery.push(building);
 
-                // Create glowing poles
+                // Create glowing poles closer to the camera
                 const poleGeometry = new THREE.CylinderGeometry(0.3, 0.3, 20, 16);
                 const poleMaterial = new THREE.MeshLambertMaterial({ color: 0xfff8dc, emissive: 0xffffcc, emissiveIntensity: 0.4 });
                 const pole = new THREE.Mesh(poleGeometry, poleMaterial);
-                pole.position.set(Math.random() < 0.5 ? -8 : 8, 10, zPosition);
+                pole.position.set(Math.random() < 0.5 ? -8 : 8, 10, zPosition + 100);
                 pole.castShadow = true;
                 scene.add(pole);
                 scenery.push(pole);
@@ -225,11 +225,11 @@
             // Update scenery with sound
             updateSceneryWithSound();
 
-            // Move scenery elements
+            // Move scenery elements closer to the camera for greater effect
             scenery.forEach(obj => {
                 obj.position.z += delta * cameraSpeed;
                 if (obj.position.z > camera.position.z + 100) {
-                    obj.position.z -= 3000; // Reposition for continuous scenery
+                    obj.position.z -= 2000; // Reposition for continuous scenery closer to the user
                 }
             });
 
