@@ -220,8 +220,8 @@
         const leftLowerLeg = document.getElementById("leftLowerLeg");
         const rightLowerLeg = document.getElementById("rightLowerLeg");
 
-        const armAngle = lowFreq * 30 + midFreq * 20;
-        const legAngle = midFreq * 30 + highFreq * 20;
+        const armAngle = lowFreq * 60 + midFreq * 40;
+        const legAngle = midFreq * 60 + highFreq * 40;
 
         leftUpperArm.setAttribute("x2", 40 + armAngle);
         rightUpperArm.setAttribute("x2", 160 - armAngle);
@@ -232,6 +232,15 @@
         rightUpperLeg.setAttribute("x2", 130 + legAngle);
         leftLowerLeg.setAttribute("y2", 300 + legAngle);
         rightLowerLeg.setAttribute("y2", 300 + legAngle);
+    }
+
+    function moveStickFigure() {
+        const stickFigure = document.getElementById("stickFigure");
+        const maxX = window.innerWidth - stickFigure.clientWidth;
+        const maxY = window.innerHeight - stickFigure.clientHeight;
+        const x = Math.sin(time * 0.5) * maxX * 0.4 + maxX / 2;
+        const y = Math.cos(time * 0.5) * maxY * 0.4 + maxY / 2;
+        stickFigure.style.transform = `translate(${x}px, ${y}px)`;
     }
     
     document.getElementById("startAudio").addEventListener("click", () => {
@@ -257,6 +266,8 @@
         gl.uniform1f(midFreqUniformLocation, midFreq);
         gl.uniform1f(highFreqUniformLocation, highFreq);
         gl.uniform2f(mousePosUniformLocation, mousePos[0], mousePos[1]);
+        
+        moveStickFigure();
         
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
