@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immersive Dreamscape Visualizer</title>
+    <style>
+        html, body {
+            margin: 0;
+            overflow: hidden;
+            height: 100%;
+            background: #000;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tensorflow/tf.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // Setting up initial camera position
+        camera.position.set(0, 20, 40);
+        camera.lookAt(0, 0, 0);
+
+        // Fractal and Torus Knot Elements
+        const fractalMaterial = new THREE.ShaderMaterial({
+            vertexShader: `
+                varying vec3 vPos;
+                void main() {
+                    vPos = position;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vPos;
+                uniform float u_time;
+                uniform vec3 u_color;
+                void main() {
+                    float intensity = length(vPos) * 0.1;
+                    float glow = 0.5 + 0.5 * sin(u_time + length(vPos));
+                    vec3 color = u_color * glow * intensity;
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `,
+            uniforms: {
+                u_time: { value: 0.0 },
+                u_color: { value: new THREE.Color(0xff00ff) },
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        });
+
+        const fractalGeometry = new THREE.IcosahedronGeometry(10, 5);
+        const fractalMesh = new THREE.Mesh(fractalGeometry, fractalMaterial);
+        scene.add(fractalMesh);
+
+        // Torus Knot Element with advanced shader effects
+        const torusGeometry = new THREE.TorusKnotGeometry(10, 3, 400, 64);
+        const torusMaterial = new THREE.ShaderMaterial({
+            vertexShader: `
+                varying vec3 vNormal;
+                void main() {
+                    vNormal = normal;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vNormal;
+                uniform float u_time;
+                uniform vec3 u_color;
+                void main() {
+                    float glow = 0.5 + 0.5 * sin(u_time + length(vNormal));
+                    vec3 color = u_color * glow;
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `,
+            uniforms: {
+                u_time: { value: 0.0 },
+                u_color: { value: new THREE.Color(0x0affef) },
+            },
+            metalness: 0.9,
+            roughness: 0.3,
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        });
+        const torusKnot = new THREE.Mesh(torusGeometry, torusMaterial);
+        scene.add(torusKnot);
+
+        // Lights for a surreal, neon atmosphere with advanced volumetric effects
+        const pointLight1 = new THREE.PointLight(0xff0099, 2, 100);
+        pointLight1.position.set(20, 30, 20);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x00ffff, 2, 100);
+        pointLight2.position.set(-20, -30, 20);
+        scene.add(pointLight2);
+
+        const ambientLight = new THREE.AmbientLight(0x222244); // soft blue/purple light
+        scene.add(ambientLight);
+
+        // Volumetric light for added depth
+        const lightConeGeometry = new THREE.CylinderGeometry(5, 20, 50, 32, 1, true);
+        const lightConeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0099, opacity: 0.2, transparent: true, side: THREE.DoubleSide });
+        const lightCone = new THREE.Mesh(lightConeGeometry, lightConeMaterial);
+        lightCone.position.set(20, 30, 20);
+        lightCone.lookAt(0, 0, 0);
+        scene.add(lightCone);
+
+        // Particles for an ethereal effect with advanced movement
+        const particleCount = 10000;
+        const particlesGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3 + 0] = (Math.random() - 0.5) * 200;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 200;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 200;
+            velocities[i * 3 + 0] = (Math.random() - 0.5) * 0.1;
+            velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.1;
+            velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.1;
+        }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particlesGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5, opacity: 0.8, transparent: true });
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particles);
+
+        // Web Audio API setup for microphone input
+        let analyser;
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audioSource = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 1024;
+            audioSource.connect(analyser);
+            animate();
+        }).catch(function (err) {
+            console.error('Error accessing microphone: ', err);
+        });
+
+        // Animation loop with advanced interactions
+        function animate() {
+            requestAnimationFrame(animate);
+            if (analyser) {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                const avgFreq = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+
+                // Update fractal glow color based on frequency
+                fractalMaterial.uniforms.u_time.value += 0.05;
+                fractalMaterial.uniforms.u_color.value.setHSL(avgFreq / 255, 0.8, 0.5);
+
+                // Torus knot scale and rotation updates based on audio
+                torusMaterial.uniforms.u_time.value += 0.05;
+                torusKnot.scale.set(1 + avgFreq / 255, 1 + avgFreq / 255, 1 + avgFreq / 255);
+                torusKnot.rotation.x += 0.01;
+                torusKnot.rotation.y += 0.01;
+            }
+
+            // Rotate fractal for added dynamic effect
+            fractalMesh.rotation.x += 0.002;
+            fractalMesh.rotation.y += 0.003;
+
+            // Advanced particle movement
+            const positions = particlesGeometry.attributes.position.array;
+            const velocities = particlesGeometry.attributes.velocity.array;
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3 + 0] += velocities[i * 3 + 0];
+                positions[i * 3 + 1] += velocities[i * 3 + 1];
+                positions[i * 3 + 2] += velocities[i * 3 + 2];
+
+                if (positions[i * 3 + 0] > 100 || positions[i * 3 + 0] < -100) velocities[i * 3 + 0] *= -1;
+                if (positions[i * 3 + 1] > 100 || positions[i * 3 + 1] < -100) velocities[i * 3 + 1] *= -1;
+                if (positions[i * 3 + 2] > 100 || positions[i * 3 + 2] < -100) velocities[i * 3 + 2] *= -1;
+            }
+            particlesGeometry.attributes.position.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
