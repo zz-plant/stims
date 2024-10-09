@@ -61,14 +61,14 @@
     <circle id="leftKnee" cx="30" cy="250" r="4" fill="white" />
     <circle id="rightKnee" cx="70" cy="250" r="4" fill="white" />
     <line id="body" x1="50" y1="60" x2="50" y2="200" stroke="white" stroke-width="4" />
-    <line id="leftUpperArm" x1="50" y1="80" x2="20" y2="130" stroke="white" stroke-width="4" />
-    <line id="leftLowerArm" x1="20" y1="130" x2="10" y2="180" stroke="white" stroke-width="4" />
-    <line id="rightUpperArm" x1="50" y1="80" x2="80" y2="130" stroke="white" stroke-width="4" />
-    <line id="rightLowerArm" x1="80" y1="130" x2="90" y2="180" stroke="white" stroke-width="4" />
-    <line id="leftUpperLeg" x1="50" y1="200" x2="40" y2="250" stroke="white" stroke-width="4" />
-    <line id="leftLowerLeg" x1="40" y1="250" x2="30" y2="300" stroke="white" stroke-width="4" />
-    <line id="rightUpperLeg" x1="50" y1="200" x2="60" y2="250" stroke="white" stroke-width="4" />
-    <line id="rightLowerLeg" x1="60" y1="250" x2="70" y2="300" stroke="white" stroke-width="4" />
+    <line id="leftUpperArm" x1="50" y1="80" x2="20" y2="80" stroke="white" stroke-width="4" />
+    <line id="leftLowerArm" x1="20" y1="80" x2="10" y2="130" stroke="white" stroke-width="4" />
+    <line id="rightUpperArm" x1="50" y1="80" x2="80" y2="80" stroke="white" stroke-width="4" />
+    <line id="rightLowerArm" x1="80" y1="80" x2="90" y2="130" stroke="white" stroke-width="4" />
+    <line id="leftUpperLeg" x1="50" y1="200" x2="40" y2="200" stroke="white" stroke-width="4" />
+    <line id="leftLowerLeg" x1="40" y1="200" x2="30" y2="250" stroke="white" stroke-width="4" />
+    <line id="rightUpperLeg" x1="50" y1="200" x2="60" y2="200" stroke="white" stroke-width="4" />
+    <line id="rightLowerLeg" x1="60" y1="200" x2="70" y2="250" stroke="white" stroke-width="4" />
 </svg>
 <script>
     const canvas = document.getElementById("glCanvas");
@@ -274,33 +274,41 @@
 
         leftUpperArm.setAttribute("x2", 50 - 30 * Math.cos(armAngle * Math.PI / 180));
         leftUpperArm.setAttribute("y2", 80 + 50 * Math.sin(armAngle * Math.PI / 180));
-        leftLowerArm.setAttribute("x2", 20 - 10 * Math.cos(armAngle * Math.PI / 180));
-        leftLowerArm.setAttribute("y2", 130 + 50 * Math.sin(armAngle * Math.PI / 180));
+        leftLowerArm.setAttribute("x2", leftUpperArm.getAttribute("x2") - 10 * Math.cos(armAngle * Math.PI / 180));
+        leftLowerArm.setAttribute("y2", leftUpperArm.getAttribute("y2") + 50 * Math.sin(armAngle * Math.PI / 180));
 
         rightUpperArm.setAttribute("x2", 50 + 30 * Math.cos(armAngle * Math.PI / 180));
         rightUpperArm.setAttribute("y2", 80 + 50 * Math.sin(armAngle * Math.PI / 180));
-        rightLowerArm.setAttribute("x2", 80 + 10 * Math.cos(armAngle * Math.PI / 180));
-        rightLowerArm.setAttribute("y2", 130 + 50 * Math.sin(armAngle * Math.PI / 180));
+        rightLowerArm.setAttribute("x2", rightUpperArm.getAttribute("x2") + 10 * Math.cos(armAngle * Math.PI / 180));
+        rightLowerArm.setAttribute("y2", rightUpperArm.getAttribute("y2") + 50 * Math.sin(armAngle * Math.PI / 180));
 
         leftUpperLeg.setAttribute("x2", 50 - 20 * Math.cos(legAngle * Math.PI / 180));
         leftUpperLeg.setAttribute("y2", 200 + 50 * Math.sin(legAngle * Math.PI / 180));
-        leftLowerLeg.setAttribute("x2", 40 - 10 * Math.cos(legAngle * Math.PI / 180));
-        leftLowerLeg.setAttribute("y2", 250 + 50 * Math.sin(legAngle * Math.PI / 180));
+        leftLowerLeg.setAttribute("x2", leftUpperLeg.getAttribute("x2") - 10 * Math.cos(legAngle * Math.PI / 180));
+        leftLowerLeg.setAttribute("y2", leftUpperLeg.getAttribute("y2") + 50 * Math.sin(legAngle * Math.PI / 180));
 
         rightUpperLeg.setAttribute("x2", 50 + 20 * Math.cos(legAngle * Math.PI / 180));
         rightUpperLeg.setAttribute("y2", 200 + 50 * Math.sin(legAngle * Math.PI / 180));
-        rightLowerLeg.setAttribute("x2", 60 + 10 * Math.cos(legAngle * Math.PI / 180));
-        rightLowerLeg.setAttribute("y2", 250 + 50 * Math.sin(legAngle * Math.PI / 180));
+        rightLowerLeg.setAttribute("x2", rightUpperLeg.getAttribute("x2") + 10 * Math.cos(legAngle * Math.PI / 180));
+        rightLowerLeg.setAttribute("y2", rightUpperLeg.getAttribute("y2") + 50 * Math.sin(legAngle * Math.PI / 180));
 
         // Update stick figure position
         stickFigurePosition.x += velocity.x;
         stickFigurePosition.y += velocity.y;
 
-        // Bounce off edges
-        if (stickFigurePosition.x <= 0 || stickFigurePosition.x >= window.innerWidth) {
+        // Ensure the stick figure doesn't go off the screen
+        if (stickFigurePosition.x < 0) {
+            stickFigurePosition.x = 0;
+            velocity.x *= -1;
+        } else if (stickFigurePosition.x > window.innerWidth - 100) {
+            stickFigurePosition.x = window.innerWidth - 100;
             velocity.x *= -1;
         }
-        if (stickFigurePosition.y <= 0 || stickFigurePosition.y >= window.innerHeight) {
+        if (stickFigurePosition.y < 0) {
+            stickFigurePosition.y = 0;
+            velocity.y *= -1;
+        } else if (stickFigurePosition.y > window.innerHeight - 300) {
+            stickFigurePosition.y = window.innerHeight - 300;
             velocity.y *= -1;
         }
 
