@@ -1,26 +1,17 @@
 // app.js: Updated version
 
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r136/three.module.js';
+import { initScene, initPerspectiveCamera, initRenderer } from './core/scene-setup.js';
+import { initAudio, getFrequencyData } from './utils/audio-handler.js';
+import { applyAudioRotation } from './utils/animation-utils.js';
 
 let scene, camera, renderer;
 
-function init() {
-  // Create scene
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000000);
-
-  // Set up camera
-  camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  );
-  camera.position.z = 5;
-
-  // Set up renderer
-  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('toy-canvas') });
-  renderer.setSize(window.innerWidth, window.innerHeight);
+async function init() {
+  // Create scene, camera, and renderer
+  scene = initScene();
+  camera = initPerspectiveCamera();
+  const canvas = document.getElementById('toy-canvas');
+  renderer = initRenderer(canvas);
 
   // Add a cube to the scene
   const geometry = new THREE.BoxGeometry();
@@ -28,9 +19,16 @@ function init() {
   const cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
 
+  // Initialize audio
+  const { analyser, dataArray } = await initAudio();
+
   // Animation loop
   function animate() {
     requestAnimationFrame(animate);
+    if (analyser) {
+      const audioData = getFrequencyData(analyser, dataArray);
+      applyAudioRotation(cube, audioData);
+    }
     cube.rotation.x += 0.01;
     cube.rotation.y += 0.01;
     renderer.render(scene, camera);
