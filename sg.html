@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Unicode Optimized Visualizer</title>
+    <title>Advanced Interactive Audio-Visual Experience</title>
     <style>
         html, body {
             margin: 0;
@@ -13,64 +13,177 @@
         canvas {
             display: block;
         }
-        .unicode-element {
+        .emoji-element {
             position: absolute;
             font-size: 30px;
             transform: translate(-50%, -50%);
             pointer-events: none;
             user-select: none;
+            z-index: 10;
+        }
+        .reset-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            z-index: 20;
         }
     </style>
 </head>
 <body>
     <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Include Hammer.js for touch gestures -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <!-- Reset button -->
+    <button class="reset-button">Reset</button>
+
     <script>
+        // Global Variables
         let scene, camera, renderer, clock;
         let analyser, frequencyData;
-        const cameraSpeedBase = 10;
-        let cameraSpeed = cameraSpeedBase;
-        const unicodeElements = [];
+        let cameraSpeed = 15;
+        const initialCameraPosition = { x: 0, y: 2, z: 10 };
+        const initialCameraRotation = { x: 0, y: 0, z: 0 };
+        const objectPool = [];
+        const activeObjects = [];
         let lastEmojiCreationTime = 0;
 
-        function init() {
-            // Scene setup
-            scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x1e3c72, 50, 400); // Add fog for depth perception
+        // Initialize the Visualizer
+        init();
 
-            // Camera setup
+        function init() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x1e3c72, 50, 400);
+
+            // Camera Setup
             camera = new THREE.PerspectiveCamera(
                 75,
                 window.innerWidth / window.innerHeight,
                 0.1,
                 1000
             );
-            camera.position.set(0, 2, 10);
+            resetCamera();
 
-            // Renderer setup
+            // Renderer Setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Initialize clock
+            // Lighting Setup
+            const ambientLight = new THREE.AmbientLight(0xe0e0e0, 1.0);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(0, 100, -100);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            // Create Scene Elements
+            createSky();
+            createRoad();
+            createStars();
+
+            // Initialize Clock
             clock = new THREE.Clock();
 
-            // Setup audio input
+            // Setup Audio Input
             setupAudio();
 
-            // Handle window resize
+            // Setup Interaction
+            setupInteraction();
+
+            // Handle Window Resize
             window.addEventListener('resize', onWindowResize, false);
 
+            // Add Reset Button Functionality
+            const resetButton = document.querySelector('.reset-button');
+            resetButton.addEventListener('click', resetCamera);
+
+            // Start Animation Loop
             animate();
         }
 
+        // Window Resize Handler
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
+        // Create Sky with Gradient Shader
+        function createSky() {
+            const skyGeo = new THREE.SphereGeometry(500, 32, 32);
+            const skyMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    topColor: { value: new THREE.Color(0x1e3c72) },
+                    bottomColor: { value: new THREE.Color(0x2a5298) },
+                    offset: { value: 400 },
+                    exponent: { value: 0.6 }
+                },
+                vertexShader: `
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+                        vWorldPosition = worldPosition.xyz;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 topColor;
+                    uniform vec3 bottomColor;
+                    uniform float offset;
+                    uniform float exponent;
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        float h = normalize( vWorldPosition + offset ).y;
+                        gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h, 0.0 ), exponent ), 0.0 ) ), 1.0 );
+                    }
+                `,
+                side: THREE.BackSide,
+            });
+
+            const sky = new THREE.Mesh(skyGeo, skyMat);
+            scene.add(sky);
+        }
+
+        // Create Road
+        function createRoad() {
+            const roadGeometry = new THREE.PlaneGeometry(2000, 20);
+            const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const road = new THREE.Mesh(roadGeometry, roadMaterial);
+            road.rotation.x = -Math.PI / 2;
+            road.position.y = 0;
+            road.receiveShadow = true;
+            scene.add(road);
+        }
+
+        // Create Stars
+        function createStars() {
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+
+            const starVertices = [];
+            for (let i = 0; i < 1000; i++) {
+                starVertices.push((Math.random() - 0.5) * 2000);
+                starVertices.push(Math.random() * 800 - 100);
+                starVertices.push((Math.random() - 0.5) * 2000);
+            }
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+        }
+
+        // Setup Audio Input
         function setupAudio() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 alert('getUserMedia not supported on your browser!');
@@ -92,72 +205,239 @@
                 });
         }
 
-        function updateUnicodeWithSound() {
+        // Setup Interaction
+        function setupInteraction() {
+            // Mouse Movement
+            let isMouseDown = false;
+            let previousMousePosition = { x: 0, y: 0 };
+
+            renderer.domElement.addEventListener('mousedown', function (e) {
+                isMouseDown = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            renderer.domElement.addEventListener('mousemove', function (e) {
+                if (isMouseDown) {
+                    const deltaMove = {
+                        x: e.clientX - previousMousePosition.x,
+                        y: e.clientY - previousMousePosition.y
+                    };
+
+                    const deltaRotationQuaternion = new THREE.Quaternion()
+                        .setFromEuler(new THREE.Euler(
+                            -deltaMove.y * 0.005,
+                            -deltaMove.x * 0.005,
+                            0,
+                            'XYZ'
+                        ));
+
+                    camera.quaternion.multiplyQuaternions(deltaRotationQuaternion, camera.quaternion);
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            });
+
+            document.addEventListener('mouseup', function () {
+                isMouseDown = false;
+            });
+
+            // Mouse Wheel Zoom
+            document.addEventListener('wheel', function (e) {
+                camera.position.z += e.deltaY * 0.01;
+                camera.position.z = Math.max(1, Math.min(100, camera.position.z));
+            });
+
+            // Touch Inputs with Hammer.js
+            const hammer = new Hammer(renderer.domElement);
+            hammer.get('pinch').set({ enable: true });
+            hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
+            let initialPinchDistance = null;
+            let initialCameraPositionZ = camera.position.z;
+
+            hammer.on('pan', function (ev) {
+                const deltaRotationQuaternion = new THREE.Quaternion()
+                    .setFromEuler(new THREE.Euler(
+                        -ev.deltaY * 0.0005,
+                        -ev.deltaX * 0.0005,
+                        0,
+                        'XYZ'
+                    ));
+                camera.quaternion.multiplyQuaternions(deltaRotationQuaternion, camera.quaternion);
+            });
+
+            hammer.on('pinchstart', function (ev) {
+                initialPinchDistance = ev.scale;
+                initialCameraPositionZ = camera.position.z;
+            });
+
+            hammer.on('pinch', function (ev) {
+                const scaleFactor = initialPinchDistance / ev.scale;
+                camera.position.z = initialCameraPositionZ * scaleFactor;
+                camera.position.z = Math.max(1, Math.min(100, camera.position.z));
+            });
+
+            // Device Motion
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', function (event) {
+                    const beta = event.beta ? THREE.Math.degToRad(event.beta) : 0;
+                    const gamma = event.gamma ? THREE.Math.degToRad(event.gamma) : 0;
+                    camera.rotation.x = beta;
+                    camera.rotation.y = gamma;
+                }, true);
+            }
+        }
+
+        // Reset Camera Position and Rotation
+        function resetCamera() {
+            camera.position.set(initialCameraPosition.x, initialCameraPosition.y, initialCameraPosition.z);
+            camera.rotation.set(initialCameraRotation.x, initialCameraRotation.y, initialCameraRotation.z);
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Update Scenery Based on Sound
+            updateSceneryWithSound();
+
+            // Move Camera Forward
+            camera.position.z -= delta * cameraSpeed;
+            camera.position.y = 2;
+
+            // Move Active Objects
+            updateActiveObjects(delta);
+
+            // Render Scene
+            renderer.render(scene, camera);
+        }
+
+        // Update Scenery Based on Audio Data
+        function updateSceneryWithSound() {
             if (analyser) {
                 analyser.getByteFrequencyData(frequencyData);
                 const bass = getFrequencyRangeValue(0, 10);
+                const mid = getFrequencyRangeValue(11, 40);
+                const treble = getFrequencyRangeValue(41, 60);
 
-                // Adjust camera speed based on bass frequencies
-                cameraSpeed = cameraSpeedBase + bass / 50;
+                // Adjust Camera Speed Based on Bass
+                cameraSpeed = 15 + bass / 50;
 
-                // Create new Unicode element in response to bass frequencies
-                if (bass > 150 && Date.now() - lastEmojiCreationTime > 300) {
-                    createUnicodeElement();
+                // Create Objects Based on Frequencies
+                if (bass > 150) createTreeOrBuilding();
+                if (mid > 120) createCar();
+                if ((bass > 100 || mid > 120 || treble > 100) && Date.now() - lastEmojiCreationTime > 300) {
+                    createEmoji();
                     lastEmojiCreationTime = Date.now();
                 }
             }
         }
 
-        function createUnicodeElement() {
-            const unicodeChars = ['🌲', '🚗', '🚙', '🏢', '🌵', '🚧', '🌟', '🚓', '🚑', '🚕', '🚒', '🦄', '🐘'];
-            const char = unicodeChars[Math.floor(Math.random() * unicodeChars.length)];
-            const unicodeElement = document.createElement('div');
-            unicodeElement.textContent = char;
-            unicodeElement.className = 'unicode-element';
-            unicodeElement.style.fontSize = `${Math.random() * 40 + 20}px`;
-            unicodeElement.style.left = `${Math.random() * window.innerWidth}px`;
-            unicodeElement.style.top = `${Math.random() * window.innerHeight / 2}px`;
-            document.body.appendChild(unicodeElement);
-
-            // Animate the element (move it upward and remove it after it leaves the view)
-            const moveUp = () => {
-                const topPos = parseFloat(unicodeElement.style.top);
-                if (topPos > -50) {
-                    unicodeElement.style.top = `${topPos - 2}px`;
-                    requestAnimationFrame(moveUp);
-                } else {
-                    unicodeElement.remove();
-                    unicodeElements.splice(unicodeElements.indexOf(unicodeElement), 1);
-                }
-            };
-            moveUp();
-
-            unicodeElements.push(unicodeElement);
-        }
-
+        // Get Average Frequency Value in Range
         function getFrequencyRangeValue(start, end) {
             const slice = frequencyData.slice(start, end);
             const sum = slice.reduce((a, b) => a + b, 0);
             return sum / slice.length;
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            const delta = clock.getDelta();
+        // Create Tree or Building
+        function createTreeOrBuilding() {
+            const isTree = Math.random() > 0.5;
+            let geometry, material;
 
-            // Move camera forward
-            camera.position.z -= delta * cameraSpeed;
-            camera.position.y = 2; // Keep camera steady
+            if (isTree) {
+                geometry = new THREE.ConeGeometry(2, 10, 16);
+                material = new THREE.MeshLambertMaterial({ color: 0x228b22 });
+            } else {
+                geometry = new THREE.BoxGeometry(5, Math.random() * 20 + 10, 5);
+                material = new THREE.MeshLambertMaterial({ color: 0x8b8b8b });
+            }
 
-            // Update Unicode elements based on sound input
-            updateUnicodeWithSound();
-
-            // Render the scene
-            renderer.render(scene, camera);
+            const element = getObjectFromPool(geometry, material);
+            element.position.set(Math.random() < 0.5 ? -20 : 20, geometry.parameters.height / 2, camera.position.z - 100);
+            element.castShadow = true;
+            element.receiveShadow = true;
+            scene.add(element);
+            activeObjects.push(element);
         }
 
-        // Initialize the visualizer
-        init();
+        // Create Car
+        function createCar() {
+            const carGeometry = new THREE.BoxGeometry(4, 2, 8);
+            const carMaterial = new THREE.MeshLambertMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 70%, 50%)`) });
+
+            const car = getObjectFromPool(carGeometry, carMaterial);
+            car.position.set(Math.random() < 0.5 ? -2 : 2, 1, camera.position.z - 50);
+            car.castShadow = true;
+            car.receiveShadow = true;
+            scene.add(car);
+            activeObjects.push(car);
+        }
+
+        // Create Emoji Element
+        function createEmoji() {
+            const emojis = ['🚗', '🚙', '🌲', '🌳', '🌵', '🌼', '🦄', '🐦', '🐘', '✨', '🌟', '☁️', '⛅'];
+            const emojiElement = document.createElement('div');
+            emojiElement.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            emojiElement.className = 'emoji-element';
+            emojiElement.style.fontSize = `${Math.random() * 30 + 20}px`;
+            emojiElement.style.left = `${Math.random() * window.innerWidth}px`;
+            emojiElement.style.top = `${window.innerHeight}px`;
+            document.body.appendChild(emojiElement);
+
+            // Animate Emoji
+            animateEmoji(emojiElement);
+        }
+
+        // Animate Emoji Element
+        function animateEmoji(element) {
+            const duration = 3000;
+            const startTime = Date.now();
+
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = elapsed / duration;
+                if (progress < 1) {
+                    element.style.top = `${window.innerHeight - progress * window.innerHeight}px`;
+                    requestAnimationFrame(animate);
+                } else {
+                    element.remove();
+                }
+            }
+            animate();
+        }
+
+        // Update Active Objects
+        function updateActiveObjects(delta) {
+            for (let i = activeObjects.length - 1; i >= 0; i--) {
+                const obj = activeObjects[i];
+                obj.position.z += delta * cameraSpeed;
+                if (obj.position.z > camera.position.z + 100) {
+                    scene.remove(obj);
+                    returnObjectToPool(obj);
+                    activeObjects.splice(i, 1);
+                }
+            }
+        }
+
+        // Object Pooling Functions
+        function getObjectFromPool(geometry, material) {
+            let obj;
+            if (objectPool.length > 0) {
+                obj = objectPool.pop();
+                obj.geometry = geometry;
+                obj.material = material;
+            } else {
+                obj = new THREE.Mesh(geometry, material);
+            }
+            return obj;
+        }
+
+        function returnObjectToPool(obj) {
+            obj.geometry.dispose();
+            obj.material.dispose();
+            objectPool.push(obj);
+        }
     </script>
 </body>
 </html>
