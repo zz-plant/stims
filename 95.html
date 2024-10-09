@@ -131,15 +131,15 @@
         // Audio setup for sound reactivity
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
             const source = audioContext.createMediaStreamSource(stream);
             source.connect(analyser);
-            analyser.fftSize = 256;
         }).catch((err) => {
             console.error('Audio input error: ', err);
         });
-
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
         // Touch and gyroscope setup for interactivity
         let touchAmplitude = 0;
@@ -160,7 +160,7 @@
             for (let i = 0; i < dataArray.length; i++) {
                 amplitude += dataArray[i];
             }
-            amplitude = amplitude / dataArray.length / 256.0; // Normalize amplitude
+            amplitude = amplitude / dataArray.length / 128.0; // Normalize amplitude
 
             // Combine audio amplitude with touch/gyroscope amplitude
             amplitude += touchAmplitude;
