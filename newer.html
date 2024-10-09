@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retrofuturistic WebGL Visualizer</title>
+    <title>WebGPU Funky Visualizer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
@@ -11,25 +11,34 @@
 </head>
 <body>
     <script type="module">
-        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
+        // Import necessary modules from Three.js with WebGPU support
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.js';
+        import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.min.js';
+        import { NodeMaterial } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.nodes.min.js';
 
         let scene, camera, renderer;
-        let analyser, dataArray, hexagonLayer, sphereLayer, particleSystem;
+        let analyser, dataArray, torusKnot, octahedron, particleSystem;
         let audioContext, source;
 
         async function init() {
+            // Check if WebGPU is available
+            if (!navigator.gpu) {
+                alert("WebGPU is not supported in this browser. Please use a browser with WebGPU support.");
+                return;
+            }
+
             // Set up scene and camera
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 80;
 
-            // Set up WebGL renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            // Set up WebGPU renderer
+            renderer = new WebGPURenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Create visual layers
-            createVisualLayers();
+            // Create funky visual layers
+            createFunkyGeometry();
 
             // Access the microphone and process audio
             try {
@@ -46,21 +55,21 @@
             animate();
         }
 
-        function createVisualLayers() {
-            // Hexagonal Layer for mid frequencies
-            const hexagonGeometry = new THREE.IcosahedronGeometry(15, 1); // Geodesic dome look
-            const hexagonMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true });
-            hexagonLayer = new THREE.Mesh(hexagonGeometry, hexagonMaterial);
-            scene.add(hexagonLayer);
+        function createFunkyGeometry() {
+            // Funky Torus Knot (Mid frequencies)
+            const torusKnotGeometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+            const torusKnotMaterial = new THREE.MeshBasicMaterial({ color: 0xff8800, wireframe: true });
+            torusKnot = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
+            scene.add(torusKnot);
 
-            // Neon Sphere Layer for low frequencies
-            const sphereGeometry = new THREE.SphereGeometry(10, 64, 64);
-            const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true });
-            sphereLayer = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            scene.add(sphereLayer);
+            // Funky Octahedron (Low frequencies)
+            const octahedronGeometry = new THREE.OctahedronGeometry(10);
+            const octahedronMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff99, wireframe: true });
+            octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
+            scene.add(octahedron);
 
             // High-frequency Particle System (Neon)
-            const particleCount = 1500;
+            const particleCount = 2000;
             const particles = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount * 3; i++) {
@@ -70,7 +79,7 @@
 
             const particleMaterial = new THREE.PointsMaterial({
                 color: 0x22ff22,
-                size: 2,
+                size: 3,
                 transparent: true,
                 blending: THREE.AdditiveBlending,
             });
@@ -112,14 +121,15 @@
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
-                // Rotate hexagon
-                hexagonLayer.rotation.x += 0.01;
-                hexagonLayer.rotation.y += 0.01;
-                hexagonLayer.scale.set(1 + (dataArray[100] / 50), 1 + (dataArray[100] / 50), 1);
+                // Funky Torus Knot: Mid frequencies
+                torusKnot.rotation.x += 0.02;
+                torusKnot.rotation.y += 0.02;
+                torusKnot.scale.set(1 + (dataArray[100] / 50), 1 + (dataArray[100] / 50), 1);
 
-                // Pulse sphere with low frequencies
-                sphereLayer.scale.set(1 + (dataArray[20] / 10), 1 + (dataArray[20] / 10), 1);  // Increase sensitivity
-                sphereLayer.material.color.setHSL(dataArray[20] / 255, 1.0, 0.5);  // Color adjustment
+                // Funky Octahedron: Low frequencies
+                octahedron.rotation.x += 0.01;
+                octahedron.rotation.z += 0.01;
+                octahedron.scale.set(1 + (dataArray[20] / 25), 1 + (dataArray[20] / 25), 1);  // Amplify the reaction
 
                 // Particle system reacting to high frequencies
                 particleSystem.material.size = (dataArray[150] / 255) * 5;
