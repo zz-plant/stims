@@ -52,6 +52,7 @@
         const initialCameraRotation = { x: 0, y: 0, z: 0 };
         const objectPool = [];
         const activeObjects = [];
+        const emojiElements = [];
         let lastEmojiCreationTime = 0;
 
         // Initialize the Visualizer
@@ -308,6 +309,9 @@
             // Move Active Objects
             updateActiveObjects(delta);
 
+            // Update Emoji Elements
+            updateEmojiElements();
+
             // Render Scene
             renderer.render(scene, camera);
         }
@@ -376,7 +380,7 @@
 
         // Create Emoji Element
         function createEmoji() {
-            const emojis = ['🚗', '🚙', '🌲', '🌳', '🌵', '🌼', '🦄', '🐦', '🐘', '✨', '🌟', '☁️', '⛅', '🪄', '🐬', '🦋', '🎈', '💫'];
+            const emojis = ['🚗', '🚙', '🌲', '🌳', '🌵', '🌼', '🦄', '🐦', '🐘', '✨', '🌟', '☁️', '⛅', '🐾', '🌈', '🎠', '💐', '🎆', '🌌', '🎇', '🎨'];
             const emojiElement = document.createElement('div');
             emojiElement.textContent = emojis[Math.floor(Math.random() * emojis.length)];
             emojiElement.className = 'emoji-element';
@@ -385,26 +389,21 @@
             emojiElement.style.top = `${window.innerHeight}px`;
             document.body.appendChild(emojiElement);
 
-            // Animate Emoji
-            animateEmoji(emojiElement);
+            emojiElements.push(emojiElement);
         }
 
-        // Animate Emoji Element
-        function animateEmoji(element) {
-            const duration = 3000;
-            const startTime = Date.now();
-
-            function animate() {
-                const elapsed = Date.now() - startTime;
-                const progress = elapsed / duration;
-                if (progress < 1) {
-                    element.style.top = `${window.innerHeight - progress * window.innerHeight}px`;
-                    requestAnimationFrame(animate);
-                } else {
+        // Update Emoji Elements
+        function updateEmojiElements() {
+            emojiElements.forEach((element, index) => {
+                const currentTop = parseFloat(element.style.top);
+                const newTop = currentTop - 2;
+                if (newTop < -50) {
                     element.remove();
+                    emojiElements.splice(index, 1);
+                } else {
+                    element.style.top = `${newTop}px`;
                 }
-            }
-            animate();
+            });
         }
 
         // Update Active Objects
