@@ -91,10 +91,12 @@
             // Add subtle road markings
             const lineGeometry = new THREE.PlaneGeometry(0.1, 2000);
             const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            const line = new THREE.Mesh(lineGeometry, lineMaterial);
-            line.position.set(0, 0.05, -1000);
-            line.rotation.x = -Math.PI / 2;
-            scene.add(line);
+            for (let i = -2; i <= 2; i += 2) {
+                const line = new THREE.Mesh(lineGeometry, lineMaterial);
+                line.position.set(i, 0.05, -1000);
+                line.rotation.x = -Math.PI / 2;
+                scene.add(line);
+            }
         }
 
         function createSynchronizedScenery() {
@@ -104,7 +106,7 @@
 
                 // Create buildings with varied colors and subtle lighting closer to the camera
                 const buildingGeometry = new THREE.BoxGeometry(10, Math.random() * 20 + 10, 10);
-                const buildingMaterial = new THREE.MeshPhongMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 40%, 40%)`) });
+                const buildingMaterial = new THREE.MeshPhongMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 40%, ${30 + Math.random() * 20}%)`) });
                 const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
                 building.position.set(Math.random() < 0.5 ? -20 : 20, buildingGeometry.parameters.height / 2, zPosition + 50);
                 building.castShadow = true;
@@ -145,7 +147,7 @@
             // Create distant hills or mountains with softer colors
             for (let i = 0; i < 50; i++) {
                 const hillGeometry = new THREE.ConeGeometry(Math.random() * 15 + 20, Math.random() * 40 + 20, 32);
-                const hillMaterial = new THREE.MeshLambertMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 30%, 30%)`) });
+                const hillMaterial = new THREE.MeshLambertMaterial({ color: new THREE.Color(`hsl(${Math.random() * 360}, 30%, ${20 + Math.random() * 20}%)`) });
                 const hill = new THREE.Mesh(hillGeometry, hillMaterial);
                 hill.position.set(Math.random() * 400 - 200, -10, -i * 150 - 300);
                 hill.receiveShadow = true;
@@ -219,14 +221,14 @@
                 // Make cars pop out of the earth in response to bass frequencies
                 scenery.forEach(obj => {
                     if (obj.geometry.type === 'BoxGeometry' && obj.geometry.parameters.height === 2) {
-                        obj.position.y = -1 + bass / 100;
+                        obj.position.y = -1 + Math.min(bass / 100, 5);
                     }
                 });
 
                 // Make trees pop out of the earth in response to treble frequencies
                 scenery.forEach(obj => {
                     if (obj.geometry.type === 'ConeGeometry') {
-                        obj.position.y = -5 + treble / 50;
+                        obj.position.y = -5 + Math.min(treble / 50, 10);
                     }
                 });
 
