@@ -38,8 +38,8 @@
                 0.1,
                 1000
             );
-            camera.position.set(-5, 3, 10); // Adjusted position to create a passenger-like perspective
-            camera.rotation.y = -0.2; // Slightly rotate to the right to simulate a passenger view
+            camera.position.set(1.5, 2, 10); // Adjusted position to create a passenger-like perspective
+            camera.rotation.y = -0.05; // Slightly rotate to the right to simulate a passenger view
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -83,7 +83,7 @@
 
         function createRailwayTracks() {
             // Create railway tracks
-            const trackGeometry = new THREE.BoxGeometry(5, 0.1, 2000);
+            const trackGeometry = new THREE.BoxGeometry(window.innerWidth / 100, 0.1, 2000);
             const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
             const track = new THREE.Mesh(trackGeometry, trackMaterial);
             track.position.set(0, 0, -1000);
@@ -274,7 +274,7 @@
 
             // Move the camera forward
             camera.position.z -= delta * cameraSpeed;
-            camera.position.y = 5; // Keep the camera above the road
+            camera.position.y = 2; // Keep the camera above the road
 
             // Update scenery with sound
             updateSceneryWithSound();
