@@ -3,41 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGPU Visualizer with Framer Motion UI</title>
+    <title>Enhanced WebGPU Visualizer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
-        #ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: white;
-        }
-        #slider {
-            width: 200px;
-        }
     </style>
 </head>
 <body>
-    <div id="ui">
-        <input id="slider" type="range" min="1" max="100" value="50">
-    </div>
-
     <script type="module">
-        import { motion } from 'https://cdn.jsdelivr.net/npm/framer-motion/+esm';
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.js';
         import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.min.js';
 
         let scene, camera, renderer;
-        let analyser, dataArray, torusKnot, particleSystem;
+        let analyser, dataArray, torusKnot, octahedron, particleSystem, dodecahedron, light1, light2;
         let audioContext, source;
-        let sensitivity = 50;
-
-        // Framer Motion animated slider
-        const slider = document.querySelector("#slider");
-        slider.addEventListener("input", (e) => {
-            sensitivity = e.target.value;
-        });
 
         async function init() {
             if (!navigator.gpu) {
@@ -45,16 +24,20 @@
                 return;
             }
 
+            // Create Scene and Camera
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 100;
+            camera.position.z = 120;
 
+            // WebGPU Renderer
             renderer = new WebGPURenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            createFunkyGeometry();
+            // Create Dynamic Geometry and Particle Systems
+            createGeometry();
 
+            // Get Audio Input from Microphone
             try {
                 await getMicrophoneInput();
             } catch (error) {
@@ -63,34 +46,56 @@
             }
 
             window.addEventListener('resize', onWindowResize, false);
-
             animate();
         }
 
-        function createFunkyGeometry() {
-            // Torus Knot
-            const torusKnotGeometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
-            const torusKnotMaterial = new THREE.MeshBasicMaterial({ color: 0xff8800, wireframe: true });
+        function createGeometry() {
+            // Geometry: Torus Knot (Mid frequencies)
+            const torusKnotGeometry = new THREE.TorusKnotGeometry(8, 2, 100, 16);
+            const torusKnotMaterial = new THREE.MeshStandardMaterial({ color: 0xff8800, wireframe: true });
             torusKnot = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
             scene.add(torusKnot);
 
+            // Geometry: Octahedron (Low frequencies)
+            const octahedronGeometry = new THREE.OctahedronGeometry(10);
+            const octahedronMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff99, wireframe: true });
+            octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
+            octahedron.position.set(-25, 0, 0);
+            scene.add(octahedron);
+
+            // Geometry: Dodecahedron (High frequencies)
+            const dodecahedronGeometry = new THREE.DodecahedronGeometry(7);
+            const dodecahedronMaterial = new THREE.MeshStandardMaterial({ color: 0x0077ff, wireframe: true });
+            dodecahedron = new THREE.Mesh(dodecahedronGeometry, dodecahedronMaterial);
+            dodecahedron.position.set(25, 0, 0);
+            scene.add(dodecahedron);
+
             // Particle System
-            const particleCount = 2000;
+            const particleCount = 3000;
             const particles = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 200;
+                positions[i] = (Math.random() - 0.5) * 150;
             }
             particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
             const particleMaterial = new THREE.PointsMaterial({
-                color: 0x22ff22,
-                size: 3,
+                color: 0xffffff,
+                size: 2,
                 transparent: true,
                 blending: THREE.AdditiveBlending,
             });
             particleSystem = new THREE.Points(particles, particleMaterial);
             scene.add(particleSystem);
+
+            // Add Dynamic Moving Lights
+            light1 = new THREE.PointLight(0xff0000, 2, 100);
+            light1.position.set(0, 50, 50);
+            scene.add(light1);
+
+            light2 = new THREE.PointLight(0x0000ff, 2, 100);
+            light2.position.set(50, 0, 50);
+            scene.add(light2);
         }
 
         async function getMicrophoneInput() {
@@ -123,13 +128,34 @@
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
-                // Use sensitivity slider to control response
-                const midFreq = dataArray[100] / 255 * sensitivity / 100;
-                torusKnot.rotation.x += 0.01 + midFreq * 0.1;
-                torusKnot.rotation.y += 0.01 + midFreq * 0.1;
+                // Respond to Mid Frequencies (Torus Knot)
+                const midFreq = dataArray[100] / 255;
+                torusKnot.rotation.x += 0.02 + midFreq * 0.1;
+                torusKnot.rotation.y += 0.02 + midFreq * 0.1;
 
-                particleSystem.material.size = (dataArray[150] / 255) * sensitivity / 10;
-                particleSystem.material.color.setHSL(dataArray[150] / 255, 1.0, 0.5);
+                // Low Frequencies (Octahedron)
+                const lowFreq = dataArray[20] / 255;
+                octahedron.rotation.x += 0.01 + lowFreq * 0.05;
+                octahedron.scale.set(1 + lowFreq * 1.5, 1 + lowFreq * 1.5, 1);
+
+                // High Frequencies (Dodecahedron)
+                const highFreq = dataArray[150] / 255;
+                dodecahedron.rotation.z += 0.02 + highFreq * 0.1;
+                dodecahedron.scale.set(1 + highFreq * 1.2, 1 + highFreq * 1.2, 1);
+
+                // Particle System bursts
+                particleSystem.material.size = 2 + highFreq * 5;
+                particleSystem.material.color.setHSL(highFreq, 1.0, 0.5);
+
+                // Moving lights reacting to mid and high frequencies
+                light1.position.x = Math.sin(midFreq * Math.PI * 2) * 30;
+                light2.position.y = Math.cos(highFreq * Math.PI * 2) * 30;
+
+                // Background color based on bass and treble
+                const bass = dataArray[20] / 255;
+                const treble = dataArray[150] / 255;
+                const bgColor = new THREE.Color(`hsl(${bass * 360}, 100%, ${50 + treble * 50}%)`);
+                renderer.setClearColor(bgColor, 1);
             }
 
             renderer.render(scene, camera);
