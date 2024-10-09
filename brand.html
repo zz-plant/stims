@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Enhanced Star Guitar Visualizer</title>
+    <title>Star Guitar Inspired Visualizer</title>
     <style>
         html, body {
             margin: 0;
@@ -293,9 +293,16 @@
 
                 // Adjust x position for perspective effect (spectrograph towers)
                 if (obj.userData && obj.userData.initialX !== undefined) {
-                    const zFactor = (obj.position.z + 300) / 300;
-                    const spreadMultiplier = 1 + 2 * (1 - zFactor);
+                    const zFactor = (obj.position.z + 300) / 300; // Normalized between 0 (far) and 1 (near)
+                    // Apply a non-linear spread function
+                    const spreadMultiplier = Math.pow(zFactor, 2) * 20; // Adjust exponent and multiplier as needed
                     obj.position.x = obj.userData.initialX * spreadMultiplier;
+
+                    // Ensure buildings stay outside the road as they get closer
+                    const minX = roadWidth / 2 + 1; // Minimum x distance from center to avoid road
+                    if (Math.abs(obj.position.x) < minX && zFactor > 0.5) {
+                        obj.position.x = Math.sign(obj.userData.initialX) * minX;
+                    }
                 }
 
                 if (obj.position.z > 5) {
@@ -315,7 +322,7 @@
                     const frequency = frequencyData[i];
                     const height = Math.max(frequency / 20, 0.1);
                     const xNormalized = (i / (barCount - 1)) * 2 - 1;
-                    const x = xNormalized * 2;
+                    const x = xNormalized * 0.5; // Start closer to the center
                     const z = -300;
                     createBuilding(x, z, height, true);
                 }
