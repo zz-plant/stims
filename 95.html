@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subtle Concert Visualizer</title>
+    <title>Concert-Friendly Music Visualizer</title>
     <style>
-        html, body {
+        body {
             margin: 0;
             overflow: hidden;
-            height: 100%;
-            background: #000;
+            background: #111;
         }
         canvas {
             display: block;
@@ -19,84 +18,80 @@
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Scene setup
+        // Setup scene, camera, and renderer
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x555555); // Soft ambient light
-        scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0x99ccff, 1, 200);
-        pointLight.position.set(0, 10, 50);
-        scene.add(pointLight);
-
-        // Geometry - Soft Pulsating Spheres
-        const spheres = [];
-        const sphereMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x99ccff, 
-            emissive: 0x002244, 
-            emissiveIntensity: 0.5, 
-            transparent: true, 
-            opacity: 0.7 
-        });
-
-        for (let i = 0; i < 3; i++) {
-            const sphereGeometry = new THREE.SphereGeometry(3, 32, 32);
-            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set((i - 1) * 8, 0, -20);
-            scene.add(sphere);
-            spheres.push(sphere);
-        }
-
-        // Camera positioning
-        camera.position.z = 30;
-
-        // Handle resizing
+        // Responsive resizing
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Web Audio API setup
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256;
+        // Create sphere geometry
+        const geometry = new THREE.SphereGeometry(1, 32, 32);
+        const material = new THREE.MeshStandardMaterial({ color: 0x99ccff, emissive: 0x003366, emissiveIntensity: 0.5 });
+        const spheres = [];
+        for (let i = 0; i < 50; i++) {
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.set((Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30);
+            scene.add(sphere);
+            spheres.push(sphere);
+        }
 
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-            const source = audioCtx.createMediaStreamSource(stream);
+        // Add soft ambient light
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+
+        // Add point lights to create a subtle glowing effect
+        const pointLight1 = new THREE.PointLight(0x99ccff, 1.5, 50);
+        pointLight1.position.set(5, 5, 5);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0xffcc99, 1.5, 50);
+        pointLight2.position.set(-5, -5, -5);
+        scene.add(pointLight2);
+
+        // Position the camera
+        camera.position.z = 40;
+
+        // Setup Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        // Get user media
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            const source = audioContext.createMediaStreamSource(stream);
             source.connect(analyser);
-            visualize();
-        }).catch(function(err) {
-            console.error('Error accessing microphone: ' + err);
+            animate();
+        }).catch((err) => {
+            console.error('Error accessing audio: ', err);
         });
 
-        // Visualization Function
-        function visualize() {
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
 
-            function animate() {
-                analyser.getByteFrequencyData(dataArray);
-                const averageFreq = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-                const scale = 1 + (averageFreq / 256) * 0.5;
+            // Get frequency data
+            analyser.getByteFrequencyData(dataArray);
+            const averageFrequency = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
 
-                spheres.forEach((sphere, index) => {
-                    sphere.scale.set(scale, scale, scale);
-                    sphere.material.emissiveIntensity = 0.3 + (averageFreq / 512);
-                    sphere.position.y = Math.sin(Date.now() * 0.001 + index) * 0.5;
-                });
+            // Update sphere scale and position based on frequency data
+            spheres.forEach((sphere, i) => {
+                const scale = 1 + dataArray[i % dataArray.length] / 128;
+                sphere.scale.set(scale, scale, scale);
+                sphere.position.x += Math.sin(averageFrequency / 1000 + i) * 0.005;
+                sphere.position.y += Math.cos(averageFrequency / 1000 + i) * 0.005;
+            });
 
-                pointLight.intensity = 0.8 + (averageFreq / 512);
-
-                renderer.render(scene, camera);
-                requestAnimationFrame(animate);
-            }
-            animate();
+            // Render the scene
+            renderer.render(scene, camera);
         }
     </script>
 </body>
