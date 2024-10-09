@@ -211,19 +211,24 @@
     }
 
     function updateStickFigure() {
-        const torso = document.getElementById("torso");
-        torso.setAttribute("height", 130 + lowFreq * 50);
-        torso.setAttribute("fill", `rgb(${Math.floor(lowFreq * 255)}, ${Math.floor(midFreq * 255)}, ${Math.floor(highFreq * 255)})`);
-
+        const leftUpperArm = document.getElementById("leftUpperArm");
+        const rightUpperArm = document.getElementById("rightUpperArm");
         const leftLowerArm = document.getElementById("leftLowerArm");
         const rightLowerArm = document.getElementById("rightLowerArm");
-        leftLowerArm.setAttribute("transform", `rotate(${Math.sin(time * 2) * 30} 40 150)`);
-        rightLowerArm.setAttribute("transform", `rotate(${Math.sin(time * 2 + 1) * 30} 160 150)`);
-
+        const leftUpperLeg = document.getElementById("leftUpperLeg");
+        const rightUpperLeg = document.getElementById("rightUpperLeg");
         const leftLowerLeg = document.getElementById("leftLowerLeg");
         const rightLowerLeg = document.getElementById("rightLowerLeg");
-        leftLowerLeg.setAttribute("transform", `rotate(${Math.sin(time * 2) * 20} 70 300)`);
-        rightLowerLeg.setAttribute("transform", `rotate(${Math.sin(time * 2 + 1) * 20} 130 300)`);
+        
+        // Add more dynamic movements to make the stick figure dance
+        leftUpperArm.setAttribute("x2", 40 + midFreq * 50);
+        rightUpperArm.setAttribute("x2", 160 - midFreq * 50);
+        leftLowerArm.setAttribute("x2", 20 + highFreq * 30);
+        rightLowerArm.setAttribute("x2", 180 - highFreq * 30);
+        leftUpperLeg.setAttribute("x2", 70 - lowFreq * 40);
+        rightUpperLeg.setAttribute("x2", 130 + lowFreq * 40);
+        leftLowerLeg.setAttribute("x2", 50 - midFreq * 30);
+        rightLowerLeg.setAttribute("x2", 150 + midFreq * 30);
     }
     
     document.getElementById("startAudio").addEventListener("click", () => {
