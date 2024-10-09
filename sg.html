@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Star Guitar Inspired Visualizer - Remake</title>
+    <title>Star Guitar Inspired Visualizer - Enhanced</title>
     <style>
         html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: #87ceeb; /* Sky blue background */
+            background: linear-gradient(to bottom, #87ceeb, #000); /* Gradient sky background */
         }
         canvas {
             display: block;
@@ -23,6 +23,7 @@
         let clock;
         let analyser, frequencyData;
         const scenery = [];
+        const distantScenery = [];
         const cameraSpeed = 10;
 
         function init() {
@@ -55,6 +56,7 @@
             // Initialize scene elements
             createRailwayTracks();
             createSynchronizedScenery();
+            createDistantElements();
 
             // Initialize clock
             clock = new THREE.Clock();
@@ -89,7 +91,7 @@
             for (let i = 0; i < 100; i++) {
                 const zPosition = -i * 20;
 
-                // Create buildings
+                // Create buildings with varied colors
                 const buildingGeometry = new THREE.BoxGeometry(5, Math.random() * 10 + 5, 5);
                 const buildingMaterial = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
                 const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
@@ -106,6 +108,30 @@
                 pole.castShadow = true;
                 scene.add(pole);
                 scenery.push(pole);
+            }
+        }
+
+        function createDistantElements() {
+            // Create distant hills or mountains
+            for (let i = 0; i < 50; i++) {
+                const hillGeometry = new THREE.ConeGeometry(Math.random() * 10 + 15, Math.random() * 20 + 10, 32);
+                const hillMaterial = new THREE.MeshLambertMaterial({ color: 0x3e3e3e });
+                const hill = new THREE.Mesh(hillGeometry, hillMaterial);
+                hill.position.set(Math.random() * 200 - 100, -5, -i * 100 - 200);
+                hill.receiveShadow = true;
+                scene.add(hill);
+                distantScenery.push(hill);
+            }
+
+            // Create moving clouds
+            for (let i = 0; i < 20; i++) {
+                const cloudGeometry = new THREE.SphereGeometry(Math.random() * 5 + 5, 16, 16);
+                const cloudMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+                const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
+                cloud.position.set(Math.random() * 200 - 100, Math.random() * 20 + 20, -i * 150 - 300);
+                cloud.castShadow = true;
+                scene.add(cloud);
+                distantScenery.push(cloud);
             }
         }
 
@@ -141,6 +167,15 @@
                         obj.scale.y = 1 + bass / 255;
                     }
                 });
+
+                // Update the movement of clouds based on higher frequencies
+                const treble = getFrequencyRangeValue(41, 60);
+                distantScenery.forEach(obj => {
+                    if (obj.geometry.type === 'SphereGeometry') {
+                        obj.position.x += (Math.random() - 0.5) * 0.1 * treble / 255;
+                        obj.position.z += (Math.random() - 0.5) * 0.1 * treble / 255;
+                    }
+                });
             }
         }
 
@@ -166,6 +201,14 @@
                 obj.position.z += delta * cameraSpeed;
                 if (obj.position.z > camera.position.z + 50) {
                     obj.position.z -= 2000; // Reposition for continuous scenery
+                }
+            });
+
+            // Move distant scenery elements at a slower speed for parallax effect
+            distantScenery.forEach(obj => {
+                obj.position.z += delta * cameraSpeed * 0.5;
+                if (obj.position.z > camera.position.z + 100) {
+                    obj.position.z -= 5000; // Reposition for continuous distant background
                 }
             });
 
