@@ -156,11 +156,23 @@
                 handleBeatDetection();
 
                 // Update modular elements color and intensity based on frequency data
+                const bass = getFrequencyRangeValue(0, 10);
                 const mid = getFrequencyRangeValue(11, 40);
+                const treble = getFrequencyRangeValue(41, 60);
+
+                // Camera shake based on bass
+                const cameraShakeIntensity = bass / 200;
+                camera.position.x += (Math.random() - 0.5) * cameraShakeIntensity;
+                camera.position.y += (Math.random() - 0.5) * cameraShakeIntensity;
+
+                // Update colors based on mid frequencies
                 const colorValue = Math.min(1, mid / 255);
                 modularElements.forEach(element => {
                     element.material.color.setHSL(colorValue, 0.7, 0.5);
                 });
+
+                // Adjust directional light intensity based on treble frequencies
+                directionalLight.intensity = 0.5 + (treble / 255) * 1.5;
             }
         }
 
