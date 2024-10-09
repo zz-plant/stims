@@ -1,15 +1,17 @@
 // app.js: Updated version
 
-import { initScene, initPerspectiveCamera, initRenderer } from './core/scene-setup.js';
+import { initScene } from './core/scene-setup.js';
+import { initCamera } from './core/camera-setup.js';
+import { initRenderer } from './core/renderer-setup.js';
 import { initAudio, getFrequencyData } from './utils/audio-handler.js';
-import { applyAudioRotation } from './utils/animation-utils.js';
+import { applyAudioRotation, applyAudioScale } from './utils/animation-utils.js';
 
 let scene, camera, renderer;
 
 async function init() {
   // Create scene, camera, and renderer
   scene = initScene();
-  camera = initPerspectiveCamera();
+  camera = initCamera();
   const canvas = document.getElementById('toy-canvas');
   renderer = initRenderer(canvas);
 
@@ -26,23 +28,34 @@ async function init() {
   function animate() {
     requestAnimationFrame(animate);
     if (analyser) {
-      const audioData = getFrequencyData(analyser, dataArray);
-      applyAudioRotation(cube, audioData);
+      const audioData = getFrequencyData(analyser);
+      applyAudioRotation(cube, audioData, 0.05);
+      applyAudioScale(cube, audioData, 50);
     }
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
     renderer.render(scene, camera);
   }
 
   animate();
 }
 
-// Handle resizing
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+// Debounce resize to optimize performance
+function debounce(func, wait = 100) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+// Handle resizing with debounce
+window.addEventListener(
+  'resize',
+  debounce(() => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  })
+);
 
 // Initialize the scene
 init();
