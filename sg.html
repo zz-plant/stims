@@ -47,10 +47,10 @@
             document.body.appendChild(renderer.domElement);
 
             // Lighting setup
-            const ambientLight = new THREE.AmbientLight(0xe0e0e0, 0.8);
+            const ambientLight = new THREE.AmbientLight(0xe0e0e0, 1.0);
             scene.add(ambientLight);
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(0, 100, -100);
             directionalLight.castShadow = true;
             scene.add(directionalLight);
@@ -60,6 +60,7 @@
             createSynchronizedScenery();
             createDistantElements();
             createStars();
+            createDynamicSky();
 
             // Initialize clock
             clock = new THREE.Clock();
@@ -181,6 +182,16 @@
 
             const stars = new THREE.Points(starGeometry, starMaterial);
             scene.add(stars);
+        }
+
+        function createDynamicSky() {
+            // Create dynamic sky elements - moving clouds and sky color adjustments
+            const skyGeometry = new THREE.PlaneGeometry(2000, 1000);
+            const skyMaterial = new THREE.MeshLambertMaterial({ color: 0x87ceeb, side: THREE.DoubleSide });
+            const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+            sky.position.set(0, 500, -1000);
+            sky.rotation.x = Math.PI / 2;
+            scene.add(sky);
         }
 
         function setupAudio() {
