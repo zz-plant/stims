@@ -20,15 +20,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // Scene setup
-        let scene, camera, renderer, clock;
+        let scene, camera, renderer, clock, directionalLight;
         let analyser, frequencyData;
         let lastBeatTime = 0;
-        const minBeatInterval = 500; // Minimum interval between beats in milliseconds
+        const minBeatInterval = 300; // Minimum interval between beats in milliseconds
         const scenery = [];
-        const beatThreshold = 150;
+        const beatThreshold = 170;
         const modularElements = [];
         const modularElementSpacing = 20;
-        const cameraSpeed = 10;
+        const cameraSpeed = 15;
+        const cameraShakeDecay = 0.9;
+        let cameraShakeOffset = { x: 0, y: 0 };
 
         function init() {
             scene = new THREE.Scene();
@@ -52,7 +54,7 @@
             const ambientLight = new THREE.AmbientLight(0xddddff, 0.6);
             scene.add(ambientLight);
 
-            const directionalLight = new THREE.DirectionalLight(0xffcc88, 0.8);
+            directionalLight = new THREE.DirectionalLight(0xffcc88, 1.2);
             directionalLight.position.set(0, 50, -50);
             scene.add(directionalLight);
 
@@ -161,9 +163,9 @@
                 const treble = getFrequencyRangeValue(41, 60);
 
                 // Camera shake based on bass
-                const cameraShakeIntensity = bass / 200;
-                camera.position.x += (Math.random() - 0.5) * cameraShakeIntensity;
-                camera.position.y += (Math.random() - 0.5) * cameraShakeIntensity;
+                const cameraShakeIntensity = bass / 150;
+                cameraShakeOffset.x = (Math.random() - 0.5) * cameraShakeIntensity;
+                cameraShakeOffset.y = (Math.random() - 0.5) * cameraShakeIntensity;
 
                 // Update colors based on mid frequencies
                 const colorValue = Math.min(1, mid / 255);
@@ -172,7 +174,7 @@
                 });
 
                 // Adjust directional light intensity based on treble frequencies
-                directionalLight.intensity = 0.5 + (treble / 255) * 1.5;
+                directionalLight.intensity = 0.8 + (treble / 255) * 1.2;
             }
         }
 
@@ -188,6 +190,12 @@
 
             // Move the camera forward
             camera.position.z -= delta * cameraSpeed;
+
+            // Apply camera shake
+            camera.position.x += cameraShakeOffset.x;
+            camera.position.y += cameraShakeOffset.y;
+            cameraShakeOffset.x *= cameraShakeDecay;
+            cameraShakeOffset.y *= cameraShakeDecay;
 
             // Update scenery with sound
             updateSceneryWithSound();
