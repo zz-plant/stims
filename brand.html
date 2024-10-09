@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transport to Another Dimension - Enhanced</title>
+    <title>Transport to Another Dimension - Star Guitar Inspired</title>
     <style>
         html, body {
             margin: 0;
@@ -28,212 +28,66 @@
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // Torus geometry to create a surreal tunnel effect
-        const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x0affef, 
-            emissive: 0x001133, 
-            emissiveIntensity: 0.7, 
-            metalness: 0.9, 
-            roughness: 0.3 
-        });
-        const torusKnot = new THREE.Mesh(geometry, material);
-        scene.add(torusKnot);
+        // Background gradient
+        const gradientCanvas = document.createElement('canvas');
+        gradientCanvas.width = 32;
+        gradientCanvas.height = window.innerHeight;
+        const gradientCtx = gradientCanvas.getContext('2d');
+        const gradient = gradientCtx.createLinearGradient(0, 0, 0, window.innerHeight);
+        gradient.addColorStop(0, '#001f3f');
+        gradient.addColorStop(1, '#0074D9');
+        gradientCtx.fillStyle = gradient;
+        gradientCtx.fillRect(0, 0, gradientCanvas.width, gradientCanvas.height);
+        scene.background = new THREE.CanvasTexture(gradientCanvas);
 
-        // Lighting for cyberpunk effect
-        const pointLight1 = new THREE.PointLight(0xff0099, 2, 100);
-        pointLight1.position.set(20, 30, 20);
-        scene.add(pointLight1);
+        // Elements inspired by Star Guitar video
+        const elements = [];
+        function createElement(geometry, material, speed, yPosition) {
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.z = -500;
+            mesh.position.y = yPosition;
+            elements.push({ mesh, speed });
+            scene.add(mesh);
+        }
 
-        const pointLight2 = new THREE.PointLight(0x00ffff, 2, 100);
-        pointLight2.position.set(-20, -30, 20);
-        scene.add(pointLight2);
+        const material1 = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+        const material2 = new THREE.MeshBasicMaterial({ color: 0xff6347 });
+        const material3 = new THREE.MeshBasicMaterial({ color: 0x4682b4 });
 
-        const ambientLight = new THREE.AmbientLight(0x222244); // soft blue/purple light
+        // Create repeated elements for rhythmic movement
+        for (let i = 0; i < 20; i++) {
+            createElement(new THREE.BoxGeometry(10, 10, 10), material1, 0.5, Math.random() * 50 - 25);
+            createElement(new THREE.CylinderGeometry(5, 5, 20, 32), material2, 1.0, Math.random() * 50 - 25);
+            createElement(new THREE.SphereGeometry(7, 32, 32), material3, 0.7, Math.random() * 50 - 25);
+        }
+
+        // Lighting for a dynamic effect
+        const ambientLight = new THREE.AmbientLight(0x404040, 2); // soft light
         scene.add(ambientLight);
 
-        // Adding some fog for depth and mystery
-        scene.fog = new THREE.Fog(0x000000, 50, 200);
+        const pointLight = new THREE.PointLight(0xffffff, 1, 1000);
+        pointLight.position.set(50, 50, 50);
+        scene.add(pointLight);
 
-        // Positioning the camera for the dimensional effect
-        camera.position.z = 60;
+        // Positioning the camera
+        camera.position.z = 100;
 
-        let speed = 0.2; // Speed of movement through the "dimension"
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
 
-        // Adding some fine detail with particle effects
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 5000;
-        const positions = new Float32Array(particlesCount * 3);
-
-        for (let i = 0; i < particlesCount * 3; i++) {
-            positions[i] = (Math.random() - 0.5) * 500;
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        const particlesMaterial = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.5, opacity: 0.8, transparent: true });
-        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particles);
-
-        // Adding interactive rings
-        const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xffaa00, side: THREE.DoubleSide });
-        const rings = [];
-        for (let i = 0; i < 10; i++) {
-            const ringGeometry = new THREE.RingGeometry(5, 10, 32);
-            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-            ring.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * -500);
-            ring.rotation.x = Math.random() * Math.PI;
-            ring.rotation.y = Math.random() * Math.PI;
-            scene.add(ring);
-            rings.push(ring);
-        }
-
-        // Adding new procedural shapes
-        const shapes = [];
-        function createRandomShape() {
-            const shapeType = Math.floor(Math.random() * 3);
-            let shape;
-            let shapeMaterial = new THREE.MeshStandardMaterial({
-                color: Math.random() * 0xffffff,
-                emissive: Math.random() * 0x222222,
-                metalness: 0.7,
-                roughness: 0.4
+            // Move elements forward to simulate train movement
+            elements.forEach(({ mesh, speed }) => {
+                mesh.position.z += speed;
+                if (mesh.position.z > 100) {
+                    mesh.position.z = -500;
+                }
             });
 
-            switch (shapeType) {
-                case 0:
-                    shape = new THREE.SphereGeometry(5, 32, 32);
-                    break;
-                case 1:
-                    shape = new THREE.BoxGeometry(7, 7, 7);
-                    break;
-                case 2:
-                    shape = new THREE.ConeGeometry(5, 15, 32);
-                    break;
-            }
-
-            const mesh = new THREE.Mesh(shape, shapeMaterial);
-            mesh.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * -500);
-            mesh.rotation.x = Math.random() * Math.PI;
-            mesh.rotation.y = Math.random() * Math.PI;
-            scene.add(mesh);
-            shapes.push(mesh);
+            renderer.render(scene, camera);
         }
 
-        for (let i = 0; i < 5; i++) {
-            createRandomShape();
-        }
-
-        // Setup audio for interaction from microphone
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const audioSource = audioContext.createMediaStreamSource(stream);
-            const analyser = audioContext.createAnalyser();
-
-            audioSource.connect(analyser);
-            analyser.fftSize = 256;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            // Animation loop
-            function animate() {
-                requestAnimationFrame(animate);
-
-                // Get audio data
-                analyser.getByteFrequencyData(dataArray);
-                const lowerHalfArray = dataArray.slice(0, (dataArray.length / 2) - 1);
-                const upperHalfArray = dataArray.slice((dataArray.length / 2) - 1, dataArray.length - 1);
-
-                // Normalize the frequency data
-                const overallAvg = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-                const lowerMax = Math.max(...lowerHalfArray);
-                const upperMax = Math.max(...upperHalfArray);
-
-                // Adjust torus properties based on music
-                torusKnot.scale.set(1 + lowerMax / 255, 1 + lowerMax / 255, 1 + lowerMax / 255);
-                torusKnot.rotation.z += upperMax / 10000;
-
-                // Apply dynamic camera movement based on music
-                camera.position.x = Math.sin(overallAvg / 20) * 10;
-                camera.position.y = Math.cos(overallAvg / 20) * 5;
-
-                // Ensure torus is always visible by making the camera look at it
-                camera.lookAt(torusKnot.position);
-
-                // Apply rotations to create a dynamic movement
-                torusKnot.rotation.x += 0.01 + (upperMax / 5000);
-                torusKnot.rotation.y += 0.01 + (lowerMax / 5000);
-
-                // Rotate particles for more visual interest
-                particles.rotation.y += 0.001 + (upperMax / 20000);
-                particles.rotation.x += 0.0005 + (lowerMax / 20000);
-
-                // Add pulse effect to lighting for more "juice"
-                pointLight1.intensity = 1 + (lowerMax / 255) * 2;
-                pointLight2.intensity = 1 + (upperMax / 255) * 2;
-
-                // Move the camera forward to simulate movement
-                camera.position.z -= speed;
-
-                // Ensure the torus does not get too far away
-                if (camera.position.z - torusKnot.position.z > 50) {
-                    torusKnot.position.z = camera.position.z - 30;
-                }
-
-                // Rotate and move rings to keep the scene dynamic
-                rings.forEach((ring, index) => {
-                    ring.rotation.x += 0.01;
-                    ring.rotation.y += 0.01;
-                    ring.position.z += 1.0; // Move rings towards the camera
-
-                    if (ring.position.z > 10) {
-                        ring.position.z = -500;
-                        ring.position.x = Math.random() * 100 - 50;
-                        ring.position.y = Math.random() * 100 - 50;
-                    }
-
-                    // Introduce procedural serendipity
-                    if (Math.random() > 0.995) {
-                        ring.material.color.setHex(Math.random() * 0xffffff);
-                        ring.scale.set(1 + Math.random(), 1 + Math.random(), 1);
-                        ring.rotation.x += Math.random() * 0.5;
-                        ring.rotation.y += Math.random() * 0.5;
-                    }
-                });
-
-                // Add random color changes to rings for visual diversity
-                if (Math.random() > 0.98) {
-                    rings.forEach((ring) => {
-                        ring.material.color.setHex(Math.random() * 0xffffff);
-                    });
-                }
-
-                // Rotate and move shapes to keep the scene dynamic
-                shapes.forEach((shape) => {
-                    shape.rotation.x += 0.01;
-                    shape.rotation.y += 0.01;
-                    shape.position.z += 1.5; // Move shapes towards the camera
-
-                    if (shape.position.z > 10) {
-                        shape.position.z = -500;
-                        shape.position.x = Math.random() * 100 - 50;
-                        shape.position.y = Math.random() * 100 - 50;
-                    }
-                });
-
-                // Occasionally create new shapes to add surprise elements
-                if (Math.random() > 0.99) {
-                    createRandomShape();
-                }
-
-                // Render scene
-                renderer.render(scene, camera);
-            }
-
-            animate();
-        }).catch(function(err) {
-            console.error('The following error occurred: ' + err);
-        });
+        animate();
 
         // Handle window resizing
         window.addEventListener('resize', () => {
