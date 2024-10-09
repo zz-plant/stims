@@ -47,10 +47,14 @@
 <svg id="stickFigure" width="100" height="200" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
     <circle cx="50" cy="20" r="20" fill="white" />
     <line id="body" x1="50" y1="40" x2="50" y2="120" stroke="white" stroke-width="4" />
-    <line id="leftArm" x1="50" y1="60" x2="20" y2="100" stroke="white" stroke-width="4" />
-    <line id="rightArm" x1="50" y1="60" x2="80" y2="100" stroke="white" stroke-width="4" />
-    <line id="leftLeg" x1="50" y1="120" x2="20" y2="180" stroke="white" stroke-width="4" />
-    <line id="rightLeg" x1="50" y1="120" x2="80" y2="180" stroke="white" stroke-width="4" />
+    <line id="leftUpperArm" x1="50" y1="60" x2="30" y2="90" stroke="white" stroke-width="4" />
+    <line id="leftLowerArm" x1="30" y1="90" x2="20" y2="120" stroke="white" stroke-width="4" />
+    <line id="rightUpperArm" x1="50" y1="60" x2="70" y2="90" stroke="white" stroke-width="4" />
+    <line id="rightLowerArm" x1="70" y1="90" x2="80" y2="120" stroke="white" stroke-width="4" />
+    <line id="leftUpperLeg" x1="50" y1="120" x2="35" y2="150" stroke="white" stroke-width="4" />
+    <line id="leftLowerLeg" x1="35" y1="150" x2="30" y2="180" stroke="white" stroke-width="4" />
+    <line id="rightUpperLeg" x1="50" y1="120" x2="65" y2="150" stroke="white" stroke-width="4" />
+    <line id="rightLowerLeg" x1="65" y1="150" x2="70" y2="180" stroke="white" stroke-width="4" />
 </svg>
 <script>
     const canvas = document.getElementById("glCanvas");
@@ -223,23 +227,37 @@
         // Animate the stick figure
         const stickFigure = document.getElementById("stickFigure");
         const body = document.getElementById("body");
-        const leftArm = document.getElementById("leftArm");
-        const rightArm = document.getElementById("rightArm");
-        const leftLeg = document.getElementById("leftLeg");
-        const rightLeg = document.getElementById("rightLeg");
+        const leftUpperArm = document.getElementById("leftUpperArm");
+        const leftLowerArm = document.getElementById("leftLowerArm");
+        const rightUpperArm = document.getElementById("rightUpperArm");
+        const rightLowerArm = document.getElementById("rightLowerArm");
+        const leftUpperLeg = document.getElementById("leftUpperLeg");
+        const leftLowerLeg = document.getElementById("leftLowerLeg");
+        const rightUpperLeg = document.getElementById("rightUpperLeg");
+        const rightLowerLeg = document.getElementById("rightLowerLeg");
 
         const armAngle = Math.sin(time * 3 + midFreq * 10) * 20;
         const legAngle = Math.sin(time * 2 + lowFreq * 10) * 15;
 
-        leftArm.setAttribute("x2", 50 - 30 * Math.cos(armAngle * Math.PI / 180));
-        leftArm.setAttribute("y2", 60 + 40 * Math.sin(armAngle * Math.PI / 180));
-        rightArm.setAttribute("x2", 50 + 30 * Math.cos(armAngle * Math.PI / 180));
-        rightArm.setAttribute("y2", 60 + 40 * Math.sin(armAngle * Math.PI / 180));
+        leftUpperArm.setAttribute("x2", 50 - 20 * Math.cos(armAngle * Math.PI / 180));
+        leftUpperArm.setAttribute("y2", 60 + 30 * Math.sin(armAngle * Math.PI / 180));
+        leftLowerArm.setAttribute("x2", 30 - 10 * Math.cos(armAngle * Math.PI / 180));
+        leftLowerArm.setAttribute("y2", 90 + 30 * Math.sin(armAngle * Math.PI / 180));
 
-        leftLeg.setAttribute("x2", 50 - 30 * Math.cos(legAngle * Math.PI / 180));
-        leftLeg.setAttribute("y2", 120 + 60 * Math.sin(legAngle * Math.PI / 180));
-        rightLeg.setAttribute("x2", 50 + 30 * Math.cos(legAngle * Math.PI / 180));
-        rightLeg.setAttribute("y2", 120 + 60 * Math.sin(legAngle * Math.PI / 180));
+        rightUpperArm.setAttribute("x2", 50 + 20 * Math.cos(armAngle * Math.PI / 180));
+        rightUpperArm.setAttribute("y2", 60 + 30 * Math.sin(armAngle * Math.PI / 180));
+        rightLowerArm.setAttribute("x2", 70 + 10 * Math.cos(armAngle * Math.PI / 180));
+        rightLowerArm.setAttribute("y2", 90 + 30 * Math.sin(armAngle * Math.PI / 180));
+
+        leftUpperLeg.setAttribute("x2", 50 - 15 * Math.cos(legAngle * Math.PI / 180));
+        leftUpperLeg.setAttribute("y2", 120 + 30 * Math.sin(legAngle * Math.PI / 180));
+        leftLowerLeg.setAttribute("x2", 35 - 5 * Math.cos(legAngle * Math.PI / 180));
+        leftLowerLeg.setAttribute("y2", 150 + 30 * Math.sin(legAngle * Math.PI / 180));
+
+        rightUpperLeg.setAttribute("x2", 50 + 15 * Math.cos(legAngle * Math.PI / 180));
+        rightUpperLeg.setAttribute("y2", 120 + 30 * Math.sin(legAngle * Math.PI / 180));
+        rightLowerLeg.setAttribute("x2", 65 + 5 * Math.cos(legAngle * Math.PI / 180));
+        rightLowerLeg.setAttribute("y2", 150 + 30 * Math.sin(legAngle * Math.PI / 180));
 
         requestAnimationFrame(render);
     }
