@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Biological Music Visualizer</title>
+    <title>Dreamy, Mesmerizing Music Visualizer</title>
     <style>
         html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: #0a0a0a;
+            background: #000;
             font-family: 'Courier New', Courier, monospace;
         }
         canvas {
@@ -25,89 +25,83 @@
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // Lighting setup
-        const pointLight = new THREE.PointLight(0xffffff, 1);
-        pointLight.position.set(20, 20, 20);
-        scene.add(pointLight);
+        // Torus Knot Geometry that morphs with the audio data
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x7f00ff, 
+            emissive: 0x550088, 
+            metalness: 0.7, 
+            roughness: 0.2, 
+            side: THREE.DoubleSide 
+        });
+        const torusKnot = new THREE.Mesh(geometry, material);
+        scene.add(torusKnot);
 
-        const ambientLight = new THREE.AmbientLight(0x404040); // soft ambient light
+        // Lighting
+        const pointLight = new THREE.PointLight(0xff00ff, 2, 500);
+        pointLight.position.set(50, 50, 50);
+        scene.add(pointLight);
+        const ambientLight = new THREE.AmbientLight(0x404040);
         scene.add(ambientLight);
 
-        // Geometry setup
-        const geometry = new THREE.IcosahedronGeometry(10, 5);
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x66ccff, 
-            wireframe: true,
-            transparent: true,
-            opacity: 0.5,
-            emissive: 0x112244,
-            metalness: 0.7,
-            roughness: 0.5
-        });
-        const icosahedron = new THREE.Mesh(geometry, material);
-        scene.add(icosahedron);
-
-        // Particle system for dreamy effect
+        // Particle system
         const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 2000;
+        const particlesCount = 1000;
         const positions = new Float32Array(particlesCount * 3);
-
         for (let i = 0; i < particlesCount * 3; i++) {
-            positions[i] = (Math.random() - 0.5) * 400;
+            positions[i] = (Math.random() - 0.5) * 500;
         }
-
         particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particlesMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1, opacity: 0.7, transparent: true });
+        const particlesMaterial = new THREE.PointsMaterial({ color: 0x00ffff, size: 1, transparent: true });
         const particles = new THREE.Points(particlesGeometry, particlesMaterial);
         scene.add(particles);
 
         // Camera positioning
-        camera.position.z = 50;
+        camera.position.z = 100;
 
-        // Audio setup
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+        // Web Audio API setup
+        let analyser;
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const analyser = audioContext.createAnalyser();
             const source = audioContext.createMediaStreamSource(stream);
-            source.connect(analyser);
+            analyser = audioContext.createAnalyser();
             analyser.fftSize = 256;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            function animate() {
-                requestAnimationFrame(animate);
-                analyser.getByteFrequencyData(dataArray);
-
-                // Calculate average frequency for shape-shifting effect
-                const avgFrequency = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-                const scale = 1 + avgFrequency / 100;
-
-                // Apply shape-shifting effect to geometry
-                icosahedron.scale.set(scale, scale, scale);
-                icosahedron.rotation.x += 0.005 + (avgFrequency / 5000);
-                icosahedron.rotation.y += 0.005 + (avgFrequency / 5000);
-
-                // Make vertices "pulsate" to create a biological effect
-                for (let i = 0; i < geometry.vertices.length; i++) {
-                    const vertex = geometry.vertices[i];
-                    const offset = (dataArray[i % bufferLength] / 256) * 2;
-                    vertex.multiplyScalar(1 + Math.sin(offset) * 0.05);
-                }
-                geometry.verticesNeedUpdate = true;
-
-                // Rotate particles for a dreamy effect
-                particles.rotation.y += 0.0005;
-                particles.rotation.x += 0.0002;
-
-                renderer.render(scene, camera);
-            }
+            source.connect(analyser);
 
             animate();
-        }).catch(function (err) {
-            console.error('The following error occurred: ' + err);
+        }).catch(err => {
+            console.error('Error accessing audio stream:', err);
         });
+
+        // Animate function
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (analyser) {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                const lowerHalfArray = dataArray.slice(0, dataArray.length / 2);
+                const avgFreq = lowerHalfArray.reduce((a, b) => a + b) / lowerHalfArray.length;
+                
+                // Modify geometry vertices based on frequency data
+                const time = performance.now() * 0.001;
+                geometry.vertices.forEach((vertex, i) => {
+                    const offset = avgFreq * 0.005;
+                    vertex.normalize().multiplyScalar(10 + offset * Math.sin(i + time));
+                });
+                geometry.verticesNeedUpdate = true;
+            }
+
+            // Rotate objects for a dreamy, mesmerizing effect
+            torusKnot.rotation.x += 0.005;
+            torusKnot.rotation.y += 0.01;
+            particles.rotation.y += 0.002;
+
+            renderer.render(scene, camera);
+        }
 
         // Handle window resizing
         window.addEventListener('resize', () => {
