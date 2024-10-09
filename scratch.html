@@ -180,7 +180,8 @@
     let midFreq = 0.0;
     let highFreq = 0.0;
     let mousePos = [0.0, 0.0];
-    
+    let gravity = [0, 0];
+
     async function setupAudio() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -226,6 +227,14 @@
         faceElement.textContent = faces[randomIndex];
     });
 
+    // Use device motion sensor for added physics effects
+    if (window.DeviceMotionEvent) {
+        window.addEventListener('devicemotion', (event) => {
+            gravity[0] = event.accelerationIncludingGravity.x;
+            gravity[1] = event.accelerationIncludingGravity.y;
+        });
+    }
+
     function render() {
         time += 0.01;
         gl.uniform1f(timeUniformLocation, time);
@@ -250,8 +259,8 @@
         const rightUpperLeg = document.getElementById("rightUpperLeg");
         const rightLowerLeg = document.getElementById("rightLowerLeg");
 
-        const armAngle = Math.sin(time * 3 + midFreq * 10) * 30;
-        const legAngle = Math.sin(time * 2 + lowFreq * 10) * 20;
+        const armAngle = Math.sin(time * 3 + midFreq * 10) * 30 + gravity[0] * 5;
+        const legAngle = Math.sin(time * 2 + lowFreq * 10) * 20 + gravity[1] * 5;
 
         leftUpperArm.setAttribute("x2", 50 - 30 * Math.cos(armAngle * Math.PI / 180));
         leftUpperArm.setAttribute("y2", 80 + 40 * Math.sin(armAngle * Math.PI / 180));
