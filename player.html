@@ -1,28 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
     <title>Stim Webtoys Player</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
-    <script type="module" src="assets/js/app.js"></script>
+    <link rel="stylesheet" href="assets/css/styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r136/three.min.js"></script>
-</head>
-<body>
-    <div id="container">
-        <canvas id="toyCanvas"></canvas>
-        <div id="controls">
-            <label for="sensitivity">Sensitivity:</label>
-            <input type="range" id="sensitivity" name="sensitivity" min="1" max="100" value="50">
-        </div>
-    </div>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const canvasId = 'toyCanvas';
-            const htmlConfigUrl = 'toys/zzp/spinning-cube-grid.html';
-            startApp(canvasId, htmlConfigUrl);
-        });
-    </script>
-</body>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body>
+    <main>
+      <div id="toy-container">
+        <canvas id="toy-canvas"></canvas>
+      </div>
+    </main>
+  </body>
 </html>
