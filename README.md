@@ -129,8 +129,8 @@ To run the stim toys locally, clone this repository and open the HTML files in y
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/stim-webtoys.git
-   cd stim-webtoys
+   git clone https://github.com/kanavjain/stims.git
+   cd stims
    ```
 
 2. Open any of the HTML files in your browser (e.g., `3dtoy.html`, `index.html`).
