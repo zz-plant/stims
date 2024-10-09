@@ -1,5 +1,5 @@
 // Apply scaling based on audio data
-export function applyAudioScale(object, audioData, sensitivity = 50) {
+export function applyAudioScale(mesh, audioData, sensitivity = 50) {
     const { lowFreq, midFreq, highFreq } = audioData;
 
     object.scale.set(
@@ -10,7 +10,7 @@ export function applyAudioScale(object, audioData, sensitivity = 50) {
 }
 
 // Apply rotation based on audio data
-export function applyAudioRotation(object, audioData, sensitivity = 1) {
+export function applyAudioRotation(mesh, audioData, sensitivity = 1) {
     const { lowFreq, midFreq, highFreq } = audioData;
 
     object.rotation.x += (lowFreq / 256) * sensitivity;
@@ -19,7 +19,7 @@ export function applyAudioRotation(object, audioData, sensitivity = 1) {
 }
 
 // Apply color changes based on audio data
-export function applyAudioColorChange(object, audioData, sensitivity = 1) {
+export function applyAudioColorChange(mesh, audioData, sensitivity = 1) {
     const { lowFreq, midFreq, highFreq } = audioData;
 
     const r = (lowFreq / 256) * sensitivity;
