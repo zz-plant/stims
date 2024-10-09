@@ -8,8 +8,8 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #1a1a1a; /* Softer dark gray to reduce strain */
-            color: #e0e0e0; /* Lighter text for better readability */
+            background-color: #1a1a1a;
+            color: #e0e0e0;
             touch-action: none;
         }
         canvas {
@@ -20,22 +20,24 @@
             top: 10px;
             left: 10px;
             z-index: 10;
-            background: rgba(20, 20, 20, 0.9); /* Darker background for less brightness */
+            background: rgba(20, 20, 20, 0.9);
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
         }
-        #controls input[type=range] {
-            width: 150px;
-            margin-bottom: 10px;
-            transition: all 0.2s;
+        #controls button {
+            background-color: #444;
+            color: #e0e0e0;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
         }
-        #controls label {
-            color: #e0e0e0; /* Lighter text for better readability */
-            font-size: 14px;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
+        #stickFigure {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
         #face {
             font-size: 40px;
@@ -48,7 +50,7 @@
 <div id="controls">
     <button id="startAudio">Start Audio Interaction</button>
 </div>
-<svg id="stickFigure" width="200" height="400" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+<svg id="stickFigure" width="200" height="400">
     <text id="face" x="100" y="60" text-anchor="middle" alignment-baseline="middle" fill="white">
         😀
     </text>
@@ -96,7 +98,6 @@
         uniform float u_highFreq;
         uniform vec2 u_mousePos;
         
-        // Function to create smooth color gradients with layers
         vec3 smoothLayer(vec2 uv, float timeOffset, float frequencyFactor) {
             vec3 color = vec3(0.2 + 0.2 * sin(uv.x * 3.0 + frequencyFactor * 4.0 + timeOffset),
                               0.2 + 0.2 * cos(uv.y * 3.0 + frequencyFactor * 4.0 + timeOffset),
@@ -107,16 +108,14 @@
         void main() {
             vec2 uv = gl_FragCoord.xy / u_resolution.xy;
             uv -= 0.5;
-            uv *= 2.0; // Zoom out slightly
+            uv *= 2.0;
             
-            // Layered visual with different frequencies affecting different layers
             vec3 lowLayer = smoothLayer(uv, u_time * 0.2, u_lowFreq);
             vec3 midLayer = smoothLayer(uv + vec2(0.1, 0.1), u_time * 0.4, u_midFreq);
             vec3 highLayer = smoothLayer(uv - vec2(0.2, 0.2), u_time * 0.8, u_highFreq);
             
             vec3 finalColor = lowLayer + midLayer + highLayer;
 
-            // Interactive touch-based ripples
             float distToMouse = distance(uv, u_mousePos);
             finalColor += 0.2 * vec3(1.0, 0.8, 0.6) * smoothstep(0.0, 1.0, 1.0 - distToMouse);
 
@@ -181,9 +180,6 @@
     let midFreq = 0.0;
     let highFreq = 0.0;
     let mousePos = [0.0, 0.0];
-    let gravity = [0, 0];
-    let stickFigurePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    let velocity = { x: 1, y: 1 };
 
     async function setupAudio() {
         try {
@@ -199,7 +195,6 @@
             function getAudioData() {
                 analyser.getByteFrequencyData(dataArray);
                 
-                // Process audio data into frequency bands
                 lowFreq = dataArray.slice(0, 32).reduce((a, b) => a + b) / 32.0 / 255.0;
                 midFreq = dataArray.slice(32, 128).reduce((a, b) => a + b) / 96.0 / 255.0;
                 highFreq = dataArray.slice(128).reduce((a, b) => a + b) / (dataArray.length - 128) / 255.0;
@@ -230,14 +225,6 @@
         faceElement.textContent = faces[randomIndex];
     });
 
-    // Use device motion sensor for added physics effects
-    if (window.DeviceMotionEvent) {
-        window.addEventListener('devicemotion', (event) => {
-            gravity[0] = event.accelerationIncludingGravity.x;
-            gravity[1] = event.accelerationIncludingGravity.y;
-        });
-    }
-
     function render() {
         time += 0.01;
         gl.uniform1f(timeUniformLocation, time);
@@ -246,80 +233,8 @@
         gl.uniform1f(highFreqUniformLocation, highFreq);
         gl.uniform2f(mousePosUniformLocation, mousePos[0], mousePos[1]);
         
-        // Draw the scene
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        // Animate the stick figure with more advanced dancing
-        const stickFigure = document.getElementById("stickFigure");
-        const torso = document.getElementById("torso");
-        const leftUpperArm = document.getElementById("leftUpperArm");
-        const leftLowerArm = document.getElementById("leftLowerArm");
-        const rightUpperArm = document.getElementById("rightUpperArm");
-        const rightLowerArm = document.getElementById("rightLowerArm");
-        const leftUpperLeg = document.getElementById("leftUpperLeg");
-        const leftLowerLeg = document.getElementById("leftLowerLeg");
-        const rightUpperLeg = document.getElementById("rightUpperLeg");
-        const rightLowerLeg = document.getElementById("rightLowerLeg");
-
-        const armAngle = Math.sin(time * 4 + midFreq * 15) * 45 + gravity[0] * 8;
-        const legAngle = Math.sin(time * 3 + lowFreq * 12) * 30 + gravity[1] * 8;
-        const bodyWiggle = Math.sin(time * 2 + highFreq * 10) * 5;
-
-        leftUpperArm.setAttribute("x2", 100 - 60 * Math.cos(armAngle * Math.PI / 180));
-        leftUpperArm.setAttribute("y2", 90 + 60 * Math.sin(armAngle * Math.PI / 180));
-        leftLowerArm.setAttribute("x1", leftUpperArm.getAttribute("x2"));
-        leftLowerArm.setAttribute("y1", leftUpperArm.getAttribute("y2"));
-        leftLowerArm.setAttribute("x2", leftUpperArm.getAttribute("x2") - 40 * Math.cos(armAngle * Math.PI / 180));
-        leftLowerArm.setAttribute("y2", parseFloat(leftUpperArm.getAttribute("y2")) + 60 * Math.sin(armAngle * Math.PI / 180));
-
-        rightUpperArm.setAttribute("x2", 100 + 60 * Math.cos(armAngle * Math.PI / 180));
-        rightUpperArm.setAttribute("y2", 90 + 60 * Math.sin(armAngle * Math.PI / 180));
-        rightLowerArm.setAttribute("x1", rightUpperArm.getAttribute("x2"));
-        rightLowerArm.setAttribute("y1", rightUpperArm.getAttribute("y2"));
-        rightLowerArm.setAttribute("x2", parseFloat(rightUpperArm.getAttribute("x2")) + 40 * Math.cos(armAngle * Math.PI / 180));
-        rightLowerArm.setAttribute("y2", parseFloat(rightUpperArm.getAttribute("y2")) + 60 * Math.sin(armAngle * Math.PI / 180));
-
-        leftUpperLeg.setAttribute("x2", 100 - 40 * Math.cos(legAngle * Math.PI / 180));
-        leftUpperLeg.setAttribute("y2", 200 + 100 * Math.sin(legAngle * Math.PI / 180));
-        leftLowerLeg.setAttribute("x1", leftUpperLeg.getAttribute("x2"));
-        leftLowerLeg.setAttribute("y1", leftUpperLeg.getAttribute("y2"));
-        leftLowerLeg.setAttribute("x2", parseFloat(leftUpperLeg.getAttribute("x2")) - 20 * Math.cos(legAngle * Math.PI / 180));
-        leftLowerLeg.setAttribute("y2", parseFloat(leftUpperLeg.getAttribute("y2")) + 80 * Math.sin(legAngle * Math.PI / 180));
-
-        rightUpperLeg.setAttribute("x2", 100 + 40 * Math.cos(legAngle * Math.PI / 180));
-        rightUpperLeg.setAttribute("y2", 200 + 100 * Math.sin(legAngle * Math.PI / 180));
-        rightLowerLeg.setAttribute("x1", rightUpperLeg.getAttribute("x2"));
-        rightLowerLeg.setAttribute("y1", rightUpperLeg.getAttribute("y2"));
-        rightLowerLeg.setAttribute("x2", parseFloat(rightUpperLeg.getAttribute("x2")) + 20 * Math.cos(legAngle * Math.PI / 180));
-        rightLowerLeg.setAttribute("y2", parseFloat(rightUpperLeg.getAttribute("y2")) + 80 * Math.sin(legAngle * Math.PI / 180));
-
-        // Update stick figure position with slight body wiggle
-        stickFigurePosition.x += velocity.x;
-        stickFigurePosition.y += velocity.y;
-
-        stickFigure.style.transform = `translate(-50%, -50%) rotate(${bodyWiggle}deg)`;
-
-        // Keep the stick figure within the screen bounds
-        if (stickFigurePosition.x <= 50) {
-            stickFigurePosition.x = 50;
-            velocity.x *= -1;
-        } else if (stickFigurePosition.x >= window.innerWidth - 150) {
-            stickFigurePosition.x = window.innerWidth - 150;
-            velocity.x *= -1;
-        }
-
-        if (stickFigurePosition.y <= 0) {
-            stickFigurePosition.y = 0;
-            velocity.y *= -1;
-        } else if (stickFigurePosition.y >= window.innerHeight - 400) {
-            stickFigurePosition.y = window.innerHeight - 400;
-            velocity.y *= -1;
-        }
-
-        // Set new position
-        stickFigure.style.left = `${stickFigurePosition.x}px`;
-        stickFigure.style.top = `${stickFigurePosition.y}px`;
 
         requestAnimationFrame(render);
     }
