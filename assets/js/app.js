@@ -1,65 +1,100 @@
 import { initScene } from './scene-setup.js';
-import { initCamera } from './camera-setup.js';
-import { initLighting } from './lighting-setup.js';
+import { initPerspectiveCamera, initOrthographicCamera } from './camera-setup.js';
+import { initPointLight, initAmbientLight } from './lighting-setup.js';
 import { initRenderer } from './renderer-setup.js';
 import { initAudio, getFrequencyData } from './audio-handler.js';
-import { applyAudioScale } from './animation-utils.js';
+import { applyAudioScale, applyAudioRotation, applyAudioColorChange } from './animation-utils.js';
+import * as yaml from 'js-yaml';  // YAML parser
 
 let scene, camera, renderer;
 let toyObject, sensitivity = 50;
 
-export function startApp(canvasId, toyType) {
+// Fetch YAML config from server or local
+function fetchYamlConfig(url) {
+    return fetch(url)
+        .then(response => response.text())
+        .then(yamlText => yaml.load(yamlText))
+        .catch(err => console.error('Error loading YAML:', err));
+}
+
+export function startApp(canvasId, yamlConfigUrl) {
     const canvas = document.getElementById(canvasId);
 
-    // Initialize scene, camera, lighting, and renderer using modular setup
-    scene = initScene();
-    camera = initCamera();
-    renderer = initRenderer(canvas);
-    initLighting(scene);
+    // Fetch the YAML file and load the toy configuration
+    fetchYamlConfig(yamlConfigUrl).then(config => {
+        // Initialize scene
+        scene = initScene();
 
-    // Load the specific toy based on its type
-    toyObject = loadToy(scene, toyType);
+        // Initialize camera based on YAML config
+        if (config.toy.camera.type === 'orthographic') {
+            camera = initOrthographicCamera(config.toy.camera);
+        } else {
+            camera = initPerspectiveCamera(config.toy.camera);
+        }
 
-    // Start the audio processing
-    initAudio().then(() => {
-        animate();
-    });
+        // Initialize renderer based on YAML config
+        renderer = initRenderer(canvas, {
+            antialias: config.toy.renderer.antialias,
+            shadowMapEnabled: config.toy.renderer.shadowMapEnabled
+        });
 
-    // Set up sensitivity control
-    document.getElementById('sensitivity').addEventListener('input', (event) => {
-        sensitivity = event.target.value;
+        // Initialize lighting based on YAML config
+        if (config.toy.lighting.type === 'ambient') {
+            initAmbientLight(scene, config.toy.lighting.color);
+        } else {
+            initPointLight(scene, config.toy.lighting.color);
+        }
+
+        // Load the object based on YAML config
+        toyObject = loadObjectFromConfig(scene, config.toy.object);
+
+        // Start the audio processing
+        initAudio().then(() => {
+            animate(config.toy.animations);
+        });
+
+        // Set up sensitivity control
+        document.getElementById('sensitivity').addEventListener('input', (event) => {
+            sensitivity = event.target.value;
+        });
     });
 }
 
-function animate() {
-    requestAnimationFrame(animate);
+function animate(animations) {
+    requestAnimationFrame(() => animate(animations));
 
     // Get the current audio data (frequencies)
     const audioData = getFrequencyData();
 
-    // Apply audio-based scaling or other animations to the toy
-    applyAudioScale(toyObject, audioData, sensitivity);
+    // Apply animations based on YAML config
+    animations.forEach(animation => {
+        switch (animation.type) {
+            case 'scale':
+                applyAudioScale(toyObject, audioData, animation.sensitivity);
+                break;
+            case 'rotation':
+                applyAudioRotation(toyObject, audioData, animation.sensitivity);
+                break;
+            case 'color-change':
+                applyAudioColorChange(toyObject, audioData, animation.sensitivity);
+                break;
+        }
+    });
 
     // Render the scene
     renderer.render(scene, camera);
 }
 
-function loadToy(scene, toyType) {
-    let object;
-    switch (toyType) {
-        case '3dtoy':
-            object = new THREE.TorusKnotGeometry(1, 0.3, 100, 16);
+function loadObjectFromConfig(scene, objectConfig) {
+    let geometry, material, mesh;
+    switch (objectConfig.type) {
+        case 'cube':
+            geometry = new THREE.BoxGeometry(objectConfig.size, objectConfig.size, objectConfig.size);
+            material = new THREE.MeshStandardMaterial({ color: objectConfig.color });
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
             break;
-        case 'stickman':
-            object = new THREE.BoxGeometry(0.5, 1, 0.2);
-            break;
-        default:
-            object = new THREE.SphereGeometry(1, 32, 32);  // Fallback toy
+        // Add other object types (sphere, torus, etc.)
     }
-
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-    const mesh = new THREE.Mesh(object, material);
-    scene.add(mesh);
-
     return mesh;
 }
