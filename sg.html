@@ -83,7 +83,7 @@
 
         function init() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x000000, 10, 200);
+            scene.fog = new THREE.Fog(0x87ceeb, 10, 200); // Add sky blue fog for sky effect
 
             // Camera setup
             camera = new THREE.PerspectiveCamera(
@@ -132,19 +132,25 @@
         }
 
         function createInitialScenery() {
-            // Create repeating scenery elements like trees, buildings, and train tracks
+            // Create repeating scenery elements with different shapes
             for (let i = 0; i < 100; i++) {
                 createSynchronizedSceneryElement(-i * 20);
             }
         }
 
         function createSynchronizedSceneryElement(zPosition) {
-            const geometry = new THREE.BoxGeometry(1, Math.random() * 5 + 2, 1);
+            // Randomly choose between different geometries
+            const geometries = [
+                new THREE.BoxGeometry(1, Math.random() * 5 + 2, 1),
+                new THREE.CylinderGeometry(0.5, 0.5, Math.random() * 5 + 2, 16),
+                new THREE.SphereGeometry(Math.random() * 1 + 0.5, 16, 16)
+            ];
+            const geometry = geometries[Math.floor(Math.random() * geometries.length)];
             const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
             const element = new THREE.Mesh(geometry, material);
             element.position.set(
                 Math.random() * 40 - 20, // Random X position for variety
-                geometry.parameters.height / 2,
+                geometry.parameters.height ? geometry.parameters.height / 2 : Math.random() * 2, // Adjust Y position based on geometry type
                 zPosition // Place at specified z position
             );
             element.castShadow = true;
@@ -155,7 +161,7 @@
         function createModularElements() {
             // Create modular repeating elements like train tracks, poles, and tunnels
             const trackGeometry = new THREE.BoxGeometry(5, 0.1, modularElementSpacing);
-            const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 }); // Change road color to grey
             for (let i = 0; i < 200; i++) {
                 const track = new THREE.Mesh(trackGeometry, trackMaterial);
                 track.position.set(0, 0, -i * modularElementSpacing);
