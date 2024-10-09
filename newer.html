@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Immersive Audio Visualizer</title>
+    <title>Advanced Audio Visualizer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
@@ -17,6 +17,7 @@
         let scene, camera, renderer;
         let analyser, dataArray, torusKnot, fractalShape, particleSystem, light1, light2;
         let audioContext, source;
+        let averageVolume = 0;
 
         async function init() {
             if (!navigator.gpu) {
@@ -27,7 +28,7 @@
             // Create Scene and Camera
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 100; // Bringing camera closer to enhance scale
+            camera.position.z = 100;
 
             // WebGPU Renderer
             renderer = new WebGPURenderer();
@@ -51,13 +52,13 @@
 
         function createVisualElements() {
             // Larger Torus Knot (Mid frequencies)
-            const torusKnotGeometry = new THREE.TorusKnotGeometry(20, 5, 100, 16); // Larger torus knot
+            const torusKnotGeometry = new THREE.TorusKnotGeometry(20, 5, 100, 16);
             const torusKnotMaterial = new THREE.MeshStandardMaterial({ color: 0xff8800, wireframe: true });
             torusKnot = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
             scene.add(torusKnot);
 
             // Larger Fractal-like Shape
-            const fractalGeometry = new THREE.IcosahedronGeometry(18, 2); // Larger fractal shape
+            const fractalGeometry = new THREE.IcosahedronGeometry(18, 2); 
             const fractalMaterial = new THREE.MeshStandardMaterial({ color: 0x0077ff, wireframe: true });
             fractalShape = new THREE.Mesh(fractalGeometry, fractalMaterial);
             fractalShape.position.set(0, 0, 0);
@@ -68,7 +69,7 @@
             const particles = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 300; // More space for particles
+                positions[i] = (Math.random() - 0.5) * 300; 
             }
             particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
@@ -109,6 +110,14 @@
             }
         }
 
+        function getAverageVolume(dataArray) {
+            let values = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                values += dataArray[i];
+            }
+            return values / dataArray.length;
+        }
+
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -121,29 +130,41 @@
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
-                // Mid Frequencies for Torus Knot
+                // Calculate average volume across all frequencies
+                averageVolume = getAverageVolume(dataArray) / 255;
+
+                // Low Frequencies for Lighting Intensity
+                const lowFreq = dataArray[20] / 255;
+                light1.intensity = 1 + lowFreq * 2;
+                light2.intensity = 1 + lowFreq * 2;
+
+                // Mid Frequencies for Torus Knot Rotation and Size
                 const midFreq = dataArray[100] / 255;
-                torusKnot.rotation.x += 0.02 + midFreq * 0.1;
-                torusKnot.rotation.y += 0.02 + midFreq * 0.1;
+                torusKnot.rotation.x += 0.02 + midFreq * 0.2; 
+                torusKnot.rotation.y += 0.02 + midFreq * 0.2;
+                torusKnot.scale.set(1 + averageVolume * 0.8, 1 + averageVolume * 0.8, 1); 
 
-                // Fractal-like shape distortion
-                const fractalFreq = dataArray[80] / 255;
-                fractalShape.scale.set(1 + fractalFreq * 0.8, 1 + fractalFreq * 0.8, 1);
+                // Fractal-like shape distortion by volume
+                fractalShape.scale.set(1 + lowFreq * 0.8, 1 + lowFreq * 0.8, 1);
 
-                // Particle System bursts and trails
+                // Particle System bursts and trails by high frequencies
                 const highFreq = dataArray[150] / 255;
-                particleSystem.material.size = 2 + highFreq * 4;
+                particleSystem.material.size = 3 + highFreq * 5;
                 particleSystem.material.color.setHSL(highFreq, 1.0, 0.7);
+                particleSystem.material.opacity = 0.5 + highFreq * 0.5; // transparency changes with treble
+
+                // Background color inversions on beat detection (low-frequency spikes)
+                if (lowFreq > 0.6) {
+                    const bgColor = new THREE.Color(`hsl(${Math.random() * 360}, 100%, ${50 + Math.random() * 50}%)`);
+                    renderer.setClearColor(bgColor, 1);
+                } else {
+                    const bgColor = new THREE.Color(`hsl(${lowFreq * 360}, 100%, ${50 + highFreq * 50}%)`);
+                    renderer.setClearColor(bgColor, 1);
+                }
 
                 // Moving lights with trailing effect
-                light1.position.x = Math.sin(midFreq * Math.PI * 2) * 60; // Extend light range
+                light1.position.x = Math.sin(midFreq * Math.PI * 2) * 60; 
                 light2.position.y = Math.cos(highFreq * Math.PI * 2) * 60;
-
-                // Background color inversions
-                const bass = dataArray[20] / 255;
-                const treble = dataArray[150] / 255;
-                const bgColor = new THREE.Color(`hsl(${bass * 360}, 100%, ${50 + treble * 50}%)`);
-                renderer.setClearColor(bgColor, 1);
             }
 
             renderer.render(scene, camera);
