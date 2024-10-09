@@ -29,7 +29,7 @@
         const modularElements = [];
         const modularElementSpacing = 20;
         const cameraSpeed = 15;
-        const cameraShakeDecay = 0.9;
+        const cameraShakeDecay = 0.95;
         let cameraShakeOffset = { x: 0, y: 0 };
 
         function init() {
@@ -131,7 +131,7 @@
             }
 
             navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(function(stream) {
+                .then(function (stream) {
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     const source = audioContext.createMediaStreamSource(stream);
                     analyser = audioContext.createAnalyser();
@@ -139,30 +139,35 @@
                     source.connect(analyser);
                     frequencyData = new Uint8Array(analyser.frequencyBinCount);
                 })
-                .catch(function(err) {
-                    console.error('The following gUM error occurred: ' + err);
+                .catch(function (err) {
+                    alert('Could not access microphone: ' + err.message + '. Please try again.');
+                    console.error('The following getUserMedia error occurred: ', err);
                 });
         }
 
+        // Improved beat detection using low frequency energy peaks
         function handleBeatDetection() {
-            const overallLevel = frequencyData.reduce((a, b) => a + b, 0) / frequencyData.length;
-            if (overallLevel > beatThreshold && Date.now() - lastBeatTime > minBeatInterval) {
+            const bassLevel = getFrequencyRangeValue(0, 10);
+            if (bassLevel > beatThreshold && Date.now() - lastBeatTime > minBeatInterval) {
                 lastBeatTime = Date.now();
                 createSynchronizedSceneryElement(camera.position.z - 100);
             }
         }
 
+        // Smooth adjustment of directional light intensity
         function updateSceneryWithSound() {
             if (analyser) {
                 analyser.getByteFrequencyData(frequencyData);
+
+                // Beat detection
                 handleBeatDetection();
 
-                // Update modular elements color and intensity based on frequency data
+                // Adjust modular elements based on audio
                 const bass = getFrequencyRangeValue(0, 10);
                 const mid = getFrequencyRangeValue(11, 40);
                 const treble = getFrequencyRangeValue(41, 60);
 
-                // Camera shake based on bass
+                // Camera shake
                 const cameraShakeIntensity = bass / 150;
                 cameraShakeOffset.x = (Math.random() - 0.5) * cameraShakeIntensity;
                 cameraShakeOffset.y = (Math.random() - 0.5) * cameraShakeIntensity;
@@ -173,8 +178,9 @@
                     element.material.color.setHSL(colorValue, 0.7, 0.5);
                 });
 
-                // Adjust directional light intensity based on treble frequencies
-                directionalLight.intensity = 0.8 + (treble / 255) * 1.2;
+                // Smoothly adjust directional light intensity
+                const targetIntensity = 0.8 + (treble / 255) * 1.2;
+                directionalLight.intensity += (targetIntensity - directionalLight.intensity) * 0.1; // Use interpolation for smooth transitions
             }
         }
 
@@ -197,22 +203,24 @@
             cameraShakeOffset.x *= cameraShakeDecay;
             cameraShakeOffset.y *= cameraShakeDecay;
 
-            // Update scenery with sound
-            updateSceneryWithSound();
+            // Update scenery with sound (every few frames for better performance)
+            if (Math.floor(clock.elapsedTime * 60) % 4 === 0) {
+                updateSceneryWithSound();
+            }
 
-            // Move scenery elements forward
+            // Move scenery elements
             scenery.forEach(obj => {
                 obj.position.z += delta * cameraSpeed;
                 if (obj.position.z > camera.position.z + 50) {
-                    obj.position.z -= 2000; // Loop scenery elements to create repetition
+                    obj.position.z -= 2000; // Reposition for continuous scenery
                 }
             });
 
-            // Move modular elements forward to create a repeating pattern
+            // Move modular elements
             modularElements.forEach(obj => {
                 obj.position.z += delta * cameraSpeed;
                 if (obj.position.z > camera.position.z + 50) {
-                    obj.position.z -= 2000;
+                    obj.position.z -= 2000; // Reposition for continuous pattern
                 }
             });
 
