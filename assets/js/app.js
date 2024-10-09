@@ -4,113 +4,101 @@ import { initPointLight, initAmbientLight } from './lighting-setup.js';
 import { initRenderer } from './renderer-setup.js';
 import { initAudio, getFrequencyData } from './audio-handler.js';
 import { applyAudioScale, applyAudioRotation, applyAudioColorChange } from './animation-utils.js';
-import * as yaml from 'js-yaml';
 
 let scene, camera, renderer;
 let toyObject, sensitivity = 50;
 
-// Fetch YAML configuration from the server or local path
-function fetchYamlConfig(url) {
-    return fetch(url)
-        .then(response => response.text())
-        .then(yamlText => yaml.load(yamlText))
-        .catch(err => console.error('Error loading YAML:', err));
-}
-
-// Start the application by initializing the scene, renderer, camera, and the toy from the YAML configuration
-export function startApp(canvasId, yamlConfigUrl) {
+// Start the application by initializing the scene, renderer, camera, and the toy from the HTML configuration
+export function startApp(canvasId, config) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) {
         console.error('Canvas element not found.');
         return;
     }
 
-    // Fetch the YAML config file and load toy configuration
-    fetchYamlConfig(yamlConfigUrl).then(config => {
-        if (!config) {
-            console.error('Failed to load YAML configuration.');
-            return;
+    if (!config) {
+        console.error('Failed to load configuration.');
+        return;
+    }
+    console.log('Loaded Config:', config);
+
+    // Initialize the scene
+    scene = initScene();
+
+    // Initialize the camera based on configuration
+    if (config.toy.camera.type === 'orthographic') {
+        camera = initOrthographicCamera(
+            config.toy.camera.left,
+            config.toy.camera.right,
+            config.toy.camera.top,
+            config.toy.camera.bottom,
+            config.toy.camera.near,
+            config.toy.camera.far,
+            config.toy.camera.position
+        );
+    } else {
+        camera = initPerspectiveCamera(
+            config.toy.camera.fov,
+            window.innerWidth / window.innerHeight,
+            config.toy.camera.near,
+            config.toy.camera.far,
+            config.toy.camera.position
+        );
+    }
+    console.log('Camera Initialized:', camera);
+
+    // Initialize the renderer based on config
+    renderer = initRenderer(canvas, {
+        antialias: config.toy.renderer.antialias,
+        shadowMapEnabled: config.toy.renderer.shadowMapEnabled,
+        size: {
+            width: window.innerWidth,
+            height: window.innerHeight
         }
-        console.log('YAML Loaded Config:', config);
+    });
+    if (!renderer) {
+        console.error('Renderer initialization failed.');
+        return;
+    }
+    console.log('Renderer Initialized:', renderer);
 
-        // Initialize the scene
-        scene = initScene();
+    // Initialize lighting based on config
+    if (config.toy.lighting.type === 'ambient') {
+        initAmbientLight(scene, config.toy.lighting.color);
+    } else {
+        initPointLight(scene, config.toy.lighting.color);
+    }
 
-        // Initialize the camera based on YAML configuration
-        if (config.toy.camera.type === 'orthographic') {
-            camera = initOrthographicCamera(
-                config.toy.camera.left,
-                config.toy.camera.right,
-                config.toy.camera.top,
-                config.toy.camera.bottom,
-                config.toy.camera.near,
-                config.toy.camera.far,
-                config.toy.camera.position
-            );
-        } else {
-            camera = initPerspectiveCamera(
-                config.toy.camera.fov,
-                window.innerWidth / window.innerHeight,
-                config.toy.camera.near,
-                config.toy.camera.far,
-                config.toy.camera.position
-            );
-        }
-        console.log('Camera Initialized:', camera);
+    // Load the toy object from the configuration
+    toyObject = loadObjectFromConfig(scene, config.toy.object);
+    if (!toyObject) {
+        console.error('Failed to initialize toy object.');
+        return;
+    }
+    console.log('Toy Object Initialized:', toyObject);
 
-        // Initialize the renderer based on YAML config
-        renderer = initRenderer(canvas, {
-            antialias: config.toy.renderer.antialias,
-            shadowMapEnabled: config.toy.renderer.shadowMapEnabled,
-            size: {
-                width: window.innerWidth,
-                height: window.innerHeight
-            }
-        });
-        if (!renderer) {
-            console.error('Renderer initialization failed.');
-            return;
-        }
-        console.log('Renderer Initialized:', renderer);
+    // Start the audio processing (mic input)
+    initAudio().then(() => {
+        animate(config.toy.animations);
+    }).catch(err => {
+        console.error('Audio initialization failed:', err);
+        animate(config.toy.animations);  // Start animation without audio
+    });
 
-        // Initialize lighting based on YAML config
-        if (config.toy.lighting.type === 'ambient') {
-            initAmbientLight(scene, config.toy.lighting.color);
-        } else {
-            initPointLight(scene, config.toy.lighting.color);
-        }
-
-        // Load the toy object from the YAML configuration
-        toyObject = loadObjectFromConfig(scene, config.toy.object);
-        if (!toyObject) {
-            console.error('Failed to initialize toy object.');
-            return;
-        }
-        console.log('Toy Object Initialized:', toyObject);
-
-        // Start the audio processing (mic input)
-        initAudio().then(() => {
-            animate(config.toy.animations);
-        }).catch(err => {
-            console.error('Audio initialization failed:', err);
-            animate(config.toy.animations);  // Start animation without audio
-        });
-
-        // Set up sensitivity control (HTML range input) for adjusting the animation sensitivity
-        document.getElementById('sensitivity').addEventListener('input', (event) => {
-            sensitivity = event.target.value;
-        });
-    }).catch(err => console.error('Error fetching YAML:', err));
+    // Set up sensitivity control (HTML range input) for adjusting the animation sensitivity
+    document.getElementById('sensitivity').addEventListener('input', (event) => {
+        sensitivity = event.target.value;
+    });
 }
 
-// Animate the object based on audio input and YAML-defined animations
+// Animate the object based on audio input and defined animations
 function animate(animations) {
     requestAnimationFrame(() => animate(animations));
 
     // Get the current audio frequency data
     const audioData = getFrequencyData();
 
-    // Apply animations defined in the YAML configuration
+    // Apply animations defined in the configuration
     animations.forEach(animation => {
         switch (animation.type) {
             case 'scale':
@@ -135,7 +123,7 @@ function animate(animations) {
     }
 }
 
-// Load and create the object (mesh) based on YAML configuration
+// Load and create the object (mesh) based on configuration
 function loadObjectFromConfig(scene, objectConfig) {
     let geometry, material, mesh;
     switch (objectConfig.type) {
