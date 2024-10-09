@@ -13,23 +13,19 @@
     <canvas id="liquid-canvas"></canvas>
 
     <script type="module">
-        import { initScene, initPerspectiveCamera, initRenderer } from './assets/js/core/scene-setup.js';
+        import { initScene, initCamera, initRenderer } from './assets/js/core/scene-setup.js';
         import { initAmbientLight } from './assets/js/lighting/lighting-setup.js';
 
         let scene, camera, renderer, particles;
 
         function init() {
             const canvas = document.getElementById('liquid-canvas');
-
-            // Set up scene, camera, renderer
             scene = initScene({ backgroundColor: 0x000033 });
-            camera = initPerspectiveCamera({ position: { x: 0, y: 0, z: 100 } });
+            camera = initCamera({ position: { x: 0, y: 0, z: 100 } });
             renderer = initRenderer(canvas);
 
-            // Add ambient lighting
-            initAmbientLight(scene, 0x404040, 0.5);
+            initAmbientLight(scene, { color: 0x404040, intensity: 0.5 });
 
-            // Particle system
             const particlesGeometry = new THREE.BufferGeometry();
             const particleCount = 5000;
             const positions = new Float32Array(particleCount * 3);
@@ -48,10 +44,8 @@
 
         function animate() {
             requestAnimationFrame(animate);
-
             particles.rotation.x += 0.001;
             particles.rotation.y += 0.001;
-
             renderer.render(scene, camera);
         }
 
