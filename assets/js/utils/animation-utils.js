@@ -1,3 +1,4 @@
+// Apply scaling based on audio data
 export function applyAudioScale(mesh, audioData, sensitivity = 50) {
     const { lowFreq, midFreq, highFreq } = audioData;
 
@@ -8,6 +9,7 @@ export function applyAudioScale(mesh, audioData, sensitivity = 50) {
     );
 }
 
+// Apply rotation based on audio data
 export function applyAudioRotation(mesh, audioData, sensitivity = 1) {
     const { lowFreq, midFreq, highFreq } = audioData;
 
@@ -16,6 +18,7 @@ export function applyAudioRotation(mesh, audioData, sensitivity = 1) {
     mesh.rotation.z += (highFreq / 256) * sensitivity;
 }
 
+// Apply color changes based on audio data
 export function applyAudioColorChange(mesh, audioData, sensitivity = 1) {
     const { lowFreq, midFreq, highFreq } = audioData;
 
