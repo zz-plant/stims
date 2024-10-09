@@ -65,6 +65,12 @@
         let cameraRotation = { x: 0, y: 0 };
         let isDeviceOrientationAvailable = false;
         let sensitivity = 0.005; // Default sensitivity
+        let cameraShakeAmplitude = 0;
+        let beatThreshold = 150;
+        let lastBeatTime = 0;
+        let minBeatInterval = 500; // Minimum interval between beats in milliseconds
+        let scenery = [];
+        let cloudParticles = [];
 
         function init() {
             // Scene setup
@@ -114,12 +120,90 @@
                 setupAudio();
                 animate();
             });
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
         }
 
-        // Functions to create scene elements (createSky, createGround, etc.)
-        // [Omitted for brevity]
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
 
-        // Setup audio with error handling
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function createSky() {
+            // Skybox or background setup
+            const loader = new THREE.TextureLoader();
+            loader.load('https://threejs.org/examples/textures/skybox/py.jpg', function(texture) {
+                const skyMaterial = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    side: THREE.BackSide
+                });
+                const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
+                const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+                scene.add(sky);
+            });
+        }
+
+        function createGround() {
+            const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+
+        function createRoad() {
+            const roadGeometry = new THREE.PlaneGeometry(10, 1000);
+            const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const road = new THREE.Mesh(roadGeometry, roadMaterial);
+            road.rotation.x = -Math.PI / 2;
+            road.position.y = 0.01;
+            road.receiveShadow = true;
+            scene.add(road);
+        }
+
+        function createScenery() {
+            const treeGeometry = new THREE.ConeGeometry(1, 4, 8);
+            const treeMaterial = new THREE.MeshLambertMaterial({ color: 0x228822 });
+
+            for (let i = 0; i < 100; i++) {
+                const tree = new THREE.Mesh(treeGeometry, treeMaterial);
+                tree.position.set(
+                    Math.random() * 200 - 100,
+                    2,
+                    -Math.random() * 1000
+                );
+                tree.castShadow = true;
+                tree.userData.isDynamicColor = true; // Mark for color changes
+                scene.add(tree);
+                scenery.push(tree);
+            }
+
+            // Create clouds
+            const cloudGeometry = new THREE.PlaneGeometry(500, 500);
+            const cloudMaterial = new THREE.MeshLambertMaterial({
+                map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/cloud.png'),
+                transparent: true,
+                opacity: 0.5,
+                depthWrite: false,
+            });
+
+            for (let i = 0; i < 25; i++) {
+                const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
+                cloud.position.set(
+                    Math.random() * 1000 - 500,
+                    Math.random() * 50 + 50,
+                    Math.random() * 1000 - 500
+                );
+                cloud.rotation.z = Math.random() * 2 * Math.PI;
+                scene.add(cloud);
+                cloudParticles.push(cloud);
+            }
+        }
+
         function setupAudio() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 alert('getUserMedia not supported on your browser!');
@@ -140,7 +224,6 @@
                 });
         }
 
-        // Advanced sound mapping with optimized updates
         function updateSceneryWithSound() {
             const now = Date.now();
             if (analyser && now - lastAudioUpdateTime > audioUpdateInterval) {
@@ -189,11 +272,38 @@
         }
 
         function handleBeatDetection() {
-            // Implement a more sophisticated beat detection algorithm here
-            // For now, we'll use a simple placeholder
+            const overallLevel = frequencyData.reduce((a, b) => a + b, 0) / frequencyData.length;
+            if (overallLevel > beatThreshold && Date.now() - lastBeatTime > minBeatInterval) {
+                lastBeatTime = Date.now();
+                createSynchronizedObject();
+            }
         }
 
-        // Interaction setup with improved controls
+        function createSynchronizedObject() {
+            const geometry = new THREE.SphereGeometry(1, 16, 16);
+            const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.set(
+                Math.random() * 20 - 10,
+                Math.random() * 5 + 1,
+                camera.position.z - 10
+            );
+            sphere.castShadow = true;
+            scene.add(sphere);
+
+            // Add to scenery for movement and eventual removal
+            scenery.push(sphere);
+
+            // Remove the object after some time to prevent clutter
+            setTimeout(() => {
+                scene.remove(sphere);
+                const index = scenery.indexOf(sphere);
+                if (index > -1) {
+                    scenery.splice(index, 1);
+                }
+            }, 5000);
+        }
+
         function setupInteraction() {
             // Mouse controls
             setupMouseControls();
@@ -299,15 +409,30 @@
             camera.rotation.y = cameraRotation.y;
         }
 
-        // Main animation loop with performance considerations
         function animate() {
             requestAnimationFrame(animate);
 
             // Update scenery with sound
             updateSceneryWithSound();
 
-            // Move scenery elements and update interactions
-            // [Rest of the animate function, including moving objects, updating camera shake, etc.]
+            // Apply camera shake
+            if (cameraShakeAmplitude > 0) {
+                const shakeX = (Math.random() - 0.5) * cameraShakeAmplitude;
+                const shakeY = (Math.random() - 0.5) * cameraShakeAmplitude;
+                const shakeZ = (Math.random() - 0.5) * cameraShakeAmplitude;
+                camera.position.x += shakeX;
+                camera.position.y += shakeY;
+                camera.position.z += shakeZ;
+            }
+
+            // Move scenery elements forward
+            const delta = clock.getDelta();
+            scenery.forEach(obj => {
+                obj.position.z += delta * 20;
+                if (obj.position.z > camera.position.z + 50) {
+                    obj.position.z -= 1000;
+                }
+            });
 
             renderer.render(scene, camera);
         }
