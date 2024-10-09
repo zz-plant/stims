@@ -20,9 +20,19 @@ function fetchYamlConfig(url) {
 // Start the application by initializing the scene, renderer, camera, and the toy from the YAML configuration
 export function startApp(canvasId, yamlConfigUrl) {
     const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        console.error('Canvas element not found.');
+        return;
+    }
 
     // Fetch the YAML config file and load toy configuration
     fetchYamlConfig(yamlConfigUrl).then(config => {
+        if (!config) {
+            console.error('Failed to load YAML configuration.');
+            return;
+        }
+        console.log('YAML Loaded Config:', config);
+
         // Initialize the scene
         scene = initScene();
 
@@ -46,6 +56,7 @@ export function startApp(canvasId, yamlConfigUrl) {
                 config.toy.camera.position
             );
         }
+        console.log('Camera Initialized:', camera);
 
         // Initialize the renderer based on YAML config
         renderer = initRenderer(canvas, {
@@ -56,6 +67,11 @@ export function startApp(canvasId, yamlConfigUrl) {
                 height: window.innerHeight
             }
         });
+        if (!renderer) {
+            console.error('Renderer initialization failed.');
+            return;
+        }
+        console.log('Renderer Initialized:', renderer);
 
         // Initialize lighting based on YAML config
         if (config.toy.lighting.type === 'ambient') {
@@ -66,17 +82,25 @@ export function startApp(canvasId, yamlConfigUrl) {
 
         // Load the toy object from the YAML configuration
         toyObject = loadObjectFromConfig(scene, config.toy.object);
+        if (!toyObject) {
+            console.error('Failed to initialize toy object.');
+            return;
+        }
+        console.log('Toy Object Initialized:', toyObject);
 
         // Start the audio processing (mic input)
         initAudio().then(() => {
             animate(config.toy.animations);
+        }).catch(err => {
+            console.error('Audio initialization failed:', err);
+            animate(config.toy.animations);  // Start animation without audio
         });
 
         // Set up sensitivity control (HTML range input) for adjusting the animation sensitivity
         document.getElementById('sensitivity').addEventListener('input', (event) => {
             sensitivity = event.target.value;
         });
-    });
+    }).catch(err => console.error('Error fetching YAML:', err));
 }
 
 // Animate the object based on audio input and YAML-defined animations
@@ -104,7 +128,11 @@ function animate(animations) {
     });
 
     // Render the scene using the renderer and camera
-    renderer.render(scene, camera);
+    if (renderer && camera && scene) {
+        renderer.render(scene, camera);
+    } else {
+        console.error('Renderer, camera, or scene not initialized properly.');
+    }
 }
 
 // Load and create the object (mesh) based on YAML configuration
