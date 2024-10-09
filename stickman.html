@@ -219,16 +219,19 @@
         const rightUpperLeg = document.getElementById("rightUpperLeg");
         const leftLowerLeg = document.getElementById("leftLowerLeg");
         const rightLowerLeg = document.getElementById("rightLowerLeg");
-        
-        // Add more dynamic movements to make the stick figure dance
-        leftUpperArm.setAttribute("x2", 40 + midFreq * 50);
-        rightUpperArm.setAttribute("x2", 160 - midFreq * 50);
-        leftLowerArm.setAttribute("x2", 20 + highFreq * 30);
-        rightLowerArm.setAttribute("x2", 180 - highFreq * 30);
-        leftUpperLeg.setAttribute("x2", 70 - lowFreq * 40);
-        rightUpperLeg.setAttribute("x2", 130 + lowFreq * 40);
-        leftLowerLeg.setAttribute("x2", 50 - midFreq * 30);
-        rightLowerLeg.setAttribute("x2", 150 + midFreq * 30);
+
+        const armAngle = lowFreq * 30 + midFreq * 20;
+        const legAngle = midFreq * 30 + highFreq * 20;
+
+        leftUpperArm.setAttribute("x2", 40 + armAngle);
+        rightUpperArm.setAttribute("x2", 160 - armAngle);
+        leftLowerArm.setAttribute("y2", 150 + armAngle);
+        rightLowerArm.setAttribute("y2", 150 + armAngle);
+
+        leftUpperLeg.setAttribute("x2", 70 - legAngle);
+        rightUpperLeg.setAttribute("x2", 130 + legAngle);
+        leftLowerLeg.setAttribute("y2", 300 + legAngle);
+        rightLowerLeg.setAttribute("y2", 300 + legAngle);
     }
     
     document.getElementById("startAudio").addEventListener("click", () => {
