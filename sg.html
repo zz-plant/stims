@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Star Guitar Inspired Visualizer - Car Ride Experience</title>
+    <title>Interactive Star Guitar Visualizer - Car Ride Experience</title>
     <style>
         html, body {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background: linear-gradient(to bottom, #1e3c72, #2a5298, #000); /* Deep blue gradient for sky */
+            background: linear-gradient(to bottom, #1e3c72, #2a5298, #000);
         }
         canvas {
             display: block;
@@ -18,18 +18,24 @@
 <body>
     <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Include Hammer.js for touch gestures -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script>
         let scene, camera, renderer;
         let clock;
         let analyser, frequencyData;
         const scenery = [];
         const carElements = [];
-        const cameraSpeed = 15;
+        const emojiElements = [];
+        const cameraSpeedBase = 15;
+        let cameraSpeed = cameraSpeedBase;
+        let cameraShakeAmplitude = 0.05;
+        let cameraShakeFrequency = 0.005;
 
         function init() {
             // Scene setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x1e3c72, 50, 400); // Add deep blue fog for sky depth
+            scene.fog = new THREE.Fog(0x1e3c72, 50, 400);
 
             // Camera setup
             camera = new THREE.PerspectiveCamera(
@@ -38,13 +44,14 @@
                 0.1,
                 1000
             );
-            camera.position.set(0, 2, 10); // Adjusted position to create a car-like perspective
-            camera.rotation.y = 0.05; // Slightly rotate to the right to simulate being in a car
+            camera.position.set(0, 2, 10);
+            camera.rotation.y = 0.0;
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
 
             // Lighting setup
@@ -59,12 +66,16 @@
             // Initialize scene elements
             createRoad();
             createStars();
+            createScenery();
 
             // Initialize clock
             clock = new THREE.Clock();
 
             // Setup audio
             setupAudio();
+
+            // Setup interaction
+            setupInteraction();
 
             // Handle window resize
             window.addEventListener('resize', onWindowResize, false);
@@ -86,6 +97,17 @@
             road.rotation.x = -Math.PI / 2;
             road.position.y = 0;
             scene.add(road);
+
+            // Create road stripes
+            const stripeGeometry = new THREE.PlaneGeometry(2, 10);
+            const stripeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            for (let i = 0; i < 100; i++) {
+                const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+                stripe.rotation.x = -Math.PI / 2;
+                stripe.position.y = 0.01;
+                stripe.position.z = -i * 20;
+                scene.add(stripe);
+            }
         }
 
         function createStars() {
@@ -103,6 +125,10 @@
 
             const stars = new THREE.Points(starGeometry, starMaterial);
             scene.add(stars);
+        }
+
+        function createScenery() {
+            // Initial scenery setup (optional)
         }
 
         function setupAudio() {
@@ -133,6 +159,10 @@
                 const mid = getFrequencyRangeValue(11, 40);
                 const treble = getFrequencyRangeValue(41, 60);
 
+                // Map bass frequencies to camera speed and shake
+                cameraSpeed = cameraSpeedBase + bass / 50;
+                cameraShakeAmplitude = bass / 5000;
+
                 // Create trees/buildings in response to bass frequencies
                 if (bass > 150) {
                     createTreeOrBuilding();
@@ -141,6 +171,11 @@
                 // Create cars in response to mid frequencies
                 if (mid > 120) {
                     createCar();
+                }
+
+                // Create emoji elements in response to treble frequencies
+                if (treble > 100) {
+                    createEmoji();
                 }
             }
         }
@@ -153,12 +188,13 @@
                 geometry = new THREE.ConeGeometry(2, 10, 16);
                 material = new THREE.MeshLambertMaterial({ color: 0x228b22 });
             } else {
-                geometry = new THREE.BoxGeometry(5, Math.random() * 20 + 10, 5);
+                const buildingHeight = Math.random() * 20 + 10;
+                geometry = new THREE.BoxGeometry(5, buildingHeight, 5);
                 material = new THREE.MeshLambertMaterial({ color: 0x8b8b8b });
             }
 
             const element = new THREE.Mesh(geometry, material);
-            element.position.set(Math.random() < 0.5 ? -20 : 20, geometry.parameters.height / 2, camera.position.z - 50);
+            element.position.set(Math.random() < 0.5 ? -20 : 20, geometry.parameters.height / 2 || 5, camera.position.z - 100);
             element.castShadow = true;
             scene.add(element);
             scenery.push(element);
@@ -174,10 +210,115 @@
             carElements.push(car);
         }
 
+        function createEmoji() {
+            const emojis = ['🚗', '🚙', '🌲', '🌳', '🌵', '🌼', '🦄', '🐦', '🐘', '✨', '🌟', '☁️', '⛅'];
+            const emoji = document.createElement('div');
+            emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            emoji.style.position = 'absolute';
+            emoji.style.fontSize = `${Math.random() * 30 + 20}px`;
+            emoji.style.left = `${Math.random() * window.innerWidth}px`;
+            emoji.style.top = `${Math.random() * window.innerHeight / 2}px`;
+            emoji.style.opacity = '0';
+            emoji.style.transition = 'opacity 1s';
+            document.body.appendChild(emoji);
+
+            requestAnimationFrame(() => {
+                emoji.style.opacity = '1';
+            });
+
+            setTimeout(() => {
+                emoji.style.opacity = '0';
+                setTimeout(() => {
+                    emoji.remove();
+                }, 1000);
+            }, 2000);
+        }
+
         function getFrequencyRangeValue(start, end) {
             const slice = frequencyData.slice(start, end);
             const sum = slice.reduce((a, b) => a + b, 0);
             return sum / slice.length;
+        }
+
+        function setupInteraction() {
+            // Mouse movement
+            let isMouseDown = false;
+            let previousMousePosition = { x: 0, y: 0 };
+
+            renderer.domElement.addEventListener('mousedown', function (e) {
+                isMouseDown = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            renderer.domElement.addEventListener('mousemove', function (e) {
+                if (isMouseDown) {
+                    const deltaMove = {
+                        x: e.clientX - previousMousePosition.x,
+                        y: e.clientY - previousMousePosition.y
+                    };
+
+                    const deltaRotationQuaternion = new THREE.Quaternion()
+                        .setFromEuler(new THREE.Euler(
+                            -deltaMove.y * 0.005,
+                            -deltaMove.x * 0.005,
+                            0,
+                            'XYZ'
+                        ));
+
+                    camera.quaternion.multiplyQuaternions(deltaRotationQuaternion, camera.quaternion);
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            });
+
+            document.addEventListener('mouseup', function () {
+                isMouseDown = false;
+            });
+
+            // Mouse wheel for zoom
+            document.addEventListener('wheel', function (e) {
+                camera.position.z += e.deltaY * 0.01;
+                camera.position.z = Math.max(5, Math.min(100, camera.position.z));
+            });
+
+            // Touch inputs using Hammer.js
+            const hammer = new Hammer(renderer.domElement);
+            hammer.get('pinch').set({ enable: true });
+            hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
+            let initialPinchDistance = null;
+            let initialCameraPositionZ = camera.position.z;
+
+            hammer.on('pan', function (ev) {
+                const deltaRotationQuaternion = new THREE.Quaternion()
+                    .setFromEuler(new THREE.Euler(
+                        -ev.deltaY * 0.0005,
+                        -ev.deltaX * 0.0005,
+                        0,
+                        'XYZ'
+                    ));
+                camera.quaternion.multiplyQuaternions(deltaRotationQuaternion, camera.quaternion);
+            });
+
+            hammer.on('pinchstart', function (ev) {
+                initialPinchDistance = ev.scale;
+                initialCameraPositionZ = camera.position.z;
+            });
+
+            hammer.on('pinch', function (ev) {
+                const scaleFactor = initialPinchDistance / ev.scale;
+                camera.position.z = initialCameraPositionZ * scaleFactor;
+                camera.position.z = Math.max(5, Math.min(100, camera.position.z));
+            });
+
+            // Device motion (for mobile devices)
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', function (event) {
+                    const beta = event.beta ? THREE.Math.degToRad(event.beta) : 0;
+                    const gamma = event.gamma ? THREE.Math.degToRad(event.gamma) : 0;
+                    camera.rotation.x = beta;
+                    camera.rotation.y = gamma;
+                }, true);
+            }
         }
 
         function animate() {
@@ -186,28 +327,30 @@
 
             // Move the camera forward
             camera.position.z -= delta * cameraSpeed;
-            camera.position.y = 2; // Keep the camera above the road
+            camera.position.y = 2 + Math.sin(Date.now() * cameraShakeFrequency) * cameraShakeAmplitude;
 
             // Update scenery with sound
             updateSceneryWithSound();
 
             // Move scenery elements
-            scenery.forEach(obj => {
+            for (let i = scenery.length - 1; i >= 0; i--) {
+                const obj = scenery[i];
                 obj.position.z += delta * cameraSpeed;
                 if (obj.position.z > camera.position.z + 100) {
                     scene.remove(obj);
-                    scenery.splice(scenery.indexOf(obj), 1); // Remove from array when out of view
+                    scenery.splice(i, 1);
                 }
-            });
+            }
 
             // Move cars on the road
-            carElements.forEach(car => {
+            for (let i = carElements.length - 1; i >= 0; i--) {
+                const car = carElements[i];
                 car.position.z += delta * cameraSpeed * 1.5;
                 if (car.position.z > camera.position.z + 50) {
                     scene.remove(car);
-                    carElements.splice(carElements.indexOf(car), 1);
+                    carElements.splice(i, 1);
                 }
-            });
+            }
 
             renderer.render(scene, camera);
         }
