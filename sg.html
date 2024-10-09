@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Star Guitar Inspired Visualizer</title>
+    <title>Star Guitar Inspired Visualizer - Remake</title>
     <style>
         html, body {
             margin: 0;
@@ -13,77 +13,22 @@
         canvas {
             display: block;
         }
-        /* VHS effect styling */
-        .vhs-effect {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            mix-blend-mode: lighten;
-            opacity: 0.2;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(255, 255, 255, 0.02),
-                rgba(255, 255, 255, 0.02) 2px,
-                transparent 2px,
-                transparent 4px
-            );
-            animation: vhsNoise 0.1s infinite;
-        }
-
-        @keyframes vhsNoise {
-            0% { transform: translateY(0); }
-            25% { transform: translateY(-2px); }
-            50% { transform: translateY(1px); }
-            75% { transform: translateY(-1px); }
-            100% { transform: translateY(0); }
-        }
-
-        /* Eerie shimmer effect styling */
-        .shimmer-effect {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            mix-blend-mode: overlay;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 40%);
-            opacity: 0.15;
-            animation: shimmerMovement 3s infinite alternate;
-        }
-
-        @keyframes shimmerMovement {
-            0% { transform: translate(-10px, -10px) scale(1.05); }
-            50% { transform: translate(10px, 10px) scale(1.1); }
-            100% { transform: translate(-10px, -10px) scale(1.05); }
-        }
     </style>
 </head>
 <body>
-    <div class="vhs-effect"></div>
-    <div class="shimmer-effect"></div>
     <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Scene setup
-        let scene, camera, renderer, clock, directionalLight;
+        let scene, camera, renderer;
+        let clock;
         let analyser, frequencyData;
-        let lastBeatTime = 0;
-        const minBeatInterval = 300; // Minimum interval between beats in milliseconds
         const scenery = [];
-        const beatThreshold = 170;
-        const modularElements = [];
-        const modularElementSpacing = 20;
-        const cameraSpeed = 15;
-        const cameraShakeDecay = 0.95;
-        let cameraShakeOffset = { x: 0, y: 0 };
+        const cameraSpeed = 10;
 
         function init() {
+            // Scene setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x87ceeb, 10, 200); // Add sky blue fog for sky effect
+            scene.fog = new THREE.Fog(0x87ceeb, 10, 300); // Add sky blue fog for sky effect
 
             // Camera setup
             camera = new THREE.PerspectiveCamera(
@@ -92,26 +37,24 @@
                 0.1,
                 1000
             );
-            camera.position.set(0, 2, 15); // Keep the camera above the road
+            camera.position.set(0, 2, 15);
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.domElement.style.filter = 'blur(1px) contrast(1.2) saturate(0.8)'; // Add slight blur, contrast, and saturation for eerie VHS feel
             document.body.appendChild(renderer.domElement);
 
             // Lighting setup
-            const ambientLight = new THREE.AmbientLight(0xddddff, 0.4);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             scene.add(ambientLight);
 
-            directionalLight = new THREE.DirectionalLight(0xffcc88, 1.2);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
             directionalLight.position.set(0, 50, -50);
             scene.add(directionalLight);
 
             // Initialize scene elements
-            createInitialScenery();
-            createModularElements();
+            createRailwayTracks();
+            createSynchronizedScenery();
 
             // Initialize clock
             clock = new THREE.Clock();
@@ -123,9 +66,6 @@
             window.addEventListener('resize', onWindowResize, false);
 
             animate();
-
-            // Setup touch input
-            setupTouchInput();
         }
 
         function onWindowResize() {
@@ -134,72 +74,38 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        function createInitialScenery() {
-            // Create repeating scenery elements with different shapes
+        function createRailwayTracks() {
+            // Create railway tracks
+            const trackGeometry = new THREE.BoxGeometry(5, 0.1, 2000);
+            const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+            const track = new THREE.Mesh(trackGeometry, trackMaterial);
+            track.position.set(0, 0, -1000);
+            track.receiveShadow = true;
+            scene.add(track);
+        }
+
+        function createSynchronizedScenery() {
+            // Create repeating scenery elements like buildings and poles
             for (let i = 0; i < 100; i++) {
-                createSynchronizedSceneryElement(-i * 20);
-            }
-            // Add additional scenery elements that react to audio or touch
-            for (let i = 0; i < 10; i++) {
-                createReactiveSceneryElement(-i * 40);
-            }
-        }
+                const zPosition = -i * 20;
 
-        function createSynchronizedSceneryElement(zPosition) {
-            // Randomly choose between different geometries
-            const geometries = [
-                new THREE.BoxGeometry(1, Math.random() * 5 + 2, 1),
-                new THREE.CylinderGeometry(0.5, 0.5, Math.random() * 5 + 2, 16),
-                new THREE.SphereGeometry(Math.random() * 1 + 0.5, 16, 16)
-            ];
-            const geometry = geometries[Math.floor(Math.random() * geometries.length)];
-            const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
-            const element = new THREE.Mesh(geometry, material);
-            element.position.set(
-                Math.random() * 40 - 20, // Random X position for variety
-                geometry.parameters.height ? geometry.parameters.height / 2 : Math.random() * 2, // Adjust Y position based on geometry type
-                zPosition // Place at specified z position
-            );
-            element.castShadow = true;
-            scene.add(element);
-            scenery.push(element);
-        }
+                // Create buildings
+                const buildingGeometry = new THREE.BoxGeometry(5, Math.random() * 10 + 5, 5);
+                const buildingMaterial = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
+                const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+                building.position.set(Math.random() < 0.5 ? -10 : 10, buildingGeometry.parameters.height / 2, zPosition);
+                building.castShadow = true;
+                scene.add(building);
+                scenery.push(building);
 
-        function createReactiveSceneryElement(zPosition) {
-            const geometry = new THREE.TorusGeometry(Math.random() * 1 + 0.5, 0.3, 16, 100);
-            const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
-            const element = new THREE.Mesh(geometry, material);
-            element.position.set(
-                Math.random() * 40 - 20, // Random X position for variety
-                Math.random() * 5 + 1, // Random Y position for height
-                zPosition // Place at specified z position
-            );
-            element.castShadow = true;
-            element.userData.isReactive = true;
-            scene.add(element);
-            scenery.push(element);
-        }
-
-        function createModularElements() {
-            // Create modular repeating elements like train tracks, poles, and tunnels
-            const trackGeometry = new THREE.BoxGeometry(5, 0.1, modularElementSpacing);
-            const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 }); // Change road color to grey
-            for (let i = 0; i < 200; i++) {
-                const track = new THREE.Mesh(trackGeometry, trackMaterial);
-                track.position.set(0, 0, -i * modularElementSpacing);
-                track.receiveShadow = true;
-                scene.add(track);
-                modularElements.push(track);
-            }
-
-            const poleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 10, 16);
-            const poleMaterial = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
-            for (let i = 0; i < 100; i++) {
+                // Create poles
+                const poleGeometry = new THREE.CylinderGeometry(0.2, 0.2, 10, 16);
+                const poleMaterial = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
                 const pole = new THREE.Mesh(poleGeometry, poleMaterial);
-                pole.position.set(-10, 5, -i * modularElementSpacing * 2);
+                pole.position.set(Math.random() < 0.5 ? -5 : 5, 5, zPosition);
                 pole.castShadow = true;
                 scene.add(pole);
-                modularElements.push(pole);
+                scenery.push(pole);
             }
         }
 
@@ -224,62 +130,17 @@
                 });
         }
 
-        function setupTouchInput() {
-            window.addEventListener('touchstart', (event) => {
-                for (let touch of event.touches) {
-                    scenery.forEach(obj => {
-                        if (obj.userData.isReactive) {
-                            obj.material.color.set(Math.random() * 0xffffff); // Change color on touch
-                        }
-                    });
-                }
-            });
-        }
-
-        // Improved beat detection using low frequency energy peaks
-        function handleBeatDetection() {
-            const bassLevel = getFrequencyRangeValue(0, 10);
-            if (bassLevel > beatThreshold && Date.now() - lastBeatTime > minBeatInterval) {
-                lastBeatTime = Date.now();
-                createSynchronizedSceneryElement(camera.position.z - 100);
-            }
-        }
-
-        // Smooth adjustment of directional light intensity
         function updateSceneryWithSound() {
             if (analyser) {
                 analyser.getByteFrequencyData(frequencyData);
-
-                // Beat detection
-                handleBeatDetection();
-
-                // Adjust modular elements based on audio
                 const bass = getFrequencyRangeValue(0, 10);
-                const mid = getFrequencyRangeValue(11, 40);
-                const treble = getFrequencyRangeValue(41, 60);
 
-                // Camera shake
-                const cameraShakeIntensity = bass / 150;
-                cameraShakeOffset.x = (Math.random() - 0.5) * cameraShakeIntensity;
-                cameraShakeOffset.y = (Math.random() - 0.5) * cameraShakeIntensity;
-
-                // Update colors based on mid frequencies
-                const colorValue = Math.min(1, mid / 255);
-                modularElements.forEach(element => {
-                    element.material.color.setHSL(colorValue, 0.7, 0.5);
-                });
-
-                // Update reactive elements based on treble frequencies
-                const trebleValue = Math.min(1, treble / 255);
-                scenery.forEach(element => {
-                    if (element.userData.isReactive) {
-                        element.scale.set(1 + trebleValue * 0.5, 1 + trebleValue * 0.5, 1 + trebleValue * 0.5); // Scale reactive elements
+                // Update the height of poles based on the bass frequency
+                scenery.forEach(obj => {
+                    if (obj.geometry.type === 'CylinderGeometry') {
+                        obj.scale.y = 1 + bass / 255;
                     }
                 });
-
-                // Smoothly adjust directional light intensity
-                const targetIntensity = 0.8 + (treble / 255) * 1.2;
-                directionalLight.intensity += (targetIntensity - directionalLight.intensity) * 0.1; // Use interpolation for smooth transitions
             }
         }
 
@@ -297,29 +158,14 @@
             camera.position.z -= delta * cameraSpeed;
             camera.position.y = 2; // Keep the camera above the road
 
-            // Apply camera shake
-            camera.position.x += cameraShakeOffset.x;
-            cameraShakeOffset.x *= cameraShakeDecay;
-            cameraShakeOffset.y *= cameraShakeDecay;
-
-            // Update scenery with sound (every few frames for better performance)
-            if (Math.floor(clock.elapsedTime * 60) % 4 === 0) {
-                updateSceneryWithSound();
-            }
+            // Update scenery with sound
+            updateSceneryWithSound();
 
             // Move scenery elements
             scenery.forEach(obj => {
                 obj.position.z += delta * cameraSpeed;
                 if (obj.position.z > camera.position.z + 50) {
                     obj.position.z -= 2000; // Reposition for continuous scenery
-                }
-            });
-
-            // Move modular elements
-            modularElements.forEach(obj => {
-                obj.position.z += delta * cameraSpeed;
-                if (obj.position.z > camera.position.z + 50) {
-                    obj.position.z -= 2000; // Reposition for continuous pattern
                 }
             });
 
