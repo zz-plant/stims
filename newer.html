@@ -111,23 +111,25 @@
             // Check if audio is being captured
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
-                console.log(dataArray);  // Check audio data in the console
 
-                // Hexagon Layer: Slow rotation and pulsation (Mid Frequencies)
+                // Rotate hexagon
                 hexagonLayer.rotation.x += 0.01;
                 hexagonLayer.rotation.y += 0.01;
                 hexagonLayer.scale.set(1 + (dataArray[100] / 50), 1 + (dataArray[100] / 50), 1);
 
-                // Sphere Layer: Breathing/pulsating (Low Frequencies)
-                sphereLayer.scale.set(1 + (dataArray[20] / 50), 1 + (dataArray[20] / 50), 1);
+                // Pulse sphere with low frequencies
+                sphereLayer.scale.set(1 + (dataArray[20] / 25), 1 + (dataArray[20] / 25), 1);  // Increase effect
                 sphereLayer.material.color.setHSL(dataArray[20] / 255, 1.0, 0.5);
 
-                // Particle System: High Frequencies
+                // Particle system reacting to high frequencies
                 particleSystem.material.size = (dataArray[150] / 255) * 5;
                 particleSystem.material.color.setHSL(dataArray[150] / 255, 1.0, 0.5);
-            } else {
-                // Simple animation to test rotation
-                hexagonLayer.rotation.z += 0.01;  // Test basic rotation
+
+                // Background color reacting to audio
+                const bass = dataArray[20] / 255;
+                const treble = dataArray[150] / 255;
+                const color = new THREE.Color(`hsl(${Math.floor(bass * 360)}, 100%, ${Math.floor(treble * 50 + 25)}%)`);
+                renderer.setClearColor(color, 1);  // Dynamic background color based on audio
             }
 
             // Render the scene
