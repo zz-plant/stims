@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synesthetic Audio Visualizer</title>
+    <title>Immersive Audio Visualizer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
@@ -15,7 +15,7 @@
         import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.min.js';
 
         let scene, camera, renderer;
-        let analyser, dataArray, torusKnot, octahedron, particleSystem, light1, light2, fractalShape;
+        let analyser, dataArray, torusKnot, fractalShape, particleSystem, light1, light2;
         let audioContext, source;
 
         async function init() {
@@ -24,10 +24,10 @@
                 return;
             }
 
-            // Scene and Camera
+            // Create Scene and Camera
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 120;
+            camera.position.z = 100; // Bringing camera closer to enhance scale
 
             // WebGPU Renderer
             renderer = new WebGPURenderer();
@@ -50,31 +50,31 @@
         }
 
         function createVisualElements() {
-            // Geometry: Torus Knot (Mid frequencies)
-            const torusKnotGeometry = new THREE.TorusKnotGeometry(8, 2, 100, 16);
+            // Larger Torus Knot (Mid frequencies)
+            const torusKnotGeometry = new THREE.TorusKnotGeometry(20, 5, 100, 16); // Larger torus knot
             const torusKnotMaterial = new THREE.MeshStandardMaterial({ color: 0xff8800, wireframe: true });
             torusKnot = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
             scene.add(torusKnot);
 
-            // Geometry: Organic Fractal Shape
-            const fractalGeometry = new THREE.IcosahedronGeometry(10, 2); // Fractal-like shape
+            // Larger Fractal-like Shape
+            const fractalGeometry = new THREE.IcosahedronGeometry(18, 2); // Larger fractal shape
             const fractalMaterial = new THREE.MeshStandardMaterial({ color: 0x0077ff, wireframe: true });
             fractalShape = new THREE.Mesh(fractalGeometry, fractalMaterial);
             fractalShape.position.set(0, 0, 0);
             scene.add(fractalShape);
 
-            // Particle System
-            const particleCount = 4000;
+            // Larger Particle System
+            const particleCount = 6000;
             const particles = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 200;
+                positions[i] = (Math.random() - 0.5) * 300; // More space for particles
             }
             particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
             const particleMaterial = new THREE.PointsMaterial({
                 color: 0xffffff,
-                size: 2,
+                size: 3,
                 transparent: true,
                 blending: THREE.AdditiveBlending,
             });
@@ -82,11 +82,11 @@
             scene.add(particleSystem);
 
             // Dynamic Moving Lights
-            light1 = new THREE.PointLight(0xff0000, 2, 100);
+            light1 = new THREE.PointLight(0xff0000, 2, 200);
             light1.position.set(0, 50, 50);
             scene.add(light1);
 
-            light2 = new THREE.PointLight(0x00ff00, 2, 100);
+            light2 = new THREE.PointLight(0x00ff00, 2, 200);
             light2.position.set(50, 0, 50);
             scene.add(light2);
         }
@@ -136,8 +136,8 @@
                 particleSystem.material.color.setHSL(highFreq, 1.0, 0.7);
 
                 // Moving lights with trailing effect
-                light1.position.x = Math.sin(midFreq * Math.PI * 2) * 40;
-                light2.position.y = Math.cos(highFreq * Math.PI * 2) * 40;
+                light1.position.x = Math.sin(midFreq * Math.PI * 2) * 60; // Extend light range
+                light2.position.y = Math.cos(highFreq * Math.PI * 2) * 60;
 
                 // Background color inversions
                 const bass = dataArray[20] / 255;
