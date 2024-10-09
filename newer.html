@@ -3,20 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGPU Funky Visualizer</title>
+    <title>WebGPU Visualizer with Framer Motion UI</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+        }
+        #slider {
+            width: 200px;
+        }
     </style>
 </head>
 <body>
+    <div id="ui">
+        <input id="slider" type="range" min="1" max="100" value="50">
+    </div>
+
     <script type="module">
+        import { motion } from 'https://cdn.jsdelivr.net/npm/framer-motion/+esm';
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.js';
         import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.min.js';
 
         let scene, camera, renderer;
-        let analyser, dataArray, torusKnot, octahedron, spiral, particleSystem;
+        let analyser, dataArray, torusKnot, particleSystem;
         let audioContext, source;
+        let sensitivity = 50;
+
+        // Framer Motion animated slider
+        const slider = document.querySelector("#slider");
+        slider.addEventListener("input", (e) => {
+            sensitivity = e.target.value;
+        });
 
         async function init() {
             if (!navigator.gpu) {
@@ -32,7 +53,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Add multiple funky geometries
             createFunkyGeometry();
 
             try {
@@ -48,28 +68,14 @@
         }
 
         function createFunkyGeometry() {
-            // Funky Torus Knot (Mid frequencies)
+            // Torus Knot
             const torusKnotGeometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
             const torusKnotMaterial = new THREE.MeshBasicMaterial({ color: 0xff8800, wireframe: true });
             torusKnot = new THREE.Mesh(torusKnotGeometry, torusKnotMaterial);
             scene.add(torusKnot);
 
-            // Funky Octahedron (Low frequencies)
-            const octahedronGeometry = new THREE.OctahedronGeometry(10);
-            const octahedronMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff99, wireframe: true });
-            octahedron = new THREE.Mesh(octahedronGeometry, octahedronMaterial);
-            octahedron.position.set(-25, 0, 0);
-            scene.add(octahedron);
-
-            // Spiral geometry (Extra funky shape)
-            const spiralGeometry = new THREE.TorusGeometry(5, 2, 30, 100, Math.PI * 2);
-            const spiralMaterial = new THREE.MeshBasicMaterial({ color: 0x0055ff, wireframe: true });
-            spiral = new THREE.Mesh(spiralGeometry, spiralMaterial);
-            spiral.position.set(25, 0, 0);
-            scene.add(spiral);
-
             // Particle System
-            const particleCount = 3000;
+            const particleCount = 2000;
             const particles = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount * 3; i++) {
@@ -117,30 +123,13 @@
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
-                // Torus Knot: Mid frequencies
-                torusKnot.rotation.x += 0.02;
-                torusKnot.rotation.y += 0.02;
-                torusKnot.scale.set(1 + (dataArray[100] / 50), 1 + (dataArray[100] / 50), 1);
+                // Use sensitivity slider to control response
+                const midFreq = dataArray[100] / 255 * sensitivity / 100;
+                torusKnot.rotation.x += 0.01 + midFreq * 0.1;
+                torusKnot.rotation.y += 0.01 + midFreq * 0.1;
 
-                // Octahedron: Low frequencies
-                octahedron.rotation.x += 0.01;
-                octahedron.rotation.z += 0.01;
-                octahedron.scale.set(1 + (dataArray[20] / 25), 1 + (dataArray[20] / 25), 1);
-
-                // Spiral: High frequencies
-                spiral.rotation.x += 0.01;
-                spiral.rotation.z += 0.01;
-                spiral.scale.set(1 + (dataArray[150] / 50), 1 + (dataArray[150] / 50), 1);
-
-                // Particle system reacting to high frequencies
-                particleSystem.material.size = (dataArray[150] / 255) * 5;
+                particleSystem.material.size = (dataArray[150] / 255) * sensitivity / 10;
                 particleSystem.material.color.setHSL(dataArray[150] / 255, 1.0, 0.5);
-
-                // Background color reacting to audio
-                const bass = dataArray[20] / 255;
-                const treble = dataArray[150] / 255;
-                const bgColor = new THREE.Color(`hsl(${bass * 360}, 100%, ${50 + treble * 50}%)`);
-                renderer.setClearColor(bgColor, 1);
             }
 
             renderer.render(scene, camera);
