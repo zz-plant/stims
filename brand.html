@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Improved Audio-Reactive Visualizer</title>
+    <title>Sensory-Integrated Audio Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -11,39 +10,41 @@
             height: 100%;
             background-color: black;
             touch-action: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
+        #startButton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 1;
         }
     </style>
 </head>
 <body>
     <canvas id="glCanvas"></canvas>
-    <button id="startAudio" style="position: absolute; top: 10px; left: 10px;">Start Audio</button>
+    <button id="startButton">Start Audio Visualization</button>
 
     <script>
-        const canvas = document.getElementById("glCanvas");
-        const gl = canvas.getContext("webgl");
+        const canvas = document.getElementById('glCanvas');
+        const gl = canvas.getContext('webgl');
 
         if (!gl) {
-            alert("Unable to initialize WebGL. Your browser may not support it.");
-            throw new Error("WebGL not supported");
+            alert('WebGL not supported in this browser.');
+            throw new Error('WebGL not supported');
         }
 
-        // Resize the canvas
+        // Resize canvas to fit the window
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
+        // Vertex shader source code
         const vertexShaderSource = `
             attribute vec2 a_position;
             varying vec2 v_uv;
@@ -53,41 +54,92 @@
             }
         `;
 
+        // Fragment shader source code
         const fragmentShaderSource = `
-            precision mediump float;
+            precision highp float;
             varying vec2 v_uv;
             uniform float u_time;
-            uniform float u_audioLowFreq;
-            uniform float u_audioMidFreq;
-            uniform float u_audioHighFreq;
+            uniform vec2 u_resolution;
+            uniform float u_bass;
+            uniform float u_mid;
+            uniform float u_treble;
+            uniform vec2 u_mouse;
+            uniform vec2 u_touch;
+            uniform vec3 u_orientation;
+
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            float noise(vec2 st) {
+                vec2 i = floor(st);
+                vec2 f = fract(st);
+
+                float a = random(i);
+                float b = random(i + vec2(1.0, 0.0));
+                float c = random(i + vec2(0.0, 1.0));
+                float d = random(i + vec2(1.0, 1.0));
+
+                vec2 u = f * f * (3.0 - 2.0 * f);
+
+                return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+            }
 
             void main() {
-                vec2 uv = v_uv - 0.5;
-                uv *= 2.0;
+                vec2 uv = v_uv;
+                vec2 centeredUv = uv - 0.5;
 
-                // Dynamic color transitions based on audio frequencies
-                vec3 color = vec3(
-                    0.5 + 0.5 * sin(u_time + uv.x * 10.0 + u_audioLowFreq * 10.0),
-                    0.5 + 0.5 * cos(u_time + uv.y * 20.0 + u_audioMidFreq * 15.0),
-                    0.5 + 0.5 * sin(u_time + uv.x * 5.0 + uv.y * 5.0 + u_audioHighFreq * 20.0)
-                );
+                float time = u_time * 0.5;
 
-                // Adding visual bloom effect
-                float bloom = exp(-10.0 * length(uv) * u_audioMidFreq);
-                color += vec3(bloom);
+                // Apply device orientation to distort the UV coordinates
+                centeredUv += u_orientation.xy * 0.05;
+
+                // Generate noise patterns
+                float n = noise(centeredUv * 5.0 + time);
+                float n2 = noise(centeredUv * 10.0 - time);
+
+                // Create dynamic color patterns based on audio frequencies
+                float bassEffect = u_bass * 2.0;
+                float midEffect = u_mid * 2.0;
+                float trebleEffect = u_treble * 2.0;
+
+                vec3 color = vec3(0.0);
+
+                // Apply bass effect
+                color.r += smoothstep(0.4, 0.6, n + bassEffect * 0.5);
+
+                // Apply mid effect
+                color.g += smoothstep(0.3, 0.7, n2 + midEffect * 0.5);
+
+                // Apply treble effect
+                color.b += smoothstep(0.2, 0.8, n + trebleEffect * 0.5);
+
+                // Add radial gradient
+                float radius = length(centeredUv) * 2.0;
+                color *= smoothstep(1.0, 0.0, radius);
+
+                // Add mouse interaction effect
+                float mouseDist = length(centeredUv - (u_mouse - 0.5));
+                color += vec3(0.2 / (mouseDist + 0.1));
+
+                // Add touch interaction effect
+                float touchDist = length(centeredUv - (u_touch - 0.5));
+                color += vec3(0.2 / (touchDist + 0.1));
 
                 gl_FragColor = vec4(color, 1.0);
             }
         `;
 
+        // Compile shader and create program
         function createShader(gl, type, source) {
             const shader = gl.createShader(type);
             gl.shaderSource(shader, source);
             gl.compileShader(shader);
+
             if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error(gl.getShaderInfoLog(shader));
+                console.error('Shader compile failed:', gl.getShaderInfoLog(shader));
                 gl.deleteShader(shader);
-                return null;
+                throw new Error('Shader compile failed');
             }
             return shader;
         }
@@ -95,104 +147,168 @@
         const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
         const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
 
+        // Create and link the program
         const program = gl.createProgram();
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
         gl.linkProgram(program);
+
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error(gl.getProgramInfoLog(program));
+            console.error('Program link failed:', gl.getProgramInfoLog(program));
             gl.deleteProgram(program);
-            throw new Error("Program failed to link");
+            throw new Error('Program link failed');
         }
+
         gl.useProgram(program);
 
+        // Set up geometry data (full-screen quad)
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         const positions = [
-            -1.0, -1.0,
-             1.0, -1.0,
-            -1.0,  1.0,
-            -1.0,  1.0,
-             1.0, -1.0,
-             1.0,  1.0
+            -1, -1, // Bottom left
+             1, -1, // Bottom right
+            -1,  1, // Top left
+            -1,  1, // Top left
+             1, -1, // Bottom right
+             1,  1, // Top right
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
-        const positionAttributeLocation = gl.getAttribLocation(program        , "a_position");
-        gl.enableVertexAttribArray(positionAttributeLocation);
-        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+        const positionLocation = gl.getAttribLocation(program, 'a_position');
+        gl.enableVertexAttribArray(positionLocation);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-        const timeUniformLocation = gl.getUniformLocation(program, "u_time");
-        const audioLowFreqUniformLocation = gl.getUniformLocation(program, "u_audioLowFreq");
-        const audioMidFreqUniformLocation = gl.getUniformLocation(program, "u_audioMidFreq");
-        const audioHighFreqUniformLocation = gl.getUniformLocation(program, "u_audioHighFreq");
+        // Get uniform locations
+        const timeLocation = gl.getUniformLocation(program, 'u_time');
+        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+        const bassLocation = gl.getUniformLocation(program, 'u_bass');
+        const midLocation = gl.getUniformLocation(program, 'u_mid');
+        const trebleLocation = gl.getUniformLocation(program, 'u_treble');
+        const mouseLocation = gl.getUniformLocation(program, 'u_mouse');
+        const touchLocation = gl.getUniformLocation(program, 'u_touch');
+        const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
 
-        let time = 0.0;
-        let audioLowFreq = 0.0;
-        let audioMidFreq = 0.0;
-        let audioHighFreq = 0.0;
+        // Set static uniforms
+        gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
 
-        let analyser;
+        // Initialize variables
+        let startTime = null;
+        let bass = 0.0;
+        let mid = 0.0;
+        let treble = 0.0;
+        let mousePosition = [0.5, 0.5];
+        let touchPosition = [0.5, 0.5];
+        let audioAnalyser = null;
+        let lastVibrateTime = 0;
+        let orientation = [0.0, 0.0, 0.0];
 
-        // Function to start capturing audio and analyze it
-        async function setupAudio() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new AudioContext();
+        // Audio setup
+        function setupAudio() {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const source = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                source.connect(analyser);
-
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-                function analyzeAudioData() {
-                    analyser.getByteFrequencyData(dataArray);
-
-                    // Extract different frequency bands
-                    const lowFreqData = dataArray.slice(0, 32).reduce((a, b) => a + b, 0) / 32;
-                    const midFreqData = dataArray.slice(32, 128).reduce((a, b) => a + b, 0) / 96;
-                    const highFreqData = dataArray.slice(128).reduce((a, b) => a + b, 0) / (dataArray.length - 128);
-
-                    // Normalize the values
-                    audioLowFreq = lowFreqData / 256.0;
-                    audioMidFreq = midFreqData / 256.0;
-                    audioHighFreq = highFreqData / 256.0;
-
-                    requestAnimationFrame(analyzeAudioData);
-                }
-
-                analyzeAudioData();
-            } catch (err) {
-                console.error("Error capturing audio: ", err);
-                alert("Unable to access audio. Please allow microphone access and refresh the page.");
-            }
+                audioAnalyser = audioContext.createAnalyser();
+                audioAnalyser.fftSize = 256;
+                source.connect(audioAnalyser);
+            }).catch(err => {
+                alert('Microphone access denied.');
+                console.error('Error accessing microphone:', err);
+            });
         }
 
-        document.getElementById("startAudio").addEventListener("click", () => {
+        // Start audio on button click
+        const startButton = document.getElementById('startButton');
+        startButton.addEventListener('click', () => {
             setupAudio();
-            document.getElementById("startAudio").style.display = "none"; // Hide the button after starting audio
+            startButton.style.display = 'none';
         });
 
-        function render() {
-            time += 0.02;
+        // Handle mouse movement
+        canvas.addEventListener('mousemove', event => {
+            const rect = canvas.getBoundingClientRect();
+            mousePosition = [
+                (event.clientX - rect.left) / canvas.width,
+                1.0 - (event.clientY - rect.top) / canvas.height,
+            ];
+        });
 
-            // Set the uniforms for the shader
-            gl.uniform1f(timeUniformLocation, time);
-            gl.uniform1f(audioLowFreqUniformLocation, audioLowFreq);
-            gl.uniform1f(audioMidFreqUniformLocation, audioMidFreq);
-            gl.uniform1f(audioHighFreqUniformLocation, audioHighFreq);
+        // Handle touch movement
+        canvas.addEventListener('touchmove', event => {
+            event.preventDefault();
+            const touch = event.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            touchPosition = [
+                (touch.clientX - rect.left) / canvas.width,
+                1.0 - (touch.clientY - rect.top) / canvas.height,
+            ];
+        }, { passive: false });
 
-            // Clear the canvas and draw the scene
-            gl.clearColor(0, 0, 0, 1);
+        // Handle device orientation
+        window.addEventListener('deviceorientation', event => {
+            const gamma = event.gamma || 0; // Left to right tilt in degrees [-90,90]
+            const beta = event.beta || 0;   // Front to back tilt in degrees [-180,180]
+            const alpha = event.alpha || 0; // Compass direction
+
+            // Normalize the orientation values
+            orientation = [
+                gamma / 90.0,  // X-axis
+                beta / 180.0,  // Y-axis
+                alpha / 360.0  // Z-axis
+            ];
+        });
+
+        // Render loop
+        function render(currentTime) {
+            if (!startTime) startTime = currentTime;
+            const elapsedTime = (currentTime - startTime) / 1000.0;
+
+            // Update uniforms
+            gl.uniform1f(timeLocation, elapsedTime);
+            gl.uniform2f(mouseLocation, mousePosition[0], mousePosition[1]);
+            gl.uniform2f(touchLocation, touchPosition[0], touchPosition[1]);
+            gl.uniform3f(orientationLocation, orientation[0], orientation[1], orientation[2]);
+
+            if (audioAnalyser) {
+                const bufferLength = audioAnalyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                audioAnalyser.getByteFrequencyData(dataArray);
+
+                // Divide frequency data into bass, mid, and treble
+                const bassData = dataArray.slice(0, bufferLength / 4);
+                const midData = dataArray.slice(bufferLength / 4, bufferLength / 2);
+                const trebleData = dataArray.slice(bufferLength / 2);
+
+                // Calculate average values
+                const bassAvg = bassData.reduce((a, b) => a + b, 0) / bassData.length / 255.0;
+                const midAvg = midData.reduce((a, b) => a + b, 0) / midData.length / 255.0;
+                const trebleAvg = trebleData.reduce((a, b) => a + b, 0) / trebleData.length / 255.0;
+
+                // Smooth the values
+                bass += (bassAvg - bass) * 0.1;
+                mid += (midAvg - mid) * 0.1;
+                treble += (trebleAvg - treble) * 0.1;
+
+                gl.uniform1f(bassLocation, bass);
+                gl.uniform1f(midLocation, mid);
+                gl.uniform1f(trebleLocation, treble);
+
+                // Haptic feedback based on bass levels
+                const currentTimeMs = performance.now();
+                if (bass > 0.5 && currentTimeMs - lastVibrateTime > 500) {
+                    if (navigator.vibrate) {
+                        navigator.vibrate(100);
+                    }
+                    lastVibrateTime = currentTimeMs;
+                }
+            }
+
+            // Clear and draw
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
             requestAnimationFrame(render);
         }
-
         requestAnimationFrame(render);
-
     </script>
 </body>
 </html>
