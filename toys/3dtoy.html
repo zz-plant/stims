@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Toy</title>
+    <style>
+        body, html { margin: 0; overflow: hidden; height: 100%; background-color: black; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="toy-canvas"></canvas>
+
+    <script type="module">
+        import { initScene } from './assets/js/core/scene-setup.js';
+        import { initCamera } from './assets/js/core/camera-setup.js';
+        import { initRenderer } from './assets/js/core/renderer-setup.js';
+        import { initLighting, initAmbientLight } from './assets/js/lighting/lighting-setup.js';
+        
+        let scene, camera, renderer, torus;
+
+        // Initialize the toy using shared assets
+        function init() {
+            const canvas = document.getElementById('toy-canvas');
+
+            // Set up scene, camera, renderer
+            scene = initScene({ backgroundColor: 0x101010 });
+            camera = initCamera({ position: { x: 0, y: 0, z: 50 } });
+            renderer = initRenderer(canvas, { antialias: true });
+
+            // Add lighting
+            initLighting(scene, { color: 0xffffff, intensity: 1 });
+            initAmbientLight(scene, { color: 0x222222, intensity: 0.5 });
+
+            // Create a torus geometry and add it to the scene
+            const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+            const material = new THREE.MeshStandardMaterial({ color: 0x0077ff });
+            torus = new THREE.Mesh(geometry, material);
+            scene.add(torus);
+
+            animate();
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate the torus
+            torus.rotation.x += 0.01;
+            torus.rotation.y += 0.01;
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
