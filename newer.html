@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL Audio Visualizer (Chrome Android Compatible)</title>
+    <title>WebGL Audio Visualizer (Mic Input)</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
     </style>
 </head>
@@ -14,14 +14,16 @@
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
 
         let scene, camera, renderer;
-        let analyser, dataArray, particleSystem, lowLayer, midLayer, highLayer;
+        let analyser, dataArray, particleSystem, lowLayer, midLayer;
         let audioContext, source;
 
         async function init() {
+            // Set up scene and camera
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 50;
 
+            // Set up WebGL renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
@@ -29,7 +31,7 @@
             // Create visual layers
             createVisualLayers();
 
-            // Access microphone
+            // Access the microphone and process audio
             try {
                 await getMicrophoneInput();
             } catch (error) {
@@ -37,49 +39,36 @@
                 console.error('Error accessing microphone:', error);
             }
 
+            // Handle window resize
             window.addEventListener('resize', onWindowResize, false);
+
+            // Start animation loop
             animate();
         }
 
         function createVisualLayers() {
-            // Low Frequency Layer (Pulsating Circles)
+            // Low Frequency Layer (Pulsating Circle)
             const lowGeometry = new THREE.CircleGeometry(10, 32);
             const lowMaterial = new THREE.MeshBasicMaterial({ color: 0xff2222, transparent: true, opacity: 0.6 });
             lowLayer = new THREE.Mesh(lowGeometry, lowMaterial);
             scene.add(lowLayer);
 
-            // Mid Frequency Layer (Swirling Lines)
+            // Mid Frequency Layer (Rotating Torus)
             const midGeometry = new THREE.TorusGeometry(20, 1, 16, 100);
             const midMaterial = new THREE.MeshBasicMaterial({ color: 0x22ff22, wireframe: true });
             midLayer = new THREE.Mesh(midGeometry, midMaterial);
             scene.add(midLayer);
-
-            // High Frequency Layer (Particles)
-            const particleCount = 1000;
-            const particles = new THREE.BufferGeometry();
-            const positions = new Float32Array(particleCount * 3);
-            for (let i = 0; i < particleCount * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 100;
-            }
-            particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-            const particleMaterial = new THREE.PointsMaterial({
-                color: 0x2222ff,
-                size: 1.5,
-                transparent: true,
-                blending: THREE.AdditiveBlending,
-            });
-            particleSystem = new THREE.Points(particles, particleMaterial);
-            scene.add(particleSystem);
         }
 
         async function getMicrophoneInput() {
+            // Create audio context and analyser
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-            // Request microphone access
             try {
+                // Request microphone input
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 console.log("Microphone access granted.");
+                
+                // Set up audio analyser
                 source = audioContext.createMediaStreamSource(stream);
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 256;
@@ -101,26 +90,25 @@
         function animate() {
             requestAnimationFrame(animate);
 
+            // Check if audio is being captured
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
-                // Low Layer - Pulsating
+                // Low Layer: Pulsating
                 lowLayer.scale.set(1 + dataArray[20] / 255, 1 + dataArray[20] / 255, 1);
                 lowLayer.material.color.setHSL(dataArray[20] / 255, 1.0, 0.5);
 
-                // Mid Layer - Rotating Swirls
+                // Mid Layer: Rotating
                 midLayer.rotation.x += 0.01 * (dataArray[100] / 255);
                 midLayer.rotation.y += 0.01 * (dataArray[100] / 255);
                 midLayer.material.color.setHSL(dataArray[100] / 255, 0.5, 0.5);
-
-                // High Layer - Particle Movement
-                particleSystem.material.size = (dataArray[150] / 255) * 5;
-                particleSystem.material.color.setHSL(dataArray[150] / 255, 1.0, 0.5);
             }
 
+            // Render the scene
             renderer.render(scene, camera);
         }
 
+        // Initialize the visualizer
         init();
     </script>
 </body>
