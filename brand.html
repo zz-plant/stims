@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improved Audio-Reactive Visualizer</title>
+    <style>
+        body, html {
+            margin: 0;
+            overflow: hidden;
+            height: 100%;
+            background-color: black;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="glCanvas"></canvas>
+    <button id="startAudio" style="position: absolute; top: 10px; left: 10px;">Start Audio</button>
+
+    <script>
+        const canvas = document.getElementById("glCanvas");
+        const gl = canvas.getContext("webgl");
+
+        if (!gl) {
+            alert("Unable to initialize WebGL. Your browser may not support it.");
+            throw new Error("WebGL not supported");
+        }
+
+        // Resize the canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const vertexShaderSource = `
+            attribute vec2 a_position;
+            varying vec2 v_uv;
+            void main() {
+                v_uv = a_position * 0.5 + 0.5;
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
+
+        const fragmentShaderSource = `
+            precision mediump float;
+            varying vec2 v_uv;
+            uniform float u_time;
+            uniform float u_audioLowFreq;
+            uniform float u_audioMidFreq;
+            uniform float u_audioHighFreq;
+
+            void main() {
+                vec2 uv = v_uv - 0.5;
+                uv *= 2.0;
+
+                // Dynamic color transitions based on audio frequencies
+                vec3 color = vec3(
+                    0.5 + 0.5 * sin(u_time + uv.x * 10.0 + u_audioLowFreq * 10.0),
+                    0.5 + 0.5 * cos(u_time + uv.y * 20.0 + u_audioMidFreq * 15.0),
+                    0.5 + 0.5 * sin(u_time + uv.x * 5.0 + uv.y * 5.0 + u_audioHighFreq * 20.0)
+                );
+
+                // Adding visual bloom effect
+                float bloom = exp(-10.0 * length(uv) * u_audioMidFreq);
+                color += vec3(bloom);
+
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error(gl.getProgramInfoLog(program));
+            gl.deleteProgram(program);
+            throw new Error("Program failed to link");
+        }
+        gl.useProgram(program);
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        const positions = [
+            -1.0, -1.0,
+             1.0, -1.0,
+            -1.0,  1.0,
+            -1.0,  1.0,
+             1.0, -1.0,
+             1.0,  1.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+        const positionAttributeLocation = gl.getAttribLocation(program        , "a_position");
+        gl.enableVertexAttribArray(positionAttributeLocation);
+        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+
+        const timeUniformLocation = gl.getUniformLocation(program, "u_time");
+        const audioLowFreqUniformLocation = gl.getUniformLocation(program, "u_audioLowFreq");
+        const audioMidFreqUniformLocation = gl.getUniformLocation(program, "u_audioMidFreq");
+        const audioHighFreqUniformLocation = gl.getUniformLocation(program, "u_audioHighFreq");
+
+        let time = 0.0;
+        let audioLowFreq = 0.0;
+        let audioMidFreq = 0.0;
+        let audioHighFreq = 0.0;
+
+        let analyser;
+
+        // Function to start capturing audio and analyze it
+        async function setupAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                function analyzeAudioData() {
+                    analyser.getByteFrequencyData(dataArray);
+
+                    // Extract different frequency bands
+                    const lowFreqData = dataArray.slice(0, 32).reduce((a, b) => a + b, 0) / 32;
+                    const midFreqData = dataArray.slice(32, 128).reduce((a, b) => a + b, 0) / 96;
+                    const highFreqData = dataArray.slice(128).reduce((a, b) => a + b, 0) / (dataArray.length - 128);
+
+                    // Normalize the values
+                    audioLowFreq = lowFreqData / 256.0;
+                    audioMidFreq = midFreqData / 256.0;
+                    audioHighFreq = highFreqData / 256.0;
+
+                    requestAnimationFrame(analyzeAudioData);
+                }
+
+                analyzeAudioData();
+            } catch (err) {
+                console.error("Error capturing audio: ", err);
+                alert("Unable to access audio. Please allow microphone access and refresh the page.");
+            }
+        }
+
+        document.getElementById("startAudio").addEventListener("click", () => {
+            setupAudio();
+            document.getElementById("startAudio").style.display = "none"; // Hide the button after starting audio
+        });
+
+        function render() {
+            time += 0.02;
+
+            // Set the uniforms for the shader
+            gl.uniform1f(timeUniformLocation, time);
+            gl.uniform1f(audioLowFreqUniformLocation, audioLowFreq);
+            gl.uniform1f(audioMidFreqUniformLocation, audioMidFreq);
+            gl.uniform1f(audioHighFreqUniformLocation, audioHighFreq);
+
+            // Clear the canvas and draw the scene
+            gl.clearColor(0, 0, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+
+    </script>
+</body>
+</html>
