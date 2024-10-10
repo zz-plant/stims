@@ -38,25 +38,25 @@
         const camera = new pc.Entity();
         camera.addComponent("camera", {
             clearColor: new pc.Color(0, 0, 0),
-            fov: 60
+            fov: 70 // Wider FOV for a more immersive experience
         });
-        camera.setLocalPosition(0, 0.5, 20); 
+        camera.setLocalPosition(0, 1, 25); // Lowered and adjusted camera height for dynamic perspective
         app.root.addChild(camera);
 
-        // Create directional light
+        // Create directional light for better depth
         const light1 = new pc.Entity();
         light1.addComponent("light", {
             type: "directional",
             color: new pc.Color(1, 1, 0.9),
-            intensity: 1.5,
-            shadowDistance: 50
+            intensity: 2.0,
+            shadowDistance: 60
         });
-        light1.setLocalEulerAngles(30, 30, 0);
+        light1.setLocalEulerAngles(45, 45, 0);
         app.root.addChild(light1);
 
         // Object types and arrays
         const sceneObjects = [];
-        const objectDistance = 15;
+        const objectDistance = 25; // Optimized spacing for better visual cohesion
         const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge'];
 
         // Create horizon or skybox for the background
@@ -65,8 +65,8 @@
             horizon.addComponent("model", {
                 type: "sphere"
             });
-            horizon.setLocalScale(100, 50, 100);
-            horizon.setLocalPosition(0, -50, -300);
+            horizon.setLocalScale(150, 75, 150);
+            horizon.setLocalPosition(0, -75, -400);
             horizon.model.material = new pc.StandardMaterial();
             horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.2);
             horizon.model.material.update();
@@ -85,22 +85,24 @@
                 object.addComponent("model", { type: "cylinder" });
             } else if (type === 'lampPost') {
                 object.addComponent("model", { type: "cylinder" });
-                object.setLocalScale(0.5, 6, 0.5);
+                object.setLocalScale(0.5, 8, 0.5);
             } else if (type === 'bridge') {
                 object.addComponent("model", { type: "box" });
-                object.setLocalScale(10, 1, 2);
+                object.setLocalScale(12, 1, 3);
             } else {
                 object.addComponent("model", { type: "sphere" });
             }
 
-            const scaleFactor = (type === 'building') ? (Math.random() * 2.5 + 5) : (Math.random() * 2 + 3);
+            // Set position and material
+            const scaleFactor = (type === 'building') ? (Math.random() * 3 + 7) : (Math.random() * 2 + 4);
             object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
             object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
 
+            // Use PBR for realistic material properties
             const material = new pc.StandardMaterial();
             material.useMetalness = true;
-            material.metalness = 0.3;
-            material.gloss = 0.5;
+            material.metalness = 0.4;
+            material.gloss = 0.6;
             material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
             material.update();
             object.model.material = material;
@@ -113,7 +115,7 @@
         // Populate the scene with repeating structure patterns
         function populateScene() {
             const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost'];
-            for (let i = 0; i < 300; i++) {
+            for (let i = 0; i < 500; i++) { // Increased number of objects for a richer scene
                 const type = repeatingPattern[i % repeatingPattern.length];
                 createObject(-20, -i * objectDistance, type, 1);
                 createObject(-10, -i * objectDistance, type, 1);
@@ -127,12 +129,12 @@
 
         // Move objects forward at a constant speed with optimized parallax effect
         function updateScene(dt) {
-            camera.translateLocal(0, 0, -dt * 8);
+            camera.translateLocal(0, 0, -dt * 12); // Slightly faster movement for more dynamic visuals
             sceneObjects.forEach((obj) => {
                 const depthFactor = obj.userData.depthFactor || 1;
-                obj.translateLocal(0, 0, dt * depthFactor * 20);
+                obj.translateLocal(0, 0, dt * depthFactor * 25); // Adjusted speed for better synchronization
 
-                if (obj.getLocalPosition().z > camera.getLocalPosition().z + 50) {
+                if (obj.getLocalPosition().z > camera.getLocalPosition().z + 100) {
                     obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500);
                 }
             });
@@ -149,7 +151,7 @@
                     const source = audioContext.createMediaStreamSource(stream);
 
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 128;
+                    analyser.fftSize = 256; // Increased FFT resolution for more detailed audio analysis
 
                     source.connect(analyser);
                     patternRecognizer = new PatternRecognizer(audioContext, analyser);
@@ -170,9 +172,9 @@
                 if (predictedPattern) {
                     sceneObjects.forEach((obj, i) => {
                         const freq = predictedPattern[i % predictedPattern.length] / 255;
-                        obj.setLocalScale(freq * 5 + 2, freq * 6 + 2, freq * 5 + 2);
-                        obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq);
-                        obj.rotate(0, freq * 1.5, 0);
+                        obj.setLocalScale(freq * 7 + 3, freq * 8 + 3, freq * 7 + 3); // More impactful scaling effect
+                        obj.model.material.diffuse = new pc.Color(freq, 0.6, 1 - freq); // Color changes are more pronounced
+                        obj.rotate(0, freq * 2.0, 0); // Enhanced rotation for added dynamics
                     });
                 }
             }
