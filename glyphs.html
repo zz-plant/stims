@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Star Guitar-like Visualizer</title>
+    <title>Improved Star Guitar-like Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -31,30 +31,31 @@
         app.scene.skyboxMip = 0;
         app.scene.ambientLight = new pc.Color(0.1, 0.1, 0.1);
 
-        // Create camera that moves forward through the scene (train-like motion)
+        // Create camera with smooth forward motion (train-like view)
         const camera = new pc.Entity();
         camera.addComponent("camera", {
             clearColor: new pc.Color(0, 0, 0),
-            fov: 75
+            fov: 85 // Slightly wider field of view for a better perspective
         });
-        camera.setLocalPosition(0, 2, 50); // Position camera for better perspective
+        camera.setLocalPosition(0, 2, 60); // Move camera back for a wider view
         app.root.addChild(camera);
 
-        // Create light
+        // Create light with long shadows
         const light1 = new pc.Entity();
         light1.addComponent("light", {
             type: "directional",
-            color: new pc.Color(1, 1, 1),
-            intensity: 1.5
+            color: new pc.Color(1, 1, 0.9),
+            intensity: 2, // Strong directional light to create long shadows
+            shadowDistance: 40
         });
-        light1.setLocalEulerAngles(45, 30, 0);
+        light1.setLocalEulerAngles(30, 30, 0); // Angle the light to simulate sunlight
         app.root.addChild(light1);
 
         // Scene Arrays for objects
         const sceneObjects = [];
         const objectDistance = 15; // Regularly spaced objects
 
-        // Horizon or skybox for a continuous background
+        // Horizon or skybox to simulate the background
         function createHorizon() {
             const horizon = new pc.Entity();
             horizon.addComponent("model", {
@@ -63,60 +64,64 @@
             horizon.setLocalScale(100, 50, 100);
             horizon.setLocalPosition(0, -50, -300);
             horizon.model.material = new pc.StandardMaterial();
-            horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.3); // Darker color for horizon
+            horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.2); // Darker for horizon effect
             horizon.model.material.update();
             app.root.addChild(horizon);
         }
 
         createHorizon();
 
-        // Object creator for buildings, poles, and abstract shapes
+        // Create object types: buildings, poles, and terrain-like structures
         function createObject(x, z, type) {
             const object = new pc.Entity();
             object.addComponent("model", {
-                type: type === 'box' ? "box" : "cylinder"
+                type: type === 'building' ? "box" : type === 'pole' ? "cylinder" : "box"
             });
 
-            // Use different shapes to simulate the variety in "Star Guitar"
-            if (type === 'box') {
-                object.setLocalScale(1.5, Math.random() * 3 + 2, 1.5); // Buildings
-            } else if (type === 'tree') {
-                object.setLocalScale(1.2, Math.random() * 3 + 2, 1.2); // Poles/trees
+            // Customize sizes for different types of objects
+            if (type === 'building') {
+                object.setLocalScale(3, Math.random() * 6 + 4, 3); // Taller buildings
+            } else if (type === 'pole') {
+                object.setLocalScale(0.5, Math.random() * 4 + 5, 0.5); // Slim poles
             } else {
-                object.setLocalScale(1, Math.random() * 4 + 1, 1); // Abstract shapes
+                object.setLocalScale(2, Math.random() * 3 + 1, 2); // Abstract terrain structures
             }
 
+            // Set object position and appearance
             object.setLocalPosition(x, 0, z);
+            object.model.material = new pc.StandardMaterial(); // Optional: Assign textures here
+            object.model.material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random()); // Random color for variety
+            object.model.material.update();
             app.root.addChild(object);
             sceneObjects.push(object);
         }
 
-        // Populate scene with objects passing regularly (train view effect)
+        // Populate the scene with different objects
         function populateScene() {
             for (let i = 0; i < 200; i++) {
-                const type = Math.random() > 0.5 ? 'box' : 'tree';
-                createObject(-8, -i * objectDistance, type); // Left side objects
-                createObject(8, -i * objectDistance, type);  // Right side objects
+                // Alternate between buildings, poles, and abstract shapes
+                createObject(-8, -i * objectDistance, 'building'); // Left side (buildings)
+                createObject(8, -i * objectDistance, 'pole');  // Right side (poles)
                 if (Math.random() > 0.6) {
-                    createObject(0, -i * objectDistance, 'abstract'); // Abstract shapes in the center
+                    createObject(0, -i * objectDistance, 'terrain'); // Center (terrain)
                 }
             }
         }
 
         populateScene();
 
-        // Smooth forward motion of the camera to emulate train movement
+        // Smooth forward movement for the camera and object recycling
         function updateScene(dt) {
-            camera.translateLocal(0, 0, -dt * 10); // Move forward continuously
+            camera.translateLocal(0, 0, -dt * 15); // Move forward smoothly
 
             sceneObjects.forEach((obj) => {
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z) {
-                    obj.translateLocal(0, 0, -3000); // Recycle objects to the front
+                    obj.translateLocal(0, 0, -3000); // Recycle objects when out of view
                 }
             });
         }
 
-        // Sync object appearance and movement with the audio beat
+        // Audio analysis for beat sync
         let audioContext, analyser, dataArray;
 
         function startMicCapture() {
@@ -139,14 +144,15 @@
                 });
         }
 
-        // Update object scales and subtle movement based on audio frequency
+        // Update objects' size and motion based on audio frequency
         function updateVisualizer(dt) {
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
                 sceneObjects.forEach((obj, i) => {
                     const freq = dataArray[i % dataArray.length] / 255;
-                    obj.setLocalScale(1.5, freq * 5 + 1.5, 1.5); // Adjust size based on beat
+                    obj.setLocalScale(2, freq * 8 + 2, 2); // Height variation based on frequency
+                    obj.translateLocal(0, freq * 0.2, 0); // Subtle movement based on beat
                 });
             }
 
