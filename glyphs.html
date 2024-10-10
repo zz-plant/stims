@@ -72,8 +72,8 @@
 
         createHorizon();
 
-        // Function to create structured objects based on the beat
-        function createObject(x, z, type) {
+        // Function to create structured objects with depth for parallax effect
+        function createObject(x, z, type, depthFactor) {
             const object = new pc.Entity();
 
             if (type === 'building') {
@@ -86,34 +86,41 @@
 
             // Adjust scale based on type
             const scaleFactor = (type === 'building') ? (Math.random() * 3 + 4) : (type === 'pole') ? (Math.random() * 2 + 5) : (Math.random() * 1 + 2);
-            object.setLocalScale(scaleFactor, scaleFactor, scaleFactor);
-            object.setLocalPosition(x, 0, z);
+            object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
+            object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
 
             // Set material colors for variety
             object.model.material = new pc.StandardMaterial();
             object.model.material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
             object.model.material.update();
 
+            object.userData = { depthFactor }; // Store the depth factor for parallax effect
             app.root.addChild(object);
             sceneObjects.push(object);
         }
 
-        // Populate the scene with repeating structure patterns (left, right, center objects)
+        // Populate the scene with repeating structure patterns (left, right, center objects) and depth factor
         function populateScene() {
             for (let i = 0; i < 100; i++) {
                 const type = structurePattern[i % structurePattern.length]; // Repeat pattern
-                createObject(-10, -i * objectDistance, type); // Left side
-                createObject(10, -i * objectDistance, type);  // Right side
-                createObject(0, -i * objectDistance, type);   // Center objects
+
+                const depthFactor = Math.random() * 0.5 + 0.5; // Objects further away have lower depth factor
+
+                createObject(-10, -i * objectDistance, type, depthFactor); // Left side
+                createObject(10, -i * objectDistance, type, depthFactor);  // Right side
+                createObject(0, -i * objectDistance, type, depthFactor);   // Center objects
             }
         }
 
         populateScene();
 
-        // Move objects forward at a constant speed
+        // Move objects forward at a constant speed with parallax effect
         function updateScene(dt) {
             sceneObjects.forEach((obj) => {
-                obj.translateLocal(0, 0, dt * 15); // Linear forward motion
+                const depthFactor = obj.userData.depthFactor || 1;
+                obj.translateLocal(0, 0, dt * depthFactor * 15); // Faster movement for foreground, slower for background
+
+                obj.rotate(0, dt * 10, 0); // Subtle rotation for objects
 
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z) {
                     obj.translateLocal(0, 0, -3000); // Recycle objects when out of view
@@ -131,7 +138,7 @@
                     const source = audioContext.createMediaStreamSource(stream);
 
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 64; // Adjusted for tighter frequency syncing
+                    analyser.fftSize = 128; // Increased for more frequency bins
                     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
                     source.connect(analyser);
@@ -141,6 +148,7 @@
                 })
                 .catch(function (err) {
                     console.error('Error accessing microphone: ' + err);
+                    alert('Please enable microphone access for the audio visualizer.');
                 });
         }
 
@@ -151,7 +159,8 @@
 
                 sceneObjects.forEach((obj, i) => {
                     const freq = dataArray[i % dataArray.length] / 255;
-                    obj.setLocalScale(freq * 5 + 1, freq * 5 + 1, freq * 5 + 1); // Adjust size based on frequency
+                    obj.setLocalScale(freq * 3 + 1, freq * 5 + 1, freq * 3 + 1); // Adjust size based on frequency
+                    obj.rotate(0, freq * 2, 0); // Subtle rotation based on beat
                 });
             }
 
