@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Defrag Visualizer</title>
+    <title>Defrag Sound-Reactive Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -54,37 +54,48 @@
                     x: j * blockWidth,
                     y: i * blockHeight,
                     color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                    isMoving: Math.random() > 0.5
+                    sizeModifier: 1.0
                 });
             }
         }
 
-        function shuffleBlocks() {
-            for (let i = blocks.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
+        let analyser;
+        let audioDataArray = [];
+
+        async function setupAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 64; // Small for faster reactions
+                audioDataArray = new Uint8Array(analyser.frequencyBinCount);
+                source.connect(analyser);
+                getAudioData();
+            } catch (err) {
+                console.error("Error capturing audio: ", err);
             }
         }
 
-        function moveBlocks() {
-            blocks.forEach(block => {
-                if (block.isMoving) {
-                    const direction = Math.random() > 0.5 ? 1 : -1;
-                    block.x += direction * blockWidth;
-                    block.y += direction * blockHeight;
-
-                    // Ensure blocks stay within bounds
-                    block.x = Math.max(0, Math.min(canvas.width - blockWidth, block.x));
-                    block.y = Math.max(0, Math.min(canvas.height - blockHeight, block.y));
-                }
-            });
+        function getAudioData() {
+            requestAnimationFrame(getAudioData);
+            analyser.getByteFrequencyData(audioDataArray);
         }
 
         function drawBlocks() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            blocks.forEach(block => {
+            blocks.forEach((block, index) => {
+                const frequency = audioDataArray[index % audioDataArray.length] / 255.0; // Normalize frequency
+                block.sizeModifier = frequency * 2; // Adjust block size based on frequency data
+
+                const colorMod = Math.floor(frequency * 360); // Adjust block color based on frequency data
+                block.color = `hsl(${colorMod}, 100%, 50%)`;
+
+                const adjustedWidth = blockWidth * block.sizeModifier;
+                const adjustedHeight = blockHeight * block.sizeModifier;
+
                 ctx.fillStyle = block.color;
-                ctx.fillRect(block.x, block.y, blockWidth, blockHeight);
+                ctx.fillRect(block.x, block.y, adjustedWidth, adjustedHeight);
             });
         }
 
@@ -98,13 +109,12 @@
         }
 
         function defragLoop() {
-            moveBlocks();
             drawBlocks();
             defragTextAnimation();
             requestAnimationFrame(defragLoop);
         }
 
-        setInterval(shuffleBlocks, 2000);
+        setupAudio();
         defragLoop();
     </script>
 </body>
