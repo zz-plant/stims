@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Improved Star Guitar-like Visualizer</title>
+    <title>Star Guitar-Inspired Visualizer with Refined Object Transitions</title>
     <style>
         body, html {
             margin: 0;
@@ -29,7 +29,7 @@
 
         // Set background color
         app.scene.skyboxMip = 0;
-        app.scene.ambientLight = new pc.Color(0.1, 0.1, 0.1);
+        app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1); // Darker ambient light for more contrast
 
         // Create camera with smooth forward motion (train-like view)
         const camera = new pc.Entity();
@@ -40,20 +40,20 @@
         camera.setLocalPosition(0, 2, 60); // Move camera back for a wider view
         app.root.addChild(camera);
 
-        // Create light with long shadows
+        // Create directional light with long shadows
         const light1 = new pc.Entity();
         light1.addComponent("light", {
             type: "directional",
             color: new pc.Color(1, 1, 0.9),
-            intensity: 2, // Strong directional light to create long shadows
-            shadowDistance: 40
+            intensity: 1.5, // Balanced light intensity
+            shadowDistance: 50
         });
-        light1.setLocalEulerAngles(30, 30, 0); // Angle the light to simulate sunlight
+        light1.setLocalEulerAngles(30, 30, 0); // Angled light for dramatic effect
         app.root.addChild(light1);
 
         // Scene Arrays for objects
         const sceneObjects = [];
-        const objectDistance = 15; // Regularly spaced objects
+        const objectDistance = 20; // Regularly spaced objects
 
         // Horizon or skybox to simulate the background
         function createHorizon() {
@@ -71,39 +71,47 @@
 
         createHorizon();
 
-        // Create object types: buildings, poles, and terrain-like structures
+        // Create object types: pyramids, cones, spheres, and boxes
         function createObject(x, z, type) {
             const object = new pc.Entity();
-            object.addComponent("model", {
-                type: type === 'building' ? "box" : type === 'pole' ? "cylinder" : "box"
-            });
 
-            // Customize sizes for different types of objects
-            if (type === 'building') {
-                object.setLocalScale(3, Math.random() * 6 + 4, 3); // Taller buildings
-            } else if (type === 'pole') {
-                object.setLocalScale(0.5, Math.random() * 4 + 5, 0.5); // Slim poles
+            if (type === 'pyramid') {
+                object.addComponent("model", { type: "cone" }); // Use cone for pyramid-like structure
+            } else if (type === 'cone') {
+                object.addComponent("model", { type: "cylinder" }); // Use cylinder for cone-like shape
+            } else if (type === 'sphere') {
+                object.addComponent("model", { type: "sphere" }); // Use sphere
             } else {
-                object.setLocalScale(2, Math.random() * 3 + 1, 2); // Abstract terrain structures
+                object.addComponent("model", { type: "box" }); // Default to box for buildings
             }
 
-            // Set object position and appearance
+            // Randomized scaling and color for variety
+            const scaleFactor = Math.random() * 3 + 1;
+            object.setLocalScale(scaleFactor, scaleFactor, scaleFactor);
             object.setLocalPosition(x, 0, z);
-            object.model.material = new pc.StandardMaterial(); // Optional: Assign textures here
-            object.model.material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random()); // Random color for variety
+
+            // Set random material colors for each object
+            object.model.material = new pc.StandardMaterial();
+            object.model.material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
             object.model.material.update();
+
             app.root.addChild(object);
             sceneObjects.push(object);
         }
 
-        // Populate the scene with different objects
+        // Populate the scene with different objects (pyramids, cones, spheres, boxes)
         function populateScene() {
             for (let i = 0; i < 200; i++) {
-                // Alternate between buildings, poles, and abstract shapes
-                createObject(-8, -i * objectDistance, 'building'); // Left side (buildings)
-                createObject(8, -i * objectDistance, 'pole');  // Right side (poles)
+                // Alternate between different object types
+                const typeOptions = ['pyramid', 'cone', 'sphere', 'box'];
+                const randomType = typeOptions[Math.floor(Math.random() * typeOptions.length)];
+
+                createObject(-8, -i * objectDistance, randomType); // Left side
+                createObject(8, -i * objectDistance, randomType);  // Right side
+
+                // Center objects with some randomness
                 if (Math.random() > 0.6) {
-                    createObject(0, -i * objectDistance, 'terrain'); // Center (terrain)
+                    createObject(0, -i * objectDistance, randomType);
                 }
             }
         }
@@ -115,6 +123,8 @@
             camera.translateLocal(0, 0, -dt * 15); // Move forward smoothly
 
             sceneObjects.forEach((obj) => {
+                obj.rotate(0, dt * 10, 0); // Subtle rotation for objects
+
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z) {
                     obj.translateLocal(0, 0, -3000); // Recycle objects when out of view
                 }
@@ -151,8 +161,8 @@
 
                 sceneObjects.forEach((obj, i) => {
                     const freq = dataArray[i % dataArray.length] / 255;
-                    obj.setLocalScale(2, freq * 8 + 2, 2); // Height variation based on frequency
-                    obj.translateLocal(0, freq * 0.2, 0); // Subtle movement based on beat
+                    obj.setLocalScale(freq * 5 + 1, freq * 5 + 1, freq * 5 + 1); // Height variation based on frequency
+                    obj.rotate(0, freq * 2, 0); // Subtle rotation based on beat
                 });
             }
 
