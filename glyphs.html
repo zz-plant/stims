@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Visualizer with Parallax, Perspective, and Beat Sync</title>
+    <title>Star Guitar-Inspired Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -31,29 +31,30 @@
         app.scene.skyboxMip = 0;
         app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1); // Darker ambient light for more contrast
 
-        // Create camera with smooth forward motion (train-like view)
+        // Create camera with smooth forward motion
         const camera = new pc.Entity();
         camera.addComponent("camera", {
             clearColor: new pc.Color(0, 0, 0),
-            fov: 85 // Slightly wider field of view for a better perspective
+            fov: 75 // Adjusted FOV for a more compressed look
         });
-        camera.setLocalPosition(0, 2, 60); // Move camera back for a wider view
+        camera.setLocalPosition(0, 2, 60); // Camera stays steady for consistent perspective
         app.root.addChild(camera);
 
-        // Create directional light with long shadows
+        // Create directional light for depth
         const light1 = new pc.Entity();
         light1.addComponent("light", {
             type: "directional",
             color: new pc.Color(1, 1, 0.9),
-            intensity: 1.5, // Balanced light intensity
+            intensity: 1.5,
             shadowDistance: 50
         });
-        light1.setLocalEulerAngles(30, 30, 0); // Angled light for dramatic effect
+        light1.setLocalEulerAngles(30, 30, 0); 
         app.root.addChild(light1);
 
-        // Scene Arrays for objects
+        // Object types and arrays
         const sceneObjects = [];
-        const objectDistance = 20; // Regularly spaced objects
+        const objectDistance = 30; // Regularly spaced objects
+        const structurePattern = ['building', 'pole', 'abstract']; // Structured patterns of objects
 
         // Horizon or skybox to simulate the background
         function createHorizon() {
@@ -64,70 +65,55 @@
             horizon.setLocalScale(100, 50, 100);
             horizon.setLocalPosition(0, -50, -300);
             horizon.model.material = new pc.StandardMaterial();
-            horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.2); // Darker for horizon effect
+            horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.2); 
             horizon.model.material.update();
             app.root.addChild(horizon);
         }
 
         createHorizon();
 
-        // Create object types: pyramids, cones, spheres, and boxes with depth for parallax effect
-        function createObject(x, z, type, depthFactor) {
+        // Function to create structured objects based on the beat
+        function createObject(x, z, type) {
             const object = new pc.Entity();
 
-            if (type === 'pyramid') {
-                object.addComponent("model", { type: "cone" }); // Use cone for pyramid-like structure
-            } else if (type === 'cone') {
-                object.addComponent("model", { type: "cylinder" }); // Use cylinder for cone-like shape
-            } else if (type === 'sphere') {
-                object.addComponent("model", { type: "sphere" }); // Use sphere
+            if (type === 'building') {
+                object.addComponent("model", { type: "box" }); // Tall buildings
+            } else if (type === 'pole') {
+                object.addComponent("model", { type: "cylinder" }); // Slim poles
             } else {
-                object.addComponent("model", { type: "box" }); // Default to box for buildings
+                object.addComponent("model", { type: "sphere" }); // Abstract spheres
             }
 
-            // Randomized scaling and color for variety
-            const scaleFactor = Math.random() * 3 + 1;
-            object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
-            object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
+            // Adjust scale based on type
+            const scaleFactor = (type === 'building') ? (Math.random() * 3 + 4) : (type === 'pole') ? (Math.random() * 2 + 5) : (Math.random() * 1 + 2);
+            object.setLocalScale(scaleFactor, scaleFactor, scaleFactor);
+            object.setLocalPosition(x, 0, z);
 
-            // Set random material colors for each object
+            // Set material colors for variety
             object.model.material = new pc.StandardMaterial();
             object.model.material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
             object.model.material.update();
 
-            object.userData = { depthFactor }; // Store the depth factor for parallax effect
             app.root.addChild(object);
             sceneObjects.push(object);
         }
 
-        // Populate the scene with different objects (pyramids, cones, spheres, boxes) and depth factor
+        // Populate the scene with repeating structure patterns (left, right, center objects)
         function populateScene() {
-            for (let i = 0; i < 200; i++) {
-                // Alternate between different object types
-                const typeOptions = ['pyramid', 'cone', 'sphere', 'box'];
-                const randomType = typeOptions[Math.floor(Math.random() * typeOptions.length)];
-
-                const depthFactor = Math.random() * 0.5 + 0.5; // Objects further away have lower depth factor
-
-                createObject(-8, -i * objectDistance, randomType, depthFactor); // Left side
-                createObject(8, -i * objectDistance, randomType, depthFactor);  // Right side
-
-                // Center objects with some randomness
-                if (Math.random() > 0.6) {
-                    createObject(0, -i * objectDistance, randomType, depthFactor);
-                }
+            for (let i = 0; i < 100; i++) {
+                const type = structurePattern[i % structurePattern.length]; // Repeat pattern
+                createObject(-10, -i * objectDistance, type); // Left side
+                createObject(10, -i * objectDistance, type);  // Right side
+                createObject(0, -i * objectDistance, type);   // Center objects
             }
         }
 
         populateScene();
 
-        // Smooth forward movement for the camera and object recycling with parallax effect
+        // Move objects forward at a constant speed
         function updateScene(dt) {
             sceneObjects.forEach((obj) => {
-                const depthFactor = obj.userData.depthFactor || 1;
-                obj.translateLocal(0, 0, dt * depthFactor * 15); // Faster movement for foreground, slower for background
-
-                obj.rotate(0, dt * 10, 0); // Subtle rotation for objects
+                obj.translateLocal(0, 0, dt * 15); // Linear forward motion
 
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z) {
                     obj.translateLocal(0, 0, -3000); // Recycle objects when out of view
@@ -145,7 +131,7 @@
                     const source = audioContext.createMediaStreamSource(stream);
 
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 64;
+                    analyser.fftSize = 64; // Adjusted for tighter frequency syncing
                     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
                     source.connect(analyser);
@@ -158,19 +144,18 @@
                 });
         }
 
-        // Update objects' size and motion based on audio frequency
+        // Update objects' size and sync with audio frequency
         function updateVisualizer(dt) {
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
                 sceneObjects.forEach((obj, i) => {
                     const freq = dataArray[i % dataArray.length] / 255;
-                    obj.setLocalScale(freq * 5 + 1, freq * 5 + 1, freq * 5 + 1); // Height variation based on frequency
-                    obj.rotate(0, freq * 2, 0); // Subtle rotation based on beat
+                    obj.setLocalScale(freq * 5 + 1, freq * 5 + 1, freq * 5 + 1); // Adjust size based on frequency
                 });
             }
 
-            // Update scene for smooth camera motion
+            // Move the scene forward
             updateScene(dt);
         }
 
