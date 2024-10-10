@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Star Guitar-Inspired Visualizer with Pattern Recognition</title>
+    <title>Star Guitar-Inspired Visualizer with Music-Driven Properties</title>
     <style>
         body, html {
             margin: 0;
@@ -39,9 +39,9 @@
         const camera = new pc.Entity();
         camera.addComponent("camera", {
             clearColor: new pc.Color(0, 0, 0),
-            fov: 70 // Adjusted FOV to keep focus on the road and surroundings
+            fov: 70
         });
-        camera.setLocalPosition(0, 1, 30); // Lower camera height for closer perspective
+        camera.setLocalPosition(0, 1, 30);
         app.root.addChild(camera);
 
         // Create directional light for better depth
@@ -57,8 +57,8 @@
 
         // Object types and arrays
         const sceneObjects = [];
-        const objectDistance = 30; // Adjust spacing for balance between density and clarity
-        const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge', 'pyramid', 'torus', 'icosphere'];
+        const objectDistance = 30;
+        const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge'];
 
         // Create horizon or skybox for the background
         function createHorizon() {
@@ -76,19 +76,45 @@
 
         createHorizon();
 
-        // Create starry sky that moves more slowly than the bottom half
+        // Create a starry sky
         function createStarrySky() {
-            const stars = new pc.Entity();
-            stars.addComponent("model", {
+            const starrySky = new pc.Entity();
+            starrySky.addComponent("model", {
                 type: "sphere"
             });
-            stars.setLocalScale(500, 500, 500);
-            stars.setLocalPosition(0, 0, -1000);
-            stars.model.material = new pc.StandardMaterial();
-            stars.model.material.diffuse = new pc.Color(1, 1, 1);
-            stars.model.material.update();
-            app.root.addChild(stars);
-            return stars;
+            starrySky.setLocalScale(500, 500, 500);
+            starrySky.setLocalPosition(0, 0, -1000);
+            const material = new pc.StandardMaterial();
+            material.emissive = new pc.Color(1, 1, 1);
+            material.emissiveMap = generateStarTexture();
+            material.update();
+            starrySky.model.material = material;
+            app.root.addChild(starrySky);
+
+            return starrySky;
+        }
+
+        function generateStarTexture() {
+            // Create a texture with random stars
+            const texture = new pc.Texture(app.graphicsDevice, {
+                width: 512,
+                height: 512,
+                format: pc.PIXELFORMAT_R8_G8_B8
+            });
+
+            const context = texture.getSource().getContext('2d');
+            context.fillStyle = 'black';
+            context.fillRect(0, 0, 512, 512);
+
+            for (let i = 0; i < 500; i++) {
+                context.fillStyle = 'white';
+                context.beginPath();
+                context.arc(Math.random() * 512, Math.random() * 512, Math.random() * 2, 0, Math.PI * 2);
+                context.fill();
+            }
+
+            texture.upload();
+            return texture;
         }
 
         const starrySky = createStarrySky();
@@ -97,27 +123,24 @@
         function createObject(x, z, type, depthFactor) {
             const object = new pc.Entity();
 
-            if (type === 'building') {
-                object.addComponent("model", { type: "box" });
-            } else if (type === 'pole') {
-                object.addComponent("model", { type: "cylinder" });
-            } else if (type === 'lampPost') {
-                object.addComponent("model", { type: "cylinder" });
-                object.setLocalScale(0.5, 6, 0.5); // Tall, thin poles for lamp posts.
-            } else if (type === 'bridge') {
-                object.addComponent("model", { type: "box" });
-                object.setLocalScale(10, 1, 2); // Horizontal box for a bridge-like structure.
-            } else if (type === 'pyramid') {
-                object.addComponent("model", { type: "cone" });
-                object.setLocalScale(3, 6, 3);
-            } else if (type === 'torus') {
-                object.addComponent("model", { type: "torus" });
-                object.setLocalScale(4, 4, 4);
-            } else if (type === 'icosphere') {
-                object.addComponent("model", { type: "sphere" });
-                object.setLocalScale(2, 2, 2);
-            } else {
-                object.addComponent("model", { type: "sphere" });
+            switch (type) {
+                case 'building':
+                    object.addComponent("model", { type: "box" });
+                    break;
+                case 'pole':
+                    object.addComponent("model", { type: "cylinder" });
+                    break;
+                case 'lampPost':
+                    object.addComponent("model", { type: "cylinder" });
+                    object.setLocalScale(0.5, 6, 0.5);
+                    break;
+                case 'bridge':
+                    object.addComponent("model", { type: "box" });
+                    object.setLocalScale(10, 1, 2);
+                    break;
+                default:
+                    object.addComponent("model", { type: "sphere" });
+                    break;
             }
 
             // Set position and material
@@ -125,7 +148,6 @@
             object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
             object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
 
-            // Use PBR for realistic material properties
             const material = new pc.StandardMaterial();
             material.useMetalness = true;
             material.metalness = 0.3;
@@ -141,7 +163,7 @@
 
         // Populate the scene with repeating structure patterns
         function populateScene() {
-            const repeatingPattern = structurePattern;
+            const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost'];
             for (let i = 0; i < 200; i++) {
                 const type = repeatingPattern[i % repeatingPattern.length];
                 createObject(-15, -i * objectDistance, type, 1);
@@ -154,16 +176,16 @@
 
         // Move objects forward at a constant speed with optimized parallax effect
         function updateScene(dt) {
-            camera.translateLocal(0, 0, -dt * 10); // Linear steady movement forward
+            camera.translateLocal(0, 0, -dt * 10);
+            starrySky.rotateLocal(0, -dt * 0.5, 0); // Slow rotation for parallax effect of starry sky
             sceneObjects.forEach((obj) => {
                 const depthFactor = obj.userData.depthFactor || 1;
                 obj.translateLocal(0, 0, dt * depthFactor * 15);
 
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z + 50) {
-                    obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500); // Set a closer reset point
+                    obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500);
                 }
             });
-            starrySky.rotateLocal(0, dt * 0.5, 0); // Slow movement for the starry sky
         }
 
         // Audio analysis for beat sync with pattern recognition
@@ -177,7 +199,7 @@
                     const source = audioContext.createMediaStreamSource(stream);
 
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 256; // Increased resolution for better detail
+                    analyser.fftSize = 256;
 
                     source.connect(analyser);
                     patternRecognizer = new PatternRecognizer(audioContext, analyser);
@@ -189,7 +211,7 @@
                 });
         }
 
-        // Update objects' size and sync with audio frequency
+        // Update objects' size, shape, and sync with audio frequency
         function updateVisualizer(dt) {
             if (patternRecognizer) {
                 patternRecognizer.updatePatternBuffer();
@@ -198,20 +220,23 @@
                 if (predictedPattern) {
                     sceneObjects.forEach((obj, i) => {
                         const freq = predictedPattern[i % predictedPattern.length] / 255;
-                        obj.setLocalScale(freq * 5 + 2, freq * 6 + 2, freq * 5 + 2); // Larger scaling effect
-                        obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq); // More distinct color change
-                        obj.rotate(0, freq * 1.5, 0);
 
-                        // Handle collision-like effect near the camera
-                        if (obj.getLocalPosition().z > camera.getLocalPosition().z - 5) {
-                            obj.model.material.opacity = 0.5; // Make the object translucent
-                            obj.model.material.blendType = pc.BLEND_NORMAL;
-                            obj.model.material.update();
-                        } else {
-                            obj.model.material.opacity = 1;
-                            obj.model.material.blendType = pc.BLEND_NONE;
-                            obj.model.material.update();
+                        // Update size
+                        obj.setLocalScale(freq * 5 + 2, freq * 6 + 2, freq * 5 + 2);
+
+                        // Update color
+                        obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq);
+                        obj.model.material.update();
+
+                        // Update shape for some objects based on the frequency
+                        if (freq > 0.7 && obj.userData.type !== 'lampPost') {
+                            obj.model.type = "sphere";
+                        } else if (freq < 0.3 && obj.userData.type !== 'bridge') {
+                            obj.model.type = "box";
                         }
+
+                        // Add rotation for visual interest
+                        obj.rotate(0, freq * 1.5, 0);
                     });
                 }
             }
