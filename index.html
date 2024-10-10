@@ -3,71 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webtoy Central Navigation</title>
-    <link rel="stylesheet" href="/assets/css/styles.css">
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const searchBar = document.getElementById("search-bar");
-            const webtoyCards = document.querySelectorAll(".webtoy-card");
-
-            searchBar.addEventListener("input", function(event) {
-                const query = event.target.value.toLowerCase();
-                webtoyCards.forEach(card => {
-                    const title = card.querySelector("h3").textContent.toLowerCase();
-                    if (title.includes(query)) {
-                        card.style.display = "block";
-                    } else {
-                        card.style.display = "none";
-                    }
-                });
-            });
-        });
-    </script>
+    <title>Stim Webtoys Library</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .webtoy-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .webtoy-card {
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .webtoy-card:hover {
+            transform: translateY(-10px);
+        }
+        .webtoy-card h3 {
+            margin-bottom: 15px;
+        }
+        .webtoy-card a {
+            color: #0affef;
+            text-decoration: none;
+        }
+        .webtoy-card p {
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        footer {
+            margin-top: 40px;
+            font-size: 0.8em;
+        }
+    </style>
 </head>
 <body>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
     <header>
-        Explore Webtoys
+        <h1>Welcome to the Stim Webtoys Library</h1>
+        <p>Explore a collection of interactive visual experiences designed to stimulate and engage the senses. Click on a webtoy to experience it!</p>
     </header>
-    <div id="search-container">
-        <input type="text" id="search-bar" placeholder="Search for a webtoy...">
+    <div class="webtoy-container">
+        <div class="webtoy-card">
+            <h3><a href="3dtoy.html">Transport to Another Dimension</a></h3>
+            <p>Experience a surreal tunnel with a twisting torus knot, dynamic lighting, and vibrant particles, all reacting in real time to audio input.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="95.html">95 Weirdcore Visualizer</a></h3>
+            <p>A synesthetic visualizer that brings trippy weirdcore aesthetics to life, with fluid and ever-changing patterns influenced by microphone input.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="brand.html">Star Guitar Inspired Visualizer</a></h3>
+            <p>Procedurally generated scenery inspired by the iconic music video, featuring trees, poles, and buildings that move in sync with the beat.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="brand2.html">Brand 2 Visualizer</a></h3>
+            <p>An evolution of the Star Guitar visualizer, with gradient skies, dynamic lighting, and modular elements creating a mesmerizing experience.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="demo.html">Dreamy Music Visualizer Suite</a></h3>
+            <p>A customizable visualizer with interactive controls. Adjust sensitivity, color mode, and explore how visuals react to audio input.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="newer.html">Advanced Audio Visualizer</a></h3>
+            <p>An advanced WebGPU-powered visualizer with larger torus knots, fractal-like shapes, and dynamic particle systems responding to audio input.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="seary.html">Trippy Synesthetic Visualizer</a></h3>
+            <p>A visualizer that offers a synesthetic experience with kaleidoscopic patterns that react to both device audio and microphone input.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="sgpat.html">Pattern Recognition Visualizer</a></h3>
+            <p>Featuring pattern recognition synced with audio input, this visualizer creates procedurally generated objects that respond dynamically.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="stars.html">Star Guitar-Inspired Visualizer</a></h3>
+            <p>A journey through a procedurally generated world, complete with spinning cones and floating rings, all moving to the rhythm of your music.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="symph.html">Dreamy Interactive Spectrograph</a></h3>
+            <p>A beautiful spectrograph visualizer that merges WebGL and 2D visuals, offering a colorful, dynamic response to audio input.</p>
+        </div>
     </div>
-    <div id="webtoy-container">
-        <div class="webtoy-card">
-            <h3><a href="3dtoy.html">3D Toy</a></h3>
-            <p>A 3D interactive visual toy featuring a surreal torus knot, dynamic particle effects, and responsive procedural shapes.</p>
-        </div>
-        <div class="webtoy-card">
-            <h3><a href="95.html">95 Visualizer</a></h3>
-            <p>A weirdcore-inspired visualizer with fluid, shifting patterns and colors, perfect for creating a trippy sensory experience.</p>
-        </div>
-        <div class="webtoy-card">
-            <h3><a href="brand.html">Brand Visualizer</a></h3>
-            <p>A visual toy inspired by *Star Guitar*, featuring procedurally generated scenery like buildings, tracks, and modular elements.</p>
-        </div>
-        <div class="webtoy-card">
-            <h3><a href="demo.html">Demo Toy</a></h3>
-            <p>A customizable visual toy where users can adjust color modes and sensitivity to audio input.</p>
-        </div>
-        <div class="webtoy-card">
-            <h3><a href="seary.html">Seary Visualizer</a></h3>
-            <p>A synesthetic visualizer that reacts to both microphone and device audio input, providing a hypnotic, kaleidoscopic effect.</p>
-        </div>
-        <div class="webtoy-card">
-            <h3><a href="stickman.html">Stickman Toy</a></h3>
-            <p>A playful visual toy with a stick figure that interacts with audio input for a lighthearted and fun experience.</p>
-        </div>
-        <div class="webtoy-card">
-            <h3><a href="symph.html">Symph Visualizer</a></h3>
-            <p>A dreamy spectrograph visualizer that blends WebGL and 2D canvas visuals, reacting to music or sound input to create stunning visualizations.</p>
-        </div>
-    </div>
-    <div class="github-buttons">
-        <a href="https://github.com/zz-plant/stims" target="_blank">Star on GitHub ⭐</a>
-        <a href="https://github.com/zz-plant/stims/fork" target="_blank">Fork on GitHub 🍴</a>
-    </div>
+    <footer>
+        <p>Explore more on <a href="https://github.com/zz-plant/stims" target="_blank">GitHub</a> and contribute to the project!</p>
+    </footer>
 </body>
 </html>
