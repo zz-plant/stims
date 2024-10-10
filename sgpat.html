@@ -102,15 +102,37 @@
             // Use PBR for realistic material properties
             const material = new pc.StandardMaterial();
             material.useMetalness = true;
-            material.metalness = 0.3;
-            material.gloss = 0.5;
+            material.metalness = 0.5;
+            material.gloss = 0.7;
             material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
+            material.bumpiness = 0.5; // Add texture richness
+            material.normalMap = createNoiseTexture(); // Generate a noise texture for added detail
             material.update();
             object.model.material = material;
 
             object.userData = { depthFactor, type };
             app.root.addChild(object);
             sceneObjects.push(object);
+        }
+
+        // Function to create a noise texture for richer visual detail
+        function createNoiseTexture() {
+            const texture = new pc.Texture(app.graphicsDevice, {
+                width: 256,
+                height: 256,
+                format: pc.PIXELFORMAT_R8_G8_B8
+            });
+
+            const pixels = new Uint8Array(256 * 256 * 3);
+            for (let i = 0; i < pixels.length; i++) {
+                pixels[i] = Math.floor(Math.random() * 256);
+            }
+
+            texture.lock();
+            const texData = texture.lock();
+            texData.set(pixels);
+            texture.unlock();
+            return texture;
         }
 
         // Populate the scene with repeating structure patterns
@@ -137,17 +159,11 @@
                     obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500); // Set a closer reset point
                 }
 
-                // Handle collision with camera by dissolving or becoming translucent
-                if (obj.getLocalPosition().z > camera.getLocalPosition().z - 5 && obj.getLocalPosition().z < camera.getLocalPosition().z + 5) {
-                    const dissolveMaterial = new pc.StandardMaterial();
-                    dissolveMaterial.useMetalness = true;
-                    dissolveMaterial.metalness = 0.1;
-                    dissolveMaterial.gloss = 0.2;
-                    dissolveMaterial.opacity = 0.3; // Make the object translucent
-                    dissolveMaterial.blendType = pc.BLEND_NORMAL;
-                    dissolveMaterial.diffuse = obj.model.material.diffuse;
-                    dissolveMaterial.update();
-                    obj.model.material = dissolveMaterial;
+                // Make objects dissolve or become translucent as they get close to the camera
+                if (obj.getLocalPosition().z > camera.getLocalPosition().z - 10) {
+                    obj.model.material.opacity = Math.max(0, 1 - (obj.getLocalPosition().z - (camera.getLocalPosition().z - 10)) / 20);
+                    obj.model.material.blendType = pc.BLEND_NORMAL;
+                    obj.model.material.update();
                 }
             });
         }
@@ -163,7 +179,7 @@
                     const source = audioContext.createMediaStreamSource(stream);
 
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 256; // Increased resolution for better detail
+                    analyser.fftSize = 512; // Increased resolution for better detail
 
                     source.connect(analyser);
                     patternRecognizer = new PatternRecognizer(audioContext, analyser);
