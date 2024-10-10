@@ -60,35 +60,38 @@
         const objectDistance = 30; // Adjust spacing for balance between density and clarity
         const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge', 'pyramid', 'torus', 'icosphere'];
 
-        // Create starry sky
-        function createStarrySky() {
-            const starContainer = new pc.Entity();
-            for (let i = 0; i < 500; i++) {
-                const star = new pc.Entity();
-                star.addComponent("model", {
-                    type: "sphere"
-                });
-                star.setLocalScale(0.05, 0.05, 0.05);
-                star.setLocalPosition(
-                    (Math.random() - 0.5) * 500,
-                    (Math.random() - 0.5) * 300 + 100,
-                    (Math.random() - 0.5) * 500 - 300
-                );
-                const starMaterial = new pc.StandardMaterial();
-                starMaterial.diffuse = new pc.Color(1, 1, 1);
-                starMaterial.update();
-                star.model.material = starMaterial;
-                starContainer.addChild(star);
-            }
-            app.root.addChild(starContainer);
-
-            // Move stars slowly for parallax effect
-            app.on("update", function (dt) {
-                starContainer.translateLocal(0, 0, dt * 2);
+        // Create horizon or skybox for the background
+        function createHorizon() {
+            const horizon = new pc.Entity();
+            horizon.addComponent("model", {
+                type: "sphere"
             });
+            horizon.setLocalScale(100, 50, 100);
+            horizon.setLocalPosition(0, -50, -300);
+            horizon.model.material = new pc.StandardMaterial();
+            horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.2);
+            horizon.model.material.update();
+            app.root.addChild(horizon);
         }
 
-        createStarrySky();
+        createHorizon();
+
+        // Create starry sky that moves more slowly than the bottom half
+        function createStarrySky() {
+            const stars = new pc.Entity();
+            stars.addComponent("model", {
+                type: "sphere"
+            });
+            stars.setLocalScale(500, 500, 500);
+            stars.setLocalPosition(0, 0, -1000);
+            stars.model.material = new pc.StandardMaterial();
+            stars.model.material.diffuse = new pc.Color(1, 1, 1);
+            stars.model.material.update();
+            app.root.addChild(stars);
+            return stars;
+        }
+
+        const starrySky = createStarrySky();
 
         // Function to create structured objects with improved scaling and depth factor
         function createObject(x, z, type, depthFactor) {
@@ -106,10 +109,10 @@
                 object.setLocalScale(10, 1, 2); // Horizontal box for a bridge-like structure.
             } else if (type === 'pyramid') {
                 object.addComponent("model", { type: "cone" });
-                object.setLocalScale(3, 5, 3);
+                object.setLocalScale(3, 6, 3);
             } else if (type === 'torus') {
                 object.addComponent("model", { type: "torus" });
-                object.setLocalScale(2, 2, 2);
+                object.setLocalScale(4, 4, 4);
             } else if (type === 'icosphere') {
                 object.addComponent("model", { type: "sphere" });
                 object.setLocalScale(2, 2, 2);
@@ -118,7 +121,7 @@
             }
 
             // Set position and material
-            const scaleFactor = (type === 'building') ? (Math.random() * 1.5 + 3) : (Math.random() * 1 + 2);
+            const scaleFactor = (type === 'building') ? (Math.random() * 1.5 + 3) : (type === 'pole') ? (Math.random() * 1.5 + 4) : (Math.random() * 1 + 2);
             object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
             object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
 
@@ -159,15 +162,8 @@
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z + 50) {
                     obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500); // Set a closer reset point
                 }
-
-                // Handle collision with camera by making object translucent or dissolve
-                const distanceToCamera = obj.getLocalPosition().z - camera.getLocalPosition().z;
-                if (distanceToCamera > -10 && distanceToCamera < 10) {
-                    obj.model.material.opacity = Math.max(0.1, 1 - Math.abs(distanceToCamera) / 10);
-                    obj.model.material.blendType = pc.BLEND_NORMAL;
-                    obj.model.material.update();
-                }
             });
+            starrySky.rotateLocal(0, dt * 0.5, 0); // Slow movement for the starry sky
         }
 
         // Audio analysis for beat sync with pattern recognition
@@ -193,7 +189,7 @@
                 });
         }
 
-        // Update objects' size, shape, color, and pattern based on audio frequency
+        // Update objects' size and sync with audio frequency
         function updateVisualizer(dt) {
             if (patternRecognizer) {
                 patternRecognizer.updatePatternBuffer();
@@ -206,14 +202,16 @@
                         obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq); // More distinct color change
                         obj.rotate(0, freq * 1.5, 0);
 
-                        // Vary shape based on frequency
-                        if (freq > 0.7 && obj.model.type !== 'torus') {
-                            obj.model.type = 'torus';
-                        } else if (freq < 0.3 && obj.model.type !== 'sphere') {
-                            obj.model.type = 'sphere';
+                        // Handle collision-like effect near the camera
+                        if (obj.getLocalPosition().z > camera.getLocalPosition().z - 5) {
+                            obj.model.material.opacity = 0.5; // Make the object translucent
+                            obj.model.material.blendType = pc.BLEND_NORMAL;
+                            obj.model.material.update();
+                        } else {
+                            obj.model.material.opacity = 1;
+                            obj.model.material.blendType = pc.BLEND_NONE;
+                            obj.model.material.update();
                         }
-
-                        obj.model.material.update();
                     });
                 }
             }
