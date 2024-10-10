@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Music Visualizer - Star Guitar Style</title>
+    <title>Enhanced Music Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -34,30 +34,34 @@
         // Create camera that moves forward through the scene
         const camera = new pc.Entity();
         camera.addComponent("camera", {
-            clearColor: new pc.Color(0, 0, 0)
+            clearColor: new pc.Color(0, 0, 0),
+            fov: 75 // Widen the field of view for more visibility
         });
-        camera.translate(0, 2, 20);
+        camera.setLocalPosition(0, 2, 30); // Move camera back to see more objects
         app.root.addChild(camera);
 
-        // Create light
-        const light = new pc.Entity();
-        light.addComponent("light", {
+        // Create directional lights
+        const light1 = new pc.Entity();
+        light1.addComponent("light", {
             type: "directional",
             color: new pc.Color(1, 1, 1),
-            intensity: 1
+            intensity: 2 // Increase intensity for better illumination
         });
-        light.setLocalEulerAngles(45, 0, 0);
-        app.root.addChild(light);
+        light1.setLocalEulerAngles(45, 30, 0);
+        app.root.addChild(light1);
+
+        const light2 = new pc.Entity();
+        light2.addComponent("light", {
+            type: "directional",
+            color: new pc.Color(0.5, 0.5, 1), // Slight blue tint for visual variety
+            intensity: 1.5
+        });
+        light2.setLocalEulerAngles(-45, -30, 0);
+        app.root.addChild(light2);
 
         // Scene Arrays
         const sceneObjects = [];
         const objectDistance = 10;
-
-        // Post-Processing Effects (optional, like bloom or motion blur)
-        const postEffect = new pc.StandardMaterial();
-        postEffect.emissive = new pc.Color(0.0, 0.5, 1.0);
-        postEffect.emissiveIntensity = 1.0;
-        postEffect.update();
 
         // Create horizon or skybox simulation
         function createHorizon() {
@@ -83,9 +87,9 @@
             });
 
             if (type === 'box') {
-                object.setLocalScale(2, Math.random() * 5 + 3, 2);
+                object.setLocalScale(3, Math.random() * 7 + 3, 3); // Larger scaling for buildings
             } else if (type === 'tree') {
-                object.setLocalScale(1.5, Math.random() * 3 + 4, 1.5);
+                object.setLocalScale(2, Math.random() * 5 + 4, 2); // Larger trees
             } else {
                 object.setLocalScale(1, Math.random() * 6 + 2, 1); // Abstract shapes
             }
@@ -97,14 +101,12 @@
 
         // Populate scene with trees, buildings, and abstract shapes
         function populateScene() {
-            for (let i = 0; i < 100; i++) {
-                const type = Math.random() > 0.5 ? 'box' : 'tree'; // Alternate between buildings and trees
-                createObject(-5, -i * objectDistance, type); // Left side
-                createObject(5, -i * objectDistance, type);  // Right side
-
-                // Add some abstract shapes in the middle occasionally
-                if (Math.random() > 0.7) {
-                    createObject(0, -i * objectDistance, 'abstract');
+            for (let i = 0; i < 200; i++) { // Increase number of objects
+                const type = Math.random() > 0.5 ? 'box' : 'tree';
+                createObject(-6, -i * objectDistance, type); // Left side
+                createObject(6, -i * objectDistance, type);  // Right side
+                if (Math.random() > 0.6) {
+                    createObject(0, -i * objectDistance, 'abstract'); // Abstract objects in the middle
                 }
             }
         }
@@ -121,6 +123,20 @@
                 }
             });
         }
+
+        // Debugging markers to visualize object positions
+        function createMarker(x, z) {
+            const marker = new pc.Entity();
+            marker.addComponent("model", { type: "sphere" });
+            marker.setLocalScale(0.5, 0.5, 0.5); // Small marker size
+            marker.setLocalPosition(x, 0, z);
+            app.root.addChild(marker);
+        }
+
+        // Use markers to debug object positions
+        createMarker(0, 0); // At the camera's initial position
+        createMarker(-6, -10); // On the left side
+        createMarker(6, -10); // On the right side
 
         // Audio analyzer setup
         let audioContext, analyser, dataArray;
