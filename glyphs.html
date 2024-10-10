@@ -3,95 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGPU Glyph Visualizer</title>
+    <title>PlayCanvas Microphone Visualizer</title>
     <style>
-        body {
+        body, html {
             margin: 0;
+            padding: 0;
             overflow: hidden;
         }
     </style>
 </head>
 <body>
-    <script type="module">
-        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.js';
-        // Fallback to WebGLRenderer if WebGPU is not available
-        import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.js';
-        import { FontLoader } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/examples/jsm/loaders/FontLoader.js';
-        import { TextGeometry } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/examples/jsm/geometries/TextGeometry.js';
-        import * as dat from 'https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.module.js';
 
-        // Error logging
-        window.onerror = function (msg, url, lineNo, columnNo, error) {
-            console.log(`Error: ${msg} at ${lineNo}:${columnNo}`);
-            return false;
-        };
+    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
 
-        // Renderer setup with fallback to WebGLRenderer
-        let renderer;
-        try {
-            renderer = new WebGPURenderer();
-        } catch (e) {
-            console.warn('WebGPU not supported, falling back to WebGL');
-            renderer = new THREE.WebGLRenderer();
-        }
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+    <script>
+        // Set up the PlayCanvas application
+        const canvas = document.createElement('canvas');
+        document.body.appendChild(canvas);
+        const app = new pc.Application(canvas, {});
 
-        // Scene and Camera
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 10;
+        // Set canvas to full screen
+        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+        app.setCanvasResolution(pc.RESOLUTION_AUTO);
+        app.start();
 
-        // Load Font for Glyphs
-        const fontLoader = new FontLoader();
-        let glyph;
-        let font;
-        const glyphs = ['A', 'B', 'C', 'D', 'E']; // Array of glyphs
-        let currentGlyphIndex = 0;
+        // Set background color
+        app.scene.skyboxMip = 0;
+        app.scene.ambientLight = new pc.Color(0.5, 0.5, 0.5);
 
-        fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (loadedFont) => {
-            console.log('Font loaded successfully');
-            font = loadedFont;
-            createGlyph(glyphs[currentGlyphIndex]);
-        }, undefined, (error) => {
-            console.error('Font loading error:', error);
+        // Create camera
+        const camera = new pc.Entity();
+        camera.addComponent("camera", {
+            clearColor: new pc.Color(0, 0, 0)
         });
+        camera.translate(0, 0, 20);
+        app.root.addChild(camera);
 
-        function createGlyph(char) {
-            if (glyph) scene.remove(glyph); // Remove the previous glyph if it exists
+        // Create light
+        const light = new pc.Entity();
+        light.addComponent("light");
+        light.setLocalEulerAngles(45, 0, 0);
+        app.root.addChild(light);
 
-            const textGeometry = new TextGeometry(char, {
-                font: font,
-                size: guiParams.glyphSize,
-                height: 0.2
+        // Create an array of visualizer bars
+        const bars = [];
+        const numBars = 32;
+        for (let i = 0; i < numBars; i++) {
+            const bar = new pc.Entity();
+            bar.addComponent("model", {
+                type: "box"
             });
-            const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            glyph = new THREE.Mesh(textGeometry, textMaterial);
-            console.log('Created glyph:', char);
-            scene.add(glyph);
-
-            // Render the scene immediately to ensure glyph is visible
-            renderer.render(scene, camera);
+            bar.setLocalScale(0.5, 1, 0.5);
+            bar.setLocalPosition(i - numBars / 2, 0, 0);
+            app.root.addChild(bar);
+            bars.push(bar);
         }
 
-        // GUI for user control
-        const gui = new dat.GUI();
-        const guiParams = {
-            glyphSize: 2,
-            rotationSpeed: 0.1
+        let audioContext, analyser, dataArray;
+
+        // Function to start microphone capture
+        function startMicCapture() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function (stream) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 64; // Adjust the size to match numBars
+                    dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                    source.connect(analyser);
+
+                    // Update the visualizer
+                    app.on("update", updateVisualizer);
+                })
+                .catch(function (err) {
+                    console.error('Error accessing microphone: ' + err);
+                });
+        }
+
+        // Update visualizer bars based on audio data
+        function updateVisualizer(dt) {
+            if (analyser) {
+                analyser.getByteFrequencyData(dataArray);
+
+                for (let i = 0; i < bars.length; i++) {
+                    const scaleY = dataArray[i] / 255 * 10; // Scale the height based on frequency
+                    bars[i].setLocalScale(0.5, Math.max(0.5, scaleY), 0.5); // Avoid zero scale
+                }
+            }
+        }
+
+        // Start microphone capture when the page loads
+        window.onload = function () {
+            startMicCapture();
         };
 
-        gui.add(guiParams, 'glyphSize', 1, 5).name('Glyph Size').onChange(value => {
-            if (glyph) glyph.scale.set(value, value, value);
-        });
-
-        gui.add(guiParams, 'rotationSpeed', 0.01, 0.5).name('Rotation Speed');
-
-        // Responsive window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        // Handle window resizing
+        window.addEventListener("resize", function () {
+            app.resizeCanvas(canvas.width, canvas.height);
         });
     </script>
 </body>
