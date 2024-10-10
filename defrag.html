@@ -46,6 +46,8 @@
         const blockWidth = canvas.width / cols;
         const blockHeight = canvas.height / rows;
         const blocks = [];
+        let idleAnimationTime = 0.0; // Idle state timer for defragmentation effects
+        let idleColorShift = 0;
 
         // Initialize grid with random colors
         for (let i = 0; i < rows; i++) {
@@ -61,6 +63,7 @@
 
         let analyser;
         let audioDataArray = [];
+        let idleState = true;
 
         async function setupAudio() {
             try {
@@ -80,6 +83,7 @@
         function getAudioData() {
             requestAnimationFrame(getAudioData);
             analyser.getByteFrequencyData(audioDataArray);
+            idleState = audioDataArray.reduce((sum, value) => sum + value, 0) === 0; // Idle if all audio data is zero
         }
 
         function drawBlocks() {
@@ -88,8 +92,16 @@
                 const frequency = audioDataArray[index % audioDataArray.length] / 255.0; // Normalize frequency
                 block.sizeModifier = frequency * 2; // Adjust block size based on frequency data
 
-                const colorMod = Math.floor(frequency * 360); // Adjust block color based on frequency data
-                block.color = `hsl(${colorMod}, 100%, 50%)`;
+                if (idleState) {
+                    // If idle, perform defragmentation-style rearrangement of blocks
+                    idleAnimationTime += 0.005;
+                    const idleEffect = Math.sin(idleAnimationTime + index * 0.1);
+                    block.sizeModifier = 1.0 + idleEffect * 0.2; // Small fluctuations
+                    block.color = `hsl(${(idleColorShift + index) % 360}, 100%, 50%)`; // Gradual color shift
+                } else {
+                    const colorMod = Math.floor(frequency * 360); // Adjust block color based on frequency data
+                    block.color = `hsl(${colorMod}, 100%, 50%)`;
+                }
 
                 const adjustedWidth = blockWidth * block.sizeModifier;
                 const adjustedHeight = blockHeight * block.sizeModifier;
@@ -97,6 +109,8 @@
                 ctx.fillStyle = block.color;
                 ctx.fillRect(block.x, block.y, adjustedWidth, adjustedHeight);
             });
+
+            idleColorShift += 1; // Slow color shift during idle state
         }
 
         function defragTextAnimation() {
