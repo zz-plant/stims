@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Star Guitar-Inspired Visualizer with Refined Object Transitions</title>
+    <title>Visualizer with Parallax and Perspective</title>
     <style>
         body, html {
             margin: 0;
@@ -72,7 +72,7 @@
         createHorizon();
 
         // Create object types: pyramids, cones, spheres, and boxes
-        function createObject(x, z, type) {
+        function createObject(x, z, type, depthFactor) {
             const object = new pc.Entity();
 
             if (type === 'pyramid') {
@@ -87,42 +87,46 @@
 
             // Randomized scaling and color for variety
             const scaleFactor = Math.random() * 3 + 1;
-            object.setLocalScale(scaleFactor, scaleFactor, scaleFactor);
-            object.setLocalPosition(x, 0, z);
+            object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
+            object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
 
             // Set random material colors for each object
             object.model.material = new pc.StandardMaterial();
             object.model.material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
             object.model.material.update();
 
+            object.userData = { depthFactor }; // Store the depth factor for parallax effect
             app.root.addChild(object);
             sceneObjects.push(object);
         }
 
-        // Populate the scene with different objects (pyramids, cones, spheres, boxes)
+        // Populate the scene with different objects (pyramids, cones, spheres, boxes) and depth factor
         function populateScene() {
             for (let i = 0; i < 200; i++) {
                 // Alternate between different object types
                 const typeOptions = ['pyramid', 'cone', 'sphere', 'box'];
                 const randomType = typeOptions[Math.floor(Math.random() * typeOptions.length)];
 
-                createObject(-8, -i * objectDistance, randomType); // Left side
-                createObject(8, -i * objectDistance, randomType);  // Right side
+                const depthFactor = Math.random() * 0.5 + 0.5; // Objects further away have lower depth factor
+
+                createObject(-8, -i * objectDistance, randomType, depthFactor); // Left side
+                createObject(8, -i * objectDistance, randomType, depthFactor);  // Right side
 
                 // Center objects with some randomness
                 if (Math.random() > 0.6) {
-                    createObject(0, -i * objectDistance, randomType);
+                    createObject(0, -i * objectDistance, randomType, depthFactor);
                 }
             }
         }
 
         populateScene();
 
-        // Smooth forward movement for the camera and object recycling
+        // Smooth forward movement for the camera and object recycling with parallax effect
         function updateScene(dt) {
-            camera.translateLocal(0, 0, -dt * 15); // Move forward smoothly
-
             sceneObjects.forEach((obj) => {
+                const depthFactor = obj.userData.depthFactor || 1;
+                obj.translateLocal(0, 0, dt * depthFactor * 15); // Faster movement for foreground, slower for background
+
                 obj.rotate(0, dt * 10, 0); // Subtle rotation for objects
 
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z) {
