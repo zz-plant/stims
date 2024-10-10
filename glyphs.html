@@ -14,13 +14,26 @@
 <body>
     <script type="module">
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.js';
+        // Fallback to WebGLRenderer if WebGPU is not available
         import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.js';
         import { FontLoader } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/examples/jsm/loaders/FontLoader.js';
         import { TextGeometry } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/examples/jsm/geometries/TextGeometry.js';
         import * as dat from 'https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.module.js';
 
-        // Renderer
-        const renderer = new WebGPURenderer();
+        // Error logging
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            console.log(`Error: ${msg} at ${lineNo}:${columnNo}`);
+            return false;
+        };
+
+        // Renderer setup with fallback to WebGLRenderer
+        let renderer;
+        try {
+            renderer = new WebGPURenderer();
+        } catch (e) {
+            console.warn('WebGPU not supported, falling back to WebGL');
+            renderer = new THREE.WebGLRenderer();
+        }
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
@@ -33,16 +46,19 @@
         const fontLoader = new FontLoader();
         let glyph;
         let font;
-        const glyphs = ['Z', 'P', 'L', 'N', 'T']; // Array of glyphs
+        const glyphs = ['A', 'B', 'C', 'D', 'E']; // Array of glyphs
         let currentGlyphIndex = 0;
 
         fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (loadedFont) => {
+            console.log('Font loaded successfully');
             font = loadedFont;
             createGlyph(glyphs[currentGlyphIndex]);
+        }, undefined, (error) => {
+            console.error('Font loading error:', error);
         });
 
         function createGlyph(char) {
-            if (glyph) scene.remove(glyph); // Remove the previous glyph
+            if (glyph) scene.remove(glyph); // Remove the previous glyph if it exists
 
             const textGeometry = new TextGeometry(char, {
                 font: font,
@@ -51,54 +67,12 @@
             });
             const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
             glyph = new THREE.Mesh(textGeometry, textMaterial);
+            console.log('Created glyph:', char);
             scene.add(glyph);
-        }
 
-        // Switch glyph based on beat or interval
-        function switchGlyph() {
-            currentGlyphIndex = (currentGlyphIndex + 1) % glyphs.length;
-            createGlyph(glyphs[currentGlyphIndex]);
-        }
-
-        // Audio Setup
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-            const audioSource = audioContext.createMediaStreamSource(stream);
-            audioSource.connect(analyser);
-        });
-
-        // Update glyphs with audio data
-        function updateGlyphWithAudio() {
-            analyser.getByteFrequencyData(dataArray);
-
-            if (glyph) {
-                const lowFreq = dataArray[0] / 256;
-                const midFreq = dataArray[64] / 256;
-                const highFreq = dataArray[128] / 256;
-
-                glyph.scale.set(1 + lowFreq * 2, 1 + midFreq * 2, 1);
-                glyph.rotation.x += highFreq * guiParams.rotationSpeed;
-                glyph.rotation.y += midFreq * guiParams.rotationSpeed;
-
-                // Trigger glyph switch on high-frequency spike (simple beat detection)
-                if (highFreq > 0.7) {
-                    switchGlyph();
-                }
-            }
-        }
-
-        // Animate
-        function animate() {
-            requestAnimationFrame(animate);
-            updateGlyphWithAudio();
+            // Render the scene immediately to ensure glyph is visible
             renderer.render(scene, camera);
         }
-
-        animate();
 
         // GUI for user control
         const gui = new dat.GUI();
