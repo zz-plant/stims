@@ -2,223 +2,105 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Star Guitar-Inspired Visualizer with Pattern Recognition</title>
+    <title>Star Guitar Visualizer with Pattern Recognition</title>
     <style>
         body, html {
             margin: 0;
-            padding: 0;
             overflow: hidden;
             background: black;
+            height: 100%;
         }
     </style>
+    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
     <script src="assets/js/utils/patternRecognition.js" type="module"></script>
 </head>
 <body>
-
-    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
-
     <script type="module">
         import PatternRecognizer from './assets/js/utils/patternRecognition.js';
 
-        // Set up the PlayCanvas application
+        // Set up PlayCanvas
         const canvas = document.createElement('canvas');
         document.body.appendChild(canvas);
         const app = new pc.Application(canvas, {});
 
-        // Set canvas to full screen
         app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
         app.setCanvasResolution(pc.RESOLUTION_AUTO);
         app.start();
 
-        // Set background color
-        app.scene.skyboxMip = 0;
-        app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1);
-
-        // Create camera
         const camera = new pc.Entity();
-        camera.addComponent("camera", {
-            clearColor: new pc.Color(0, 0, 0),
-            fov: 70 // Adjusted FOV to focus on the road and surroundings
-        });
-        camera.setLocalPosition(0, 1, 30); // Set initial position of the camera
+        camera.addComponent("camera", { fov: 75 });
+        camera.setLocalPosition(0, 1, 25);
         app.root.addChild(camera);
 
-        // Create directional light
-        const light1 = new pc.Entity();
-        light1.addComponent("light", {
-            type: "directional",
-            color: new pc.Color(1, 1, 0.9),
-            intensity: 1.5,
-            shadowDistance: 50
-        });
-        light1.setLocalEulerAngles(30, 30, 0);
-        app.root.addChild(light1);
+        const light = new pc.Entity();
+        light.addComponent("light", { type: "directional", color: new pc.Color(1, 1, 0.9), intensity: 1.5 });
+        app.root.addChild(light);
 
-        // Object types and arrays
+        // Pattern-based object generation
         const sceneObjects = [];
-        const objectDistance = 30; // Distance between repeating objects
-        const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge'];
+        const objectDistance = 20;
+        const objectTypes = ['building', 'pole', 'bridge', 'spinningCone', 'floatingRing'];
 
-        // Create sky with stars
-        const skyboxEntity = new pc.Entity();
-        skyboxEntity.addComponent("model", {
-            type: "sphere"
-        });
-        skyboxEntity.setLocalScale(500, 500, 500);
-        skyboxEntity.model.material = new pc.StandardMaterial();
-        skyboxEntity.model.material.emissive = new pc.Color(0.1, 0.1, 0.3);
-        skyboxEntity.model.material.update();
-        app.root.addChild(skyboxEntity);
-
-        // Function to create structured objects with improved scaling and depth factor
-        function createObject(x, z, type, depthFactor) {
+        function createObject(type, x, z) {
             const object = new pc.Entity();
-
-            if (type === 'building') {
-                object.addComponent("model", { type: "box" });
-            } else if (type === 'pole') {
-                object.addComponent("model", { type: "cylinder" });
-            } else if (type === 'lampPost') {
-                object.addComponent("model", { type: "cylinder" });
-                object.setLocalScale(0.5, 6, 0.5);
-            } else if (type === 'bridge') {
-                object.addComponent("model", { type: "box" });
-                object.setLocalScale(10, 1, 2);
-            } else if (type === 'abstract') {
-                object.addComponent("model", { type: "sphere" });
-            } else if (type === 'spinningCone') {
-                object.addComponent("model", { type: "cone" });
-                object.setLocalScale(2, 4, 2);
-                object.addComponent("script");
-                object.script.create('spin', {
-                    attributes: {
-                        speed: Math.random() * 30 + 20
-                    }
-                });
-            } else if (type === 'floatingRing') {
-                object.addComponent("model", { type: "torus" });
-                object.setLocalScale(3, 3, 3);
+            let geometry;
+            switch (type) {
+                case 'building':
+                    geometry = new pc.Box(2, Math.random() * 10 + 5, 2);
+                    break;
+                case 'pole':
+                    geometry = new pc.Cylinder(0.1, 0.1, Math.random() * 10 + 5);
+                    break;
+                case 'spinningCone':
+                    geometry = new pc.Cone(2, 4);
+                    break;
+                case 'floatingRing':
+                    geometry = new pc.Torus(3, 0.5);
+                    break;
+                default:
+                    geometry = new pc.Sphere();
             }
-
-            // Set position and material
-            const scaleFactor = (type === 'building') ? (Math.random() * 1.5 + 3) : (Math.random() * 1.5 + 2);
-            object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
-            object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
-
-            // Use PBR for realistic material properties
-            const material = new pc.StandardMaterial();
-            material.useMetalness = true;
-            material.metalness = 0.3;
-            material.gloss = 0.5;
-            material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
-            material.update();
-            object.model.material = material;
-
-            object.userData = { depthFactor, type };
+            object.addComponent("model", { type: geometry });
+            object.setLocalPosition(x, 0, z);
             app.root.addChild(object);
             sceneObjects.push(object);
         }
 
-        // Populate the scene with repeating structure patterns
-        function populateScene() {
-            const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost', 'spinningCone', 'floatingRing'];
-            for (let i = 0; i < 200; i++) {
-                const type = repeatingPattern[i % repeatingPattern.length];
-                createObject(-15, -i * objectDistance, type, 1);
-                createObject(15, -i * objectDistance, type, 1);
-                createObject(0, -i * objectDistance, type, 1);
-            }
+        for (let i = 0; i < 100; i++) {
+            const randomType = objectTypes[i % objectTypes.length];
+            createObject(randomType, Math.random() * 10 - 5, -i * objectDistance);
         }
 
-        populateScene();
+        let audioContext, analyser, patternRecognizer;
 
-        // Move objects forward at a constant speed with optimized parallax effect
-        function updateScene(dt) {
-            camera.translateLocal(0, 0, -dt * 10); // Linear steady movement forward
-
-            // Rotate skybox to simulate slow-moving stars
-            skyboxEntity.rotate(0, -dt * 0.1, 0);
-
-            sceneObjects.forEach((obj) => {
-                const depthFactor = obj.userData.depthFactor || 1;
-                obj.translateLocal(0, 0, dt * depthFactor * 15);
-
-                if (obj.getLocalPosition().z > camera.getLocalPosition().z + 50) {
-                    obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500);
-                }
-
-                // Keep objects from getting too tiny
-                const distanceFromCamera = Math.abs(obj.getLocalPosition().z - camera.getLocalPosition().z);
-                const minScale = 2;
-                const maxDistance = 500;
-                const scale = Math.max(minScale, 1 - (distanceFromCamera / maxDistance));
-                obj.setLocalScale(scale, scale, scale);
-
-                // Make objects dissolve as they approach the camera
-                if (distanceFromCamera < 30) {
-                    obj.model.material.opacity = Math.max(0, distanceFromCamera / 30);
-                    obj.model.material.blendType = pc.BLEND_NORMAL;
-                    obj.model.material.update();
-                } else {
-                    obj.model.material.opacity = 1;
-                    obj.model.material.blendType = pc.BLEND_NONE;
-                    obj.model.material.update();
-                }
+        function initAudio() {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                patternRecognizer = new PatternRecognizer(audioContext, analyser);
+            }).catch(function (err) {
+                console.error('Error accessing microphone: ', err);
             });
         }
 
-        // Audio analysis for beat sync with pattern recognition
-        let audioContext, analyser;
-        let patternRecognizer;
-
-        function startMicCapture() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(function (stream) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioContext.createMediaStreamSource(stream);
-
-                    analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 256; // Increased resolution for better detail
-
-                    source.connect(analyser);
-                    patternRecognizer = new PatternRecognizer(audioContext, analyser);
-                    app.on("update", updateVisualizer);
-                })
-                .catch(function (err) {
-                    console.error('Error accessing microphone: ' + err);
-                    alert('Please enable microphone access for the audio visualizer.');
-                });
-        }
-
-        // Update objects' size and sync with audio frequency
-        function updateVisualizer(dt) {
+        function updatePattern(dt) {
             if (patternRecognizer) {
                 patternRecognizer.updatePatternBuffer();
                 const predictedPattern = patternRecognizer.predictNextPattern();
-
                 if (predictedPattern) {
                     sceneObjects.forEach((obj, i) => {
-                        const freq = predictedPattern[i % predictedPattern.length] / 255;
-                        obj.setLocalScale(freq * 5 + 2, freq * 6 + 2, freq * 5 + 2); // Larger scaling effect
-                        obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq); // More distinct color change
-                        obj.rotate(0, freq * 1.5, 0);
+                        const scale = predictedPattern[i % predictedPattern.length] / 255;
+                        obj.setLocalScale(scale * 3 + 2, scale * 3 + 2, scale * 3 + 2);
                     });
                 }
             }
-
-            updateScene(dt);
         }
 
-        // Start microphone capture on page load
-        window.onload = function () {
-            startMicCapture();
-        };
-
-        // Handle window resizing
-        window.addEventListener("resize", function () {
-            app.resizeCanvas(canvas.width, canvas.height);
-        });
+        app.on("update", updatePattern);
+        initAudio();
     </script>
 </body>
 </html>
