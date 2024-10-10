@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Star Guitar-Inspired Visualizer Improved</title>
+    <title>Star Guitar-Inspired Visualizer with Pattern Recognition</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             overflow: hidden;
+            background: black;
         }
     </style>
+    <script src="assets/js/utils/patternRecognition.js" type="module"></script>
 </head>
 <body>
 
     <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
 
-    <script>
+    <script type="module">
+        import PatternRecognizer from './assets/js/utils/patternRecognition.js';
+
         // Set up the PlayCanvas application
         const canvas = document.createElement('canvas');
         document.body.appendChild(canvas);
@@ -31,46 +35,42 @@
         app.scene.skyboxMip = 0;
         app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1);
 
-        // Create camera with improved FOV
+        // Create camera
         const camera = new pc.Entity();
         camera.addComponent("camera", {
             clearColor: new pc.Color(0, 0, 0),
-            fov: 60 // Narrower FOV for a more focused perspective
+            fov: 70 // Adjusted FOV to focus on the road and surroundings
         });
-        camera.setLocalPosition(0, 2, 30); // Move camera closer for better view
+        camera.setLocalPosition(0, 1, 30); // Set initial position of the camera
         app.root.addChild(camera);
 
-        // Create directional light for better depth
+        // Create directional light
         const light1 = new pc.Entity();
         light1.addComponent("light", {
             type: "directional",
             color: new pc.Color(1, 1, 0.9),
             intensity: 1.5,
-            shadowDistance: 50
+            shadowDistance: 50,
+            castShadows: true
         });
         light1.setLocalEulerAngles(30, 30, 0);
         app.root.addChild(light1);
 
         // Object types and arrays
         const sceneObjects = [];
-        const objectDistance = 50; // Increased spacing between objects for better clarity
-        const structurePattern = ['building', 'pole', 'abstract'];
+        const objectDistance = 30; // Distance between repeating objects
+        const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge'];
 
-        // Create horizon or skybox for the background
-        function createHorizon() {
-            const horizon = new pc.Entity();
-            horizon.addComponent("model", {
-                type: "sphere"
-            });
-            horizon.setLocalScale(100, 50, 100);
-            horizon.setLocalPosition(0, -50, -300);
-            horizon.model.material = new pc.StandardMaterial();
-            horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.2);
-            horizon.model.material.update();
-            app.root.addChild(horizon);
-        }
-
-        createHorizon();
+        // Create sky with stars
+        const skyboxEntity = new pc.Entity();
+        skyboxEntity.addComponent("model", {
+            type: "sphere"
+        });
+        skyboxEntity.setLocalScale(500, 500, 500);
+        skyboxEntity.model.material = new pc.StandardMaterial();
+        skyboxEntity.model.material.emissive = new pc.Color(0.1, 0.1, 0.3);
+        skyboxEntity.model.material.update();
+        app.root.addChild(skyboxEntity);
 
         // Function to create structured objects with improved scaling and depth factor
         function createObject(x, z, type, depthFactor) {
@@ -80,38 +80,43 @@
                 object.addComponent("model", { type: "box" });
             } else if (type === 'pole') {
                 object.addComponent("model", { type: "cylinder" });
+            } else if (type === 'lampPost') {
+                object.addComponent("model", { type: "cylinder" });
+                object.setLocalScale(0.5, 6, 0.5);
+            } else if (type === 'bridge') {
+                object.addComponent("model", { type: "box" });
+                object.setLocalScale(10, 1, 2);
             } else {
                 object.addComponent("model", { type: "sphere" });
             }
 
-            // Adjust scale based on type
-            const scaleFactor = (type === 'building') ? (Math.random() * 1.5 + 3) : (type === 'pole') ? (Math.random() * 1.5 + 4) : (Math.random() * 1 + 2);
+            // Set position and material
+            const scaleFactor = (type === 'building') ? (Math.random() * 1.5 + 3) : (Math.random() * 1.5 + 2);
             object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
             object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
 
             // Use PBR for realistic material properties
             const material = new pc.StandardMaterial();
             material.useMetalness = true;
-            material.metalness = 0.3; // Set consistent metalness
-            material.gloss = 0.5; // Consistent gloss for all objects
+            material.metalness = 0.3;
+            material.gloss = 0.5;
             material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
             material.update();
             object.model.material = material;
 
-            object.userData = { depthFactor };
+            object.userData = { depthFactor, type };
             app.root.addChild(object);
             sceneObjects.push(object);
         }
 
         // Populate the scene with repeating structure patterns
         function populateScene() {
-            for (let i = 0; i < 100; i++) {
-                const type = structurePattern[i % structurePattern.length];
-                const depthFactor = Math.random() * 0.3 + 0.8; // Less extreme depth variations
-
-                createObject(-15, -i * objectDistance, type, depthFactor); // Left side
-                createObject(15, -i * objectDistance, type, depthFactor);  // Right side
-                createObject(0, -i * objectDistance, type, depthFactor);   // Center objects
+            const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost'];
+            for (let i = 0; i < 200; i++) {
+                const type = repeatingPattern[i % repeatingPattern.length];
+                createObject(-15, -i * objectDistance, type, 1);
+                createObject(15, -i * objectDistance, type, 1);
+                createObject(0, -i * objectDistance, type, 1);
             }
         }
 
@@ -119,20 +124,42 @@
 
         // Move objects forward at a constant speed with optimized parallax effect
         function updateScene(dt) {
+            camera.translateLocal(0, 0, -dt * 10); // Linear steady movement forward
+
+            // Rotate skybox to simulate slow-moving stars
+            skyboxEntity.rotate(0, -dt * 0.1, 0);
+
             sceneObjects.forEach((obj) => {
                 const depthFactor = obj.userData.depthFactor || 1;
-                obj.translateLocal(0, 0, dt * depthFactor * 15); // Adjust speed for better parallax
+                obj.translateLocal(0, 0, dt * depthFactor * 15);
 
-                obj.rotate(0, dt * 3, 0); // Subtle rotation for objects
+                if (obj.getLocalPosition().z > camera.getLocalPosition().z + 50) {
+                    obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500);
+                }
 
-                if (obj.getLocalPosition().z > camera.getLocalPosition().z) {
-                    obj.translateLocal(0, 0, -5000); // Increase recycle distance for better flow
+                // Keep objects from getting too tiny
+                const distanceFromCamera = Math.abs(obj.getLocalPosition().z - camera.getLocalPosition().z);
+                const minScale = 2;
+                const maxDistance = 500;
+                const scale = Math.max(minScale, 1 - (distanceFromCamera / maxDistance));
+                obj.setLocalScale(scale, scale, scale);
+
+                // Make objects dissolve or become translucent when near the camera
+                if (distanceFromCamera < 20) {
+                    obj.model.material.opacity = Math.max(0, 1 - (20 - distanceFromCamera) / 20);
+                    obj.model.material.blendType = pc.BLEND_NORMAL;
+                    obj.model.material.update();
+                } else {
+                    obj.model.material.opacity = 1;
+                    obj.model.material.blendType = pc.BLEND_NONE;
+                    obj.model.material.update();
                 }
             });
         }
 
-        // Audio analysis for beat sync
-        let audioContext, analyser, dataArray;
+        // Audio analysis for beat sync with pattern recognition
+        let audioContext, analyser;
+        let patternRecognizer;
 
         function startMicCapture() {
             navigator.mediaDevices.getUserMedia({ audio: true })
@@ -141,11 +168,10 @@
                     const source = audioContext.createMediaStreamSource(stream);
 
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 128;
-                    dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.fftSize = 256; // Increased resolution for better detail
 
                     source.connect(analyser);
-
+                    patternRecognizer = new PatternRecognizer(audioContext, analyser);
                     app.on("update", updateVisualizer);
                 })
                 .catch(function (err) {
@@ -156,14 +182,18 @@
 
         // Update objects' size and sync with audio frequency
         function updateVisualizer(dt) {
-            if (analyser) {
-                analyser.getByteFrequencyData(dataArray);
+            if (patternRecognizer) {
+                patternRecognizer.updatePatternBuffer();
+                const predictedPattern = patternRecognizer.predictNextPattern();
 
-                sceneObjects.forEach((obj, i) => {
-                    const freq = dataArray[i % dataArray.length] / 255;
-                    obj.setLocalScale(freq * 2 + 1, freq * 3 + 1, freq * 2 + 1);
-                    obj.rotate(0, freq * 1.2, 0);
-                });
+                if (predictedPattern) {
+                    sceneObjects.forEach((obj, i) => {
+                        const freq = predictedPattern[i % predictedPattern.length] / 255;
+                        obj.setLocalScale(freq * 5 + 2, freq * 6 + 2, freq * 5 + 2); // Larger scaling effect
+                        obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq); // More distinct color change
+                        obj.rotate(0, freq * 1.5, 0);
+                    });
+                }
             }
 
             updateScene(dt);
