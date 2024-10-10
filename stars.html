@@ -103,7 +103,7 @@
             material.update();
             object.model.material = material;
 
-            object.userData = { depthFactor, type };
+            object.userData = { depthFactor, type, initialColor: material.diffuse.clone() };
             app.root.addChild(object);
             sceneObjects.push(object);
         }
@@ -153,6 +153,10 @@
                     obj.model.material.blendType = pc.BLEND_NONE;
                     obj.model.material.update();
                 }
+
+                // Restore original colors to avoid turning all objects blue
+                obj.model.material.diffuse = obj.userData.initialColor;
+                obj.model.material.update();
             });
         }
 
