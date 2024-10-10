@@ -60,21 +60,35 @@
         const objectDistance = 30; // Adjust spacing for balance between density and clarity
         const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge', 'pyramid', 'torus', 'icosphere'];
 
-        // Create horizon or skybox for the background
-        function createHorizon() {
-            const horizon = new pc.Entity();
-            horizon.addComponent("model", {
-                type: "sphere"
+        // Create starry sky
+        function createStarrySky() {
+            const starContainer = new pc.Entity();
+            for (let i = 0; i < 500; i++) {
+                const star = new pc.Entity();
+                star.addComponent("model", {
+                    type: "sphere"
+                });
+                star.setLocalScale(0.05, 0.05, 0.05);
+                star.setLocalPosition(
+                    (Math.random() - 0.5) * 500,
+                    (Math.random() - 0.5) * 300 + 100,
+                    (Math.random() - 0.5) * 500 - 300
+                );
+                const starMaterial = new pc.StandardMaterial();
+                starMaterial.diffuse = new pc.Color(1, 1, 1);
+                starMaterial.update();
+                star.model.material = starMaterial;
+                starContainer.addChild(star);
+            }
+            app.root.addChild(starContainer);
+
+            // Move stars slowly for parallax effect
+            app.on("update", function (dt) {
+                starContainer.translateLocal(0, 0, dt * 2);
             });
-            horizon.setLocalScale(100, 50, 100);
-            horizon.setLocalPosition(0, -50, -300);
-            horizon.model.material = new pc.StandardMaterial();
-            horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.2);
-            horizon.model.material.update();
-            app.root.addChild(horizon);
         }
 
-        createHorizon();
+        createStarrySky();
 
         // Function to create structured objects with improved scaling and depth factor
         function createObject(x, z, type, depthFactor) {
@@ -92,27 +106,27 @@
                 object.setLocalScale(10, 1, 2); // Horizontal box for a bridge-like structure.
             } else if (type === 'pyramid') {
                 object.addComponent("model", { type: "cone" });
-                object.setLocalScale(3, 4, 3); // Pyramid-like shape
+                object.setLocalScale(3, 5, 3);
             } else if (type === 'torus') {
                 object.addComponent("model", { type: "torus" });
-                object.setLocalScale(3, 3, 3); // Torus shape for more geometric variety
+                object.setLocalScale(2, 2, 2);
             } else if (type === 'icosphere') {
                 object.addComponent("model", { type: "sphere" });
-                object.setLocalScale(3, 3, 3); // Spherical shape but smaller for variation
+                object.setLocalScale(2, 2, 2);
             } else {
                 object.addComponent("model", { type: "sphere" });
             }
 
             // Set position and material
-            const scaleFactor = (type === 'building') ? (Math.random() * 1.5 + 3) : (type === 'pole') ? (Math.random() * 1.5 + 4) : (Math.random() * 1 + 2);
+            const scaleFactor = (type === 'building') ? (Math.random() * 1.5 + 3) : (Math.random() * 1 + 2);
             object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
             object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
 
             // Use PBR for realistic material properties
             const material = new pc.StandardMaterial();
             material.useMetalness = true;
-            material.metalness = 0.5;
-            material.gloss = 0.7;
+            material.metalness = 0.3;
+            material.gloss = 0.5;
             material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
             material.update();
             object.model.material = material;
@@ -124,7 +138,7 @@
 
         // Populate the scene with repeating structure patterns
         function populateScene() {
-            const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost', 'pyramid', 'torus', 'icosphere'];
+            const repeatingPattern = structurePattern;
             for (let i = 0; i < 200; i++) {
                 const type = repeatingPattern[i % repeatingPattern.length];
                 createObject(-15, -i * objectDistance, type, 1);
@@ -146,12 +160,11 @@
                     obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500); // Set a closer reset point
                 }
 
-                // Add dissolving or translucency effect when close to camera
-                if (obj.getLocalPosition().z > camera.getLocalPosition().z - 10) {
-                    obj.model.material.opacity = Math.max(0, 1 - (obj.getLocalPosition().z - camera.getLocalPosition().z + 10) / 10);
-                    obj.model.material.update();
-                } else {
-                    obj.model.material.opacity = 1;
+                // Handle collision with camera by making object translucent or dissolve
+                const distanceToCamera = obj.getLocalPosition().z - camera.getLocalPosition().z;
+                if (distanceToCamera > -10 && distanceToCamera < 10) {
+                    obj.model.material.opacity = Math.max(0.1, 1 - Math.abs(distanceToCamera) / 10);
+                    obj.model.material.blendType = pc.BLEND_NORMAL;
                     obj.model.material.update();
                 }
             });
@@ -180,7 +193,7 @@
                 });
         }
 
-        // Update objects' size and sync with audio frequency
+        // Update objects' size, shape, color, and pattern based on audio frequency
         function updateVisualizer(dt) {
             if (patternRecognizer) {
                 patternRecognizer.updatePatternBuffer();
@@ -192,6 +205,15 @@
                         obj.setLocalScale(freq * 5 + 2, freq * 6 + 2, freq * 5 + 2); // Larger scaling effect
                         obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq); // More distinct color change
                         obj.rotate(0, freq * 1.5, 0);
+
+                        // Vary shape based on frequency
+                        if (freq > 0.7 && obj.model.type !== 'torus') {
+                            obj.model.type = 'torus';
+                        } else if (freq < 0.3 && obj.model.type !== 'sphere') {
+                            obj.model.type = 'sphere';
+                        }
+
+                        obj.model.material.update();
                     });
                 }
             }
