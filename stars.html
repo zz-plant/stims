@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Star Guitar-Inspired Visualizer with Advanced PlayCanvas Features</title>
+    <title>Star Guitar-Inspired Visualizer Improved</title>
     <style>
         body, html {
             margin: 0;
@@ -31,16 +31,16 @@
         app.scene.skyboxMip = 0;
         app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1);
 
-        // Create camera with smooth forward motion
+        // Create camera with improved FOV
         const camera = new pc.Entity();
         camera.addComponent("camera", {
             clearColor: new pc.Color(0, 0, 0),
-            fov: 75
+            fov: 60 // Narrower FOV for a more focused perspective
         });
-        camera.setLocalPosition(0, 2, 60);
+        camera.setLocalPosition(0, 2, 30); // Move camera closer for better view
         app.root.addChild(camera);
 
-        // Create directional light for depth
+        // Create directional light for better depth
         const light1 = new pc.Entity();
         light1.addComponent("light", {
             type: "directional",
@@ -53,7 +53,7 @@
 
         // Object types and arrays
         const sceneObjects = [];
-        const objectDistance = 30;
+        const objectDistance = 50; // Increased spacing between objects for better clarity
         const structurePattern = ['building', 'pole', 'abstract'];
 
         // Create horizon or skybox for the background
@@ -72,7 +72,7 @@
 
         createHorizon();
 
-        // Function to create structured objects with depth for parallax effect
+        // Function to create structured objects with improved scaling and depth factor
         function createObject(x, z, type, depthFactor) {
             const object = new pc.Entity();
 
@@ -85,15 +85,15 @@
             }
 
             // Adjust scale based on type
-            const scaleFactor = (type === 'building') ? (Math.random() * 3 + 4) : (type === 'pole') ? (Math.random() * 2 + 5) : (Math.random() * 1 + 2);
+            const scaleFactor = (type === 'building') ? (Math.random() * 1.5 + 3) : (type === 'pole') ? (Math.random() * 1.5 + 4) : (Math.random() * 1 + 2);
             object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
             object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
 
-            // Use PBR for materials for more realistic visuals
+            // Use PBR for realistic material properties
             const material = new pc.StandardMaterial();
             material.useMetalness = true;
-            material.metalness = Math.random();
-            material.gloss = 0.5 + Math.random() * 0.5;
+            material.metalness = 0.3; // Set consistent metalness
+            material.gloss = 0.5; // Consistent gloss for all objects
             material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
             material.update();
             object.model.material = material;
@@ -103,31 +103,30 @@
             sceneObjects.push(object);
         }
 
-        // Populate the scene with repeating structure patterns and depth factor
+        // Populate the scene with repeating structure patterns
         function populateScene() {
             for (let i = 0; i < 100; i++) {
                 const type = structurePattern[i % structurePattern.length];
+                const depthFactor = Math.random() * 0.3 + 0.8; // Less extreme depth variations
 
-                const depthFactor = Math.random() * 0.5 + 0.5;
-
-                createObject(-10, -i * objectDistance, type, depthFactor);
-                createObject(10, -i * objectDistance, type, depthFactor);
-                createObject(0, -i * objectDistance, type, depthFactor);
+                createObject(-15, -i * objectDistance, type, depthFactor); // Left side
+                createObject(15, -i * objectDistance, type, depthFactor);  // Right side
+                createObject(0, -i * objectDistance, type, depthFactor);   // Center objects
             }
         }
 
         populateScene();
 
-        // Move objects forward at a constant speed with parallax effect
+        // Move objects forward at a constant speed with optimized parallax effect
         function updateScene(dt) {
             sceneObjects.forEach((obj) => {
                 const depthFactor = obj.userData.depthFactor || 1;
-                obj.translateLocal(0, 0, dt * depthFactor * 15);
+                obj.translateLocal(0, 0, dt * depthFactor * 15); // Adjust speed for better parallax
 
-                obj.rotate(0, dt * 10, 0);
+                obj.rotate(0, dt * 3, 0); // Subtle rotation for objects
 
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z) {
-                    obj.translateLocal(0, 0, -3000);
+                    obj.translateLocal(0, 0, -5000); // Increase recycle distance for better flow
                 }
             });
         }
@@ -162,8 +161,8 @@
 
                 sceneObjects.forEach((obj, i) => {
                     const freq = dataArray[i % dataArray.length] / 255;
-                    obj.setLocalScale(freq * 3 + 1, freq * 5 + 1, freq * 3 + 1);
-                    obj.rotate(0, freq * 2, 0);
+                    obj.setLocalScale(freq * 2 + 1, freq * 3 + 1, freq * 2 + 1);
+                    obj.rotate(0, freq * 1.2, 0);
                 });
             }
 
