@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PlayCanvas Microphone Visualizer</title>
+    <title>Enhanced Music Visualizer - Star Guitar Style</title>
     <style>
         body, html {
             margin: 0;
@@ -29,39 +29,102 @@
 
         // Set background color
         app.scene.skyboxMip = 0;
-        app.scene.ambientLight = new pc.Color(0.5, 0.5, 0.5);
+        app.scene.ambientLight = new pc.Color(0.1, 0.1, 0.1);
 
-        // Create camera
+        // Create camera that moves forward through the scene
         const camera = new pc.Entity();
         camera.addComponent("camera", {
             clearColor: new pc.Color(0, 0, 0)
         });
-        camera.translate(0, 0, 20);
+        camera.translate(0, 2, 20);
         app.root.addChild(camera);
 
         // Create light
         const light = new pc.Entity();
-        light.addComponent("light");
+        light.addComponent("light", {
+            type: "directional",
+            color: new pc.Color(1, 1, 1),
+            intensity: 1
+        });
         light.setLocalEulerAngles(45, 0, 0);
         app.root.addChild(light);
 
-        // Create an array of visualizer bars
-        const bars = [];
-        const numBars = 32;
-        for (let i = 0; i < numBars; i++) {
-            const bar = new pc.Entity();
-            bar.addComponent("model", {
-                type: "box"
+        // Scene Arrays
+        const sceneObjects = [];
+        const objectDistance = 10;
+
+        // Post-Processing Effects (optional, like bloom or motion blur)
+        const postEffect = new pc.StandardMaterial();
+        postEffect.emissive = new pc.Color(0.0, 0.5, 1.0);
+        postEffect.emissiveIntensity = 1.0;
+        postEffect.update();
+
+        // Create horizon or skybox simulation
+        function createHorizon() {
+            const horizon = new pc.Entity();
+            horizon.addComponent("model", {
+                type: "sphere"
             });
-            bar.setLocalScale(0.5, 1, 0.5);
-            bar.setLocalPosition(i - numBars / 2, 0, 0);
-            app.root.addChild(bar);
-            bars.push(bar);
+            horizon.setLocalScale(100, 50, 100);
+            horizon.setLocalPosition(0, -50, -300);
+            horizon.model.material = new pc.StandardMaterial();
+            horizon.model.material.diffuse = new pc.Color(0.2, 0.2, 0.4);
+            horizon.model.material.update();
+            app.root.addChild(horizon);
         }
 
+        createHorizon();
+
+        // Object creator for buildings, trees, and other elements
+        function createObject(x, z, type) {
+            const object = new pc.Entity();
+            object.addComponent("model", {
+                type: type === 'box' ? "box" : "cylinder"
+            });
+
+            if (type === 'box') {
+                object.setLocalScale(2, Math.random() * 5 + 3, 2);
+            } else if (type === 'tree') {
+                object.setLocalScale(1.5, Math.random() * 3 + 4, 1.5);
+            } else {
+                object.setLocalScale(1, Math.random() * 6 + 2, 1); // Abstract shapes
+            }
+
+            object.setLocalPosition(x, 0, z);
+            app.root.addChild(object);
+            sceneObjects.push(object);
+        }
+
+        // Populate scene with trees, buildings, and abstract shapes
+        function populateScene() {
+            for (let i = 0; i < 100; i++) {
+                const type = Math.random() > 0.5 ? 'box' : 'tree'; // Alternate between buildings and trees
+                createObject(-5, -i * objectDistance, type); // Left side
+                createObject(5, -i * objectDistance, type);  // Right side
+
+                // Add some abstract shapes in the middle occasionally
+                if (Math.random() > 0.7) {
+                    createObject(0, -i * objectDistance, 'abstract');
+                }
+            }
+        }
+
+        populateScene();
+
+        // Object recycling and camera movement
+        function updateScene(dt) {
+            camera.translateLocal(0, 0, -dt * 10); // Forward movement
+
+            sceneObjects.forEach((obj) => {
+                if (obj.getLocalPosition().z > camera.getLocalPosition().z) {
+                    obj.translateLocal(0, 0, -1000); // Move back when out of view
+                }
+            });
+        }
+
+        // Audio analyzer setup
         let audioContext, analyser, dataArray;
 
-        // Function to start microphone capture
         function startMicCapture() {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(function (stream) {
@@ -69,12 +132,12 @@
                     const source = audioContext.createMediaStreamSource(stream);
 
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 64; // Adjust the size to match numBars
+                    analyser.fftSize = 64;
                     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
                     source.connect(analyser);
 
-                    // Update the visualizer
+                    // Sync visuals with beat
                     app.on("update", updateVisualizer);
                 })
                 .catch(function (err) {
@@ -82,16 +145,30 @@
                 });
         }
 
-        // Update visualizer bars based on audio data
         function updateVisualizer(dt) {
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
 
-                for (let i = 0; i < bars.length; i++) {
-                    const scaleY = dataArray[i] / 255 * 10; // Scale the height based on frequency
-                    bars[i].setLocalScale(0.5, Math.max(0.5, scaleY), 0.5); // Avoid zero scale
-                }
+                // Sync object scale or movement with frequency data
+                sceneObjects.forEach((obj, i) => {
+                    const freq = dataArray[i % dataArray.length] / 255;
+                    obj.setLocalScale(2, freq * 8 + 2, 2); // Vary height with audio
+                    obj.translateLocal(0, freq * 0.5, 0); // Subtle vertical movement
+
+                    // Sync color to high-frequency sounds
+                    if (freq > 0.5) {
+                        obj.model.material.emissive = new pc.Color(freq, freq, freq * 0.5);
+                        obj.model.material.update();
+                    }
+                });
+
+                // Add sway to the camera based on frequencies
+                const cameraSway = dataArray[0] / 255;
+                camera.translateLocal(cameraSway * 0.02, 0, 0); // Slight lateral movement
             }
+
+            // Update scene for movement and recycling
+            updateScene(dt);
         }
 
         // Start microphone capture when the page loads
