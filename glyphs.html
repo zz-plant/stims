@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizer with Parallax and Perspective</title>
+    <title>Advanced Visualizer with Parallax, Perspective, and Beat Sync</title>
     <style>
         body, html {
             margin: 0;
@@ -71,7 +71,7 @@
 
         createHorizon();
 
-        // Create object types: pyramids, cones, spheres, and boxes
+        // Create object types: pyramids, cones, spheres, and boxes with depth for parallax effect
         function createObject(x, z, type, depthFactor) {
             const object = new pc.Entity();
 
