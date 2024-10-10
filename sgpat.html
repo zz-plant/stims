@@ -136,6 +136,16 @@
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z + 50) {
                     obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500); // Set a closer reset point
                 }
+
+                // Handle collision with camera
+                if (obj.getLocalPosition().z > camera.getLocalPosition().z - 5 && obj.getLocalPosition().z < camera.getLocalPosition().z + 5) {
+                    obj.model.material.opacity = 0.2; // Make object translucent when too close to the camera
+                    obj.model.material.blendType = pc.BLEND_NORMAL;
+                    obj.model.material.update();
+                } else {
+                    obj.model.material.opacity = 1.0; // Restore opacity when not near camera
+                    obj.model.material.update();
+                }
             });
         }
 
