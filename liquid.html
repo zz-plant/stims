@@ -1,126 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Audio Reactive Visualizer</title>
-    <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js"></script>
+    <title>WebGPU Enhanced Audio Visualizer with Bloom</title>
     <style>
-        body {
+        body, html {
             margin: 0;
+            padding: 0;
             overflow: hidden;
-            background-color: #000;
         }
     </style>
-</head>
-
-<body>
     <script type="module">
-        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
+        import * as pc from 'https://code.playcanvas.com/playcanvas-stable.min.js';
 
-        // Set up the scene
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 20;
+        // Set up the PlayCanvas application with WebGPU
+        const canvas = document.createElement('canvas');
+        document.body.appendChild(canvas);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // Particle System Setup
-        const particleCount = 8000;
-        const particles = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const colors = new Float32Array(particleCount * 3);
-
-        for (let i = 0; i < particleCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 50;
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
-
-            colors[i * 3] = Math.random() * 0.7 + 0.3;
-            colors[i * 3 + 1] = Math.random() * 0.7 + 0.3;
-            colors[i * 3 + 2] = Math.random() * 0.7 + 0.3;
-        }
-
-        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        const particleMaterial = new THREE.PointsMaterial({
-            vertexColors: true,
-            size: 0.2,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            opacity: 0.8
+        const app = new pc.Application(canvas, {
+            graphicsDeviceOptions: {
+                preferredGraphicsDevice: "webgpu" // Use WebGPU for enhanced performance
+            }
         });
 
-        const particleSystem = new THREE.Points(particles, particleMaterial);
-        scene.add(particleSystem);
+        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+        app.setCanvasResolution(pc.RESOLUTION_AUTO);
+        app.start();
 
-        // Audio Setup
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
+        // Set background color
+        app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1);
 
-        let audioEnabled = false;
+        // Create a camera with bloom post-processing
+        const camera = new pc.Entity();
+        camera.addComponent("camera", {
+            clearColor: new pc.Color(0, 0, 0),
+            fov: 60
+        });
+        camera.setLocalPosition(0, 0.5, 20);
+        app.root.addChild(camera);
 
-        // Get microphone input
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(function (stream) {
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                audioEnabled = true;
-                console.log("Microphone access granted.");
-            })
-            .catch(function (err) {
-                console.error('Error accessing the microphone:', err);
-                alert("Error accessing microphone. Fallback animation will be used.");
-            });
+        // Add bloom post-processing effect from PlayCanvas
+        const bloom = new pc.BloomEffect(app.graphicsDevice, {
+            bloomThreshold: 0.7,   // Only apply bloom to bright areas
+            bloomIntensity: 1.2,   // Increase the strength of the bloom effect
+            blurAmount: 4.0        // Amount of blurring in the bloom effect
+        });
+        camera.camera.postEffects.addEffect(bloom);
 
-        // Animate particles with dreamy, fluid movements
-        function animate() {
-            requestAnimationFrame(animate);
+        // Create a directional light
+        const light = new pc.Entity();
+        light.addComponent("light", {
+            type: "directional",
+            color: new pc.Color(1, 1, 0.9),
+            intensity: 1.5
+        });
+        light.setLocalEulerAngles(30, 30, 0);
+        app.root.addChild(light);
 
-            let averageFrequency = 0;
+        // Scene objects
+        const sceneObjects = [];
+        const objectDistance = 15;
 
-            if (audioEnabled) {
-                analyser.getByteFrequencyData(dataArray);
-                averageFrequency = dataArray.reduce((a, b) => a + b) / bufferLength;
-            } else {
-                averageFrequency = Math.sin(Date.now() * 0.001) * 128 + 128;
-            }
+        // Create scene objects with random colors and Gaussian Splatting effect
+        function createObject(x, z, type) {
+            const object = new pc.Entity();
+            object.addComponent("model", { type: "box" });
 
-            const positions = particleSystem.geometry.attributes.position.array;
-            const time = Date.now() * 0.0001;
+            const material = new pc.StandardMaterial();
+            material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
+            material.update();
 
-            for (let i = 0; i < particleCount; i++) {
-                const index = i * 3;
+            object.model.material = material;
+            object.setLocalScale(5, 5, 5);
+            object.setLocalPosition(x, 0, z);
 
-                // Add more wave-like movement for a dreamy effect
-                positions[index] += Math.sin(time + positions[index + 1] * 0.05) * 0.005 * (averageFrequency / 128);
-                positions[index + 1] += Math.cos(time + positions[index + 2] * 0.05) * 0.005 * (averageFrequency / 128);
-                positions[index + 2] += Math.sin(time + positions[index] * 0.05) * 0.005 * (averageFrequency / 128);
-            }
-
-            particleSystem.geometry.attributes.position.needsUpdate = true;
-
-            renderer.render(scene, camera);
+            app.root.addChild(object);
+            sceneObjects.push(object);
         }
 
-        animate();
+        function populateScene() {
+            for (let i = 0; i < 100; i++) {
+                createObject(Math.random() * 30 - 15, -i * objectDistance, 'box');
+            }
+        }
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            renderer.setSize(width, height);
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
+        populateScene();
+
+        // Web Audio API for real-time audio analysis
+        let audioContext, analyser;
+        function startAudioProcessing() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 128;
+                    source.connect(analyser);
+
+                    app.on("update", updateVisualizer);
+                })
+                .catch(err => {
+                    console.error('Error accessing microphone: ' + err);
+                });
+        }
+
+        function updateVisualizer(dt) {
+            const frequencyData = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(frequencyData);
+
+            sceneObjects.forEach((obj, i) => {
+                const scaleFactor = frequencyData[i % frequencyData.length] / 255;
+                obj.setLocalScale(scaleFactor * 5 + 1, scaleFactor * 5 + 1, scaleFactor * 5 + 1);
+            });
+        }
+
+        window.onload = function () {
+            startAudioProcessing();
+        };
+
+        // Handle window resizing
+        window.addEventListener("resize", function () {
+            app.resizeCanvas(canvas.width, canvas.height);
         });
     </script>
+</head>
+<body>
 </body>
-
 </html>
