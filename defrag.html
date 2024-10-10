@@ -3,161 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Defragmenting Drive C:</title>
+    <title>Defrag Simulation with Audio & Visuals</title>
     <style>
         body, html {
             margin: 0;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            padding: 0;
             background-color: black;
-            font-family: 'Courier New', Courier, monospace;
-            color: #00FF00;
             overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
         }
-
-        #driveStatus {
+        #progress-bar-container {
             position: absolute;
-            bottom: 10px;
-            font-size: 1.5rem;
+            bottom: 20px;
+            width: 100%;
             text-align: center;
         }
-
+        #progress-bar {
+            height: 20px;
+            width: 80%;
+            border: 2px solid green;
+            margin: 0 auto;
+            background-color: black;
+            position: relative;
+        }
+        #progress-bar-fill {
+            height: 100%;
+            background-color: lime;
+            width: 0;
+        }
+        #status-text {
+            color: green;
+            margin-top: 10px;
+            font-size: 20px;
+        }
         canvas {
             display: block;
-            background-color: #000;
-        }
-
-        /* Block Colors inspired by defrag visuals */
-        .block {
-            width: 10px;
-            height: 10px;
-            background-color: #333;
-        }
-
-        #progressBar {
-            position: absolute;
-            bottom: 40px;
-            width: 80%;
-            height: 25px;
-            border: 2px solid #00FF00;
-            display: flex;
-            justify-content: flex-start;
-        }
-
-        .progressSegment {
-            height: 100%;
-            background-color: #00FF00;
-            animation: load 10s linear infinite;
-        }
-
-        @keyframes load {
-            0% { width: 0%; }
-            100% { width: 100%; }
+            width: 100vw;
+            height: 100vh;
         }
     </style>
 </head>
 <body>
-    <canvas id="visualizerCanvas"></canvas>
-    
-    <div id="progressBar">
-        <div id="progress" class="progressSegment"></div>
+    <canvas id="toy-canvas"></canvas>
+
+    <div id="progress-bar-container">
+        <div id="progress-bar">
+            <div id="progress-bar-fill"></div>
+        </div>
+        <div id="status-text">Defragmenting Drive C:</div>
     </div>
-    
-    <div id="driveStatus">Defragmenting Drive C:</div>
 
-    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
-    <script src="assets/js/utils/patternRecognition.js" type="module"></script>
-
-    <script type="module">
-        import PatternRecognizer from './assets/js/utils/patternRecognition.js';
-
-        // Setup PlayCanvas for the defrag-like visualizer
-        const canvas = document.getElementById('visualizerCanvas');
-        const app = new pc.Application(canvas, {});
-        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
-        app.setCanvasResolution(pc.RESOLUTION_AUTO);
-        app.start();
-
-        const blocks = [];
-        const rows = 30;
-        const cols = 50;
-        const blockSize = Math.min(window.innerWidth / cols, window.innerHeight / rows);
-        
-        let recognizedPattern = null;
-        let currentBlock = 0;
-        let defragSpeed = 50; // Simulating defrag progression speed
-
-        const patternRecognizer = new PatternRecognizer(app.context, null); // Assuming you can pass an analyser
-
-        // Setup grid for defrag visuals
-        function createGrid() {
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    const block = new pc.Entity();
-                    block.addComponent("element", {
-                        type: "image",
-                        anchor: [0, 0, 0, 0],
-                        width: blockSize,
-                        height: blockSize,
-                        color: new pc.Color(Math.random(), Math.random(), Math.random()) // Random colors like blocks in old defraggers
-                    });
-                    block.setLocalPosition(col * blockSize, row * blockSize, 0);
-                    blocks.push(block);
-                    app.root.addChild(block);
-                }
-            }
-        }
-
-        function defragment() {
-            if (currentBlock >= blocks.length) {
-                currentBlock = 0;
-            }
-            const block = blocks[currentBlock];
-            block.element.color = new pc.Color(Math.random(), Math.random(), Math.random());
-            currentBlock++;
-
-            setTimeout(defragment, defragSpeed);
-        }
-
-        createGrid();
-        defragment();
-
-        // Update progress bar to reflect defragmentation progress
-        let progressBar = document.getElementById("progress");
-        let progressPercent = 0;
-        function updateProgressBar() {
-            progressPercent += 0.5;
-            progressBar.style.width = progressPercent + '%';
-            if (progressPercent >= 100) {
-                progressPercent = 0;
-            }
-            requestAnimationFrame(updateProgressBar);
-        }
-
-        updateProgressBar();
-
-        // Optional: Make grid react to pattern recognition (e.g., from audio)
-        function updatePattern(dt) {
-            recognizedPattern = patternRecognizer.predictNextPattern();
-            if (recognizedPattern) {
-                recognizedPattern.forEach((value, index) => {
-                    const block = blocks[index];
-                    const intensity = value / 255;
-                    block.element.color = new pc.Color(intensity, intensity, intensity);
-                });
-            }
-        }
-
-        app.on('update', updatePattern);
-
-        // Handle window resizing
-        window.addEventListener("resize", function () {
-            app.resizeCanvas(canvas.width, canvas.height);
-        });
-
-    </script>
+    <script src="/assets/js/app.js" type="module"></script>
 </body>
 </html>
