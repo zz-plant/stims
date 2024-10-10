@@ -142,6 +142,13 @@
                 const maxDistance = 500;
                 const scale = Math.max(minScale, 1 - (distanceFromCamera / maxDistance));
                 obj.setLocalScale(scale, scale, scale);
+
+                // Make objects dissolve or become translucent when colliding with the camera
+                if (distanceFromCamera < 10) {
+                    obj.model.material.opacity = Math.max(0, (distanceFromCamera - 5) / 5);
+                    obj.model.material.blendType = pc.BLEND_NORMAL;
+                    obj.model.material.update();
+                }
             });
         }
 
