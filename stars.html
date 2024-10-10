@@ -85,8 +85,20 @@
             } else if (type === 'bridge') {
                 object.addComponent("model", { type: "box" });
                 object.setLocalScale(10, 1, 2);
-            } else {
+            } else if (type === 'abstract') {
                 object.addComponent("model", { type: "sphere" });
+            } else if (type === 'spinningCone') {
+                object.addComponent("model", { type: "cone" });
+                object.setLocalScale(2, 4, 2);
+                object.addComponent("script");
+                object.script.create('spin', {
+                    attributes: {
+                        speed: Math.random() * 30 + 20
+                    }
+                });
+            } else if (type === 'floatingRing') {
+                object.addComponent("model", { type: "torus" });
+                object.setLocalScale(3, 3, 3);
             }
 
             // Set position and material
@@ -103,14 +115,14 @@
             material.update();
             object.model.material = material;
 
-            object.userData = { depthFactor, type, baseColor: material.diffuse.clone() };
+            object.userData = { depthFactor, type };
             app.root.addChild(object);
             sceneObjects.push(object);
         }
 
         // Populate the scene with repeating structure patterns
         function populateScene() {
-            const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost'];
+            const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost', 'spinningCone', 'floatingRing'];
             for (let i = 0; i < 200; i++) {
                 const type = repeatingPattern[i % repeatingPattern.length];
                 createObject(-15, -i * objectDistance, type, 1);
@@ -189,14 +201,7 @@
                     sceneObjects.forEach((obj, i) => {
                         const freq = predictedPattern[i % predictedPattern.length] / 255;
                         obj.setLocalScale(freq * 5 + 2, freq * 6 + 2, freq * 5 + 2); // Larger scaling effect
-
-                        // Blend the object's base color with the new frequency-based color
-                        const baseColor = obj.userData.baseColor;
-                        obj.model.material.diffuse.r = pc.math.lerp(baseColor.r, freq, 0.5);
-                        obj.model.material.diffuse.g = pc.math.lerp(baseColor.g, 0.5, 0.5);
-                        obj.model.material.diffuse.b = pc.math.lerp(baseColor.b, 1 - freq, 0.5);
-                        obj.model.material.update();
-
+                        obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq); // More distinct color change
                         obj.rotate(0, freq * 1.5, 0);
                     });
                 }
