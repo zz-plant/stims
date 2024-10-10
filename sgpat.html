@@ -58,7 +58,7 @@
         // Object types and arrays
         const sceneObjects = [];
         const objectDistance = 30; // Adjust spacing for balance between density and clarity
-        const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge'];
+        const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge', 'pyramid', 'torus', 'icosphere'];
 
         // Create horizon or skybox for the background
         function createHorizon() {
@@ -90,6 +90,15 @@
             } else if (type === 'bridge') {
                 object.addComponent("model", { type: "box" });
                 object.setLocalScale(10, 1, 2); // Horizontal box for a bridge-like structure.
+            } else if (type === 'pyramid') {
+                object.addComponent("model", { type: "cone" });
+                object.setLocalScale(3, 4, 3); // Pyramid-like shape
+            } else if (type === 'torus') {
+                object.addComponent("model", { type: "torus" });
+                object.setLocalScale(3, 3, 3); // Torus shape for more geometric variety
+            } else if (type === 'icosphere') {
+                object.addComponent("model", { type: "sphere" });
+                object.setLocalScale(3, 3, 3); // Spherical shape but smaller for variation
             } else {
                 object.addComponent("model", { type: "sphere" });
             }
@@ -105,8 +114,6 @@
             material.metalness = 0.5;
             material.gloss = 0.7;
             material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
-            material.bumpiness = 0.5; // Add texture richness
-            material.normalMap = createNoiseTexture(); // Generate a noise texture for added detail
             material.update();
             object.model.material = material;
 
@@ -115,29 +122,9 @@
             sceneObjects.push(object);
         }
 
-        // Function to create a noise texture for richer visual detail
-        function createNoiseTexture() {
-            const texture = new pc.Texture(app.graphicsDevice, {
-                width: 256,
-                height: 256,
-                format: pc.PIXELFORMAT_R8_G8_B8
-            });
-
-            const pixels = new Uint8Array(256 * 256 * 3);
-            for (let i = 0; i < pixels.length; i++) {
-                pixels[i] = Math.floor(Math.random() * 256);
-            }
-
-            texture.lock();
-            const texData = texture.lock();
-            texData.set(pixels);
-            texture.unlock();
-            return texture;
-        }
-
         // Populate the scene with repeating structure patterns
         function populateScene() {
-            const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost'];
+            const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost', 'pyramid', 'torus', 'icosphere'];
             for (let i = 0; i < 200; i++) {
                 const type = repeatingPattern[i % repeatingPattern.length];
                 createObject(-15, -i * objectDistance, type, 1);
@@ -159,10 +146,12 @@
                     obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500); // Set a closer reset point
                 }
 
-                // Make objects dissolve or become translucent as they get close to the camera
+                // Add dissolving or translucency effect when close to camera
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z - 10) {
-                    obj.model.material.opacity = Math.max(0, 1 - (obj.getLocalPosition().z - (camera.getLocalPosition().z - 10)) / 20);
-                    obj.model.material.blendType = pc.BLEND_NORMAL;
+                    obj.model.material.opacity = Math.max(0, 1 - (obj.getLocalPosition().z - camera.getLocalPosition().z + 10) / 10);
+                    obj.model.material.update();
+                } else {
+                    obj.model.material.opacity = 1;
                     obj.model.material.update();
                 }
             });
@@ -179,7 +168,7 @@
                     const source = audioContext.createMediaStreamSource(stream);
 
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 512; // Increased resolution for better detail
+                    analyser.fftSize = 256; // Increased resolution for better detail
 
                     source.connect(analyser);
                     patternRecognizer = new PatternRecognizer(audioContext, analyser);
