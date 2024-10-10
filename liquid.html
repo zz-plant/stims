@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGPU Enhanced Audio Visualizer with Bloom</title>
+    <title>Audio Visualizer with WebGPU Fallback</title>
     <style>
         body, html {
             margin: 0;
@@ -14,15 +14,28 @@
     <script type="module">
         import * as pc from 'https://code.playcanvas.com/playcanvas-stable.min.js';
 
-        // Set up the PlayCanvas application with WebGPU
         const canvas = document.createElement('canvas');
         document.body.appendChild(canvas);
 
-        const app = new pc.Application(canvas, {
-            graphicsDeviceOptions: {
-                preferredGraphicsDevice: "webgpu" // Use WebGPU for enhanced performance
-            }
-        });
+        // Check if WebGPU is supported
+        const isWebGPUSupported = !!navigator.gpu;
+        let app;
+
+        if (isWebGPUSupported) {
+            console.log("WebGPU is supported, using WebGPU.");
+            app = new pc.Application(canvas, {
+                graphicsDeviceOptions: {
+                    preferredGraphicsDevice: "webgpu"  // Use WebGPU for enhanced performance
+                }
+            });
+        } else {
+            console.log("WebGPU is not supported, falling back to WebGL.");
+            app = new pc.Application(canvas, {
+                graphicsDeviceOptions: {
+                    preferredGraphicsDevice: "webgl"  // Fallback to WebGL
+                }
+            });
+        }
 
         app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
         app.setCanvasResolution(pc.RESOLUTION_AUTO);
@@ -31,7 +44,7 @@
         // Set background color
         app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1);
 
-        // Create a camera with bloom post-processing
+        // Create camera with bloom post-processing
         const camera = new pc.Entity();
         camera.addComponent("camera", {
             clearColor: new pc.Color(0, 0, 0),
@@ -62,7 +75,7 @@
         const sceneObjects = [];
         const objectDistance = 15;
 
-        // Create scene objects with random colors and Gaussian Splatting effect
+        // Create scene objects with random colors
         function createObject(x, z, type) {
             const object = new pc.Entity();
             object.addComponent("model", { type: "box" });
