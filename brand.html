@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Star Guitar Inspired Visualizer</title>
+    <title>Enhanced Star Guitar Inspired Visualizer</title>
     <style>
         html, body {
             margin: 0;
@@ -19,188 +19,139 @@
     <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Scene setup
-        let scene, camera, renderer, clock;
-        let analyser, frequencyData;
-        let lastBeatTime = 0;
-        const minBeatInterval = 500; // Minimum interval between beats in milliseconds
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x000000, 10, 200);
+
+        // Camera setup
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 5);
+        camera.rotation.x = -0.05;
+
+        // Renderer setup
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting setup
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffddaa, 0.8);
+        directionalLight.position.set(0, 50, -50);
+        scene.add(directionalLight);
+
+        // Gradient Sky
+        const skyGeo = new THREE.SphereGeometry(500, 32, 15);
+        const skyMat = new THREE.ShaderMaterial({
+            vertexShader: `
+                varying vec2 vUV;
+                void main() {
+                    vUV = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+                }
+            `,
+            fragmentShader: `
+                varying vec2 vUV;
+                void main() {
+                    vec3 skyColor = mix(vec3(0.1, 0.2, 0.5), vec3(0.8, 0.9, 1.0), vUV.y);
+                    gl_FragColor = vec4( skyColor, 1.0 );
+                }
+            `,
+            side: THREE.BackSide
+        });
+        const sky = new THREE.Mesh(skyGeo, skyMat);
+        scene.add(sky);
+
+        // Ground plane
+        const groundGeo = new THREE.PlaneGeometry(1000, 1000);
+        const groundMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -1.5;
+        scene.add(ground);
+
+        // Function to create procedural elements
         const scenery = [];
-        const beatThreshold = 150;
-        const modularElements = [];
-        const modularElementSpacing = 20;
-        const cameraSpeed = 10;
-
-        function init() {
-            scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x000000, 10, 200);
-
-            // Camera setup
-            camera = new THREE.PerspectiveCamera(
-                75,
-                window.innerWidth / window.innerHeight,
-                0.1,
-                1000
-            );
-            camera.position.set(0, 2, 5);
-
-            // Renderer setup
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-
-            // Lighting setup
-            const ambientLight = new THREE.AmbientLight(0xddddff, 0.6);
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffcc88, 0.8);
-            directionalLight.position.set(0, 50, -50);
-            scene.add(directionalLight);
-
-            // Initialize scene elements
-            createInitialScenery();
-            createModularElements();
-
-            // Initialize clock
-            clock = new THREE.Clock();
-
-            // Setup audio
-            setupAudio();
-
-            // Handle window resize
-            window.addEventListener('resize', onWindowResize, false);
-
-            animate();
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function createInitialScenery() {
-            // Create repeating scenery elements like trees, buildings, and train tracks
-            for (let i = 0; i < 100; i++) {
-                createSynchronizedSceneryElement(-i * 20);
+        function createElement(type, x, z) {
+            let element;
+            const scaleFactor = Math.random() * 1.5 + 2;
+            switch (type) {
+                case 'building':
+                    element = new THREE.Mesh(new THREE.BoxGeometry(1, scaleFactor, 1), new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff }));
+                    break;
+                case 'tree':
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1), new THREE.MeshLambertMaterial({ color: 0x8B4513 }));
+                    const leaves = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 8), new THREE.MeshLambertMaterial({ color: 0x228B22 }));
+                    leaves.position.set(0, 0.5, 0);
+                    element = new THREE.Group();
+                    element.add(trunk);
+                    element.add(leaves);
+                    break;
+                case 'pole':
+                    element = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 5), new THREE.MeshLambertMaterial({ color: 0xaaaaaa }));
+                    break;
+                default:
+                    element = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff }));
+                    break;
             }
-        }
-
-        function createSynchronizedSceneryElement(zPosition) {
-            const geometry = new THREE.BoxGeometry(1, Math.random() * 5 + 2, 1);
-            const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
-            const element = new THREE.Mesh(geometry, material);
-            element.position.set(
-                Math.random() * 40 - 20, // Random X position for variety
-                geometry.parameters.height / 2,
-                zPosition // Place at specified z position
-            );
-            element.castShadow = true;
-            scene.add(element);
+            element.position.set(x, 0, z);
             scenery.push(element);
+            scene.add(element);
         }
 
-        function createModularElements() {
-            // Create modular repeating elements like train tracks, poles, and tunnels
-            const trackGeometry = new THREE.BoxGeometry(5, 0.1, modularElementSpacing);
-            const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
-            for (let i = 0; i < 200; i++) {
-                const track = new THREE.Mesh(trackGeometry, trackMaterial);
-                track.position.set(0, 0, -i * modularElementSpacing);
-                track.receiveShadow = true;
-                scene.add(track);
-                modularElements.push(track);
-            }
-
-            const poleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 10, 16);
-            const poleMaterial = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
-            for (let i = 0; i < 100; i++) {
-                const pole = new THREE.Mesh(poleGeometry, poleMaterial);
-                pole.position.set(-10, 5, -i * modularElementSpacing * 2);
-                pole.castShadow = true;
-                scene.add(pole);
-                modularElements.push(pole);
-            }
+        // Populate scenery with varied elements
+        for (let i = 0; i < 100; i++) {
+            const z = -Math.random() * 300;
+            const side = Math.random() > 0.5 ? 1 : -1;
+            const x = side * (Math.random() * 10 + 5);
+            const types = ['building', 'tree', 'pole'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            createElement(randomType, x, z);
         }
 
-        function setupAudio() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert('getUserMedia not supported on your browser!');
-                return;
-            }
+        // Audio setup
+        let analyser;
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audioSource = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            audioSource.connect(analyser);
+        }).catch((err) => {
+            console.error('Audio input error: ', err);
+        });
 
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(function(stream) {
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioContext.createMediaStreamSource(stream);
-                    analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 256;
-                    source.connect(analyser);
-                    frequencyData = new Uint8Array(analyser.frequencyBinCount);
-                })
-                .catch(function(err) {
-                    console.error('The following gUM error occurred: ' + err);
-                });
-        }
-
-        function handleBeatDetection() {
-            const overallLevel = frequencyData.reduce((a, b) => a + b, 0) / frequencyData.length;
-            if (overallLevel > beatThreshold && Date.now() - lastBeatTime > minBeatInterval) {
-                lastBeatTime = Date.now();
-                createSynchronizedSceneryElement(camera.position.z - 100);
-            }
-        }
-
-        function updateSceneryWithSound() {
-            if (analyser) {
-                analyser.getByteFrequencyData(frequencyData);
-                handleBeatDetection();
-
-                // Update modular elements color and intensity based on frequency data
-                const mid = getFrequencyRangeValue(11, 40);
-                const colorValue = Math.min(1, mid / 255);
-                modularElements.forEach(element => {
-                    element.material.color.setHSL(colorValue, 0.7, 0.5);
-                });
-            }
-        }
-
-        function getFrequencyRangeValue(start, end) {
-            const slice = frequencyData.slice(start, end);
-            const sum = slice.reduce((a, b) => a + b, 0);
-            return sum / slice.length;
-        }
-
+        // Animation loop
         function animate() {
             requestAnimationFrame(animate);
-            const delta = clock.getDelta();
 
-            // Move the camera forward
-            camera.position.z -= delta * cameraSpeed;
+            let bass = 0;
+            if (analyser) {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                bass = dataArray.slice(0, 10).reduce((a, b) => a + b, 0) / 10;
+            }
 
-            // Update scenery with sound
-            updateSceneryWithSound();
-
-            // Move scenery elements forward
-            scenery.forEach(obj => {
-                obj.position.z += delta * cameraSpeed;
-                if (obj.position.z > camera.position.z + 50) {
-                    obj.position.z -= 2000; // Loop scenery elements to create repetition
-                }
-            });
-
-            // Move modular elements forward to create a repeating pattern
-            modularElements.forEach(obj => {
-                obj.position.z += delta * cameraSpeed;
-                if (obj.position.z > camera.position.z + 50) {
-                    obj.position.z -= 2000;
+            const speed = 0.5 + bass / 100;
+            scenery.forEach((obj) => {
+                obj.position.z += speed;
+                if (obj.position.z > 5) {
+                    obj.position.z -= 300;
+                    obj.position.x = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 5);
                 }
             });
 
             renderer.render(scene, camera);
         }
 
-        // Initialize the visualizer
-        init();
+        animate();
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
