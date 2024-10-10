@@ -50,8 +50,7 @@
             type: "directional",
             color: new pc.Color(1, 1, 0.9),
             intensity: 1.5,
-            shadowDistance: 50,
-            castShadows: true
+            shadowDistance: 50
         });
         light1.setLocalEulerAngles(30, 30, 0);
         app.root.addChild(light1);
@@ -144,9 +143,9 @@
                 const scale = Math.max(minScale, 1 - (distanceFromCamera / maxDistance));
                 obj.setLocalScale(scale, scale, scale);
 
-                // Make objects dissolve or become translucent when near the camera
-                if (distanceFromCamera < 20) {
-                    obj.model.material.opacity = Math.max(0, 1 - (20 - distanceFromCamera) / 20);
+                // Make objects dissolve as they approach the camera
+                if (distanceFromCamera < 30) {
+                    obj.model.material.opacity = Math.max(0, distanceFromCamera / 30);
                     obj.model.material.blendType = pc.BLEND_NORMAL;
                     obj.model.material.update();
                 } else {
