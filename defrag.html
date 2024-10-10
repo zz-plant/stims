@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defrag Visualizer with Audio - PlayCanvas</title>
+    <style>
+        body, html {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', monospace;
+        }
+        #defrag-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #00ff00;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="defrag-info">Defragmenting Drive C:</div>
+    <canvas id="application-canvas"></canvas>
+
+    <!-- Include PlayCanvas and patternRecognizer -->
+    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
+    <script type="module" src="assets/js/utils/patternRecognition.js"></script>
+
+    <script type="module">
+        import PatternRecognizer from './assets/js/utils/patternRecognition.js';
+
+        // Create the PlayCanvas application and set up the canvas
+        const canvas = document.getElementById('application-canvas');
+        const app = new pc.Application(canvas, {
+            mouse: new pc.Mouse(canvas),
+            touch: new pc.TouchDevice(canvas)
+        });
+
+        // Set the canvas to fill the window and resize as needed
+        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+        app.setCanvasResolution(pc.RESOLUTION_AUTO);
+        app.start();
+
+        // Set a black clear color
+        app.scene.ambientLight = new pc.Color(0.2, 0.2, 0.2);
+        app.scene.skybox = null;
+
+        // Create a camera entity
+        const camera = new pc.Entity();
+        camera.addComponent('camera', {
+            clearColor: new pc.Color(0, 0, 0),
+            farClip: 1000,
+        });
+        camera.setPosition(0, 10, 40);
+        app.root.addChild(camera);
+
+        // Create the lighting
+        const light = new pc.Entity();
+        light.addComponent('light', {
+            type: 'directional',
+            color: new pc.Color(1, 1, 1),
+            intensity: 0.75
+        });
+        light.setEulerAngles(45, 0, 0);
+        app.root.addChild(light);
+
+        // Parameters for the grid
+        const gridRows = 20;
+        const gridCols = 40;
+        const blockSize = 1.0;
+        const blocks = [];
+
+        // Create a grid of blocks
+        for (let row = 0; row < gridRows; row++) {
+            for (let col = 0; col < gridCols; col++) {
+                const block = new pc.Entity();
+                block.addComponent('model', { type: 'box' });
+                block.setLocalScale(blockSize, blockSize, blockSize);
+                block.setPosition(col - gridCols / 2, 0, row - gridRows / 2);
+
+                // Assign random colors to simulate fragmented blocks
+                block.model.material = new pc.StandardMaterial();
+                block.model.material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
+                block.model.material.update();
+                
+                block.status = Math.random() > 0.8 ? 'filled' : 'empty';
+                block.originalColor = block.model.material.diffuse.clone();
+                app.root.addChild(block);
+                blocks.push(block);
+            }
+        }
+
+        // Move the blocks left to simulate defragmentation
+        function defragBlocks(audioFreqData) {
+            const frequencyThreshold = 0.5; // Define a threshold for triggering defragmentation based on audio data
+
+            for (let row = 0; row < gridRows; row++) {
+                for (let col = 0; col < gridCols - 1; col++) {
+                    const currentBlock = blocks[row * gridCols + col];
+                    const nextBlock = blocks[row * gridCols + col + 1];
+                    
+                    // Use audio frequency data to influence the defrag speed and activity
+                    const audioValue = audioFreqData ? audioFreqData[col % audioFreqData.length] / 255 : 0;
+                    if (audioValue > frequencyThreshold && currentBlock.status === 'empty' && nextBlock.status === 'filled') {
+                        currentBlock.status = 'filled';
+                        nextBlock.status = 'empty';
+                        
+                        // Swap colors
+                        currentBlock.model.material.diffuse = nextBlock.originalColor;
+                        currentBlock.model.material.update();
+
+                        nextBlock.model.material.diffuse = new pc.Color(0, 0, 0);
+                        nextBlock.model.material.update();
+                    }
+                }
+            }
+        }
+
+        // Audio pattern recognizer setup
+        let patternRecognizer;
+        let audioDataArray;
+
+        function startMicCapture() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function (stream) {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 256;
+
+                    source.connect(analyser);
+
+                    patternRecognizer = new PatternRecognizer(audioContext, analyser);
+                    audioDataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                    app.on("update", function (dt) {
+                        analyser.getByteFrequencyData(audioDataArray);
+                        defragBlocks(audioDataArray); // Pass audio data to influence defragmentation
+                    });
+                })
+                .catch(function (err) {
+                    console.error('Error accessing microphone: ' + err);
+                });
+        }
+
+        // Start microphone capture and pattern recognition
+        window.onload = function () {
+            startMicCapture();
+        };
+
+        // Handle window resizing
+        window.addEventListener("resize", function () {
+            app.resizeCanvas(canvas.width, canvas.height);
+        });
+    </script>
+</body>
+</html>
