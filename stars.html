@@ -103,7 +103,7 @@
             material.update();
             object.model.material = material;
 
-            object.userData = { depthFactor, type, initialColor: material.diffuse.clone() };
+            object.userData = { depthFactor, type, baseColor: material.diffuse.clone() };
             app.root.addChild(object);
             sceneObjects.push(object);
         }
@@ -153,10 +153,6 @@
                     obj.model.material.blendType = pc.BLEND_NONE;
                     obj.model.material.update();
                 }
-
-                // Restore original colors to avoid turning all objects blue
-                obj.model.material.diffuse = obj.userData.initialColor;
-                obj.model.material.update();
             });
         }
 
@@ -193,7 +189,14 @@
                     sceneObjects.forEach((obj, i) => {
                         const freq = predictedPattern[i % predictedPattern.length] / 255;
                         obj.setLocalScale(freq * 5 + 2, freq * 6 + 2, freq * 5 + 2); // Larger scaling effect
-                        obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq); // More distinct color change
+
+                        // Blend the object's base color with the new frequency-based color
+                        const baseColor = obj.userData.baseColor;
+                        obj.model.material.diffuse.r = pc.math.lerp(baseColor.r, freq, 0.5);
+                        obj.model.material.diffuse.g = pc.math.lerp(baseColor.g, 0.5, 0.5);
+                        obj.model.material.diffuse.b = pc.math.lerp(baseColor.b, 1 - freq, 0.5);
+                        obj.model.material.update();
+
                         obj.rotate(0, freq * 1.5, 0);
                     });
                 }
