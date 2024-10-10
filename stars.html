@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Star Guitar-Inspired Visualizer</title>
+    <title>Star Guitar-Inspired Visualizer with Advanced PlayCanvas Features</title>
     <style>
         body, html {
             margin: 0;
@@ -29,15 +29,15 @@
 
         // Set background color
         app.scene.skyboxMip = 0;
-        app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1); // Darker ambient light for more contrast
+        app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1);
 
         // Create camera with smooth forward motion
         const camera = new pc.Entity();
         camera.addComponent("camera", {
             clearColor: new pc.Color(0, 0, 0),
-            fov: 75 // Adjusted FOV for a more compressed look
+            fov: 75
         });
-        camera.setLocalPosition(0, 2, 60); // Camera stays steady for consistent perspective
+        camera.setLocalPosition(0, 2, 60);
         app.root.addChild(camera);
 
         // Create directional light for depth
@@ -48,15 +48,15 @@
             intensity: 1.5,
             shadowDistance: 50
         });
-        light1.setLocalEulerAngles(30, 30, 0); 
+        light1.setLocalEulerAngles(30, 30, 0);
         app.root.addChild(light1);
 
         // Object types and arrays
         const sceneObjects = [];
-        const objectDistance = 30; // Regularly spaced objects
-        const structurePattern = ['building', 'pole', 'abstract']; // Structured patterns of objects
+        const objectDistance = 30;
+        const structurePattern = ['building', 'pole', 'abstract'];
 
-        // Horizon or skybox to simulate the background
+        // Create horizon or skybox for the background
         function createHorizon() {
             const horizon = new pc.Entity();
             horizon.addComponent("model", {
@@ -65,7 +65,7 @@
             horizon.setLocalScale(100, 50, 100);
             horizon.setLocalPosition(0, -50, -300);
             horizon.model.material = new pc.StandardMaterial();
-            horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.2); 
+            horizon.model.material.diffuse = new pc.Color(0.1, 0.1, 0.2);
             horizon.model.material.update();
             app.root.addChild(horizon);
         }
@@ -77,11 +77,11 @@
             const object = new pc.Entity();
 
             if (type === 'building') {
-                object.addComponent("model", { type: "box" }); // Tall buildings
+                object.addComponent("model", { type: "box" });
             } else if (type === 'pole') {
-                object.addComponent("model", { type: "cylinder" }); // Slim poles
+                object.addComponent("model", { type: "cylinder" });
             } else {
-                object.addComponent("model", { type: "sphere" }); // Abstract spheres
+                object.addComponent("model", { type: "sphere" });
             }
 
             // Adjust scale based on type
@@ -89,26 +89,30 @@
             object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
             object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
 
-            // Set material colors for variety
-            object.model.material = new pc.StandardMaterial();
-            object.model.material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
-            object.model.material.update();
+            // Use PBR for materials for more realistic visuals
+            const material = new pc.StandardMaterial();
+            material.useMetalness = true;
+            material.metalness = Math.random();
+            material.gloss = 0.5 + Math.random() * 0.5;
+            material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
+            material.update();
+            object.model.material = material;
 
-            object.userData = { depthFactor }; // Store the depth factor for parallax effect
+            object.userData = { depthFactor };
             app.root.addChild(object);
             sceneObjects.push(object);
         }
 
-        // Populate the scene with repeating structure patterns (left, right, center objects) and depth factor
+        // Populate the scene with repeating structure patterns and depth factor
         function populateScene() {
             for (let i = 0; i < 100; i++) {
-                const type = structurePattern[i % structurePattern.length]; // Repeat pattern
+                const type = structurePattern[i % structurePattern.length];
 
-                const depthFactor = Math.random() * 0.5 + 0.5; // Objects further away have lower depth factor
+                const depthFactor = Math.random() * 0.5 + 0.5;
 
-                createObject(-10, -i * objectDistance, type, depthFactor); // Left side
-                createObject(10, -i * objectDistance, type, depthFactor);  // Right side
-                createObject(0, -i * objectDistance, type, depthFactor);   // Center objects
+                createObject(-10, -i * objectDistance, type, depthFactor);
+                createObject(10, -i * objectDistance, type, depthFactor);
+                createObject(0, -i * objectDistance, type, depthFactor);
             }
         }
 
@@ -118,12 +122,12 @@
         function updateScene(dt) {
             sceneObjects.forEach((obj) => {
                 const depthFactor = obj.userData.depthFactor || 1;
-                obj.translateLocal(0, 0, dt * depthFactor * 15); // Faster movement for foreground, slower for background
+                obj.translateLocal(0, 0, dt * depthFactor * 15);
 
-                obj.rotate(0, dt * 10, 0); // Subtle rotation for objects
+                obj.rotate(0, dt * 10, 0);
 
                 if (obj.getLocalPosition().z > camera.getLocalPosition().z) {
-                    obj.translateLocal(0, 0, -3000); // Recycle objects when out of view
+                    obj.translateLocal(0, 0, -3000);
                 }
             });
         }
@@ -138,12 +142,11 @@
                     const source = audioContext.createMediaStreamSource(stream);
 
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 128; // Increased for more frequency bins
+                    analyser.fftSize = 128;
                     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
                     source.connect(analyser);
 
-                    // Sync visuals with beat
                     app.on("update", updateVisualizer);
                 })
                 .catch(function (err) {
@@ -159,12 +162,11 @@
 
                 sceneObjects.forEach((obj, i) => {
                     const freq = dataArray[i % dataArray.length] / 255;
-                    obj.setLocalScale(freq * 3 + 1, freq * 5 + 1, freq * 3 + 1); // Adjust size based on frequency
-                    obj.rotate(0, freq * 2, 0); // Subtle rotation based on beat
+                    obj.setLocalScale(freq * 3 + 1, freq * 5 + 1, freq * 3 + 1);
+                    obj.rotate(0, freq * 2, 0);
                 });
             }
 
-            // Move the scene forward
             updateScene(dt);
         }
 
