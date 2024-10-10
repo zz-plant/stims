@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGPU Glyph Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.js';
+        import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.js';
+        import { FontLoader } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/examples/jsm/loaders/FontLoader.js';
+        import { TextGeometry } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/examples/jsm/geometries/TextGeometry.js';
+        import * as dat from 'https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.module.js';
+
+        // Renderer
+        const renderer = new WebGPURenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Scene and Camera
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 10;
+
+        // Load Font for Glyphs
+        const fontLoader = new FontLoader();
+        let glyph;
+        let font;
+        const glyphs = ['Z', 'P', 'L', 'N', 'T']; // Array of glyphs
+        let currentGlyphIndex = 0;
+
+        fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (loadedFont) => {
+            font = loadedFont;
+            createGlyph(glyphs[currentGlyphIndex]);
+        });
+
+        function createGlyph(char) {
+            if (glyph) scene.remove(glyph); // Remove the previous glyph
+
+            const textGeometry = new TextGeometry(char, {
+                font: font,
+                size: guiParams.glyphSize,
+                height: 0.2
+            });
+            const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            glyph = new THREE.Mesh(textGeometry, textMaterial);
+            scene.add(glyph);
+        }
+
+        // Switch glyph based on beat or interval
+        function switchGlyph() {
+            currentGlyphIndex = (currentGlyphIndex + 1) % glyphs.length;
+            createGlyph(glyphs[currentGlyphIndex]);
+        }
+
+        // Audio Setup
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            const audioSource = audioContext.createMediaStreamSource(stream);
+            audioSource.connect(analyser);
+        });
+
+        // Update glyphs with audio data
+        function updateGlyphWithAudio() {
+            analyser.getByteFrequencyData(dataArray);
+
+            if (glyph) {
+                const lowFreq = dataArray[0] / 256;
+                const midFreq = dataArray[64] / 256;
+                const highFreq = dataArray[128] / 256;
+
+                glyph.scale.set(1 + lowFreq * 2, 1 + midFreq * 2, 1);
+                glyph.rotation.x += highFreq * guiParams.rotationSpeed;
+                glyph.rotation.y += midFreq * guiParams.rotationSpeed;
+
+                // Trigger glyph switch on high-frequency spike (simple beat detection)
+                if (highFreq > 0.7) {
+                    switchGlyph();
+                }
+            }
+        }
+
+        // Animate
+        function animate() {
+            requestAnimationFrame(animate);
+            updateGlyphWithAudio();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // GUI for user control
+        const gui = new dat.GUI();
+        const guiParams = {
+            glyphSize: 2,
+            rotationSpeed: 0.1
+        };
+
+        gui.add(guiParams, 'glyphSize', 1, 5).name('Glyph Size').onChange(value => {
+            if (glyph) glyph.scale.set(value, value, value);
+        });
+
+        gui.add(guiParams, 'rotationSpeed', 0.01, 0.5).name('Rotation Speed');
+
+        // Responsive window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
