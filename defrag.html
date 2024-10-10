@@ -3,157 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Defrag Visualizer with Audio - PlayCanvas</title>
+    <title>Defragmenting Drive C:</title>
     <style>
         body, html {
             margin: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+            font-family: 'Courier New', Courier, monospace;
+            color: #00FF00;
             overflow: hidden;
-            background-color: #000;
-            font-family: 'Courier New', monospace;
         }
-        #defrag-info {
+
+        #driveStatus {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: #00ff00;
-            font-size: 14px;
+            bottom: 10px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        canvas {
+            display: block;
+            background-color: #000;
+        }
+
+        /* Block Colors inspired by defrag visuals */
+        .block {
+            width: 10px;
+            height: 10px;
+            background-color: #333;
+        }
+
+        #progressBar {
+            position: absolute;
+            bottom: 40px;
+            width: 80%;
+            height: 25px;
+            border: 2px solid #00FF00;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .progressSegment {
+            height: 100%;
+            background-color: #00FF00;
+            animation: load 10s linear infinite;
+        }
+
+        @keyframes load {
+            0% { width: 0%; }
+            100% { width: 100%; }
         }
     </style>
 </head>
 <body>
-    <div id="defrag-info">Defragmenting Drive C:</div>
-    <canvas id="application-canvas"></canvas>
+    <canvas id="visualizerCanvas"></canvas>
+    
+    <div id="progressBar">
+        <div id="progress" class="progressSegment"></div>
+    </div>
+    
+    <div id="driveStatus">Defragmenting Drive C:</div>
 
-    <!-- Include PlayCanvas and patternRecognizer -->
     <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
-    <script type="module" src="assets/js/utils/patternRecognition.js"></script>
+    <script src="assets/js/utils/patternRecognition.js" type="module"></script>
 
     <script type="module">
         import PatternRecognizer from './assets/js/utils/patternRecognition.js';
 
-        // Create the PlayCanvas application and set up the canvas
-        const canvas = document.getElementById('application-canvas');
-        const app = new pc.Application(canvas, {
-            mouse: new pc.Mouse(canvas),
-            touch: new pc.TouchDevice(canvas)
-        });
-
-        // Set the canvas to fill the window and resize as needed
+        // Setup PlayCanvas for the defrag-like visualizer
+        const canvas = document.getElementById('visualizerCanvas');
+        const app = new pc.Application(canvas, {});
         app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
         app.setCanvasResolution(pc.RESOLUTION_AUTO);
         app.start();
 
-        // Set a black clear color
-        app.scene.ambientLight = new pc.Color(0.2, 0.2, 0.2);
-        app.scene.skybox = null;
-
-        // Create a camera entity
-        const camera = new pc.Entity();
-        camera.addComponent('camera', {
-            clearColor: new pc.Color(0, 0, 0),
-            farClip: 1000,
-        });
-        camera.setPosition(0, 10, 40);
-        app.root.addChild(camera);
-
-        // Create the lighting
-        const light = new pc.Entity();
-        light.addComponent('light', {
-            type: 'directional',
-            color: new pc.Color(1, 1, 1),
-            intensity: 0.75
-        });
-        light.setEulerAngles(45, 0, 0);
-        app.root.addChild(light);
-
-        // Parameters for the grid
-        const gridRows = 20;
-        const gridCols = 40;
-        const blockSize = 1.0;
         const blocks = [];
+        const rows = 30;
+        const cols = 50;
+        const blockSize = Math.min(window.innerWidth / cols, window.innerHeight / rows);
+        
+        let recognizedPattern = null;
+        let currentBlock = 0;
+        let defragSpeed = 50; // Simulating defrag progression speed
 
-        // Create a grid of blocks
-        for (let row = 0; row < gridRows; row++) {
-            for (let col = 0; col < gridCols; col++) {
-                const block = new pc.Entity();
-                block.addComponent('model', { type: 'box' });
-                block.setLocalScale(blockSize, blockSize, blockSize);
-                block.setPosition(col - gridCols / 2, 0, row - gridRows / 2);
+        const patternRecognizer = new PatternRecognizer(app.context, null); // Assuming you can pass an analyser
 
-                // Assign random colors to simulate fragmented blocks
-                block.model.material = new pc.StandardMaterial();
-                block.model.material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
-                block.model.material.update();
-                
-                block.status = Math.random() > 0.8 ? 'filled' : 'empty';
-                block.originalColor = block.model.material.diffuse.clone();
-                app.root.addChild(block);
-                blocks.push(block);
-            }
-        }
-
-        // Move the blocks left to simulate defragmentation
-        function defragBlocks(audioFreqData) {
-            const frequencyThreshold = 0.5; // Define a threshold for triggering defragmentation based on audio data
-
-            for (let row = 0; row < gridRows; row++) {
-                for (let col = 0; col < gridCols - 1; col++) {
-                    const currentBlock = blocks[row * gridCols + col];
-                    const nextBlock = blocks[row * gridCols + col + 1];
-                    
-                    // Use audio frequency data to influence the defrag speed and activity
-                    const audioValue = audioFreqData ? audioFreqData[col % audioFreqData.length] / 255 : 0;
-                    if (audioValue > frequencyThreshold && currentBlock.status === 'empty' && nextBlock.status === 'filled') {
-                        currentBlock.status = 'filled';
-                        nextBlock.status = 'empty';
-                        
-                        // Swap colors
-                        currentBlock.model.material.diffuse = nextBlock.originalColor;
-                        currentBlock.model.material.update();
-
-                        nextBlock.model.material.diffuse = new pc.Color(0, 0, 0);
-                        nextBlock.model.material.update();
-                    }
+        // Setup grid for defrag visuals
+        function createGrid() {
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const block = new pc.Entity();
+                    block.addComponent("element", {
+                        type: "image",
+                        anchor: [0, 0, 0, 0],
+                        width: blockSize,
+                        height: blockSize,
+                        color: new pc.Color(Math.random(), Math.random(), Math.random()) // Random colors like blocks in old defraggers
+                    });
+                    block.setLocalPosition(col * blockSize, row * blockSize, 0);
+                    blocks.push(block);
+                    app.root.addChild(block);
                 }
             }
         }
 
-        // Audio pattern recognizer setup
-        let patternRecognizer;
-        let audioDataArray;
+        function defragment() {
+            if (currentBlock >= blocks.length) {
+                currentBlock = 0;
+            }
+            const block = blocks[currentBlock];
+            block.element.color = new pc.Color(Math.random(), Math.random(), Math.random());
+            currentBlock++;
 
-        function startMicCapture() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(function (stream) {
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioContext.createMediaStreamSource(stream);
-                    const analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 256;
-
-                    source.connect(analyser);
-
-                    patternRecognizer = new PatternRecognizer(audioContext, analyser);
-                    audioDataArray = new Uint8Array(analyser.frequencyBinCount);
-
-                    app.on("update", function (dt) {
-                        analyser.getByteFrequencyData(audioDataArray);
-                        defragBlocks(audioDataArray); // Pass audio data to influence defragmentation
-                    });
-                })
-                .catch(function (err) {
-                    console.error('Error accessing microphone: ' + err);
-                });
+            setTimeout(defragment, defragSpeed);
         }
 
-        // Start microphone capture and pattern recognition
-        window.onload = function () {
-            startMicCapture();
-        };
+        createGrid();
+        defragment();
+
+        // Update progress bar to reflect defragmentation progress
+        let progressBar = document.getElementById("progress");
+        let progressPercent = 0;
+        function updateProgressBar() {
+            progressPercent += 0.5;
+            progressBar.style.width = progressPercent + '%';
+            if (progressPercent >= 100) {
+                progressPercent = 0;
+            }
+            requestAnimationFrame(updateProgressBar);
+        }
+
+        updateProgressBar();
+
+        // Optional: Make grid react to pattern recognition (e.g., from audio)
+        function updatePattern(dt) {
+            recognizedPattern = patternRecognizer.predictNextPattern();
+            if (recognizedPattern) {
+                recognizedPattern.forEach((value, index) => {
+                    const block = blocks[index];
+                    const intensity = value / 255;
+                    block.element.color = new pc.Color(intensity, intensity, intensity);
+                });
+            }
+        }
+
+        app.on('update', updatePattern);
 
         // Handle window resizing
         window.addEventListener("resize", function () {
             app.resizeCanvas(canvas.width, canvas.height);
         });
+
     </script>
 </body>
 </html>
