@@ -43,6 +43,7 @@
             transform: translateX(-50%);
             z-index: 10;
             mix-blend-mode: screen;
+            filter: url(#glow);
         }
 
         #word-cloud-canvas {
@@ -74,6 +75,7 @@
             aspect-ratio: 1 / 1;
             overflow: hidden;
             position: relative;
+            filter: url(#glow);
         }
 
         .control-button.active {
@@ -132,6 +134,22 @@
 
     <audio id="button-sound" src="https://freesound.org/data/previews/542/542434_10033997-lq.mp3"></audio>
 
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+        <defs>
+            <filter id="glow">
+                <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+            <filter id="wiggle">
+                <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise"/>
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="5"/>
+            </filter>
+        </defs>
+    </svg>
+
     <script>
         const wordCloudCanvas = document.getElementById('word-cloud-canvas');
         const unmuteButton = document.getElementById('unmute-button');
@@ -178,11 +196,7 @@
                 shrinkToFit: true,
                 clearCanvas: true,
                 hover: (item, dimension, event) => {
-                    const ctx = wordCloudCanvas.getContext('2d');
-                    ctx.save();
-                    ctx.translate(dimension.x, dimension.y);
-                    ctx.rotate(3 * Math.PI / 180);
-                    ctx.restore();
+                    wordCloudCanvas.style.filter = 'url(#wiggle)';
                 }
             });
         }
