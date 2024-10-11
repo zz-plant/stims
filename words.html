@@ -143,6 +143,7 @@
     let audioContext = null;
     let analyser = null;
     let microphone = null;
+    let mediaStream = null;
 
     // Word cloud shapes for randomness
     const shapes = ['circle', 'star', 'triangle', 'diamond'];
@@ -197,6 +198,7 @@
         analyser.fftSize = 256;
 
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            mediaStream = stream;
             microphone = audioContext.createMediaStreamSource(stream);
             microphone.connect(analyser);
             visualize();
@@ -229,6 +231,12 @@
             audioContext = null;
             analyser = null;
             microphone = null;
+
+            // Explicitly stop all tracks of the media stream
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
         }
         document.querySelectorAll('.particle').forEach(p => p.remove());
     }
