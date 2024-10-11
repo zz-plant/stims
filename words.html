@@ -40,7 +40,7 @@
             top: 10vh;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 1; /* Ensure the word cloud is layered properly */
+            z-index: 1;
         }
 
         #word-cloud-canvas {
@@ -57,17 +57,17 @@
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
             transition: box-shadow 0.4s ease, background-color 0.4s ease;
             position: fixed;
-            z-index: 3; /* Ensure buttons are always visible */
+            z-index: 3;
         }
 
         #unmute-button {
             left: 2vw;
-            bottom: 10vh;
+            bottom: 5vh;
         }
 
         #toggle-speech-button {
             right: 2vw;
-            bottom: 10vh;
+            bottom: 5vh;
         }
 
         .control-icon {
@@ -88,9 +88,9 @@
             pointer-events: none;
             animation: particleFloat 6s ease-in-out infinite alternate;
             opacity: 0.8;
-            max-width: 15px;
-            max-height: 15px;
-            z-index: 2; /* Particles should be below buttons but above background */
+            max-width: 10px;
+            max-height: 10px;
+            z-index: 2;
         }
 
         @keyframes particleFloat {
@@ -105,9 +105,9 @@
             pointer-events: none;
             opacity: 0;
             animation: waveExpand 1.5s ease-out forwards;
-            max-width: 30vw;
-            max-height: 30vh;
-            z-index: 2; /* Waves should be below buttons but above background */
+            max-width: 20vw;
+            max-height: 20vh;
+            z-index: 2;
         }
 
         @keyframes waveExpand {
@@ -213,7 +213,7 @@
                 const maxVolume = Math.max(...dataArray);
 
                 // Update particle effects
-                const particleCount = Math.min(maxVolume / 10, 15);
+                const particleCount = Math.min(maxVolume / 10, 10);
                 updateParticles(particleCount);
 
                 // Create expanding waveform circles
@@ -238,10 +238,10 @@
             for (let i = 0; i < count; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
-                particle.style.width = `${Math.random() * 10 + 5}px`;
+                particle.style.width = `${Math.random() * 8 + 3}px`;
                 particle.style.height = particle.style.width;
                 particle.style.left = `${Math.random() * 90}vw`;
-                particle.style.top = `${Math.random() * 90}vh`;
+                particle.style.top = `${Math.random() * 80}vh`;
                 particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
                 document.body.appendChild(particle);
             }
@@ -251,9 +251,9 @@
             if (volume > 120) {
                 const wave = document.createElement('div');
                 wave.className = 'wave';
-                wave.style.left = `calc(50vw - ${Math.min(volume / 4, 75)}px)`;
-                wave.style.top = `calc(50vh - ${Math.min(volume / 4, 75)}px)`;
-                wave.style.width = `${Math.min(volume / 2, 150)}px`;
+                wave.style.left = `calc(50vw - ${Math.min(volume / 6, 50)}px)`;
+                wave.style.top = `calc(50vh - ${Math.min(volume / 6, 50)}px)`;
+                wave.style.width = `${Math.min(volume / 3, 100)}px`;
                 wave.style.height = wave.style.width;
                 document.body.appendChild(wave);
 
