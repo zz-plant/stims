@@ -8,7 +8,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: #000;
+            background: linear-gradient(135deg, #1a1a1a, #333);
         }
         #overlay {
             position: absolute;
@@ -18,6 +18,7 @@
             height: 100%;
             pointer-events: none;
             filter: url('#displacementFilter');
+            mix-blend-mode: screen;
         }
         @keyframes colorShift {
             0% { stop-color: rgb(255, 0, 0); }
@@ -33,8 +34,8 @@
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0">
         <defs>
             <filter id="displacementFilter">
-                <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="4" result="turbulence" />
-                <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="70" xChannelSelector="R" yChannelSelector="G"/>
+                <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="5" result="turbulence" />
+                <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="100" xChannelSelector="R" yChannelSelector="G"/>
             </filter>
         </defs>
     </svg>
@@ -66,7 +67,7 @@
         });
         app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
         app.setCanvasResolution(pc.RESOLUTION_AUTO);
-        app.scene.ambientLight = new pc.Color(0.3, 0.3, 0.3);
+        app.scene.ambientLight = new pc.Color(0.4, 0.4, 0.4);
         app.start();
 
         // Create camera entity
@@ -74,28 +75,28 @@
         camera.addComponent('camera', {
             clearColor: new pc.Color(0, 0, 0, 1)
         });
-        camera.setPosition(0, 0, 15);
+        camera.setPosition(0, 0, 20);
         app.root.addChild(camera);
 
         // Create light entities
         const light1 = new pc.Entity();
         light1.addComponent('light', {
             type: 'point',
-            color: new pc.Color(1, 0.25, 0),
+            color: new pc.Color(1, 0.5, 0.5),
             range: 50,
             intensity: 2
         });
-        light1.setPosition(10, 10, 10);
+        light1.setPosition(15, 10, 10);
         app.root.addChild(light1);
 
         const light2 = new pc.Entity();
         light2.addComponent('light', {
             type: 'point',
-            color: new pc.Color(0, 0.25, 1),
+            color: new pc.Color(0.5, 0.5, 1),
             range: 50,
             intensity: 2
         });
-        light2.setPosition(-10, -10, 10);
+        light2.setPosition(-15, -10, 10);
         app.root.addChild(light2);
 
         // Create sphere entity
@@ -110,19 +111,19 @@
 
         // Update sphere material
         const material = sphere.render.material;
-        material.shininess = 60;
-        material.metalness = 0.6;
+        material.shininess = 80;
+        material.metalness = 0.8;
         material.update();
 
         // Create particle system
         const particleSystem = new pc.Entity();
         particleSystem.addComponent('particlesystem', {
-            numParticles: 500,
-            lifetime: 2,
+            numParticles: 1000,
+            lifetime: 3,
             rate: 0.01,
-            scaleGraph: new pc.Curve([0, 0.2, 1]),
-            colorGraph: new pc.CurveSet([new pc.Curve([1, 1, 0]), new pc.Curve([1, 1, 0]), new pc.Curve([1, 1, 0])]),
-            velocityGraph: new pc.Curve([0, 0.5, 1])
+            scaleGraph: new pc.Curve([0, 0.4, 1]),
+            colorGraph: new pc.CurveSet([new pc.Curve([1, 1, 0]), new pc.Curve([1, 0, 0.5]), new pc.Curve([1, 1, 0.5])]),
+            velocityGraph: new pc.Curve([0, 1, 1.5])
         });
         app.root.addChild(particleSystem);
 
@@ -152,7 +153,7 @@
         app.mouse.on(pc.EVENT_MOUSEMOVE, (event) => {
             const mouseX = (event.x / window.innerWidth) * 2 - 1;
             const mouseY = -(event.y / window.innerHeight) * 2 + 1;
-            sphere.setEulerAngles(mouseY * 50, mouseX * 50, 0);
+            sphere.setEulerAngles(mouseY * 30, mouseX * 30, 0);
         });
 
         // Main animation loop
@@ -165,10 +166,11 @@
             material.update();
 
             // Rotate sphere for a more dynamic visual
-            sphere.rotate(0.5, 0.5, 0);
+            sphere.rotate(1.0 * dt, 1.0 * dt, 0);
 
-            // Update particle rotation
-            particleSystem.rotate(0, 0.1, 0);
+            // Update particle rotation and expand particles for a more dynamic effect
+            particleSystem.rotate(0, 0.2 * dt, 0);
+            particleSystem.particlesystem.velocityGraph = new pc.Curve([0, 1 + displacementScale, 2]);
         });
     </script>
 </body>
