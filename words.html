@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Reactive Word Cloud (Supercharged Visualizer & Speech Toggle)</title>
+    <title>Supercharged Reactive Word Cloud & Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -12,9 +12,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #ffd5e5, #fffae6, #c3f5d6, #b3e5f9);
-            background-size: 200% 200%;
-            animation: backgroundShift 20s ease infinite;
+            background: linear-gradient(135deg, #ff6b6b, #ffcc70, #50e3c2, #ff6bd6);
+            background-size: 400% 400%;
+            animation: backgroundShift 10s ease infinite;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
             position: relative;
@@ -28,21 +28,21 @@
 
         #word-cloud-canvas {
             width: 90vw;
-            height: 70vh;
-            box-shadow: 0 12px 40px rgba(255, 255, 255, 0.3);
+            height: 60vh;
             border-radius: 15px;
             background: rgba(255, 255, 255, 0.1);
             filter: blur(0.5px);
+            box-shadow: 0 12px 40px rgba(255, 255, 255, 0.4);
         }
 
         .control-button {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.2);
             padding: 20px;
             border-radius: 50%;
             border: none;
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 110, 87, 0.6), 0 0 40px rgba(255, 110, 87, 0.3);
-            transition: all 0.4s ease;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+            transition: box-shadow 0.4s ease, background-color 0.4s ease;
             position: fixed;
             bottom: 10vh;
             z-index: 100;
@@ -59,48 +59,40 @@
         .control-icon {
             width: 50px;
             height: 50px;
-            transition: transform 0.6s ease, filter 1.5s ease;
+            transition: filter 1.5s ease;
             filter: drop-shadow(0 0 20px #ff6e57);
         }
 
         .control-button.active {
-            box-shadow: 0 0 40px rgba(255, 255, 255, 0.9), 0 0 60px rgba(255, 110, 87, 0.7);
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .control-button:active .control-icon {
-            transform: scale(1.1);
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.3);
         }
 
         .particle {
             position: absolute;
-            width: 8px;
-            height: 8px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.8);
             pointer-events: none;
-            animation: particleMove 3s ease-out infinite;
-            opacity: 0.7;
+            animation: particleFloat 6s ease-in-out infinite alternate;
+            opacity: 0.8;
         }
 
-        @keyframes particleMove {
-            0% { transform: scale(1) translateY(0); opacity: 1; }
-            50% { transform: scale(1.5) translateY(-200px); opacity: 0.5; }
-            100% { transform: scale(0) translateY(-400px); opacity: 0; }
+        @keyframes particleFloat {
+            0% { transform: translateY(0) translateX(0); }
+            100% { transform: translateY(-150px) translateX(50px); }
         }
 
         .wave {
             position: absolute;
-            border: 3px solid rgba(255, 255, 255, 0.5);
+            border: 4px solid rgba(255, 255, 255, 0.5);
             border-radius: 50%;
             pointer-events: none;
             opacity: 0;
-            animation: waveExpand 1.5s ease-out infinite;
+            animation: waveExpand 2s ease-out forwards;
         }
 
         @keyframes waveExpand {
             0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(5); opacity: 0; }
+            100% { transform: scale(8); opacity: 0; }
         }
 
     </style>
@@ -192,6 +184,8 @@
         function visualize() {
             const dataArray = new Uint8Array(analyser.frequencyBinCount);
             function draw() {
+                if (!isUnmuted) return; // Stop drawing if unmuted is deactivated
+
                 analyser.getByteFrequencyData(dataArray);
                 const maxVolume = Math.max(...dataArray);
 
@@ -221,8 +215,11 @@
             for (let i = 0; i < count; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
+                particle.style.width = `${Math.random() * 10 + 5}px`;
+                particle.style.height = particle.style.width;
                 particle.style.left = `${Math.random() * 100}vw`;
                 particle.style.top = `${Math.random() * 100}vh`;
+                particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
                 document.body.appendChild(particle);
             }
         }
@@ -231,15 +228,13 @@
             if (volume > 100) {  // Only create waves on significant sound peaks
                 const wave = document.createElement('div');
                 wave.className = 'wave';
-                wave.style.left = `${50}vw`;
-                wave.style.top = `${50}vh`;
+                wave.style.left = `calc(50vw - ${volume / 4}px)`;
+                wave.style.top = `calc(50vh - ${volume / 4}px)`;
                 wave.style.width = `${volume / 2}px`;
                 wave.style.height = `${volume / 2}px`;
                 document.body.appendChild(wave);
 
-                setTimeout(() => {
-                    wave.remove();
-                }, 1500); // Remove the wave after animation completes
+                wave.addEventListener('animationend', () => wave.remove());
             }
         }
 
