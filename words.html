@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluted Glass Word Cloud</title>
+    <title>Advanced Word Cloud</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -53,41 +53,10 @@
             box-shadow: 0 0 25px rgba(255, 110, 87, 0.8), 0 0 50px rgba(255, 110, 87, 0.5);
         }
 
-        #mic-button::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 150%;
-            height: 150%;
-            background: radial-gradient(circle, rgba(255, 110, 87, 0.5), transparent);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        #mic-button.unmuted::before {
-            opacity: 1;
-        }
-
         #mic-icon {
             width: 80px;
             height: 80px;
             transition: transform 0.4s ease;
-        }
-
-        #mic-button:active #mic-icon {
-            transform: scale(1.2);
-        }
-
-        @keyframes shimmer {
-            0% {
-                background-position: -200%;
-            }
-            100% {
-                background-position: 200%;
-            }
         }
 
         .word {
@@ -132,6 +101,14 @@
         let wordsArray = [];
         let isRecording = false;
 
+        // Feature detection
+        if (!WordCloud.isSupported) {
+            alert('Your browser does not support WordCloud.');
+        }
+
+        // Get minimum font size allowed by the browser
+        console.log('Minimum font size:', WordCloud.minFontSize);
+
         function updateWordCloud(words) {
             const wordFrequency = words.reduce((freq, word) => {
                 freq[word] = (freq[word] || 0) + 1;
@@ -139,6 +116,10 @@
             }, {});
 
             const wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
+
+            // List of shapes to choose from
+            const shapes = ['circle', 'star', 'triangle', 'square', 'diamond', 'cardioid', 'pentagon'];
+            const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
 
             WordCloud(wordCloudElement, {
                 list: wordCloudData,
@@ -149,8 +130,20 @@
                 minRotation: -Math.PI / 6,
                 maxRotation: Math.PI / 6,
                 backgroundColor: 'transparent',
-                shape: 'circle',
+                shape: randomShape, // Random shape
+                click: (item, dimension, event) => {
+                    alert(`You clicked on: ${item[0]}`);
+                },
+                hover: (item, dimension, event) => {
+                    console.log(`Hovered over: ${item[0]}`);
+                }
             });
+        }
+
+        // Stop rendering function
+        function stopWordCloud() {
+            WordCloud.stop();
+            console.log("Word cloud rendering stopped.");
         }
 
         // Toggle mic logic with mic icon and glowing pulse
@@ -192,10 +185,6 @@
             }
         };
 
-        // Feature detection for WordCloud
-        if (!WordCloud.isSupported) {
-            alert("Your browser does not support WordCloud rendering.");
-        }
     </script>
 
 </body>
