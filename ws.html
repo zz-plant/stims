@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dreamy Interactive Spectrograph Music Visualizer with Pattern Recognition</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            color: #00ff00;
+            white-space: pre;
+            line-height: 1;
+        }
+        #error-message {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ff0000;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="error-message" style="display: none;"></div>
+    <div id="asciiCanvas"></div>
+    <script type="module">
+        import PatternRecognizer from './assets/js/utils/patternRecognition.js';
+        import { applyAudioRotation, applyAudioScale } from './assets/js/utils/animation-utils.js';
+        import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
+
+        const asciiCanvas = document.getElementById("asciiCanvas");
+
+        let analyser;
+        let patternRecognizer;
+        let audioDataArray = [];
+        const words = ["dream", "light", "pulse", "wave", "echo", "flow", "rise", "fall", "beat", "harmony"];
+
+        async function setupAudio() {
+            try {
+                const audioData = await initAudio();
+                analyser = audioData.analyser;
+                audioDataArray = audioData.dataArray;
+                patternRecognizer = new PatternRecognizer(analyser);
+                getAudioData();
+            } catch (err) {
+                showError('Unable to access the microphone. Please allow microphone permissions and reload the page.');
+                console.error("Error capturing audio: ", err);
+            }
+        }
+
+        function getAudioData() {
+            requestAnimationFrame(getAudioData);
+            if (analyser) {
+                getFrequencyData(analyser);
+                const average = audioDataArray.reduce((sum, value) => sum + value, 0) / audioDataArray.length;
+                patternRecognizer.updatePatternBuffer();
+                const detectedPattern = patternRecognizer.detectPattern();
+                updateAsciiVisualizer(audioDataArray, detectedPattern, average);
+            }
+        }
+
+        function updateAsciiVisualizer(dataArray, detectedPattern, average) {
+            asciiCanvas.textContent = "";
+            const chars = [" ", "░", "▒", "▓", "#", "█", "■", "▲", "◆", "@"]; // Random Unicode characters
+            const width = 64;
+            const height = 16;
+            const barWidth = Math.floor(dataArray.length / width);
+            const wordThreshold = 180; // Threshold intensity for words to appear
+
+            for (let y = 0; y < height; y++) {
+                let line = "";
+                for (let x = 0; x < width; x++) {
+                    const index = Math.min(x * barWidth, dataArray.length - 1);
+                    const value = dataArray[index];
+                    let char;
+
+                    if (detectedPattern && value > wordThreshold) {
+                        // Insert a random word from the words list
+                        char = words[Math.floor(Math.random() * words.length)];
+                    } else {
+                        // Use a random Unicode character
+                        const charIndex = Math.floor((value / 255) * (chars.length - 1));
+                        char = chars[charIndex];
+                    }
+
+                    line += char;
+                }
+                asciiCanvas.textContent += line + "\n";
+            }
+        }
+
+        setupAudio();
+    </script>
+</body>
+</html>
