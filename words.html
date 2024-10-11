@@ -110,10 +110,6 @@
             100% { transform: translateY(-40px) translateX(-20px) scale(1); opacity: 0.5; }
         }
 
-        @keyframes wiggle {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(3deg); }
-        }
     </style>
 </head>
 <body>
@@ -142,10 +138,6 @@
                     <feMergeNode in="coloredBlur"/>
                     <feMergeNode in="SourceGraphic"/>
                 </feMerge>
-            </filter>
-            <filter id="wiggle">
-                <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise"/>
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="5"/>
             </filter>
         </defs>
     </svg>
@@ -194,10 +186,7 @@
                 shape: randomShape,
                 drawOutOfBound: false,
                 shrinkToFit: true,
-                clearCanvas: true,
-                hover: (item, dimension, event) => {
-                    wordCloudCanvas.style.filter = 'url(#wiggle)';
-                }
+                clearCanvas: true
             });
         }
 
@@ -259,7 +248,7 @@
                 WordCloud(wordCloudCanvas, {
                     list: wordCloudData.map(([word, count]) => [word, count * (1 + volume / 256)]),
                     gridSize: Math.floor(10 * (window.innerWidth / 1024)),
-                    weightFactor: 15,
+                    weightFactor: (word) => 15 + Math.random() * volume / 10,
                     color: () => `hsl(${Math.random() * 360}, 100%, ${50 + volume / 10}%)`,
                     rotateRatio: 0.4,
                     minRotation: -Math.PI / 6,
@@ -295,14 +284,11 @@
             if (!isAddingWords) {
                 isAddingWords = true;
                 toggleSpeechButton.classList.add('active');
-                deactivateVisualizer();
                 recognition.start();
-                document.body.style.animation = "pulseEating 1.5s ease-in-out infinite";
             } else {
                 isAddingWords = false;
                 toggleSpeechButton.classList.remove('active');
                 recognition.stop();
-                document.body.style.animation = ""; // Stop the pulse animation
             }
         });
 
@@ -311,7 +297,6 @@
                 isAddingWords = false;
                 toggleSpeechButton.classList.remove('active');
                 recognition.stop();
-                document.body.style.animation = ""; // Stop the pulse animation
             }
         }
 
