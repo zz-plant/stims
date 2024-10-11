@@ -38,6 +38,8 @@
             box-shadow: 0 12px 40px rgba(255, 255, 255, 0.4);
             position: absolute;
             top: 10vh;
+            left: 50%;
+            transform: translateX(-50%);
         }
 
         #word-cloud-canvas {
@@ -85,29 +87,29 @@
             pointer-events: none;
             animation: particleFloat 6s ease-in-out infinite alternate;
             opacity: 0.8;
-            max-width: 20px;
-            max-height: 20px;
+            max-width: 15px;
+            max-height: 15px;
         }
 
         @keyframes particleFloat {
             0% { transform: translateY(0) translateX(0); }
-            100% { transform: translateY(-150px) translateX(50px); }
+            100% { transform: translateY(-50px) translateX(50px); }
         }
 
         .wave {
             position: absolute;
-            border: 4px solid rgba(255, 255, 255, 0.5);
+            border: 3px solid rgba(255, 255, 255, 0.5);
             border-radius: 50%;
             pointer-events: none;
             opacity: 0;
-            animation: waveExpand 2s ease-out forwards;
-            max-width: 50vw;
-            max-height: 50vh;
+            animation: waveExpand 1.5s ease-out forwards;
+            max-width: 30vw;
+            max-height: 30vh;
         }
 
         @keyframes waveExpand {
             0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(8); opacity: 0; }
+            100% { transform: scale(5); opacity: 0; }
         }
 
     </style>
@@ -166,9 +168,9 @@
                 maxRotation: Math.PI / 6,
                 backgroundColor: 'transparent',
                 shape: randomShape,
-                drawOutOfBound: false, // Prevent words from drawing out of bounds
+                drawOutOfBound: false,
                 shrinkToFit: true,
-                clearCanvas: true // Clear previous cloud to ensure the update works smoothly
+                clearCanvas: true
             });
         }
 
@@ -202,13 +204,13 @@
         function visualize() {
             const dataArray = new Uint8Array(analyser.frequencyBinCount);
             function draw() {
-                if (!isUnmuted) return; // Stop drawing if unmuted is deactivated
+                if (!isUnmuted) return;
 
                 analyser.getByteFrequencyData(dataArray);
                 const maxVolume = Math.max(...dataArray);
 
                 // Update particle effects
-                const particleCount = Math.min(maxVolume / 10, 30);
+                const particleCount = Math.min(maxVolume / 10, 15);
                 updateParticles(particleCount);
 
                 // Create expanding waveform circles
@@ -243,12 +245,12 @@
         }
 
         function createWave(volume) {
-            if (volume > 100) {  // Only create waves on significant sound peaks
+            if (volume > 120) {
                 const wave = document.createElement('div');
                 wave.className = 'wave';
-                wave.style.left = `calc(50vw - ${volume / 4}px)`;
-                wave.style.top = `calc(50vh - ${volume / 4}px)`;
-                wave.style.width = `${Math.min(volume / 2, 200)}px`;
+                wave.style.left = `calc(50vw - ${Math.min(volume / 4, 75)}px)`;
+                wave.style.top = `calc(50vh - ${Math.min(volume / 4, 75)}px)`;
+                wave.style.width = `${Math.min(volume / 2, 150)}px`;
                 wave.style.height = wave.style.width;
                 document.body.appendChild(wave);
 
