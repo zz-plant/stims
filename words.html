@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Word Cloud & Visualizer</title>
+    <title>Dreamy Word Cloud & Audio Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         * {
@@ -16,9 +16,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #f85032, #e73827, #3e5151);
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
             background-size: 400% 400%;
-            animation: backgroundShift 12s ease infinite;
+            animation: backgroundShift 10s ease infinite;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
             position: relative;
@@ -31,18 +31,18 @@
         }
 
         #word-cloud-container {
-            width: 90vw;
-            height: 70vh;
+            width: 80vw;
+            height: 60vh;
             overflow: hidden;
             border-radius: 15px;
-            background: rgba(0, 0, 0, 0.1);
-            filter: blur(0.5px);
-            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 12px 50px rgba(0, 0, 0, 0.3);
             position: absolute;
-            top: 10%;
+            top: 15%;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
+            mix-blend-mode: screen;
         }
 
         #word-cloud-canvas {
@@ -61,8 +61,8 @@
         }
 
         .control-button {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
             border-radius: 50%;
             border: none;
             cursor: pointer;
@@ -77,8 +77,8 @@
         }
 
         .control-button.active {
-            box-shadow: 0 0 60px rgba(255, 255, 255, 0.6);
-            background-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.3);
         }
 
         .control-button:active {
@@ -89,12 +89,23 @@
             width: 35px;
             height: 35px;
             transition: filter 1.5s ease;
-            filter: drop-shadow(0 0 15px rgba(255, 110, 87, 0.5));
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
         }
 
-        @keyframes pulseEating {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFloat 4s ease-in-out infinite alternate;
+            opacity: 0.8;
+            z-index: 5;
+            mix-blend-mode: difference;
+        }
+
+        @keyframes particleFloat {
+            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.5; }
+            50% { transform: translateY(-20px) translateX(20px) scale(1.3); opacity: 1; }
+            100% { transform: translateY(-40px) translateX(-20px) scale(1); opacity: 0.5; }
         }
     </style>
 </head>
@@ -197,8 +208,10 @@
 
                 analyser.getByteFrequencyData(dataArray);
                 const maxVolume = Math.max(...dataArray);
+
                 updateWordCloudWithVisualizer(maxVolume);
-                
+                createParticleEffects(maxVolume);
+
                 requestAnimationFrame(draw);
             }
             draw();
@@ -208,6 +221,7 @@
             if (audioContext) {
                 audioContext.close();
             }
+            document.querySelectorAll('.particle').forEach(p => p.remove());
         }
 
         function updateWordCloudWithVisualizer(volume) {
@@ -226,6 +240,22 @@
                     shrinkToFit: true,
                     clearCanvas: true
                 });
+            }
+        }
+
+        function createParticleEffects(volume) {
+            document.querySelectorAll('.particle').forEach(p => p.remove());
+            const particleCount = Math.min(volume / 10, 10);
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.width = `${Math.random() * 8 + 3}px`;
+                particle.style.height = particle.style.width;
+                particle.style.left = `${Math.random() * 90}vw`;
+                particle.style.top = `${Math.random() * 80}vh`;
+                particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
+                document.body.appendChild(particle);
             }
         }
 
