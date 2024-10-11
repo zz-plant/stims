@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Reactive Word Cloud (Enhanced Visualizer & Speech Toggle)</title>
+    <title>Dreamy Reactive Word Cloud (Supercharged Visualizer & Speech Toggle)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -17,6 +17,7 @@
             animation: backgroundShift 20s ease infinite;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
+            position: relative;
         }
 
         @keyframes backgroundShift {
@@ -73,40 +74,35 @@
 
         .particle {
             position: absolute;
-            width: 5px;
-            height: 5px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.8);
             pointer-events: none;
-            animation: particleMove 3s linear infinite;
+            animation: particleMove 3s ease-out infinite;
             opacity: 0.7;
         }
 
         @keyframes particleMove {
-            0% { transform: translateY(0); opacity: 0.7; }
-            50% { transform: translateY(-100px); opacity: 0.3; }
-            100% { transform: translateY(0); opacity: 0.7; }
+            0% { transform: scale(1) translateY(0); opacity: 1; }
+            50% { transform: scale(1.5) translateY(-200px); opacity: 0.5; }
+            100% { transform: scale(0) translateY(-400px); opacity: 0; }
         }
 
-        @keyframes float {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0); }
+        .wave {
+            position: absolute;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            animation: waveExpand 1.5s ease-out infinite;
         }
 
-        @keyframes wordSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes waveExpand {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(5); opacity: 0; }
         }
 
-        .word {
-            display: inline-block;
-            animation: float 8s infinite ease-in-out, wordSpin 25s infinite linear;
-            position: relative;
-            font-size: 24px;
-            color: rgba(255, 255, 255, 0.9);
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
-        }
     </style>
 </head>
 <body>
@@ -137,7 +133,6 @@
         let audioContext;
         let analyser;
         let microphone;
-        let particleArray = [];
 
         // Word cloud shapes for randomness
         const shapes = ['circle', 'star', 'triangle', 'diamond'];
@@ -164,7 +159,6 @@
                 shape: randomShape,
                 drawOutOfBound: true,
                 shrinkToFit: true,
-                classes: 'word',
             });
         }
 
@@ -202,8 +196,11 @@
                 const maxVolume = Math.max(...dataArray);
 
                 // Update particle effects
-                const particleCount = Math.min(maxVolume / 10, 20);
+                const particleCount = Math.min(maxVolume / 10, 30);
                 updateParticles(particleCount);
+
+                // Create expanding waveform circles
+                createWave(maxVolume);
 
                 requestAnimationFrame(draw);
             }
@@ -214,24 +211,35 @@
             if (audioContext) {
                 audioContext.close();
             }
-            particleArray.forEach(p => document.body.removeChild(p));
-            particleArray = [];
+            document.querySelectorAll('.particle').forEach(p => p.remove());
+            document.querySelectorAll('.wave').forEach(w => w.remove());
         }
 
         function updateParticles(count) {
-            // Remove existing particles
-            particleArray.forEach(p => document.body.removeChild(p));
-            particleArray = [];
+            document.querySelectorAll('.particle').forEach(p => p.remove());
 
-            // Add new particles
             for (let i = 0; i < count; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
                 particle.style.left = `${Math.random() * 100}vw`;
                 particle.style.top = `${Math.random() * 100}vh`;
-                particle.style.animationDelay = `${Math.random() * 3}s`;
                 document.body.appendChild(particle);
-                particleArray.push(particle);
+            }
+        }
+
+        function createWave(volume) {
+            if (volume > 100) {  // Only create waves on significant sound peaks
+                const wave = document.createElement('div');
+                wave.className = 'wave';
+                wave.style.left = `${50}vw`;
+                wave.style.top = `${50}vh`;
+                wave.style.width = `${volume / 2}px`;
+                wave.style.height = `${volume / 2}px`;
+                document.body.appendChild(wave);
+
+                setTimeout(() => {
+                    wave.remove();
+                }, 1500); // Remove the wave after animation completes
             }
         }
 
