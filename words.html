@@ -183,6 +183,7 @@
                 isUnmuted = true;
                 unmuteButton.classList.add('active');
                 unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Unmuted mic icon
+                deactivateSpeechRecognition(); // Stop speech detection before activating visualizer
                 activateVisualizer();
             } else {
                 isUnmuted = false;
@@ -266,6 +267,7 @@
             if (!isAddingWords) {
                 isAddingWords = true;
                 toggleSpeechButton.classList.add('active');
+                deactivateVisualizer(); // Stop visualizer before starting speech detection
                 recognition.start();
             } else {
                 isAddingWords = false;
@@ -273,6 +275,14 @@
                 recognition.stop();
             }
         });
+
+        function deactivateSpeechRecognition() {
+            if (isAddingWords) {
+                isAddingWords = false;
+                toggleSpeechButton.classList.remove('active');
+                recognition.stop();
+            }
+        }
 
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
