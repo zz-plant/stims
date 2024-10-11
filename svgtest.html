@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ambient Sound SVG + PlayCanvas Visualizer with FFT and Microphone Input</title>
+    <title>Retrofuturistic SVG + PlayCanvas Visualizer with Microphone Input</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background: linear-gradient(135deg, #001f3f, #001021);
+            background: linear-gradient(135deg, #0d0d0d, #282828);
             font-family: 'Orbitron', sans-serif;
             color: #00ffcc;
         }
@@ -40,8 +40,8 @@
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0">
         <defs>
             <filter id="displacementFilter">
-                <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="turbulence" />
-                <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="100" xChannelSelector="R" yChannelSelector="G"/>
+                <feTurbulence type="fractalNoise" baseFrequency="0.2" numOctaves="6" result="turbulence" />
+                <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="150" xChannelSelector="R" yChannelSelector="G"/>
             </filter>
         </defs>
     </svg>
@@ -49,10 +49,10 @@
     <!-- Overlay for SVG filter application -->
     <div id="overlay">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50%" cy="50%" r="200" fill="url(#grad1)" style="animation: pulse 8s infinite alternate ease-in-out;" />
+            <circle cx="50%" cy="50%" r="200" fill="url(#grad1)" style="animation: pulse 6s infinite alternate ease-in-out;" />
             <defs>
                 <radialGradient id="grad1" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                    <stop offset="0%" style="stop-color:rgb(255,255,255);stop-opacity:1; animation: colorShift 10s infinite alternate;" />
+                    <stop offset="0%" style="stop-color:rgb(255,255,255);stop-opacity:1; animation: colorShift 8s infinite alternate;" />
                     <stop offset="100%" style="stop-color:rgb(0,0,0);stop-opacity:1" />
                 </radialGradient>
             </defs>
@@ -73,7 +73,7 @@
         });
         app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
         app.setCanvasResolution(pc.RESOLUTION_AUTO);
-        app.scene.ambientLight = new pc.Color(0.3, 0.3, 0.5);
+        app.scene.ambientLight = new pc.Color(0.4, 0.4, 0.4);
         app.start();
 
         // Create camera entity
@@ -81,57 +81,56 @@
         camera.addComponent('camera', {
             clearColor: new pc.Color(0, 0, 0, 1)
         });
-        camera.setPosition(0, 0, 30);
+        camera.setPosition(0, 0, 25);
         app.root.addChild(camera);
 
         // Create light entities
         const light1 = new pc.Entity();
         light1.addComponent('light', {
             type: 'point',
-            color: new pc.Color(0, 0.6, 1),
-            range: 150,
-            intensity: 2
+            color: new pc.Color(0, 1, 0.6),
+            range: 100,
+            intensity: 3
         });
-        light1.setPosition(10, 20, 10);
+        light1.setPosition(20, 15, 20);
         app.root.addChild(light1);
 
         const light2 = new pc.Entity();
         light2.addComponent('light', {
             type: 'point',
-            color: new pc.Color(0.8, 0.5, 1),
-            range: 150,
-            intensity: 2
+            color: new pc.Color(0.5, 0.5, 1),
+            range: 100,
+            intensity: 3
         });
-        light2.setPosition(-15, -10, 20);
+        light2.setPosition(-20, -15, 20);
         app.root.addChild(light2);
 
-        // Create a smooth, flowing sphere for an ambient effect
-        const sphere = new pc.Entity();
-        sphere.addComponent('model', {
-            type: 'sphere'
+        // Create torus entity for a retrofuturistic vibe
+        const torus = new pc.Entity();
+        torus.addComponent('model', {
+            type: 'torus'
         });
-        sphere.addComponent('render', {
+        torus.addComponent('render', {
             material: new pc.StandardMaterial()
         });
-        app.root.addChild(sphere);
+        app.root.addChild(torus);
 
-        // Update sphere material
-        const material = sphere.render.material;
-        material.diffuse.set(0.1, 0.4, 0.7);
-        material.shininess = 50;
-        material.metalness = 0.2;
+        // Update torus material
+        const material = torus.render.material;
+        material.diffuse.set(0.1, 0.8, 0.5);
+        material.shininess = 100;
+        material.metalness = 0.9;
         material.update();
 
-        // Create particle system for an ethereal ambient effect
+        // Create particle system
         const particleSystem = new pc.Entity();
         particleSystem.addComponent('particlesystem', {
-            numParticles: 1000,
-            lifetime: 5,
+            numParticles: 1500,
+            lifetime: 4,
             rate: 0.02,
-            scaleGraph: new pc.Curve([0, 0.3, 0.7]),
-            colorGraph: new pc.CurveSet([new pc.Curve([0.4, 0.7, 1]), new pc.Curve([0.6, 0.9, 1]), new pc.Curve([0.7, 0.8, 1])]),
-            velocityGraph: new pc.Curve([0, 0.5, 1.5]),
-            blendType: pc.BLEND_ADDITIVE
+            scaleGraph: new pc.Curve([0, 0.5, 1]),
+            colorGraph: new pc.CurveSet([new pc.Curve([1, 0.8, 0]), new pc.Curve([0, 1, 1]), new pc.Curve([0, 0.8, 1])]),
+            velocityGraph: new pc.Curve([0, 1, 2])
         });
         app.root.addChild(particleSystem);
 
@@ -140,40 +139,35 @@
             app.resizeCanvas(canvas.width, canvas.height);
         });
 
-        // Set up audio context and analyzer for microphone input
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256;
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-
-        // Request microphone access
+        // Set up audio context and analyzer with microphone input
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioCtx.createAnalyser();
             const source = audioCtx.createMediaStreamSource(stream);
             source.connect(analyser);
+            analyser.fftSize = 256;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            // Main animation loop
+            app.on('update', (dt) => {
+                analyser.getByteFrequencyData(dataArray);
+
+                // Modify torus material based on audio frequency
+                const displacementScale = dataArray[0] / 128;
+                material.emissive.setHSL(displacementScale / 2, 1, 0.5);
+                material.update();
+
+                // Rotate torus for a more dynamic visual
+                torus.rotate(0.8 * dt, 1.2 * dt, 0);
+
+                // Update particle rotation and expand particles for a more dynamic effect
+                particleSystem.rotate(0, 0.3 * dt, 0);
+                particleSystem.particlesystem.velocityGraph = new pc.Curve([0, 1 + displacementScale, 2.5]);
+            });
         }).catch((err) => {
-            console.error('Error accessing microphone: ', err);
-        });
-
-        // Main animation loop
-        app.on('update', (dt) => {
-            analyser.getByteFrequencyData(dataArray);
-
-            // Use FFT data to create a more ambient and fluid visual effect
-            let avgFrequency = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-            const displacementScale = avgFrequency / 200;
-            const hue = avgFrequency / 300;
-
-            // Modify sphere material color and emissive based on ambient sound levels
-            material.emissive.setHSL(hue, 0.8, 0.5);
-            material.update();
-
-            // Slow, subtle rotation of the sphere for a meditative feel
-            sphere.rotate(0.05 * dt, 0.1 * dt, 0);
-
-            // Update particle system for ambient movement
-            particleSystem.rotate(0, 0.05 * dt, 0);
-            particleSystem.particlesystem.velocityGraph = new pc.Curve([0, 0.5 + displacementScale, 1.5]);
+            console.error('Microphone access denied or not available', err);
         });
     </script>
 </body>
