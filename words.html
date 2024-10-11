@@ -3,77 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PlayCanvas Speech Webtoy</title>
-    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
+    <title>Speech Input Webtoy</title>
+    <style>
+        body {
+            background-color: #1d1d1d;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        #output-container {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 50vh;
+            overflow: hidden;
+        }
+
+        .word {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px;
+            font-size: 24px;
+            background: linear-gradient(45deg, #ff6f61, #d63f8a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+        }
+
+        .word:hover {
+            transform: rotate(10deg) scale(1.5);
+        }
+
+        #start-button {
+            padding: 10px 20px;
+            background-color: #ff7e5f;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        #start-button:hover {
+            background-color: #feb47b;
+        }
+    </style>
 </head>
 <body>
 
     <button id="start-button">Start Speech Input</button>
-    <canvas id="application-canvas"></canvas>
+    <div id="output-container"></div>
 
     <script>
-        const canvas = document.getElementById('application-canvas');
+        const outputContainer = document.getElementById('output-container');
         const startButton = document.getElementById('start-button');
-        const app = new pc.Application(canvas, {});
-
-        // Set up PlayCanvas scene
-        app.start();
-        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
-        app.setCanvasResolution(pc.RESOLUTION_AUTO);
-
-        // Create and position the camera
-        const camera = new pc.Entity('camera');
-        camera.addComponent('camera', {
-            clearColor: new pc.Color(0.2, 0.2, 0.2)
-        });
-        camera.setPosition(0, 0, 10);
-        app.root.addChild(camera);
-
-        // Create a light source
-        const light = new pc.Entity('light');
-        light.addComponent('light');
-        light.setEulerAngles(45, 30, 0);
-        app.root.addChild(light);
-
-        // Add text entity
-        const textEntity = new pc.Entity();
-        textEntity.addComponent('element', {
-            type: pc.ELEMENTTYPE_TEXT,
-            anchor: [0.5, 0.5, 0.5, 0.5],
-            fontSize: 50,
-            pivot: [0.5, 0.5],
-            text: 'Waiting for speech...',
-            color: new pc.Color(1, 1, 1)
-        });
-        app.root.addChild(textEntity);
-
-        // Speech recognition setup
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        // Update text function
-        function updateText(newText) {
-            textEntity.element.text = newText;
-            textEntity.setLocalPosition(Math.random() * 2 - 1, Math.random() * 2 - 1, 0);  // Random position for visual effect
-            textEntity.setLocalEulerAngles(0, 0, Math.random() * 360);  // Random rotation
-        }
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            updateText(transcript);
-        };
-
-        // Start speech recognition on button click
         startButton.addEventListener('click', () => {
             recognition.start();
         });
 
-        // Update PlayCanvas scene
-        app.on('update', function (dt) {
-            // Rotate the text entity for visual effect
-            textEntity.rotate(0, dt * 30, 0);
-        });
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            const words = transcript.split(' ');
+            outputContainer.innerHTML = '';
+            
+            words.forEach(word => {
+                const wordElement = document.createElement('span');
+                wordElement.classList.add('word');
+                wordElement.textContent = word;
+                outputContainer.appendChild(wordElement);
+            });
+        };
     </script>
 
 </body>
