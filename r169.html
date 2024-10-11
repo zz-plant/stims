@@ -73,9 +73,9 @@
             }
 
             vec3 dreamyGradient(vec2 uv, float timeOffset) {
-                vec3 color = vec3(0.4 + 0.4 * sin(uv.x * 10.0 + u_audioData * 6.0 + timeOffset),
-                                  0.4 + 0.4 * cos(uv.y * 10.0 + u_audioData * 6.0 + timeOffset),
-                                  0.5 + 0.4 * sin((uv.x + uv.y) * 8.0 + u_audioData * 6.0 + timeOffset));
+                vec3 color = vec3(0.4 + 0.4 * sin(uv.x * 10.0 + u_audioData * 12.0 + timeOffset),
+                                  0.4 + 0.4 * cos(uv.y * 10.0 + u_audioData * 12.0 + timeOffset),
+                                  0.5 + 0.4 * sin((uv.x + uv.y) * 8.0 + u_audioData * 12.0 + timeOffset));
                 return color + u_colorOffset * 0.7;
             }
             
@@ -85,19 +85,19 @@
                 uv *= 2.0;
                 
                 float dist = distance(uv, u_touch);
-                float ripple = sin(dist * 15.0 - u_time * 3.0) * 0.15;
-                float bloom = 0.3 / (dist * dist + 0.25);
+                float ripple = sin(dist * 15.0 - u_time * 3.0) * 0.3 * u_audioData;
+                float bloom = 0.5 / (dist * dist + 0.25) * u_audioData;
                 uv += ripple;
                 
                 vec3 normal = normalize(vec3(uv, 1.0));
                 vec3 lightDir = normalize(vec3(0.5, 0.5, 1.0));
                 vec3 lightColor = vec3(1.0, 0.9, 0.8);
                 
-                vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData;
-                color += vec3(0.4 + 0.4 * sin(u_time * 0.4 + u_audioData * 2.0), 
-                              0.4 + 0.4 * cos(u_time * 0.5 + u_audioData * 3.0), 
-                              0.5 + 0.4 * sin(u_time * 0.6 + u_audioData * 1.5));
-                color += bloom * 0.6;
+                vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData * 1.5;
+                color += vec3(0.4 + 0.4 * sin(u_time * 0.4 + u_audioData * 4.0), 
+                              0.4 + 0.4 * cos(u_time * 0.5 + u_audioData * 5.0), 
+                              0.5 + 0.4 * sin(u_time * 0.6 + u_audioData * 3.0));
+                color += bloom * 0.8;
                 
                 color = applyLighting(color, lightDir, normal, lightColor);
                 
@@ -183,7 +183,7 @@
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
                 analyser.getByteFrequencyData(dataArray);
                 const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-                audioData = average / 128.0;
+                audioData = average / 64.0;
                 updateSpectrograph(dataArray);
             }
         }
@@ -200,7 +200,7 @@
             let x = 0;
             
             for (let i = 0; i < dataArray.length; i++) {
-                barHeight = dataArray[i] / 2;
+                barHeight = dataArray[i];
                 ctx2d.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
                 x += barWidth + 1;
             }
