@@ -1,171 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Advanced Dynamic Speech Webtoy</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #1d1d1d;
-      font-family: 'Arial', sans-serif;
-    }
-
-    #output-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    .word {
-      display: inline-block;
-      margin: 5px;
-      padding: 2px 5px;
-      transition: all 0.4s ease-in-out;
-      will-change: transform, opacity, font-size;
-      cursor: pointer;
-      user-select: none;
-      opacity: 0.9;
-      transform-origin: center;
-    }
-
-    /* Hover Effects for Words */
-    .word:hover {
-      transform: rotateX(360deg) scale(1.5);
-      opacity: 1;
-    }
-
-    /* Animating Words to Fade In/Out */
-    .word.show {
-      animation: fadeIn 0.6s ease-out forwards;
-    }
-
-    @keyframes fadeIn {
-      0% {
-        transform: translate3d(0, -50px, 0);
-        opacity: 0;
-      }
-      100% {
-        transform: translate3d(0, 0, 0);
-        opacity: 1;
-      }
-    }
-
-    /* Random Rotations and Movements on Load */
-    .word.random-movement {
-      animation: floatWord 3s ease-in-out infinite alternate;
-    }
-
-    @keyframes floatWord {
-      from {
-        transform: translate3d(0, 0, 0) rotate(0);
-      }
-      to {
-        transform: translate3d(20px, -10px, 0) rotate(15deg);
-      }
-    }
-
-    /* Color Gradients and Shadows */
-    .word.random-gradient {
-      background: linear-gradient(45deg, var(--color1), var(--color2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
-    }
-
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayCanvas Speech Webtoy</title>
+    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
 </head>
 <body>
 
-  <div id="output-container"></div>
+    <button id="start-button">Start Speech Input</button>
+    <canvas id="application-canvas"></canvas>
 
-  <script>
-    const outputContainer = document.getElementById('output-container');
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    
-    const analyser = audioContext.createAnalyser();
-    const wordLimit = 1000;
-    let wordsArray = [];
+    <script>
+        const canvas = document.getElementById('application-canvas');
+        const startButton = document.getElementById('start-button');
+        const app = new pc.Application(canvas, {});
 
-    const randomFromArray = (array) => array[Math.floor(Math.random() * array.length)];
-    const getRandomColor = () => `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-    const getRandomGradient = () => [getRandomColor(), getRandomColor()];
+        // Set up PlayCanvas scene
+        app.start();
+        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+        app.setCanvasResolution(pc.RESOLUTION_AUTO);
 
-    const createWordElement = (word) => {
-      const wordElement = document.createElement('span');
-      wordElement.textContent = word;
-      wordElement.classList.add('word', 'show');
+        const camera = new pc.Entity('camera');
+        camera.addComponent('camera', {
+            clearColor: new pc.Color(0.2, 0.2, 0.2)
+        });
+        camera.setPosition(0, 0, 10);
+        app.root.addChild(camera);
 
-      // Randomized visual effects
-      if (Math.random() > 0.5) {
-        wordElement.classList.add('random-movement');
-      }
+        const light = new pc.Entity('light');
+        light.addComponent('light');
+        light.setEulerAngles(45, 30, 0);
+        app.root.addChild(light);
 
-      if (Math.random() > 0.5) {
-        wordElement.classList.add('random-gradient');
-        const [color1, color2] = getRandomGradient();
-        wordElement.style.setProperty('--color1', color1);
-        wordElement.style.setProperty('--color2', color2);
-      }
+        // Add text entity
+        const textEntity = new pc.Entity();
+        textEntity.addComponent('element', {
+            type: pc.ELEMENTTYPE_TEXT,
+            anchor: [0.5, 0.5, 0.5, 0.5],
+            fontSize: 50,
+            pivot: [0.5, 0.5],
+            text: 'Waiting for speech...',
+            color: new pc.Color(1, 1, 1)
+        });
+        app.root.addChild(textEntity);
 
-      wordElement.addEventListener('click', () => {
-        wordElement.style.transform = `rotate(${Math.random() * 360}deg) scale(${Math.random() * 1.5 + 0.5})`;
-      });
+        // Speech recognition setup
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
 
-      return wordElement;
-    };
-
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      const microphone = audioContext.createMediaStreamSource(stream);
-      microphone.connect(analyser);
-
-      function getVolume() {
-        const dataArray = new Uint8Array(analyser.fftSize);
-        analyser.getByteTimeDomainData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += (dataArray[i] - 128) ** 2;
-        }
-        return Math.sqrt(sum / dataArray.length);
-      }
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        const newWords = transcript.split(' ');
-
-        wordsArray = wordsArray.concat(newWords);
-        
-        if (wordsArray.length > wordLimit) {
-          wordsArray = wordsArray.slice(wordsArray.length - wordLimit);
+        function updateText(newText) {
+            textEntity.element.text = newText;
+            textEntity.setLocalPosition(Math.random() * 2 - 1, Math.random() * 2 - 1, 0);  // Random position for visual effect
+            textEntity.setLocalEulerAngles(0, 0, Math.random() * 360);  // Random rotation
         }
 
-        outputContainer.innerHTML = '';
-        wordsArray.forEach(word => {
-          const wordElement = createWordElement(word);
-          outputContainer.appendChild(wordElement);
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            updateText(transcript);
+        };
+
+        startButton.addEventListener('click', () => {
+            recognition.start();
         });
 
-        const volume = getVolume();
-        outputContainer.style.fontSize = `${Math.min(200, volume * 100)}px`;
-      };
-
-      recognition.start();
-    });
-  </script>
+        app.on('update', function (dt) {
+            // Rotate the text for visual effect
+            textEntity.rotate(0, dt * 30, 0);
+        });
+    </script>
 
 </body>
 </html>
