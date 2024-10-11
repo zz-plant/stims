@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Reactive Word Cloud</title>
+    <title>Dreamy Reactive Word Cloud (Fixed Buttons)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -26,26 +26,26 @@
         }
 
         #word-cloud-canvas {
-            width: 90vw;
-            height: 60vh;
-            border-radius: 15px;
+            width: 100%;
+            height: 70vh;
             box-shadow: 0 12px 40px rgba(255, 255, 255, 0.3);
-            position: relative;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.1);
         }
 
         #mic-button {
             background: rgba(255, 255, 255, 0.1);
-            padding: 30px;
+            padding: 20px;
             border-radius: 50%;
             border: none;
             cursor: pointer;
-            box-shadow: 0 0 30px rgba(255, 110, 87, 0.7), 0 0 60px rgba(255, 110, 87, 0.4);
-            transition: all 0.6s ease;
-            margin: 20px;
-            position: absolute;
-            bottom: 8vh;
-            left: calc(50% - 50px);
+            box-shadow: 0 0 20px rgba(255, 110, 87, 0.6), 0 0 40px rgba(255, 110, 87, 0.3);
+            transition: all 0.4s ease;
+            position: fixed;
+            bottom: 10vh;
+            left: 5vw;
             animation: micFloat 6s ease-in-out infinite;
+            z-index: 100;
         }
 
         @keyframes micFloat {
@@ -54,33 +54,39 @@
         }
 
         #mic-icon {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             transition: transform 0.6s ease, filter 1.5s ease;
-            filter: drop-shadow(0 0 20px #ff6e57);
+            filter: drop-shadow(0 0 15px #ff6e57);
         }
 
         #mic-button:active #mic-icon {
-            transform: scale(1.2);
+            transform: scale(1.1);
         }
 
-        .word {
-            display: inline-block;
-            animation: float 10s infinite ease-in-out, rotate 20s infinite linear;
-            position: relative;
-            font-size: 24px;
-            filter: blur(0.5px);
+        #speech-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(87, 110, 255, 0.6), 0 0 40px rgba(87, 110, 255, 0.3);
+            transition: all 0.4s ease;
+            position: fixed;
+            bottom: 10vh;
+            right: 5vw;
+            z-index: 100;
         }
 
-        @keyframes float {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0); }
+        #speech-icon {
+            width: 50px;
+            height: 50px;
+            transition: transform 0.6s ease, filter 1.5s ease;
+            filter: drop-shadow(0 0 15px #5770ff);
         }
 
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        #speech-toggle:active #speech-icon {
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -90,17 +96,24 @@
         <img id="mic-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Muted Mic Icon" />
     </button>
 
+    <button id="speech-toggle">
+        <img id="speech-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539899.png" alt="Speech Toggle Icon" />
+    </button>
+
     <canvas id="word-cloud-canvas"></canvas>
 
     <script>
         const wordCloudCanvas = document.getElementById('word-cloud-canvas');
         const micButton = document.getElementById('mic-button');
+        const speechToggle = document.getElementById('speech-toggle');
         const micIcon = document.getElementById('mic-icon');
+        const speechIcon = document.getElementById('speech-icon');
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
         let isRecording = false;
+        let isSpeechActive = false;
         let wordsArray = [];
 
         // Word cloud shapes for randomness
@@ -118,15 +131,16 @@
 
             WordCloud(wordCloudCanvas, {
                 list: wordCloudData,
-                gridSize: Math.floor(10 * (window.innerWidth / 1024)),
-                weightFactor: 12,
+                gridSize: Math.floor(12 * (window.innerWidth / 1024)),
+                weightFactor: 20,
                 color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
-                rotateRatio: 0.5,
+                rotateRatio: 0.4,
                 minRotation: -Math.PI / 6,
                 maxRotation: Math.PI / 6,
                 backgroundColor: 'transparent',
                 shape: randomShape,
                 drawOutOfBound: true,
+                shrinkToFit: true,
             });
         }
 
@@ -139,6 +153,19 @@
             } else {
                 isRecording = false;
                 micIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
+                recognition.stop();
+            }
+        });
+
+        // Toggle speech processing
+        speechToggle.addEventListener('click', () => {
+            if (!isSpeechActive) {
+                isSpeechActive = true;
+                speechIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Active speech icon
+                recognition.start();
+            } else {
+                isSpeechActive = false;
+                speechIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Inactive speech icon
                 recognition.stop();
             }
         });
@@ -157,7 +184,7 @@
         };
 
         recognition.onspeechend = () => {
-            if (isRecording) {
+            if (isRecording || isSpeechActive) {
                 recognition.stop();
             }
         };
