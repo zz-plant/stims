@@ -152,29 +152,31 @@
         const shapes = ['circle', 'star', 'triangle', 'diamond'];
 
         function updateWordCloud(words) {
-            const wordFrequency = words.reduce((freq, word) => {
-                freq[word] = (freq[word] || 0) + 1;
-                return freq;
-            }, {});
+            if (WordCloud.isSupported) {
+                const wordFrequency = words.reduce((freq, word) => {
+                    freq[word] = (freq[word] || 0) + 1;
+                    return freq;
+                }, {});
 
-            const wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
+                const wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
 
-            const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+                const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
 
-            WordCloud(wordCloudCanvas, {
-                list: wordCloudData,
-                gridSize: Math.floor(12 * (window.innerWidth / 1024)),
-                weightFactor: 20,
-                color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
-                rotateRatio: 0.4,
-                minRotation: -Math.PI / 6,
-                maxRotation: Math.PI / 6,
-                backgroundColor: 'transparent',
-                shape: randomShape,
-                drawOutOfBound: false,
-                shrinkToFit: true,
-                clearCanvas: true
-            });
+                WordCloud(wordCloudCanvas, {
+                    list: wordCloudData,
+                    gridSize: Math.floor(12 * (window.innerWidth / 1024)),
+                    weightFactor: 20,
+                    color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
+                    rotateRatio: 0.4,
+                    minRotation: -Math.PI / 6,
+                    maxRotation: Math.PI / 6,
+                    backgroundColor: 'transparent',
+                    shape: randomShape,
+                    drawOutOfBound: false,
+                    shrinkToFit: true,
+                    clearCanvas: true
+                });
+            }
         }
 
         // Unmute button logic for music visualizer activation
@@ -289,16 +291,18 @@
 
         recognition.onspeechend = () => {
             if (isAddingWords) {
-                isAddingWords = false;
-                toggleSpeechButton.classList.remove('active');
+                recognition.start(); // Keep listening as long as the toggle is active
+            } else {
+                recognition.stop();
             }
-            recognition.stop();
         };
 
-        // Feature detection for WordCloud
-        if (!WordCloud.isSupported) {
-            alert("Your browser does not support WordCloud rendering.");
-        }
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error:", event.error);
+            if (isAddingWords) {
+                recognition.start();
+            }
+        };
     </script>
 
 </body>
