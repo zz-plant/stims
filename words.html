@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unmute to Speak Word Cloud</title>
+    <title>Fluted Glass Word Cloud</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
             background-color: #0d0d0d;
             color: white;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Arial', sans-serif;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -21,34 +21,59 @@
 
         #word-cloud {
             width: 90vw;
-            height: 55vh;
-            background-color: rgba(255, 255, 255, 0.08);
+            height: 60vh;
+            background: rgba(255, 255, 255, 0.1);
             padding: 10px;
             border-radius: 15px;
+            backdrop-filter: blur(10px);
             box-shadow: 0 12px 20px rgba(255, 255, 255, 0.15);
             overflow: hidden;
             position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         #mic-button {
-            background-color: #555;
+            background: rgba(255, 255, 255, 0.15);
             border: none;
             outline: none;
             cursor: pointer;
-            padding: 20px;
+            padding: 30px;
             border-radius: 50%;
-            transition: background-color 0.4s ease;
             box-shadow: 0px 5px 15px rgba(255, 110, 87, 0.6);
             margin-bottom: 20px;
+            position: relative;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: shimmer 2s infinite;
         }
 
         #mic-button.unmuted {
-            background-color: #ff6e57;
+            background-color: rgba(255, 110, 87, 0.2);
+            box-shadow: 0 0 25px rgba(255, 110, 87, 0.8), 0 0 50px rgba(255, 110, 87, 0.5);
+        }
+
+        #mic-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle, rgba(255, 110, 87, 0.5), transparent);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #mic-button.unmuted::before {
+            opacity: 1;
         }
 
         #mic-icon {
-            width: 70px;
-            height: 70px;
+            width: 80px;
+            height: 80px;
             transition: transform 0.4s ease;
         }
 
@@ -56,14 +81,24 @@
             transform: scale(1.2);
         }
 
+        @keyframes shimmer {
+            0% {
+                background-position: -200%;
+            }
+            100% {
+                background-position: 200%;
+            }
+        }
+
         .word {
             display: inline-block;
-            animation: float 6s infinite ease-in-out, colorShift 4s infinite ease-in-out;
+            animation: float 6s infinite ease-in-out, colorShift 6s infinite ease-in-out;
             position: relative;
+            font-size: 24px;
         }
 
         .word:hover {
-            transform: scale(1.4) rotate(25deg);
+            transform: scale(1.4) rotate(15deg);
             transition: transform 0.5s ease;
         }
 
@@ -74,8 +109,8 @@
         }
 
         @keyframes colorShift {
-            0% { color: hsl(0, 100%, 60%); }
-            100% { color: hsl(360, 100%, 60%); }
+            0% { color: hsl(0, 100%, 50%); }
+            100% { color: hsl(360, 100%, 50%); }
         }
     </style>
 </head>
@@ -108,17 +143,17 @@
             WordCloud(wordCloudElement, {
                 list: wordCloudData,
                 gridSize: Math.floor(10 * (window.innerWidth / 1024)),
-                weightFactor: 12,
+                weightFactor: 10,
                 color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
-                rotateRatio: 0.5,
+                rotateRatio: 0.4,
                 minRotation: -Math.PI / 6,
                 maxRotation: Math.PI / 6,
-                backgroundColor: '#0d0d0d',
-                shape: 'star',
+                backgroundColor: 'transparent',
+                shape: 'circle',
             });
         }
 
-        // Toggle mic logic with mic icon change
+        // Toggle mic logic with mic icon and glowing pulse
         micButton.addEventListener('mousedown', () => {
             if (!isRecording) {
                 isRecording = true;
