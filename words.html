@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reactive Word Cloud & Visualizer</title>
+    <title>Dreamy Reactive Word Cloud & Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -34,8 +34,8 @@
             background: rgba(0, 0, 0, 0.1);
             filter: blur(0.5px);
             box-shadow: 0 12px 40px rgba(255, 255, 255, 0.4);
-            position: fixed;
-            top: 20vh;
+            position: absolute;
+            top: 10vh;
             left: 50%;
             transform: translateX(-50%);
             z-index: 5;
@@ -111,6 +111,11 @@
         @keyframes waveExpand {
             0% { transform: scale(0); opacity: 1; }
             100% { transform: scale(5); opacity: 0; }
+        }
+
+        @keyframes pulseEating {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
     </style>
@@ -269,10 +274,12 @@
                 toggleSpeechButton.classList.add('active');
                 deactivateVisualizer(); // Stop visualizer before starting speech detection
                 recognition.start();
+                document.body.style.animation = "pulseEating 1.5s ease-in-out infinite";
             } else {
                 isAddingWords = false;
                 toggleSpeechButton.classList.remove('active');
                 recognition.stop();
+                document.body.style.animation = ""; // Stop the pulse animation
             }
         });
 
@@ -281,6 +288,7 @@
                 isAddingWords = false;
                 toggleSpeechButton.classList.remove('active');
                 recognition.stop();
+                document.body.style.animation = ""; // Stop the pulse animation
             }
         }
 
