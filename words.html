@@ -29,18 +29,16 @@
         #word-cloud-container {
             width: 90vw;
             height: 60vh;
-            max-width: 90vw;
-            max-height: 60vh;
             overflow: hidden;
             border-radius: 15px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.1);
             filter: blur(0.5px);
             box-shadow: 0 12px 40px rgba(255, 255, 255, 0.4);
             position: absolute;
             top: 10vh;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 1;
+            z-index: 5;
         }
 
         #word-cloud-canvas {
@@ -303,6 +301,9 @@
                 recognition.start();
             }
         };
+
+        // Initial word cloud rendering for visibility testing
+        updateWordCloud(wordsArray);
     </script>
 
 </body>
