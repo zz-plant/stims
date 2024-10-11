@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supercharged Reactive Word Cloud & Visualizer</title>
+    <title>Reactive Word Cloud & Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -44,16 +44,17 @@
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
             transition: box-shadow 0.4s ease, background-color 0.4s ease;
             position: fixed;
-            bottom: 10vh;
             z-index: 100;
         }
 
         #unmute-button {
-            left: 5vw;
+            left: 2vw;
+            bottom: 10vh;
         }
 
         #toggle-speech-button {
-            right: 5vw;
+            right: 2vw;
+            bottom: 10vh;
         }
 
         .control-icon {
@@ -74,6 +75,8 @@
             pointer-events: none;
             animation: particleFloat 6s ease-in-out infinite alternate;
             opacity: 0.8;
+            max-width: 100vw;
+            max-height: 100vh;
         }
 
         @keyframes particleFloat {
@@ -88,6 +91,8 @@
             pointer-events: none;
             opacity: 0;
             animation: waveExpand 2s ease-out forwards;
+            max-width: 100vw;
+            max-height: 100vh;
         }
 
         @keyframes waveExpand {
@@ -151,6 +156,7 @@
                 shape: randomShape,
                 drawOutOfBound: true,
                 shrinkToFit: true,
+                clearCanvas: true // Clear previous cloud to ensure the update works smoothly
             });
         }
 
