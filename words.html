@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Reactive Word Cloud (Mic and Word Buttons)</title>
+    <title>Dreamy Reactive Word Cloud (Enhanced)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -12,9 +12,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #ff6b6b, #f8e71c, #7ed321, #50e3c2);
+            background: linear-gradient(135deg, #ffd5e5, #fffae6, #c3f5d6, #b3e5f9);
             background-size: 200% 200%;
-            animation: backgroundShift 16s ease infinite;
+            animation: backgroundShift 20s ease infinite;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
         }
@@ -26,11 +26,12 @@
         }
 
         #word-cloud-canvas {
-            width: 100%;
+            width: 90vw;
             height: 70vh;
             box-shadow: 0 12px 40px rgba(255, 255, 255, 0.3);
             border-radius: 15px;
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+            filter: blur(0.5px);
         }
 
         .control-button {
@@ -58,12 +59,38 @@
             width: 50px;
             height: 50px;
             transition: transform 0.6s ease, filter 1.5s ease;
-            filter: drop-shadow(0 0 15px #ff6e57);
+            filter: drop-shadow(0 0 20px #ff6e57);
+        }
+
+        .control-button.active {
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.9), 0 0 60px rgba(255, 110, 87, 0.7);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .control-button:active .control-icon {
             transform: scale(1.1);
         }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes wordSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .word {
+            display: inline-block;
+            animation: float 8s infinite ease-in-out, wordSpin 25s infinite linear;
+            position: relative;
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+        }
+
     </style>
 </head>
 <body>
@@ -116,6 +143,7 @@
                 shape: randomShape,
                 drawOutOfBound: true,
                 shrinkToFit: true,
+                classes: 'word',
             });
         }
 
@@ -123,12 +151,14 @@
         micAccessButton.addEventListener('click', () => {
             if (!isMicAccessActive) {
                 isMicAccessActive = true;
+                micAccessButton.classList.add('active');
                 micAccessIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Active mic icon
-                // Add any mic-specific functionality here
+                recognition.start();
             } else {
                 isMicAccessActive = false;
+                micAccessButton.classList.remove('active');
                 micAccessIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
-                // Stop any mic-specific functionality here
+                recognition.stop();
             }
         });
 
@@ -136,9 +166,11 @@
         addWordButton.addEventListener('click', () => {
             if (!isAddingWords) {
                 isAddingWords = true;
+                addWordButton.classList.add('active');
                 recognition.start();
             } else {
                 isAddingWords = false;
+                addWordButton.classList.remove('active');
                 recognition.stop();
             }
         });
@@ -158,8 +190,10 @@
 
         recognition.onspeechend = () => {
             if (isAddingWords) {
-                recognition.stop();
+                isAddingWords = false;
+                addWordButton.classList.remove('active');
             }
+            recognition.stop();
         };
 
         // Feature detection for WordCloud
