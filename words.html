@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word Cloud Builder</title>
+    <title>Dreamy Reactive Word Cloud (Visualizer & Speech Toggle)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -90,7 +90,6 @@
             color: rgba(255, 255, 255, 0.9);
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
         }
-
     </style>
 </head>
 <body>
@@ -117,6 +116,10 @@
         let isUnmuted = false;
         let isAddingWords = false;
         let wordsArray = [];
+
+        let audioContext;
+        let analyser;
+        let microphone;
 
         // Word cloud shapes for randomness
         const shapes = ['circle', 'star', 'triangle', 'diamond'];
@@ -147,22 +150,52 @@
             });
         }
 
-        // General unmute button logic for music visualizer activation
+        // Unmute button logic for music visualizer activation
         unmuteButton.addEventListener('click', () => {
             if (!isUnmuted) {
                 isUnmuted = true;
                 unmuteButton.classList.add('active');
                 unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Unmuted mic icon
-                // Insert visualizer activation logic here (e.g., start audio visualization)
+                activateVisualizer();
             } else {
                 isUnmuted = false;
                 unmuteButton.classList.remove('active');
                 unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
-                // Insert visualizer deactivation logic here (e.g., stop audio visualization)
+                deactivateVisualizer();
             }
         });
 
-        // Add words button logic for speech detection toggle
+        function activateVisualizer() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                visualize();
+            });
+        }
+
+        function visualize() {
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            function draw() {
+                analyser.getByteFrequencyData(dataArray);
+                const maxVolume = Math.max(...dataArray);
+                const scaleFactor = Math.min(maxVolume / 128, 2);
+                document.body.style.transform = `scale(${1 + scaleFactor * 0.05})`;
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        function deactivateVisualizer() {
+            if (audioContext) {
+                audioContext.close();
+            }
+        }
+
+        // Toggle speech button logic for speech detection
         toggleSpeechButton.addEventListener('click', () => {
             if (!isAddingWords) {
                 isAddingWords = true;
