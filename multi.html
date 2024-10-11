@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Capability Visualizer</title>
+    <style>
+        body, html {
+            margin: 0;
+            overflow: hidden;
+            height: 100%;
+            background-color: #000000;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="webglCanvas"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Scene, Camera, Renderer Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webglCanvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Dynamic lighting
+        const light1 = new THREE.PointLight(0xff00ff, 1, 100);
+        light1.position.set(10, 10, 10);
+        scene.add(light1);
+
+        const light2 = new THREE.PointLight(0x00ffff, 1, 100);
+        light2.position.set(-10, -10, -10);
+        scene.add(light2);
+
+        const ambientLight = new THREE.AmbientLight(0x222244, 0.5);
+        scene.add(ambientLight);
+
+        // Torus knot for surreal effect
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+        const material = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.7, roughness: 0.4 });
+        const torusKnot = new THREE.Mesh(geometry, material);
+        scene.add(torusKnot);
+
+        // Particle system
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 1000;
+        const particlesPosition = new Float32Array(particlesCount * 3);
+        for (let i = 0; i < particlesCount * 3; i++) {
+            particlesPosition[i] = (Math.random() - 0.5) * 500;
+        }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlesPosition, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ color: 0x00ff00, size: 0.5 });
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particles);
+
+        // Procedural shapes
+        const shapes = [];
+        function createRandomShape() {
+            const shapeType = Math.floor(Math.random() * 3);
+            let shape;
+            const shapeMaterial = new THREE.MeshStandardMaterial({
+                color: Math.random() * 0xffffff,
+                emissive: Math.random() * 0x222222,
+                metalness: 0.7,
+                roughness: 0.4
+            });
+
+            switch (shapeType) {
+                case 0:
+                    shape = new THREE.SphereGeometry(5, 32, 32);
+                    break;
+                case 1:
+                    shape = new THREE.BoxGeometry(7, 7, 7);
+                    break;
+                case 2:
+                    shape = new THREE.ConeGeometry(5, 15, 32);
+                    break;
+            }
+
+            const mesh = new THREE.Mesh(shape, shapeMaterial);
+            mesh.position.set(Math.random() * 100 - 50, Math.random() * 100 - 50, Math.random() * -500);
+            scene.add(mesh);
+            shapes.push(mesh);
+        }
+
+        for (let i = 0; i < 5; i++) {
+            createRandomShape();
+        }
+
+        // Audio input
+        let analyser;
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            const audioContext = new AudioContext();
+            const audioSource = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            audioSource.connect(analyser);
+            analyser.fftSize = 256;
+
+            animate();
+        }).catch((err) => {
+            console.error('Error accessing microphone:', err);
+        });
+
+        // Device orientation
+        window.addEventListener('deviceorientation', (event) => {
+            camera.rotation.x = event.beta / 180 * Math.PI;
+            camera.rotation.y = event.gamma / 90 * Math.PI;
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (analyser) {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+
+                const avgFrequency = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+                torusKnot.rotation.x += avgFrequency / 10000;
+                torusKnot.rotation.y += avgFrequency / 10000;
+
+                light1.intensity = avgFrequency / 128;
+                light2.intensity = avgFrequency / 128;
+
+                particles.rotation.y += 0.001 + avgFrequency / 100000;
+
+                shapes.forEach((shape) => {
+                    shape.rotation.x += 0.01;
+                    shape.rotation.y += 0.01;
+                    shape.position.z += 0.5;
+
+                    if (shape.position.z > 10) {
+                        shape.position.z = -500;
+                    }
+                });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
