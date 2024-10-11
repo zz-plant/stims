@@ -82,6 +82,7 @@
             clearColor: new pc.Color(0, 0, 0, 1)
         });
         camera.setPosition(0, 0, 25);
+        camera.lookAt(0, 0, 0);
         app.root.addChild(camera);
 
         // Create light entities
@@ -113,6 +114,7 @@
         torus.addComponent('render', {
             material: new pc.StandardMaterial()
         });
+        torus.setLocalScale(3, 3, 3);
         app.root.addChild(torus);
 
         // Update torus material
@@ -132,6 +134,7 @@
             colorGraph: new pc.CurveSet([new pc.Curve([1, 0.8, 0]), new pc.Curve([0, 1, 1]), new pc.Curve([0, 0.8, 1])]),
             velocityGraph: new pc.Curve([0, 1, 2])
         });
+        particleSystem.setLocalPosition(0, 0, -5);
         app.root.addChild(particleSystem);
 
         // Handle window resize
@@ -160,11 +163,16 @@
                 material.update();
 
                 // Rotate torus for a more dynamic visual
-                torus.rotate(0.8 * dt, 1.2 * dt, 0);
+                torus.rotate(1.5 * dt, 1.8 * dt, 0.5 * dt);
 
                 // Update particle rotation and expand particles for a more dynamic effect
-                particleSystem.rotate(0, 0.3 * dt, 0);
-                particleSystem.particlesystem.velocityGraph = new pc.Curve([0, 1 + displacementScale, 2.5]);
+                particleSystem.rotate(0, 0.5 * dt, 0);
+                particleSystem.particlesystem.velocityGraph = new pc.Curve([0, 1 + displacementScale, 3]);
+
+                // Move the camera slightly based on audio input for more dynamic 3D effect
+                const cameraShake = displacementScale * 0.5;
+                camera.setPosition(cameraShake * Math.sin(dt * 5), cameraShake * Math.cos(dt * 5), 25);
+                camera.lookAt(0, 0, 0);
             });
         }).catch((err) => {
             console.error('Microphone access denied or not available', err);
