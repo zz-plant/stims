@@ -6,10 +6,7 @@
     <title>Interactive Word Cloud & Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
             margin: 0;
             height: 100vh;
@@ -23,13 +20,11 @@
             overflow: hidden;
             position: relative;
         }
-
         @keyframes backgroundShift {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-
         #word-cloud-container {
             width: 80vw;
             height: 60vh;
@@ -43,14 +38,11 @@
             transform: translateX(-50%);
             z-index: 10;
             mix-blend-mode: screen;
-            filter: url(#glow);
         }
-
         #word-cloud-canvas {
             width: 100%;
             height: 100%;
         }
-
         .controls {
             position: fixed;
             bottom: 5vh;
@@ -60,7 +52,6 @@
             gap: 20px;
             z-index: 15;
         }
-
         .control-button {
             background: rgba(255, 255, 255, 0.2);
             padding: 20px;
@@ -75,41 +66,11 @@
             aspect-ratio: 1 / 1;
             overflow: hidden;
             position: relative;
-            filter: url(#glow);
         }
-
         .control-button.active {
             box-shadow: 0 0 60px rgba(255, 255, 255, 0.9);
             background-color: rgba(255, 255, 255, 0.3);
         }
-
-        .control-button:active {
-            transform: scale(0.9);
-        }
-
-        .control-icon {
-            width: 35px;
-            height: 35px;
-            transition: filter 1.5s ease;
-            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
-        }
-
-        .particle {
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            animation: particleFloat 4s ease-in-out infinite alternate;
-            opacity: 0.8;
-            z-index: 5;
-            mix-blend-mode: difference;
-        }
-
-        @keyframes particleFloat {
-            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.5; }
-            50% { transform: translateY(-20px) translateX(20px) scale(1.3); opacity: 1; }
-            100% { transform: translateY(-40px) translateX(-20px) scale(1); opacity: 0.5; }
-        }
-
     </style>
 </head>
 <body>
@@ -118,7 +79,6 @@
         <button id="unmute-button" class="control-button" aria-label="Unmute Visualizer" title="Toggle Visualizer">
             <img id="unmute-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Mic Access Icon" />
         </button>
-
         <button id="toggle-speech-button" class="control-button" aria-label="Speech Recognition" title="Toggle Speech Recognition">
             <img id="toggle-speech-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/4049/4049754.png" alt="Add Word Icon" />
         </button>
@@ -128,26 +88,10 @@
         <canvas id="word-cloud-canvas"></canvas>
     </div>
 
-    <audio id="button-sound" src="https://freesound.org/data/previews/542/542434_10033997-lq.mp3"></audio>
-
-    <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
-        <defs>
-            <filter id="glow">
-                <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
-                <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-            </filter>
-        </defs>
-    </svg>
-
     <script>
         const wordCloudCanvas = document.getElementById('word-cloud-canvas');
         const unmuteButton = document.getElementById('unmute-button');
         const toggleSpeechButton = document.getElementById('toggle-speech-button');
-        const unmuteIcon = document.getElementById('unmute-icon');
-        const buttonSound = document.getElementById('button-sound');
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
@@ -157,66 +101,61 @@
         let wordsArray = [];
         let wordCloudData = [];
 
-        let audioContext;
-        let analyser;
-        let microphone;
-
-        // Word cloud shapes for randomness
-        const shapes = ['circle', 'star', 'triangle', 'diamond'];
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
 
         function updateWordCloud(words) {
             const wordFrequency = words.reduce((freq, word) => {
                 freq[word] = (freq[word] || 0) + 1;
                 return freq;
             }, {});
-
             wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
-
-            const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
-
             WordCloud(wordCloudCanvas, {
                 list: wordCloudData,
                 gridSize: Math.floor(10 * (window.innerWidth / 1024)),
                 weightFactor: 15,
                 color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
                 rotateRatio: 0.4,
-                minRotation: -Math.PI / 6,
-                maxRotation: Math.PI / 6,
                 backgroundColor: 'transparent',
-                shape: randomShape,
-                drawOutOfBound: false,
-                shrinkToFit: true,
                 clearCanvas: true
             });
         }
 
-        // Unmute button logic for music visualizer activation
         unmuteButton.addEventListener('click', () => {
-            buttonSound.play();
             if (!isUnmuted) {
-                isUnmuted = true;
-                unmuteButton.classList.add('active');
-                unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Unmuted mic icon
-                deactivateSpeechRecognition();
                 activateVisualizer();
             } else {
-                isUnmuted = false;
-                unmuteButton.classList.remove('active');
-                unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
                 deactivateVisualizer();
             }
+            isUnmuted = !isUnmuted;
+            unmuteButton.classList.toggle('active');
+        });
+
+        toggleSpeechButton.addEventListener('click', () => {
+            if (!isAddingWords) {
+                activateSpeechRecognition();
+            } else {
+                deactivateSpeechRecognition();
+            }
+            isAddingWords = !isAddingWords;
+            toggleSpeechButton.classList.toggle('active');
         });
 
         function activateVisualizer() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
 
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                microphone = audioContext.createMediaStreamSource(stream);
-                microphone.connect(analyser);
-                visualize();
-            });
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    visualize();
+                }).catch(error => {
+                    console.error('Error accessing microphone:', error);
+                });
+            }
         }
 
         function visualize() {
@@ -224,13 +163,9 @@
 
             function draw() {
                 if (!isUnmuted) return;
-
                 analyser.getByteFrequencyData(dataArray);
                 const maxVolume = Math.max(...dataArray);
-
                 updateWordCloudWithVisualizer(maxVolume);
-                createParticleEffects(maxVolume);
-
                 requestAnimationFrame(draw);
             }
             draw();
@@ -238,97 +173,53 @@
 
         function deactivateVisualizer() {
             if (audioContext) {
-                audioContext.close();
+                microphone.disconnect();
+                analyser.disconnect();
+                audioContext.close().then(() => {
+                    audioContext = null;
+                    analyser = null;
+                    microphone = null;
+                });
             }
-            document.querySelectorAll('.particle').forEach(p => p.remove());
         }
 
         function updateWordCloudWithVisualizer(volume) {
-            if (WordCloud.isSupported && wordCloudData.length) {
+            if (wordCloudData.length) {
                 WordCloud(wordCloudCanvas, {
                     list: wordCloudData.map(([word, count]) => [word, count * (1 + volume / 256)]),
                     gridSize: Math.floor(10 * (window.innerWidth / 1024)),
                     weightFactor: (word) => 15 + Math.random() * volume / 10,
                     color: () => `hsl(${Math.random() * 360}, 100%, ${50 + volume / 10}%)`,
                     rotateRatio: 0.4,
-                    minRotation: -Math.PI / 6,
-                    maxRotation: Math.PI / 6,
                     backgroundColor: 'transparent',
-                    shape: 'circle',
-                    drawOutOfBound: false,
-                    shrinkToFit: true,
                     clearCanvas: true
                 });
             }
         }
 
-        function createParticleEffects(volume) {
-            document.querySelectorAll('.particle').forEach(p => p.remove());
-            const particleCount = Math.min(volume / 10, 10);
-
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.width = `${Math.random() * 8 + 3}px`;
-                particle.style.height = particle.style.width;
-                particle.style.left = `${Math.random() * 90}vw`;
-                particle.style.top = `${Math.random() * 80}vh`;
-                particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
-                document.body.appendChild(particle);
-            }
+        function activateSpeechRecognition() {
+            recognition.start();
         }
 
-        // Toggle speech button logic for speech detection
-        toggleSpeechButton.addEventListener('click', () => {
-            buttonSound.play();
-            if (!isAddingWords) {
-                isAddingWords = true;
-                toggleSpeechButton.classList.add('active');
-                recognition.start();
-            } else {
-                isAddingWords = false;
-                toggleSpeechButton.classList.remove('active');
-                recognition.stop();
-            }
-        });
-
         function deactivateSpeechRecognition() {
-            if (isAddingWords) {
-                isAddingWords = false;
-                toggleSpeechButton.classList.remove('active');
-                recognition.stop();
-            }
+            recognition.stop();
         }
 
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             const newWords = transcript.split(' ');
-
             wordsArray = wordsArray.concat(newWords);
-
             if (wordsArray.length > 1000) {
                 wordsArray = wordsArray.slice(wordsArray.length - 1000);
             }
-
             updateWordCloud(wordsArray);
         };
 
-        recognition.onspeechend = () => {
-            if (isAddingWords) {
-                recognition.start(); // Keep listening as long as the toggle is active
-            } else {
-                recognition.stop();
-            }
-        };
-
         recognition.onerror = (event) => {
-            console.error("Speech recognition error:", event.error);
-            if (isAddingWords) {
-                recognition.start();
-            }
+            console.error('Speech recognition error:', event.error);
         };
 
-        // Initial word cloud rendering for visibility testing
+        // Initial word cloud rendering
         updateWordCloud(wordsArray);
     </script>
 
