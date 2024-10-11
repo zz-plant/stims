@@ -3,69 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Speech Recognition Word Cloud</title>
+    <title>Hold to Record Word Cloud</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
-            background-color: #1d1d1d;
+            background-color: #0f0f0f;
             color: white;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-        }
-
-        #word-cloud {
-            width: 80vw;
-            height: 60vh;
-            background-color: rgba(255, 255, 255, 0.05);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
             overflow: hidden;
         }
 
+        #word-cloud {
+            width: 90vw;
+            height: 50vh;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
         #start-button {
-            padding: 15px 30px;
-            background-color: #ff7e5f;
+            padding: 15px 25px;
+            background-color: #ff6e57;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             color: white;
             font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.4s ease;
             margin-bottom: 20px;
-            animation: pulse 2s infinite ease-in-out;
+            animation: pulse 1.5s infinite ease-in-out;
+            box-shadow: 0px 5px 15px rgba(255, 110, 87, 0.5);
         }
 
         #start-button:hover {
-            background-color: #feb47b;
+            background-color: #ff925a;
         }
 
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.08); }
             100% { transform: scale(1); }
-        }
-
-        @keyframes bounce {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0); }
         }
 
         .word {
             display: inline-block;
-            animation: bounce 2s infinite;
+            animation: spin 6s infinite linear, colorShift 4s infinite ease-in-out;
+        }
+
+        .word:hover {
+            transform: scale(1.3) rotate(20deg);
+            transition: transform 0.4s ease-in-out;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes colorShift {
+            0% { color: hsl(0, 100%, 50%); }
+            100% { color: hsl(360, 100%, 50%); }
         }
     </style>
 </head>
 <body>
 
-    <button id="start-button">Start Speech Input</button>
+    <button id="start-button">Hold to Record</button>
     <div id="word-cloud"></div>
 
     <script>
@@ -77,7 +90,6 @@
 
         let wordsArray = [];
 
-        // Update the word cloud with the new words
         function updateWordCloud(words) {
             const wordFrequency = words.reduce((freq, word) => {
                 freq[word] = (freq[word] || 0) + 1;
@@ -88,26 +100,30 @@
 
             WordCloud(wordCloudElement, {
                 list: wordCloudData,
-                gridSize: Math.floor(16 * (window.innerWidth / 1024)),
-                weightFactor: 15,
+                gridSize: Math.floor(10 * (window.innerWidth / 1024)),
+                weightFactor: 10,
                 color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
-                rotateRatio: 0.8,
-                minRotation: -Math.PI / 2,
-                maxRotation: Math.PI / 2,
-                rotationSteps: 3,
-                backgroundColor: '#1d1d1d',
-                shape: 'diamond',
-                hover: (item, dimension, event) => {
+                rotateRatio: 0.6,
+                minRotation: -Math.PI / 3,
+                maxRotation: Math.PI / 3,
+                rotationSteps: 2,
+                backgroundColor: '#0f0f0f',
+                shape: 'circle',
+                hover: (item) => {
                     console.log(`Hovered over: ${item[0]}`);
                 },
-                click: (item, dimension, event) => {
+                click: (item) => {
                     alert(`You clicked on ${item[0]}`);
                 }
             });
         }
 
-        startButton.addEventListener('click', () => {
+        startButton.addEventListener('mousedown', () => {
             recognition.start();
+        });
+
+        startButton.addEventListener('mouseup', () => {
+            recognition.stop();
         });
 
         recognition.onresult = (event) => {
@@ -122,6 +138,10 @@
             }
 
             updateWordCloud(wordsArray);
+        };
+
+        recognition.onspeechend = () => {
+            recognition.stop();
         };
 
         // Feature detection for WordCloud
