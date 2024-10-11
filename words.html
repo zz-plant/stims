@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Reactive Word Cloud & Visualizer</title>
+    <title>Dreamy Word Cloud & Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #ff6b6b, #ffcc70, #50e3c2, #ff6bd6);
+            background: linear-gradient(135deg, #f85032, #e73827, #3e5151);
             background-size: 400% 400%;
-            animation: backgroundShift 10s ease infinite;
+            animation: backgroundShift 12s ease infinite;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
             position: relative;
@@ -27,17 +31,17 @@
         }
 
         #word-cloud-container {
-            width: 90vw;
+            width: 80vw;
             height: 60vh;
-            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             border-radius: 15px;
             background: rgba(0, 0, 0, 0.1);
-            filter: blur(0.5px);
-            box-shadow: 0 12px 40px rgba(255, 255, 255, 0.4);
+            filter: blur(0.4px);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
             position: absolute;
-            top: 10vh;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 15%;
             z-index: 5;
         }
 
@@ -46,89 +50,64 @@
             height: 100%;
         }
 
-        .control-button {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
-            transition: box-shadow 0.4s ease, background-color 0.4s ease;
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
             position: fixed;
+            bottom: 5vh;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 10;
         }
 
-        #unmute-button {
-            left: 2vw;
-            bottom: 5vh;
-        }
-
-        #toggle-speech-button {
-            right: 2vw;
-            bottom: 5vh;
-        }
-
-        .control-icon {
-            width: 50px;
-            height: 50px;
-            transition: filter 1.5s ease;
-            filter: drop-shadow(0 0 20px #ff6e57);
+        .control-button {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: box-shadow 0.4s ease, transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1 / 1;
         }
 
         .control-button.active {
-            box-shadow: 0 0 60px rgba(255, 255, 255, 0.9);
-            background-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.6);
+            background-color: rgba(255, 255, 255, 0.25);
         }
 
-        .particle {
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            animation: particleFloat 6s ease-in-out infinite alternate;
-            opacity: 0.8;
-            max-width: 10px;
-            max-height: 10px;
-            z-index: 2;
+        .control-button:active {
+            transform: scale(0.9);
         }
 
-        @keyframes particleFloat {
-            0% { transform: translateY(0) translateX(0); }
-            100% { transform: translateY(-50px) translateX(50px); }
-        }
-
-        .wave {
-            position: absolute;
-            border: 3px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            pointer-events: none;
-            opacity: 0;
-            animation: waveExpand 1.5s ease-out forwards;
-            max-width: 20vw;
-            max-height: 20vh;
-            z-index: 2;
-        }
-
-        @keyframes waveExpand {
-            0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(5); opacity: 0; }
+        .control-icon {
+            width: 35px;
+            height: 35px;
+            transition: filter 1.5s ease;
+            filter: drop-shadow(0 0 15px rgba(255, 110, 87, 0.5));
         }
 
         @keyframes pulseEating {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
         }
-
     </style>
 </head>
 <body>
 
-    <button id="unmute-button" class="control-button">
-        <img id="unmute-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Mic Access Icon" />
-    </button>
+    <div class="controls">
+        <button id="unmute-button" class="control-button">
+            <img id="unmute-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Mic Access Icon" />
+        </button>
 
-    <button id="toggle-speech-button" class="control-button">
-        <img id="toggle-speech-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/4049/4049754.png" alt="Add Word Icon" />
-    </button>
+        <button id="toggle-speech-button" class="control-button">
+            <img id="toggle-speech-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/4049/4049754.png" alt="Add Word Icon" />
+        </button>
+    </div>
 
     <div id="word-cloud-container">
         <canvas id="word-cloud-canvas"></canvas>
@@ -167,8 +146,8 @@
 
                 WordCloud(wordCloudCanvas, {
                     list: wordCloudData,
-                    gridSize: Math.floor(12 * (window.innerWidth / 1024)),
-                    weightFactor: 20,
+                    gridSize: Math.floor(10 * (window.innerWidth / 1024)),
+                    weightFactor: 15,
                     color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
                     rotateRatio: 0.4,
                     minRotation: -Math.PI / 6,
@@ -188,7 +167,7 @@
                 isUnmuted = true;
                 unmuteButton.classList.add('active');
                 unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Unmuted mic icon
-                deactivateSpeechRecognition(); // Stop speech detection before activating visualizer
+                deactivateSpeechRecognition();
                 activateVisualizer();
             } else {
                 isUnmuted = false;
@@ -218,13 +197,6 @@
                 analyser.getByteFrequencyData(dataArray);
                 const maxVolume = Math.max(...dataArray);
 
-                // Update particle effects
-                const particleCount = Math.min(maxVolume / 10, 10);
-                updateParticles(particleCount);
-
-                // Create expanding waveform circles
-                createWave(maxVolume);
-
                 requestAnimationFrame(draw);
             }
             draw();
@@ -234,37 +206,6 @@
             if (audioContext) {
                 audioContext.close();
             }
-            document.querySelectorAll('.particle').forEach(p => p.remove());
-            document.querySelectorAll('.wave').forEach(w => w.remove());
-        }
-
-        function updateParticles(count) {
-            document.querySelectorAll('.particle').forEach(p => p.remove());
-
-            for (let i = 0; i < count; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.width = `${Math.random() * 8 + 3}px`;
-                particle.style.height = particle.style.width;
-                particle.style.left = `${Math.random() * 90}vw`;
-                particle.style.top = `${Math.random() * 80}vh`;
-                particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
-                document.body.appendChild(particle);
-            }
-        }
-
-        function createWave(volume) {
-            if (volume > 120) {
-                const wave = document.createElement('div');
-                wave.className = 'wave';
-                wave.style.left = `calc(50vw - ${Math.min(volume / 6, 50)}px)`;
-                wave.style.top = `calc(50vh - ${Math.min(volume / 6, 50)}px)`;
-                wave.style.width = `${Math.min(volume / 3, 100)}px`;
-                wave.style.height = wave.style.width;
-                document.body.appendChild(wave);
-
-                wave.addEventListener('animationend', () => wave.remove());
-            }
         }
 
         // Toggle speech button logic for speech detection
@@ -272,7 +213,7 @@
             if (!isAddingWords) {
                 isAddingWords = true;
                 toggleSpeechButton.classList.add('active');
-                deactivateVisualizer(); // Stop visualizer before starting speech detection
+                deactivateVisualizer();
                 recognition.start();
                 document.body.style.animation = "pulseEating 1.5s ease-in-out infinite";
             } else {
