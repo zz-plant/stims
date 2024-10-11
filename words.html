@@ -31,18 +31,18 @@
         }
 
         #word-cloud-container {
-            width: 80vw;
-            height: 60vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            width: 90vw;
+            height: 70vh;
+            overflow: hidden;
             border-radius: 15px;
             background: rgba(0, 0, 0, 0.1);
-            filter: blur(0.4px);
+            filter: blur(0.5px);
             box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
             position: absolute;
-            top: 15%;
-            z-index: 5;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
         }
 
         #word-cloud-canvas {
@@ -51,20 +51,19 @@
         }
 
         .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
             position: fixed;
             bottom: 5vh;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10;
+            display: flex;
+            gap: 20px;
+            z-index: 15;
         }
 
         .control-button {
             background: rgba(255, 255, 255, 0.15);
             padding: 15px;
-            border-radius: 15px;
+            border-radius: 50%;
             border: none;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -73,6 +72,8 @@
             align-items: center;
             justify-content: center;
             aspect-ratio: 1 / 1;
+            overflow: hidden;
+            position: relative;
         }
 
         .control-button.active {
@@ -125,6 +126,7 @@
         let isUnmuted = false;
         let isAddingWords = false;
         let wordsArray = [];
+        let wordCloudData = [];
 
         let audioContext;
         let analyser;
@@ -134,31 +136,29 @@
         const shapes = ['circle', 'star', 'triangle', 'diamond'];
 
         function updateWordCloud(words) {
-            if (WordCloud.isSupported) {
-                const wordFrequency = words.reduce((freq, word) => {
-                    freq[word] = (freq[word] || 0) + 1;
-                    return freq;
-                }, {});
+            const wordFrequency = words.reduce((freq, word) => {
+                freq[word] = (freq[word] || 0) + 1;
+                return freq;
+            }, {});
 
-                const wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
+            wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
 
-                const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+            const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
 
-                WordCloud(wordCloudCanvas, {
-                    list: wordCloudData,
-                    gridSize: Math.floor(10 * (window.innerWidth / 1024)),
-                    weightFactor: 15,
-                    color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
-                    rotateRatio: 0.4,
-                    minRotation: -Math.PI / 6,
-                    maxRotation: Math.PI / 6,
-                    backgroundColor: 'transparent',
-                    shape: randomShape,
-                    drawOutOfBound: false,
-                    shrinkToFit: true,
-                    clearCanvas: true
-                });
-            }
+            WordCloud(wordCloudCanvas, {
+                list: wordCloudData,
+                gridSize: Math.floor(10 * (window.innerWidth / 1024)),
+                weightFactor: 15,
+                color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
+                rotateRatio: 0.4,
+                minRotation: -Math.PI / 6,
+                maxRotation: Math.PI / 6,
+                backgroundColor: 'transparent',
+                shape: randomShape,
+                drawOutOfBound: false,
+                shrinkToFit: true,
+                clearCanvas: true
+            });
         }
 
         // Unmute button logic for music visualizer activation
@@ -191,12 +191,14 @@
 
         function visualize() {
             const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
             function draw() {
                 if (!isUnmuted) return;
 
                 analyser.getByteFrequencyData(dataArray);
                 const maxVolume = Math.max(...dataArray);
-
+                updateWordCloudWithVisualizer(maxVolume);
+                
                 requestAnimationFrame(draw);
             }
             draw();
@@ -205,6 +207,25 @@
         function deactivateVisualizer() {
             if (audioContext) {
                 audioContext.close();
+            }
+        }
+
+        function updateWordCloudWithVisualizer(volume) {
+            if (WordCloud.isSupported && wordCloudData.length) {
+                WordCloud(wordCloudCanvas, {
+                    list: wordCloudData.map(([word, count]) => [word, count * (1 + volume / 256)]),
+                    gridSize: Math.floor(10 * (window.innerWidth / 1024)),
+                    weightFactor: 15,
+                    color: () => `hsl(${Math.random() * 360}, 100%, ${50 + volume / 10}%)`,
+                    rotateRatio: 0.4,
+                    minRotation: -Math.PI / 6,
+                    maxRotation: Math.PI / 6,
+                    backgroundColor: 'transparent',
+                    shape: 'circle',
+                    drawOutOfBound: false,
+                    shrinkToFit: true,
+                    clearCanvas: true
+                });
             }
         }
 
