@@ -3,20 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Word Cloud</title>
+    <title>Trippy Word Cloud</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
-            background-color: #0d0d0d;
-            color: white;
-            font-family: 'Arial', sans-serif;
+            margin: 0;
+            height: 100vh;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
             overflow: hidden;
+            background: linear-gradient(45deg, #ff0066, #00ffcc, #3300ff);
+            background-size: 300% 300%;
+            animation: psychedelicBackground 10s infinite ease-in-out;
+        }
+
+        @keyframes psychedelicBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         #word-cloud {
@@ -26,31 +31,25 @@
             padding: 10px;
             border-radius: 15px;
             backdrop-filter: blur(10px);
-            box-shadow: 0 12px 20px rgba(255, 255, 255, 0.15);
+            box-shadow: 0 12px 40px rgba(255, 255, 255, 0.3);
             overflow: hidden;
-            position: relative;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         #mic-button {
             background: rgba(255, 255, 255, 0.15);
             border: none;
-            outline: none;
             cursor: pointer;
-            padding: 30px;
+            padding: 20px;
             border-radius: 50%;
-            box-shadow: 0px 5px 15px rgba(255, 110, 87, 0.6);
+            box-shadow: 0px 5px 25px rgba(255, 255, 255, 0.8);
             margin-bottom: 20px;
-            position: relative;
-            transition: all 0.4s ease;
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: shimmer 2s infinite;
+            animation: glowButton 3s infinite alternate ease-in-out;
         }
 
-        #mic-button.unmuted {
-            background-color: rgba(255, 110, 87, 0.2);
-            box-shadow: 0 0 25px rgba(255, 110, 87, 0.8), 0 0 50px rgba(255, 110, 87, 0.5);
+        @keyframes glowButton {
+            0% { box-shadow: 0px 5px 25px rgba(255, 110, 87, 0.8); }
+            100% { box-shadow: 0px 5px 45px rgba(255, 255, 0, 1); }
         }
 
         #mic-icon {
@@ -61,25 +60,34 @@
 
         .word {
             display: inline-block;
-            animation: float 6s infinite ease-in-out, colorShift 6s infinite ease-in-out;
+            animation: float 6s infinite ease-in-out, colorShift 6s infinite ease-in-out, trippyMovement 12s infinite ease-in-out;
             position: relative;
             font-size: 24px;
+            text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
         }
 
         .word:hover {
-            transform: scale(1.4) rotate(15deg);
+            transform: scale(1.4) rotate(45deg);
             transition: transform 0.5s ease;
         }
 
         @keyframes float {
             0% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
+            50% { transform: translateY(-10px); }
             100% { transform: translateY(0); }
         }
 
         @keyframes colorShift {
             0% { color: hsl(0, 100%, 50%); }
             100% { color: hsl(360, 100%, 50%); }
+        }
+
+        @keyframes trippyMovement {
+            0% { transform: rotate(0deg) scale(1) translate(0); }
+            25% { transform: rotate(15deg) scale(1.2) translate(10px, 10px); }
+            50% { transform: rotate(-30deg) scale(0.8) translate(-10px, -20px); }
+            75% { transform: rotate(45deg) scale(1.4) translate(20px, 0); }
+            100% { transform: rotate(0deg) scale(1) translate(0); }
         }
     </style>
 </head>
@@ -101,14 +109,9 @@
         let wordsArray = [];
         let isRecording = false;
 
-        // Feature detection
-        if (!WordCloud.isSupported) {
-            alert('Your browser does not support WordCloud.');
-        }
-
-        // Get minimum font size allowed by the browser
-        console.log('Minimum font size:', WordCloud.minFontSize);
-
+        // Random shapes for word cloud
+        const shapes = ['circle', 'star', 'triangle', 'square', 'diamond', 'cardioid', 'pentagon'];
+        
         function updateWordCloud(words) {
             const wordFrequency = words.reduce((freq, word) => {
                 freq[word] = (freq[word] || 0) + 1;
@@ -117,8 +120,6 @@
 
             const wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
 
-            // List of shapes to choose from
-            const shapes = ['circle', 'star', 'triangle', 'square', 'diamond', 'cardioid', 'pentagon'];
             const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
 
             WordCloud(wordCloudElement, {
@@ -130,28 +131,14 @@
                 minRotation: -Math.PI / 6,
                 maxRotation: Math.PI / 6,
                 backgroundColor: 'transparent',
-                shape: randomShape, // Random shape
-                click: (item, dimension, event) => {
-                    alert(`You clicked on: ${item[0]}`);
-                },
-                hover: (item, dimension, event) => {
-                    console.log(`Hovered over: ${item[0]}`);
-                }
+                shape: randomShape,
             });
         }
 
-        // Stop rendering function
-        function stopWordCloud() {
-            WordCloud.stop();
-            console.log("Word cloud rendering stopped.");
-        }
-
-        // Toggle mic logic with mic icon and glowing pulse
         micButton.addEventListener('mousedown', () => {
             if (!isRecording) {
                 isRecording = true;
                 micIcon.src = "https://cdn-icons-png.flaticon.com/512/1621/1621778.png"; // Active mic icon
-                micButton.classList.add('unmuted');
                 recognition.start();
             }
         });
@@ -160,7 +147,6 @@
             if (isRecording) {
                 isRecording = false;
                 micIcon.src = "https://cdn-icons-png.flaticon.com/512/1621/1621759.png"; // Muted mic icon
-                micButton.classList.remove('unmuted');
                 recognition.stop();
             }
         });
@@ -171,7 +157,6 @@
 
             wordsArray = wordsArray.concat(newWords);
 
-            // Limit to last 1000 words
             if (wordsArray.length > 1000) {
                 wordsArray = wordsArray.slice(wordsArray.length - 1000);
             }
@@ -184,7 +169,6 @@
                 recognition.stop();
             }
         };
-
     </script>
 
 </body>
