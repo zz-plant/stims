@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced 3D Audio-Responsive Visualizer</title>
+    <title>WebGPU 3D Visualizer</title>
     <style>
         html, body {
             margin: 0;
@@ -18,166 +18,46 @@
     </style>
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.js"></script>
-    <script src="https://threejs.org/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://threejs.org/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://threejs.org/examples/js/postprocessing/UnrealBloomPass.js"></script>
-    
-    <script>
+    <script type="module">
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.js';
+        import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.webgpu.min.js';
+
+        // Check if WebGPU is supported
+        if (navigator.gpu === undefined) {
+            alert("WebGPU not supported on this browser.");
+        }
+
         // Scene setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+        // WebGPU renderer
+        const renderer = new WebGPURenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // Post-processing setup for bloom effect
-        const composer = new THREE.EffectComposer(renderer);
-        const renderPass = new THREE.RenderPass(scene, camera);
-        composer.addPass(renderPass);
-
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        composer.addPass(bloomPass);
-
-        // Torus geometry for the main object
-        const geometry = new THREE.TorusKnotGeometry(10, 3, 200, 32);
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x0affef, 
-            emissive: 0x001133, 
-            emissiveIntensity: 0.7, 
-            metalness: 0.9, 
-            roughness: 0.3 
-        });
+        // Basic torus knot geometry for testing
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
         const torusKnot = new THREE.Mesh(geometry, material);
         scene.add(torusKnot);
 
-        // Lighting
-        const light1 = new THREE.PointLight(0xff0099, 2, 100);
-        light1.position.set(20, 30, 20);
-        scene.add(light1);
-
-        const light2 = new THREE.PointLight(0x00ffff, 2, 100);
-        light2.position.set(-20, -30, 20);
-        scene.add(light2);
-
-        const ambientLight = new THREE.AmbientLight(0x222244);
+        // Basic lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff);
         scene.add(ambientLight);
 
-        // Fog for depth
-        scene.fog = new THREE.Fog(0x000000, 50, 200);
-        camera.position.z = 60;
+        // Camera positioning
+        camera.position.z = 50;
 
-        // Particle system
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 5000;
-        const positions = new Float32Array(particlesCount * 3);
-        for (let i = 0; i < particlesCount * 3; i++) {
-            positions[i] = (Math.random() - 0.5) * 500;
-        }
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particlesMaterial = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.5, opacity: 0.8, transparent: true });
-        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particles);
-
-        // Raycaster for mouse interaction
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        window.addEventListener('mousemove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        });
-
-        function checkIntersects() {
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(scene.children);
-            intersects.forEach((intersect) => {
-                intersect.object.material.color.set(0xff0000);
-            });
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            torusKnot.rotation.x += 0.01;
+            torusKnot.rotation.y += 0.01;
+            renderer.render(scene, camera);
         }
 
-        // Custom Shader Material
-        const customMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 1.0 }
-            },
-            vertexShader: `
-                uniform float time;
-                void main() {
-                    vec3 transformed = position;
-                    transformed.z += sin(position.x * 10.0 + time) * 0.5;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
-                }
-            `,
-            fragmentShader: `
-                void main() {
-                    gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0);
-                }
-            `
-        });
-
-        const customShape = new THREE.Mesh(new THREE.SphereGeometry(5, 32, 32), customMaterial);
-        scene.add(customShape);
-
-        // Adding lens flare effect
-        const lensFlareTexture = new THREE.TextureLoader().load('lensflare.png');
-        const lensflare = new THREE.Lensflare();
-        lensflare.addElement(new THREE.LensflareElement(lensFlareTexture, 700, 0));
-        light1.add(lensflare);
-
-        // Animated camera path
-        let t = 0;
-        function animateCamera() {
-            t += 0.01;
-            camera.position.x = 50 * Math.sin(t);
-            camera.position.z = 50 * Math.cos(t);
-            camera.lookAt(0, 0, 0);
-        }
-
-        // Audio input setup
-        let analyser;
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const audioSource = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            audioSource.connect(analyser);
-            analyser.fftSize = 256;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            function updateColorFromAudio(dataArray) {
-                const low = dataArray.slice(0, 50).reduce((acc, val) => acc + val, 0) / 50;
-                const mid = dataArray.slice(50, 150).reduce((acc, val) => acc + val, 0) / 100;
-                const high = dataArray.slice(150, 256).reduce((acc, val) => acc + val, 0) / 106;
-                const color = new THREE.Color(low / 255, mid / 255, high / 255);
-                torusKnot.material.color.set(color);
-            }
-
-            // Animation loop
-            function animate() {
-                requestAnimationFrame(animate);
-
-                analyser.getByteFrequencyData(dataArray);
-                const avgFrequency = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-                torusKnot.rotation.x += avgFrequency / 10000;
-                torusKnot.rotation.y += avgFrequency / 10000;
-
-                light1.intensity = avgFrequency / 128;
-                light2.intensity = avgFrequency / 128;
-
-                particles.rotation.y += 0.001 + avgFrequency / 100000;
-
-                updateColorFromAudio(dataArray);
-                checkIntersects();
-                animateCamera();
-
-                composer.render();
-            }
-
-            animate();
-        }).catch(function(err) {
-            console.error('The following error occurred: ' + err);
-        });
+        animate();
 
         // Handle window resizing
         window.addEventListener('resize', () => {
