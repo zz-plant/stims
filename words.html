@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Reactive Word Cloud (Visualizer & Speech Toggle)</title>
+    <title>Dreamy Reactive Word Cloud (Enhanced Visualizer & Speech Toggle)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -71,6 +71,23 @@
             transform: scale(1.1);
         }
 
+        .particle {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            animation: particleMove 3s linear infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes particleMove {
+            0% { transform: translateY(0); opacity: 0.7; }
+            50% { transform: translateY(-100px); opacity: 0.3; }
+            100% { transform: translateY(0); opacity: 0.7; }
+        }
+
         @keyframes float {
             0% { transform: translateY(0); }
             50% { transform: translateY(-15px); }
@@ -120,6 +137,7 @@
         let audioContext;
         let analyser;
         let microphone;
+        let particleArray = [];
 
         // Word cloud shapes for randomness
         const shapes = ['circle', 'star', 'triangle', 'diamond'];
@@ -182,8 +200,11 @@
             function draw() {
                 analyser.getByteFrequencyData(dataArray);
                 const maxVolume = Math.max(...dataArray);
-                const scaleFactor = Math.min(maxVolume / 128, 2);
-                document.body.style.transform = `scale(${1 + scaleFactor * 0.05})`;
+
+                // Update particle effects
+                const particleCount = Math.min(maxVolume / 10, 20);
+                updateParticles(particleCount);
+
                 requestAnimationFrame(draw);
             }
             draw();
@@ -192,6 +213,25 @@
         function deactivateVisualizer() {
             if (audioContext) {
                 audioContext.close();
+            }
+            particleArray.forEach(p => document.body.removeChild(p));
+            particleArray = [];
+        }
+
+        function updateParticles(count) {
+            // Remove existing particles
+            particleArray.forEach(p => document.body.removeChild(p));
+            particleArray = [];
+
+            // Add new particles
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.top = `${Math.random() * 100}vh`;
+                particle.style.animationDelay = `${Math.random() * 3}s`;
+                document.body.appendChild(particle);
+                particleArray.push(particle);
             }
         }
 
