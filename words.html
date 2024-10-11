@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Word Cloud & Audio Visualizer</title>
+    <title>Interactive Word Cloud & Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         * {
@@ -107,16 +107,21 @@
             50% { transform: translateY(-20px) translateX(20px) scale(1.3); opacity: 1; }
             100% { transform: translateY(-40px) translateX(-20px) scale(1); opacity: 0.5; }
         }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(3deg); }
+        }
     </style>
 </head>
 <body>
 
     <div class="controls">
-        <button id="unmute-button" class="control-button">
+        <button id="unmute-button" class="control-button" aria-label="Unmute Visualizer" title="Toggle Visualizer">
             <img id="unmute-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Mic Access Icon" />
         </button>
 
-        <button id="toggle-speech-button" class="control-button">
+        <button id="toggle-speech-button" class="control-button" aria-label="Speech Recognition" title="Toggle Speech Recognition">
             <img id="toggle-speech-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/4049/4049754.png" alt="Add Word Icon" />
         </button>
     </div>
@@ -125,11 +130,14 @@
         <canvas id="word-cloud-canvas"></canvas>
     </div>
 
+    <audio id="button-sound" src="https://freesound.org/data/previews/542/542434_10033997-lq.mp3"></audio>
+
     <script>
         const wordCloudCanvas = document.getElementById('word-cloud-canvas');
         const unmuteButton = document.getElementById('unmute-button');
         const toggleSpeechButton = document.getElementById('toggle-speech-button');
         const unmuteIcon = document.getElementById('unmute-icon');
+        const buttonSound = document.getElementById('button-sound');
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
@@ -168,12 +176,20 @@
                 shape: randomShape,
                 drawOutOfBound: false,
                 shrinkToFit: true,
-                clearCanvas: true
+                clearCanvas: true,
+                hover: (item, dimension, event) => {
+                    const ctx = wordCloudCanvas.getContext('2d');
+                    ctx.save();
+                    ctx.translate(dimension.x, dimension.y);
+                    ctx.rotate(3 * Math.PI / 180);
+                    ctx.restore();
+                }
             });
         }
 
         // Unmute button logic for music visualizer activation
         unmuteButton.addEventListener('click', () => {
+            buttonSound.play();
             if (!isUnmuted) {
                 isUnmuted = true;
                 unmuteButton.classList.add('active');
@@ -261,6 +277,7 @@
 
         // Toggle speech button logic for speech detection
         toggleSpeechButton.addEventListener('click', () => {
+            buttonSound.play();
             if (!isAddingWords) {
                 isAddingWords = true;
                 toggleSpeechButton.classList.add('active');
