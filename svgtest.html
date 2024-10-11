@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced SVG + Three.js Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            filter: url('#displacementFilter');
+        }
+    </style>
+</head>
+<body>
+    <!-- The SVG element for the CSS displacement map -->
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0">
+        <defs>
+            <filter id="displacementFilter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="turbulence" />
+                <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="50" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Overlay for SVG filter application -->
+    <div id="overlay">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50%" cy="50%" r="150" fill="url(#grad1)" />
+            <defs>
+                <radialGradient id="grad1" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" style="stop-color:rgb(255,255,255);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:rgb(0,0,0);stop-opacity:1" />
+                </radialGradient>
+            </defs>
+        </svg>
+    </div>
+
+    <!-- Include Three.js and post-processing libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    
+    <script>
+        // Set up the Three.js scene
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Load a simple displacement geometry
+        const geometry = new THREE.SphereGeometry(5, 64, 64);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.4,
+            metalness: 0.6,
+        });
+        const sphere = new THREE.Mesh(geometry, material);
+        scene.add(sphere);
+
+        // Add multiple colored lights
+        const pointLight1 = new THREE.PointLight(0xff0040, 2, 50);
+        pointLight1.position.set(10, 10, 10);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x0040ff, 2, 50);
+        pointLight2.position.set(-10, -10, 10);
+        scene.add(pointLight2);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        camera.position.z = 15;
+
+        // Particle system for added visual richness
+        const particleGeometry = new THREE.BufferGeometry();
+        const particleCount = 500;
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 50;
+        }
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const particleMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2 });
+        const particles = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particles);
+
+        // Post-processing setup (Bloom effect)
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(new THREE.RenderPass(scene, camera));
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        composer.addPass(bloomPass);
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Set up audio context and analyzer
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioCtx.createAnalyser();
+        const audio = new Audio('path-to-your-audio-file.mp3');
+        audio.crossOrigin = "anonymous";
+        audio.loop = true;
+
+        const source = audioCtx.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        analyser.fftSize = 256;
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        audio.play();
+
+        // Interactive mouse movement
+        document.addEventListener('mousemove', (event) => {
+            const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            sphere.rotation.x = mouseY * 0.5;
+            sphere.rotation.y = mouseX * 0.5;
+        });
+
+        // Main animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            analyser.getByteFrequencyData(dataArray);
+
+            // Modify sphere displacement scale and color based on audio frequency
+            const displacementScale = dataArray[0] / 128;
+            sphere.material.displacementScale = displacementScale;
+            sphere.material.color.setHSL(displacementScale / 2, 1, 0.5);
+
+            // Modify CSS displacement filter scale based on audio data
+            const filterElement = document.querySelector('#displacementFilter feDisplacementMap');
+            filterElement.setAttribute('scale', displacementScale * 100);
+
+            // Rotate the sphere for a more dynamic visual
+            sphere.rotation.x += 0.005;
+            sphere.rotation.y += 0.005;
+
+            // Update particle rotation for extra dynamism
+            particles.rotation.y += 0.001;
+
+            // Render the scene with effects
+            composer.render();
+        }
+
+        animate();
+    </script>
+</body>
+</html>
