@@ -40,6 +40,7 @@
             top: 10vh;
             left: 50%;
             transform: translateX(-50%);
+            z-index: 1; /* Ensure the word cloud is layered properly */
         }
 
         #word-cloud-canvas {
@@ -56,7 +57,7 @@
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
             transition: box-shadow 0.4s ease, background-color 0.4s ease;
             position: fixed;
-            z-index: 100;
+            z-index: 3; /* Ensure buttons are always visible */
         }
 
         #unmute-button {
@@ -89,6 +90,7 @@
             opacity: 0.8;
             max-width: 15px;
             max-height: 15px;
+            z-index: 2; /* Particles should be below buttons but above background */
         }
 
         @keyframes particleFloat {
@@ -105,6 +107,7 @@
             animation: waveExpand 1.5s ease-out forwards;
             max-width: 30vw;
             max-height: 30vh;
+            z-index: 2; /* Waves should be below buttons but above background */
         }
 
         @keyframes waveExpand {
