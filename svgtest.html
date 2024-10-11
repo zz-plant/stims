@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced SVG + Three.js Visualizer</title>
+    <title>Enhanced SVG + PlayCanvas Visualizer</title>
     <style>
         body {
             margin: 0;
@@ -45,69 +45,83 @@
         </svg>
     </div>
 
-    <!-- Include Three.js and post-processing libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <!-- Include PlayCanvas Engine -->
+    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
     
     <script>
-        // Set up the Three.js scene
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // Load a simple displacement geometry
-        const geometry = new THREE.SphereGeometry(5, 64, 64);
-        const material = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.4,
-            metalness: 0.6,
+        // Set up the PlayCanvas application
+        const canvas = document.createElement('canvas');
+        document.body.appendChild(canvas);
+        const app = new pc.Application(canvas, {
+            graphicsDeviceOptions: {
+                alpha: true
+            }
         });
-        const sphere = new THREE.Mesh(geometry, material);
-        scene.add(sphere);
+        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+        app.setCanvasResolution(pc.RESOLUTION_AUTO);
+        app.scene.ambientLight = new pc.Color(0.3, 0.3, 0.3);
+        app.start();
 
-        // Add multiple colored lights
-        const pointLight1 = new THREE.PointLight(0xff0040, 2, 50);
-        pointLight1.position.set(10, 10, 10);
-        scene.add(pointLight1);
+        // Create camera entity
+        const camera = new pc.Entity();
+        camera.addComponent('camera', {
+            clearColor: new pc.Color(0, 0, 0, 1)
+        });
+        camera.setPosition(0, 0, 15);
+        app.root.addChild(camera);
 
-        const pointLight2 = new THREE.PointLight(0x0040ff, 2, 50);
-        pointLight2.position.set(-10, -10, 10);
-        scene.add(pointLight2);
+        // Create light entities
+        const light1 = new pc.Entity();
+        light1.addComponent('light', {
+            type: 'point',
+            color: new pc.Color(1, 0.25, 0),
+            range: 50,
+            intensity: 2
+        });
+        light1.setPosition(10, 10, 10);
+        app.root.addChild(light1);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-        scene.add(ambientLight);
+        const light2 = new pc.Entity();
+        light2.addComponent('light', {
+            type: 'point',
+            color: new pc.Color(0, 0.25, 1),
+            range: 50,
+            intensity: 2
+        });
+        light2.setPosition(-10, -10, 10);
+        app.root.addChild(light2);
 
-        camera.position.z = 15;
+        // Create sphere entity
+        const sphere = new pc.Entity();
+        sphere.addComponent('model', {
+            type: 'sphere'
+        });
+        sphere.addComponent('render', {
+            material: new pc.StandardMaterial()
+        });
+        app.root.addChild(sphere);
 
-        // Particle system for added visual richness
-        const particleGeometry = new THREE.BufferGeometry();
-        const particleCount = 500;
-        const positions = new Float32Array(particleCount * 3);
-        for (let i = 0; i < particleCount * 3; i++) {
-            positions[i] = (Math.random() - 0.5) * 50;
-        }
-        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        // Update sphere material
+        const material = sphere.render.material;
+        material.shininess = 60;
+        material.metalness = 0.6;
+        material.update();
 
-        const particleMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2 });
-        const particles = new THREE.Points(particleGeometry, particleMaterial);
-        scene.add(particles);
-
-        // Post-processing setup (Bloom effect)
-        const composer = new THREE.EffectComposer(renderer);
-        composer.addPass(new THREE.RenderPass(scene, camera));
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        composer.addPass(bloomPass);
+        // Create particle system
+        const particleSystem = new pc.Entity();
+        particleSystem.addComponent('particlesystem', {
+            numParticles: 500,
+            lifetime: 2,
+            rate: 0.01,
+            scaleGraph: new pc.Curve([0, 0.2, 1]),
+            colorGraph: new pc.CurveSet([new pc.Curve([1, 1, 0]), new pc.Curve([1, 1, 0]), new pc.Curve([1, 1, 0])]),
+            velocityGraph: new pc.Curve([0, 0.5, 1])
+        });
+        app.root.addChild(particleSystem);
 
         // Handle window resize
         window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            composer.setSize(window.innerWidth, window.innerHeight);
+            app.resizeCanvas(canvas.width, canvas.height);
         });
 
         // Set up audio context and analyzer
@@ -128,39 +142,27 @@
         audio.play();
 
         // Interactive mouse movement
-        document.addEventListener('mousemove', (event) => {
-            const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-            const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-            sphere.rotation.x = mouseY * 0.5;
-            sphere.rotation.y = mouseX * 0.5;
+        app.mouse.on(pc.EVENT_MOUSEMOVE, (event) => {
+            const mouseX = (event.x / window.innerWidth) * 2 - 1;
+            const mouseY = -(event.y / window.innerHeight) * 2 + 1;
+            sphere.setEulerAngles(mouseY * 50, mouseX * 50, 0);
         });
 
         // Main animation loop
-        function animate() {
-            requestAnimationFrame(animate);
+        app.on('update', (dt) => {
             analyser.getByteFrequencyData(dataArray);
 
-            // Modify sphere displacement scale and color based on audio frequency
+            // Modify sphere material based on audio frequency
             const displacementScale = dataArray[0] / 128;
-            sphere.material.displacementScale = displacementScale;
-            sphere.material.color.setHSL(displacementScale / 2, 1, 0.5);
+            material.diffuse.setHSL(displacementScale / 2, 1, 0.5);
+            material.update();
 
-            // Modify CSS displacement filter scale based on audio data
-            const filterElement = document.querySelector('#displacementFilter feDisplacementMap');
-            filterElement.setAttribute('scale', displacementScale * 100);
+            // Rotate sphere for a more dynamic visual
+            sphere.rotate(0.5, 0.5, 0);
 
-            // Rotate the sphere for a more dynamic visual
-            sphere.rotation.x += 0.005;
-            sphere.rotation.y += 0.005;
-
-            // Update particle rotation for extra dynamism
-            particles.rotation.y += 0.001;
-
-            // Render the scene with effects
-            composer.render();
-        }
-
-        animate();
+            // Update particle rotation
+            particleSystem.rotate(0, 0.1, 0);
+        });
     </script>
 </body>
 </html>
