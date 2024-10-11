@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phone-Friendly Word Cloud</title>
+    <title>Reactive Word Cloud</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -93,7 +93,7 @@
 <body>
 
     <button id="mic-button">
-        <img id="mic-icon" src="https://cdn-icons-png.flaticon.com/512/1828/1828772.png" alt="Mic Muted Icon" />
+        <img id="mic-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Muted Mic Icon" />
     </button>
 
     <div id="word-cloud"></div>
@@ -106,8 +106,11 @@
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        let wordsArray = [];
+        let audioContext;
+        let analyser;
+        let microphone;
         let isRecording = false;
+        let backgroundElement = document.body;
 
         // Random shapes for word cloud
         const shapes = ['circle', 'star', 'triangle', 'square', 'diamond'];
@@ -135,19 +138,48 @@
             });
         }
 
+        function setupAudioProcessing() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                processAudio(dataArray);
+            });
+        }
+
+        function processAudio(dataArray) {
+            function animateBackground() {
+                analyser.getByteFrequencyData(dataArray);
+                const volume = Math.max(...dataArray); // Get the maximum volume level
+
+                const scaleFactor = Math.min(volume / 128, 2); // Scaling based on volume (max scale 2x)
+                backgroundElement.style.transform = `scale(${1 + scaleFactor * 0.2})`;
+
+                requestAnimationFrame(animateBackground);
+            }
+            animateBackground();
+        }
+
         micButton.addEventListener('mousedown', () => {
             if (!isRecording) {
                 isRecording = true;
-                micIcon.src = "https://cdn-icons-png.flaticon.com/512/1828/1828759.png"; // Active mic icon
+                micIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Active mic icon
                 recognition.start();
+                setupAudioProcessing();
             }
         });
 
         micButton.addEventListener('mouseup', () => {
             if (isRecording) {
                 isRecording = false;
-                micIcon.src = "https://cdn-icons-png.flaticon.com/512/1828/1828772.png"; // Muted mic icon
+                micIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
                 recognition.stop();
+                audioContext.close(); // Stop audio context to release microphone access
             }
         });
 
