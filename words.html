@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trippy Word Cloud</title>
+    <title>3D Trippy Word Cloud</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -13,6 +13,7 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            perspective: 1000px;
             background: linear-gradient(45deg, #ff0066, #00ffcc, #3300ff);
             background-size: 300% 300%;
             animation: psychedelicBackground 10s infinite ease-in-out;
@@ -34,6 +35,13 @@
             box-shadow: 0 12px 40px rgba(255, 255, 255, 0.3);
             overflow: hidden;
             border: 2px solid rgba(255, 255, 255, 0.3);
+            transform-style: preserve-3d;
+            animation: rotateCloud 12s infinite linear;
+        }
+
+        @keyframes rotateCloud {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
         }
 
         #mic-button {
@@ -60,34 +68,26 @@
 
         .word {
             display: inline-block;
-            animation: float 6s infinite ease-in-out, colorShift 6s infinite ease-in-out, trippyMovement 12s infinite ease-in-out;
-            position: relative;
-            font-size: 24px;
+            position: absolute;
+            animation: wordFloat 8s infinite ease-in-out, colorShift 6s infinite ease-in-out;
             text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+            transform-style: preserve-3d;
         }
 
         .word:hover {
-            transform: scale(1.4) rotate(45deg);
+            transform: scale(1.4) rotateY(180deg);
             transition: transform 0.5s ease;
         }
 
-        @keyframes float {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0); }
+        @keyframes wordFloat {
+            0% { transform: translateZ(0) translateY(0) rotateX(0deg) rotateY(0deg); }
+            50% { transform: translateZ(100px) translateY(-50px) rotateX(45deg) rotateY(45deg); }
+            100% { transform: translateZ(0) translateY(0) rotateX(0deg) rotateY(0deg); }
         }
 
         @keyframes colorShift {
             0% { color: hsl(0, 100%, 50%); }
             100% { color: hsl(360, 100%, 50%); }
-        }
-
-        @keyframes trippyMovement {
-            0% { transform: rotate(0deg) scale(1) translate(0); }
-            25% { transform: rotate(15deg) scale(1.2) translate(10px, 10px); }
-            50% { transform: rotate(-30deg) scale(0.8) translate(-10px, -20px); }
-            75% { transform: rotate(45deg) scale(1.4) translate(20px, 0); }
-            100% { transform: rotate(0deg) scale(1) translate(0); }
         }
     </style>
 </head>
@@ -132,6 +132,12 @@
                 maxRotation: Math.PI / 6,
                 backgroundColor: 'transparent',
                 shape: randomShape,
+                hover: (item) => {
+                    console.log(`Hovered over ${item[0]}`);
+                },
+                click: (item) => {
+                    alert(`You clicked on ${item[0]}`);
+                }
             });
         }
 
