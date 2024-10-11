@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Reactive Word Cloud (Fixed Buttons)</title>
+    <title>Dreamy Reactive Word Cloud (Mic and Word Buttons)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -33,7 +33,7 @@
             background: rgba(0, 0, 0, 0.1);
         }
 
-        #mic-button {
+        .control-button {
             background: rgba(255, 255, 255, 0.1);
             padding: 20px;
             border-radius: 50%;
@@ -43,77 +43,52 @@
             transition: all 0.4s ease;
             position: fixed;
             bottom: 10vh;
-            left: 5vw;
-            animation: micFloat 6s ease-in-out infinite;
             z-index: 100;
         }
 
-        @keyframes micFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        #mic-access-button {
+            left: 5vw;
         }
 
-        #mic-icon {
+        #add-word-button {
+            right: 5vw;
+        }
+
+        .control-icon {
             width: 50px;
             height: 50px;
             transition: transform 0.6s ease, filter 1.5s ease;
             filter: drop-shadow(0 0 15px #ff6e57);
         }
 
-        #mic-button:active #mic-icon {
-            transform: scale(1.1);
-        }
-
-        #speech-toggle {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(87, 110, 255, 0.6), 0 0 40px rgba(87, 110, 255, 0.3);
-            transition: all 0.4s ease;
-            position: fixed;
-            bottom: 10vh;
-            right: 5vw;
-            z-index: 100;
-        }
-
-        #speech-icon {
-            width: 50px;
-            height: 50px;
-            transition: transform 0.6s ease, filter 1.5s ease;
-            filter: drop-shadow(0 0 15px #5770ff);
-        }
-
-        #speech-toggle:active #speech-icon {
+        .control-button:active .control-icon {
             transform: scale(1.1);
         }
     </style>
 </head>
 <body>
 
-    <button id="mic-button">
-        <img id="mic-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Muted Mic Icon" />
+    <button id="mic-access-button" class="control-button">
+        <img id="mic-access-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Mic Access Icon" />
     </button>
 
-    <button id="speech-toggle">
-        <img id="speech-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539899.png" alt="Speech Toggle Icon" />
+    <button id="add-word-button" class="control-button">
+        <img id="add-word-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/4049/4049754.png" alt="Add Word Icon" />
     </button>
 
     <canvas id="word-cloud-canvas"></canvas>
 
     <script>
         const wordCloudCanvas = document.getElementById('word-cloud-canvas');
-        const micButton = document.getElementById('mic-button');
-        const speechToggle = document.getElementById('speech-toggle');
-        const micIcon = document.getElementById('mic-icon');
-        const speechIcon = document.getElementById('speech-icon');
+        const micAccessButton = document.getElementById('mic-access-button');
+        const addWordButton = document.getElementById('add-word-button');
+        const micAccessIcon = document.getElementById('mic-access-icon');
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        let isRecording = false;
-        let isSpeechActive = false;
+        let isMicAccessActive = false;
+        let isAddingWords = false;
         let wordsArray = [];
 
         // Word cloud shapes for randomness
@@ -144,28 +119,26 @@
             });
         }
 
-        // Toggle mic with glowing effect
-        micButton.addEventListener('click', () => {
-            if (!isRecording) {
-                isRecording = true;
-                micIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Active mic icon
-                recognition.start();
+        // General mic access button logic
+        micAccessButton.addEventListener('click', () => {
+            if (!isMicAccessActive) {
+                isMicAccessActive = true;
+                micAccessIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Active mic icon
+                // Add any mic-specific functionality here
             } else {
-                isRecording = false;
-                micIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
-                recognition.stop();
+                isMicAccessActive = false;
+                micAccessIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
+                // Stop any mic-specific functionality here
             }
         });
 
-        // Toggle speech processing
-        speechToggle.addEventListener('click', () => {
-            if (!isSpeechActive) {
-                isSpeechActive = true;
-                speechIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Active speech icon
+        // Add words button logic
+        addWordButton.addEventListener('click', () => {
+            if (!isAddingWords) {
+                isAddingWords = true;
                 recognition.start();
             } else {
-                isSpeechActive = false;
-                speechIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Inactive speech icon
+                isAddingWords = false;
                 recognition.stop();
             }
         });
@@ -184,7 +157,7 @@
         };
 
         recognition.onspeechend = () => {
-            if (isRecording || isSpeechActive) {
+            if (isAddingWords) {
                 recognition.stop();
             }
         };
