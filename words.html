@@ -3,55 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speech Input Webtoy</title>
+    <title>Advanced Speech Recognition Word Cloud</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
             background-color: #1d1d1d;
-            color: #ffffff;
+            color: white;
             font-family: Arial, sans-serif;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            flex-direction: column;
+            margin: 0;
         }
 
-        #output-container {
-            margin-top: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 50vh;
-            overflow: hidden;
-        }
-
-        .word {
-            display: inline-block;
-            margin: 5px;
-            padding: 10px;
-            font-size: 24px;
-            background: linear-gradient(45deg, #ff6f61, #d63f8a);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
-            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
-        }
-
-        .word:hover {
-            transform: rotate(10deg) scale(1.5);
+        #word-cloud {
+            width: 80vw;
+            height: 60vh;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
         }
 
         #start-button {
-            padding: 10px 20px;
+            padding: 15px 30px;
             background-color: #ff7e5f;
             border: none;
             border-radius: 5px;
             color: white;
-            font-size: 16px;
+            font-size: 18px;
             cursor: pointer;
-            margin-top: 20px;
             transition: background-color 0.3s ease;
         }
 
@@ -63,14 +46,45 @@
 <body>
 
     <button id="start-button">Start Speech Input</button>
-    <div id="output-container"></div>
+    <div id="word-cloud"></div>
 
     <script>
-        const outputContainer = document.getElementById('output-container');
+        const wordCloudElement = document.getElementById('word-cloud');
         const startButton = document.getElementById('start-button');
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
+
+        let wordsArray = [];
+
+        // Update the word cloud with the new words
+        function updateWordCloud(words) {
+            const wordFrequency = words.reduce((freq, word) => {
+                freq[word] = (freq[word] || 0) + 1;
+                return freq;
+            }, {});
+
+            const wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
+
+            WordCloud(wordCloudElement, {
+                list: wordCloudData,
+                gridSize: Math.floor(16 * (window.innerWidth / 1024)),
+                weightFactor: 10,
+                color: (word, weight) => weight > 5 ? '#ff7e5f' : `hsl(${Math.random() * 360}, 100%, 50%)`,
+                rotateRatio: 0.5,
+                minRotation: -Math.PI / 4,
+                maxRotation: Math.PI / 4,
+                rotationSteps: 2,
+                backgroundColor: '#1d1d1d',
+                shape: 'star',
+                hover: (item, dimension, event) => {
+                    console.log(`Hovered over: ${item[0]}`);
+                },
+                click: (item, dimension, event) => {
+                    alert(`You clicked on ${item[0]}`);
+                }
+            });
+        }
 
         startButton.addEventListener('click', () => {
             recognition.start();
@@ -78,16 +92,24 @@
 
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
-            const words = transcript.split(' ');
-            outputContainer.innerHTML = '';
-            
-            words.forEach(word => {
-                const wordElement = document.createElement('span');
-                wordElement.classList.add('word');
-                wordElement.textContent = word;
-                outputContainer.appendChild(wordElement);
-            });
+            const newWords = transcript.split(' ');
+
+            wordsArray = wordsArray.concat(newWords);
+
+            // Limit to last 1000 words
+            if (wordsArray.length > 1000) {
+                wordsArray = wordsArray.slice(wordsArray.length - 1000);
+            }
+
+            updateWordCloud(wordsArray);
         };
+
+        // Feature detection for WordCloud
+        if (!WordCloud.isSupported) {
+            alert("Your browser does not support WordCloud rendering.");
+        } else {
+            console.log(`Minimum font size supported: ${WordCloud.minFontSize}px`);
+        }
     </script>
 
 </body>
