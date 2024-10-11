@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Impressive Reactive Word Cloud</title>
+    <title>Dreamy Reactive Word Cloud</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
     <style>
         body {
@@ -14,7 +14,7 @@
             align-items: center;
             background: linear-gradient(135deg, #ff6b6b, #f8e71c, #7ed321, #50e3c2);
             background-size: 200% 200%;
-            animation: backgroundShift 8s ease infinite;
+            animation: backgroundShift 16s ease infinite;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
         }
@@ -29,61 +29,58 @@
             width: 90vw;
             height: 60vh;
             border-radius: 15px;
-            box-shadow: 0 12px 40px rgba(255, 255, 255, 0.2);
-        }
-
-        #mic-button, #speech-toggle {
-            background-color: rgba(255, 255, 255, 0.2);
-            padding: 25px;
-            border-radius: 50%;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-            border: none;
-            outline: none;
-            transition: all 0.3s ease;
-            margin: 10px;
-            position: absolute;
-            bottom: 5vh;
+            box-shadow: 0 12px 40px rgba(255, 255, 255, 0.3);
+            position: relative;
         }
 
         #mic-button {
-            left: 10vw;
-        }
-
-        #speech-toggle {
-            right: 10vw;
-        }
-
-        #mic-button.unmuted {
-            background-color: #ff6e57;
-            box-shadow: 0 0 25px rgba(255, 110, 87, 0.8), 0 0 50px rgba(255, 110, 87, 0.5);
-        }
-
-        #mic-button::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 150%;
-            height: 150%;
-            background: radial-gradient(circle, rgba(255, 110, 87, 0.5), transparent);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(255, 110, 87, 0.7), 0 0 60px rgba(255, 110, 87, 0.4);
+            transition: all 0.6s ease;
+            margin: 20px;
+            position: absolute;
+            bottom: 8vh;
+            left: calc(50% - 50px);
+            animation: micFloat 6s ease-in-out infinite;
         }
 
-        #mic-button.unmuted::before {
-            opacity: 1;
+        @keyframes micFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
-        #mic-icon, #speech-icon {
-            width: 50px;
-            height: 50px;
-            transition: transform 0.3s ease;
+        #mic-icon {
+            width: 60px;
+            height: 60px;
+            transition: transform 0.6s ease, filter 1.5s ease;
+            filter: drop-shadow(0 0 20px #ff6e57);
         }
 
-        #mic-button:active #mic-icon, #speech-toggle:active #speech-icon {
+        #mic-button:active #mic-icon {
             transform: scale(1.2);
+        }
+
+        .word {
+            display: inline-block;
+            animation: float 10s infinite ease-in-out, rotate 20s infinite linear;
+            position: relative;
+            font-size: 24px;
+            filter: blur(0.5px);
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -93,32 +90,21 @@
         <img id="mic-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Muted Mic Icon" />
     </button>
 
-    <button id="speech-toggle">
-        <img id="speech-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539899.png" alt="Speech Toggle Icon" />
-    </button>
-
     <canvas id="word-cloud-canvas"></canvas>
 
     <script>
         const wordCloudCanvas = document.getElementById('word-cloud-canvas');
         const micButton = document.getElementById('mic-button');
-        const speechToggle = document.getElementById('speech-toggle');
         const micIcon = document.getElementById('mic-icon');
-        const speechIcon = document.getElementById('speech-icon');
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        let audioContext;
-        let analyser;
-        let microphone;
         let isRecording = false;
-        let isSpeechActive = false;
         let wordsArray = [];
-        let backgroundElement = document.body;
 
-        // Random shapes for word cloud
-        const shapes = ['circle', 'star', 'triangle', 'square', 'diamond'];
+        // Word cloud shapes for randomness
+        const shapes = ['circle', 'star', 'triangle', 'diamond'];
 
         function updateWordCloud(words) {
             const wordFrequency = words.reduce((freq, word) => {
@@ -135,7 +121,7 @@
                 gridSize: Math.floor(10 * (window.innerWidth / 1024)),
                 weightFactor: 12,
                 color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
-                rotateRatio: 0.4,
+                rotateRatio: 0.5,
                 minRotation: -Math.PI / 6,
                 maxRotation: Math.PI / 6,
                 backgroundColor: 'transparent',
@@ -144,57 +130,15 @@
             });
         }
 
-        function setupAudioProcessing() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                microphone = audioContext.createMediaStreamSource(stream);
-                microphone.connect(analyser);
-                processAudio(dataArray);
-            });
-        }
-
-        function processAudio(dataArray) {
-            function animateBackground() {
-                analyser.getByteFrequencyData(dataArray);
-                const volume = Math.max(...dataArray); // Get the maximum volume level
-
-                const scaleFactor = Math.min(volume / 128, 2); // Scaling based on volume (max scale 2x)
-                backgroundElement.style.transform = `scale(${1 + scaleFactor * 0.2})`;
-
-                requestAnimationFrame(animateBackground);
-            }
-            animateBackground();
-        }
-
-        // Start mic access without speech recognition
+        // Toggle mic with glowing effect
         micButton.addEventListener('click', () => {
             if (!isRecording) {
                 isRecording = true;
                 micIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Active mic icon
-                micButton.classList.add('unmuted');
-                setupAudioProcessing();
+                recognition.start();
             } else {
                 isRecording = false;
                 micIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
-                micButton.classList.remove('unmuted');
-                audioContext.close(); // Stop audio context to release microphone access
-            }
-        });
-
-        // Toggle speech processing
-        speechToggle.addEventListener('click', () => {
-            if (!isSpeechActive) {
-                isSpeechActive = true;
-                speechIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Active speech icon
-                recognition.start();
-            } else {
-                isSpeechActive = false;
-                speechIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Inactive speech icon
                 recognition.stop();
             }
         });
@@ -213,10 +157,15 @@
         };
 
         recognition.onspeechend = () => {
-            if (isSpeechActive) {
+            if (isRecording) {
                 recognition.stop();
             }
         };
+
+        // Feature detection for WordCloud
+        if (!WordCloud.isSupported) {
+            alert("Your browser does not support WordCloud rendering.");
+        }
     </script>
 
 </body>
