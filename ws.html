@@ -124,7 +124,7 @@
                     let char;
 
                     if (detectedPattern && value > wordThreshold) {
-                        // Insert a random word from the words list
+                        // Insert a random word from the words list based on the average intensity
                         char = words[Math.floor(Math.random() * words.length)];
                     } else {
                         // Use a random Unicode character or letter
@@ -132,7 +132,7 @@
                         char = chars[charIndex];
                     }
 
-                    line += char;
+                    line += char + " "; // Add spacing for better legibility
                 }
                 asciiCanvas.textContent += line + "\n";
             }
