@@ -21,6 +21,7 @@
         app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
         app.setCanvasResolution(pc.RESOLUTION_AUTO);
 
+        // Create and position the camera
         const camera = new pc.Entity('camera');
         camera.addComponent('camera', {
             clearColor: new pc.Color(0.2, 0.2, 0.2)
@@ -28,6 +29,7 @@
         camera.setPosition(0, 0, 10);
         app.root.addChild(camera);
 
+        // Create a light source
         const light = new pc.Entity('light');
         light.addComponent('light');
         light.setEulerAngles(45, 30, 0);
@@ -50,6 +52,7 @@
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
+        // Update text function
         function updateText(newText) {
             textEntity.element.text = newText;
             textEntity.setLocalPosition(Math.random() * 2 - 1, Math.random() * 2 - 1, 0);  // Random position for visual effect
@@ -61,12 +64,14 @@
             updateText(transcript);
         };
 
+        // Start speech recognition on button click
         startButton.addEventListener('click', () => {
             recognition.start();
         });
 
+        // Update PlayCanvas scene
         app.on('update', function (dt) {
-            // Rotate the text for visual effect
+            // Rotate the text entity for visual effect
             textEntity.rotate(0, dt * 30, 0);
         });
     </script>
