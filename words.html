@@ -126,197 +126,201 @@
         <canvas id="word-cloud-canvas"></canvas>
     </div>
 
-    <script>
-        const wordCloudCanvas = document.getElementById('word-cloud-canvas');
-        const unmuteButton = document.getElementById('unmute-button');
-        const toggleSpeechButton = document.getElementById('toggle-speech-button');
-        const unmuteIcon = document.getElementById('unmute-icon');
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
+<script>
+    const wordCloudCanvas = document.getElementById('word-cloud-canvas');
+    const unmuteButton = document.getElementById('unmute-button');
+    const toggleSpeechButton = document.getElementById('toggle-speech-button');
+    const unmuteIcon = document.getElementById('unmute-icon');
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
-        let isUnmuted = false;
-        let isAddingWords = false;
-        let wordsArray = [];
-        let wordCloudData = [];
+    let isUnmuted = false;
+    let isAddingWords = false;
+    let wordsArray = [];
+    let wordCloudData = [];
 
-        let audioContext;
-        let analyser;
-        let microphone;
+    let audioContext = null;
+    let analyser = null;
+    let microphone = null;
 
-        // Word cloud shapes for randomness
-        const shapes = ['circle', 'star', 'triangle', 'diamond'];
+    // Word cloud shapes for randomness
+    const shapes = ['circle', 'star', 'triangle', 'diamond'];
 
-        function updateWordCloud(words) {
-            if (WordCloud.isSupported) {
-                const wordFrequency = words.reduce((freq, word) => {
-                    freq[word] = (freq[word] || 0) + 1;
-                    return freq;
-                }, {});
+    function updateWordCloud(words) {
+        if (WordCloud.isSupported) {
+            const wordFrequency = words.reduce((freq, word) => {
+                freq[word] = (freq[word] || 0) + 1;
+                return freq;
+            }, {});
 
-                wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
+            wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
 
-                const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+            const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
 
-                WordCloud(wordCloudCanvas, {
-                    list: wordCloudData,
-                    gridSize: Math.floor(10 * (window.innerWidth / 1024)),
-                    weightFactor: 15,
-                    color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
-                    rotateRatio: 0.4,
-                    minRotation: -Math.PI / 6,
-                    maxRotation: Math.PI / 6,
-                    backgroundColor: 'transparent',
-                    shape: randomShape,
-                    drawOutOfBound: false,
-                    shrinkToFit: true,
-                    clearCanvas: true
-                });
-            }
-        }
-
-        // Unmute button logic for music visualizer activation
-        unmuteButton.addEventListener('click', () => {
-            if (!isUnmuted) {
-                isUnmuted = true;
-                unmuteButton.classList.add('active');
-                unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Unmuted mic icon
-                deactivateSpeechRecognition();
-                activateVisualizer();
-            } else {
-                isUnmuted = false;
-                unmuteButton.classList.remove('active');
-                unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
-                deactivateVisualizer();
-            }
-        });
-
-        function activateVisualizer() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                microphone = audioContext.createMediaStreamSource(stream);
-                microphone.connect(analyser);
-                visualize();
+            WordCloud(wordCloudCanvas, {
+                list: wordCloudData,
+                gridSize: Math.floor(10 * (window.innerWidth / 1024)),
+                weightFactor: 15,
+                color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
+                rotateRatio: 0.4,
+                minRotation: -Math.PI / 6,
+                maxRotation: Math.PI / 6,
+                backgroundColor: 'transparent',
+                shape: randomShape,
+                drawOutOfBound: false,
+                shrinkToFit: true,
+                clearCanvas: true
             });
         }
+    }
 
-        function visualize() {
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-            function draw() {
-                if (!isUnmuted) return;
-
-                analyser.getByteFrequencyData(dataArray);
-                const maxVolume = Math.max(...dataArray);
-
-                updateWordCloudWithVisualizer(maxVolume);
-                createParticleEffects(maxVolume);
-
-                requestAnimationFrame(draw);
-            }
-            draw();
+    // Unmute button logic for music visualizer activation
+    unmuteButton.addEventListener('click', () => {
+        if (!isUnmuted) {
+            isUnmuted = true;
+            unmuteButton.classList.add('active');
+            unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Unmuted mic icon
+            deactivateSpeechRecognition(); // Ensure speech recognition is turned off before starting visualizer
+            activateVisualizer();
+        } else {
+            isUnmuted = false;
+            unmuteButton.classList.remove('active');
+            unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
+            deactivateVisualizer();
         }
+    });
 
-        function deactivateVisualizer() {
-            if (audioContext) {
-                audioContext.close();
-                audioContext = null;
-                analyser = null;
-                microphone = null;
-            }
-            document.querySelectorAll('.particle').forEach(p => p.remove());
-        }
+    function activateVisualizer() {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
 
-        function updateWordCloudWithVisualizer(volume) {
-            if (WordCloud.isSupported && wordCloudData.length) {
-                WordCloud(wordCloudCanvas, {
-                    list: wordCloudData.map(([word, count]) => [word, count * (1 + volume / 256)]),
-                    gridSize: Math.floor(10 * (window.innerWidth / 1024)),
-                    weightFactor: 15,
-                    color: () => `hsl(${Math.random() * 360}, 100%, ${50 + volume / 10}%)`,
-                    rotateRatio: 0.4,
-                    minRotation: -Math.PI / 6,
-                    maxRotation: Math.PI / 6,
-                    backgroundColor: 'transparent',
-                    shape: 'circle',
-                    drawOutOfBound: false,
-                    shrinkToFit: true,
-                    clearCanvas: true
-                });
-            }
-        }
-
-        function createParticleEffects(volume) {
-            document.querySelectorAll('.particle').forEach(p => p.remove());
-            const particleCount = Math.min(volume / 10, 10);
-
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.width = `${Math.random() * 8 + 3}px`;
-                particle.style.height = particle.style.width;
-                particle.style.left = `${Math.random() * 90}vw`;
-                particle.style.top = `${Math.random() * 80}vh`;
-                particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
-                document.body.appendChild(particle);
-            }
-        }
-
-        // Toggle speech button logic for speech detection
-        toggleSpeechButton.addEventListener('click', () => {
-            if (!isAddingWords) {
-                isAddingWords = true;
-                toggleSpeechButton.classList.add('active');
-                deactivateVisualizer();
-                recognition.start();
-            } else {
-                isAddingWords = false;
-                toggleSpeechButton.classList.remove('active');
-                recognition.stop();
-            }
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+            visualize();
+        }).catch(error => {
+            console.error("Error accessing microphone for visualizer:", error);
+            deactivateVisualizer(); // Clean up in case of error
         });
+    }
 
-        function deactivateSpeechRecognition() {
-            if (isAddingWords) {
-                isAddingWords = false;
-                toggleSpeechButton.classList.remove('active');
-                recognition.stop();
-            }
+    function visualize() {
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        function draw() {
+            if (!isUnmuted) return;
+
+            analyser.getByteFrequencyData(dataArray);
+            const maxVolume = Math.max(...dataArray);
+
+            updateWordCloudWithVisualizer(maxVolume);
+            createParticleEffects(maxVolume);
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    function deactivateVisualizer() {
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+            analyser = null;
+            microphone = null;
+        }
+        document.querySelectorAll('.particle').forEach(p => p.remove());
+    }
+
+    function updateWordCloudWithVisualizer(volume) {
+        if (WordCloud.isSupported && wordCloudData.length) {
+            WordCloud(wordCloudCanvas, {
+                list: wordCloudData.map(([word, count]) => [word, count * (1 + volume / 256)]),
+                gridSize: Math.floor(10 * (window.innerWidth / 1024)),
+                weightFactor: 15,
+                color: () => `hsl(${Math.random() * 360}, 100%, ${50 + volume / 10}%)`,
+                rotateRatio: 0.4,
+                minRotation: -Math.PI / 6,
+                maxRotation: Math.PI / 6,
+                backgroundColor: 'transparent',
+                shape: 'circle',
+                drawOutOfBound: false,
+                shrinkToFit: true,
+                clearCanvas: true
+            });
+        }
+    }
+
+    function createParticleEffects(volume) {
+        document.querySelectorAll('.particle').forEach(p => p.remove());
+        const particleCount = Math.min(volume / 10, 10);
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.width = `${Math.random() * 8 + 3}px`;
+            particle.style.height = particle.style.width;
+            particle.style.left = `${Math.random() * 90}vw`;
+            particle.style.top = `${Math.random() * 80}vh`;
+            particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
+            document.body.appendChild(particle);
+        }
+    }
+
+    // Toggle speech button logic for speech detection
+    toggleSpeechButton.addEventListener('click', () => {
+        if (!isAddingWords) {
+            isAddingWords = true;
+            toggleSpeechButton.classList.add('active');
+            deactivateVisualizer(); // Ensure visualizer is turned off before starting speech recognition
+            recognition.start();
+        } else {
+            isAddingWords = false;
+            toggleSpeechButton.classList.remove('active');
+            recognition.stop();
+        }
+    });
+
+    function deactivateSpeechRecognition() {
+        if (isAddingWords) {
+            isAddingWords = false;
+            toggleSpeechButton.classList.remove('active');
+            recognition.stop();
+        }
+    }
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const newWords = transcript.split(' ');
+
+        wordsArray = wordsArray.concat(newWords);
+
+        if (wordsArray.length > 1000) {
+            wordsArray = wordsArray.slice(wordsArray.length - 1000);
         }
 
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            const newWords = transcript.split(' ');
-
-            wordsArray = wordsArray.concat(newWords);
-
-            if (wordsArray.length > 1000) {
-                wordsArray = wordsArray.slice(wordsArray.length - 1000);
-            }
-
-            updateWordCloud(wordsArray);
-        };
-
-        recognition.onspeechend = () => {
-            if (isAddingWords) {
-                recognition.start(); // Keep listening as long as the toggle is active
-            } else {
-                recognition.stop();
-            }
-        };
-
-        recognition.onerror = (event) => {
-            console.error("Speech recognition error:", event.error);
-            if (isAddingWords) {
-                recognition.start();
-            }
-        };
-
-        // Initial word cloud rendering for visibility testing
         updateWordCloud(wordsArray);
-    </script>
+    };
+
+    recognition.onspeechend = () => {
+        if (isAddingWords) {
+            recognition.start(); // Keep listening as long as the toggle is active
+        } else {
+            recognition.stop();
+        }
+    };
+
+    recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        if (isAddingWords) {
+            recognition.start();
+        }
+    };
+
+    // Initial word cloud rendering for visibility testing
+    updateWordCloud(wordsArray);
+</script>
 
 </body>
 </html>
