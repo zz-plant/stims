@@ -93,7 +93,7 @@
 <body>
 
     <button id="mic-button">
-        <img id="mic-icon" src="https://cdn-icons-png.flaticon.com/512/1621/1621759.png" alt="Mic Icon" />
+        <img id="mic-icon" src="https://cdn-icons-png.flaticon.com/512/1828/1828772.png" alt="Mic Muted Icon" />
     </button>
 
     <div id="word-cloud"></div>
@@ -138,7 +138,7 @@
         micButton.addEventListener('mousedown', () => {
             if (!isRecording) {
                 isRecording = true;
-                micIcon.src = "https://cdn-icons-png.flaticon.com/512/1621/1621778.png"; // Active mic icon
+                micIcon.src = "https://cdn-icons-png.flaticon.com/512/1828/1828759.png"; // Active mic icon
                 recognition.start();
             }
         });
@@ -146,7 +146,7 @@
         micButton.addEventListener('mouseup', () => {
             if (isRecording) {
                 isRecording = false;
-                micIcon.src = "https://cdn-icons-png.flaticon.com/512/1621/1621759.png"; // Muted mic icon
+                micIcon.src = "https://cdn-icons-png.flaticon.com/512/1828/1828772.png"; // Muted mic icon
                 recognition.stop();
             }
         });
