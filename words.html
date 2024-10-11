@@ -36,7 +36,8 @@
             background: rgba(255, 255, 255, 0.1);
             filter: blur(0.5px);
             box-shadow: 0 12px 40px rgba(255, 255, 255, 0.4);
-            position: relative;
+            position: absolute;
+            top: 10vh;
         }
 
         #word-cloud-canvas {
@@ -165,7 +166,7 @@
                 maxRotation: Math.PI / 6,
                 backgroundColor: 'transparent',
                 shape: randomShape,
-                drawOutOfBound: true,
+                drawOutOfBound: false, // Prevent words from drawing out of bounds
                 shrinkToFit: true,
                 clearCanvas: true // Clear previous cloud to ensure the update works smoothly
             });
@@ -234,8 +235,8 @@
                 particle.className = 'particle';
                 particle.style.width = `${Math.random() * 10 + 5}px`;
                 particle.style.height = particle.style.width;
-                particle.style.left = `${Math.random() * 100}vw`;
-                particle.style.top = `${Math.random() * 100}vh`;
+                particle.style.left = `${Math.random() * 90}vw`;
+                particle.style.top = `${Math.random() * 90}vh`;
                 particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
                 document.body.appendChild(particle);
             }
@@ -247,8 +248,8 @@
                 wave.className = 'wave';
                 wave.style.left = `calc(50vw - ${volume / 4}px)`;
                 wave.style.top = `calc(50vh - ${volume / 4}px)`;
-                wave.style.width = `${volume / 2}px`;
-                wave.style.height = `${volume / 2}px`;
+                wave.style.width = `${Math.min(volume / 2, 200)}px`;
+                wave.style.height = wave.style.width;
                 document.body.appendChild(wave);
 
                 wave.addEventListener('animationend', () => wave.remove());
