@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Terminal Visualizer with Glow and Dissolve</title>
+  <title>Clear Visualizer with Word Interaction</title>
   <style>
     body {
       margin: 0;
@@ -17,22 +17,19 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(30, 1fr); /* Create 30 columns */
-      grid-template-rows: repeat(15, 1fr);   /* Create 15 rows */
+      grid-template-columns: repeat(30, 1fr); /* 30 columns */
+      grid-template-rows: repeat(15, 1fr);   /* 15 rows */
       width: 85vw;  /* Grid occupies 85% of the viewport width */
       height: 75vh; /* Grid occupies 75% of the viewport height */
-      gap: 1px;
-      filter: url(#crt); /* Apply the CRT SVG filter */
-      animation: crtFlicker 0.05s infinite alternate; /* CRT flicker effect */
+      gap: 0px;     /* No gap between cells */
     }
     .cell {
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 1.5vw;
-      color: #00ff00;
+      font-size: 1.2vw; /* Increased size for legibility */
+      color: #00ff00;   /* Bright neon green */
       transition: all 0.2s ease-in-out;
-      filter: drop-shadow(0 0 3px #00ff00); /* Glowing effect */
     }
     button, label, input {
       position: absolute;
@@ -59,13 +56,7 @@
       color: #00ff00;
     }
 
-    /* Keyframe for flickering text effect */
-    @keyframes crtFlicker {
-      0% { opacity: 1; }
-      100% { opacity: 0.95; } /* Slight flicker effect */
-    }
-
-    /* Keyframe for glowing and dissolving text */
+    /* Glow and dissolve animation */
     @keyframes dissolve {
       0% {
         opacity: 1;
@@ -81,12 +72,6 @@
       }
     }
 
-    /* SVG filter to simulate CRT effect */
-    svg {
-      position: absolute;
-      width: 0;
-      height: 0;
-    }
   </style>
 </head>
 <body>
@@ -95,24 +80,6 @@
   <input id="sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.3">
 
   <div class="grid" id="grid"></div>
-
-  <svg>
-    <filter id="crt">
-      <!-- RGB offset effect -->
-      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise"/>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" />
-      <!-- Slight blurring for the CRT feel -->
-      <feGaussianBlur stdDeviation="0.6" />
-      <!-- Scan lines -->
-      <feComponentTransfer>
-        <feFuncR type="discrete" tableValues="0 1"/>
-        <feFuncG type="discrete" tableValues="0 1"/>
-        <feFuncB type="discrete" tableValues="0 1"/>
-        <feFuncA type="discrete" tableValues="1 0"/>
-      </feComponentTransfer>
-      <feBlend mode="overlay" in="SourceGraphic"/>
-    </filter>
-  </svg>
 
   <script>
     let audioContext, analyser, dataArray, micStream, isMicrophoneEnabled = false;
