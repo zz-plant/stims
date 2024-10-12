@@ -32,10 +32,12 @@
             padding: 20px;
             border-radius: 10px;
             text-align: center;
-            transition: transform 0.3s;
+            transition: transform 0.3s, background 0.3s;
+            cursor: pointer;
         }
         .webtoy-card:hover {
             transform: translateY(-10px);
+            background: #333;
         }
         .webtoy-card h3 {
             margin-bottom: 15px;
@@ -43,6 +45,7 @@
         .webtoy-card a {
             color: #0affef;
             text-decoration: none;
+            font-weight: bold;
         }
         .webtoy-card p {
             font-size: 0.9em;
@@ -52,41 +55,64 @@
             margin-top: 40px;
             font-size: 0.8em;
         }
+        footer a {
+            color: #0affef;
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>Welcome to the Stim Webtoys Library</h1>
-        <p>Explore a collection of interactive visual experiences designed to stimulate and engage the senses. Click on a webtoy to experience it!</p>
+        <h1>Stim Webtoys Library</h1>
+        <p>Explore a collection of interactive visual experiences designed to stimulate the senses. Click on a webtoy to experience it!</p>
     </header>
     <div class="webtoy-container">
         <div class="webtoy-card">
             <h3><a href="3dtoy.html">Transport to Another Dimension</a></h3>
-            <p>Experience a surreal tunnel with a twisting torus knot, dynamic lighting, and vibrant particles, all reacting in real time to audio input.</p>
+            <p>Immerse yourself in a surreal 3D tunnel featuring a twisting torus knot, dynamic lighting, and vibrant particles, all reacting in real time to sound.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="brand.html">Star Guitar Inspired Visualizer</a></h3>
-            <p>Procedurally generated scenery inspired by the iconic music video, featuring trees, poles, and buildings that move in sync with the beat.</p>
+            <h3><a href="brand.html">Star Guitar Visualizer</a></h3>
+            <p>Experience a visual journey through procedurally generated scenery, inspired by the iconic music video, with elements that sync to the beat of your music.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="demo.html">Dreamy Music Visualizer Suite</a></h3>
-            <p>A customizable visualizer with interactive controls. Adjust sensitivity, color mode, and explore how visuals react to audio input.</p>
+            <h3><a href="defrag.html">Defrag Visualizer</a></h3>
+            <p>A retro-style, sound-reactive visualizer that evokes the look and feel of old-school defragmentation processes, updated for modern times.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="evol.html">Evolutionary Weirdcore</a></h3>
+            <p>Explore a constantly evolving, weirdcore-inspired landscape. Watch as fractals, glitches, and surreal visuals transform based on music input.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="multi.html">Multi-Capability Visualizer</a></h3>
+            <p>A versatile visualizer that responds to both audio and device orientation, creating dynamic shapes and lighting effects in real time.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="multi2.html">WebGPU/WebGL Visualizer</a></h3>
+            <p>A next-gen visualizer leveraging WebGPU (or WebGL fallback) for stunning real-time effects with sound and motion-based interactions.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="r169.html">Spectrograph & Pattern Recognition</a></h3>
+            <p>Pattern recognition meets interactive visuals in this dreamy spectrograph that responds dynamically to audio input and user interactions.</p>
         </div>
         <div class="webtoy-card">
             <h3><a href="seary.html">Trippy Synesthetic Visualizer</a></h3>
-            <p>A visualizer that offers a synesthetic experience with kaleidoscopic patterns that react to both device audio and microphone input.</p>
+            <p>Enter a kaleidoscopic world of patterns that respond to both device audio and microphone input, offering a full synesthetic experience.</p>
         </div>
         <div class="webtoy-card">
             <h3><a href="sgpat.html">Pattern Recognition Visualizer</a></h3>
-            <p>Featuring pattern recognition synced with audio input, this visualizer creates procedurally generated objects that respond dynamically.</p>
+            <p>A visualizer that uses pattern recognition to create procedurally generated objects that move and change dynamically with sound.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="stars.html">Star Guitar-Inspired Visualizer</a></h3>
-            <p>A journey through a procedurally generated world, complete with spinning cones and floating rings, all moving to the rhythm of your music.</p>
+            <h3><a href="svgtest.html">SVG + Three.js Visualizer</a></h3>
+            <p>A hybrid visualizer combining SVG effects and Three.js for a unique, layered experience that reacts in real time to audio data.</p>
         </div>
         <div class="webtoy-card">
-            <h3><a href="symph.html">Dreamy Interactive Spectrograph</a></h3>
-            <p>A beautiful spectrograph visualizer that merges WebGL and 2D visuals, offering a colorful, dynamic response to audio input.</p>
+            <h3><a href="symph.html">Dreamy Spectrograph</a></h3>
+            <p>A stunning music visualizer blending WebGL with 2D visuals, creating a dreamy spectrograph that reacts dynamically to your audio.</p>
+        </div>
+        <div class="webtoy-card">
+            <h3><a href="words.html">Interactive Word Cloud</a></h3>
+            <p>Generate a dynamic word cloud that interacts with your voice input. Watch words float, shift, and react to the sounds around you.</p>
         </div>
     </div>
     <footer>
