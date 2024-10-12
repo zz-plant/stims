@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mic Input Cool Text Visualizer</title>
+  <title>Unexpected Music Visualizer</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
@@ -19,9 +19,10 @@
 </head>
 <body>
   <button id="start-button">Start Microphone</button>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js"></script>
-  <script>
+
+  <script type="module">
+    import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
+
     let audioContext;
     let analyser;
     let dataArray;
@@ -74,108 +75,86 @@
     document.body.appendChild(renderer.domElement);
 
     const fontLoader = new THREE.FontLoader();
-    let textMesh;
+    let textMeshes = [];
     let font;
 
     fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (loadedFont) {
       font = loadedFont;
-      createTextMesh();
+      createTextMeshes();
     });
 
     // Full text to render
-    const fullText = 'This is an example of a body of text that will dynamically morph and glow based on microphone input.';
+    const fullText = 'Unexpected effects in a music visualizer. Shattering, Swarming, Defying gravity.';
     const words = fullText.split(' ');
     const revealedWords = Array(words.length).fill(false);
 
-    // Create text mesh
-    function createTextMesh() {
-      const geometry = new THREE.TextGeometry(getTextWithTeasingGibberish(), {
-        font: font,
-        size: 0.5,
-        height: 0.05,
+    // Create text meshes for each word
+    function createTextMeshes() {
+      words.forEach((word, index) => {
+        const geometry = new THREE.TextGeometry(word, {
+          font: font,
+          size: 0.5,
+          height: 0.05,
+        });
+
+        const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // Random initial positions for the words
+        mesh.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 5 - 10);
+        textMeshes.push(mesh);
+        scene.add(mesh);
       });
-      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
-      textMesh = new THREE.Mesh(geometry, material);
-      textMesh.position.set(-5, 0, -5);
-      scene.add(textMesh);
-      camera.position.z = 5;
+
+      camera.position.z = 15;  // Adjust camera to see all words initially
     }
 
-    // Generate gibberish mixed with legible words based on beat intensity
-    function generateTeasingGibberish(word, legibilityFactor) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      for (let i = 0; i < word.length; i++) {
-        if (Math.random() < legibilityFactor) {
-          result += word[i];  // Reveal real letter
-        } else {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));  // Gibberish letter
+    // Beat-driven word behavior
+    function updateWordsBasedOnBeat(beatStrength) {
+      // Text shattering effect on beat peaks
+      textMeshes.forEach((mesh, index) => {
+        const distanceFromCenter = Math.abs(mesh.position.x) + Math.abs(mesh.position.y);
+        const threshold = beatStrength / 10;
+
+        if (distanceFromCenter < threshold) {
+          // Push words outward, "shattering" them away from the center
+          mesh.position.x += (Math.random() - 0.5) * beatStrength * 0.02;
+          mesh.position.y += (Math.random() - 0.5) * beatStrength * 0.02;
+          mesh.rotation.z += (Math.random() - 0.5) * beatStrength * 0.001;
         }
-      }
-      return result;
-    }
-
-    function getTextWithTeasingGibberish() {
-      const legibilityFactor = currentLegibilityFactor;  // Controlled by beat strength
-      return words.map((word, i) => {
-        if (revealedWords[i]) {
-          return word; // Already revealed
-        } else {
-          return generateTeasingGibberish(word, legibilityFactor);
-        }
-      }).join(' ');
-    }
-
-    // Update the text mesh geometry when the beat changes
-    function updateTextMesh() {
-      const geometry = new THREE.TextGeometry(getTextWithTeasingGibberish(), {
-        font: font,
-        size: 0.5,
-        height: 0.05,
       });
-      textMesh.geometry.dispose();
-      textMesh.geometry = geometry;
-
-      // Add glow effect based on beat intensity
-      const glowIntensity = currentLegibilityFactor * 2;  // Increase glow with legibility
-      textMesh.material.emissive = new THREE.Color(glowIntensity, glowIntensity, glowIntensity);
     }
 
-    // Increase word legibility based on beat intensity
-    function updateLegibilityBasedOnBeat() {
-      const beatStrength = getBeat();  // Get beat strength from mic input
-      currentLegibilityFactor = Math.min(1, beatStrength / 128);  // Normalize beat strength
-
-      // Randomly reveal more words based on the beat intensity
-      const wordsToReveal = Math.floor(beatStrength / 10);  // More words for higher intensity
-      for (let i = 0; i < wordsToReveal; i++) {
-        const randomIndex = Math.floor(Math.random() * words.length);
-        revealedWords[randomIndex] = true;  // Reveal random words
-      }
-
-      // Apply some dynamic effects based on beat peaks
-      applyDynamicEffects(beatStrength);
-      updateTextMesh();  // Update the text mesh with new legibility
+    // Apply gravity-defying behavior to words
+    function applyGravityDefyingEffect(beatStrength) {
+      textMeshes.forEach((mesh) => {
+        // Add a sine-based oscillation to simulate gravity-defying text movement
+        const oscillationFactor = Math.sin(Date.now() * 0.001) * (beatStrength * 0.01);
+        mesh.position.y += oscillationFactor;
+      });
     }
 
-    // Apply dynamic effects like glow, pulsing, and camera movement based on intensity
-    function applyDynamicEffects(beatStrength) {
-      const pulseScale = 1 + beatStrength / 300;  // Scale text based on beat
-      textMesh.scale.set(pulseScale, pulseScale, pulseScale);  // Apply pulse effect
-
-      // Add subtle camera movement for cooler visuals
-      const cameraMovement = Math.sin(Date.now() * 0.001) * 0.5;
-      camera.position.x = cameraMovement;
-      camera.position.y = cameraMovement / 2;
-      camera.lookAt(textMesh.position);
+    // Word swarming effect - words "attract" toward random points
+    function applySwarmEffect(beatStrength) {
+      const targetPoint = new THREE.Vector3(Math.random() * 4 - 2, Math.random() * 4 - 2, Math.random() * -5);
+      textMeshes.forEach((mesh) => {
+        // Move each word toward the target point
+        mesh.position.lerp(targetPoint, 0.01 + (beatStrength * 0.001));  // Speed increases with beat
+      });
     }
 
     // Render loop
     function render() {
       requestAnimationFrame(render);
       if (analyser) {
-        updateLegibilityBasedOnBeat();  // Check mic input and update legibility
+        const beatStrength = getBeat();
+
+        // Apply the effects
+        updateWordsBasedOnBeat(beatStrength);
+        applyGravityDefyingEffect(beatStrength);
+        applySwarmEffect(beatStrength);
       }
+
       renderer.render(scene, camera);
     }
   </script>
