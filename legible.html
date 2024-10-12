@@ -14,12 +14,28 @@
       background-color: black;
       color: #00ff00;
       font-family: monospace;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #003300, #001a00);
+      animation: backgroundAnimate 10s infinite alternate ease-in-out;
+    }
+    @keyframes backgroundAnimate {
+      0% {
+        background: radial-gradient(circle at center, #003300, #001a00);
+      }
+      50% {
+        background: radial-gradient(circle at center, #004d00, #002600);
+      }
+      100% {
+        background: radial-gradient(circle at center, #003300, #001a00);
+      }
     }
     .grid {
       display: grid;
       width: 95vw;
       height: 85vh;
       gap: 1px;
+      transform-origin: center;
+      transition: transform 0.5s ease-in-out;
     }
     .cell {
       display: flex;
@@ -27,7 +43,11 @@
       align-items: center;
       font-size: 2.5vw;
       color: #00ff00;
-      transition: all 0.2s ease-in-out;
+      transition: all 0.3s ease-in-out;
+      filter: drop-shadow(0 0 5px #00ff00);
+      background: linear-gradient(145deg, rgba(0, 255, 0, 0.2), rgba(0, 255, 0, 0.1));
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
     }
     button, label, input {
       position: absolute;
@@ -43,6 +63,12 @@
       background-color: #222;
       color: #00ff00;
       border: 1px solid #00ff00;
+      box-shadow: 0 0 10px #00ff00;
+      transition: transform 0.3s ease-in-out;
+    }
+    button:hover {
+      transform: scale(1.1) rotate(-5deg);
+      background-color: #333;
     }
     #sensitivity {
       top: 50px;
@@ -62,28 +88,48 @@
       }
       50% {
         opacity: 0.5;
-        transform: scale(1.1);
+        transform: scale(1.5) rotate(15deg);
       }
       100% {
         opacity: 0;
-        transform: scale(0.9);
+        transform: scale(0.8) rotate(-15deg);
       }
     }
 
     /* Timed glow animation */
     @keyframes timedGlow {
       0%, 100% { filter: drop-shadow(0 0 5px #00ff00); }
-      50% { filter: drop-shadow(0 0 15px #00ff00); }
+      50% { filter: drop-shadow(0 0 25px #00ff00); }
     }
 
     /* CRT Filter */
     .crt {
-      filter: contrast(1.4) brightness(1.1) saturate(1.5);
+      filter: contrast(1.4) brightness(1.1) saturate(1.5) hue-rotate(15deg);
+      animation: hueShift 5s infinite alternate;
+    }
+
+    @keyframes hueShift {
+      0% {
+        filter: contrast(1.4) brightness(1.1) saturate(1.5) hue-rotate(0deg);
+      }
+      100% {
+        filter: contrast(1.4) brightness(1.1) saturate(1.5) hue-rotate(360deg);
+      }
     }
 
     /* Flicker effect */
     .flicker {
       animation: timedGlow 1.5s infinite alternate;
+    }
+
+    /* Trippy background animation */
+    @keyframes backgroundPulse {
+      0%, 100% {
+        background-color: #001a00;
+      }
+      50% {
+        background-color: #003300;
+      }
     }
 
     @media (max-width: 768px) {
@@ -124,9 +170,26 @@
     let cyclingActive = true;
 
     const gridElement = document.getElementById('grid');
-    const fullText = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION';
-    const words = fullText.split(' ');
+    let words = [];
     let revealedLocations = [];
+
+    // Fetch 100 common dictionary words from an endpoint
+    async function fetchWords() {
+      try {
+        const response = await fetch('https://random-word-api.herokuapp.com/word?number=100');
+        if (response.ok) {
+          words = await response.json();
+        } else {
+          console.error('Failed to fetch words. Using default words.');
+          words = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION'.split(' ');
+        }
+      } catch (error) {
+        console.error('Error fetching words:', error);
+        words = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION'.split(' ');
+      }
+    }
+
+    fetchWords();
 
     sensitivitySlider.addEventListener('input', () => {
       sensitivity = parseFloat(sensitivitySlider.value);
@@ -174,6 +237,7 @@
           gridCells.forEach(cell => {
             if (!cell.dataset.fixed) {
               cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
+              cell.style.transform = `rotate(${Math.random() * 360 - 180}deg) scale(${1 + Math.random() * 0.5})`;
             }
           });
         }
@@ -270,7 +334,7 @@
 
     function dissolveWord(wordElements) {
       wordElements.forEach(cell => {
-        cell.style.animation = 'dissolve 0.5s forwards';
+        cell.style.animation = 'dissolve 0.8s forwards';
         cell.addEventListener('animationend', () => {
           cell.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
           cell.classList.remove('flicker');
@@ -289,10 +353,10 @@
           revealWordAtRandomLocation();
         }
         if (beatStrengthMid > sensitivity / 1.5) {
-          gridElement.style.transform = `scale(${1 + beatStrengthMid * 0.05})`;
+          gridElement.style.transform = `scale(${1 + beatStrengthMid * 0.1}) rotate(${beatStrengthMid * 20}deg)`;
         }
         if (beatStrengthHigh > sensitivity / 2) {
-          document.body.style.backgroundColor = `rgba(0, ${Math.floor(beatStrengthHigh * 255)}, 0, 1)`;
+          document.body.style.background = `radial-gradient(circle at center, #004d00, rgba(0, ${Math.floor(beatStrengthHigh * 255)}, 0, 1))`;
         }
       }
     }
