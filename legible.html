@@ -5,22 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terminal-Like Visualizer</title>
   <style>
-    body { 
-      margin: 0; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      height: 100vh; 
-      background-color: black; 
-      overflow: hidden; 
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: black;
+      color: #00ff00;
       font-family: monospace;
     }
-    canvas { 
-      display: block; 
-      width: 100%; 
-      height: 100%; 
-      touch-action: none; 
-      background: black;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(30, 1fr); /* Create 30 columns */
+      grid-template-rows: repeat(15, 1fr);   /* Create 15 rows */
+      width: 90vw;  /* Grid occupies 90% of the viewport width */
+      height: 70vh; /* Grid occupies 70% of the viewport height */
+      gap: 2px;
+    }
+    .cell {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2vw; /* Adjust font size relative to the viewport width */
     }
     button, label, input {
       position: absolute;
@@ -53,54 +60,63 @@
   <label id="sensitivity-label" for="sensitivity">Beat Sensitivity:</label>
   <input id="sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.3">
 
-  <canvas id="canvas"></canvas>
+  <div class="grid" id="grid"></div>
 
   <script>
     let audioContext, analyser, dataArray, micStream, isMicrophoneEnabled = false;
     const startButton = document.getElementById('start-button');
     const sensitivitySlider = document.getElementById('sensitivity');
     let sensitivity = parseFloat(sensitivitySlider.value);
-    let revealed = false;
+    let wordIndex = 0;
+    let cyclingActive = true;
 
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    const gridElement = document.getElementById('grid');
+    const gridCols = 30;
+    const gridRows = 15;
+    const fullText = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION';
+    const words = fullText.split(' ');
+    let revealedLocations = [];
 
     sensitivitySlider.addEventListener('input', () => {
       sensitivity = parseFloat(sensitivitySlider.value);
-      console.log("Sensitivity updated to:", sensitivity); // Debug output
+      console.log("Sensitivity updated to:", sensitivity);
     });
 
     startButton.addEventListener('click', startMicAudio);
 
-    // Initialize grid size and text data
-    const gridCols = 30; 
-    const gridRows = 15;
-    let cellSize = 20;
-    const fullText = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION';
-    const words = fullText.split(' ');
-    let textGrid = generateGibberishGrid(gridCols, gridRows);
-    let revealedLocations = [];
-    let wordIndex = 0;
-    let lastUpdateTime = 0;
-
-    // Resize canvas dynamically
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
-      const canvasAspect = canvas.width / canvas.height;
-      const gridAspect = gridCols / gridRows;
-
-      if (canvasAspect > gridAspect) {
-        cellSize = Math.floor(canvas.height / gridRows);
-      } else {
-        cellSize = Math.floor(canvas.width / gridCols);
+    // Initialize the grid with cells and start random character cycling
+    function generateGibberishGrid(cols, rows) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const fragment = document.createDocumentFragment();
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
+          fragment.appendChild(cell);
+        }
       }
-      console.log("Canvas resized. Cell size:", cellSize); // Debug output
+      gridElement.appendChild(fragment);
     }
 
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    generateGibberishGrid(gridCols, gridRows);
+
+    // Start random character cycling for all grid cells
+    function cycleRandomCharacters() {
+      const gridCells = document.querySelectorAll('.cell');
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      setInterval(() => {
+        if (cyclingActive) {
+          gridCells.forEach(cell => {
+            if (!cell.dataset.fixed) {  // Only cycle characters if the cell is not "fixed" (part of a revealed word)
+              cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+          });
+        }
+      }, 100); // Update every 100ms
+    }
+
+    cycleRandomCharacters(); // Start cycling the characters
 
     function startMicAudio() {
       navigator.mediaDevices.getUserMedia({ audio: true, video: false })
@@ -116,7 +132,7 @@
 
           startButton.style.display = 'none';
           render();  // Start the visualizer
-          console.log("Microphone started successfully"); // Debug output
+          console.log("Microphone started successfully");
         })
         .catch(err => {
           alert('Microphone access denied. Please allow microphone access to enable the visualizer.');
@@ -131,71 +147,41 @@
         sum += dataArray[i];
       }
       const beatStrength = (sum / dataArray.length) / 255;
-      console.log("Beat strength:", beatStrength); // Debug output
       return beatStrength;  // Normalize between 0 and 1
-    }
-
-    function generateGibberishGrid(cols, rows) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      const grid = [];
-      for (let r = 0; r < rows; r++) {
-        let row = '';
-        for (let c = 0; c < cols; c++) {
-          row += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        grid.push(row);
-      }
-      return grid;
-    }
-
-    function renderGrid() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = `${cellSize * 0.8}px monospace`;
-      ctx.fillStyle = '#00ff00';
-
-      for (let r = 0; r < gridRows; r++) {
-        for (let c = 0; c < gridCols; c++) {
-          const char = textGrid[r][c];
-          ctx.fillText(char, c * cellSize, r * cellSize + cellSize - 10);  // Adjusted position for better alignment
-        }
-      }
     }
 
     function revealWordAtRandomLocation() {
       if (wordIndex < words.length) {
         const word = words[wordIndex];
-        const maxRow = gridRows - 1;
+        const gridCells = document.querySelectorAll('.cell');
         const maxCol = gridCols - word.length;
 
-        let row, col;
+        let randomIndex;
         do {
-          row = Math.floor(Math.random() * maxRow);
-          col = Math.floor(Math.random() * maxCol);
-        } while (isOverlap(row, col, word.length));
+          const row = Math.floor(Math.random() * gridRows);
+          const col = Math.floor(Math.random() * maxCol);
+          randomIndex = row * gridCols + col;
+        } while (isOverlap(randomIndex, word.length));
 
-        // Place the word in the grid at the random location
+        // Place the word in the grid at the random location and stop the cycling for those cells
         for (let i = 0; i < word.length; i++) {
-          textGrid[row] = replaceAt(textGrid[row], col + i, word[i]);
+          const cell = gridCells[randomIndex + i];
+          cell.textContent = word[i];
+          cell.dataset.fixed = true;  // Mark the cell as "fixed" so it stops cycling
         }
 
-        revealedLocations.push({ row, col, length: word.length });
-
-        console.log("Revealed word:", word, "at row:", row, "col:", col); // Debug output
+        revealedLocations.push({ index: randomIndex, length: word.length });
         wordIndex++;
       }
     }
 
-    function isOverlap(row, col, length) {
+    function isOverlap(index, length) {
       for (let location of revealedLocations) {
-        if (row === location.row && col < location.col + location.length && col + length > location.col) {
+        if (index < location.index + location.length && index + length > location.index) {
           return true; 
         }
       }
       return false;
-    }
-
-    function replaceAt(string, index, char) {
-      return string.substring(0, index) + char + string.substring(index + 1);
     }
 
     function render(time) {
@@ -204,15 +190,9 @@
       if (isMicrophoneEnabled) {
         const beatStrength = getBeat();
 
-        const now = performance.now();
-        if (now - lastUpdateTime > 100) {  // Adjusted update rate for visual feedback
-          if (beatStrength > sensitivity) {
-            revealWordAtRandomLocation();
-          }
-          lastUpdateTime = now;
+        if (beatStrength > sensitivity) {
+          revealWordAtRandomLocation();
         }
-
-        renderGrid();
       }
     }
 
