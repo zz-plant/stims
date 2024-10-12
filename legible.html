@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mic Input Cool Text Visualizer</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+    button {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 10px;
+      font-size: 16px;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <button id="start-button">Start Microphone</button>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    let audioContext;
+    let analyser;
+    let dataArray;
+    let currentLegibilityFactor = 0;
+    let micStream;
+
+    const startButton = document.getElementById('start-button');
+    startButton.addEventListener('click', startMicAudio);
+
+    function startMicAudio() {
+      // Request access to the microphone
+      navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then(stream => {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 2048;
+          const bufferLength = analyser.frequencyBinCount;
+          dataArray = new Uint8Array(bufferLength);
+
+          // Create media stream source from microphone
+          micStream = audioContext.createMediaStreamSource(stream);
+          micStream.connect(analyser);
+          
+          // Hide the start button after the microphone is started
+          startButton.style.display = 'none';
+
+          // Start the render loop
+          render();
+        })
+        .catch(err => {
+          console.error('Error accessing the microphone', err);
+        });
+    }
+
+    // Beat detection function using microphone input
+    function getBeat() {
+      analyser.getByteFrequencyData(dataArray);
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+      }
+      return sum / dataArray.length;  // Return average frequency
+    }
+
+    // Three.js setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const fontLoader = new THREE.FontLoader();
+    let textMesh;
+    let font;
+
+    fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (loadedFont) {
+      font = loadedFont;
+      createTextMesh();
+    });
+
+    // Full text to render
+    const fullText = 'This is an example of a body of text that will dynamically morph and glow based on microphone input.';
+    const words = fullText.split(' ');
+    const revealedWords = Array(words.length).fill(false);
+
+    // Create text mesh
+    function createTextMesh() {
+      const geometry = new THREE.TextGeometry(getTextWithTeasingGibberish(), {
+        font: font,
+        size: 0.5,
+        height: 0.05,
+      });
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+      textMesh = new THREE.Mesh(geometry, material);
+      textMesh.position.set(-5, 0, -5);
+      scene.add(textMesh);
+      camera.position.z = 5;
+    }
+
+    // Generate gibberish mixed with legible words based on beat intensity
+    function generateTeasingGibberish(word, legibilityFactor) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < word.length; i++) {
+        if (Math.random() < legibilityFactor) {
+          result += word[i];  // Reveal real letter
+        } else {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));  // Gibberish letter
+        }
+      }
+      return result;
+    }
+
+    function getTextWithTeasingGibberish() {
+      const legibilityFactor = currentLegibilityFactor;  // Controlled by beat strength
+      return words.map((word, i) => {
+        if (revealedWords[i]) {
+          return word; // Already revealed
+        } else {
+          return generateTeasingGibberish(word, legibilityFactor);
+        }
+      }).join(' ');
+    }
+
+    // Update the text mesh geometry when the beat changes
+    function updateTextMesh() {
+      const geometry = new THREE.TextGeometry(getTextWithTeasingGibberish(), {
+        font: font,
+        size: 0.5,
+        height: 0.05,
+      });
+      textMesh.geometry.dispose();
+      textMesh.geometry = geometry;
+
+      // Add glow effect based on beat intensity
+      const glowIntensity = currentLegibilityFactor * 2;  // Increase glow with legibility
+      textMesh.material.emissive = new THREE.Color(glowIntensity, glowIntensity, glowIntensity);
+    }
+
+    // Increase word legibility based on beat intensity
+    function updateLegibilityBasedOnBeat() {
+      const beatStrength = getBeat();  // Get beat strength from mic input
+      currentLegibilityFactor = Math.min(1, beatStrength / 128);  // Normalize beat strength
+
+      // Randomly reveal more words based on the beat intensity
+      const wordsToReveal = Math.floor(beatStrength / 10);  // More words for higher intensity
+      for (let i = 0; i < wordsToReveal; i++) {
+        const randomIndex = Math.floor(Math.random() * words.length);
+        revealedWords[randomIndex] = true;  // Reveal random words
+      }
+
+      // Apply some dynamic effects based on beat peaks
+      applyDynamicEffects(beatStrength);
+      updateTextMesh();  // Update the text mesh with new legibility
+    }
+
+    // Apply dynamic effects like glow, pulsing, and camera movement based on intensity
+    function applyDynamicEffects(beatStrength) {
+      const pulseScale = 1 + beatStrength / 300;  // Scale text based on beat
+      textMesh.scale.set(pulseScale, pulseScale, pulseScale);  // Apply pulse effect
+
+      // Add subtle camera movement for cooler visuals
+      const cameraMovement = Math.sin(Date.now() * 0.001) * 0.5;
+      camera.position.x = cameraMovement;
+      camera.position.y = cameraMovement / 2;
+      camera.lookAt(textMesh.position);
+    }
+
+    // Render loop
+    function render() {
+      requestAnimationFrame(render);
+      if (analyser) {
+        updateLegibilityBasedOnBeat();  // Check mic input and update legibility
+      }
+      renderer.render(scene, camera);
+    }
+  </script>
+</body>
+</html>
