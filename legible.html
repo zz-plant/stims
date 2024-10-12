@@ -1,279 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PlayCanvas Demoscene Visualizer</title>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        #startButton {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 10px 20px;
-            font-size: 16px;
-            z-index: 1000;
-        }
-        #sensitivitySlider {
-            position: absolute;
-            top: 60px;
-            left: 20px;
-            width: 150px;
-            z-index: 1000;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/playcanvas/2.1.0/playcanvas.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Search Visualizer</title>
+  <style>
+    body { 
+      margin: 0; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh; 
+      background-color: black; 
+      overflow: hidden; 
+    }
+    canvas { 
+      display: block; 
+    }
+    button, label, input {
+      position: absolute;
+      font-size: 16px;
+      z-index: 1000;
+    }
+    button {
+      top: 10px;
+      left: 10px;
+      padding: 10px 20px;
+    }
+    #sensitivity {
+      top: 50px;
+      left: 10px;
+    }
+    #sensitivity-label {
+      top: 80px;
+      left: 10px;
+    }
+  </style>
 </head>
 <body>
-    <button id="startButton">Start Microphone</button>
-    <input type="range" id="sensitivitySlider" min="20" max="100" value="50">
+  <button id="start-button">Start Microphone</button>
+  <label id="sensitivity-label" for="sensitivity">Beat Sensitivity:</label>
+  <input id="sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.3">
 
-    <canvas id="application-canvas"></canvas>
+  <canvas id="canvas"></canvas>
 
-    <script>
-        const canvas = document.getElementById('application-canvas');
-        const startButton = document.getElementById('startButton');
-        const sensitivitySlider = document.getElementById('sensitivitySlider');
+  <script>
+    let audioContext, analyser, dataArray, micStream, isMicrophoneEnabled = false;
+    const startButton = document.getElementById('start-button');
+    const sensitivitySlider = document.getElementById('sensitivity');
+    let sensitivity = parseFloat(sensitivitySlider.value);
+    let revealed = false;
 
-        let audioContext, analyser, dataArray, sensitivityThreshold = 50;
-        let particles = [];
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
 
-        // Set up PlayCanvas application
-        const app = new pc.Application(canvas, {
-            mouse: new pc.Mouse(canvas),
-            touch: new pc.TouchDevice(canvas)
+    sensitivitySlider.addEventListener('input', () => {
+      sensitivity = parseFloat(sensitivitySlider.value);
+    });
+
+    startButton.addEventListener('click', startMicAudio);
+
+    // Initialize grid size and text data
+    const gridCols = 20;
+    const gridRows = 10;
+    const cellSize = 40;
+    const fullText = 'HELLO WORLD FROM A COOL WORDSEARCH VISUALIZER';
+    const words = fullText.split(' ');
+    let textGrid = generateGibberishGrid(gridCols, gridRows);
+    let wordIndex = 0;
+    let wordCharIndex = 0;
+
+    function resizeCanvas() {
+      const minDimension = Math.min(window.innerWidth, window.innerHeight);
+      canvas.width = minDimension;
+      canvas.height = minDimension * 0.5;
+
+      // Adjust cell size based on canvas size for mobile optimization
+      const adjustedCellSize = Math.min(canvas.width / gridCols, canvas.height / gridRows);
+      cellSize = adjustedCellSize > 30 ? adjustedCellSize : 30;  // Set a minimum cell size
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function startMicAudio() {
+      navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then(stream => {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 512;  // Reduced size for better performance on mobile
+          dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+          micStream = audioContext.createMediaStreamSource(stream);
+          micStream.connect(analyser);
+          isMicrophoneEnabled = true;
+
+          startButton.style.display = 'none';
+          render();  // Start the visualizer
+        })
+        .catch(err => {
+          alert('Microphone access denied. Please allow microphone access to enable the visualizer.');
+          console.error('Microphone access error:', err);
         });
-        app.start();
+    }
 
-        // Fill the canvas
-        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
-        app.setCanvasResolution(pc.RESOLUTION_AUTO);
+    function getBeat() {
+      analyser.getByteFrequencyData(dataArray);
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+      }
+      return (sum / dataArray.length) / 255;  // Normalize between 0 and 1
+    }
 
-        // Add a camera to the scene
-        const camera = new pc.Entity('camera');
-        camera.addComponent('camera', {
-            clearColor: new pc.Color(0, 0, 0),
-            fov: 75
-        });
-        camera.setLocalPosition(0, 0, 20);
-        app.root.addChild(camera);
+    function generateGibberishGrid(cols, rows) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const grid = [];
+      for (let r = 0; r < rows; r++) {
+        let row = '';
+        for (let c = 0; c < cols; c++) {
+          row += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        grid.push(row);
+      }
+      return grid;
+    }
 
-        // Enable orbit camera controls
-        camera.addComponent("script");
-        app.assets.loadFromUrl("https://code.playcanvas.com/camera/orbit-camera.js", "script", function (err, asset) {
-            camera.script.create("orbitCamera", {
-                attributes: {
-                    inertiaFactor: 0.2
-                }
-            });
-        });
+    function renderGrid() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = `${cellSize - 10}px monospace`;
+      ctx.fillStyle = '#00ff00';  // Neon green color
 
-        // Add a light
-        const light = new pc.Entity();
-        light.addComponent('light');
-        light.setLocalPosition(10, 10, 10);
-        app.root.addChild(light);
+      for (let r = 0; r < gridRows; r++) {
+        for (let c = 0; c < gridCols; c++) {
+          const char = textGrid[r][c];
+          ctx.fillText(char, c * cellSize + 10, r * cellSize + cellSize - 10);
+        }
+      }
+    }
 
-        // Create geometric shapes (demoscene effect)
-        const shapes = createGeometricShapes();
+    function revealNextCharacter() {
+      if (wordIndex < words.length) {
+        const word = words[wordIndex];
+        const row = Math.floor(wordCharIndex / gridCols);
+        const col = wordCharIndex % gridCols;
 
-        // Load font asset for text
-        const fontAsset = new pc.Asset("font", "font", {
-            url: "https://playcanvas.com/api/assets/files/fonts/Arial.json"
-        });
+        if (wordCharIndex < word.length) {
+          textGrid[row] = replaceAt(textGrid[row], col, word[wordCharIndex]);
+          wordCharIndex++;
+        } else {
+          wordCharIndex = 0;
+          wordIndex++;
+        }
+      }
+    }
 
-        app.assets.add(fontAsset);
+    function replaceAt(string, index, char) {
+      return string.substring(0, index) + char + string.substring(index + 1);
+    }
 
-        fontAsset.ready(function () {
-            createTextMeshes();
-        });
+    function render(time) {
+      requestAnimationFrame(render);
 
-        // Full text to render
-        const fullText = "Demoscene Visualizer in PlayCanvas.";
-        const words = fullText.split(' ');
+      if (isMicrophoneEnabled) {
+        const beatStrength = getBeat();
 
-        // State for revealed words
-        let revealedWords = Array(words.length).fill(false);
-
-        // Create text entities
-        function createTextMeshes() {
-            words.forEach((word, index) => {
-                const textEntity = new pc.Entity();
-                textEntity.addComponent("element", {
-                    type: "text",
-                    fontAsset: fontAsset,
-                    fontSize: 2,
-                    text: generateGibberish(word.length),
-                    color: new pc.Color(0.8, 0.2, 0.8), // Neon-like color
-                    opacity: 0.5,
-                    pivot: new pc.Vec2(0.5, 0.5),
-                    anchor: new pc.Vec2(0.5, 0.5)
-                });
-
-                // Set initial random position for each word
-                textEntity.setLocalPosition(
-                    Math.random() * 15 - 7.5,
-                    Math.random() * 5 - 2.5,
-                    Math.random() * 10 - 5
-                );
-
-                textEntity.revealed = false;
-                textEntity.originalWord = word;
-                app.root.addChild(textEntity);
-            });
+        if (beatStrength > sensitivity && !revealed) {
+          revealNextCharacter();  // Reveal a character based on the beat
+          revealed = true;        // Prevent multiple reveals for one beat
+        } else if (beatStrength < sensitivity) {
+          revealed = false;
         }
 
-        // Function to generate gibberish
-        function generateGibberish(length) {
-            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < length; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return result;
-        }
+        renderGrid();
+      }
+    }
 
-        // Create geometric shapes (cubes, spheres, etc.)
-        function createGeometricShapes() {
-            const shapes = [];
-            for (let i = 0; i < 5; i++) {
-                const shape = new pc.Entity();
-                shape.addComponent("model", {
-                    type: "box"
-                });
-                shape.setLocalScale(1, 1, 1);
-                shape.setLocalPosition(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5);
-                shapes.push(shape);
-                app.root.addChild(shape);
-            }
-            return shapes;
-        }
-
-        // Procedural background (waves)
-        function createProceduralBackground() {
-            for (let i = 0; i < 100; i++) {
-                const particle = new pc.Entity();
-                particle.addComponent("element", {
-                    type: "image",
-                    color: new pc.Color(0.2, 0.2, 0.2, 0.4),
-                    width: 0.1,
-                    height: 0.1
-                });
-                particle.setLocalPosition(
-                    Math.random() * 20 - 10,
-                    Math.random() * 20 - 10,
-                    Math.random() * 10 - 5
-                );
-                app.root.addChild(particle);
-                particles.push(particle);
-            }
-        }
-
-        createProceduralBackground();
-
-        // Start the microphone when the button is clicked
-        startButton.addEventListener('click', function () {
-            startButton.style.display = 'none';
-            sensitivitySlider.style.display = 'block';
-            startMicrophone();
-        });
-
-        // Update sensitivity when the slider is moved
-        sensitivitySlider.addEventListener('input', function () {
-            sensitivityThreshold = sensitivitySlider.value;
-        });
-
-        // Start the microphone
-        function startMicrophone() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 2048;
-                    const bufferLength = analyser.frequencyBinCount;
-                    dataArray = new Uint8Array(bufferLength);
-
-                    const source = audioContext.createMediaStreamSource(stream);
-                    source.connect(analyser);
-
-                    // Start updating text meshes with beat intensity
-                    app.on("update", function (dt) {
-                        updateTextWithBeat();
-                        checkPerformance();
-                        updateShapes(dt);
-                    });
-                })
-                .catch(err => {
-                    console.error("Microphone access denied:", err);
-                });
-        }
-
-        // Update text based on microphone input (beat strength)
-        function updateTextWithBeat() {
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0, lowFreq = 0, midFreq = 0, highFreq = 0;
-            
-            // Split into low, mid, high frequencies
-            const lowCutoff = dataArray.length / 3;
-            const midCutoff = 2 * lowCutoff;
-
-            for (let i = 0; i < dataArray.length; i++) {
-                sum += dataArray[i];
-                if (i < lowCutoff) lowFreq += dataArray[i];
-                else if (i < midCutoff) midFreq += dataArray[i];
-                else highFreq += dataArray[i];
-            }
-
-            const beatStrength = sum / dataArray.length;
-            const lowStrength = lowFreq / lowCutoff;
-            const midStrength = midFreq / (midCutoff - lowCutoff);
-            const highStrength = highFreq / (dataArray.length - midCutoff);
-
-            // Loop through text entities and make them react
-            app.root.children.forEach(entity => {
-                if (entity.element && !entity.revealed) {
-                    if (beatStrength > sensitivityThreshold) {
-                        entity.element.text = entity.originalWord; // Reveal the word
-                        entity.element.opacity = 1.0;
-                        entity.revealed = true;
-                    } else {
-                        // Scale and opacity based on beat strength
-                        entity.setLocalScale(1 + beatStrength * 0.01, 1 + beatStrength * 0.01, 1);
-                        entity.element.opacity = Math.min(1, beatStrength * 0.005);
-
-                        // Color based on frequency bands (low = red, mid = green, high = blue)
-                        entity.element.color.set(
-                            Math.min(1, lowStrength * 0.01),
-                            Math.min(1, midStrength * 0.01),
-                            Math.min(1, highStrength * 0.01)
-                        );
-                    }
-                }
-            });
-        }
-
-        // Update geometric shapes (rotate and scale them)
-        function updateShapes(dt) {
-            shapes.forEach(shape => {
-                shape.rotate(10 * dt, 20 * dt, 30 * dt); // Rotate the shape over time
-                const scaleFactor = 1 + 0.5 * Math.sin(Date.now() * 0.001);
-                shape.setLocalScale(scaleFactor, scaleFactor, scaleFactor);
-            });
-        }
-
-        // Check performance and adjust text complexity if necessary
-        function checkPerformance() {
-            const fps = app.graphicsDevice.fps;
-
-            // If FPS drops below 30, reduce text complexity (e.g., reduce size or animations)
-            if (fps < 30) {
-                app.root.children.forEach(entity => {
-                    if (entity.element) {
-                        entity.element.fontSize = Math.max(1, entity.element.fontSize - 0.05); // Reduce font size
-                    }
-                });
-            }
-        }
-    </script>
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Your browser does not support microphone access. Please update to a modern browser.');
+    }
+  </script>
 </body>
 </html>
