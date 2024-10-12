@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Visualizer with Words and Gibberish</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: black;
+      color: #00ff00;
+      font-family: monospace;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(30, 1fr); /* Create 30 columns */
+      grid-template-rows: repeat(15, 1fr);   /* Create 15 rows */
+      width: 85vw;  /* Grid occupies 85% of the viewport width */
+      height: 75vh; /* Grid occupies 75% of the viewport height */
+      gap: 1px;     /* Reduced gap between cells */
+    }
+    .cell {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5vw; /* Increased font size relative to the viewport width */
+      color: #00ff00;   /* Neon green color */
+    }
+    button, label, input {
+      position: absolute;
+      font-size: 16px;
+      z-index: 1000;
+      user-select: none;
+      color: #00ff00;
+    }
+    button {
+      top: 10px;
+      left: 10px;
+      padding: 10px 20px;
+      background-color: #222;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+    }
+    #sensitivity {
+      top: 50px;
+      left: 10px;
+    }
+    #sensitivity-label {
+      top: 80px;
+      left: 10px;
+      color: #00ff00;
+    }
+  </style>
+</head>
+<body>
+  <button id="start-button">Start Microphone</button>
+  <label id="sensitivity-label" for="sensitivity">Beat Sensitivity:</label>
+  <input id="sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.3">
+
+  <div class="grid" id="grid"></div>
+
+  <script>
+    let audioContext, analyser, dataArray, micStream, isMicrophoneEnabled = false;
+    const startButton = document.getElementById('start-button');
+    const sensitivitySlider = document.getElementById('sensitivity');
+    let sensitivity = parseFloat(sensitivitySlider.value);
+    let cyclingActive = true;
+
+    const gridElement = document.getElementById('grid');
+    const gridCols = 30;
+    const gridRows = 15;
+    const dictionaryWords = ['HELLO', 'WORLD', 'VISUALIZER', 'SYSTEM', 'SIMULATION', 'COOL', 'TERMINAL', 'MATRIX', 'DYNAMIC', 'REACTIVE', 'LOUD', 'QUIET']; // Example dictionary words
+    let revealedLocations = [];
+
+    sensitivitySlider.addEventListener('input', () => {
+      sensitivity = parseFloat(sensitivitySlider.value);
+      console.log("Sensitivity updated to:", sensitivity);
+    });
+
+    startButton.addEventListener('click', startMicAudio);
+
+    // Initialize the grid with gibberish characters
+    function generateGibberishGrid(cols, rows) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const fragment = document.createDocumentFragment();
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
+          fragment.appendChild(cell);
+        }
+      }
+      gridElement.appendChild(fragment);
+    }
+
+    generateGibberishGrid(gridCols, gridRows);
+
+    // Start random character cycling for all grid cells
+    function cycleRandomCharacters() {
+      const gridCells = document.querySelectorAll('.cell');
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      setInterval(() => {
+        if (cyclingActive) {
+          gridCells.forEach(cell => {
+            if (!cell.dataset.fixed) {  // Only cycle characters if the cell is not "fixed" (part of a revealed word)
+              cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+          });
+        }
+      }, 100); // Update every 100ms
+    }
+
+    cycleRandomCharacters(); // Start cycling the characters
+
+    function startMicAudio() {
+      navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then(stream => {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 512;  // Optimized for real-time audio
+          dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+          micStream = audioContext.createMediaStreamSource(stream);
+          micStream.connect(analyser);
+          isMicrophoneEnabled = true;
+
+          startButton.style.display = 'none';
+          render();  // Start the visualizer
+          console.log("Microphone started successfully");
+        })
+        .catch(err => {
+          alert('Microphone access denied. Please allow microphone access to enable the visualizer.');
+          console.error('Microphone access error:', err);
+        });
+    }
+
+    function getBeat() {
+      analyser.getByteFrequencyData(dataArray);
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+      }
+      const beatStrength = (sum / dataArray.length) / 255;
+      return beatStrength;  // Normalize between 0 and 1
+    }
+
+    function adjustGridDensity(beatStrength) {
+      const gridCells = document.querySelectorAll('.cell');
+      const densityThreshold = 0.5; // Threshold to switch between dictionary words and gibberish
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+      if (beatStrength > densityThreshold) {
+        // Add more dictionary words when volume is loud
+        for (let i = 0; i < Math.floor(beatStrength * gridCells.length); i++) {
+          const randomIndex = Math.floor(Math.random() * gridCells.length);
+          const randomWord = dictionaryWords[Math.floor(Math.random() * dictionaryWords.length)];
+          gridCells[randomIndex].textContent = randomWord.charAt(Math.floor(Math.random() * randomWord.length));
+          gridCells[randomIndex].dataset.fixed = true;
+        }
+      } else {
+        // Add more gibberish when volume is low
+        for (let i = 0; i < Math.floor((1 - beatStrength) * gridCells.length); i++) {
+          const randomIndex = Math.floor(Math.random() * gridCells.length);
+          gridCells[randomIndex].textContent = chars.charAt(Math.floor(Math.random() * chars.length));
+          delete gridCells[randomIndex].dataset.fixed; // Remove "fixed" status for these cells
+        }
+      }
+    }
+
+    function render(time) {
+      requestAnimationFrame(render);
+
+      if (isMicrophoneEnabled) {
+        const beatStrength = getBeat();
+        adjustGridDensity(beatStrength);
+      }
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Your browser does not support microphone access. Please update to a modern browser.');
+    }
+  </script>
+</body>
+</html>
