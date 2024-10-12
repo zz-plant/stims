@@ -72,17 +72,16 @@
     startButton.addEventListener('click', startMicAudio);
 
     // Initialize grid size and text data
-    const gridCols = 30; // Increased for terminal feel
+    const gridCols = 30; 
     const gridRows = 15;
-    let cellSize = 20; // Smaller for terminal-like appearance
+    let cellSize = 20;
     const fullText = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION';
     const words = fullText.split(' ');
     let textGrid = generateGibberishGrid(gridCols, gridRows);
-    let revealedLocations = []; // Track where words are placed
+    let revealedLocations = [];
     let wordIndex = 0;
     let lastUpdateTime = 0;
 
-    // Resize canvas dynamically
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -146,7 +145,7 @@
     function renderGrid() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.font = `${cellSize * 0.8}px monospace`;
-      ctx.fillStyle = '#00ff00';  // Green terminal-like color
+      ctx.fillStyle = '#00ff00';
 
       for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
@@ -162,31 +161,37 @@
         const maxRow = gridRows - 1;
         const maxCol = gridCols - word.length;
 
-        // Random row and column that won't overlap
         let row, col;
         do {
           row = Math.floor(Math.random() * maxRow);
           col = Math.floor(Math.random() * maxCol);
         } while (isOverlap(row, col, word.length));
 
-        // Place the word in the grid at the random location
+        // Place the word in the grid at the random location and highlight it
         for (let i = 0; i < word.length; i++) {
           textGrid[row] = replaceAt(textGrid[row], col + i, word[i]);
         }
 
-        revealedLocations.push({ row, col, length: word.length }); // Track revealed locations
+        revealedLocations.push({ row, col, length: word.length });
+
+        // Temporarily highlight the word
+        ctx.font = `${cellSize}px monospace`;
+        ctx.fillStyle = '#ffffff';  // Highlighted in white
+        for (let i = 0; i < word.length; i++) {
+          ctx.fillText(word[i], (col + i) * cellSize + 10, row * cellSize + cellSize - 10);
+        }
+
         wordIndex++;
       }
     }
 
     function isOverlap(row, col, length) {
-      // Check if this word would overlap any other revealed word
       for (let location of revealedLocations) {
         if (row === location.row && col < location.col + location.length && col + length > location.col) {
-          return true; // Overlap detected
+          return true; 
         }
       }
-      return false; // No overlap
+      return false;
     }
 
     function replaceAt(string, index, char) {
@@ -200,8 +205,7 @@
         const beatStrength = getBeat();
 
         const now = performance.now();
-        if (now - lastUpdateTime > 100) {  // Update every 100ms
-          // If beat strength is high enough, reveal next word at a random location
+        if (now - lastUpdateTime > 80) {  // Faster update rate for better visual feedback
           if (beatStrength > sensitivity) {
             revealWordAtRandomLocation();
           }
