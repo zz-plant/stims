@@ -16,11 +16,15 @@
     }
     canvas { 
       display: block; 
+      width: 100%; 
+      height: 100%; 
+      touch-action: none; 
     }
     button, label, input {
       position: absolute;
       font-size: 16px;
       z-index: 1000;
+      user-select: none;
     }
     button {
       top: 10px;
@@ -61,23 +65,29 @@
     startButton.addEventListener('click', startMicAudio);
 
     // Initialize grid size and text data
-    const gridCols = 20;
-    const gridRows = 10;
-    const cellSize = 40;
-    const fullText = 'HELLO WORLD FROM A COOL WORDSEARCH VISUALIZER';
+    const gridCols = 15; // Adjust grid size for more dynamic updates
+    const gridRows = 8;
+    let cellSize = 40; // Dynamically sized
+    const fullText = 'HELLO WORLD FROM A COOL WORDSEARCH VISUALIZER VISUAL WORD';
     const words = fullText.split(' ');
     let textGrid = generateGibberishGrid(gridCols, gridRows);
     let wordIndex = 0;
     let wordCharIndex = 0;
+    let activeWordIndex = -1;
 
+    // Resize canvas dynamically
     function resizeCanvas() {
-      const minDimension = Math.min(window.innerWidth, window.innerHeight);
-      canvas.width = minDimension;
-      canvas.height = minDimension * 0.5;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
 
-      // Adjust cell size based on canvas size for mobile optimization
-      const adjustedCellSize = Math.min(canvas.width / gridCols, canvas.height / gridRows);
-      cellSize = adjustedCellSize > 30 ? adjustedCellSize : 30;  // Set a minimum cell size
+      const canvasAspect = canvas.width / canvas.height;
+      const gridAspect = gridCols / gridRows;
+
+      if (canvasAspect > gridAspect) {
+        cellSize = canvas.height / gridRows;
+      } else {
+        cellSize = canvas.width / gridCols;
+      }
     }
 
     window.addEventListener('resize', resizeCanvas);
@@ -88,7 +98,7 @@
         .then(stream => {
           audioContext = new (window.AudioContext || window.webkitAudioContext)();
           analyser = audioContext.createAnalyser();
-          analyser.fftSize = 512;  // Reduced size for better performance on mobile
+          analyser.fftSize = 512;  // Optimized for mobile
           dataArray = new Uint8Array(analyser.frequencyBinCount);
 
           micStream = audioContext.createMediaStreamSource(stream);
@@ -128,7 +138,7 @@
 
     function renderGrid() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = `${cellSize - 10}px monospace`;
+      ctx.font = `${cellSize * 0.8}px monospace`;
       ctx.fillStyle = '#00ff00';  // Neon green color
 
       for (let r = 0; r < gridRows; r++) {
@@ -140,18 +150,18 @@
     }
 
     function revealNextCharacter() {
-      if (wordIndex < words.length) {
+      if (wordIndex < words.length && wordCharIndex < words[wordIndex].length) {
         const word = words[wordIndex];
         const row = Math.floor(wordCharIndex / gridCols);
         const col = wordCharIndex % gridCols;
 
-        if (wordCharIndex < word.length) {
-          textGrid[row] = replaceAt(textGrid[row], col, word[wordCharIndex]);
-          wordCharIndex++;
-        } else {
-          wordCharIndex = 0;
-          wordIndex++;
-        }
+        textGrid[row] = replaceAt(textGrid[row], col, word[wordCharIndex]);
+        wordCharIndex++;
+        activeWordIndex = wordIndex;
+      } else if (wordCharIndex >= words[wordIndex].length) {
+        wordCharIndex = 0;
+        wordIndex++;
+        activeWordIndex = -1;
       }
     }
 
@@ -165,9 +175,10 @@
       if (isMicrophoneEnabled) {
         const beatStrength = getBeat();
 
+        // If beat strength is high enough, reveal next character
         if (beatStrength > sensitivity && !revealed) {
-          revealNextCharacter();  // Reveal a character based on the beat
-          revealed = true;        // Prevent multiple reveals for one beat
+          revealNextCharacter();
+          revealed = true;
         } else if (beatStrength < sensitivity) {
           revealed = false;
         }
