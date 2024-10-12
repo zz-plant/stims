@@ -14,17 +14,28 @@
             font-size: 16px;
             z-index: 1000;
         }
+        #sensitivitySlider {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            width: 150px;
+            z-index: 1000;
+        }
     </style>
     <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
 </head>
 <body>
     <button id="startButton">Start Microphone</button>
+    <input type="range" id="sensitivitySlider" min="20" max="100" value="50">
+
     <canvas id="application-canvas"></canvas>
 
     <script>
         const canvas = document.getElementById('application-canvas');
         const startButton = document.getElementById('startButton');
-        let audioContext, analyser, dataArray;
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+
+        let audioContext, analyser, dataArray, sensitivityThreshold = 50;
 
         // Set up PlayCanvas application
         const app = new pc.Application(canvas, {
@@ -121,7 +132,13 @@
         // Start the microphone when the button is clicked
         startButton.addEventListener('click', function () {
             startButton.style.display = 'none';
+            sensitivitySlider.style.display = 'block';
             startMicrophone();
+        });
+
+        // Update sensitivity when the slider is moved
+        sensitivitySlider.addEventListener('input', function () {
+            sensitivityThreshold = sensitivitySlider.value;
         });
 
         // Start the microphone
@@ -140,6 +157,7 @@
                     // Start updating text meshes with beat intensity
                     app.on("update", function (dt) {
                         updateTextWithBeat();
+                        checkPerformance();
                     });
                 })
                 .catch(err => {
@@ -150,19 +168,28 @@
         // Update text based on microphone input (beat strength)
         function updateTextWithBeat() {
             analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
+            let sum = 0, lowFreq = 0, midFreq = 0, highFreq = 0;
+            
+            // Split into low, mid, high frequencies
+            const lowCutoff = dataArray.length / 3;
+            const midCutoff = 2 * lowCutoff;
+
             for (let i = 0; i < dataArray.length; i++) {
                 sum += dataArray[i];
+                if (i < lowCutoff) lowFreq += dataArray[i];
+                else if (i < midCutoff) midFreq += dataArray[i];
+                else highFreq += dataArray[i];
             }
-            const beatStrength = sum / dataArray.length;
 
-            // Threshold for revealing words
-            const revealThreshold = 50;
+            const beatStrength = sum / dataArray.length;
+            const lowStrength = lowFreq / lowCutoff;
+            const midStrength = midFreq / (midCutoff - lowCutoff);
+            const highStrength = highFreq / (dataArray.length - midCutoff);
 
             // Loop through text entities and make them react
             app.root.children.forEach(entity => {
                 if (entity.element && !entity.revealed) {
-                    if (beatStrength > revealThreshold) {
+                    if (beatStrength > sensitivityThreshold) {
                         entity.element.text = entity.originalWord; // Reveal the word
                         entity.element.opacity = 1.0;
                         entity.revealed = true;
@@ -170,9 +197,30 @@
                         // Scale and opacity based on beat strength
                         entity.setLocalScale(1 + beatStrength * 0.01, 1 + beatStrength * 0.01, 1);
                         entity.element.opacity = Math.min(1, beatStrength * 0.005);
+
+                        // Color based on frequency bands (low = red, mid = green, high = blue)
+                        entity.element.color.set(
+                            Math.min(1, lowStrength * 0.01),
+                            Math.min(1, midStrength * 0.01),
+                            Math.min(1, highStrength * 0.01)
+                        );
                     }
                 }
             });
+        }
+
+        // Check performance and adjust text complexity if necessary
+        function checkPerformance() {
+            const fps = app.graphicsDevice.fps;
+
+            // If FPS drops below 30, reduce text complexity (e.g., reduce size or animations)
+            if (fps < 30) {
+                app.root.children.forEach(entity => {
+                    if (entity.element) {
+                        entity.element.fontSize = Math.max(1, entity.element.fontSize - 0.05); // Reduce font size
+                    }
+                });
+            }
         }
     </script>
 </body>
