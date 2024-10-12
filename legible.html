@@ -19,15 +19,16 @@
       display: grid;
       grid-template-columns: repeat(30, 1fr); /* Create 30 columns */
       grid-template-rows: repeat(15, 1fr);   /* Create 15 rows */
-      width: 90vw;  /* Grid occupies 90% of the viewport width */
-      height: 70vh; /* Grid occupies 70% of the viewport height */
-      gap: 2px;
+      width: 85vw;  /* Grid occupies 85% of the viewport width */
+      height: 75vh; /* Grid occupies 75% of the viewport height */
+      gap: 1px;     /* Reduced gap between cells */
     }
     .cell {
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 1.2vw; /* Adjust font size relative to the viewport width */
+      font-size: 1.5vw; /* Increased font size relative to the viewport width */
+      color: #00ff00;   /* Neon green color */
     }
     button, label, input {
       position: absolute;
