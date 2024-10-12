@@ -92,9 +92,9 @@
       const gridAspect = gridCols / gridRows;
 
       if (canvasAspect > gridAspect) {
-        cellSize = canvas.height / gridRows;
+        cellSize = Math.floor(canvas.height / gridRows);
       } else {
-        cellSize = canvas.width / gridCols;
+        cellSize = Math.floor(canvas.width / gridCols);
       }
       console.log("Canvas resized. Cell size:", cellSize); // Debug output
     }
@@ -156,7 +156,7 @@
       for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
           const char = textGrid[r][c];
-          ctx.fillText(char, c * cellSize + 10, r * cellSize + cellSize - 10);
+          ctx.fillText(char, c * cellSize, r * cellSize + cellSize - 10);  // Adjusted position for better alignment
         }
       }
     }
@@ -173,6 +173,7 @@
           col = Math.floor(Math.random() * maxCol);
         } while (isOverlap(row, col, word.length));
 
+        // Place the word in the grid at the random location
         for (let i = 0; i < word.length; i++) {
           textGrid[row] = replaceAt(textGrid[row], col + i, word[i]);
         }
