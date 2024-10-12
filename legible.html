@@ -1,190 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Legible Visualizer</title>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
-    button {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-      z-index: 1000;
-    }
-    .error-message {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      color: red;
-      font-size: 16px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayCanvas Demoscene Visualizer</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #startButton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            z-index: 1000;
+        }
+    </style>
+    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
 </head>
 <body>
-  <button id="start-button">Start Microphone</button>
-  <div class="error-message" id="error-message"></div>
+    <button id="startButton">Start Microphone</button>
+    <canvas id="application-canvas"></canvas>
 
-  <script type="module">
-    import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
+    <script>
+        const canvas = document.getElementById('application-canvas');
+        const startButton = document.getElementById('startButton');
+        let audioContext, analyser, dataArray;
 
-    let audioContext;
-    let analyser;
-    let dataArray;
-    let micStream;
-    let isMicrophoneEnabled = false;
+        // Set up PlayCanvas application
+        const app = new pc.Application(canvas, {
+            mouse: new pc.Mouse(canvas),
+            touch: new pc.TouchDevice(canvas)
+        });
+        app.start();
 
-    const startButton = document.getElementById('start-button');
-    const errorMessage = document.getElementById('error-message');
-    startButton.addEventListener('click', startMicAudio);
+        // Fill the canvas
+        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+        app.setCanvasResolution(pc.RESOLUTION_AUTO);
 
-    async function startMicAudio() {
-      try {
-        // Request microphone access
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 2048;
-        const bufferLength = analyser.frequencyBinCount;
-        dataArray = new Uint8Array(bufferLength);
+        // Add a camera to the scene
+        const camera = new pc.Entity('camera');
+        camera.addComponent('camera', {
+            clearColor: new pc.Color(0, 0, 0),
+            fov: 75
+        });
+        camera.setLocalPosition(0, 0, 20);
+        app.root.addChild(camera);
 
-        // Create media stream source from microphone
-        micStream = audioContext.createMediaStreamSource(stream);
-        micStream.connect(analyser);
-        isMicrophoneEnabled = true;
-
-        // Hide the start button after microphone access is granted
-        startButton.style.display = 'none';
-        errorMessage.innerText = '';  // Clear any previous errors
-
-        // Start the rendering process
-        render();
-      } catch (err) {
-        errorMessage.innerText = 'Microphone access denied. Please check your browser permissions.';
-        console.error('Microphone access error:', err);
-      }
-    }
-
-    // Function to get the beat intensity from microphone input
-    function getBeat() {
-      analyser.getByteFrequencyData(dataArray);
-      let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        sum += dataArray[i];
-      }
-      return sum / dataArray.length;  // Return average frequency
-    }
-
-    // Initialize Three.js scene
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    // Resize renderer on window resize (mobile-friendly)
-    window.addEventListener('resize', () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      renderer.setSize(width, height);
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-    });
-
-    const fontLoader = new THREE.FontLoader();
-    let textMeshes = [];
-    let font;
-    let revealedWords = []; // Track which words are revealed
-
-    fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (loadedFont) {
-      font = loadedFont;
-      createTextMeshes();
-    });
-
-    // Full text to render
-    const fullText = 'This is an example visualizer where words react to the microphone input.';
-    const words = fullText.split(' ');
-
-    // Split text into words and create text meshes
-    function createTextMeshes() {
-      words.forEach((word, index) => {
-        // Create gibberish for each word, starting with gibberish
-        let geometry = new THREE.TextGeometry(generateGibberish(word.length), {
-          font: font,
-          size: 0.5,
-          height: 0.05,
+        // Enable orbit camera controls
+        camera.addComponent("script");
+        app.assets.loadFromUrl("https://code.playcanvas.com/camera/orbit-camera.js", "script", function (err, asset) {
+            camera.script.create("orbitCamera", {
+                attributes: {
+                    inertiaFactor: 0.2
+                }
+            });
         });
 
-        const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
-        const mesh = new THREE.Mesh(geometry, material);
+        // Add a light
+        const light = new pc.Entity();
+        light.addComponent('light');
+        light.setLocalPosition(10, 10, 10);
+        app.root.addChild(light);
 
-        // Position words randomly at first
-        mesh.position.set(
-          Math.random() * 10 - 5, // Random x position
-          Math.random() * 5 - 2.5, // Random y position
-          Math.random() * 5 - 10   // Random z position
-        );
-        textMeshes.push(mesh);
-        scene.add(mesh);
-      });
+        // Load font asset
+        const fontAsset = new pc.Asset("font", "font", {
+            url: "https://playcanvas.com/api/assets/files/fonts/Arial.json"
+        });
 
-      camera.position.z = 15; // Position camera to see all words
-    }
+        app.assets.add(fontAsset);
 
-    // Function to generate gibberish
-    function generateGibberish(length) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-    }
+        fontAsset.ready(function () {
+            createTextMeshes();
+        });
 
-    // Function to update text mesh behavior based on microphone input
-    function updateTextMeshes(beatStrength) {
-      textMeshes.forEach((mesh, index) => {
-        // Move words based on beat intensity
-        mesh.position.y += Math.sin(Date.now() * 0.002) * beatStrength * 0.01;
-        mesh.rotation.z += Math.sin(Date.now() * 0.001) * beatStrength * 0.002;
+        // Full text to render
+        const fullText = "This is an example demoscene visualizer in PlayCanvas.";
+        const words = fullText.split(' ');
 
-        // Gradually reveal words as beatStrength increases
-        if (beatStrength > 50 && !revealedWords[index]) {
-          // Reveal word based on beat strength
-          const word = words[index];
-          let geometry = new THREE.TextGeometry(word, {
-            font: font,
-            size: 0.5,
-            height: 0.05,
-          });
-          mesh.geometry.dispose(); // Remove old geometry
-          mesh.geometry = geometry; // Set new legible geometry
-          mesh.material.opacity = 1; // Make fully visible
-          revealedWords[index] = true; // Mark word as revealed
+        // State for revealed words
+        let revealedWords = Array(words.length).fill(false);
+
+        // Create text entities
+        function createTextMeshes() {
+            words.forEach((word, index) => {
+                const textEntity = new pc.Entity();
+                textEntity.addComponent("element", {
+                    type: "text",
+                    fontAsset: fontAsset,
+                    fontSize: 2,
+                    text: generateGibberish(word.length),
+                    color: new pc.Color(1, 0, 1), // Neon-like pink
+                    opacity: 0.3,
+                    pivot: new pc.Vec2(0.5, 0.5),
+                    anchor: new pc.Vec2(0.5, 0.5)
+                });
+
+                // Set initial random position for each word
+                textEntity.setLocalPosition(
+                    Math.random() * 15 - 7.5,
+                    Math.random() * 5 - 2.5,
+                    Math.random() * 10 - 5
+                );
+
+                textEntity.revealed = false;
+                textEntity.originalWord = word;
+                app.root.addChild(textEntity);
+            });
         }
-      });
-    }
 
-    // Render loop
-    function render() {
-      requestAnimationFrame(render);
+        // Function to generate gibberish
+        function generateGibberish(length) {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
 
-      if (isMicrophoneEnabled) {
-        const beatStrength = getBeat();
-        updateTextMeshes(beatStrength);
-      }
+        // Start the microphone when the button is clicked
+        startButton.addEventListener('click', function () {
+            startButton.style.display = 'none';
+            startMicrophone();
+        });
 
-      renderer.render(scene, camera);
-    }
+        // Start the microphone
+        function startMicrophone() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 2048;
+                    const bufferLength = analyser.frequencyBinCount;
+                    dataArray = new Uint8Array(bufferLength);
 
-    // Fallback for older browsers or issues
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      errorMessage.innerText = 'Your browser does not support microphone access. Please update to a modern browser.';
-    }
-  </script>
+                    const source = audioContext.createMediaStreamSource(stream);
+                    source.connect(analyser);
+
+                    // Start updating text meshes with beat intensity
+                    app.on("update", function (dt) {
+                        updateTextWithBeat();
+                    });
+                })
+                .catch(err => {
+                    console.error("Microphone access denied:", err);
+                });
+        }
+
+        // Update text based on microphone input (beat strength)
+        function updateTextWithBeat() {
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const beatStrength = sum / dataArray.length;
+
+            // Threshold for revealing words
+            const revealThreshold = 50;
+
+            // Loop through text entities and make them react
+            app.root.children.forEach(entity => {
+                if (entity.element && !entity.revealed) {
+                    if (beatStrength > revealThreshold) {
+                        entity.element.text = entity.originalWord; // Reveal the word
+                        entity.element.opacity = 1.0;
+                        entity.revealed = true;
+                    } else {
+                        // Scale and opacity based on beat strength
+                        entity.setLocalScale(1 + beatStrength * 0.01, 1 + beatStrength * 0.01, 1);
+                        entity.element.opacity = Math.min(1, beatStrength * 0.005);
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>
