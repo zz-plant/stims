@@ -145,6 +145,7 @@
     function generateGibberishGrid() {
       const { cols, rows } = calculateGridDimensions();
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      gridElement.innerHTML = ''; // Clear the grid before regenerating
       gridElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
       gridElement.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
       const fragment = document.createDocumentFragment();
