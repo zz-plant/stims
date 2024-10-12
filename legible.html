@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unexpected Music Visualizer</title>
+  <title>Legible Visualizer</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
     button {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      padding: 10px;
+      top: 20px;
+      left: 20px;
+      padding: 10px 20px;
       font-size: 16px;
       z-index: 1000;
     }
@@ -26,8 +26,8 @@
     let audioContext;
     let analyser;
     let dataArray;
-    let currentLegibilityFactor = 0;
     let micStream;
+    let isMicrophoneEnabled = false;
 
     const startButton = document.getElementById('start-button');
     startButton.addEventListener('click', startMicAudio);
@@ -45,19 +45,21 @@
           // Create media stream source from microphone
           micStream = audioContext.createMediaStreamSource(stream);
           micStream.connect(analyser);
-          
-          // Hide the start button after the microphone is started
+          isMicrophoneEnabled = true;
+
+          // Hide the start button after microphone access is granted
           startButton.style.display = 'none';
 
-          // Start the render loop
+          // Start the rendering process
           render();
         })
         .catch(err => {
-          console.error('Error accessing the microphone', err);
+          alert('Microphone access denied. Please allow microphone access to enable the visualizer.');
+          console.error('Microphone access error:', err);
         });
     }
 
-    // Beat detection function using microphone input
+    // Function to get the beat intensity from microphone input
     function getBeat() {
       analyser.getByteFrequencyData(dataArray);
       let sum = 0;
@@ -67,16 +69,26 @@
       return sum / dataArray.length;  // Return average frequency
     }
 
-    // Three.js setup
+    // Initialize Three.js scene
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer();
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+
+    // Resize renderer on window resize (mobile-friendly)
+    window.addEventListener('resize', () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    });
 
     const fontLoader = new THREE.FontLoader();
     let textMeshes = [];
     let font;
+    let revealedWords = []; // Track which words are revealed
 
     fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (loadedFont) {
       font = loadedFont;
@@ -84,78 +96,84 @@
     });
 
     // Full text to render
-    const fullText = 'Unexpected effects in a music visualizer. Shattering, Swarming, Defying gravity.';
+    const fullText = 'This is an example visualizer where words react to the microphone input.';
     const words = fullText.split(' ');
-    const revealedWords = Array(words.length).fill(false);
 
-    // Create text meshes for each word
+    // Split text into words and create text meshes
     function createTextMeshes() {
       words.forEach((word, index) => {
-        const geometry = new THREE.TextGeometry(word, {
+        // Create gibberish for each word, starting with gibberish
+        let geometry = new THREE.TextGeometry(generateGibberish(word.length), {
           font: font,
           size: 0.5,
           height: 0.05,
         });
 
-        const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+        const material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
         const mesh = new THREE.Mesh(geometry, material);
 
-        // Random initial positions for the words
-        mesh.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 5 - 10);
+        // Position words randomly at first
+        mesh.position.set(
+          Math.random() * 10 - 5, // Random x position
+          Math.random() * 5 - 2.5, // Random y position
+          Math.random() * 5 - 10   // Random z position
+        );
         textMeshes.push(mesh);
         scene.add(mesh);
       });
 
-      camera.position.z = 15;  // Adjust camera to see all words initially
+      camera.position.z = 15; // Position camera to see all words
     }
 
-    // Beat-driven word behavior
-    function updateWordsBasedOnBeat(beatStrength) {
-      // Text shattering effect on beat peaks
+    // Function to generate gibberish
+    function generateGibberish(length) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    }
+
+    // Function to update text mesh behavior based on microphone input
+    function updateTextMeshes(beatStrength) {
       textMeshes.forEach((mesh, index) => {
-        const distanceFromCenter = Math.abs(mesh.position.x) + Math.abs(mesh.position.y);
-        const threshold = beatStrength / 10;
+        // Move words based on beat intensity
+        mesh.position.y += Math.sin(Date.now() * 0.002) * beatStrength * 0.01;
+        mesh.rotation.z += Math.sin(Date.now() * 0.001) * beatStrength * 0.002;
 
-        if (distanceFromCenter < threshold) {
-          // Push words outward, "shattering" them away from the center
-          mesh.position.x += (Math.random() - 0.5) * beatStrength * 0.02;
-          mesh.position.y += (Math.random() - 0.5) * beatStrength * 0.02;
-          mesh.rotation.z += (Math.random() - 0.5) * beatStrength * 0.001;
+        // Gradually reveal words as beatStrength increases
+        if (beatStrength > 50 && !revealedWords[index]) {
+          // Reveal word based on beat strength
+          const word = words[index];
+          let geometry = new THREE.TextGeometry(word, {
+            font: font,
+            size: 0.5,
+            height: 0.05,
+          });
+          mesh.geometry.dispose(); // Remove old geometry
+          mesh.geometry = geometry; // Set new legible geometry
+          mesh.material.opacity = 1; // Make fully visible
+          revealedWords[index] = true; // Mark word as revealed
         }
-      });
-    }
-
-    // Apply gravity-defying behavior to words
-    function applyGravityDefyingEffect(beatStrength) {
-      textMeshes.forEach((mesh) => {
-        // Add a sine-based oscillation to simulate gravity-defying text movement
-        const oscillationFactor = Math.sin(Date.now() * 0.001) * (beatStrength * 0.01);
-        mesh.position.y += oscillationFactor;
-      });
-    }
-
-    // Word swarming effect - words "attract" toward random points
-    function applySwarmEffect(beatStrength) {
-      const targetPoint = new THREE.Vector3(Math.random() * 4 - 2, Math.random() * 4 - 2, Math.random() * -5);
-      textMeshes.forEach((mesh) => {
-        // Move each word toward the target point
-        mesh.position.lerp(targetPoint, 0.01 + (beatStrength * 0.001));  // Speed increases with beat
       });
     }
 
     // Render loop
     function render() {
       requestAnimationFrame(render);
-      if (analyser) {
-        const beatStrength = getBeat();
 
-        // Apply the effects
-        updateWordsBasedOnBeat(beatStrength);
-        applyGravityDefyingEffect(beatStrength);
-        applySwarmEffect(beatStrength);
+      if (isMicrophoneEnabled) {
+        const beatStrength = getBeat();
+        updateTextMeshes(beatStrength);
       }
 
       renderer.render(scene, camera);
+    }
+
+    // Fallback for older browsers or issues
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Your browser does not support microphone access. Please update to a modern browser.');
     }
   </script>
 </body>
