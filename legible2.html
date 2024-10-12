@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clear Visualizer with Word Interaction</title>
+  <title>Interactive Visualizer with Timed Reversion</title>
   <style>
     body {
       margin: 0;
@@ -72,6 +72,12 @@
       }
     }
 
+    /* Timed glow animation */
+    @keyframes timedGlow {
+      0%, 100% { filter: drop-shadow(0 0 5px #00ff00); }
+      50% { filter: drop-shadow(0 0 15px #00ff00); }
+    }
+
   </style>
 </head>
 <body>
@@ -92,7 +98,6 @@
     const gridCols = 30;
     const gridRows = 15;
     const dictionaryWords = ['HELLO', 'WORLD', 'VISUALIZER', 'SYSTEM', 'SIMULATION', 'COOL', 'TERMINAL', 'MATRIX', 'DYNAMIC', 'REACTIVE', 'LOUD', 'QUIET']; // Example dictionary words
-    let revealedLocations = [];
 
     sensitivitySlider.addEventListener('input', () => {
       sensitivity = parseFloat(sensitivitySlider.value);
@@ -178,13 +183,25 @@
         for (let i = 0; i < Math.floor(beatStrength * gridCells.length); i++) {
           const randomIndex = Math.floor(Math.random() * gridCells.length);
           const randomWord = dictionaryWords[Math.floor(Math.random() * dictionaryWords.length)];
-          gridCells[randomIndex].textContent = randomWord;
-          gridCells[randomIndex].dataset.fixed = true;
+          const cell = gridCells[randomIndex];
+          
+          if (!cell.dataset.fixed) {
+            cell.textContent = randomWord;
+            cell.dataset.fixed = true;
+            cell.style.animation = "timedGlow 1s infinite"; // Add glowing animation
+            
+            // Set timer to revert to gibberish after 10 seconds
+            setTimeout(() => {
+              if (cell.dataset.fixed) {
+                dissolveWord(cell);
+              }
+            }, 10000);
 
-          // Add event listener for tapping to dissolve word
-          gridCells[randomIndex].addEventListener('click', function () {
-            dissolveWord(gridCells[randomIndex]);
-          });
+            // Add event listener for tapping to dissolve word
+            cell.addEventListener('click', function () {
+              dissolveWord(cell);
+            });
+          }
         }
       }
     }
