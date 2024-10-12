@@ -197,6 +197,8 @@
           randomIndex = row * gridCols + col;
         } while (isOverlap(randomIndex, word.length));
 
+        const wordElements = []; // Store elements for the whole word
+
         // Place the word in the grid at the random location and stop the cycling for those cells
         for (let i = 0; i < word.length; i++) {
           const cell = gridCells[randomIndex + i];
@@ -204,11 +206,14 @@
           cell.dataset.fixed = true;  // Mark the cell as "fixed" so it stops cycling
           cell.classList.add("flicker"); // Add flicker effect
 
-          // Allow tapping on the word to dissolve it
-          cell.addEventListener('click', () => dissolveWord(cell, i === word.length - 1));
+          wordElements.push(cell); // Collect all the cells that form the word
         }
 
         revealedLocations.push({ index: randomIndex, length: word.length });
+
+        // Add a single event listener on the first letter of the word to dissolve the whole word
+        wordElements[0].addEventListener('click', () => dissolveWord(wordElements));
+
         wordIndex++;
       }
     }
@@ -222,16 +227,15 @@
       return false;
     }
 
-    function dissolveWord(cell, isLastCharacter) {
-      cell.style.animation = 'dissolve 0.5s forwards'; // Play dissolve animation
-      cell.addEventListener('animationend', () => {
-        cell.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26)); // Revert to gibberish
-        cell.classList.remove('flicker');
-        delete cell.dataset.fixed; // Allow it to cycle again
-
-        if (isLastCharacter) {
-          wordIndex++;
-        }
+    function dissolveWord(wordElements) {
+      // Animate and dissolve each letter of the word
+      wordElements.forEach(cell => {
+        cell.style.animation = 'dissolve 0.5s forwards'; // Play dissolve animation
+        cell.addEventListener('animationend', () => {
+          cell.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26)); // Revert to gibberish
+          cell.classList.remove('flicker');
+          delete cell.dataset.fixed; // Allow it to cycle again
+        });
       });
     }
 
