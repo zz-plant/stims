@@ -15,10 +15,18 @@
       font-size: 16px;
       z-index: 1000;
     }
+    .error-message {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      color: red;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
   <button id="start-button">Start Microphone</button>
+  <div class="error-message" id="error-message"></div>
 
   <script type="module">
     import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
@@ -30,33 +38,35 @@
     let isMicrophoneEnabled = false;
 
     const startButton = document.getElementById('start-button');
+    const errorMessage = document.getElementById('error-message');
     startButton.addEventListener('click', startMicAudio);
 
-    function startMicAudio() {
-      // Request access to the microphone
-      navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-        .then(stream => {
-          audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          analyser = audioContext.createAnalyser();
-          analyser.fftSize = 2048;
-          const bufferLength = analyser.frequencyBinCount;
-          dataArray = new Uint8Array(bufferLength);
+    async function startMicAudio() {
+      try {
+        // Request microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
 
-          // Create media stream source from microphone
-          micStream = audioContext.createMediaStreamSource(stream);
-          micStream.connect(analyser);
-          isMicrophoneEnabled = true;
+        // Create media stream source from microphone
+        micStream = audioContext.createMediaStreamSource(stream);
+        micStream.connect(analyser);
+        isMicrophoneEnabled = true;
 
-          // Hide the start button after microphone access is granted
-          startButton.style.display = 'none';
+        // Hide the start button after microphone access is granted
+        startButton.style.display = 'none';
+        errorMessage.innerText = '';  // Clear any previous errors
 
-          // Start the rendering process
-          render();
-        })
-        .catch(err => {
-          alert('Microphone access denied. Please allow microphone access to enable the visualizer.');
-          console.error('Microphone access error:', err);
-        });
+        // Start the rendering process
+        render();
+      } catch (err) {
+        errorMessage.innerText = 'Microphone access denied. Please check your browser permissions.';
+        console.error('Microphone access error:', err);
+      }
     }
 
     // Function to get the beat intensity from microphone input
@@ -173,7 +183,7 @@
 
     // Fallback for older browsers or issues
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('Your browser does not support microphone access. Please update to a modern browser.');
+      errorMessage.innerText = 'Your browser does not support microphone access. Please update to a modern browser.';
     }
   </script>
 </body>
