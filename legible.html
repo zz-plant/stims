@@ -22,7 +22,7 @@
             z-index: 1000;
         }
     </style>
-    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/playcanvas/2.1.0/playcanvas.min.js"></script>
 </head>
 <body>
     <button id="startButton">Start Microphone</button>
@@ -36,6 +36,7 @@
         const sensitivitySlider = document.getElementById('sensitivitySlider');
 
         let audioContext, analyser, dataArray, sensitivityThreshold = 50;
+        let particles = [];
 
         // Set up PlayCanvas application
         const app = new pc.Application(canvas, {
@@ -73,7 +74,10 @@
         light.setLocalPosition(10, 10, 10);
         app.root.addChild(light);
 
-        // Load font asset
+        // Create geometric shapes (demoscene effect)
+        const shapes = createGeometricShapes();
+
+        // Load font asset for text
         const fontAsset = new pc.Asset("font", "font", {
             url: "https://playcanvas.com/api/assets/files/fonts/Arial.json"
         });
@@ -85,7 +89,7 @@
         });
 
         // Full text to render
-        const fullText = "This is an example demoscene visualizer in PlayCanvas.";
+        const fullText = "Demoscene Visualizer in PlayCanvas.";
         const words = fullText.split(' ');
 
         // State for revealed words
@@ -100,8 +104,8 @@
                     fontAsset: fontAsset,
                     fontSize: 2,
                     text: generateGibberish(word.length),
-                    color: new pc.Color(1, 0, 1), // Neon-like pink
-                    opacity: 0.3,
+                    color: new pc.Color(0.8, 0.2, 0.8), // Neon-like color
+                    opacity: 0.5,
                     pivot: new pc.Vec2(0.5, 0.5),
                     anchor: new pc.Vec2(0.5, 0.5)
                 });
@@ -128,6 +132,44 @@
             }
             return result;
         }
+
+        // Create geometric shapes (cubes, spheres, etc.)
+        function createGeometricShapes() {
+            const shapes = [];
+            for (let i = 0; i < 5; i++) {
+                const shape = new pc.Entity();
+                shape.addComponent("model", {
+                    type: "box"
+                });
+                shape.setLocalScale(1, 1, 1);
+                shape.setLocalPosition(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5);
+                shapes.push(shape);
+                app.root.addChild(shape);
+            }
+            return shapes;
+        }
+
+        // Procedural background (waves)
+        function createProceduralBackground() {
+            for (let i = 0; i < 100; i++) {
+                const particle = new pc.Entity();
+                particle.addComponent("element", {
+                    type: "image",
+                    color: new pc.Color(0.2, 0.2, 0.2, 0.4),
+                    width: 0.1,
+                    height: 0.1
+                });
+                particle.setLocalPosition(
+                    Math.random() * 20 - 10,
+                    Math.random() * 20 - 10,
+                    Math.random() * 10 - 5
+                );
+                app.root.addChild(particle);
+                particles.push(particle);
+            }
+        }
+
+        createProceduralBackground();
 
         // Start the microphone when the button is clicked
         startButton.addEventListener('click', function () {
@@ -158,6 +200,7 @@
                     app.on("update", function (dt) {
                         updateTextWithBeat();
                         checkPerformance();
+                        updateShapes(dt);
                     });
                 })
                 .catch(err => {
@@ -206,6 +249,15 @@
                         );
                     }
                 }
+            });
+        }
+
+        // Update geometric shapes (rotate and scale them)
+        function updateShapes(dt) {
+            shapes.forEach(shape => {
+                shape.rotate(10 * dt, 20 * dt, 30 * dt); // Rotate the shape over time
+                const scaleFactor = 1 + 0.5 * Math.sin(Date.now() * 0.001);
+                shape.setLocalScale(scaleFactor, scaleFactor, scaleFactor);
             });
         }
 
