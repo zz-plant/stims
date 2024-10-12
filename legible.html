@@ -78,8 +78,9 @@
     const fullText = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION';
     const words = fullText.split(' ');
     let textGrid = generateGibberishGrid(gridCols, gridRows);
+    let revealedLocations = []; // Track where words are placed
     let wordIndex = 0;
-    let wordCharIndex = 0;
+    let lastUpdateTime = 0;
 
     // Resize canvas dynamically
     function resizeCanvas() {
@@ -155,18 +156,37 @@
       }
     }
 
-    function revealNextCharacter() {
-      if (wordIndex < words.length && wordCharIndex < words[wordIndex].length) {
+    function revealWordAtRandomLocation() {
+      if (wordIndex < words.length) {
         const word = words[wordIndex];
-        const row = Math.floor(wordCharIndex / gridCols);
-        const col = wordCharIndex % gridCols;
+        const maxRow = gridRows - 1;
+        const maxCol = gridCols - word.length;
 
-        textGrid[row] = replaceAt(textGrid[row], col, word[wordCharIndex]);
-        wordCharIndex++;
-      } else if (wordCharIndex >= words[wordIndex].length) {
-        wordCharIndex = 0;
+        // Random row and column that won't overlap
+        let row, col;
+        do {
+          row = Math.floor(Math.random() * maxRow);
+          col = Math.floor(Math.random() * maxCol);
+        } while (isOverlap(row, col, word.length));
+
+        // Place the word in the grid at the random location
+        for (let i = 0; i < word.length; i++) {
+          textGrid[row] = replaceAt(textGrid[row], col + i, word[i]);
+        }
+
+        revealedLocations.push({ row, col, length: word.length }); // Track revealed locations
         wordIndex++;
       }
+    }
+
+    function isOverlap(row, col, length) {
+      // Check if this word would overlap any other revealed word
+      for (let location of revealedLocations) {
+        if (row === location.row && col < location.col + location.length && col + length > location.col) {
+          return true; // Overlap detected
+        }
+      }
+      return false; // No overlap
     }
 
     function replaceAt(string, index, char) {
@@ -179,12 +199,13 @@
       if (isMicrophoneEnabled) {
         const beatStrength = getBeat();
 
-        // If beat strength is high enough, reveal next character
-        if (beatStrength > sensitivity && !revealed) {
-          revealNextCharacter();
-          revealed = true;
-        } else if (beatStrength < sensitivity) {
-          revealed = false;
+        const now = performance.now();
+        if (now - lastUpdateTime > 100) {  // Update every 100ms
+          // If beat strength is high enough, reveal next word at a random location
+          if (beatStrength > sensitivity) {
+            revealWordAtRandomLocation();
+          }
+          lastUpdateTime = now;
         }
 
         renderGrid();
