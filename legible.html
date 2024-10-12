@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Word Search Visualizer</title>
+  <title>Terminal-Like Visualizer</title>
   <style>
     body { 
       margin: 0; 
@@ -13,23 +13,29 @@
       height: 100vh; 
       background-color: black; 
       overflow: hidden; 
+      font-family: monospace;
     }
     canvas { 
       display: block; 
       width: 100%; 
       height: 100%; 
       touch-action: none; 
+      background: black;
     }
     button, label, input {
       position: absolute;
       font-size: 16px;
       z-index: 1000;
       user-select: none;
+      color: #00ff00;
     }
     button {
       top: 10px;
       left: 10px;
       padding: 10px 20px;
+      background-color: #222;
+      color: #00ff00;
+      border: 1px solid #00ff00;
     }
     #sensitivity {
       top: 50px;
@@ -38,6 +44,7 @@
     #sensitivity-label {
       top: 80px;
       left: 10px;
+      color: #00ff00;
     }
   </style>
 </head>
@@ -65,15 +72,14 @@
     startButton.addEventListener('click', startMicAudio);
 
     // Initialize grid size and text data
-    const gridCols = 15; // Adjust grid size for more dynamic updates
-    const gridRows = 8;
-    let cellSize = 40; // Dynamically sized
-    const fullText = 'HELLO WORLD FROM A COOL WORDSEARCH VISUALIZER VISUAL WORD';
+    const gridCols = 30; // Increased for terminal feel
+    const gridRows = 15;
+    let cellSize = 20; // Smaller for terminal-like appearance
+    const fullText = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION';
     const words = fullText.split(' ');
     let textGrid = generateGibberishGrid(gridCols, gridRows);
     let wordIndex = 0;
     let wordCharIndex = 0;
-    let activeWordIndex = -1;
 
     // Resize canvas dynamically
     function resizeCanvas() {
@@ -98,7 +104,7 @@
         .then(stream => {
           audioContext = new (window.AudioContext || window.webkitAudioContext)();
           analyser = audioContext.createAnalyser();
-          analyser.fftSize = 512;  // Optimized for mobile
+          analyser.fftSize = 512;  // Optimized for real-time audio
           dataArray = new Uint8Array(analyser.frequencyBinCount);
 
           micStream = audioContext.createMediaStreamSource(stream);
@@ -124,7 +130,7 @@
     }
 
     function generateGibberishGrid(cols, rows) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       const grid = [];
       for (let r = 0; r < rows; r++) {
         let row = '';
@@ -139,7 +145,7 @@
     function renderGrid() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.font = `${cellSize * 0.8}px monospace`;
-      ctx.fillStyle = '#00ff00';  // Neon green color
+      ctx.fillStyle = '#00ff00';  // Green terminal-like color
 
       for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
@@ -157,11 +163,9 @@
 
         textGrid[row] = replaceAt(textGrid[row], col, word[wordCharIndex]);
         wordCharIndex++;
-        activeWordIndex = wordIndex;
       } else if (wordCharIndex >= words[wordIndex].length) {
         wordCharIndex = 0;
         wordIndex++;
-        activeWordIndex = -1;
       }
     }
 
