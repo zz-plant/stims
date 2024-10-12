@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Terminal-Like Visualizer</title>
+  <title>Enhanced Terminal-Like Visualizer</title>
   <style>
     body {
       margin: 0;
@@ -17,18 +17,17 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(30, 1fr); /* Create 30 columns */
-      grid-template-rows: repeat(15, 1fr);   /* Create 15 rows */
-      width: 85vw;  /* Grid occupies 85% of the viewport width */
-      height: 75vh; /* Grid occupies 75% of the viewport height */
-      gap: 1px;     /* Reduced gap between cells */
+      width: 95vw;
+      height: 85vh;
+      gap: 1px;
     }
     .cell {
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 1.5vw; /* Increased font size relative to the viewport width */
-      color: #00ff00;   /* Neon green color */
+      font-size: 2.5vw;
+      color: #00ff00;
+      transition: all 0.2s ease-in-out;
     }
     button, label, input {
       position: absolute;
@@ -54,9 +53,62 @@
       left: 10px;
       color: #00ff00;
     }
+
+    /* Glow and dissolve animation */
+    @keyframes dissolve {
+      0% {
+        opacity: 1;
+        filter: drop-shadow(0 0 10px #00ff00);
+      }
+      50% {
+        opacity: 0.5;
+        transform: scale(1.1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+    }
+
+    /* Timed glow animation */
+    @keyframes timedGlow {
+      0%, 100% { filter: drop-shadow(0 0 5px #00ff00); }
+      50% { filter: drop-shadow(0 0 15px #00ff00); }
+    }
+
+    /* CRT Filter */
+    .crt {
+      filter: contrast(1.4) brightness(1.1) saturate(1.5);
+    }
+
+    /* Flicker effect */
+    .flicker {
+      animation: timedGlow 1.5s infinite alternate;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: repeat(20, 1fr);
+        grid-template-rows: repeat(10, 1fr);
+      }
+      .cell {
+        font-size: 4vw;
+      }
+    }
+
+    @media (min-width: 769px) {
+      .grid {
+        grid-template-columns: repeat(30, 1fr);
+        grid-template-rows: repeat(15, 1fr);
+      }
+      .cell {
+        font-size: 2.5vw;
+      }
+    }
+
   </style>
 </head>
-<body>
+<body class="crt">
   <button id="start-button">Start Microphone</button>
   <label id="sensitivity-label" for="sensitivity">Beat Sensitivity:</label>
   <input id="sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.3">
@@ -72,23 +124,31 @@
     let cyclingActive = true;
 
     const gridElement = document.getElementById('grid');
-    const gridCols = 30;
-    const gridRows = 15;
     const fullText = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION';
     const words = fullText.split(' ');
     let revealedLocations = [];
 
     sensitivitySlider.addEventListener('input', () => {
       sensitivity = parseFloat(sensitivitySlider.value);
-      console.log("Sensitivity updated to:", sensitivity);
     });
 
     startButton.addEventListener('click', startMicAudio);
 
+    // Dynamically calculate grid columns and rows based on screen size
+    function calculateGridDimensions() {
+      const cols = window.innerWidth < 768 ? 20 : 30;
+      const rows = window.innerWidth < 768 ? 10 : 15;
+      return { cols, rows };
+    }
+
     // Initialize the grid with cells and start random character cycling
-    function generateGibberishGrid(cols, rows) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    function generateGibberishGrid() {
+      const { cols, rows } = calculateGridDimensions();
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      gridElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      gridElement.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
       const fragment = document.createDocumentFragment();
+
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const cell = document.createElement('div');
@@ -100,21 +160,23 @@
       gridElement.appendChild(fragment);
     }
 
-    generateGibberishGrid(gridCols, gridRows);
+    generateGibberishGrid();
+
+    window.addEventListener('resize', generateGibberishGrid); // Regenerate the grid on screen resize
 
     // Start random character cycling for all grid cells
     function cycleRandomCharacters() {
       const gridCells = document.querySelectorAll('.cell');
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
       setInterval(() => {
         if (cyclingActive) {
           gridCells.forEach(cell => {
-            if (!cell.dataset.fixed) {  // Only cycle characters if the cell is not "fixed" (part of a revealed word)
+            if (!cell.dataset.fixed) {
               cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
             }
           });
         }
-      }, 100); // Update every 100ms
+      }, 100);
     }
 
     cycleRandomCharacters(); // Start cycling the characters
@@ -124,7 +186,7 @@
         .then(stream => {
           audioContext = new (window.AudioContext || window.webkitAudioContext)();
           analyser = audioContext.createAnalyser();
-          analyser.fftSize = 512;  // Optimized for real-time audio
+          analyser.fftSize = 512;
           dataArray = new Uint8Array(analyser.frequencyBinCount);
 
           micStream = audioContext.createMediaStreamSource(stream);
@@ -132,46 +194,66 @@
           isMicrophoneEnabled = true;
 
           startButton.style.display = 'none';
-          render();  // Start the visualizer
-          console.log("Microphone started successfully");
+          render(); // Start the visualizer
         })
         .catch(err => {
           alert('Microphone access denied. Please allow microphone access to enable the visualizer.');
-          console.error('Microphone access error:', err);
         });
     }
 
     function getBeat() {
       analyser.getByteFrequencyData(dataArray);
-      let sum = 0;
+      let sumLow = 0, sumMid = 0, sumHigh = 0;
+      const lowEnd = Math.floor(dataArray.length * 0.2);
+      const midEnd = Math.floor(dataArray.length * 0.6);
+
       for (let i = 0; i < dataArray.length; i++) {
-        sum += dataArray[i];
+        if (i < lowEnd) {
+          sumLow += dataArray[i];
+        } else if (i < midEnd) {
+          sumMid += dataArray[i];
+        } else {
+          sumHigh += dataArray[i];
+        }
       }
-      const beatStrength = (sum / dataArray.length) / 255;
-      return beatStrength;  // Normalize between 0 and 1
+      const beatStrengthLow = (sumLow / lowEnd) / 255;
+      const beatStrengthMid = (sumMid / (midEnd - lowEnd)) / 255;
+      const beatStrengthHigh = (sumHigh / (dataArray.length - midEnd)) / 255;
+
+      return { beatStrengthLow, beatStrengthMid, beatStrengthHigh }; // Return beat strength for each frequency range
     }
 
     function revealWordAtRandomLocation() {
       if (wordIndex < words.length) {
         const word = words[wordIndex];
         const gridCells = document.querySelectorAll('.cell');
-        const maxCol = gridCols - word.length;
+        const { cols, rows } = calculateGridDimensions();
+        const maxCol = cols - word.length;
 
         let randomIndex;
         do {
-          const row = Math.floor(Math.random() * gridRows);
+          const row = Math.floor(Math.random() * rows);
           const col = Math.floor(Math.random() * maxCol);
-          randomIndex = row * gridCols + col;
+          randomIndex = row * cols + col;
         } while (isOverlap(randomIndex, word.length));
 
-        // Place the word in the grid at the random location and stop the cycling for those cells
+        const wordElements = [];
+
         for (let i = 0; i < word.length; i++) {
           const cell = gridCells[randomIndex + i];
           cell.textContent = word[i];
-          cell.dataset.fixed = true;  // Mark the cell as "fixed" so it stops cycling
+          cell.dataset.fixed = true;
+          cell.classList.add("flicker");
+
+          wordElements.push(cell);
         }
 
         revealedLocations.push({ index: randomIndex, length: word.length });
+
+        wordElements.forEach(cell => {
+          cell.addEventListener('click', () => dissolveWord(wordElements));
+        });
+
         wordIndex++;
       }
     }
@@ -179,20 +261,37 @@
     function isOverlap(index, length) {
       for (let location of revealedLocations) {
         if (index < location.index + location.length && index + length > location.index) {
-          return true; 
+          return true;
         }
       }
       return false;
+    }
+
+    function dissolveWord(wordElements) {
+      wordElements.forEach(cell => {
+        cell.style.animation = 'dissolve 0.5s forwards';
+        cell.addEventListener('animationend', () => {
+          cell.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
+          cell.classList.remove('flicker');
+          delete cell.dataset.fixed;
+        });
+      });
     }
 
     function render(time) {
       requestAnimationFrame(render);
 
       if (isMicrophoneEnabled) {
-        const beatStrength = getBeat();
+        const { beatStrengthLow, beatStrengthMid, beatStrengthHigh } = getBeat();
 
-        if (beatStrength > sensitivity) {
+        if (beatStrengthLow > sensitivity) {
           revealWordAtRandomLocation();
+        }
+        if (beatStrengthMid > sensitivity / 1.5) {
+          gridElement.style.transform = `scale(${1 + beatStrengthMid * 0.05})`;
+        }
+        if (beatStrengthHigh > sensitivity / 2) {
+          document.body.style.backgroundColor = `rgba(0, ${Math.floor(beatStrengthHigh * 255)}, 0, 1)`;
         }
       }
     }
