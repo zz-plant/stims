@@ -67,6 +67,7 @@
 
     sensitivitySlider.addEventListener('input', () => {
       sensitivity = parseFloat(sensitivitySlider.value);
+      console.log("Sensitivity updated to:", sensitivity); // Debug output
     });
 
     startButton.addEventListener('click', startMicAudio);
@@ -82,6 +83,7 @@
     let wordIndex = 0;
     let lastUpdateTime = 0;
 
+    // Resize canvas dynamically
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -94,6 +96,7 @@
       } else {
         cellSize = canvas.width / gridCols;
       }
+      console.log("Canvas resized. Cell size:", cellSize); // Debug output
     }
 
     window.addEventListener('resize', resizeCanvas);
@@ -113,6 +116,7 @@
 
           startButton.style.display = 'none';
           render();  // Start the visualizer
+          console.log("Microphone started successfully"); // Debug output
         })
         .catch(err => {
           alert('Microphone access denied. Please allow microphone access to enable the visualizer.');
@@ -126,7 +130,9 @@
       for (let i = 0; i < dataArray.length; i++) {
         sum += dataArray[i];
       }
-      return (sum / dataArray.length) / 255;  // Normalize between 0 and 1
+      const beatStrength = (sum / dataArray.length) / 255;
+      console.log("Beat strength:", beatStrength); // Debug output
+      return beatStrength;  // Normalize between 0 and 1
     }
 
     function generateGibberishGrid(cols, rows) {
@@ -167,20 +173,13 @@
           col = Math.floor(Math.random() * maxCol);
         } while (isOverlap(row, col, word.length));
 
-        // Place the word in the grid at the random location and highlight it
         for (let i = 0; i < word.length; i++) {
           textGrid[row] = replaceAt(textGrid[row], col + i, word[i]);
         }
 
         revealedLocations.push({ row, col, length: word.length });
 
-        // Temporarily highlight the word
-        ctx.font = `${cellSize}px monospace`;
-        ctx.fillStyle = '#ffffff';  // Highlighted in white
-        for (let i = 0; i < word.length; i++) {
-          ctx.fillText(word[i], (col + i) * cellSize + 10, row * cellSize + cellSize - 10);
-        }
-
+        console.log("Revealed word:", word, "at row:", row, "col:", col); // Debug output
         wordIndex++;
       }
     }
@@ -205,7 +204,7 @@
         const beatStrength = getBeat();
 
         const now = performance.now();
-        if (now - lastUpdateTime > 80) {  // Faster update rate for better visual feedback
+        if (now - lastUpdateTime > 100) {  // Adjusted update rate for visual feedback
           if (beatStrength > sensitivity) {
             revealWordAtRandomLocation();
           }
