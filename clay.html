@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Smooshing and Parallax Effect</title>
+    <title>Three.js Claymation Music Visualizer with Expanded Viewport</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -15,21 +15,21 @@
         // Set up scene, camera, renderer
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 15;
+        camera.position.z = 25;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
         // Create dynamic backdrop
-        const backdropGeometry = new THREE.PlaneGeometry(50, 50, 32, 32);
+        const backdropGeometry = new THREE.PlaneGeometry(80, 80, 32, 32);
         const backdropMaterial = new THREE.MeshStandardMaterial({
             color: 0x000000,
             side: THREE.DoubleSide,
             wireframe: false
         });
         const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial);
-        backdrop.position.z = -20;
+        backdrop.position.z = -40;
         scene.add(backdrop);
 
         // Microphone input
@@ -58,18 +58,20 @@
             new THREE.TorusGeometry(1, 0.4, 16, 100)
         ];
 
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 40; i++) { // Increased number of shapes
             const geometry = geometries[i % geometries.length];
             const clayMaterial = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(`hsl(${(i / 16) * 360}, 100%, 70%)`),
+                color: new THREE.Color(`hsl(${(i / 40) * 360}, 100%, 70%)`),
                 roughness: 1.0,
                 metalness: 0.0,
                 transparent: true,
                 opacity: 0.8 // Allow blending of shapes
             });
             const shape = new THREE.Mesh(geometry, clayMaterial);
-            shape.position.x = (i - 8) * 1.5;
-            shape.scale.setScalar(0.7);
+            shape.position.x = (Math.random() - 0.5) * 40; // Wider spread along X axis
+            shape.position.y = (Math.random() - 0.5) * 30; // Spread along Y axis
+            shape.position.z = (Math.random() - 0.5) * 20; // Spread along Z axis
+            shape.scale.setScalar(0.7 + Math.random() * 1.5); // Varying scales
             scene.add(shape);
             shapes.push(shape);
         }
@@ -93,7 +95,7 @@
         scene.add(ambientLight);
 
         const pointLight = new THREE.PointLight(0xffffff, 1, 100);
-        pointLight.position.set(0, 10, 10);
+        pointLight.position.set(0, 20, 20);
         scene.add(pointLight);
 
         // Animate function with smooshing effect and parallax
@@ -119,8 +121,8 @@
                     shape.scale.set(scale, scale, scale);
 
                     // Apply unique movement patterns influenced by shared waves and introduce gyroscopic rotation
-                    shape.position.y = Math.sin(time * 0.002 + index) * 1.5 + Math.cos(force * Math.PI);
-                    shape.position.z = Math.cos(time * 0.0015 + index) * 1.5 + Math.sin(force * Math.PI);
+                    shape.position.y += Math.sin(time * 0.002 + index) * 0.05;
+                    shape.position.z += Math.cos(time * 0.0015 + index) * 0.05;
                     shape.rotation.x += 0.02 + 0.03 * Math.sin(time * 0.001 + index);
                     shape.rotation.y += 0.02 + 0.03 * Math.cos(time * 0.001 + index);
                     shape.rotation.z += 0.01 * Math.sin(time * 0.0015 + index);
