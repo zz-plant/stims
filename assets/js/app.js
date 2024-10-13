@@ -1,3 +1,4 @@
+
 // app.js
 
 import { initScene } from './core/scene-setup.js';
@@ -29,7 +30,7 @@ function startAudioAndAnimation() {
         
         animate();
     }).catch((error) => {
-        console.error('Error accessing microphone:', error);
+        displayError('Microphone access is required for the visualization to work. Please allow microphone access.');
     });
 }
 
@@ -58,6 +59,14 @@ function handleResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function displayError(message) {
+    const errorElement = document.getElementById('error-message');
+    if (errorElement) {
+        errorElement.innerText = message;
+        errorElement.style.display = 'block';
+    }
 }
 
 // Start visualization
