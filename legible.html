@@ -24,6 +24,7 @@
       grid-template-columns: repeat(30, 1fr);
       grid-template-rows: repeat(15, 1fr);
       transform-origin: center;
+      transition: transform 0.3s ease;
     }
     .cell {
       display: flex;
@@ -32,30 +33,32 @@
       font-size: 1.5vw;
       color: #00ff00;
       background: #001a00;
+      transition: all 0.3s ease;
     }
-    button, label, input {
+    .controls {
       position: absolute;
-      font-size: 16px;
-      z-index: 1000;
-      user-select: none;
-      color: #00ff00;
-    }
-    button {
       top: 10px;
       left: 10px;
-      padding: 10px 20px;
-      background-color: #111;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1000;
+    }
+    button, label, input, select {
+      font-size: 16px;
       color: #00ff00;
+      background-color: #111;
       border: 1px solid #00ff00;
+      padding: 5px 10px;
+    }
+    button {
       cursor: pointer;
     }
-    #sensitivity {
-      top: 50px;
-      left: 10px;
+    button:hover, select:hover {
+      background-color: #002200;
     }
-    #sensitivity-label {
-      top: 80px;
-      left: 10px;
+    input[type="range"] {
+      width: 100%;
     }
 
     @keyframes dissolve {
@@ -67,6 +70,16 @@
         opacity: 0;
         transform: scale(0.8);
       }
+    }
+
+    @keyframes flicker {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    .flicker {
+      animation: flicker 0.5s infinite;
     }
 
     @media (max-width: 768px) {
@@ -83,16 +96,27 @@
   </style>
 </head>
 <body>
-  <button id="start-button">Start Microphone</button>
-  <label id="sensitivity-label" for="sensitivity">Beat Sensitivity:</label>
-  <input id="sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.3">
+  <div class="controls">
+    <button id="start-button">Start Microphone</button>
+    <label for="sensitivity">Beat Sensitivity:</label>
+    <input id="sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.3">
+    <label for="color-scheme">Color Scheme:</label>
+    <select id="color-scheme">
+      <option value="matrix">Matrix</option>
+      <option value="cyberpunk">Cyberpunk</option>
+      <option value="retro">Retro</option>
+    </select>
+    <button id="reset-button">Reset Grid</button>
+  </div>
 
   <div class="grid" id="grid"></div>
 
   <script>
     let audioContext, analyser, dataArray, micStream, isMicrophoneEnabled = false;
     const startButton = document.getElementById('start-button');
+    const resetButton = document.getElementById('reset-button');
     const sensitivitySlider = document.getElementById('sensitivity');
+    const colorSchemeSelect = document.getElementById('color-scheme');
     let sensitivity = parseFloat(sensitivitySlider.value);
     let wordIndex = 0;
     let cyclingActive = true;
@@ -124,6 +148,34 @@
     });
 
     startButton.addEventListener('click', startMicAudio);
+    resetButton.addEventListener('click', resetGrid);
+
+    colorSchemeSelect.addEventListener('change', updateColorScheme);
+
+    function updateColorScheme() {
+      const scheme = colorSchemeSelect.value;
+      let textColor, bgColor;
+      switch(scheme) {
+        case 'cyberpunk':
+          textColor = '#ff00ff';
+          bgColor = '#000033';
+          break;
+        case 'retro':
+          textColor = '#ffff00';
+          bgColor = '#330000';
+          break;
+        default: // matrix
+          textColor = '#00ff00';
+          bgColor = '#001a00';
+      }
+      document.documentElement.style.setProperty('--text-color', textColor);
+      document.documentElement.style.setProperty('--bg-color', bgColor);
+      document.body.style.color = textColor;
+      document.querySelectorAll('.cell').forEach(cell => {
+        cell.style.color = textColor;
+        cell.style.background = bgColor;
+      });
+    }
 
     // Initialize the grid with cells and start random character cycling
     function generateGibberishGrid() {
@@ -173,7 +225,8 @@
           micStream.connect(analyser);
           isMicrophoneEnabled = true;
 
-          startButton.style.display = 'none';
+          startButton.textContent = 'Microphone Active';
+          startButton.disabled = true;
           render(); // Start the visualizer
         })
         .catch(err => {
@@ -244,6 +297,13 @@
       });
     }
 
+    function resetGrid() {
+      generateGibberishGrid();
+      revealedLocations = [];
+      wordIndex = 0;
+      updateColorScheme();
+    }
+
     function render(time) {
       requestAnimationFrame(render);
 
@@ -252,6 +312,9 @@
 
         if (beatStrength > sensitivity) {
           revealWordAtRandomLocation();
+          gridElement.style.transform = `scale(${1 + beatStrength * 0.1})`;
+        } else {
+          gridElement.style.transform = 'scale(1)';
         }
       }
     }
@@ -259,3 +322,9 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       alert('Your browser does not support microphone access. Please update to a modern browser.');
     }
+
+    // Initialize color scheme
+    updateColorScheme();
+  </script>
+</body>
+</html>
