@@ -43,13 +43,14 @@
       align-items: center;
       font-size: 1.5vw;
       color: #00ff00;
-      background: #001a00;
+      background: rgba(0, 26, 0, 0.5);
       transition: all 0.3s ease;
     }
     .floating-word {
       position: absolute;
       font-size: 3vw;
       animation: float 3s ease-in-out infinite;
+      pointer-events: none;
     }
     @keyframes float {
       0% { transform: translateY(0); }
@@ -57,7 +58,7 @@
       100% { transform: translateY(0); }
     }
     .glow {
-      box-shadow: 0 0 10px #00ff00;
+      text-shadow: 0 0 10px #00ff00;
     }
     .controls {
       position: absolute;
@@ -71,7 +72,7 @@
     button, label, input, select {
       font-size: 16px;
       color: #00ff00;
-      background-color: #111;
+      background-color: rgba(17, 17, 17, 0.7);
       border: 1px solid #00ff00;
       padding: 5px 10px;
     }
@@ -79,7 +80,7 @@
       cursor: pointer;
     }
     button:hover, select:hover {
-      background-color: #002200;
+      background-color: rgba(0, 34, 0, 0.7);
     }
     input[type="range"] {
       width: 100%;
@@ -211,7 +212,7 @@
               cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
             }
           });
-          setTimeout(updateCharacters, 100);
+          requestAnimationFrame(updateCharacters);
         }
       }
       updateCharacters();
@@ -271,11 +272,13 @@
       if (beatStrength.low > sensitivity) {
         if (wordIndex < words.length) {
           const word = words[wordIndex];
-          const maxCol = Math.sqrt(gridCells.length) - word.length;
+          const maxCol = 30 - word.length;
 
           let randomIndex;
           do {
-            randomIndex = Math.floor(Math.random() * (gridCells.length - word.length));
+            const randomRow = Math.floor(Math.random() * 15);
+            const randomCol = Math.floor(Math.random() * (maxCol + 1));
+            randomIndex = randomRow * 30 + randomCol;
           } while (isOverlap(randomIndex, word.length));
 
           const wordElements = [];
@@ -295,21 +298,6 @@
 
           wordIndex++;
         }
-      } else {
-        revealedLocations.forEach(location => {
-          const { index, length } = location;
-          for (let j = 0; j < length; j++) {
-            const cell = gridCells[index + j];
-            if (cell.dataset.fixed) {
-              cell.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
-              cell.classList.remove('flicker', 'glow');
-              delete cell.dataset.fixed;
-            }
-          }
-        });
-
-        revealedLocations = [];
-        wordIndex = 0;
       }
 
       if (beatStrength.mid > sensitivity) {
@@ -337,13 +325,21 @@
           const rect1 = cell.getBoundingClientRect();
           const rect2 = nextCell.getBoundingClientRect();
 
+          const angle = Math.atan2(rect2.top - rect1.top, rect2.left - rect1.left);
+          const length = Math.sqrt((rect2.left - rect1.left) ** 2 + (rect2.top - rect1.top) ** 2);
+
           line.style.left = `${rect1.left + rect1.width / 2}px`;
           line.style.top = `${rect1.top + rect1.height / 2}px`;
-          line.style.height = `${Math.sqrt((rect2.left - rect1.left) ** 2 + (rect2.top - rect1.top) ** 2)}px`;
+          line.style.width = `${length}px`;
+          line.style.transform = `rotate(${angle}rad)`;
+          line.style.transformOrigin = 'left';
 
           document.body.appendChild(line);
 
-          setTimeout(() => line.style.opacity = '0', 2000);
+          setTimeout(() => {
+            line.style.opacity = '0';
+            setTimeout(() => line.remove(), 1000);
+          }, 2000);
         }
       });
     }
@@ -359,8 +355,10 @@
       document.body.appendChild(floatingWord);
 
       setTimeout(() => {
-        floatingWord.remove();
-      }, 4000);
+        floatingWord.style.opacity = '0';
+        floatingWord.style.transition = 'opacity 1s ease-out';
+        setTimeout(() => floatingWord.remove(), 1000);
+      }, 3000);
     }
 
     function isOverlap(index, length) {
@@ -379,11 +377,11 @@
           cell.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
           cell.classList.remove('flicker', 'glow');
           delete cell.dataset.fixed;
-        });
+        }, { once: true });
       });
     }
 
-    function render(time) {
+    function render() {
       requestAnimationFrame(render);
 
       if (isMicrophoneEnabled) {
