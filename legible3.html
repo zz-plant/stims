@@ -293,35 +293,53 @@
       return (sumLow / lowEnd) / 255; // Return normalized beat strength for the low range
     }
 
-    function revealWordAtRandomLocation() {
-      if (wordIndex < words.length) {
-        const word = words[wordIndex];
-        const gridCells = document.querySelectorAll('.cell');
-        const maxCol = Math.sqrt(gridCells.length) - word.length;
+    function revealOrHideWords(beatStrength) {
+      const gridCells = document.querySelectorAll('.cell');
 
-        let randomIndex;
-        do {
-          randomIndex = Math.floor(Math.random() * (gridCells.length - word.length));
-        } while (isOverlap(randomIndex, word.length));
+      if (beatStrength > sensitivity) {
+        // Reveal more words
+        if (wordIndex < words.length) {
+          const word = words[wordIndex];
+          const maxCol = Math.sqrt(gridCells.length) - word.length;
 
-        const wordElements = [];
+          let randomIndex;
+          do {
+            randomIndex = Math.floor(Math.random() * (gridCells.length - word.length));
+          } while (isOverlap(randomIndex, word.length));
 
-        for (let i = 0; i < word.length; i++) {
-          const cell = gridCells[randomIndex + i];
-          cell.textContent = word[i];
-          cell.dataset.fixed = true;
-          cell.classList.add("flicker");
+          const wordElements = [];
+          for (let j = 0; j < word.length; j++) {
+            const cell = gridCells[randomIndex + j];
+            cell.textContent = word[j];
+            cell.dataset.fixed = true;
+            cell.classList.add("flicker");
+            wordElements.push(cell);
+          }
 
-          wordElements.push(cell);
+          revealedLocations.push({ index: randomIndex, length: word.length });
+
+          wordElements.forEach(cell => {
+            cell.addEventListener('click', () => dissolveWord(wordElements));
+          });
+
+          wordIndex++;
         }
-
-        revealedLocations.push({ index: randomIndex, length: word.length });
-
-        wordElements.forEach(cell => {
-          cell.addEventListener('click', () => dissolveWord(wordElements));
+      } else {
+        // Revert words to gibberish gradually
+        revealedLocations.forEach(location => {
+          const { index, length } = location;
+          for (let j = 0; j < length; j++) {
+            const cell = gridCells[index + j];
+            if (cell.dataset.fixed) {
+              cell.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
+              cell.classList.remove('flicker');
+              delete cell.dataset.fixed;
+            }
+          }
         });
 
-        wordIndex++;
+        revealedLocations = [];
+        wordIndex = 0;
       }
     }
 
@@ -358,13 +376,10 @@
 
       if (isMicrophoneEnabled) {
         const beatStrength = getBeat();
-
-        if (beatStrength > sensitivity) {
-          revealWordAtRandomLocation();
-          gridElement.style.transform = `scale(${1 + beatStrength * 0.1})`;
-        } else {
-          gridElement.style.transform = 'scale(1)';
-        }
+        revealOrHideWords(beatStrength);
+        gridElement.style.transform = `scale(${1 + beatStrength * 0.1})`;
+      } else {
+        gridElement.style.transform = 'scale(1)';
       }
     }
 
