@@ -3,205 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Star Guitar-Inspired Visualizer with Pattern Recognition</title>
+    <title>Interactive Spectrograph and Pattern Recognition Visualizer</title>
     <style>
         body, html {
             margin: 0;
-            padding: 0;
             overflow: hidden;
-            background: black;
+            background-color: black;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #error-message {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ff0000;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10;
         }
     </style>
-    <script src="assets/js/utils/patternRecognition.js" type="module"></script>
 </head>
 <body>
-
-    <script src="https://code.playcanvas.com/playcanvas-stable.min.js"></script>
+    <div id="error-message" style="display: none;"></div>
+    <canvas id="glCanvas"></canvas>
 
     <script type="module">
         import PatternRecognizer from './assets/js/utils/patternRecognition.js';
 
-        // Set up the PlayCanvas application
-        const canvas = document.createElement('canvas');
-        document.body.appendChild(canvas);
-        const app = new pc.Application(canvas, {});
+        const canvas = document.getElementById("glCanvas");
+        const gl = canvas.getContext("webgl");
+        const ctx2d = canvas.getContext("2d");
 
-        // Set canvas to full screen
-        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
-        app.setCanvasResolution(pc.RESOLUTION_AUTO);
-        app.start();
+        if (!gl) {
+            alert("Unable to initialize WebGL. Your browser may not support it.");
+            throw new Error("WebGL not supported");
+        }
 
-        // Set background color
-        app.scene.skyboxMip = 0;
-        app.scene.ambientLight = new pc.Color(0.05, 0.05, 0.1);
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-        // Create camera
-        const camera = new pc.Entity();
-        camera.addComponent("camera", {
-            clearColor: new pc.Color(0, 0, 0),
-            fov: 70 // Adjusted FOV to focus on the road and surroundings
-        });
-        camera.setLocalPosition(0, 1, 30); // Set initial position of the camera
-        app.root.addChild(camera);
-
-        // Create directional light
-        const light1 = new pc.Entity();
-        light1.addComponent("light", {
-            type: "directional",
-            color: new pc.Color(1, 1, 0.9),
-            intensity: 1.5,
-            shadowDistance: 50
-        });
-        light1.setLocalEulerAngles(30, 30, 0);
-        app.root.addChild(light1);
-
-        // Object types and arrays
-        const sceneObjects = [];
-        const objectDistance = 30; // Distance between repeating objects
-        const structurePattern = ['building', 'pole', 'abstract', 'lampPost', 'bridge'];
-
-        // Create sky with stars
-        const skyboxEntity = new pc.Entity();
-        skyboxEntity.addComponent("model", {
-            type: "sphere"
-        });
-        skyboxEntity.setLocalScale(500, 500, 500);
-        skyboxEntity.model.material = new pc.StandardMaterial();
-        skyboxEntity.model.material.emissive = new pc.Color(0.1, 0.1, 0.3);
-        skyboxEntity.model.material.update();
-        app.root.addChild(skyboxEntity);
-
-        // Function to create structured objects with improved scaling and depth factor
-        function createObject(x, z, type, depthFactor) {
-            const object = new pc.Entity();
-
-            if (type === 'building') {
-                object.addComponent("model", { type: "box" });
-            } else if (type === 'pole') {
-                object.addComponent("model", { type: "cylinder" });
-            } else if (type === 'lampPost') {
-                object.addComponent("model", { type: "cylinder" });
-                object.setLocalScale(0.5, 6, 0.5);
-            } else if (type === 'bridge') {
-                object.addComponent("model", { type: "box" });
-                object.setLocalScale(10, 1, 2);
-            } else {
-                object.addComponent("model", { type: "sphere" });
+        const vertexShaderSource = `
+            attribute vec4 a_position;
+            void main() {
+                gl_Position = a_position;
             }
-
-            // Set position and material
-            const scaleFactor = (type === 'building') ? (Math.random() * 1.5 + 3) : (Math.random() * 1.5 + 2);
-            object.setLocalScale(scaleFactor * depthFactor, scaleFactor * depthFactor, scaleFactor * depthFactor);
-            object.setLocalPosition(x * depthFactor, 0, z * depthFactor);
-
-            // Use PBR for realistic material properties
-            const material = new pc.StandardMaterial();
-            material.useMetalness = true;
-            material.metalness = 0.3;
-            material.gloss = 0.5;
-            material.diffuse = new pc.Color(Math.random(), Math.random(), Math.random());
-            material.update();
-            object.model.material = material;
-
-            object.userData = { depthFactor, type };
-            app.root.addChild(object);
-            sceneObjects.push(object);
-        }
-
-        // Populate the scene with repeating structure patterns
-        function populateScene() {
-            const repeatingPattern = ['building', 'pole', 'bridge', 'lampPost'];
-            for (let i = 0; i < 200; i++) {
-                const type = repeatingPattern[i % repeatingPattern.length];
-                createObject(-15, -i * objectDistance, type, 1);
-                createObject(15, -i * objectDistance, type, 1);
-                createObject(0, -i * objectDistance, type, 1);
+        `;
+        
+        const fragmentShaderSource = `
+            precision highp float;
+            uniform float u_time;
+            uniform vec2 u_resolution;
+            uniform float u_audioData;
+            uniform vec3 u_colorOffset;
+            uniform vec2 u_touch;
+            
+            vec3 dreamyGradient(vec2 uv, float timeOffset) {
+                vec3 color = vec3(0.4 + 0.4 * sin(uv.x * 10.0 + u_audioData * 6.0 + timeOffset),
+                                  0.4 + 0.4 * cos(uv.y * 10.0 + u_audioData * 6.0 + timeOffset),
+                                  0.5 + 0.4 * sin((uv.x + uv.y) * 8.0 + u_audioData * 6.0 + timeOffset));
+                return color + u_colorOffset * 0.7;
             }
+            
+            void main() {
+                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+                uv -= 0.5;
+                uv *= 2.0;
+                
+                float dist = distance(uv, u_touch);
+                float ripple = sin(dist * 15.0 - u_time * 3.0) * 0.15;
+                float bloom = 0.3 / (dist * dist + 0.25);
+                uv += ripple;
+                
+                vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData;
+                color += vec3(0.4 + 0.4 * sin(u_time * 0.4 + u_audioData * 2.0), 
+                              0.4 + 0.4 * cos(u_time * 0.5 + u_audioData * 3.0), 
+                              0.5 + 0.4 * sin(u_time * 0.6 + u_audioData * 1.5));
+                color += bloom * 0.6;
+                
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+        
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
         }
-
-        populateScene();
-
-        // Move objects forward at a constant speed with optimized parallax effect
-        function updateScene(dt) {
-            camera.translateLocal(0, 0, -dt * 10); // Linear steady movement forward
-
-            // Rotate skybox to simulate slow-moving stars
-            skyboxEntity.rotate(0, -dt * 0.1, 0);
-
-            sceneObjects.forEach((obj) => {
-                const depthFactor = obj.userData.depthFactor || 1;
-                obj.translateLocal(0, 0, dt * depthFactor * 15);
-
-                if (obj.getLocalPosition().z > camera.getLocalPosition().z + 50) {
-                    obj.setLocalPosition(obj.getLocalPosition().x, obj.getLocalPosition().y, -500);
-                }
-
-                // Keep objects from getting too tiny
-                const distanceFromCamera = Math.abs(obj.getLocalPosition().z - camera.getLocalPosition().z);
-                const minScale = 2;
-                const maxDistance = 500;
-                const scale = Math.max(minScale, 1 - (distanceFromCamera / maxDistance));
-                obj.setLocalScale(scale, scale, scale);
-
-                // Make objects dissolve or become translucent when colliding with the camera
-                if (distanceFromCamera < 10) {
-                    obj.model.material.opacity = Math.max(0, (distanceFromCamera - 5) / 5);
-                    obj.model.material.blendType = pc.BLEND_NORMAL;
-                    obj.model.material.update();
-                }
-            });
+        
+        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+        
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error(gl.getProgramInfoLog(program));
+            gl.deleteProgram(program);
+            throw new Error("Program failed to link");
         }
+        
+        gl.useProgram(program);
+        
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        const positions = [
+            -1.0, -1.0,
+             1.0, -1.0,
+            -1.0,  1.0,
+            -1.0,  1.0,
+             1.0, -1.0,
+             1.0,  1.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+        
+        const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+        gl.enableVertexAttribArray(positionAttributeLocation);
+        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+        
+        const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+        const timeUniformLocation = gl.getUniformLocation(program, "u_time");
+        const audioDataUniformLocation = gl.getUniformLocation(program, "u_audioData");
+        const colorOffsetUniformLocation = gl.getUniformLocation(program, "u_colorOffset");
+        const touchUniformLocation = gl.getUniformLocation(program, "u_touch");
+        
+        gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
 
-        // Audio analysis for beat sync with pattern recognition
-        let audioContext, analyser;
+        let time = 0.0;
+        let audioData = 0.0;
+        let colorOffset = [0.0, 0.0, 0.0];
+        let touchPoint = [0.0, 0.0];
+        let analyser;
         let patternRecognizer;
 
-        function startMicCapture() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(function (stream) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioContext.createMediaStreamSource(stream);
-
-                    analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 256; // Increased resolution for better detail
-
-                    source.connect(analyser);
-                    patternRecognizer = new PatternRecognizer(audioContext, analyser);
-                    app.on("update", updateVisualizer);
-                })
-                .catch(function (err) {
-                    console.error('Error accessing microphone: ' + err);
-                    alert('Please enable microphone access for the audio visualizer.');
-                });
+        async function setupAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                patternRecognizer = new PatternRecognizer(audioContext, analyser);
+                getAudioData();
+            } catch (err) {
+                showError('Unable to access the microphone. Please allow microphone permissions and reload the page.');
+                console.error("Error capturing audio: ", err);
+            }
         }
 
-        // Update objects' size and sync with audio frequency
-        function updateVisualizer(dt) {
-            if (patternRecognizer) {
+        function getAudioData() {
+            requestAnimationFrame(getAudioData);
+            if (analyser) {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+                audioData = average / 128.0;
+                updateSpectrograph(dataArray);
                 patternRecognizer.updatePatternBuffer();
-                const predictedPattern = patternRecognizer.predictNextPattern();
+                const detectedPattern = patternRecognizer.detectPattern();
 
-                if (predictedPattern) {
-                    sceneObjects.forEach((obj, i) => {
-                        const freq = predictedPattern[i % predictedPattern.length] / 255;
-                        obj.setLocalScale(freq * 5 + 2, freq * 6 + 2, freq * 5 + 2); // Larger scaling effect
-                        obj.model.material.diffuse = new pc.Color(freq, 0.5, 1 - freq); // More distinct color change
-                        obj.rotate(0, freq * 1.5, 0);
-                    });
+                if (detectedPattern) {
+                    colorOffset = [1.0, 0.0, 0.0]; // Change color if a pattern is detected
+                } else {
+                    colorOffset = [0.0, 0.0, 0.0];
                 }
             }
-
-            updateScene(dt);
         }
 
-        // Start microphone capture on page load
-        window.onload = function () {
-            startMicCapture();
-        };
+        function updateSpectrograph(dataArray) {
+            ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+            const gradient = ctx2d.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#ff6ec7');
+            gradient.addColorStop(0.5, '#8e44ad');
+            gradient.addColorStop(1, '#3498db');
+            ctx2d.fillStyle = gradient;
+            const barWidth = (canvas.width / dataArray.length) * 1.5;
+            let barHeight;
+            let x = 0;
+            
+            for (let i = 0; i < dataArray.length; i++) {
+                barHeight = dataArray[i] / 2;
+                ctx2d.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        }
+        
+        setupAudio();
 
-        // Handle window resizing
-        window.addEventListener("resize", function () {
-            app.resizeCanvas(canvas.width, canvas.height);
+        function render() {
+            time += 0.02;
+            gl.uniform1f(timeUniformLocation, time);
+            gl.uniform1f(audioDataUniformLocation, audioData);
+            gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
+            gl.uniform2fv(touchUniformLocation, touchPoint);
+            
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+
+        // Handle touch input
+        canvas.addEventListener("mousemove", (event) => {
+            const rect = canvas.getBoundingClientRect();
+            touchPoint = [
+                (event.clientX - rect.left) / rect.width * 2 - 1,
+                1 - (event.clientY - rect.top) / rect.height * 2
+            ];
+        });
+
+        canvas.addEventListener("touchmove", (event) => {
+            const touch = event.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            touchPoint = [
+                (touch.clientX - rect.left) / rect.width * 2 - 1,
+                1 - (touch.clientY - rect.top) / rect.height * 2
+            ];
+        });
+
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.innerText = message;
+            errorMessage.style.display = 'block';
+        }
+
+        // Fullscreen toggle for convenience
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'f') {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            }
+        });
+
+        // Handle touch and interaction end
+        window.addEventListener('touchend', () => {
+            touchPoint = [0.0, 0.0];
+        });
+
+        window.addEventListener('mouseup', () => {
+            touchPoint = [0.0, 0.0];
         });
     </script>
 </body>
