@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Spectrograph and Pattern Recognition Visualizer</title>
+    <title>Pattern Recognition & Spectrograph Visualizer</title>
     <style>
         body, html {
             margin: 0;
@@ -33,8 +33,8 @@
 <body>
     <div id="error-message" style="display: none;"></div>
     <canvas id="glCanvas"></canvas>
-
     <script type="module">
+        // Import the pattern recognition logic
         import PatternRecognizer from './assets/js/utils/patternRecognition.js';
 
         const canvas = document.getElementById("glCanvas");
@@ -46,6 +46,7 @@
             throw new Error("WebGL not supported");
         }
 
+        // Handle resizing
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -54,6 +55,7 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
+        // Shader sources
         const vertexShaderSource = `
             attribute vec4 a_position;
             void main() {
@@ -107,10 +109,11 @@
             }
             return shader;
         }
-        
+
+        // Create shaders
         const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
         const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-        
+
         const program = gl.createProgram();
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
@@ -120,9 +123,10 @@
             gl.deleteProgram(program);
             throw new Error("Program failed to link");
         }
-        
+
         gl.useProgram(program);
-        
+
+        // Set up position buffer
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         const positions = [
@@ -134,17 +138,18 @@
              1.0,  1.0
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-        
+
         const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
         gl.enableVertexAttribArray(positionAttributeLocation);
         gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-        
+
+        // Get uniforms locations
         const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
         const timeUniformLocation = gl.getUniformLocation(program, "u_time");
         const audioDataUniformLocation = gl.getUniformLocation(program, "u_audioData");
         const colorOffsetUniformLocation = gl.getUniformLocation(program, "u_colorOffset");
         const touchUniformLocation = gl.getUniformLocation(program, "u_touch");
-        
+
         gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
 
         let time = 0.0;
@@ -189,6 +194,7 @@
             }
         }
 
+        // 2D Spectrograph rendering
         function updateSpectrograph(dataArray) {
             ctx2d.clearRect(0, 0, canvas.width, canvas.height);
             const gradient = ctx2d.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -206,9 +212,10 @@
                 x += barWidth + 1;
             }
         }
-        
+
         setupAudio();
 
+        // Main render loop
         function render() {
             time += 0.02;
             gl.uniform1f(timeUniformLocation, time);
@@ -224,51 +231,20 @@
 
         requestAnimationFrame(render);
 
-        // Handle touch input
-        canvas.addEventListener("mousemove", (event) => {
-            const rect = canvas.getBoundingClientRect();
-            touchPoint = [
-                (event.clientX - rect.left) / rect.width * 2 - 1,
-                1 - (event.clientY - rect.top) / rect.height * 2
-            ];
-        });
-
-        canvas.addEventListener("touchmove", (event) => {
+        // Handle touch input for interaction
+        canvas.addEventListener('touchmove', (event) => {
             const touch = event.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            touchPoint = [
-                (touch.clientX - rect.left) / rect.width * 2 - 1,
-                1 - (touch.clientY - rect.top) / rect.height * 2
-            ];
+            const x = (touch.clientX / canvas.width) * 2.0 - 1.0;
+            const y = -(touch.clientY / canvas.height) * 2.0 + 1.0;
+            touchPoint = [x, y];
         });
 
+        // Show error messages
         function showError(message) {
-            const errorMessage = document.getElementById('error-message');
-            errorMessage.innerText = message;
-            errorMessage.style.display = 'block';
+            const errorMessageElement = document.getElementById('error-message');
+            errorMessageElement.textContent = message;
+            errorMessageElement.style.display = 'block';
         }
-
-        // Fullscreen toggle for convenience
-        window.addEventListener('keydown', (event) => {
-            if (event.key === 'f') {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen();
-                } else {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
-                    }
-                }
-            }
-        });
-
-        // Handle touch and interaction end
-        window.addEventListener('touchend', () => {
-            touchPoint = [0.0, 0.0];
-        });
-
-        window.addEventListener('mouseup', () => {
-            touchPoint = [0.0, 0.0];
-        });
     </script>
 </body>
 </html>
