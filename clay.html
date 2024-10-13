@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Clay Effect</title>
+    <title>Three.js Claymation Music Visualizer with Force Sensitive Displacement</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -19,7 +19,7 @@
         <defs>
             <filter id="claymationFilter">
                 <feTurbulence type="fractalNoise" baseFrequency="0.2" numOctaves="3" result="noise" />
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" xChannelSelector="R" yChannelSelector="G" />
                 <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" />
             </filter>
         </defs>
@@ -85,7 +85,7 @@
         const ambientLight = new THREE.AmbientLight(0x404040);
         scene.add(ambientLight);
 
-        // Animate function
+        // Animate function with force sensitive displacement
         let lastFrameTime = 0;
         const frameRate = 12; // Claymation frame rate
 
@@ -100,11 +100,21 @@
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
                 analyser.getByteFrequencyData(dataArray);
 
-                // Update spheres based on frequency data
+                // Update spheres based on frequency data with displacement
                 spheres.forEach((sphere, index) => {
                     const dataIndex = Math.floor(index * (dataArray.length / spheres.length));
-                    const scale = 0.5 + (dataArray[dataIndex] / 256) * 1.5;
+                    const force = dataArray[dataIndex] / 256;
+                    const scale = 0.5 + force * 1.5;
                     sphere.scale.set(scale, scale, scale);
+
+                    // Apply force-sensitive displacement to vertices
+                    const positions = sphere.geometry.attributes.position;
+                    for (let i = 0; i < positions.count; i++) {
+                        const originalPosition = new THREE.Vector3().fromBufferAttribute(positions, i);
+                        const offset = force * 0.2 * (Math.random() - 0.5);
+                        positions.setXYZ(i, originalPosition.x + offset, originalPosition.y + offset, originalPosition.z + offset);
+                    }
+                    positions.needsUpdate = true;
 
                     // Apply slight random rotations for stop-motion effect
                     sphere.rotation.x += 0.02 + (Math.random() - 0.5) * 0.04;
