@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Smooshing Effect</title>
+    <title>Three.js Claymation Music Visualizer with Smooshing and Parallax Effect</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -96,7 +96,7 @@
         pointLight.position.set(0, 10, 10);
         scene.add(pointLight);
 
-        // Animate function with smooshing effect
+        // Animate function with smooshing effect and parallax
         let lastFrameTime = 0;
         const frameRate = 12; // Claymation frame rate
 
@@ -118,9 +118,12 @@
                     const scale = 0.5 + Math.pow(force, 0.75) * 2.0; // More dynamic scaling
                     shape.scale.set(scale, scale, scale);
 
-                    // Apply unique movement patterns influenced by shared waves
+                    // Apply unique movement patterns influenced by shared waves and introduce gyroscopic rotation
                     shape.position.y = Math.sin(time * 0.002 + index) * 1.5 + Math.cos(force * Math.PI);
                     shape.position.z = Math.cos(time * 0.0015 + index) * 1.5 + Math.sin(force * Math.PI);
+                    shape.rotation.x += 0.02 + 0.03 * Math.sin(time * 0.001 + index);
+                    shape.rotation.y += 0.02 + 0.03 * Math.cos(time * 0.001 + index);
+                    shape.rotation.z += 0.01 * Math.sin(time * 0.0015 + index);
                 });
 
                 // Smooshing effect - collision detection and deformation
@@ -178,6 +181,15 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Gyroscopic parallax effect
+        window.addEventListener('deviceorientation', (event) => {
+            const { beta, gamma } = event;
+            const parallaxFactor = 0.02;
+            camera.position.x = gamma * parallaxFactor;
+            camera.position.y = beta * parallaxFactor;
+            camera.lookAt(scene.position);
         });
     </script>
 </body>
