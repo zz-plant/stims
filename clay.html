@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Enhanced Visual Complexity</title>
+    <title>Three.js Claymation Music Visualizer with Organic Shapes</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -15,7 +15,7 @@
         // Set up scene, camera, renderer
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 10;
+        camera.position.z = 15;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -37,21 +37,34 @@
             });
         }
 
-        // Create clay-like spheres with color variation
-        const spheres = [];
-        const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
-        for (let i = 0; i < 16; i++) {
-            const clayMaterial = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(`hsl(${(i / 16) * 360}, 100%, 70%)`), // Different colors for each sphere
-                roughness: 1.0,
-                metalness: 0.0
-            });
-            const sphere = new THREE.Mesh(sphereGeometry, clayMaterial);
-            sphere.position.x = (i - 8) * 1.2;
-            sphere.scale.setScalar(0.5);
-            scene.add(sphere);
-            spheres.push(sphere);
+        // Create organic clay-like shapes
+        const organicShapes = [];
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffa07a, // Clay-like color
+            roughness: 1.0,
+            metalness: 0.0
+        });
+
+        for (let i = 0; i < 10; i++) {
+            const geometry = new THREE.IcosahedronGeometry(Math.random() * 1.5 + 0.5, 1); // Randomized organic shapes
+            const mesh = new THREE.Mesh(geometry, material.clone());
+            mesh.position.x = (Math.random() - 0.5) * 20;
+            mesh.position.y = (Math.random() - 0.5) * 10;
+            mesh.position.z = (Math.random() - 0.5) * 10;
+            scene.add(mesh);
+            organicShapes.push(mesh);
         }
+
+        // Create dynamic backdrop
+        const backdropGeometry = new THREE.PlaneGeometry(50, 50, 32, 32);
+        const backdropMaterial = new THREE.MeshStandardMaterial({
+            color: 0x222222,
+            side: THREE.DoubleSide,
+            wireframe: false
+        });
+        const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial);
+        backdrop.position.z = -20;
+        scene.add(backdrop);
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -61,7 +74,7 @@
         pointLight.position.set(0, 10, 10);
         scene.add(pointLight);
 
-        // Animate function with more visual complexity
+        // Animate function with organic shapes
         let lastFrameTime = 0;
         const frameRate = 12; // Claymation frame rate
 
@@ -76,24 +89,25 @@
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
                 analyser.getByteFrequencyData(dataArray);
 
-                // Update spheres based on frequency data
-                spheres.forEach((sphere, index) => {
-                    const dataIndex = Math.floor(index * (dataArray.length / spheres.length));
+                // Update shapes based on frequency data
+                organicShapes.forEach((shape, index) => {
+                    const dataIndex = Math.floor(index * (dataArray.length / organicShapes.length));
                     const force = dataArray[dataIndex] / 256;
-                    const scale = 0.5 + Math.pow(force, 0.75) * 2.0; // More dynamic scaling
-                    sphere.scale.set(scale, scale, scale);
+                    const scale = 0.8 + Math.sin(force * Math.PI) * 1.5; // Smoother, more organic scaling
+                    shape.scale.set(scale, scale, scale);
 
-                    // Apply wavelike movement
-                    sphere.position.y = Math.sin(time * 0.002 + index) * 1.5;
-                    sphere.position.z = Math.cos(time * 0.002 + index) * 1.5;
-
-                    // Change color based on audio frequency
-                    sphere.material.color.setHSL((force * 0.5 + index / spheres.length) % 1, 1.0, 0.6);
-
-                    // Apply slight random rotations for stop-motion effect
-                    sphere.rotation.x += 0.02 + 0.02 * Math.sin(time * 0.001 + index);
-                    sphere.rotation.y += 0.02 + 0.02 * Math.cos(time * 0.001 + index);
+                    // Apply random rotations for stop-motion effect
+                    shape.rotation.x += 0.01 + 0.03 * Math.sin(time * 0.001 + index);
+                    shape.rotation.y += 0.01 + 0.03 * Math.cos(time * 0.001 + index);
                 });
+
+                // Update backdrop for a dynamic effect
+                const vertices = backdrop.geometry.attributes.position;
+                for (let i = 0; i < vertices.count; i++) {
+                    const wave = Math.sin(time * 0.001 + i * 0.1) * 0.5;
+                    vertices.setZ(i, wave);
+                }
+                vertices.needsUpdate = true;
 
                 renderer.render(scene, camera);
             }
