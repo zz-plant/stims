@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Soft Clay Effect</title>
+    <title>Three.js Claymation Music Visualizer with Clay Effect</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -18,9 +18,9 @@
     <svg>
         <defs>
             <filter id="claymationFilter">
-                <feTurbulence type="fractalNoise" baseFrequency="0.3" numOctaves="3" result="noise" />
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" xChannelSelector="R" yChannelSelector="G" />
-                <feGaussianBlur in="SourceGraphic" stdDeviation="0.6" />
+                <feTurbulence type="fractalNoise" baseFrequency="0.2" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" />
             </filter>
         </defs>
     </svg>
@@ -56,14 +56,14 @@
 
         // Create clay-like spheres
         const textureLoader = new THREE.TextureLoader();
-        const clayTexture = textureLoader.load('https://threejs.org/examples/textures/disturb.jpg'); // Use a softer, organic texture
+        const clayTexture = textureLoader.load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg'); // Use a softer, clay-like texture
 
         const clayMaterial = new THREE.MeshStandardMaterial({
             map: clayTexture,
             roughness: 1.0,
             metalness: 0.0,
             bumpMap: clayTexture,
-            bumpScale: 0.3,
+            bumpScale: 0.4,
             normalMap: clayTexture,
         });
 
