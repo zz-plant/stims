@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced Terminal-Like Visualizer</title>
+  <title>Enhanced Terminal-Like Visualizer with Datamuse API</title>
+
+  <!-- Particles.js Library -->
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -16,6 +20,12 @@
       font-family: 'Courier New', monospace;
       overflow: hidden;
     }
+    #particles-js {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
     .grid {
       display: grid;
       width: 90vw;
@@ -25,6 +35,7 @@
       grid-template-rows: repeat(15, 1fr);
       transform-origin: center;
       transition: transform 0.3s ease;
+      z-index: 1;
     }
     .cell {
       display: flex;
@@ -105,10 +116,19 @@
       <option value="matrix">Matrix</option>
       <option value="cyberpunk">Cyberpunk</option>
       <option value="retro">Retro</option>
+      <option value="rainforest">Rainforest</option>
+      <option value="desert">Desert</option>
+      <option value="arctic">Arctic</option>
+      <option value="coral_reef">Coral Reef</option>
+      <option value="earlyComputers">Early Computers</option>
+      <option value="dos">DOS</option>
+      <option value="windows95">Windows 95</option>
+      <option value="modernIDE">Modern IDE</option>
     </select>
     <button id="reset-button">Reset Grid</button>
   </div>
 
+  <div id="particles-js"></div>
   <div class="grid" id="grid"></div>
 
   <script>
@@ -125,12 +145,13 @@
     let words = [];
     let revealedLocations = [];
 
-    // Fetch 100 common dictionary words from an endpoint
+    // Fetch words using the Datamuse API
     async function fetchWords() {
       try {
-        const response = await fetch('https://random-word-api.herokuapp.com/word?number=100');
+        const response = await fetch('https://api.datamuse.com/words?ml=visual&max=100');
         if (response.ok) {
-          words = await response.json();
+          const wordObjects = await response.json();
+          words = wordObjects.map(wordObj => wordObj.word.toUpperCase());
         } else {
           console.error('Failed to fetch words. Using default words.');
           words = 'HELLO WORLD FROM A COOL TERMINAL VISUALIZER SYSTEM SIMULATION'.split(' ');
@@ -152,27 +173,56 @@
 
     colorSchemeSelect.addEventListener('change', updateColorScheme);
 
+    // Particles.js configuration
+    particlesJS("particles-js", {
+      particles: {
+        number: { value: 80, density: { enable: true, value_area: 800 } },
+        color: { value: "#00ff00" },
+        shape: { type: "circle" },
+        opacity: { value: 0.5, random: false },
+        size: { value: 3, random: true },
+        line_linked: { enable: true, distance: 150, color: "#00ff00", opacity: 0.4, width: 1 },
+        move: { enable: true, speed: 2, direction: "none", random: false, straight: false, out_mode: "out" }
+      },
+      interactivity: {
+        detect_on: "canvas",
+        events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" } },
+        modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
+      },
+      retina_detect: true
+    });
+
     function updateColorScheme() {
       const scheme = colorSchemeSelect.value;
-      let textColor, bgColor;
-      switch(scheme) {
-        case 'cyberpunk':
-          textColor = '#ff00ff';
-          bgColor = '#000033';
-          break;
-        case 'retro':
-          textColor = '#ffff00';
-          bgColor = '#330000';
-          break;
-        default: // matrix
-          textColor = '#00ff00';
-          bgColor = '#001a00';
-      }
-      document.body.style.color = textColor;
+      const colorSchemes = {
+        matrix: { primary: '#00ff00', secondary: '#001a00' },
+        cyberpunk: { primary: '#ff00ff', secondary: '#000033' },
+        retro: { primary: '#ffff00', secondary: '#330000' },
+        rainforest: { primary: '#228B22', secondary: '#32CD32' },
+        desert: { primary: '#DEB887', secondary: '#F4A460' },
+        arctic: { primary: '#F0F8FF', secondary: '#87CEFA' },
+        coral_reef: { primary: '#00CED1', secondary: '#FF7F50' },
+        earlyComputers: { primary: '#00FF00', secondary: '#000000' },
+        dos: { primary: '#FFFFFF', secondary: '#0000AA' },
+        windows95: { primary: '#C0C0C0', secondary: '#000080' },
+        modernIDE: { primary: '#1E1E1E', secondary: '#D4D4D4' }
+      };
+      const selectedScheme = colorSchemes[scheme];
+
       document.querySelectorAll('.cell').forEach(cell => {
-        cell.style.color = textColor;
-        cell.style.background = bgColor;
+        cell.style.color = selectedScheme.primary;
+        cell.style.background = selectedScheme.secondary;
       });
+
+      // Update particle color
+      updateParticleColor(selectedScheme.primary);
+    }
+
+    // Update particle color based on selected scheme
+    function updateParticleColor(color) {
+      pJSDom[0].pJS.particles.color.value = color;
+      pJSDom[0].pJS.particles.line_linked.color = color;
+      pJSDom[0].pJS.fn.particlesRefresh();
     }
 
     // Initialize the grid with cells and start random character cycling
