@@ -1,9 +1,9 @@
-
 // app.js
 
 import { initScene } from './core/scene-setup.js';
 import { initCamera } from './core/camera-setup.js';
 import { initRenderer } from './core/renderer-setup.js';
+import { initLighting, initAmbientLight } from './lighting/lighting-setup.js'; // Import lighting setup
 import { initAudio, getFrequencyData } from './utils/audio-handler.js';
 import { applyAudioRotation, applyAudioScale } from './utils/animation-utils.js';
 import PatternRecognizer from './utils/patternRecognition.js';
@@ -16,6 +16,10 @@ function initVisualization() {
     const canvas = document.getElementById('toy-canvas');
     renderer = initRenderer(canvas);
 
+    // Set up lighting
+    initLighting(scene, { type: 'PointLight', color: 0xffffff, intensity: 1, position: { x: 10, y: 10, z: 20 } });
+    initAmbientLight(scene, { color: 0x404040, intensity: 0.5 });
+
     // Add a cube to the scene
     const geometry = new THREE.BoxGeometry();
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
@@ -27,7 +31,6 @@ function startAudioAndAnimation() {
     initAudio().then((audioData) => {
         analyser = audioData.analyser;
         patternRecognizer = new PatternRecognizer(analyser);
-        
         animate();
     }).catch((error) => {
         displayError('Microphone access is required for the visualization to work. Please allow microphone access.');
@@ -36,7 +39,7 @@ function startAudioAndAnimation() {
 
 function animate() {
     requestAnimationFrame(animate);
-    
+
     if (analyser) {
         const audioData = getFrequencyData(analyser);
         applyAudioRotation(cube, audioData, 0.05);
