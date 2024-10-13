@@ -168,8 +168,6 @@
           textColor = '#00ff00';
           bgColor = '#001a00';
       }
-      document.documentElement.style.setProperty('--text-color', textColor);
-      document.documentElement.style.setProperty('--bg-color', bgColor);
       document.body.style.color = textColor;
       document.querySelectorAll('.cell').forEach(cell => {
         cell.style.color = textColor;
@@ -302,6 +300,7 @@
       revealedLocations = [];
       wordIndex = 0;
       updateColorScheme();
+      cycleRandomCharacters(); // Restart cycling after reset
     }
 
     function render(time) {
