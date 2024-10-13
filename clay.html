@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Enhanced Displacement</title>
+    <title>Three.js Claymation Music Visualizer with Enhanced Material Properties</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -60,11 +60,15 @@
 
         const clayMaterial = new THREE.MeshStandardMaterial({
             map: clayTexture,
-            roughness: 1.0,
+            roughness: 1.2,
             metalness: 0.0,
             bumpMap: clayTexture,
-            bumpScale: 0.4,
+            bumpScale: 0.6,
             normalMap: clayTexture,
+            normalScale: new THREE.Vector2(1.0, 1.0),
+            displacementMap: clayTexture,
+            displacementScale: 0.5,
+            displacementBias: -0.2,
         });
 
         const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
@@ -111,9 +115,9 @@
                     const positions = sphere.geometry.attributes.position;
                     for (let i = 0; i < positions.count; i++) {
                         const originalPosition = new THREE.Vector3().fromBufferAttribute(positions, i);
-                        const offsetX = force * 0.3 * (Math.random() - 0.5);
-                        const offsetY = force * 0.3 * (Math.random() - 0.5);
-                        const offsetZ = force * 0.3 * (Math.random() - 0.5);
+                        const offsetX = force * 0.4 * (Math.random() - 0.5);
+                        const offsetY = force * 0.4 * (Math.random() - 0.5);
+                        const offsetZ = force * 0.4 * (Math.random() - 0.5);
                         positions.setXYZ(i, originalPosition.x + offsetX, originalPosition.y + offsetY, originalPosition.z + offsetZ);
                     }
                     positions.needsUpdate = true;
