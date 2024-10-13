@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Imperfect Clay-Like Motion</title>
+    <title>Three.js Claymation Music Visualizer with Enhanced Background Scenery</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -21,16 +21,44 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Create dynamic backdrop
-        const backdropGeometry = new THREE.PlaneGeometry(80, 80, 32, 32);
+        // Create dynamic backdrop with added interest
+        const backdropGeometry = new THREE.PlaneGeometry(100, 100, 64, 64);
         const backdropMaterial = new THREE.MeshStandardMaterial({
-            color: 0x000000,
+            color: 0x222222,
             side: THREE.DoubleSide,
             wireframe: false
         });
         const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial);
-        backdrop.position.z = -40;
+        backdrop.position.z = -50;
         scene.add(backdrop);
+
+        // Create scenery elements (e.g., hills, trees)
+        const scenery = [];
+        for (let i = 0; i < 20; i++) {
+            const hillGeometry = new THREE.DodecahedronGeometry(3 + Math.random() * 2);
+            const hillMaterial = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(`hsl(${Math.random() * 360}, 60%, 40%)`),
+                roughness: 1.0,
+                metalness: 0.0
+            });
+            const hill = new THREE.Mesh(hillGeometry, hillMaterial);
+            hill.position.set((Math.random() - 0.5) * 80, (Math.random() - 0.5) * 40, -40 + Math.random() * 20);
+            scene.add(hill);
+            scenery.push(hill);
+        }
+
+        for (let i = 0; i < 30; i++) {
+            const treeGeometry = new THREE.ConeGeometry(0.5, 2 + Math.random() * 3, 8);
+            const treeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x006400,
+                roughness: 1.0,
+                metalness: 0.0
+            });
+            const tree = new THREE.Mesh(treeGeometry, treeMaterial);
+            tree.position.set((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 50, -30 + Math.random() * 10);
+            scene.add(tree);
+            scenery.push(tree);
+        }
 
         // Microphone input
         let analyser;
@@ -172,6 +200,12 @@
                     vertices.setZ(i, wave);
                 }
                 vertices.needsUpdate = true;
+
+                // Update scenery for dynamic background
+                scenery.forEach((object, index) => {
+                    object.position.y += Math.sin(time * 0.001 + index) * 0.01;
+                    object.rotation.y += 0.005;
+                });
 
                 renderer.render(scene, camera);
             }
