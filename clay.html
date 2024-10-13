@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Organic Connections</title>
+    <title>Three.js Claymation Music Visualizer with Smooshing Effect</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -96,7 +96,7 @@
         pointLight.position.set(0, 10, 10);
         scene.add(pointLight);
 
-        // Animate function with more visual complexity, organic connections, and dynamic blending
+        // Animate function with smooshing effect
         let lastFrameTime = 0;
         const frameRate = 12; // Claymation frame rate
 
@@ -121,15 +121,34 @@
                     // Apply unique movement patterns influenced by shared waves
                     shape.position.y = Math.sin(time * 0.002 + index) * 1.5 + Math.cos(force * Math.PI);
                     shape.position.z = Math.cos(time * 0.0015 + index) * 1.5 + Math.sin(force * Math.PI);
-
-                    // Change color and opacity for blending effect
-                    shape.material.color.setHSL((force * 0.5 + index / shapes.length) % 1, 1.0, 0.6);
-                    shape.material.opacity = 0.6 + 0.4 * Math.sin(time * 0.002 + index); // Varying opacity for blending
-
-                    // Apply slight random rotations for stop-motion effect
-                    shape.rotation.x += 0.02 + 0.02 * Math.sin(time * 0.001 + index);
-                    shape.rotation.y += 0.02 + 0.02 * Math.cos(time * 0.001 + index);
                 });
+
+                // Smooshing effect - collision detection and deformation
+                for (let i = 0; i < shapes.length; i++) {
+                    for (let j = i + 1; j < shapes.length; j++) {
+                        const shapeA = shapes[i];
+                        const shapeB = shapes[j];
+                        const distance = shapeA.position.distanceTo(shapeB.position);
+                        const minDistance = (shapeA.scale.x + shapeB.scale.x) * 0.5;
+
+                        if (distance < minDistance) {
+                            // Calculate smooshing effect
+                            const overlap = minDistance - distance;
+                            const smooshFactor = overlap * 0.1;
+
+                            // Adjust positions slightly to simulate smooshing
+                            const direction = new THREE.Vector3().subVectors(shapeB.position, shapeA.position).normalize();
+                            shapeA.position.add(direction.clone().multiplyScalar(-smooshFactor));
+                            shapeB.position.add(direction.clone().multiplyScalar(smooshFactor));
+
+                            // Deform scales to simulate sharing mass
+                            shapeA.scale.x = Math.max(0.5, shapeA.scale.x - smooshFactor * 0.5);
+                            shapeB.scale.x = Math.max(0.5, shapeB.scale.x - smooshFactor * 0.5);
+                            shapeA.scale.y = Math.max(0.5, shapeA.scale.y - smooshFactor * 0.5);
+                            shapeB.scale.y = Math.max(0.5, shapeB.scale.y - smooshFactor * 0.5);
+                        }
+                    }
+                }
 
                 // Update strands for organic connections
                 strands.forEach((strand, i) => {
