@@ -9,17 +9,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #0a0a0a;
+            --bg-color: #0d0d0d;
             --text-color: #ffffff;
             --accent-color: #00ffaa;
-            --card-bg: rgba(255, 255, 255, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --glass-blur: blur(20px);
+            --box-shadow: 0 4px 60px rgba(0, 0, 0, 0.4);
+            --highlight-color: #ff00ff;
+            --card-hover: rgba(255, 255, 255, 0.2);
         }
 
         body, html {
             margin: 0;
             padding: 0;
             font-family: 'Space Grotesk', sans-serif;
-            background-color: var(--bg-color);
+            background: radial-gradient(circle, #0d0d0d, #000000);
             color: var(--text-color);
             overflow-x: hidden;
         }
@@ -39,44 +44,49 @@
 
         header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
         }
 
         h1 {
-            font-size: 3.5rem;
+            font-size: 4rem;
             font-weight: 700;
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, var(--accent-color), #ff00ff);
+            margin-bottom: 1.5rem;
+            background: linear-gradient(45deg, var(--accent-color), var(--highlight-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+            text-shadow: 0 0 20px rgba(0, 255, 170, 0.5);
         }
 
         .webtoy-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            max-width: 1400px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem;
+            max-width: 1300px;
             margin: 0 auto;
         }
 
         .webtoy-card {
-            background: var(--card-bg);
-            border-radius: 15px;
+            background: var(--glass-bg);
+            border-radius: 20px;
             padding: 2rem;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--box-shadow);
+            position: relative;
+            overflow: hidden;
         }
 
         .webtoy-card:hover {
-            transform: translateY(-10px) scale(1.05);
-            box-shadow: 0 15px 30px rgba(0, 255, 170, 0.2);
+            background: var(--card-hover);
+            transform: translateY(-12px) scale(1.05);
+            box-shadow: 0 25px 60px rgba(0, 255, 170, 0.6);
         }
 
         .webtoy-card h3 {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             margin-bottom: 1rem;
+            text-shadow: 0 0 8px rgba(0, 255, 170, 0.7);
         }
 
         .webtoy-card a {
@@ -91,16 +101,43 @@
         }
 
         .webtoy-card p {
-            font-size: 0.9rem;
-            opacity: 0.8;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .glow-effect {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 255, 170, 0.1), transparent);
+            z-index: 0;
+            opacity: 0.7;
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
         }
 
         footer {
             text-align: center;
-            margin-top: 3rem;
-            padding: 1rem;
+            margin-top: 4rem;
+            padding: 1.5rem;
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px);
+            border-radius: 10px;
+            max-width: 700px;
+            margin: 4rem auto;
         }
 
         @media (max-width: 768px) {
@@ -114,9 +151,9 @@
         }
 
         .cursor {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--accent-color);
+            width: 25px;
+            height: 25px;
+            border: 3px solid var(--accent-color);
             border-radius: 50%;
             position: fixed;
             pointer-events: none;
@@ -125,9 +162,9 @@
         }
 
         .cursor-follower {
-            width: 40px;
-            height: 40px;
-            background: rgba(0, 255, 170, 0.2);
+            width: 45px;
+            height: 45px;
+            background: rgba(0, 255, 170, 0.15);
             border-radius: 50%;
             position: fixed;
             pointer-events: none;
@@ -143,52 +180,62 @@
     <div class="content">
         <header>
             <h1>Stim Webtoys Library</h1>
-            <p>Discover a variety of interactive visual experiences that are meant to engage your senses and curiosity. Explore each webtoy to see what resonates with you.</p>
+            <p>Discover interactive visuals designed to engage your senses. Explore a variety of webtoys and find something that resonates with you.</p>
         </header>
         <main class="webtoy-container">
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="3dtoy.html">3D Toy</a></h3>
-                <p>Explore a surreal 3D tunnel with a twisting torus knot, dynamic lighting, and vibrant particles, all in sync with sound.</p>
+                <p>Immerse yourself in a surreal 3D tunnel featuring a twisting torus knot, dynamic lighting, and vibrant particles, all reacting to sound.</p>
             </div>
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="brand.html">Star Guitar Visualizer</a></h3>
-                <p>Take a visual journey through procedurally generated scenery, inspired by an iconic music video, synced to your music.</p>
+                <p>Experience a visual journey through procedurally generated scenery, inspired by an iconic music video, syncing to the beat of your music.</p>
             </div>
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="defrag.html">Defrag Visualizer</a></h3>
-                <p>A retro-style, sound-reactive visualizer that recalls the look and feel of old-school defragmentation processes.</p>
+                <p>A retro-style, sound-reactive visualizer that evokes the look and feel of old-school defragmentation processes.</p>
             </div>
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="evol.html">Evolutionary Weirdcore</a></h3>
-                <p>Watch as a weirdcore-inspired landscape evolves with fractals, glitches, and surreal visuals that react to music input.</p>
+                <p>Explore a constantly evolving, weirdcore-inspired landscape. Watch as fractals, glitches, and surreal visuals transform with your music.</p>
             </div>
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="multi.html">Multi-Capability Visualizer</a></h3>
                 <p>A versatile visualizer that responds to both audio and device orientation, creating dynamic shapes and effects in real time.</p>
             </div>
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="seary.html">Trippy Synesthetic Visualizer</a></h3>
-                <p>A kaleidoscopic world of patterns that respond to both audio and microphone input, offering a rich synesthetic experience.</p>
+                <p>Enter a kaleidoscopic world of patterns that respond to both device audio and microphone input, offering a full synesthetic experience.</p>
             </div>
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="sgpat.html">Pattern Recognition Visualizer</a></h3>
-                <p>A visualizer that uses pattern recognition to generate objects that move dynamically with sound.</p>
+                <p>A visualizer that uses pattern recognition to create procedurally generated objects that move and change dynamically with sound.</p>
             </div>
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="svgtest.html">SVG + Three.js Visualizer</a></h3>
-                <p>A hybrid visualizer combining SVG effects and Three.js for a unique experience that reacts to audio in real time.</p>
+                <p>A hybrid visualizer combining SVG effects and Three.js for a unique, layered experience that reacts in real time to audio data.</p>
             </div>
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="symph.html">Dreamy Spectrograph</a></h3>
-                <p>A music visualizer blending WebGL with 2D visuals to create a dreamy spectrograph that moves with your audio.</p>
+                <p>A stunning music visualizer blending WebGL with 2D visuals, creating a dreamy spectrograph that reacts dynamically to your audio.</p>
             </div>
             <div class="webtoy-card">
+                <div class="glow-effect"></div>
                 <h3><a href="words.html">Interactive Word Cloud</a></h3>
-                <p>Generate a word cloud that interacts with your voice input, making words float and shift based on the sounds around you.</p>
+                <p>Generate a dynamic word cloud that interacts with your voice input. Watch words float, shift, and react to the sounds around you.</p>
             </div>
         </main>
         <footer>
-            <p>Check out the <a href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub repository</a> to explore more or contribute to the project.</p>
+            <p>Explore more on <a href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a> and contribute to the project!</p>
         </footer>
     </div>
 
