@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stim Webtoys Library</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>Next-Gen Stim Webtoys Library</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Satoshi:wght@300;400;700&display=swap');
+        
         :root {
-            --bg-color: #0d0d0d;
+            --bg-color: #0a0a0a;
             --text-color: #ffffff;
-            --accent-color: #00ffaa;
-            --glass-bg: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.3);
-            --glass-blur: blur(20px);
-            --box-shadow: 0 4px 60px rgba(0, 0, 0, 0.4);
-            --highlight-color: #ff00ff;
-            --card-hover: rgba(255, 255, 255, 0.2);
+            --accent-color: #00f5d4;
+            --secondary-color: #d0ff14;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --shadow-color: rgba(0, 0, 0, 0.15);
+            --blur: blur(20px);
         }
 
         body, html {
             margin: 0;
             padding: 0;
-            font-family: 'Space Grotesk', sans-serif;
-            background: radial-gradient(circle, #0d0d0d, #000000);
+            font-family: 'Satoshi', sans-serif;
+            background-color: var(--bg-color);
             color: var(--text-color);
             overflow-x: hidden;
         }
@@ -34,114 +32,96 @@
             top: 0;
             left: 0;
             z-index: -1;
+            width: 100%;
+            height: 100vh;
         }
 
         .content {
+            padding: 3rem;
             position: relative;
             z-index: 1;
-            padding: 2rem;
-        }
-
-        header {
             text-align: center;
-            margin-bottom: 4rem;
         }
 
-        h1 {
-            font-size: 4rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(45deg, var(--accent-color), var(--highlight-color));
+        header h1 {
+            font-size: 3rem;
+            background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 20px rgba(0, 255, 170, 0.5);
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        header p {
+            margin: 0 auto 2rem auto;
+            max-width: 600px;
+            opacity: 0.8;
+            font-size: 1.2rem;
         }
 
         .webtoy-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2.5rem;
-            max-width: 1300px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
         .webtoy-card {
             background: var(--glass-bg);
-            border-radius: 20px;
-            padding: 2rem;
-            transition: all 0.4s ease;
-            backdrop-filter: var(--glass-blur);
+            backdrop-filter: var(--blur);
             border: 1px solid var(--glass-border);
-            box-shadow: var(--box-shadow);
-            position: relative;
-            overflow: hidden;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px var(--shadow-color);
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.4s ease;
         }
 
         .webtoy-card:hover {
-            background: var(--card-hover);
-            transform: translateY(-12px) scale(1.05);
-            box-shadow: 0 25px 60px rgba(0, 255, 170, 0.6);
+            background-color: var(--secondary-color);
+            transform: translateY(-10px) scale(1.05);
         }
 
         .webtoy-card h3 {
-            font-size: 1.8rem;
             margin-bottom: 1rem;
-            text-shadow: 0 0 8px rgba(0, 255, 170, 0.7);
+            font-weight: 600;
+            font-size: 1.6rem;
         }
 
         .webtoy-card a {
             color: var(--accent-color);
             text-decoration: none;
             font-weight: 500;
-            transition: all 0.3s ease;
         }
 
         .webtoy-card a:hover {
-            text-shadow: 0 0 10px var(--accent-color);
+            text-decoration: underline;
         }
 
         .webtoy-card p {
-            font-size: 0.95rem;
-            opacity: 0.9;
-        }
-
-        .glow-effect {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(0, 255, 170, 0.1), transparent);
-            z-index: 0;
-            opacity: 0.7;
-            animation: pulseGlow 2s infinite;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% {
-                transform: scale(1);
-                opacity: 0.7;
-            }
-            50% {
-                transform: scale(1.05);
-                opacity: 1;
-            }
+            font-size: 1rem;
+            opacity: 0.75;
         }
 
         footer {
+            margin-top: 3rem;
+            font-size: 0.9rem;
             text-align: center;
-            margin-top: 4rem;
-            padding: 1.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(8px);
-            border-radius: 10px;
-            max-width: 700px;
-            margin: 4rem auto;
+            opacity: 0.8;
         }
 
+        footer a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive Styling */
         @media (max-width: 768px) {
-            h1 {
+            header h1 {
                 font-size: 2.5rem;
             }
 
@@ -150,149 +130,107 @@
             }
         }
 
-        .cursor {
-            width: 25px;
-            height: 25px;
-            border: 3px solid var(--accent-color);
-            border-radius: 50%;
-            position: fixed;
-            pointer-events: none;
-            transition: all 0.1s ease;
-            z-index: 9999;
+        /* Neumorphic button style */
+        .neumorphic-button {
+            background: #1a1a1a;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            box-shadow: inset 10px 10px 20px rgba(0, 0, 0, 0.2), 
+                        inset -10px -10px 20px rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            border: none;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            margin-top: 2rem;
         }
 
-        .cursor-follower {
-            width: 45px;
-            height: 45px;
-            background: rgba(0, 255, 170, 0.15);
-            border-radius: 50%;
-            position: fixed;
-            pointer-events: none;
-            transition: all 0.3s ease;
-            z-index: 9998;
+        .neumorphic-button:hover {
+            box-shadow: inset 10px 10px 30px rgba(0, 0, 0, 0.3),
+                        inset -10px -10px 30px rgba(255, 255, 255, 0.2);
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <canvas id="bg-canvas"></canvas>
-    <div class="cursor"></div>
-    <div class="cursor-follower"></div>
+    
     <div class="content">
         <header>
             <h1>Stim Webtoys Library</h1>
-            <p>Discover interactive visuals designed to engage your senses. Explore a variety of webtoys and find something that resonates with you.</p>
+            <p>Engage with sensory-rich experiences and explore how the world of visuals and audio can intertwine. Click a webtoy to begin your journey.</p>
+            <button class="neumorphic-button">Get Started</button>
         </header>
-        <main class="webtoy-container">
+
+        <div class="webtoy-container">
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="3dtoy.html">3D Toy</a></h3>
                 <p>Immerse yourself in a surreal 3D tunnel featuring a twisting torus knot, dynamic lighting, and vibrant particles, all reacting to sound.</p>
             </div>
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="brand.html">Star Guitar Visualizer</a></h3>
-                <p>Experience a visual journey through procedurally generated scenery, inspired by an iconic music video, syncing to the beat of your music.</p>
+                <p>Experience a visual journey through procedurally generated scenery, inspired by the iconic music video, with elements that sync to the beat of your music.</p>
             </div>
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="defrag.html">Defrag Visualizer</a></h3>
-                <p>A retro-style, sound-reactive visualizer that evokes the look and feel of old-school defragmentation processes.</p>
+                <p>A retro-style, sound-reactive visualizer that evokes the look and feel of old-school defragmentation processes, updated for modern times.</p>
             </div>
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="evol.html">Evolutionary Weirdcore</a></h3>
-                <p>Explore a constantly evolving, weirdcore-inspired landscape. Watch as fractals, glitches, and surreal visuals transform with your music.</p>
+                <p>Explore a constantly evolving, weirdcore-inspired landscape. Watch as fractals, glitches, and surreal visuals transform based on music input.</p>
             </div>
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="multi.html">Multi-Capability Visualizer</a></h3>
-                <p>A versatile visualizer that responds to both audio and device orientation, creating dynamic shapes and effects in real time.</p>
+                <p>A versatile visualizer that responds to both audio and device orientation, creating dynamic shapes and lighting effects in real time.</p>
             </div>
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="seary.html">Trippy Synesthetic Visualizer</a></h3>
                 <p>Enter a kaleidoscopic world of patterns that respond to both device audio and microphone input, offering a full synesthetic experience.</p>
             </div>
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="sgpat.html">Pattern Recognition Visualizer</a></h3>
                 <p>A visualizer that uses pattern recognition to create procedurally generated objects that move and change dynamically with sound.</p>
             </div>
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="svgtest.html">SVG + Three.js Visualizer</a></h3>
                 <p>A hybrid visualizer combining SVG effects and Three.js for a unique, layered experience that reacts in real time to audio data.</p>
             </div>
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="symph.html">Dreamy Spectrograph</a></h3>
                 <p>A stunning music visualizer blending WebGL with 2D visuals, creating a dreamy spectrograph that reacts dynamically to your audio.</p>
             </div>
             <div class="webtoy-card">
-                <div class="glow-effect"></div>
                 <h3><a href="words.html">Interactive Word Cloud</a></h3>
                 <p>Generate a dynamic word cloud that interacts with your voice input. Watch words float, shift, and react to the sounds around you.</p>
             </div>
-        </main>
-        <footer>
-            <p>Explore more on <a href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a> and contribute to the project!</p>
-        </footer>
+        </div>
     </div>
 
+    <footer>
+        <p>Discover more at <a href="https://github.com/zz-plant/stims" target="_blank">GitHub</a> and contribute to the future of stim tech!</p>
+    </footer>
+
     <script>
-        // Three.js background
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
 
-        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ffaa, wireframe: true });
-        const torusKnot = new THREE.Mesh(geometry, material);
-        scene.add(torusKnot);
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        camera.position.z = 30;
+        function drawBackground() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        function animate() {
-            requestAnimationFrame(animate);
-            torusKnot.rotation.x += 0.01;
-            torusKnot.rotation.y += 0.01;
-            renderer.render(scene, camera);
+            // Background with some flowing circles or particles
+            ctx.fillStyle = '#00f5d4';
+            for (let i = 0; i < 50; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 40, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            requestAnimationFrame(drawBackground);
         }
-        animate();
 
-        // Custom cursor
-        const cursor = document.querySelector('.cursor');
-        const cursorFollower = document.querySelector('.cursor-follower');
-
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-            
-            setTimeout(() => {
-                cursorFollower.style.left = e.clientX + 'px';
-                cursorFollower.style.top = e.clientY + 'px';
-            }, 100);
-        });
-
-        // Hover effect for cards
-        document.querySelectorAll('.webtoy-card').forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                cursor.style.transform = 'scale(1.5)';
-                cursorFollower.style.transform = 'scale(1.5)';
-            });
-            card.addEventListener('mouseleave', () => {
-                cursor.style.transform = 'scale(1)';
-                cursorFollower.style.transform = 'scale(1)';
-            });
-        });
-
-        // Responsive canvas
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        drawBackground();
     </script>
 </body>
 </html>
