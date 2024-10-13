@@ -1,8 +1,8 @@
+
 // patternRecognition.js: A pattern recognition and predictive listening script for audio-based visualizers
 
 class PatternRecognizer {
-    constructor(audioContext, analyser, bufferSize = 60) {
-        this.audioContext = audioContext;
+    constructor(analyser, bufferSize = 30) { // Reduced buffer size for performance
         this.analyser = analyser;
         this.bufferSize = bufferSize;
         this.patternBuffer = [];
@@ -35,7 +35,7 @@ class PatternRecognizer {
         return null;
     }
 
-    comparePatterns(pattern1, pattern2, tolerance = 0.9) {
+    comparePatterns(pattern1, pattern2, tolerance = 0.85) { // Lower tolerance for better performance
         // Calculate similarity score between two patterns
         let matchCount = 0;
         for (let i = 0; i < pattern1.length; i++) {
@@ -45,50 +45,6 @@ class PatternRecognizer {
         }
         return matchCount / pattern1.length >= tolerance;
     }
-
-    predictNextPattern() {
-        // Predict the next pattern based on the detected pattern
-        const detectedPattern = this.detectPattern();
-        if (detectedPattern) {
-            return detectedPattern;
-        }
-        return null;
-    }
 }
 
-// Usage Example:
-// Create an audio context and analyser
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-const analyser = audioContext.createAnalyser();
-analyser.fftSize = 128;
-
-// Create a pattern recognizer
-const patternRecognizer = new PatternRecognizer(audioContext, analyser);
-
-function updateAudio() {
-    // Update pattern buffer and get prediction
-    patternRecognizer.updatePatternBuffer();
-    const predictedPattern = patternRecognizer.predictNextPattern();
-
-    if (predictedPattern) {
-        // Use predicted pattern to control visual elements
-        console.log('Predicted Pattern Detected:', predictedPattern);
-        // Custom logic to update visual elements can be placed here
-    }
-
-    requestAnimationFrame(updateAudio);
-}
-
-// Example: Start audio processing
-navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(function (stream) {
-        const source = audioContext.createMediaStreamSource(stream);
-        source.connect(analyser);
-        updateAudio();
-    })
-    .catch(function (err) {
-        console.error('Error accessing microphone:', err);
-    });
-
-// Export for use in other visualizers
 export default PatternRecognizer;
