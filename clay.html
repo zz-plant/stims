@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Claymation Music Visualizer with SVG Filters</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        svg { position: absolute; width: 0; height: 0; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://threejs.org/examples/jsm/postprocessing/EffectComposer.js"></script>
+    <script src="https://threejs.org/examples/jsm/postprocessing/RenderPass.js"></script>
+</head>
+<body>
+    <!-- SVG Filters for Claymation Look -->
+    <svg>
+        <defs>
+            <filter id="claymationFilter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+        </defs>
+    </svg>
+
+    <script>
+        // Set up scene, camera, renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Apply SVG Filter to Renderer DOM Element
+        renderer.domElement.style.filter = 'url(#claymationFilter)';
+
+        // Microphone input
+        let analyser;
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(stream);
+
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+
+                source.connect(analyser);
+            }).catch((err) => {
+                console.error('Microphone access denied:', err);
+            });
+        }
+
+        // Create clay-like spheres
+        const textureLoader = new THREE.TextureLoader();
+        const clayTexture = textureLoader.load('https://threejs.org/examples/textures/brick_diffuse.jpg');
+
+        const clayMaterial = new THREE.MeshStandardMaterial({
+            map: clayTexture,
+            roughness: 0.9,
+            metalness: 0.1,
+            bumpMap: clayTexture,
+            bumpScale: 0.2,
+        });
+
+        const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+        const spheres = [];
+        for (let i = 0; i < 16; i++) {
+            const sphere = new THREE.Mesh(sphereGeometry, clayMaterial.clone());
+            sphere.position.x = (i - 8) * 0.5;
+            sphere.scale.setScalar(0.5);
+            scene.add(sphere);
+            spheres.push(sphere);
+        }
+
+        // Lighting
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(2, 5, 5);
+        scene.add(directionalLight);
+
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        // Animate function
+        let lastFrameTime = 0;
+        const frameRate = 12; // Claymation frame rate
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            const delta = time - lastFrameTime;
+            if (delta > 1000 / frameRate && analyser) {
+                lastFrameTime = time;
+
+                // Get frequency data
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+
+                // Update spheres based on frequency data
+                spheres.forEach((sphere, index) => {
+                    const dataIndex = Math.floor(index * (dataArray.length / spheres.length));
+                    const scale = 0.5 + (dataArray[dataIndex] / 256) * 1.5;
+                    sphere.scale.set(scale, scale, scale);
+
+                    // Apply slight random rotations for stop-motion effect
+                    sphere.rotation.x += 0.015 + (Math.random() - 0.5) * 0.03;
+                    sphere.rotation.y += 0.015 + (Math.random() - 0.5) * 0.03;
+
+                    // Slight position jitter
+                    sphere.position.y += (Math.random() - 0.5) * 0.05;
+                    sphere.position.x += (Math.random() - 0.5) * 0.01;
+                });
+
+                renderer.render(scene, camera);
+            }
+        }
+        animate(0);
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
