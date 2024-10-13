@@ -3,28 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Clay Effect</title>
+    <title>Three.js Claymation Music Visualizer Debug Version</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
-        svg { position: absolute; width: 0; height: 0; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://threejs.org/examples/jsm/postprocessing/EffectComposer.js"></script>
-    <script src="https://threejs.org/examples/jsm/postprocessing/RenderPass.js"></script>
 </head>
 <body>
-    <!-- SVG Filters for Claymation Look -->
-    <svg>
-        <defs>
-            <filter id="claymationFilter">
-                <feTurbulence type="fractalNoise" baseFrequency="0.15" numOctaves="4" result="noise" />
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" xChannelSelector="R" yChannelSelector="G" />
-                <feGaussianBlur in="SourceGraphic" stdDeviation="1.0" />
-            </filter>
-        </defs>
-    </svg>
-
     <script>
         // Set up scene, camera, renderer
         const scene = new THREE.Scene();
@@ -34,9 +20,6 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-
-        // Apply SVG Filter to Renderer DOM Element
-        renderer.domElement.style.filter = 'url(#claymationFilter)';
 
         // Microphone input
         let analyser;
@@ -54,21 +37,11 @@
             });
         }
 
-        // Create clay-like spheres
-        const textureLoader = new THREE.TextureLoader();
-        const clayTexture = textureLoader.load('https://threejs.org/examples/textures/general/brick_diffuse.jpg'); // Use a less glossy, clay-like texture
-
+        // Create simple spheres
         const clayMaterial = new THREE.MeshStandardMaterial({
-            map: clayTexture,
+            color: 0xffa07a, // Use a simple clay-like color
             roughness: 1.0,
-            metalness: 0.0,
-            bumpMap: clayTexture,
-            bumpScale: 0.8,
-            normalMap: clayTexture,
-            normalScale: new THREE.Vector2(0.5, 0.5),
-            displacementMap: clayTexture,
-            displacementScale: 0.6,
-            displacementBias: -0.3,
+            metalness: 0.0
         });
 
         const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
@@ -81,16 +54,11 @@
             spheres.push(sphere);
         }
 
-        // Lighting
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(2, 5, 5);
-        directionalLight.castShadow = true;
-        scene.add(directionalLight);
-
-        const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+        // Simplified Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
         scene.add(ambientLight);
 
-        // Animate function with enhanced displacement
+        // Animate function
         let lastFrameTime = 0;
         const frameRate = 12; // Claymation frame rate
 
@@ -105,31 +73,16 @@
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
                 analyser.getByteFrequencyData(dataArray);
 
-                // Update spheres based on frequency data with enhanced displacement
+                // Update spheres based on frequency data
                 spheres.forEach((sphere, index) => {
                     const dataIndex = Math.floor(index * (dataArray.length / spheres.length));
                     const force = dataArray[dataIndex] / 256;
                     const scale = 0.5 + force * 1.5;
                     sphere.scale.set(scale, scale, scale);
 
-                    // Apply force-sensitive displacement to vertices with more axial variation
-                    const positions = sphere.geometry.attributes.position;
-                    for (let i = 0; i < positions.count; i++) {
-                        const originalPosition = new THREE.Vector3().fromBufferAttribute(positions, i);
-                        const offsetX = force * 0.5 * (Math.random() - 0.5);
-                        const offsetY = force * 0.5 * (Math.random() - 0.5);
-                        const offsetZ = force * 0.5 * (Math.random() - 0.5);
-                        positions.setXYZ(i, originalPosition.x + offsetX, originalPosition.y + offsetY, originalPosition.z + offsetZ);
-                    }
-                    positions.needsUpdate = true;
-
                     // Apply slight random rotations for stop-motion effect
                     sphere.rotation.x += 0.02 + (Math.random() - 0.5) * 0.04;
                     sphere.rotation.y += 0.02 + (Math.random() - 0.5) * 0.04;
-
-                    // Slight position jitter
-                    sphere.position.y += (Math.random() - 0.5) * 0.08;
-                    sphere.position.x += (Math.random() - 0.5) * 0.02;
                 });
 
                 renderer.render(scene, camera);
