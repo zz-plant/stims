@@ -1,14 +1,13 @@
-// app.js
-
 import { initScene } from './core/scene-setup.js';
 import { initCamera } from './core/camera-setup.js';
 import { initRenderer } from './core/renderer-setup.js';
-import { initLighting, initAmbientLight } from './lighting/lighting-setup.js'; // Import lighting setup
+import { initLighting, initAmbientLight } from './lighting/lighting-setup.js'; 
 import { initAudio, getFrequencyData } from './utils/audio-handler.js';
 import { applyAudioRotation, applyAudioScale } from './utils/animation-utils.js';
 import PatternRecognizer from './utils/patternRecognition.js';
 
 let scene, camera, renderer, cube, analyser, patternRecognizer;
+let currentLightType = 'PointLight'; // Default light type
 
 function initVisualization() {
     scene = initScene();
@@ -16,8 +15,8 @@ function initVisualization() {
     const canvas = document.getElementById('toy-canvas');
     renderer = initRenderer(canvas);
 
-    // Set up lighting
-    initLighting(scene, { type: 'PointLight', color: 0xffffff, intensity: 1, position: { x: 10, y: 10, z: 20 } });
+    // Set up lighting based on user selection
+    initLighting(scene, { type: currentLightType, color: 0xffffff, intensity: 1, position: { x: 10, y: 10, z: 20 } });
     initAmbientLight(scene, { color: 0x404040, intensity: 0.5 });
 
     // Add a cube to the scene
@@ -71,6 +70,13 @@ function displayError(message) {
         errorElement.style.display = 'block';
     }
 }
+
+// Update lighting type on change
+document.getElementById('light-type').addEventListener('change', (event) => {
+    currentLightType = event.target.value;
+    // Reinitialize lighting
+    initVisualization();
+});
 
 // Start visualization
 initVisualization();
