@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Delightful Terminal Visualizer for Word Lovers</title>
+  <title>Juicy Terminal Visualizer</title>
 
   <!-- Particles.js Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/particlesjs/2.2.3/particles.min.js"></script>
@@ -46,6 +46,19 @@
       background: #001a00;
       transition: all 0.3s ease;
     }
+    .floating-word {
+      position: absolute;
+      font-size: 3vw;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+      100% { transform: translateY(0); }
+    }
+    .glow {
+      box-shadow: 0 0 10px #00ff00;
+    }
     .controls {
       position: absolute;
       top: 10px;
@@ -55,7 +68,7 @@
       gap: 10px;
       z-index: 1000;
     }
-    button, label, input {
+    button, label, input, select {
       font-size: 16px;
       color: #00ff00;
       background-color: #111;
@@ -65,7 +78,7 @@
     button {
       cursor: pointer;
     }
-    button:hover, input:hover {
+    button:hover, select:hover {
       background-color: #002200;
     }
     input[type="range"] {
@@ -81,6 +94,12 @@
         opacity: 0;
         transform: scale(0.8);
       }
+    }
+
+    @keyframes flicker {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
     }
 
     .flicker {
@@ -125,7 +144,7 @@
     // Use Datamuse API to fetch words related to a theme
     async function fetchWords() {
       try {
-        const response = await fetch('https://api.datamuse.com/words?ml=brain&max=100');
+        const response = await fetch('https://api.datamuse.com/words?ml=visual&max=100');
         if (response.ok) {
           const wordObjects = await response.json();
           words = wordObjects.map(wordObj => wordObj.word.toUpperCase());
@@ -292,6 +311,56 @@
         revealedLocations = [];
         wordIndex = 0;
       }
+
+      if (beatStrength.mid > sensitivity) {
+        createFloatingWord();
+      }
+
+      if (beatStrength.high > sensitivity * 1.5) {
+        triggerConstellation();
+      }
+    }
+
+    function triggerConstellation() {
+      const gridCells = document.querySelectorAll('.cell');
+      const constellationCells = Array.from({ length: 5 }, () => gridCells[Math.floor(Math.random() * gridCells.length)]);
+
+      constellationCells.forEach((cell, idx) => {
+        if (idx < constellationCells.length - 1) {
+          const nextCell = constellationCells[idx + 1];
+          const line = document.createElement('div');
+          line.style.position = 'absolute';
+          line.style.width = '2px';
+          line.style.backgroundColor = '#00ff00';
+          line.style.transition = 'opacity 1s ease-out';
+
+          const rect1 = cell.getBoundingClientRect();
+          const rect2 = nextCell.getBoundingClientRect();
+
+          line.style.left = `${rect1.left + rect1.width / 2}px`;
+          line.style.top = `${rect1.top + rect1.height / 2}px`;
+          line.style.height = `${Math.sqrt((rect2.left - rect1.left) ** 2 + (rect2.top - rect1.top) ** 2)}px`;
+
+          document.body.appendChild(line);
+
+          setTimeout(() => line.style.opacity = '0', 2000);
+        }
+      });
+    }
+
+    function createFloatingWord() {
+      const word = words[Math.floor(Math.random() * words.length)];
+      const floatingWord = document.createElement('div');
+      floatingWord.textContent = word;
+      floatingWord.classList.add('floating-word');
+      floatingWord.style.top = `${Math.random() * 80}vh`;
+      floatingWord.style.left = `${Math.random() * 80}vw`;
+
+      document.body.appendChild(floatingWord);
+
+      setTimeout(() => {
+        floatingWord.remove();
+      }, 4000);
     }
 
     function isOverlap(index, length) {
@@ -320,7 +389,7 @@
       if (isMicrophoneEnabled) {
         const beatStrength = getBeat();
         revealOrHideWords(beatStrength);
-        gridElement.style.transform = `scale(${1 + beatStrength.low * 0.1}) rotate(${beatStrength.mid * 5}deg)`;
+        gridElement.style.transform = `scale(${1 + beatStrength.low * 0.1})`;
       } else {
         gridElement.style.transform = 'scale(1)';
       }
