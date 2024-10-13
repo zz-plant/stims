@@ -55,7 +55,7 @@
       gap: 10px;
       z-index: 1000;
     }
-    button, label, input, select {
+    button, label, input {
       font-size: 16px;
       color: #00ff00;
       background-color: #111;
@@ -65,7 +65,7 @@
     button {
       cursor: pointer;
     }
-    button:hover, select:hover {
+    button:hover, input:hover {
       background-color: #002200;
     }
     input[type="range"] {
@@ -180,7 +180,7 @@
       gridElement.appendChild(fragment);
     }
 
-    generateGibberishGrid(); // Start generating the grid without needing to hit reset
+    generateGibberishGrid(); // Automatically generate grid
 
     function cycleRandomCharacters() {
       const gridCells = document.querySelectorAll('.cell');
@@ -198,7 +198,7 @@
       updateCharacters();
     }
 
-    cycleRandomCharacters(); // Automatically start cycling characters without reset
+    cycleRandomCharacters(); // Start character cycling
 
     function startMicAudio() {
       navigator.mediaDevices.getUserMedia({ audio: true, video: false })
