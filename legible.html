@@ -237,9 +237,9 @@
       wordElements.forEach(cell => {
         cell.style.animation = 'dissolve 0.8s forwards';
         cell.addEventListener('animationend', () => {
-          cell.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26));
+          cell.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(Math.floor(Math.random() * 26)); // Revert to gibberish
           cell.classList.remove('flicker');
-          delete cell.dataset.fixed;
+          delete cell.dataset.fixed; // Allow it to cycle again
         });
       });
     }
@@ -259,6 +259,3 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       alert('Your browser does not support microphone access. Please update to a modern browser.');
     }
-  </script>
-</body>
-</html>
