@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Force Sensitive Displacement</title>
+    <title>Three.js Claymation Music Visualizer with Enhanced Displacement</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -85,7 +85,7 @@
         const ambientLight = new THREE.AmbientLight(0x404040);
         scene.add(ambientLight);
 
-        // Animate function with force sensitive displacement
+        // Animate function with enhanced displacement
         let lastFrameTime = 0;
         const frameRate = 12; // Claymation frame rate
 
@@ -100,19 +100,21 @@
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
                 analyser.getByteFrequencyData(dataArray);
 
-                // Update spheres based on frequency data with displacement
+                // Update spheres based on frequency data with enhanced displacement
                 spheres.forEach((sphere, index) => {
                     const dataIndex = Math.floor(index * (dataArray.length / spheres.length));
                     const force = dataArray[dataIndex] / 256;
                     const scale = 0.5 + force * 1.5;
                     sphere.scale.set(scale, scale, scale);
 
-                    // Apply force-sensitive displacement to vertices
+                    // Apply force-sensitive displacement to vertices with axial variation
                     const positions = sphere.geometry.attributes.position;
                     for (let i = 0; i < positions.count; i++) {
                         const originalPosition = new THREE.Vector3().fromBufferAttribute(positions, i);
-                        const offset = force * 0.2 * (Math.random() - 0.5);
-                        positions.setXYZ(i, originalPosition.x + offset, originalPosition.y + offset, originalPosition.z + offset);
+                        const offsetX = force * 0.3 * (Math.random() - 0.5);
+                        const offsetY = force * 0.3 * (Math.random() - 0.5);
+                        const offsetZ = force * 0.3 * (Math.random() - 0.5);
+                        positions.setXYZ(i, originalPosition.x + offsetX, originalPosition.y + offsetY, originalPosition.z + offsetZ);
                     }
                     positions.needsUpdate = true;
 
