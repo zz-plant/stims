@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Organic Shapes</title>
+    <title>Three.js Claymation Music Visualizer with Unique Blending Shapes</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -21,6 +21,17 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
+        // Create dynamic backdrop
+        const backdropGeometry = new THREE.PlaneGeometry(50, 50, 32, 32);
+        const backdropMaterial = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            side: THREE.DoubleSide,
+            wireframe: false
+        });
+        const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial);
+        backdrop.position.z = -20;
+        scene.add(backdrop);
+
         // Microphone input
         let analyser;
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -37,34 +48,31 @@
             });
         }
 
-        // Create organic clay-like shapes
-        const organicShapes = [];
-        const material = new THREE.MeshStandardMaterial({
-            color: 0xffa07a, // Clay-like color
-            roughness: 1.0,
-            metalness: 0.0
-        });
+        // Create an array of different clay-like shapes
+        const shapes = [];
+        const geometries = [
+            new THREE.SphereGeometry(1, 32, 32),
+            new THREE.BoxGeometry(1.5, 1.5, 1.5),
+            new THREE.ConeGeometry(1, 2, 32),
+            new THREE.DodecahedronGeometry(1),
+            new THREE.TorusGeometry(1, 0.4, 16, 100)
+        ];
 
-        for (let i = 0; i < 10; i++) {
-            const geometry = new THREE.IcosahedronGeometry(Math.random() * 1.5 + 0.5, 1); // Randomized organic shapes
-            const mesh = new THREE.Mesh(geometry, material.clone());
-            mesh.position.x = (Math.random() - 0.5) * 20;
-            mesh.position.y = (Math.random() - 0.5) * 10;
-            mesh.position.z = (Math.random() - 0.5) * 10;
-            scene.add(mesh);
-            organicShapes.push(mesh);
+        for (let i = 0; i < 16; i++) {
+            const geometry = geometries[i % geometries.length];
+            const clayMaterial = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(`hsl(${(i / 16) * 360}, 100%, 70%)`),
+                roughness: 1.0,
+                metalness: 0.0,
+                transparent: true,
+                opacity: 0.8 // Allow blending of shapes
+            });
+            const shape = new THREE.Mesh(geometry, clayMaterial);
+            shape.position.x = (i - 8) * 1.5;
+            shape.scale.setScalar(0.7);
+            scene.add(shape);
+            shapes.push(shape);
         }
-
-        // Create dynamic backdrop
-        const backdropGeometry = new THREE.PlaneGeometry(50, 50, 32, 32);
-        const backdropMaterial = new THREE.MeshStandardMaterial({
-            color: 0x222222,
-            side: THREE.DoubleSide,
-            wireframe: false
-        });
-        const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial);
-        backdrop.position.z = -20;
-        scene.add(backdrop);
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -74,7 +82,7 @@
         pointLight.position.set(0, 10, 10);
         scene.add(pointLight);
 
-        // Animate function with organic shapes
+        // Animate function with more visual complexity and dynamic blending
         let lastFrameTime = 0;
         const frameRate = 12; // Claymation frame rate
 
@@ -90,15 +98,23 @@
                 analyser.getByteFrequencyData(dataArray);
 
                 // Update shapes based on frequency data
-                organicShapes.forEach((shape, index) => {
-                    const dataIndex = Math.floor(index * (dataArray.length / organicShapes.length));
+                shapes.forEach((shape, index) => {
+                    const dataIndex = Math.floor(index * (dataArray.length / shapes.length));
                     const force = dataArray[dataIndex] / 256;
-                    const scale = 0.8 + Math.sin(force * Math.PI) * 1.5; // Smoother, more organic scaling
+                    const scale = 0.5 + Math.pow(force, 0.75) * 2.0; // More dynamic scaling
                     shape.scale.set(scale, scale, scale);
 
-                    // Apply random rotations for stop-motion effect
-                    shape.rotation.x += 0.01 + 0.03 * Math.sin(time * 0.001 + index);
-                    shape.rotation.y += 0.01 + 0.03 * Math.cos(time * 0.001 + index);
+                    // Apply unique movement patterns
+                    shape.position.y = Math.sin(time * 0.002 + index) * 1.5;
+                    shape.position.z = Math.cos(time * 0.0015 + index) * 1.5;
+
+                    // Change color and opacity for blending effect
+                    shape.material.color.setHSL((force * 0.5 + index / shapes.length) % 1, 1.0, 0.6);
+                    shape.material.opacity = 0.6 + 0.4 * Math.sin(time * 0.002 + index); // Varying opacity for blending
+
+                    // Apply slight random rotations for stop-motion effect
+                    shape.rotation.x += 0.02 + 0.02 * Math.sin(time * 0.001 + index);
+                    shape.rotation.y += 0.02 + 0.02 * Math.cos(time * 0.001 + index);
                 });
 
                 // Update backdrop for a dynamic effect
