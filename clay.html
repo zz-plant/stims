@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Unique Blending Shapes</title>
+    <title>Three.js Claymation Music Visualizer with Organic Connections</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -74,6 +74,20 @@
             shapes.push(shape);
         }
 
+        // Create organic connecting strands between shapes
+        const strandMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+        const strands = [];
+        for (let i = 0; i < shapes.length - 1; i++) {
+            const points = [
+                shapes[i].position.clone(),
+                shapes[i + 1].position.clone()
+            ];
+            const strandGeometry = new THREE.BufferGeometry().setFromPoints(points);
+            const strand = new THREE.Line(strandGeometry, strandMaterial);
+            scene.add(strand);
+            strands.push(strand);
+        }
+
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
@@ -82,7 +96,7 @@
         pointLight.position.set(0, 10, 10);
         scene.add(pointLight);
 
-        // Animate function with more visual complexity and dynamic blending
+        // Animate function with more visual complexity, organic connections, and dynamic blending
         let lastFrameTime = 0;
         const frameRate = 12; // Claymation frame rate
 
@@ -104,9 +118,9 @@
                     const scale = 0.5 + Math.pow(force, 0.75) * 2.0; // More dynamic scaling
                     shape.scale.set(scale, scale, scale);
 
-                    // Apply unique movement patterns
-                    shape.position.y = Math.sin(time * 0.002 + index) * 1.5;
-                    shape.position.z = Math.cos(time * 0.0015 + index) * 1.5;
+                    // Apply unique movement patterns influenced by shared waves
+                    shape.position.y = Math.sin(time * 0.002 + index) * 1.5 + Math.cos(force * Math.PI);
+                    shape.position.z = Math.cos(time * 0.0015 + index) * 1.5 + Math.sin(force * Math.PI);
 
                     // Change color and opacity for blending effect
                     shape.material.color.setHSL((force * 0.5 + index / shapes.length) % 1, 1.0, 0.6);
@@ -115,6 +129,16 @@
                     // Apply slight random rotations for stop-motion effect
                     shape.rotation.x += 0.02 + 0.02 * Math.sin(time * 0.001 + index);
                     shape.rotation.y += 0.02 + 0.02 * Math.cos(time * 0.001 + index);
+                });
+
+                // Update strands for organic connections
+                strands.forEach((strand, i) => {
+                    const points = [
+                        shapes[i].position.clone(),
+                        shapes[i + 1].position.clone()
+                    ];
+                    strand.geometry.setFromPoints(points);
+                    strand.geometry.attributes.position.needsUpdate = true;
                 });
 
                 // Update backdrop for a dynamic effect
