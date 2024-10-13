@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with SVG Filters</title>
+    <title>Three.js Claymation Music Visualizer with Enhanced Clay Effect</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -18,8 +18,9 @@
     <svg>
         <defs>
             <filter id="claymationFilter">
-                <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" result="noise" />
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+                <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="4" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" xChannelSelector="R" yChannelSelector="G" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" />
             </filter>
         </defs>
     </svg>
@@ -59,17 +60,18 @@
 
         const clayMaterial = new THREE.MeshStandardMaterial({
             map: clayTexture,
-            roughness: 0.9,
-            metalness: 0.1,
+            roughness: 1.0,
+            metalness: 0.0,
             bumpMap: clayTexture,
-            bumpScale: 0.2,
+            bumpScale: 0.5,
+            normalMap: clayTexture,
         });
 
         const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
         const spheres = [];
         for (let i = 0; i < 16; i++) {
             const sphere = new THREE.Mesh(sphereGeometry, clayMaterial.clone());
-            sphere.position.x = (i - 8) * 0.5;
+            sphere.position.x = (i - 8) * 0.6;
             sphere.scale.setScalar(0.5);
             scene.add(sphere);
             spheres.push(sphere);
@@ -105,12 +107,12 @@
                     sphere.scale.set(scale, scale, scale);
 
                     // Apply slight random rotations for stop-motion effect
-                    sphere.rotation.x += 0.015 + (Math.random() - 0.5) * 0.03;
-                    sphere.rotation.y += 0.015 + (Math.random() - 0.5) * 0.03;
+                    sphere.rotation.x += 0.02 + (Math.random() - 0.5) * 0.04;
+                    sphere.rotation.y += 0.02 + (Math.random() - 0.5) * 0.04;
 
                     // Slight position jitter
-                    sphere.position.y += (Math.random() - 0.5) * 0.05;
-                    sphere.position.x += (Math.random() - 0.5) * 0.01;
+                    sphere.position.y += (Math.random() - 0.5) * 0.08;
+                    sphere.position.x += (Math.random() - 0.5) * 0.02;
                 });
 
                 renderer.render(scene, camera);
