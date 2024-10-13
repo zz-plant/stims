@@ -11,27 +11,27 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: #001a00;
+      background-color: #000;
       color: #00ff00;
-      font-family: monospace;
+      font-family: 'Courier New', monospace;
       overflow: hidden;
     }
     .grid {
       display: grid;
-      width: 95vw;
-      height: 85vh;
+      width: 90vw;
+      height: 80vh;
       gap: 1px;
+      grid-template-columns: repeat(30, 1fr);
+      grid-template-rows: repeat(15, 1fr);
       transform-origin: center;
-      transition: transform 0.5s ease-in-out;
     }
     .cell {
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 2.5vw;
+      font-size: 1.5vw;
       color: #00ff00;
-      transition: all 0.3s ease-in-out;
-      filter: drop-shadow(0 0 5px #00ff00);
+      background: #001a00;
     }
     button, label, input {
       position: absolute;
@@ -44,15 +44,10 @@
       top: 10px;
       left: 10px;
       padding: 10px 20px;
-      background-color: #222;
+      background-color: #111;
       color: #00ff00;
       border: 1px solid #00ff00;
-      box-shadow: 0 0 10px #00ff00;
-      transition: transform 0.3s ease-in-out;
-    }
-    button:hover {
-      transform: scale(1.1);
-      background-color: #333;
+      cursor: pointer;
     }
     #sensitivity {
       top: 50px;
@@ -61,18 +56,12 @@
     #sensitivity-label {
       top: 80px;
       left: 10px;
-      color: #00ff00;
     }
 
-    /* Glow and dissolve animation */
     @keyframes dissolve {
       0% {
         opacity: 1;
         filter: drop-shadow(0 0 10px #00ff00);
-      }
-      50% {
-        opacity: 0.5;
-        transform: scale(1.2);
       }
       100% {
         opacity: 0;
@@ -80,45 +69,20 @@
       }
     }
 
-    /* Timed glow animation */
-    @keyframes timedGlow {
-      0%, 100% { filter: drop-shadow(0 0 5px #00ff00); }
-      50% { filter: drop-shadow(0 0 15px #00ff00); }
-    }
-
-    /* CRT Filter */
-    .crt {
-      filter: contrast(1.4) brightness(1.1) saturate(1.5);
-    }
-
-    /* Flicker effect */
-    .flicker {
-      animation: timedGlow 1.5s infinite alternate;
-    }
-
     @media (max-width: 768px) {
-      .grid {
-        grid-template-columns: repeat(20, 1fr);
-        grid-template-rows: repeat(10, 1fr);
-      }
       .cell {
-        font-size: 4vw;
+        font-size: 3vw;
       }
     }
 
     @media (min-width: 769px) {
-      .grid {
-        grid-template-columns: repeat(30, 1fr);
-        grid-template-rows: repeat(15, 1fr);
-      }
       .cell {
-        font-size: 2.5vw;
+        font-size: 1.5vw;
       }
     }
-
   </style>
 </head>
-<body class="crt">
+<body>
   <button id="start-button">Start Microphone</button>
   <label id="sensitivity-label" for="sensitivity">Beat Sensitivity:</label>
   <input id="sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.3">
@@ -161,50 +125,38 @@
 
     startButton.addEventListener('click', startMicAudio);
 
-    // Dynamically calculate grid columns and rows based on screen size
-    function calculateGridDimensions() {
-      const cols = window.innerWidth < 768 ? 20 : 30;
-      const rows = window.innerWidth < 768 ? 10 : 15;
-      return { cols, rows };
-    }
-
     // Initialize the grid with cells and start random character cycling
     function generateGibberishGrid() {
-      const { cols, rows } = calculateGridDimensions();
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
       gridElement.innerHTML = ''; // Clear the grid before regenerating
-      gridElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-      gridElement.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
       const fragment = document.createDocumentFragment();
 
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const cell = document.createElement('div');
-          cell.classList.add('cell');
-          cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
-          fragment.appendChild(cell);
-        }
+      for (let i = 0; i < 450; i++) { // Fixed number of cells for better performance
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
+        fragment.appendChild(cell);
       }
       gridElement.appendChild(fragment);
     }
 
     generateGibberishGrid();
 
-    window.addEventListener('resize', generateGibberishGrid); // Regenerate the grid on screen resize
-
     // Start random character cycling for all grid cells
     function cycleRandomCharacters() {
       const gridCells = document.querySelectorAll('.cell');
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      setInterval(() => {
+      function updateCharacters() {
         if (cyclingActive) {
           gridCells.forEach(cell => {
             if (!cell.dataset.fixed) {
               cell.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
             }
           });
+          setTimeout(updateCharacters, 100); // Use setTimeout to avoid overwhelming the browser
         }
-      }, 100);
+      }
+      updateCharacters();
     }
 
     cycleRandomCharacters(); // Start cycling the characters
@@ -231,38 +183,24 @@
 
     function getBeat() {
       analyser.getByteFrequencyData(dataArray);
-      let sumLow = 0, sumMid = 0, sumHigh = 0;
+      let sumLow = 0;
       const lowEnd = Math.floor(dataArray.length * 0.2);
-      const midEnd = Math.floor(dataArray.length * 0.6);
 
-      for (let i = 0; i < dataArray.length; i++) {
-        if (i < lowEnd) {
-          sumLow += dataArray[i];
-        } else if (i < midEnd) {
-          sumMid += dataArray[i];
-        } else {
-          sumHigh += dataArray[i];
-        }
+      for (let i = 0; i < lowEnd; i++) {
+        sumLow += dataArray[i];
       }
-      const beatStrengthLow = (sumLow / lowEnd) / 255;
-      const beatStrengthMid = (sumMid / (midEnd - lowEnd)) / 255;
-      const beatStrengthHigh = (sumHigh / (dataArray.length - midEnd)) / 255;
-
-      return { beatStrengthLow, beatStrengthMid, beatStrengthHigh }; // Return beat strength for each frequency range
+      return (sumLow / lowEnd) / 255; // Return normalized beat strength for the low range
     }
 
     function revealWordAtRandomLocation() {
       if (wordIndex < words.length) {
         const word = words[wordIndex];
         const gridCells = document.querySelectorAll('.cell');
-        const { cols, rows } = calculateGridDimensions();
-        const maxCol = cols - word.length;
+        const maxCol = Math.sqrt(gridCells.length) - word.length;
 
         let randomIndex;
         do {
-          const row = Math.floor(Math.random() * rows);
-          const col = Math.floor(Math.random() * maxCol);
-          randomIndex = row * cols + col;
+          randomIndex = Math.floor(Math.random() * (gridCells.length - word.length));
         } while (isOverlap(randomIndex, word.length));
 
         const wordElements = [];
@@ -310,16 +248,10 @@
       requestAnimationFrame(render);
 
       if (isMicrophoneEnabled) {
-        const { beatStrengthLow, beatStrengthMid, beatStrengthHigh } = getBeat();
+        const beatStrength = getBeat();
 
-        if (beatStrengthLow > sensitivity) {
+        if (beatStrength > sensitivity) {
           revealWordAtRandomLocation();
-        }
-        if (beatStrengthMid > sensitivity / 1.5) {
-          gridElement.style.transform = `scale(${1 + beatStrengthMid * 0.1})`;
-        }
-        if (beatStrengthHigh > sensitivity / 2) {
-          document.body.style.backgroundColor = `rgba(0, ${Math.floor(beatStrengthHigh * 255)}, 0, 1)`;
         }
       }
     }
