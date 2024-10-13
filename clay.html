@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Expanded Viewport</title>
+    <title>Three.js Claymation Music Visualizer with Imperfect Clay-Like Motion</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -98,7 +98,7 @@
         pointLight.position.set(0, 20, 20);
         scene.add(pointLight);
 
-        // Animate function with smooshing effect and parallax
+        // Animate function with smooshing effect, imperfect motion, and parallax
         let lastFrameTime = 0;
         const frameRate = 12; // Claymation frame rate
 
@@ -120,12 +120,12 @@
                     const scale = 0.5 + Math.pow(force, 0.75) * 2.0; // More dynamic scaling
                     shape.scale.set(scale, scale, scale);
 
-                    // Apply unique movement patterns influenced by shared waves and introduce gyroscopic rotation
-                    shape.position.y += Math.sin(time * 0.002 + index) * 0.05;
-                    shape.position.z += Math.cos(time * 0.0015 + index) * 0.05;
-                    shape.rotation.x += 0.02 + 0.03 * Math.sin(time * 0.001 + index);
-                    shape.rotation.y += 0.02 + 0.03 * Math.cos(time * 0.001 + index);
-                    shape.rotation.z += 0.01 * Math.sin(time * 0.0015 + index);
+                    // Apply unique movement patterns influenced by shared waves and introduce imperfect, jittery rotation
+                    shape.position.y += Math.sin(time * 0.002 + index) * 0.05 + (Math.random() - 0.5) * 0.02;
+                    shape.position.z += Math.cos(time * 0.0015 + index) * 0.05 + (Math.random() - 0.5) * 0.02;
+                    shape.rotation.x += 0.02 + 0.03 * Math.sin(time * 0.001 + index) + (Math.random() - 0.5) * 0.01;
+                    shape.rotation.y += 0.02 + 0.03 * Math.cos(time * 0.001 + index) + (Math.random() - 0.5) * 0.01;
+                    shape.rotation.z += 0.01 * Math.sin(time * 0.0015 + index) + (Math.random() - 0.5) * 0.01;
                 });
 
                 // Smooshing effect - collision detection and deformation
