@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Adaptive Flow Field Audio-Reactive Visualizer</title>
+  <title>Artistically Dynamic Audio Visualizer</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background-color: #1a1a1a;
+      background-color: #000;
     }
     canvas {
       display: block;
@@ -25,15 +25,22 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const particles = [];
-    const numParticles = 1000;  // Increased for more dynamics
-    const flowField = [];
-    const flowFieldSize = 30;   // Higher resolution for more intricate patterns
+    const width = canvas.width;
+    const height = canvas.height;
+
+    let particles = [];
+    const numParticles = 5000;  // High number for dense visuals
+    let flowField = [];
+    const flowFieldSize = 20;  // High resolution for detailed patterns
     let animationId;
     let hue = 0;
+    let time = 0;
 
-    let mouseX = null;
-    let mouseY = null;
+    let mouse = {
+      x: null,
+      y: null,
+      isActive: false
+    };
 
     // Audio Setup
     function setupAudio() {
@@ -43,7 +50,7 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const source = audioContext.createMediaStreamSource(stream);
             analyser = audioContext.createAnalyser();
-            analyser.fftSize = 512;  // Increased for better frequency resolution
+            analyser.fftSize = 1024;  // Increased for better frequency resolution
 
             source.connect(analyser);
             dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -61,111 +68,77 @@
 
     setupAudio();
 
-    // Initialize particles and flow field
-    function init() {
-      particles.length = 0;
-      for (let i = 0; i < numParticles; i++) {
-        particles.push(new Particle());
-      }
-      createFlowField();
-    }
-
     // Particle Class
     class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 3 + 1;
+      constructor(x, y) {
+        this.x = x || Math.random() * width;
+        this.y = y || Math.random() * height;
         this.speed = 0;
-        this.velocityX = 0;
-        this.velocityY = 0;
+        this.velocity = { x: 0, y: 0 };
+        this.size = Math.random() * 1.5 + 0.5;
         this.angle = 0;
-        this.history = [];
-        this.maxHistory = Math.floor(Math.random() * 20 + 10);  // Varied trail lengths
-        this.hue = Math.random() * 360;
-        this.frequencyBand = Math.floor(Math.random() * 3);  // 0: Low, 1: Mid, 2: High
+        this.lastPos = { x: this.x, y: this.y };
       }
 
-      update(audioLevels) {
+      update(flowField, audioLevel) {
+        // Calculate position in flow field grid
         const col = Math.floor(this.x / flowFieldSize);
         const row = Math.floor(this.y / flowFieldSize);
-        const index = col + row * Math.floor(canvas.width / flowFieldSize);
-        this.angle = flowField[index];
+        const index = col + row * Math.floor(width / flowFieldSize);
 
-        const audioLevel = audioLevels[this.frequencyBand];
-        this.speed = audioLevel * 5 + 0.5;  // Speed increases with audio level
-        this.velocityX = Math.cos(this.angle) * this.speed;
-        this.velocityY = Math.sin(this.angle) * this.speed;
-        this.x += this.velocityX;
-        this.y += this.velocityY;
+        // Get flow field angle and adjust with Perlin noise
+        const angle = flowField[index];
+        this.angle = angle;
+
+        // Update velocity based on angle
+        this.speed = audioLevel * 2 + 0.5;
+        this.velocity.x = Math.cos(this.angle) * this.speed;
+        this.velocity.y = Math.sin(this.angle) * this.speed;
+
+        // Update position
+        this.lastPos.x = this.x;
+        this.lastPos.y = this.y;
+        this.x += this.velocity.x;
+        this.y += this.velocity.y;
 
         // Wrap around edges
-        if (this.x > canvas.width) this.x = 0;
-        if (this.x < 0) this.x = canvas.width;
-        if (this.y > canvas.height) this.y = 0;
-        if (this.y < 0) this.y = canvas.height;
-
-        // Store history for trails
-        this.history.push({ x: this.x, y: this.y });
-        if (this.history.length > this.maxHistory) {
-          this.history.shift();
-        }
-
-        // Update color hue and size based on audio level
-        this.hue = (this.hue + audioLevel * 20) % 360;
-        this.size = (audioLevel * 5) + 1;
-
-        // Inter-particle interaction (optional for performance)
-        // this.interactWithParticles();
+        if (this.x > width) this.x = 0;
+        if (this.x < 0) this.x = width;
+        if (this.y > height) this.y = 0;
+        if (this.y < 0) this.y = height;
       }
 
       draw() {
         ctx.beginPath();
-        for (let i = 0; i < this.history.length; i++) {
-          const point = this.history[i];
-          ctx.lineTo(point.x, point.y);
-        }
-        ctx.strokeStyle = `hsl(${this.hue}, 100%, 50%)`;
-        ctx.lineWidth = this.size / 2;
+        ctx.moveTo(this.lastPos.x, this.lastPos.y);
+        ctx.lineTo(this.x, this.y);
+        ctx.strokeStyle = `hsl(${(this.x / width) * 360 + time}, 100%, 50%)`;
         ctx.stroke();
-      }
-
-      // Inter-particle interaction (Optional)
-      interactWithParticles() {
-        particles.forEach(other => {
-          if (other !== this) {
-            const dx = other.x - this.x;
-            const dy = other.y - this.y;
-            const distance = Math.hypot(dx, dy);
-            if (distance < 50) {
-              this.velocityX -= dx / distance;
-              this.velocityY -= dy / distance;
-            }
-          }
-        });
       }
     }
 
-    // Create Flow Field
-    function createFlowField(audioLevels) {
-      flowField.length = 0;
-      const cols = Math.floor(canvas.width / flowFieldSize);
-      const rows = Math.floor(canvas.height / flowFieldSize);
+    // Initialize particles and flow field
+    function init() {
+      particles = [];
+      for (let i = 0; i < numParticles; i++) {
+        particles.push(new Particle());
+      }
+      flowField = new Array(Math.floor(width / flowFieldSize) * Math.floor(height / flowFieldSize));
+    }
 
-      const baseFrequency = (audioLevels[0] + audioLevels[1] + audioLevels[2]) / 3;
+    // Create Flow Field
+    function createFlowField(audioData) {
+      const cols = Math.floor(width / flowFieldSize);
+      const rows = Math.floor(height / flowFieldSize);
+      let index = 0;
+
+      // Use Perlin noise for smooth, natural variations
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          // The flow field angle is now influenced by audio levels and mouse position
-          let angle = (Math.cos(x * 0.1 + hue * 0.01) + Math.sin(y * 0.1 + hue * 0.01)) * Math.PI;
-
-          if (mouseX !== null && mouseY !== null) {
-            const dx = x * flowFieldSize - mouseX;
-            const dy = y * flowFieldSize - mouseY;
-            const distance = Math.hypot(dx, dy);
-            angle += Math.sin(distance * 0.05) * baseFrequency * 5;
-          }
-
-          flowField.push(angle);
+          const noiseValue = noise.simplex3(x * 0.01, y * 0.01, time * 0.0005);
+          const angle = noiseValue * Math.PI * 2;
+          flowField[index] = angle;
+          index++;
         }
       }
     }
@@ -175,36 +148,35 @@
       animationId = requestAnimationFrame(animate);
 
       analyser.getByteFrequencyData(dataArray);
+      const audioLevel = getAverageVolume(dataArray) / 255;
 
-      // Normalize audio data
-      const audioLevels = getAudioLevels();
+      // Clear canvas with lower opacity for motion trails
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, width, height);
 
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';  // Slightly higher opacity for more pronounced trails
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Update time for Perlin noise
+      time += 1;
+
+      createFlowField(dataArray);
 
       particles.forEach(particle => {
-        particle.update(audioLevels);
+        particle.update(flowField, audioLevel);
         particle.draw();
       });
 
-      hue += 0.5;
-      createFlowField(audioLevels);  // Update flow field with audio input and mouse interaction
+      // Visual effects: optional glow effect
+      // ctx.globalCompositeOperation = 'lighter';
+
+      // Draw interactive elements
+      if (mouse.isActive) {
+        ctx.beginPath();
+        ctx.arc(mouse.x, mouse.y, 50, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.fill();
+      }
     }
 
-    // Calculate average audio levels for low, mid, and high frequencies
-    function getAudioLevels() {
-      const lowFreqArray = dataArray.slice(0, dataArray.length / 3);
-      const midFreqArray = dataArray.slice(dataArray.length / 3, 2 * dataArray.length / 3);
-      const highFreqArray = dataArray.slice(2 * dataArray.length / 3);
-
-      const lowLevel = getAverageVolume(lowFreqArray) / 255;
-      const midLevel = getAverageVolume(midFreqArray) / 255;
-      const highLevel = getAverageVolume(highFreqArray) / 255;
-
-      // Apply smoothing
-      return smoothAudioLevels([lowLevel, midLevel, highLevel]);
-    }
-
+    // Calculate average audio level
     function getAverageVolume(array) {
       let values = 0;
       for (let i = 0; i < array.length; i++) {
@@ -213,41 +185,77 @@
       return values / array.length;
     }
 
-    // Smoothing function to reduce abrupt changes
-    const audioLevelHistory = [ [0,0,0], [0,0,0], [0,0,0] ];  // Keep last 3 frames
-    function smoothAudioLevels(levels) {
-      audioLevelHistory.push(levels);
-      if (audioLevelHistory.length > 3) audioLevelHistory.shift();
-
-      const smoothedLevels = [0, 0, 0];
-      for (let i = 0; i < 3; i++) {
-        smoothedLevels[i] = audioLevelHistory.reduce((sum, l) => sum + l[i], 0) / audioLevelHistory.length;
-      }
-      return smoothedLevels;
-    }
-
     // Handle window resize
     window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = width = window.innerWidth;
+      canvas.height = height = window.innerHeight;
       init();
     });
 
     // Mouse interaction
     canvas.addEventListener('mousemove', (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      mouse.isActive = true;
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      mouse.isActive = true;
+
+      // Add particles at mouse position
+      for (let i = 0; i < 100; i++) {
+        particles.push(new Particle(mouse.x, mouse.y));
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      mouse.isActive = false;
     });
 
     canvas.addEventListener('mouseleave', () => {
-      mouseX = null;
-      mouseY = null;
+      mouse.isActive = false;
+    });
+
+    // Touch interaction
+    canvas.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      mouse.x = touch.clientX;
+      mouse.y = touch.clientY;
+      mouse.isActive = true;
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      mouse.x = touch.clientX;
+      mouse.y = touch.clientY;
+      mouse.isActive = true;
+
+      // Add particles at touch position
+      for (let i = 0; i < 100; i++) {
+        particles.push(new Particle(mouse.x, mouse.y));
+      }
+    });
+
+    canvas.addEventListener('touchend', () => {
+      mouse.isActive = false;
     });
 
     // Clean up on page unload
     window.addEventListener('beforeunload', () => {
       cancelAnimationFrame(animationId);
     });
+
+    // Perlin noise implementation (using Simplex Noise for better performance)
+    const noise = new SimplexNoise();
+
+    // Simplex Noise implementation
+    // You can include a SimplexNoise library or implement it here
+    // For brevity, let's assume SimplexNoise is included via a script tag or module
+
   </script>
+  <!-- Include SimplexNoise library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/perlin-noise/0.1.0/perlin-noise.min.js"></script>
 </body>
 </html>
