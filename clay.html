@@ -1,224 +1,376 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Living Clay Interactive Visualizer</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #1a1a1a;
-        }
-        canvas {
-            display: block;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Enhanced Interactive Claymation Visualizer</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #1a1a1a;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="visualizer"></canvas>
+  <canvas id="visualizer"></canvas>
 
-    <script>
-        const canvas = document.getElementById('visualizer');
-        const ctx = canvas.getContext('2d');
-        let analyser, dataArray, audioContext;
+  <script>
+    const canvas = document.getElementById('visualizer');
+    const ctx = canvas.getContext('2d');
+    let analyser, dataArray, audioContext;
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-        const particles = [];
-        const numParticles = 10;  // Fewer but larger, evolving blobs
-        let mouseX = null, mouseY = null;
-        let lastFrameTime = 0;
-        const frameRate = 12;  // Choppy claymation frame rate
-        let maxParticleSize = 100;
+    const particles = [];
+    const numParticles = 20;  // Optimized for performance
+    let mouseX = null, mouseY = null;
+    let isDragging = false;
+    let draggedParticle = null;
+    let lastFrameTime = 0;
+    const frameRate = 12;  // Claymation frame rate
+    let maxParticleSize = 80;
 
-        // Clay-like Particle Class (with more complex forms)
-        class ClayParticle {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.baseSize = Math.random() * 50 + 50;
-                this.size = this.baseSize;
-                this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
-                this.velocityX = (Math.random() - 0.5) * 2;
-                this.velocityY = (Math.random() - 0.5) * 2;
-                this.vertices = this.generateVertices();  // Complex organic shape
-                this.isBeingInteractedWith = false;
-                this.rotation = Math.random() * Math.PI * 2;
-                this.rotationSpeed = (Math.random() - 0.5) * 0.02;
-            }
+    // Gradient for shading effect
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
 
-            // Generate vertices for a multi-point organic shape
-            generateVertices() {
-                const vertices = [];
-                const numPoints = Math.floor(Math.random() * 6) + 6;  // Between 6-12 points
+    // Clay-like Particle Class with fusion and splitting
+    class ClayParticle {
+      constructor(x, y, size = null) {
+        this.x = x;
+        this.y = y;
+        this.baseSize = size || (Math.random() * 40 + 40);
+        this.size = this.baseSize;
+        this.colorHue = Math.random() * 360;
+        this.color = `hsl(${this.colorHue}, 80%, 60%)`;
+        this.velocityX = (Math.random() - 0.5) * 1.5;
+        this.velocityY = (Math.random() - 0.5) * 1.5;
+        this.vertices = this.generateVertices();
+        this.isBeingInteractedWith = false;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+        this.frequencyBand = Math.floor(Math.random() * 3);  // 0: Low, 1: Mid, 2: High
+      }
 
-                for (let i = 0; i < numPoints; i++) {
-                    const angle = (i / numPoints) * Math.PI * 2;
-                    const radius = this.baseSize / 2 + Math.random() * this.baseSize / 4;
-                    vertices.push({ angle, radius });
-                }
-                return vertices;
-            }
+      // Generate vertices for an organic shape
+      generateVertices() {
+        const vertices = [];
+        const numPoints = Math.floor(Math.random() * 6) + 6;  // Between 6-12 points
 
-            update(audioLevel) {
-                this.x += this.velocityX * (audioLevel + 0.5);
-                this.y += this.velocityY * (audioLevel + 0.5);
+        for (let i = 0; i < numPoints; i++) {
+          const angle = (i / numPoints) * Math.PI * 2;
+          const radius = this.baseSize / 2 + Math.random() * this.baseSize / 4;
+          vertices.push({ angle, radius });
+        }
+        return vertices;
+      }
 
-                // Reflect off edges
-                if (this.x > canvas.width || this.x < 0) this.velocityX *= -1;
-                if (this.y > canvas.height || this.y < 0) this.velocityY *= -1;
+      update(audioLevels) {
+        const audioLevel = audioLevels[this.frequencyBand];
 
-                // Rotate and deform based on sound input
-                this.rotation += this.rotationSpeed;
-                this.vertices.forEach(v => {
-                    v.radius = v.radius * (0.9 + 0.2 * audioLevel);
-                });
-
-                // Increase size dynamically based on sound intensity
-                this.size = this.baseSize * (0.8 + audioLevel * 1.5);
-                if (this.size > maxParticleSize) this.size = maxParticleSize; // Cap the size
-            }
-
-            draw() {
-                // Draw organic shape
-                ctx.beginPath();
-                for (let i = 0; i < this.vertices.length; i++) {
-                    const v = this.vertices[i];
-                    const x = this.x + Math.cos(v.angle + this.rotation) * v.radius;
-                    const y = this.y + Math.sin(v.angle + this.rotation) * v.radius;
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                ctx.closePath();
-                ctx.fillStyle = this.color;
-                ctx.fill();
-
-                // Subtle outline for more clay-like effect
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.stroke();
-            }
-
-            checkInteraction(mx, my) {
-                const dist = Math.hypot(this.x - mx, this.y - my);
-                return dist < this.size;  // Proximity-based interaction
-            }
+        if (!this.isBeingInteractedWith) {
+          this.x += this.velocityX * (audioLevel + 0.5);
+          this.y += this.velocityY * (audioLevel + 0.5);
         }
 
-        // Initialize particles
-        function initParticles() {
-            particles.length = 0;
-            for (let i = 0; i < numParticles; i++) {
-                particles.push(new ClayParticle(Math.random() * canvas.width, Math.random() * canvas.height));
-            }
+        // Gravity effect
+        this.velocityY += 0.01;
+
+        // Elastic recoil if being interacted with
+        if (this.isBeingInteractedWith && !isDragging) {
+          this.x += (this.originalX - this.x) * 0.1;
+          this.y += (this.originalY - this.y) * 0.1;
         }
 
-        initParticles();
-
-        // Audio Setup
-        function setupAudio() {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(function (stream) {
-                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        const source = audioContext.createMediaStreamSource(stream);
-                        analyser = audioContext.createAnalyser();
-                        analyser.fftSize = 256;
-
-                        source.connect(analyser);
-                        dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-                        animate(0);
-                    })
-                    .catch(function (err) {
-                        console.error('Microphone access denied:', err);
-                    });
-            } else {
-                alert('getUserMedia not supported in this browser.');
-            }
+        // Reflect off edges
+        if (this.x > canvas.width) {
+          this.x = canvas.width;
+          this.velocityX *= -0.8;
+        }
+        if (this.x < 0) {
+          this.x = 0;
+          this.velocityX *= -0.8;
+        }
+        if (this.y > canvas.height) {
+          this.y = canvas.height;
+          this.velocityY *= -0.8;
+        }
+        if (this.y < 0) {
+          this.y = 0;
+          this.velocityY *= -0.8;
         }
 
-        setupAudio();
-
-        // Handle mouse/touch interaction
-        canvas.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
+        // Rotate and deform based on sound input
+        this.rotation += this.rotationSpeed;
+        this.vertices.forEach(v => {
+          v.radius = v.radius * (0.9 + 0.2 * audioLevel);
         });
 
-        canvas.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            mouseX = touch.clientX;
-            mouseY = touch.clientY;
-        });
+        // Increase size dynamically based on sound intensity
+        this.size = this.baseSize * (0.8 + audioLevel * 1.5);
+        if (this.size > maxParticleSize) this.size = maxParticleSize;
+      }
 
-        // Animate particles and interaction
-        function animate(time) {
-            requestAnimationFrame(animate);
+      draw() {
+        // Draw organic shape with shading
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
 
-            const delta = time - lastFrameTime;
-            if (delta > 1000 / frameRate && analyser) {
-                lastFrameTime = time;
+        ctx.beginPath();
+        for (let i = 0; i < this.vertices.length; i++) {
+          const v = this.vertices[i];
+          const x = Math.cos(v.angle) * v.radius;
+          const y = Math.sin(v.angle) * v.radius;
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.closePath();
 
-                analyser.getByteFrequencyData(dataArray);
-                const audioLevel = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
+        // Apply shading
+        ctx.fillStyle = this.color;
+        ctx.fill();
 
-                // Clear canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Apply noise texture
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.globalAlpha = 1;
 
-                // Draw textured backdrop
-                drawTexturedBackdrop(audioLevel);
+        // Subtle outline
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.stroke();
 
-                particles.forEach(particle => {
-                    particle.isBeingInteractedWith = mouseX !== null && particle.checkInteraction(mouseX, mouseY);
-                    particle.update(audioLevel);
-                    particle.draw();
-                });
+        ctx.restore();
+      }
 
-                // Draw light overlay to give a tactile feel
-                drawLightOverlay(audioLevel);
+      checkInteraction(mx, my) {
+        const dist = Math.hypot(this.x - mx, this.y - my);
+        return dist < this.size;
+      }
+
+      // Fusion with another particle
+      fuseWith(other) {
+        this.baseSize += other.baseSize * 0.6;  // Gain some size from the other particle
+        this.size = this.baseSize;
+        // Adjust color hue slightly
+        this.colorHue = (this.colorHue + other.colorHue) / 2;
+        this.color = `hsl(${this.colorHue}, 80%, 60%)`;
+        // Absorb vertices
+        this.vertices = this.vertices.concat(other.vertices);
+      }
+
+      // Split into smaller particles
+      split() {
+        const child1 = new ClayParticle(this.x + 10, this.y + 10, this.baseSize / 2);
+        const child2 = new ClayParticle(this.x - 10, this.y - 10, this.baseSize / 2);
+        return [child1, child2];
+      }
+    }
+
+    // Initialize particles
+    function initParticles() {
+      particles.length = 0;
+      for (let i = 0; i < numParticles; i++) {
+        particles.push(new ClayParticle(Math.random() * canvas.width, Math.random() * canvas.height));
+      }
+    }
+
+    initParticles();
+
+    // Audio Setup
+    function setupAudio() {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(function (stream) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+
+            source.connect(analyser);
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            animate(0);
+          })
+          .catch(function (err) {
+            console.error('Microphone access denied:', err);
+          });
+      } else {
+        alert('getUserMedia not supported in this browser.');
+      }
+    }
+
+    setupAudio();
+
+    // Handle mouse/touch interaction
+    canvas.addEventListener('mousedown', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      isDragging = true;
+      draggedParticle = particles.find(p => p.checkInteraction(mouseX, mouseY));
+      if (draggedParticle) {
+        draggedParticle.isBeingInteractedWith = true;
+        draggedParticle.originalX = draggedParticle.x;
+        draggedParticle.originalY = draggedParticle.y;
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (isDragging && draggedParticle) {
+        draggedParticle.x = mouseX;
+        draggedParticle.y = mouseY;
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      isDragging = false;
+      if (draggedParticle) {
+        draggedParticle.isBeingInteractedWith = false;
+        draggedParticle = null;
+      }
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      mouseX = touch.clientX;
+      mouseY = touch.clientY;
+      isDragging = true;
+      draggedParticle = particles.find(p => p.checkInteraction(mouseX, mouseY));
+      if (draggedParticle) {
+        draggedParticle.isBeingInteractedWith = true;
+        draggedParticle.originalX = draggedParticle.x;
+        draggedParticle.originalY = draggedParticle.y;
+      }
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      mouseX = touch.clientX;
+      mouseY = touch.clientY;
+      if (isDragging && draggedParticle) {
+        draggedParticle.x = mouseX;
+        draggedParticle.y = mouseY;
+      }
+    });
+
+    canvas.addEventListener('touchend', () => {
+      isDragging = false;
+      if (draggedParticle) {
+        draggedParticle.isBeingInteractedWith = false;
+        draggedParticle = null;
+      }
+    });
+
+    // Animate particles and interaction
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      const delta = time - lastFrameTime;
+      if (delta > 1000 / frameRate && analyser) {
+        lastFrameTime = time;
+
+        analyser.getByteFrequencyData(dataArray);
+
+        // Calculate audio levels for low, mid, high frequencies
+        const audioLevels = [
+          getAverageVolume(dataArray.slice(0, dataArray.length / 3)) / 255,     // Low frequencies
+          getAverageVolume(dataArray.slice(dataArray.length / 3, 2 * dataArray.length / 3)) / 255, // Mid frequencies
+          getAverageVolume(dataArray.slice(2 * dataArray.length / 3)) / 255    // High frequencies
+        ];
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw textured backdrop
+        drawTexturedBackdrop(audioLevels);
+
+        // Update and draw particles
+        for (let i = 0; i < particles.length; i++) {
+          const particle = particles[i];
+          particle.update(audioLevels);
+          particle.draw();
+
+          // Particle Fusion
+          for (let j = i + 1; j < particles.length; j++) {
+            const otherParticle = particles[j];
+            const dist = Math.hypot(particle.x - otherParticle.x, particle.y - otherParticle.y);
+            if (dist < (particle.size + otherParticle.size) / 4) {
+              particle.fuseWith(otherParticle);
+              particles.splice(j, 1);
+              j--;
             }
+          }
+
+          // Particle Splitting
+          if (particle.size > maxParticleSize * 1.2) {
+            const newParticles = particle.split();
+            particles.splice(i, 1);
+            particles.push(...newParticles);
+            i--;
+          }
         }
 
-        // Add a textured, evolving backdrop
-        function drawTexturedBackdrop(audioLevel) {
-            const imageData = ctx.createImageData(canvas.width, canvas.height);
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                const brightness = Math.random() * 255 * audioLevel * 1.5;
-                imageData.data[i] = brightness * 0.9;
-                imageData.data[i + 1] = brightness * 0.7;
-                imageData.data[i + 2] = brightness * 0.5;
-                imageData.data[i + 3] = 255;
-            }
-            ctx.putImageData(imageData, 0, 0);
-        }
+        // Draw light overlay to give a tactile feel
+        drawLightOverlay(Math.max(...audioLevels));
+      }
+    }
 
-        // Add radial gradient light overlay for a soft, clay-like look
-        function drawLightOverlay(audioLevel) {
-            const gradient = ctx.createRadialGradient(
-                canvas.width / 2, canvas.height / 2, 50,
-                canvas.width / 2, canvas.height / 2, canvas.width / 2
-            );
-            gradient.addColorStop(0, `rgba(255, 255, 255, ${0.4 * audioLevel})`);
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    // Utility function to calculate average volume
+    function getAverageVolume(array) {
+      let values = 0;
+      for (let i = 0; i < array.length; i++) {
+        values += array[i];
+      }
+      return values / array.length;
+    }
 
-            ctx.globalCompositeOperation = 'lighter';
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.globalCompositeOperation = 'source-over';
-        }
+    // Add a textured, evolving backdrop
+    function drawTexturedBackdrop(audioLevels) {
+      const imageData = ctx.createImageData(canvas.width, canvas.height);
+      const audioLevel = Math.max(...audioLevels);
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        const brightness = Math.random() * 255 * audioLevel * 1.2;
+        imageData.data[i] = brightness * 0.9;
+        imageData.data[i + 1] = brightness * 0.7;
+        imageData.data[i + 2] = brightness * 0.5;
+        imageData.data[i + 3] = 255;
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
 
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            initParticles();
-        });
+    // Add radial gradient light overlay
+    function drawLightOverlay(audioLevel) {
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 50,
+        canvas.width / 2, canvas.height / 2, canvas.width / 2
+      );
+      gradient.addColorStop(0, `rgba(255, 255, 255, ${0.5 * audioLevel})`);
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-    </script>
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // Handle window resizing
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initParticles();
+    });
+
+  </script>
 </body>
 </html>
