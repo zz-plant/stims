@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sophisticated WebGL Audio Visualizer</title>
+  <title>Dynamic WebGL Audio Visualizer</title>
   <style>
     body {
       margin: 0;
@@ -48,7 +48,7 @@
     const sensitivitySlider = document.getElementById('sensitivity');
     const mouse = { x: 0, y: 0 };
     let sensitivity = 1;
-    let lastLowPeak = 0; // Used for beat detection
+    let lastLowPeak = 0;
 
     function init() {
       // Scene setup
@@ -92,7 +92,7 @@
     }
 
     function createParticles() {
-      const particleCount = 15000; // Increase particle density
+      const particleCount = 5000; // Fewer particles
       const positions = new Float32Array(particleCount * 3);
       const velocities = new Float32Array(particleCount * 3);
 
@@ -100,9 +100,11 @@
         positions[i * 3] = (Math.random() - 0.5) * 100;
         positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
         positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
-        velocities[i * 3] = (Math.random() - 0.5) * 0.5;
-        velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
-        velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+
+        // Faster velocity for more dynamic motion
+        velocities[i * 3] = (Math.random() - 0.5) * 2.0; // Increase speed
+        velocities[i * 3 + 1] = (Math.random() - 0.5) * 2.0;
+        velocities[i * 3 + 2] = (Math.random() - 0.5) * 2.0;
       }
 
       const geometry = new THREE.BufferGeometry();
@@ -141,26 +143,22 @@
         varying vec3 vColor;
 
         float perlinNoise(float x, float y, float z) {
-          return noise.simplex3(x, y, z); // Perlin Noise for smoother, organic movements
+          return noise.simplex3(x, y, z);
         }
 
         void main() {
-          vec3 newPosition = position + velocity * time * 0.1;
+          vec3 newPosition = position + velocity * time * 0.5; // Faster movements
 
-          // Frequency bands splitting
-          float bass = audioData[0] * sensitivity; // Low frequencies for bass
-          float mid = audioData[64] * sensitivity; // Mid frequencies
-          float treble = audioData[128] * sensitivity; // High frequencies
+          float bass = audioData[0] * sensitivity;
+          float mid = audioData[64] * sensitivity;
+          float treble = audioData[128] * sensitivity;
 
-          // Applying Perlin noise to movement for smooth organic motion
           float noiseFactor = perlinNoise(newPosition.x, newPosition.y, time);
-          newPosition.x += sin(time + position.x * noiseFactor) * bass * 0.4;
-          newPosition.y += cos(time + position.y * noiseFactor) * mid * 0.3;
+          newPosition.x += sin(time + position.x * noiseFactor) * bass * 0.5;
+          newPosition.y += cos(time + position.y * noiseFactor) * mid * 0.4;
 
-          // Dynamic particle size influenced by bass for more obvious reactions
-          gl_PointSize = 3.0 + bass * 10.0;
+          gl_PointSize = 8.0 + bass * 20.0; // Larger particles
 
-          // Color shifting based on audio bands using sine and cosine functions
           vColor = vec3(
             0.5 + 0.5 * sin(time + bass),
             0.5 + 0.5 * cos(time + mid),
@@ -197,21 +195,18 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      // Update uniforms
       analyser.getByteFrequencyData(dataArray);
 
-      // Beat detection using low frequencies
       let bass = dataArray[0] / 255;
       if (bass > 0.8 && bass > lastLowPeak * 1.1) {
         lastLowPeak = bass;
-        // Trigger a burst effect on a detected beat
-        uniforms.time.value += 0.1; // Speed up time on a beat for more intensity
+        uniforms.time.value += 0.1;
       }
+
       uniforms.time.value += 0.05;
       uniforms.audioData.value = dataArray.map(d => d / 255);
       uniforms.sensitivity.value = sensitivity;
 
-      // Render the scene
       renderer.render(scene, camera);
     }
 
