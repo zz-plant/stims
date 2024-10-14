@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio-Reactive Claymation Visualizer</title>
+    <title>Claymation-Like Audio Visualizer</title>
     <style>
         body {
             margin: 0;
-            background: #1a1a1a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             overflow: hidden;
+            background-color: #1a1a1a;
         }
+
         canvas {
             display: block;
         }
@@ -24,25 +22,26 @@
     <script>
         const canvas = document.getElementById('visualizer');
         const ctx = canvas.getContext('2d');
-        let analyser, dataArray, audioContext;
 
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        let analyser, dataArray, audioContext;
         const particles = [];
-        const numParticles = 500;  // Number of particles for the audio-reactive fluid-like effect
+        const numParticles = 300;  // Reduced to focus on larger, more organic forms
         let lastFrameTime = 0;
-        const frameRate = 12;  // Frame rate for the stop-motion effect
+        const frameRate = 12;  // Simulate claymation choppy motion
 
-        // Particle Class
-        class Particle {
+        // Clay-like Particle Class
+        class ClayParticle {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.size = Math.random() * 4 + 1;
-                this.color = `rgba(255, 255, 255, 0.7)`;
+                this.size = Math.random() * 30 + 20; // Larger sizes for a malleable clay feel
+                this.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
                 this.velocityX = (Math.random() - 0.5) * 2;
                 this.velocityY = (Math.random() - 0.5) * 2;
+                this.deformation = Math.random() * 0.3; // Initial deformation amount
             }
 
             update(audioLevel) {
@@ -52,12 +51,19 @@
                 if (this.x > canvas.width || this.x < 0) this.velocityX *= -1;
                 if (this.y > canvas.height || this.y < 0) this.velocityY *= -1;
 
-                this.size = (Math.random() * 2 + 1) * (audioLevel + 0.5);
+                // Modify deformation based on audio intensity
+                this.deformation = 0.3 + audioLevel * 0.7;
             }
 
             draw() {
+                // Draw deformed, clay-like shapes
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.ellipse(
+                    this.x, this.y,
+                    this.size * this.deformation, this.size,  // Stretch along one axis
+                    Math.random() * Math.PI,  // Imperfect rotation
+                    0, Math.PI * 2
+                );
                 ctx.fillStyle = this.color;
                 ctx.fill();
             }
@@ -67,7 +73,7 @@
         function initParticles() {
             particles.length = 0;
             for (let i = 0; i < numParticles; i++) {
-                particles.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height));
+                particles.push(new ClayParticle(Math.random() * canvas.width, Math.random() * canvas.height));
             }
         }
 
@@ -77,7 +83,7 @@
         function setupAudio() {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(function(stream) {
+                    .then(function (stream) {
                         audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         const source = audioContext.createMediaStreamSource(stream);
                         analyser = audioContext.createAnalyser();
@@ -88,7 +94,7 @@
 
                         animate(0);
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                         console.error('Microphone access denied:', err);
                     });
             } else {
@@ -98,7 +104,7 @@
 
         setupAudio();
 
-        // Animate particles and shapes
+        // Animate particles
         function animate(time) {
             requestAnimationFrame(animate);
 
@@ -107,48 +113,29 @@
                 lastFrameTime = time;
 
                 analyser.getByteFrequencyData(dataArray);
+                const audioLevel = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
 
-                // Clear the canvas
+                // Clear canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Draw background noise texture
-                drawBackgroundNoise(dataArray);
-
-                // Update and draw particles
-                const audioLevel = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
+                // Draw clay-like particles
                 particles.forEach(particle => {
                     particle.update(audioLevel);
                     particle.draw();
                 });
 
-                // Draw light overlay
+                // Add light overlay to give a tactile feel
                 drawLightOverlay(audioLevel);
             }
         }
 
-        // Create dynamic clay-like backdrop
-        function drawBackgroundNoise(dataArray) {
-            const imageData = ctx.createImageData(canvas.width, canvas.height);
-            const audioLevel = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
-
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                const value = (Math.random() * 255 * audioLevel);
-                imageData.data[i] = value;
-                imageData.data[i + 1] = value * 0.8;
-                imageData.data[i + 2] = value * 0.6;
-                imageData.data[i + 3] = 255;
-            }
-
-            ctx.putImageData(imageData, 0, 0);
-        }
-
-        // Add radial gradient light effect
+        // Add radial gradient light overlay for a soft, clay-like look
         function drawLightOverlay(audioLevel) {
             const gradient = ctx.createRadialGradient(
                 canvas.width / 2, canvas.height / 2, 50,
                 canvas.width / 2, canvas.height / 2, canvas.width / 2
             );
-            gradient.addColorStop(0, `rgba(255, 255, 255, ${0.5 * audioLevel})`);
+            gradient.addColorStop(0, `rgba(255, 255, 255, ${0.4 * audioLevel})`);
             gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
             ctx.globalCompositeOperation = 'lighter';
@@ -163,6 +150,7 @@
             canvas.height = window.innerHeight;
             initParticles();
         });
+
     </script>
 </body>
 </html>
