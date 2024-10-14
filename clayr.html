@@ -72,9 +72,12 @@
     <button id="saveButton">Save/Export Pottery</button>
 </div>
 <div id="message">Move your device to scan the area...</div>
+
+<!-- Script imports -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/exporters/OBJExporter.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/jsm/webxr/ARButton.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/webxr/ARButton.js"></script>
+
 <script>
     let scene, camera, renderer;
     let potteryMesh, wheelMesh;
@@ -83,9 +86,9 @@
     let hitTestSourceRequested = false;
     let isPlaced = false;
     let isInteracting = false;
-    const maxRadius = 0.3; // Adjusted for AR scale
-    const minRadius = 0.05;
-    const height = 0.6;
+    const maxRadius = 0.15; // Adjusted for AR scale
+    const minRadius = 0.02;
+    const height = 0.3;
     const segments = 200;
     let currentTool = 'smooth';
     let isFired = false;
@@ -170,14 +173,9 @@
         const clayGeometry = new THREE.LatheGeometry(profilePoints, 200);
         clayGeometry.computeVertexNormals();
 
-        // Clay Material with texture
-        const textureLoader = new THREE.TextureLoader();
-        const clayTexture = textureLoader.load('https://i.imgur.com/8g1VbBP.jpg'); // Replace with a clay texture
-        const clayNormalMap = textureLoader.load('https://i.imgur.com/RvXj5Un.jpg'); // Replace with a normal map
-
+        // Clay Material without external textures
         const clayMaterial = new THREE.MeshStandardMaterial({
-            map: clayTexture,
-            normalMap: clayNormalMap,
+            color: 0x8B4513, // SaddleBrown color for unfired clay
             roughness: 0.9,
             metalness: 0.1,
         });
@@ -188,7 +186,7 @@
         potteryMesh.rotation.y = Math.PI; // Adjust orientation
 
         // Pottery Wheel
-        const wheelGeometry = new THREE.CylinderGeometry(maxRadius * 2, maxRadius * 2, 0.05, 64);
+        const wheelGeometry = new THREE.CylinderGeometry(maxRadius * 2, maxRadius * 2, 0.02, 64);
         const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
         wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
         wheelMesh.receiveShadow = true;
@@ -197,9 +195,10 @@
         group.add(wheelMesh);
         group.add(potteryMesh);
         wheelMesh.position.y = 0;
-        potteryMesh.position.y = 0.05;
+        potteryMesh.position.y = 0.02;
         scene.add(group);
         group.position.copy(reticle.position);
+        group.rotation.copy(reticle.rotation);
     }
 
     function onPointerDown(event) {
@@ -231,8 +230,8 @@
         const normalizedY = point.y - potteryMesh.parent.position.y;
         const pointRadius = Math.sqrt(point.x * point.x + point.z * point.z);
 
-        const influenceRadius = 0.02;
-        const deformationStrength = 0.002;
+        const influenceRadius = 0.01;
+        const deformationStrength = 0.001;
 
         const positions = potteryMesh.geometry.attributes.position;
         for (let i = 0; i < positions.count; i++) {
@@ -301,11 +300,7 @@
         isFired = true;
 
         // Change material to look like fired clay
-        const textureLoader = new THREE.TextureLoader();
-        const firedTexture = textureLoader.load('https://i.imgur.com/TyR7CZl.jpg'); // Replace with fired clay texture
-
-        potteryMesh.material.map = firedTexture;
-        potteryMesh.material.normalMap = null;
+        potteryMesh.material.color.setHex(0xCD853F); // Peru color for fired clay
         potteryMesh.material.roughness = 0.5;
         potteryMesh.material.metalness = 0.2;
         potteryMesh.material.needsUpdate = true;
@@ -316,11 +311,7 @@
         isGlazed = true;
 
         // Change material to look glazed
-        const textureLoader = new THREE.TextureLoader();
-        const glazeTexture = textureLoader.load('https://i.imgur.com/6T0FMI6.jpg'); // Replace with glaze texture
-
-        potteryMesh.material.map = glazeTexture;
-        potteryMesh.material.normalMap = null;
+        potteryMesh.material.color.setHex(0xFFD700); // Gold color for glazed pottery
         potteryMesh.material.roughness = 0.1;
         potteryMesh.material.metalness = 0.5;
         potteryMesh.material.needsUpdate = true;
@@ -347,8 +338,8 @@
             const session = renderer.xr.getSession();
 
             if (hitTestSourceRequested === false) {
-                session.requestReferenceSpace('viewer').then(function (referenceSpace) {
-                    session.requestHitTestSource({ space: referenceSpace }).then(function (source) {
+                session.requestReferenceSpace('viewer').then(function (viewerSpace) {
+                    session.requestHitTestSource({ space: viewerSpace }).then(function (source) {
                         hitTestSource = source;
                     });
                 });
