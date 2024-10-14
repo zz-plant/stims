@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebGL Audio-Reactive Visualizer</title>
+  <title>WebGL Audio Visualizer</title>
   <style>
     body {
       margin: 0;
@@ -108,10 +108,9 @@
         void main() {
           vec3 newPosition = position + velocity * time * 0.1;
 
-          // Move particles based on audio
-          float audioStrength = audioData[int(mod(gl_VertexID, 128.0))] * 10.0;
-          newPosition.x += sin(time + audioStrength) * 0.2;
-          newPosition.y += cos(time + audioStrength) * 0.2;
+          // Basic animation without audio for debugging
+          newPosition.x += sin(time + position.x) * 0.2;
+          newPosition.y += cos(time + position.y) * 0.2;
 
           // Color based on distance from mouse
           float dist = distance(mouse, vec2(newPosition.x, newPosition.y));
