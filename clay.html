@@ -16,7 +16,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/RenderPass.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/ShaderPass.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/shaders/CopyShader.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/shaders/SSAOShader.min.js"></script>
 </head>
 <body>
     <script>
@@ -39,17 +38,6 @@
         // Post-processing
         const composer = new THREE.EffectComposer(renderer);
         composer.addPass(new THREE.RenderPass(scene, camera));
-
-        // Ambient Occlusion Pass
-        const ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
-        ssaoPass.uniforms['tDepth'].value = composer.renderTarget2.texture;
-        ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
-        ssaoPass.uniforms['cameraNear'].value = camera.near;
-        ssaoPass.uniforms['cameraFar'].value = camera.far;
-        ssaoPass.uniforms['onlyAO'].value = false;
-        ssaoPass.uniforms['aoClamp'].value = 0.5;
-        ssaoPass.uniforms['lumInfluence'].value = 0.7;
-        composer.addPass(ssaoPass);
 
         // Lighting
         const hemiLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.6);
@@ -80,21 +68,22 @@
                 flatShading: true
             });
 
-            // Procedural noise to simulate clay texture
             material.onBeforeCompile = function(shader) {
                 shader.uniforms.time = { value: 0 };
-                shader.vertexShader = `
-                    uniform float time;
-                    ${THREE.ShaderChunk.common}
-                    ${THREE.ShaderChunk.uv_pars_vertex}
-                    ${THREE.ShaderChunk.displacementmap_pars_vertex}
-                    void main() {
-                        ${THREE.ShaderChunk.begin_vertex}
-                        // Simplex noise function to simulate clay imperfections
-                        vec3 transformed = position + normal * (sin(position.x * 10.0 + time * 0.5) * 0.05);
-                        ${THREE.ShaderChunk.project_vertex}
-                    }
-                `;
+
+                // Inject 'time' uniform and custom code into the vertex shader
+                shader.vertexShader = 'uniform float time;\n' + shader.vertexShader;
+
+                shader.vertexShader = shader.vertexShader.replace(
+                    '#include <begin_vertex>',
+                    `
+                    #include <begin_vertex>
+                    transformed += normal * (sin(position.x * 10.0 + time * 0.5) * 0.05);
+                    `
+                );
+
+                // Save reference to shader object for updating the uniform later
+                material.userData.shader = shader;
             };
 
             return material;
@@ -154,14 +143,19 @@
             requestAnimationFrame(animate);
 
             const delta = time - lastFrameTime;
-            if (delta > 1000 / frameRate && analyser && dataArray) {
+            if (delta > 1000 / frameRate) {
                 lastFrameTime = time;
 
-                analyser.getByteFrequencyData(dataArray);
+                if (analyser && dataArray) {
+                    analyser.getByteFrequencyData(dataArray);
+                }
 
                 shapes.forEach((shape, index) => {
-                    const dataIndex = Math.floor(index * (dataArray.length / shapes.length));
-                    const force = dataArray[dataIndex] / 256;
+                    let force = 0;
+                    if (analyser && dataArray) {
+                        const dataIndex = Math.floor(index * (dataArray.length / shapes.length));
+                        force = dataArray[dataIndex] / 256;
+                    }
 
                     // Update shader time uniform
                     if (shape.material.userData.shader) {
