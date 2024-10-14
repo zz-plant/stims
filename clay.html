@@ -2,11 +2,11 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Pottery Wheel Simulation</title>
+    <title>Advanced Pottery Wheel Simulation</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; }
-        canvas { display: block; }
-        #instructions {
+        canvas { display: block; touch-action: none; }
+        #ui {
             position: absolute;
             top: 10px;
             left: 10px;
@@ -17,26 +17,59 @@
             padding: 10px;
             border-radius: 5px;
         }
+        #ui button, #ui select {
+            margin-top: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #colorPicker {
+            margin-top: 5px;
+            padding: 0;
+            width: 100%;
+            height: 30px;
+            border: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-<div id="instructions">
-    <p>Click and drag vertically on the clay to shape it.</p>
+<div id="ui">
+    <p>Select Tool:</p>
+    <select id="toolSelector">
+        <option value="push">Push</option>
+        <option value="pull">Pull</option>
+        <option value="smooth">Smooth</option>
+    </select>
+    <br>
+    <p>Clay Color:</p>
+    <input type="color" id="colorPicker" value="#d2a679">
+    <br>
+    <button id="resetButton">Reset Clay</button>
+    <button id="undoButton">Undo</button>
+    <button id="redoButton">Redo</button>
+    <br>
+    <button id="saveImageButton">Save Image</button>
+    <button id="exportModelButton">Export Model (OBJ)</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/exporters/OBJExporter.js"></script>
 <script>
     // Basic Three.js setup
-    let scene, camera, renderer;
+    let scene, camera, renderer, controls;
     let potteryMesh, wheelMesh;
-    let isMouseDown = false;
-    let mouseY = 0;
-
-    // Clay shaping variables
-    const segments = 64;
-    const heightSegments = 64;
-    let clayVertices = [];
+    let isInteracting = false;
+    let previousY = 0;
+    let profilePoints = [];
     const maxRadius = 5;
-    const minRadius = 1;
+    const minRadius = 0.5;
+    const height = 12;
+    const segments = 100;
+    const textureLoader = new THREE.TextureLoader();
+    let tool = 'push';
+    const actionHistory = [];
+    let historyIndex = -1;
 
     init();
     animate();
@@ -47,121 +80,257 @@
         scene.background = new THREE.Color(0x222222);
 
         camera = new THREE.PerspectiveCamera(
-            45,
+            60,
             window.innerWidth / window.innerHeight,
             0.1,
             1000
         );
-        camera.position.set(0, 10, 30);
+
+        // Position the camera to simulate the potter's perspective
+        camera.position.set(0, 8, 10);
         camera.lookAt(0, 5, 0);
 
         // Renderer
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
+        // Controls
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enablePan = false;
+        controls.minDistance = 5;
+        controls.maxDistance = 30;
+        controls.maxPolarAngle = Math.PI / 2;
+
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
 
-        const spotLight = new THREE.SpotLight(0xffffff, 0.7);
-        spotLight.position.set(20, 40, 20);
-        spotLight.castShadow = true;
-        scene.add(spotLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(0, 20, 10);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
 
         // Pottery Wheel
         const wheelGeometry = new THREE.CylinderGeometry(6, 6, 1, 32);
-        const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        const wheelTexture = textureLoader.load('https://i.imgur.com/3d8c5bx.jpg');
+        const wheelMaterial = new THREE.MeshStandardMaterial({ map: wheelTexture });
         wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
         wheelMesh.position.y = 0.5;
+        wheelMesh.receiveShadow = true;
         scene.add(wheelMesh);
 
         // Clay
         createClay();
 
+        // Ground Plane
+        const groundGeometry = new THREE.PlaneGeometry(200, 200);
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+        groundMesh.rotation.x = -Math.PI / 2;
+        groundMesh.position.y = 0;
+        groundMesh.receiveShadow = true;
+        scene.add(groundMesh);
+
         // Event Listeners
         window.addEventListener('resize', onWindowResize, false);
-        renderer.domElement.addEventListener('mousedown', onMouseDown, false);
-        renderer.domElement.addEventListener('mouseup', onMouseUp, false);
-        renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+
+        // Unified Pointer Events
+        const domElement = renderer.domElement;
+        domElement.addEventListener('pointerdown', onPointerDown, false);
+        domElement.addEventListener('pointerup', onPointerUp, false);
+        domElement.addEventListener('pointermove', onPointerMove, false);
+        domElement.addEventListener('pointercancel', onPointerUp, false);
+        domElement.addEventListener('pointerout', onPointerUp, false);
+        domElement.addEventListener('pointerleave', onPointerUp, false);
+
+        // Disable context menu on long press
+        domElement.addEventListener('contextmenu', event => event.preventDefault());
+
+        // UI Elements
+        document.getElementById('resetButton').addEventListener('click', resetClay);
+        document.getElementById('undoButton').addEventListener('click', undoAction);
+        document.getElementById('redoButton').addEventListener('click', redoAction);
+        document.getElementById('saveImageButton').addEventListener('click', savePotteryImage);
+        document.getElementById('exportModelButton').addEventListener('click', exportPotteryModel);
+
+        const toolSelector = document.getElementById('toolSelector');
+        toolSelector.addEventListener('change', event => {
+            tool = event.target.value;
+        });
+
+        const colorPicker = document.getElementById('colorPicker');
+        colorPicker.addEventListener('input', event => {
+            updateClayMaterial(event.target.value);
+        });
     }
 
     function createClay() {
-        // Create a cylinder geometry for the clay
-        const clayGeometry = new THREE.CylinderGeometry(
-            maxRadius,
-            maxRadius,
-            10,
-            segments,
-            heightSegments,
-            true
-        );
+        // Create initial profile curve for the clay
+        profilePoints = [];
+        const step = height / segments;
+        for (let i = 0; i <= segments; i++) {
+            const y = i * step;
+            const radius = maxRadius;
+            profilePoints.push(new THREE.Vector2(radius, y));
+        }
+
+        saveAction(); // Save initial state
+        updateClayGeometry();
+    }
+
+    function updateClayGeometry() {
+        // Remove existing mesh if any
+        if (potteryMesh) {
+            scene.remove(potteryMesh);
+            potteryMesh.geometry.dispose();
+            potteryMesh.material.dispose();
+        }
+
+        // Create LatheGeometry from profile curve
+        const clayGeometry = new THREE.LatheGeometry(profilePoints, 200);
         clayGeometry.computeVertexNormals();
 
-        // Store vertices for manipulation
-        clayVertices = clayGeometry.vertices;
-
-        // Clay Material
+        // Clay Material with Color
         const clayMaterial = new THREE.MeshStandardMaterial({
-            color: 0xd2a679,
+            color: document.getElementById('colorPicker').value,
             side: THREE.DoubleSide,
             flatShading: false,
         });
 
         potteryMesh = new THREE.Mesh(clayGeometry, clayMaterial);
-        potteryMesh.position.y = 5.5;
+        potteryMesh.position.y = 0;
+        potteryMesh.castShadow = true;
+        potteryMesh.receiveShadow = true;
         scene.add(potteryMesh);
     }
 
-    function onMouseDown(event) {
-        isMouseDown = true;
-        mouseY = event.clientY;
-    }
-
-    function onMouseUp() {
-        isMouseDown = false;
-    }
-
-    function onMouseMove(event) {
-        if (isMouseDown) {
-            const deltaY = event.clientY - mouseY;
-            mouseY = event.clientY;
-
-            // Map mouse movement to clay deformation
-            deformClay(deltaY);
+    function updateClayMaterial(color) {
+        if (potteryMesh) {
+            potteryMesh.material.color.set(color);
         }
     }
 
-    function deformClay(deltaY) {
-        const influenceRadius = 2; // How wide the influence of the deformation is
-        const deformationStrength = deltaY * 0.01;
+    function onPointerDown(event) {
+        isInteracting = true;
+        previousY = event.clientY || event.touches[0].clientY;
+        // Lock pointer for better mobile experience
+        event.target.setPointerCapture(event.pointerId);
+    }
 
-        // Deform the clay vertices
-        for (let i = 0; i < clayVertices.length; i++) {
-            const vertex = clayVertices[i];
-            const distFromTop = vertex.y - (potteryMesh.position.y - 5);
+    function onPointerUp(event) {
+        if (isInteracting) {
+            saveAction(); // Save state after interaction
+        }
+        isInteracting = false;
+        event.target.releasePointerCapture(event.pointerId);
+    }
 
-            // Only deform vertices within the influence radius of the mouse Y position
-            if (Math.abs(distFromTop - (mouseY / window.innerHeight) * 10) < influenceRadius) {
-                const newRadius = vertex.length() + deformationStrength;
+    function onPointerMove(event) {
+        if (isInteracting) {
+            const currentY = event.clientY || (event.touches && event.touches[0].clientY);
+            const deltaY = currentY - previousY;
+            previousY = currentY;
+
+            // Map pointer movement to clay deformation
+            deformClay(deltaY, currentY);
+        }
+    }
+
+    function deformClay(deltaY, pointerY) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        const normalizedY = ((pointerY - rect.top) / rect.height) * height;
+
+        const influenceRadius = 1.5; // How wide the influence of the deformation is
+        let deformationStrength = deltaY * 0.05;
+
+        // Adjust deformation strength based on tool
+        if (tool === 'pull') {
+            deformationStrength = -deformationStrength;
+        } else if (tool === 'smooth') {
+            deformationStrength *= 0.2; // Less aggressive smoothing
+        }
+
+        // Deform the profile points
+        profilePoints.forEach(point => {
+            const distance = Math.abs(point.y - normalizedY);
+            if (distance < influenceRadius) {
+                let deformation = deformationStrength * (1 - distance / influenceRadius);
+
+                if (tool === 'smooth') {
+                    // Smooth deformation averages the radius with neighboring points
+                    const index = profilePoints.indexOf(point);
+                    const prevRadius = profilePoints[Math.max(0, index - 1)].x;
+                    const nextRadius = profilePoints[Math.min(profilePoints.length - 1, index + 1)].x;
+                    const averageRadius = (prevRadius + nextRadius) / 2;
+                    deformation = (averageRadius - point.x) * 0.5;
+                }
+
+                point.x += deformation;
 
                 // Clamp the radius between minRadius and maxRadius
-                const clampedRadius = THREE.MathUtils.clamp(
-                    newRadius,
-                    minRadius,
-                    maxRadius
-                );
-
-                // Update vertex position
-                const scale = clampedRadius / vertex.length();
-                vertex.x *= scale;
-                vertex.z *= scale;
+                point.x = THREE.MathUtils.clamp(point.x, minRadius, maxRadius);
             }
-        }
+        });
 
-        // Notify Three.js that vertices have changed
-        potteryMesh.geometry.verticesNeedUpdate = true;
-        potteryMesh.geometry.computeVertexNormals();
+        // Update the clay geometry
+        updateClayGeometry();
+    }
+
+    function resetClay() {
+        createClay();
+    }
+
+    function savePotteryImage() {
+        renderer.render(scene, camera); // Ensure the latest frame is rendered
+        const dataURL = renderer.domElement.toDataURL('image/png');
+
+        // Create a temporary link to trigger the download
+        const link = document.createElement('a');
+        link.href = dataURL;
+        link.download = 'my_pottery.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function exportPotteryModel() {
+        const exporter = new THREE.OBJExporter();
+        const objString = exporter.parse(potteryMesh);
+
+        // Create a blob and trigger download
+        const blob = new Blob([objString], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'my_pottery.obj';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function saveAction() {
+        // Remove any redo history
+        actionHistory.splice(historyIndex + 1);
+        // Save a deep copy of the profilePoints
+        actionHistory.push(JSON.parse(JSON.stringify(profilePoints)));
+        historyIndex++;
+    }
+
+    function undoAction() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            profilePoints = JSON.parse(JSON.stringify(actionHistory[historyIndex]));
+            updateClayGeometry();
+        }
+    }
+
+    function redoAction() {
+        if (historyIndex < actionHistory.length - 1) {
+            historyIndex++;
+            profilePoints = JSON.parse(JSON.stringify(actionHistory[historyIndex]));
+            updateClayGeometry();
+        }
     }
 
     function animate() {
