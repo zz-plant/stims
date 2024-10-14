@@ -1,204 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Clay-like Interactive Music Visualizer</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-        }
-
-        canvas {
-            display: block;
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Virtual Pottery Wheel</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { background-color: #f0f0f0; display: block; margin: 0 auto; }
+  </style>
 </head>
 <body>
-    <canvas id="visualizer"></canvas>
+  <canvas id="canvas"></canvas>
+  
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
 
-    <script>
-        // Canvas setup
-        const canvas = document.getElementById('visualizer');
-        const ctx = canvas.getContext('2d');
-        resizeCanvas();
+    // Set canvas to full window size
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-        // Variables
-        const particles = [];
-        const numParticles = 1000; // Number of particles
-        let audioContext, analyser, dataArray;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
 
-        // Mouse/Touch variables
-        let mouse = { x: null, y: null, radius: 100 };
-        let isInteracting = false;
+    let rotationOffset = 0;
+    const rotationSpeed = 0.05;
 
-        // Particle class
-        class Particle {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.baseX = x;
-                this.baseY = y;
-                this.size = Math.random() * 2 + 1;
-                this.density = Math.random() * 30 + 1;
-                this.color = 'rgba(255, 255, 255, 0.7)';
-            }
+    const numPoints = 200;
+    const profile = [];
+    const maxRadius = canvasWidth / 6;
+    const centerY = canvasHeight / 2;
+    const centerX = canvasWidth / 2;
 
-            update(audioLevel) {
-                let dx = mouse.x - this.x;
-                let dy = mouse.y - this.y;
-                let distance = Math.sqrt(dx * dx + dy * dy);
-                let forceDirectionX = dx / distance;
-                let forceDirectionY = dy / distance;
-                let maxDistance = mouse.radius;
-                let force = (maxDistance - distance) / maxDistance;
+    // Initialize the clay profile as a cylinder
+    for (let i = 0; i < numPoints; i++) {
+      profile[i] = maxRadius;
+    }
 
-                if (distance < mouse.radius && isInteracting) {
-                    this.x -= forceDirectionX * force * this.density;
-                    this.y -= forceDirectionY * force * this.density;
-                } else {
-                    // Return particles to their original position
-                    let dx = this.x - this.baseX;
-                    let dy = this.y - this.baseY;
-                    this.x -= dx / 10;
-                    this.y -= dy / 10;
-                }
+    // Event handlers for mouse interaction
+    let isMouseDown = false;
+    let lastMouseY = 0;
+    let lastMouseX = 0;
 
-                // Audio influence
-                this.size = (Math.random() * 1 + 0.5) * (audioLevel * 2 + 0.5);
-            }
+    canvas.addEventListener('mousedown', function(e) {
+      isMouseDown = true;
+      const rect = canvas.getBoundingClientRect();
+      lastMouseX = e.clientX - rect.left;
+      lastMouseY = e.clientY - rect.top;
+    });
 
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-            }
+    canvas.addEventListener('mousemove', function(e) {
+      if (isMouseDown) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const dx = mouseX - centerX;
+        const dy = mouseY - lastMouseY;
+
+        const yIndex = Math.floor((mouseY / canvasHeight) * numPoints);
+        if (yIndex >= 0 && yIndex < numPoints) {
+          const deltaRadius = dx / 5;
+          profile[yIndex] += deltaRadius;
+          if (profile[yIndex] > maxRadius) profile[yIndex] = maxRadius;
+          if (profile[yIndex] < 0) profile[yIndex] = 0;
         }
 
-        // Initialize particles in a grid
-        function initParticles() {
-            particles.length = 0;
-            const gap = 20;
-            for (let y = 0; y < canvas.height; y += gap) {
-                for (let x = 0; x < canvas.width; x += gap) {
-                    particles.push(new Particle(x, y));
-                }
-            }
-        }
-        initParticles();
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+      }
+    });
 
-        // Audio setup
-        function startVisualizer() {
-            // Create audio context
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    canvas.addEventListener('mouseup', function(e) {
+      isMouseDown = false;
+    });
 
-            // Create analyser node
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
+    canvas.addEventListener('mouseleave', function(e) {
+      isMouseDown = false;
+    });
 
-            // Create data array
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      rotationOffset += rotationSpeed;
 
-            // Get audio input from the microphone
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(function (stream) {
-                        const source = audioContext.createMediaStreamSource(stream);
-                        source.connect(analyser);
-                        visualize();
-                    })
-                    .catch(function (err) {
-                        alert('Microphone access denied or not available.');
-                        console.error('Error accessing microphone: ' + err);
-                    });
-            } else {
-                alert('getUserMedia not supported in this browser.');
-                console.error('getUserMedia not supported in this browser.');
-            }
-        }
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-        // Visualization loop
-        let hue = 0;
-        function visualize() {
-            requestAnimationFrame(visualize);
+      const angles = [];
+      const numAngles = 30; // Number of profiles to draw per frame
+      for (let i = 0; i < numAngles; i++) {
+        angles.push((i / numAngles) * Math.PI * 2);
+      }
 
-            analyser.getByteFrequencyData(dataArray);
+      for (let i = 0; i < angles.length; i++) {
+        const angle = angles[i] + rotationOffset;
+        const cosAngle = Math.cos(angle);
+        const shade = (cosAngle + 1) / 2; // Value between 0 and 1
 
-            // Calculate average audio level
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-                sum += dataArray[i];
-            }
-            const average = sum / dataArray.length;
-            const audioLevel = average / 255;
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(150, 100, 50, ${shade})`;
+        ctx.lineWidth = 2;
 
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let j = 0; j < numPoints - 1; j++) {
+          const y1 = (j / numPoints) * canvasHeight;
+          const y2 = ((j + 1) / numPoints) * canvasHeight;
 
-            // Update and draw particles
-            particles.forEach(particle => {
-                particle.update(audioLevel);
-                particle.draw();
-            });
+          const radius1 = profile[j];
+          const radius2 = profile[j + 1];
 
-            // Update hue for color change
-            hue += 0.5;
-            if (hue > 360) hue = 0;
+          const x1 = centerX + radius1 * Math.cos(angle);
+          const x2 = centerX + radius2 * Math.cos(angle);
+
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
         }
 
-        // Handle resizing
-        window.addEventListener('resize', () => {
-            resizeCanvas();
-            initParticles();
-        });
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
+        ctx.stroke();
+      }
+    }
 
-        // Handle mouse/touch events
-        canvas.addEventListener('mousemove', function (e) {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-            isInteracting = true;
-        });
-
-        canvas.addEventListener('mousedown', function (e) {
-            isInteracting = true;
-        });
-
-        canvas.addEventListener('mouseup', function (e) {
-            isInteracting = false;
-        });
-
-        canvas.addEventListener('mouseout', function (e) {
-            isInteracting = false;
-        });
-
-        canvas.addEventListener('touchstart', function (e) {
-            const touch = e.touches[0];
-            mouse.x = touch.clientX;
-            mouse.y = touch.clientY;
-            isInteracting = true;
-        });
-
-        canvas.addEventListener('touchmove', function (e) {
-            const touch = e.touches[0];
-            mouse.x = touch.clientX;
-            mouse.y = touch.clientY;
-        });
-
-        canvas.addEventListener('touchend', function (e) {
-            isInteracting = false;
-        });
-
-        // Start the visualizer when the page loads
-        window.addEventListener('load', startVisualizer);
-    </script>
+    animate();
+  </script>
 </body>
 </html>
