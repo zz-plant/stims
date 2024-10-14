@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dreamy Particle Music Visualizer</title>
+    <title>Clay-like Interactive Music Visualizer</title>
     <style>
         body {
             margin: 0;
@@ -32,54 +32,65 @@
         const numParticles = 1000; // Number of particles
         let audioContext, analyser, dataArray;
 
+        // Mouse/Touch variables
+        let mouse = { x: null, y: null, radius: 100 };
+        let isInteracting = false;
+
         // Particle class
         class Particle {
-            constructor() {
-                this.reset();
-            }
-
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.velocityX = (Math.random() - 0.5) * 2;
-                this.velocityY = (Math.random() - 0.5) * 2;
-                this.size = Math.random() * 2 + 0.5;
-                this.life = Math.random() * 60 + 60; // Lifetime in frames
-                this.opacity = 0;
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.baseX = x;
+                this.baseY = y;
+                this.size = Math.random() * 2 + 1;
+                this.density = Math.random() * 30 + 1;
+                this.color = 'rgba(255, 255, 255, 0.7)';
             }
 
             update(audioLevel) {
-                this.x += this.velocityX;
-                this.y += this.velocityY;
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                let forceDirectionX = dx / distance;
+                let forceDirectionY = dy / distance;
+                let maxDistance = mouse.radius;
+                let force = (maxDistance - distance) / maxDistance;
 
-                // Wrap around edges
-                if (this.x > canvas.width) this.x = 0;
-                if (this.x < 0) this.x = canvas.width;
-                if (this.y > canvas.height) this.y = 0;
-                if (this.y < 0) this.y = canvas.height;
-
-                this.life--;
-                if (this.life <= 0) {
-                    this.reset();
+                if (distance < mouse.radius && isInteracting) {
+                    this.x -= forceDirectionX * force * this.density;
+                    this.y -= forceDirectionY * force * this.density;
+                } else {
+                    // Return particles to their original position
+                    let dx = this.x - this.baseX;
+                    let dy = this.y - this.baseY;
+                    this.x -= dx / 10;
+                    this.y -= dy / 10;
                 }
 
-                // Adjust size and opacity based on audio level
-                this.size = (Math.random() * 1 + 0.5) * (audioLevel * 1.5 + 0.5);
-                this.opacity = audioLevel + 0.2;
+                // Audio influence
+                this.size = (Math.random() * 1 + 0.5) * (audioLevel * 2 + 0.5);
             }
 
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.fillStyle = this.color;
                 ctx.fill();
             }
         }
 
-        // Initialize particles
-        for (let i = 0; i < numParticles; i++) {
-            particles.push(new Particle());
+        // Initialize particles in a grid
+        function initParticles() {
+            particles.length = 0;
+            const gap = 20;
+            for (let y = 0; y < canvas.height; y += gap) {
+                for (let x = 0; x < canvas.width; x += gap) {
+                    particles.push(new Particle(x, y));
+                }
+            }
         }
+        initParticles();
 
         // Audio setup
         function startVisualizer() {
@@ -88,7 +99,7 @@
 
             // Create analyser node
             analyser = audioContext.createAnalyser();
-            analyser.fftSize = 512;
+            analyser.fftSize = 256;
 
             // Create data array
             dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -126,9 +137,8 @@
             const average = sum / dataArray.length;
             const audioLevel = average / 255;
 
-            // Clear canvas with a translucent fill to create trails
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Update and draw particles
             particles.forEach(particle => {
@@ -139,17 +149,53 @@
             // Update hue for color change
             hue += 0.5;
             if (hue > 360) hue = 0;
-
-            // Set global composite operation for dreamy effect
-            ctx.globalCompositeOperation = 'lighter';
         }
 
         // Handle resizing
-        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            initParticles();
+        });
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         }
+
+        // Handle mouse/touch events
+        canvas.addEventListener('mousemove', function (e) {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            isInteracting = true;
+        });
+
+        canvas.addEventListener('mousedown', function (e) {
+            isInteracting = true;
+        });
+
+        canvas.addEventListener('mouseup', function (e) {
+            isInteracting = false;
+        });
+
+        canvas.addEventListener('mouseout', function (e) {
+            isInteracting = false;
+        });
+
+        canvas.addEventListener('touchstart', function (e) {
+            const touch = e.touches[0];
+            mouse.x = touch.clientX;
+            mouse.y = touch.clientY;
+            isInteracting = true;
+        });
+
+        canvas.addEventListener('touchmove', function (e) {
+            const touch = e.touches[0];
+            mouse.x = touch.clientX;
+            mouse.y = touch.clientY;
+        });
+
+        canvas.addEventListener('touchend', function (e) {
+            isInteracting = false;
+        });
 
         // Start the visualizer when the page loads
         window.addEventListener('load', startVisualizer);
