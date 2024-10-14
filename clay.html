@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Realistic Pottery Wheel Simulation</title>
+    <title>Enhanced Pottery Wheel Simulation</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; }
         canvas { display: block; touch-action: none; }
@@ -25,12 +25,22 @@
             font-size: 14px;
             cursor: pointer;
         }
+        #toolPanel {
+            margin-top: 10px;
+        }
+        #toolPanel button {
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
 <div id="ui">
     <button id="resetButton">Reset Clay</button>
-    <button id="saveButton">Save Pottery</button>
+    <div id="toolPanel">
+        <button data-tool="smooth">Smooth</button>
+        <button data-tool="carve">Carve</button>
+        <button data-tool="pinch">Pinch</button>
+    </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js"></script>
@@ -43,10 +53,10 @@
     const maxRadius = 5;
     const minRadius = 0.5;
     const height = 12;
-    const segments = 50; // Reduced for performance
-    const textureLoader = new THREE.TextureLoader();
+    const segments = 100; // Increased for better detail
     let world, physicsMaterial, clayBody;
     const clock = new THREE.Clock();
+    let currentTool = 'smooth';
 
     init();
     animate();
@@ -74,16 +84,20 @@
         document.body.appendChild(renderer.domElement);
 
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(0, 20, 10);
-        directionalLight.castShadow = true;
-        scene.add(directionalLight);
+        const spotLight = new THREE.SpotLight(0xffffff, 1);
+        spotLight.position.set(15, 40, 35);
+        spotLight.angle = Math.PI / 4;
+        spotLight.penumbra = 0.1;
+        spotLight.decay = 2;
+        spotLight.distance = 200;
+        spotLight.castShadow = true;
+        scene.add(spotLight);
 
         // Pottery Wheel
-        const wheelGeometry = new THREE.CylinderGeometry(6, 6, 1, 32);
+        const wheelGeometry = new THREE.CylinderGeometry(6, 6, 1, 64);
         const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
         wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
         wheelMesh.position.y = 0.5;
@@ -126,7 +140,13 @@
         // UI Buttons
         const uiElement = document.getElementById('ui');
         document.getElementById('resetButton').addEventListener('click', resetClay);
-        document.getElementById('saveButton').addEventListener('click', savePottery);
+
+        // Tool Selection
+        document.querySelectorAll('#toolPanel button').forEach(button => {
+            button.addEventListener('click', () => {
+                currentTool = button.getAttribute('data-tool');
+            });
+        });
 
         // Hide UI after inactivity
         let uiTimeout;
@@ -158,14 +178,14 @@
         }
 
         // Create LatheGeometry from profile curve
-        const clayGeometry = new THREE.LatheGeometry(profilePoints, 100);
+        const clayGeometry = new THREE.LatheGeometry(profilePoints, 200);
         clayGeometry.computeVertexNormals();
 
-        // Clay Material with Shaders for Wet Look
+        // Clay Material with basic shininess
         const clayMaterial = new THREE.MeshStandardMaterial({
             color: 0xd2a679,
-            roughness: 0.5,
-            metalness: 0.1,
+            roughness: 0.6,  // Reduced roughness for a glossy appearance
+            metalness: 0.3,  // Increased metalness for some shininess
         });
 
         // Remove existing mesh if any
@@ -278,6 +298,20 @@
                 const radius = Math.sqrt(x * x + z * z);
                 const angle = Math.atan2(z, x);
                 let newRadius = radius + factor;
+
+                // Apply tool-specific deformation
+                switch (currentTool) {
+                    case 'smooth':
+                        newRadius = THREE.MathUtils.lerp(radius, newRadius, 0.5);
+                        break;
+                    case 'carve':
+                        newRadius = radius - Math.abs(factor);
+                        break;
+                    case 'pinch':
+                        newRadius = radius + factor;
+                        break;
+                }
+
                 newRadius = THREE.MathUtils.clamp(newRadius, minRadius, maxRadius);
                 x = newRadius * Math.cos(angle);
                 z = newRadius * Math.sin(angle);
@@ -326,19 +360,6 @@
         createClay();
     }
 
-    function savePottery() {
-        renderer.render(scene, camera); // Ensure the latest frame is rendered
-        const dataURL = renderer.domElement.toDataURL('image/png');
-
-        // Create a temporary link to trigger the download
-        const link = document.createElement('a');
-        link.href = dataURL;
-        link.download = 'my_pottery.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
     function animate() {
         requestAnimationFrame(animate);
 
@@ -350,7 +371,6 @@
         wheelMesh.rotation.y += rotationSpeed;
         potteryMesh.rotation.y += rotationSpeed;
 
-        // Enhanced Visual Effects: Motion Blur Simulation
         renderer.render(scene, camera);
     }
 
