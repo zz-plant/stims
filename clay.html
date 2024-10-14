@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Pottery Wheel Simulation</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { display: block; }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<div id="instructions">
+    <p>Click and drag vertically on the clay to shape it.</p>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script>
+    // Basic Three.js setup
+    let scene, camera, renderer;
+    let potteryMesh, wheelMesh;
+    let isMouseDown = false;
+    let mouseY = 0;
+
+    // Clay shaping variables
+    const segments = 64;
+    const heightSegments = 64;
+    let clayVertices = [];
+    const maxRadius = 5;
+    const minRadius = 1;
+
+    init();
+    animate();
+
+    function init() {
+        // Scene and Camera
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x222222);
+
+        camera = new THREE.PerspectiveCamera(
+            45,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 10, 30);
+        camera.lookAt(0, 5, 0);
+
+        // Renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const spotLight = new THREE.SpotLight(0xffffff, 0.7);
+        spotLight.position.set(20, 40, 20);
+        spotLight.castShadow = true;
+        scene.add(spotLight);
+
+        // Pottery Wheel
+        const wheelGeometry = new THREE.CylinderGeometry(6, 6, 1, 32);
+        const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelMesh.position.y = 0.5;
+        scene.add(wheelMesh);
+
+        // Clay
+        createClay();
+
+        // Event Listeners
+        window.addEventListener('resize', onWindowResize, false);
+        renderer.domElement.addEventListener('mousedown', onMouseDown, false);
+        renderer.domElement.addEventListener('mouseup', onMouseUp, false);
+        renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+    }
+
+    function createClay() {
+        // Create a cylinder geometry for the clay
+        const clayGeometry = new THREE.CylinderGeometry(
+            maxRadius,
+            maxRadius,
+            10,
+            segments,
+            heightSegments,
+            true
+        );
+        clayGeometry.computeVertexNormals();
+
+        // Store vertices for manipulation
+        clayVertices = clayGeometry.vertices;
+
+        // Clay Material
+        const clayMaterial = new THREE.MeshStandardMaterial({
+            color: 0xd2a679,
+            side: THREE.DoubleSide,
+            flatShading: false,
+        });
+
+        potteryMesh = new THREE.Mesh(clayGeometry, clayMaterial);
+        potteryMesh.position.y = 5.5;
+        scene.add(potteryMesh);
+    }
+
+    function onMouseDown(event) {
+        isMouseDown = true;
+        mouseY = event.clientY;
+    }
+
+    function onMouseUp() {
+        isMouseDown = false;
+    }
+
+    function onMouseMove(event) {
+        if (isMouseDown) {
+            const deltaY = event.clientY - mouseY;
+            mouseY = event.clientY;
+
+            // Map mouse movement to clay deformation
+            deformClay(deltaY);
+        }
+    }
+
+    function deformClay(deltaY) {
+        const influenceRadius = 2; // How wide the influence of the deformation is
+        const deformationStrength = deltaY * 0.01;
+
+        // Deform the clay vertices
+        for (let i = 0; i < clayVertices.length; i++) {
+            const vertex = clayVertices[i];
+            const distFromTop = vertex.y - (potteryMesh.position.y - 5);
+
+            // Only deform vertices within the influence radius of the mouse Y position
+            if (Math.abs(distFromTop - (mouseY / window.innerHeight) * 10) < influenceRadius) {
+                const newRadius = vertex.length() + deformationStrength;
+
+                // Clamp the radius between minRadius and maxRadius
+                const clampedRadius = THREE.MathUtils.clamp(
+                    newRadius,
+                    minRadius,
+                    maxRadius
+                );
+
+                // Update vertex position
+                const scale = clampedRadius / vertex.length();
+                vertex.x *= scale;
+                vertex.z *= scale;
+            }
+        }
+
+        // Notify Three.js that vertices have changed
+        potteryMesh.geometry.verticesNeedUpdate = true;
+        potteryMesh.geometry.computeVertexNormals();
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // Rotate the wheel and clay
+        wheelMesh.rotation.y += 0.02;
+        potteryMesh.rotation.y += 0.02;
+
+        renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+</script>
+</body>
+</html>
