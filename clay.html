@@ -59,7 +59,7 @@
     }
 
     function createParticles() {
-      const particleCount = 10000;
+      const particleCount = 5000;
       const positions = new Float32Array(particleCount * 3);
       const velocities = new Float32Array(particleCount * 3);
 
@@ -104,30 +104,31 @@
 
         attribute vec3 velocity;
         varying vec3 vColor;
+        varying float vAudioPower;
 
         void main() {
-          vec3 newPosition = position + velocity * time * 0.1;
+          vec3 newPosition = position + velocity * time * 0.2;
 
-          // Basic animation without audio for debugging
-          newPosition.x += sin(time + position.x) * 0.2;
-          newPosition.y += cos(time + position.y) * 0.2;
+          // Use audio data to scale particle size and movement
+          float audioStrength = audioData[int(mod(gl_VertexID, 128))];
+          float audioPower = audioStrength * 10.0;  // Increase audio impact
+          newPosition += velocity * audioPower * 0.5;
 
-          // Color based on distance from mouse
-          float dist = distance(mouse, vec2(newPosition.x, newPosition.y));
-          vColor = vec3(0.5 + 0.5 * sin(dist * 0.1), 0.5 + 0.5 * cos(dist * 0.1), 1.0);
+          vAudioPower = audioPower;  // Pass audio power to fragment shader
 
           gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-          gl_PointSize = 3.0;
+          gl_PointSize = 2.0 + audioPower * 10.0;  // Particle size reacts to sound
         }
       `;
     }
 
     function fragmentShader() {
       return `
-        varying vec3 vColor;
+        varying float vAudioPower;
 
         void main() {
-          gl_FragColor = vec4(vColor, 1.0);
+          // Use audio power to adjust color brightness
+          gl_FragColor = vec4(vAudioPower, vAudioPower * 0.5, 1.0, 1.0);
         }
       `;
     }
@@ -150,7 +151,7 @@
       // Update uniforms
       analyser.getByteFrequencyData(dataArray);
       uniforms.time.value += 0.05;
-      uniforms.audioData.value = dataArray.map(d => d / 255);
+      uniforms.audioData.value = dataArray.map(d => d / 255);  // Normalize audio data
 
       // Render the scene
       renderer.render(scene, camera);
