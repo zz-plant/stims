@@ -2,144 +2,106 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SVG Filters Music Visualizer with Enhanced CSS</title>
+    <title>Dreamy Particle Music Visualizer</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background: linear-gradient(135deg, #111, #333);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
+            background-color: #000;
         }
 
-        #visualizer {
-            width: 80vw;
-            height: 80vh;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            position: relative;
-            background: rgba(0, 0, 0, 0.6);
-        }
-
-        svg {
+        canvas {
+            display: block;
+            position: absolute;
             width: 100%;
             height: 100%;
-            position: absolute;
-        }
-
-        .bar {
-            fill: url(#gradient);
-            transition: all 0.1s ease-out; /* Smooth height transition */
-        }
-
-        @keyframes gradientAnimation {
-            0% { stop-color: rgb(255, 0, 0); }
-            25% { stop-color: rgb(255, 255, 0); }
-            50% { stop-color: rgb(0, 255, 0); }
-            75% { stop-color: rgb(0, 0, 255); }
-            100% { stop-color: rgb(255, 0, 255); }
-        }
-
-        @keyframes backgroundPulse {
-            0% { background: linear-gradient(135deg, #111, #333); }
-            50% { background: linear-gradient(135deg, #333, #111); }
-            100% { background: linear-gradient(135deg, #111, #333); }
-        }
-
-        body {
-            animation: backgroundPulse 10s infinite alternate;
         }
     </style>
 </head>
 <body>
-    <div id="visualizer"></div>
-
-    <!-- SVG Filters Definition -->
-    <svg id="filters" xmlns="http://www.w3.org/2000/svg" style="display: none;">
-        <defs>
-            <!-- Gradient for the bars -->
-            <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-opacity:1">
-                    <animate attributeName="stop-color" values="rgb(255,0,0);rgb(255,255,0);rgb(0,255,0);rgb(0,0,255);rgb(255,0,255);rgb(255,0,0)" dur="8s" repeatCount="indefinite"/>
-                </stop>
-                <stop offset="100%" style="stop-opacity:1">
-                    <animate attributeName="stop-color" values="rgb(0,0,255);rgb(0,255,255);rgb(255,0,0);rgb(255,255,0);rgb(0,255,0);rgb(0,0,255)" dur="8s" repeatCount="indefinite"/>
-                </stop>
-            </linearGradient>
-
-            <!-- Glow Effect -->
-            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
-                <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                </feMerge>
-            </filter>
-
-            <!-- Color Shift Filter -->
-            <filter id="colorShift">
-                <feColorMatrix type="hueRotate" values="0">
-                    <animate attributeName="values" from="0" to="360" dur="10s" repeatCount="indefinite" />
-                </feColorMatrix>
-            </filter>
-        </defs>
-    </svg>
+    <canvas id="visualizer"></canvas>
 
     <script>
-        // Set up the SVG visualization
-        const visualizer = document.getElementById('visualizer');
-        const svgNS = "http://www.w3.org/2000/svg";
-        const svg = document.createElementNS(svgNS, 'svg');
-        visualizer.appendChild(svg);
+        // Canvas setup
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        resizeCanvas();
 
-        // Number of bars in the visualizer
-        const numBars = 64;
-        const bars = [];
+        // Variables
+        const particles = [];
+        const numParticles = 1000; // Number of particles
+        let audioContext, analyser, dataArray;
 
-        // Create the bars
-        for (let i = 0; i < numBars; i++) {
-            const rect = document.createElementNS(svgNS, 'rect');
-            rect.setAttribute('class', 'bar');
-            rect.setAttribute('x', (i / numBars) * 100 + '%');
-            rect.setAttribute('y', '50%');
-            rect.setAttribute('width', (1 / numBars) * 90 + '%'); // Adjust width for spacing
-            rect.setAttribute('height', '0%');
-            rect.setAttribute('filter', 'url(#glow)');
+        // Particle class
+        class Particle {
+            constructor() {
+                this.reset();
+            }
 
-            svg.appendChild(rect);
-            bars.push(rect);
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.velocityX = (Math.random() - 0.5) * 2;
+                this.velocityY = (Math.random() - 0.5) * 2;
+                this.size = Math.random() * 2 + 0.5;
+                this.life = Math.random() * 60 + 60; // Lifetime in frames
+                this.opacity = 0;
+            }
+
+            update(audioLevel) {
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+
+                // Wrap around edges
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0;
+                if (this.y < 0) this.y = canvas.height;
+
+                this.life--;
+                if (this.life <= 0) {
+                    this.reset();
+                }
+
+                // Adjust size and opacity based on audio level
+                this.size = (Math.random() * 1 + 0.5) * (audioLevel * 1.5 + 0.5);
+                this.opacity = audioLevel + 0.2;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.fill();
+            }
+        }
+
+        // Initialize particles
+        for (let i = 0; i < numParticles; i++) {
+            particles.push(new Particle());
         }
 
         // Audio setup
-        let audioContext;
-        let analyser;
-        let dataArray;
-
-        // Start the audio processing
         function startVisualizer() {
             // Create audio context
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
             // Create analyser node
             analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
+            analyser.fftSize = 512;
 
             // Create data array
             dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-            // Get audio input
+            // Get audio input from the microphone
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(function(stream) {
+                    .then(function (stream) {
                         const source = audioContext.createMediaStreamSource(stream);
                         source.connect(analyser);
                         visualize();
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                         alert('Microphone access denied or not available.');
                         console.error('Error accessing microphone: ' + err);
                     });
@@ -150,24 +112,44 @@
         }
 
         // Visualization loop
+        let hue = 0;
         function visualize() {
             requestAnimationFrame(visualize);
 
             analyser.getByteFrequencyData(dataArray);
 
-            for (let i = 0; i < numBars; i++) {
-                const value = dataArray[i];
-                const percent = value / 255;
-                const height = percent * 100;
-                const y = 100 - height;
-
-                bars[i].setAttribute('height', height + '%');
-                bars[i].setAttribute('y', y + '%');
+            // Calculate average audio level
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
             }
+            const average = sum / dataArray.length;
+            const audioLevel = average / 255;
+
+            // Clear canvas with a translucent fill to create trails
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update(audioLevel);
+                particle.draw();
+            });
+
+            // Update hue for color change
+            hue += 0.5;
+            if (hue > 360) hue = 0;
+
+            // Set global composite operation for dreamy effect
+            ctx.globalCompositeOperation = 'lighter';
         }
 
-        // Apply SVG filters to the visualizer
-        svg.setAttribute('filter', 'url(#colorShift)');
+        // Handle resizing
+        window.addEventListener('resize', resizeCanvas);
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
 
         // Start the visualizer when the page loads
         window.addEventListener('load', startVisualizer);
