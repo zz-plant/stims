@@ -2,195 +2,175 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Realistic Claymation Music Visualizer Without External Textures</title>
+    <title>SVG Filters Music Visualizer with Enhanced CSS</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #e0d7c6; }
-        canvas { display: block; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #111, #333);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        #visualizer {
+            width: 80vw;
+            height: 80vh;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            position: relative;
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+
+        .bar {
+            fill: url(#gradient);
+            transition: all 0.1s ease-out; /* Smooth height transition */
+        }
+
+        @keyframes gradientAnimation {
+            0% { stop-color: rgb(255, 0, 0); }
+            25% { stop-color: rgb(255, 255, 0); }
+            50% { stop-color: rgb(0, 255, 0); }
+            75% { stop-color: rgb(0, 0, 255); }
+            100% { stop-color: rgb(255, 0, 255); }
+        }
+
+        @keyframes backgroundPulse {
+            0% { background: linear-gradient(135deg, #111, #333); }
+            50% { background: linear-gradient(135deg, #333, #111); }
+            100% { background: linear-gradient(135deg, #111, #333); }
+        }
+
+        body {
+            animation: backgroundPulse 10s infinite alternate;
+        }
     </style>
-    <!-- Three.js Library from cdnjs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <!-- OrbitControls (Optional) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/controls/OrbitControls.min.js"></script>
-    <!-- Shader and Post-processing dependencies from cdnjs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/EffectComposer.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/RenderPass.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/ShaderPass.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/shaders/CopyShader.min.js"></script>
 </head>
 <body>
+    <div id="visualizer"></div>
+
+    <!-- SVG Filters Definition -->
+    <svg id="filters" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <defs>
+            <!-- Gradient for the bars -->
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-opacity:1">
+                    <animate attributeName="stop-color" values="rgb(255,0,0);rgb(255,255,0);rgb(0,255,0);rgb(0,0,255);rgb(255,0,255);rgb(255,0,0)" dur="8s" repeatCount="indefinite"/>
+                </stop>
+                <stop offset="100%" style="stop-opacity:1">
+                    <animate attributeName="stop-color" values="rgb(0,0,255);rgb(0,255,255);rgb(255,0,0);rgb(255,255,0);rgb(0,255,0);rgb(0,0,255)" dur="8s" repeatCount="indefinite"/>
+                </stop>
+            </linearGradient>
+
+            <!-- Glow Effect -->
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+                <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+
+            <!-- Color Shift Filter -->
+            <filter id="colorShift">
+                <feColorMatrix type="hueRotate" values="0">
+                    <animate attributeName="values" from="0" to="360" dur="10s" repeatCount="indefinite" />
+                </feColorMatrix>
+            </filter>
+        </defs>
+    </svg>
+
     <script>
-        // Scene Setup
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xe0d7c6); // Clay-like background color
+        // Set up the SVG visualization
+        const visualizer = document.getElementById('visualizer');
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, 'svg');
+        visualizer.appendChild(svg);
 
-        // Camera Setup
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.set(0, 10, 30);
+        // Number of bars in the visualizer
+        const numBars = 64;
+        const bars = [];
 
-        // Renderer Setup
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        // Create the bars
+        for (let i = 0; i < numBars; i++) {
+            const rect = document.createElementNS(svgNS, 'rect');
+            rect.setAttribute('class', 'bar');
+            rect.setAttribute('x', (i / numBars) * 100 + '%');
+            rect.setAttribute('y', '50%');
+            rect.setAttribute('width', (1 / numBars) * 90 + '%'); // Adjust width for spacing
+            rect.setAttribute('height', '0%');
+            rect.setAttribute('filter', 'url(#glow)');
 
-        // Post-processing
-        const composer = new THREE.EffectComposer(renderer);
-        composer.addPass(new THREE.RenderPass(scene, camera));
-
-        // Lighting
-        const hemiLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.6);
-        scene.add(hemiLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-        dirLight.position.set(-30, 50, -30);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        scene.add(dirLight);
-
-        // Ground Plane
-        const groundGeo = new THREE.PlaneGeometry(200, 200);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.8 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -10;
-        ground.receiveShadow = true;
-        scene.add(ground);
-
-        // Clay Material Function with Procedural Noise
-        function createClayMaterial(color) {
-            const material = new THREE.MeshStandardMaterial({
-                color: color,
-                roughness: 0.9,
-                metalness: 0.0,
-                flatShading: true
-            });
-
-            material.onBeforeCompile = function(shader) {
-                shader.uniforms.time = { value: 0 };
-
-                // Inject 'time' uniform and custom code into the vertex shader
-                shader.vertexShader = 'uniform float time;\n' + shader.vertexShader;
-
-                shader.vertexShader = shader.vertexShader.replace(
-                    '#include <begin_vertex>',
-                    `
-                    #include <begin_vertex>
-                    transformed += normal * (sin(position.x * 10.0 + time * 0.5) * 0.05);
-                    `
-                );
-
-                // Save reference to shader object for updating the uniform later
-                material.userData.shader = shader;
-            };
-
-            return material;
+            svg.appendChild(rect);
+            bars.push(rect);
         }
 
-        // Create Shapes with Clay Material
-        const shapes = [];
-        const geometries = [
-            new THREE.SphereGeometry(1, 32, 32),
-            new THREE.BoxGeometry(1.5, 1.5, 1.5, 16, 16, 16),
-            new THREE.ConeGeometry(1, 2, 32),
-            new THREE.DodecahedronGeometry(1, 0),
-            new THREE.TorusGeometry(1, 0.4, 16, 50)
-        ];
-
-        for (let i = 0; i < 30; i++) {
-            const geometry = geometries[i % geometries.length];
-            const color = new THREE.Color(`hsl(${(i / 30) * 360}, 50%, 60%)`);
-            const material = createClayMaterial(color);
-
-            const shape = new THREE.Mesh(geometry, material);
-            shape.position.x = (Math.random() - 0.5) * 30;
-            shape.position.y = (Math.random()) * 10;
-            shape.position.z = (Math.random() - 0.5) * 30;
-            shape.scale.setScalar(1 + Math.random() * 1.5);
-            shape.castShadow = true;
-            shape.receiveShadow = true;
-            scene.add(shape);
-            shapes.push(shape);
-        }
-
-        // Microphone Input
+        // Audio setup
+        let audioContext;
         let analyser;
         let dataArray;
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioContext.createMediaStreamSource(stream);
 
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
+        // Start the audio processing
+        function startVisualizer() {
+            // Create audio context
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-                source.connect(analyser);
-                dataArray = new Uint8Array(analyser.frequencyBinCount);
-            }).catch((err) => {
-                console.error('Microphone access denied:', err);
-            });
-        } else {
-            console.error('getUserMedia not supported in this browser.');
-        }
+            // Create analyser node
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
 
-        // Animate Function with Advanced Deformation
-        let lastFrameTime = 0;
-        const frameRate = 12;
+            // Create data array
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-        function animate(time) {
-            requestAnimationFrame(animate);
-
-            const delta = time - lastFrameTime;
-            if (delta > 1000 / frameRate) {
-                lastFrameTime = time;
-
-                if (analyser && dataArray) {
-                    analyser.getByteFrequencyData(dataArray);
-                }
-
-                shapes.forEach((shape, index) => {
-                    let force = 0;
-                    if (analyser && dataArray) {
-                        const dataIndex = Math.floor(index * (dataArray.length / shapes.length));
-                        force = dataArray[dataIndex] / 256;
-                    }
-
-                    // Update shader time uniform
-                    if (shape.material.userData.shader) {
-                        shape.material.userData.shader.uniforms.time.value = time * 0.001;
-                    }
-
-                    // Advanced Deformation
-                    shape.scale.setScalar(1 + force);
-                    shape.rotation.x += 0.02 + (Math.random() - 0.5) * 0.05;
-                    shape.rotation.y += 0.02 + (Math.random() - 0.5) * 0.05;
-                    shape.rotation.z += 0.01 + (Math.random() - 0.5) * 0.05;
-                });
-
-                composer.render();
+            // Get audio input
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(function(stream) {
+                        const source = audioContext.createMediaStreamSource(stream);
+                        source.connect(analyser);
+                        visualize();
+                    })
+                    .catch(function(err) {
+                        alert('Microphone access denied or not available.');
+                        console.error('Error accessing microphone: ' + err);
+                    });
+            } else {
+                alert('getUserMedia not supported in this browser.');
+                console.error('getUserMedia not supported in this browser.');
             }
         }
-        animate(0);
 
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+        // Visualization loop
+        function visualize() {
+            requestAnimationFrame(visualize);
 
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        });
+            analyser.getByteFrequencyData(dataArray);
 
-        // Gyroscopic Parallax Effect
-        window.addEventListener('deviceorientation', (event) => {
-            const { beta, gamma } = event;
-            const parallaxFactor = 0.05;
-            camera.position.x = gamma * parallaxFactor;
-            camera.position.y = beta * parallaxFactor;
-            camera.lookAt(scene.position);
-        });
+            for (let i = 0; i < numBars; i++) {
+                const value = dataArray[i];
+                const percent = value / 255;
+                const height = percent * 100;
+                const y = 100 - height;
+
+                bars[i].setAttribute('height', height + '%');
+                bars[i].setAttribute('y', y + '%');
+            }
+        }
+
+        // Apply SVG filters to the visualizer
+        svg.setAttribute('filter', 'url(#colorShift)');
+
+        // Start the visualizer when the page loads
+        window.addEventListener('load', startVisualizer);
     </script>
 </body>
 </html>
