@@ -43,7 +43,7 @@
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon-es/0.18.0/cannon-es.min.js"></script>
 <script>
     // Basic Three.js setup
     let scene, camera, renderer;
@@ -54,8 +54,6 @@
     const minRadius = 0.5;
     const height = 12;
     const segments = 100; // Increased for better detail
-    let world, physicsMaterial, clayBody;
-    const clock = new THREE.Clock();
     let currentTool = 'smooth';
 
     init();
@@ -66,14 +64,7 @@
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x222222);
 
-        camera = new THREE.PerspectiveCamera(
-            60,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            1000
-        );
-
-        // Position the camera to simulate the potter's perspective
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 8, 10);
         camera.lookAt(0, 5, 0);
 
@@ -113,35 +104,20 @@
         groundMesh.receiveShadow = true;
         scene.add(groundMesh);
 
-        // Physics World
-        world = new CANNON.World();
-        world.gravity.set(0, -9.82, 0);
-        world.broadphase = new CANNON.NaiveBroadphase();
-        physicsMaterial = new CANNON.Material();
-
-        // Clay
+        // Create Clay
         createClay();
 
         // Event Listeners
         window.addEventListener('resize', onWindowResize, false);
-
-        // Unified Pointer Events
         const domElement = renderer.domElement;
         domElement.addEventListener('pointerdown', onPointerDown, false);
         domElement.addEventListener('pointerup', onPointerUp, false);
         domElement.addEventListener('pointermove', onPointerMove, false);
-        domElement.addEventListener('pointercancel', onPointerUp, false);
-        domElement.addEventListener('pointerout', onPointerUp, false);
-        domElement.addEventListener('pointerleave', onPointerUp, false);
-
-        // Disable context menu on long press
         domElement.addEventListener('contextmenu', event => event.preventDefault());
 
         // UI Buttons
         const uiElement = document.getElementById('ui');
         document.getElementById('resetButton').addEventListener('click', resetClay);
-
-        // Tool Selection
         document.querySelectorAll('#toolPanel button').forEach(button => {
             button.addEventListener('click', () => {
                 currentTool = button.getAttribute('data-tool');
@@ -163,11 +139,6 @@
     }
 
     function createClay() {
-        // Remove existing clay body from physics world
-        if (clayBody) {
-            world.removeBody(clayBody);
-        }
-
         // Create initial profile curve for the clay
         const profilePoints = [];
         const step = height / segments;
@@ -184,8 +155,8 @@
         // Clay Material with basic shininess
         const clayMaterial = new THREE.MeshStandardMaterial({
             color: 0xd2a679,
-            roughness: 0.6,  // Reduced roughness for a glossy appearance
-            metalness: 0.3,  // Increased metalness for some shininess
+            roughness: 0.6,
+            metalness: 0.3,
         });
 
         // Remove existing mesh if any
@@ -200,23 +171,6 @@
         potteryMesh.castShadow = true;
         potteryMesh.receiveShadow = true;
         scene.add(potteryMesh);
-
-        // Create physics body for the clay
-        const clayShape = createPhysicsShapeFromGeometry(clayGeometry);
-        clayBody = new CANNON.Body({ mass: 0 });
-        clayBody.addShape(clayShape);
-        clayBody.position.set(potteryMesh.position.x, potteryMesh.position.y, potteryMesh.position.z);
-        world.addBody(clayBody);
-    }
-
-    function createPhysicsShapeFromGeometry(geometry) {
-        // Approximate the geometry with a convex hull for physics
-        const vertices = geometry.attributes.position.array;
-        const points = [];
-        for (let i = 0; i < vertices.length; i += 3) {
-            points.push(new CANNON.Vec3(vertices[i], vertices[i + 1], vertices[i + 2]));
-        }
-        return new CANNON.ConvexPolyhedron({ vertices: points });
     }
 
     function onPointerDown(event) {
@@ -239,21 +193,11 @@
     function onPointerMove(event) {
         if (isInteracting) {
             const currentTouches = [getTouchPosition(event)];
-            if (event.touches && event.touches.length > 1) {
-                currentTouches.push(getTouchPosition(event, 1));
-            }
-
             if (previousTouches.length === currentTouches.length) {
                 if (currentTouches.length === 1) {
                     // Single touch deformation
                     const deltaY = currentTouches[0].y - previousTouches[0].y;
                     deformClay(deltaY, currentTouches[0].y);
-                } else if (currentTouches.length === 2) {
-                    // Multi-touch pinch gesture
-                    const prevDistance = getDistance(previousTouches[0], previousTouches[1]);
-                    const currDistance = getDistance(currentTouches[0], currentTouches[1]);
-                    const scale = currDistance / prevDistance;
-                    deformClayWithPinch(scale, currentTouches);
                 }
 
                 // Haptic Feedback
@@ -267,26 +211,17 @@
         }
     }
 
-    function getTouchPosition(event, index = 0) {
-        if (event.touches && event.touches.length > index) {
-            return { x: event.touches[index].clientX, y: event.touches[index].clientY };
-        } else {
-            return { x: event.clientX, y: event.clientY };
-        }
-    }
-
-    function getDistance(p1, p2) {
-        return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+    function getTouchPosition(event) {
+        return { x: event.clientX, y: event.clientY };
     }
 
     function deformClay(deltaY, pointerY) {
         const rect = renderer.domElement.getBoundingClientRect();
         const normalizedY = ((pointerY - rect.top) / rect.height) * height;
 
-        const influenceRadius = 1.5; // How wide the influence of the deformation is
+        const influenceRadius = 1.5;
         const deformationStrength = deltaY * 0.05;
 
-        // Deform the clay geometry
         const positions = potteryMesh.geometry.attributes.position;
         for (let i = 0; i < positions.count; i++) {
             const y = positions.getY(i);
@@ -299,7 +234,6 @@
                 const angle = Math.atan2(z, x);
                 let newRadius = radius + factor;
 
-                // Apply tool-specific deformation
                 switch (currentTool) {
                     case 'smooth':
                         newRadius = THREE.MathUtils.lerp(radius, newRadius, 0.5);
@@ -324,47 +258,12 @@
         potteryMesh.geometry.computeVertexNormals();
     }
 
-    function deformClayWithPinch(scale, touches) {
-        const centerY = (touches[0].y + touches[1].y) / 2;
-        const rect = renderer.domElement.getBoundingClientRect();
-        const normalizedY = ((centerY - rect.top) / rect.height) * height;
-
-        const influenceRadius = 3;
-        const deformationStrength = (scale - 1) * 10;
-
-        // Deform the clay geometry
-        const positions = potteryMesh.geometry.attributes.position;
-        for (let i = 0; i < positions.count; i++) {
-            const y = positions.getY(i);
-            const distance = Math.abs(y - normalizedY);
-            if (distance < influenceRadius) {
-                const factor = deformationStrength * (1 - distance / influenceRadius);
-                let x = positions.getX(i);
-                let z = positions.getZ(i);
-                const radius = Math.sqrt(x * x + z * z);
-                const angle = Math.atan2(z, x);
-                let newRadius = radius + factor;
-                newRadius = THREE.MathUtils.clamp(newRadius, minRadius, maxRadius);
-                x = newRadius * Math.cos(angle);
-                z = newRadius * Math.sin(angle);
-                positions.setX(i, x);
-                positions.setZ(i, z);
-            }
-        }
-
-        positions.needsUpdate = true;
-        potteryMesh.geometry.computeVertexNormals();
-    }
-
     function resetClay() {
         createClay();
     }
 
     function animate() {
         requestAnimationFrame(animate);
-
-        const delta = clock.getDelta();
-        world.step(delta);
 
         // Rotate the wheel and clay
         const rotationSpeed = 0.02;
