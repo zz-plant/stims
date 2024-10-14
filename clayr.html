@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Mobile 3D Pottery Wheel Simulation</title>
+    <title>Advanced 3D Pottery Wheel Simulation</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
         canvas { display: block; touch-action: none; }
@@ -18,8 +18,8 @@
             padding: 10px;
             border-radius: 5px;
         }
-        #ui button { margin: 5px; padding: 5px 10px; font-size: 14px; cursor: pointer; }
-        #ui select { margin: 5px; padding: 5px; }
+        #ui button, #ui select { margin: 5px; padding: 5px 10px; font-size: 14px; cursor: pointer; }
+        #colorPicker { margin: 5px; }
     </style>
 </head>
 <body>
@@ -29,31 +29,25 @@
     <button id="fireButton">Fire Pottery</button>
     <button id="glazeButton">Glaze Pottery</button>
     <select id="toolSelect">
-        <option value="none">Select Tool</option>
         <option value="smooth">Smooth</option>
         <option value="carve">Carve</option>
         <option value="pinch">Pinch</option>
     </select>
-    <button id="saveButton">Save Progress</button>
-    <button id="shareButton">Share</button>
+    <input type="color" id="colorPicker" value="#8B4513">
+    <button id="saveButton">Save Design</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script>
     let scene, camera, renderer, potteryMesh, wheelMesh, group;
     let isFired = false, isGlazed = false;
-    let rotationSpeed = 0.005;
-    let isTouching = false;
-    let currentTool = 'none';
-    let lastTouchX = 0;
-    let lastTouchY = 0;
+    let currentTool = 'smooth';
     let touchSensitivity = 0.01;
-    let pinchDistance = null;
-    let clayTexture;
-    const maxRadius = 0.15, minRadius = 0.02, height = 0.3, segments = 200;
+    const maxRadius = 0.15, height = 0.3, segments = 200;
+    let clayColor = new THREE.Color(0x8B4513);
+    let rotationSpeed = 0.01;
 
     function init() {
-        // Initialize Scene, Camera, Renderer
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0.5, 2);
@@ -61,43 +55,16 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Lighting
         const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
         light.position.set(0, 1, 0);
         scene.add(light);
 
-        // Pottery and Wheel Creation
         createPottery();
-
-        // UI Event Listeners
-        document.getElementById('resetButton').addEventListener('click', resetClay);
-        document.getElementById('fireButton').addEventListener('click', firePottery);
-        document.getElementById('glazeButton').addEventListener('click', glazePottery);
-        document.getElementById('toolSelect').addEventListener('change', (e) => {
-            currentTool = e.target.value;
-        });
-        document.getElementById('saveButton').addEventListener('click', saveProgress);
-        document.getElementById('shareButton').addEventListener('click', sharePottery);
-
-        // Touch Events for Mobile
-        renderer.domElement.addEventListener('touchstart', onTouchStart, false);
-        renderer.domElement.addEventListener('touchmove', onTouchMove, false);
-        renderer.domElement.addEventListener('touchend', onTouchEnd, false);
-
-        // Gyroscope Rotation (Optional)
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener("deviceorientation", handleOrientation);
-        }
-
-        window.addEventListener('resize', onWindowResize);
+        setupEventListeners();
         animate();
     }
 
     function createPottery() {
-        isFired = false;
-        isGlazed = false;
-
-        // Pottery profile curve
         const profilePoints = [];
         const step = height / segments;
         for (let i = 0; i <= segments; i++) {
@@ -105,29 +72,59 @@
             profilePoints.push(new THREE.Vector2(maxRadius, y));
         }
 
-        // Pottery LatheGeometry
         const potteryGeometry = new THREE.LatheGeometry(profilePoints, 200);
         potteryGeometry.computeVertexNormals();
 
-        // Load Clay Texture
-        const textureLoader = new THREE.TextureLoader();
-        clayTexture = textureLoader.load('https://i.imgur.com/8g1VbBP.jpg'); // Replace with your own texture
-        const potteryMaterial = new THREE.MeshStandardMaterial({
-            map: clayTexture,
-            roughness: 0.9,
-            metalness: 0.1,
+        const vertexShader = `
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            void main() {
+                vUv = uv;
+                vNormal = normal;
+                vec3 transformed = position;
+                transformed.z += sin(uv.y * 10.0) * 0.002;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
+            }
+        `;
+        const fragmentShader = `
+            uniform vec3 color;
+            uniform bool isFired;
+            uniform bool isGlazed;
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            void main() {
+                vec3 finalColor = color;
+                if (isFired) {
+                    finalColor *= 0.8;
+                }
+                if (isGlazed) {
+                    finalColor += vec3(0.2, 0.2, 0.1);
+                    float specular = pow(max(dot(vNormal, vec3(0, 1, 0)), 0.0), 20.0);
+                    finalColor += vec3(specular);
+                }
+                gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+
+        const potteryMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                color: { value: clayColor },
+                isFired: { value: isFired },
+                isGlazed: { value: isGlazed }
+            },
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader
         });
+
         potteryMesh = new THREE.Mesh(potteryGeometry, potteryMaterial);
         potteryMesh.castShadow = true;
         potteryMesh.receiveShadow = true;
 
-        // Wheel Geometry
         const wheelGeometry = new THREE.CylinderGeometry(maxRadius * 2, maxRadius * 2, 0.05, 64);
         const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
         wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
         wheelMesh.receiveShadow = true;
 
-        // Positioning and Grouping
         potteryMesh.position.y = 0.05;
         wheelMesh.position.y = 0;
 
@@ -137,62 +134,56 @@
         scene.add(group);
     }
 
+    function setupEventListeners() {
+        document.getElementById('resetButton').addEventListener('click', resetClay);
+        document.getElementById('fireButton').addEventListener('click', firePottery);
+        document.getElementById('glazeButton').addEventListener('click', glazePottery);
+        document.getElementById('toolSelect').addEventListener('change', (e) => {
+            currentTool = e.target.value;
+        });
+        document.getElementById('colorPicker').addEventListener('change', (e) => {
+            clayColor.setStyle(e.target.value);
+            potteryMesh.material.uniforms.color.value = clayColor;
+        });
+        document.getElementById('saveButton').addEventListener('click', saveDesign);
+
+        renderer.domElement.addEventListener('touchstart', onTouchStart, false);
+        renderer.domElement.addEventListener('touchmove', onTouchMove, false);
+        renderer.domElement.addEventListener('touchend', onTouchEnd, false);
+        window.addEventListener('resize', onWindowResize);
+    }
+
     function resetClay() {
-        scene.clear();
+        scene.remove(group);
         createPottery();
+        isFired = false;
+        isGlazed = false;
     }
 
     function firePottery() {
         if (!isFired) {
             isFired = true;
-            potteryMesh.material.map = null; // Remove texture during firing
-            potteryMesh.material.color.setHex(0xCD853F); // Fired color
-            potteryMesh.material.roughness = 0.5;
-            potteryMesh.material.metalness = 0.2;
-            potteryMesh.material.needsUpdate = true;
+            potteryMesh.material.uniforms.isFired.value = true;
         }
     }
 
     function glazePottery() {
         if (isFired && !isGlazed) {
             isGlazed = true;
-            potteryMesh.material.color.setHex(0xFFD700); // Glazed color
-            potteryMesh.material.roughness = 0.1;
-            potteryMesh.material.metalness = 0.5;
-            potteryMesh.material.needsUpdate = true;
+            potteryMesh.material.uniforms.isGlazed.value = true;
         }
     }
 
-    function saveProgress() {
-        alert("Progress saved! You can return to this project later.");
-        // Add logic to save the pottery state, maybe in localStorage or a database
-    }
-
-    function sharePottery() {
-        alert("Your pottery has been shared!");
-        // Add sharing functionality, such as generating an image or sharing on social media
-    }
-
-    function applyToolEffect(event) {
-        const touchX = (event.clientX / window.innerWidth) * 2 - 1;
-        const touchY = -(event.clientY / window.innerHeight) * 2 + 1;
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera({ x: touchX, y: touchY }, camera);
-        const intersects = raycaster.intersectObject(potteryMesh);
-        if (intersects.length > 0 && currentTool !== 'none') {
-            deformClay(intersects[0].point);
-        }
-    }
-
-    function deformClay(point) {
+    function applyToolEffect(point) {
         const positions = potteryMesh.geometry.attributes.position;
         for (let i = 0; i < positions.count; i++) {
-            const distance = point.distanceToSquared(new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i)));
+            const vertex = new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i));
+            const distance = point.distanceTo(vertex);
             if (distance < 0.1) {
                 let newZ = positions.getZ(i);
-                if (currentTool === 'carve') newZ -= 0.005;
+                if (currentTool === 'carve') newZ -= 0.002;
                 else if (currentTool === 'smooth') newZ = THREE.MathUtils.lerp(newZ, 0, 0.1);
-                else if (currentTool === 'pinch') newZ += 0.005;
+                else if (currentTool === 'pinch') newZ += 0.002;
                 positions.setZ(i, newZ);
             }
         }
@@ -202,25 +193,28 @@
 
     function onTouchStart(event) {
         if (event.touches.length === 1) {
-            applyToolEffect(event.touches[0]);
-        }
-        if (event.touches.length === 2) {
-            pinchDistance = getPinchDistance(event);
+            const touch = event.touches[0];
+            const mouse = new THREE.Vector2(
+                (touch.clientX / window.innerWidth) * 2 - 1,
+                -(touch.clientY / window.innerHeight) * 2 + 1
+            );
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(potteryMesh);
+            if (intersects.length > 0) {
+                applyToolEffect(intersects[0].point);
+            }
         }
     }
 
     function onTouchMove(event) {
         if (event.touches.length === 2) {
-            const newPinchDistance = getPinchDistance(event);
-            const zoomFactor = pinchDistance / newPinchDistance;
-            camera.position.z *= zoomFactor;
-            pinchDistance = newPinchDistance;
+            const pinchDistance = getPinchDistance(event);
+            camera.position.z *= pinchDistance / getPinchDistance(event);
         }
     }
 
-    function onTouchEnd(event) {
-        isTouching = false;
-    }
+    function onTouchEnd(event) {}
 
     function getPinchDistance(event) {
         const dx = event.touches[0].clientX - event.touches[1].clientX;
@@ -228,14 +222,17 @@
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    function handleOrientation(event) {
-        const rotation = event.gamma * 0.01; // Tilt the phone left/right
-        potteryMesh.rotation.y += rotation;
-        wheelMesh.rotation.y += rotation;
+    function saveDesign() {
+        const dataURL = renderer.domElement.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'pottery_design.png';
+        link.href = dataURL;
+        link.click();
     }
 
     function animate() {
         requestAnimationFrame(animate);
+        group.rotation.y += rotationSpeed;
         renderer.render(scene, camera);
     }
 
