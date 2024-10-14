@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Pottery Wheel Simulation</title>
+    <title>Mobile 3D Pottery Wheel Simulation</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; }
+        body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
         canvas { display: block; touch-action: none; }
         #ui {
             position: absolute;
@@ -27,48 +27,59 @@
     <button id="resetButton">Reset Clay</button>
     <button id="fireButton">Fire Pottery</button>
     <button id="glazeButton">Glaze Pottery</button>
+    <button id="preset1">Preset: Vase</button>
+    <button id="preset2">Preset: Bowl</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script>
     let scene, camera, renderer, potteryMesh, wheelMesh;
-    const maxRadius = 0.15, minRadius = 0.02, height = 0.3, segments = 200;
     let isFired = false, isGlazed = false;
-    let rotateSpeed = 0.005;
+    let rotationSpeed = 0.005;
+    let isTouching = false;
+    let lastTouchX = 0;
+    let touchSensitivity = 0.01;
+    let pinchDistance = null;
+    const maxRadius = 0.15, minRadius = 0.02, height = 0.3, segments = 200;
 
     function init() {
-        // Initialize scene, camera, and renderer
+        // Scene, Camera, Renderer
         scene = new THREE.Scene();
-
         camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0.5, 2);
-
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Create light
+        // Lighting
         const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
         light.position.set(0, 1, 0);
         scene.add(light);
 
+        // Pottery and Wheel Creation
         createPottery();
-        animate();
 
-        // Event listeners for UI
+        // UI Event Listeners
         document.getElementById('resetButton').addEventListener('click', resetClay);
         document.getElementById('fireButton').addEventListener('click', firePottery);
         document.getElementById('glazeButton').addEventListener('click', glazePottery);
+        document.getElementById('preset1').addEventListener('click', applyPresetVase);
+        document.getElementById('preset2').addEventListener('click', applyPresetBowl);
+
+        // Touch Events for Mobile
+        renderer.domElement.addEventListener('touchstart', onTouchStart, false);
+        renderer.domElement.addEventListener('touchmove', onTouchMove, false);
+        renderer.domElement.addEventListener('touchend', onTouchEnd, false);
 
         window.addEventListener('resize', onWindowResize);
+        animate();
     }
 
     function createPottery() {
-        // Reset pottery and wheel
         isFired = false;
         isGlazed = false;
 
-        // Profile curve for the pottery shape
+        // Pottery profile curve
         const profilePoints = [];
         const step = height / segments;
         for (let i = 0; i <= segments; i++) {
@@ -76,31 +87,28 @@
             profilePoints.push(new THREE.Vector2(maxRadius, y));
         }
 
-        // Create lathe geometry from profile points
+        // Pottery LatheGeometry
         const potteryGeometry = new THREE.LatheGeometry(profilePoints, 200);
         potteryGeometry.computeVertexNormals();
-
         const potteryMaterial = new THREE.MeshStandardMaterial({
             color: 0x8B4513,
             roughness: 0.9,
             metalness: 0.1,
         });
-
         potteryMesh = new THREE.Mesh(potteryGeometry, potteryMaterial);
         potteryMesh.castShadow = true;
         potteryMesh.receiveShadow = true;
 
-        // Create wheel geometry
+        // Wheel Geometry
         const wheelGeometry = new THREE.CylinderGeometry(maxRadius * 2, maxRadius * 2, 0.05, 64);
         const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
         wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
         wheelMesh.receiveShadow = true;
 
-        // Position pottery and wheel
+        // Positioning and Grouping
         potteryMesh.position.y = 0.05;
         wheelMesh.position.y = 0;
 
-        // Create group for pottery and wheel
         const group = new THREE.Group();
         group.add(potteryMesh);
         group.add(wheelMesh);
@@ -108,7 +116,6 @@
     }
 
     function resetClay() {
-        // Remove old pottery and recreate
         scene.clear();
         createPottery();
     }
@@ -133,13 +140,66 @@
         }
     }
 
+    function applyPresetVase() {
+        if (!isFired) {
+            // Modify the pottery shape to be a vase
+            potteryMesh.geometry = new THREE.LatheGeometry([
+                new THREE.Vector2(maxRadius * 0.6, 0),
+                new THREE.Vector2(maxRadius * 0.7, height * 0.3),
+                new THREE.Vector2(maxRadius * 0.4, height * 0.6),
+                new THREE.Vector2(maxRadius * 0.7, height)
+            ], 200);
+            potteryMesh.geometry.computeVertexNormals();
+        }
+    }
+
+    function applyPresetBowl() {
+        if (!isFired) {
+            // Modify the pottery shape to be a bowl
+            potteryMesh.geometry = new THREE.LatheGeometry([
+                new THREE.Vector2(maxRadius, 0),
+                new THREE.Vector2(maxRadius * 0.9, height * 0.3),
+                new THREE.Vector2(maxRadius * 0.5, height)
+            ], 200);
+            potteryMesh.geometry.computeVertexNormals();
+        }
+    }
+
+    function onTouchStart(event) {
+        if (event.touches.length === 1) {
+            isTouching = true;
+            lastTouchX = event.touches[0].clientX;
+        } else if (event.touches.length === 2) {
+            pinchDistance = getPinchDistance(event);
+        }
+    }
+
+    function onTouchMove(event) {
+        if (isTouching && event.touches.length === 1) {
+            const deltaX = event.touches[0].clientX - lastTouchX;
+            potteryMesh.rotation.y += deltaX * touchSensitivity;
+            wheelMesh.rotation.y += deltaX * touchSensitivity;
+            lastTouchX = event.touches[0].clientX;
+        } else if (event.touches.length === 2) {
+            const newPinchDistance = getPinchDistance(event);
+            const zoomFactor = pinchDistance / newPinchDistance;
+            camera.position.z *= zoomFactor;
+            pinchDistance = newPinchDistance;
+        }
+    }
+
+    function onTouchEnd(event) {
+        isTouching = false;
+    }
+
+    function getPinchDistance(event) {
+        const dx = event.touches[0].clientX - event.touches[1].clientX;
+        const dy = event.touches[0].clientY - event.touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
     function animate() {
         requestAnimationFrame(animate);
-
-        // Rotate the pottery and wheel
-        potteryMesh.rotation.y += rotateSpeed;
-        wheelMesh.rotation.y += rotateSpeed;
-
         renderer.render(scene, camera);
     }
 
@@ -149,7 +209,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // Initialize the simulation
     init();
 </script>
 
