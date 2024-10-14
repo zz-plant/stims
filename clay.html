@@ -1,216 +1,213 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dynamic WebGL Audio Visualizer</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background-color: #000;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    canvas {
-      display: block;
-    }
-    #controls {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 10;
-      color: white;
-      font-family: Arial, sans-serif;
-    }
-    #controls label {
-      margin-right: 10px;
-    }
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/josephg/noisejs/perlin.js"></script> <!-- Adding Perlin Noise library -->
+    <title>Microphone Input Music Visualizer</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { display: block; }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            z-index: 1;
+        }
+        #startButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-  <canvas id="visualizer"></canvas>
-  <div id="controls">
-    <label>Color</label>
-    <input type="color" id="colorPicker" value="#ffffff">
-    <label>Sensitivity</label>
-    <input type="range" id="sensitivity" min="0.1" max="5" step="0.1" value="1">
-  </div>
+<div id="controls">
+    <button id="startButton">Start Microphone Visualizer</button>
+</div>
+<canvas id="gameCanvas"></canvas>
+<script>
+    // Get the canvas and context
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-  <script>
-    let scene, camera, renderer, particles, analyser, dataArray, uniforms;
-    const canvas = document.getElementById('visualizer');
-    const colorPicker = document.getElementById('colorPicker');
-    const sensitivitySlider = document.getElementById('sensitivity');
-    const mouse = { x: 0, y: 0 };
-    let sensitivity = 1;
-    let lastLowPeak = 0;
+    // Set canvas size
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    function init() {
-      // Scene setup
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.z = 50;
+    // Audio setup
+    const startButton = document.getElementById('startButton');
+    let audioContext, analyzer, source, frequencyData;
 
-      // Renderer setup
-      renderer = new THREE.WebGLRenderer({ canvas });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
+    startButton.addEventListener('click', function() {
+        // Disable the button after starting
+        startButton.disabled = true;
+        startButton.style.display = 'none';
 
-      // Audio setup
-      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(stream);
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        // Request microphone access
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function(stream) {
+                setupAudioContext(stream);
+            })
+            .catch(function(err) {
+                console.error('Error accessing microphone:', err);
+                alert('Error accessing microphone: ' + err.message);
+            });
+    });
 
-        // Create particle system
-        createParticles();
-
-        // Start animation loop
+    function setupAudioContext(stream) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyzer = audioContext.createAnalyser();
+        source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyzer);
+        analyzer.fftSize = 1024;
+        const bufferLength = analyzer.frequencyBinCount;
+        frequencyData = new Uint8Array(bufferLength);
+        // Start animation after setting up audio context
         animate();
-      }).catch(err => {
-        console.error('Audio access denied:', err);
-      });
-
-      // Handle resize
-      window.addEventListener('resize', onResize);
-      document.addEventListener('mousemove', onMouseMove);
-
-      // Update sensitivity and color
-      sensitivitySlider.addEventListener('input', () => {
-        sensitivity = parseFloat(sensitivitySlider.value);
-      });
-      colorPicker.addEventListener('input', () => {
-        uniforms.color.value.set(colorPicker.value);
-      });
     }
 
-    function createParticles() {
-      const particleCount = 5000; // Fewer particles
-      const positions = new Float32Array(particleCount * 3);
-      const velocities = new Float32Array(particleCount * 3);
+    // Particle system
+    const particles = [];
+    const particleCount = 800;
 
-      for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 100;
-        positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
-
-        // Faster velocity for more dynamic motion
-        velocities[i * 3] = (Math.random() - 0.5) * 2.0; // Increase speed
-        velocities[i * 3 + 1] = (Math.random() - 0.5) * 2.0;
-        velocities[i * 3 + 2] = (Math.random() - 0.5) * 2.0;
-      }
-
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
-
-      uniforms = {
-        time: { value: 0 },
-        mouse: { value: new THREE.Vector2() },
-        audioData: { value: new Float32Array(128) },
-        color: { value: new THREE.Color(colorPicker.value) },
-        sensitivity: { value: sensitivity }
-      };
-
-      const material = new THREE.ShaderMaterial({
-        uniforms: uniforms,
-        vertexShader: vertexShader(),
-        fragmentShader: fragmentShader(),
-        blending: THREE.AdditiveBlending,
-        transparent: true,
-        depthWrite: false
-      });
-
-      particles = new THREE.Points(geometry, material);
-      scene.add(particles);
+    // Initialize particles
+    for (let i = 0; i < particleCount; i++) {
+        particles.push(createParticle());
     }
 
-    function vertexShader() {
-      return `
-        uniform float time;
-        uniform vec2 mouse;
-        uniform float audioData[128];
-        uniform float sensitivity;
-
-        attribute vec3 velocity;
-        varying vec3 vColor;
-
-        float perlinNoise(float x, float y, float z) {
-          return noise.simplex3(x, y, z);
-        }
-
-        void main() {
-          vec3 newPosition = position + velocity * time * 0.5; // Faster movements
-
-          float bass = audioData[0] * sensitivity;
-          float mid = audioData[64] * sensitivity;
-          float treble = audioData[128] * sensitivity;
-
-          float noiseFactor = perlinNoise(newPosition.x, newPosition.y, time);
-          newPosition.x += sin(time + position.x * noiseFactor) * bass * 0.5;
-          newPosition.y += cos(time + position.y * noiseFactor) * mid * 0.4;
-
-          gl_PointSize = 8.0 + bass * 20.0; // Larger particles
-
-          vColor = vec3(
-            0.5 + 0.5 * sin(time + bass),
-            0.5 + 0.5 * cos(time + mid),
-            0.5 + 0.5 * sin(time + treble)
-          );
-
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-        }
-      `;
+    function createParticle() {
+        return {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 3 + 1,
+            baseSize: Math.random() * 3 + 1,
+            velocityX: (Math.random() - 0.5) * 2,
+            velocityY: (Math.random() - 0.5) * 2,
+            hue: Math.random() * 360,
+            lightness: 50,
+            alpha: 0.5,
+            rotation: Math.random() * 360,
+            angularVelocity: (Math.random() - 0.5) * 2
+        };
     }
 
-    function fragmentShader() {
-      return `
-        varying vec3 vColor;
-
-        void main() {
-          gl_FragColor = vec4(vColor, 1.0);
-        }
-      `;
-    }
-
-    function onMouseMove(event) {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      uniforms.mouse.value.set(mouse.x * 50, mouse.y * 50);
-    }
-
-    function onResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
+    // Main animation loop
     function animate() {
-      requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
 
-      analyser.getByteFrequencyData(dataArray);
+        // Create dynamic gradient background
+        if (analyzer) {
+            analyzer.getByteFrequencyData(frequencyData);
+            const bass = getBass(frequencyData);
+            const hue = (bass / 255) * 360;
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, canvas.width
+            );
+            gradient.addColorStop(0, `hsl(${hue}, 100%, 30%)`);
+            gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 100%, 10%)`);
+            ctx.fillStyle = gradient;
+        } else {
+            ctx.fillStyle = '#000';
+        }
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      let bass = dataArray[0] / 255;
-      if (bass > 0.8 && bass > lastLowPeak * 1.1) {
-        lastLowPeak = bass;
-        uniforms.time.value += 0.1;
-      }
+        // Draw particles
+        particles.forEach((p, index) => {
+            // Move particles
+            p.x += p.velocityX;
+            p.y += p.velocityY;
+            p.rotation += p.angularVelocity;
 
-      uniforms.time.value += 0.05;
-      uniforms.audioData.value = dataArray.map(d => d / 255);
-      uniforms.sensitivity.value = sensitivity;
+            // Wrap around edges
+            if (p.x < -p.size) p.x = canvas.width + p.size;
+            if (p.x > canvas.width + p.size) p.x = -p.size;
+            if (p.y < -p.size) p.y = canvas.height + p.size;
+            if (p.y > canvas.height + p.size) p.y = -p.size;
 
-      renderer.render(scene, camera);
+            // Change particle properties based on frequency data
+            if (analyzer) {
+                const freqIndex = Math.floor(index % frequencyData.length);
+                const amplitude = frequencyData[freqIndex] / 255;
+                p.size = p.baseSize + amplitude * 15;
+                p.hue = (p.hue + amplitude * 10) % 360;
+                p.lightness = 40 + amplitude * 20;
+                p.alpha = 0.3 + amplitude * 0.7;
+            }
+
+            // Draw particle
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = `hsla(${p.hue}, 100%, ${p.lightness}%, ${p.alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(0, -p.size / 2);
+            for (let i = 0; i < 5; i++) {
+                ctx.lineTo(
+                    (p.size / 2) * Math.cos(((18 + i * 72) * Math.PI) / 180),
+                    (p.size / 2) * Math.sin(((18 + i * 72) * Math.PI) / 180)
+                );
+                ctx.lineTo(
+                    (p.size / 4) * Math.cos(((54 + i * 72) * Math.PI) / 180),
+                    (p.size / 4) * Math.sin(((54 + i * 72) * Math.PI) / 180)
+                );
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        });
+
+        // Draw frequency bars
+        if (analyzer) {
+            const barWidth = (canvas.width / frequencyData.length) * 2.5;
+            let x = 0;
+            for (let i = 0; i < frequencyData.length; i++) {
+                const barHeight = frequencyData[i] * 1.2;
+                const hue = (i / frequencyData.length) * 360;
+                ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.7)`;
+                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        }
+
+        // Draw waveform
+        if (analyzer) {
+            const timeData = new Uint8Array(analyzer.fftSize);
+            analyzer.getByteTimeDomainData(timeData);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.beginPath();
+            const sliceWidth = canvas.width / timeData.length;
+            let x = 0;
+            for (let i = 0; i < timeData.length; i++) {
+                const v = timeData[i] / 128.0;
+                const y = (v * canvas.height) / 2;
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+        }
     }
 
-    init();
-  </script>
+    // Helper function to get bass frequency average
+    function getBass(dataArray) {
+        let sum = 0;
+        const bassCount = dataArray.length / 8; // Lower frequencies
+        for (let i = 0; i < bassCount; i++) {
+            sum += dataArray[i];
+        }
+        return sum / bassCount;
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+</script>
 </body>
 </html>
