@@ -2,245 +2,164 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Enhanced Clay Aesthetic</title>
+    <title>Enhanced Claymation Music Visualizer</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
         canvas { display: block; }
     </style>
+    <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://threejs.org/examples/jsm/libs/stats.module.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+    <!-- ShaderPass for post-processing -->
+    <script src="https://threejs.org/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://threejs.org/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://threejs.org/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://threejs.org/examples/js/shaders/FXAAShader.js"></script>
+    <script src="https://threejs.org/examples/js/shaders/ToonShader.js"></script>
 </head>
 <body>
-    <script>
-        // Set up scene, camera, renderer
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 25;
+<script>
+    // Scene Setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a1a);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+    // Camera Setup
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.z = 35;
+
+    // Renderer Setup
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Post-processing for Toon Shading
+    const composer = new THREE.EffectComposer(renderer);
+    composer.addPass(new THREE.RenderPass(scene, camera));
+
+    const effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+    effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+    composer.addPass(effectFXAA);
+
+    // Controls (Optional)
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    // Lighting
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(-5, 10, 5);
+    scene.add(dirLight);
+
+    // Clay Material Function
+    function createClayMaterial(color) {
+        const material = new THREE.MeshStandardMaterial({
+            color: color,
+            roughness: 0.9,
+            metalness: 0.1
+        });
+
+        // Add procedural noise texture to simulate clay imperfections
+        const noiseTexture = new THREE.TextureLoader().load('https://i.imgur.com/Uf4jK95.png');
+        noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
+        noiseTexture.repeat.set(2, 2);
+        material.bumpMap = noiseTexture;
+        material.bumpScale = 0.05;
+
+        return material;
+    }
+
+    // Create Shapes with Clay Material
+    const shapes = [];
+    const geometries = [
+        new THREE.SphereGeometry(1, 32, 32),
+        new THREE.BoxGeometry(1.5, 1.5, 1.5),
+        new THREE.ConeGeometry(1, 2, 32),
+        new THREE.DodecahedronGeometry(1),
+        new THREE.TorusGeometry(1, 0.4, 16, 100)
+    ];
+
+    for (let i = 0; i < 40; i++) {
+        const geometry = geometries[i % geometries.length];
+        const color = new THREE.Color(`hsl(${(i / 40) * 360}, 100%, 70%)`);
+        const material = createClayMaterial(color);
+
+        const shape = new THREE.Mesh(geometry, material);
+        shape.position.x = (Math.random() - 0.5) * 50;
+        shape.position.y = (Math.random() - 0.5) * 40;
+        shape.position.z = (Math.random() - 0.5) * 30;
+        shape.scale.setScalar(0.7 + Math.random() * 1.5);
+        scene.add(shape);
+        shapes.push(shape);
+    }
+
+    // Microphone Input
+    let analyser;
+    let dataArray;
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(stream);
+
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+
+            source.connect(analyser);
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        }).catch((err) => {
+            console.error('Microphone access denied:', err);
+        });
+    }
+
+    // Animation Variables
+    let lastFrameTime = 0;
+    const frameRate = 12; // Adjusted for stop-motion effect
+
+    // Animate Function
+    function animate(time) {
+        requestAnimationFrame(animate);
+
+        const delta = time - lastFrameTime;
+        if (delta > 1000 / frameRate && analyser) {
+            lastFrameTime = time;
+
+            analyser.getByteFrequencyData(dataArray);
+
+            shapes.forEach((shape, index) => {
+                const dataIndex = Math.floor(index * (dataArray.length / shapes.length));
+                const force = dataArray[dataIndex] / 256;
+                const scale = 0.5 + Math.pow(force, 0.75) * 1.5;
+                shape.scale.set(scale, scale, scale);
+
+                // Imperfect Motion
+                shape.position.y += Math.sin(time * 0.002 + index) * 0.05 + (Math.random() - 0.5) * 0.02;
+                shape.position.z += Math.cos(time * 0.0015 + index) * 0.05 + (Math.random() - 0.5) * 0.02;
+                shape.rotation.x += 0.02 + (Math.random() - 0.5) * 0.05;
+                shape.rotation.y += 0.02 + (Math.random() - 0.5) * 0.05;
+                shape.rotation.z += 0.01 + (Math.random() - 0.5) * 0.05;
+            });
+
+            // Subtle Camera Shake
+            camera.position.x += (Math.random() - 0.5) * 0.02;
+            camera.position.y += (Math.random() - 0.5) * 0.02;
+
+            composer.render();
+        }
+    }
+    animate(0);
+
+    // Handle Window Resize
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
         renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // Create dynamic backdrop with added interest
-        const backdropGeometry = new THREE.PlaneGeometry(100, 100, 64, 64);
-        const backdropMaterial = new THREE.MeshStandardMaterial({
-            color: 0x222222,
-            side: THREE.DoubleSide,
-            wireframe: false
-        });
-        const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial);
-        backdrop.position.z = -50;
-        scene.add(backdrop);
-
-        // Create scenery elements (e.g., hills, trees, props)
-        const scenery = [];
-        for (let i = 0; i < 20; i++) {
-            const hillGeometry = new THREE.DodecahedronGeometry(3 + Math.random() * 2);
-            const hillMaterial = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(`hsl(${Math.random() * 360}, 60%, 40%)`),
-                roughness: 1.0,
-                metalness: 0.0
-            });
-            const hill = new THREE.Mesh(hillGeometry, hillMaterial);
-            hill.position.set((Math.random() - 0.5) * 80, (Math.random() - 0.5) * 40, -40 + Math.random() * 20);
-            scene.add(hill);
-            scenery.push(hill);
-        }
-
-        for (let i = 0; i < 30; i++) {
-            const treeGeometry = new THREE.ConeGeometry(0.5, 2 + Math.random() * 3, 8);
-            const treeMaterial = new THREE.MeshStandardMaterial({
-                color: 0x006400,
-                roughness: 1.0,
-                metalness: 0.0
-            });
-            const tree = new THREE.Mesh(treeGeometry, treeMaterial);
-            tree.position.set((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 50, -30 + Math.random() * 10);
-            scene.add(tree);
-            scenery.push(tree);
-        }
-
-        for (let i = 0; i < 15; i++) {
-            const propGeometry = new THREE.TorusKnotGeometry(0.5, 0.15, 50, 20);
-            const propMaterial = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(`hsl(${Math.random() * 360}, 70%, 50%)`),
-                roughness: 0.8,
-                metalness: 0.3
-            });
-            const prop = new THREE.Mesh(propGeometry, propMaterial);
-            prop.position.set((Math.random() - 0.5) * 90, (Math.random() - 0.5) * 40, -20 + Math.random() * 20);
-            scene.add(prop);
-            scenery.push(prop);
-        }
-
-        // Microphone input
-        let analyser;
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioContext.createMediaStreamSource(stream);
-
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-
-                source.connect(analyser);
-            }).catch((err) => {
-                console.error('Microphone access denied:', err);
-            });
-        }
-
-        // Create an array of different clay-like shapes
-        const shapes = [];
-        const geometries = [
-            new THREE.SphereGeometry(1, 32, 32),
-            new THREE.BoxGeometry(1.5, 1.5, 1.5),
-            new THREE.ConeGeometry(1, 2, 32),
-            new THREE.DodecahedronGeometry(1),
-            new THREE.TorusGeometry(1, 0.4, 16, 100)
-        ];
-
-        for (let i = 0; i < 40; i++) { // Increased number of shapes
-            const geometry = geometries[i % geometries.length];
-            const clayMaterial = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(`hsl(${(i / 40) * 360}, 100%, 70%)`),
-                roughness: 0.9,
-                metalness: 0.1,
-                transparent: true,
-                opacity: 0.9 // Allow blending of shapes
-            });
-            const shape = new THREE.Mesh(geometry, clayMaterial);
-            shape.position.x = (Math.random() - 0.5) * 50; // Wider spread along X axis
-            shape.position.y = (Math.random() - 0.5) * 40; // Spread along Y axis
-            shape.position.z = (Math.random() - 0.5) * 30; // Spread along Z axis
-            shape.scale.setScalar(0.7 + Math.random() * 1.5); // Varying scales
-            scene.add(shape);
-            shapes.push(shape);
-        }
-
-        // Create organic connecting strands between shapes
-        const strandMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
-        const strands = [];
-        for (let i = 0; i < shapes.length - 1; i++) {
-            const points = [
-                shapes[i].position.clone(),
-                shapes[i + 1].position.clone()
-            ];
-            const strandGeometry = new THREE.BufferGeometry().setFromPoints(points);
-            const strand = new THREE.Line(strandGeometry, strandMaterial);
-            scene.add(strand);
-            strands.push(strand);
-        }
-
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-        scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0xffd700, 1, 150);
-        pointLight.position.set(20, 30, 50);
-        scene.add(pointLight);
-
-        // Animate function with smooshing effect, imperfect motion, and parallax
-        let lastFrameTime = 0;
-        const frameRate = 10; // Claymation frame rate for a choppy effect
-
-        function animate(time) {
-            requestAnimationFrame(animate);
-
-            const delta = time - lastFrameTime;
-            if (delta > 1000 / frameRate && analyser) {
-                lastFrameTime = time;
-
-                // Get frequency data
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(dataArray);
-
-                // Update shapes based on frequency data
-                shapes.forEach((shape, index) => {
-                    const dataIndex = Math.floor(index * (dataArray.length / shapes.length));
-                    const force = dataArray[dataIndex] / 256;
-                    const scale = 0.5 + Math.pow(force, 0.75) * 1.5; // More dynamic scaling
-                    shape.scale.set(scale, scale, scale);
-
-                    // Apply unique movement patterns influenced by shared waves and introduce imperfect, jittery rotation
-                    shape.position.y += Math.sin(time * 0.002 + index) * 0.05 + (Math.random() - 0.5) * 0.02;
-                    shape.position.z += Math.cos(time * 0.0015 + index) * 0.05 + (Math.random() - 0.5) * 0.02;
-                    shape.rotation.x += 0.02 + 0.03 * Math.sin(time * 0.001 + index) + (Math.random() - 0.5) * 0.01;
-                    shape.rotation.y += 0.02 + 0.03 * Math.cos(time * 0.001 + index) + (Math.random() - 0.5) * 0.01;
-                    shape.rotation.z += 0.01 * Math.sin(time * 0.0015 + index) + (Math.random() - 0.5) * 0.01;
-                });
-
-                // Smooshing effect - collision detection and deformation
-                for (let i = 0; i < shapes.length; i++) {
-                    for (let j = i + 1; j < shapes.length; j++) {
-                        const shapeA = shapes[i];
-                        const shapeB = shapes[j];
-                        const distance = shapeA.position.distanceTo(shapeB.position);
-                        const minDistance = (shapeA.scale.x + shapeB.scale.x) * 0.5;
-
-                        if (distance < minDistance) {
-                            // Calculate smooshing effect
-                            const overlap = minDistance - distance;
-                            const smooshFactor = overlap * 0.1;
-
-                            // Adjust positions slightly to simulate smooshing
-                            const direction = new THREE.Vector3().subVectors(shapeB.position, shapeA.position).normalize();
-                            shapeA.position.add(direction.clone().multiplyScalar(-smooshFactor));
-                            shapeB.position.add(direction.clone().multiplyScalar(smooshFactor));
-
-                            // Deform scales to simulate sharing mass
-                            shapeA.scale.x = Math.max(0.5, shapeA.scale.x - smooshFactor * 0.5);
-                            shapeB.scale.x = Math.max(0.5, shapeB.scale.x - smooshFactor * 0.5);
-                            shapeA.scale.y = Math.max(0.5, shapeA.scale.y - smooshFactor * 0.5);
-                            shapeB.scale.y = Math.max(0.5, shapeB.scale.y - smooshFactor * 0.5);
-                        }
-                    }
-                }
-
-                // Update strands for organic connections
-                strands.forEach((strand, i) => {
-                    const points = [
-                        shapes[i].position.clone(),
-                        shapes[i + 1].position.clone()
-                    ];
-                    strand.geometry.setFromPoints(points);
-                    strand.geometry.attributes.position.needsUpdate = true;
-                });
-
-                // Update backdrop for a dynamic effect
-                const vertices = backdrop.geometry.attributes.position;
-                for (let i = 0; i < vertices.count; i++) {
-                    const wave = Math.sin(time * 0.001 + i * 0.1) * 0.5;
-                    vertices.setZ(i, wave);
-                }
-                vertices.needsUpdate = true;
-
-                // Update scenery for dynamic background
-                scenery.forEach((object, index) => {
-                    object.position.y += Math.sin(time * 0.001 + index) * 0.01;
-                    object.rotation.y += 0.005;
-                });
-
-                renderer.render(scene, camera);
-            }
-        }
-        animate(0);
-
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Gyroscopic parallax effect
-        window.addEventListener('deviceorientation', (event) => {
-            const { beta, gamma } = event;
-            const parallaxFactor = 0.02;
-            camera.position.x = gamma * parallaxFactor;
-            camera.position.y = beta * parallaxFactor;
-            camera.lookAt(scene.position);
-        });
-    </script>
+        composer.setSize(window.innerWidth, window.innerHeight);
+        effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+    });
+</script>
 </body>
 </html>
