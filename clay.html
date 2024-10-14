@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Enhanced Interactive Claymation Visualizer</title>
+  <title>Flow Field Audio-Reactive Visualizer</title>
   <style>
     body {
       margin: 0;
@@ -26,165 +26,10 @@
     canvas.height = window.innerHeight;
 
     const particles = [];
-    const numParticles = 20;  // Optimized for performance
-    let mouseX = null, mouseY = null;
-    let isDragging = false;
-    let draggedParticle = null;
-    let lastFrameTime = 0;
-    const frameRate = 12;  // Claymation frame rate
-    let maxParticleSize = 80;
-
-    // Gradient for shading effect
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
-
-    // Clay-like Particle Class with fusion and splitting
-    class ClayParticle {
-      constructor(x, y, size = null) {
-        this.x = x;
-        this.y = y;
-        this.baseSize = size || (Math.random() * 40 + 40);
-        this.size = this.baseSize;
-        this.colorHue = Math.random() * 360;
-        this.color = `hsl(${this.colorHue}, 80%, 60%)`;
-        this.velocityX = (Math.random() - 0.5) * 1.5;
-        this.velocityY = (Math.random() - 0.5) * 1.5;
-        this.vertices = this.generateVertices();
-        this.isBeingInteractedWith = false;
-        this.rotation = Math.random() * Math.PI * 2;
-        this.rotationSpeed = (Math.random() - 0.5) * 0.02;
-        this.frequencyBand = Math.floor(Math.random() * 3);  // 0: Low, 1: Mid, 2: High
-      }
-
-      // Generate vertices for an organic shape
-      generateVertices() {
-        const vertices = [];
-        const numPoints = Math.floor(Math.random() * 6) + 6;  // Between 6-12 points
-
-        for (let i = 0; i < numPoints; i++) {
-          const angle = (i / numPoints) * Math.PI * 2;
-          const radius = this.baseSize / 2 + Math.random() * this.baseSize / 4;
-          vertices.push({ angle, radius });
-        }
-        return vertices;
-      }
-
-      update(audioLevels) {
-        const audioLevel = audioLevels[this.frequencyBand];
-
-        if (!this.isBeingInteractedWith) {
-          this.x += this.velocityX * (audioLevel + 0.5);
-          this.y += this.velocityY * (audioLevel + 0.5);
-        }
-
-        // Gravity effect
-        this.velocityY += 0.01;
-
-        // Elastic recoil if being interacted with
-        if (this.isBeingInteractedWith && !isDragging) {
-          this.x += (this.originalX - this.x) * 0.1;
-          this.y += (this.originalY - this.y) * 0.1;
-        }
-
-        // Reflect off edges
-        if (this.x > canvas.width) {
-          this.x = canvas.width;
-          this.velocityX *= -0.8;
-        }
-        if (this.x < 0) {
-          this.x = 0;
-          this.velocityX *= -0.8;
-        }
-        if (this.y > canvas.height) {
-          this.y = canvas.height;
-          this.velocityY *= -0.8;
-        }
-        if (this.y < 0) {
-          this.y = 0;
-          this.velocityY *= -0.8;
-        }
-
-        // Rotate and deform based on sound input
-        this.rotation += this.rotationSpeed;
-        this.vertices.forEach(v => {
-          v.radius = v.radius * (0.9 + 0.2 * audioLevel);
-        });
-
-        // Increase size dynamically based on sound intensity
-        this.size = this.baseSize * (0.8 + audioLevel * 1.5);
-        if (this.size > maxParticleSize) this.size = maxParticleSize;
-      }
-
-      draw() {
-        // Draw organic shape with shading
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
-
-        ctx.beginPath();
-        for (let i = 0; i < this.vertices.length; i++) {
-          const v = this.vertices[i];
-          const x = Math.cos(v.angle) * v.radius;
-          const y = Math.sin(v.angle) * v.radius;
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-        ctx.closePath();
-
-        // Apply shading
-        ctx.fillStyle = this.color;
-        ctx.fill();
-
-        // Apply noise texture
-        ctx.globalAlpha = 0.5;
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-
-        // Subtle outline
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-        ctx.stroke();
-
-        ctx.restore();
-      }
-
-      checkInteraction(mx, my) {
-        const dist = Math.hypot(this.x - mx, this.y - my);
-        return dist < this.size;
-      }
-
-      // Fusion with another particle
-      fuseWith(other) {
-        this.baseSize += other.baseSize * 0.6;  // Gain some size from the other particle
-        this.size = this.baseSize;
-        // Adjust color hue slightly
-        this.colorHue = (this.colorHue + other.colorHue) / 2;
-        this.color = `hsl(${this.colorHue}, 80%, 60%)`;
-        // Absorb vertices
-        this.vertices = this.vertices.concat(other.vertices);
-      }
-
-      // Split into smaller particles
-      split() {
-        const child1 = new ClayParticle(this.x + 10, this.y + 10, this.baseSize / 2);
-        const child2 = new ClayParticle(this.x - 10, this.y - 10, this.baseSize / 2);
-        return [child1, child2];
-      }
-    }
-
-    // Initialize particles
-    function initParticles() {
-      particles.length = 0;
-      for (let i = 0; i < numParticles; i++) {
-        particles.push(new ClayParticle(Math.random() * canvas.width, Math.random() * canvas.height));
-      }
-    }
-
-    initParticles();
+    const flowField = [];
+    const flowFieldSize = 50;  // Controls the resolution of the flow field
+    let animationId;
+    let hue = 0;
 
     // Audio Setup
     function setupAudio() {
@@ -199,7 +44,8 @@
             source.connect(analyser);
             dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-            animate(0);
+            init();
+            animate();
           })
           .catch(function (err) {
             console.error('Microphone access denied:', err);
@@ -211,166 +57,112 @@
 
     setupAudio();
 
-    // Handle mouse/touch interaction
-    canvas.addEventListener('mousedown', (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      isDragging = true;
-      draggedParticle = particles.find(p => p.checkInteraction(mouseX, mouseY));
-      if (draggedParticle) {
-        draggedParticle.isBeingInteractedWith = true;
-        draggedParticle.originalX = draggedParticle.x;
-        draggedParticle.originalY = draggedParticle.y;
+    // Initialize particles and flow field
+    function init() {
+      particles.length = 0;
+      const numParticles = 500;
+      for (let i = 0; i < numParticles; i++) {
+        particles.push(new Particle());
       }
-    });
+      createFlowField();
+    }
 
-    canvas.addEventListener('mousemove', (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      if (isDragging && draggedParticle) {
-        draggedParticle.x = mouseX;
-        draggedParticle.y = mouseY;
+    // Particle Class
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2 + 1;
+        this.speed = 0;
+        this.velocityX = 0;
+        this.velocityY = 0;
+        this.angle = 0;
+        this.history = [];
+        this.maxHistory = 20;
+        this.hue = Math.random() * 360;
       }
-    });
 
-    canvas.addEventListener('mouseup', () => {
-      isDragging = false;
-      if (draggedParticle) {
-        draggedParticle.isBeingInteractedWith = false;
-        draggedParticle = null;
-      }
-    });
+      update(audioLevel) {
+        const col = Math.floor(this.x / flowFieldSize);
+        const row = Math.floor(this.y / flowFieldSize);
+        const index = col + row * Math.floor(canvas.width / flowFieldSize);
+        this.angle = flowField[index];
+        this.speed = audioLevel * 5 + 0.5;  // Speed increases with audio level
+        this.velocityX = Math.cos(this.angle) * this.speed;
+        this.velocityY = Math.sin(this.angle) * this.speed;
+        this.x += this.velocityX;
+        this.y += this.velocityY;
 
-    canvas.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      mouseX = touch.clientX;
-      mouseY = touch.clientY;
-      isDragging = true;
-      draggedParticle = particles.find(p => p.checkInteraction(mouseX, mouseY));
-      if (draggedParticle) {
-        draggedParticle.isBeingInteractedWith = true;
-        draggedParticle.originalX = draggedParticle.x;
-        draggedParticle.originalY = draggedParticle.y;
-      }
-    });
+        // Wrap around edges
+        if (this.x > canvas.width) this.x = 0;
+        if (this.x < 0) this.x = canvas.width;
+        if (this.y > canvas.height) this.y = 0;
+        if (this.y < 0) this.y = canvas.height;
 
-    canvas.addEventListener('touchmove', (e) => {
-      const touch = e.touches[0];
-      mouseX = touch.clientX;
-      mouseY = touch.clientY;
-      if (isDragging && draggedParticle) {
-        draggedParticle.x = mouseX;
-        draggedParticle.y = mouseY;
-      }
-    });
-
-    canvas.addEventListener('touchend', () => {
-      isDragging = false;
-      if (draggedParticle) {
-        draggedParticle.isBeingInteractedWith = false;
-        draggedParticle = null;
-      }
-    });
-
-    // Animate particles and interaction
-    function animate(time) {
-      requestAnimationFrame(animate);
-
-      const delta = time - lastFrameTime;
-      if (delta > 1000 / frameRate && analyser) {
-        lastFrameTime = time;
-
-        analyser.getByteFrequencyData(dataArray);
-
-        // Calculate audio levels for low, mid, high frequencies
-        const audioLevels = [
-          getAverageVolume(dataArray.slice(0, dataArray.length / 3)) / 255,     // Low frequencies
-          getAverageVolume(dataArray.slice(dataArray.length / 3, 2 * dataArray.length / 3)) / 255, // Mid frequencies
-          getAverageVolume(dataArray.slice(2 * dataArray.length / 3)) / 255    // High frequencies
-        ];
-
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw textured backdrop
-        drawTexturedBackdrop(audioLevels);
-
-        // Update and draw particles
-        for (let i = 0; i < particles.length; i++) {
-          const particle = particles[i];
-          particle.update(audioLevels);
-          particle.draw();
-
-          // Particle Fusion
-          for (let j = i + 1; j < particles.length; j++) {
-            const otherParticle = particles[j];
-            const dist = Math.hypot(particle.x - otherParticle.x, particle.y - otherParticle.y);
-            if (dist < (particle.size + otherParticle.size) / 4) {
-              particle.fuseWith(otherParticle);
-              particles.splice(j, 1);
-              j--;
-            }
-          }
-
-          // Particle Splitting
-          if (particle.size > maxParticleSize * 1.2) {
-            const newParticles = particle.split();
-            particles.splice(i, 1);
-            particles.push(...newParticles);
-            i--;
-          }
+        // Store history for trails
+        this.history.push({ x: this.x, y: this.y });
+        if (this.history.length > this.maxHistory) {
+          this.history.shift();
         }
 
-        // Draw light overlay to give a tactile feel
-        drawLightOverlay(Math.max(...audioLevels));
+        // Update color hue based on position and audio
+        this.hue = (this.hue + audioLevel * 10) % 360;
+      }
+
+      draw() {
+        ctx.beginPath();
+        for (let i = 0; i < this.history.length; i++) {
+          const point = this.history[i];
+          ctx.lineTo(point.x, point.y);
+        }
+        ctx.strokeStyle = `hsl(${this.hue}, 100%, 50%)`;
+        ctx.stroke();
       }
     }
 
-    // Utility function to calculate average volume
-    function getAverageVolume(array) {
-      let values = 0;
-      for (let i = 0; i < array.length; i++) {
-        values += array[i];
+    // Create Flow Field
+    function createFlowField() {
+      flowField.length = 0;
+      const cols = Math.floor(canvas.width / flowFieldSize);
+      const rows = Math.floor(canvas.height / flowFieldSize);
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const angle = (Math.cos(x * 0.1) + Math.sin(y * 0.1)) * Math.PI;
+          flowField.push(angle);
+        }
       }
-      return values / array.length;
     }
 
-    // Add a textured, evolving backdrop
-    function drawTexturedBackdrop(audioLevels) {
-      const imageData = ctx.createImageData(canvas.width, canvas.height);
-      const audioLevel = Math.max(...audioLevels);
-      for (let i = 0; i < imageData.data.length; i += 4) {
-        const brightness = Math.random() * 255 * audioLevel * 1.2;
-        imageData.data[i] = brightness * 0.9;
-        imageData.data[i + 1] = brightness * 0.7;
-        imageData.data[i + 2] = brightness * 0.5;
-        imageData.data[i + 3] = 255;
-      }
-      ctx.putImageData(imageData, 0, 0);
-    }
+    // Animate
+    function animate() {
+      animationId = requestAnimationFrame(animate);
 
-    // Add radial gradient light overlay
-    function drawLightOverlay(audioLevel) {
-      const gradient = ctx.createRadialGradient(
-        canvas.width / 2, canvas.height / 2, 50,
-        canvas.width / 2, canvas.height / 2, canvas.width / 2
-      );
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${0.5 * audioLevel})`);
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      analyser.getByteFrequencyData(dataArray);
+      const audioLevel = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
 
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';  // Fade effect for trails
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.globalCompositeOperation = 'source-over';
+
+      particles.forEach(particle => {
+        particle.update(audioLevel);
+        particle.draw();
+      });
+
+      hue += 0.5;
+      createFlowField();  // Update flow field for dynamic patterns
     }
 
-    // Handle window resizing
+    // Handle window resize
     window.addEventListener('resize', () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      initParticles();
+      init();
     });
 
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+      cancelAnimationFrame(animationId);
+    });
   </script>
 </body>
 </html>
