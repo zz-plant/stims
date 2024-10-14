@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Artistically Dynamic Audio Visualizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGL Audio-Reactive Visualizer</title>
   <style>
     body {
       margin: 0;
@@ -13,249 +14,150 @@
       display: block;
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 </head>
 <body>
   <canvas id="visualizer"></canvas>
 
   <script>
+    let scene, camera, renderer, particles, analyser, dataArray, uniforms;
     const canvas = document.getElementById('visualizer');
-    const ctx = canvas.getContext('2d');
-    let analyser, dataArray, audioContext;
+    const mouse = { x: 0, y: 0 };
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const width = canvas.width;
-    const height = canvas.height;
-
-    let particles = [];
-    const numParticles = 5000;  // High number for dense visuals
-    let flowField = [];
-    const flowFieldSize = 20;  // High resolution for detailed patterns
-    let animationId;
-    let hue = 0;
-    let time = 0;
-
-    let mouse = {
-      x: null,
-      y: null,
-      isActive: false
-    };
-
-    // Audio Setup
-    function setupAudio() {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(function (stream) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const source = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 1024;  // Increased for better frequency resolution
-
-            source.connect(analyser);
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-            init();
-            animate();
-          })
-          .catch(function (err) {
-            console.error('Microphone access denied:', err);
-          });
-      } else {
-        alert('getUserMedia not supported in this browser.');
-      }
-    }
-
-    setupAudio();
-
-    // Particle Class
-    class Particle {
-      constructor(x, y) {
-        this.x = x || Math.random() * width;
-        this.y = y || Math.random() * height;
-        this.speed = 0;
-        this.velocity = { x: 0, y: 0 };
-        this.size = Math.random() * 1.5 + 0.5;
-        this.angle = 0;
-        this.lastPos = { x: this.x, y: this.y };
-      }
-
-      update(flowField, audioLevel) {
-        // Calculate position in flow field grid
-        const col = Math.floor(this.x / flowFieldSize);
-        const row = Math.floor(this.y / flowFieldSize);
-        const index = col + row * Math.floor(width / flowFieldSize);
-
-        // Get flow field angle and adjust with Perlin noise
-        const angle = flowField[index];
-        this.angle = angle;
-
-        // Update velocity based on angle
-        this.speed = audioLevel * 2 + 0.5;
-        this.velocity.x = Math.cos(this.angle) * this.speed;
-        this.velocity.y = Math.sin(this.angle) * this.speed;
-
-        // Update position
-        this.lastPos.x = this.x;
-        this.lastPos.y = this.y;
-        this.x += this.velocity.x;
-        this.y += this.velocity.y;
-
-        // Wrap around edges
-        if (this.x > width) this.x = 0;
-        if (this.x < 0) this.x = width;
-        if (this.y > height) this.y = 0;
-        if (this.y < 0) this.y = height;
-      }
-
-      draw() {
-        ctx.beginPath();
-        ctx.moveTo(this.lastPos.x, this.lastPos.y);
-        ctx.lineTo(this.x, this.y);
-        ctx.strokeStyle = `hsl(${(this.x / width) * 360 + time}, 100%, 50%)`;
-        ctx.stroke();
-      }
-    }
-
-    // Initialize particles and flow field
     function init() {
-      particles = [];
-      for (let i = 0; i < numParticles; i++) {
-        particles.push(new Particle());
-      }
-      flowField = new Array(Math.floor(width / flowFieldSize) * Math.floor(height / flowFieldSize));
-    }
+      // Scene setup
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 50;
 
-    // Create Flow Field
-    function createFlowField(audioData) {
-      const cols = Math.floor(width / flowFieldSize);
-      const rows = Math.floor(height / flowFieldSize);
-      let index = 0;
+      // Renderer setup
+      renderer = new THREE.WebGLRenderer({ canvas });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
 
-      // Use Perlin noise for smooth, natural variations
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          const noiseValue = noise.simplex3(x * 0.01, y * 0.01, time * 0.0005);
-          const angle = noiseValue * Math.PI * 2;
-          flowField[index] = angle;
-          index++;
-        }
-      }
-    }
+      // Audio setup
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-    // Animate
-    function animate() {
-      animationId = requestAnimationFrame(animate);
+        // Create particle system
+        createParticles();
 
-      analyser.getByteFrequencyData(dataArray);
-      const audioLevel = getAverageVolume(dataArray) / 255;
-
-      // Clear canvas with lower opacity for motion trails
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-      ctx.fillRect(0, 0, width, height);
-
-      // Update time for Perlin noise
-      time += 1;
-
-      createFlowField(dataArray);
-
-      particles.forEach(particle => {
-        particle.update(flowField, audioLevel);
-        particle.draw();
+        // Start animation loop
+        animate();
+      }).catch(err => {
+        console.error('Audio access denied:', err);
       });
 
-      // Visual effects: optional glow effect
-      // ctx.globalCompositeOperation = 'lighter';
-
-      // Draw interactive elements
-      if (mouse.isActive) {
-        ctx.beginPath();
-        ctx.arc(mouse.x, mouse.y, 50, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.fill();
-      }
+      // Handle resize
+      window.addEventListener('resize', onResize);
+      document.addEventListener('mousemove', onMouseMove);
     }
 
-    // Calculate average audio level
-    function getAverageVolume(array) {
-      let values = 0;
-      for (let i = 0; i < array.length; i++) {
-        values += array[i];
+    function createParticles() {
+      const particleCount = 10000;
+      const positions = new Float32Array(particleCount * 3);
+      const velocities = new Float32Array(particleCount * 3);
+
+      for (let i = 0; i < particleCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+        velocities[i * 3] = (Math.random() - 0.5) * 0.5;
+        velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
+        velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
       }
-      return values / array.length;
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+
+      uniforms = {
+        time: { value: 0 },
+        mouse: { value: new THREE.Vector2() },
+        audioData: { value: new Float32Array(128) },
+        color: { value: new THREE.Color(0xffffff) }
+      };
+
+      const material = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: vertexShader(),
+        fragmentShader: fragmentShader(),
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false
+      });
+
+      particles = new THREE.Points(geometry, material);
+      scene.add(particles);
     }
 
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      canvas.width = width = window.innerWidth;
-      canvas.height = height = window.innerHeight;
-      init();
-    });
+    function vertexShader() {
+      return `
+        uniform float time;
+        uniform vec2 mouse;
+        uniform float audioData[128];
 
-    // Mouse interaction
-    canvas.addEventListener('mousemove', (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-      mouse.isActive = true;
-    });
+        attribute vec3 velocity;
+        varying vec3 vColor;
 
-    canvas.addEventListener('mousedown', (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-      mouse.isActive = true;
+        void main() {
+          vec3 newPosition = position + velocity * time * 0.1;
 
-      // Add particles at mouse position
-      for (let i = 0; i < 100; i++) {
-        particles.push(new Particle(mouse.x, mouse.y));
-      }
-    });
+          // Move particles based on audio
+          float audioStrength = audioData[int(mod(gl_VertexID, 128.0))] * 10.0;
+          newPosition.x += sin(time + audioStrength) * 0.2;
+          newPosition.y += cos(time + audioStrength) * 0.2;
 
-    canvas.addEventListener('mouseup', () => {
-      mouse.isActive = false;
-    });
+          // Color based on distance from mouse
+          float dist = distance(mouse, vec2(newPosition.x, newPosition.y));
+          vColor = vec3(0.5 + 0.5 * sin(dist * 0.1), 0.5 + 0.5 * cos(dist * 0.1), 1.0);
 
-    canvas.addEventListener('mouseleave', () => {
-      mouse.isActive = false;
-    });
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+          gl_PointSize = 3.0;
+        }
+      `;
+    }
 
-    // Touch interaction
-    canvas.addEventListener('touchmove', (e) => {
-      const touch = e.touches[0];
-      mouse.x = touch.clientX;
-      mouse.y = touch.clientY;
-      mouse.isActive = true;
-    });
+    function fragmentShader() {
+      return `
+        varying vec3 vColor;
 
-    canvas.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      mouse.x = touch.clientX;
-      mouse.y = touch.clientY;
-      mouse.isActive = true;
+        void main() {
+          gl_FragColor = vec4(vColor, 1.0);
+        }
+      `;
+    }
 
-      // Add particles at touch position
-      for (let i = 0; i < 100; i++) {
-        particles.push(new Particle(mouse.x, mouse.y));
-      }
-    });
+    function onMouseMove(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      uniforms.mouse.value.set(mouse.x * 50, mouse.y * 50);
+    }
 
-    canvas.addEventListener('touchend', () => {
-      mouse.isActive = false;
-    });
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
 
-    // Clean up on page unload
-    window.addEventListener('beforeunload', () => {
-      cancelAnimationFrame(animationId);
-    });
+    function animate() {
+      requestAnimationFrame(animate);
 
-    // Perlin noise implementation (using Simplex Noise for better performance)
-    const noise = new SimplexNoise();
+      // Update uniforms
+      analyser.getByteFrequencyData(dataArray);
+      uniforms.time.value += 0.05;
+      uniforms.audioData.value = dataArray.map(d => d / 255);
 
-    // Simplex Noise implementation
-    // You can include a SimplexNoise library or implement it here
-    // For brevity, let's assume SimplexNoise is included via a script tag or module
+      // Render the scene
+      renderer.render(scene, camera);
+    }
 
+    init();
   </script>
-  <!-- Include SimplexNoise library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/perlin-noise/0.1.0/perlin-noise.min.js"></script>
 </body>
 </html>
