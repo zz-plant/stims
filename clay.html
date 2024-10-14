@@ -143,6 +143,9 @@
 
           // React to audio data, clustering based on bass frequencies
           float audioAmplitude = audioData[int(position.x * 0.5 + 64.0)] * sensitivity;
+          
+          // Amplify audio effects for more obvious reaction
+          audioAmplitude *= 2.5; // Increase audio influence to make it more obvious
 
           newPosition.x += sin(time + position.x) * 0.2 * audioAmplitude;
           newPosition.y += cos(time + position.y) * 0.2 * audioAmplitude;
