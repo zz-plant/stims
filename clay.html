@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Claymation Music Visualizer with Enhanced Background Scenery</title>
+    <title>Three.js Claymation Music Visualizer with Enhanced Clay Aesthetic</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://threejs.org/examples/jsm/libs/stats.module.js"></script>
 </head>
 <body>
     <script>
@@ -32,7 +33,7 @@
         backdrop.position.z = -50;
         scene.add(backdrop);
 
-        // Create scenery elements (e.g., hills, trees)
+        // Create scenery elements (e.g., hills, trees, props)
         const scenery = [];
         for (let i = 0; i < 20; i++) {
             const hillGeometry = new THREE.DodecahedronGeometry(3 + Math.random() * 2);
@@ -58,6 +59,19 @@
             tree.position.set((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 50, -30 + Math.random() * 10);
             scene.add(tree);
             scenery.push(tree);
+        }
+
+        for (let i = 0; i < 15; i++) {
+            const propGeometry = new THREE.TorusKnotGeometry(0.5, 0.15, 50, 20);
+            const propMaterial = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(`hsl(${Math.random() * 360}, 70%, 50%)`),
+                roughness: 0.8,
+                metalness: 0.3
+            });
+            const prop = new THREE.Mesh(propGeometry, propMaterial);
+            prop.position.set((Math.random() - 0.5) * 90, (Math.random() - 0.5) * 40, -20 + Math.random() * 20);
+            scene.add(prop);
+            scenery.push(prop);
         }
 
         // Microphone input
@@ -90,22 +104,22 @@
             const geometry = geometries[i % geometries.length];
             const clayMaterial = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(`hsl(${(i / 40) * 360}, 100%, 70%)`),
-                roughness: 1.0,
-                metalness: 0.0,
+                roughness: 0.9,
+                metalness: 0.1,
                 transparent: true,
-                opacity: 0.8 // Allow blending of shapes
+                opacity: 0.9 // Allow blending of shapes
             });
             const shape = new THREE.Mesh(geometry, clayMaterial);
-            shape.position.x = (Math.random() - 0.5) * 40; // Wider spread along X axis
-            shape.position.y = (Math.random() - 0.5) * 30; // Spread along Y axis
-            shape.position.z = (Math.random() - 0.5) * 20; // Spread along Z axis
+            shape.position.x = (Math.random() - 0.5) * 50; // Wider spread along X axis
+            shape.position.y = (Math.random() - 0.5) * 40; // Spread along Y axis
+            shape.position.z = (Math.random() - 0.5) * 30; // Spread along Z axis
             shape.scale.setScalar(0.7 + Math.random() * 1.5); // Varying scales
             scene.add(shape);
             shapes.push(shape);
         }
 
         // Create organic connecting strands between shapes
-        const strandMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+        const strandMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
         const strands = [];
         for (let i = 0; i < shapes.length - 1; i++) {
             const points = [
@@ -119,16 +133,16 @@
         }
 
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xffffff, 1, 100);
-        pointLight.position.set(0, 20, 20);
+        const pointLight = new THREE.PointLight(0xffd700, 1, 150);
+        pointLight.position.set(20, 30, 50);
         scene.add(pointLight);
 
         // Animate function with smooshing effect, imperfect motion, and parallax
         let lastFrameTime = 0;
-        const frameRate = 12; // Claymation frame rate
+        const frameRate = 10; // Claymation frame rate for a choppy effect
 
         function animate(time) {
             requestAnimationFrame(animate);
@@ -145,7 +159,7 @@
                 shapes.forEach((shape, index) => {
                     const dataIndex = Math.floor(index * (dataArray.length / shapes.length));
                     const force = dataArray[dataIndex] / 256;
-                    const scale = 0.5 + Math.pow(force, 0.75) * 2.0; // More dynamic scaling
+                    const scale = 0.5 + Math.pow(force, 0.75) * 1.5; // More dynamic scaling
                     shape.scale.set(scale, scale, scale);
 
                     // Apply unique movement patterns influenced by shared waves and introduce imperfect, jittery rotation
