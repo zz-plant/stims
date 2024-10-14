@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Realistic 3D Pottery Wheel Simulation</title>
+    <title>Pleasant Pottery Wheel Simulation</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
+        body { margin: 0; overflow: hidden; background: #f0f0f0; touch-action: none; }
         canvas { display: block; touch-action: none; }
         #ui {
             position: absolute;
@@ -18,7 +18,8 @@
             padding: 10px;
             border-radius: 5px;
         }
-        #ui button, #ui select { margin: 5px; padding: 5px 10px; font-size: 14px; cursor: pointer; }
+        #ui button, #ui select, #ui input { margin: 5px; padding: 5px 10px; font-size: 14px; cursor: pointer; }
+        #colorPicker { margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -30,6 +31,7 @@
         <option value="pull">Pull Walls</option>
         <option value="open">Open Center</option>
     </select>
+    <input type="color" id="colorPicker" value="#8B4513">
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
@@ -42,6 +44,8 @@
     let touchStartY = 0;
     let isInteracting = false;
     const gravity = -0.002;
+    let clayColor = new THREE.Color(0x8B4513); // Default clay color
+    let easingFactor = 0.1; // Easing factor for smooth interactions
 
     function init() {
         // Scene, Camera, Renderer
@@ -66,6 +70,10 @@
         document.getElementById('fireButton').addEventListener('click', firePottery);
         document.getElementById('toolSelect').addEventListener('change', (e) => {
             currentTool = e.target.value;
+        });
+        document.getElementById('colorPicker').addEventListener('input', (e) => {
+            clayColor.setStyle(e.target.value);
+            potteryMesh.material.color = clayColor;
         });
 
         // Touch Events for Mobile and Mouse Events for Desktop
@@ -93,7 +101,7 @@
         potteryGeometry.computeVertexNormals();
 
         const potteryMaterial = new THREE.MeshStandardMaterial({
-            color: 0x8B4513,
+            color: clayColor,
             roughness: 0.9,
             metalness: 0.1,
         });
@@ -135,12 +143,15 @@
     function onPointerDown(event) {
         isInteracting = true;
         touchStartY = event.clientY || event.touches[0].clientY;
+
+        // Optional: Haptic feedback (for touch devices)
+        if (navigator.vibrate) navigator.vibrate(50); 
     }
 
     function onPointerMove(event) {
         if (isInteracting && !isFired) {
             const touchY = event.clientY || (event.touches && event.touches[0].clientY);
-            const deltaY = touchStartY - touchY;
+            const deltaY = (touchStartY - touchY) * easingFactor;
             touchStartY = touchY;
 
             const deformationStrength = deltaY * 0.0005;
@@ -169,11 +180,11 @@
             // Skip the bottom vertices
             if (y <= 0) continue;
 
-            // Increase the height
-            let newY = y + strength;
+            // Increase the height with easing
+            let newY = y + strength * (1 - Math.abs(strength) * 0.1); 
             newY = THREE.MathUtils.clamp(newY, 0, maxHeight);
 
-            // Optionally, adjust the radius to simulate thinning
+            // Adjust the radius to simulate thinning
             const factor = newY / y;
             const newX = x * factor;
             const newZ = z * factor;
@@ -198,8 +209,8 @@
                 const radius = Math.sqrt(x * x + z * z);
                 const angle = Math.atan2(z, x);
 
-                // Increase the inner radius
-                const newRadius = radius + strength;
+                // Increase the inner radius with easing
+                const newRadius = radius + strength * easingFactor;
                 const newX = newRadius * Math.cos(angle);
                 const newZ = newRadius * Math.sin(angle);
 
