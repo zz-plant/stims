@@ -1,84 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rotating Pit-Fired Stoneware Visualizer</title>
-  <style>
-    body {
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #333;
-    }
-
-    svg {
-      display: block;
-      width: 100%;
-      max-width: 600px;
-      height: auto;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Realistic Claymation Music Visualizer Without External Textures</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #e0d7c6; }
+        canvas { display: block; }
+    </style>
+    <!-- Three.js Library from cdnjs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <!-- OrbitControls (Optional) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/controls/OrbitControls.min.js"></script>
+    <!-- Shader and Post-processing dependencies from cdnjs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/EffectComposer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/RenderPass.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/ShaderPass.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/shaders/CopyShader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/shaders/SSAOShader.min.js"></script>
 </head>
 <body>
-  <svg id="svgRoot" width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
-    <title>Rotating Pit-Fired Stoneware Visualizer</title>
-    <defs>
-      <!-- Pit-Fired Texture Filter -->
-      <filter id="pitFireTexture">
-        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="30" />
-        <feColorMatrix type="matrix" values="
-          1 0 0 0 0
-          0 0.9 0 0 0
-          0 0 0.8 0 0
-          0 0 0 1 0" />
-      </filter>
+    <script>
+        // Scene Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xe0d7c6); // Clay-like background color
 
-      <!-- Decorative Pattern -->
-      <pattern id="decorPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-        <circle cx="10" cy="10" r="5" fill="rgba(0, 0, 0, 0.2)" />
-      </pattern>
+        // Camera Setup
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(0, 10, 30);
 
-      <!-- Light Overlay -->
-      <radialGradient id="lightEffect" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="white" stop-opacity="0.5" />
-        <stop offset="100%" stop-color="black" stop-opacity="0" />
-      </radialGradient>
-    </defs>
+        // Renderer Setup
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-    <!-- Stoneware Shape -->
-    <ellipse id="stoneware" cx="300" cy="300" rx="150" ry="250" fill="url(#decorPattern)" filter="url(#pitFireTexture)" />
+        // Post-processing
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(new THREE.RenderPass(scene, camera));
 
-    <!-- Light Overlay Effect -->
-    <ellipse cx="300" cy="300" rx="150" ry="250" fill="url(#lightEffect)" />
-  </svg>
+        // Ambient Occlusion Pass
+        const ssaoPass = new THREE.ShaderPass(THREE.SSAOShader);
+        ssaoPass.uniforms['tDepth'].value = composer.renderTarget2.texture;
+        ssaoPass.uniforms['size'].value.set(window.innerWidth, window.innerHeight);
+        ssaoPass.uniforms['cameraNear'].value = camera.near;
+        ssaoPass.uniforms['cameraFar'].value = camera.far;
+        ssaoPass.uniforms['onlyAO'].value = false;
+        ssaoPass.uniforms['aoClamp'].value = 0.5;
+        ssaoPass.uniforms['lumInfluence'].value = 0.7;
+        composer.addPass(ssaoPass);
 
-  <script>
-    const stoneware = document.getElementById('stoneware');
-    const turbulence = document.querySelector('#pitFireTexture feTurbulence');
-    let angle = 0;
-    let freq = 0.05;
-    let delta = 0.0001;
+        // Lighting
+        const hemiLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.6);
+        scene.add(hemiLight);
 
-    function animate() {
-      // Rotate
-      angle += 1;
-      const skewX = 10 * Math.sin(angle * Math.PI / 180);
-      const scaleX = 1 + 0.1 * Math.cos(angle * Math.PI / 180);
-      stoneware.setAttribute('transform', `translate(300,300) skewX(${skewX}) scale(${scaleX},1) translate(-300,-300)`);
-      
-      // Animate Texture
-      freq += delta;
-      if (freq > 0.06 || freq < 0.04) delta = -delta;
-      turbulence.setAttribute('baseFrequency', freq);
-      
-      requestAnimationFrame(animate);
-    }
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(-30, 50, -30);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
 
-    animate();
-  </script>
+        // Ground Plane
+        const groundGeo = new THREE.PlaneGeometry(200, 200);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.8 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -10;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Clay Material Function with Procedural Noise
+        function createClayMaterial(color) {
+            const material = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.9,
+                metalness: 0.0,
+                flatShading: true
+            });
+
+            // Procedural noise to simulate clay texture
+            material.onBeforeCompile = function(shader) {
+                shader.uniforms.time = { value: 0 };
+                shader.vertexShader = `
+                    uniform float time;
+                    ${THREE.ShaderChunk.common}
+                    ${THREE.ShaderChunk.uv_pars_vertex}
+                    ${THREE.ShaderChunk.displacementmap_pars_vertex}
+                    void main() {
+                        ${THREE.ShaderChunk.begin_vertex}
+                        // Simplex noise function to simulate clay imperfections
+                        vec3 transformed = position + normal * (sin(position.x * 10.0 + time * 0.5) * 0.05);
+                        ${THREE.ShaderChunk.project_vertex}
+                    }
+                `;
+            };
+
+            return material;
+        }
+
+        // Create Shapes with Clay Material
+        const shapes = [];
+        const geometries = [
+            new THREE.SphereGeometry(1, 32, 32),
+            new THREE.BoxGeometry(1.5, 1.5, 1.5, 16, 16, 16),
+            new THREE.ConeGeometry(1, 2, 32),
+            new THREE.DodecahedronGeometry(1, 0),
+            new THREE.TorusGeometry(1, 0.4, 16, 50)
+        ];
+
+        for (let i = 0; i < 30; i++) {
+            const geometry = geometries[i % geometries.length];
+            const color = new THREE.Color(`hsl(${(i / 30) * 360}, 50%, 60%)`);
+            const material = createClayMaterial(color);
+
+            const shape = new THREE.Mesh(geometry, material);
+            shape.position.x = (Math.random() - 0.5) * 30;
+            shape.position.y = (Math.random()) * 10;
+            shape.position.z = (Math.random() - 0.5) * 30;
+            shape.scale.setScalar(1 + Math.random() * 1.5);
+            shape.castShadow = true;
+            shape.receiveShadow = true;
+            scene.add(shape);
+            shapes.push(shape);
+        }
+
+        // Microphone Input
+        let analyser;
+        let dataArray;
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(stream);
+
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+
+                source.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }).catch((err) => {
+                console.error('Microphone access denied:', err);
+            });
+        } else {
+            console.error('getUserMedia not supported in this browser.');
+        }
+
+        // Animate Function with Advanced Deformation
+        let lastFrameTime = 0;
+        const frameRate = 12;
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            const delta = time - lastFrameTime;
+            if (delta > 1000 / frameRate && analyser && dataArray) {
+                lastFrameTime = time;
+
+                analyser.getByteFrequencyData(dataArray);
+
+                shapes.forEach((shape, index) => {
+                    const dataIndex = Math.floor(index * (dataArray.length / shapes.length));
+                    const force = dataArray[dataIndex] / 256;
+
+                    // Update shader time uniform
+                    if (shape.material.userData.shader) {
+                        shape.material.userData.shader.uniforms.time.value = time * 0.001;
+                    }
+
+                    // Advanced Deformation
+                    shape.scale.setScalar(1 + force);
+                    shape.rotation.x += 0.02 + (Math.random() - 0.5) * 0.05;
+                    shape.rotation.y += 0.02 + (Math.random() - 0.5) * 0.05;
+                    shape.rotation.z += 0.01 + (Math.random() - 0.5) * 0.05;
+                });
+
+                composer.render();
+            }
+        }
+        animate(0);
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Gyroscopic Parallax Effect
+        window.addEventListener('deviceorientation', (event) => {
+            const { beta, gamma } = event;
+            const parallaxFactor = 0.05;
+            camera.position.x = gamma * parallaxFactor;
+            camera.position.y = beta * parallaxFactor;
+            camera.lookAt(scene.position);
+        });
+    </script>
 </body>
 </html>
