@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AR Pottery Wheel Simulation</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { display: block; touch-action: none; }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #ui button {
+            margin-top: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #toolPanel {
+            margin-top: 10px;
+        }
+        #toolPanel button {
+            margin-right: 5px;
+        }
+        #saveButton {
+            margin-top: 10px;
+            width: 100%;
+        }
+        #firingPanel {
+            margin-top: 10px;
+        }
+        #firingPanel button {
+            margin-right: 5px;
+        }
+        #message {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            font-family: Arial, sans-serif;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+<div id="ui">
+    <button id="resetButton">Reset Clay</button>
+    <div id="toolPanel">
+        <button data-tool="smooth">Smooth</button>
+        <button data-tool="carve">Carve</button>
+        <button data-tool="pinch">Pinch</button>
+        <button data-tool="scrape">Scrape</button>
+        <button data-tool="add">Add Clay</button>
+        <button data-tool="cut">Cut</button>
+        <button data-tool="shape">Shape</button>
+    </div>
+    <div id="firingPanel">
+        <button id="fireButton">Fire Pottery</button>
+        <button id="glazeButton">Glaze Pottery</button>
+    </div>
+    <button id="saveButton">Save/Export Pottery</button>
+</div>
+<div id="message">Move your device to scan the area...</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/exporters/OBJExporter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/jsm/webxr/ARButton.js"></script>
+<script>
+    let scene, camera, renderer;
+    let potteryMesh, wheelMesh;
+    let reticle;
+    let hitTestSource = null;
+    let hitTestSourceRequested = false;
+    let isPlaced = false;
+    let isInteracting = false;
+    const maxRadius = 0.3; // Adjusted for AR scale
+    const minRadius = 0.05;
+    const height = 0.6;
+    const segments = 200;
+    let currentTool = 'smooth';
+    let isFired = false;
+    let isGlazed = false;
+
+    init();
+    animate();
+
+    function init() {
+        // Scene and Camera
+        scene = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 20);
+
+        // Renderer with WebXR enabled
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.xr.enabled = true; // Enable WebXR
+        document.body.appendChild(renderer.domElement);
+        document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
+
+        // Lighting
+        const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+        light.position.set(0.5, 1, 0.25);
+        scene.add(light);
+
+        // Create Reticle
+        reticle = new THREE.Mesh(
+            new THREE.RingGeometry(0.05, 0.06, 32).rotateX(-Math.PI / 2),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        reticle.visible = false;
+        scene.add(reticle);
+
+        // Event Listeners
+        window.addEventListener('resize', onWindowResize, false);
+        const domElement = renderer.domElement;
+        domElement.addEventListener('pointerdown', onPointerDown, false);
+        domElement.addEventListener('pointerup', onPointerUp, false);
+        domElement.addEventListener('pointermove', onPointerMove, false);
+        domElement.addEventListener('contextmenu', event => event.preventDefault());
+
+        // UI Buttons
+        const uiElement = document.getElementById('ui');
+        document.getElementById('resetButton').addEventListener('click', resetClay);
+        document.getElementById('fireButton').addEventListener('click', firePottery);
+        document.getElementById('glazeButton').addEventListener('click', glazePottery);
+        document.getElementById('saveButton').addEventListener('click', savePottery);
+        document.querySelectorAll('#toolPanel button').forEach(button => {
+            button.addEventListener('click', () => {
+                currentTool = button.getAttribute('data-tool');
+            });
+        });
+
+        // Hide UI after inactivity
+        let uiTimeout;
+        function resetUITimeout() {
+            clearTimeout(uiTimeout);
+            uiElement.style.opacity = 1;
+            uiTimeout = setTimeout(() => {
+                uiElement.style.opacity = 0;
+            }, 3000);
+        }
+        resetUITimeout();
+        document.addEventListener('pointermove', resetUITimeout);
+        document.addEventListener('pointerdown', resetUITimeout);
+    }
+
+    function createPottery() {
+        isFired = false;
+        isGlazed = false;
+        // Create initial profile curve for the clay
+        const profilePoints = [];
+        const step = height / segments;
+        for (let i = 0; i <= segments; i++) {
+            const y = i * step;
+            const radius = maxRadius;
+            profilePoints.push(new THREE.Vector2(radius, y));
+        }
+
+        // Create LatheGeometry from profile curve
+        const clayGeometry = new THREE.LatheGeometry(profilePoints, 200);
+        clayGeometry.computeVertexNormals();
+
+        // Clay Material with texture
+        const textureLoader = new THREE.TextureLoader();
+        const clayTexture = textureLoader.load('https://i.imgur.com/8g1VbBP.jpg'); // Replace with a clay texture
+        const clayNormalMap = textureLoader.load('https://i.imgur.com/RvXj5Un.jpg'); // Replace with a normal map
+
+        const clayMaterial = new THREE.MeshStandardMaterial({
+            map: clayTexture,
+            normalMap: clayNormalMap,
+            roughness: 0.9,
+            metalness: 0.1,
+        });
+
+        potteryMesh = new THREE.Mesh(clayGeometry, clayMaterial);
+        potteryMesh.castShadow = true;
+        potteryMesh.receiveShadow = true;
+        potteryMesh.rotation.y = Math.PI; // Adjust orientation
+
+        // Pottery Wheel
+        const wheelGeometry = new THREE.CylinderGeometry(maxRadius * 2, maxRadius * 2, 0.05, 64);
+        const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelMesh.receiveShadow = true;
+
+        const group = new THREE.Group();
+        group.add(wheelMesh);
+        group.add(potteryMesh);
+        wheelMesh.position.y = 0;
+        potteryMesh.position.y = 0.05;
+        scene.add(group);
+        group.position.copy(reticle.position);
+    }
+
+    function onPointerDown(event) {
+        isInteracting = true;
+    }
+
+    function onPointerUp(event) {
+        isInteracting = false;
+    }
+
+    function onPointerMove(event) {
+        if (isInteracting && isPlaced && !isFired) {
+            const touch = event.changedTouches ? event.changedTouches[0] : event;
+            const x = (touch.clientX / window.innerWidth) * 2 - 1;
+            const y = -(touch.clientY / window.innerHeight) * 2 + 1;
+            const pointer = new THREE.Vector2(x, y);
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObject(potteryMesh);
+            if (intersects.length > 0) {
+                const point = intersects[0].point;
+                deformClay(point);
+            }
+        }
+    }
+
+    function deformClay(point) {
+        const normalizedY = point.y - potteryMesh.parent.position.y;
+        const pointRadius = Math.sqrt(point.x * point.x + point.z * point.z);
+
+        const influenceRadius = 0.02;
+        const deformationStrength = 0.002;
+
+        const positions = potteryMesh.geometry.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+            const y = positions.getY(i);
+            const x = positions.getX(i);
+            const z = positions.getZ(i);
+
+            const vertexRadius = Math.sqrt(x * x + z * z);
+            const angle = Math.atan2(z, x);
+
+            const distanceY = Math.abs(y - normalizedY);
+            const distanceX = Math.abs(vertexRadius - pointRadius);
+            const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+
+            if (distance < influenceRadius) {
+                const factor = deformationStrength * (1 - distance / influenceRadius);
+
+                let newRadius = vertexRadius;
+                switch (currentTool) {
+                    case 'smooth':
+                        newRadius = THREE.MathUtils.lerp(vertexRadius, vertexRadius + factor, 0.5);
+                        break;
+                    case 'carve':
+                        newRadius = vertexRadius - Math.abs(factor);
+                        break;
+                    case 'pinch':
+                        newRadius = vertexRadius + factor;
+                        break;
+                    case 'scrape':
+                        newRadius = vertexRadius - factor * 0.5;
+                        break;
+                    case 'add':
+                        newRadius = vertexRadius + Math.abs(factor);
+                        break;
+                    case 'cut':
+                        if (y < normalizedY + influenceRadius * 0.5 && y > normalizedY - influenceRadius * 0.5) {
+                            newRadius = minRadius;
+                        }
+                        break;
+                    case 'shape':
+                        newRadius = THREE.MathUtils.lerp(vertexRadius, pointRadius, 0.1);
+                        break;
+                }
+
+                newRadius = THREE.MathUtils.clamp(newRadius, minRadius, maxRadius);
+                const newX = newRadius * Math.cos(angle);
+                const newZ = newRadius * Math.sin(angle);
+                positions.setX(i, newX);
+                positions.setZ(i, newZ);
+            }
+        }
+
+        positions.needsUpdate = true;
+        potteryMesh.geometry.computeVertexNormals();
+    }
+
+    function resetClay() {
+        if (potteryMesh) {
+            scene.remove(potteryMesh.parent);
+        }
+        createPottery();
+    }
+
+    function firePottery() {
+        if (isFired || !isPlaced) return;
+        isFired = true;
+
+        // Change material to look like fired clay
+        const textureLoader = new THREE.TextureLoader();
+        const firedTexture = textureLoader.load('https://i.imgur.com/TyR7CZl.jpg'); // Replace with fired clay texture
+
+        potteryMesh.material.map = firedTexture;
+        potteryMesh.material.normalMap = null;
+        potteryMesh.material.roughness = 0.5;
+        potteryMesh.material.metalness = 0.2;
+        potteryMesh.material.needsUpdate = true;
+    }
+
+    function glazePottery() {
+        if (!isFired || isGlazed || !isPlaced) return;
+        isGlazed = true;
+
+        // Change material to look glazed
+        const textureLoader = new THREE.TextureLoader();
+        const glazeTexture = textureLoader.load('https://i.imgur.com/6T0FMI6.jpg'); // Replace with glaze texture
+
+        potteryMesh.material.map = glazeTexture;
+        potteryMesh.material.normalMap = null;
+        potteryMesh.material.roughness = 0.1;
+        potteryMesh.material.metalness = 0.5;
+        potteryMesh.material.needsUpdate = true;
+    }
+
+    function savePottery() {
+        if (!isPlaced) return;
+        const exporter = new THREE.OBJExporter();
+        const objData = exporter.parse(potteryMesh);
+        const blob = new Blob([objData], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.download = 'pottery.obj';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+    }
+
+    function animate() {
+        renderer.setAnimationLoop(render);
+    }
+
+    function render(timestamp, frame) {
+        if (frame) {
+            const referenceSpace = renderer.xr.getReferenceSpace();
+            const session = renderer.xr.getSession();
+
+            if (hitTestSourceRequested === false) {
+                session.requestReferenceSpace('viewer').then(function (referenceSpace) {
+                    session.requestHitTestSource({ space: referenceSpace }).then(function (source) {
+                        hitTestSource = source;
+                    });
+                });
+
+                session.addEventListener('end', function () {
+                    hitTestSourceRequested = false;
+                    hitTestSource = null;
+                });
+
+                hitTestSourceRequested = true;
+            }
+
+            if (hitTestSource) {
+                const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+                if (hitTestResults.length > 0 && !isPlaced) {
+                    const hit = hitTestResults[0];
+
+                    const pose = hit.getPose(referenceSpace);
+                    reticle.visible = true;
+                    reticle.matrix.fromArray(pose.transform.matrix);
+                    reticle.matrix.decompose(reticle.position, reticle.quaternion, reticle.scale);
+                    document.getElementById('message').style.display = 'block';
+                    document.getElementById('message').innerText = 'Tap to place the pottery wheel';
+                } else {
+                    reticle.visible = false;
+                }
+            }
+        }
+
+        if (isPlaced) {
+            // Rotate the wheel and clay
+            const rotationSpeed = 0.02;
+            wheelMesh.rotation.y += rotationSpeed;
+            if (!isFired) {
+                potteryMesh.rotation.y += rotationSpeed;
+            }
+            document.getElementById('message').style.display = 'none';
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    renderer.domElement.addEventListener('click', (event) => {
+        if (!isPlaced && reticle.visible) {
+            isPlaced = true;
+            createPottery();
+            document.getElementById('message').style.display = 'none';
+        }
+    });
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+</script>
+</body>
+</html>
