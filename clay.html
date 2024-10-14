@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claymation-Like Audio Visualizer</title>
+    <title>Interactive Claymation Visualizer</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background-color: #1a1a1a;
         }
-
         canvas {
             display: block;
         }
@@ -22,37 +21,46 @@
     <script>
         const canvas = document.getElementById('visualizer');
         const ctx = canvas.getContext('2d');
+        let analyser, dataArray, audioContext;
 
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        let analyser, dataArray, audioContext;
         const particles = [];
-        const numParticles = 300;  // Reduced to focus on larger, more organic forms
+        const numParticles = 100;  // Fewer particles but more interactive
+        let mouseX = null, mouseY = null;
         let lastFrameTime = 0;
-        const frameRate = 12;  // Simulate claymation choppy motion
+        const frameRate = 15;  // Choppy claymation frame rate
+        let maxParticleSize = 40;
 
         // Clay-like Particle Class
         class ClayParticle {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.size = Math.random() * 30 + 20; // Larger sizes for a malleable clay feel
+                this.baseSize = Math.random() * 20 + 10;
+                this.size = this.baseSize;
                 this.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
-                this.velocityX = (Math.random() - 0.5) * 2;
-                this.velocityY = (Math.random() - 0.5) * 2;
+                this.velocityX = (Math.random() - 0.5) * 1;
+                this.velocityY = (Math.random() - 0.5) * 1;
                 this.deformation = Math.random() * 0.3; // Initial deformation amount
+                this.isBeingInteractedWith = false;
             }
 
             update(audioLevel) {
-                this.x += this.velocityX * (audioLevel + 1);
-                this.y += this.velocityY * (audioLevel + 1);
+                this.x += this.velocityX * (audioLevel + 0.5);
+                this.y += this.velocityY * (audioLevel + 0.5);
 
+                // Reflect off edges
                 if (this.x > canvas.width || this.x < 0) this.velocityX *= -1;
                 if (this.y > canvas.height || this.y < 0) this.velocityY *= -1;
 
-                // Modify deformation based on audio intensity
-                this.deformation = 0.3 + audioLevel * 0.7;
+                // Deform based on sound input, and reset when not interacted
+                this.deformation = this.isBeingInteractedWith ? 1.5 : 0.3 + audioLevel * 0.5;
+
+                // Increase size dynamically based on sound intensity
+                this.size = this.baseSize * (0.5 + audioLevel * 1.5);
+                if (this.size > maxParticleSize) this.size = maxParticleSize; // Cap the size for aesthetic purposes
             }
 
             draw() {
@@ -61,11 +69,16 @@
                 ctx.ellipse(
                     this.x, this.y,
                     this.size * this.deformation, this.size,  // Stretch along one axis
-                    Math.random() * Math.PI,  // Imperfect rotation
+                    Math.random() * Math.PI,  // Imperfect rotation for clay-like randomness
                     0, Math.PI * 2
                 );
                 ctx.fillStyle = this.color;
                 ctx.fill();
+            }
+
+            checkInteraction(mx, my) {
+                const dist = Math.hypot(this.x - mx, this.y - my);
+                return dist < this.size;  // Simple proximity-based interaction
             }
         }
 
@@ -104,7 +117,19 @@
 
         setupAudio();
 
-        // Animate particles
+        // Handle mouse/touch interaction
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+        });
+
+        // Animate particles and interaction
         function animate(time) {
             requestAnimationFrame(animate);
 
@@ -118,13 +143,14 @@
                 // Clear canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Draw clay-like particles
                 particles.forEach(particle => {
+                    particle.isBeingInteractedWith = mouseX !== null && particle.checkInteraction(mouseX, mouseY);
+
                     particle.update(audioLevel);
                     particle.draw();
                 });
 
-                // Add light overlay to give a tactile feel
+                // Draw light overlay to give a tactile feel
                 drawLightOverlay(audioLevel);
             }
         }
