@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Claymation Visualizer</title>
+    <title>Living Clay Interactive Visualizer</title>
     <style>
         body {
             margin: 0;
@@ -27,24 +27,39 @@
         canvas.height = window.innerHeight;
 
         const particles = [];
-        const numParticles = 100;  // Fewer particles but more interactive
+        const numParticles = 10;  // Fewer but larger, evolving blobs
         let mouseX = null, mouseY = null;
         let lastFrameTime = 0;
-        const frameRate = 15;  // Choppy claymation frame rate
-        let maxParticleSize = 40;
+        const frameRate = 12;  // Choppy claymation frame rate
+        let maxParticleSize = 100;
 
-        // Clay-like Particle Class
+        // Clay-like Particle Class (with more complex forms)
         class ClayParticle {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.baseSize = Math.random() * 20 + 10;
+                this.baseSize = Math.random() * 50 + 50;
                 this.size = this.baseSize;
-                this.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
-                this.velocityX = (Math.random() - 0.5) * 1;
-                this.velocityY = (Math.random() - 0.5) * 1;
-                this.deformation = Math.random() * 0.3; // Initial deformation amount
+                this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
+                this.velocityX = (Math.random() - 0.5) * 2;
+                this.velocityY = (Math.random() - 0.5) * 2;
+                this.vertices = this.generateVertices();  // Complex organic shape
                 this.isBeingInteractedWith = false;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+            }
+
+            // Generate vertices for a multi-point organic shape
+            generateVertices() {
+                const vertices = [];
+                const numPoints = Math.floor(Math.random() * 6) + 6;  // Between 6-12 points
+
+                for (let i = 0; i < numPoints; i++) {
+                    const angle = (i / numPoints) * Math.PI * 2;
+                    const radius = this.baseSize / 2 + Math.random() * this.baseSize / 4;
+                    vertices.push({ angle, radius });
+                }
+                return vertices;
             }
 
             update(audioLevel) {
@@ -55,30 +70,42 @@
                 if (this.x > canvas.width || this.x < 0) this.velocityX *= -1;
                 if (this.y > canvas.height || this.y < 0) this.velocityY *= -1;
 
-                // Deform based on sound input, and reset when not interacted
-                this.deformation = this.isBeingInteractedWith ? 1.5 : 0.3 + audioLevel * 0.5;
+                // Rotate and deform based on sound input
+                this.rotation += this.rotationSpeed;
+                this.vertices.forEach(v => {
+                    v.radius = v.radius * (0.9 + 0.2 * audioLevel);
+                });
 
                 // Increase size dynamically based on sound intensity
-                this.size = this.baseSize * (0.5 + audioLevel * 1.5);
-                if (this.size > maxParticleSize) this.size = maxParticleSize; // Cap the size for aesthetic purposes
+                this.size = this.baseSize * (0.8 + audioLevel * 1.5);
+                if (this.size > maxParticleSize) this.size = maxParticleSize; // Cap the size
             }
 
             draw() {
-                // Draw deformed, clay-like shapes
+                // Draw organic shape
                 ctx.beginPath();
-                ctx.ellipse(
-                    this.x, this.y,
-                    this.size * this.deformation, this.size,  // Stretch along one axis
-                    Math.random() * Math.PI,  // Imperfect rotation for clay-like randomness
-                    0, Math.PI * 2
-                );
+                for (let i = 0; i < this.vertices.length; i++) {
+                    const v = this.vertices[i];
+                    const x = this.x + Math.cos(v.angle + this.rotation) * v.radius;
+                    const y = this.y + Math.sin(v.angle + this.rotation) * v.radius;
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
                 ctx.fillStyle = this.color;
                 ctx.fill();
+
+                // Subtle outline for more clay-like effect
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.stroke();
             }
 
             checkInteraction(mx, my) {
                 const dist = Math.hypot(this.x - mx, this.y - my);
-                return dist < this.size;  // Simple proximity-based interaction
+                return dist < this.size;  // Proximity-based interaction
             }
         }
 
@@ -143,9 +170,11 @@
                 // Clear canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+                // Draw textured backdrop
+                drawTexturedBackdrop(audioLevel);
+
                 particles.forEach(particle => {
                     particle.isBeingInteractedWith = mouseX !== null && particle.checkInteraction(mouseX, mouseY);
-
                     particle.update(audioLevel);
                     particle.draw();
                 });
@@ -153,6 +182,19 @@
                 // Draw light overlay to give a tactile feel
                 drawLightOverlay(audioLevel);
             }
+        }
+
+        // Add a textured, evolving backdrop
+        function drawTexturedBackdrop(audioLevel) {
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const brightness = Math.random() * 255 * audioLevel * 1.5;
+                imageData.data[i] = brightness * 0.9;
+                imageData.data[i + 1] = brightness * 0.7;
+                imageData.data[i + 2] = brightness * 0.5;
+                imageData.data[i + 3] = 255;
+            }
+            ctx.putImageData(imageData, 0, 0);
         }
 
         // Add radial gradient light overlay for a soft, clay-like look
