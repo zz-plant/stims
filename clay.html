@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enhanced WebGL Audio Visualizer</title>
+  <title>Sophisticated WebGL Audio Visualizer</title>
   <style>
     body {
       margin: 0;
@@ -30,6 +30,7 @@
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/josephg/noisejs/perlin.js"></script> <!-- Adding Perlin Noise library -->
 </head>
 <body>
   <canvas id="visualizer"></canvas>
@@ -47,6 +48,7 @@
     const sensitivitySlider = document.getElementById('sensitivity');
     const mouse = { x: 0, y: 0 };
     let sensitivity = 1;
+    let lastLowPeak = 0; // Used for beat detection
 
     function init() {
       // Scene setup
@@ -138,27 +140,32 @@
         attribute vec3 velocity;
         varying vec3 vColor;
 
+        float perlinNoise(float x, float y, float z) {
+          return noise.simplex3(x, y, z); // Perlin Noise for smoother, organic movements
+        }
+
         void main() {
           vec3 newPosition = position + velocity * time * 0.1;
 
-          // React to audio data, clustering based on bass frequencies
-          float audioAmplitude = audioData[int(position.x * 0.5 + 64.0)] * sensitivity;
-          
-          // Amplify audio effects for more obvious reaction
-          audioAmplitude *= 2.5; // Increase audio influence to make it more obvious
+          // Frequency bands splitting
+          float bass = audioData[0] * sensitivity; // Low frequencies for bass
+          float mid = audioData[64] * sensitivity; // Mid frequencies
+          float treble = audioData[128] * sensitivity; // High frequencies
 
-          newPosition.x += sin(time + position.x) * 0.2 * audioAmplitude;
-          newPosition.y += cos(time + position.y) * 0.2 * audioAmplitude;
+          // Applying Perlin noise to movement for smooth organic motion
+          float noiseFactor = perlinNoise(newPosition.x, newPosition.y, time);
+          newPosition.x += sin(time + position.x * noiseFactor) * bass * 0.4;
+          newPosition.y += cos(time + position.y * noiseFactor) * mid * 0.3;
 
-          // Increase particle size and brightness for stronger beats
-          if (audioAmplitude > 0.8) {
-            gl_PointSize = 5.0 + audioAmplitude * 8.0;
-            vColor = vec3(1.0, 1.0, 1.0); // Bright burst on beats
-          } else {
-            gl_PointSize = 2.0 + audioAmplitude * 5.0;
-            // Color based on frequency, shifting between blue and purple
-            vColor = vec3(0.5 + 0.5 * sin(position.x * 0.1), 0.5 + 0.5 * cos(position.y * 0.1), 1.0);
-          }
+          // Dynamic particle size influenced by bass for more obvious reactions
+          gl_PointSize = 3.0 + bass * 10.0;
+
+          // Color shifting based on audio bands using sine and cosine functions
+          vColor = vec3(
+            0.5 + 0.5 * sin(time + bass),
+            0.5 + 0.5 * cos(time + mid),
+            0.5 + 0.5 * sin(time + treble)
+          );
 
           gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
         }
@@ -192,6 +199,14 @@
 
       // Update uniforms
       analyser.getByteFrequencyData(dataArray);
+
+      // Beat detection using low frequencies
+      let bass = dataArray[0] / 255;
+      if (bass > 0.8 && bass > lastLowPeak * 1.1) {
+        lastLowPeak = bass;
+        // Trigger a burst effect on a detected beat
+        uniforms.time.value += 0.1; // Speed up time on a beat for more intensity
+      }
       uniforms.time.value += 0.05;
       uniforms.audioData.value = dataArray.map(d => d / 255);
       uniforms.sensitivity.value = sensitivity;
