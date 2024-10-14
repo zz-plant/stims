@@ -2,21 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Enhanced Claymation Music Visualizer</title>
+    <title>Claymation Music Visualizer Without threejs.org Resources</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
         canvas { display: block; }
     </style>
-    <!-- Three.js Library -->
+    <!-- Three.js Library from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <!-- OrbitControls -->
-    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
-    <!-- ShaderPass for post-processing -->
-    <script src="https://threejs.org/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://threejs.org/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://threejs.org/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://threejs.org/examples/js/shaders/FXAAShader.js"></script>
-    <script src="https://threejs.org/examples/js/shaders/ToonShader.js"></script>
+    <!-- OrbitControls from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Post-processing dependencies from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/shaders/FXAAShader.js"></script>
 </head>
 <body>
 <script>
@@ -34,7 +33,7 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Post-processing for Toon Shading
+    // Post-processing
     const composer = new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene, camera));
 
@@ -96,6 +95,55 @@
         shapes.push(shape);
     }
 
+    // Organic Connecting Strands
+    const strandMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+    const strands = [];
+    for (let i = 0; i < shapes.length - 1; i++) {
+        const points = [
+            shapes[i].position.clone(),
+            shapes[i + 1].position.clone()
+        ];
+        const strandGeometry = new THREE.BufferGeometry().setFromPoints(points);
+        const strand = new THREE.Line(strandGeometry, strandMaterial);
+        scene.add(strand);
+        strands.push(strand);
+    }
+
+    // Dynamic Backdrop
+    const backdropGeometry = new THREE.PlaneGeometry(100, 100, 64, 64);
+    const backdropMaterial = new THREE.MeshStandardMaterial({
+        color: 0x222222,
+        side: THREE.DoubleSide,
+        wireframe: false
+    });
+    const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial);
+    backdrop.position.z = -50;
+    scene.add(backdrop);
+
+    // Scenery Elements
+    const scenery = [];
+
+    // Hills
+    for (let i = 0; i < 10; i++) {
+        const hillGeometry = new THREE.DodecahedronGeometry(3 + Math.random() * 2);
+        const hillMaterial = createClayMaterial(new THREE.Color(`hsl(${Math.random() * 360}, 60%, 40%)`));
+        const hill = new THREE.Mesh(hillGeometry, hillMaterial);
+        hill.position.set((Math.random() - 0.5) * 80, -20 + Math.random() * 10, -40 + Math.random() * 20);
+        hill.scale.setScalar(2 + Math.random() * 2);
+        scene.add(hill);
+        scenery.push(hill);
+    }
+
+    // Trees
+    for (let i = 0; i < 15; i++) {
+        const treeGeometry = new THREE.ConeGeometry(0.5, 2 + Math.random() * 3, 8);
+        const treeMaterial = createClayMaterial(0x006400);
+        const tree = new THREE.Mesh(treeGeometry, treeMaterial);
+        tree.position.set((Math.random() - 0.5) * 100, -15 + Math.random() * 5, -30 + Math.random() * 10);
+        scene.add(tree);
+        scenery.push(tree);
+    }
+
     // Microphone Input
     let analyser;
     let dataArray;
@@ -142,6 +190,57 @@
                 shape.rotation.z += 0.01 + (Math.random() - 0.5) * 0.05;
             });
 
+            // Smooshing Effect - Collision Detection and Deformation
+            for (let i = 0; i < shapes.length; i++) {
+                for (let j = i + 1; j < shapes.length; j++) {
+                    const shapeA = shapes[i];
+                    const shapeB = shapes[j];
+                    const distance = shapeA.position.distanceTo(shapeB.position);
+                    const minDistance = (shapeA.scale.x + shapeB.scale.x) * 0.5;
+
+                    if (distance < minDistance) {
+                        // Calculate smooshing effect
+                        const overlap = minDistance - distance;
+                        const smooshFactor = overlap * 0.1;
+
+                        // Adjust positions to simulate smooshing
+                        const direction = new THREE.Vector3().subVectors(shapeB.position, shapeA.position).normalize();
+                        shapeA.position.add(direction.clone().multiplyScalar(-smooshFactor));
+                        shapeB.position.add(direction.clone().multiplyScalar(smooshFactor));
+
+                        // Deform scales to simulate sharing mass
+                        shapeA.scale.x = Math.max(0.5, shapeA.scale.x - smooshFactor * 0.5);
+                        shapeB.scale.x = Math.max(0.5, shapeB.scale.x - smooshFactor * 0.5);
+                        shapeA.scale.y = Math.max(0.5, shapeA.scale.y - smooshFactor * 0.5);
+                        shapeB.scale.y = Math.max(0.5, shapeB.scale.y - smooshFactor * 0.5);
+                    }
+                }
+            }
+
+            // Update Strands
+            strands.forEach((strand, i) => {
+                const points = [
+                    shapes[i].position.clone(),
+                    shapes[i + 1].position.clone()
+                ];
+                strand.geometry.setFromPoints(points);
+                strand.geometry.attributes.position.needsUpdate = true;
+            });
+
+            // Update Backdrop for Dynamic Effect
+            const vertices = backdrop.geometry.attributes.position;
+            for (let i = 0; i < vertices.count; i++) {
+                const wave = Math.sin(time * 0.001 + i * 0.1) * 0.5;
+                vertices.setZ(i, wave);
+            }
+            vertices.needsUpdate = true;
+
+            // Update Scenery for Dynamic Background
+            scenery.forEach((object, index) => {
+                object.position.y += Math.sin(time * 0.001 + index) * 0.01;
+                object.rotation.y += 0.005;
+            });
+
             // Subtle Camera Shake
             camera.position.x += (Math.random() - 0.5) * 0.02;
             camera.position.y += (Math.random() - 0.5) * 0.02;
@@ -159,6 +258,15 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         composer.setSize(window.innerWidth, window.innerHeight);
         effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+    });
+
+    // Gyroscopic Parallax Effect
+    window.addEventListener('deviceorientation', (event) => {
+        const { beta, gamma } = event;
+        const parallaxFactor = 0.02;
+        camera.position.x = gamma * parallaxFactor;
+        camera.position.y = beta * parallaxFactor;
+        camera.lookAt(scene.position);
     });
 </script>
 </body>
