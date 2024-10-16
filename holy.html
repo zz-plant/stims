@@ -12,12 +12,12 @@
 <body>
     <script type="module">
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/three.module.js';
-        import { OrbitControls } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/controls/OrbitControls.js';
-        import { EffectComposer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/postprocessing/UnrealBloomPass.js';
-        import { GlitchPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/postprocessing/GlitchPass.js';
-
+import { OrbitControls } from 'https://unpkg.com/three@0.167.0/examples/jsm/controls/OrbitControls.js';
+import { EffectComposer } from 'https://unpkg.com/three@0.167.0/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postprocessing/GlitchPass.js';
+        
         let scene, camera, renderer, composer, controls, fractal, particleSystem, audioAnalyser, clock;
 
         function init() {
