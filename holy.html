@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Three.js Audio Visualizer with Mic Input</title>
+    <title>Enhanced Three.js Audio Visualizer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; }
         canvas { display: block; }
@@ -11,14 +11,11 @@
 </head>
 <body>
     <script type="module">
-        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/three.module.js';
-import { OrbitControls } from 'https://unpkg.com/three@0.167.0/examples/jsm/controls/OrbitControls.js';
-import { EffectComposer } from 'https://unpkg.com/three@0.167.0/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postprocessing/GlitchPass.js';
-        
-        let scene, camera, renderer, composer, controls, fractal, particleSystem, audioAnalyser, clock;
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+
+        let scene, camera, renderer, fractal, particleSystem, audioAnalyser, clock;
+        let waveform, waveformMaterial;
+        let colorShiftTime = 0;
 
         function init() {
             scene = new THREE.Scene();
@@ -28,22 +25,11 @@ import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postpro
             renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
-            composer = new EffectComposer(renderer);
-            composer.addPass(new RenderPass(scene, camera));
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            composer.addPass(bloomPass);
-            const glitchPass = new GlitchPass();
-            composer.addPass(glitchPass);
-
-            controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.1;
-
             fractal = createFractalGeometry(3);
             scene.add(fractal);
 
             createParticleSystem();
-
+            createWaveform();
             setupLighting();
 
             camera.position.z = 10;
@@ -54,11 +40,14 @@ import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postpro
 
         function createFractalGeometry(level) {
             const geometry = new THREE.IcosahedronGeometry(1, 3);
-            const material = new THREE.MeshStandardMaterial({
+            const material = new THREE.MeshPhongMaterial({
                 color: 0xffffff,
                 wireframe: true,
                 opacity: 0.5,
                 transparent: true,
+                emissive: 0x444444,
+                specular: 0xffffff,
+                shininess: 100
             });
             const mesh = new THREE.Mesh(geometry, material);
             if (level > 0) {
@@ -70,9 +59,10 @@ import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postpro
         }
 
         function createParticleSystem() {
-            const particleCount = 2000;
+            const particleCount = 5000;
             const positions = new Float32Array(particleCount * 3);
             const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
 
             for (let i = 0; i < particleCount; i++) {
                 positions[i * 3] = (Math.random() - 0.5) * 100;
@@ -82,21 +72,58 @@ import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postpro
                 colors[i * 3] = Math.random();
                 colors[i * 3 + 1] = Math.random();
                 colors[i * 3 + 2] = Math.random();
+
+                sizes[i] = Math.random() * 0.5 + 0.1;
             }
 
             const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-            const material = new THREE.PointsMaterial({
-                size: 0.3,
-                vertexColors: true,
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    audioLevel: { value: 0 }
+                },
+                vertexShader: `
+                    uniform float time;
+                    uniform float audioLevel;
+                    attribute float size;
+                    varying vec3 vColor;
+                    void main() {
+                        vColor = color;
+                        vec3 pos = position;
+                        pos.y += sin(time * 2.0 + position.x * 0.05) * audioLevel * 2.0;
+                        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                        gl_PointSize = size * (300.0 / -mvPosition.z) * (1.0 + audioLevel);
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vColor;
+                    void main() {
+                        if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.475) discard;
+                        gl_FragColor = vec4(vColor, 1.0);
+                    }
+                `,
                 blending: THREE.AdditiveBlending,
-                transparent: true
+                depthTest: false,
+                transparent: true,
             });
 
             particleSystem = new THREE.Points(geometry, material);
             scene.add(particleSystem);
+        }
+
+        function createWaveform() {
+            const waveformGeometry = new THREE.BufferGeometry();
+            const waveformVertices = new Float32Array(128 * 3);
+            waveformGeometry.setAttribute('position', new THREE.BufferAttribute(waveformVertices, 3));
+
+            waveformMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+            waveform = new THREE.Line(waveformGeometry, waveformMaterial);
+            scene.add(waveform);
         }
 
         function setupLighting() {
@@ -114,7 +141,7 @@ import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postpro
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const source = audioContext.createMediaStreamSource(stream);
                 audioAnalyser = audioContext.createAnalyser();
-                audioAnalyser.fftSize = 512;
+                audioAnalyser.fftSize = 256;
                 source.connect(audioAnalyser);
             } catch (err) {
                 console.error('Error accessing microphone:', err);
@@ -125,6 +152,7 @@ import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postpro
             requestAnimationFrame(animate);
 
             const deltaTime = clock.getDelta();
+            const time = clock.getElapsedTime();
 
             if (audioAnalyser) {
                 const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
@@ -134,13 +162,12 @@ import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postpro
                 const mid = getAverageFrequency(dataArray, 4, 8);
                 const treble = getAverageFrequency(dataArray, 8, 16);
 
-                updateFractal(bass, mid);
-                updateParticles(mid, deltaTime);
-                updateBloom(treble);
+                updateFractal(bass, mid, treble, time);
+                updateParticles(mid, time);
+                updateWaveform(dataArray);
             }
 
-            controls.update();
-            composer.render();
+            renderer.render(scene, camera);
         }
 
         function getAverageFrequency(array, start, end) {
@@ -148,35 +175,44 @@ import { GlitchPass } from 'https://unpkg.com/three@0.167.0/examples/jsm/postpro
             for (let i = start; i < end; i++) {
                 sum += array[i];
             }
-            return sum / (end - start);
+            return sum / (end - start) / 255;
         }
 
-        function updateFractal(bass, mid) {
-            fractal.rotation.x += 0.001 + (bass / 255) * 0.005;
-            fractal.rotation.y += 0.002 + (mid / 255) * 0.005;
+        function updateFractal(bass, mid, treble, time) {
+            fractal.rotation.x += 0.001 + bass * 0.05;
+            fractal.rotation.y += 0.002 + mid * 0.05;
+            fractal.scale.setScalar(1 + treble * 0.2);
+
+            colorShiftTime += 0.01;
+            const hue = (Math.sin(colorShiftTime) + 1) * 0.5;
+            fractal.material.color.setHSL(hue, 1, 0.5);
+            fractal.material.emissive.setHSL(hue, 1, 0.2);
         }
 
-        function updateParticles(mid, deltaTime) {
-            const positions = particleSystem.geometry.attributes.position.array;
-            const time = clock.getElapsedTime();
+        function updateParticles(mid, time) {
+            particleSystem.material.uniforms.time.value = time;
+            particleSystem.material.uniforms.audioLevel.value = mid;
+            particleSystem.rotation.y += 0.001;
+        }
 
-            for (let i = 0; i < positions.length; i += 3) {
-                positions[i + 1] = Math.sin(time + positions[i]) * 2 * (mid / 128);
+        function updateWaveform(dataArray) {
+            const positions = waveform.geometry.attributes.position.array;
+            for (let i = 0; i < 128; i++) {
+                const value = dataArray[i] / 128.0;
+                positions[i * 3] = i / 128 * 10 - 5;
+                positions[i * 3 + 1] = value * 2 - 1;
+                positions[i * 3 + 2] = -5;
             }
+            waveform.geometry.attributes.position.needsUpdate = true;
 
-            particleSystem.geometry.attributes.position.needsUpdate = true;
-            particleSystem.rotation.y += deltaTime * 0.1;
-        }
-
-        function updateBloom(treble) {
-            composer.passes[1].strength = 2.0 + (treble / 255) * 1.0;
+            const hue = (Math.sin(colorShiftTime * 0.1) + 1) * 0.5;
+            waveformMaterial.color.setHSL(hue, 1, 0.5);
         }
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         }
 
         init();
