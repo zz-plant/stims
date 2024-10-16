@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Three.js Audio Visualizer with Mic Input</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: black; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/three.module.js';
+        import { OrbitControls } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/controls/OrbitControls.js';
+        import { EffectComposer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/postprocessing/UnrealBloomPass.js';
+        import { GlitchPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r167/examples/jsm/postprocessing/GlitchPass.js';
+
+        let scene, camera, renderer, composer, controls, fractal, particleSystem, audioAnalyser, clock;
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(new RenderPass(scene, camera));
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            composer.addPass(bloomPass);
+            const glitchPass = new GlitchPass();
+            composer.addPass(glitchPass);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.1;
+
+            fractal = createFractalGeometry(3);
+            scene.add(fractal);
+
+            createParticleSystem();
+
+            setupLighting();
+
+            camera.position.z = 10;
+            clock = new THREE.Clock();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function createFractalGeometry(level) {
+            const geometry = new THREE.IcosahedronGeometry(1, 3);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                wireframe: true,
+                opacity: 0.5,
+                transparent: true,
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            if (level > 0) {
+                const child = createFractalGeometry(level - 1);
+                child.scale.set(0.5, 0.5, 0.5);
+                mesh.add(child);
+            }
+            return mesh;
+        }
+
+        function createParticleSystem() {
+            const particleCount = 2000;
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 100;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+
+                colors[i * 3] = Math.random();
+                colors[i * 3 + 1] = Math.random();
+                colors[i * 3 + 2] = Math.random();
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.3,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                transparent: true
+            });
+
+            particleSystem = new THREE.Points(geometry, material);
+            scene.add(particleSystem);
+        }
+
+        function setupLighting() {
+            const ambientLight = new THREE.AmbientLight(0x404040, 1);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0xffffff, 2);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+        }
+
+        async function setupAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(stream);
+                audioAnalyser = audioContext.createAnalyser();
+                audioAnalyser.fftSize = 512;
+                source.connect(audioAnalyser);
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const deltaTime = clock.getDelta();
+
+            if (audioAnalyser) {
+                const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+                audioAnalyser.getByteFrequencyData(dataArray);
+
+                const bass = getAverageFrequency(dataArray, 0, 4);
+                const mid = getAverageFrequency(dataArray, 4, 8);
+                const treble = getAverageFrequency(dataArray, 8, 16);
+
+                updateFractal(bass, mid);
+                updateParticles(mid, deltaTime);
+                updateBloom(treble);
+            }
+
+            controls.update();
+            composer.render();
+        }
+
+        function getAverageFrequency(array, start, end) {
+            let sum = 0;
+            for (let i = start; i < end; i++) {
+                sum += array[i];
+            }
+            return sum / (end - start);
+        }
+
+        function updateFractal(bass, mid) {
+            fractal.rotation.x += 0.001 + (bass / 255) * 0.005;
+            fractal.rotation.y += 0.002 + (mid / 255) * 0.005;
+        }
+
+        function updateParticles(mid, deltaTime) {
+            const positions = particleSystem.geometry.attributes.position.array;
+            const time = clock.getElapsedTime();
+
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i + 1] = Math.sin(time + positions[i]) * 2 * (mid / 128);
+            }
+
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.rotation.y += deltaTime * 0.1;
+        }
+
+        function updateBloom(treble) {
+            composer.passes[1].strength = 2.0 + (treble / 255) * 1.0;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init();
+        setupAudio().then(() => animate());
+    </script>
+</body>
+</html>
