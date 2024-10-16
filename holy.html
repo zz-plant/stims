@@ -2,147 +2,131 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Three.js Audio Visualizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Immersive Audio Visualizer</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: black; }
+        body { margin: 0; overflow: hidden; background-color: black; touch-action: none; }
         canvas { display: block; }
+        #startButton, #infoButton {
+            position: absolute;
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: rgba(76, 175, 80, 0.7);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #startButton:hover, #infoButton:hover {
+            background-color: rgba(76, 175, 80, 1);
+        }
+        #startButton {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #infoButton {
+            top: 10px;
+            right: 10px;
+        }
+        #infoPanel {
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <button id="startButton">Start Visualizer</button>
+    <button id="infoButton">i</button>
+    <div id="infoPanel">
+        <p>Touch and drag to rotate</p>
+        <p>Pinch to zoom</p>
+        <p>Double tap to change shape</p>
+    </div>
     <script type="module">
-        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
 
-        let scene, camera, renderer, fractal, particleSystem, audioAnalyser, clock;
-        let waveform, waveformMaterial;
-        let colorShiftTime = 0;
+        let scene, camera, renderer, visualizer, audioContext, audioAnalyser, dataArray;
+        let isAudioInitialized = false;
+        let lastTap = 0;
+        let zoomDistance = 5;
+        const shapes = ['sphere', 'cube', 'torus'];
+        let currentShape = 0;
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.body.appendChild(renderer.domElement);
 
-            fractal = createFractalGeometry(3);
-            scene.add(fractal);
+            visualizer = createVisualizer();
+            scene.add(visualizer);
 
-            createParticleSystem();
-            createWaveform();
-            setupLighting();
+            addLighting();
 
-            camera.position.z = 10;
-            clock = new THREE.Clock();
+            camera.position.z = zoomDistance;
 
             window.addEventListener('resize', onWindowResize);
+            document.addEventListener('touchstart', onTouchStart, { passive: false });
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd, { passive: false });
+
+            document.getElementById('infoButton').addEventListener('click', toggleInfoPanel);
         }
 
-        function createFractalGeometry(level) {
-            const geometry = new THREE.IcosahedronGeometry(1, 3);
-            const material = new THREE.MeshPhongMaterial({
-                color: 0xffffff,
-                wireframe: true,
-                opacity: 0.5,
-                transparent: true,
-                emissive: 0x444444,
-                specular: 0xffffff,
-                shininess: 100
-            });
-            const mesh = new THREE.Mesh(geometry, material);
-            if (level > 0) {
-                const child = createFractalGeometry(level - 1);
-                child.scale.set(0.5, 0.5, 0.5);
-                mesh.add(child);
-            }
-            return mesh;
-        }
-
-        function createParticleSystem() {
-            const particleCount = 5000;
-            const positions = new Float32Array(particleCount * 3);
-            const colors = new Float32Array(particleCount * 3);
-            const sizes = new Float32Array(particleCount);
-
-            for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] = (Math.random() - 0.5) * 100;
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
-
-                colors[i * 3] = Math.random();
-                colors[i * 3 + 1] = Math.random();
-                colors[i * 3 + 2] = Math.random();
-
-                sizes[i] = Math.random() * 0.5 + 0.1;
-            }
-
-            const geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-            const material = new THREE.ShaderMaterial({
-                uniforms: {
-                    time: { value: 0 },
-                    audioLevel: { value: 0 }
-                },
-                vertexShader: `
-                    uniform float time;
-                    uniform float audioLevel;
-                    attribute float size;
-                    varying vec3 vColor;
-                    void main() {
-                        vColor = color;
-                        vec3 pos = position;
-                        pos.y += sin(time * 2.0 + position.x * 0.05) * audioLevel * 2.0;
-                        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                        gl_PointSize = size * (300.0 / -mvPosition.z) * (1.0 + audioLevel);
-                        gl_Position = projectionMatrix * mvPosition;
-                    }
-                `,
-                fragmentShader: `
-                    varying vec3 vColor;
-                    void main() {
-                        if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.475) discard;
-                        gl_FragColor = vec4(vColor, 1.0);
-                    }
-                `,
-                blending: THREE.AdditiveBlending,
-                depthTest: false,
-                transparent: true,
-            });
-
-            particleSystem = new THREE.Points(geometry, material);
-            scene.add(particleSystem);
-        }
-
-        function createWaveform() {
-            const waveformGeometry = new THREE.BufferGeometry();
-            const waveformVertices = new Float32Array(128 * 3);
-            waveformGeometry.setAttribute('position', new THREE.BufferAttribute(waveformVertices, 3));
-
-            waveformMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-            waveform = new THREE.Line(waveformGeometry, waveformMaterial);
-            scene.add(waveform);
-        }
-
-        function setupLighting() {
-            const ambientLight = new THREE.AmbientLight(0x404040, 1);
+        function addLighting() {
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
             scene.add(ambientLight);
 
-            const pointLight = new THREE.PointLight(0xffffff, 2);
+            const pointLight = new THREE.PointLight(0xffffff, 1);
             pointLight.position.set(5, 5, 5);
             scene.add(pointLight);
         }
 
+        function createVisualizer() {
+            const geometry = createGeometry();
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                emissive: 0x222222,
+                shininess: 100,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            return new THREE.Mesh(geometry, material);
+        }
+
+        function createGeometry() {
+            switch(shapes[currentShape]) {
+                case 'cube':
+                    return new THREE.BoxGeometry(3, 3, 3, 32, 32, 32);
+                case 'torus':
+                    return new THREE.TorusGeometry(2, 0.5, 32, 100);
+                case 'sphere':
+                default:
+                    return new THREE.SphereGeometry(2, 32, 32);
+            }
+        }
+
         async function setupAudio() {
             try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const source = audioContext.createMediaStreamSource(stream);
                 audioAnalyser = audioContext.createAnalyser();
                 audioAnalyser.fftSize = 256;
                 source.connect(audioAnalyser);
+                dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+                isAudioInitialized = true;
             } catch (err) {
                 console.error('Error accessing microphone:', err);
             }
@@ -151,62 +135,34 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            const deltaTime = clock.getDelta();
-            const time = clock.getElapsedTime();
-
-            if (audioAnalyser) {
-                const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+            if (isAudioInitialized) {
                 audioAnalyser.getByteFrequencyData(dataArray);
-
-                const bass = getAverageFrequency(dataArray, 0, 4);
-                const mid = getAverageFrequency(dataArray, 4, 8);
-                const treble = getAverageFrequency(dataArray, 8, 16);
-
-                updateFractal(bass, mid, treble, time);
-                updateParticles(mid, time);
-                updateWaveform(dataArray);
+                updateVisualizer();
             }
 
             renderer.render(scene, camera);
         }
 
-        function getAverageFrequency(array, start, end) {
+        function updateVisualizer() {
+            const averageFrequency = getAverageFrequency();
+            const scale = 1 + averageFrequency * 0.2;
+            visualizer.scale.set(scale, scale, scale);
+
+            const hue = (Date.now() % 10000) / 10000;
+            const color = new THREE.Color().setHSL(hue, 1, 0.5);
+            visualizer.material.color = color;
+            visualizer.material.emissive.setHSL(hue, 1, 0.2);
+
+            visualizer.rotation.x += 0.001;
+            visualizer.rotation.y += 0.002;
+        }
+
+        function getAverageFrequency() {
             let sum = 0;
-            for (let i = start; i < end; i++) {
-                sum += array[i];
+            for(let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
             }
-            return sum / (end - start) / 255;
-        }
-
-        function updateFractal(bass, mid, treble, time) {
-            fractal.rotation.x += 0.001 + bass * 0.05;
-            fractal.rotation.y += 0.002 + mid * 0.05;
-            fractal.scale.setScalar(1 + treble * 0.2);
-
-            colorShiftTime += 0.01;
-            const hue = (Math.sin(colorShiftTime) + 1) * 0.5;
-            fractal.material.color.setHSL(hue, 1, 0.5);
-            fractal.material.emissive.setHSL(hue, 1, 0.2);
-        }
-
-        function updateParticles(mid, time) {
-            particleSystem.material.uniforms.time.value = time;
-            particleSystem.material.uniforms.audioLevel.value = mid;
-            particleSystem.rotation.y += 0.001;
-        }
-
-        function updateWaveform(dataArray) {
-            const positions = waveform.geometry.attributes.position.array;
-            for (let i = 0; i < 128; i++) {
-                const value = dataArray[i] / 128.0;
-                positions[i * 3] = i / 128 * 10 - 5;
-                positions[i * 3 + 1] = value * 2 - 1;
-                positions[i * 3 + 2] = -5;
-            }
-            waveform.geometry.attributes.position.needsUpdate = true;
-
-            const hue = (Math.sin(colorShiftTime * 0.1) + 1) * 0.5;
-            waveformMaterial.color.setHSL(hue, 1, 0.5);
+            return sum / dataArray.length / 255;
         }
 
         function onWindowResize() {
@@ -215,8 +171,55 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        init();
-        setupAudio().then(() => animate());
+        function onTouchStart(event) {
+            event.preventDefault();
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                changeShape();
+            }
+            lastTap = currentTime;
+        }
+
+        function onTouchMove(event) {
+            event.preventDefault();
+            if (event.touches.length === 1) {
+                const touch = event.touches[0];
+                visualizer.rotation.y = (touch.clientX / window.innerWidth) * Math.PI * 2;
+                visualizer.rotation.x = (touch.clientY / window.innerHeight) * Math.PI;
+            } else if (event.touches.length === 2) {
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                const distance = Math.hypot(
+                    touch1.pageX - touch2.pageX,
+                    touch1.pageY - touch2.pageY
+                );
+                zoomDistance = Math.max(2, Math.min(10, 10 - distance / 50));
+                camera.position.z = zoomDistance;
+            }
+        }
+
+        function onTouchEnd(event) {
+            event.preventDefault();
+        }
+
+        function changeShape() {
+            currentShape = (currentShape + 1) % shapes.length;
+            scene.remove(visualizer);
+            visualizer = createVisualizer();
+            scene.add(visualizer);
+        }
+
+        function toggleInfoPanel() {
+            const infoPanel = document.getElementById('infoPanel');
+            infoPanel.style.display = infoPanel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        document.getElementById('startButton').addEventListener('click', () => {
+            document.getElementById('startButton').style.display = 'none';
+            init();
+            setupAudio().then(() => animate());
+        });
     </script>
 </body>
 </html>
