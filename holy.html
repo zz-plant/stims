@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Immersive Audio Visualizer</title>
+    <title>Ultimate Satisfying Audio Visualizer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: black; touch-action: none; }
         canvas { display: block; }
-        #startButton, #infoButton {
+        #startButton, #infoButton, #settingsButton, #fullscreenButton {
             position: absolute;
-            padding: 15px 30px;
-            font-size: 18px;
-            background-color: rgba(76, 175, 80, 0.7);
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: rgba(76, 175, 80, 0.8);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, transform 0.2s;
+            z-index: 10;
         }
-        #startButton:hover, #infoButton:hover {
+        #startButton:hover, #infoButton:hover, #settingsButton:hover, #fullscreenButton:hover {
             background-color: rgba(76, 175, 80, 1);
+            transform: scale(1.05);
         }
         #startButton {
             top: 50%;
@@ -27,153 +29,482 @@
             transform: translate(-50%, -50%);
         }
         #infoButton {
-            top: 10px;
-            right: 10px;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            padding: 0;
         }
-        #infoPanel {
+        #settingsButton {
+            top: 15px;
+            left: 15px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            padding: 0;
+        }
+        #fullscreenButton {
+            top: 15px;
+            right: 65px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+            padding: 0;
+        }
+        #infoPanel, #settingsPanel {
             position: absolute;
-            top: 60px;
-            right: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
+            top: 70px;
+            right: 15px;
+            left: 15px;
+            background-color: rgba(0, 0, 0, 0.85);
             color: white;
-            padding: 15px;
-            border-radius: 5px;
+            padding: 20px;
+            border-radius: 8px;
             display: none;
+            z-index: 9;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .closeButton {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        /* Loading Spinner */
+        #loadingOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            flex-direction: column;
+            color: white;
+            font-size: 18px;
+        }
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #4CAF50;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Settings Panel */
+        .slider-container {
+            margin: 15px 0;
+        }
+        .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .slider-container input {
+            width: 100%;
         }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <div>Initializing Visualizer...</div>
+    </div>
+
+    <!-- Control Buttons -->
     <button id="startButton">Start Visualizer</button>
     <button id="infoButton">i</button>
-    <div id="infoPanel">
-        <p>Touch and drag to rotate</p>
-        <p>Pinch to zoom</p>
-        <p>Double tap to change shape</p>
-    </div>
-    <script type="module">
-        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.169.0/three.module.min.js';
+    <button id="settingsButton">⚙️</button>
+    <button id="fullscreenButton">⛶</button>
 
-        let scene, camera, renderer, visualizer, audioContext, audioAnalyser, dataArray;
+    <!-- Info Panel -->
+    <div id="infoPanel">
+        <div class="panel-header">
+            <h2>How to Use</h2>
+            <button class="closeButton" onclick="toggleInfoPanel()">×</button>
+        </div>
+        <p><strong>Touch and Drag:</strong> Rotate the visualizer.</p>
+        <p><strong>Pinch:</strong> Zoom in and out.</p>
+        <p><strong>Double Tap:</strong> Change shape.</p>
+        <p><strong>Fullscreen:</strong> Toggle fullscreen mode.</p>
+        <p><strong>Settings:</strong> Customize visualizer preferences.</p>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settingsPanel">
+        <div class="panel-header">
+            <h2>Settings</h2>
+            <button class="closeButton" onclick="toggleSettingsPanel()">×</button>
+        </div>
+        <div class="slider-container">
+            <label for="particleCount">Particle Count: <span id="particleCountValue">600</span></label>
+            <input type="range" id="particleCount" min="100" max="2000" value="600">
+        </div>
+        <div class="slider-container">
+            <label for="shapeDetail">Shape Detail: <span id="shapeDetailValue">32</span></label>
+            <input type="range" id="shapeDetail" min="8" max="64" step="2" value="32">
+        </div>
+        <div class="slider-container">
+            <label for="opacity">Shape Opacity: <span id="opacityValue">0.8</span></label>
+            <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8">
+        </div>
+    </div>
+
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+    <!-- Post-Processing Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/examples/js/shaders/FXAAShader.js"></script>
+
+    <!-- Main Visualizer Script -->
+    <script>
+        let scene, camera, renderer, composer, bloomPass, fxaaPass;
+        let visualizerShape, particles;
+        let audioContext, audioAnalyser, dataArray;
         let isAudioInitialized = false;
         let lastTap = 0;
         let zoomDistance = 5;
-        const shapes = ['sphere', 'cube', 'torus'];
+        const shapes = ['sphere', 'cube', 'torus', 'dodecahedron'];
         let currentShape = 0;
+        let particleCount = 600;
+        let shapeDetail = 32;
+        let shapeOpacity = 0.8;
+        let instancedParticles;
+        let particleMaterial;
+        let particleGeometry;
+        let animationId;
 
+        // UI Elements
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const startButton = document.getElementById('startButton');
+        const infoButton = document.getElementById('infoButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const fullscreenButton = document.getElementById('fullscreenButton');
+        const infoPanel = document.getElementById('infoPanel');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const particleCountSlider = document.getElementById('particleCount');
+        const particleCountValue = document.getElementById('particleCountValue');
+        const shapeDetailSlider = document.getElementById('shapeDetail');
+        const shapeDetailValue = document.getElementById('shapeDetailValue');
+        const opacitySlider = document.getElementById('opacity');
+        const opacityValue = document.getElementById('opacityValue');
+
+        // Initialize Visualizer
         function init() {
+            // Scene and Camera Setup
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ antialias: false });
+            camera.position.z = zoomDistance;
+
+            // Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.body.appendChild(renderer.domElement);
 
-            visualizer = createVisualizer();
-            scene.add(visualizer);
+            // Post-Processing Setup
+            composer = new THREE.EffectComposer(renderer);
+            const renderPass = new THREE.RenderPass(scene, camera);
+            composer.addPass(renderPass);
 
+            // Bloom Pass for Glow Effect
+            bloomPass = new THREE.UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                1.5, // strength
+                0.4, // radius
+                0.85 // threshold
+            );
+            bloomPass.threshold = 0.21;
+            bloomPass.strength = 1.5;
+            bloomPass.radius = 0.55;
+            composer.addPass(bloomPass);
+
+            // FXAA Pass for Anti-Aliasing
+            fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
+            fxaaPass.material.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+            fxaaPass.renderToScreen = true;
+            composer.addPass(fxaaPass);
+
+            // Create Visual Elements
+            createShape();
+            createParticles();
+
+            // Lighting
             addLighting();
 
-            camera.position.z = zoomDistance;
+            // Dynamic Background
+            createDynamicBackground();
 
+            // Event Listeners
             window.addEventListener('resize', onWindowResize);
             document.addEventListener('touchstart', onTouchStart, { passive: false });
             document.addEventListener('touchmove', onTouchMove, { passive: false });
             document.addEventListener('touchend', onTouchEnd, { passive: false });
 
-            document.getElementById('infoButton').addEventListener('click', toggleInfoPanel);
+            // UI Event Listeners
+            infoButton.addEventListener('click', toggleInfoPanel);
+            settingsButton.addEventListener('click', toggleSettingsPanel);
+            fullscreenButton.addEventListener('click', toggleFullscreen);
         }
 
+        // Add Lighting to the Scene
         function addLighting() {
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             scene.add(ambientLight);
 
             const pointLight = new THREE.PointLight(0xffffff, 1);
-            pointLight.position.set(5, 5, 5);
+            pointLight.position.set(10, 10, 10);
             scene.add(pointLight);
         }
 
-        function createVisualizer() {
-            const geometry = createGeometry();
-            const material = new THREE.MeshPhongMaterial({
-                color: 0xffffff,
-                emissive: 0x222222,
-                shininess: 100,
-                wireframe: true,
-                transparent: true,
-                opacity: 0.8
+        // Create Dynamic Background
+        let backgroundUniforms;
+        function createDynamicBackground() {
+            const bgGeometry = new THREE.PlaneGeometry(2, 2, 1, 1);
+            backgroundUniforms = {
+                time: { value: 0.0 },
+                resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+                color1: { value: new THREE.Color(0x000000) },
+                color2: { value: new THREE.Color(0x000000) }
+            };
+            const bgMaterial = new THREE.ShaderMaterial({
+                uniforms: backgroundUniforms,
+                vertexShader: `
+                    void main() {
+                        gl_Position = vec4( position, 1.0 );
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    uniform vec2 resolution;
+                    uniform vec3 color1;
+                    uniform vec3 color2;
+                    void main() {
+                        vec2 st = gl_FragCoord.xy / resolution.xy;
+                        float pct = 0.5 + 0.5 * sin(time + st.x * 10.0);
+                        gl_FragColor = vec4(mix(color1, color2, pct), 1.0);
+                    }
+                `,
+                depthWrite: false,
+                side: THREE.DoubleSide
             });
-            return new THREE.Mesh(geometry, material);
+            const bgMesh = new THREE.Mesh(bgGeometry, bgMaterial);
+            bgMesh.frustumCulled = false;
+            scene.add(bgMesh);
         }
 
+        // Create 3D Shape
+        function createShape() {
+            const geometry = createGeometry();
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0x222222,
+                metalness: 0.5,
+                roughness: 0.1,
+                wireframe: false,
+                transparent: true,
+                opacity: shapeOpacity,
+                side: THREE.DoubleSide
+            });
+            visualizerShape = new THREE.Mesh(geometry, material);
+            scene.add(visualizerShape);
+        }
+
+        // Create Particle System using Instanced Mesh
+        function createParticles() {
+            particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+            particleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
+            instancedParticles = new THREE.InstancedMesh(particleGeometry, particleMaterial, particleCount);
+            instancedParticles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            instancedParticles.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(particleCount * 3), 3);
+            scene.add(instancedParticles);
+
+            // Initialize Particle Positions and Colors
+            const dummy = new THREE.Object3D();
+            for (let i = 0; i < particleCount; i++) {
+                dummy.position.set(
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 20
+                );
+                dummy.updateMatrix();
+                instancedParticles.setMatrixAt(i, dummy.matrix);
+                // Initialize colors
+                instancedParticles.instanceColor.setXYZ(i, Math.random(), Math.random(), Math.random());
+            }
+            instancedParticles.instanceMatrix.needsUpdate = true;
+            instancedParticles.instanceColor.needsUpdate = true;
+        }
+
+        // Create Geometry Based on Current Shape
         function createGeometry() {
+            const detail = shapeDetail;
             switch(shapes[currentShape]) {
                 case 'cube':
-                    return new THREE.BoxGeometry(3, 3, 3, 32, 32, 32);
+                    return new THREE.BoxGeometry(3, 3, 3, detail, detail, detail);
                 case 'torus':
-                    return new THREE.TorusGeometry(2, 0.5, 32, 100);
+                    return new THREE.TorusGeometry(2, 0.7, detail, 100);
+                case 'dodecahedron':
+                    return new THREE.DodecahedronGeometry(2, 0);
                 case 'sphere':
                 default:
-                    return new THREE.SphereGeometry(2, 32, 32);
+                    return new THREE.SphereGeometry(2, detail, detail);
             }
         }
 
+        // Update Visualizer Shape
+        function updateShape() {
+            if (visualizerShape) {
+                scene.remove(visualizerShape);
+            }
+            createShape();
+        }
+
+        // Setup Audio Processing
         async function setupAudio() {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const source = audioContext.createMediaStreamSource(stream);
                 audioAnalyser = audioContext.createAnalyser();
-                audioAnalyser.fftSize = 256;
+                audioAnalyser.fftSize = 1024;
                 source.connect(audioAnalyser);
                 dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
                 isAudioInitialized = true;
             } catch (err) {
                 console.error('Error accessing microphone:', err);
+                alert('Microphone access is required for the visualizer to work.');
             }
         }
 
+        // Animation Loop
         function animate() {
-            requestAnimationFrame(animate);
+            animationId = requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const elapsed = clock.getElapsedTime();
 
             if (isAudioInitialized) {
                 audioAnalyser.getByteFrequencyData(dataArray);
-                updateVisualizer();
+                updateVisualizer(elapsed);
             }
 
-            renderer.render(scene, camera);
+            // Update Dynamic Background
+            backgroundUniforms.time.value += delta;
+
+            composer.render();
         }
 
-        function updateVisualizer() {
-            const averageFrequency = getAverageFrequency();
-            const scale = 1 + averageFrequency * 0.2;
-            visualizer.scale.set(scale, scale, scale);
+        const clock = new THREE.Clock();
 
-            const hue = (Date.now() % 10000) / 10000;
-            const color = new THREE.Color().setHSL(hue, 1, 0.5);
-            visualizer.material.color = color;
-            visualizer.material.emissive.setHSL(hue, 1, 0.2);
+        // Update Visual Elements Based on Audio Data
+        function updateVisualizer(elapsed) {
+            // Calculate Frequency Bands
+            const bass = getFrequencyRange(20, 250);
+            const mid = getFrequencyRange(250, 2000);
+            const treble = getFrequencyRange(2000, 16000);
 
-            visualizer.rotation.x += 0.001;
-            visualizer.rotation.y += 0.002;
-        }
+            // Calculate Average Frequencies
+            const bassAvg = average(bass) / 255;
+            const midAvg = average(mid) / 255;
+            const trebleAvg = average(treble) / 255;
 
-        function getAverageFrequency() {
-            let sum = 0;
-            for(let i = 0; i < dataArray.length; i++) {
-                sum += dataArray[i];
+            // Scale Shape Smoothly
+            const scale = 1 + bassAvg * 0.5;
+            visualizerShape.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.05);
+
+            // Rotate Shape Smoothly
+            visualizerShape.rotation.x += 0.002 + midAvg * 0.001;
+            visualizerShape.rotation.y += 0.003 + trebleAvg * 0.001;
+
+            // Update Shape Color
+            const hue = (bassAvg + midAvg + trebleAvg) / 3;
+            visualizerShape.material.color.setHSL(hue, 1, 0.5);
+            visualizerShape.material.emissive.setHSL(hue, 1, 0.2);
+
+            // Update Particles
+            const dummy = new THREE.Object3D();
+            for (let i = 0; i < particleCount; i++) {
+                const freqIndex = Math.floor((i / particleCount) * dataArray.length);
+                const audioValue = dataArray[freqIndex] / 255;
+
+                // Position Update with Smooth Movement
+                instancedParticles.getMatrixAt(i, dummy.matrix);
+                dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+
+                dummy.position.y += (audioValue - 0.5) * 0.1;
+                dummy.rotation.x += 0.01 * audioValue;
+                dummy.rotation.y += 0.01 * audioValue;
+                dummy.updateMatrix();
+                instancedParticles.setMatrixAt(i, dummy.matrix);
+
+                // Color Update based on Audio
+                const color = new THREE.Color();
+                color.setHSL(hue, 1, 0.5 + 0.5 * audioValue);
+                instancedParticles.instanceColor.setXYZ(i, color.r, color.g, color.b);
             }
-            return sum / dataArray.length / 255;
+            instancedParticles.instanceMatrix.needsUpdate = true;
+            instancedParticles.instanceColor.needsUpdate = true;
         }
 
+        // Get Frequencies within a Range
+        function getFrequencyRange(low, high) {
+            if (!audioAnalyser) return [];
+            const nyquist = audioContext.sampleRate / 2;
+            const lowIndex = Math.floor(low / nyquist * dataArray.length);
+            const highIndex = Math.floor(high / nyquist * dataArray.length);
+            return dataArray.slice(lowIndex, highIndex);
+        }
+
+        // Calculate Average of an Array
+        function average(arr) {
+            if (arr.length === 0) return 0;
+            const sum = arr.reduce((acc, val) => acc + val, 0);
+            return sum / arr.length;
+        }
+
+        // Handle Window Resize
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            backgroundUniforms.resolution.value.set(window.innerWidth, window.innerHeight);
+
+            // Update FXAA Pass Resolution
+            fxaaPass.material.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
         }
 
+        // Touch Event Handlers
         function onTouchStart(event) {
             event.preventDefault();
-            const currentTime = new Date().getTime();
+            const currentTime = Date.now();
             const tapLength = currentTime - lastTap;
             if (tapLength < 300 && tapLength > 0) {
                 changeShape();
@@ -185,16 +516,17 @@
             event.preventDefault();
             if (event.touches.length === 1) {
                 const touch = event.touches[0];
-                visualizer.rotation.y = (touch.clientX / window.innerWidth) * Math.PI * 2;
-                visualizer.rotation.x = (touch.clientY / window.innerHeight) * Math.PI;
+                visualizerShape.rotation.y = (touch.clientX / window.innerWidth) * Math.PI * 2;
+                visualizerShape.rotation.x = (touch.clientY / window.innerHeight) * Math.PI;
             } else if (event.touches.length === 2) {
+                // Pinch to Zoom
                 const touch1 = event.touches[0];
                 const touch2 = event.touches[1];
                 const distance = Math.hypot(
                     touch1.pageX - touch2.pageX,
                     touch1.pageY - touch2.pageY
                 );
-                zoomDistance = Math.max(2, Math.min(10, 10 - distance / 50));
+                zoomDistance = THREE.MathUtils.clamp(10 - distance / 50, 2, 15);
                 camera.position.z = zoomDistance;
             }
         }
@@ -203,23 +535,75 @@
             event.preventDefault();
         }
 
+        // Change Shape on Double Tap
         function changeShape() {
             currentShape = (currentShape + 1) % shapes.length;
-            scene.remove(visualizer);
-            visualizer = createVisualizer();
-            scene.add(visualizer);
+            updateShape();
         }
 
+        // Toggle Info Panel
         function toggleInfoPanel() {
-            const infoPanel = document.getElementById('infoPanel');
             infoPanel.style.display = infoPanel.style.display === 'none' ? 'block' : 'none';
         }
 
-        document.getElementById('startButton').addEventListener('click', () => {
-            document.getElementById('startButton').style.display = 'none';
+        // Toggle Settings Panel
+        function toggleSettingsPanel() {
+            settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Toggle Fullscreen Mode
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable fullscreen mode: ${err.message} (${err.name})`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Update Particle Count
+        function updateParticleCount() {
+            particleCount = parseInt(particleCountSlider.value);
+            particleCountValue.textContent = particleCount;
+            // Recreate particles
+            scene.remove(instancedParticles);
+            createParticles();
+        }
+
+        // Update Shape Detail
+        function updateShapeDetail() {
+            shapeDetail = parseInt(shapeDetailSlider.value);
+            shapeDetailValue.textContent = shapeDetail;
+            updateShape();
+        }
+
+        // Update Shape Opacity
+        function updateShapeOpacity() {
+            shapeOpacity = parseFloat(opacitySlider.value);
+            opacityValue.textContent = shapeOpacity.toFixed(1);
+            if (visualizerShape) {
+                visualizerShape.material.opacity = shapeOpacity;
+            }
+        }
+
+        // Start Button Click Handler
+        startButton.addEventListener('click', async () => {
+            startButton.style.display = 'none';
             init();
-            setupAudio().then(() => animate());
+            await setupAudio();
+            loadingOverlay.style.display = 'none';
+            animate();
         });
+
+        // Settings Panel Initialization
+        particleCountValue.textContent = particleCount;
+        shapeDetailValue.textContent = shapeDetail;
+        opacityValue.textContent = shapeOpacity.toFixed(1);
+
+        // Prevent Context Menu on Long Press
+        window.oncontextmenu = function (e) { e.preventDefault(); e.stopPropagation(); return false; }
+
     </script>
 </body>
 </html>
