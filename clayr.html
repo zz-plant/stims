@@ -1,1 +1,141 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Cozy Pottery Wheel Simulation</title> <style> body { margin: 0; overflow: hidden; background: #fdf4e3; touch-action: none; font-family: 'Comic Sans MS', cursive, sans-serif; } canvas { display: block; touch-action: none; } #ui { position: absolute; top: 10px; left: 10px; color: #333; font-family: Arial, sans-serif; z-index: 1; background: rgba(255, 255, 255, 0.9); padding: 15px; border-radius: 15px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); } #ui button, #ui select, #ui input { margin: 5px; padding: 10px; font-size: 16px; background: #fff5f2; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1); } #ui button:hover, #ui select:hover, #ui input:hover { background: #ffecdf; } #colorPicker { margin-top: 10px; } #ui button:active, #ui select:active, #ui input:active { transform: scale(0.98); } </style> </head> <body> <div id="ui"> <button id="resetButton">✨ Reset Clay ✨</button> <button id="fireButton">🔥 Fire Pottery 🔥</button> <div id="toolPanel"> <select id="toolSelect"> <option value="smooth">🧴 Smooth</option> <option value="carve">🪓 Carve</option> <option value="pinch">🤏 Pinch</option> <option value="pull">🧑‍🎨 Pull Walls</option> <option value="open">🌀 Open Center</option> </select> <input type="color" id="colorPicker" value="#ffb3ba"> </div> </div> <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon-es/0.18.0/cannon-es.min.js"></script> <script> let scene, camera, renderer, potteryMesh, wheelMesh, group; let isFired = false; let currentTool = 'smooth'; const maxRadius = 0.15, minRadius = 0.02, initialHeight = 0.1, maxHeight = 0.3; const segments = 200; let touchStartY = 0; let isInteracting = false; const gravity = -0.002; let clayColor = new THREE.Color(0xffb3ba); let easingFactor = 0.1; init(); animate(); function init() { scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 1000); camera.position.set(0, 0.3, 0.6); camera.lookAt(0, 0.15, 0); renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); document.body.appendChild(renderer.domElement); const light = new THREE.HemisphereLight(0xffffe0, 0xffe4b5, 1); scene.add(light); createPottery(); document.getElementById('resetButton').addEventListener('click', resetClay); document.getElementById('fireButton').addEventListener('click', firePottery); document.getElementById('toolSelect').addEventListener('change', (e) => { currentTool = e.target.value; }); document.getElementById('colorPicker').addEventListener('input', (e) => { clayColor.setStyle(e.target.value); potteryMesh.material.color = clayColor; }); renderer.domElement.addEventListener('pointerdown', onPointerDown, false); renderer.domElement.addEventListener('pointermove', onPointerMove, false); renderer.domElement.addEventListener('pointerup', onPointerUp, false); window.addEventListener('resize', onWindowResize); } function createPottery() { isFired = false; const profilePoints = []; const step = initialHeight / segments; for (let i = 0; i <= segments; i++) { const y = i * step; profilePoints.push(new THREE.Vector2(maxRadius, y)); } const potteryGeometry = new THREE.LatheGeometry(profilePoints, 200); potteryGeometry.computeVertexNormals(); const potteryMaterial = new THREE.MeshStandardMaterial({ color: clayColor, roughness: 0.9, metalness: 0.1, }); potteryMesh = new THREE.Mesh(potteryGeometry, potteryMaterial); potteryMesh.castShadow = true; potteryMesh.receiveShadow = true; const wheelGeometry = new THREE.CylinderGeometry(maxRadius * 2, maxRadius * 2, 0.02, 64); const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0xffd1ba }); wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial); wheelMesh.receiveShadow = true; group = new THREE.Group(); group.add(wheelMesh); group.add(potteryMesh); wheelMesh.position.y = 0; potteryMesh.position.y = 0.02; scene.add(group); } function resetClay() { scene.remove(group); createPottery(); } function firePottery() { if (!isFired) { isFired = true; potteryMesh.material.color.setHex(0xffdab9); potteryMesh.material.roughness = 0.5; potteryMesh.material.metalness = 0.2; potteryMesh.material.needsUpdate = true; } } function onPointerDown(event) { isInteracting = true; touchStartY = event.clientY || event.touches.clientY; if (navigator.vibrate) navigator.vibrate(50); } function onPointerMove(event) { if (isInteracting && !isFired) { const touchY = event.clientY || (event.touches && event.touches.clientY); const deltaY = (touchStartY - touchY) * easingFactor; touchStartY = touchY; const deformationStrength = deltaY * 0.0005; if (currentTool === 'pull') { pullWalls(deformationStrength); } else if (currentTool === 'open') { openCenter(deformationStrength); } else if (currentTool === 'smooth' || currentTool === 'carve' || currentTool === 'pinch') { deformClay(deformationStrength, touchY); } applyGravity(); relaxMesh(); } } function onPointerUp(event) { isInteracting = false; } function pullWalls(strength) { const positions = potteryMesh.geometry.attributes.position; for (let i = 0; i < positions.count; i++) { const y = positions.getY(i); const x = positions.getX(i); const z = positions.getZ(i); if (y <= 0) continue; let newY = y + strength * (1 - Math.abs(strength) * 0.1); newY = THREE.MathUtils.clamp(newY, 0, maxHeight); const factor = newY / y; const newX = x * factor; const newZ = z * factor; positions.setX(i, newX); positions.setY(i, newY); positions.setZ(i, newZ); } positions.needsUpdate = true; potteryMesh.geometry.computeVertexNormals(); } function openCenter(strength) { const positions = potteryMesh.geometry.attributes.position; for (let i = 0; i < positions.count; i++) { const y = positions.getY(i); const x = positions.getX(i); const z = positions.getZ(i); if (y >= initialHeight) { const radius = Math.sqrt(x * x + z * z); const angle = Math.atan2(z, x); const newRadius = radius + strength * easingFactor; const newX = newRadius * Math.cos(angle); const newZ = newRadius * Math.sin(angle); positions.setX(i, newX); positions.setZ(i, newZ); } } positions.needsUpdate = true; potteryMesh.geometry.computeVertexNormals(); } function deformClay(deformationStrength, pointerY) { const rect = renderer.domElement.getBoundingClientRect(); const normalizedY = ((pointerY - rect.top) / rect.height) * initialHeight; const influenceRadius = 0.05; const positions = potteryMesh.geometry.attributes.position; for (let i = 0; i < positions.count; i++) { const y = positions.getY(i); const distance = Math.abs(y - normalizedY); if (distance < influenceRadius) { const factor = deformationStrength * (1 - distance / influenceRadius); let x = positions.getX(i); let z = positions.getZ(i); const radius = Math.sqrt(x * x + z * z); const angle = Math.atan2(z, x); let newRadius = radius + factor; switch (currentTool) { case 'smooth': newRadius = THREE.MathUtils.lerp(radius, newRadius, 0.5); break; case 'carve': newRadius = radius - Math.abs(factor); break; case 'pinch': newRadius = radius + factor; break; } newRadius = THREE.MathUtils.clamp(newRadius, minRadius, maxRadius); x = newRadius * Math.cos(angle); z = newRadius * Math.sin(angle); positions.setX(i, x); positions.setZ(i, z); } } positions.needsUpdate = true; potteryMesh.geometry.computeVertexNormals(); } function applyGravity() { const positions = potteryMesh.geometry.attributes.position; for (let i = 0; i < positions.count; i++) { let y = positions.getY(i); const newY = y + gravity; positions.setY(i, Math.max(0, newY)); } positions.needsUpdate = true; potteryMesh.geometry.computeVertexNormals(); } function relaxMesh() { const positions = potteryMesh.geometry.attributes.position; const smoothFactor = 0.05; for (let i = 1; i < positions.count - 1; i++) { const yPrev = positions.getY(i - 1); const yNext = positions.getY(i + 1); const avgY = (yPrev + yNext) / 2; const newY = THREE.MathUtils.lerp(positions.getY(i), avgY, smoothFactor); positions.setY(i, newY); } positions.needsUpdate = true; } function animate() { requestAnimationFrame(animate); const rotationSpeed = 0.015; group.rotation.y += rotationSpeed; renderer.render(scene, camera); } function onWindowResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); } init(); </script> </body> </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGPU Audio Visualizer</title>
+  <style>
+    body, html {
+      margin: 0;
+      overflow: hidden;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="visualizerCanvas"></canvas>
+  <script type="module">
+    const canvas = document.getElementById('visualizerCanvas');
+
+    async function initializeAudioVisualizer() {
+      if (!navigator.gpu) {
+        console.error("WebGPU is not supported on this browser.");
+        return;
+      }
+
+      // Initialize WebGPU
+      const adapter = await navigator.gpu.requestAdapter();
+      const device = await adapter.requestDevice();
+      const context = canvas.getContext('webgpu');
+      const format = navigator.gpu.getPreferredCanvasFormat();
+      context.configure({ device, format, alphaMode: 'opaque' });
+
+      // Vertex Shader: Pulsating effect
+      const vertexShaderCode = `
+        @vertex
+        fn main(@location(0) position: vec2<f32>, @builtin(instance_index) instanceIndex: u32)
+           -> @builtin(position) vec4<f32> {
+          let angle = f32(instanceIndex) * 0.1;
+          let pos = vec2(cos(angle) * position.x - sin(angle) * position.y, 
+                         sin(angle) * position.x + cos(angle) * position.y);
+          return vec4<f32>(pos, 0.0, 1.0);
+        }
+      `;
+
+      // Fragment Shader: Color changes with frequency
+      const fragmentShaderCode = `
+        @fragment
+        fn main(@location(0) frequency: f32, @builtin(instance_index) index: u32) 
+                -> @location(0) vec4<f32> {
+          let red = abs(sin(frequency + f32(index) * 0.1));
+          let green = abs(cos(frequency * 0.5 + f32(index) * 0.15));
+          let blue = abs(sin(frequency * 0.7));
+          return vec4<f32>(red, green, blue, 1.0);
+        }
+      `;
+
+      const vertexShaderModule = device.createShaderModule({ code: vertexShaderCode });
+      const fragmentShaderModule = device.createShaderModule({ code: fragmentShaderCode });
+
+      // Define Shape Data
+      const vertices = new Float32Array([
+        -0.1, -0.1,   0.1, -0.1,   0.0,  0.1
+      ]);
+
+      const vertexBuffer = device.createBuffer({
+        size: vertices.byteLength,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        mappedAtCreation: true,
+      });
+      new Float32Array(vertexBuffer.getMappedRange()).set(vertices);
+      vertexBuffer.unmap();
+
+      const pipeline = device.createRenderPipeline({
+        layout: 'auto',
+        vertex: {
+          module: vertexShaderModule,
+          entryPoint: 'main',
+          buffers: [{ arrayStride: 2 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] }]
+        },
+        fragment: {
+          module: fragmentShaderModule,
+          entryPoint: 'main',
+          targets: [{ format }],
+        },
+        primitive: { topology: 'triangle-list' },
+      });
+
+      // Audio setup
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyser.fftSize = 128;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      function frame() {
+        analyser.getByteFrequencyData(dataArray);
+        const avgFrequency = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        const normalizedFreq = avgFrequency / 255.0;
+
+        // Draw
+        const commandEncoder = device.createCommandEncoder();
+        const textureView = context.getCurrentTexture().createView();
+        const renderPassDescriptor = {
+          colorAttachments: [{
+            view: textureView,
+            clearValue: { r: 0, g: 0, b: 0, a: 1 },
+            loadOp: 'clear',
+            storeOp: 'store',
+          }],
+        };
+
+        const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+        passEncoder.setPipeline(pipeline);
+        passEncoder.setVertexBuffer(0, vertexBuffer);
+        for (let i = 0; i < 20; i++) {  // Render multiple shapes for effect
+          passEncoder.draw(3, 1, 0, i); 
+        }
+        passEncoder.end();
+        device.queue.submit([commandEncoder.finish()]);
+
+        requestAnimationFrame(frame);
+      }
+      
+      frame();
+    }
+
+    initializeAudioVisualizer().catch(console.error);
+  </script>
+</body>
+</html>
