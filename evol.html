@@ -3,18 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy Music Visualizer Suite</title>
+    <title>Evolutionary Weirdcore Visualizer</title>
     <style>
         body, html {
             margin: 0;
             overflow: hidden;
             height: 100%;
-            background-color: black;
-            touch-action: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: Arial, sans-serif;
+            background-color: #000000; /* OLED black */
         }
         canvas {
             display: block;
@@ -29,107 +24,92 @@
             background: rgba(0, 0, 0, 0.7);
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-        }
-        #controls input[type=range], #controls select {
-            width: 150px;
-            margin-bottom: 10px;
-            transition: all 0.2s;
         }
         #controls label {
             color: #ffffff;
             font-size: 14px;
-            font-weight: bold;
             display: block;
             margin-bottom: 5px;
-        }
-        #error-message {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: #ff0000;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 10;
         }
     </style>
 </head>
 <body>
     <canvas id="glCanvas"></canvas>
     <div id="controls">
-        <button id="startAudio">Start Audio Interaction</button>
-        <button id="togglePause">Pause</button>
         <label>
-            Sensitivity: 
-            <input type="range" id="sensitivity" min="0.5" max="2.0" step="0.1" value="1.0">
-        </label>
-        <label>
-            Color Mode: 
-            <select id="colorMode">
-                <option value="default">Default</option>
-                <option value="inverted">Inverted</option>
-                <option value="neon">Neon</option>
-            </select>
+            Fractal Intensity: 
+            <input type="range" id="fractalIntensity" min="0.5" max="2.0" step="0.1" value="1.0">
         </label>
     </div>
-    <div id="error-message" style="display: none;"></div>
     <script>
         const canvas = document.getElementById("glCanvas");
         const gl = canvas.getContext("webgl");
 
         if (!gl) {
-            document.getElementById("error-message").innerText = "Unable to initialize WebGL. Your browser may not support it.";
-            document.getElementById("error-message").style.display = "block";
+            alert("Unable to initialize WebGL. Your browser may not support it.");
             throw new Error("WebGL not supported");
         }
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
         const vertexShaderSource = `
             attribute vec4 a_position;
+            varying vec2 v_uv;
             void main() {
+                v_uv = a_position.xy * 0.5 + 0.5;
                 gl_Position = a_position;
             }
         `;
-
+        
         const fragmentShaderSource = `
             precision highp float;
             uniform float u_time;
             uniform vec2 u_resolution;
             uniform float u_audioData;
-            uniform vec3 u_colorOffset;
-            uniform vec2 u_touch;
+            uniform float u_fractalIntensity;
+            varying vec2 v_uv;
 
-            vec3 dreamyGradient(vec2 uv, float timeOffset) {
-                vec3 color = vec3(0.4 + 0.4 * sin(uv.x * 10.0 + u_audioData * 6.0 + timeOffset),
-                                  0.4 + 0.4 * cos(uv.y * 10.0 + u_audioData * 6.0 + timeOffset),
-                                  0.5 + 0.4 * sin((uv.x + uv.y) * 8.0 + u_audioData * 6.0 + timeOffset));
-                return color + u_colorOffset * 0.7;
+            float random(vec2 p) {
+                return fract(sin(dot(p.xy, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+
+            float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                float a = random(i);
+                float b = random(i + vec2(1.0, 0.0));
+                float c = random(i + vec2(0.0, 1.0));
+                float d = random(i + vec2(1.0, 1.0));
+                vec2 u = f * f * (3.0 - 2.0 * f);
+                return mix(a, b, u.x) + (c - a) * u.y + (d - c) * u.x * u.y;
+            }
+
+            float fbm(vec2 p) {
+                float total = 0.0;
+                float amplitude = 1.0;
+                for (int i = 0; i < 6; i++) {
+                    total += noise(p) * amplitude;
+                    p *= 2.0;
+                    amplitude *= 0.5;
+                }
+                return total;
             }
 
             void main() {
-                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-                uv -= 0.5;
-                uv *= 2.0;
+                vec2 uv = v_uv;
+                vec2 pos = (gl_FragCoord.xy / u_resolution.xy) * 2.0 - 1.0;
 
-                float dist = distance(uv, u_touch);
-                float ripple = sin(dist * 15.0 - u_time * 3.0) * 0.15;
-                float bloom = 0.3 / (dist * dist + 0.25);
-                uv += ripple;
+                float audioEffect = u_audioData * 5.0;
+                float distortion = fbm(uv * u_fractalIntensity + audioEffect) * 0.5;
+                float glitch = step(0.9, random(uv * u_time * 2.0)) * 0.5;
 
-                vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData;
-                color += vec3(0.4 + 0.4 * sin(u_time * 0.4 + u_audioData * 2.0), 
-                              0.4 + 0.4 * cos(u_time * 0.5 + u_audioData * 3.0), 
-                              0.5 + 0.4 * sin(u_time * 0.6 + u_audioData * 1.5));
-                color += bloom * 0.6;
-
+                vec3 color = vec3(distortion * 0.5 + glitch, distortion * 0.3, distortion * 0.8);
                 gl_FragColor = vec4(color, 1.0);
             }
         `;
@@ -148,7 +128,7 @@
 
         const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
         const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-
+        
         const program = gl.createProgram();
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
@@ -180,15 +160,13 @@
         const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
         const timeUniformLocation = gl.getUniformLocation(program, "u_time");
         const audioDataUniformLocation = gl.getUniformLocation(program, "u_audioData");
-        const colorOffsetUniformLocation = gl.getUniformLocation(program, "u_colorOffset");
-        const touchUniformLocation = gl.getUniformLocation(program, "u_touch");
+        const fractalIntensityLocation = gl.getUniformLocation(program, "u_fractalIntensity");
 
         gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
 
         let time = 0.0;
         let audioData = 0.0;
-        let colorOffset = [0.0, 0.0, 0.0];
-        let touchPoint = [0.0, 0.0];
+        let fractalIntensity = 1.0;
         let analyser;
 
         async function setupAudio() {
@@ -201,8 +179,6 @@
                 source.connect(analyser);
                 getAudioData();
             } catch (err) {
-                document.getElementById("error-message").innerText = 'Unable to access the microphone. Please allow microphone permissions and reload the page.';
-                document.getElementById("error-message").style.display = "block";
                 console.error("Error capturing audio: ", err);
             }
         }
@@ -217,13 +193,18 @@
             }
         }
 
+        setupAudio();
+
+        document.getElementById("fractalIntensity").addEventListener("input", (event) => {
+            fractalIntensity = event.target.value;
+        });
+
         function render() {
             time += 0.02;
             gl.uniform1f(timeUniformLocation, time);
             gl.uniform1f(audioDataUniformLocation, audioData);
-            gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
-            gl.uniform2fv(touchUniformLocation, touchPoint);
-
+            gl.uniform1f(fractalIntensityLocation, fractalIntensity);
+            
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -231,14 +212,6 @@
         }
 
         requestAnimationFrame(render);
-
-        document.getElementById("startAudio").addEventListener("click", setupAudio);
-
-        canvas.addEventListener('mousemove', (event) => {
-            const x = (event.clientX / canvas.width) * 2.0 - 1.0;
-            const y = -(event.clientY / canvas.height) * 2.0 + 1.0;
-            touchPoint = [x, y];
-        });
     </script>
 </body>
 </html>

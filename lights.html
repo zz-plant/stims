@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio-Responsive Visualizer</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        select, button {
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        select:hover, button:hover {
+            background-color: #555;
+        }
+
+        #error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        #toy-canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Controls for light type and starting audio -->
+    <div id="controls">
+        <select id="light-type">
+            <option value="PointLight">Point Light</option>
+            <option value="DirectionalLight">Directional Light</option>
+            <option value="SpotLight">Spot Light</option>
+            <option value="HemisphereLight">Hemisphere Light</option>
+        </select>
+        <button id="start-audio-btn">Start Audio & Visualization</button>
+    </div>
+
+    <!-- WebGL Canvas -->
+    <canvas id="toy-canvas"></canvas>
+
+    <!-- Error message for microphone access -->
+    <div id="error-message"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="assets/js/app.js"></script>
+
+</body>
+</html>

@@ -1,93 +1,116 @@
-# README - Stim Webtoys Library
+# Stim Webtoys Library
 
-Welcome to the **Stim Webtoys Library** hosted at [no.toil.fyi](https://no.toil.fyi). This repository is a collection of interactive web-based toys designed to provide sensory stimulation and visual enjoyment. These toys are built using technologies like Three.js, WebGL, and real-time audio interaction to create engaging, responsive experiences that can be enjoyed casually or as a form of sensory play.
+Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). This is a collection of interactive web-based toys designed to provide some fun sensory stimulation. They’re built with **Three.js**, **WebGL**, and live **audio interaction** for anyone who enjoys engaging, responsive visuals. These are great for casual play, or as a form of sensory exploration, especially for neurodiverse folks.
 
-## Overview of Files
+## Getting Started
 
-### 1. **3dtoy.html**
-- **Description**: A 3D interactive visual toy that features a surreal torus knot and particle effects. The visuals respond to audio input, creating a dynamic sensory experience.
-- **Technologies**: Three.js, WebGL, microphone audio interaction.
+### What You’ll Need:
+- **A Modern Web Browser**: Anything that supports WebGL should work (think Chrome, Firefox, Edge).
+- **Microphone Access**: A lot of these toys respond to sound, so you’ll want to enable that.
+- **Touch Devices**: Some toys are enhanced by touch, but that’s optional.
+
+### How to Play:
+Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond to sound, touch, and other inputs to create a chill or stimulating experience, depending on what you're looking for. If you’d rather poke around locally, feel free to clone this repo and open the HTML files in your browser.
+
+## Toys in the Collection
+
+### 1. [**Evolutionary Weirdcore**](https://no.toil.fyi/evol.html) (New)
+- **Description**: A next-level weirdcore visualizer with fractal geometry, glitchy effects, and distortions that evolve as the audio changes.
+- **Technologies**: WebGL, GLSL shaders, real-time audio input.
 - **Key Features**:
-  - Audio-reactive animations.
-  - Procedural shapes and lighting effects.
-  - Fog and depth to enhance the immersive effect.
+  - **Fractals**: Dynamic fractals that shift and evolve with the audio.
+  - **Glitches**: Audio peaks trigger glitch effects for that extra weirdcore vibe.
+  - **Customizable**: Tweak the fractal intensity yourself and mess with visual behavior.
 
-### 2. **95.html**
-- **Description**: A weirdcore-inspired visualizer with fluid, shifting patterns and colors, perfect for creating a trippy sensory experience.
+### 2. [**3dtoy.html**](https://no.toil.fyi/3dtoy.html)
+- **Description**: Dive into a surreal 3D space with a twisting torus knot, swirling particles, and random procedural shapes that move with the sound.
+- **Technologies**: Three.js, WebGL, microphone input.
+- **Key Features**:
+  - Audio-reactive visuals.
+  - Moving camera and dynamic lighting.
+  - Procedural shapes for variety.
+
+### 3. [**95.html**](https://no.toil.fyi/95.html)
+- **Description**: A weirdcore visualizer that shifts through liquid patterns and trippy colors, creating a sensory experience that reacts to sound.
 - **Technologies**: WebGL, GLSL shaders, microphone input.
 - **Key Features**:
-  - Visual patterns that distort and react to sound.
-  - Random noise generation for dynamic, unpredictable visuals.
+  - Real-time pattern distortions.
+  - Random noise effects for unpredictable visuals.
 
-### 3. **brand.html**
-- **Description**: A visual toy inspired by *Star Guitar*, featuring procedurally generated scenery like buildings, tracks, and modular elements. The visuals react to sound beats.
+### 4. [**brand.html**](https://no.toil.fyi/brand.html)
+- **Description**: Inspired by *Star Guitar*, this visual toy procedurally generates scenery—buildings, trees, tracks—that pulse to the beat.
 - **Technologies**: Three.js, WebGL, microphone input.
 - **Key Features**:
-  - Synchronization with audio beats to generate new visual elements.
-  - Repetitive, calming scenery.
+  - Audio-reactive scenery.
+  - Dynamic fog and lighting.
+  - Buildings, tracks, and more created on the fly.
 
-### 4. **brand2.html**
-- **Description**: A variation of the *Star Guitar* visual toy with added fog effects and procedural buildings and trees.
-- **Technologies**: Three.js, WebGL, microphone input.
-- **Key Features**:
-  - Audio-reactive procedural elements.
-  - Dynamic, foggy landscapes.
-
-### 5. **combo.html**
-- **Description**: An immersive visual toy combining dynamic fractals, particle effects, and a torus knot that changes based on audio input.
-- **Technologies**: Three.js, TensorFlow.js, microphone input.
-- **Key Features**:
-  - Fractal shapes and particles for a stimulating visual effect.
-  - Real-time color changes based on sound frequencies.
-
-### 6. **demo.html**
-- **Description**: A dreamy, customizable visual toy with interactive controls to adjust color modes and sensitivity to sound.
+### 5. [**demo.html**](https://no.toil.fyi/demo.html)
+- **Description**: Customize your visualizer with this tool. Adjust the colors, sensitivity, and see how the visuals react to whatever sound you feed it.
 - **Technologies**: WebGL, microphone input.
 - **Key Features**:
-  - Adjustable sensitivity and color modes.
-  - Real-time visual feedback to audio.
+  - Adjustable settings for colors and sensitivity.
+  - Visuals that shift based on real-time audio.
 
-### 7. **index.html**
-- **Description**: A synesthetic visualizer that reacts to audio from both a microphone and device audio. This toy creates a hypnotic, kaleidoscopic effect.
-- **Technologies**: WebGL, microphone and device audio input.
+### 6. [**seary.html**](https://no.toil.fyi/seary.html)
+- **Description**: A kaleidoscopic visualizer that reacts to both microphone and device audio. Multi-touch and device orientation effects make it even more engaging.
+- **Technologies**: WebGL, multi-touch input, audio input.
 - **Key Features**:
-  - Synesthetic experience with multi-touch and device orientation interactivity.
-  - Fluid, colorful visuals.
+  - Reacts to touch and device orientation.
+  - Trippy patterns synced with the audio.
 
-### 8. **scratch.html**
-- **Description**: A playful visual toy with a simple stick figure and dreamy visual effects. The stick figure interacts with audio input and provides a fun, relaxing experience.
-- **Technologies**: WebGL, SVG, microphone input.
-- **Key Features**:
-  - Interactive stick figure that reacts to sound.
-  - Smooth color transitions.
-
-### 9. **sum.html**
-- **Description**: Another synesthetic visualizer with multi-touch and sound interaction. It combines smooth, flowing visuals with real-time audio analysis.
-- **Technologies**: WebGL, microphone/device audio input.
-- **Key Features**:
-  - Responsive visuals that react to sound and touch input.
-  - Dynamic colors and shifting patterns.
-
-### 10. **symph.html**
-- **Description**: A dreamy spectrograph visualizer that creates a stunning blend of WebGL and 2D canvas visuals, reacting to music or sound input.
+### 7. [**symph.html**](https://no.toil.fyi/symph.html)
+- **Description**: A dreamy spectrograph that blends WebGL and 2D visuals, transforming audio input into a visual journey.
 - **Technologies**: WebGL, 2D Canvas, microphone input.
 - **Key Features**:
-  - Audio-reactive spectrograph overlay.
-  - Gradient backgrounds and dynamic ripples.
+  - Spectrograph overlays that respond to sound.
+  - Gradients and ripples for a smooth, immersive experience.
 
-## Requirements
-- A modern web browser that supports WebGL (e.g., Chrome, Firefox, Edge).
-- Access to a microphone for sound-reactive toys.
-- Optional: Touch-enabled device for enhanced interaction with certain toys.
+---
 
-## Usage
-Simply visit [no.toil.fyi](https://no.toil.fyi) to access and enjoy the collection of stim webtoys. Each toy is designed to respond to sound, touch, and other interactions, providing a soothing or stimulating sensory experience depending on the settings.
+## What’s in the Pipeline
 
-## Libraries Used
-- **Three.js**: A powerful JavaScript library for creating 3D web experiences.
-- **WebGL**: The core technology used to render 2D and 3D graphics.
-- **TensorFlow.js**: Integrated in some toys for AI-enhanced visual effects.
-- **GLSL**: Custom shaders used for visual distortions and effects.
+### **WebGL Compatibility**
+- **Issue**: Some users with older or unsupported browsers/devices might run into issues.
+- **Fix**: Add fallback options or messages for users without WebGL support.
+
+### **Performance Tweaks**
+- **Issue**: Some toys are heavy on resources and might lag on lower-end devices.
+- **Fix**: Add settings to adjust visual quality (e.g., reduce particle count or resolution).
+
+### **Audio Permissions**
+- **Issue**: Not much feedback when audio permissions are denied or unavailable.
+- **Fix**: Add error messages or alternative audio input options when microphone access isn’t granted.
+
+### **Touch Responsiveness**
+- **Issue**: Some toys are touch-sensitive, but they don’t always work well on mobile.
+- **Fix**: Improve multi-touch support and make the toys more mobile-friendly.
+
+---
+
+## Local Setup
+
+If you want to mess around with the toys locally, just clone the repo and open the HTML files in your browser. Here’s the quick setup:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/zz-plant/stims.git
+   cd stims
+   ```
+
+2. Open any of the HTML files in your browser (e.g., `evolutionary-weirdcore.html`, `index.html`).
+
+3. Want to serve locally? Here’s a simple Python server:
+   ```bash
+   python3 -m http.server
+   ```
+
+   This will run everything locally at `http://localhost:8000`.
+
+---
 
 ## License
-Feel free to explore and play with the toys, modify the code, and create your own sensory experiences!
+
+This project is released under the [Unlicense](https://unlicense.org/), so you’re free to copy, modify, sell, and distribute it however you like. Do whatever you want with it—there are no restrictions. 
+
+Feel free to add more toys, tweak the visuals, or contribute in any way.
