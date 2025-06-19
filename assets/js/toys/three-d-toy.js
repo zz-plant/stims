@@ -5,6 +5,8 @@ import { initRenderer } from '../core/renderer-setup.js';
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup.js';
 import { initAudio, getFrequencyData } from '../utils/audio-handler.js';
 
+let errorElement;
+
 let scene, camera, renderer, torusKnot, particles;
 const shapes = [];
 
@@ -96,16 +98,47 @@ function handleResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+// Create and reveal an error element so users know microphone access failed
+function showError(message) {
+    if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.id = 'error-message';
+        errorElement.style.position = 'absolute';
+        errorElement.style.top = '20px';
+        errorElement.style.left = '20px';
+        errorElement.style.color = '#ff0000';
+        errorElement.style.background = 'rgba(0, 0, 0, 0.7)';
+        errorElement.style.padding = '10px';
+        errorElement.style.borderRadius = '5px';
+        errorElement.style.zIndex = '10';
+        document.body.appendChild(errorElement);
+    }
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+}
+
+// Hide the microphone error message
+function hideError() {
+    if (errorElement) {
+        errorElement.style.display = 'none';
+    }
+}
+
 let analyser;
 
+// Display a user-facing message when microphone access fails and hide it on success
+
 async function startAudio() {
-  try {
-    const audioData = await initAudio();
-    analyser = audioData.analyser;
-    animate();
-  } catch (e) {
-    console.error('Error accessing microphone:', e);
-  }
+    try {
+        const audioData = await initAudio();
+        analyser = audioData.analyser;
+        hideError();
+        animate();
+    } catch (e) {
+        console.error('Error accessing microphone:', e);
+        // Show user-friendly message if microphone access fails
+        showError('Microphone access was denied. Please allow access and reload.');
+    }
 }
 
 function animate() {
