@@ -10,3 +10,18 @@ canvas {
 body {
   background-color: #000;
 }
+
+/* Small link to return to the main library */
+.home-link {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  z-index: 1000;
+}
+
