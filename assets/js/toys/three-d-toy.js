@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r155/three.module.js';
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/three.module.js';
 import { initScene } from '../core/scene-setup.js';
 import { initCamera } from '../core/camera-setup.js';
 import { initRenderer } from '../core/renderer-setup.js';
