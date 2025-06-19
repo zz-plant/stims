@@ -43,6 +43,7 @@ function startAudioAndAnimation() {
       animate();
     })
     .catch((error) => {
+      console.error('initAudio failed:', error);
       displayError(
         'Microphone access is required for the visualization to work. Please allow microphone access.'
       );
