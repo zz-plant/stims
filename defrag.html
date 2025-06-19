@@ -29,7 +29,8 @@
     <canvas id="canvas"></canvas>
     <div id="defragText">Defragmenting Drive C:</div>
 
-    <script>
+    <script type="module">
+        import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
@@ -67,13 +68,9 @@
 
         async function setupAudio() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new AudioContext();
-                const source = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 64; // Small for faster reactions
-                audioDataArray = new Uint8Array(analyser.frequencyBinCount);
-                source.connect(analyser);
+                const result = await initAudio({ fftSize: 64 });
+                analyser = result.analyser;
+                audioDataArray = result.dataArray;
                 getAudioData();
             } catch (err) {
                 console.error("Error capturing audio: ", err);
@@ -82,7 +79,7 @@
 
         function getAudioData() {
             requestAnimationFrame(getAudioData);
-            analyser.getByteFrequencyData(audioDataArray);
+            audioDataArray = getFrequencyData(analyser);
             idleState = audioDataArray.reduce((sum, value) => sum + value, 0) === 0; // Idle if all audio data is zero
         }
 
