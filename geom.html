@@ -1,59 +1,62 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>Microphone Input Music Visualizer</title>
-    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/base.css" />
     <style>
-        body { background: #000; }
-        #controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #fff;
-            z-index: 1;
-        }
-        #startButton {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
+      body {
+        background: #000;
+      }
+      #controls {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: #fff;
+        z-index: 1;
+      }
+      #startButton {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
     </style>
-</head>
-<body>
-<div id="controls">
-    <button id="startButton">Start Microphone Visualizer</button>
-</div>
-<canvas id="gameCanvas"></canvas>
-<script>
-    // Get the canvas and context
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+  </head>
+  <body>
+    <div id="controls">
+      <button id="startButton">Start Microphone Visualizer</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+      // Get the canvas and context
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
 
-    // Set canvas size
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+      // Set canvas size
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
 
-    // Audio setup
-    const startButton = document.getElementById('startButton');
-    let audioContext, analyzer, source, frequencyData;
+      // Audio setup
+      const startButton = document.getElementById('startButton');
+      let audioContext, analyzer, source, frequencyData;
 
-    startButton.addEventListener('click', function() {
+      startButton.addEventListener('click', function () {
         // Disable the button after starting
         startButton.disabled = true;
         startButton.style.display = 'none';
 
         // Request microphone access
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(function(stream) {
-                setupAudioContext(stream);
-            })
-            .catch(function(err) {
-                console.error('Error accessing microphone:', err);
-                alert('Error accessing microphone: ' + err.message);
-            });
-    });
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then(function (stream) {
+            setupAudioContext(stream);
+          })
+          .catch(function (err) {
+            console.error('Error accessing microphone:', err);
+            alert('Error accessing microphone: ' + err.message);
+          });
+      });
 
-    function setupAudioContext(stream) {
+      function setupAudioContext(stream) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyzer = audioContext.createAnalyser();
         source = audioContext.createMediaStreamSource(stream);
@@ -63,151 +66,155 @@
         frequencyData = new Uint8Array(bufferLength);
         // Start animation after setting up audio context
         animate();
-    }
+      }
 
-    // Particle system
-    const particles = [];
-    const particleCount = 800;
+      // Particle system
+      const particles = [];
+      const particleCount = 800;
 
-    // Initialize particles
-    for (let i = 0; i < particleCount; i++) {
+      // Initialize particles
+      for (let i = 0; i < particleCount; i++) {
         particles.push(createParticle());
-    }
+      }
 
-    function createParticle() {
+      function createParticle() {
         return {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 3 + 1,
-            baseSize: Math.random() * 3 + 1,
-            velocityX: (Math.random() - 0.5) * 2,
-            velocityY: (Math.random() - 0.5) * 2,
-            hue: Math.random() * 360,
-            lightness: 50,
-            alpha: 0.5,
-            rotation: Math.random() * 360,
-            angularVelocity: (Math.random() - 0.5) * 2
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 3 + 1,
+          baseSize: Math.random() * 3 + 1,
+          velocityX: (Math.random() - 0.5) * 2,
+          velocityY: (Math.random() - 0.5) * 2,
+          hue: Math.random() * 360,
+          lightness: 50,
+          alpha: 0.5,
+          rotation: Math.random() * 360,
+          angularVelocity: (Math.random() - 0.5) * 2,
         };
-    }
+      }
 
-    // Main animation loop
-    function animate() {
+      // Main animation loop
+      function animate() {
         requestAnimationFrame(animate);
 
         // Create dynamic gradient background
         if (analyzer) {
-            analyzer.getByteFrequencyData(frequencyData);
-            const bass = getBass(frequencyData);
-            const hue = (bass / 255) * 360;
-            const gradient = ctx.createRadialGradient(
-                canvas.width / 2, canvas.height / 2, 0,
-                canvas.width / 2, canvas.height / 2, canvas.width
-            );
-            gradient.addColorStop(0, `hsl(${hue}, 100%, 30%)`);
-            gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 100%, 10%)`);
-            ctx.fillStyle = gradient;
+          analyzer.getByteFrequencyData(frequencyData);
+          const bass = getBass(frequencyData);
+          const hue = (bass / 255) * 360;
+          const gradient = ctx.createRadialGradient(
+            canvas.width / 2,
+            canvas.height / 2,
+            0,
+            canvas.width / 2,
+            canvas.height / 2,
+            canvas.width
+          );
+          gradient.addColorStop(0, `hsl(${hue}, 100%, 30%)`);
+          gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 100%, 10%)`);
+          ctx.fillStyle = gradient;
         } else {
-            ctx.fillStyle = '#000';
+          ctx.fillStyle = '#000';
         }
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Draw particles
         particles.forEach((p, index) => {
-            // Move particles
-            p.x += p.velocityX;
-            p.y += p.velocityY;
-            p.rotation += p.angularVelocity;
+          // Move particles
+          p.x += p.velocityX;
+          p.y += p.velocityY;
+          p.rotation += p.angularVelocity;
 
-            // Wrap around edges
-            if (p.x < -p.size) p.x = canvas.width + p.size;
-            if (p.x > canvas.width + p.size) p.x = -p.size;
-            if (p.y < -p.size) p.y = canvas.height + p.size;
-            if (p.y > canvas.height + p.size) p.y = -p.size;
+          // Wrap around edges
+          if (p.x < -p.size) p.x = canvas.width + p.size;
+          if (p.x > canvas.width + p.size) p.x = -p.size;
+          if (p.y < -p.size) p.y = canvas.height + p.size;
+          if (p.y > canvas.height + p.size) p.y = -p.size;
 
-            // Change particle properties based on frequency data
-            if (analyzer) {
-                const freqIndex = Math.floor(index % frequencyData.length);
-                const amplitude = frequencyData[freqIndex] / 255;
-                p.size = p.baseSize + amplitude * 15;
-                p.hue = (p.hue + amplitude * 10) % 360;
-                p.lightness = 40 + amplitude * 20;
-                p.alpha = 0.3 + amplitude * 0.7;
-            }
+          // Change particle properties based on frequency data
+          if (analyzer) {
+            const freqIndex = Math.floor(index % frequencyData.length);
+            const amplitude = frequencyData[freqIndex] / 255;
+            p.size = p.baseSize + amplitude * 15;
+            p.hue = (p.hue + amplitude * 10) % 360;
+            p.lightness = 40 + amplitude * 20;
+            p.alpha = 0.3 + amplitude * 0.7;
+          }
 
-            // Draw particle
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate((p.rotation * Math.PI) / 180);
-            ctx.fillStyle = `hsla(${p.hue}, 100%, ${p.lightness}%, ${p.alpha})`;
-            ctx.beginPath();
-            ctx.moveTo(0, -p.size / 2);
-            for (let i = 0; i < 5; i++) {
-                ctx.lineTo(
-                    (p.size / 2) * Math.cos(((18 + i * 72) * Math.PI) / 180),
-                    (p.size / 2) * Math.sin(((18 + i * 72) * Math.PI) / 180)
-                );
-                ctx.lineTo(
-                    (p.size / 4) * Math.cos(((54 + i * 72) * Math.PI) / 180),
-                    (p.size / 4) * Math.sin(((54 + i * 72) * Math.PI) / 180)
-                );
-            }
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
+          // Draw particle
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = `hsla(${p.hue}, 100%, ${p.lightness}%, ${p.alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(0, -p.size / 2);
+          for (let i = 0; i < 5; i++) {
+            ctx.lineTo(
+              (p.size / 2) * Math.cos(((18 + i * 72) * Math.PI) / 180),
+              (p.size / 2) * Math.sin(((18 + i * 72) * Math.PI) / 180)
+            );
+            ctx.lineTo(
+              (p.size / 4) * Math.cos(((54 + i * 72) * Math.PI) / 180),
+              (p.size / 4) * Math.sin(((54 + i * 72) * Math.PI) / 180)
+            );
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
         });
 
         // Draw frequency bars
         if (analyzer) {
-            const barWidth = (canvas.width / frequencyData.length) * 2.5;
-            let x = 0;
-            for (let i = 0; i < frequencyData.length; i++) {
-                const barHeight = frequencyData[i] * 1.2;
-                const hue = (i / frequencyData.length) * 360;
-                ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.7)`;
-                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                x += barWidth + 1;
-            }
+          const barWidth = (canvas.width / frequencyData.length) * 2.5;
+          let x = 0;
+          for (let i = 0; i < frequencyData.length; i++) {
+            const barHeight = frequencyData[i] * 1.2;
+            const hue = (i / frequencyData.length) * 360;
+            ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.7)`;
+            ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+            x += barWidth + 1;
+          }
         }
 
         // Draw waveform
         if (analyzer) {
-            const timeData = new Uint8Array(analyzer.fftSize);
-            analyzer.getByteTimeDomainData(timeData);
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.beginPath();
-            const sliceWidth = canvas.width / timeData.length;
-            let x = 0;
-            for (let i = 0; i < timeData.length; i++) {
-                const v = timeData[i] / 128.0;
-                const y = (v * canvas.height) / 2;
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-                x += sliceWidth;
+          const timeData = new Uint8Array(analyzer.fftSize);
+          analyzer.getByteTimeDomainData(timeData);
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.beginPath();
+          const sliceWidth = canvas.width / timeData.length;
+          let x = 0;
+          for (let i = 0; i < timeData.length; i++) {
+            const v = timeData[i] / 128.0;
+            const y = (v * canvas.height) / 2;
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
             }
-            ctx.lineTo(canvas.width, canvas.height / 2);
-            ctx.stroke();
+            x += sliceWidth;
+          }
+          ctx.lineTo(canvas.width, canvas.height / 2);
+          ctx.stroke();
         }
-    }
+      }
 
-    // Helper function to get bass frequency average
-    function getBass(dataArray) {
+      // Helper function to get bass frequency average
+      function getBass(dataArray) {
         let sum = 0;
         const bassCount = dataArray.length / 8; // Lower frequencies
         for (let i = 0; i < bassCount; i++) {
-            sum += dataArray[i];
+          sum += dataArray[i];
         }
         return sum / bassCount;
-    }
+      }
 
-    // Handle window resize
-    window.addEventListener('resize', function() {
+      // Handle window resize
+      window.addEventListener('resize', function () {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-    });
-</script>
-</body>
+      });
+    </script>
+  </body>
 </html>

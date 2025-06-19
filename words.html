@@ -1,333 +1,382 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Interactive Word Cloud & Visualizer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.min.js"></script>
-    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/base.css" />
     <style>
-        * {
-            box-sizing: border-box;
-        }
+      * {
+        box-sizing: border-box;
+      }
 
-        body {
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, #6a11cb, #2575fc);
-            background-size: 400% 400%;
-            animation: backgroundShift 10s ease infinite;
-            font-family: 'Arial', sans-serif;
-            position: relative;
-        }
+      body {
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        background-size: 400% 400%;
+        animation: backgroundShift 10s ease infinite;
+        font-family: 'Arial', sans-serif;
+        position: relative;
+      }
 
-        @keyframes backgroundShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+      @keyframes backgroundShift {
+        0% {
+          background-position: 0% 50%;
         }
-
-        #word-cloud-container {
-            width: 80vw;
-            height: 60vh;
-            overflow: hidden;
-            border-radius: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 12px 50px rgba(0, 0, 0, 0.3);
-            position: absolute;
-            top: 15%;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            mix-blend-mode: screen;
+        50% {
+          background-position: 100% 50%;
         }
-
-        #word-cloud-canvas {
-            width: 100%;
-            height: 100%;
+        100% {
+          background-position: 0% 50%;
         }
+      }
 
-        .controls {
-            position: fixed;
-            bottom: 5vh;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 20px;
-            z-index: 15;
+      #word-cloud-container {
+        width: 80vw;
+        height: 60vh;
+        overflow: hidden;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.05);
+        box-shadow: 0 12px 50px rgba(0, 0, 0, 0.3);
+        position: absolute;
+        top: 15%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        mix-blend-mode: screen;
+      }
+
+      #word-cloud-canvas {
+        width: 100%;
+        height: 100%;
+      }
+
+      .controls {
+        position: fixed;
+        bottom: 5vh;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 20px;
+        z-index: 15;
+      }
+
+      .control-button {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 20px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        transition:
+          box-shadow 0.4s ease,
+          transform 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .control-button.active {
+        box-shadow: 0 0 60px rgba(255, 255, 255, 0.9);
+        background-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .control-button:active {
+        transform: scale(0.9);
+      }
+
+      .control-icon {
+        width: 35px;
+        height: 35px;
+        transition: filter 1.5s ease;
+        filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
+      }
+
+      .particle {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+        animation: particleFloat 4s ease-in-out infinite alternate;
+        opacity: 0.8;
+        z-index: 5;
+        mix-blend-mode: difference;
+      }
+
+      @keyframes particleFloat {
+        0% {
+          transform: translateY(0) translateX(0) scale(1);
+          opacity: 0.5;
         }
-
-        .control-button {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: box-shadow 0.4s ease, transform 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            aspect-ratio: 1 / 1;
-            overflow: hidden;
-            position: relative;
+        50% {
+          transform: translateY(-20px) translateX(20px) scale(1.3);
+          opacity: 1;
         }
-
-        .control-button.active {
-            box-shadow: 0 0 60px rgba(255, 255, 255, 0.9);
-            background-color: rgba(255, 255, 255, 0.3);
+        100% {
+          transform: translateY(-40px) translateX(-20px) scale(1);
+          opacity: 0.5;
         }
-
-        .control-button:active {
-            transform: scale(0.9);
-        }
-
-        .control-icon {
-            width: 35px;
-            height: 35px;
-            transition: filter 1.5s ease;
-            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
-        }
-
-        .particle {
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            animation: particleFloat 4s ease-in-out infinite alternate;
-            opacity: 0.8;
-            z-index: 5;
-            mix-blend-mode: difference;
-        }
-
-        @keyframes particleFloat {
-            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.5; }
-            50% { transform: translateY(-20px) translateX(20px) scale(1.3); opacity: 1; }
-            100% { transform: translateY(-40px) translateX(-20px) scale(1); opacity: 0.5; }
-        }
-
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="controls">
-        <button id="unmute-button" class="control-button" aria-label="Unmute Visualizer" title="Toggle Visualizer">
-            <img id="unmute-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png" alt="Mic Access Icon" />
-        </button>
+      <button
+        id="unmute-button"
+        class="control-button"
+        aria-label="Unmute Visualizer"
+        title="Toggle Visualizer"
+      >
+        <img
+          id="unmute-icon"
+          class="control-icon"
+          src="https://cdn-icons-png.flaticon.com/512/5539/5539962.png"
+          alt="Mic Access Icon"
+        />
+      </button>
 
-        <button id="toggle-speech-button" class="control-button" aria-label="Speech Recognition" title="Toggle Speech Recognition">
-            <img id="toggle-speech-icon" class="control-icon" src="https://cdn-icons-png.flaticon.com/512/4049/4049754.png" alt="Add Word Icon" />
-        </button>
+      <button
+        id="toggle-speech-button"
+        class="control-button"
+        aria-label="Speech Recognition"
+        title="Toggle Speech Recognition"
+      >
+        <img
+          id="toggle-speech-icon"
+          class="control-icon"
+          src="https://cdn-icons-png.flaticon.com/512/4049/4049754.png"
+          alt="Add Word Icon"
+        />
+      </button>
     </div>
 
     <div id="word-cloud-container">
-        <canvas id="word-cloud-canvas"></canvas>
+      <canvas id="word-cloud-canvas"></canvas>
     </div>
 
-<script type="module">
-    import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
-    const wordCloudCanvas = document.getElementById('word-cloud-canvas');
-    const unmuteButton = document.getElementById('unmute-button');
-    const toggleSpeechButton = document.getElementById('toggle-speech-button');
-    const unmuteIcon = document.getElementById('unmute-icon');
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    <script type="module">
+      import {
+        initAudio,
+        getFrequencyData,
+      } from './assets/js/utils/audio-handler.js';
+      const wordCloudCanvas = document.getElementById('word-cloud-canvas');
+      const unmuteButton = document.getElementById('unmute-button');
+      const toggleSpeechButton = document.getElementById(
+        'toggle-speech-button'
+      );
+      const unmuteIcon = document.getElementById('unmute-icon');
+      const recognition = new (window.SpeechRecognition ||
+        window.webkitSpeechRecognition)();
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
-    let isUnmuted = false;
-    let isAddingWords = false;
-    let wordsArray = [];
-    let wordCloudData = [];
+      let isUnmuted = false;
+      let isAddingWords = false;
+      let wordsArray = [];
+      let wordCloudData = [];
 
-    let audioContext = null;
-    let analyser = null;
-    let microphone = null;
-    let mediaStream = null;
+      let audioContext = null;
+      let analyser = null;
+      let microphone = null;
+      let mediaStream = null;
 
-    // Word cloud shapes for randomness
-    const shapes = ['circle', 'star', 'triangle', 'diamond'];
+      // Word cloud shapes for randomness
+      const shapes = ['circle', 'star', 'triangle', 'diamond'];
 
-    function updateWordCloud(words) {
+      function updateWordCloud(words) {
         if (WordCloud.isSupported) {
-            const wordFrequency = words.reduce((freq, word) => {
-                freq[word] = (freq[word] || 0) + 1;
-                return freq;
-            }, {});
+          const wordFrequency = words.reduce((freq, word) => {
+            freq[word] = (freq[word] || 0) + 1;
+            return freq;
+          }, {});
 
-            wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [word, count]);
+          wordCloudData = Object.entries(wordFrequency).map(([word, count]) => [
+            word,
+            count,
+          ]);
 
-            const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+          const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
 
-            WordCloud(wordCloudCanvas, {
-                list: wordCloudData,
-                gridSize: Math.floor(10 * (window.innerWidth / 1024)),
-                weightFactor: 15,
-                color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
-                rotateRatio: 0.4,
-                minRotation: -Math.PI / 6,
-                maxRotation: Math.PI / 6,
-                backgroundColor: 'transparent',
-                shape: randomShape,
-                drawOutOfBound: false,
-                shrinkToFit: true,
-                clearCanvas: true
-            });
+          WordCloud(wordCloudCanvas, {
+            list: wordCloudData,
+            gridSize: Math.floor(10 * (window.innerWidth / 1024)),
+            weightFactor: 15,
+            color: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
+            rotateRatio: 0.4,
+            minRotation: -Math.PI / 6,
+            maxRotation: Math.PI / 6,
+            backgroundColor: 'transparent',
+            shape: randomShape,
+            drawOutOfBound: false,
+            shrinkToFit: true,
+            clearCanvas: true,
+          });
         }
-    }
+      }
 
-    // Unmute button logic for music visualizer activation
-    unmuteButton.addEventListener('click', () => {
+      // Unmute button logic for music visualizer activation
+      unmuteButton.addEventListener('click', () => {
         if (!isUnmuted) {
-            isUnmuted = true;
-            unmuteButton.classList.add('active');
-            unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539899.png"; // Unmuted mic icon
-            deactivateSpeechRecognition(); // Ensure speech recognition is turned off before starting visualizer
-            activateVisualizer();
+          isUnmuted = true;
+          unmuteButton.classList.add('active');
+          unmuteIcon.src =
+            'https://cdn-icons-png.flaticon.com/512/5539/5539899.png'; // Unmuted mic icon
+          deactivateSpeechRecognition(); // Ensure speech recognition is turned off before starting visualizer
+          activateVisualizer();
         } else {
-            isUnmuted = false;
-            unmuteButton.classList.remove('active');
-            unmuteIcon.src = "https://cdn-icons-png.flaticon.com/512/5539/5539962.png"; // Muted mic icon
-            deactivateVisualizer();
+          isUnmuted = false;
+          unmuteButton.classList.remove('active');
+          unmuteIcon.src =
+            'https://cdn-icons-png.flaticon.com/512/5539/5539962.png'; // Muted mic icon
+          deactivateVisualizer();
         }
-    });
+      });
 
-    async function activateVisualizer() {
+      async function activateVisualizer() {
         try {
-            const { analyser: a, audioContext: ctx, stream } = await initAudio();
-            analyser = a;
-            audioContext = ctx;
-            mediaStream = stream;
-            microphone = audioContext.createMediaStreamSource(stream);
-            microphone.connect(analyser);
-            visualize();
+          const { analyser: a, audioContext: ctx, stream } = await initAudio();
+          analyser = a;
+          audioContext = ctx;
+          mediaStream = stream;
+          microphone = audioContext.createMediaStreamSource(stream);
+          microphone.connect(analyser);
+          visualize();
         } catch (error) {
-            console.error("Error accessing microphone for visualizer:", error);
-            deactivateVisualizer();
+          console.error('Error accessing microphone for visualizer:', error);
+          deactivateVisualizer();
         }
-    }
+      }
 
-    function visualize() {
+      function visualize() {
         let dataArray = new Uint8Array(analyser.frequencyBinCount);
 
         function draw() {
-            if (!isUnmuted) return;
+          if (!isUnmuted) return;
 
-            dataArray = getFrequencyData(analyser);
-            const maxVolume = Math.max(...dataArray);
+          dataArray = getFrequencyData(analyser);
+          const maxVolume = Math.max(...dataArray);
 
-            updateWordCloudWithVisualizer(maxVolume);
-            createParticleEffects(maxVolume);
+          updateWordCloudWithVisualizer(maxVolume);
+          createParticleEffects(maxVolume);
 
-            requestAnimationFrame(draw);
+          requestAnimationFrame(draw);
         }
         draw();
-    }
+      }
 
-    function deactivateVisualizer() {
+      function deactivateVisualizer() {
         if (audioContext) {
-            audioContext.close();
-            audioContext = null;
-            analyser = null;
-            microphone = null;
+          audioContext.close();
+          audioContext = null;
+          analyser = null;
+          microphone = null;
 
-            // Explicitly stop all tracks of the media stream
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(track => track.stop());
-                mediaStream = null;
-            }
+          // Explicitly stop all tracks of the media stream
+          if (mediaStream) {
+            mediaStream.getTracks().forEach((track) => track.stop());
+            mediaStream = null;
+          }
         }
-        document.querySelectorAll('.particle').forEach(p => p.remove());
-    }
+        document.querySelectorAll('.particle').forEach((p) => p.remove());
+      }
 
-    function updateWordCloudWithVisualizer(volume) {
+      function updateWordCloudWithVisualizer(volume) {
         if (WordCloud.isSupported && wordCloudData.length) {
-            WordCloud(wordCloudCanvas, {
-                list: wordCloudData.map(([word, count]) => [word, count * (1 + volume / 256)]),
-                gridSize: Math.floor(10 * (window.innerWidth / 1024)),
-                weightFactor: 15,
-                color: () => `hsl(${Math.random() * 360}, 100%, ${50 + volume / 10}%)`,
-                rotateRatio: 0.4,
-                minRotation: -Math.PI / 6,
-                maxRotation: Math.PI / 6,
-                backgroundColor: 'transparent',
-                shape: 'circle',
-                drawOutOfBound: false,
-                shrinkToFit: true,
-                clearCanvas: true
-            });
+          WordCloud(wordCloudCanvas, {
+            list: wordCloudData.map(([word, count]) => [
+              word,
+              count * (1 + volume / 256),
+            ]),
+            gridSize: Math.floor(10 * (window.innerWidth / 1024)),
+            weightFactor: 15,
+            color: () =>
+              `hsl(${Math.random() * 360}, 100%, ${50 + volume / 10}%)`,
+            rotateRatio: 0.4,
+            minRotation: -Math.PI / 6,
+            maxRotation: Math.PI / 6,
+            backgroundColor: 'transparent',
+            shape: 'circle',
+            drawOutOfBound: false,
+            shrinkToFit: true,
+            clearCanvas: true,
+          });
         }
-    }
+      }
 
-    function createParticleEffects(volume) {
-        document.querySelectorAll('.particle').forEach(p => p.remove());
+      function createParticleEffects(volume) {
+        document.querySelectorAll('.particle').forEach((p) => p.remove());
         const particleCount = Math.min(volume / 10, 10);
 
         for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.width = `${Math.random() * 8 + 3}px`;
-            particle.style.height = particle.style.width;
-            particle.style.left = `${Math.random() * 90}vw`;
-            particle.style.top = `${Math.random() * 80}vh`;
-            particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
-            document.body.appendChild(particle);
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.style.width = `${Math.random() * 8 + 3}px`;
+          particle.style.height = particle.style.width;
+          particle.style.left = `${Math.random() * 90}vw`;
+          particle.style.top = `${Math.random() * 80}vh`;
+          particle.style.background = `hsl(${Math.random() * 360}, 100%, 75%)`;
+          document.body.appendChild(particle);
         }
-    }
+      }
 
-    // Toggle speech button logic for speech detection
-    toggleSpeechButton.addEventListener('click', () => {
+      // Toggle speech button logic for speech detection
+      toggleSpeechButton.addEventListener('click', () => {
         if (!isAddingWords) {
-            isAddingWords = true;
-            toggleSpeechButton.classList.add('active');
-            deactivateVisualizer(); // Ensure visualizer is turned off before starting speech recognition
-            recognition.start();
+          isAddingWords = true;
+          toggleSpeechButton.classList.add('active');
+          deactivateVisualizer(); // Ensure visualizer is turned off before starting speech recognition
+          recognition.start();
         } else {
-            isAddingWords = false;
-            toggleSpeechButton.classList.remove('active');
-            recognition.stop();
+          isAddingWords = false;
+          toggleSpeechButton.classList.remove('active');
+          recognition.stop();
         }
-    });
+      });
 
-    function deactivateSpeechRecognition() {
+      function deactivateSpeechRecognition() {
         if (isAddingWords) {
-            isAddingWords = false;
-            toggleSpeechButton.classList.remove('active');
-            recognition.stop();
+          isAddingWords = false;
+          toggleSpeechButton.classList.remove('active');
+          recognition.stop();
         }
-    }
+      }
 
-    recognition.onresult = (event) => {
+      recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         const newWords = transcript.split(' ');
 
         wordsArray = wordsArray.concat(newWords);
 
         if (wordsArray.length > 1000) {
-            wordsArray = wordsArray.slice(wordsArray.length - 1000);
+          wordsArray = wordsArray.slice(wordsArray.length - 1000);
         }
 
         updateWordCloud(wordsArray);
-    };
+      };
 
-    recognition.onspeechend = () => {
+      recognition.onspeechend = () => {
         if (isAddingWords) {
-            recognition.start(); // Keep listening as long as the toggle is active
+          recognition.start(); // Keep listening as long as the toggle is active
         } else {
-            recognition.stop();
+          recognition.stop();
         }
-    };
+      };
 
-    recognition.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
         if (isAddingWords) {
-            recognition.start();
+          recognition.start();
         }
-    };
+      };
 
-    // Initial word cloud rendering for visibility testing
-    updateWordCloud(wordsArray);
-</script>
-
-</body>
+      // Initial word cloud rendering for visibility testing
+      updateWordCloud(wordsArray);
+    </script>
+  </body>
 </html>
