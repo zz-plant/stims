@@ -167,7 +167,8 @@
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 256;
                 source.connect(analyser);
-                patternRecognizer = new PatternRecognizer(audioContext, analyser);
+                // PatternRecognizer expects only the analyser instance
+                patternRecognizer = new PatternRecognizer(analyser);
                 getAudioData();
             } catch (err) {
                 showError('Unable to access the microphone. Please allow microphone permissions and reload the page.');
