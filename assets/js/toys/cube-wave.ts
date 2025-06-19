@@ -1,7 +1,14 @@
 
 import * as THREE from 'three';
-import WebToy from '../core/web-toy.js';
-import { getFrequencyData } from '../utils/audio-handler.js';
+import WebToy from '../core/web-toy';
+import { getFrequencyData } from '../utils/audio-handler';
+import { LightConfig, AmbientLightConfig } from '../lighting/lighting-setup';
+
+interface ToyConfig {
+  cameraOptions?: Record<string, unknown>;
+  lightingOptions?: LightConfig;
+  ambientLightOptions?: AmbientLightConfig;
+}
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 30, z: 80 } },
@@ -10,10 +17,10 @@ const toy = new WebToy({
     position: { x: 0, y: 50, z: 50 },
   },
   ambientLightOptions: {},
-});
+} as ToyConfig);
 
-const cubes = [];
-let analyser;
+const cubes: THREE.Mesh[] = [];
+let analyser: AnalyserNode | null;
 
 function init() {
   const { scene } = toy;

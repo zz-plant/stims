@@ -1,7 +1,7 @@
 import { initScene } from './scene-setup.ts';
 import { initCamera } from './camera-setup.ts';
 import { initRenderer } from './renderer-setup.ts';
-import { initLighting, initAmbientLight } from '../lighting/lighting-setup.js';
+import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
 import { initAudio } from '../utils/audio-handler.ts';
 
 export default class WebToy {
