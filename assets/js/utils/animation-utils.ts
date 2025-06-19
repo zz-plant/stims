@@ -2,10 +2,10 @@
 
 // Function to apply audio-driven rotation based on different frequency bands
 export function applyAudioRotation(
-  object,
-  audioData,
-  rotationSpeed,
-  band = 'average'
+  object: { rotation: { x: number; y: number } },
+  audioData: Uint8Array,
+  rotationSpeed: number,
+  band: 'low' | 'mid' | 'high' | 'average' = 'average'
 ) {
   let avgFrequency;
 
@@ -30,10 +30,10 @@ export function applyAudioRotation(
 
 // Function to apply audio-driven scaling based on different frequency bands
 export function applyAudioScale(
-  object,
-  audioData,
-  scaleFactor,
-  band = 'average'
+  object: { scale: { set: (x: number, y: number, z: number) => void } },
+  audioData: Uint8Array,
+  scaleFactor: number,
+  band: 'low' | 'mid' | 'high' | 'average' = 'average'
 ) {
   let avgFrequency;
 
@@ -57,33 +57,32 @@ export function applyAudioScale(
 }
 
 // Helper functions to extract different frequency ranges
-function getLowFrequency(audioData) {
-  return (
-    audioData
-      .slice(0, audioData.length * 0.33)
-      .reduce((acc, val) => acc + val, 0) /
-    (audioData.length * 0.33)
-  );
+function averageFrequencyRange(
+  audioData: Uint8Array,
+  startRatio: number,
+  endRatio: number,
+  denominatorRatio = endRatio - startRatio
+) {
+  const start = Math.trunc(audioData.length * startRatio);
+  const end = Math.trunc(audioData.length * endRatio);
+  const slice = audioData.slice(start, end);
+  const sum = slice.reduce((acc, val) => acc + val, 0);
+  const rangeLength = audioData.length * denominatorRatio;
+  return sum / rangeLength;
 }
 
-function getMidFrequency(audioData) {
-  return (
-    audioData
-      .slice(audioData.length * 0.33, audioData.length * 0.66)
-      .reduce((acc, val) => acc + val, 0) /
-    (audioData.length * 0.33)
-  );
+function getLowFrequency(audioData: Uint8Array) {
+  return averageFrequencyRange(audioData, 0, 0.33, 0.33);
 }
 
-function getHighFrequency(audioData) {
-  return (
-    audioData
-      .slice(audioData.length * 0.66)
-      .reduce((acc, val) => acc + val, 0) /
-    (audioData.length * 0.33)
-  );
+function getMidFrequency(audioData: Uint8Array) {
+  return averageFrequencyRange(audioData, 0.33, 0.66, 0.33);
 }
 
-function getAverageFrequency(audioData) {
-  return audioData.reduce((acc, val) => acc + val, 0) / audioData.length;
+function getHighFrequency(audioData: Uint8Array) {
+  return averageFrequencyRange(audioData, 0.66, 1, 0.33);
+}
+
+function getAverageFrequency(audioData: Uint8Array) {
+  return averageFrequencyRange(audioData, 0, 1, 1);
 }

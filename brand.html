@@ -7,13 +7,12 @@
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
-    <!-- Include Three.js library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.js"></script>
     <script type="module">
+      import * as THREE from 'three';
       import {
         initAudio,
         getFrequencyData,
-      } from './assets/js/utils/audio-handler.js';
+      } from './assets/js/utils/audio-handler.ts';
       const scene = new THREE.Scene();
       scene.fog = new THREE.Fog(0x000000, 10, 200);
 

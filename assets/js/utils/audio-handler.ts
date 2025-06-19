@@ -1,4 +1,4 @@
-export async function initAudio(options = {}) {
+export async function initAudio(options: { fftSize?: number } = {}) {
   const { fftSize = 256 } = options;
   try {
     const audioContext = new AudioContext();
@@ -17,7 +17,7 @@ export async function initAudio(options = {}) {
   }
 }
 
-export function getFrequencyData(analyser) {
+export function getFrequencyData(analyser: AnalyserNode) {
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(dataArray);
   return dataArray;

@@ -95,7 +95,7 @@ If you want to mess around with the toys locally, just clone the repo and open t
    git clone https://github.com/zz-plant/stims.git
    cd stims
    ```
-2. Use Node.js 18 (see `.nvmrc`). If you have nvm installed, run `nvm use`.
+2. Use Node.js 22 (see `.nvmrc`). If you have nvm installed, run `nvm use`.
 
 3. Open any of the HTML files in your browser (e.g., `evol.html`, `index.html`).
 
@@ -107,9 +107,7 @@ If you want to mess around with the toys locally, just clone the repo and open t
 
    This will run everything locally at `http://localhost:8000`.
 
-All external JavaScript dependencies—including the WordCloud library—are stored
-in `assets/js/lib` so everything works offline without hitting a CDN.
-
+All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
 ### Running Tests
 
 This project uses [Jest](https://jestjs.io/) for its test suite. To install
