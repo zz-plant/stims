@@ -9,55 +9,55 @@
     "slug": "brand",
     "title": "Star Guitar Visualizer",
     "description": "A visual journey inspired by an iconic music video, synced to your music.",
-    "module": "./brand.html"
+    "module": "./toy.html?toy=brand"
   },
   {
     "slug": "defrag",
     "title": "Defrag Visualizer",
     "description": "A nostalgic, sound-reactive visualizer evoking old defragmentation screens.",
-    "module": "./defrag.html"
+    "module": "./toy.html?toy=defrag"
   },
   {
     "slug": "evol",
     "title": "Evolutionary Weirdcore",
     "description": "Watch surreal landscapes evolve with fractals and glitches that react to music.",
-    "module": "./evol.html"
+    "module": "./toy.html?toy=evol"
   },
   {
     "slug": "multi",
     "title": "Multi-Capability Visualizer",
     "description": "Shapes and lights move with both sound and device motion.",
-    "module": "./multi.html"
+    "module": "./toy.html?toy=multi"
   },
   {
     "slug": "seary",
     "title": "Trippy Synesthetic Visualizer",
     "description": "Blend audio and visuals in a rich synesthetic experience.",
-    "module": "./seary.html"
+    "module": "./toy.html?toy=seary"
   },
   {
     "slug": "sgpat",
     "title": "Pattern Recognition Visualizer",
     "description": "See patterns form dynamically in response to sound.",
-    "module": "./sgpat.html"
+    "module": "./toy.html?toy=sgpat"
   },
   {
     "slug": "svgtest",
     "title": "SVG + Three.js Visualizer",
     "description": "A hybrid visualizer blending 2D and 3D elements, reacting in real time.",
-    "module": "./svgtest.html"
+    "module": "./toy.html?toy=svgtest"
   },
   {
     "slug": "symph",
     "title": "Dreamy Spectrograph",
     "description": "A relaxing spectrograph that moves gently with your audio.",
-    "module": "./symph.html"
+    "module": "./toy.html?toy=symph"
   },
   {
     "slug": "words",
     "title": "Interactive Word Cloud",
     "description": "Speak and watch the word cloud react and shift with your voice.",
-    "module": "./words.html"
+    "module": "./toy.html?toy=words"
   },
   {
     "slug": "cube-wave",
