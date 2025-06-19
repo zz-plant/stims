@@ -122,6 +122,10 @@ dependencies and run the tests:
    npm test
    ```
 
+### Linting and Formatting
+
+Before committing, run `npm run lint` to check code style and `npm run format` to automatically format your files. This keeps the project consistent.
+
 ---
 
 ## License
