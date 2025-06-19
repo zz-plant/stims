@@ -21,9 +21,24 @@
     </style>
   </head>
   <body>
+    <div id="error-message" role="alert" style="display: none; color: #ff0000; background: #fff0f0; text-align: center; padding: 10px;"></div>
     <canvas id="visualizerCanvas"></canvas>
     <script type="module">
       const canvas = document.getElementById('visualizerCanvas');
+      const errorMessageElement = document.getElementById('error-message');
+
+      function showError(message) {
+        if (errorMessageElement) {
+          errorMessageElement.textContent = message;
+          errorMessageElement.style.display = 'block';
+        }
+      }
+
+      function hideError() {
+        if (errorMessageElement) {
+          errorMessageElement.style.display = 'none';
+        }
+      }
 
       async function initializeAudioVisualizer() {
         if (!navigator.gpu) {
@@ -103,16 +118,25 @@
         });
 
         // Audio setup
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        const audioContext = new (window.AudioContext ||
-          window.webkitAudioContext)();
-        const analyser = audioContext.createAnalyser();
-        const source = audioContext.createMediaStreamSource(stream);
-        source.connect(analyser);
-        analyser.fftSize = 128;
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        let analyser;
+        let dataArray;
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          const audioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+          analyser = audioContext.createAnalyser();
+          const source = audioContext.createMediaStreamSource(stream);
+          source.connect(analyser);
+          analyser.fftSize = 128;
+          dataArray = new Uint8Array(analyser.frequencyBinCount);
+          hideError();
+        } catch (err) {
+          showError('Microphone access was denied. Please allow access and reload.');
+          console.error('Error accessing microphone:', err);
+          return;
+        }
 
         function frame() {
           analyser.getByteFrequencyData(dataArray);

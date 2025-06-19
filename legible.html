@@ -116,6 +116,7 @@
     </style>
   </head>
   <body>
+    <div id="error-message" role="alert" style="display: none; color: #ff0000; background: #fff0f0; text-align: center; padding: 10px;"></div>
     <div class="controls">
       <button id="start-button">Start Microphone</button>
       <label for="sensitivity">Beat Sensitivity:</label>
@@ -157,6 +158,7 @@
       const resetButton = document.getElementById('reset-button');
       const sensitivitySlider = document.getElementById('sensitivity');
       const colorSchemeSelect = document.getElementById('color-scheme');
+      const errorMessageElement = document.getElementById('error-message');
       let sensitivity = parseFloat(sensitivitySlider.value);
       let wordIndex = 0;
       let cyclingActive = true;
@@ -164,6 +166,19 @@
       const gridElement = document.getElementById('grid');
       let words = [];
       let revealedLocations = [];
+
+      function showError(message) {
+        if (errorMessageElement) {
+          errorMessageElement.textContent = message;
+          errorMessageElement.style.display = 'block';
+        }
+      }
+
+      function hideError() {
+        if (errorMessageElement) {
+          errorMessageElement.style.display = 'none';
+        }
+      }
 
       // Fetch words using the Datamuse API
       async function fetchWords() {
@@ -327,14 +342,14 @@
             micStream.connect(analyser);
             isMicrophoneEnabled = true;
 
+            hideError();
+
             startButton.textContent = 'Microphone Active';
             startButton.disabled = true;
             render(); // Start the visualizer
           })
           .catch((err) => {
-            alert(
-              'Microphone access denied. Please allow microphone access to enable the visualizer.'
-            );
+            showError('Microphone access was denied. Please allow access and reload.');
           });
       }
 
@@ -432,7 +447,7 @@
       }
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert(
+        showError(
           'Your browser does not support microphone access. Please update to a modern browser.'
         );
       }

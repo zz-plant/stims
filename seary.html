@@ -21,6 +21,7 @@
     </style>
   </head>
   <body>
+    <div id="error-message" role="alert" style="display: none; color: #ff0000; background: #fff0f0; text-align: center; padding: 10px;"></div>
     <canvas id="gpuCanvas"></canvas>
     <select id="audioSelect">
       <option value="mic">Microphone</option>
@@ -191,8 +192,22 @@
 
       // Audio setup for beat detection and frequency analysis
       let audioContext, analyser, source;
+      const errorMessageElement = document.getElementById('error-message');
       let bufferLength, dataArray;
       const audioSelect = document.getElementById('audioSelect');
+
+      function showError(message) {
+        if (errorMessageElement) {
+          errorMessageElement.textContent = message;
+          errorMessageElement.style.display = 'block';
+        }
+      }
+
+      function hideError() {
+        if (errorMessageElement) {
+          errorMessageElement.style.display = 'none';
+        }
+      }
 
       audioSelect.addEventListener('change', initializeAudio);
       initializeAudio();
@@ -205,6 +220,7 @@
         navigator.mediaDevices
           .getUserMedia({ audio: true })
           .then((stream) => {
+            hideError();
             audioContext = new (window.AudioContext ||
               window.webkitAudioContext)();
             if (audioSelect.value === 'mic') {
@@ -356,6 +372,7 @@
           })
           .catch((err) => {
             console.error('Error accessing microphone: ' + err);
+            showError('Microphone access was denied. Please allow access and reload.');
           });
       }
 

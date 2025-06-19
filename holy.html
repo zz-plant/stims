@@ -147,6 +147,7 @@
     </style>
   </head>
   <body>
+    <div id="error-message" role="alert" style="display: none; color: #ff0000; background: #fff0f0; text-align: center; padding: 10px;"></div>
     <!-- Loading Overlay -->
     <div id="loadingOverlay">
       <div class="spinner"></div>
@@ -235,6 +236,7 @@
       let isAudioInitialized = false;
       let lastTap = 0;
       let zoomDistance = 5;
+      const errorMessageElement = document.getElementById('error-message');
       const shapes = ['sphere', 'cube', 'torus', 'dodecahedron'];
       let currentShape = 0;
       let particleCount = 600;
@@ -244,6 +246,19 @@
       let particleMaterial;
       let particleGeometry;
       let animationId;
+
+      function showError(message) {
+        if (errorMessageElement) {
+          errorMessageElement.textContent = message;
+          errorMessageElement.style.display = 'block';
+        }
+      }
+
+      function hideError() {
+        if (errorMessageElement) {
+          errorMessageElement.style.display = 'none';
+        }
+      }
 
       // UI Elements
       const loadingOverlay = document.getElementById('loadingOverlay');
@@ -473,9 +488,10 @@
           source.connect(audioAnalyser);
           dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
           isAudioInitialized = true;
+          hideError();
         } catch (err) {
           console.error('Error accessing microphone:', err);
-          alert('Microphone access is required for the visualizer to work.');
+          showError('Microphone access was denied. Please allow access and reload.');
         }
       }
 

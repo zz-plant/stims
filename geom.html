@@ -22,6 +22,7 @@
     </style>
   </head>
   <body>
+    <div id="error-message" role="alert" style="display: none; color: #ff0000; background: #fff0f0; text-align: center; padding: 10px;"></div>
     <div id="controls">
       <button id="startButton">Start Microphone Visualizer</button>
     </div>
@@ -37,7 +38,21 @@
 
       // Audio setup
       const startButton = document.getElementById('startButton');
+      const errorMessageElement = document.getElementById('error-message');
       let audioContext, analyzer, source, frequencyData;
+
+      function showError(message) {
+        if (errorMessageElement) {
+          errorMessageElement.textContent = message;
+          errorMessageElement.style.display = 'block';
+        }
+      }
+
+      function hideError() {
+        if (errorMessageElement) {
+          errorMessageElement.style.display = 'none';
+        }
+      }
 
       startButton.addEventListener('click', function () {
         // Disable the button after starting
@@ -49,10 +64,11 @@
           .getUserMedia({ audio: true })
           .then(function (stream) {
             setupAudioContext(stream);
+            hideError();
           })
           .catch(function (err) {
             console.error('Error accessing microphone:', err);
-            alert('Error accessing microphone: ' + err.message);
+            showError('Microphone access was denied. Please allow access and reload.');
           });
       });
 
