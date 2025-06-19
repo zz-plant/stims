@@ -1,6 +1,6 @@
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.module.js';
-import WebToy from '../core/web-toy.ts';
-import { getFrequencyData } from '../utils/audio-handler.ts';
+import * as THREE from 'three';
+import WebToy from '../core/web-toy.js';
+import { getFrequencyData } from '../utils/audio-handler.js';
 
 let errorElement;
 
