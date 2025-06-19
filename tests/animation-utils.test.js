@@ -1,4 +1,7 @@
-import { applyAudioRotation, applyAudioScale } from '../assets/js/utils/animation-utils.js';
+import {
+  applyAudioRotation,
+  applyAudioScale,
+} from '../assets/js/utils/animation-utils.js';
 
 describe('animation-utils', () => {
   test('applyAudioRotation updates rotation based on average frequency', () => {
@@ -15,13 +18,18 @@ describe('animation-utils', () => {
 
   test('applyAudioScale sets scale based on specified band', () => {
     const called = [];
-    const object = { scale: { set: jest.fn((x, y, z) => called.push([x, y, z])) } };
+    const object = {
+      scale: { set: jest.fn((x, y, z) => called.push([x, y, z])) },
+    };
     const audioData = new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90]);
 
     applyAudioScale(object, audioData, 50, 'high');
 
-    const highAvg = audioData.slice(Math.trunc(audioData.length * 0.66))
-      .reduce((acc, val) => acc + val, 0) / (audioData.length * 0.33);
+    const highAvg =
+      audioData
+        .slice(Math.trunc(audioData.length * 0.66))
+        .reduce((acc, val) => acc + val, 0) /
+      (audioData.length * 0.33);
     const scale = 1 + highAvg / 50;
     expect(object.scale.set).toHaveBeenCalledWith(scale, scale, scale);
     expect(called[0]).toEqual([scale, scale, scale]);
