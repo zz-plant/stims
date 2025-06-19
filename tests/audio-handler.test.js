@@ -1,4 +1,7 @@
-import { initAudio, getFrequencyData } from '../assets/js/utils/audio-handler.js';
+import {
+  initAudio,
+  getFrequencyData,
+} from '../assets/js/utils/audio-handler.js';
 
 describe('audio-handler utilities', () => {
   beforeEach(() => {
@@ -42,7 +45,7 @@ describe('audio-handler utilities', () => {
   test('getFrequencyData returns array of the expected length', () => {
     const analyser = {
       frequencyBinCount: 64,
-      getByteFrequencyData: jest.fn(arr => arr.fill(1)),
+      getByteFrequencyData: jest.fn((arr) => arr.fill(1)),
     };
 
     const result = getFrequencyData(analyser);
