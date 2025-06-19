@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import PatternRecognizer from '../assets/js/utils/patternRecognition.js';
+import PatternRecognizer from '../assets/js/utils/patternRecognition.ts';
 
 describe('PatternRecognizer', () => {
   test('detectPattern returns pattern when last two patterns match', () => {

@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { initScene } from './core/scene-setup.js';
-import { initCamera } from './core/camera-setup.js';
-import { initRenderer } from './core/renderer-setup.js';
+import { initScene } from './core/scene-setup.ts';
+import { initCamera } from './core/camera-setup.ts';
+import { initRenderer } from './core/renderer-setup.ts';
 import { initLighting, initAmbientLight } from './lighting/lighting-setup.js';
-import { initAudio, getFrequencyData } from './utils/audio-handler.js';
+import { initAudio, getFrequencyData } from './utils/audio-handler.ts';
 import {
   applyAudioRotation,
   applyAudioScale,
-} from './utils/animation-utils.js';
-import PatternRecognizer from './utils/patternRecognition.js';
+} from './utils/animation-utils.ts';
+import PatternRecognizer from './utils/patternRecognition.ts';
 
 let scene, camera, renderer, cube, analyser, patternRecognizer;
 let currentLightType = 'PointLight'; // Default light type
