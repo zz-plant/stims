@@ -27,10 +27,16 @@ describe('audio-handler utilities', () => {
   });
 
   test('initAudio resolves with analyser and data array', async () => {
-    const { analyser, dataArray } = await initAudio();
+    const { analyser, dataArray, audioContext, stream } = await initAudio();
     expect(analyser).toBeDefined();
     expect(dataArray).toBeInstanceOf(Uint8Array);
     expect(dataArray.length).toBe(analyser.frequencyBinCount);
+    expect(audioContext).toBeDefined();
+    expect(stream).toBeDefined();
+  });
+
+  test('initAudio supports custom fftSize', async () => {
+    await expect(initAudio({ fftSize: 512 })).resolves.toBeDefined();
   });
 
   test('getFrequencyData returns array of the expected length', () => {
