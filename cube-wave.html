@@ -8,6 +8,9 @@
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
-    <script type="module" src="assets/js/toys/cube-wave.js"></script>
+    <script type="module">
+      import { loadToy } from './assets/js/loader.js';
+      loadToy('cube-wave');
+    </script>
   </body>
 </html>
