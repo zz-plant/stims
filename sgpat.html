@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -28,6 +28,7 @@
     </style>
   </head>
   <body>
+    <button id="startButton">Start Visualizer</button>
     <div id="error-message" style="display: none"></div>
     <canvas id="glCanvas"></canvas>
     <script type="module">
@@ -200,6 +201,12 @@
         }
       }
 
+      const startButton = document.getElementById('startButton');
+      startButton.addEventListener('click', () => {
+        startButton.remove();
+        setupAudio();
+      });
+
       function getAudioData() {
         requestAnimationFrame(getAudioData);
         if (analyser) {
@@ -242,8 +249,6 @@
           x += barWidth + 1;
         }
       }
-
-      setupAudio();
 
       // Main render loop
       function render() {
