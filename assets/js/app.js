@@ -40,6 +40,7 @@ function startAudioAndAnimation() {
     .then((audioData) => {
       analyser = audioData.analyser;
       patternRecognizer = new PatternRecognizer(analyser);
+      hideError();
       animate();
     })
     .catch((error) => {
@@ -83,6 +84,13 @@ function displayError(message) {
     errorElement.setAttribute('aria-live', 'assertive');
     errorElement.innerText = message;
     errorElement.style.display = 'block';
+  }
+}
+
+function hideError() {
+  const errorElement = document.getElementById('error-message');
+  if (errorElement) {
+    errorElement.style.display = 'none';
   }
 }
 
