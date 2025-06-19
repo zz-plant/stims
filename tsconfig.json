@@ -7,7 +7,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "jsx": "react-jsx"
+    "jsx": "preserve"
   },
   "include": ["assets/js/**/*"],
   "exclude": ["dist"]

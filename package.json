@@ -16,8 +16,7 @@
     "prettier": "^2.8.8",
     "ts-jest": "^29.1.1",
     "typescript": "^5.4.2",
-    "vite": "^6.3.5",
-    "@vitejs/plugin-react": "^4.5.2"
+    "vite": "^6.3.5"
   },
   "jest": {
     "preset": "ts-jest/presets/default-esm",
@@ -36,8 +35,6 @@
   },
   "dependencies": {
     "cannon-es": "^0.20.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
     "three": "^0.177.0"
   }
 }
