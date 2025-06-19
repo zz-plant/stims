@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import PatternRecognizer from '../assets/js/utils/patternRecognition.js';
+import PatternRecognizer from '../assets/js/utils/patternRecognition.ts';
 
 describe('PatternRecognizer', () => {
   test('updatePatternBuffer stores analyser data', () => {

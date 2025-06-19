@@ -33,11 +33,11 @@
     <canvas id="glCanvas"></canvas>
     <script type="module">
       // Import the pattern recognition logic
-      import PatternRecognizer from './assets/js/utils/patternRecognition.js';
+      import PatternRecognizer from './assets/js/utils/patternRecognition.ts';
       import {
         initAudio,
         getFrequencyData,
-      } from './assets/js/utils/audio-handler.js';
+      } from './assets/js/utils/audio-handler.ts';
 
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
