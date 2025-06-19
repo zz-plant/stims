@@ -1,3 +1,6 @@
+import { jest } from '@jest/globals';
+
+let originalNavigatorDesc;
 import {
   initAudio,
   getFrequencyData,
@@ -11,11 +14,18 @@ describe('audio-handler utilities', () => {
     };
     const mockSource = { connect: jest.fn() };
 
-    global.navigator = {
-      mediaDevices: {
-        getUserMedia: jest.fn().mockResolvedValue('stream'),
+    originalNavigatorDesc = Object.getOwnPropertyDescriptor(global, 'navigator');
+    Object.defineProperty(global, 'navigator', {
+      configurable: true,
+      writable: true,
+      value: {
+        mediaDevices: {
+          getUserMedia: jest.fn().mockResolvedValue('stream'),
+        },
       },
-    };
+    });
+    global.window = global.window || {};
+    global.window.navigator = global.navigator;
 
     global.AudioContext = jest.fn(() => ({
       createAnalyser: jest.fn(() => mockAnalyser),
@@ -25,7 +35,15 @@ describe('audio-handler utilities', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
-    delete global.navigator;
+    if (originalNavigatorDesc) {
+      Object.defineProperty(global, 'navigator', originalNavigatorDesc);
+      originalNavigatorDesc = undefined;
+    } else {
+      delete global.navigator;
+    }
+    if (global.window) {
+      delete global.window.navigator;
+    }
     delete global.AudioContext;
   });
 
