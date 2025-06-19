@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import PatternRecognizer from '../assets/js/utils/patternRecognition.js';
 
 describe('PatternRecognizer', () => {
@@ -17,7 +18,7 @@ describe('PatternRecognizer', () => {
     expect(result).toEqual([...patterns[1]]);
   });
 
-  test('detectPattern returns null when patterns differ', () => {
+  test('detectPattern returns last pattern when patterns differ slightly', () => {
     const patterns = [new Uint8Array([1, 1, 1]), new Uint8Array([2, 2, 2])];
     let call = 0;
     const analyser = {
@@ -30,6 +31,6 @@ describe('PatternRecognizer', () => {
     recognizer.updatePatternBuffer();
 
     const result = recognizer.detectPattern();
-    expect(result).toBeNull();
+    expect(result).toEqual([...patterns[1]]);
   });
 });

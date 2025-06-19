@@ -28,7 +28,7 @@
     </style>
   </head>
   <body>
-    <div id="error-message" style="display: none"></div>
+    <div id="error-message" role="alert" aria-live="assertive" style="display: none"></div>
     <canvas id="glCanvas"></canvas>
     <script type="module">
       // Import the pattern recognition logic
@@ -194,7 +194,7 @@
           getAudioData();
         } catch (err) {
           showError(
-            'Unable to access the microphone. Please allow microphone permissions and reload the page.'
+            'Microphone access denied. Please allow microphone permissions and reload the page.'
           );
           console.error('Error capturing audio: ', err);
         }

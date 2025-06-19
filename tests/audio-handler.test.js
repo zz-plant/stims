@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import {
   initAudio,
   getFrequencyData,
@@ -11,10 +12,8 @@ describe('audio-handler utilities', () => {
     };
     const mockSource = { connect: jest.fn() };
 
-    global.navigator = {
-      mediaDevices: {
-        getUserMedia: jest.fn().mockResolvedValue('stream'),
-      },
+    navigator.mediaDevices = {
+      getUserMedia: jest.fn().mockResolvedValue('stream'),
     };
 
     global.AudioContext = jest.fn(() => ({
@@ -25,7 +24,7 @@ describe('audio-handler utilities', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
-    delete global.navigator;
+    delete navigator.mediaDevices;
     delete global.AudioContext;
   });
 

@@ -103,6 +103,8 @@ function showError(message) {
   if (!errorElement) {
     errorElement = document.createElement('div');
     errorElement.id = 'error-message';
+    errorElement.setAttribute('role', 'alert');
+    errorElement.setAttribute('aria-live', 'assertive');
     errorElement.style.position = 'absolute';
     errorElement.style.top = '20px';
     errorElement.style.left = '20px';
@@ -137,7 +139,9 @@ async function startAudio() {
   } catch (e) {
     console.error('Error accessing microphone:', e);
     // Show user-friendly message if microphone access fails
-    showError('Microphone access was denied. Please allow access and reload.');
+    showError(
+      'Microphone access denied. Please allow access and reload.'
+    );
   }
 }
 

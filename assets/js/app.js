@@ -44,7 +44,7 @@ function startAudioAndAnimation() {
     })
     .catch((error) => {
       displayError(
-        'Microphone access is required for the visualization to work. Please allow microphone access.'
+        'Microphone access denied. Please allow microphone access.'
       );
     });
 }
@@ -79,6 +79,8 @@ function handleResize() {
 function displayError(message) {
   const errorElement = document.getElementById('error-message');
   if (errorElement) {
+    errorElement.setAttribute('role', 'alert');
+    errorElement.setAttribute('aria-live', 'assertive');
     errorElement.innerText = message;
     errorElement.style.display = 'block';
   }
