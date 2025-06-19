@@ -9,8 +9,12 @@
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <script type="module">
-      import { loadFromQuery } from './assets/js/loader.js';
-      loadFromQuery();
+      import { loadToy } from './assets/js/loader.js';
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get('toy');
+      if (slug) {
+        loadToy(slug);
+      }
     </script>
   </body>
 </html>

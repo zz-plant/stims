@@ -3,7 +3,8 @@
     "slug": "3dtoy",
     "title": "3D Toy",
     "description": "Dive into a twisting 3D tunnel that responds to sound.",
-    "module": "./assets/js/toys/three-d-toy.js"
+    "module": "./toy.html?toy=3dtoy",
+    "script": "./assets/js/toys/three-d-toy.js"
   },
   {
     "slug": "brand",
@@ -63,18 +64,21 @@
     "slug": "cube-wave",
     "title": "Cube Wave",
     "description": "A grid of cubes that rise and fall with your audio.",
-    "module": "./assets/js/toys/cube-wave.js"
+    "module": "./toy.html?toy=cube-wave",
+    "script": "./assets/js/toys/cube-wave.js"
   },
   {
     "slug": "particle-orbit",
     "title": "Particle Orbit",
     "description": "Thousands of particles swirling faster as the music intensifies.",
-    "module": "./assets/js/toys/particle-orbit.js"
+    "module": "./toy.html?toy=particle-orbit",
+    "script": "./assets/js/toys/particle-orbit.js"
   },
   {
     "slug": "spiral-burst",
     "title": "Spiral Burst",
     "description": "Colorful spirals rotate and expand with every beat.",
-    "module": "./assets/js/toys/spiral-burst.js"
+    "module": "./toy.html?toy=spiral-burst",
+    "script": "./assets/js/toys/spiral-burst.js"
   }
 ]

@@ -7,13 +7,11 @@ export async function loadToy(slug) {
     return;
   }
 
-  if (toy.module.includes('toy.html')) {
-    window.location.href = `./${slug}.html`;
-  } else if (toy.module.endsWith('.js')) {
+  if (toy.script) {
     document.getElementById('toy-list')?.remove();
-    await import(toy.module);
+    await import(toy.script);
   } else {
-    window.location.href = toy.module;
+    window.location.href = `./${slug}.html`;
   }
 }
 

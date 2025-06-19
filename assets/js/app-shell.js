@@ -13,11 +13,7 @@ async function createCard(toy) {
   card.appendChild(desc);
 
   card.addEventListener('click', () => {
-    if (toy.module.endsWith('.js')) {
-      loadToy(toy.slug);
-    } else {
-      window.location.href = toy.module;
-    }
+    window.location.href = toy.module;
   });
 
   return card;

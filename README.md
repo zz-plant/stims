@@ -16,7 +16,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
 
 ## Toys in the Collection
 
-### 1. [**Evolutionary Weirdcore**](https://no.toil.fyi/evol.html) (New)
+### 1. [**Evolutionary Weirdcore**](https://no.toil.fyi/toy.html?toy=evol) (New)
 
 - **Description**: A next-level weirdcore visualizer with fractal geometry, glitchy effects, and distortions that evolve as the audio changes.
 - **Technologies**: WebGL, GLSL shaders, real-time audio input.
@@ -25,7 +25,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
   - **Glitches**: Audio peaks trigger glitch effects for that extra weirdcore vibe.
   - **Customizable**: Tweak the fractal intensity yourself and mess with visual behavior.
 
-### 2. [**3dtoy.html**](https://no.toil.fyi/3dtoy.html)
+### 2. [**3dtoy.html**](https://no.toil.fyi/toy.html?toy=3dtoy)
 
 - **Description**: Dive into a surreal 3D space with a twisting torus knot, swirling particles, and random procedural shapes that move with the sound.
 - **Technologies**: Three.js, WebGL, microphone input.
@@ -34,7 +34,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
   - Moving camera and dynamic lighting.
   - Procedural shapes for variety.
 
-### 3. [**brand.html**](https://no.toil.fyi/brand.html)
+### 3. [**brand.html**](https://no.toil.fyi/toy.html?toy=brand)
 
 - **Description**: Inspired by _Star Guitar_, this visual toy procedurally generates scenery—buildings, trees, tracks—that pulse to the beat.
 - **Technologies**: Three.js, WebGL, microphone input.
@@ -43,7 +43,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
   - Dynamic fog and lighting.
   - Buildings, tracks, and more created on the fly.
 
-### 4. [**seary.html**](https://no.toil.fyi/seary.html)
+### 4. [**seary.html**](https://no.toil.fyi/toy.html?toy=seary)
 
 - **Description**: A kaleidoscopic visualizer that reacts to both microphone and device audio. Multi-touch and device orientation effects make it even more engaging.
 - **Technologies**: WebGL, multi-touch input, audio input.
@@ -51,7 +51,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
   - Reacts to touch and device orientation.
   - Trippy patterns synced with the audio.
 
-### 5. [**symph.html**](https://no.toil.fyi/symph.html)
+### 5. [**symph.html**](https://no.toil.fyi/toy.html?toy=symph)
 
 - **Description**: A dreamy spectrograph that blends WebGL and 2D visuals, transforming audio input into a visual journey.
 - **Technologies**: WebGL, 2D Canvas, microphone input.
@@ -97,7 +97,7 @@ If you want to mess around with the toys locally, just clone the repo and open t
    ```
 2. Use Node.js 22 (see `.nvmrc`). If you have nvm installed, run `nvm use`.
 
-3. Open any of the HTML files in your browser (e.g., `evol.html`, `index.html`).
+3. Open any of the toys in your browser (e.g., `toy.html?toy=evol`, `index.html`).
 
 4. Want to serve locally? Here’s a simple Python server:
 
