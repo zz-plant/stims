@@ -8,7 +8,8 @@
 <body>
     <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.js"></script>
-    <script>
+    <script type="module">
+        import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
         const scene = new THREE.Scene();
         scene.fog = new THREE.Fog(0x000000, 10, 200);
 
@@ -99,14 +100,10 @@
             createElement(randomType, x, z);
         }
 
-        // Audio setup
+        // Audio setup using shared utility
         let analyser;
-        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const audioSource = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            audioSource.connect(analyser);
+        initAudio().then(({ analyser: a }) => {
+            analyser = a;
         }).catch((err) => {
             console.error('Audio input error: ', err);
         });
@@ -117,8 +114,7 @@
 
             let bass = 0;
             if (analyser) {
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(dataArray);
+                const dataArray = getFrequencyData(analyser);
                 bass = dataArray.slice(0, 10).reduce((a, b) => a + b, 0) / 10;
             }
 
