@@ -93,6 +93,12 @@ If you want to mess around with the toys locally, just clone the repo and open t
 
    This will run everything locally at `http://localhost:8000`.
 
+### Three.js Version
+
+All visualizers currently rely on **Three.js** release **r155** via the CDN. If
+you change the version, update every HTML file’s CDN reference to match so the
+visual effects continue to work as expected.
+
 ### Running Tests
 
 This project uses [Jest](https://jestjs.io/) for its test suite. To install
