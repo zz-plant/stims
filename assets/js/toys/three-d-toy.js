@@ -173,4 +173,11 @@ function animate() {
 }
 
 init();
-startAudio();
+
+const startButton = document.getElementById('startButton');
+if (startButton) {
+  startButton.addEventListener('click', () => {
+    startButton.remove();
+    startAudio();
+  });
+}

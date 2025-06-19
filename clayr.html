@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -21,6 +21,7 @@
     </style>
   </head>
   <body>
+    <button id="startButton">Start Visualizer</button>
     <canvas id="visualizerCanvas"></canvas>
     <script type="module">
       const canvas = document.getElementById('visualizerCanvas');
@@ -151,7 +152,11 @@
         frame();
       }
 
-      initializeAudioVisualizer().catch(console.error);
+      const startButton = document.getElementById('startButton');
+      startButton.addEventListener('click', () => {
+        startButton.remove();
+        initializeAudioVisualizer().catch(console.error);
+      });
     </script>
   </body>
 </html>

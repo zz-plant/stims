@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -14,6 +14,7 @@
     </style>
   </head>
   <body>
+    <button id="startButton">Start Visualizer</button>
     <canvas id="webglCanvas"></canvas>
     <script type="module">
       import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.module.js';
@@ -140,15 +141,23 @@
       // Audio input setup
       let analyser;
       let dataArray;
-      initAudio()
-        .then(({ analyser: a, dataArray: d }) => {
+
+      async function startAudio() {
+        try {
+          const { analyser: a, dataArray: d } = await initAudio();
           analyser = a;
           dataArray = d;
           audioReact();
-        })
-        .catch(function (err) {
+        } catch (err) {
           console.error('The following error occurred: ' + err);
-        });
+        }
+      }
+
+      const startButton = document.getElementById('startButton');
+      startButton.addEventListener('click', () => {
+        startButton.remove();
+        startAudio();
+      });
 
       function audioReact() {
         function updateAudio() {
