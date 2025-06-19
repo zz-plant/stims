@@ -35,7 +35,7 @@ class PatternRecognizer {
         return null;
     }
 
-    comparePatterns(pattern1, pattern2, tolerance = 0.85) { // Lower tolerance for better performance
+    comparePatterns(pattern1, pattern2, tolerance = 0.85) { // Higher tolerance for stricter matching
         // Calculate similarity score between two patterns
         let matchCount = 0;
         for (let i = 0; i < pattern1.length; i++) {
