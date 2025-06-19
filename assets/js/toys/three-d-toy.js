@@ -1,14 +1,23 @@
-import * as THREE from 'three';
-import { initScene } from '../core/scene-setup.js';
-import { initCamera } from '../core/camera-setup.js';
-import { initRenderer } from '../core/renderer-setup.js';
-import { initLighting, initAmbientLight } from '../lighting/lighting-setup.js';
-import { initAudio, getFrequencyData } from '../utils/audio-handler.js';
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.module.js';
+import WebToy from '../core/web-toy.js';
+import { getFrequencyData } from '../utils/audio-handler.js';
 
 let errorElement;
 
-let scene, camera, renderer, torusKnot, particles;
+const toy = new WebToy({
+  cameraOptions: { position: { x: 0, y: 0, z: 80 } },
+  lightingOptions: {
+    type: 'PointLight',
+    color: 0xff00ff,
+    intensity: 2,
+    position: { x: 20, y: 30, z: 20 },
+  },
+  ambientLightOptions: { color: 0x404040, intensity: 0.8 },
+});
+
+let torusKnot, particles;
 const shapes = [];
+let analyser;
 
 function createRandomShape() {
   const shapeType = Math.floor(Math.random() * 3);
@@ -38,25 +47,16 @@ function createRandomShape() {
     Math.random() * 120 - 60,
     Math.random() * -800
   );
-  scene.add(mesh);
+  toy.scene.add(mesh);
   shapes.push(mesh);
 }
 
 function init() {
-  scene = initScene();
-  camera = initCamera({ position: { x: 0, y: 0, z: 80 } });
-
-  const canvas = document.createElement('canvas');
-  document.body.appendChild(canvas);
-  renderer = initRenderer(canvas);
+  const { scene } = toy;
 
   torusKnot = new THREE.Mesh(
     new THREE.TorusKnotGeometry(10, 3, 100, 16),
-    new THREE.MeshStandardMaterial({
-      color: 0x00ffcc,
-      metalness: 0.7,
-      roughness: 0.4,
-    })
+    new THREE.MeshStandardMaterial({ color: 0x00ffcc, metalness: 0.7, roughness: 0.4 })
   );
   scene.add(torusKnot);
 
@@ -66,39 +66,16 @@ function init() {
   for (let i = 0; i < particlesCount * 3; i++) {
     particlesPosition[i] = (Math.random() - 0.5) * 800;
   }
-  particlesGeometry.setAttribute(
-    'position',
-    new THREE.BufferAttribute(particlesPosition, 3)
-  );
-  const particlesMaterial = new THREE.PointsMaterial({
-    color: 0xffffff,
-    size: 1.8,
-  });
+  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlesPosition, 3));
+  const particlesMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.8 });
   particles = new THREE.Points(particlesGeometry, particlesMaterial);
   scene.add(particles);
-
-  initAmbientLight(scene, { color: 0x404040, intensity: 0.8 });
-  initLighting(scene, {
-    type: 'PointLight',
-    color: 0xff00ff,
-    intensity: 2,
-    position: { x: 20, y: 30, z: 20 },
-  });
 
   for (let i = 0; i < 7; i++) {
     createRandomShape();
   }
-
-  window.addEventListener('resize', handleResize);
 }
 
-function handleResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-// Create and reveal an error element so users know microphone access failed
 function showError(message) {
   if (!errorElement) {
     errorElement = document.createElement('div');
@@ -117,26 +94,20 @@ function showError(message) {
   errorElement.style.display = 'block';
 }
 
-// Hide the microphone error message
 function hideError() {
   if (errorElement) {
     errorElement.style.display = 'none';
   }
 }
 
-let analyser;
-
-// Display a user-facing message when microphone access fails and hide it on success
-
 async function startAudio() {
   try {
-    const audioData = await initAudio();
-    analyser = audioData.analyser;
+    await toy.initAudio();
+    analyser = toy.analyser;
     hideError();
     animate();
   } catch (e) {
     console.error('Error accessing microphone:', e);
-    // Show user-friendly message if microphone access fails
     showError('Microphone access was denied. Please allow access and reload.');
   }
 }
@@ -145,9 +116,7 @@ function animate() {
   requestAnimationFrame(animate);
 
   const dataArray = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
-  const avgFrequency = dataArray.length
-    ? dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-    : 0;
+  const avgFrequency = dataArray.length ? dataArray.reduce((a, b) => a + b, 0) / dataArray.length : 0;
 
   torusKnot.rotation.x += avgFrequency / 5000;
   torusKnot.rotation.y += avgFrequency / 7000;
@@ -169,7 +138,7 @@ function animate() {
   const randomScale = 1 + Math.sin(Date.now() * 0.001) * 0.3;
   torusKnot.scale.set(randomScale, randomScale, randomScale);
 
-  renderer.render(scene, camera);
+  toy.render();
 }
 
 init();
