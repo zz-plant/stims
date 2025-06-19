@@ -8,8 +8,9 @@
     "format": "prettier --write ."
   },
   "devDependencies": {
-    "jest": "^29.6.1",
     "eslint": "^8.55.0",
+    "jest": "^29.6.1",
+    "jest-environment-jsdom": "^30.0.1",
     "prettier": "^2.8.8"
   },
   "jest": {
