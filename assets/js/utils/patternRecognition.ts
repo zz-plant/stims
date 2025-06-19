@@ -1,7 +1,12 @@
 // patternRecognition.js: A pattern recognition and predictive listening script for audio-based visualizers
 
 class PatternRecognizer {
-  constructor(analyser, bufferSize = 30) {
+  analyser: AnalyserNode;
+  bufferSize: number;
+  patternBuffer: number[][];
+  frequencyData: Uint8Array;
+
+  constructor(analyser: AnalyserNode, bufferSize = 30) {
     // Reduced buffer size for performance
     this.analyser = analyser;
     this.bufferSize = bufferSize;
@@ -9,7 +14,7 @@ class PatternRecognizer {
     this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
   }
 
-  updatePatternBuffer() {
+  updatePatternBuffer(): void {
     // Get current frequency data and add to pattern buffer
     this.analyser.getByteFrequencyData(this.frequencyData);
     this.patternBuffer.push([...this.frequencyData]);
@@ -20,7 +25,7 @@ class PatternRecognizer {
     }
   }
 
-  detectPattern() {
+  detectPattern(): number[] | null {
     // Compare the current pattern to past patterns in the buffer
     if (this.patternBuffer.length < this.bufferSize) return null;
 
@@ -35,7 +40,11 @@ class PatternRecognizer {
     return null;
   }
 
-  comparePatterns(pattern1, pattern2, tolerance = 0.85) {
+  comparePatterns(
+    pattern1: number[],
+    pattern2: number[],
+    tolerance = 0.85
+  ): boolean {
     // Higher tolerance for stricter matching
     // Calculate similarity score between two patterns
     let matchCount = 0;

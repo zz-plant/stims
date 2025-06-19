@@ -1,3 +1,4 @@
+
 import * as THREE from 'three';
 import WebToy from '../core/web-toy.js';
 import { getFrequencyData } from '../utils/audio-handler.js';
