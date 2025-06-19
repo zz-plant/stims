@@ -1,5 +1,7 @@
 import { loadToy, loadFromQuery } from './loader.js';
 
+let allToys = [];
+
 async function createCard(toy) {
   const card = document.createElement('div');
   card.className = 'webtoy-card';
@@ -21,13 +23,30 @@ async function createCard(toy) {
   return card;
 }
 
+function renderToys(toys) {
+  const list = document.getElementById('toy-list');
+  if (!list) return;
+  list.innerHTML = '';
+  toys.forEach((toy) => list.appendChild(createCard(toy)));
+}
+
+function filterToys(query) {
+  const search = query.toLowerCase();
+  const filtered = allToys.filter(
+    (t) =>
+      t.title.toLowerCase().includes(search) ||
+      t.description.toLowerCase().includes(search)
+  );
+  renderToys(filtered);
+}
+
 async function init() {
   const res = await fetch('assets/data/toys.json');
-  const toys = await res.json();
-  const list = document.getElementById('toy-list');
-  if (list) {
-    toys.forEach((toy) => list.appendChild(createCard(toy)));
-  }
+  allToys = await res.json();
+  renderToys(allToys);
+
+  const search = document.getElementById('search-bar');
+  search?.addEventListener('input', (e) => filterToys(e.target.value));
   await loadFromQuery();
 }
 
