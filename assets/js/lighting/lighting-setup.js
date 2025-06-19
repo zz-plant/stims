@@ -1,4 +1,3 @@
-// lighting-setup.js
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.module.js';
 
 // Initialize a point light with configurable options
