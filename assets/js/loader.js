@@ -7,7 +7,9 @@ export async function loadToy(slug) {
     return;
   }
 
-  if (toy.module.endsWith('.js')) {
+  if (toy.module.includes('toy.html')) {
+    window.location.href = `./${slug}.html`;
+  } else if (toy.module.endsWith('.js')) {
     document.getElementById('toy-list')?.remove();
     await import(toy.module);
   } else {
