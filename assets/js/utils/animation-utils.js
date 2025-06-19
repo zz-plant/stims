@@ -57,33 +57,32 @@ export function applyAudioScale(
 }
 
 // Helper functions to extract different frequency ranges
+function averageFrequencyRange(
+  audioData,
+  startRatio,
+  endRatio,
+  denominatorRatio = endRatio - startRatio
+) {
+  const start = Math.trunc(audioData.length * startRatio);
+  const end = Math.trunc(audioData.length * endRatio);
+  const slice = audioData.slice(start, end);
+  const sum = slice.reduce((acc, val) => acc + val, 0);
+  const rangeLength = audioData.length * denominatorRatio;
+  return sum / rangeLength;
+}
+
 function getLowFrequency(audioData) {
-  return (
-    audioData
-      .slice(0, audioData.length * 0.33)
-      .reduce((acc, val) => acc + val, 0) /
-    (audioData.length * 0.33)
-  );
+  return averageFrequencyRange(audioData, 0, 0.33, 0.33);
 }
 
 function getMidFrequency(audioData) {
-  return (
-    audioData
-      .slice(audioData.length * 0.33, audioData.length * 0.66)
-      .reduce((acc, val) => acc + val, 0) /
-    (audioData.length * 0.33)
-  );
+  return averageFrequencyRange(audioData, 0.33, 0.66, 0.33);
 }
 
 function getHighFrequency(audioData) {
-  return (
-    audioData
-      .slice(audioData.length * 0.66)
-      .reduce((acc, val) => acc + val, 0) /
-    (audioData.length * 0.33)
-  );
+  return averageFrequencyRange(audioData, 0.66, 1, 0.33);
 }
 
 function getAverageFrequency(audioData) {
-  return audioData.reduce((acc, val) => acc + val, 0) / audioData.length;
+  return averageFrequencyRange(audioData, 0, 1, 1);
 }
