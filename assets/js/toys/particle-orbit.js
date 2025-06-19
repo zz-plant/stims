@@ -6,7 +6,7 @@ import { initLighting, initAmbientLight } from '../lighting/lighting-setup.js';
 import { initAudio, getFrequencyData } from '../utils/audio-handler.js';
 
 let scene, camera, renderer, analyser;
-let particles;
+let particles, particlesMaterial;
 
 function init() {
     scene = initScene();
@@ -25,8 +25,8 @@ function init() {
         positions[i] = (Math.random() - 0.5) * 80;
     }
     particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const material = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 });
-    particles = new THREE.Points(particlesGeometry, material);
+    particlesMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 });
+    particles = new THREE.Points(particlesGeometry, particlesMaterial);
     scene.add(particles);
 
     window.addEventListener('resize', handleResize);
@@ -55,6 +55,10 @@ function animate() {
     const rotationSpeed = 0.001 + avg / 100000;
     particles.rotation.y += rotationSpeed;
     particles.rotation.x += rotationSpeed / 2;
+
+    particlesMaterial.size = 1.5 + avg / 50;
+    const hue = (avg / 256) % 1;
+    particlesMaterial.color.setHSL(hue, 0.7, 0.6);
 
     renderer.render(scene, camera);
 }

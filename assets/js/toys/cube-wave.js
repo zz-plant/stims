@@ -56,9 +56,14 @@ function animate() {
     const dataArray = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
     const avg = dataArray.length ? dataArray.reduce((a, b) => a + b, 0) / dataArray.length : 0;
 
+    const binsPerCube = dataArray.length / cubes.length;
     cubes.forEach((cube, i) => {
-        const scale = 1 + (dataArray[i % dataArray.length] || avg) / 128;
+        const bin = Math.floor(i * binsPerCube);
+        const value = dataArray[bin] || avg;
+        const scale = 1 + value / 128;
         cube.scale.y = scale;
+        cube.material.color.setHSL(0.6 - value / 512, 0.8, 0.5);
+        cube.rotation.y += value / 100000;
     });
 
     renderer.render(scene, camera);

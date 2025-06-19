@@ -56,9 +56,16 @@ function animate() {
     requestAnimationFrame(animate);
     const data = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
     const avg = data.length ? data.reduce((a,b)=>a+b,0)/data.length : 0;
+    const binsPerLine = data.length / lines.length;
     lines.forEach((line, idx) => {
-        line.rotation.z += 0.002 + avg / 100000;
+        const bin = Math.floor(idx * binsPerLine);
+        const value = data[bin] || avg;
+        line.rotation.z += 0.002 + value / 100000;
         line.rotation.x += 0.001 + idx / 10000;
+        const scale = 1 + value / 256;
+        line.scale.set(scale, scale, scale);
+        const hue = (idx / lines.length + value / 512) % 1;
+        line.material.color.setHSL(hue, 0.6, 0.5);
     });
     renderer.render(scene, camera);
 }
