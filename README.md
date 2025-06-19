@@ -76,7 +76,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
 
 ## Local Setup
 
-If you want to mess around with the toys locally, just clone the repo and open the HTML files in your browser. Here’s the quick setup:
+If you want to mess around with the toys locally, clone the repo and run the local server. Here’s the quick setup:
 
 1. Clone the repository:
    ```bash
@@ -84,14 +84,17 @@ If you want to mess around with the toys locally, just clone the repo and open t
    cd stims
    ```
 
-2. Open any of the HTML files in your browser (e.g., `evol.html`, `index.html`).
-
-3. Want to serve locally? Here’s a simple Python server:
+2. Install dependencies:
    ```bash
-   python3 -m http.server
+   npm install
    ```
 
-   This will run everything locally at `http://localhost:8000`.
+3. Start the server:
+   ```bash
+   npm start
+   ```
+
+   This serves the project at `http://localhost:8080`. Open any of the HTML files (e.g., `evol.html`, `index.html`) in your browser.
 
 ### Running Tests
 
