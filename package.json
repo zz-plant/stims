@@ -5,18 +5,25 @@
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "lint": "eslint \"**/*.js\"",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "dev": "vite",
+    "build": "vite build"
   },
   "devDependencies": {
     "eslint": "^8.55.0",
     "jest": "^29.6.1",
     "jest-environment-jsdom": "^30.0.1",
-    "prettier": "^2.8.8"
+    "prettier": "^2.8.8",
+    "vite": "^6.3.5"
   },
   "jest": {
     "testEnvironment": "jsdom"
   },
   "engines": {
     "node": "^22"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "three": "^0.177.0"
   }
 }
