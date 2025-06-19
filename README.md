@@ -30,14 +30,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
   - Moving camera and dynamic lighting.
   - Procedural shapes for variety.
 
-### 3. [**95.html**](https://no.toil.fyi/95.html)
-- **Description**: A weirdcore visualizer that shifts through liquid patterns and trippy colors, creating a sensory experience that reacts to sound.
-- **Technologies**: WebGL, GLSL shaders, microphone input.
-- **Key Features**:
-  - Real-time pattern distortions.
-  - Random noise effects for unpredictable visuals.
-
-### 4. [**brand.html**](https://no.toil.fyi/brand.html)
+### 3. [**brand.html**](https://no.toil.fyi/brand.html)
 - **Description**: Inspired by *Star Guitar*, this visual toy procedurally generates scenery—buildings, trees, tracks—that pulse to the beat.
 - **Technologies**: Three.js, WebGL, microphone input.
 - **Key Features**:
@@ -45,21 +38,14 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
   - Dynamic fog and lighting.
   - Buildings, tracks, and more created on the fly.
 
-### 5. [**demo.html**](https://no.toil.fyi/demo.html)
-- **Description**: Customize your visualizer with this tool. Adjust the colors, sensitivity, and see how the visuals react to whatever sound you feed it.
-- **Technologies**: WebGL, microphone input.
-- **Key Features**:
-  - Adjustable settings for colors and sensitivity.
-  - Visuals that shift based on real-time audio.
-
-### 6. [**seary.html**](https://no.toil.fyi/seary.html)
+### 4. [**seary.html**](https://no.toil.fyi/seary.html)
 - **Description**: A kaleidoscopic visualizer that reacts to both microphone and device audio. Multi-touch and device orientation effects make it even more engaging.
 - **Technologies**: WebGL, multi-touch input, audio input.
 - **Key Features**:
   - Reacts to touch and device orientation.
   - Trippy patterns synced with the audio.
 
-### 7. [**symph.html**](https://no.toil.fyi/symph.html)
+### 5. [**symph.html**](https://no.toil.fyi/symph.html)
 - **Description**: A dreamy spectrograph that blends WebGL and 2D visuals, transforming audio input into a visual journey.
 - **Technologies**: WebGL, 2D Canvas, microphone input.
 - **Key Features**:
@@ -98,7 +84,7 @@ If you want to mess around with the toys locally, just clone the repo and open t
    cd stims
    ```
 
-2. Open any of the HTML files in your browser (e.g., `evolutionary-weirdcore.html`, `index.html`).
+2. Open any of the HTML files in your browser (e.g., `evol.html`, `index.html`).
 
 3. Want to serve locally? Here’s a simple Python server:
    ```bash
