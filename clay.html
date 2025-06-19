@@ -1,71 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <meta charset="utf-8">
+  <head>
+    <meta charset="utf-8" />
     <title>Enhanced Pottery Wheel Simulation</title>
-    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/base.css" />
     <style>
-        body { background: #000; }
-        canvas { touch-action: none; }
-        #ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            z-index: 1;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 5px;
-            opacity: 0; /* Start hidden */
-            transition: opacity 0.5s;
-        }
-        #ui button {
-            margin-top: 5px;
-            padding: 5px 10px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        #toolPanel {
-            margin-top: 10px;
-        }
-        #toolPanel button {
-            margin-right: 5px;
-        }
+      body {
+        background: #000;
+      }
+      canvas {
+        touch-action: none;
+      }
+      #ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        z-index: 1;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 10px;
+        border-radius: 5px;
+        opacity: 0; /* Start hidden */
+        transition: opacity 0.5s;
+      }
+      #ui button {
+        margin-top: 5px;
+        padding: 5px 10px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      #toolPanel {
+        margin-top: 10px;
+      }
+      #toolPanel button {
+        margin-right: 5px;
+      }
     </style>
-</head>
-<body>
-<div id="ui">
-    <button id="resetButton">Reset Clay</button>
-    <div id="toolPanel">
+  </head>
+  <body>
+    <div id="ui">
+      <button id="resetButton">Reset Clay</button>
+      <div id="toolPanel">
         <button data-tool="smooth">Smooth</button>
         <button data-tool="carve">Carve</button>
         <button data-tool="pinch">Pinch</button>
+      </div>
     </div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js"></script>
-<script>
-    // Basic Three.js setup
-    let scene, camera, renderer;
-    let potteryMesh, wheelMesh;
-    let isInteracting = false;
-    let previousTouches = [];
-    const maxRadius = 5;
-    const minRadius = 0.5;
-    const height = 12;
-    const segments = 100; // Increased for better detail
-    let currentTool = 'smooth';
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js"></script>
+    <script>
+      // Basic Three.js setup
+      let scene, camera, renderer;
+      let potteryMesh, wheelMesh;
+      let isInteracting = false;
+      let previousTouches = [];
+      const maxRadius = 5;
+      const minRadius = 0.5;
+      const height = 12;
+      const segments = 100; // Increased for better detail
+      let currentTool = 'smooth';
 
-    init();
-    animate();
+      init();
+      animate();
 
-    function init() {
+      function init() {
         // Scene and Camera
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x222222);
 
-        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera = new THREE.PerspectiveCamera(
+          60,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
+        );
         camera.position.set(0, 8, 10);
         camera.lookAt(0, 5, 0);
 
@@ -90,7 +99,9 @@
 
         // Pottery Wheel
         const wheelGeometry = new THREE.CylinderGeometry(6, 6, 1, 64);
-        const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        const wheelMaterial = new THREE.MeshStandardMaterial({
+          color: 0x555555,
+        });
         wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
         wheelMesh.position.y = 0.5;
         wheelMesh.receiveShadow = true;
@@ -98,7 +109,9 @@
 
         // Ground Plane
         const groundGeometry = new THREE.PlaneGeometry(200, 200);
-        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const groundMaterial = new THREE.MeshStandardMaterial({
+          color: 0x333333,
+        });
         const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
         groundMesh.rotation.x = -Math.PI / 2;
         groundMesh.position.y = 0;
@@ -114,39 +127,43 @@
         domElement.addEventListener('pointerdown', onPointerDown, false);
         domElement.addEventListener('pointerup', onPointerUp, false);
         domElement.addEventListener('pointermove', onPointerMove, false);
-        domElement.addEventListener('contextmenu', event => event.preventDefault());
+        domElement.addEventListener('contextmenu', (event) =>
+          event.preventDefault()
+        );
 
         // UI Buttons
         const uiElement = document.getElementById('ui');
-        document.getElementById('resetButton').addEventListener('click', resetClay);
-        document.querySelectorAll('#toolPanel button').forEach(button => {
-            button.addEventListener('click', () => {
-                currentTool = button.getAttribute('data-tool');
-            });
+        document
+          .getElementById('resetButton')
+          .addEventListener('click', resetClay);
+        document.querySelectorAll('#toolPanel button').forEach((button) => {
+          button.addEventListener('click', () => {
+            currentTool = button.getAttribute('data-tool');
+          });
         });
 
         // Hide UI after inactivity
         let uiTimeout;
         function resetUITimeout() {
-            clearTimeout(uiTimeout);
-            uiElement.style.opacity = 1;
-            uiTimeout = setTimeout(() => {
-                uiElement.style.opacity = 0;
-            }, 3000);
+          clearTimeout(uiTimeout);
+          uiElement.style.opacity = 1;
+          uiTimeout = setTimeout(() => {
+            uiElement.style.opacity = 0;
+          }, 3000);
         }
         resetUITimeout();
         document.addEventListener('pointermove', resetUITimeout);
         document.addEventListener('pointerdown', resetUITimeout);
-    }
+      }
 
-    function createClay() {
+      function createClay() {
         // Create initial profile curve for the clay
         const profilePoints = [];
         const step = height / segments;
         for (let i = 0; i <= segments; i++) {
-            const y = i * step;
-            const radius = maxRadius;
-            profilePoints.push(new THREE.Vector2(radius, y));
+          const y = i * step;
+          const radius = maxRadius;
+          profilePoints.push(new THREE.Vector2(radius, y));
         }
 
         // Create LatheGeometry from profile curve
@@ -155,16 +172,16 @@
 
         // Clay Material with basic shininess
         const clayMaterial = new THREE.MeshStandardMaterial({
-            color: 0xd2a679,
-            roughness: 0.6,
-            metalness: 0.3,
+          color: 0xd2a679,
+          roughness: 0.6,
+          metalness: 0.3,
         });
 
         // Remove existing mesh if any
         if (potteryMesh) {
-            scene.remove(potteryMesh);
-            potteryMesh.geometry.dispose();
-            potteryMesh.material.dispose();
+          scene.remove(potteryMesh);
+          potteryMesh.geometry.dispose();
+          potteryMesh.material.dispose();
         }
 
         potteryMesh = new THREE.Mesh(clayGeometry, clayMaterial);
@@ -172,51 +189,54 @@
         potteryMesh.castShadow = true;
         potteryMesh.receiveShadow = true;
         scene.add(potteryMesh);
-    }
+      }
 
-    function onPointerDown(event) {
+      function onPointerDown(event) {
         isInteracting = true;
         previousTouches = [getTouchPosition(event)];
         event.target.setPointerCapture(event.pointerId);
 
         // Haptic Feedback
         if (navigator.vibrate) {
-            navigator.vibrate(50);
+          navigator.vibrate(50);
         }
-    }
+      }
 
-    function onPointerUp(event) {
+      function onPointerUp(event) {
         isInteracting = false;
         previousTouches = [];
         event.target.releasePointerCapture(event.pointerId);
-    }
+      }
 
-    function onPointerMove(event) {
+      function onPointerMove(event) {
         if (isInteracting) {
-            const currentTouches = [getTouchPosition(event)];
-            if (previousTouches.length === currentTouches.length) {
-                if (currentTouches.length === 1) {
-                    // Single touch deformation
-                    const deltaY = currentTouches[0].y - previousTouches[0].y;
-                    deformClay(deltaY, currentTouches[0].y);
-                }
-
-                // Haptic Feedback
-                if (navigator.vibrate) {
-                    const intensity = Math.min(Math.abs(currentTouches[0].y - previousTouches[0].y), 100);
-                    navigator.vibrate(intensity);
-                }
+          const currentTouches = [getTouchPosition(event)];
+          if (previousTouches.length === currentTouches.length) {
+            if (currentTouches.length === 1) {
+              // Single touch deformation
+              const deltaY = currentTouches[0].y - previousTouches[0].y;
+              deformClay(deltaY, currentTouches[0].y);
             }
 
-            previousTouches = currentTouches;
+            // Haptic Feedback
+            if (navigator.vibrate) {
+              const intensity = Math.min(
+                Math.abs(currentTouches[0].y - previousTouches[0].y),
+                100
+              );
+              navigator.vibrate(intensity);
+            }
+          }
+
+          previousTouches = currentTouches;
         }
-    }
+      }
 
-    function getTouchPosition(event) {
+      function getTouchPosition(event) {
         return { x: event.clientX, y: event.clientY };
-    }
+      }
 
-    function deformClay(deltaY, pointerY) {
+      function deformClay(deltaY, pointerY) {
         const rect = renderer.domElement.getBoundingClientRect();
         const normalizedY = ((pointerY - rect.top) / rect.height) * height;
 
@@ -225,45 +245,46 @@
 
         const positions = potteryMesh.geometry.attributes.position;
         for (let i = 0; i < positions.count; i++) {
-            const y = positions.getY(i);
-            const distance = Math.abs(y - normalizedY);
-            if (distance < influenceRadius) {
-                const factor = deformationStrength * (1 - distance / influenceRadius);
-                let x = positions.getX(i);
-                let z = positions.getZ(i);
-                const radius = Math.sqrt(x * x + z * z);
-                const angle = Math.atan2(z, x);
-                let newRadius = radius + factor;
+          const y = positions.getY(i);
+          const distance = Math.abs(y - normalizedY);
+          if (distance < influenceRadius) {
+            const factor =
+              deformationStrength * (1 - distance / influenceRadius);
+            let x = positions.getX(i);
+            let z = positions.getZ(i);
+            const radius = Math.sqrt(x * x + z * z);
+            const angle = Math.atan2(z, x);
+            let newRadius = radius + factor;
 
-                switch (currentTool) {
-                    case 'smooth':
-                        newRadius = THREE.MathUtils.lerp(radius, newRadius, 0.5);
-                        break;
-                    case 'carve':
-                        newRadius = radius - Math.abs(factor);
-                        break;
-                    case 'pinch':
-                        newRadius = radius + factor;
-                        break;
-                }
-
-                newRadius = THREE.MathUtils.clamp(newRadius, minRadius, maxRadius);
-                x = newRadius * Math.cos(angle);
-                z = newRadius * Math.sin(angle);
-                positions.setX(i, x);
-                positions.setZ(i, z);
+            switch (currentTool) {
+              case 'smooth':
+                newRadius = THREE.MathUtils.lerp(radius, newRadius, 0.5);
+                break;
+              case 'carve':
+                newRadius = radius - Math.abs(factor);
+                break;
+              case 'pinch':
+                newRadius = radius + factor;
+                break;
             }
+
+            newRadius = THREE.MathUtils.clamp(newRadius, minRadius, maxRadius);
+            x = newRadius * Math.cos(angle);
+            z = newRadius * Math.sin(angle);
+            positions.setX(i, x);
+            positions.setZ(i, z);
+          }
         }
 
         positions.needsUpdate = true;
         potteryMesh.geometry.computeVertexNormals();
-    }
+      }
 
-    function resetClay() {
+      function resetClay() {
         createClay();
-    }
+      }
 
-    function animate() {
+      function animate() {
         requestAnimationFrame(animate);
 
         // Rotate the wheel and clay
@@ -272,14 +293,14 @@
         potteryMesh.rotation.y += rotationSpeed;
 
         renderer.render(scene, camera);
-    }
+      }
 
-    function onWindowResize() {
+      function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
 
         renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-</script>
-</body>
+      }
+    </script>
+  </body>
 </html>
