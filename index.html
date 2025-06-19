@@ -6,18 +6,17 @@
     <title>Stim Webtoys Library</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<<<    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <style>
         :root {
             --bg-color: #0d0d0d;
             --text-color: #e0ffe0;
             --accent-color: #4ceea7;
-            --card-bg: rgba(255, 255, 255, 0.05);
-            --hover-bg: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(255, 255, 255, 0.07);
+            --hover-bg: rgba(255, 255, 255, 0.15);
         }
 
         body, html {
-            margin: 0;
             padding: 0;
             font-family: 'Space Grotesk', sans-serif;
             background: linear-gradient(135deg, #0d0d0d 0%, #1c1c1c 100%);
@@ -43,6 +42,15 @@
             margin-bottom: 2rem;
         }
 
+        @keyframes hueShift {
+            from {
+                filter: hue-rotate(0deg);
+            }
+            to {
+                filter: hue-rotate(360deg);
+            }
+        }
+
         h1 {
             font-size: 2.5rem;
             font-weight: 700;
@@ -50,6 +58,7 @@
             background: linear-gradient(45deg, var(--accent-color), #ff77ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            animation: hueShift 10s linear infinite;
         }
 
         .webtoy-container {
@@ -67,13 +76,15 @@
             transition: all 0.3s ease;
             text-align: center;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .webtoy-card:hover {
             background: var(--hover-bg);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 255, 170, 0.2);
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 10px 25px rgba(0, 255, 170, 0.3);
         }
 
         .webtoy-card h3 {
@@ -85,6 +96,15 @@
         .webtoy-card p {
             font-size: 0.9rem;
             opacity: 0.8;
+        }
+
+        .webtoy-card a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .webtoy-card a:hover {
+            text-decoration: underline;
         }
 
         footer {
@@ -138,43 +158,43 @@
         </header>
         <main class="webtoy-container">
             <div class="webtoy-card">
-                <h3><a href="3dtoy.html">3D Toy</a></h3>
+                <h3><a href="3dtoy.html" target="_blank">3D Toy</a></h3>
                 <p>Dive into a twisting 3D tunnel that responds to sound.</p>
             </div>
             <div class="webtoy-card">
-                <h3><a href="brand.html">Star Guitar Visualizer</a></h3>
+                <h3><a href="brand.html" target="_blank">Star Guitar Visualizer</a></h3>
                 <p>A visual journey inspired by an iconic music video, synced to your music.</p>
             </div>
             <div class="webtoy-card">
-                <h3><a href="defrag.html">Defrag Visualizer</a></h3>
+                <h3><a href="defrag.html" target="_blank">Defrag Visualizer</a></h3>
                 <p>A nostalgic, sound-reactive visualizer evoking old defragmentation screens.</p>
             </div>
             <div class="webtoy-card">
-                <h3><a href="evol.html">Evolutionary Weirdcore</a></h3>
+                <h3><a href="evol.html" target="_blank">Evolutionary Weirdcore</a></h3>
                 <p>Watch surreal landscapes evolve with fractals and glitches that react to music.</p>
             </div>
             <div class="webtoy-card">
-                <h3><a href="multi.html">Multi-Capability Visualizer</a></h3>
+                <h3><a href="multi.html" target="_blank">Multi-Capability Visualizer</a></h3>
                 <p>Shapes and lights move with both sound and device motion.</p>
             </div>
             <div class="webtoy-card">
-                <h3><a href="seary.html">Trippy Synesthetic Visualizer</a></h3>
+                <h3><a href="seary.html" target="_blank">Trippy Synesthetic Visualizer</a></h3>
                 <p>Blend audio and visuals in a rich synesthetic experience.</p>
             </div>
             <div class="webtoy-card">
-                <h3><a href="sgpat.html">Pattern Recognition Visualizer</a></h3>
+                <h3><a href="sgpat.html" target="_blank">Pattern Recognition Visualizer</a></h3>
                 <p>See patterns form dynamically in response to sound.</p>
             </div>
             <div class="webtoy-card">
-                <h3><a href="svgtest.html">SVG + Three.js Visualizer</a></h3>
+                <h3><a href="svgtest.html" target="_blank">SVG + Three.js Visualizer</a></h3>
                 <p>A hybrid visualizer blending 2D and 3D elements, reacting in real time.</p>
             </div>
             <div class="webtoy-card">
-                <h3><a href="symph.html">Dreamy Spectrograph</a></h3>
+                <h3><a href="symph.html" target="_blank">Dreamy Spectrograph</a></h3>
                 <p>A relaxing spectrograph that moves gently with your audio.</p>
             </div>
             <div class="webtoy-card">
-                <h3><a href="words.html">Interactive Word Cloud</a></h3>
+                <h3><a href="words.html" target="_blank">Interactive Word Cloud</a></h3>
                 <p>Speak and watch the word cloud react and shift with your voice.</p>
             </div>
         </main>

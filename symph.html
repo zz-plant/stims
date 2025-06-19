@@ -4,19 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dreamy Interactive Spectrograph Music Visualizer</title>
+    <link rel="stylesheet" href="assets/css/base.css">
     <style>
         body {
-            margin: 0;
-            overflow: hidden;
             background-color: black;
             touch-action: none;
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: Arial, sans-serif;
-        }
-        canvas {
-            display: block;
         }
         #error-message {
             position: absolute;
@@ -33,7 +29,8 @@
 <body>
     <div id="error-message" style="display: none;"></div>
     <canvas id="glCanvas"></canvas>
-    <script>
+    <script type="module">
+        import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
         const canvas = document.getElementById("glCanvas");
         const gl = canvas.getContext("webgl");
         const ctx2d = canvas.getContext("2d");
@@ -152,12 +149,8 @@
 
         async function setupAudio() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new AudioContext();
-                const source = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                source.connect(analyser);
+                const { analyser: a } = await initAudio();
+                analyser = a;
                 getAudioData();
             } catch (err) {
                 showError('Unable to access the microphone. Please allow microphone permissions and reload the page.');
@@ -168,8 +161,7 @@
         function getAudioData() {
             requestAnimationFrame(getAudioData);
             if (analyser) {
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(dataArray);
+                const dataArray = getFrequencyData(analyser);
                 const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
                 audioData = average / 128.0;
                 updateSpectrograph(dataArray);
