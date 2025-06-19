@@ -31,6 +31,7 @@
     </style>
   </head>
   <body>
+    <button id="startButton">Start Visualizer</button>
     <canvas id="glCanvas"></canvas>
     <div id="controls">
       <label>
@@ -223,7 +224,11 @@
         }
       }
 
-      setupAudio();
+      const startButton = document.getElementById('startButton');
+      startButton.addEventListener('click', () => {
+        startButton.remove();
+        setupAudio();
+      });
 
       document
         .getElementById('fractalIntensity')

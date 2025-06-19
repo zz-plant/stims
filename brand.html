@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="assets/css/base.css" />
   </head>
   <body>
+    <button id="startButton">Start Visualizer</button>
     <!-- Include Three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.js"></script>
     <script type="module">
@@ -125,13 +126,21 @@
 
       // Audio setup using shared utility
       let analyser;
-      initAudio()
-        .then(({ analyser: a }) => {
+
+      async function startAudio() {
+        try {
+          const { analyser: a } = await initAudio();
           analyser = a;
-        })
-        .catch((err) => {
+        } catch (err) {
           console.error('Audio input error: ', err);
-        });
+        }
+      }
+
+      const startButton = document.getElementById('startButton');
+      startButton.addEventListener('click', () => {
+        startButton.remove();
+        startAudio();
+      });
 
       // Animation loop
       function animate() {

@@ -21,6 +21,7 @@
     </style>
   </head>
   <body>
+    <button id="startButton">Start Visualizer</button>
     <canvas id="gpuCanvas"></canvas>
     <select id="audioSelect">
       <option value="mic">Microphone</option>
@@ -195,7 +196,12 @@
       const audioSelect = document.getElementById('audioSelect');
 
       audioSelect.addEventListener('change', initializeAudio);
-      initializeAudio();
+
+      const startButton = document.getElementById('startButton');
+      startButton.addEventListener('click', () => {
+        startButton.remove();
+        initializeAudio();
+      });
 
       function initializeAudio() {
         if (audioContext) {
