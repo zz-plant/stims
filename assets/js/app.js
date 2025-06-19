@@ -42,7 +42,7 @@ function startAudioAndAnimation() {
       patternRecognizer = new PatternRecognizer(analyser);
       animate();
     })
-    .catch((error) => {
+    .catch(() => {
       displayError(
         'Microphone access is required for the visualization to work. Please allow microphone access.'
       );
