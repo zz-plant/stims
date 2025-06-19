@@ -4,7 +4,7 @@ let originalNavigatorDesc;
 import {
   initAudio,
   getFrequencyData,
-} from '../assets/js/utils/audio-handler.js';
+} from '../assets/js/utils/audio-handler.ts';
 
 describe('audio-handler utilities', () => {
   beforeEach(() => {
