@@ -7,7 +7,7 @@ export default defineConfig({
     outDir: 'dist',
   },
   esbuild: {
-    loader: 'ts',
+    loader: 'tsx',
     include: /assets\/js\/.*\.[tj]sx?$/,
   },
 });
