@@ -95,10 +95,11 @@ If you want to mess around with the toys locally, just clone the repo and open t
    git clone https://github.com/zz-plant/stims.git
    cd stims
    ```
+2. Use Node.js 18 (see `.nvmrc`). If you have nvm installed, run `nvm use`.
 
-2. Open any of the HTML files in your browser (e.g., `evol.html`, `index.html`).
+3. Open any of the HTML files in your browser (e.g., `evol.html`, `index.html`).
 
-3. Want to serve locally? Here’s a simple Python server:
+4. Want to serve locally? Here’s a simple Python server:
 
    ```bash
    python3 -m http.server
@@ -124,6 +125,10 @@ dependencies and run the tests:
    ```bash
    npm test
    ```
+
+### Linting and Formatting
+
+Before committing, run `npm run lint` to check code style and `npm run format` to automatically format your files. This keeps the project consistent.
 
 ---
 
