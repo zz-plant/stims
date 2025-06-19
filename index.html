@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -194,30 +194,7 @@
     <canvas id="bg-canvas"></canvas>
     <div class="cursor"></div>
     <div class="cursor-follower"></div>
-    <div class="content">
-      <header>
-        <h1>Stim Webtoys Library</h1>
-        <p>
-          Explore a collection of interactive visual experiences to engage your
-          senses and spark creativity.
-        </p>
-        <div id="search-container">
-          <input id="search-bar" type="text" placeholder="Search toys..." />
-        </div>
-      </header>
-      <main id="toy-list" class="webtoy-container"></main>
-      <footer>
-        <p>
-          Curious about how these work?
-          <a
-            href="https://github.com/zz-plant/stims"
-            target="_blank"
-            rel="noopener noreferrer"
-            >Check out our open-source project.</a
-          >
-        </p>
-      </footer>
-    </div>
+    <div id="root"></div>
 
     <script type="module">
       import * as THREE from 'three';
@@ -267,7 +244,6 @@
         }, 100);
       });
 
-
       // Responsive canvas
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -275,6 +251,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
     </script>
-    <script type="module" src="assets/js/app-shell.js"></script>
+    <script type="module" src="assets/js/main.tsx"></script>
   </body>
 </html>
