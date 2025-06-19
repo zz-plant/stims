@@ -14,5 +14,8 @@
   },
   "jest": {
     "testEnvironment": "jsdom"
+  },
+  "engines": {
+    "node": "^18"
   }
 }
