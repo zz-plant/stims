@@ -17,8 +17,8 @@
     <a href="index.html" class="home-link">Back to Library</a>
     <canvas id="webglCanvas"></canvas>
     <script type="module">
-      import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.module.js';
-      import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.webgpu.min.js';
+      import * as THREE from 'three';
+      import { WebGPURenderer } from 'three/addons/renderers/webgpu/WebGPURenderer.js';
       import {
         initAudio,
         getFrequencyData,

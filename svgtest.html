@@ -109,9 +109,8 @@
     </div>
 
     <!-- Include Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.webgpu.min.js"></script>
-
-    <script>
+    <script type="module">
+      import * as THREE from 'three';
       // Set up the Three.js scene
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(

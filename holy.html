@@ -221,12 +221,12 @@
 
     <!-- Main Visualizer Script -->
     <script type="module">
-      import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.module.js';
-      import { EffectComposer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/postprocessing/EffectComposer.js';
-      import { RenderPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/postprocessing/RenderPass.js';
-      import { UnrealBloomPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/postprocessing/UnrealBloomPass.js';
-      import { ShaderPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/postprocessing/ShaderPass.js';
-      import { FXAAShader } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/shaders/FXAAShader.js';
+      import * as THREE from 'three';
+      import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+      import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+      import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+      import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+      import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
       let scene, camera, renderer, composer, bloomPass, fxaaPass;
       let visualizerShape, particles;
       let audioContext, audioAnalyser, dataArray;
