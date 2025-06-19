@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 import {
   applyAudioRotation,
   applyAudioScale,
-} from '../assets/js/utils/animation-utils.js';
+} from '../assets/js/utils/animation-utils.ts';
 
 describe('animation-utils', () => {
   test('applyAudioRotation updates rotation based on average frequency', () => {

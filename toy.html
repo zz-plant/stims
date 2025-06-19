@@ -3,11 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spiral Burst</title>
+    <title>Web Toy</title>
     <link rel="stylesheet" href="assets/css/base.css" />
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
-    <script type="module" src="assets/js/toys/spiral-burst.js"></script>
+    <script type="module">
+      import { loadFromQuery } from './assets/js/loader.js';
+      loadFromQuery();
+    </script>
   </body>
 </html>
