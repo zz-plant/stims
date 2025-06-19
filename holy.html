@@ -219,17 +219,14 @@
       </div>
     </div>
 
-    <!-- Three.js Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <!-- Post-Processing Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/UnrealBloomPass.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/shaders/FXAAShader.js"></script>
-
     <!-- Main Visualizer Script -->
-    <script>
+    <script type="module">
+      import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.module.js';
+      import { EffectComposer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/postprocessing/EffectComposer.js';
+      import { RenderPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/postprocessing/RenderPass.js';
+      import { UnrealBloomPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/postprocessing/UnrealBloomPass.js';
+      import { ShaderPass } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/postprocessing/ShaderPass.js';
+      import { FXAAShader } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/jsm/shaders/FXAAShader.js';
       let scene, camera, renderer, composer, bloomPass, fxaaPass;
       let visualizerShape, particles;
       let audioContext, audioAnalyser, dataArray;
@@ -280,12 +277,12 @@
         document.body.appendChild(renderer.domElement);
 
         // Post-Processing Setup
-        composer = new THREE.EffectComposer(renderer);
-        const renderPass = new THREE.RenderPass(scene, camera);
+        composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
         composer.addPass(renderPass);
 
         // Bloom Pass for Glow Effect
-        bloomPass = new THREE.UnrealBloomPass(
+        bloomPass = new UnrealBloomPass(
           new THREE.Vector2(window.innerWidth, window.innerHeight),
           1.5, // strength
           0.4, // radius
@@ -297,7 +294,7 @@
         composer.addPass(bloomPass);
 
         // FXAA Pass for Anti-Aliasing
-        fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
+        fxaaPass = new ShaderPass(FXAAShader);
         fxaaPass.material.uniforms['resolution'].value.set(
           1 / window.innerWidth,
           1 / window.innerHeight
