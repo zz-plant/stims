@@ -106,6 +106,9 @@ If you want to mess around with the toys locally, just clone the repo and open t
 
    This will run everything locally at `http://localhost:8000`.
 
+All external JavaScript dependencies—including the WordCloud library—are stored
+in `assets/js/lib` so everything works offline without hitting a CDN.
+
 ### Running Tests
 
 This project uses [Jest](https://jestjs.io/) for its test suite. To install
