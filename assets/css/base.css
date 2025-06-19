@@ -1,11 +1,12 @@
-html, body {
-    margin: 0;
-    overflow: hidden;
-    height: 100%;
+html,
+body {
+  margin: 0;
+  overflow: hidden;
+  height: 100%;
 }
 canvas {
-    display: block;
+  display: block;
 }
 body {
-    background-color: #000;
+  background-color: #000;
 }

@@ -1,153 +1,161 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stim Webtoys Library</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <style>
-        :root {
-            --bg-color: #0d0d0d;
-            --text-color: #e0ffe0;
-            --accent-color: #4ceea7;
-            --card-bg: rgba(255, 255, 255, 0.07);
-            --hover-bg: rgba(255, 255, 255, 0.15);
-        }
+      :root {
+        --bg-color: #0d0d0d;
+        --text-color: #e0ffe0;
+        --accent-color: #4ceea7;
+        --card-bg: rgba(255, 255, 255, 0.07);
+        --hover-bg: rgba(255, 255, 255, 0.15);
+      }
 
-        body, html {
-            padding: 0;
-            font-family: 'Space Grotesk', sans-serif;
-            background: linear-gradient(135deg, #0d0d0d 0%, #1c1c1c 100%);
-            color: var(--text-color);
-            overflow-x: hidden;
-        }
+      body,
+      html {
+        padding: 0;
+        font-family: 'Space Grotesk', sans-serif;
+        background: linear-gradient(135deg, #0d0d0d 0%, #1c1c1c 100%);
+        color: var(--text-color);
+        overflow-x: hidden;
+      }
 
-        #bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: -1;
-        }
+      #bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+      }
 
-        .content {
-            position: relative;
-            z-index: 1;
-            padding: 2rem;
-        }
+      .content {
+        position: relative;
+        z-index: 1;
+        padding: 2rem;
+      }
 
-        header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
+      header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
 
-        @keyframes hueShift {
-            from {
-                filter: hue-rotate(0deg);
-            }
-            to {
-                filter: hue-rotate(360deg);
-            }
+      @keyframes hueShift {
+        from {
+          filter: hue-rotate(0deg);
         }
+        to {
+          filter: hue-rotate(360deg);
+        }
+      }
 
+      h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        background: linear-gradient(45deg, var(--accent-color), #ff77ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: hueShift 10s linear infinite;
+      }
+
+      .webtoy-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .webtoy-card {
+        background: var(--card-bg);
+        border-radius: 15px;
+        padding: 2rem;
+        transition: all 0.3s ease;
+        text-align: center;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .webtoy-card:hover {
+        background: var(--hover-bg);
+        transform: translateY(-5px) scale(1.03);
+        box-shadow: 0 10px 25px rgba(0, 255, 170, 0.3);
+      }
+
+      .webtoy-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: var(--accent-color);
+      }
+
+      .webtoy-card p {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+
+      .webtoy-card a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .webtoy-card a:hover {
+        text-decoration: underline;
+      }
+
+      footer {
+        text-align: center;
+        margin-top: 3rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(5px);
+      }
+
+      .cursor,
+      .cursor-follower {
+        pointer-events: none;
+        position: fixed;
+        border-radius: 50%;
+        z-index: 9999;
+      }
+
+      .cursor {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--accent-color);
+        transition: all 0.1s ease;
+      }
+
+      .cursor-follower {
+        width: 40px;
+        height: 40px;
+        background: rgba(0, 255, 170, 0.2);
+        transition: all 0.3s ease;
+      }
+
+      @media (max-width: 768px) {
         h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, var(--accent-color), #ff77ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: hueShift 10s linear infinite;
+          font-size: 2rem;
         }
 
         .webtoy-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
+          grid-template-columns: 1fr;
         }
-
-        .webtoy-card {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 2rem;
-            transition: all 0.3s ease;
-            text-align: center;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .webtoy-card:hover {
-            background: var(--hover-bg);
-            transform: translateY(-5px) scale(1.03);
-            box-shadow: 0 10px 25px rgba(0, 255, 170, 0.3);
-        }
-
-        .webtoy-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: var(--accent-color);
-        }
-
-        .webtoy-card p {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        .webtoy-card a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .webtoy-card a:hover {
-            text-decoration: underline;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 3rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(5px);
-        }
-
-        .cursor, .cursor-follower {
-            pointer-events: none;
-            position: fixed;
-            border-radius: 50%;
-            z-index: 9999;
-        }
-
-        .cursor {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--accent-color);
-            transition: all 0.1s ease;
-        }
-
-        .cursor-follower {
-            width: 40px;
-            height: 40px;
-            background: rgba(0, 255, 170, 0.2);
-            transition: all 0.3s ease;
-        }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
-            }
-
-            .webtoy-container {
-                grid-template-columns: 1fr;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <canvas id="bg-canvas"></canvas>
     <div class="cursor"></div>
     <div class="cursor-follower"></div>
@@ -197,6 +205,18 @@
                 <h3><a href="words.html" target="_blank">Interactive Word Cloud</a></h3>
                 <p>Speak and watch the word cloud react and shift with your voice.</p>
             </div>
+            <div class="webtoy-card">
+                <h3><a href="cube-wave.html" target="_blank">Cube Wave</a></h3>
+                <p>A grid of cubes that rise and fall with your audio.</p>
+            </div>
+            <div class="webtoy-card">
+                <h3><a href="particle-orbit.html" target="_blank">Particle Orbit</a></h3>
+                <p>Thousands of particles swirling faster as the music intensifies.</p>
+            </div>
+            <div class="webtoy-card">
+                <h3><a href="spiral-burst.html" target="_blank">Spiral Burst</a></h3>
+                <p>Colorful spirals rotate and expand with every beat.</p>
+            </div>
         </main>
         <footer>
             <p>Curious about how these work? <a href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">Check out our open-source project.</a></p>
@@ -204,59 +224,70 @@
     </div>
 
     <script>
-        // Three.js background
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+      // Three.js background
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById('bg-canvas'),
+        alpha: true,
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x00ffaa,
+        wireframe: true,
+      });
+      const torusKnot = new THREE.Mesh(geometry, material);
+      scene.add(torusKnot);
+
+      camera.position.z = 30;
+
+      function animate() {
+        requestAnimationFrame(animate);
+        torusKnot.rotation.x += 0.01;
+        torusKnot.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // Custom cursor
+      const cursor = document.querySelector('.cursor');
+      const cursorFollower = document.querySelector('.cursor-follower');
+
+      document.addEventListener('mousemove', (e) => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+
+        setTimeout(() => {
+          cursorFollower.style.left = e.clientX + 'px';
+          cursorFollower.style.top = e.clientY + 'px';
+        }, 100);
+      });
+
+      // Hover effect for cards
+      document.querySelectorAll('.webtoy-card').forEach((card) => {
+        card.addEventListener('mouseenter', () => {
+          cursor.style.transform = 'scale(1.5)';
+          cursorFollower.style.transform = 'scale(1.5)';
+        });
+        card.addEventListener('mouseleave', () => {
+          cursor.style.transform = 'scale(1)';
+          cursorFollower.style.transform = 'scale(1)';
+        });
+      });
+
+      // Responsive canvas
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-
-        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ffaa, wireframe: true });
-        const torusKnot = new THREE.Mesh(geometry, material);
-        scene.add(torusKnot);
-
-        camera.position.z = 30;
-
-        function animate() {
-            requestAnimationFrame(animate);
-            torusKnot.rotation.x += 0.01;
-            torusKnot.rotation.y += 0.01;
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Custom cursor
-        const cursor = document.querySelector('.cursor');
-        const cursorFollower = document.querySelector('.cursor-follower');
-
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-            
-            setTimeout(() => {
-                cursorFollower.style.left = e.clientX + 'px';
-                cursorFollower.style.top = e.clientY + 'px';
-            }, 100);
-        });
-
-        // Hover effect for cards
-        document.querySelectorAll('.webtoy-card').forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                cursor.style.transform = 'scale(1.5)';
-                cursorFollower.style.transform = 'scale(1.5)';
-            });
-            card.addEventListener('mouseleave', () => {
-                cursor.style.transform = 'scale(1)';
-                cursorFollower.style.transform = 'scale(1)';
-            });
-        });
-
-        // Responsive canvas
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+      });
     </script>
-</body>
+  </body>
 </html>

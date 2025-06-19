@@ -1,127 +1,131 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Defrag Sound-Reactive Visualizer</title>
-    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/base.css" />
     <style>
-        body {
-            background-color: #000000; /* OLED black */
-            font-family: 'Courier New', monospace;
-            color: #00FF00; /* Old-school green text */
-        }
-        #defragText {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            z-index: 10;
-            font-size: 20px;
-        }
+      body {
+        background-color: #000000; /* OLED black */
+        font-family: 'Courier New', monospace;
+        color: #00ff00; /* Old-school green text */
+      }
+      #defragText {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        z-index: 10;
+        font-size: 20px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <canvas id="canvas"></canvas>
     <div id="defragText">Defragmenting Drive C:</div>
 
     <script type="module">
-        import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+      import {
+        initAudio,
+        getFrequencyData,
+      } from './assets/js/utils/audio-handler.js';
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
 
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+      });
 
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+      const rows = 30;
+      const cols = 40;
+      const blockWidth = canvas.width / cols;
+      const blockHeight = canvas.height / rows;
+      const blocks = [];
+      let idleAnimationTime = 0.0; // Idle state timer for defragmentation effects
+      let idleColorShift = 0;
+
+      // Initialize grid with random colors
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          blocks.push({
+            x: j * blockWidth,
+            y: i * blockHeight,
+            color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+            sizeModifier: 1.0,
+          });
+        }
+      }
+
+      let analyser;
+      let audioDataArray = [];
+      let idleState = true;
+
+      async function setupAudio() {
+        try {
+          const result = await initAudio({ fftSize: 64 });
+          analyser = result.analyser;
+          audioDataArray = result.dataArray;
+          getAudioData();
+        } catch (err) {
+          console.error('Error capturing audio: ', err);
+        }
+      }
+
+      function getAudioData() {
+        requestAnimationFrame(getAudioData);
+        audioDataArray = getFrequencyData(analyser);
+        idleState = audioDataArray.reduce((sum, value) => sum + value, 0) === 0; // Idle if all audio data is zero
+      }
+
+      function drawBlocks() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        blocks.forEach((block, index) => {
+          const frequency =
+            audioDataArray[index % audioDataArray.length] / 255.0; // Normalize frequency
+          block.sizeModifier = frequency * 2; // Adjust block size based on frequency data
+
+          if (idleState) {
+            // If idle, perform defragmentation-style rearrangement of blocks
+            idleAnimationTime += 0.005;
+            const idleEffect = Math.sin(idleAnimationTime + index * 0.1);
+            block.sizeModifier = 1.0 + idleEffect * 0.2; // Small fluctuations
+            block.color = `hsl(${(idleColorShift + index) % 360}, 100%, 50%)`; // Gradual color shift
+          } else {
+            const colorMod = Math.floor(frequency * 360); // Adjust block color based on frequency data
+            block.color = `hsl(${colorMod}, 100%, 50%)`;
+          }
+
+          const adjustedWidth = blockWidth * block.sizeModifier;
+          const adjustedHeight = blockHeight * block.sizeModifier;
+
+          ctx.fillStyle = block.color;
+          ctx.fillRect(block.x, block.y, adjustedWidth, adjustedHeight);
         });
 
-        const rows = 30;
-        const cols = 40;
-        const blockWidth = canvas.width / cols;
-        const blockHeight = canvas.height / rows;
-        const blocks = [];
-        let idleAnimationTime = 0.0; // Idle state timer for defragmentation effects
-        let idleColorShift = 0;
+        idleColorShift += 1; // Slow color shift during idle state
+      }
 
-        // Initialize grid with random colors
-        for (let i = 0; i < rows; i++) {
-            for (let j = 0; j < cols; j++) {
-                blocks.push({
-                    x: j * blockWidth,
-                    y: i * blockHeight,
-                    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                    sizeModifier: 1.0
-                });
-            }
+      function defragTextAnimation() {
+        const text = document.getElementById('defragText');
+        if (text.innerHTML.endsWith('...')) {
+          text.innerHTML = 'Defragmenting Drive C:';
+        } else {
+          text.innerHTML += '.';
         }
+      }
 
-        let analyser;
-        let audioDataArray = [];
-        let idleState = true;
+      function defragLoop() {
+        drawBlocks();
+        defragTextAnimation();
+        requestAnimationFrame(defragLoop);
+      }
 
-        async function setupAudio() {
-            try {
-                const result = await initAudio({ fftSize: 64 });
-                analyser = result.analyser;
-                audioDataArray = result.dataArray;
-                getAudioData();
-            } catch (err) {
-                console.error("Error capturing audio: ", err);
-            }
-        }
-
-        function getAudioData() {
-            requestAnimationFrame(getAudioData);
-            audioDataArray = getFrequencyData(analyser);
-            idleState = audioDataArray.reduce((sum, value) => sum + value, 0) === 0; // Idle if all audio data is zero
-        }
-
-        function drawBlocks() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            blocks.forEach((block, index) => {
-                const frequency = audioDataArray[index % audioDataArray.length] / 255.0; // Normalize frequency
-                block.sizeModifier = frequency * 2; // Adjust block size based on frequency data
-
-                if (idleState) {
-                    // If idle, perform defragmentation-style rearrangement of blocks
-                    idleAnimationTime += 0.005;
-                    const idleEffect = Math.sin(idleAnimationTime + index * 0.1);
-                    block.sizeModifier = 1.0 + idleEffect * 0.2; // Small fluctuations
-                    block.color = `hsl(${(idleColorShift + index) % 360}, 100%, 50%)`; // Gradual color shift
-                } else {
-                    const colorMod = Math.floor(frequency * 360); // Adjust block color based on frequency data
-                    block.color = `hsl(${colorMod}, 100%, 50%)`;
-                }
-
-                const adjustedWidth = blockWidth * block.sizeModifier;
-                const adjustedHeight = blockHeight * block.sizeModifier;
-
-                ctx.fillStyle = block.color;
-                ctx.fillRect(block.x, block.y, adjustedWidth, adjustedHeight);
-            });
-
-            idleColorShift += 1; // Slow color shift during idle state
-        }
-
-        function defragTextAnimation() {
-            const text = document.getElementById('defragText');
-            if (text.innerHTML.endsWith("...")) {
-                text.innerHTML = "Defragmenting Drive C:";
-            } else {
-                text.innerHTML += ".";
-            }
-        }
-
-        function defragLoop() {
-            drawBlocks();
-            defragTextAnimation();
-            requestAnimationFrame(defragLoop);
-        }
-
-        setupAudio();
-        defragLoop();
+      setupAudio();
+      defragLoop();
     </script>
-</body>
+  </body>
 </html>

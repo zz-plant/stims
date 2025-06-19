@@ -1,133 +1,194 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SVG + Three.js Visualizer</title>
-    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/base.css" />
     <style>
-        #overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            filter: url('#displacementFilter'); /* Apply CSS displacement filter */
-            mix-blend-mode: screen;
+      #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        filter: url('#displacementFilter'); /* Apply CSS displacement filter */
+        mix-blend-mode: screen;
+      }
+      @keyframes colorShift {
+        0% {
+          stop-color: rgb(0, 255, 153);
         }
-        @keyframes colorShift {
-            0% { stop-color: rgb(0, 255, 153); }
-            25% { stop-color: rgb(51, 51, 255); }
-            50% { stop-color: rgb(255, 20, 147); }
-            75% { stop-color: rgb(255, 140, 0); }
-            100% { stop-color: rgb(0, 255, 153); }
+        25% {
+          stop-color: rgb(51, 51, 255);
         }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 1; }
+        50% {
+          stop-color: rgb(255, 20, 147);
         }
+        75% {
+          stop-color: rgb(255, 140, 0);
+        }
+        100% {
+          stop-color: rgb(0, 255, 153);
+        }
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.8;
+        }
+        50% {
+          transform: scale(1.1);
+          opacity: 1;
+        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <!-- The SVG element for the CSS displacement map -->
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0">
-        <defs>
-            <filter id="displacementFilter">
-                <feTurbulence type="fractalNoise" baseFrequency="0.2" numOctaves="6" result="turbulence" />
-                <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="150" xChannelSelector="R" yChannelSelector="G"/>
-            </filter>
-        </defs>
+      <defs>
+        <filter id="displacementFilter">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.2"
+            numOctaves="6"
+            result="turbulence"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="turbulence"
+            scale="150"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </defs>
     </svg>
 
     <!-- Overlay for SVG filter application -->
     <div id="overlay">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50%" cy="50%" r="200" fill="url(#grad1)" style="animation: pulse 6s infinite alternate ease-in-out; filter: blur(4px);" />
-            <defs>
-                <radialGradient id="grad1" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                    <stop offset="0%" style="stop-color:rgb(255,255,255);stop-opacity:1; animation: colorShift 8s infinite alternate;" />
-                    <stop offset="100%" style="stop-color:rgb(0,0,0);stop-opacity:1" />
-                </radialGradient>
-            </defs>
-        </svg>
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <circle
+          cx="50%"
+          cy="50%"
+          r="200"
+          fill="url(#grad1)"
+          style="
+            animation: pulse 6s infinite alternate ease-in-out;
+            filter: blur(4px);
+          "
+        />
+        <defs>
+          <radialGradient
+            id="grad1"
+            cx="50%"
+            cy="50%"
+            r="50%"
+            fx="50%"
+            fy="50%"
+          >
+            <stop
+              offset="0%"
+              style="
+                stop-color: rgb(255, 255, 255);
+                stop-opacity: 1;
+                animation: colorShift 8s infinite alternate;
+              "
+            />
+            <stop
+              offset="100%"
+              style="stop-color: rgb(0, 0, 0); stop-opacity: 1"
+            />
+          </radialGradient>
+        </defs>
+      </svg>
     </div>
 
     <!-- Include Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.webgpu.min.js"></script>
-    
+
     <script>
-        // Set up the Three.js scene
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
+      // Set up the Three.js scene
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer({ alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Load a simple displacement geometry
+      const geometry = new THREE.SphereGeometry(5, 64, 64);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.7,
+        metalness: 0.3,
+      });
+      const sphere = new THREE.Mesh(geometry, material);
+      scene.add(sphere);
+
+      // Add lighting
+      const light = new THREE.PointLight(0xffffff, 1, 100);
+      light.position.set(10, 10, 10);
+      scene.add(light);
+
+      camera.position.z = 15;
+
+      // Handle window resize
+      window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      });
 
-        // Load a simple displacement geometry
-        const geometry = new THREE.SphereGeometry(5, 64, 64);
-        const material = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.7,
-            metalness: 0.3,
-        });
-        const sphere = new THREE.Mesh(geometry, material);
-        scene.add(sphere);
+      // Set up audio context and analyzer
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioCtx.createAnalyser();
+      const audio = new Audio('path-to-your-audio-file.mp3');
+      audio.crossOrigin = 'anonymous';
+      audio.loop = true;
 
-        // Add lighting
-        const light = new THREE.PointLight(0xffffff, 1, 100);
-        light.position.set(10, 10, 10);
-        scene.add(light);
+      const source = audioCtx.createMediaElementSource(audio);
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      analyser.fftSize = 256;
 
-        camera.position.z = 15;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-        });
+      audio.play();
 
-        // Set up audio context and analyzer
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const analyser = audioCtx.createAnalyser();
-        const audio = new Audio('path-to-your-audio-file.mp3');
-        audio.crossOrigin = "anonymous";
-        audio.loop = true;
+      // Main animation loop
+      function animate() {
+        requestAnimationFrame(animate);
 
-        const source = audioCtx.createMediaElementSource(audio);
-        source.connect(analyser);
-        analyser.connect(audioCtx.destination);
-        analyser.fftSize = 256;
+        // Get audio data
+        analyser.getByteFrequencyData(dataArray);
 
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
+        // Modify sphere displacement scale based on audio frequency
+        const displacementScale = dataArray[0] / 128;
 
-        audio.play();
+        // Modify CSS displacement filter scale based on audio data
+        const filterElement = document.querySelector(
+          '#displacementFilter feDisplacementMap'
+        );
+        filterElement.setAttribute('scale', displacementScale * 100);
 
-        // Main animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            // Get audio data
-            analyser.getByteFrequencyData(dataArray);
+        // Rotate the sphere for a more dynamic visual
+        sphere.rotation.x += 0.01;
+        sphere.rotation.y += 0.01;
 
-            // Modify sphere displacement scale based on audio frequency
-            const displacementScale = dataArray[0] / 128;
+        // Render the Three.js scene
+        renderer.render(scene, camera);
+      }
 
-            // Modify CSS displacement filter scale based on audio data
-            const filterElement = document.querySelector('#displacementFilter feDisplacementMap');
-            filterElement.setAttribute('scale', displacementScale * 100);
-
-            // Rotate the sphere for a more dynamic visual
-            sphere.rotation.x += 0.01;
-            sphere.rotation.y += 0.01;
-
-            // Render the Three.js scene
-            renderer.render(scene, camera);
-        }
-
-        animate();
+      animate();
     </script>
-</body>
+  </body>
 </html>
