@@ -76,7 +76,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
 
 ## Local Setup
 
-If you want to mess around with the toys locally, just clone the repo and open the HTML files in your browser. Here’s the quick setup:
+To explore the toys locally, clone the repo, install the dependencies, and serve the files from a simple web server:
 
 1. Clone the repository:
    ```bash
@@ -84,14 +84,17 @@ If you want to mess around with the toys locally, just clone the repo and open t
    cd stims
    ```
 
-2. Open any of the HTML files in your browser (e.g., `evol.html`, `index.html`).
+2. Install dependencies (including Three.js):
+   ```bash
+   npm install
+   ```
 
-3. Want to serve locally? Here’s a simple Python server:
+3. Serve the files locally. A quick way is with Python:
    ```bash
    python3 -m http.server
    ```
 
-   This will run everything locally at `http://localhost:8000`.
+   Then open your browser at `http://localhost:8000` and navigate to any of the HTML files (e.g., `evol.html`, `index.html`).
 
 ### Running Tests
 

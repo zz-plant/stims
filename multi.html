@@ -15,8 +15,8 @@
 <body>
     <canvas id="webglCanvas"></canvas>
     <script type="module">
-        import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.module.js';
-        import { WebGPURenderer } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.webgpu.min.js';
+        import * as THREE from './node_modules/three/build/three.module.js';
+        import { WebGPURenderer } from './node_modules/three/examples/jsm/renderers/webgpu/WebGPURenderer.js';
         import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
 
         let renderer, isWebGPUSupported = false;
