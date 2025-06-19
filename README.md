@@ -107,6 +107,21 @@ If you want to mess around with the toys locally, just clone the repo and open t
 
    This will run everything locally at `http://localhost:8000`.
 
+### Running Tests
+
+This project uses [Jest](https://jestjs.io/) for its test suite. To install
+dependencies and run the tests:
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Run the tests:
+   ```bash
+   npm test
+   ```
+
 ---
 
 ## License
