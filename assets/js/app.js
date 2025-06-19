@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { initScene } from './core/scene-setup.ts';
 import { initCamera } from './core/camera-setup.ts';
 import { initRenderer } from './core/renderer-setup.ts';
-import { initLighting, initAmbientLight } from './lighting/lighting-setup.js';
+import { initLighting, initAmbientLight } from './lighting/lighting-setup';
 import { initAudio, getFrequencyData } from './utils/audio-handler.ts';
 import {
   applyAudioRotation,

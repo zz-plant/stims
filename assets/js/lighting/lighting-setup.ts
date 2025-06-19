@@ -1,17 +1,30 @@
 import * as THREE from 'three';
 
+export interface LightConfig {
+  type?: 'DirectionalLight' | 'SpotLight' | 'HemisphereLight' | 'PointLight';
+  color?: number | string;
+  intensity?: number;
+  position?: { x: number; y: number; z: number };
+  castShadow?: boolean;
+}
+
+export interface AmbientLightConfig {
+  color?: number | string;
+  intensity?: number;
+}
+
 // Initialize a point light with configurable options
 export function initLighting(
-  scene,
-  config = {
-    type: 'PointLight', // Allow different types of lights
+  scene: THREE.Scene,
+  config: LightConfig = {
+    type: 'PointLight',
     color: 0xffffff,
     intensity: 1,
     position: { x: 10, y: 10, z: 10 },
-    castShadow: false, // Enable shadow support
+    castShadow: false,
   }
-) {
-  let light;
+): void {
+  let light: THREE.Light;
 
   switch (config.type) {
     case 'DirectionalLight':
@@ -60,9 +73,9 @@ export function initLighting(
 }
 
 export function initAmbientLight(
-  scene,
-  config = { color: 0x404040, intensity: 0.5 }
-) {
+  scene: THREE.Scene,
+  config: AmbientLightConfig = { color: 0x404040, intensity: 0.5 }
+): void {
   const ambientLight = new THREE.AmbientLight(config.color, config.intensity);
   scene.add(ambientLight);
 }

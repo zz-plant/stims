@@ -1,8 +1,15 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy.js';
-import { getFrequencyData } from '../utils/audio-handler.js';
+import WebToy from '../core/web-toy';
+import { getFrequencyData } from '../utils/audio-handler';
+import { LightConfig, AmbientLightConfig } from '../lighting/lighting-setup';
 
-let errorElement;
+interface ToyConfig {
+  cameraOptions?: Record<string, unknown>;
+  lightingOptions?: LightConfig;
+  ambientLightOptions?: AmbientLightConfig;
+}
+
+let errorElement: HTMLElement | null;
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 80 } },
@@ -13,11 +20,11 @@ const toy = new WebToy({
     position: { x: 20, y: 30, z: 20 },
   },
   ambientLightOptions: { color: 0x404040, intensity: 0.8 },
-});
+} as ToyConfig);
 
-let torusKnot, particles;
-const shapes = [];
-let analyser;
+let torusKnot: THREE.Mesh, particles: THREE.Points;
+const shapes: THREE.Mesh[] = [];
+let analyser: AnalyserNode | null;
 
 function createRandomShape() {
   const shapeType = Math.floor(Math.random() * 3);
