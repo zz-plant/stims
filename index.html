@@ -67,6 +67,26 @@
         animation: hueShift 10s linear infinite;
       }
 
+      #search-container {
+        text-align: center;
+        margin: 1rem 0 2rem;
+      }
+
+      #search-bar {
+        padding: 0.5rem 1rem;
+        width: 80%;
+        max-width: 400px;
+        border-radius: 4px;
+        border: 1px solid #444;
+        background: rgba(0, 0, 0, 0.6);
+        color: var(--text-color);
+      }
+
+      #search-bar:focus {
+        outline: none;
+        border-color: var(--accent-color);
+      }
+
       .webtoy-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -181,6 +201,9 @@
           Explore a collection of interactive visual experiences to engage your
           senses and spark creativity.
         </p>
+        <div id="search-container">
+          <input id="search-bar" type="text" placeholder="Search toys..." />
+        </div>
       </header>
       <main id="toy-list" class="webtoy-container"></main>
       <footer>
