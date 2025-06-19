@@ -32,6 +32,7 @@
     <script type="module">
         // Import the pattern recognition logic
         import PatternRecognizer from './assets/js/utils/patternRecognition.js';
+        import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
 
         const canvas = document.getElementById("glCanvas");
         const gl = canvas.getContext("webgl");
@@ -157,13 +158,8 @@
 
         async function setupAudio() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioContext = new AudioContext();
-                const source = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                source.connect(analyser);
-                // PatternRecognizer expects only the analyser instance
+                const result = await initAudio();
+                analyser = result.analyser;
                 patternRecognizer = new PatternRecognizer(analyser);
                 getAudioData();
             } catch (err) {
@@ -175,8 +171,7 @@
         function getAudioData() {
             requestAnimationFrame(getAudioData);
             if (analyser) {
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(dataArray);
+                const dataArray = getFrequencyData(analyser);
                 const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
                 audioData = average / 128.0;
                 updateSpectrograph(dataArray);

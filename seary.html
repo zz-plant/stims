@@ -22,7 +22,8 @@
         <option value="mic">Microphone</option>
         <option value="device">Device Audio</option>
     </select>
-    <script>
+    <script type="module">
+        import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.js';
         // Fallback to WebGL
         const canvas = document.getElementById('gpuCanvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -177,6 +178,7 @@
 
         // Audio setup for beat detection and frequency analysis
         let audioContext, analyser, source;
+        let bufferLength, dataArray;
         const audioSelect = document.getElementById('audioSelect');
 
         audioSelect.addEventListener('change', initializeAudio);
@@ -189,10 +191,14 @@
 
             navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-
                 if (audioSelect.value === 'mic') {
-                    source = audioContext.createMediaStreamSource(stream);
+                    initAudio().then(({ analyser: a, dataArray: d }) => {
+                        analyser = a;
+                        source = audioContext.createMediaStreamSource(stream);
+                        source.connect(analyser);
+                        startProcessing(d);
+                    });
+                    return;
                 } else {
                     // Use the audio context's `createMediaElementSource` to capture device audio
                     const audioElement = new Audio();
@@ -201,11 +207,12 @@
                     source.connect(audioContext.destination); // To allow playback
                     audioElement.play();
                 }
-
-                source.connect(analyser);
+                analyser = audioContext.createAnalyser();
                 analyser.fftSize = 256;
+                source.connect(analyser);
                 const bufferLength = analyser.frequencyBinCount;
                 const dataArray = new Uint8Array(bufferLength);
+                startProcessing(dataArray);
 
                 let lastVibrateTime = 0;
 
@@ -269,8 +276,14 @@
                     }
                 }
 
+                function startProcessing(arr) {
+                    dataArray = arr;
+                    bufferLength = analyser.frequencyBinCount;
+                    updateAudioData();
+                }
+
                 function updateAudioData() {
-                    analyser.getByteFrequencyData(dataArray);
+                    dataArray = getFrequencyData(analyser);
                     const lowFreq = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
                     const midFreq = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
                     const highFreq = dataArray.slice(2 * bufferLength / 3, bufferLength).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
