@@ -23,7 +23,7 @@ function setupDarkModeToggle() {
   });
 }
 
-async function createCard(toy) {
+function createCard(toy) {
   const card = document.createElement('div');
   card.className = 'webtoy-card';
   const title = document.createElement('h3');
