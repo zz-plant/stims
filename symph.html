@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -38,9 +38,26 @@
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const ctx2d = canvas.getContext('2d');
+      const errorEl = document.getElementById('error-message');
+
+      function showError(message) {
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.style.display = 'block';
+        }
+      }
+
+      function hideError() {
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
+      }
 
       if (!gl) {
-        alert('Unable to initialize WebGL. Your browser may not support it.');
+        showError(
+          'Unable to initialize WebGL. Your browser may not support it.'
+        );
         throw new Error('WebGL not supported');
       }
 
@@ -181,6 +198,7 @@
         try {
           const { analyser: a } = await initAudio();
           analyser = a;
+          hideError();
           getAudioData();
         } catch (err) {
           showError(

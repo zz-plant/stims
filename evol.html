@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -28,10 +28,21 @@
         display: block;
         margin-bottom: 5px;
       }
+      #error-message {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: #ff0000;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10;
+      }
     </style>
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
+    <div id="error-message" style="display: none"></div>
     <canvas id="glCanvas"></canvas>
     <div id="controls">
       <label>
@@ -53,9 +64,26 @@
       } from './assets/js/utils/audio-handler.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
+      const errorEl = document.getElementById('error-message');
+
+      function showError(message) {
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.style.display = 'block';
+        }
+      }
+
+      function hideError() {
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
+      }
 
       if (!gl) {
-        alert('Unable to initialize WebGL. Your browser may not support it.');
+        showError(
+          'Unable to initialize WebGL. Your browser may not support it.'
+        );
         throw new Error('WebGL not supported');
       }
 
@@ -208,9 +236,13 @@
         try {
           const result = await initAudio();
           analyser = result.analyser;
+          hideError();
           getAudioData();
         } catch (err) {
           console.error('Error capturing audio: ', err);
+          showError(
+            'Unable to access the microphone. Please allow microphone permissions and reload the page.'
+          );
         }
       }
 
