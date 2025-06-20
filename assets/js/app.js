@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { initScene } from './core/scene-setup.ts';
 import { initCamera } from './core/camera-setup.ts';
 import { initRenderer } from './core/renderer-setup.ts';
+import { ensureWebGL } from './utils/webgl-check.ts';
 import { initLighting, initAmbientLight } from './lighting/lighting-setup';
 import { initAudio, getFrequencyData } from './utils/audio-handler.ts';
 import {
@@ -14,7 +15,9 @@ let scene, camera, renderer, cube, analyser, patternRecognizer;
 let currentLightType = 'PointLight'; // Default light type
 
 function initVisualization() {
-  // Clean up previous renderer and scene to prevent GPU memory leaks
+  if (!ensureWebGL()) {
+    return;
+  }
   if (renderer) {
     renderer.dispose();
   }

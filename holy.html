@@ -232,6 +232,10 @@
       import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
       import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
       import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
+      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      if (!ensureWebGL()) {
+        return;
+      }
       let scene, camera, renderer, composer, bloomPass, fxaaPass;
       let visualizerShape, particles;
       let audioContext, audioAnalyser, dataArray;
