@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -113,10 +113,21 @@
           font-size: 1.5vw;
         }
       }
+      #error-message {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: #ff0000;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10;
+      }
     </style>
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
+    <div id="error-message" style="display: none"></div>
     <div class="controls">
       <button id="start-button">Start Microphone</button>
       <label for="sensitivity">Beat Sensitivity:</label>
@@ -161,6 +172,22 @@
       let sensitivity = parseFloat(sensitivitySlider.value);
       let wordIndex = 0;
       let cyclingActive = true;
+
+      const errorEl = document.getElementById('error-message');
+
+      function showError(message) {
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.style.display = 'block';
+        }
+      }
+
+      function hideError() {
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
+      }
 
       const gridElement = document.getElementById('grid');
       let words = [];
@@ -328,12 +355,14 @@
             micStream.connect(analyser);
             isMicrophoneEnabled = true;
 
+            hideError();
+
             startButton.textContent = 'Microphone Active';
             startButton.disabled = true;
             render(); // Start the visualizer
           })
           .catch((err) => {
-            alert(
+            showError(
               'Microphone access denied. Please allow microphone access to enable the visualizer.'
             );
           });
@@ -433,7 +462,7 @@
       }
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert(
+        showError(
           'Your browser does not support microphone access. Please update to a modern browser.'
         );
       }
