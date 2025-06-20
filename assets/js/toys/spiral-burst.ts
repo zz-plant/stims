@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import { getFrequencyData } from '../utils/audio-handler';
@@ -17,7 +16,7 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const lines: THREE.Line[] = [];
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const { scene } = toy;
@@ -27,10 +26,14 @@ function init() {
     for (let j = 0; j < 30; j++) {
       const angle = j * 0.2 + i * 0.1;
       const radius = j * 0.5 + i;
-      points.push(new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, j));
+      points.push(
+        new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, j)
+      );
     }
     geometry.setFromPoints(points);
-    const material = new THREE.LineBasicMaterial({ color: Math.random() * 0xffffff });
+    const material = new THREE.LineBasicMaterial({
+      color: Math.random() * 0xffffff,
+    });
     const line = new THREE.Line(geometry, material);
     scene.add(line);
     lines.push(line);
@@ -41,14 +44,13 @@ async function startAudio() {
   try {
     await toy.initAudio();
     analyser = toy.analyser;
-    animate();
+    toy.renderer.setAnimationLoop(animate);
   } catch (e) {
     console.error('Microphone access denied', e);
   }
 }
 
 function animate() {
-  requestAnimationFrame(animate);
   const data = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
   const avg = data.length ? data.reduce((a, b) => a + b, 0) / data.length : 0;
   const binsPerLine = data.length / lines.length;

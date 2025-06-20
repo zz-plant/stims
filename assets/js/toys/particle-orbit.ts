@@ -20,7 +20,7 @@ const toy = new WebToy({
 
 let particles: THREE.Points;
 let particlesMaterial: THREE.PointsMaterial;
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const scene = toy.scene;
@@ -30,7 +30,10 @@ function init() {
   for (let i = 0; i < count * 3; i++) {
     positions[i] = (Math.random() - 0.5) * 80;
   }
-  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particlesGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(positions, 3)
+  );
   particlesMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 });
   particles = new THREE.Points(particlesGeometry, particlesMaterial);
   scene.add(particles);
@@ -40,14 +43,13 @@ async function startAudio() {
   try {
     await toy.initAudio({ fftSize: 256 });
     analyser = toy.analyser;
-    animate();
+    toy.renderer.setAnimationLoop(animate);
   } catch (e) {
     console.error('Microphone access denied', e);
   }
 }
 
 function animate() {
-  requestAnimationFrame(animate);
   const data = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
   const avg = data.length ? data.reduce((a, b) => a + b, 0) / data.length : 0;
   const rotationSpeed = 0.001 + avg / 100000;

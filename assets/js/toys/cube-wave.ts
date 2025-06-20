@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import { getFrequencyData } from '../utils/audio-handler';
@@ -20,7 +19,7 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const cubes: THREE.Mesh[] = [];
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const { scene } = toy;
@@ -43,14 +42,13 @@ async function startAudio() {
   try {
     await toy.initAudio({ fftSize: 128 });
     analyser = toy.analyser;
-    animate();
+    toy.renderer.setAnimationLoop(animate);
   } catch (e) {
     console.error('Microphone access denied', e);
   }
 }
 
 function animate() {
-  requestAnimationFrame(animate);
   const dataArray = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
   const avg = dataArray.length
     ? dataArray.reduce((a, b) => a + b, 0) / dataArray.length

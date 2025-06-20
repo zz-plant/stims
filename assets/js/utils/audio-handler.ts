@@ -1,24 +1,27 @@
-export async function initAudio(options: { fftSize?: number } = {}) {
-  const { fftSize = 256 } = options;
+import * as THREE from 'three';
+
+export async function initAudio(
+  options: { fftSize?: number; camera?: THREE.Camera } = {}
+) {
+  const { fftSize = 256, camera } = options;
   try {
-    const audioContext = new AudioContext();
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = fftSize;
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    const listener = new THREE.AudioListener();
+    if (camera) {
+      camera.add(listener);
+    }
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const audioSource = audioContext.createMediaStreamSource(stream);
-    audioSource.connect(analyser);
+    const audio = new THREE.Audio(listener);
+    audio.setMediaStreamSource(stream);
+    const analyser = new THREE.AudioAnalyser(audio, fftSize);
 
-    return { analyser, dataArray, audioContext, stream };
+    return { analyser, listener, audio, stream };
   } catch (error) {
     console.error('Error accessing audio:', error);
     throw new Error('Microphone access was denied.');
   }
 }
 
-export function getFrequencyData(analyser: AnalyserNode) {
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(dataArray);
-  return dataArray;
+export function getFrequencyData(analyser: THREE.AudioAnalyser) {
+  return analyser.getFrequencyData();
 }

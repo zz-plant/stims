@@ -172,7 +172,6 @@
 
       // Animation loop
       function animate() {
-        requestAnimationFrame(animate);
 
         let bass = 0;
         if (analyser) {
@@ -222,7 +221,7 @@
         renderer.render(scene, camera);
       }
 
-      animate();
+      renderer.setAnimationLoop(animate);
 
       // Handle window resizing
       window.addEventListener('resize', () => {

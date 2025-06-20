@@ -16,7 +16,7 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const rings: THREE.Mesh[] = [];
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
@@ -35,14 +35,13 @@ async function startAudio() {
   try {
     await toy.initAudio();
     analyser = toy.analyser;
-    animate();
+    toy.renderer.setAnimationLoop(animate);
   } catch (e) {
     console.error('Microphone access denied', e);
   }
 }
 
 function animate() {
-  requestAnimationFrame(animate);
   const data = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
   const avg = data.length ? data.reduce((a, b) => a + b, 0) / data.length : 0;
   rings.forEach((ring, idx) => {
