@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <title>Microphone Input Music Visualizer</title>
@@ -19,6 +19,16 @@
         font-size: 16px;
         cursor: pointer;
       }
+      #error-message {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: #ff0000;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10;
+      }
     </style>
   </head>
   <body>
@@ -26,6 +36,7 @@
     <div id="controls">
       <button id="startButton">Start Microphone Visualizer</button>
     </div>
+    <div id="error-message" style="display: none"></div>
     <canvas id="gameCanvas"></canvas>
     <script>
       // Get the canvas and context
@@ -38,7 +49,22 @@
 
       // Audio setup
       const startButton = document.getElementById('startButton');
+      const errorEl = document.getElementById('error-message');
       let audioContext, analyzer, source, frequencyData;
+
+      function showError(message) {
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.style.display = 'block';
+        }
+      }
+
+      function hideError() {
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
+      }
 
       startButton.addEventListener('click', function () {
         // Disable the button after starting
@@ -53,11 +79,12 @@
           })
           .catch(function (err) {
             console.error('Error accessing microphone:', err);
-            alert('Error accessing microphone: ' + err.message);
+            showError('Error accessing microphone: ' + err.message);
           });
       });
 
       function setupAudioContext(stream) {
+        hideError();
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyzer = audioContext.createAnalyser();
         source = audioContext.createMediaStreamSource(stream);
