@@ -3,6 +3,7 @@ import { initCamera } from './camera-setup.ts';
 import { initRenderer } from './renderer-setup.ts';
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
 import { initAudio } from '../utils/audio-handler.ts';
+import { ensureWebGL } from '../utils/webgl-check.ts';
 
 export default class WebToy {
   constructor({
@@ -13,6 +14,10 @@ export default class WebToy {
     ambientLightOptions = null,
     canvas = null,
   } = {}) {
+    if (!ensureWebGL()) {
+      throw new Error('WebGL not supported');
+    }
+
     this.canvas = canvas || document.createElement('canvas');
     document.body.appendChild(this.canvas);
 

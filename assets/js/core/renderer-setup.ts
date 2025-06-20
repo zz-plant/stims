@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import WebGPURenderer from 'three/addons/renderers/webgpu/WebGPURenderer.js';
+import { ensureWebGL } from '../utils/webgl-check.ts';
 
 export function initRenderer(
   canvas,
@@ -8,6 +9,10 @@ export function initRenderer(
     exposure: 1,
   }
 ) {
+  if (!ensureWebGL()) {
+    return null;
+  }
+
   let renderer;
   if (navigator.gpu) {
     renderer = new WebGPURenderer({ canvas, antialias: config.antialias });
