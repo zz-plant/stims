@@ -28,6 +28,8 @@ export default class WebToy {
     }
 
     this.analyser = null;
+    this.audioListener = null;
+    this.audio = null;
     window.addEventListener('resize', () => this.handleResize());
   }
 
@@ -38,8 +40,10 @@ export default class WebToy {
   }
 
   async initAudio(options = {}) {
-    const audio = await initAudio(options);
+    const audio = await initAudio({ ...options, camera: this.camera });
     this.analyser = audio.analyser;
+    this.audioListener = audio.listener;
+    this.audio = audio.audio;
     return audio;
   }
 
