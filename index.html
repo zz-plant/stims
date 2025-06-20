@@ -26,13 +26,14 @@
     <div class="cursor"></div>
     <div class="cursor-follower"></div>
     <div class="content">
-      <header>
+      <header class="hero">
         <button id="theme-toggle" class="theme-toggle">Dark Mode</button>
         <h1>Stim Webtoys Library</h1>
-        <p>
+        <p class="tagline">
           Explore a collection of interactive visual experiences to engage your
           senses and spark creativity.
         </p>
+        <a href="#toy-list" class="cta-button">Browse Toys</a>
       </header>
       <main id="toy-list" class="webtoy-container"></main>
       <footer>
@@ -51,6 +52,10 @@
 
     <script type="module">
       import * as THREE from 'three';
+      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      if (!ensureWebGL()) {
+        return;
+      }
       // Three.js background
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
