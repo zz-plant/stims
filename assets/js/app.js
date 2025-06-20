@@ -18,6 +18,28 @@ function initVisualization() {
   if (!ensureWebGL()) {
     return;
   }
+  if (renderer) {
+    renderer.dispose();
+  }
+
+  if (scene) {
+    scene.traverse((object) => {
+      if (object.isMesh) {
+        if (object.geometry) object.geometry.dispose();
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach((mat) => mat.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      }
+    });
+    while (scene.children.length > 0) {
+      scene.remove(scene.children[0]);
+    }
+  }
+
   scene = initScene();
   camera = initCamera();
   const canvas = document.getElementById('toy-canvas');
