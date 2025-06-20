@@ -1,6 +1,7 @@
+import toysData from './toys-data.js';
+
 export async function loadToy(slug) {
-  const res = await fetch('assets/data/toys.json');
-  const toys = await res.json();
+  const toys = toysData;
   const toy = toys.find((t) => t.slug === slug);
   if (!toy) {
     console.error(`Toy not found: ${slug}`);

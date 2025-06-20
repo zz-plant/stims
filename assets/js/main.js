@@ -1,4 +1,5 @@
 import { loadToy, loadFromQuery } from './loader.js';
+import toysData from './toys-data.js';
 
 let allToys = [];
 
@@ -82,8 +83,7 @@ function openToy(toy) {
 }
 
 async function init() {
-  const res = await fetch('assets/data/toys.json');
-  allToys = await res.json();
+  allToys = toysData;
   renderToys(allToys);
 
   setupDarkModeToggle();
