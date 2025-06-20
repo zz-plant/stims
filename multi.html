@@ -140,11 +140,9 @@
 
       // Audio input setup
       let analyser;
-      let dataArray;
       initAudio()
-        .then(({ analyser: a, dataArray: d }) => {
+        .then(({ analyser: a }) => {
           analyser = a;
-          dataArray = d;
         })
         .catch(function (err) {
           console.error('The following error occurred: ' + err);
@@ -159,7 +157,7 @@
       // Animation loop
       function animate() {
         if (analyser) {
-          dataArray = getFrequencyData(analyser);
+          const dataArray = getFrequencyData(analyser);
           const avgFrequency =
             dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
 
