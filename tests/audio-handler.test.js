@@ -8,13 +8,17 @@ import {
 
 describe('audio-handler utilities', () => {
   beforeEach(() => {
-    const mockAnalyser = {
+    const mockAnalyserNode = {
       frequencyBinCount: 128,
       getByteFrequencyData: jest.fn(),
+      connect: jest.fn(),
     };
     const mockSource = { connect: jest.fn() };
 
-    originalNavigatorDesc = Object.getOwnPropertyDescriptor(global, 'navigator');
+    originalNavigatorDesc = Object.getOwnPropertyDescriptor(
+      global,
+      'navigator'
+    );
     Object.defineProperty(global, 'navigator', {
       configurable: true,
       writable: true,
@@ -24,12 +28,14 @@ describe('audio-handler utilities', () => {
         },
       },
     });
+
     global.window = global.window || {};
     global.window.navigator = global.navigator;
-
-    global.AudioContext = jest.fn(() => ({
-      createAnalyser: jest.fn(() => mockAnalyser),
+    global.window.AudioContext = jest.fn(() => ({
+      createAnalyser: jest.fn(() => mockAnalyserNode),
       createMediaStreamSource: jest.fn(() => mockSource),
+      createGain: jest.fn(() => ({ connect: jest.fn() })),
+      destination: {},
     }));
   });
 
@@ -44,15 +50,14 @@ describe('audio-handler utilities', () => {
     if (global.window) {
       delete global.window.navigator;
     }
-    delete global.AudioContext;
+    delete global.window.AudioContext;
   });
 
-  test('initAudio resolves with analyser and data array', async () => {
-    const { analyser, dataArray, audioContext, stream } = await initAudio();
+  test('initAudio resolves with analyser and listener', async () => {
+    const { analyser, listener, audio, stream } = await initAudio();
     expect(analyser).toBeDefined();
-    expect(dataArray).toBeInstanceOf(Uint8Array);
-    expect(dataArray.length).toBe(analyser.frequencyBinCount);
-    expect(audioContext).toBeDefined();
+    expect(listener).toBeDefined();
+    expect(audio).toBeDefined();
     expect(stream).toBeDefined();
   });
 
@@ -61,15 +66,14 @@ describe('audio-handler utilities', () => {
   });
 
   test('getFrequencyData returns array of the expected length', () => {
+    const data = new Uint8Array(64);
     const analyser = {
-      frequencyBinCount: 64,
-      getByteFrequencyData: jest.fn((arr) => arr.fill(1)),
+      getFrequencyData: jest.fn(() => data),
     };
 
     const result = getFrequencyData(analyser);
 
-    expect(result).toBeInstanceOf(Uint8Array);
-    expect(result.length).toBe(64);
-    expect(analyser.getByteFrequencyData).toHaveBeenCalled();
+    expect(result).toBe(data);
+    expect(analyser.getFrequencyData).toHaveBeenCalled();
   });
 });
