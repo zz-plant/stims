@@ -69,17 +69,9 @@
         try {
           const result = await initAudio({ fftSize: 64 });
           analyser = result.analyser;
-          audioDataArray = result.dataArray;
-          getAudioData();
         } catch (err) {
           console.error('Error capturing audio: ', err);
         }
-      }
-
-      function getAudioData() {
-        requestAnimationFrame(getAudioData);
-        audioDataArray = getFrequencyData(analyser);
-        idleState = audioDataArray.reduce((sum, value) => sum + value, 0) === 0; // Idle if all audio data is zero
       }
 
       function drawBlocks() {
@@ -120,6 +112,11 @@
       }
 
       function defragLoop() {
+        if (analyser) {
+          audioDataArray = getFrequencyData(analyser);
+          idleState =
+            audioDataArray.reduce((sum, value) => sum + value, 0) === 0;
+        }
         drawBlocks();
         defragTextAnimation();
         requestAnimationFrame(defragLoop);
