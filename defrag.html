@@ -23,6 +23,7 @@
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <canvas id="canvas"></canvas>
+    <div id="error-message" style="display: none"></div>
     <div id="defragText">Defragmenting Drive C:</div>
 
     <script type="module">
@@ -32,6 +33,14 @@
       } from './assets/js/utils/audio-handler.ts';
       const canvas = document.getElementById('canvas');
       const ctx = canvas.getContext('2d');
+      function displayError(message) {
+        const el = document.getElementById("error-message");
+        if (el) {
+          el.innerText = message;
+          el.style.display = "block";
+        }
+      }
+
 
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -71,6 +80,7 @@
           analyser = result.analyser;
         } catch (err) {
           console.error('Error capturing audio: ', err);
+          displayError('Microphone access is required for the visualization to work. Please allow microphone access.');
         }
       }
 
