@@ -50,6 +50,10 @@
     </div>
     <script type="module">
       import * as THREE from 'three';
+      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      if (!ensureWebGL()) {
+        return;
+      }
       // Basic Three.js setup
       let scene, camera, renderer;
       let potteryMesh, wheelMesh;

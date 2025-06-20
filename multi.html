@@ -20,6 +20,10 @@
     <script type="module">
       import * as THREE from 'three';
       import { WebGPURenderer } from 'three/addons/renderers/webgpu/WebGPURenderer.js';
+      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      if (!ensureWebGL()) {
+        return;
+      }
       import {
         initAudio,
         getFrequencyData,

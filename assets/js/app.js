@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { initScene } from './core/scene-setup.ts';
 import { initCamera } from './core/camera-setup.ts';
 import { initRenderer } from './core/renderer-setup.ts';
+import { ensureWebGL } from './utils/webgl-check.ts';
 import { initLighting, initAmbientLight } from './lighting/lighting-setup';
 import { initAudio, getFrequencyData } from './utils/audio-handler.ts';
 import {
@@ -14,6 +15,31 @@ let scene, camera, renderer, cube, analyser, patternRecognizer;
 let currentLightType = 'PointLight'; // Default light type
 
 function initVisualization() {
+  if (!ensureWebGL()) {
+    return;
+  }
+  if (renderer) {
+    renderer.dispose();
+  }
+
+  if (scene) {
+    scene.traverse((object) => {
+      if (object.isMesh) {
+        if (object.geometry) object.geometry.dispose();
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach((mat) => mat.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      }
+    });
+    while (scene.children.length > 0) {
+      scene.remove(scene.children[0]);
+    }
+  }
+
   scene = initScene();
   camera = initCamera();
   const canvas = document.getElementById('toy-canvas');
