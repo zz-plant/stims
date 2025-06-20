@@ -1,6 +1,7 @@
 import { loadToy, loadFromQuery } from './loader.js';
 
 let allToys = [];
+let sortedToys = [];
 
 function setupDarkModeToggle() {
   const btn = document.getElementById('theme-toggle');
@@ -32,13 +33,7 @@ async function createCard(toy) {
   card.appendChild(title);
   card.appendChild(desc);
 
-  card.addEventListener('click', () => {
-    if (toy.module.endsWith('.js') || toy.module.endsWith('.ts')) {
-      loadToy(toy.slug);
-    } else {
-      window.location.href = toy.module;
-    }
-  });
+  card.addEventListener('click', () => openToy(toy));
 
   return card;
 }
@@ -52,7 +47,7 @@ function renderToys(toys) {
 
 function filterToys(query) {
   const search = query.toLowerCase();
-  const filtered = allToys.filter(
+  const filtered = sortedToys.filter(
     (t) =>
       t.title.toLowerCase().includes(search) ||
       t.description.toLowerCase().includes(search)
@@ -60,13 +55,47 @@ function filterToys(query) {
   renderToys(filtered);
 }
 
+function applySort(mode) {
+  if (mode === 'alpha') {
+    sortedToys = [...allToys].sort((a, b) => a.title.localeCompare(b.title));
+  } else if (mode === 'random') {
+    sortedToys = [...allToys];
+    for (let i = sortedToys.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [sortedToys[i], sortedToys[j]] = [sortedToys[j], sortedToys[i]];
+    }
+  } else {
+    sortedToys = [...allToys];
+  }
+  renderToys(sortedToys);
+}
+
+function openToy(toy) {
+  if (toy.module.endsWith('.js') || toy.module.endsWith('.ts')) {
+    loadToy(toy.slug);
+  } else {
+    window.location.href = toy.module;
+  }
+}
+
 async function init() {
   const res = await fetch('assets/data/toys.json');
   allToys = await res.json();
-  renderToys(allToys);
+  sortedToys = [...allToys];
+  renderToys(sortedToys);
 
   const search = document.getElementById('search-bar');
   search?.addEventListener('input', (e) => filterToys(e.target.value));
+
+  const sort = document.getElementById('sort-select');
+  sort?.addEventListener('change', (e) => applySort(e.target.value));
+
+  const randomBtn = document.getElementById('random-btn');
+  randomBtn?.addEventListener('click', () => {
+    const randomToy = allToys[Math.floor(Math.random() * allToys.length)];
+    if (randomToy) openToy(randomToy);
+  });
+
   setupDarkModeToggle();
   await loadFromQuery();
 }
