@@ -9,6 +9,7 @@
     <a href="index.html" class="home-link">Back to Library</a>
     <script type="module">
       import * as THREE from 'three';
+      import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
       import {
         initAudio,
         getFrequencyData,
@@ -69,59 +70,95 @@
       ground.position.y = -1.5;
       scene.add(ground);
 
-      // Function to create procedural elements
-      const scenery = [];
-      function createElement(type, x, z) {
-        let element;
-        const scaleFactor = Math.random() * 1.5 + 2;
-        switch (type) {
-          case 'building':
-            element = new THREE.Mesh(
-              new THREE.BoxGeometry(1, scaleFactor, 1),
-              new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
-            );
-            break;
-          case 'tree':
-            const trunk = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.1, 0.1, 1),
-              new THREE.MeshLambertMaterial({ color: 0x8b4513 })
-            );
-            const leaves = new THREE.Mesh(
-              new THREE.ConeGeometry(0.5, 1.5, 8),
-              new THREE.MeshLambertMaterial({ color: 0x228b22 })
-            );
-            leaves.position.set(0, 0.5, 0);
-            element = new THREE.Group();
-            element.add(trunk);
-            element.add(leaves);
-            break;
-          case 'pole':
-            element = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.1, 0.1, 5),
-              new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
-            );
-            break;
-          default:
-            element = new THREE.Mesh(
-              new THREE.SphereGeometry(1, 32, 32),
-              new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff })
-            );
-            break;
-        }
-        element.position.set(x, 0, z);
-        scenery.push(element);
-        scene.add(element);
-      }
-
-      // Populate scenery with varied elements
+      // Generate random element data
+      const elements = [];
+      const types = ['building', 'tree', 'pole'];
       for (let i = 0; i < 100; i++) {
         const z = -Math.random() * 300;
         const side = Math.random() > 0.5 ? 1 : -1;
         const x = side * (Math.random() * 10 + 5);
-        const types = ['building', 'tree', 'pole'];
-        const randomType = types[Math.floor(Math.random() * types.length)];
-        createElement(randomType, x, z);
+        const type = types[Math.floor(Math.random() * types.length)];
+        elements.push({ type, x, z, scale: Math.random() * 1.5 + 2 });
       }
+
+      const buildingData = elements.filter((e) => e.type === 'building');
+      const treeData = elements.filter((e) => e.type === 'tree');
+      const poleData = elements.filter((e) => e.type === 'pole');
+
+      // Building instanced mesh
+      const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
+      const buildingMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+      const buildingMesh = new THREE.InstancedMesh(
+        buildingGeo,
+        buildingMat,
+        buildingData.length
+      );
+      buildingMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      buildingMesh.instanceColor = new THREE.InstancedBufferAttribute(
+        new Float32Array(buildingData.length * 3),
+        3
+      );
+      scene.add(buildingMesh);
+
+      // Tree instanced mesh using merged geometry
+      const trunkGeo = new THREE.CylinderGeometry(0.1, 0.1, 1);
+      const leavesGeo = new THREE.ConeGeometry(0.5, 1.5, 8);
+      leavesGeo.translate(0, 0.5, 0);
+      const trunkColor = new THREE.Color(0x8b4513);
+      const trunkColors = new Float32Array(trunkGeo.attributes.position.count * 3);
+      for (let i = 0; i < trunkColors.length; i += 3) {
+        trunkColors[i] = trunkColor.r;
+        trunkColors[i + 1] = trunkColor.g;
+        trunkColors[i + 2] = trunkColor.b;
+      }
+      trunkGeo.setAttribute('color', new THREE.BufferAttribute(trunkColors, 3));
+      const leavesColor = new THREE.Color(0x228b22);
+      const leavesColors = new Float32Array(leavesGeo.attributes.position.count * 3);
+      for (let i = 0; i < leavesColors.length; i += 3) {
+        leavesColors[i] = leavesColor.r;
+        leavesColors[i + 1] = leavesColor.g;
+        leavesColors[i + 2] = leavesColor.b;
+      }
+      leavesGeo.setAttribute('color', new THREE.BufferAttribute(leavesColors, 3));
+      const treeGeo = BufferGeometryUtils.mergeBufferGeometries([trunkGeo, leavesGeo]);
+      const treeMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+      const treeMesh = new THREE.InstancedMesh(treeGeo, treeMat, treeData.length);
+      treeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      scene.add(treeMesh);
+
+      // Pole instanced mesh
+      const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 5);
+      const poleMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+      const poleMesh = new THREE.InstancedMesh(poleGeo, poleMat, poleData.length);
+      poleMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      scene.add(poleMesh);
+
+      const dummy = new THREE.Object3D();
+      buildingData.forEach((d, i) => {
+        dummy.position.set(d.x, 0, d.z);
+        dummy.scale.set(1, d.scale, 1);
+        dummy.updateMatrix();
+        buildingMesh.setMatrixAt(i, dummy.matrix);
+        const color = new THREE.Color(Math.random() * 0xffffff);
+        buildingMesh.instanceColor.setXYZ(i, color.r, color.g, color.b);
+      });
+      buildingMesh.instanceMatrix.needsUpdate = true;
+      buildingMesh.instanceColor.needsUpdate = true;
+
+      treeData.forEach((d, i) => {
+        dummy.position.set(d.x, 0, d.z);
+        dummy.scale.setScalar(d.scale / 3);
+        dummy.updateMatrix();
+        treeMesh.setMatrixAt(i, dummy.matrix);
+      });
+      treeMesh.instanceMatrix.needsUpdate = true;
+
+      poleData.forEach((d, i) => {
+        dummy.position.set(d.x, 0, d.z);
+        dummy.updateMatrix();
+        poleMesh.setMatrixAt(i, dummy.matrix);
+      });
+      poleMesh.instanceMatrix.needsUpdate = true;
 
       // Audio setup using shared utility
       let analyser;
@@ -144,14 +181,43 @@
         }
 
         const speed = 0.5 + bass / 100;
-        scenery.forEach((obj) => {
-          obj.position.z += speed;
-          if (obj.position.z > 5) {
-            obj.position.z -= 300;
-            obj.position.x =
-              (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 5);
+        buildingData.forEach((d, i) => {
+          d.z += speed;
+          if (d.z > 5) {
+            d.z -= 300;
+            d.x = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 5);
           }
+          dummy.position.set(d.x, 0, d.z);
+          dummy.scale.set(1, d.scale, 1);
+          dummy.updateMatrix();
+          buildingMesh.setMatrixAt(i, dummy.matrix);
         });
+        buildingMesh.instanceMatrix.needsUpdate = true;
+
+        treeData.forEach((d, i) => {
+          d.z += speed;
+          if (d.z > 5) {
+            d.z -= 300;
+            d.x = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 5);
+          }
+          dummy.position.set(d.x, 0, d.z);
+          dummy.scale.setScalar(d.scale / 3);
+          dummy.updateMatrix();
+          treeMesh.setMatrixAt(i, dummy.matrix);
+        });
+        treeMesh.instanceMatrix.needsUpdate = true;
+
+        poleData.forEach((d, i) => {
+          d.z += speed;
+          if (d.z > 5) {
+            d.z -= 300;
+            d.x = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 5);
+          }
+          dummy.position.set(d.x, 0, d.z);
+          dummy.updateMatrix();
+          poleMesh.setMatrixAt(i, dummy.matrix);
+        });
+        poleMesh.instanceMatrix.needsUpdate = true;
 
         renderer.render(scene, camera);
       }
