@@ -37,6 +37,18 @@
         --hover-bg: rgba(0, 0, 0, 0.1);
       }
 
+      .sr-only {
+        position: absolute !important;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       body,
       html {
         padding: 0;
@@ -250,6 +262,7 @@
         </p>
       </header>
       <div id="search-container">
+        <label for="search-bar" class="sr-only">Search</label>
         <input id="search-bar" type="text" placeholder="Search toys..." />
       </div>
       <div id="controls">
