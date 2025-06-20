@@ -90,7 +90,32 @@
 
       #search-container {
         text-align: center;
-        margin: 1rem 0 2rem;
+        margin: 1rem 0 1rem;
+      }
+
+      #controls {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      #sort-select,
+      #random-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        border: 1px solid #444;
+        background: rgba(0, 0, 0, 0.6);
+        color: var(--text-color);
+        cursor: pointer;
+      }
+
+      #sort-select:focus,
+      #random-btn:focus {
+        outline: none;
+        border-color: var(--accent-color);
+      }
+
+      #random-btn:hover {
+        background: var(--hover-bg);
       }
 
       #search-bar {
@@ -209,7 +234,6 @@
           grid-template-columns: 1fr;
         }
       }
-
     </style>
   </head>
   <body>
@@ -226,11 +250,15 @@
         </p>
       </header>
       <div id="search-container">
-        <input
-          id="search-bar"
-          type="text"
-          placeholder="Search toys..."
-        />
+        <input id="search-bar" type="text" placeholder="Search toys..." />
+      </div>
+      <div id="controls">
+        <select id="sort-select">
+          <option value="default">Default Order</option>
+          <option value="alpha">A-Z</option>
+          <option value="random">Shuffle</option>
+        </select>
+        <button id="random-btn">Random Toy</button>
       </div>
       <main id="toy-list" class="webtoy-container"></main>
       <footer>
