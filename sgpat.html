@@ -3,10 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dreamy Interactive Spectrograph Music Visualizer</title>
+    <title>Pattern Recognition & Spectrograph Visualizer</title>
     <link rel="stylesheet" href="assets/css/base.css" />
     <style>
-      body {
+      body,
+      html {
         background-color: black;
         touch-action: none;
         display: flex;
@@ -31,28 +32,16 @@
     <div id="error-message" style="display: none"></div>
     <canvas id="glCanvas"></canvas>
     <script type="module">
+      // Import the pattern recognition logic
+      import PatternRecognizer from './assets/js/utils/patternRecognition.ts';
       import {
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const ctx2d = canvas.getContext('2d');
-      const errorEl = document.getElementById('error-message');
-
-      function displayError(message) {
-        if (errorEl) {
-          errorEl.textContent = message;
-          errorEl.style.display = 'block';
-        }
-      }
-
-      function hideError() {
-        if (errorEl) {
-          errorEl.style.display = 'none';
-          errorEl.textContent = '';
-        }
-      }
 
       if (!gl) {
         displayError(
@@ -61,6 +50,7 @@
         throw new Error('WebGL not supported');
       }
 
+      // Handle resizing
       function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -69,6 +59,7 @@
       window.addEventListener('resize', resizeCanvas);
       resizeCanvas();
 
+      // Shader sources
       const vertexShaderSource = `
             attribute vec4 a_position;
             void main() {
@@ -123,6 +114,7 @@
         return shader;
       }
 
+      // Create shaders
       const vertexShader = createShader(
         gl,
         gl.VERTEX_SHADER,
@@ -146,6 +138,7 @@
 
       gl.useProgram(program);
 
+      // Set up position buffer
       const positionBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
       const positions = [
@@ -171,6 +164,7 @@
         0
       );
 
+      // Get uniforms locations
       const resolutionUniformLocation = gl.getUniformLocation(
         program,
         'u_resolution'
@@ -193,11 +187,13 @@
       let colorOffset = [0.0, 0.0, 0.0];
       let touchPoint = [0.0, 0.0];
       let analyser;
+      let patternRecognizer;
 
       async function setupAudio() {
         try {
-          const { analyser: a } = await initAudio();
-          analyser = a;
+          const result = await initAudio();
+          analyser = result.analyser;
+          patternRecognizer = new PatternRecognizer(analyser);
           hideError();
           getAudioData();
         } catch (err) {
@@ -216,9 +212,18 @@
             dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
           audioData = average / 128.0;
           updateSpectrograph(dataArray);
+          patternRecognizer.updatePatternBuffer();
+          const detectedPattern = patternRecognizer.detectPattern();
+
+          if (detectedPattern) {
+            colorOffset = [1.0, 0.0, 0.0]; // Change color if a pattern is detected
+          } else {
+            colorOffset = [0.0, 0.0, 0.0];
+          }
         }
       }
 
+      // 2D Spectrograph rendering
       function updateSpectrograph(dataArray) {
         ctx2d.clearRect(0, 0, canvas.width, canvas.height);
         const gradient = ctx2d.createLinearGradient(
@@ -244,6 +249,7 @@
 
       setupAudio();
 
+      // Main render loop
       function render() {
         time += 0.02;
         gl.uniform1f(timeUniformLocation, time);
@@ -259,12 +265,25 @@
 
       requestAnimationFrame(render);
 
-      // Handle pointer input
+      // Handle pointer input for interaction
       canvas.addEventListener('pointermove', (event) => {
         const x = (event.clientX / canvas.width) * 2.0 - 1.0;
         const y = -(event.clientY / canvas.height) * 2.0 + 1.0;
         touchPoint = [x, y];
       });
+
+      // Show error messages
+      function displayError(message) {
+        const errorMessageElement = document.getElementById('error-message');
+        errorMessageElement.textContent = message;
+        errorMessageElement.style.display = 'block';
+      }
+
+      function hideError() {
+        const errorMessageElement = document.getElementById('error-message');
+        errorMessageElement.style.display = 'none';
+        errorMessageElement.textContent = '';
+      }
     </script>
   </body>
 </html>

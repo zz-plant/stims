@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Toy</title>
+    <link rel="stylesheet" href="assets/css/base.css" />
+  </head>
+  <body>
+    <a href="index.html" class="home-link">Back to Library</a>
+    <button id="start-audio-btn">Start</button>
+    <script type="module" src="assets/js/toyMain.js"></script>
+    <script>
+      const btn = document.getElementById('start-audio-btn');
+      btn.addEventListener('click', () => {
+        if (window.startAudio) {
+          window.startAudio();
+          btn.style.display = 'none';
+        }
+      });
+    </script>
+  </body>
+</html>
