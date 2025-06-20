@@ -44,7 +44,7 @@
       const ctx2d = canvas.getContext('2d');
 
       if (!gl) {
-        showError(
+        displayError(
           'Unable to initialize WebGL. Your browser may not support it.'
         );
         throw new Error('WebGL not supported');
@@ -197,8 +197,8 @@
           hideError();
           getAudioData();
         } catch (err) {
-          showError(
-            'Unable to access the microphone. Please allow microphone permissions and reload the page.'
+          displayError(
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
           );
           console.error('Error capturing audio: ', err);
         }
@@ -273,7 +273,7 @@
       });
 
       // Show error messages
-      function showError(message) {
+      function displayError(message) {
         const errorMessageElement = document.getElementById('error-message');
         errorMessageElement.textContent = message;
         errorMessageElement.style.display = 'block';

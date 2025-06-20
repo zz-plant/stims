@@ -16,6 +16,7 @@
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <canvas id="webglCanvas"></canvas>
+    <div id="error-message" style="display: none"></div>
     <script type="module">
       import * as THREE from 'three';
       import { WebGPURenderer } from 'three/addons/renderers/webgpu/WebGPURenderer.js';
@@ -30,6 +31,14 @@
 
       let renderer,
         isWebGPUSupported = false;
+      function displayError(message) {
+        const el = document.getElementById("error-message");
+        if (el) {
+          el.innerText = message;
+          el.style.display = "block";
+        }
+      }
+
 
       // Try to initialize WebGPU
       if (navigator.gpu) {
@@ -44,6 +53,7 @@
             error
           );
           isWebGPUSupported = false;
+
         }
       }
 
@@ -150,6 +160,7 @@
         })
         .catch(function (err) {
           console.error('The following error occurred: ' + err);
+          displayError('Microphone access is required for the visualization to work. Please allow microphone access.');
         });
 
       // Device orientation handling
