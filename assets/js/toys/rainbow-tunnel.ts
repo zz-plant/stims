@@ -16,7 +16,7 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const rings: THREE.Mesh[] = [];
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const geometry = new THREE.TorusGeometry(10, 3, 16, 100);

@@ -17,7 +17,7 @@ const toy = new WebToy({
 
 let stars: THREE.Points;
 let starMaterial: THREE.PointsMaterial;
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const geometry = new THREE.BufferGeometry();

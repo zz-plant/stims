@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import { getFrequencyData } from '../utils/audio-handler';
@@ -20,7 +19,7 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const cubes: THREE.Mesh[] = [];
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const { scene } = toy;

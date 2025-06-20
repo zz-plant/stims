@@ -20,7 +20,7 @@ const toy = new WebToy({
 
 let particles: THREE.Points;
 let particlesMaterial: THREE.PointsMaterial;
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const scene = toy.scene;
@@ -30,7 +30,10 @@ function init() {
   for (let i = 0; i < count * 3; i++) {
     positions[i] = (Math.random() - 0.5) * 80;
   }
-  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particlesGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(positions, 3)
+  );
   particlesMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.5 });
   particles = new THREE.Points(particlesGeometry, particlesMaterial);
   scene.add(particles);

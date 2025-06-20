@@ -1,23 +1,22 @@
 // patternRecognition.js: A pattern recognition and predictive listening script for audio-based visualizers
 
+import * as THREE from 'three';
+
 class PatternRecognizer {
-  analyser: AnalyserNode;
+  analyser: THREE.AudioAnalyser;
   bufferSize: number;
   patternBuffer: number[][];
-  frequencyData: Uint8Array;
-
-  constructor(analyser: AnalyserNode, bufferSize = 30) {
+  constructor(analyser: THREE.AudioAnalyser, bufferSize = 30) {
     // Reduced buffer size for performance
     this.analyser = analyser;
     this.bufferSize = bufferSize;
     this.patternBuffer = [];
-    this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
   }
 
   updatePatternBuffer(): void {
     // Get current frequency data and add to pattern buffer
-    this.analyser.getByteFrequencyData(this.frequencyData);
-    this.patternBuffer.push([...this.frequencyData]);
+    const data = this.analyser.getFrequencyData();
+    this.patternBuffer.push([...data]);
 
     // Limit buffer size
     if (this.patternBuffer.length > this.bufferSize) {

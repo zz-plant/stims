@@ -19,7 +19,7 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const spheres: THREE.Mesh[] = [];
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const { scene } = toy;

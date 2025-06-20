@@ -24,7 +24,7 @@ const toy = new WebToy({
 
 let torusKnot: THREE.Mesh, particles: THREE.Points;
 const shapes: THREE.Mesh[] = [];
-let analyser: AnalyserNode | null;
+let analyser: THREE.AudioAnalyser | null;
 
 function createRandomShape() {
   const shapeType = Math.floor(Math.random() * 3);
@@ -63,7 +63,11 @@ function init() {
 
   torusKnot = new THREE.Mesh(
     new THREE.TorusKnotGeometry(10, 3, 100, 16),
-    new THREE.MeshStandardMaterial({ color: 0x00ffcc, metalness: 0.7, roughness: 0.4 })
+    new THREE.MeshStandardMaterial({
+      color: 0x00ffcc,
+      metalness: 0.7,
+      roughness: 0.4,
+    })
   );
   scene.add(torusKnot);
 
@@ -73,8 +77,14 @@ function init() {
   for (let i = 0; i < particlesCount * 3; i++) {
     particlesPosition[i] = (Math.random() - 0.5) * 800;
   }
-  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlesPosition, 3));
-  const particlesMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1.8 });
+  particlesGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(particlesPosition, 3)
+  );
+  const particlesMaterial = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 1.8,
+  });
   particles = new THREE.Points(particlesGeometry, particlesMaterial);
   scene.add(particles);
 
@@ -123,7 +133,9 @@ function animate() {
   requestAnimationFrame(animate);
 
   const dataArray = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
-  const avgFrequency = dataArray.length ? dataArray.reduce((a, b) => a + b, 0) / dataArray.length : 0;
+  const avgFrequency = dataArray.length
+    ? dataArray.reduce((a, b) => a + b, 0) / dataArray.length
+    : 0;
 
   torusKnot.rotation.x += avgFrequency / 5000;
   torusKnot.rotation.y += avgFrequency / 7000;
