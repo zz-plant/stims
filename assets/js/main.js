@@ -1,7 +1,6 @@
 import { loadToy, loadFromQuery } from './loader.js';
 
 let allToys = [];
-let sortedToys = [];
 
 function setupDarkModeToggle() {
   const btn = document.getElementById('theme-toggle');
@@ -23,9 +22,38 @@ function setupDarkModeToggle() {
   });
 }
 
+function colorFromSlug(slug) {
+  let hash = 0;
+  for (const char of slug) {
+    hash = (hash * 31 + char.charCodeAt(0)) % 360;
+  }
+  return `hsl(${hash}, 70%, 60%)`;
+}
+
+function createSVGAnimation(slug) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.classList.add('toy-icon');
+  const circle = document.createElementNS(ns, 'circle');
+  circle.setAttribute('cx', '50');
+  circle.setAttribute('cy', '50');
+  circle.setAttribute('r', '30');
+  circle.setAttribute('fill', colorFromSlug(slug));
+  const anim = document.createElementNS(ns, 'animate');
+  anim.setAttribute('attributeName', 'r');
+  anim.setAttribute('values', '20;40;20');
+  anim.setAttribute('dur', '3s');
+  anim.setAttribute('repeatCount', 'indefinite');
+  circle.appendChild(anim);
+  svg.appendChild(circle);
+  return svg;
+}
+
 function createCard(toy) {
   const card = document.createElement('div');
   card.className = 'webtoy-card';
+  card.appendChild(createSVGAnimation(toy.slug));
   const title = document.createElement('h3');
   title.textContent = toy.title;
   const desc = document.createElement('p');
@@ -45,31 +73,6 @@ function renderToys(toys) {
   toys.forEach((toy) => list.appendChild(createCard(toy)));
 }
 
-function filterToys(query) {
-  const search = query.toLowerCase();
-  const filtered = sortedToys.filter(
-    (t) =>
-      t.title.toLowerCase().includes(search) ||
-      t.description.toLowerCase().includes(search)
-  );
-  renderToys(filtered);
-}
-
-function applySort(mode) {
-  if (mode === 'alpha') {
-    sortedToys = [...allToys].sort((a, b) => a.title.localeCompare(b.title));
-  } else if (mode === 'random') {
-    sortedToys = [...allToys];
-    for (let i = sortedToys.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [sortedToys[i], sortedToys[j]] = [sortedToys[j], sortedToys[i]];
-    }
-  } else {
-    sortedToys = [...allToys];
-  }
-  renderToys(sortedToys);
-}
-
 function openToy(toy) {
   if (toy.module.endsWith('.js') || toy.module.endsWith('.ts')) {
     loadToy(toy.slug);
@@ -81,20 +84,7 @@ function openToy(toy) {
 async function init() {
   const res = await fetch('assets/data/toys.json');
   allToys = await res.json();
-  sortedToys = [...allToys];
-  renderToys(sortedToys);
-
-  const search = document.getElementById('search-bar');
-  search?.addEventListener('input', (e) => filterToys(e.target.value));
-
-  const sort = document.getElementById('sort-select');
-  sort?.addEventListener('change', (e) => applySort(e.target.value));
-
-  const randomBtn = document.getElementById('random-btn');
-  randomBtn?.addEventListener('click', () => {
-    const randomToy = allToys[Math.floor(Math.random() * allToys.length)];
-    if (randomToy) openToy(randomToy);
-  });
+  renderToys(allToys);
 
   setupDarkModeToggle();
   await loadFromQuery();
