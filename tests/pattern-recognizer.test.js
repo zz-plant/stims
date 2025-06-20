@@ -4,16 +4,13 @@ import PatternRecognizer from '../assets/js/utils/patternRecognition.ts';
 describe('PatternRecognizer', () => {
   test('updatePatternBuffer stores analyser data', () => {
     const analyser = {
-      frequencyBinCount: 3,
-      getByteFrequencyData: jest.fn((arr) => arr.set([1, 2, 3])),
+      getFrequencyData: jest.fn(() => new Uint8Array([1, 2, 3])),
     };
     const recognizer = new PatternRecognizer(analyser, 2);
 
     recognizer.updatePatternBuffer();
 
-    expect(analyser.getByteFrequencyData).toHaveBeenCalledWith(
-      recognizer.frequencyData
-    );
+    expect(analyser.getFrequencyData).toHaveBeenCalled();
     expect(recognizer.patternBuffer.length).toBe(1);
     expect(recognizer.patternBuffer[0]).toEqual([1, 2, 3]);
   });
@@ -25,11 +22,7 @@ describe('PatternRecognizer', () => {
     ];
     let call = 0;
     const analyser = {
-      frequencyBinCount: 3,
-      getByteFrequencyData: jest.fn((arr) => {
-        arr.set(dataSets[call]);
-        call += 1;
-      }),
+      getFrequencyData: jest.fn(() => dataSets[call++]),
     };
     const recognizer = new PatternRecognizer(analyser, 2);
 
