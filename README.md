@@ -2,6 +2,8 @@
 
 Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). This is a collection of interactive web-based toys designed to provide some fun sensory stimulation. They’re built with **Three.js**, **WebGL**, and live **audio interaction** for anyone who enjoys engaging, responsive visuals. These are great for casual play, or as a form of sensory exploration, especially for neurodiverse folks.
 
+Recent updates enable color‑managed rendering with ACES filmic tone mapping for richer visuals and optional positional audio for deeper immersion.
+
 ## Getting Started
 
 ### What You’ll Need:
@@ -95,6 +97,7 @@ If you want to mess around with the toys locally, just clone the repo and open t
    git clone https://github.com/zz-plant/stims.git
    cd stims
    ```
+
 2. Use Node.js 22 (see `.nvmrc`). If you have nvm installed, run `nvm use`.
 
 3. Open any of the HTML files in your browser (e.g., `evol.html`, `index.html`).
@@ -108,6 +111,7 @@ If you want to mess around with the toys locally, just clone the repo and open t
    This will run everything locally at `http://localhost:8000`.
 
 All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
+
 ### Running Tests
 
 This project uses [Jest](https://jestjs.io/) for its test suite. To install
