@@ -19,7 +19,7 @@ Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil
 
 ### How to Play:
 
-Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond to sound, touch, and other inputs to create a chill or stimulating experience, depending on what you're looking for. If you’d rather poke around locally, feel free to clone this repo and open the HTML files in your browser.
+Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond to sound, touch, and other inputs to create a chill or stimulating experience. If you’d rather play locally, follow the steps in **Local Setup** to run the dev server and open the toys at `http://localhost:5173`.
 
 ## Toys in the Collection
 
@@ -93,15 +93,16 @@ To play with the toys locally you’ll need to run them from a local web server.
    npm run dev
    ```
 
-   Open `http://localhost:5173` in your browser.
+  Open `http://localhost:5173` in your browser.
 
-   If you’d rather use a simple Python server, run:
+  To serve a static build instead of the dev server, run:
 
-   ```bash
-   python3 -m http.server
-   ```
+  ```bash
+  npm run build
+  python3 -m http.server dist
+  ```
 
-   Then open `http://localhost:8000`.
+  Then open `http://localhost:8000`.
 
 All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
 
