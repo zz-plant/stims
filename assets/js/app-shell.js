@@ -1,4 +1,5 @@
 import { loadToy, loadFromQuery } from './loader.js';
+import toysData from './toys-data.js';
 
 let allToys = [];
 
@@ -41,8 +42,7 @@ function filterToys(query) {
 }
 
 async function init() {
-  const res = await fetch('assets/data/toys.json');
-  allToys = await res.json();
+  allToys = toysData;
   renderToys(allToys);
 
   const search = document.getElementById('search-bar');
