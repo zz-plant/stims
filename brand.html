@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -7,6 +7,7 @@
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
+    <canvas id="vizCanvas"></canvas>
     <script type="module">
       import * as THREE from 'three';
       import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -14,6 +15,7 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { initRenderer } from './assets/js/core/renderer-setup.ts';
       const scene = new THREE.Scene();
       scene.fog = new THREE.Fog(0x000000, 10, 200);
 
@@ -28,9 +30,8 @@
       camera.rotation.x = -0.05;
 
       // Renderer setup
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
+      const canvas = document.getElementById('vizCanvas');
+      const renderer = initRenderer(canvas, { antialias: true, exposure: 1.2 });
 
       // Lighting setup
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -105,7 +106,9 @@
       const leavesGeo = new THREE.ConeGeometry(0.5, 1.5, 8);
       leavesGeo.translate(0, 0.5, 0);
       const trunkColor = new THREE.Color(0x8b4513);
-      const trunkColors = new Float32Array(trunkGeo.attributes.position.count * 3);
+      const trunkColors = new Float32Array(
+        trunkGeo.attributes.position.count * 3
+      );
       for (let i = 0; i < trunkColors.length; i += 3) {
         trunkColors[i] = trunkColor.r;
         trunkColors[i + 1] = trunkColor.g;
@@ -113,23 +116,39 @@
       }
       trunkGeo.setAttribute('color', new THREE.BufferAttribute(trunkColors, 3));
       const leavesColor = new THREE.Color(0x228b22);
-      const leavesColors = new Float32Array(leavesGeo.attributes.position.count * 3);
+      const leavesColors = new Float32Array(
+        leavesGeo.attributes.position.count * 3
+      );
       for (let i = 0; i < leavesColors.length; i += 3) {
         leavesColors[i] = leavesColor.r;
         leavesColors[i + 1] = leavesColor.g;
         leavesColors[i + 2] = leavesColor.b;
       }
-      leavesGeo.setAttribute('color', new THREE.BufferAttribute(leavesColors, 3));
-      const treeGeo = BufferGeometryUtils.mergeBufferGeometries([trunkGeo, leavesGeo]);
+      leavesGeo.setAttribute(
+        'color',
+        new THREE.BufferAttribute(leavesColors, 3)
+      );
+      const treeGeo = BufferGeometryUtils.mergeBufferGeometries([
+        trunkGeo,
+        leavesGeo,
+      ]);
       const treeMat = new THREE.MeshLambertMaterial({ vertexColors: true });
-      const treeMesh = new THREE.InstancedMesh(treeGeo, treeMat, treeData.length);
+      const treeMesh = new THREE.InstancedMesh(
+        treeGeo,
+        treeMat,
+        treeData.length
+      );
       treeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       scene.add(treeMesh);
 
       // Pole instanced mesh
       const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 5);
       const poleMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
-      const poleMesh = new THREE.InstancedMesh(poleGeo, poleMat, poleData.length);
+      const poleMesh = new THREE.InstancedMesh(
+        poleGeo,
+        poleMat,
+        poleData.length
+      );
       poleMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       scene.add(poleMesh);
 
@@ -162,7 +181,7 @@
 
       // Audio setup using shared utility
       let analyser;
-      initAudio()
+      initAudio({ positional: true, object: camera })
         .then(({ analyser: a }) => {
           analyser = a;
         })
@@ -172,7 +191,6 @@
 
       // Animation loop
       function animate() {
-
         let bass = 0;
         if (analyser) {
           const dataArray = getFrequencyData(analyser);
