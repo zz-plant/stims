@@ -35,6 +35,7 @@ describe('audio-handler utilities', () => {
       createAnalyser: jest.fn(() => mockAnalyserNode),
       createMediaStreamSource: jest.fn(() => mockSource),
       createGain: jest.fn(() => ({ connect: jest.fn() })),
+      createPanner: jest.fn(() => ({ connect: jest.fn() })),
       destination: {},
     }));
   });
@@ -59,6 +60,14 @@ describe('audio-handler utilities', () => {
     expect(listener).toBeDefined();
     expect(audio).toBeDefined();
     expect(stream).toBeDefined();
+  });
+
+  test('initAudio can create positional audio', async () => {
+    const { audio } = await initAudio({
+      positional: true,
+      object: { add: jest.fn() },
+    });
+    expect(audio).toBeDefined();
   });
 
   test('initAudio supports custom fftSize', async () => {

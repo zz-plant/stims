@@ -4,6 +4,12 @@ declare module 'three' {
     constructor(listener: AudioListener);
     setMediaStreamSource(stream: any): void;
   }
+  export class PositionalAudio extends Audio {
+    constructor(listener: AudioListener);
+  }
+  export class Object3D {
+    add(obj: any): void;
+  }
   export class AudioAnalyser {
     analyser: any;
     constructor(audio: Audio, fftSize?: number);
