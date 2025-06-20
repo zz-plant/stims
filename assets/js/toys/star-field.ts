@@ -52,4 +52,4 @@ function animate() {
 }
 
 init();
-startAudio();
+(window as any).startAudio = startAudio;
