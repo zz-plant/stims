@@ -23,6 +23,7 @@
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <canvas id="gpuCanvas"></canvas>
+    <div id="error-message" style="display: none"></div>
     <select id="audioSelect">
       <option value="mic">Microphone</option>
       <option value="device">Device Audio</option>
@@ -34,6 +35,14 @@
       } from './assets/js/utils/audio-handler.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
+      function displayError(message) {
+        const el = document.getElementById("error-message");
+        if (el) {
+          el.innerText = message;
+          el.style.display = "block";
+        }
+      }
+
       const gl =
         canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
@@ -214,8 +223,10 @@
                 source = audioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
                 startProcessing(d);
+              }).catch((err) => {
+                console.error("Error capturing audio: ", err);
+                displayError("Microphone access is required for the visualization to work. Please allow microphone access.");
               });
-              return;
             } else {
               // Use the audio context's `createMediaElementSource` to capture device audio
               const audioElement = new Audio();
