@@ -241,7 +241,6 @@
       let instancedParticles;
       let particleMaterial;
       let particleGeometry;
-      let animationId;
 
       // UI Elements
       const loadingOverlay = document.getElementById('loadingOverlay');
@@ -479,7 +478,6 @@
 
       // Animation Loop
       function animate() {
-        animationId = requestAnimationFrame(animate);
 
         const delta = clock.getDelta();
         const elapsed = clock.getElapsedTime();
@@ -682,7 +680,7 @@
         init();
         await setupAudio();
         loadingOverlay.style.display = 'none';
-        animate();
+        renderer.setAnimationLoop(animate);
       });
 
       // Settings Panel Initialization
