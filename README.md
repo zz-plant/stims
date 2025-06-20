@@ -70,7 +70,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
 
 ## Local Setup
 
-If you want to mess around with the toys locally, just clone the repo and open the HTML files in your browser. Here’s the quick setup:
+To play with the toys locally you’ll need to run them from a local web server. Opening the HTML files directly won’t work because the TypeScript modules and JSON fetches can’t load over `file://`. Here’s the quick setup:
 
 1. Clone the repository:
 
@@ -81,15 +81,27 @@ If you want to mess around with the toys locally, just clone the repo and open t
 
 2. Use Node.js 22 (see `.nvmrc`). If you have nvm installed, run `nvm use`.
 
-3. Open any of the HTML files in your browser (e.g., `evol.html`, `index.html`).
+3. Install dependencies:
 
-4. Want to serve locally? Here’s a simple Python server:
+   ```bash
+   npm install
+   ```
+
+4. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+   Open `http://localhost:5173` in your browser.
+
+   If you’d rather use a simple Python server, run:
 
    ```bash
    python3 -m http.server
    ```
 
-   This will run everything locally at `http://localhost:8000`.
+   Then open `http://localhost:8000`.
 
 All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
 
