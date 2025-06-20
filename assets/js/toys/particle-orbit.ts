@@ -40,14 +40,13 @@ async function startAudio() {
   try {
     await toy.initAudio({ fftSize: 256 });
     analyser = toy.analyser;
-    animate();
+    toy.renderer.setAnimationLoop(animate);
   } catch (e) {
     console.error('Microphone access denied', e);
   }
 }
 
 function animate() {
-  requestAnimationFrame(animate);
   const data = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
   const avg = data.length ? data.reduce((a, b) => a + b, 0) / data.length : 0;
   const rotationSpeed = 0.001 + avg / 100000;

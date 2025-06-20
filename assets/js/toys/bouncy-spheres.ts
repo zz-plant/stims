@@ -38,14 +38,13 @@ async function startAudio() {
   try {
     await toy.initAudio({ fftSize: 128 });
     analyser = toy.analyser;
-    animate();
+    toy.renderer.setAnimationLoop(animate);
   } catch (e) {
     console.error('Microphone access denied', e);
   }
 }
 
 function animate() {
-  requestAnimationFrame(animate);
   const data = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
   const binsPerSphere = data.length / spheres.length;
   spheres.forEach((sphere, idx) => {

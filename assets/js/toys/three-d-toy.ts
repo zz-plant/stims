@@ -112,7 +112,7 @@ async function startAudio() {
     await toy.initAudio();
     analyser = toy.analyser;
     hideError();
-    animate();
+    toy.renderer.setAnimationLoop(animate);
   } catch (e) {
     console.error('Error accessing microphone:', e);
     showError('Microphone access was denied. Please allow access and reload.');
@@ -120,7 +120,6 @@ async function startAudio() {
 }
 
 function animate() {
-  requestAnimationFrame(animate);
 
   const dataArray = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
   const avgFrequency = dataArray.length ? dataArray.reduce((a, b) => a + b, 0) / dataArray.length : 0;

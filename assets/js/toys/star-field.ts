@@ -36,14 +36,13 @@ async function startAudio() {
   try {
     await toy.initAudio();
     analyser = toy.analyser;
-    animate();
+    toy.renderer.setAnimationLoop(animate);
   } catch (e) {
     console.error('Microphone access denied', e);
   }
 }
 
 function animate() {
-  requestAnimationFrame(animate);
   const data = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
   const avg = data.length ? data.reduce((a, b) => a + b, 0) / data.length : 0;
   stars.rotation.y += 0.001 + avg / 50000;
