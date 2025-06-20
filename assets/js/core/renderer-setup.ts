@@ -1,7 +1,13 @@
 import * as THREE from 'three';
-import WebGPURenderer from 'three/src/renderers/webgpu/WebGPURenderer.js';
+import WebGPURenderer from 'three/addons/renderers/webgpu/WebGPURenderer.js';
 
-export function initRenderer(canvas, config = { antialias: true }) {
+export function initRenderer(
+  canvas,
+  config: { antialias?: boolean; exposure?: number } = {
+    antialias: true,
+    exposure: 1,
+  }
+) {
   let renderer;
   if (navigator.gpu) {
     renderer = new WebGPURenderer({ canvas, antialias: config.antialias });
@@ -13,5 +19,8 @@ export function initRenderer(canvas, config = { antialias: true }) {
   }
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = config.exposure ?? 1;
   return renderer;
 }
