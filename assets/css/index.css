@@ -39,6 +39,7 @@ html {
   );
   color: var(--text-color);
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 #bg-canvas {
@@ -58,6 +59,36 @@ header {
   text-align: center;
   margin-bottom: 2rem;
   position: relative;
+}
+
+header.hero {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.tagline {
+  font-size: 1.25rem;
+  margin-top: 0;
+  max-width: 600px;
+}
+
+.cta-button {
+  margin-top: 1.5rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  background: var(--accent-color);
+  color: var(--bg-color);
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.cta-button:hover {
+  background: var(--hover-bg);
+  color: var(--text-color);
 }
 
 @keyframes hueShift {
@@ -187,4 +218,3 @@ footer {
     grid-template-columns: 1fr;
   }
 }
-
