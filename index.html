@@ -52,6 +52,10 @@
 
     <script type="module">
       import * as THREE from 'three';
+      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      if (!ensureWebGL()) {
+        return;
+      }
       // Three.js background
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
