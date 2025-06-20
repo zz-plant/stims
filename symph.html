@@ -259,11 +259,10 @@
 
       requestAnimationFrame(render);
 
-      // Handle touch input
-      canvas.addEventListener('touchmove', (event) => {
-        const touch = event.touches[0];
-        const x = (touch.clientX / canvas.width) * 2.0 - 1.0;
-        const y = -(touch.clientY / canvas.height) * 2.0 + 1.0;
+      // Handle pointer input
+      canvas.addEventListener('pointermove', (event) => {
+        const x = (event.clientX / canvas.width) * 2.0 - 1.0;
+        const y = -(event.clientY / canvas.height) * 2.0 + 1.0;
         touchPoint = [x, y];
       });
     </script>
