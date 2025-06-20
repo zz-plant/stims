@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -44,7 +44,9 @@
       const ctx2d = canvas.getContext('2d');
 
       if (!gl) {
-        alert('Unable to initialize WebGL. Your browser may not support it.');
+        showError(
+          'Unable to initialize WebGL. Your browser may not support it.'
+        );
         throw new Error('WebGL not supported');
       }
 
@@ -192,6 +194,7 @@
           const result = await initAudio();
           analyser = result.analyser;
           patternRecognizer = new PatternRecognizer(analyser);
+          hideError();
           getAudioData();
         } catch (err) {
           showError(
@@ -275,6 +278,12 @@
         const errorMessageElement = document.getElementById('error-message');
         errorMessageElement.textContent = message;
         errorMessageElement.style.display = 'block';
+      }
+
+      function hideError() {
+        const errorMessageElement = document.getElementById('error-message');
+        errorMessageElement.style.display = 'none';
+        errorMessageElement.textContent = '';
       }
     </script>
   </body>
