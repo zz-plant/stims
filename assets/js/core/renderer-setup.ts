@@ -4,6 +4,9 @@ export function initRenderer(canvas, config = { antialias: true }) {
     canvas,
     antialias: config.antialias,
   });
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   return renderer;
 }
