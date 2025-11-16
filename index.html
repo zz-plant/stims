@@ -125,61 +125,67 @@
     <script type="module">
       import * as THREE from 'three';
       import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
-      if (!ensureWebGL()) {
-        return;
-      }
-      // Three.js background
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-      );
-      const renderer = new THREE.WebGLRenderer({
-        canvas: document.getElementById('bg-canvas'),
-        alpha: true,
-      });
-      renderer.setSize(window.innerWidth, window.innerHeight);
 
-      const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0x00ffaa,
-        wireframe: true,
-      });
-      const torusKnot = new THREE.Mesh(geometry, material);
-      scene.add(torusKnot);
+      function startBackground() {
+        if (!ensureWebGL()) {
+          return;
+        }
 
-      camera.position.z = 30;
-
-      function animate() {
-        requestAnimationFrame(animate);
-        torusKnot.rotation.x += 0.01;
-        torusKnot.rotation.y += 0.01;
-        renderer.render(scene, camera);
-      }
-      animate();
-
-      // Custom cursor
-      const cursor = document.querySelector('.cursor');
-      const cursorFollower = document.querySelector('.cursor-follower');
-
-      document.addEventListener('pointermove', (e) => {
-        cursor.style.left = e.clientX + 'px';
-        cursor.style.top = e.clientY + 'px';
-
-        setTimeout(() => {
-          cursorFollower.style.left = e.clientX + 'px';
-          cursorFollower.style.top = e.clientY + 'px';
-        }, 100);
-      });
-
-      // Responsive canvas
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+        // Three.js background
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(
+          75,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
+        );
+        const renderer = new THREE.WebGLRenderer({
+          canvas: document.getElementById('bg-canvas'),
+          alpha: true,
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
-      });
+
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+        const material = new THREE.MeshBasicMaterial({
+          color: 0x00ffaa,
+          wireframe: true,
+        });
+        const torusKnot = new THREE.Mesh(geometry, material);
+        scene.add(torusKnot);
+
+        camera.position.z = 30;
+
+        function animate() {
+          requestAnimationFrame(animate);
+          torusKnot.rotation.x += 0.01;
+          torusKnot.rotation.y += 0.01;
+          renderer.render(scene, camera);
+        }
+        animate();
+
+        // Custom cursor
+        const cursor = document.querySelector('.cursor');
+        const cursorFollower = document.querySelector('.cursor-follower');
+
+        document.addEventListener('pointermove', (e) => {
+          cursor.style.left = e.clientX + 'px';
+          cursor.style.top = e.clientY + 'px';
+
+          setTimeout(() => {
+            cursorFollower.style.left = e.clientX + 'px';
+            cursorFollower.style.top = e.clientY + 'px';
+          }, 100);
+        });
+
+        // Responsive canvas
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+      }
+
+      startBackground();
     </script>
     <script type="module" src="assets/js/main.js"></script>
   </body>
