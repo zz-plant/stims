@@ -26,16 +26,88 @@
     <div class="cursor"></div>
     <div class="cursor-follower"></div>
     <div class="content">
+      <nav class="top-nav">
+        <div class="brand">
+          <span class="brand-mark"></span>
+          <div class="brand-copy">
+            <p class="eyebrow">Stim Lab</p>
+            <p class="brand-title">Webtoy Library</p>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <a class="nav-link" href="#toy-list">Library</a>
+          <a
+            class="nav-link"
+            href="https://github.com/zz-plant/stims"
+            target="_blank"
+            rel="noopener noreferrer"
+            >GitHub</a
+          >
+          <button id="theme-toggle" class="theme-toggle">Dark Mode</button>
+        </div>
+      </nav>
+
       <header class="hero">
-        <button id="theme-toggle" class="theme-toggle">Dark Mode</button>
-        <h1>Stim Webtoys Library</h1>
-        <p class="tagline">
-          Explore a collection of interactive visual experiences to engage your
-          senses and spark creativity.
-        </p>
-        <a href="#toy-list" class="cta-button">Browse Toys</a>
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">New home for sensory experiments</p>
+            <h1>Interactive playgrounds for curious minds.</h1>
+            <p class="tagline">
+              Wander through a curated set of audiovisual toys, crafted for
+              play, inspiration, and a bit of mindful stimulus.
+            </p>
+            <div class="cta-row">
+              <a href="#toy-list" class="cta-button primary">Browse library</a>
+              <a
+                href="https://github.com/zz-plant/stims"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="cta-button ghost"
+                >View the code</a
+              >
+            </div>
+            <div class="chip-row" aria-hidden="true">
+              <span class="chip">WebGL</span>
+              <span class="chip">Particles</span>
+              <span class="chip">Kinetic typography</span>
+              <span class="chip">Shader sketches</span>
+            </div>
+          </div>
+          <div class="hero-card">
+            <p class="eyebrow">Live signal</p>
+            <p class="hero-card-title">Stim stream</p>
+            <p class="hero-card-subtitle">Now featuring</p>
+            <ul class="feature-list">
+              <li>30+ interactive sketches</li>
+              <li>Instant load from query</li>
+              <li>Dark / light optimized</li>
+            </ul>
+            <div class="stat-grid">
+              <div class="stat-card">
+                <p class="stat-value">01</p>
+                <p class="stat-label">New arrivals</p>
+              </div>
+              <div class="stat-card">
+                <p class="stat-value">∞</p>
+                <p class="stat-label">Loops to explore</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
-      <main id="toy-list" class="webtoy-container"></main>
+
+      <section class="library">
+        <div class="section-heading">
+          <p class="eyebrow">Library</p>
+          <h2>Browse every stim</h2>
+          <p class="section-description">
+            Tap a card to open it instantly, or share a URL to load a toy from a
+            query param. The catalog is always expanding.
+          </p>
+        </div>
+        <main id="toy-list" class="webtoy-container"></main>
+      </section>
+
       <footer>
         <p>
           Curious about how these work?
