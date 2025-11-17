@@ -123,9 +123,11 @@ async function startAudio() {
     analyser = toy.analyser;
     hideError();
     toy.renderer.setAnimationLoop(animate);
+    return true;
   } catch (e) {
     console.error('Error accessing microphone:', e);
     showError('Microphone access was denied. Please allow access and reload.');
+    throw e;
   }
 }
 
@@ -160,4 +162,4 @@ function animate() {
 }
 
 init();
-startAudio();
+(window as any).startAudio = startAudio;

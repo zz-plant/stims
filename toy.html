@@ -8,14 +8,20 @@
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
-    <button id="start-audio-btn">Start</button>
+    <button id="start-audio-btn">Start audio</button>
     <script type="module" src="assets/js/toyMain.js"></script>
     <script>
       const btn = document.getElementById('start-audio-btn');
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (window.startAudio) {
-          window.startAudio();
-          btn.style.display = 'none';
+          btn.disabled = true;
+          try {
+            await window.startAudio();
+            btn.style.display = 'none';
+          } catch (error) {
+            console.error('Unable to start audio:', error);
+            btn.disabled = false;
+          }
         }
       });
     </script>

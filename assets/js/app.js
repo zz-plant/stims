@@ -61,20 +61,20 @@ function initVisualization() {
   scene.add(cube);
 }
 
-function startAudioAndAnimation() {
-  initAudio()
-    .then((audioData) => {
-      analyser = audioData.analyser;
-      patternRecognizer = new PatternRecognizer(analyser);
-      animate();
-    })
-    .catch((error) => {
-      console.error('initAudio failed:', error);
-      const errorMessage =
-        error?.message ||
-        'Microphone access is required for the visualization to work. Please allow microphone access.';
-      displayError(errorMessage);
-    });
+async function startAudioAndAnimation() {
+  try {
+    const audioData = await initAudio();
+    analyser = audioData.analyser;
+    patternRecognizer = new PatternRecognizer(analyser);
+    animate();
+    return true;
+  } catch (error) {
+    console.error('initAudio failed:', error);
+    displayError(
+      'Microphone access is required for the visualization to work. Please allow microphone access.'
+    );
+    return false;
+  }
 }
 
 function animate() {
@@ -108,7 +108,7 @@ function displayError(message) {
   const errorElement = document.getElementById('error-message');
   if (errorElement) {
     errorElement.innerText = message;
-    errorElement.style.display = 'block';
+    errorElement.style.display = message ? 'block' : 'none';
   }
 }
 
@@ -123,9 +123,16 @@ document.getElementById('light-type').addEventListener('change', (event) => {
 initVisualization();
 
 // Handle audio start button click
-document.getElementById('start-audio-btn').addEventListener('click', () => {
-  startAudioAndAnimation();
-  document.getElementById('start-audio-btn').style.display = 'none'; // Hide button after starting audio
+document.getElementById('start-audio-btn').addEventListener('click', async () => {
+  const startButton = document.getElementById('start-audio-btn');
+  startButton.disabled = true;
+  const started = await startAudioAndAnimation();
+  if (started) {
+    startButton.style.display = 'none'; // Hide button after starting audio
+    displayError('');
+  } else {
+    startButton.disabled = false;
+  }
 });
 
 // Handle window resize
