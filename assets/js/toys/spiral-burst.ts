@@ -45,8 +45,10 @@ async function startAudio() {
     await toy.initAudio();
     analyser = toy.analyser;
     toy.renderer.setAnimationLoop(animate);
+    return true;
   } catch (e) {
     console.error('Microphone access denied', e);
+    throw e;
   }
 }
 
