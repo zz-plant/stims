@@ -4,6 +4,7 @@ let originalNavigatorDesc;
 import {
   initAudio,
   getFrequencyData,
+  AudioAccessError,
 } from '../assets/js/utils/audio-handler.ts';
 
 describe('audio-handler utilities', () => {
@@ -72,6 +73,28 @@ describe('audio-handler utilities', () => {
 
   test('initAudio supports custom fftSize', async () => {
     await expect(initAudio({ fftSize: 512 })).resolves.toBeDefined();
+  });
+
+  test('initAudio rejects with unsupported error when media devices are missing', async () => {
+    delete global.navigator.mediaDevices;
+
+    await expect(initAudio()).rejects.toEqual(
+      expect.objectContaining({
+        reason: 'unsupported',
+        message: expect.stringContaining('does not support'),
+      })
+    );
+  });
+
+  test('initAudio rejects with denied error when permission is blocked', async () => {
+    global.navigator.mediaDevices.getUserMedia = jest
+      .fn()
+      .mockRejectedValue(new DOMException('denied', 'NotAllowedError'));
+
+    await expect(initAudio()).rejects.toBeInstanceOf(AudioAccessError);
+    await expect(initAudio()).rejects.toEqual(
+      expect.objectContaining({ reason: 'denied' })
+    );
   });
 
   test('getFrequencyData returns array of the expected length', () => {
