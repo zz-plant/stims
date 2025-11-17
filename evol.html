@@ -3,16 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dreamy Interactive Spectrograph Music Visualizer</title>
+    <title>Evolutionary Weirdcore Visualizer</title>
     <link rel="stylesheet" href="assets/css/base.css" />
     <style>
       body {
-        background-color: black;
-        touch-action: none;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-family: Arial, sans-serif;
+        background-color: #000000; /* OLED black */
+      }
+      canvas {
+        width: 100vw;
+        height: 100vh;
+      }
+      #controls {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 15px;
+        border-radius: 8px;
+      }
+      #controls label {
+        color: #ffffff;
+        font-size: 14px;
+        display: block;
+        margin-bottom: 5px;
       }
       #error-message {
         position: absolute;
@@ -30,6 +44,19 @@
     <a href="index.html" class="home-link">Back to Library</a>
     <div id="error-message" style="display: none"></div>
     <canvas id="glCanvas"></canvas>
+    <div id="controls">
+      <label>
+        Fractal Intensity:
+        <input
+          type="range"
+          id="fractalIntensity"
+          min="0.5"
+          max="2.0"
+          step="0.1"
+          value="1.0"
+        />
+      </label>
+    </div>
     <script type="module">
       import {
         initAudio,
@@ -37,7 +64,6 @@
       } from './assets/js/utils/audio-handler.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
-      const ctx2d = canvas.getContext('2d');
       const errorEl = document.getElementById('error-message');
 
       function displayError(message) {
@@ -71,7 +97,9 @@
 
       const vertexShaderSource = `
             attribute vec4 a_position;
+            varying vec2 v_uv;
             void main() {
+                v_uv = a_position.xy * 0.5 + 0.5;
                 gl_Position = a_position;
             }
         `;
@@ -81,32 +109,44 @@
             uniform float u_time;
             uniform vec2 u_resolution;
             uniform float u_audioData;
-            uniform vec3 u_colorOffset;
-            uniform vec2 u_touch;
-            
-            vec3 dreamyGradient(vec2 uv, float timeOffset) {
-                vec3 color = vec3(0.4 + 0.4 * sin(uv.x * 10.0 + u_audioData * 6.0 + timeOffset),
-                                  0.4 + 0.4 * cos(uv.y * 10.0 + u_audioData * 6.0 + timeOffset),
-                                  0.5 + 0.4 * sin((uv.x + uv.y) * 8.0 + u_audioData * 6.0 + timeOffset));
-                return color + u_colorOffset * 0.7;
+            uniform float u_fractalIntensity;
+            varying vec2 v_uv;
+
+            float random(vec2 p) {
+                return fract(sin(dot(p.xy, vec2(12.9898, 78.233))) * 43758.5453);
             }
-            
+
+            float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                float a = random(i);
+                float b = random(i + vec2(1.0, 0.0));
+                float c = random(i + vec2(0.0, 1.0));
+                float d = random(i + vec2(1.0, 1.0));
+                vec2 u = f * f * (3.0 - 2.0 * f);
+                return mix(a, b, u.x) + (c - a) * u.y + (d - c) * u.x * u.y;
+            }
+
+            float fbm(vec2 p) {
+                float total = 0.0;
+                float amplitude = 1.0;
+                for (int i = 0; i < 6; i++) {
+                    total += noise(p) * amplitude;
+                    p *= 2.0;
+                    amplitude *= 0.5;
+                }
+                return total;
+            }
+
             void main() {
-                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-                uv -= 0.5;
-                uv *= 2.0;
-                
-                float dist = distance(uv, u_touch);
-                float ripple = sin(dist * 15.0 - u_time * 3.0) * 0.15;
-                float bloom = 0.3 / (dist * dist + 0.25);
-                uv += ripple;
-                
-                vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData;
-                color += vec3(0.4 + 0.4 * sin(u_time * 0.4 + u_audioData * 2.0), 
-                              0.4 + 0.4 * cos(u_time * 0.5 + u_audioData * 3.0), 
-                              0.5 + 0.4 * sin(u_time * 0.6 + u_audioData * 1.5));
-                color += bloom * 0.6;
-                
+                vec2 uv = v_uv;
+                vec2 pos = (gl_FragCoord.xy / u_resolution.xy) * 2.0 - 1.0;
+
+                float audioEffect = u_audioData * 5.0;
+                float distortion = fbm(uv * u_fractalIntensity + audioEffect) * 0.5;
+                float glitch = step(0.9, random(uv * u_time * 2.0)) * 0.5;
+
+                vec3 color = vec3(distortion * 0.5 + glitch, distortion * 0.3, distortion * 0.8);
                 gl_FragColor = vec4(color, 1.0);
             }
         `;
@@ -180,32 +220,27 @@
         program,
         'u_audioData'
       );
-      const colorOffsetUniformLocation = gl.getUniformLocation(
+      const fractalIntensityLocation = gl.getUniformLocation(
         program,
-        'u_colorOffset'
+        'u_fractalIntensity'
       );
-      const touchUniformLocation = gl.getUniformLocation(program, 'u_touch');
 
       gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
 
       let time = 0.0;
       let audioData = 0.0;
-      let colorOffset = [0.0, 0.0, 0.0];
-      let touchPoint = [0.0, 0.0];
+      let fractalIntensity = 1.0;
       let analyser;
 
       async function setupAudio() {
         try {
-          const { analyser: a } = await initAudio();
-          analyser = a;
+          const result = await initAudio();
+          analyser = result.analyser;
           hideError();
           getAudioData();
         } catch (err) {
-          displayError(
-            'Microphone access is required for the visualization to work. Please allow microphone access.'
-          );
           console.error('Error capturing audio: ', err);
-        }
+          displayError('Microphone access is required for the visualization to work. Please allow microphone access.');
       }
 
       function getAudioData() {
@@ -215,41 +250,22 @@
           const average =
             dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
           audioData = average / 128.0;
-          updateSpectrograph(dataArray);
-        }
-      }
-
-      function updateSpectrograph(dataArray) {
-        ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-        const gradient = ctx2d.createLinearGradient(
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-        gradient.addColorStop(0, '#ff6ec7');
-        gradient.addColorStop(0.5, '#8e44ad');
-        gradient.addColorStop(1, '#3498db');
-        ctx2d.fillStyle = gradient;
-        const barWidth = (canvas.width / dataArray.length) * 1.5;
-        let barHeight;
-        let x = 0;
-
-        for (let i = 0; i < dataArray.length; i++) {
-          barHeight = dataArray[i] / 2;
-          ctx2d.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-          x += barWidth + 1;
         }
       }
 
       setupAudio();
 
+      document
+        .getElementById('fractalIntensity')
+        .addEventListener('input', (event) => {
+          fractalIntensity = event.target.value;
+        });
+
       function render() {
         time += 0.02;
         gl.uniform1f(timeUniformLocation, time);
         gl.uniform1f(audioDataUniformLocation, audioData);
-        gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
-        gl.uniform2fv(touchUniformLocation, touchPoint);
+        gl.uniform1f(fractalIntensityLocation, fractalIntensity);
 
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -258,13 +274,6 @@
       }
 
       requestAnimationFrame(render);
-
-      // Handle pointer input
-      canvas.addEventListener('pointermove', (event) => {
-        const x = (event.clientX / canvas.width) * 2.0 - 1.0;
-        const y = -(event.clientY / canvas.height) * 2.0 + 1.0;
-        touchPoint = [x, y];
-      });
     </script>
   </body>
 </html>
