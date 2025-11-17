@@ -75,7 +75,7 @@ function renderToys(toys) {
 }
 
 function openToy(toy) {
-  if (toy.module.endsWith('.js') || toy.module.endsWith('.ts')) {
+  if (toy.type === 'module') {
     loadToy(toy.slug);
   } else {
     window.location.href = toy.module;
