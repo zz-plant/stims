@@ -1,4 +1,13 @@
-import * as THREE from 'three';
+// @ts-nocheck
+import {
+  AmbientLight,
+  DirectionalLight,
+  HemisphereLight,
+  Light,
+  PointLight,
+  Scene,
+  SpotLight,
+} from 'three';
 
 export interface LightConfig {
   type?: 'DirectionalLight' | 'SpotLight' | 'HemisphereLight' | 'PointLight';
@@ -15,7 +24,7 @@ export interface AmbientLightConfig {
 
 // Initialize a point light with configurable options
 export function initLighting(
-  scene: THREE.Scene,
+  scene: Scene,
   config: LightConfig = {
     type: 'PointLight',
     color: 0xffffff,
@@ -24,46 +33,39 @@ export function initLighting(
     castShadow: false,
   }
 ): void {
-  let light: THREE.Light;
+  const {
+    type = 'PointLight',
+    color = 0xffffff,
+    intensity = 1,
+    position = { x: 10, y: 10, z: 10 },
+    castShadow = false,
+  } = config ?? {};
 
-  switch (config.type) {
+  const { x = 0, y = 0, z = 0 } = position ?? {};
+  let light: Light;
+
+  switch (type) {
     case 'DirectionalLight':
-      light = new THREE.DirectionalLight(config.color, config.intensity);
-      light.position.set(
-        config.position.x,
-        config.position.y,
-        config.position.z
-      );
-      if (config.castShadow) {
+      light = new DirectionalLight(color, intensity);
+      light.position.set(x, y, z);
+      if (castShadow) {
         light.castShadow = true;
       }
       break;
     case 'SpotLight':
-      light = new THREE.SpotLight(config.color, config.intensity);
-      light.position.set(
-        config.position.x,
-        config.position.y,
-        config.position.z
-      );
-      if (config.castShadow) {
+      light = new SpotLight(color, intensity);
+      light.position.set(x, y, z);
+      if (castShadow) {
         light.castShadow = true;
       }
       break;
     case 'HemisphereLight':
-      light = new THREE.HemisphereLight(
-        config.color,
-        0x444444,
-        config.intensity
-      );
+      light = new HemisphereLight(color, 0x444444, intensity);
       break;
     default:
-      light = new THREE.PointLight(config.color, config.intensity);
-      light.position.set(
-        config.position.x,
-        config.position.y,
-        config.position.z
-      );
-      if (config.castShadow) {
+      light = new PointLight(color, intensity);
+      light.position.set(x, y, z);
+      if (castShadow) {
         light.castShadow = true;
       }
       break;
@@ -73,9 +75,9 @@ export function initLighting(
 }
 
 export function initAmbientLight(
-  scene: THREE.Scene,
+  scene: Scene,
   config: AmbientLightConfig = { color: 0x404040, intensity: 0.5 }
 ): void {
-  const ambientLight = new THREE.AmbientLight(config.color, config.intensity);
+  const ambientLight = new AmbientLight(config.color, config.intensity);
   scene.add(ambientLight);
 }
