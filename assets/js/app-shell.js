@@ -14,7 +14,7 @@ async function createCard(toy) {
   card.appendChild(desc);
 
   card.addEventListener('click', () => {
-    if (toy.module.endsWith('.js') || toy.module.endsWith('.ts')) {
+    if (toy.type === 'module') {
       loadToy(toy.slug);
     } else {
       window.location.href = toy.module;
