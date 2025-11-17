@@ -70,9 +70,10 @@ function startAudioAndAnimation() {
     })
     .catch((error) => {
       console.error('initAudio failed:', error);
-      displayError(
-        'Microphone access is required for the visualization to work. Please allow microphone access.'
-      );
+      const errorMessage =
+        error?.message ||
+        'Microphone access is required for the visualization to work. Please allow microphone access.';
+      displayError(errorMessage);
     });
 }
 
