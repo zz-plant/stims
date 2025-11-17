@@ -66,8 +66,9 @@ function averageFrequencyRange(
   const start = Math.trunc(audioData.length * startRatio);
   const end = Math.trunc(audioData.length * endRatio);
   const slice = audioData.slice(start, end);
+  if (slice.length === 0) return 0;
   const sum = slice.reduce((acc, val) => acc + val, 0);
-  const rangeLength = audioData.length * denominatorRatio;
+  const rangeLength = slice.length || audioData.length * denominatorRatio || 1;
   return sum / rangeLength;
 }
 
