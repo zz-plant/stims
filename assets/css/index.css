@@ -32,10 +32,17 @@ body,
 html {
   padding: 0;
   font-family: 'Space Grotesk', sans-serif;
-  background: radial-gradient(circle at 20% 20%, rgba(76, 238, 167, 0.1),
-        transparent 35%),
-      radial-gradient(circle at 80% 10%, rgba(255, 119, 255, 0.1), transparent 35%),
-      linear-gradient(135deg, var(--bg-color) 0%, var(--bg-color-secondary) 100%);
+  background: radial-gradient(
+      circle at 20% 20%,
+      rgba(76, 238, 167, 0.1),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 80% 10%,
+      rgba(255, 119, 255, 0.1),
+      transparent 35%
+    ),
+    linear-gradient(135deg, var(--bg-color) 0%, var(--bg-color-secondary) 100%);
   color: var(--text-color);
   overflow-x: hidden;
   overflow-y: auto;

@@ -23,24 +23,24 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
 
 ## Toys in the Collection
 
-| Toy | Description |
-| --- | --- |
-| [3D Toy](./toy.html?toy=3dtoy) | Dive into a twisting 3D tunnel that responds to sound. |
-| [Star Guitar Visualizer](./brand.html) | A visual journey inspired by an iconic music video, synced to your music. |
-| [Defrag Visualizer](./defrag.html) | A nostalgic, sound-reactive visualizer evoking old defragmentation screens. |
-| [Evolutionary Weirdcore](./evol.html) | Watch surreal landscapes evolve with fractals and glitches that react to music. |
-| [Multi-Capability Visualizer](./multi.html) | Shapes and lights move with both sound and device motion. |
-| [Trippy Synesthetic Visualizer](./seary.html) | Blend audio and visuals in a rich synesthetic experience. |
-| [Pattern Recognition Visualizer](./sgpat.html) | See patterns form dynamically in response to sound. |
-| [SVG + Three.js Visualizer](./svgtest.html) | A hybrid visualizer blending 2D and 3D elements, reacting in real time. |
-| [Dreamy Spectrograph](./symph.html) | A relaxing spectrograph that moves gently with your audio. |
-| [Interactive Word Cloud](./words.html) | Speak and watch the word cloud react and shift with your voice. |
-| [Cube Wave](./toy.html?toy=cube-wave) | A grid of cubes that rise and fall with your audio. |
-| [Particle Orbit](./toy.html?toy=particle-orbit) | Thousands of particles swirling faster as the music intensifies. |
-| [Spiral Burst](./toy.html?toy=spiral-burst) | Colorful spirals rotate and expand with every beat. |
-| [Bouncy Spheres](./toy.html?toy=bouncy-spheres) | Lines of spheres bounce and change color with audio. |
-| [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel) | Fly through colorful rings that spin to your music. |
-| [Star Field](./toy.html?toy=star-field) | A field of shimmering stars reacts to the beat. |
+| Toy                                             | Description                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------------- |
+| [3D Toy](./toy.html?toy=3dtoy)                  | Dive into a twisting 3D tunnel that responds to sound.                          |
+| [Star Guitar Visualizer](./brand.html)          | A visual journey inspired by an iconic music video, synced to your music.       |
+| [Defrag Visualizer](./defrag.html)              | A nostalgic, sound-reactive visualizer evoking old defragmentation screens.     |
+| [Evolutionary Weirdcore](./evol.html)           | Watch surreal landscapes evolve with fractals and glitches that react to music. |
+| [Multi-Capability Visualizer](./multi.html)     | Shapes and lights move with both sound and device motion.                       |
+| [Trippy Synesthetic Visualizer](./seary.html)   | Blend audio and visuals in a rich synesthetic experience.                       |
+| [Pattern Recognition Visualizer](./sgpat.html)  | See patterns form dynamically in response to sound.                             |
+| [SVG + Three.js Visualizer](./svgtest.html)     | A hybrid visualizer blending 2D and 3D elements, reacting in real time.         |
+| [Dreamy Spectrograph](./symph.html)             | A relaxing spectrograph that moves gently with your audio.                      |
+| [Interactive Word Cloud](./words.html)          | Speak and watch the word cloud react and shift with your voice.                 |
+| [Cube Wave](./toy.html?toy=cube-wave)           | A grid of cubes that rise and fall with your audio.                             |
+| [Particle Orbit](./toy.html?toy=particle-orbit) | Thousands of particles swirling faster as the music intensifies.                |
+| [Spiral Burst](./toy.html?toy=spiral-burst)     | Colorful spirals rotate and expand with every beat.                             |
+| [Bouncy Spheres](./toy.html?toy=bouncy-spheres) | Lines of spheres bounce and change color with audio.                            |
+| [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel) | Fly through colorful rings that spin to your music.                             |
+| [Star Field](./toy.html?toy=star-field)         | A field of shimmering stars reacts to the beat.                                 |
 
 ---
 
@@ -93,16 +93,16 @@ To play with the toys locally you’ll need to run them from a local web server.
    npm run dev
    ```
 
-  Open `http://localhost:5173` in your browser.
+Open `http://localhost:5173` in your browser.
 
-  To serve a static build instead of the dev server, run:
+To serve a static build instead of the dev server, run:
 
-  ```bash
-  npm run build
-  python3 -m http.server dist
-  ```
+```bash
+npm run build
+python3 -m http.server dist
+```
 
-  Then open `http://localhost:8000`.
+Then open `http://localhost:8000`.
 
 All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
 

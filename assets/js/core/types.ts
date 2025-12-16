@@ -1,4 +1,7 @@
-import type { LightConfig, AmbientLightConfig } from '../lighting/lighting-setup';
+import type {
+  LightConfig,
+  AmbientLightConfig,
+} from '../lighting/lighting-setup';
 
 /**
  * Shared configuration interface for all toys.

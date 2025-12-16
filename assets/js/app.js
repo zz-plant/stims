@@ -123,17 +123,19 @@ document.getElementById('light-type').addEventListener('change', (event) => {
 initVisualization();
 
 // Handle audio start button click
-document.getElementById('start-audio-btn').addEventListener('click', async () => {
-  const startButton = document.getElementById('start-audio-btn');
-  startButton.disabled = true;
-  const started = await startAudioAndAnimation();
-  if (started) {
-    startButton.style.display = 'none'; // Hide button after starting audio
-    displayError('');
-  } else {
-    startButton.disabled = false;
-  }
-});
+document
+  .getElementById('start-audio-btn')
+  .addEventListener('click', async () => {
+    const startButton = document.getElementById('start-audio-btn');
+    startButton.disabled = true;
+    const started = await startAudioAndAnimation();
+    if (started) {
+      startButton.style.display = 'none'; // Hide button after starting audio
+      displayError('');
+    } else {
+      startButton.disabled = false;
+    }
+  });
 
 // Handle window resize
 window.addEventListener('resize', handleResize);
