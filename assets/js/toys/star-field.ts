@@ -1,13 +1,12 @@
 import * as THREE from 'three';
 import WebToy from '../core/web-toy';
-import { getFrequencyData } from '../utils/audio-handler';
-import { LightConfig, AmbientLightConfig } from '../lighting/lighting-setup';
-
-interface ToyConfig {
-  cameraOptions?: Record<string, unknown>;
-  lightingOptions?: LightConfig;
-  ambientLightOptions?: AmbientLightConfig;
-}
+import type { ToyConfig } from '../core/types';
+import {
+  startAudioLoop,
+  getContextFrequencyData,
+  AnimationContext,
+} from '../core/animation-loop';
+import { getAverageFrequency } from '../utils/audio-handler';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 50 } },
@@ -17,7 +16,6 @@ const toy = new WebToy({
 
 let stars: THREE.Points;
 let starMaterial: THREE.PointsMaterial;
-let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const geometry = new THREE.BufferGeometry();
@@ -32,11 +30,18 @@ function init() {
   toy.scene.add(stars);
 }
 
+function animate(ctx: AnimationContext) {
+  const data = getContextFrequencyData(ctx);
+  const avg = getAverageFrequency(data);
+  stars.rotation.y += 0.001 + avg / 50000;
+  const hue = (avg / 256) % 1;
+  starMaterial.color.setHSL(hue, 0.8, 0.9);
+  ctx.toy.render();
+}
+
 async function startAudio() {
   try {
-    await toy.initAudio();
-    analyser = toy.analyser;
-    toy.renderer.setAnimationLoop(animate);
+    await startAudioLoop(toy, animate);
     return true;
   } catch (e) {
     console.error('Microphone access denied', e);
@@ -44,14 +49,5 @@ async function startAudio() {
   }
 }
 
-function animate() {
-  const data = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
-  const avg = data.length ? data.reduce((a, b) => a + b, 0) / data.length : 0;
-  stars.rotation.y += 0.001 + avg / 50000;
-  const hue = (avg / 256) % 1;
-  starMaterial.color.setHSL(hue, 0.8, 0.9);
-  toy.render();
-}
-
 init();
-(window as any).startAudio = startAudio;
+(window as unknown as Record<string, unknown>).startAudio = startAudio;

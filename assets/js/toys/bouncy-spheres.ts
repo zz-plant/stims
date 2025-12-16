@@ -1,13 +1,11 @@
 import * as THREE from 'three';
 import WebToy from '../core/web-toy';
-import { getFrequencyData } from '../utils/audio-handler';
-import { LightConfig, AmbientLightConfig } from '../lighting/lighting-setup';
-
-interface ToyConfig {
-  cameraOptions?: Record<string, unknown>;
-  lightingOptions?: LightConfig;
-  ambientLightOptions?: AmbientLightConfig;
-}
+import type { ToyConfig } from '../core/types';
+import {
+  startAudioLoop,
+  getContextFrequencyData,
+  AnimationContext,
+} from '../core/animation-loop';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 20, z: 60 } },
@@ -19,7 +17,6 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const spheres: THREE.Mesh[] = [];
-let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const { scene } = toy;
@@ -34,20 +31,8 @@ function init() {
   }
 }
 
-async function startAudio() {
-  try {
-    await toy.initAudio({ fftSize: 128 });
-    analyser = toy.analyser;
-    toy.renderer.setAnimationLoop(animate);
-    return true;
-  } catch (e) {
-    console.error('Microphone access denied', e);
-    throw e;
-  }
-}
-
-function animate() {
-  const data = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
+function animate(ctx: AnimationContext) {
+  const data = getContextFrequencyData(ctx);
   const binsPerSphere = data.length / spheres.length;
   spheres.forEach((sphere, idx) => {
     const bin = Math.floor(idx * binsPerSphere);
@@ -59,8 +44,18 @@ function animate() {
       0.6
     );
   });
-  toy.render();
+  ctx.toy.render();
+}
+
+async function startAudio() {
+  try {
+    await startAudioLoop(toy, animate, { fftSize: 128 });
+    return true;
+  } catch (e) {
+    console.error('Microphone access denied', e);
+    throw e;
+  }
 }
 
 init();
-(window as any).startAudio = startAudio;
+(window as unknown as Record<string, unknown>).startAudio = startAudio;

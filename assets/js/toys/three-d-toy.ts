@@ -1,13 +1,12 @@
 import * as THREE from 'three';
 import WebToy from '../core/web-toy';
-import { getFrequencyData } from '../utils/audio-handler';
-import { LightConfig, AmbientLightConfig } from '../lighting/lighting-setup';
-
-interface ToyConfig {
-  cameraOptions?: Record<string, unknown>;
-  lightingOptions?: LightConfig;
-  ambientLightOptions?: AmbientLightConfig;
-}
+import type { ToyConfig } from '../core/types';
+import {
+  startAudioLoop,
+  getContextFrequencyData,
+  AnimationContext,
+} from '../core/animation-loop';
+import { getAverageFrequency } from '../utils/audio-handler';
 
 let errorElement: HTMLElement | null;
 
@@ -22,9 +21,9 @@ const toy = new WebToy({
   ambientLightOptions: { color: 0x404040, intensity: 0.8 },
 } as ToyConfig);
 
-let torusKnot: THREE.Mesh, particles: THREE.Points;
+let torusKnot: THREE.Mesh;
+let particles: THREE.Points;
 const shapes: THREE.Mesh[] = [];
-let analyser: THREE.AudioAnalyser | null;
 
 function createRandomShape() {
   const shapeType = Math.floor(Math.random() * 3);
@@ -93,7 +92,7 @@ function init() {
   }
 }
 
-function showError(message) {
+function showError(message: string) {
   if (!errorElement) {
     errorElement = document.createElement('div');
     errorElement.id = 'error-message';
@@ -117,26 +116,9 @@ function hideError() {
   }
 }
 
-async function startAudio() {
-  try {
-    await toy.initAudio();
-    analyser = toy.analyser;
-    hideError();
-    toy.renderer.setAnimationLoop(animate);
-    return true;
-  } catch (e) {
-    console.error('Error accessing microphone:', e);
-    showError('Microphone access was denied. Please allow access and reload.');
-    throw e;
-  }
-}
-
-function animate() {
-
-  const dataArray = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
-  const avgFrequency = dataArray.length
-    ? dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-    : 0;
+function animate(ctx: AnimationContext) {
+  const dataArray = getContextFrequencyData(ctx);
+  const avgFrequency = getAverageFrequency(dataArray);
 
   torusKnot.rotation.x += avgFrequency / 5000;
   torusKnot.rotation.y += avgFrequency / 7000;
@@ -151,15 +133,29 @@ function animate() {
       shape.position.z = -800;
       shape.position.x = Math.random() * 120 - 60;
       shape.position.y = Math.random() * 120 - 60;
-      shape.material.color.set(Math.random() * 0xffffff);
+      (shape.material as THREE.MeshStandardMaterial).color.set(
+        Math.random() * 0xffffff
+      );
     }
   });
 
   const randomScale = 1 + Math.sin(Date.now() * 0.001) * 0.3;
   torusKnot.scale.set(randomScale, randomScale, randomScale);
 
-  toy.render();
+  ctx.toy.render();
+}
+
+async function startAudio() {
+  try {
+    await startAudioLoop(toy, animate);
+    hideError();
+    return true;
+  } catch (e) {
+    console.error('Error accessing microphone:', e);
+    showError('Microphone access was denied. Please allow access and reload.');
+    throw e;
+  }
 }
 
 init();
-(window as any).startAudio = startAudio;
+(window as unknown as Record<string, unknown>).startAudio = startAudio;

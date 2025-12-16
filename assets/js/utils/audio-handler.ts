@@ -78,3 +78,12 @@ export async function initAudio(
 export function getFrequencyData(analyser: THREE.AudioAnalyser) {
   return analyser.getFrequencyData();
 }
+
+/**
+ * Compute the average value of frequency data.
+ * Replaces the repeated inline `data.reduce((a, b) => a + b, 0) / data.length` pattern.
+ */
+export function getAverageFrequency(data: Uint8Array): number {
+  if (data.length === 0) return 0;
+  return data.reduce((a, b) => a + b, 0) / data.length;
+}

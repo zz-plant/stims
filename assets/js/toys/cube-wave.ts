@@ -1,13 +1,12 @@
 import * as THREE from 'three';
 import WebToy from '../core/web-toy';
-import { getFrequencyData } from '../utils/audio-handler';
-import { LightConfig, AmbientLightConfig } from '../lighting/lighting-setup';
-
-interface ToyConfig {
-  cameraOptions?: Record<string, unknown>;
-  lightingOptions?: LightConfig;
-  ambientLightOptions?: AmbientLightConfig;
-}
+import type { ToyConfig } from '../core/types';
+import {
+  startAudioLoop,
+  getContextFrequencyData,
+  AnimationContext,
+} from '../core/animation-loop';
+import { getAverageFrequency } from '../utils/audio-handler';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 30, z: 80 } },
@@ -19,7 +18,6 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const cubes: THREE.Mesh[] = [];
-let analyser: THREE.AudioAnalyser | null;
 
 function init() {
   const { scene } = toy;
@@ -38,23 +36,9 @@ function init() {
   }
 }
 
-async function startAudio() {
-  try {
-    await toy.initAudio({ fftSize: 128 });
-    analyser = toy.analyser;
-    toy.renderer.setAnimationLoop(animate);
-    return true;
-  } catch (e) {
-    console.error('Microphone access denied', e);
-    throw e;
-  }
-}
-
-function animate() {
-  const dataArray = analyser ? getFrequencyData(analyser) : new Uint8Array(0);
-  const avg = dataArray.length
-    ? dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-    : 0;
+function animate(ctx: AnimationContext) {
+  const dataArray = getContextFrequencyData(ctx);
+  const avg = getAverageFrequency(dataArray);
 
   const binsPerCube = dataArray.length / cubes.length;
   cubes.forEach((cube, i) => {
@@ -62,12 +46,26 @@ function animate() {
     const value = dataArray[bin] || avg;
     const scale = 1 + value / 128;
     cube.scale.y = scale;
-    cube.material.color.setHSL(0.6 - value / 512, 0.8, 0.5);
+    (cube.material as THREE.MeshStandardMaterial).color.setHSL(
+      0.6 - value / 512,
+      0.8,
+      0.5
+    );
     cube.rotation.y += value / 100000;
   });
 
-  toy.render();
+  ctx.toy.render();
+}
+
+async function startAudio() {
+  try {
+    await startAudioLoop(toy, animate, { fftSize: 128 });
+    return true;
+  } catch (e) {
+    console.error('Microphone access denied', e);
+    throw e;
+  }
 }
 
 init();
-(window as any).startAudio = startAudio;
+(window as unknown as Record<string, unknown>).startAudio = startAudio;
