@@ -21,7 +21,9 @@ describe('initLighting', () => {
   it('does not require a position for non-positional lights', () => {
     const scene = new Scene();
 
-    expect(() => initLighting(scene, { type: 'HemisphereLight' })).not.toThrow();
+    expect(() =>
+      initLighting(scene, { type: 'HemisphereLight' })
+    ).not.toThrow();
     expect(scene.children[0]).toBeInstanceOf(HemisphereLight);
   });
 });

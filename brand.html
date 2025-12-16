@@ -20,13 +20,12 @@
       const scene = new THREE.Scene();
       scene.fog = new THREE.Fog(0x000000, 10, 200);
       function displayError(message) {
-        const el = document.getElementById("error-message");
+        const el = document.getElementById('error-message');
         if (el) {
           el.innerText = message;
-          el.style.display = "block";
+          el.style.display = 'block';
         }
       }
-
 
       // Camera setup
       const camera = new THREE.PerspectiveCamera(
@@ -196,7 +195,9 @@
         })
         .catch((err) => {
           console.error('Audio input error: ', err);
-            displayError('Microphone access is required for the visualization to work. Please allow microphone access.');
+          displayError(
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
+          );
         });
 
       // Animation loop

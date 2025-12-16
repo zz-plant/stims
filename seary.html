@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -36,10 +36,10 @@
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
       function displayError(message) {
-        const el = document.getElementById("error-message");
+        const el = document.getElementById('error-message');
         if (el) {
           el.innerText = message;
-          el.style.display = "block";
+          el.style.display = 'block';
         }
       }
 
@@ -218,15 +218,19 @@
             audioContext = new (window.AudioContext ||
               window.webkitAudioContext)();
             if (audioSelect.value === 'mic') {
-              initAudio().then(({ analyser: a, dataArray: d }) => {
-                analyser = a;
-                source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                startProcessing(d);
-              }).catch((err) => {
-                console.error("Error capturing audio: ", err);
-                displayError("Microphone access is required for the visualization to work. Please allow microphone access.");
-              });
+              initAudio()
+                .then(({ analyser: a, dataArray: d }) => {
+                  analyser = a;
+                  source = audioContext.createMediaStreamSource(stream);
+                  source.connect(analyser);
+                  startProcessing(d);
+                })
+                .catch((err) => {
+                  console.error('Error capturing audio: ', err);
+                  displayError(
+                    'Microphone access is required for the visualization to work. Please allow microphone access.'
+                  );
+                });
             } else {
               // Use the audio context's `createMediaElementSource` to capture device audio
               const audioElement = new Audio();

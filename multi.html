@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -32,13 +32,12 @@
       let renderer,
         isWebGPUSupported = false;
       function displayError(message) {
-        const el = document.getElementById("error-message");
+        const el = document.getElementById('error-message');
         if (el) {
           el.innerText = message;
-          el.style.display = "block";
+          el.style.display = 'block';
         }
       }
-
 
       // Try to initialize WebGPU
       if (navigator.gpu) {
@@ -53,7 +52,6 @@
             error
           );
           isWebGPUSupported = false;
-
         }
       }
 
@@ -160,7 +158,9 @@
         })
         .catch(function (err) {
           console.error('The following error occurred: ' + err);
-          displayError('Microphone access is required for the visualization to work. Please allow microphone access.');
+          displayError(
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
+          );
         });
 
       // Device orientation handling

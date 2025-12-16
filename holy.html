@@ -620,13 +620,19 @@
           changeShape();
         }
         lastTap = currentTime;
-        activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        activePointers.set(event.pointerId, {
+          x: event.clientX,
+          y: event.clientY,
+        });
       }
 
       function onPointerMove(event) {
         event.preventDefault();
         if (!activePointers.has(event.pointerId)) return;
-        activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        activePointers.set(event.pointerId, {
+          x: event.clientX,
+          y: event.clientY,
+        });
         const points = Array.from(activePointers.values());
         if (points.length === 1) {
           const p = points[0];
