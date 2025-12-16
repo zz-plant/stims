@@ -13,7 +13,7 @@
         width: 100%;
         height: 100%;
         pointer-events: none;
-        filter: url('#displacementFilter'); /* Apply CSS displacement filter */
+        filter: url('#displacementFilter');
         mix-blend-mode: screen;
       }
       @keyframes colorShift {
@@ -44,15 +44,27 @@
           opacity: 1;
         }
       }
+      #error-message {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: #ff0000;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10;
+      }
     </style>
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
+    <div id="error-message" style="display: none"></div>
     <!-- The SVG element for the CSS displacement map -->
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0">
       <defs>
         <filter id="displacementFilter">
           <feTurbulence
+            id="turbulence"
             type="fractalNoise"
             baseFrequency="0.2"
             numOctaves="6"
@@ -73,6 +85,7 @@
     <div id="overlay">
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
         <circle
+          id="mainCircle"
           cx="50%"
           cy="50%"
           r="200"
@@ -80,6 +93,17 @@
           style="
             animation: pulse 6s infinite alternate ease-in-out;
             filter: blur(4px);
+          "
+        />
+        <circle
+          id="innerCircle"
+          cx="50%"
+          cy="50%"
+          r="100"
+          fill="url(#grad2)"
+          style="
+            animation: pulse 4s infinite alternate-reverse ease-in-out;
+            filter: blur(2px);
           "
         />
         <defs>
@@ -92,16 +116,31 @@
             fy="50%"
           >
             <stop
+              id="grad1Stop1"
               offset="0%"
-              style="
-                stop-color: rgb(255, 255, 255);
-                stop-opacity: 1;
-                animation: colorShift 8s infinite alternate;
-              "
+              style="stop-color: rgb(255, 255, 255); stop-opacity: 1"
             />
             <stop
               offset="100%"
               style="stop-color: rgb(0, 0, 0); stop-opacity: 1"
+            />
+          </radialGradient>
+          <radialGradient
+            id="grad2"
+            cx="50%"
+            cy="50%"
+            r="50%"
+            fx="50%"
+            fy="50%"
+          >
+            <stop
+              id="grad2Stop1"
+              offset="0%"
+              style="stop-color: rgb(255, 100, 200); stop-opacity: 0.8"
+            />
+            <stop
+              offset="100%"
+              style="stop-color: rgb(50, 50, 150); stop-opacity: 0.5"
             />
           </radialGradient>
         </defs>
@@ -112,9 +151,30 @@
     <script type="module">
       import * as THREE from 'three';
       import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
-      if (!ensureWebGL()) {
-        return;
+      import {
+        initAudio,
+        getFrequencyData,
+      } from './assets/js/utils/audio-handler.ts';
+
+      const errorEl = document.getElementById('error-message');
+
+      function displayError(message) {
+        if (errorEl) {
+          errorEl.textContent = message;
+          errorEl.style.display = 'block';
+        }
       }
+
+      function hideError() {
+        if (errorEl) {
+          errorEl.style.display = 'none';
+        }
+      }
+
+      if (!ensureWebGL()) {
+        displayError('WebGL is not supported in your browser.');
+      }
+
       // Set up the Three.js scene
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
@@ -127,22 +187,67 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
-      // Load a simple displacement geometry
-      const geometry = new THREE.SphereGeometry(5, 64, 64);
-      const material = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        roughness: 0.7,
-        metalness: 0.3,
+      // Create multiple spheres with different materials
+      const spheres = [];
+      const geometry = new THREE.SphereGeometry(3, 64, 64);
+
+      // Main sphere
+      const mainMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff66aa,
+        roughness: 0.3,
+        metalness: 0.7,
+        emissive: 0x220011,
       });
-      const sphere = new THREE.Mesh(geometry, material);
-      scene.add(sphere);
+      const mainSphere = new THREE.Mesh(geometry, mainMaterial);
+      scene.add(mainSphere);
+      spheres.push({ mesh: mainSphere, baseScale: 1.0 });
+
+      // Orbiting spheres
+      const orbitGeometry = new THREE.SphereGeometry(1, 32, 32);
+      for (let i = 0; i < 4; i++) {
+        const orbitMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color().setHSL(i * 0.25, 0.8, 0.6),
+          roughness: 0.4,
+          metalness: 0.6,
+        });
+        const orbitSphere = new THREE.Mesh(orbitGeometry, orbitMaterial);
+        orbitSphere.userData.angle = (i * Math.PI * 2) / 4;
+        orbitSphere.userData.radius = 8;
+        orbitSphere.userData.speed = 0.02 + i * 0.005;
+        scene.add(orbitSphere);
+        spheres.push({ mesh: orbitSphere, baseScale: 0.5, isOrbiting: true });
+      }
+
+      // Add particles
+      const particlesGeometry = new THREE.BufferGeometry();
+      const particleCount = 500;
+      const positions = new Float32Array(particleCount * 3);
+      for (let i = 0; i < particleCount * 3; i++) {
+        positions[i] = (Math.random() - 0.5) * 50;
+      }
+      particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const particlesMaterial = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.15,
+        transparent: true,
+        opacity: 0.8,
+      });
+      const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+      scene.add(particles);
 
       // Add lighting
-      const light = new THREE.PointLight(0xffffff, 1, 100);
-      light.position.set(10, 10, 10);
-      scene.add(light);
+      const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+      scene.add(ambientLight);
 
-      camera.position.z = 15;
+      const pointLight = new THREE.PointLight(0xff00ff, 2, 100);
+      pointLight.position.set(10, 10, 10);
+      scene.add(pointLight);
+
+      const pointLight2 = new THREE.PointLight(0x00ffff, 1.5, 100);
+      pointLight2.position.set(-10, -10, 10);
+      scene.add(pointLight2);
+
+      camera.position.z = 20;
 
       // Handle window resize
       window.addEventListener('resize', () => {
@@ -151,42 +256,107 @@
         camera.updateProjectionMatrix();
       });
 
-      // Set up audio context and analyzer
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const analyser = audioCtx.createAnalyser();
-      const audio = new Audio('path-to-your-audio-file.mp3');
-      audio.crossOrigin = 'anonymous';
-      audio.loop = true;
+      // Set up audio using the shared audio handler
+      let analyser;
+      let audioDataArray = new Uint8Array(128);
 
-      const source = audioCtx.createMediaElementSource(audio);
-      source.connect(analyser);
-      analyser.connect(audioCtx.destination);
-      analyser.fftSize = 256;
+      async function setupAudio() {
+        try {
+          const result = await initAudio({ fftSize: 256 });
+          analyser = result.analyser;
+          hideError();
+        } catch (err) {
+          console.error('Error capturing audio: ', err);
+          displayError(
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
+          );
+        }
+      }
 
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
+      setupAudio();
 
-      audio.play();
+      // SVG elements for reactive effects
+      const turbulence = document.getElementById('turbulence');
+      const mainCircle = document.getElementById('mainCircle');
+      const innerCircle = document.getElementById('innerCircle');
+      const grad1Stop1 = document.getElementById('grad1Stop1');
+      const grad2Stop1 = document.getElementById('grad2Stop1');
+
+      let time = 0;
 
       // Main animation loop
       function animate() {
         requestAnimationFrame(animate);
+        time += 0.016;
 
-        // Get audio data
-        analyser.getByteFrequencyData(dataArray);
+        let avgFrequency = 0;
+        let bassFrequency = 0;
+        let highFrequency = 0;
 
-        // Modify sphere displacement scale based on audio frequency
-        const displacementScale = dataArray[0] / 128;
+        if (analyser) {
+          audioDataArray = getFrequencyData(analyser);
+          avgFrequency = audioDataArray.reduce((sum, val) => sum + val, 0) / audioDataArray.length;
+          bassFrequency = audioDataArray.slice(0, 10).reduce((sum, val) => sum + val, 0) / 10;
+          highFrequency = audioDataArray.slice(audioDataArray.length - 20).reduce((sum, val) => sum + val, 0) / 20;
+        }
 
-        // Modify CSS displacement filter scale based on audio data
-        const filterElement = document.querySelector(
-          '#displacementFilter feDisplacementMap'
-        );
-        filterElement.setAttribute('scale', displacementScale * 100);
+        const normalizedAvg = avgFrequency / 255;
+        const normalizedBass = bassFrequency / 255;
+        const normalizedHigh = highFrequency / 255;
 
-        // Rotate the sphere for a more dynamic visual
-        sphere.rotation.x += 0.01;
-        sphere.rotation.y += 0.01;
+        // Animate main sphere
+        const mainScale = 1 + normalizedBass * 0.5;
+        mainSphere.scale.set(mainScale, mainScale, mainScale);
+        mainSphere.rotation.x += 0.005 + normalizedAvg * 0.02;
+        mainSphere.rotation.y += 0.01 + normalizedAvg * 0.02;
+        mainMaterial.emissive.setHSL((time * 0.1) % 1, 0.5, normalizedAvg * 0.3);
+
+        // Animate orbiting spheres
+        spheres.forEach((item, index) => {
+          if (item.isOrbiting) {
+            const mesh = item.mesh;
+            mesh.userData.angle += mesh.userData.speed * (1 + normalizedAvg);
+            mesh.position.x = Math.cos(mesh.userData.angle) * mesh.userData.radius;
+            mesh.position.z = Math.sin(mesh.userData.angle) * mesh.userData.radius;
+            mesh.position.y = Math.sin(mesh.userData.angle * 2) * 2;
+            const orbScale = item.baseScale * (1 + normalizedHigh * 0.3);
+            mesh.scale.set(orbScale, orbScale, orbScale);
+          }
+        });
+
+        // Animate particles
+        particles.rotation.y += 0.001 + normalizedAvg * 0.005;
+        particlesMaterial.opacity = 0.5 + normalizedAvg * 0.5;
+
+        // Animate lights
+        pointLight.intensity = 1 + normalizedBass * 3;
+        pointLight2.intensity = 0.5 + normalizedHigh * 2;
+
+        // Modify SVG displacement filter based on audio
+        if (turbulence) {
+          const baseFreq = 0.2 + normalizedBass * 0.1;
+          turbulence.setAttribute('baseFrequency', baseFreq.toString());
+        }
+
+        // Animate SVG circles
+        if (mainCircle) {
+          const radius = 200 + normalizedBass * 100;
+          mainCircle.setAttribute('r', radius.toString());
+        }
+        if (innerCircle) {
+          const radius = 100 + normalizedHigh * 50;
+          innerCircle.setAttribute('r', radius.toString());
+        }
+
+        // Animate gradient colors
+        if (grad1Stop1) {
+          const hue = ((time * 50) % 360);
+          grad1Stop1.style.stopColor = `hsl(${hue}, 100%, ${50 + normalizedAvg * 30}%)`;
+        }
+        if (grad2Stop1) {
+          const hue = ((time * 30 + 180) % 360);
+          grad2Stop1.style.stopColor = `hsl(${hue}, 80%, ${40 + normalizedHigh * 30}%)`;
+        }
 
         // Render the Three.js scene
         renderer.render(scene, camera);

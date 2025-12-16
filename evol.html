@@ -130,7 +130,7 @@
             float fbm(vec2 p) {
                 float total = 0.0;
                 float amplitude = 1.0;
-                for (int i = 0; i < 6; i++) {
+                for (int i = 0; i < 8; i++) {
                     total += noise(p) * amplitude;
                     p *= 2.0;
                     amplitude *= 0.5;
@@ -138,15 +138,55 @@
                 return total;
             }
 
+            vec3 weirdcorePalette(float t, float audio) {
+                vec3 a = vec3(0.5, 0.5, 0.5);
+                vec3 b = vec3(0.5, 0.5, 0.5);
+                vec3 c = vec3(1.0, 0.7, 0.4);
+                vec3 d = vec3(0.0, 0.15, 0.2);
+                return a + b * cos(6.28318 * (c * t + d + audio * 0.5));
+            }
+
             void main() {
                 vec2 uv = v_uv;
                 vec2 pos = (gl_FragCoord.xy / u_resolution.xy) * 2.0 - 1.0;
+                pos.x *= u_resolution.x / u_resolution.y;
 
-                float audioEffect = u_audioData * 5.0;
-                float distortion = fbm(uv * u_fractalIntensity + audioEffect) * 0.5;
-                float glitch = step(0.9, random(uv * u_time * 2.0)) * 0.5;
-
-                vec3 color = vec3(distortion * 0.5 + glitch, distortion * 0.3, distortion * 0.8);
+                float audioEffect = u_audioData * 8.0;
+                
+                // Warped coordinates for surreal effect
+                vec2 warpedUV = uv + vec2(
+                    sin(uv.y * 10.0 + u_time + audioEffect) * 0.05,
+                    cos(uv.x * 10.0 + u_time * 1.3) * 0.05
+                );
+                
+                float distortion = fbm(warpedUV * u_fractalIntensity * 3.0 + audioEffect) * 0.6;
+                float distortion2 = fbm(warpedUV * u_fractalIntensity * 1.5 - u_time * 0.5) * 0.4;
+                
+                // Enhanced glitch effects
+                float glitch = step(0.92, random(uv * u_time * 3.0)) * 0.8;
+                float scanline = sin(gl_FragCoord.y * 0.5 + u_time * 10.0) * 0.03;
+                float vhsNoise = random(vec2(u_time * 0.1, gl_FragCoord.y * 0.01)) * 0.05;
+                
+                // Color shifts for weirdcore aesthetic
+                float colorShift = sin(u_time * 0.5 + distortion * 5.0) * 0.5 + 0.5;
+                vec3 color = weirdcorePalette(distortion + distortion2, u_audioData);
+                
+                // Add chromatic aberration
+                float chromaOffset = (0.01 + u_audioData * 0.02);
+                vec3 chromaColor;
+                chromaColor.r = weirdcorePalette(distortion + chromaOffset, u_audioData).r;
+                chromaColor.g = color.g;
+                chromaColor.b = weirdcorePalette(distortion - chromaOffset, u_audioData).b;
+                
+                color = mix(color, chromaColor, 0.7);
+                color += glitch * vec3(1.0, 0.0, 0.5);
+                color += scanline;
+                color += vhsNoise;
+                
+                // Vignette
+                float vignette = 1.0 - length(pos) * 0.4;
+                color *= vignette;
+                
                 gl_FragColor = vec4(color, 1.0);
             }
         `;
@@ -240,7 +280,10 @@
           getAudioData();
         } catch (err) {
           console.error('Error capturing audio: ', err);
-          displayError('Microphone access is required for the visualization to work. Please allow microphone access.');
+          displayError(
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
+          );
+        }
       }
 
       function getAudioData() {
