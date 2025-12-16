@@ -81,7 +81,10 @@ function init() {
     positions[i * 3 + 2] = Math.random() * -TUNNEL_LENGTH;
   }
 
-  particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particleGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(positions, 3)
+  );
   const particleMaterial = new THREE.PointsMaterial({
     color: 0xffffff,
     size: 0.5,
@@ -136,9 +139,18 @@ function animate(ctx: AnimationContext) {
     outerMaterial.emissive.setHSL(hueShift, 0.6, normalizedValue * 0.4);
 
     if (ringData.inner) {
-      const innerMaterial = ringData.inner.material as THREE.MeshStandardMaterial;
-      innerMaterial.color.setHSL((hueShift + 0.1) % 1, 0.9, 0.6 + normalizedValue * 0.2);
-      innerMaterial.emissive.setHSL((hueShift + 0.1) % 1, 0.8, normalizedValue * 0.5);
+      const innerMaterial = ringData.inner
+        .material as THREE.MeshStandardMaterial;
+      innerMaterial.color.setHSL(
+        (hueShift + 0.1) % 1,
+        0.9,
+        0.6 + normalizedValue * 0.2
+      );
+      innerMaterial.emissive.setHSL(
+        (hueShift + 0.1) % 1,
+        0.8,
+        normalizedValue * 0.5
+      );
       innerMaterial.opacity = 0.5 + normalizedValue * 0.4;
     }
   });

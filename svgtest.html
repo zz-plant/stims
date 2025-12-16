@@ -225,7 +225,10 @@
       for (let i = 0; i < particleCount * 3; i++) {
         positions[i] = (Math.random() - 0.5) * 50;
       }
-      particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      particlesGeometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(positions, 3)
+      );
       const particlesMaterial = new THREE.PointsMaterial({
         color: 0xffffff,
         size: 0.15,
@@ -295,9 +298,15 @@
 
         if (analyser) {
           audioDataArray = getFrequencyData(analyser);
-          avgFrequency = audioDataArray.reduce((sum, val) => sum + val, 0) / audioDataArray.length;
-          bassFrequency = audioDataArray.slice(0, 10).reduce((sum, val) => sum + val, 0) / 10;
-          highFrequency = audioDataArray.slice(audioDataArray.length - 20).reduce((sum, val) => sum + val, 0) / 20;
+          avgFrequency =
+            audioDataArray.reduce((sum, val) => sum + val, 0) /
+            audioDataArray.length;
+          bassFrequency =
+            audioDataArray.slice(0, 10).reduce((sum, val) => sum + val, 0) / 10;
+          highFrequency =
+            audioDataArray
+              .slice(audioDataArray.length - 20)
+              .reduce((sum, val) => sum + val, 0) / 20;
         }
 
         const normalizedAvg = avgFrequency / 255;
@@ -309,15 +318,21 @@
         mainSphere.scale.set(mainScale, mainScale, mainScale);
         mainSphere.rotation.x += 0.005 + normalizedAvg * 0.02;
         mainSphere.rotation.y += 0.01 + normalizedAvg * 0.02;
-        mainMaterial.emissive.setHSL((time * 0.1) % 1, 0.5, normalizedAvg * 0.3);
+        mainMaterial.emissive.setHSL(
+          (time * 0.1) % 1,
+          0.5,
+          normalizedAvg * 0.3
+        );
 
         // Animate orbiting spheres
         spheres.forEach((item, index) => {
           if (item.isOrbiting) {
             const mesh = item.mesh;
             mesh.userData.angle += mesh.userData.speed * (1 + normalizedAvg);
-            mesh.position.x = Math.cos(mesh.userData.angle) * mesh.userData.radius;
-            mesh.position.z = Math.sin(mesh.userData.angle) * mesh.userData.radius;
+            mesh.position.x =
+              Math.cos(mesh.userData.angle) * mesh.userData.radius;
+            mesh.position.z =
+              Math.sin(mesh.userData.angle) * mesh.userData.radius;
             mesh.position.y = Math.sin(mesh.userData.angle * 2) * 2;
             const orbScale = item.baseScale * (1 + normalizedHigh * 0.3);
             mesh.scale.set(orbScale, orbScale, orbScale);
@@ -350,12 +365,16 @@
 
         // Animate gradient colors
         if (grad1Stop1) {
-          const hue = ((time * 50) % 360);
-          grad1Stop1.style.stopColor = `hsl(${hue}, 100%, ${50 + normalizedAvg * 30}%)`;
+          const hue = (time * 50) % 360;
+          grad1Stop1.style.stopColor = `hsl(${hue}, 100%, ${
+            50 + normalizedAvg * 30
+          }%)`;
         }
         if (grad2Stop1) {
-          const hue = ((time * 30 + 180) % 360);
-          grad2Stop1.style.stopColor = `hsl(${hue}, 80%, ${40 + normalizedHigh * 30}%)`;
+          const hue = (time * 30 + 180) % 360;
+          grad2Stop1.style.stopColor = `hsl(${hue}, 80%, ${
+            40 + normalizedHigh * 30
+          }%)`;
         }
 
         // Render the Three.js scene

@@ -99,7 +99,7 @@ function animate(ctx: AnimationContext) {
     const normalizedValue = value / 255;
 
     // Wave-like bounce with audio reactivity
-    const waveOffset = (col * 0.3 + row * 0.5);
+    const waveOffset = col * 0.3 + row * 0.5;
     const bounce = Math.sin(time * 3 + waveOffset) * 3;
     const audioBoost = normalizedValue * 15;
     mesh.position.y = bounce + audioBoost;
@@ -115,7 +115,11 @@ function animate(ctx: AnimationContext) {
     // Color shift based on audio
     const material = mesh.material as THREE.MeshStandardMaterial;
     const hue = ((col / COLS) * 0.3 + 0.8 + normalizedValue * 0.2) % 1;
-    material.color.setHSL(hue, 0.7 + normalizedValue * 0.3, 0.5 + normalizedValue * 0.2);
+    material.color.setHSL(
+      hue,
+      0.7 + normalizedValue * 0.3,
+      0.5 + normalizedValue * 0.2
+    );
     material.emissive.setHSL(hue, 0.5, normalizedValue * 0.3);
   });
 

@@ -64,7 +64,10 @@ function init() {
     }
   }
 
-  geometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(starPositions, 3)
+  );
   geometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
   geometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 
@@ -101,8 +104,14 @@ function init() {
     nebulaColors[i3 + 2] = color.b;
   }
 
-  nebulaGeometry.setAttribute('position', new THREE.BufferAttribute(nebulaPositions, 3));
-  nebulaGeometry.setAttribute('color', new THREE.BufferAttribute(nebulaColors, 3));
+  nebulaGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(nebulaPositions, 3)
+  );
+  nebulaGeometry.setAttribute(
+    'color',
+    new THREE.BufferAttribute(nebulaColors, 3)
+  );
 
   const nebulaMaterial = new THREE.PointsMaterial({
     size: 15,
@@ -162,7 +171,8 @@ function animate(ctx: AnimationContext) {
   // Animate nebula
   nebulaParticles.rotation.y += 0.001;
   nebulaParticles.rotation.x = Math.sin(time * 0.1) * 0.1;
-  (nebulaParticles.material as THREE.PointsMaterial).opacity = 0.2 + normalizedAvg * 0.3;
+  (nebulaParticles.material as THREE.PointsMaterial).opacity =
+    0.2 + normalizedAvg * 0.3;
 
   // Color shift based on audio
   const hue = (normalizedAvg * 0.5 + time * 0.05) % 1;
