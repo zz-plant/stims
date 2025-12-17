@@ -60,30 +60,37 @@ export function applyAudioScale(
 function averageFrequencyRange(
   audioData: Uint8Array,
   startRatio: number,
-  endRatio: number,
-  denominatorRatio = endRatio - startRatio
+  endRatio: number
 ) {
-  const start = Math.trunc(audioData.length * startRatio);
-  const end = Math.trunc(audioData.length * endRatio);
-  const slice = audioData.slice(start, end);
-  if (slice.length === 0) return 0;
-  const sum = slice.reduce((acc, val) => acc + val, 0);
-  const rangeLength = slice.length || audioData.length * denominatorRatio || 1;
+  const start = Math.max(0, Math.trunc(audioData.length * startRatio));
+  const end = Math.min(
+    audioData.length,
+    Math.trunc(audioData.length * endRatio)
+  );
+  const rangeLength = end - start;
+
+  if (rangeLength <= 0) return 0;
+
+  let sum = 0;
+  for (let i = start; i < end; i++) {
+    sum += audioData[i];
+  }
+
   return sum / rangeLength;
 }
 
 function getLowFrequency(audioData: Uint8Array) {
-  return averageFrequencyRange(audioData, 0, 0.33, 0.33);
+  return averageFrequencyRange(audioData, 0, 0.33);
 }
 
 function getMidFrequency(audioData: Uint8Array) {
-  return averageFrequencyRange(audioData, 0.33, 0.66, 0.33);
+  return averageFrequencyRange(audioData, 0.33, 0.66);
 }
 
 function getHighFrequency(audioData: Uint8Array) {
-  return averageFrequencyRange(audioData, 0.66, 1, 0.33);
+  return averageFrequencyRange(audioData, 0.66, 1);
 }
 
 function getAverageFrequency(audioData: Uint8Array) {
-  return averageFrequencyRange(audioData, 0, 1, 1);
+  return averageFrequencyRange(audioData, 0, 1);
 }
