@@ -85,5 +85,11 @@ export function getFrequencyData(analyser: THREE.AudioAnalyser) {
  */
 export function getAverageFrequency(data: Uint8Array): number {
   if (data.length === 0) return 0;
-  return data.reduce((a, b) => a + b, 0) / data.length;
+
+  let sum = 0;
+  for (let i = 0; i < data.length; i += 1) {
+    sum += data[i];
+  }
+
+  return sum / data.length;
 }
