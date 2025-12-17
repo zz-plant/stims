@@ -110,6 +110,10 @@ Then open `http://localhost:8000`.
 
 All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
 
+## Code of Conduct and Contributions
+
+Please review our [Code of Conduct](./CODE_OF_CONDUCT.md) before participating in the project. By contributing, you agree to uphold these community standards. A full contributing guide will live alongside the Code of Conduct so expectations are always clear.
+
 ### Running Tests
 
 This project uses [Jest](https://jestjs.io/) for its test suite. To install
@@ -126,9 +130,24 @@ dependencies and run the tests:
    npm test
    ```
 
+For custom test filters or file patterns, you can run Jest directly with the required ESM flag via the dedicated script:
+
+```bash
+npm run jest -- --testPathPattern=some-file
+```
+
 ### Linting and Formatting
 
 Before committing, run `npm run lint` to check code style and `npm run format` to automatically format your files. This keeps the project consistent.
+
+## Contributing
+
+If you run into a problem or want to propose an improvement, please use the GitHub issue templates so we get the details we need:
+
+- **Bug reports**: include clear reproduction steps, your environment, and what you expected to happen.
+- **Feature requests**: describe the problem you’re trying to solve, the behavior you’d like, and any alternatives you considered.
+
+When opening a pull request, fill out the PR template with a summary of the change and the tests you ran. Check the lint and test boxes only if you executed those commands.
 
 ---
 

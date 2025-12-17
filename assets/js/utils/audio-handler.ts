@@ -12,14 +12,14 @@ export class AudioAccessError extends Error {
   }
 }
 
-export async function initAudio(
-  options: {
-    fftSize?: number;
-    camera?: THREE.Camera;
-    positional?: boolean;
-    object?: THREE.Object3D;
-  } = {}
-) {
+export type AudioInitOptions = {
+  fftSize?: number;
+  camera?: THREE.Camera;
+  positional?: boolean;
+  object?: THREE.Object3D;
+};
+
+export async function initAudio(options: AudioInitOptions = {}) {
   const { fftSize = 256, camera, positional = false, object } = options;
 
   if (typeof navigator === 'undefined') {
