@@ -11,6 +11,8 @@
     "prepare": "husky install"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "@types/three": "^0.181.0",
     "eslint": "^8.55.0",
     "husky": "^9.0.11",
