@@ -3,6 +3,20 @@ import toysData from './toys-data.js';
 const MANIFEST_PATH = '/.vite/manifest.json';
 let manifestPromise;
 
+function disposeActiveToy() {
+  const activeToy = globalThis.__activeWebToy;
+
+  if (activeToy?.dispose) {
+    try {
+      activeToy.dispose();
+    } catch (error) {
+      console.error('Error disposing existing toy', error);
+    }
+  }
+
+  delete (globalThis as Record<string, unknown>).__activeWebToy;
+}
+
 async function fetchManifest() {
   if (!manifestPromise) {
     manifestPromise = fetch(MANIFEST_PATH)
@@ -35,12 +49,15 @@ export async function loadToy(slug) {
   }
 
   if (toy.type === 'page') {
+    disposeActiveToy();
     window.location.href = `./${slug}.html`;
   } else if (toy.type === 'module') {
+    disposeActiveToy();
     document.getElementById('toy-list')?.remove();
     const moduleUrl = await resolveModulePath(toy.module);
     await import(moduleUrl);
   } else {
+    disposeActiveToy();
     window.location.href = toy.module;
   }
 }
