@@ -1,4 +1,8 @@
 import js from '@eslint/js';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
+
+const tsconfigRootDir = new URL('.', import.meta.url).pathname;
 
 export default [
   js.configs.recommended,
@@ -25,6 +29,23 @@ export default [
         CustomEvent: 'readonly',
       },
     },
-    ignores: ['assets/js/**'],
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: './tsconfig.json',
+        tsconfigRootDir,
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+    },
+    rules: {
+      ...tsPlugin.configs.recommended.rules,
+    },
   },
 ];
