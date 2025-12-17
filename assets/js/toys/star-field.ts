@@ -64,11 +64,13 @@ function init() {
     }
   }
 
-  geometry.setAttribute(
-    'position',
-    new THREE.BufferAttribute(starPositions, 3)
-  );
-  geometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+  const positionAttribute = new THREE.BufferAttribute(starPositions, 3);
+  positionAttribute.setUsage(THREE.DynamicDrawUsage);
+  geometry.setAttribute('position', positionAttribute);
+
+  const sizeAttribute = new THREE.BufferAttribute(starSizes, 1);
+  sizeAttribute.setUsage(THREE.DynamicDrawUsage);
+  geometry.setAttribute('size', sizeAttribute);
   geometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 
   starMaterial = new THREE.PointsMaterial({
