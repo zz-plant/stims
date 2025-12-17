@@ -15,6 +15,14 @@ export default [
     type: 'page',
   },
   {
+    slug: 'clay',
+    title: 'Pottery Wheel Sculptor',
+    description:
+      'Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.',
+    module: './clay.html',
+    type: 'page',
+  },
+  {
     slug: 'defrag',
     title: 'Defrag Visualizer',
     description:
@@ -28,6 +36,14 @@ export default [
     description:
       'Watch surreal landscapes evolve with fractals and glitches that react to music.',
     module: './toy.html?toy=evol',
+    type: 'page',
+  },
+  {
+    slug: 'geom',
+    title: 'Microphone Geometry Visualizer',
+    description:
+      'Push shifting geometric forms directly from live mic input with responsive controls.',
+    module: './geom.html',
     type: 'page',
   },
   {
@@ -49,6 +65,14 @@ export default [
     title: 'Pattern Recognition Visualizer',
     description: 'See patterns form dynamically in response to sound.',
     module: './toy.html?toy=sgpat',
+    type: 'page',
+  },
+  {
+    slug: 'legible',
+    title: 'Terminal Word Grid',
+    description:
+      'A retro green text grid that pulses to audio and surfaces fresh words as you play.',
+    module: './legible.html',
     type: 'page',
   },
   {
@@ -88,6 +112,14 @@ export default [
       'Thousands of particles swirling faster as the music intensifies.',
     module: 'assets/js/toys/particle-orbit.ts',
     type: 'module',
+  },
+  {
+    slug: 'lights',
+    title: 'Audio Light Show',
+    description:
+      'Swap shader styles and color palettes while lights ripple with your microphone input.',
+    module: './lights.html',
+    type: 'page',
   },
   {
     slug: 'spiral-burst',
