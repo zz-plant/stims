@@ -62,21 +62,22 @@ function averageFrequencyRange(
   startRatio: number,
   endRatio: number
 ) {
-  const start = Math.max(0, Math.trunc(audioData.length * startRatio));
-  const end = Math.min(
+  const startIndex = Math.max(0, Math.floor(audioData.length * startRatio));
+  const endIndex = Math.min(
     audioData.length,
-    Math.trunc(audioData.length * endRatio)
+    Math.ceil(audioData.length * endRatio)
   );
-  const rangeLength = end - start;
+  const bucketWidth = Math.ceil(audioData.length * endRatio) -
+    Math.floor(audioData.length * startRatio);
 
-  if (rangeLength <= 0) return 0;
+  if (bucketWidth <= 0 || endIndex <= startIndex) return 0;
 
   let sum = 0;
-  for (let i = start; i < end; i++) {
+  for (let i = startIndex; i < endIndex; i++) {
     sum += audioData[i];
   }
 
-  return sum / rangeLength;
+  return sum / bucketWidth;
 }
 
 function getLowFrequency(audioData: Uint8Array) {

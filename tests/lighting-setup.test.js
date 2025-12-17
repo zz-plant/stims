@@ -18,6 +18,17 @@ describe('initLighting', () => {
     expect(light.position.z).toBe(10);
   });
 
+  it('merges partial position values with defaults', () => {
+    const scene = new Scene();
+
+    initLighting(scene, { type: 'DirectionalLight', position: { y: 5 } });
+
+    const light = scene.children[0];
+    expect(light.position.x).toBe(10);
+    expect(light.position.y).toBe(5);
+    expect(light.position.z).toBe(10);
+  });
+
   it('does not require a position for non-positional lights', () => {
     const scene = new Scene();
 
