@@ -36,11 +36,11 @@ export function initLighting(
     type = 'PointLight',
     color = 0xffffff,
     intensity = 1,
-    position = { x: 10, y: 10, z: 10 },
+    position,
     castShadow = false,
   } = config ?? {};
 
-  const { x = 0, y = 0, z = 0 } = position ?? {};
+  const { x, y, z } = { x: 10, y: 10, z: 10, ...(position ?? {}) };
   let light: Light;
 
   switch (type) {
