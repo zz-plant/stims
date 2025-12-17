@@ -126,6 +126,12 @@ dependencies and run the tests:
    npm test
    ```
 
+For custom test filters or file patterns, you can run Jest directly with the required ESM flag via the dedicated script:
+
+```bash
+npm run jest -- --testPathPattern=some-file
+```
+
 ### Linting and Formatting
 
 Before committing, run `npm run lint` to check code style and `npm run format` to automatically format your files. This keeps the project consistent.
