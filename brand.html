@@ -39,7 +39,11 @@
 
       // Renderer setup
       const canvas = document.getElementById('vizCanvas');
-      const renderer = initRenderer(canvas, { antialias: true, exposure: 1.2 });
+      const renderer = initRenderer(canvas, {
+        antialias: true,
+        exposure: 1.2,
+        maxPixelRatio: 2,
+      });
 
       // Lighting setup
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
