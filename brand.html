@@ -12,13 +12,12 @@
     <script type="module">
       import * as THREE from 'three';
       import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+      import WebToy from './assets/js/core/web-toy.ts';
       import {
-        initAudio,
-        getFrequencyData,
-      } from './assets/js/utils/audio-handler.ts';
-      import { initRenderer } from './assets/js/core/renderer-setup.ts';
-      const scene = new THREE.Scene();
-      scene.fog = new THREE.Fog(0x000000, 10, 200);
+        AnimationContext,
+        getContextFrequencyData,
+        startAudioLoop,
+      } from './assets/js/core/animation-loop.ts';
       function displayError(message) {
         const el = document.getElementById('error-message');
         if (el) {
@@ -27,19 +26,18 @@
         }
       }
 
-      // Camera setup
-      const camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-      );
-      camera.position.set(0, 2, 5);
-      camera.rotation.x = -0.05;
-
-      // Renderer setup
       const canvas = document.getElementById('vizCanvas');
-      const renderer = initRenderer(canvas, { antialias: true, exposure: 1.2 });
+      const toy = new WebToy({
+        canvas,
+        cameraOptions: {
+          position: { x: 0, y: 2, z: 5 },
+          aspect: window.innerWidth / window.innerHeight,
+        },
+        rendererOptions: { antialias: true, exposure: 1.2 },
+      });
+      toy.camera.rotation.x = -0.05;
+      const { scene, camera } = toy;
+      scene.fog = new THREE.Fog(0x000000, 10, 200);
 
       // Lighting setup
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -187,26 +185,14 @@
       });
       poleMesh.instanceMatrix.needsUpdate = true;
 
-      // Audio setup using shared utility
-      let analyser;
-      initAudio({ positional: true, object: camera })
-        .then(({ analyser: a }) => {
-          analyser = a;
-        })
-        .catch((err) => {
-          console.error('Audio input error: ', err);
-          displayError(
-            'Microphone access is required for the visualization to work. Please allow microphone access.'
-          );
-        });
-
-      // Animation loop
-      function animate() {
-        let bass = 0;
-        if (analyser) {
-          const dataArray = getFrequencyData(analyser);
-          bass = dataArray.slice(0, 10).reduce((a, b) => a + b, 0) / 10;
-        }
+      /** @param {AnimationContext} ctx */
+      function animate(ctx) {
+        const dataArray = getContextFrequencyData(ctx);
+        const bass =
+          dataArray.length === 0
+            ? 0
+            : dataArray.slice(0, 10).reduce((a, b) => a + b, 0) /
+              Math.min(10, dataArray.length);
 
         const speed = 0.5 + bass / 100;
         buildingData.forEach((d, i) => {
@@ -247,17 +233,17 @@
         });
         poleMesh.instanceMatrix.needsUpdate = true;
 
-        renderer.render(scene, camera);
+        ctx.toy.render();
       }
 
-      renderer.setAnimationLoop(animate);
-
-      // Handle window resizing
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
+      startAudioLoop(toy, animate, { positional: true, object: camera }).catch(
+        (err) => {
+          console.error('Audio input error: ', err);
+          displayError(
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
+          );
+        }
+      );
     </script>
   </body>
 </html>

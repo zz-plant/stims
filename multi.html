@@ -19,18 +19,13 @@
     <div id="error-message" style="display: none"></div>
     <script type="module">
       import * as THREE from 'three';
-      import { WebGPURenderer } from 'three/addons/renderers/webgpu/WebGPURenderer.js';
-      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
-      if (!ensureWebGL()) {
-        return;
-      }
+      import WebToy from './assets/js/core/web-toy.ts';
       import {
-        initAudio,
-        getFrequencyData,
-      } from './assets/js/utils/audio-handler.ts';
+        AnimationContext,
+        getContextFrequencyData,
+        startAudioLoop,
+      } from './assets/js/core/animation-loop.ts';
 
-      let renderer,
-        isWebGPUSupported = false;
       function displayError(message) {
         const el = document.getElementById('error-message');
         if (el) {
@@ -38,43 +33,13 @@
           el.style.display = 'block';
         }
       }
-
-      // Try to initialize WebGPU
-      if (navigator.gpu) {
-        try {
-          renderer = new WebGPURenderer();
-          renderer.setSize(window.innerWidth, window.innerHeight);
-          isWebGPUSupported = true;
-          console.log('WebGPU is supported and running.');
-        } catch (error) {
-          console.error(
-            'Failed to initialize WebGPU, falling back to WebGL: ',
-            error
-          );
-          isWebGPUSupported = false;
-        }
-      }
-
-      // Fallback to WebGL if WebGPU is not supported
-      if (!isWebGPUSupported) {
-        renderer = new THREE.WebGLRenderer({
-          canvas: document.getElementById('webglCanvas'),
-          antialias: true,
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        console.log('WebGL is running.');
-      }
-
-      // Scene setup
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-      );
-      camera.position.z = 50;
+      const canvas = document.getElementById('webglCanvas');
+      const toy = new WebToy({
+        canvas,
+        cameraOptions: { position: { x: 0, y: 0, z: 50 } },
+        rendererOptions: { antialias: true },
+      });
+      const { scene, camera } = toy;
 
       // Torus knot geometry
       const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
@@ -150,62 +115,49 @@
         createRandomShape();
       }
 
-      // Audio input setup
-      let analyser;
-      initAudio()
-        .then(({ analyser: a }) => {
-          analyser = a;
-        })
-        .catch(function (err) {
-          console.error('The following error occurred: ' + err);
-          displayError(
-            'Microphone access is required for the visualization to work. Please allow microphone access.'
-          );
-        });
-
       // Device orientation handling
       window.addEventListener('deviceorientation', (event) => {
         camera.rotation.x = (event.beta / 180) * Math.PI;
         camera.rotation.y = (event.gamma / 90) * Math.PI;
       });
 
-      // Animation loop
-      function animate() {
-        if (analyser) {
-          const dataArray = getFrequencyData(analyser);
-          const avgFrequency =
-            dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+      /** @param {AnimationContext} ctx */
+      function animate(ctx) {
+        const dataArray = getContextFrequencyData(ctx);
+        const avgFrequency =
+          dataArray.length === 0
+            ? 0
+            : dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
 
-          // Rotate the torus knot based on sound frequency
-          torusKnot.rotation.x += avgFrequency / 5000;
-          torusKnot.rotation.y += avgFrequency / 5000;
+        // Rotate the torus knot based on sound frequency
+        torusKnot.rotation.x += avgFrequency / 5000;
+        torusKnot.rotation.y += avgFrequency / 5000;
 
-          // Adjust point light intensity with sound frequency
-          pointLight.intensity = avgFrequency / 100;
+        // Adjust point light intensity with sound frequency
+        pointLight.intensity = avgFrequency / 100;
 
-          // Rotate particles based on frequency
-          particles.rotation.y += 0.001 + avgFrequency / 100000;
+        // Rotate particles based on frequency
+        particles.rotation.y += 0.001 + avgFrequency / 100000;
 
-          // Rotate procedural shapes based on audio input
-          shapes.forEach((shape) => {
-            shape.rotation.x += 0.01;
-            shape.rotation.y += 0.01;
-            shape.position.z += 0.5;
+        // Rotate procedural shapes based on audio input
+        shapes.forEach((shape) => {
+          shape.rotation.x += 0.01;
+          shape.rotation.y += 0.01;
+          shape.position.z += 0.5;
 
-            if (shape.position.z > 10) {
-              shape.position.z = -500;
-            }
-          });
-        }
-        renderer.render(scene, camera);
+          if (shape.position.z > 10) {
+            shape.position.z = -500;
+          }
+        });
+
+        ctx.toy.render();
       }
-      renderer.setAnimationLoop(animate);
 
-      // Handle window resizing
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+      startAudioLoop(toy, animate).catch((err) => {
+        console.error('The following error occurred: ' + err);
+        displayError(
+          'Microphone access is required for the visualization to work. Please allow microphone access.'
+        );
       });
     </script>
   </body>

@@ -1,5 +1,5 @@
 import type * as THREE from 'three';
-import { getFrequencyData } from '../utils/audio-handler';
+import { getFrequencyData, initAudio } from '../utils/audio-handler';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WebToyInstance = any;
@@ -11,6 +11,8 @@ export interface AnimationContext {
   toy: WebToyInstance;
   analyser: THREE.AudioAnalyser | null;
 }
+
+type AudioInitOptions = Parameters<typeof initAudio>[0];
 
 /**
  * Shared helper to initialize audio and start the animation loop.
@@ -24,7 +26,7 @@ export interface AnimationContext {
 export async function startAudioLoop(
   toy: WebToyInstance,
   animate: (ctx: AnimationContext) => void,
-  audioOptions: { fftSize?: number } = {}
+  audioOptions: AudioInitOptions = {}
 ): Promise<AnimationContext> {
   await toy.initAudio(audioOptions);
   const ctx: AnimationContext = { toy, analyser: toy.analyser };
