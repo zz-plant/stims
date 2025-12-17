@@ -11,6 +11,8 @@ import {
 } from './utils/animation-utils.ts';
 import PatternRecognizer from './utils/patternRecognition.ts';
 
+const DEFAULT_RENDERER_OPTIONS = { maxPixelRatio: 2 };
+
 let scene, camera, renderer, cube, analyser, patternRecognizer;
 let currentLightType = 'PointLight'; // Default light type
 
@@ -43,7 +45,7 @@ function initVisualization() {
   scene = initScene();
   camera = initCamera();
   const canvas = document.getElementById('toy-canvas');
-  renderer = initRenderer(canvas);
+  renderer = initRenderer(canvas, DEFAULT_RENDERER_OPTIONS);
 
   // Set up lighting based on user selection
   initLighting(scene, {
