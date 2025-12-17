@@ -110,6 +110,10 @@ Then open `http://localhost:8000`.
 
 All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
 
+## Code of Conduct and Contributions
+
+Please review our [Code of Conduct](./CODE_OF_CONDUCT.md) before participating in the project. By contributing, you agree to uphold these community standards. A full contributing guide will live alongside the Code of Conduct so expectations are always clear.
+
 ### Running Tests
 
 This project uses [Jest](https://jestjs.io/) for its test suite. To install
