@@ -56,6 +56,10 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
 - **Issue**: Some toys are heavy on resources and might lag on lower-end devices.
 - **Fix**: Add settings to adjust visual quality (e.g., reduce particle count or resolution).
 
+If you want to reduce GPU load on high-DPI screens without degrading visuals too much, pass a `maxPixelRatio` option to
+`initRenderer` (defaults to `2`). This caps the renderer to `Math.min(window.devicePixelRatio, maxPixelRatio)`, so setting
+`maxPixelRatio` to `1.5` or `1` can significantly cut per-frame work while retaining clarity.
+
 ### **Audio Permissions**
 
 - **Issue**: Not much feedback when audio permissions are denied or unavailable.

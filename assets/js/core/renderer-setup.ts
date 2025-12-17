@@ -4,9 +4,10 @@ import { ensureWebGL } from '../utils/webgl-check.ts';
 
 export function initRenderer(
   canvas,
-  config: { antialias?: boolean; exposure?: number } = {
+  config: { antialias?: boolean; exposure?: number; maxPixelRatio?: number } = {
     antialias: true,
     exposure: 1,
+    maxPixelRatio: 2,
   }
 ) {
   if (!ensureWebGL()) {
@@ -22,7 +23,8 @@ export function initRenderer(
       antialias: config.antialias,
     });
   }
-  renderer.setPixelRatio(window.devicePixelRatio);
+  const maxPixelRatio = config.maxPixelRatio ?? 2;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
