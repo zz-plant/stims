@@ -1,20 +1,38 @@
 import { jest } from '@jest/globals';
 
 let originalNavigatorDesc;
-import {
-  initAudio,
-  getFrequencyData,
-  AudioAccessError,
-} from '../assets/js/utils/audio-handler.ts';
+let initAudio;
+let getFrequencyData;
+let AudioAccessError;
+
+beforeAll(async () => {
+  jest.unstable_mockModule('three', () => {
+    const actualThree = jest.requireActual('three');
+
+    return {
+      __esModule: true,
+      ...actualThree,
+      AudioListener: jest.fn(() => ({ add: jest.fn() })),
+      Audio: jest.fn(() => ({ setMediaStreamSource: jest.fn() })),
+      PositionalAudio: jest.fn(() => ({ setMediaStreamSource: jest.fn() })),
+      AudioAnalyser: jest.fn((_, fftSize = 256) => {
+        const data = new Uint8Array(fftSize / 2);
+        return {
+          frequencyBinCount: data.length,
+          getFrequencyData: jest.fn(() => data),
+        };
+      }),
+    };
+  });
+
+  ({ initAudio, getFrequencyData, AudioAccessError } = await import(
+    '../assets/js/utils/audio-handler.ts'
+  ));
+});
 
 describe('audio-handler utilities', () => {
   beforeEach(() => {
-    const mockAnalyserNode = {
-      frequencyBinCount: 128,
-      getByteFrequencyData: jest.fn(),
-      connect: jest.fn(),
-    };
-    const mockSource = { connect: jest.fn() };
+    jest.clearAllMocks();
 
     originalNavigatorDesc = Object.getOwnPropertyDescriptor(
       global,
@@ -32,13 +50,6 @@ describe('audio-handler utilities', () => {
 
     global.window = global.window || {};
     global.window.navigator = global.navigator;
-    global.window.AudioContext = jest.fn(() => ({
-      createAnalyser: jest.fn(() => mockAnalyserNode),
-      createMediaStreamSource: jest.fn(() => mockSource),
-      createGain: jest.fn(() => ({ connect: jest.fn() })),
-      createPanner: jest.fn(() => ({ connect: jest.fn() })),
-      destination: {},
-    }));
   });
 
   afterEach(() => {
@@ -52,7 +63,6 @@ describe('audio-handler utilities', () => {
     if (global.window) {
       delete global.window.navigator;
     }
-    delete global.window.AudioContext;
   });
 
   test('initAudio resolves with analyser and listener', async () => {
