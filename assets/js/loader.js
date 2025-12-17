@@ -1,17 +1,18 @@
 import toysData from './toys-data.js';
 
+const MANIFEST_PATH = '/.vite/manifest.json';
 let manifestPromise;
 
 async function fetchManifest() {
   if (!manifestPromise) {
-    manifestPromise = fetch('./manifest.json')
+    manifestPromise = fetch(MANIFEST_PATH)
       .then((response) => (response.ok ? response.json() : null))
       .catch(() => null);
   }
   return manifestPromise;
 }
 
-async function resolveModulePath(entry) {
+export async function resolveModulePath(entry) {
   const manifest = await fetchManifest();
   const manifestEntry = manifest?.[entry];
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import WebGPURenderer from 'three/addons/renderers/webgpu/WebGPURenderer.js';
+import WebGPURenderer from 'three/src/renderers/webgpu/WebGPURenderer.js';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 
 export function initRenderer(
