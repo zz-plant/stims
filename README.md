@@ -9,11 +9,9 @@ Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what
 ## Quick Start
 
 1. Clone the repo and `cd` into it.
-2. Choose your runtime (the repo records `bun@1.2.14` in `package.json` via `packageManager`):
-   - **Bun 1.2+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle.
-   - **Node.js 22** (see `.nvmrc`): still supported for Vite and general tooling if you prefer npm.
-3. Install dependencies with `npm install` or `bun install`. Bun will write to `bun.lock` so you can pin installs with `bun install --frozen-lockfile`.
-4. Start the dev server with `npm run dev` or `bun run dev`, then open `http://localhost:5173` in your browser.
+2. Install **Bun 1.2+** (recorded in `package.json` via `packageManager`) from [bun.sh](https://bun.sh/) for the fastest install/test cycle. **Node.js 22** (see `.nvmrc`) remains available as a fallback if you prefer npm.
+3. Install dependencies with `bun install`. Bun writes to `bun.lock`, so you can pin installs with `bun install --frozen-lockfile`. If you need a fallback, use `npm install` with Node 22.
+4. Start the dev server with `bun run dev`, then open `http://localhost:5173` in your browser. If you’re on Node, `npm run dev` works as a backup.
 
 ## Getting Started
 
@@ -110,55 +108,54 @@ To play with the toys locally you’ll need to run them from a local web server.
    cd stims
    ```
 
-2. Use Bun 1.2+ (recorded in `package.json`) or Node.js 22 (see `.nvmrc`). If you have nvm installed, run `nvm use` to select the correct Node version.
+2. Use Bun 1.2+ (recorded in `package.json`). Node.js 22 (see `.nvmrc`) is available as an optional fallback; if you have nvm installed, run `nvm use` to select it.
 
-3. Install dependencies:
+3. Install dependencies with Bun:
 
    ```bash
-   npm install
-   # or
    bun install
    ```
 
-   Bun does not automatically run `prepare` scripts, so the repo includes a `postinstall` hook that installs Husky when `npm_config_user_agent` starts with `bun`. If that step fails for any reason, fall back to `bun x husky install` (or `npx husky install`).
+   Bun does not automatically run `prepare` scripts, so the repo includes a `postinstall` hook that installs Husky when `npm_config_user_agent` starts with `bun`. If that step fails for any reason, run `bun x husky install`. If you must use Node, `npm install` is an acceptable fallback.
 
-4. Start the development server:
+4. Start the development server (Bun by default):
 
    ```bash
-   npm run dev
-   # or
    bun run dev
    ```
+
+   If you’re on Node, use `npm run dev` instead.
 
 Open `http://localhost:5173` in your browser.
 
 To serve a static build instead of the dev server, run:
 
 ```bash
-npm run build
-npm run preview
-# or
 bun run build
+bun run preview
 
 bun run serve:dist
 # or use Python as a fallback
 python3 -m http.server dist
-bun run preview
+
+# Node fallback
+npm run build
+npm run preview
 ```
 
 The preview server hosts the contents of `dist/` on port `4173` using Vite's `--host` flag, so you can load the build from other devices on your LAN if needed.
 
 All JavaScript dependencies are installed via npm (or Bun) and bundled locally with Vite, so everything works offline without hitting a CDN.
 
-### Helpful Scripts (npm or Bun)
+### Helpful Scripts (Bun-first)
 
-- `npm run dev` / `bun run dev`: Start the Vite development server for local exploration.
-- `npm run build` / `bun run build`: Produce a production build in `dist/`.
-- `npm run preview` / `bun run preview`: Serve the production build locally (Vite preview with `--host` for LAN testing) to validate the output before deploying.
-- `bun test` (or `bun run test`): Run the Bun-native test suite. `npm run test` will also proxy to Bun if you have it installed.
+- `bun run dev`: Start the Vite development server for local exploration. (`npm run dev` works if you’re on Node.)
+- `bun run build`: Produce a production build in `dist/`. (`npm run build` is available as a fallback.)
+- `bun run preview`: Serve the production build locally (Vite preview with `--host` for LAN testing) to validate the output before deploying. (`npm run preview` is the Node fallback.)
+- `bun test` (or `bun run test`): Run the Bun-native test suite. `npm run test` will proxy to Bun when available.
 - `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
-- `npm run lint` / `bun run lint`: Check code quality with ESLint.
-- `npm run format` / `bun run format`: Format files with Prettier.
+- `bun run lint`: Check code quality with ESLint. (`npm run lint` is an optional fallback.)
+- `bun run format`: Format files with Prettier. (`npm run format` is an optional fallback.)
 - `bun run serve:dist`: Serve the `dist/` build with Bun (preferred for local production previews).
 
 ## Code of Conduct and Contributions
@@ -174,16 +171,16 @@ dependencies and run the tests:
 
    ```bash
    bun install
-   # or
-   npm install
    ```
+
+   (`npm install` is available if you’re using Node.)
 
 2. Run the tests:
    ```bash
    bun test
-   # or
-   npm run test
    ```
+
+   (`npm run test` proxies to Bun when present.)
 
 For quick iteration, use the watch mode:
 
@@ -193,7 +190,7 @@ bun run test:watch
 
 ### Linting and Formatting
 
-Before committing, run `npm run lint` to check code style and `npm run format` to automatically format your files. This keeps the project consistent.
+Before committing, run `bun run lint` to check code style and `bun run format` to automatically format your files. If you’re on Node, the `npm run lint` and `npm run format` fallbacks are available. This keeps the project consistent.
 
 ## Contributing
 
