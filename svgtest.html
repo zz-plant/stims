@@ -155,6 +155,7 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
 
       const errorEl = document.getElementById('error-message');
 
@@ -252,6 +253,26 @@
 
       camera.position.z = 20;
 
+      const toy = {
+        camera,
+        renderer,
+        analyser: null,
+        audioCleanup: null,
+        async initAudio(options = {}) {
+          const audio = await initAudio({ ...options, camera });
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          return audio;
+        },
+        dispose() {
+          if (this.renderer?.setAnimationLoop) {
+            this.renderer.setAnimationLoop(null);
+          }
+
+          this.audioCleanup?.();
+        },
+      };
+
       // Handle window resize
       window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -260,23 +281,7 @@
       });
 
       // Set up audio using the shared audio handler
-      let analyser;
       let audioDataArray = new Uint8Array(128);
-
-      async function setupAudio() {
-        try {
-          const result = await initAudio({ fftSize: 256 });
-          analyser = result.analyser;
-          hideError();
-        } catch (err) {
-          console.error('Error capturing audio: ', err);
-          displayError(
-            'Microphone access is required for the visualization to work. Please allow microphone access.'
-          );
-        }
-      }
-
-      setupAudio();
 
       // SVG elements for reactive effects
       const turbulence = document.getElementById('turbulence');
@@ -288,16 +293,15 @@
       let time = 0;
 
       // Main animation loop
-      function animate() {
-        requestAnimationFrame(animate);
+      function animate(ctxAudio) {
         time += 0.016;
 
         let avgFrequency = 0;
         let bassFrequency = 0;
         let highFrequency = 0;
 
-        if (analyser) {
-          audioDataArray = getFrequencyData(analyser);
+        if (ctxAudio.analyser) {
+          audioDataArray = getFrequencyData(ctxAudio.analyser);
           avgFrequency =
             audioDataArray.reduce((sum, val) => sum + val, 0) /
             audioDataArray.length;
@@ -381,7 +385,17 @@
         renderer.render(scene, camera);
       }
 
-      animate();
+      startToyAudio(toy, animate, { fftSize: 256, fallbackToSynthetic: true })
+        .then(() => hideError())
+        .catch((err) => {
+          console.error('Error capturing audio: ', err);
+          displayError(
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
+          );
+          toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
+        });
+
+      window.addEventListener('pagehide', () => toy.dispose());
     </script>
   </body>
 </html>

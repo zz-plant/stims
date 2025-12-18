@@ -45,6 +45,7 @@
     </div>
     <script type="module">
       import {
+        initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
       import { createPeakDetector } from './assets/js/utils/peak-detector.ts';
@@ -53,6 +54,7 @@
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createSearyFunAdapter } from './assets/seary/fun-adapter.ts';
       import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
       const sparkleCanvas = document.getElementById('sparkleCanvas');
@@ -67,6 +69,7 @@
       let burstsEnabled = true;
       let peakSensitivity = 0.35;
       let lastRenderTime = 0;
+      let renderElapsed = 0;
 
       function displayError(message) {
         const el = document.getElementById('error-message');
@@ -144,6 +147,54 @@
       window.addEventListener('resize', resizeCanvas);
       resizeCanvas();
       const disposeResize = setupCanvasResize(canvas, gl, { maxPixelRatio: 2 });
+
+      class CanvasToy {
+        constructor(canvasEl) {
+          this.canvas = canvasEl;
+          this.analyser = null;
+          this.audioCleanup = null;
+          this.loopId = null;
+          this.renderLoop = null;
+          this.renderer = {
+            setAnimationLoop: (loop) => {
+              if (this.loopId) {
+                cancelAnimationFrame(this.loopId);
+              }
+
+              this.renderLoop = loop;
+
+              if (!loop) return;
+
+              const tick = () => {
+                this.renderLoop?.();
+                this.loopId = requestAnimationFrame(tick);
+              };
+
+              tick();
+            },
+          };
+        }
+
+        async initAudio(options = {}) {
+          const audio = await initAudio(options);
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          return audio;
+        }
+
+        dispose() {
+          if (this.loopId) {
+            cancelAnimationFrame(this.loopId);
+          }
+
+          this.renderLoop = null;
+          this.loopId = null;
+          this.audioCleanup?.();
+          this.analyser = null;
+        }
+      }
+
+      const toy = new CanvasToy(canvas);
 
       // Compile shader
       function compileShader(source, type) {
@@ -446,175 +497,174 @@
       }
 
       // Audio setup for beat detection and frequency analysis
-      let audioContext, analyser, source;
       let peakDetector = null;
-      let bufferLength, dataArray;
+      let lastVibrateTime = 0;
+      let currentFreqs = adapter.transformFrequencies({
+        low: 0,
+        mid: 0,
+        high: 0,
+      });
       const audioSelect = document.getElementById('audioSelect');
+
+      function vibrateBasedOnAudio(lowFreq, midFreq, highFreq) {
+        const intensity = Math.max(lowFreq, midFreq, highFreq);
+        const currentTime = Date.now();
+
+        if (intensity > 0.7 && currentTime - lastVibrateTime > 500) {
+          if (navigator.vibrate) {
+            navigator.vibrate([intensity * 100, 50, intensity * 100]);
+          }
+          lastVibrateTime = currentTime;
+        }
+      }
+
+      function vibrateBasedOnVisuals(lowFreq, midFreq, highFreq, dist) {
+        const vibrateIntensity =
+          Math.max(lowFreq, midFreq, highFreq) * (1.0 - dist);
+        if (navigator.vibrate && vibrateIntensity > 0.5) {
+          navigator.vibrate([
+            Math.floor(vibrateIntensity * 200),
+            50,
+            Math.floor(vibrateIntensity * 200),
+          ]);
+        }
+      }
+
+      function rebuildPeakDetector(ctx) {
+        if (!ctx.analyser) {
+          peakDetector = null;
+          return;
+        }
+
+        peakDetector = createPeakDetector({
+          getData: () => getFrequencyData(ctx.analyser),
+          sensitivity: peakSensitivity,
+          onPeak: handlePeak,
+          onRelease: handlePeakRelease,
+        });
+      }
+
+      window.addEventListener('deviceorientation', (event) => {
+        orientation.alpha = event.alpha;
+        orientation.beta = event.beta;
+        orientation.gamma = event.gamma;
+      });
+
+      function processAudio(ctxAudio) {
+        if (!ctxAudio.analyser) {
+          peakDetector = null;
+          currentFreqs = adapter.transformFrequencies({
+            low: 0,
+            mid: 0,
+            high: 0,
+          });
+          return { lowFreq: 0, midFreq: 0, highFreq: 0 };
+        }
+
+        const dataArray = getFrequencyData(ctxAudio.analyser);
+        const bufferLength = dataArray.length || 1;
+        const bucketSize = bufferLength / 3;
+        const lowFreq =
+          dataArray
+            .slice(0, bucketSize)
+            .reduce((sum, value) => sum + value, 0) /
+          bucketSize /
+          256.0;
+        const midFreq =
+          dataArray
+            .slice(bucketSize, 2 * bucketSize)
+            .reduce((sum, value) => sum + value, 0) /
+          bucketSize /
+          256.0;
+        const highFreq =
+          dataArray
+            .slice(2 * bucketSize)
+            .reduce((sum, value) => sum + value, 0) /
+          bucketSize /
+          256.0;
+
+        currentFreqs = adapter.transformFrequencies({
+          low: lowFreq,
+          mid: midFreq,
+          high: highFreq,
+        });
+
+        if (!peakDetector) {
+          rebuildPeakDetector(ctxAudio);
+        }
+
+        peakDetector?.update(dataArray);
+
+        vibrateBasedOnAudio(
+          currentFreqs.low,
+          currentFreqs.mid,
+          currentFreqs.high
+        );
+        vibrateBasedOnVisuals(
+          currentFreqs.low,
+          currentFreqs.mid,
+          currentFreqs.high,
+          Math.random()
+        );
+
+        return { lowFreq, midFreq, highFreq };
+      }
+
+      async function initializeAudio() {
+        lastRenderTime = 0;
+        renderElapsed = 0;
+        const options =
+          audioSelect.value === 'device'
+            ? { preferSynthetic: true, fftSize: 256 }
+            : { fftSize: 256, fallbackToSynthetic: true };
+
+        try {
+          await startToyAudio(toy, animate, options);
+          funControls.setAudioAvailable(true);
+          rebuildPeakDetector(toy);
+        } catch (err) {
+          console.error('Error accessing microphone: ' + err);
+          funControls.setAudioAvailable(false);
+          peakDetector = null;
+          currentFreqs = adapter.transformFrequencies({
+            low: 0,
+            mid: 0,
+            high: 0,
+          });
+          showError(
+            'error-message',
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
+          );
+          toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
+        }
+      }
 
       audioSelect.addEventListener('change', initializeAudio);
       initializeAudio();
 
-      function initializeAudio() {
-        if (audioContext) {
-          audioContext.close();
-        }
-        peakDetector = null;
-
-        navigator.mediaDevices
-          .getUserMedia({ audio: true })
-          .then((stream) => {
-            funControls.setAudioAvailable(true);
-            audioContext = new (window.AudioContext ||
-              window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            if (audioSelect.value === 'mic') {
-              initAudio()
-                .then(({ analyser: a, dataArray: d }) => {
-                  analyser = a;
-                  source = audioContext.createMediaStreamSource(stream);
-                  source.connect(analyser);
-                  startProcessing(d);
-                })
-                .catch((err) => {
-                  console.error('Error capturing audio: ', err);
-                  showError(
-                    'error-message',
-                    'Microphone access is required for the visualization to work. Please allow microphone access.'
-                  );
-                });
-            } else {
-              // Use the audio context's `createMediaElementSource` to capture device audio
-              const audioElement = new Audio();
-              audioElement.crossOrigin = 'anonymous';
-              source = audioContext.createMediaElementSource(audioElement);
-              source.connect(audioContext.destination); // To allow playback
-              audioElement.play();
-            }
-            source.connect(analyser);
-            rebuildPeakDetector();
-            bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
-            startProcessing(dataArray);
-
-            let lastVibrateTime = 0;
-
-            function vibrateBasedOnAudio(lowFreq, midFreq, highFreq) {
-              const intensity = Math.max(lowFreq, midFreq, highFreq);
-              const currentTime = Date.now();
-
-              // Vibrate only during significant visual events and not too frequently
-              if (intensity > 0.7 && currentTime - lastVibrateTime > 500) {
-                if (navigator.vibrate) {
-                  navigator.vibrate([intensity * 100, 50, intensity * 100]);
-                }
-                lastVibrateTime = currentTime;
-              }
-            }
-
-            function vibrateBasedOnVisuals(lowFreq, midFreq, highFreq, dist) {
-              const vibrateIntensity =
-                Math.max(lowFreq, midFreq, highFreq) * (1.0 - dist);
-              if (navigator.vibrate && vibrateIntensity > 0.5) {
-                navigator.vibrate([
-                  Math.floor(vibrateIntensity * 200),
-                  50,
-                  Math.floor(vibrateIntensity * 200),
-                ]);
-              }
-            }
-
-            // Device orientation-based distortion
-            window.addEventListener('deviceorientation', (event) => {
-              orientation.alpha = event.alpha;
-              orientation.beta = event.beta;
-              orientation.gamma = event.gamma;
-            });
-
-            function startProcessing(arr) {
-              dataArray = arr;
-              bufferLength = analyser.frequencyBinCount;
-              updateAudioData();
-            }
-
-            function updateAudioData() {
-              dataArray = getFrequencyData(analyser);
-              const lowFreq =
-                dataArray
-                  .slice(0, bufferLength / 3)
-                  .reduce((sum, value) => sum + value, 0) /
-                (bufferLength / 3) /
-                256.0;
-              const midFreq =
-                dataArray
-                  .slice(bufferLength / 3, (2 * bufferLength) / 3)
-                  .reduce((sum, value) => sum + value, 0) /
-                (bufferLength / 3) /
-                256.0;
-              const highFreq =
-                dataArray
-                  .slice((2 * bufferLength) / 3, bufferLength)
-                  .reduce((sum, value) => sum + value, 0) /
-                (bufferLength / 3) /
-                256.0;
-
-              // Beat detection based on low frequency threshold
-              if (lowFreq > 0.5) {
-                canvas.style.transform = 'scale(1.1)';
-                setTimeout(() => {
-                  canvas.style.transform = 'scale(1)';
-                }, 100);
-              }
-
-              currentFreqs = adapter.transformFrequencies({
-                low: lowFreq,
-                mid: midFreq,
-                high: highFreq,
-              });
-
-              peakDetector?.update(dataArray);
-
-              vibrateBasedOnAudio(
-                currentFreqs.low,
-                currentFreqs.mid,
-                currentFreqs.high
-              );
-              vibrateBasedOnVisuals(
-                currentFreqs.low,
-                currentFreqs.mid,
-                currentFreqs.high,
-                Math.random()
-              );
-
-              requestAnimationFrame(updateAudioData);
-            }
-            updateAudioData();
-          })
-          .catch((err) => {
-            console.error('Error accessing microphone: ' + err);
-            funControls.setAudioAvailable(false);
-            peakDetector = null;
-            currentFreqs = adapter.transformFrequencies({
-              low: 0,
-              mid: 0,
-              high: 0,
-            });
-          });
-      }
-
       // Render loop
-      function render(time) {
-        time *= 0.001; // Convert time to seconds
-        const delta = lastRenderTime === 0 ? 0 : time - lastRenderTime;
+      function animate(ctxAudio) {
+        const now = performance.now();
+        const delta = lastRenderTime === 0 ? 0 : (now - lastRenderTime) / 1000;
         const dt = Math.min(delta, 0.1);
-        lastRenderTime = time;
+        lastRenderTime = now;
+        renderElapsed += dt;
+
+        const audioMetrics = processAudio(ctxAudio);
+
+        if (audioMetrics?.lowFreq > 0.5) {
+          canvas.style.transform = 'scale(1.1)';
+          setTimeout(() => {
+            canvas.style.transform = 'scale(1)';
+          }, 100);
+        }
 
         burstState.scale += (1 - burstState.scale) * Math.min(1, dt * 2.25);
         burstState.rotation *= Math.max(0, 1 - dt * 1.35);
         burstState.intensity = Math.max(0, burstState.intensity - dt * 1.2);
 
         // Set uniforms
-        gl.uniform1f(timeLocation, time);
+        gl.uniform1f(timeLocation, renderElapsed);
         gl.uniform1f(lowFreqLocation, currentFreqs.low);
         gl.uniform1f(midFreqLocation, currentFreqs.mid);
         gl.uniform1f(highFreqLocation, currentFreqs.high);
@@ -648,11 +698,12 @@
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
         updateSparkles(dt || 0.016);
-
-        requestAnimationFrame(render);
       }
-      requestAnimationFrame(render);
-      window.addEventListener('pagehide', disposeResize);
+
+      window.addEventListener('pagehide', () => {
+        disposeResize();
+        toy.dispose?.();
+      });
     </script>
   </body>
 </html>
