@@ -15,6 +15,9 @@ const DEFAULT_RENDERER_OPTIONS = { maxPixelRatio: 2 };
 
 let scene, camera, renderer, cube, analyser, patternRecognizer, audioCleanup;
 let currentLightType = 'PointLight'; // Default light type
+let animationFrameId = null;
+let isAnimating = false;
+let audioListener = null;
 
 function initVisualization() {
   if (!ensureWebGL()) {
@@ -63,13 +66,31 @@ function initVisualization() {
   scene.add(cube);
 }
 
+function startAnimationLoop() {
+  if (isAnimating) return;
+
+  isAnimating = true;
+  animationFrameId = requestAnimationFrame(animate);
+}
+
+function stopAnimationLoop() {
+  if (!isAnimating) return;
+
+  isAnimating = false;
+  if (animationFrameId !== null) {
+    window.cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+}
+
 async function startAudioAndAnimation() {
   try {
     const audioData = await initAudio();
     analyser = audioData.analyser;
+    audioListener = audioData.listener ?? null;
     audioCleanup = audioData.cleanup;
     patternRecognizer = new PatternRecognizer(analyser);
-    animate();
+    startAnimationLoop();
     return true;
   } catch (error) {
     console.error('initAudio failed:', error);
@@ -81,7 +102,7 @@ async function startAudioAndAnimation() {
 }
 
 function animate() {
-  requestAnimationFrame(animate);
+  if (!isAnimating) return;
 
   if (analyser) {
     const audioData = getFrequencyData(analyser);
@@ -99,6 +120,8 @@ function animate() {
   }
 
   renderer.render(scene, camera);
+
+  animationFrameId = requestAnimationFrame(animate);
 }
 
 function handleResize() {
@@ -147,5 +170,50 @@ window.addEventListener('resize', handleResize);
 window.addEventListener('pagehide', () => {
   if (audioCleanup) {
     audioCleanup();
+    analyser = null;
+    patternRecognizer = null;
+    audioListener = null;
   }
+  stopAnimationLoop();
+});
+
+async function handleVisibilityChange() {
+  if (document.visibilityState === 'hidden') {
+    stopAnimationLoop();
+
+    if (audioListener?.context?.state === 'running') {
+      try {
+        await audioListener.context.suspend();
+      } catch (error) {
+        console.error('Error suspending audio context:', error);
+      }
+    } else if (audioCleanup) {
+      audioCleanup();
+      analyser = null;
+      patternRecognizer = null;
+      audioListener = null;
+    }
+
+    return;
+  }
+
+  if (document.visibilityState === 'visible') {
+    if (audioListener?.context?.state === 'suspended') {
+      try {
+        await audioListener.context.resume();
+      } catch (error) {
+        console.error('Error resuming audio context:', error);
+      }
+    } else if (!analyser && audioCleanup) {
+      await startAudioAndAnimation();
+    }
+
+    if (analyser) {
+      startAnimationLoop();
+    }
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  handleVisibilityChange();
 });
