@@ -27,6 +27,13 @@ function getManifestPath() {
   return baseUrl ? new URL('./.vite/manifest.json', baseUrl).pathname : '/.vite/manifest.json';
 }
 
+function resolvePagePath(path) {
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+  const baseUrl = getBaseUrl();
+  return baseUrl ? new URL(path, baseUrl).toString() : path;
+}
+
 function getToyList() {
   const doc = getDocument();
   return doc?.getElementById('toy-list') ?? null;
@@ -356,7 +363,33 @@ export async function loadToy(slug, { pushState = false } = {}) {
     removeStatusElement(container);
   } else {
     disposeActiveToy();
-    window.location.href = toy.module;
+    showActiveToyView();
+
+    const container = ensureActiveToyContainer();
+    showLoadingIndicator(container, toy.title || toy.slug);
+
+    const iframe = document.createElement('iframe');
+    iframe.src = resolvePagePath(toy.module);
+    iframe.title = toy.title ?? 'Web toy';
+    iframe.allow = 'microphone; camera; fullscreen';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+
+    const activeToy = {
+      dispose() {
+        iframe.remove();
+        if (globalThis.__activeWebToy === activeToy) {
+          delete globalThis.__activeWebToy;
+        }
+      },
+    };
+
+    iframe.addEventListener('load', () => removeStatusElement(container));
+    iframe.addEventListener('error', () => showImportError(container, toy));
+
+    globalThis.__activeWebToy = activeToy;
+    container.appendChild(iframe);
   }
 }
 
