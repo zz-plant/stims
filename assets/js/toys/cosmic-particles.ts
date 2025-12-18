@@ -8,6 +8,11 @@ import {
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
 import { applyAudioColor } from '../utils/color-audio';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 80 } },
@@ -15,6 +20,10 @@ const toy = new WebToy({
 } as ToyConfig);
 
 type PresetKey = 'orbit' | 'nebula';
+
+let activeQuality: QualityPreset = DEFAULT_QUALITY_PRESETS.find(
+  (preset) => preset.id === 'balanced'
+)!;
 
 type PresetInstance = {
   animate: (ctx: AnimationContext) => void;
@@ -28,11 +37,11 @@ const presetButtons: Record<PresetKey, HTMLButtonElement> = {
   nebula: document.createElement('button'),
 };
 
-function createOrbitPreset(): PresetInstance {
+function createOrbitPreset(quality: QualityPreset): PresetInstance {
   const group = new THREE.Group();
 
   const particlesGeometry = new THREE.BufferGeometry();
-  const count = 2400;
+  const count = Math.max(900, Math.floor(2400 * (quality.particleScale ?? 1)));
   const positions = new Float32Array(count * 3);
   for (let i = 0; i < count * 3; i++) {
     positions[i] = (Math.random() - 0.5) * 90;
@@ -82,11 +91,11 @@ function createOrbitPreset(): PresetInstance {
   };
 }
 
-function createNebulaPreset(): PresetInstance {
+function createNebulaPreset(quality: QualityPreset): PresetInstance {
   const group = new THREE.Group();
 
   const starGeometry = new THREE.BufferGeometry();
-  const STAR_COUNT = 4000;
+  const STAR_COUNT = Math.max(1200, Math.floor(4000 * (quality.particleScale ?? 1)));
   const starPositions = new Float32Array(STAR_COUNT * 3);
   const starSizes = new Float32Array(STAR_COUNT);
   const starColors = new Float32Array(STAR_COUNT * 3);
@@ -136,7 +145,7 @@ function createNebulaPreset(): PresetInstance {
   group.add(stars);
 
   const nebulaGeometry = new THREE.BufferGeometry();
-  const NEBULA_COUNT = 200;
+  const NEBULA_COUNT = Math.max(80, Math.floor(200 * (quality.particleScale ?? 1)));
   const nebulaPositions = new Float32Array(NEBULA_COUNT * 3);
   const nebulaColors = new Float32Array(NEBULA_COUNT * 3);
 
@@ -247,11 +256,14 @@ function createNebulaPreset(): PresetInstance {
   };
 }
 
-function setActivePreset(key: PresetKey) {
-  if (key === activePresetKey && activePreset) return;
+function setActivePreset(key: PresetKey, { force } = { force: false }) {
+  if (key === activePresetKey && activePreset && !force) return;
 
   activePreset?.dispose();
-  activePreset = key === 'orbit' ? createOrbitPreset() : createNebulaPreset();
+  activePreset =
+    key === 'orbit'
+      ? createOrbitPreset(activeQuality)
+      : createNebulaPreset(activeQuality);
   activePresetKey = key;
   updatePresetButtons();
 }
@@ -264,60 +276,47 @@ function updatePresetButtons() {
   });
 }
 
-function createPresetControls() {
-  const container = document.createElement('div');
-  container.style.position = 'fixed';
-  container.style.top = '16px';
-  container.style.right = '16px';
-  container.style.display = 'flex';
-  container.style.flexDirection = 'column';
-  container.style.gap = '8px';
-  container.style.background = 'rgba(0, 0, 0, 0.45)';
-  container.style.padding = '10px 12px';
-  container.style.borderRadius = '10px';
-  container.style.color = '#fff';
-  container.style.fontFamily = 'sans-serif';
-  container.style.zIndex = '10';
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+  setActivePreset(activePresetKey, { force: true });
+}
 
-  const title = document.createElement('div');
-  title.textContent = 'Cosmic preset';
-  title.style.fontSize = '14px';
-  title.style.letterSpacing = '0.02em';
-  container.appendChild(title);
+function setupSettingsPanel() {
+  const panel = getSettingsPanel();
+  panel.configure({
+    title: 'Cosmic controls',
+    description:
+      'Quality changes persist between toys so you can cap DPI or ramp visuals.',
+  });
 
-  const buttonsRow = document.createElement('div');
-  buttonsRow.style.display = 'flex';
-  buttonsRow.style.gap = '8px';
+  panel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
+
+  const presetRow = panel.addSection(
+    'Cosmic preset',
+    'Switch between swirling orbits and deep nebula fly-throughs.'
+  );
 
   presetButtons.orbit.textContent = 'Orbit';
   presetButtons.nebula.textContent = 'Nebula';
 
   (Object.keys(presetButtons) as PresetKey[]).forEach((key) => {
     const button = presetButtons[key];
-    button.style.padding = '6px 10px';
-    button.style.borderRadius = '8px';
-    button.style.border = '1px solid #ffffff55';
-    button.style.background = '#0f172a';
-    button.style.color = '#fff';
-    button.style.cursor = 'pointer';
+    button.className = 'cta-button';
     button.addEventListener('click', () => setActivePreset(key));
-    buttonsRow.appendChild(button);
+    presetRow.appendChild(button);
   });
-
-  const hint = document.createElement('div');
-  hint.textContent =
-    'Switch between swirling orbits and deep nebula fly-throughs.';
-  hint.style.fontSize = '12px';
-  hint.style.opacity = '0.8';
-  hint.style.maxWidth = '220px';
-
-  container.appendChild(buttonsRow);
-  container.appendChild(hint);
-  document.body.appendChild(container);
 }
 
 function init() {
-  createPresetControls();
+  setupSettingsPanel();
   setActivePreset(activePresetKey);
 }
 

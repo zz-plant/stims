@@ -2,6 +2,133 @@ import * as THREE from 'three';
 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable';
 
+const FREQUENCY_ANALYSER_PROCESSOR = new URL(
+  './frequency-analyser-processor.ts',
+  import.meta.url
+);
+
+export class FrequencyAnalyser {
+  frequencyBinCount: number;
+  private frequencyData: Uint8Array;
+  private rms = 0;
+  private readonly context: AudioContext;
+  private readonly sourceNode: MediaStreamAudioSourceNode;
+  private readonly silentGain: GainNode;
+  private readonly workletNode?: AudioWorkletNode;
+  private readonly analyserNode?: AnalyserNode;
+
+  private constructor({
+    context,
+    sourceNode,
+    workletNode,
+    analyserNode,
+    fftSize,
+    silentGain,
+  }: {
+    context: AudioContext;
+    sourceNode: MediaStreamAudioSourceNode;
+    workletNode?: AudioWorkletNode;
+    analyserNode?: AnalyserNode;
+    fftSize: number;
+    silentGain: GainNode;
+  }) {
+    this.context = context;
+    this.sourceNode = sourceNode;
+    this.workletNode = workletNode;
+    this.analyserNode = analyserNode;
+    this.frequencyBinCount = fftSize / 2;
+    this.frequencyData = new Uint8Array(this.frequencyBinCount);
+    this.silentGain = silentGain;
+
+    if (this.workletNode) {
+      this.workletNode.port.onmessage = (event: MessageEvent) => {
+        const { frequencyData, rms } = event.data ?? {};
+        if (frequencyData) {
+          this.frequencyData = new Uint8Array(frequencyData);
+        }
+        if (typeof rms === 'number') {
+          this.rms = rms;
+        }
+      };
+    }
+  }
+
+  static async create(
+    context: AudioContext,
+    stream: MediaStream,
+    fftSize: number
+  ): Promise<FrequencyAnalyser> {
+    const sourceNode = context.createMediaStreamSource(stream);
+    const silentGain = context.createGain();
+    silentGain.gain.value = 0;
+
+    if (context.audioWorklet?.addModule) {
+      try {
+        await context.audioWorklet.addModule(FREQUENCY_ANALYSER_PROCESSOR);
+
+        const workletNode = new AudioWorkletNode(context, 'frequency-analyser', {
+          numberOfInputs: 1,
+          numberOfOutputs: 1,
+          outputChannelCount: [1],
+          processorOptions: { fftSize },
+        });
+
+        sourceNode.connect(workletNode);
+        workletNode.connect(silentGain);
+        silentGain.connect(context.destination);
+
+        return new FrequencyAnalyser({
+          context,
+          sourceNode,
+          workletNode,
+          fftSize,
+          silentGain,
+        });
+      } catch (error) {
+        console.warn('Falling back to AnalyserNode after AudioWorklet failure', error);
+      }
+    }
+
+    const analyserNode = context.createAnalyser();
+    analyserNode.fftSize = fftSize;
+    sourceNode.connect(analyserNode);
+    analyserNode.connect(silentGain);
+    silentGain.connect(context.destination);
+
+    return new FrequencyAnalyser({
+      context,
+      sourceNode,
+      analyserNode,
+      fftSize,
+      silentGain,
+    });
+  }
+
+  getFrequencyData() {
+    if (this.analyserNode) {
+      this.analyserNode.getByteFrequencyData(this.frequencyData);
+    }
+
+    return this.frequencyData;
+  }
+
+  getRmsLevel() {
+    return this.rms;
+  }
+
+  disconnect() {
+    if (this.workletNode) {
+      this.workletNode.port.onmessage = null;
+      this.workletNode.disconnect();
+    }
+    if (this.analyserNode) {
+      this.analyserNode.disconnect();
+    }
+    this.sourceNode.disconnect();
+    this.silentGain.disconnect();
+  }
+}
+
 async function queryMicrophonePermissionState(): Promise<PermissionState | undefined> {
   if (typeof navigator === 'undefined') return undefined;
   if (!navigator.permissions?.query) return undefined;
@@ -40,7 +167,7 @@ export type AudioInitOptions = {
   constraints?: MediaStreamConstraints;
   stream?: MediaStream;
   onCleanup?: (ctx: {
-    analyser: THREE.AudioAnalyser;
+    analyser: FrequencyAnalyser;
     listener: THREE.AudioListener;
     audio: THREE.Audio | THREE.PositionalAudio;
     stream?: MediaStream;
@@ -157,7 +284,11 @@ export async function initAudio(options: AudioInitOptions = {}) {
     if (positional && object) {
       object.add(audio);
     }
-    const analyser = new THREE.AudioAnalyser(audio, fftSize);
+    const analyser = await FrequencyAnalyser.create(
+      listener.context,
+      streamSource,
+      fftSize
+    );
 
     let cleanedUp = false;
     const cleanup = () => {
@@ -176,9 +307,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
         audio.disconnect();
       }
 
-      if (analyser?.analyser) {
-        analyser.analyser.disconnect();
-      }
+      analyser?.disconnect();
 
       if (streamSource) {
         streamSource.getTracks().forEach((track) => track.stop());
@@ -254,7 +383,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
   }
 }
 
-export function getFrequencyData(analyser: THREE.AudioAnalyser) {
+export function getFrequencyData(analyser: FrequencyAnalyser) {
   return analyser.getFrequencyData();
 }
 

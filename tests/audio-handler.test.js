@@ -1,5 +1,6 @@
 import {
   afterEach,
+  afterAll,
   beforeAll,
   beforeEach,
   describe,
@@ -12,10 +13,49 @@ let originalNavigatorDesc;
 let initAudio;
 let getFrequencyData;
 let AudioAccessError;
+let originalAudioContext;
+let originalAudioWorkletNode;
+
+class FakeAudioWorklet {
+  addModule = mock().mockResolvedValue(undefined);
+}
+
+class FakeAudioContext {
+  audioWorklet = new FakeAudioWorklet();
+  destination = {};
+
+  createMediaStreamSource = mock(() => ({ connect: mock(), disconnect: mock() }));
+  createGain = mock(() => ({ gain: { value: 1 }, connect: mock(), disconnect: mock() }));
+  createAnalyser = mock(() => ({
+    fftSize: 0,
+    frequencyBinCount: 128,
+    getByteFrequencyData: mock(),
+    connect: mock(),
+    disconnect: mock(),
+  }));
+  close = mock();
+}
+
+class FakeAudioWorkletNode {
+  port = { onmessage: null, postMessage: mock() };
+  connect = mock();
+  disconnect = mock();
+
+  constructor() {}
+}
 
 beforeAll(async () => {
+  originalAudioContext = global.AudioContext;
+  originalAudioWorkletNode = global.AudioWorkletNode;
+  global.AudioContext = FakeAudioContext;
+  global.AudioWorkletNode = FakeAudioWorkletNode;
+
   mock.module('three', () => {
-    const AudioListener = mock(() => ({ add: mock(), context: { close: mock() } }));
+    const AudioListener = mock(() => ({
+      add: mock(),
+      remove: mock(),
+      context: new FakeAudioContext(),
+    }));
     const Audio = mock(() => ({
       setMediaStreamSource: mock(),
       stop: mock(),
@@ -65,8 +105,11 @@ describe('audio-handler utilities', () => {
   beforeEach(() => {
     originalNavigatorDesc = Object.getOwnPropertyDescriptor(global, 'navigator');
     const nav = global.navigator;
+    const track = { stop: mock() };
+    const stream = { getTracks: mock(() => [track]) };
+
     nav.mediaDevices = {
-      getUserMedia: mock().mockResolvedValue('stream'),
+      getUserMedia: mock().mockResolvedValue(stream),
     };
     global.navigator = nav;
   });
@@ -77,6 +120,20 @@ describe('audio-handler utilities', () => {
       originalNavigatorDesc = undefined;
     } else {
       delete global.navigator;
+    }
+  });
+
+  afterAll(() => {
+    if (originalAudioContext) {
+      global.AudioContext = originalAudioContext;
+    } else {
+      delete global.AudioContext;
+    }
+
+    if (originalAudioWorkletNode) {
+      global.AudioWorkletNode = originalAudioWorkletNode;
+    } else {
+      delete global.AudioWorkletNode;
     }
   });
 

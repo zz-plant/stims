@@ -8,6 +8,11 @@ import {
 import { getAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor, type AudioColorParams } from '../utils/color-audio';
 import { startToyAudio } from '../utils/start-audio';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
 
 type ShapeMode = 'cubes' | 'spheres';
 
@@ -69,6 +74,10 @@ const toy = new WebToy({
 
 const gridGroup = new THREE.Group();
 const gridItems: GridItem[] = [];
+
+let activeQuality: QualityPreset = DEFAULT_QUALITY_PRESETS.find(
+  (preset) => preset.id === 'balanced'
+)!;
 
 const presets: Record<ShapeMode, GridPreset> = {
   cubes: {
@@ -175,6 +184,21 @@ const presets: Record<ShapeMode, GridPreset> = {
 let currentPreset: GridPreset = presets.cubes;
 let activeMode: ShapeMode = 'cubes';
 
+function getGridConfig(preset: GridPreset) {
+  const particleScale = activeQuality.particleScale ?? 1;
+  const scale = Math.max(0.6, particleScale);
+  const rows = Math.max(2, Math.round(preset.grid.rows * scale));
+  const cols = Math.max(2, Math.round(preset.grid.cols * scale));
+  const spacingScale = 1 / Math.max(Math.sqrt(scale), 0.75);
+
+  return {
+    rows,
+    cols,
+    spacingX: preset.grid.spacingX * spacingScale,
+    spacingZ: preset.grid.spacingZ * spacingScale,
+  };
+}
+
 function disposeGroup(group: THREE.Group) {
   group.traverse((child) => {
     const mesh = child as THREE.Mesh;
@@ -198,7 +222,7 @@ function rebuildGrid(mode: ShapeMode) {
   toy.camera.position.copy(currentPreset.camera.position);
   toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
 
-  const { rows, cols, spacingX, spacingZ } = currentPreset.grid;
+  const { rows, cols, spacingX, spacingZ } = getGridConfig(currentPreset);
   const startX = -((cols - 1) * spacingX) / 2;
   const startZ = -((rows - 1) * spacingZ) / 2;
 
@@ -220,49 +244,50 @@ function rebuildGrid(mode: ShapeMode) {
   }
 }
 
-function createShapeSelector() {
-  const panel = document.createElement('div');
-  panel.className = 'control-panel';
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+  rebuildGrid(activeMode);
+}
 
-  const heading = document.createElement('div');
-  heading.className = 'control-panel__heading';
-  heading.textContent = 'Grid Visualizer';
+function setupSettingsPanel() {
+  const panel = getSettingsPanel();
+  panel.configure({
+    title: 'Grid visualizer',
+    description:
+      'Adjust render resolution caps and switch primitives without restarting audio.',
+  });
 
-  const description = document.createElement('p');
-  description.className = 'control-panel__description';
-  description.textContent = 'Swap between cube waves and bouncing spheres.';
+  panel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
 
-  const row = document.createElement('label');
-  row.className = 'control-panel__row';
-
-  const text = document.createElement('div');
-  text.className = 'control-panel__text';
-  const label = document.createElement('span');
-  label.className = 'control-panel__label';
-  label.textContent = 'Shape';
-  const hint = document.createElement('small');
-  hint.textContent = 'Change the primitive without restarting audio.';
-  text.appendChild(label);
-  text.appendChild(hint);
+  const shapeRow = panel.addSection(
+    'Shape',
+    'Change the primitive without restarting audio.'
+  );
 
   const select = document.createElement('select');
+  select.className = 'control-panel__select';
   Object.entries(presets).forEach(([key, preset]) => {
     const option = document.createElement('option');
     option.value = key;
     option.textContent = preset.label;
     select.appendChild(option);
   });
+
   select.value = activeMode;
   select.addEventListener('change', () => {
     const nextMode = select.value as ShapeMode;
     rebuildGrid(nextMode);
   });
 
-  row.appendChild(text);
-  row.appendChild(select);
-
-  [heading, description, row].forEach((el) => panel.appendChild(el));
-  document.body.appendChild(panel);
+  shapeRow.appendChild(select);
 }
 
 function updateTransforms(
@@ -332,8 +357,7 @@ async function startAudio(useSynthetic = false) {
 
 function init() {
   toy.scene.add(gridGroup);
-  rebuildGrid(activeMode);
-  createShapeSelector();
+  setupSettingsPanel();
 }
 
 init();
