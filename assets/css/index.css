@@ -679,6 +679,71 @@ footer {
   line-height: 1.5;
 }
 
+.status-card {
+  padding: 1.1rem 1rem;
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(109, 240, 255, 0.14), rgba(155, 123, 255, 0.14), rgba(255, 111, 227, 0.12));
+  border: 1px solid var(--accent-soft);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3), 0 0 24px var(--highlight-glow);
+  backdrop-filter: blur(10px);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.release-link {
+  color: var(--accent-color);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.release-link:hover,
+.release-link:focus-visible {
+  text-decoration: underline;
+}
+
+.status-body {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.status-metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.metric-value {
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+.status-fallback {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #ffbf47;
+  background: rgba(255, 191, 71, 0.1);
+  border: 1px solid rgba(255, 191, 71, 0.5);
+  padding: 0.7rem 0.75rem;
+  border-radius: 12px;
+}
+
 @media (max-width: 768px) {
   h1 {
     font-size: 2rem;
