@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>Dreamy Interactive Spectrograph Music Visualizer</title>
     <link rel="stylesheet" href="assets/css/base.css" />
     <style>
@@ -28,7 +31,7 @@
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <div id="error-message" style="display: none"></div>
-    <canvas id="glCanvas"></canvas>
+    <canvas id="glCanvas" class="toy-canvas"></canvas>
     <script type="module">
       import {
         initAudio,
