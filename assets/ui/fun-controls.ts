@@ -249,5 +249,6 @@ export function initFunControls(options: FunControlsInit = {}) {
       }
       notifyAudio();
     },
+    container,
   };
 }
