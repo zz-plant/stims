@@ -33,10 +33,16 @@
     <canvas id="gpuCanvas"></canvas>
     <canvas id="sparkleCanvas"></canvas>
     <div id="error-message" style="display: none"></div>
-    <select id="audioSelect">
-      <option value="mic">Microphone</option>
-      <option value="device">Device Audio</option>
-    </select>
+    <div class="control-panel" aria-label="Audio controls">
+      <div class="control-panel__heading">Audio Input</div>
+      <div class="control-panel__row">
+        <label class="control-panel__label" for="audioSelect">Source</label>
+        <select id="audioSelect">
+          <option value="mic">Microphone</option>
+          <option value="device">Device Audio</option>
+        </select>
+      </div>
+    </div>
     <script type="module">
       import {
         getFrequencyData,

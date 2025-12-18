@@ -1,4 +1,4 @@
-import { loadToy, loadFromQuery } from './loader.js';
+import { initNavigation, loadToy, loadFromQuery } from './loader.js';
 import toysData from './toys-data.js';
 
 let allToys = [];
@@ -34,20 +34,158 @@ function colorFromSlug(slug) {
 function createSVGAnimation(slug) {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('viewBox', '0 0 120 120');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', `${slug} holographic icon`);
   svg.classList.add('toy-icon');
-  const circle = document.createElementNS(ns, 'circle');
-  circle.setAttribute('cx', '50');
-  circle.setAttribute('cy', '50');
-  circle.setAttribute('r', '30');
-  circle.setAttribute('fill', colorFromSlug(slug));
-  const anim = document.createElementNS(ns, 'animate');
-  anim.setAttribute('attributeName', 'r');
-  anim.setAttribute('values', '20;40;20');
-  anim.setAttribute('dur', '3s');
-  anim.setAttribute('repeatCount', 'indefinite');
-  circle.appendChild(anim);
-  svg.appendChild(circle);
+
+  let hue = 0;
+  for (const char of slug) {
+    hue = (hue * 31 + char.charCodeAt(0)) % 360;
+  }
+
+  const primary = `hsl(${hue}, 80%, 60%)`;
+  const accent = `hsl(${(hue + 140) % 360}, 90%, 65%)`;
+  const highlight = `hsla(${(hue + 40) % 360}, 100%, 70%, 0.9)`;
+
+  const defs = document.createElementNS(ns, 'defs');
+  const glowGradient = document.createElementNS(ns, 'radialGradient');
+  glowGradient.setAttribute('id', `glow-${slug}`);
+  glowGradient.innerHTML = `
+    <stop offset="0%" stop-color="${highlight}" stop-opacity="0.9" />
+    <stop offset="60%" stop-color="${accent}" stop-opacity="0.35" />
+    <stop offset="100%" stop-color="${primary}" stop-opacity="0" />
+  `;
+  defs.appendChild(glowGradient);
+
+  const shimmerGradient = document.createElementNS(ns, 'linearGradient');
+  shimmerGradient.setAttribute('id', `shimmer-${slug}`);
+  shimmerGradient.setAttribute('x1', '0%');
+  shimmerGradient.setAttribute('x2', '100%');
+  shimmerGradient.setAttribute('y1', '0%');
+  shimmerGradient.setAttribute('y2', '100%');
+  shimmerGradient.innerHTML = `
+    <stop offset="0%" stop-color="${primary}" />
+    <stop offset="50%" stop-color="${accent}" />
+    <stop offset="100%" stop-color="${highlight}" />
+  `;
+  defs.appendChild(shimmerGradient);
+  svg.appendChild(defs);
+
+  const halo = document.createElementNS(ns, 'circle');
+  halo.setAttribute('cx', '60');
+  halo.setAttribute('cy', '60');
+  halo.setAttribute('r', '52');
+  halo.setAttribute('fill', `url(#glow-${slug})`);
+  svg.appendChild(halo);
+
+  const ringGroup = document.createElementNS(ns, 'g');
+  ringGroup.setAttribute('transform', 'translate(60 60)');
+
+  const ring1 = document.createElementNS(ns, 'circle');
+  ring1.setAttribute('cx', '0');
+  ring1.setAttribute('cy', '0');
+  ring1.setAttribute('r', '42');
+  ring1.setAttribute('fill', 'none');
+  ring1.setAttribute('stroke', `url(#shimmer-${slug})`);
+  ring1.setAttribute('stroke-width', '3');
+  ring1.setAttribute('stroke-dasharray', '6 12');
+  ring1.setAttribute('stroke-linecap', 'round');
+  const ring1Anim = document.createElementNS(ns, 'animate');
+  ring1Anim.setAttribute('attributeName', 'stroke-dashoffset');
+  ring1Anim.setAttribute('values', '0; -120');
+  ring1Anim.setAttribute('dur', '6s');
+  ring1Anim.setAttribute('repeatCount', 'indefinite');
+  ring1.appendChild(ring1Anim);
+
+  const ring2 = document.createElementNS(ns, 'circle');
+  ring2.setAttribute('cx', '0');
+  ring2.setAttribute('cy', '0');
+  ring2.setAttribute('r', '26');
+  ring2.setAttribute('fill', 'none');
+  ring2.setAttribute('stroke', highlight);
+  ring2.setAttribute('stroke-width', '2.5');
+  ring2.setAttribute('stroke-dasharray', '4 10');
+  ring2.setAttribute('stroke-linecap', 'round');
+  const ring2Anim = document.createElementNS(ns, 'animate');
+  ring2Anim.setAttribute('attributeName', 'stroke-dashoffset');
+  ring2Anim.setAttribute('values', '60; -60');
+  ring2Anim.setAttribute('dur', '4s');
+  ring2Anim.setAttribute('repeatCount', 'indefinite');
+  ring2.appendChild(ring2Anim);
+
+  const ringRotate = document.createElementNS(ns, 'animateTransform');
+  ringRotate.setAttribute('attributeName', 'transform');
+  ringRotate.setAttribute('attributeType', 'XML');
+  ringRotate.setAttribute('type', 'rotate');
+  ringRotate.setAttribute('from', '0');
+  ringRotate.setAttribute('to', '360');
+  ringRotate.setAttribute('dur', '14s');
+  ringRotate.setAttribute('repeatCount', 'indefinite');
+  ringGroup.appendChild(ringRotate);
+  ringGroup.appendChild(ring1);
+  ringGroup.appendChild(ring2);
+  svg.appendChild(ringGroup);
+
+  const starburst = document.createElementNS(ns, 'g');
+  starburst.setAttribute('transform', 'translate(60 60)');
+  for (let i = 0; i < 12; i += 1) {
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', '0');
+    line.setAttribute('y1', '0');
+    line.setAttribute('x2', '0');
+    line.setAttribute('y2', '36');
+    line.setAttribute('stroke', primary);
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-linecap', 'round');
+    line.setAttribute('opacity', '0.7');
+    line.setAttribute('transform', `rotate(${i * 30})`);
+    const lineAnim = document.createElementNS(ns, 'animate');
+    lineAnim.setAttribute('attributeName', 'stroke-dasharray');
+    lineAnim.setAttribute('values', '0 36; 36 0; 0 36');
+    lineAnim.setAttribute('dur', '5s');
+    lineAnim.setAttribute('repeatCount', 'indefinite');
+    line.appendChild(lineAnim);
+    starburst.appendChild(line);
+  }
+  const starRotate = document.createElementNS(ns, 'animateTransform');
+  starRotate.setAttribute('attributeName', 'transform');
+  starRotate.setAttribute('type', 'rotate');
+  starRotate.setAttribute('from', '0 60 60');
+  starRotate.setAttribute('to', '-360 60 60');
+  starRotate.setAttribute('dur', '10s');
+  starRotate.setAttribute('repeatCount', 'indefinite');
+  starburst.appendChild(starRotate);
+  svg.appendChild(starburst);
+
+  const diamondGroup = document.createElementNS(ns, 'g');
+  diamondGroup.setAttribute('transform', 'translate(60 60)');
+  for (const radius of [10, 20, 32]) {
+    const diamond = document.createElementNS(ns, 'path');
+    diamond.setAttribute('d', `M 0 -${radius} L ${radius} 0 L 0 ${radius} L -${radius} 0 Z`);
+    diamond.setAttribute('fill', 'none');
+    diamond.setAttribute('stroke', accent);
+    diamond.setAttribute('stroke-width', '1.5');
+    diamond.setAttribute('stroke-linejoin', 'round');
+    diamond.setAttribute('stroke-dasharray', '3 6');
+    const dashAnim = document.createElementNS(ns, 'animate');
+    dashAnim.setAttribute('attributeName', 'stroke-dashoffset');
+    dashAnim.setAttribute('values', '0; 30');
+    dashAnim.setAttribute('dur', `${3 + radius / 10}s`);
+    dashAnim.setAttribute('repeatCount', 'indefinite');
+    diamond.appendChild(dashAnim);
+    diamondGroup.appendChild(diamond);
+  }
+  const diamondRotate = document.createElementNS(ns, 'animateTransform');
+  diamondRotate.setAttribute('attributeName', 'transform');
+  diamondRotate.setAttribute('type', 'rotate');
+  diamondRotate.setAttribute('from', '0 60 60');
+  diamondRotate.setAttribute('to', '360 60 60');
+  diamondRotate.setAttribute('dur', '12s');
+  diamondRotate.setAttribute('repeatCount', 'indefinite');
+  diamondGroup.appendChild(diamondRotate);
+  svg.appendChild(diamondGroup);
+
   return svg;
 }
 
@@ -106,7 +244,7 @@ function renderToys(toys) {
 
 function openToy(toy) {
   if (toy.type === 'module') {
-    loadToy(toy.slug);
+    loadToy(toy.slug, { pushState: true });
   } else {
     window.location.href = toy.module;
   }
@@ -117,6 +255,7 @@ async function init() {
   renderToys(allToys);
 
   setupDarkModeToggle();
+  initNavigation();
   await loadFromQuery();
 }
 

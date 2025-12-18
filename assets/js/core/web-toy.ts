@@ -30,7 +30,10 @@ export default class WebToy {
     }
 
     this.canvas = canvas || document.createElement('canvas');
-    document.body.appendChild(this.canvas);
+
+    const host =
+      document.getElementById('active-toy-container') || document.body;
+    host.appendChild(this.canvas);
 
     this.scene = initScene(sceneOptions);
     this.camera = initCamera(cameraOptions);
