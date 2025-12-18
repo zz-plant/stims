@@ -13,7 +13,9 @@ const moduleInputs = Object.fromEntries(
 export default defineConfig({
   build: {
     outDir: 'dist',
-    manifest: true,
+    // Emit a top-level manifest so runtime lookups work even when the .vite
+    // directory is hidden or stripped by static hosts.
+    manifest: 'manifest.json',
     rollupOptions: {
       input: {
         main: path.resolve(rootDir, 'index.html'),
