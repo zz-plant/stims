@@ -65,7 +65,44 @@ function showLibraryView() {
 
 function showActiveToyView() {
   hideElement(getToyList());
-  showElement(ensureActiveToyContainer());
+  const container = ensureActiveToyContainer();
+  ensureBackToLibraryControl(container);
+  showElement(container);
+}
+
+function updateHistoryToLibraryView() {
+  const win = getWindow();
+  if (!win?.history) return;
+
+  const url = new URL(win.location.href);
+  if (!url.searchParams.has(TOY_QUERY_PARAM)) {
+    return;
+  }
+
+  url.searchParams.delete(TOY_QUERY_PARAM);
+  win.history.pushState({}, '', url);
+}
+
+function ensureBackToLibraryControl(container) {
+  const doc = getDocument();
+  if (!doc || !container) return null;
+
+  let control = container.querySelector('[data-back-to-library]');
+  if (control) return control;
+
+  control = doc.createElement('button');
+  control.type = 'button';
+  control.className = 'home-link';
+  control.textContent = 'Back to Library';
+  control.setAttribute('data-back-to-library', 'true');
+  control.addEventListener('click', () => {
+    disposeActiveToy();
+    showLibraryView();
+    updateHistoryToLibraryView();
+  });
+
+  container.appendChild(control);
+  return control;
 }
 
 function disposeActiveToy() {
