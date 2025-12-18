@@ -8,6 +8,7 @@ import {
 } from 'bun:test';
 
 const loaderModule = '../assets/js/loader.js';
+const originalWindow = global.window;
 const originalLocation = window.location;
 const originalHistory = window.history;
 const originalNavigator = global.navigator;
@@ -245,7 +246,7 @@ describe('resolveModulePath', () => {
   afterEach(() => {
     mock.restore();
     delete global.fetch;
-    delete global.window;
+    global.window = originalWindow;
   });
 
   test('uses manifest entry when available', async () => {
