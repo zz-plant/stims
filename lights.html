@@ -5,72 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Audio-Responsive Visualizer</title>
     <link rel="stylesheet" href="assets/css/base.css" />
-    <style>
-      body,
-      html {
-        padding: 0;
-        font-family: Arial, sans-serif;
-        background-color: #111;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-      }
-
-      #controls {
-        position: absolute;
-        top: 20px;
-        display: flex;
-        gap: 10px;
-        z-index: 10;
-      }
-
-      select,
-      button {
-        padding: 10px;
-        background-color: #333;
-        color: white;
-        border: none;
-        border-radius: 5px;
-      }
-
-      select:hover,
-      button:hover {
-        background-color: #555;
-      }
-
-      #error-message {
-        color: red;
-        font-size: 14px;
-        margin-top: 10px;
-        display: none;
-      }
-
-      #toy-canvas {
-        display: block;
-      }
-    </style>
+    <link rel="stylesheet" href="assets/css/index.css" />
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <!-- Controls for light type and starting audio -->
-    <div id="controls">
-      <select id="light-type">
-        <option value="PointLight">Point Light</option>
-        <option value="DirectionalLight">Directional Light</option>
-        <option value="SpotLight">Spot Light</option>
-        <option value="HemisphereLight">Hemisphere Light</option>
-      </select>
-      <button id="start-audio-btn">Start Audio & Visualization</button>
+    <div class="control-panel">
+      <div class="control-panel__heading">Lighting controls</div>
+      <p class="control-panel__description">Choose a light and start the visualization.</p>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Light type</span>
+          <small>Update the scene illumination.</small>
+        </div>
+        <select id="light-type">
+          <option value="PointLight">Point Light</option>
+          <option value="DirectionalLight">Directional Light</option>
+          <option value="SpotLight">Spot Light</option>
+          <option value="HemisphereLight">Hemisphere Light</option>
+        </select>
+      </div>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Audio</span>
+          <small>Start microphone input and animation.</small>
+        </div>
+        <button id="start-audio-btn" class="cta-button primary">Start Audio &amp; Visualization</button>
+      </div>
+      <p
+        id="error-message"
+        class="control-panel__description"
+        aria-live="polite"
+        hidden
+      ></p>
     </div>
 
     <!-- WebGL Canvas -->
     <canvas id="toy-canvas"></canvas>
-
-    <!-- Error message for microphone access -->
-    <div id="error-message"></div>
 
     <script type="module" src="assets/js/app.js"></script>
   </body>

@@ -5,10 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web Toy</title>
     <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/index.css" />
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
-    <button id="start-audio-btn">Start audio</button>
+    <div class="control-panel">
+      <div class="control-panel__heading">Audio controls</div>
+      <p class="control-panel__description">Start microphone input to play the toy.</p>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Microphone</span>
+          <small>Enable audio to begin the experience.</small>
+        </div>
+        <button id="start-audio-btn" class="cta-button primary">Start audio</button>
+      </div>
+    </div>
     <script type="module" src="assets/js/toyMain.js"></script>
     <script>
       const btn = document.getElementById('start-audio-btn');
