@@ -5,6 +5,10 @@ const TOY_QUERY_PARAM = 'toy';
 let manifestPromise;
 let navigationInitialized = false;
 
+function hasWebGPUSupport() {
+  return typeof navigator !== 'undefined' && Boolean(navigator.gpu);
+}
+
 function getDocument() {
   return typeof document === 'undefined' ? null : document;
 }
@@ -146,6 +150,35 @@ function showImportError(container, toy) {
   status.querySelector('.active-toy-status__content')?.appendChild(actions);
 }
 
+function showCapabilityError(container, toy) {
+  clearActiveToyContainer();
+
+  const status = createStatusElement(container, {
+    type: 'error',
+    title: 'WebGPU not available',
+    message: toy?.title
+      ? `${toy.title} needs WebGPU, which is not supported in this browser.`
+      : 'This toy requires WebGPU, which is not supported in this browser.',
+  });
+
+  if (!status) return;
+
+  const actions = document.createElement('div');
+  actions.className = 'active-toy-actions';
+
+  const back = document.createElement('button');
+  back.type = 'button';
+  back.className = 'cta-button';
+  back.textContent = 'Back to Library';
+  back.addEventListener('click', () => {
+    showLibraryView();
+    updateHistoryToLibraryView();
+  });
+
+  actions.appendChild(back);
+  status.querySelector('.active-toy-status__content')?.appendChild(actions);
+}
+
 function showLibraryView() {
   showElement(getToyList());
   hideElement(findActiveToyContainer());
@@ -251,30 +284,55 @@ export async function loadToy(slug, { pushState = false } = {}) {
     return;
   }
 
-  if (toy.type === 'page') {
-    disposeActiveToy();
-    window.location.href = `./${slug}.html`;
-  } else if (toy.type === 'module') {
+  if (toy.type === 'module') {
     if (pushState) {
       pushToyState(slug);
     }
 
     disposeActiveToy();
     showActiveToyView();
+
+    if (toy.requiresWebGPU && !hasWebGPUSupport()) {
+      const container = ensureActiveToyContainer();
+      showCapabilityError(container, toy);
+      return;
+    }
+
     const container = ensureActiveToyContainer();
     showLoadingIndicator(container, toy.title || toy.slug);
 
     const moduleUrl = await resolveModulePath(toy.module);
     let importError = null;
 
-    await import(moduleUrl).catch((error) => {
-      importError = error;
-    });
+    let moduleExports = null;
+
+    await import(moduleUrl)
+      .then((mod) => {
+        moduleExports = mod;
+      })
+      .catch((error) => {
+        importError = error;
+      });
 
     if (importError) {
       console.error('Error loading toy module:', importError);
       showImportError(container, toy);
       return;
+    }
+
+    const starter = moduleExports?.start ?? moduleExports?.default?.start;
+
+    if (starter) {
+      try {
+        const active = await starter({ container, slug });
+        if (active && !globalThis.__activeWebToy) {
+          globalThis.__activeWebToy = active;
+        }
+      } catch (error) {
+        console.error('Error starting toy module:', error);
+        showImportError(container, toy);
+        return;
+      }
     }
 
     removeStatusElement(container);
