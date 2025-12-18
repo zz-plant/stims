@@ -4,9 +4,26 @@
     <meta charset="UTF-8" />
     <title>Enhanced Star Guitar Inspired Visualizer</title>
     <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/index.css" />
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
+    <div class="control-panel">
+      <div class="control-panel__heading">Audio controls</div>
+      <p class="control-panel__description">
+        Start microphone input to sync the visuals with your music.
+      </p>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Microphone</span>
+          <small>Enable audio to begin the experience.</small>
+        </div>
+        <button id="start-audio-btn" class="cta-button primary">
+          Start audio
+        </button>
+      </div>
+      <div id="audio-status" class="control-panel__status" role="status"></div>
+    </div>
     <canvas id="vizCanvas"></canvas>
     <div id="error-message" style="display: none"></div>
     <script type="module">
@@ -20,7 +37,21 @@
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createBrandFunAdapter } from './assets/brand/fun-adapter.ts';
 
+      const startButton = document.getElementById('start-audio-btn');
+      const statusElement = document.getElementById('audio-status');
       const canvas = document.getElementById('vizCanvas');
+
+      const setStatus = (message, variant = 'info') => {
+        if (!statusElement) return;
+        statusElement.textContent = message;
+        statusElement.dataset.variant = variant;
+        statusElement.hidden = !message;
+      };
+
+      const startSilentAnimation = () => {
+        const silentContext = { toy, analyser: null };
+        toy.renderer.setAnimationLoop(() => animate(silentContext));
+      };
 
       initHints({
         id: 'brand-visualizer',
@@ -256,18 +287,38 @@
         ctx.toy.render();
       }
 
-      startToyAudio(toy, animate, {
-        positional: true,
-        object: toy.camera,
-      }).catch((err) => {
-        console.error('Audio input error: ', err);
-        funControls.setAudioAvailable(false);
-        showError(
-          'error-message',
-          'Microphone access is unavailable. Visuals will run without audio reactivity.'
-        );
-        const silentContext = { toy, analyser: null };
-        toy.renderer.setAnimationLoop(() => animate(silentContext));
+      if (statusElement) {
+        statusElement.hidden = true;
+      }
+
+      startSilentAnimation();
+
+      startButton?.addEventListener('click', async () => {
+        if (!startButton) return;
+        startButton.disabled = true;
+        setStatus('Requesting microphone access...', 'info');
+
+        try {
+          await startToyAudio(toy, animate, {
+            positional: true,
+            object: toy.camera,
+          });
+          startButton.style.display = 'none';
+          setStatus('Microphone connected! Enjoy the visuals.', 'success');
+        } catch (err) {
+          console.error('Audio input error: ', err);
+          funControls.setAudioAvailable(false);
+          setStatus(
+            'Microphone access is unavailable. Visuals will run without audio reactivity.',
+            'error'
+          );
+          showError(
+            'error-message',
+            'Microphone access is unavailable. Visuals will run without audio reactivity.'
+          );
+          startSilentAnimation();
+          startButton.disabled = false;
+        }
       });
     </script>
   </body>

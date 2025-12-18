@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Multi-Capability Visualizer (WebGPU/WebGL Fallback)</title>
     <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/index.css" />
     <style>
       body,
       html {
@@ -15,6 +16,22 @@
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
+    <div class="control-panel">
+      <div class="control-panel__heading">Audio controls</div>
+      <p class="control-panel__description">
+        Start microphone input to sync the visuals with your music.
+      </p>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Microphone</span>
+          <small>Enable audio to begin the experience.</small>
+        </div>
+        <button id="start-audio-btn" class="cta-button primary">
+          Start audio
+        </button>
+      </div>
+      <div id="audio-status" class="control-panel__status" role="status"></div>
+    </div>
     <canvas id="webglCanvas"></canvas>
     <div id="error-message" style="display: none"></div>
     <script type="module">
@@ -29,6 +46,8 @@
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createMultiFunAdapter } from './assets/multi/fun-adapter.ts';
 
+      const startButton = document.getElementById('start-audio-btn');
+      const statusElement = document.getElementById('audio-status');
       const canvas = document.getElementById('webglCanvas');
       initHints({
         id: 'multi-visualizer',
@@ -332,17 +351,48 @@
         ctx.toy.render();
       }
 
-      startToyAudio(toy, animate)
-        .catch((err) => {
+      const startSilentAnimation = () => {
+        const silentContext = { toy, analyser: null };
+        toy.renderer.setAnimationLoop(() => animate(silentContext));
+      };
+
+      const setStatus = (message, variant = 'info') => {
+        if (!statusElement) return;
+        statusElement.textContent = message;
+        statusElement.dataset.variant = variant;
+        statusElement.hidden = !message;
+      };
+
+      if (statusElement) {
+        statusElement.hidden = true;
+      }
+
+      startSilentAnimation();
+
+      startButton?.addEventListener('click', async () => {
+        if (!startButton) return;
+        startButton.disabled = true;
+        setStatus('Requesting microphone access...', 'info');
+
+        try {
+          await startToyAudio(toy, animate);
+          startButton.style.display = 'none';
+          setStatus('Microphone connected! Enjoy the visuals.', 'success');
+        } catch (err) {
           console.error('The following error occurred: ' + err);
           funControls.setAudioAvailable(false);
+          setStatus(
+            'Microphone access is unavailable. Visuals will run without audio reactivity.',
+            'error'
+          );
           showError(
             'error-message',
             'Microphone access is unavailable. Visuals will run without audio reactivity.'
           );
-          const silentContext = { toy, analyser: null };
-          toy.renderer.setAnimationLoop(() => animate(silentContext));
-        });
+          startSilentAnimation();
+          startButton.disabled = false;
+        }
+      });
     </script>
   </body>
 </html>

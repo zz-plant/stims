@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>Enhanced Pottery Wheel Simulation</title>
     <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/index.css" />
     <style>
       body {
         background: #000;
@@ -39,6 +40,20 @@
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
+    <div class="control-panel">
+      <div class="control-panel__heading">Audio controls</div>
+      <p class="control-panel__description">
+        Start microphone input to sync wheel motion with your music.
+      </p>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Microphone</span>
+          <small>Enable audio to enhance the experience.</small>
+        </div>
+        <button id="start-audio-btn" class="cta-button primary">Start audio</button>
+      </div>
+      <div id="audio-status" class="control-panel__status" role="status"></div>
+    </div>
     <div id="ui">
       <button id="resetButton">Reset Clay</button>
       <div id="toolPanel">
@@ -50,11 +65,14 @@
     <script type="module">
       import * as THREE from 'three';
       import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      import { initAudio } from './assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
       if (!ensureWebGL()) {
         return;
       }
       // Basic Three.js setup
       let scene, camera, renderer;
+      let audioToy;
       let potteryMesh, wheelMesh;
       let isInteracting = false;
       let previousTouches = [];
@@ -64,8 +82,23 @@
       const segments = 100; // Increased for better detail
       let currentTool = 'smooth';
 
+      const startButton = document.getElementById('start-audio-btn');
+      const statusElement = document.getElementById('audio-status');
+
+      const setStatus = (message, variant = 'info') => {
+        if (!statusElement) return;
+        statusElement.textContent = message;
+        statusElement.dataset.variant = variant;
+        statusElement.hidden = !message;
+      };
+
       init();
-      animate();
+
+      const startSilentAnimation = () => {
+        if (!audioToy?.renderer?.setAnimationLoop) return;
+        const silentContext = { toy: audioToy, analyser: null };
+        audioToy.renderer.setAnimationLoop(() => animate(silentContext));
+      };
 
       function init() {
         // Scene and Camera
@@ -86,6 +119,18 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
+
+        audioToy = {
+          rendererReady: Promise.resolve(),
+          analyser: null,
+          renderer,
+          async initAudio(options = {}) {
+            const audio = await initAudio({ ...options, camera });
+            this.analyser = audio.analyser;
+            return audio;
+          },
+          render: () => renderer.render(scene, camera),
+        };
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -288,8 +333,6 @@
       }
 
       function animate() {
-        requestAnimationFrame(animate);
-
         // Rotate the wheel and clay
         const rotationSpeed = 0.02;
         wheelMesh.rotation.y += rotationSpeed;
@@ -297,6 +340,32 @@
 
         renderer.render(scene, camera);
       }
+
+      if (statusElement) {
+        statusElement.hidden = true;
+      }
+
+      startSilentAnimation();
+
+      startButton?.addEventListener('click', async () => {
+        if (!startButton) return;
+        startButton.disabled = true;
+        setStatus('Requesting microphone access...', 'info');
+
+        try {
+          await startToyAudio(audioToy, animate);
+          startButton.style.display = 'none';
+          setStatus('Microphone connected! Enjoy the visuals.', 'success');
+        } catch (error) {
+          console.error('Audio input error:', error);
+          setStatus(
+            'Microphone access is unavailable. Visuals will run without audio reactivity.',
+            'error'
+          );
+          startSilentAnimation();
+          startButton.disabled = false;
+        }
+      });
 
       function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;

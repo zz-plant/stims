@@ -5,6 +5,7 @@ import { initRenderer } from './core/renderer-setup.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
 import { initLighting, initAmbientLight } from './lighting/lighting-setup';
 import { initAudio, getFrequencyData } from './utils/audio-handler.ts';
+import { startToyAudio } from './utils/start-audio.ts';
 import {
   applyAudioRotation,
   applyAudioScale,
@@ -26,8 +27,21 @@ let currentLightType = 'PointLight'; // Default light type
 let animationFrameId = null;
 let isAnimating = false;
 let audioListener = null;
+let toyBridge = null;
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let isReducedMotionPreferred = prefersReducedMotion.matches;
+const statusElement = document.getElementById('audio-status');
+
+const setStatus = (message, variant = 'info') => {
+  if (!statusElement) return;
+  statusElement.textContent = message;
+  statusElement.dataset.variant = variant;
+  statusElement.hidden = !message;
+};
+
+if (statusElement) {
+  statusElement.hidden = true;
+}
 
 async function initVisualization() {
   if (!ensureWebGL()) {
@@ -83,6 +97,23 @@ async function initVisualization() {
   cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
 
+  toyBridge = {
+    rendererReady: rendererReadyPromise,
+    analyser: null,
+    renderer: {
+      setAnimationLoop: (callback) => {
+        callback();
+      },
+    },
+    async initAudio(options = {}) {
+      const audio = await initAudio({ ...options, camera });
+      this.analyser = audio.analyser;
+      audioListener = audio.listener ?? null;
+      audioCleanup = audio.cleanup;
+      return audio;
+    },
+  };
+
   renderSceneOnce();
 }
 
@@ -112,23 +143,32 @@ async function startAudioAndAnimation() {
       displayError('Unable to start because no renderer is available.');
       return false;
     }
-    const audioData = await initAudio();
-    analyser = audioData.analyser;
-    audioListener = audioData.listener ?? null;
-    audioCleanup = audioData.cleanup;
-    patternRecognizer = new PatternRecognizer(analyser);
+    setStatus('Requesting microphone access...', 'info');
+    await startToyAudio(toyBridge, (ctx) => {
+      analyser = ctx.analyser;
+      if (!patternRecognizer && ctx.analyser) {
+        patternRecognizer = new PatternRecognizer(ctx.analyser);
+      }
+    });
 
     if (isReducedMotionPreferred) {
       renderSceneOnce();
     } else {
       startAnimationLoop();
     }
+    setStatus('Microphone connected! Enjoy the visuals.', 'success');
+    displayError('');
     return true;
   } catch (error) {
     console.error('initAudio failed:', error);
     displayError(
       'Microphone access is required for the visualization to work. Please allow microphone access.'
     );
+    setStatus(
+      'Microphone access is unavailable. Visuals will run without audio reactivity.',
+      'error'
+    );
+    startAnimationLoop();
     return false;
   }
 }
@@ -136,7 +176,7 @@ async function startAudioAndAnimation() {
 function animate() {
   if (!isAnimating) return;
 
-  if (analyser) {
+  if (analyser && patternRecognizer) {
     const audioData = getFrequencyData(analyser);
 
     if (!isReducedMotionPreferred) {
