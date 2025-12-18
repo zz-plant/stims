@@ -22,15 +22,34 @@ body {
   position: fixed;
   top: 10px;
   right: 10px;
-  padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(17, 216, 255, 0.15), rgba(255, 0, 153, 0.1));
+  color: #e9fbff;
   text-decoration: none;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(4px);
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  border: 1px solid rgba(111, 247, 255, 0.8);
+  box-shadow: 0 0 10px rgba(17, 216, 255, 0.45), inset 0 0 12px rgba(255, 0, 153, 0.3);
+  clip-path: polygon(8% 0, 100% 0, 100% 75%, 92% 100%, 0 100%, 0 25%);
+  text-transform: uppercase;
+  transition: transform 160ms ease, box-shadow 200ms ease, border-color 200ms ease;
   z-index: 1000;
+}
+
+.home-link::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+  pointer-events: none;
+  box-shadow: 0 0 16px rgba(17, 216, 255, 0.5);
+}
+
+.home-link:hover {
+  transform: translateY(-1px) scale(1.02);
+  border-color: rgba(255, 0, 153, 0.9);
+  box-shadow: 0 0 14px rgba(111, 247, 255, 0.75), 0 0 22px rgba(255, 0, 153, 0.6);
 }
 
 .control-panel {
@@ -38,14 +57,51 @@ body {
   bottom: 16px;
   left: 16px;
   width: min(320px, 90vw);
-  background: rgba(10, 10, 10, 0.78);
-  color: #f5f5f5;
-  padding: 12px 14px;
-  border-radius: 12px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e9fbff;
+  padding: 16px;
+  background: rgba(4, 6, 14, 0.85);
+  border: 1px solid rgba(111, 247, 255, 0.65);
+  clip-path: polygon(8% 0, 100% 0, 100% 78%, 92% 100%, 0 100%, 0 22%);
+  box-shadow: 0 0 18px rgba(17, 216, 255, 0.45), 0 12px 28px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px) saturate(130%);
   z-index: 1100;
+  overflow: hidden;
+}
+
+.control-panel::before,
+.control-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.control-panel::before {
+  background: repeating-linear-gradient(
+        90deg,
+        rgba(111, 247, 255, 0.08),
+        rgba(111, 247, 255, 0.08) 1px,
+        transparent 1px,
+        transparent 18px
+      ),
+    repeating-linear-gradient(
+        0deg,
+        rgba(255, 0, 153, 0.06),
+        rgba(255, 0, 153, 0.06) 1px,
+        transparent 1px,
+        transparent 18px
+      );
+  transform: translateY(0);
+  animation: grid-glide 14s linear infinite;
+  opacity: 0.55;
+}
+
+.control-panel::after {
+  inset: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+  box-shadow: inset 0 0 24px rgba(17, 216, 255, 0.25);
 }
 
 .control-panel__heading {
@@ -94,22 +150,35 @@ body {
   width: 20px;
   height: 20px;
   accent-color: #70f0ff;
+  filter: drop-shadow(0 0 6px rgba(111, 247, 255, 0.5));
+  cursor: pointer;
 }
 
 .control-panel select {
-  background: rgba(20, 20, 20, 0.85);
-  color: #f5f5f5;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 8px 10px;
+  background: linear-gradient(135deg, rgba(16, 24, 40, 0.9), rgba(11, 17, 29, 0.92));
+  color: #e9fbff;
+  border: 1px solid rgba(111, 247, 255, 0.8);
+  border-radius: 2px;
+  padding: 10px 12px;
   min-width: 150px;
-  font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 0 14px rgba(17, 216, 255, 0.25), inset 0 0 12px rgba(255, 0, 153, 0.18);
 }
 
 .control-panel select:focus {
-  outline: 2px solid rgba(112, 240, 255, 0.6);
+  outline: 2px solid rgba(255, 0, 153, 0.65);
   outline-offset: 2px;
+  box-shadow: 0 0 18px rgba(255, 0, 153, 0.4), 0 0 10px rgba(111, 247, 255, 0.35);
+}
+
+@keyframes grid-glide {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-18px);
+  }
 }
 
 #error-message {
