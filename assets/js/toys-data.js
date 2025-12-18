@@ -171,4 +171,14 @@ export default [
     type: 'module',
     requiresWebGPU: false,
   },
+  {
+    slug: 'fractal-kite-garden',
+    title: 'Fractal Kite Garden',
+    description:
+      'Grow branching kite fractals that sway with mids and shimmer with crisp highs.',
+    module: 'assets/js/toys/fractal-kite-garden.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    controls: ['Pattern density slider', 'Palette switches'],
+  },
 ];
