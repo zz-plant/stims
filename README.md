@@ -9,9 +9,11 @@ Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what
 ## Quick Start
 
 1. Clone the repo and `cd` into it.
-2. Install **Bun 1.2+** (recorded in `package.json` via `packageManager`) from [bun.sh](https://bun.sh/) for the fastest install/test cycle. **Node.js 22** (see `.nvmrc`) remains available as a fallback if you prefer npm.
-3. Install dependencies with `bun install`. Bun writes to `bun.lock`, so you can pin installs with `bun install --frozen-lockfile`. If you need a fallback, use `npm install` with Node 22.
-4. Start the dev server with `bun run dev`, then open `http://localhost:5173` in your browser. If you’re on Node, `npm run dev` works as a backup.
+2. Choose your runtime (the repo records `bun@1.2.14` in `package.json` via `packageManager`):
+   - **Bun 1.2+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle.
+   - **Node.js 22** (see `.nvmrc`): still supported for Vite and general tooling if you prefer npm.
+3. Install dependencies with `bun install` (preferred). The repository tracks `bun.lock` for reproducible installs—use `bun install --frozen-lockfile` to respect it. If you use npm, run `npm install` locally; a `package-lock.json` will be generated but is not committed.
+4. Start the dev server with `npm run dev` or `bun run dev`, then open `http://localhost:5173` in your browser.
 
 ## Getting Started
 
@@ -110,13 +112,17 @@ To play with the toys locally you’ll need to run them from a local web server.
 
 2. Use Bun 1.2+ (recorded in `package.json`). Node.js 22 (see `.nvmrc`) is available as an optional fallback; if you have nvm installed, run `nvm use` to select it.
 
-3. Install dependencies with Bun:
+3. Install dependencies (Bun is preferred and the only locked flow):
 
    ```bash
    bun install
+   # or, if you prefer npm locally
+   npm install
    ```
 
-   Bun does not automatically run `prepare` scripts, so the repo includes a `postinstall` hook that installs Husky when `npm_config_user_agent` starts with `bun`. If that step fails for any reason, run `bun x husky install`. If you must use Node, `npm install` is an acceptable fallback.
+   The repository tracks `bun.lock`; pin installs with `bun install --frozen-lockfile`. If you use npm, regenerate `package-lock.json` locally as needed, but do not commit it.
+
+   Bun does not automatically run `prepare` scripts, so the repo includes a `postinstall` hook that installs Husky when `npm_config_user_agent` starts with `bun`. If that step fails for any reason, fall back to `bun x husky install` (or `npx husky install`).
 
 4. Start the development server (Bun by default):
 
