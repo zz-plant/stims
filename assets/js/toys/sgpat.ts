@@ -6,6 +6,7 @@ import {
   startAudioLoop,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { setupCanvasResize } from '../utils/canvas-resize';
 import PatternRecognizer from '../utils/patternRecognition';
 
 const toy = new WebToy({
@@ -124,6 +125,16 @@ toy.scene.add(quad);
 
 let patternRecognizer: PatternRecognizer | null = null;
 const clock = new THREE.Clock();
+let viewportWidth = window.innerWidth;
+let viewportHeight = window.innerHeight;
+const disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
+  maxPixelRatio: 2,
+  onResize: ({ cssWidth, cssHeight }) => {
+    viewportWidth = cssWidth;
+    viewportHeight = cssHeight;
+    uniforms.u_resolution.value.set(cssWidth, cssHeight);
+  },
+});
 
 function displayError(message: string) {
   const errorMessageElement = document.getElementById('error-message');
@@ -132,32 +143,19 @@ function displayError(message: string) {
   errorMessageElement.style.display = message ? 'block' : 'none';
 }
 
-function resize() {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  uniforms.u_resolution.value.set(width, height);
-  spectroCanvas.width = width;
-  spectroCanvas.height = height;
-}
-
 function updateSpectrograph(dataArray: Uint8Array) {
   if (!dataArray.length) {
-    spectroCtx.clearRect(0, 0, spectroCanvas.width, spectroCanvas.height);
+    spectroCtx.clearRect(0, 0, viewportWidth, viewportHeight);
     return;
   }
 
-  spectroCtx.clearRect(0, 0, spectroCanvas.width, spectroCanvas.height);
-  const gradient = spectroCtx.createLinearGradient(
-    0,
-    0,
-    spectroCanvas.width,
-    spectroCanvas.height
-  );
+  spectroCtx.clearRect(0, 0, viewportWidth, viewportHeight);
+  const gradient = spectroCtx.createLinearGradient(0, 0, viewportWidth, viewportHeight);
   gradient.addColorStop(0, '#ff6ec7');
   gradient.addColorStop(0.5, '#8e44ad');
   gradient.addColorStop(1, '#3498db');
   spectroCtx.fillStyle = gradient;
-  const barWidth = (spectroCanvas.width / dataArray.length) * 1.5;
+  const barWidth = (viewportWidth / dataArray.length) * 1.5;
   let barHeight;
   let x = 0;
 
@@ -165,7 +163,7 @@ function updateSpectrograph(dataArray: Uint8Array) {
     barHeight = dataArray[i] / 2;
     spectroCtx.fillRect(
       x,
-      spectroCanvas.height - barHeight,
+      viewportHeight - barHeight,
       barWidth,
       barHeight
     );
@@ -196,7 +194,6 @@ function handlePointerMove(event: PointerEvent) {
 }
 
 async function start() {
-  resize();
   if (!toy.renderer) {
     displayError('WebGL is not supported in this browser.');
     return;
@@ -216,5 +213,5 @@ async function start() {
 }
 
 start();
-window.addEventListener('resize', resize);
 window.addEventListener('pointermove', handlePointerMove);
+window.addEventListener('pagehide', disposeResize);

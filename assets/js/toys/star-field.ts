@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import type { ToyConfig } from '../core/types';
 import {
-  startAudioLoop,
   getContextFrequencyData,
   AnimationContext,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { startToyAudio } from '../utils/start-audio';
+import { applyAudioColor } from '../utils/color-audio';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 100 } },
@@ -177,8 +178,13 @@ function animate(ctx: AnimationContext) {
     0.2 + normalizedAvg * 0.3;
 
   // Color shift based on audio
-  const hue = (normalizedAvg * 0.5 + time * 0.05) % 1;
-  starMaterial.color.setHSL(hue, 0.3, 0.9);
+  const hueBase = (time * 0.05) % 1;
+  applyAudioColor(starMaterial, normalizedAvg, {
+    baseHue: hueBase,
+    hueRange: 0.5,
+    baseSaturation: 0.3,
+    baseLuminance: 0.9,
+  });
 
   // Camera effects
   toy.camera.position.x = Math.sin(time * 0.3) * 10;
@@ -189,13 +195,7 @@ function animate(ctx: AnimationContext) {
 }
 
 async function startAudio() {
-  try {
-    await startAudioLoop(toy, animate, { fftSize: 256 });
-    return true;
-  } catch (e) {
-    console.error('Microphone access denied', e);
-    throw e;
-  }
+  return startToyAudio(toy, animate, 256);
 }
 
 init();
