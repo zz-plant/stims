@@ -1,0 +1,208 @@
+import { AudioAccessError, getMicrophonePermissionState } from '../utils/audio-handler';
+
+type FlowMode = 'microphone' | 'sample';
+
+type FlowStatus = 'info' | 'error' | 'success';
+
+type FlowAnalytics = {
+  track?: (event: string, detail?: Record<string, unknown>) => void;
+  log?: (message: string, detail?: unknown) => void;
+};
+
+export type MicrophoneFlowOptions = {
+  startButton?: HTMLButtonElement | null;
+  fallbackButton?: HTMLButtonElement | null;
+  statusElement?: HTMLElement | null;
+  timeoutMs?: number;
+  requestMicrophone: () => Promise<unknown>;
+  requestSampleAudio?: () => Promise<unknown>;
+  analytics?: FlowAnalytics;
+  onSuccess?: (mode: FlowMode) => void;
+  onError?: (mode: FlowMode, error: unknown) => void;
+};
+
+function setStatus(
+  element: HTMLElement | null | undefined,
+  message: string,
+  variant: FlowStatus = 'info'
+) {
+  if (!element) return;
+  element.textContent = message;
+  element.dataset.variant = variant;
+  element.hidden = !message;
+}
+
+function toggleButtons(
+  startButton: HTMLButtonElement | null | undefined,
+  fallbackButton: HTMLButtonElement | null | undefined,
+  disabled: boolean
+) {
+  if (startButton) startButton.disabled = disabled;
+  if (fallbackButton) fallbackButton.disabled = disabled;
+}
+
+function describeError(error: unknown, mode: FlowMode) {
+  if (error instanceof AudioAccessError) {
+    if (error.reason === 'denied') {
+      return 'Microphone access is blocked. Check your browser or system privacy settings and try again, or load the sample audio.';
+    }
+    if (error.reason === 'unsupported') {
+      return 'This browser cannot capture microphone audio. Switch browsers or load the sample audio to keep exploring.';
+    }
+    return 'Microphone access is unavailable right now. Retry or continue with the sample audio.';
+  }
+
+  if (error instanceof Error && /timed out/i.test(error.message)) {
+    return 'Microphone request timed out. Please retry or load the sample audio fallback.';
+  }
+
+  return mode === 'sample'
+    ? 'Sample audio could not be loaded. Please retry.'
+    : 'We could not access your microphone. Retry or load the sample audio.';
+}
+
+function track(
+  analytics: FlowAnalytics | undefined,
+  event: string,
+  detail?: Record<string, unknown>
+) {
+  analytics?.track?.(event, detail);
+  analytics?.log?.(event, detail);
+}
+
+async function guardDeniedPermission() {
+  const permissionState = await getMicrophonePermissionState();
+  if (permissionState === 'denied') {
+    throw new AudioAccessError(
+      'denied',
+      'Microphone access is blocked. Update permissions to continue.'
+    );
+  }
+
+  return permissionState;
+}
+
+export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
+  const {
+    startButton,
+    fallbackButton,
+    statusElement,
+    requestMicrophone,
+    requestSampleAudio,
+    analytics,
+    timeoutMs = 8000,
+    onSuccess,
+    onError,
+  } = options;
+
+  let pending = false;
+
+  const showFallback = () => {
+    if (fallbackButton) {
+      fallbackButton.hidden = false;
+    }
+  };
+
+  const runRequest = async (mode: FlowMode) => {
+    if (pending) return;
+    pending = true;
+    toggleButtons(startButton, fallbackButton, true);
+
+    const timeoutError = new AudioAccessError(
+      'unavailable',
+      'Microphone request timed out.'
+    );
+
+    const withTimeout = async (promise: Promise<unknown>) => {
+      let timeoutHandle: ReturnType<typeof globalThis.setTimeout> | null = null;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutHandle = globalThis.setTimeout(
+          () => reject(timeoutError),
+          timeoutMs
+        );
+      });
+
+      try {
+        return await Promise.race([promise, timeoutPromise]);
+      } finally {
+        if (timeoutHandle) globalThis.clearTimeout(timeoutHandle);
+      }
+    };
+
+    let permissionState: PermissionState | undefined;
+
+    try {
+      permissionState = mode === 'microphone'
+        ? await guardDeniedPermission()
+        : undefined;
+
+      track(analytics, 'microphone_request_started', {
+        mode,
+        permissionState: permissionState ?? 'unknown',
+      });
+
+      const request =
+        mode === 'sample'
+          ? requestSampleAudio ?? requestMicrophone
+          : requestMicrophone;
+
+      if (!request) {
+        throw new Error('No audio request handler registered.');
+      }
+
+      setStatus(
+        statusElement,
+        mode === 'sample'
+          ? 'Loading sample audio (no microphone needed)...'
+          : 'Requesting microphone access...',
+        'info'
+      );
+
+      await withTimeout(request());
+
+      setStatus(
+        statusElement,
+        mode === 'sample'
+          ? 'Sample audio connected. Visuals will react to the demo track.'
+          : 'Microphone connected! Enjoy the visuals.',
+        'success'
+      );
+
+      if (mode === 'microphone' && fallbackButton) {
+        fallbackButton.hidden = true;
+      }
+
+      track(analytics, 'microphone_request_succeeded', {
+        mode,
+        permissionState: permissionState ?? 'unknown',
+      });
+
+      onSuccess?.(mode);
+    } catch (error) {
+      track(analytics, 'microphone_request_failed', {
+        mode,
+        permissionState: permissionState ?? 'unknown',
+        message: error instanceof Error ? error.message : 'unknown',
+      });
+
+      setStatus(statusElement, describeError(error, mode), 'error');
+      showFallback();
+      onError?.(mode, error);
+      throw error;
+    } finally {
+      pending = false;
+      toggleButtons(startButton, fallbackButton, false);
+    }
+  };
+
+  startButton?.addEventListener('click', () => runRequest('microphone'));
+  fallbackButton?.addEventListener('click', () => runRequest('sample'));
+
+  return {
+    startMicrophoneRequest: () => runRequest('microphone'),
+    startSampleAudio: () => runRequest('sample'),
+    setStatus: (message: string, variant: FlowStatus = 'info') =>
+      setStatus(statusElement, message, variant),
+  };
+}
+

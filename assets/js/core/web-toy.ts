@@ -1,7 +1,11 @@
 import * as THREE from 'three';
 import { initScene } from './scene-setup.ts';
 import { initCamera } from './camera-setup.ts';
-import { initRenderer, type RendererInitResult } from './renderer-setup.ts';
+import {
+  initRenderer,
+  type RendererInitConfig,
+  type RendererInitResult,
+} from './renderer-setup.ts';
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
 import { initAudio } from '../utils/audio-handler.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
@@ -14,6 +18,7 @@ export default class WebToy {
   rendererBackend: RendererInitResult['backend'] | null;
   rendererInfo: RendererInitResult | null;
   rendererReady: Promise<RendererInitResult | null>;
+  rendererOptions: RendererInitConfig;
   analyser: THREE.AudioAnalyser | null;
   audioListener: THREE.AudioListener | null;
   audio: THREE.Audio | THREE.PositionalAudio | null;
@@ -44,12 +49,22 @@ export default class WebToy {
     this.renderer = null;
     this.rendererBackend = null;
     this.rendererInfo = null;
+    this.rendererOptions = rendererOptions;
     this.rendererReady = initRenderer(this.canvas, rendererOptions);
     this.rendererReady
       .then((result) => {
         this.rendererInfo = result;
         this.renderer = result?.renderer ?? null;
         this.rendererBackend = result?.backend ?? null;
+        if (result) {
+          this.rendererOptions = {
+            ...this.rendererOptions,
+            maxPixelRatio: result.maxPixelRatio,
+            renderScale: result.renderScale,
+            exposure: result.exposure,
+          };
+          this.applyRendererSettings();
+        }
       })
       .catch((error) => {
         console.warn('Renderer initialization failed.', error);
@@ -76,7 +91,35 @@ export default class WebToy {
   handleResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer?.setSize(window.innerWidth, window.innerHeight);
+    this.applyRendererSettings();
+  }
+
+  applyRendererSettings() {
+    if (!this.renderer) return;
+
+    const maxPixelRatio = this.rendererOptions.maxPixelRatio ?? 2;
+    const renderScale = this.rendererOptions.renderScale ?? 1;
+    const exposure = this.rendererOptions.exposure ?? 1;
+
+    const effectivePixelRatio = Math.min(
+      (window.devicePixelRatio || 1) * renderScale,
+      maxPixelRatio
+    );
+
+    this.renderer.setPixelRatio(effectivePixelRatio);
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.toneMappingExposure = exposure;
+
+    if (this.rendererInfo) {
+      this.rendererInfo.maxPixelRatio = maxPixelRatio;
+      this.rendererInfo.renderScale = renderScale;
+      this.rendererInfo.exposure = exposure;
+    }
+  }
+
+  updateRendererSettings(options: Partial<RendererInitConfig>) {
+    this.rendererOptions = { ...this.rendererOptions, ...options };
+    this.applyRendererSettings();
   }
 
   async initAudio(options = {}) {
