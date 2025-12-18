@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 const loaderModule = '../assets/js/loader.js';
 const originalLocation = window.location;
 const originalHistory = window.history;
+const originalNavigator = global.navigator;
 
 function createMockLocation(href) {
   const url = new URL(href);
@@ -67,6 +68,11 @@ describe('loadToy', () => {
     jest.resetModules();
     document.body.innerHTML = '';
     delete global.fetch;
+    Object.defineProperty(global, 'navigator', {
+      writable: true,
+      configurable: true,
+      value: originalNavigator,
+    });
     Object.defineProperty(window, 'location', {
       writable: true,
       configurable: true,
@@ -124,6 +130,11 @@ describe('active toy navigation affordance', () => {
     jest.resetModules();
     document.body.innerHTML = '';
     delete global.fetch;
+    Object.defineProperty(global, 'navigator', {
+      writable: true,
+      configurable: true,
+      value: originalNavigator,
+    });
     delete globalThis.__activeWebToy;
     Object.defineProperty(window, 'location', {
       writable: true,
@@ -152,6 +163,94 @@ describe('active toy navigation affordance', () => {
       false
     );
     expect(window.location.search).toBe('');
+  });
+});
+
+describe('WebGPU requirements', () => {
+  beforeEach(() => {
+    jest.resetModules();
+    document.body.innerHTML = '<div id="toy-list"></div>';
+    Object.defineProperty(global, 'navigator', {
+      writable: true,
+      configurable: true,
+      value: {},
+    });
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.resetModules();
+    document.body.innerHTML = '';
+    delete global.fetch;
+    Object.defineProperty(global, 'navigator', {
+      writable: true,
+      configurable: true,
+      value: originalNavigator,
+    });
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      configurable: true,
+      value: originalLocation,
+    });
+    Object.defineProperty(window, 'history', {
+      writable: true,
+      configurable: true,
+      value: originalHistory,
+    });
+  });
+
+  test('shows capability error instead of loading module toy', async () => {
+    await jest.unstable_mockModule('../assets/js/toys-data.js', () => ({
+      default: [
+        {
+          slug: 'webgpu-toy',
+          title: 'Fancy WebGPU',
+          module: 'assets/js/toys/example.ts',
+          type: 'module',
+          requiresWebGPU: true,
+        },
+      ],
+    }));
+
+    const { loadToy } = await import(loaderModule);
+    await loadToy('webgpu-toy', { pushState: true });
+
+    const status = document.querySelector('.active-toy-status.is-error');
+    expect(status?.querySelector('h2')?.textContent).toContain('WebGPU not available');
+    expect(window.location.href).toBe(originalLocation.href);
+  });
+
+  test('prevents navigation to page toy when WebGPU is missing', async () => {
+    await jest.unstable_mockModule('../assets/js/toys-data.js', () => ({
+      default: [
+        {
+          slug: 'webgpu-page',
+          title: 'Page WebGPU',
+          module: './webgpu-page.html',
+          type: 'page',
+          requiresWebGPU: true,
+        },
+      ],
+    }));
+
+    const location = createMockLocation('http://example.com/library');
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      configurable: true,
+      value: location,
+    });
+    Object.defineProperty(window, 'history', {
+      writable: true,
+      configurable: true,
+      value: createMockHistory(location),
+    });
+
+    const { loadToy } = await import(loaderModule);
+    await loadToy('webgpu-page');
+
+    expect(document.querySelector('.active-toy-status.is-error')).not.toBeNull();
+    expect(window.location.href).toBe('http://example.com/library');
   });
 });
 
