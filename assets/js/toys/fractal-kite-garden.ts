@@ -299,7 +299,9 @@ function createControls() {
 
 function init() {
   toy.scene.fog = new THREE.FogExp2(0x030712, 0.028);
-  toy.renderer?.setClearColor(0x030712, 1);
+  toy.rendererReady.then((result) => {
+    result?.renderer.setClearColor?.(0x030712, 1);
+  });
   createControls();
   buildGarden();
 }

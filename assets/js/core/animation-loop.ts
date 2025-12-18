@@ -27,8 +27,14 @@ export async function startAudioLoop(
   animate: (ctx: AnimationContext) => void,
   audioOptions: AudioInitOptions = {}
 ): Promise<AnimationContext> {
+  if (toy.rendererReady) {
+    await toy.rendererReady;
+  }
   await toy.initAudio(audioOptions);
   const ctx: AnimationContext = { toy, analyser: toy.analyser };
+  if (!toy.renderer?.setAnimationLoop) {
+    throw new Error('Renderer is not available to start the animation loop.');
+  }
   toy.renderer.setAnimationLoop(() => animate(ctx));
   return ctx;
 }
