@@ -45,8 +45,6 @@ export default [
         CustomEvent: 'readonly',
         define: 'readonly',
         module: 'readonly',
-        process: 'readonly',
-        Bun: 'readonly',
       },
     },
   },
