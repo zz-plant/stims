@@ -18,35 +18,32 @@ Thanks for helping build and refine the Stim Webtoys Library! This guide covers 
 
 Start the local development server and open the site at `http://localhost:5173`:
 ```bash
-npm run dev
-# or
 bun run dev
 ```
+
+If you’re using Node as a fallback, run `npm run dev` instead.
 
 ## Testing, Linting, and Formatting
 
 - Run all tests:
   ```bash
   bun test
-  # or
-  npm run test
   ```
+  (`npm run test` proxies to Bun when available.)
 - Run the Bun test runner with filters (for example, targeting specific files):
   ```bash
   bun test tests/path/to/spec.test.js
   ```
 - Lint the project:
   ```bash
-  npm run lint
-  # or
   bun run lint
   ```
+  (`npm run lint` is available as an optional fallback.)
 - Format the codebase:
   ```bash
-  npm run format
-  # or
   bun run format
   ```
+  (`npm run format` is available as an optional fallback.)
 
 ## Branching and Pull Requests
 
