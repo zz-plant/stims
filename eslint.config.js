@@ -5,6 +5,15 @@ import tsParser from '@typescript-eslint/parser';
 const tsconfigRootDir = new URL('.', import.meta.url).pathname;
 
 export default [
+  {
+    ignores: [
+      '**/node_modules/**',
+      '**/.git/**',
+      '**/dist/**',
+      '**/bun.lock',
+      '**/package-lock.json',
+    ],
+  },
   js.configs.recommended,
   {
     files: ['**/*.{js,ts,tsx}'],
@@ -23,7 +32,12 @@ export default [
         window: 'readonly',
         fetch: 'readonly',
         console: 'readonly',
+        navigator: 'readonly',
+        performance: 'readonly',
+        Event: 'readonly',
+        DOMException: 'readonly',
         URLSearchParams: 'readonly',
+        URL: 'readonly',
         localStorage: 'readonly',
         requestAnimationFrame: 'readonly',
         CustomEvent: 'readonly',
@@ -47,5 +61,14 @@ export default [
     rules: {
       ...tsPlugin.configs.recommended.rules,
     },
+  },
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
+    ignores: ['assets/js/lib/**'],
   },
 ];
