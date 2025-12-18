@@ -63,7 +63,7 @@ async function ensureBuildExists() {
     if (!stats.isDirectory()) {
       throw new Error();
     }
-  } catch (error) {
+  } catch {
     console.error("No dist/ directory found. Please run 'bun run build' first.");
     process.exit(1);
   }
