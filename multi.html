@@ -26,20 +26,12 @@
       } from './assets/js/core/animation-loop.ts';
       import createPeakDetector from './assets/js/utils/peak-detector.ts';
       import { getAverageFrequency } from './assets/js/utils/audio-handler.ts';
+      import { showError } from './assets/js/utils/error-display.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createMultiFunAdapter } from './assets/multi/fun-adapter.ts';
 
       const canvas = document.getElementById('webglCanvas');
-
-      function displayError(message) {
-        const el = document.getElementById('error-message');
-        if (el) {
-          el.innerText = message;
-          el.style.display = 'block';
-        }
-      }
-
       initHints({
         id: 'multi-visualizer',
         tips: [
@@ -346,7 +338,8 @@
         .catch((err) => {
           console.error('The following error occurred: ' + err);
           funControls.setAudioAvailable(false);
-          displayError(
+          showError(
+            'error-message',
             'Microphone access is unavailable. Visuals will run without audio reactivity.'
           );
           const silentContext = { toy, analyser: null };

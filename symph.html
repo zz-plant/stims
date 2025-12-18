@@ -35,20 +35,16 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import {
+        clearError,
+        showError,
+      } from './assets/js/utils/error-display.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createSymphFunAdapter } from './assets/symph/fun-adapter.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const ctx2d = canvas.getContext('2d');
-      const errorEl = document.getElementById('error-message');
-
-      function displayError(message) {
-        if (errorEl) {
-          errorEl.textContent = message;
-          errorEl.style.display = 'block';
-        }
-      }
 
       initHints({
         id: 'symph-visualizer',
@@ -59,15 +55,9 @@
         ],
       });
 
-      function hideError() {
-        if (errorEl) {
-          errorEl.style.display = 'none';
-          errorEl.textContent = '';
-        }
-      }
-
       if (!gl) {
-        displayError(
+        showError(
+          'error-message',
           'Unable to initialize WebGL. Your browser may not support it.'
         );
         throw new Error('WebGL not supported');
@@ -223,11 +213,12 @@
         try {
           const { analyser: a } = await initAudio();
           analyser = a;
-          hideError();
+          clearError('error-message');
           getAudioData();
           funControls.setAudioAvailable(true);
         } catch (err) {
-          displayError(
+          showError(
+            'error-message',
             'Microphone access is unavailable. Visuals will run without audio reactivity.'
           );
           funControls.setAudioAvailable(false);
