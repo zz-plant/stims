@@ -2,6 +2,22 @@ import * as THREE from 'three';
 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable';
 
+async function queryMicrophonePermissionState(): Promise<PermissionState | undefined> {
+  if (typeof navigator === 'undefined') return undefined;
+  if (!navigator.permissions?.query) return undefined;
+
+  try {
+    const status = await navigator.permissions.query({
+      name: 'microphone' as PermissionName,
+    });
+
+    return status.state;
+  } catch (error) {
+    console.warn('Unable to query microphone permission status', error);
+    return undefined;
+  }
+}
+
 export class AudioAccessError extends Error {
   reason: AudioAccessReason;
 
@@ -81,6 +97,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
   let listener: THREE.AudioListener | null = null;
   let resolvedStream: MediaStream | null = null;
   let ownsStream = false;
+  let permissionState: PermissionState | undefined;
 
   if (typeof navigator === 'undefined') {
     throw new AudioAccessError(
@@ -105,10 +122,20 @@ export async function initAudio(options: AudioInitOptions = {}) {
     if (stream) {
       resolvedStream = stream;
     } else {
+      permissionState = await queryMicrophonePermissionState();
+
+      if (permissionState === 'denied') {
+        throw new AudioAccessError(
+          'denied',
+          'Microphone access is blocked. Please allow microphone access in your browser settings and try again.'
+        );
+      }
+
       resolvedStream = await navigator.mediaDevices.getUserMedia(
         constraints ?? { audio: { echoCancellation: true } }
       );
       ownsStream = true;
+      permissionState = permissionState ?? 'granted';
     }
 
     const streamSource = resolvedStream;
@@ -171,7 +198,17 @@ export async function initAudio(options: AudioInitOptions = {}) {
       onCleanup?.({ analyser, listener, audio, stream: streamSource });
     };
 
-    return { analyser, listener, audio, stream: streamSource, cleanup };
+    const effectivePermissionState =
+      permissionState ?? (streamSource ? ('granted' as PermissionState) : undefined);
+
+    return {
+      analyser,
+      listener,
+      audio,
+      stream: streamSource,
+      cleanup,
+      permissionState: effectivePermissionState,
+    };
   } catch (error) {
     console.error('Error accessing audio:', error);
 
