@@ -10,20 +10,27 @@ export type RendererInitResult = {
   backend: RendererBackend;
   adapter?: GPUAdapter | null;
   device?: GPUDevice | null;
+  maxPixelRatio: number;
+  renderScale: number;
+  exposure: number;
+};
+
+export type RendererInitConfig = {
+  antialias?: boolean;
+  exposure?: number;
+  maxPixelRatio?: number;
+  alpha?: boolean;
+  renderScale?: number;
 };
 
 export async function initRenderer(
   canvas: HTMLCanvasElement,
-  config: {
-    antialias?: boolean;
-    exposure?: number;
-    maxPixelRatio?: number;
-    alpha?: boolean;
-  } = {
+  config: RendererInitConfig = {
     antialias: true,
     exposure: 1,
     maxPixelRatio: 2,
     alpha: false,
+    renderScale: 1,
   }
 ): Promise<RendererInitResult | null> {
   if (!ensureWebGL()) {
@@ -35,6 +42,7 @@ export async function initRenderer(
     exposure = 1,
     maxPixelRatio = 2,
     alpha = false,
+    renderScale = 1,
   } = config;
 
   const finalize = (
@@ -43,12 +51,24 @@ export async function initRenderer(
     adapter: GPUAdapter | null,
     device: GPUDevice | null
   ): RendererInitResult => {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
+    const effectivePixelRatio = Math.min(
+      (window.devicePixelRatio || 1) * renderScale,
+      maxPixelRatio
+    );
+    renderer.setPixelRatio(effectivePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = exposure;
-    return { renderer, backend, adapter, device };
+    return {
+      renderer,
+      backend,
+      adapter,
+      device,
+      maxPixelRatio,
+      renderScale,
+      exposure,
+    };
   };
 
   const fallbackToWebGL = (reason: string, error?: unknown) => {

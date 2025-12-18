@@ -10,7 +10,12 @@ import type {
 export interface ToyConfig {
   cameraOptions?: Record<string, unknown>;
   sceneOptions?: { backgroundColor?: number };
-  rendererOptions?: { antialias?: boolean; exposure?: number; maxPixelRatio?: number };
+  rendererOptions?: {
+    antialias?: boolean;
+    exposure?: number;
+    maxPixelRatio?: number;
+    renderScale?: number;
+  };
   lightingOptions?: LightConfig;
   ambientLightOptions?: AmbientLightConfig;
   canvas?: HTMLCanvasElement | null;
