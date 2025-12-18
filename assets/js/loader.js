@@ -1,9 +1,14 @@
 import toysData from './toys-data.js';
 
-const MANIFEST_PATH = '/.vite/manifest.json';
 const TOY_QUERY_PARAM = 'toy';
 let manifestPromise;
 let navigationInitialized = false;
+
+function getBaseUrl() {
+  const win = getWindow();
+  if (!win) return null;
+  return new URL(win.location.href);
+}
 
 function hasWebGPUSupport() {
   return typeof navigator !== 'undefined' && Boolean(navigator.gpu);
@@ -15,6 +20,11 @@ function getDocument() {
 
 function getWindow() {
   return typeof window === 'undefined' ? null : window;
+}
+
+function getManifestPath() {
+  const baseUrl = getBaseUrl();
+  return baseUrl ? new URL('./.vite/manifest.json', baseUrl).pathname : '/.vite/manifest.json';
 }
 
 function getToyList() {
@@ -245,7 +255,7 @@ function disposeActiveToy() {
 
 async function fetchManifest() {
   if (!manifestPromise) {
-    manifestPromise = fetch(MANIFEST_PATH)
+    manifestPromise = fetch(getManifestPath())
       .then((response) => (response.ok ? response.json() : null))
       .catch(() => null);
   }
@@ -259,8 +269,16 @@ export async function resolveModulePath(entry) {
   if (manifestEntry) {
     const compiledFile = manifestEntry.file || manifestEntry.url;
     if (compiledFile) {
-      return new URL(compiledFile, window.location.origin).pathname;
+      const baseUrl = getBaseUrl();
+      return baseUrl
+        ? new URL(compiledFile, baseUrl).pathname
+        : new URL(compiledFile, window.location.origin).pathname;
     }
+  }
+
+  const baseUrl = getBaseUrl();
+  if (baseUrl) {
+    return new URL(entry, baseUrl).pathname;
   }
 
   return entry.startsWith('/') || entry.startsWith('.') ? entry : `/${entry}`;
