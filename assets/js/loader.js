@@ -135,16 +135,32 @@ function removeStatusElement(container) {
   }
 }
 
-function showImportError(container, toy) {
+function buildImportErrorMessage(toy, { moduleUrl, importError } = {}) {
+  if (getWindow()?.location?.protocol === 'file:') {
+    return 'This toy needs a local web server to compile its TypeScript modules. Run `npm run dev` (or `bun run dev`) and reload from `http://localhost:5173`.';
+  }
+
+  const message = importError?.message ?? '';
+  if (typeof moduleUrl === 'string' && moduleUrl.endsWith('.ts')) {
+    return `${toy?.title ?? 'This toy'} could not be compiled. Make sure you are running through the dev server or a production build so the TypeScript bundle is available.`;
+  }
+
+  if (message.toLowerCase().includes('mime')) {
+    return `${toy?.title ?? 'This toy'} could not be loaded because the server is returning an unexpected file type. Try reloading from the dev server or production build.`;
+  }
+
+  return toy?.title
+    ? `${toy.title} hit a snag while loading. Try again or return to the library.`
+    : 'Something went wrong while loading this toy. Try again or return to the library.';
+}
+
+function showImportError(container, toy, { moduleUrl, importError } = {}) {
   clearActiveToyContainer();
 
   const status = createStatusElement(container, {
     type: 'error',
     title: 'Unable to load this toy',
-    message:
-      toy?.title
-        ? `${toy.title} hit a snag while loading. Try again or return to the library.`
-        : 'Something went wrong while loading this toy. Try again or return to the library.'
+    message: buildImportErrorMessage(toy, { moduleUrl, importError }),
   });
 
   if (!status) return;
@@ -353,7 +369,7 @@ export async function loadToy(slug, { pushState = false } = {}) {
 
     if (importError) {
       console.error('Error loading toy module:', importError);
-      showImportError(container, toy);
+      showImportError(container, toy, { moduleUrl, importError });
       return;
     }
 
