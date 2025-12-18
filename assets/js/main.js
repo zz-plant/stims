@@ -7,19 +7,27 @@ function setupDarkModeToggle() {
   const btn = document.getElementById('theme-toggle');
   if (!btn) return;
   let dark = localStorage.getItem('theme') !== 'light';
-  btn.textContent = dark ? 'Light Mode' : 'Dark Mode';
+  const updateButtonState = () => {
+    btn.textContent = dark ? 'Light Mode' : 'Dark Mode';
+    btn.setAttribute('aria-pressed', String(dark));
+    btn.setAttribute(
+      'aria-label',
+      dark ? 'Switch to light mode' : 'Switch to dark mode',
+    );
+  };
+
+  updateButtonState();
   btn.addEventListener('click', () => {
     dark = !dark;
     const root = document.documentElement;
     if (dark) {
       root.classList.remove('light');
       localStorage.setItem('theme', 'dark');
-      btn.textContent = 'Light Mode';
     } else {
       root.classList.add('light');
       localStorage.setItem('theme', 'light');
-      btn.textContent = 'Dark Mode';
     }
+    updateButtonState();
   });
 }
 
@@ -190,8 +198,9 @@ function createSVGAnimation(slug) {
 }
 
 function createCard(toy) {
-  const card = document.createElement('div');
+  const card = document.createElement('button');
   card.className = 'webtoy-card';
+  card.type = 'button';
   card.appendChild(createSVGAnimation(toy.slug));
   const title = document.createElement('h3');
   title.textContent = toy.title;
@@ -230,7 +239,15 @@ function createCard(toy) {
     card.appendChild(metaRow);
   }
 
-  card.addEventListener('click', () => openToy(toy));
+  const handleOpenToy = () => openToy(toy);
+
+  card.addEventListener('click', handleOpenToy);
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleOpenToy();
+    }
+  });
 
   return card;
 }
