@@ -136,6 +136,8 @@ To serve a static build instead of the dev server, run:
 npm run build
 # or
 bun run build
+# or build with Bun's bundler (code-splitting + hashed assets)
+bun run bun-build
 
 python3 -m http.server dist
 ```
@@ -148,6 +150,7 @@ All JavaScript dependencies are installed via npm (or Bun) and bundled locally w
 
 - `npm run dev` / `bun run dev`: Start the Vite development server for local exploration.
 - `npm run build` / `bun run build`: Produce a production build in `dist/`.
+- `bun run bun-build`: Build the site with Bun's bundler, enabling code-splitting and hashed assets for static hosting in `dist/`.
 - `npm run preview` / `bun run preview`: Serve the production build locally to validate the output before deploying.
 - `bun test` (or `bun run test`): Run the Bun-native test suite. `npm run test` will also proxy to Bun if you have it installed.
 - `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
