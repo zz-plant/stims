@@ -47,7 +47,7 @@ class PatternRecognizer {
 
     // Check if the last two patterns are similar
     if (this.comparePatterns(lastPattern, secondLastPattern)) {
-      return lastPattern;
+      return lastPattern.slice();
     }
 
     return null;

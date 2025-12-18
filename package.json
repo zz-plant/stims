@@ -32,7 +32,9 @@
     ],
     "globals": {
       "ts-jest": {
-        "useESM": true
+        "useESM": true,
+        "tsconfig": "./tsconfig.json",
+        "diagnostics": false
       }
     }
   },
