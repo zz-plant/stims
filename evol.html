@@ -5,48 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Evolutionary Weirdcore Visualizer</title>
     <link rel="stylesheet" href="assets/css/base.css" />
-    <style>
-      body {
-        background-color: #000000; /* OLED black */
-      }
-      canvas {
-        width: 100vw;
-        height: 100vh;
-      }
-      #controls {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 10;
-        background: rgba(0, 0, 0, 0.7);
-        padding: 15px;
-        border-radius: 8px;
-      }
-      #controls label {
-        color: #ffffff;
-        font-size: 14px;
-        display: block;
-        margin-bottom: 5px;
-      }
-      #error-message {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        color: #ff0000;
-        background: rgba(0, 0, 0, 0.7);
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 10;
-      }
-    </style>
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
-    <div id="error-message" style="display: none"></div>
+    <div id="error-message"></div>
     <canvas id="glCanvas"></canvas>
-    <div id="controls">
-      <label>
-        Fractal Intensity:
+    <div class="control-panel">
+      <div class="control-panel__row">
+        <label class="control-panel__text" for="fractalIntensity">
+          <span class="control-panel__label">Fractal Intensity</span>
+        </label>
         <input
           type="range"
           id="fractalIntensity"
@@ -55,7 +23,7 @@
           step="0.1"
           value="1.0"
         />
-      </label>
+      </div>
     </div>
     <script type="module">
       import {
