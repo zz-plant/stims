@@ -230,6 +230,14 @@ header.hero {
   margin: 1.5rem 0;
 }
 
+.cta-helper {
+  margin: -0.5rem 0 1.5rem;
+  max-width: 720px;
+  font-size: 0.95rem;
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
 .cta-button {
   padding: 0.7rem 1.25rem;
   border-radius: 12px;
@@ -517,6 +525,21 @@ footer {
   text-align: center;
   margin-top: 3rem;
   padding: 1rem;
+}
+
+.footer-actions {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+.footer-cta-row {
+  margin: 0.5rem 0 0;
+  justify-content: center;
+}
+
+.footer-helper {
+  margin: 0.25rem 0 0;
 }
 
 .theme-toggle {
