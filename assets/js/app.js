@@ -110,7 +110,7 @@ function displayError(message) {
   const errorElement = document.getElementById('error-message');
   if (errorElement) {
     errorElement.innerText = message;
-    errorElement.style.display = message ? 'block' : 'none';
+    errorElement.hidden = !message;
   }
 }
 
