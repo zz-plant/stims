@@ -4,32 +4,37 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
 
 ## Tooling and Environment
 
-- **Node.js 22** is required (see `.nvmrc`). Run `nvm use` if you have nvm installed.
+- **Bun 1.2+** is the fastest path for local installs and testing. The repo also supports **Node.js 22** (see `.nvmrc`) if you prefer npm for Vite or tooling.
 - Install dependencies once per clone:
   ```bash
   npm install
+  # or
+  bun install
   ```
-- The project uses **TypeScript**, **Vite**, **Three.js**, and **Jest** with ESM. Keep `NODE_OPTIONS=--experimental-vm-modules` when invoking Jest directly.
+  If you install with Bun and rely on Git hooks, the `postinstall` script will invoke `husky install` when `npm_config_user_agent` starts with `bun`. If hooks still don’t appear, run `bun x husky install` (or `npx husky install`).
+- The project uses **TypeScript**, **Vite**, **Three.js**, and the Bun test runner. No extra ESM flags are required when running `bun test`.
 - Run the dev server locally:
   ```bash
   npm run dev
+  # or
+  bun run dev
   ```
   The site serves from `http://localhost:5173`.
 
 ## Common Scripts
 
-| Task | Command |
-| ---- | ------- |
-| Start dev server | `npm run dev` |
-| Production build | `npm run build` |
-| Preview build locally | `npm run preview` |
-| Run Jest suite | `npm test` |
-| Lint | `npm run lint` |
-| Format with Prettier | `npm run format` |
+| Task | Command (npm / Bun) |
+| ---- | ------------------ |
+| Start dev server | `npm run dev` / `bun run dev` |
+| Production build | `npm run build` / `bun run build` |
+| Preview build locally | `npm run preview` / `bun run preview` |
+| Run test suite | `bun test` / `bun run test` |
+| Lint | `npm run lint` / `bun run lint` |
+| Format with Prettier | `npm run format` / `bun run format` |
 
 When debugging a single test file, run:
 ```bash
-npm run jest -- --testPathPattern=relative/path/to/spec
+bun test tests/filename.test.js
 ```
 
 ## Project Structure
@@ -39,7 +44,7 @@ npm run jest -- --testPathPattern=relative/path/to/spec
 - `assets/js/utils/`: Small helpers (math, color, randomization, easing).
 - `assets/css/`: Shared styles for HTML entry points.
 - `assets/data/`: Static JSON or other payloads consumed by toys.
-- `tests/`: Jest specs covering utilities and shared behaviors.
+- `tests/`: Bun specs covering utilities and shared behaviors.
 - HTML entry points (`toy.html`, `brand.html`, etc.) load specific toys or groups of toys.
 
 ## Development Workflow
@@ -65,7 +70,7 @@ npm run jest -- --testPathPattern=relative/path/to/spec
 ## Testing Expectations
 
 - Prefer fast, deterministic tests in `tests/`. Mock audio contexts or DOM APIs when real instances are unnecessary.
-- Use Jest’s ESM config from `package.json`; avoid CommonJS-specific globals.
+- Prefer Bun’s built-in mocking (`mock.fn`, `mock.module`) and avoid CommonJS-specific globals.
 - Keep tests colocated with utilities when practical, or place shared behaviors in `tests/`.
 
 ## Accessibility and UX

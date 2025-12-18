@@ -22,6 +22,13 @@ export interface AmbientLightConfig {
 }
 
 // Initialize a point light with configurable options
+type ThreeLighting = {
+  DirectionalLight: typeof DirectionalLight;
+  SpotLight: typeof SpotLight;
+  HemisphereLight: typeof HemisphereLight;
+  PointLight: typeof PointLight;
+};
+
 export function initLighting(
   scene: Scene,
   config: LightConfig = {
@@ -30,6 +37,12 @@ export function initLighting(
     intensity: 1,
     position: { x: 10, y: 10, z: 10 },
     castShadow: false,
+  },
+  lighting: ThreeLighting = {
+    DirectionalLight,
+    SpotLight,
+    HemisphereLight,
+    PointLight,
   }
 ): void {
   const {
@@ -45,24 +58,24 @@ export function initLighting(
 
   switch (type) {
     case 'DirectionalLight':
-      light = new DirectionalLight(color, intensity);
+      light = new lighting.DirectionalLight(color, intensity);
       light.position.set(x, y, z);
       if (castShadow) {
         light.castShadow = true;
       }
       break;
     case 'SpotLight':
-      light = new SpotLight(color, intensity);
+      light = new lighting.SpotLight(color, intensity);
       light.position.set(x, y, z);
       if (castShadow) {
         light.castShadow = true;
       }
       break;
     case 'HemisphereLight':
-      light = new HemisphereLight(color, 0x444444, intensity);
+      light = new lighting.HemisphereLight(color, 0x444444, intensity);
       break;
     default:
-      light = new PointLight(color, intensity);
+      light = new lighting.PointLight(color, intensity);
       light.position.set(x, y, z);
       if (castShadow) {
         light.castShadow = true;

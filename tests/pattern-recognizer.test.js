@@ -1,11 +1,11 @@
-import { jest } from '@jest/globals';
+import { describe, expect, mock, test } from 'bun:test';
 import PatternRecognizer from '../assets/js/utils/patternRecognition.ts';
 
 describe('PatternRecognizer', () => {
   const createAnalyser = (responses) => {
     let call = 0;
     return {
-      getFrequencyData: jest.fn(() => responses[call++]),
+      getFrequencyData: mock(() => responses[call++]),
     };
   };
 
