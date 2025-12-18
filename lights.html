@@ -81,12 +81,17 @@
         </div>
         <button id="start-audio-btn" class="cta-button primary">Start Audio &amp; Visualization</button>
       </div>
-      <p
-        id="error-message"
-        class="control-panel__description"
-        aria-live="polite"
+      <div
+        id="audio-status"
+        class="control-panel__status"
+        role="status"
         hidden
-      ></p>
+      ></div>
+      <div class="control-panel__actions">
+        <button id="use-sample-audio" class="cta-button" hidden>
+          Load sample audio
+        </button>
+      </div>
     </div>
 
     <!-- WebGL Canvas -->

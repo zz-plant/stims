@@ -2,9 +2,14 @@ import * as THREE from 'three';
 import { initScene } from './core/scene-setup.ts';
 import { initCamera } from './core/camera-setup.ts';
 import { initRenderer } from './core/renderer-setup.ts';
+import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
 import { initLighting, initAmbientLight } from './lighting/lighting-setup';
-import { initAudio, getFrequencyData } from './utils/audio-handler.ts';
+import {
+  createSyntheticAudioStream,
+  initAudio,
+  getFrequencyData,
+} from './utils/audio-handler.ts';
 import {
   applyAudioRotation,
   applyAudioScale,
@@ -20,7 +25,8 @@ let scene,
   cube,
   analyser,
   patternRecognizer,
-  audioCleanup;
+  audioCleanup,
+  syntheticCleanup;
 let rendererReadyPromise;
 let currentLightType = 'PointLight'; // Default light type
 let animationFrameId = null;
@@ -103,19 +109,34 @@ function stopAnimationLoop() {
   }
 }
 
-async function startAudioAndAnimation() {
+async function startAudioAndAnimation(useSampleAudio = false) {
   try {
     if (rendererReadyPromise) {
       await rendererReadyPromise;
     }
     if (!renderer) {
-      displayError('Unable to start because no renderer is available.');
-      return false;
+      throw new Error('Unable to start because no renderer is available.');
     }
-    const audioData = await initAudio();
+    if (syntheticCleanup) {
+      syntheticCleanup();
+      syntheticCleanup = null;
+    }
+
+    const syntheticStream = useSampleAudio
+      ? createSyntheticAudioStream()
+      : null;
+
+    const audioData = await initAudio({ stream: syntheticStream?.stream });
     analyser = audioData.analyser;
     audioListener = audioData.listener ?? null;
-    audioCleanup = audioData.cleanup;
+    audioCleanup = () => {
+      audioData.cleanup();
+      if (syntheticCleanup) {
+        syntheticCleanup();
+        syntheticCleanup = null;
+      }
+    };
+    syntheticCleanup = syntheticStream?.cleanup ?? null;
     patternRecognizer = new PatternRecognizer(analyser);
 
     if (isReducedMotionPreferred) {
@@ -126,10 +147,11 @@ async function startAudioAndAnimation() {
     return true;
   } catch (error) {
     console.error('initAudio failed:', error);
-    displayError(
-      'Microphone access is required for the visualization to work. Please allow microphone access.'
-    );
-    return false;
+    if (syntheticCleanup) {
+      syntheticCleanup();
+      syntheticCleanup = null;
+    }
+    throw error;
   }
 }
 
@@ -172,11 +194,12 @@ function renderSceneOnce() {
 }
 
 function displayError(message) {
-  const errorElement = document.getElementById('error-message');
-  if (errorElement) {
-    errorElement.innerText = message;
-    errorElement.hidden = !message;
-  }
+  const errorElement = document.getElementById('audio-status');
+  if (!errorElement) return;
+
+  errorElement.innerText = message;
+  errorElement.dataset.variant = 'error';
+  errorElement.hidden = !message;
 }
 
 // Update lighting type on change
@@ -189,20 +212,27 @@ document.getElementById('light-type').addEventListener('change', (event) => {
 // Start visualization
 rendererReadyPromise = initVisualization();
 
-// Handle audio start button click
-document
-  .getElementById('start-audio-btn')
-  .addEventListener('click', async () => {
+setupMicrophonePermissionFlow({
+  startButton: document.getElementById('start-audio-btn'),
+  fallbackButton: document.getElementById('use-sample-audio'),
+  statusElement: document.getElementById('audio-status'),
+  requestMicrophone: () => startAudioAndAnimation(false),
+  requestSampleAudio: () => startAudioAndAnimation(true),
+  analytics: {
+    log: (event, detail) => console.info(`[audio-flow] ${event}`, detail ?? {}),
+  },
+  onSuccess: () => {
     const startButton = document.getElementById('start-audio-btn');
-    startButton.disabled = true;
-    const started = await startAudioAndAnimation();
-    if (started) {
-      startButton.style.display = 'none'; // Hide button after starting audio
-      displayError('');
-    } else {
-      startButton.disabled = false;
+    if (startButton instanceof window.HTMLButtonElement) {
+      startButton.style.display = 'none';
     }
-  });
+
+    const fallbackButton = document.getElementById('use-sample-audio');
+    if (fallbackButton instanceof window.HTMLButtonElement) {
+      fallbackButton.hidden = true;
+    }
+  },
+});
 
 // Handle window resize
 window.addEventListener('resize', handleResize);
@@ -246,7 +276,14 @@ async function handleVisibilityChange() {
         console.error('Error resuming audio context:', error);
       }
     } else if (!analyser && audioCleanup) {
-      await startAudioAndAnimation();
+      try {
+        await startAudioAndAnimation();
+      } catch (error) {
+        displayError(
+          'Microphone access is required for the visualization to work. Please allow microphone access.'
+        );
+        console.error('Unable to restart audio after visibility change', error);
+      }
     }
 
     if (analyser) {
