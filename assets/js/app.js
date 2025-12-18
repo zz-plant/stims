@@ -13,7 +13,7 @@ import PatternRecognizer from './utils/patternRecognition.ts';
 
 const DEFAULT_RENDERER_OPTIONS = { maxPixelRatio: 2 };
 
-let scene, camera, renderer, cube, analyser, patternRecognizer;
+let scene, camera, renderer, cube, analyser, patternRecognizer, audioCleanup;
 let currentLightType = 'PointLight'; // Default light type
 
 function initVisualization() {
@@ -67,6 +67,7 @@ async function startAudioAndAnimation() {
   try {
     const audioData = await initAudio();
     analyser = audioData.analyser;
+    audioCleanup = audioData.cleanup;
     patternRecognizer = new PatternRecognizer(analyser);
     animate();
     return true;
@@ -141,3 +142,10 @@ document
 
 // Handle window resize
 window.addEventListener('resize', handleResize);
+
+// Clean up audio when navigating away
+window.addEventListener('pagehide', () => {
+  if (audioCleanup) {
+    audioCleanup();
+  }
+});
