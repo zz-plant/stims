@@ -34,6 +34,8 @@
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
       import { initHints } from './assets/ui/hints.ts';
+      import { initFunControls } from './assets/ui/fun-controls.ts';
+      import { createSearyFunAdapter } from './assets/seary/fun-adapter.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
       function displayError(message) {
@@ -51,6 +53,15 @@
           'Switch to Party Mode for bigger motion.',
           'Use the audio source menu to swap between mic and device audio.',
         ],
+      });
+
+      const adapter = createSearyFunAdapter();
+      const funControls = initFunControls({
+        paletteOptions: adapter.paletteOptions,
+        onPaletteChange: (palette, colors) =>
+          adapter.setPalette(palette, colors),
+        onMotionChange: (intensity, mode) => adapter.setMotion(intensity, mode),
+        onAudioToggle: (enabled) => adapter.setAudioReactive(enabled),
       });
 
       const gl =
@@ -105,6 +116,7 @@
             uniform vec2 u_touch0;
             uniform vec2 u_touch1;
             uniform vec3 u_orientation;
+            uniform vec3 u_palette_accent;
             varying vec2 v_uv;
             
             float noise(vec2 p) {
@@ -163,6 +175,8 @@
                 float glow = exp(-10.0 * dist) * (u_low_freq + u_mid_freq + u_high_freq);
                 color += vec3(glow * 0.4, glow * 0.6, glow * 0.8);
 
+                color = mix(color, color * u_palette_accent, 0.35);
+
                 gl_FragColor = vec4(color, 1.0);
             }
         `;
@@ -208,6 +222,59 @@
         program,
         'u_orientation'
       );
+      const paletteLocation = gl.getUniformLocation(
+        program,
+        'u_palette_accent'
+      );
+
+      let currentFreqs = adapter.transformFrequencies({
+        low: 0,
+        mid: 0,
+        high: 0,
+      });
+      let orientation = { alpha: 0, beta: 0, gamma: 0 };
+      const touches = [
+        { x: 0.0, y: 0.0 },
+        { x: 0.0, y: 0.0 },
+      ];
+      const activePointers = new Map();
+
+      canvas.addEventListener('pointerdown', (event) => {
+        updatePointer(event);
+        event.preventDefault();
+      });
+
+      canvas.addEventListener('pointermove', (event) => {
+        updatePointer(event);
+        event.preventDefault();
+      });
+
+      canvas.addEventListener('pointerup', (event) => {
+        activePointers.delete(event.pointerId);
+        refreshTouches();
+      });
+
+      function updatePointer(event) {
+        activePointers.set(event.pointerId, {
+          x: event.clientX,
+          y: event.clientY,
+        });
+        refreshTouches();
+      }
+
+      function refreshTouches() {
+        const values = Array.from(activePointers.values());
+        for (let i = 0; i < touches.length; i++) {
+          if (i < values.length) {
+            const p = values[i];
+            touches[i].x = (p.x / window.innerWidth) * 2.0 - 1.0;
+            touches[i].y = 1.0 - (p.y / window.innerHeight) * 2.0;
+          } else {
+            touches[i].x = 0.0;
+            touches[i].y = 0.0;
+          }
+        }
+      }
 
       // Audio setup for beat detection and frequency analysis
       let audioContext, analyser, source;
@@ -225,6 +292,7 @@
         navigator.mediaDevices
           .getUserMedia({ audio: true })
           .then((stream) => {
+            funControls.setAudioAvailable(true);
             audioContext = new (window.AudioContext ||
               window.webkitAudioContext)();
             if (audioSelect.value === 'mic') {
@@ -284,56 +352,11 @@
             }
 
             // Device orientation-based distortion
-            let orientation = { alpha: 0, beta: 0, gamma: 0 };
             window.addEventListener('deviceorientation', (event) => {
               orientation.alpha = event.alpha;
               orientation.beta = event.beta;
               orientation.gamma = event.gamma;
             });
-
-            // Pointer-based multi-touch effects
-            let touches = [
-              { x: 0.0, y: 0.0 },
-              { x: 0.0, y: 0.0 },
-            ];
-            const activePointers = new Map();
-
-            canvas.addEventListener('pointerdown', (event) => {
-              updatePointer(event);
-              event.preventDefault();
-            });
-
-            canvas.addEventListener('pointermove', (event) => {
-              updatePointer(event);
-              event.preventDefault();
-            });
-
-            canvas.addEventListener('pointerup', (event) => {
-              activePointers.delete(event.pointerId);
-              refreshTouches();
-            });
-
-            function updatePointer(event) {
-              activePointers.set(event.pointerId, {
-                x: event.clientX,
-                y: event.clientY,
-              });
-              refreshTouches();
-            }
-
-            function refreshTouches() {
-              const values = Array.from(activePointers.values());
-              for (let i = 0; i < touches.length; i++) {
-                if (i < values.length) {
-                  const p = values[i];
-                  touches[i].x = (p.x / window.innerWidth) * 2.0 - 1.0;
-                  touches[i].y = 1.0 - (p.y / window.innerHeight) * 2.0;
-                } else {
-                  touches[i].x = 0.0;
-                  touches[i].y = 0.0;
-                }
-              }
-            }
 
             function startProcessing(arr) {
               dataArray = arr;
@@ -370,21 +393,23 @@
                 }, 100);
               }
 
-              gl.uniform1f(lowFreqLocation, lowFreq);
-              gl.uniform1f(midFreqLocation, midFreq);
-              gl.uniform1f(highFreqLocation, highFreq);
-              gl.uniform3f(
-                orientationLocation,
-                orientation.alpha / 360.0,
-                orientation.beta / 90.0,
-                orientation.gamma / 90.0
+              currentFreqs = adapter.transformFrequencies({
+                low: lowFreq,
+                mid: midFreq,
+                high: highFreq,
+              });
+
+              vibrateBasedOnAudio(
+                currentFreqs.low,
+                currentFreqs.mid,
+                currentFreqs.high
               );
-
-              gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
-              gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
-
-              vibrateBasedOnAudio(lowFreq, midFreq, highFreq);
-              vibrateBasedOnVisuals(lowFreq, midFreq, highFreq, Math.random());
+              vibrateBasedOnVisuals(
+                currentFreqs.low,
+                currentFreqs.mid,
+                currentFreqs.high,
+                Math.random()
+              );
 
               requestAnimationFrame(updateAudioData);
             }
@@ -392,6 +417,12 @@
           })
           .catch((err) => {
             console.error('Error accessing microphone: ' + err);
+            funControls.setAudioAvailable(false);
+            currentFreqs = adapter.transformFrequencies({
+              low: 0,
+              mid: 0,
+              high: 0,
+            });
           });
       }
 
@@ -401,6 +432,23 @@
 
         // Set uniforms
         gl.uniform1f(timeLocation, time);
+        gl.uniform1f(lowFreqLocation, currentFreqs.low);
+        gl.uniform1f(midFreqLocation, currentFreqs.mid);
+        gl.uniform1f(highFreqLocation, currentFreqs.high);
+        gl.uniform3f(
+          orientationLocation,
+          orientation.alpha / 360.0,
+          orientation.beta / 90.0,
+          orientation.gamma / 90.0
+        );
+        gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
+        gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
+        gl.uniform3f(
+          paletteLocation,
+          adapter.paletteAccent[0],
+          adapter.paletteAccent[1],
+          adapter.paletteAccent[2]
+        );
 
         // Draw
         gl.clearColor(0, 0, 0, 1);

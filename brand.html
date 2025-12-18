@@ -18,6 +18,8 @@
         getContextFrequencyData,
       } from './assets/js/core/animation-loop.ts';
       import { initHints } from './assets/ui/hints.ts';
+      import { initFunControls } from './assets/ui/fun-controls.ts';
+      import { createBrandFunAdapter } from './assets/brand/fun-adapter.ts';
 
       const canvas = document.getElementById('vizCanvas');
 
@@ -165,6 +167,25 @@
       poleMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       toy.scene.add(poleMesh);
 
+      const adapter = createBrandFunAdapter({
+        buildingMesh,
+        treeMaterial: treeMat,
+        poleMaterial: poleMat,
+      });
+
+      const funControls = initFunControls({
+        paletteOptions: adapter.paletteOptions,
+        onPaletteChange: (palette, colors) => {
+          adapter.setPalette(palette, colors);
+        },
+        onMotionChange: (intensity, mode) => {
+          adapter.setMotion(intensity, mode);
+        },
+        onAudioToggle: (enabled) => {
+          adapter.setAudioReactive(enabled);
+        },
+      });
+
       const dummy = new THREE.Object3D();
       buildingData.forEach((d, i) => {
         dummy.position.set(d.x, 0, d.z);
@@ -194,12 +215,15 @@
 
       function animate(ctx) {
         const dataArray = getContextFrequencyData(ctx);
-        const bassBand = dataArray.slice(0, Math.max(1, Math.min(10, dataArray.length)));
+        const bassBand = dataArray.slice(
+          0,
+          Math.max(1, Math.min(10, dataArray.length))
+        );
         const bass = bassBand.length
           ? bassBand.reduce((a, b) => a + b, 0) / bassBand.length
           : 0;
 
-        const speed = 0.5 + bass / 100;
+        const speed = adapter.computeSpeed(bass);
         buildingData.forEach((d, i) => {
           d.z += speed;
           if (d.z > 5) {
@@ -241,14 +265,18 @@
         ctx.toy.render();
       }
 
-      startAudioLoop(toy, animate, { positional: true, object: toy.camera }).catch(
-        (err) => {
-          console.error('Audio input error: ', err);
-          displayError(
-            'Microphone access is required for the visualization to work. Please allow microphone access.'
-          );
-        }
-      );
+      startAudioLoop(toy, animate, {
+        positional: true,
+        object: toy.camera,
+      }).catch((err) => {
+        console.error('Audio input error: ', err);
+        funControls.setAudioAvailable(false);
+        displayError(
+          'Microphone access is unavailable. Visuals will run without audio reactivity.'
+        );
+        const silentContext = { toy, analyser: null };
+        toy.renderer.setAnimationLoop(() => animate(silentContext));
+      });
     </script>
   </body>
 </html>
