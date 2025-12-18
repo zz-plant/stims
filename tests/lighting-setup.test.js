@@ -1,27 +1,33 @@
-import { describe, expect, it } from '@jest/globals';
-import * as THREE from 'three';
-import { initLighting } from '../assets/js/lighting/lighting-setup';
+import { beforeAll, describe, expect, mock, test } from 'bun:test';
 
-const { DirectionalLight, HemisphereLight, Scene } = THREE;
+let initLighting;
+let stubLighting;
+let Scene;
+
+beforeAll(async () => {
+  mock.module('three', () => import('./three-stub.ts'));
+  ({ initLighting } = await import('../assets/js/lighting/lighting-setup'));
+  ({ Scene, ...stubLighting } = await import('./three-stub.ts'));
+});
 
 describe('initLighting', () => {
-  it('uses default position values when position is omitted', () => {
+  test('uses default position values when position is omitted', () => {
     const scene = new Scene();
 
-    initLighting(scene, { type: 'DirectionalLight' });
+    initLighting(scene, { type: 'DirectionalLight' }, stubLighting);
 
     expect(scene.children).toHaveLength(1);
     const light = scene.children[0];
-    expect(light).toBeInstanceOf(DirectionalLight);
+    expect(light).toBeInstanceOf(stubLighting.DirectionalLight);
     expect(light.position.x).toBe(10);
     expect(light.position.y).toBe(10);
     expect(light.position.z).toBe(10);
   });
 
-  it('merges partial position values with defaults', () => {
+  test('merges partial position values with defaults', () => {
     const scene = new Scene();
 
-    initLighting(scene, { type: 'DirectionalLight', position: { y: 5 } });
+    initLighting(scene, { type: 'DirectionalLight', position: { y: 5 } }, stubLighting);
 
     const light = scene.children[0];
     expect(light.position.x).toBe(10);
@@ -29,12 +35,10 @@ describe('initLighting', () => {
     expect(light.position.z).toBe(10);
   });
 
-  it('does not require a position for non-positional lights', () => {
+  test('does not require a position for non-positional lights', () => {
     const scene = new Scene();
 
-    expect(() =>
-      initLighting(scene, { type: 'HemisphereLight' })
-    ).not.toThrow();
-    expect(scene.children[0]).toBeInstanceOf(HemisphereLight);
+    expect(() => initLighting(scene, { type: 'HemisphereLight' }, stubLighting)).not.toThrow();
+    expect(scene.children[0]).toBeInstanceOf(stubLighting.HemisphereLight);
   });
 });

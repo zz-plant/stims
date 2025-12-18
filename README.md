@@ -7,9 +7,11 @@ For setup, testing, and contribution guidelines, see [CONTRIBUTING.md](./CONTRIB
 ## Quick Start
 
 1. Clone the repo and `cd` into it.
-2. Use Node.js 22: run `nvm use` if you have nvm installed.
-3. Install dependencies with `npm install`.
-4. Start the dev server with `npm run dev` and open `http://localhost:5173` in your browser.
+2. Choose your runtime (the repo records `bun@1.2.14` in `package.json` via `packageManager`):
+   - **Bun 1.2+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle.
+   - **Node.js 22** (see `.nvmrc`): still supported for Vite and general tooling if you prefer npm.
+3. Install dependencies with `npm install` or `bun install`. Bun will write to `bun.lock` so you can pin installs with `bun install --frozen-lockfile`.
+4. Start the dev server with `npm run dev` or `bun run dev`, then open `http://localhost:5173` in your browser.
 
 ## Getting Started
 
@@ -32,7 +34,7 @@ This project is organized so you can find the visuals, core utilities, and share
 - `assets/js/utils/`: Small utility modules that support the core helpers and toys.
 - `assets/css/`: Shared styling for the various HTML entry points.
 - `assets/data/`: Static data files consumed by the toys.
-- `tests/`: Jest specs that validate core behaviors.
+- `tests/`: Bun specs that validate core behaviors.
 - `toy.html`, `brand.html`, `seary.html`, and other HTML files: Entry points that load specific toys or collections of toys.
 
 If you add a new toy, place the implementation in `assets/js/toys/`, register it in `assets/js/toys-data.js`, and make sure there’s an entry point (often `toy.html?toy=<slug>`) that can load it.
@@ -103,18 +105,24 @@ To play with the toys locally you’ll need to run them from a local web server.
    cd stims
    ```
 
-2. Use Node.js 22 (see `.nvmrc`). If you have nvm installed, run `nvm use`.
+2. Use Bun 1.2+ (recorded in `package.json`) or Node.js 22 (see `.nvmrc`). If you have nvm installed, run `nvm use` to select the correct Node version.
 
 3. Install dependencies:
 
    ```bash
    npm install
+   # or
+   bun install
    ```
+
+   Bun does not automatically run `prepare` scripts, so the repo includes a `postinstall` hook that installs Husky when `npm_config_user_agent` starts with `bun`. If that step fails for any reason, fall back to `bun x husky install` (or `npx husky install`).
 
 4. Start the development server:
 
    ```bash
    npm run dev
+   # or
+   bun run dev
    ```
 
 Open `http://localhost:5173` in your browser.
@@ -123,21 +131,25 @@ To serve a static build instead of the dev server, run:
 
 ```bash
 npm run build
+# or
+bun run build
+
 python3 -m http.server dist
 ```
 
 Then open `http://localhost:8000`.
 
-All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
+All JavaScript dependencies are installed via npm (or Bun) and bundled locally with Vite, so everything works offline without hitting a CDN.
 
-### Helpful npm Scripts
+### Helpful Scripts (npm or Bun)
 
-- `npm run dev`: Start the Vite development server for local exploration.
-- `npm run build`: Produce a production build in `dist/`.
-- `npm run preview`: Serve the production build locally to validate the output before deploying.
-- `npm test`: Run the Jest suite.
-- `npm run lint`: Check code quality with ESLint.
-- `npm run format`: Format files with Prettier.
+- `npm run dev` / `bun run dev`: Start the Vite development server for local exploration.
+- `npm run build` / `bun run build`: Produce a production build in `dist/`.
+- `npm run preview` / `bun run preview`: Serve the production build locally to validate the output before deploying.
+- `bun test` (or `bun run test`): Run the Bun-native test suite. `npm run test` will also proxy to Bun if you have it installed.
+- `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
+- `npm run lint` / `bun run lint`: Check code quality with ESLint.
+- `npm run format` / `bun run format`: Format files with Prettier.
 
 ## Code of Conduct and Contributions
 
@@ -145,24 +157,28 @@ Please review our [Code of Conduct](./CODE_OF_CONDUCT.md) before participating i
 
 ### Running Tests
 
-This project uses [Jest](https://jestjs.io/) for its test suite. To install
+This project uses the [Bun test runner](https://bun.sh/docs/test) for its suite. To install
 dependencies and run the tests:
 
 1. Install dependencies:
 
    ```bash
+   bun install
+   # or
    npm install
    ```
 
 2. Run the tests:
    ```bash
-   npm test
+   bun test
+   # or
+   npm run test
    ```
 
-For custom test filters or file patterns, you can run Jest directly with the required ESM flag via the dedicated script:
+For quick iteration, use the watch mode:
 
 ```bash
-npm run jest -- --testPathPattern=some-file
+bun run test:watch
 ```
 
 ### Linting and Formatting

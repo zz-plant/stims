@@ -4,36 +4,47 @@ Thanks for helping build and refine the Stim Webtoys Library! This guide covers 
 
 ## Environment Setup
 
-- Use **Node.js 22** (see `.nvmrc`). If you use nvm, run `nvm use` after cloning.
+- Use **Bun 1.2+** for the fastest installs and test runs (the repo records this in `package.json`). **Node.js 22** (see `.nvmrc`) is also supported if you prefer npm for Vite or tooling.
 - Install dependencies with:
   ```bash
   npm install
+  # or
+  bun install
   ```
+  Bun does not automatically run `prepare` scripts, so a `postinstall` script installs Husky when your user agent starts with `bun`. If that misses your setup, run `bun x husky install` (or `npx husky install`) after installing dependencies.
 
 ## Running the Dev Server
 
 Start the local development server and open the site at `http://localhost:5173`:
 ```bash
 npm run dev
+# or
+bun run dev
 ```
 
 ## Testing, Linting, and Formatting
 
 - Run all tests:
   ```bash
-  npm test
+  bun test
+  # or
+  npm run test
   ```
-- Run Jest directly with filters (for example, targeting specific files):
+- Run the Bun test runner with filters (for example, targeting specific files):
   ```bash
-  npm run jest -- --testPathPattern=path/to/spec
+  bun test tests/path/to/spec.test.js
   ```
 - Lint the project:
   ```bash
   npm run lint
+  # or
+  bun run lint
   ```
 - Format the codebase:
   ```bash
   npm run format
+  # or
+  bun run format
   ```
 
 ## Branching and Pull Requests
@@ -49,6 +60,6 @@ npm run dev
 - Register toy metadata (labels, slugs, and settings) in `assets/js/toys-data.js` so the loader can find your new toy.
 - Toy entry points are served through `toy.html` using a `?toy=` query string (for example, `toy.html?toy=cube-wave`). Ensure your toy slug matches the metadata entry.
 - Shared styling and assets live under `assets/css/` and `assets/data/`. Add new static assets there when needed.
-- Update or add tests under `tests/` to cover new behaviors. You can run targeted checks with the `--testPathPattern` flag shown above.
+- Update or add tests under `tests/` to cover new behaviors. You can run targeted checks by passing the spec path to `bun test`.
 
 Happy building!

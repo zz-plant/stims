@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { describe, expect, mock, test } from 'bun:test';
 import {
   applyAudioRotation,
   applyAudioScale,
@@ -69,7 +69,7 @@ describe('animation-utils', () => {
   test('applyAudioScale sets scale based on specified band', () => {
     const called = [];
     const object = {
-      scale: { set: jest.fn((x, y, z) => called.push([x, y, z])) },
+      scale: { set: mock((x, y, z) => called.push([x, y, z])) },
     };
     const audioData = new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80, 90]);
 

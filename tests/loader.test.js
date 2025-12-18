@@ -1,8 +1,17 @@
-import { jest } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from 'bun:test';
 
 const loaderModule = '../assets/js/loader.js';
 const originalLocation = window.location;
 const originalHistory = window.history;
+
+const freshImport = async (path) => import(`${path}?t=${Date.now()}-${Math.random()}`);
 
 function createMockLocation(href) {
   const url = new URL(href);
@@ -28,10 +37,7 @@ function createMockLocation(href) {
 function createMockHistory(locationObject) {
   return {
     pushState: (_state, _title, nextUrl) => {
-      const targetUrl =
-        typeof nextUrl === 'string'
-          ? new URL(nextUrl, locationObject.href)
-          : nextUrl;
+      const targetUrl = typeof nextUrl === 'string' ? new URL(nextUrl, locationObject.href) : nextUrl;
       locationObject.href = targetUrl.href;
     },
   };
@@ -41,11 +47,10 @@ describe('loadToy', () => {
   let loadToy;
 
   beforeEach(async () => {
-    jest.resetModules();
-    global.fetch = jest.fn(() =>
+    mock.restore();
+    global.fetch = mock(() =>
       Promise.resolve({
-        json: () =>
-          Promise.resolve([{ slug: 'brand', module: './toy.html?toy=brand' }]),
+        json: () => Promise.resolve([{ slug: 'brand', module: './toy.html?toy=brand' }]),
       })
     );
     const location = createMockLocation('http://example.com');
@@ -59,12 +64,11 @@ describe('loadToy', () => {
       configurable: true,
       value: createMockHistory(location),
     });
-    ({ loadToy } = await import(loaderModule));
+    ({ loadToy } = await freshImport(loaderModule));
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.resetModules();
+    mock.restore();
     document.body.innerHTML = '';
     delete global.fetch;
     Object.defineProperty(window, 'location', {
@@ -89,11 +93,11 @@ describe('active toy navigation affordance', () => {
   let loadToy;
 
   beforeEach(async () => {
-    jest.resetModules();
+    mock.restore();
     document.body.innerHTML = '<div id="toy-list"></div>';
-    global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
+    global.fetch = mock(() => Promise.resolve({ ok: false }));
 
-    await jest.unstable_mockModule('../assets/js/toys-data.js', () => ({
+    mock.module('../assets/js/toys-data.js', () => ({
       default: [
         {
           slug: 'module-toy',
@@ -105,7 +109,7 @@ describe('active toy navigation affordance', () => {
       ],
     }));
 
-    ({ loadToy } = await import(loaderModule));
+    ({ loadToy } = await freshImport(loaderModule));
     const location = createMockLocation('http://example.com/library');
     Object.defineProperty(window, 'location', {
       writable: true,
@@ -120,8 +124,7 @@ describe('active toy navigation affordance', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.resetModules();
+    mock.restore();
     document.body.innerHTML = '';
     delete global.fetch;
     delete globalThis.__activeWebToy;
@@ -143,14 +146,12 @@ describe('active toy navigation affordance', () => {
     const backControl = document.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
 
-    globalThis.__activeWebToy = { dispose: jest.fn() };
+    globalThis.__activeWebToy = { dispose: mock() };
 
     backControl.click();
 
     expect(globalThis.__activeWebToy).toBeUndefined();
-    expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(
-      false
-    );
+    expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
     expect(window.location.search).toBe('');
   });
 });
@@ -159,13 +160,12 @@ describe('resolveModulePath', () => {
   const moduleEntry = 'assets/js/toys/example.ts';
 
   beforeEach(() => {
-    jest.resetModules();
+    mock.restore();
     global.window = { location: { origin: 'http://example.com' } };
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.resetModules();
+    mock.restore();
     delete global.fetch;
     delete global.window;
   });
@@ -174,11 +174,9 @@ describe('resolveModulePath', () => {
     const manifest = {
       [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
     };
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) })
-    );
+    global.fetch = mock(() => Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) }));
 
-    const { resolveModulePath } = await import(loaderModule);
+    const { resolveModulePath } = await freshImport(loaderModule);
     const modulePath = await resolveModulePath(moduleEntry);
 
     expect(global.fetch).toHaveBeenCalledWith('/.vite/manifest.json');
@@ -186,9 +184,9 @@ describe('resolveModulePath', () => {
   });
 
   test('falls back when manifest is missing', async () => {
-    global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
+    global.fetch = mock(() => Promise.resolve({ ok: false }));
 
-    const { resolveModulePath } = await import(loaderModule);
+    const { resolveModulePath } = await freshImport(loaderModule);
     const modulePath = await resolveModulePath(moduleEntry);
 
     expect(modulePath).toBe('/assets/js/toys/example.ts');
