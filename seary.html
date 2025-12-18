@@ -33,18 +33,12 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { showError } from './assets/js/utils/error-display.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createSearyFunAdapter } from './assets/seary/fun-adapter.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
-      function displayError(message) {
-        const el = document.getElementById('error-message');
-        if (el) {
-          el.innerText = message;
-          el.style.display = 'block';
-        }
-      }
 
       initHints({
         id: 'seary-visualizer',
@@ -305,7 +299,8 @@
                 })
                 .catch((err) => {
                   console.error('Error capturing audio: ', err);
-                  displayError(
+                  showError(
+                    'error-message',
                     'Microphone access is required for the visualization to work. Please allow microphone access.'
                   );
                 });

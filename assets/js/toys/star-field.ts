@@ -7,6 +7,7 @@ import {
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
+import { applyAudioColor } from '../utils/color-audio';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 100 } },
@@ -177,8 +178,13 @@ function animate(ctx: AnimationContext) {
     0.2 + normalizedAvg * 0.3;
 
   // Color shift based on audio
-  const hue = (normalizedAvg * 0.5 + time * 0.05) % 1;
-  starMaterial.color.setHSL(hue, 0.3, 0.9);
+  const hueBase = (time * 0.05) % 1;
+  applyAudioColor(starMaterial, normalizedAvg, {
+    baseHue: hueBase,
+    hueRange: 0.5,
+    baseSaturation: 0.3,
+    baseLuminance: 0.9,
+  });
 
   // Camera effects
   toy.camera.position.x = Math.sin(time * 0.3) * 10;
