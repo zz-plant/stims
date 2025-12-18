@@ -58,9 +58,14 @@ function animate(ctx: AnimationContext) {
   ctx.toy.render();
 }
 
-async function startAudio() {
-  return startToyAudio(toy, animate);
+async function startAudio(useSynthetic = false) {
+  return startToyAudio(toy, animate, {
+    fallbackToSynthetic: useSynthetic,
+    preferSynthetic: useSynthetic,
+  });
 }
 
 init();
 (window as unknown as Record<string, unknown>).startAudio = startAudio;
+(window as unknown as Record<string, unknown>).startAudioFallback = () =>
+  startAudio(true);

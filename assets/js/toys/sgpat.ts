@@ -133,6 +133,7 @@ let viewportWidth = window.innerWidth;
 let viewportHeight = window.innerHeight;
 let isStarting = false;
 let hasAudioStarted = false;
+const activePointers = new Map<number, { x: number; y: number }>();
 const disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
   maxPixelRatio: 2,
   onResize: ({ cssWidth, cssHeight }) => {
@@ -211,10 +212,48 @@ function animate(ctx: AnimationContext) {
   toy.render();
 }
 
+function updateTouchUniformFromPointers() {
+  if (!activePointers.size) {
+    uniforms.u_touch.value.set(0, 0);
+    return;
+  }
+
+  let sumX = 0;
+  let sumY = 0;
+  activePointers.forEach(({ x, y }) => {
+    sumX += x;
+    sumY += y;
+  });
+
+  const divisor = activePointers.size;
+  uniforms.u_touch.value.set(sumX / divisor, sumY / divisor);
+}
+
+function updatePointerPosition(event: PointerEvent) {
+  const x = (event.clientX / viewportWidth) * 2.0 - 1.0;
+  const y = -(event.clientY / viewportHeight) * 2.0 + 1.0;
+  activePointers.set(event.pointerId, { x, y });
+  updateTouchUniformFromPointers();
+}
+
 function handlePointerMove(event: PointerEvent) {
-  const x = (event.clientX / window.innerWidth) * 2.0 - 1.0;
-  const y = -(event.clientY / window.innerHeight) * 2.0 + 1.0;
-  uniforms.u_touch.value.set(x, y);
+  updatePointerPosition(event);
+}
+
+function handlePointerDown(event: PointerEvent) {
+  if (event.target instanceof Element && event.target.hasPointerCapture) {
+    try {
+      event.target.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture can fail on some elements or browsers; proceed without it.
+    }
+  }
+  updatePointerPosition(event);
+}
+
+function handlePointerEnd(event: PointerEvent) {
+  activePointers.delete(event.pointerId);
+  updateTouchUniformFromPointers();
 }
 
 async function start() {
@@ -254,4 +293,9 @@ async function start() {
 
 startButton?.addEventListener('click', start);
 window.addEventListener('pointermove', handlePointerMove);
+window.addEventListener('pointerdown', handlePointerDown);
+window.addEventListener('pointerup', handlePointerEnd);
+window.addEventListener('pointercancel', handlePointerEnd);
+window.addEventListener('pointerout', handlePointerEnd);
+window.addEventListener('pointerleave', handlePointerEnd);
 window.addEventListener('pagehide', disposeResize);

@@ -322,8 +322,12 @@ function animate(ctx: AnimationContext) {
   ctx.toy.render();
 }
 
-async function startAudio() {
-  return startToyAudio(toy, animate, 256);
+async function startAudio(useSynthetic = false) {
+  return startToyAudio(toy, animate, {
+    fftSize: 256,
+    fallbackToSynthetic: useSynthetic,
+    preferSynthetic: useSynthetic,
+  });
 }
 
 function init() {
@@ -334,3 +338,5 @@ function init() {
 
 init();
 (window as unknown as Record<string, unknown>).startAudio = startAudio;
+(window as unknown as Record<string, unknown>).startAudioFallback = () =>
+  startAudio(true);
