@@ -19,6 +19,14 @@ const server = new McpServer(
   },
 );
 
+type ToyMetadata = {
+  slug: string;
+  title: string;
+  description: string;
+  requiresWebGPU: boolean;
+  url: string;
+};
+
 server.registerTool(
   'list_docs',
   {
@@ -50,7 +58,8 @@ server.registerTool(
 server.registerTool(
   'get_toys',
   {
-    description: 'List toys with metadata and links sourced from assets/js/toys-data.js.',
+    description:
+      'Return structured toy metadata from assets/js/toys-data.js with optional slug or WebGPU filters.',
     inputSchema: z
       .object({
         slug: z.string().trim().optional().describe('Limit results to a specific toy slug.'),
@@ -58,24 +67,15 @@ server.registerTool(
           .boolean()
           .optional()
           .describe('Filter by WebGPU requirement (true = only WebGPU toys).'),
-        includeModules: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe('Include module entry paths from the manifest source.'),
       })
       .strict(),
   },
-  async ({ slug, requiresWebGPU, includeModules }) => {
-    const filtered = toysData.filter((toy) => {
-      if (slug && toy.slug !== slug) {
-        return false;
-      }
+  async ({ slug, requiresWebGPU }) => {
+    const toys = normalizeToys(toysData);
 
-      if (typeof requiresWebGPU === 'boolean' && toy.requiresWebGPU !== requiresWebGPU) {
-        return false;
-      }
-
+    const filtered = toys.filter((toy) => {
+      if (slug && toy.slug !== slug) return false;
+      if (typeof requiresWebGPU === 'boolean' && toy.requiresWebGPU !== requiresWebGPU) return false;
       return true;
     });
 
@@ -83,22 +83,14 @@ server.registerTool(
       return asTextResponse('No toys matched the requested filters.');
     }
 
-    const lines = filtered.map((toy) => {
-      const details = [
-        `• ${toy.title} (${toy.slug})`,
-        `  Description: ${toy.description}`,
-        `  WebGPU required: ${toy.requiresWebGPU ? 'yes' : 'no'}`,
-        `  URL: toy.html?toy=${toy.slug}`,
-      ];
-
-      if (includeModules) {
-        details.push(`  Module: ${toy.module}`);
-      }
-
-      return details.join('\n');
-    });
-
-    return asTextResponse(lines.join('\n\n'));
+    return {
+      content: [
+        {
+          type: 'json',
+          json: filtered,
+        },
+      ],
+    } as const;
   },
 );
 
@@ -202,4 +194,30 @@ function asTextResponse(text: string) {
       },
     ],
   } as const;
+}
+
+function normalizeToys(data: unknown): ToyMetadata[] {
+  if (!Array.isArray(data)) return [];
+
+  return data
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const entry = item as Record<string, unknown>;
+
+      const slug = typeof entry.slug === 'string' ? entry.slug : null;
+      const title = typeof entry.title === 'string' ? entry.title : '';
+      const description = typeof entry.description === 'string' ? entry.description : '';
+      const requiresWebGPU = typeof entry.requiresWebGPU === 'boolean' ? entry.requiresWebGPU : false;
+
+      if (!slug) return null;
+
+      return {
+        slug,
+        title: title || slug,
+        description,
+        requiresWebGPU,
+        url: `toy.html?toy=${encodeURIComponent(slug)}`,
+      };
+    })
+    .filter((entry): entry is ToyMetadata => Boolean(entry));
 }
