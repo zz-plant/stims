@@ -14,6 +14,46 @@
         justify-content: center;
         align-items: center;
       }
+      .control-panel {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-end;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 12px;
+        max-width: min(360px, 80vw);
+        z-index: 11;
+      }
+      .control-panel button {
+        background: linear-gradient(135deg, #7f5af0, #2cb67d);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      }
+      .control-panel button:hover:enabled {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+      }
+      .control-panel button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      .control-panel .caption {
+        color: #d1d5db;
+        font-size: 14px;
+        line-height: 1.4;
+        text-align: right;
+      }
       #error-message {
         position: absolute;
         top: 20px;
@@ -28,6 +68,18 @@
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
+    <div class="control-panel">
+      <button
+        id="start-audio-button"
+        type="button"
+        title="Enable your microphone to drive the spectrograph. Colors shift when repeating patterns are detected."
+      >
+        Start / Retry Audio
+      </button>
+      <div class="caption" id="mic-caption">
+        Allow microphone access to animate the spectrograph; the hues pulse harder when the pattern recognizer hears repeating motifs.
+      </div>
+    </div>
     <div id="error-message" style="display: none"></div>
     <canvas id="glCanvas"></canvas>
     <script type="module" src="assets/js/toys/sgpat.ts"></script>
