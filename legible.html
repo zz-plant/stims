@@ -158,11 +158,12 @@
     <div id="particles-js"></div>
     <div class="grid" id="grid"></div>
 
-    <script>
-      let audioContext,
-        analyser,
-        dataArray,
-        micStream,
+    <script type="module">
+      import { getFrequencyData, initAudio } from './assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
+
+      let analyser,
+        dataArray = new Uint8Array(0),
         isMicrophoneEnabled = false;
       const startButton = document.getElementById('start-button');
       const resetButton = document.getElementById('reset-button');
@@ -340,35 +341,65 @@
 
       cycleRandomCharacters(); // Start cycling the characters
 
+      class GridToy {
+        constructor() {
+          this.analyser = null;
+          this.audioCleanup = null;
+          this.loopId = null;
+          this.renderer = {
+            setAnimationLoop: (loop) => {
+              if (this.loopId) {
+                cancelAnimationFrame(this.loopId);
+              }
+
+              const tick = () => {
+                loop();
+                this.loopId = requestAnimationFrame(tick);
+              };
+
+              tick();
+            },
+          };
+        }
+
+        async initAudio(options = {}) {
+          const audio = await initAudio(options);
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          analyser = this.analyser;
+          return audio;
+        }
+
+        dispose() {
+          if (this.loopId) {
+            cancelAnimationFrame(this.loopId);
+          }
+
+          this.audioCleanup?.();
+        }
+      }
+
+      const toy = new GridToy();
+
       function startMicAudio() {
-        navigator.mediaDevices
-          .getUserMedia({ audio: true, video: false })
-          .then((stream) => {
-            audioContext = new (window.AudioContext ||
-              window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 512;
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-            micStream = audioContext.createMediaStreamSource(stream);
-            micStream.connect(analyser);
+        startButton.disabled = true;
+        startToyAudio(toy, render, { fftSize: 512, fallbackToSynthetic: true })
+          .then(() => {
             isMicrophoneEnabled = true;
-
-            hideError();
-
             startButton.textContent = 'Microphone Active';
-            startButton.disabled = true;
-            render(); // Start the visualizer
+            hideError();
           })
-          .catch((err) => {
+          .catch(() => {
             showError(
               'Microphone access denied. Please allow microphone access to enable the visualizer.'
             );
+            startButton.disabled = false;
+            startButton.textContent = 'Enable Microphone';
           });
       }
 
       function getBeat() {
-        analyser.getByteFrequencyData(dataArray);
+        if (!dataArray.length) return 0;
         let sumLow = 0;
         const lowEnd = Math.floor(dataArray.length * 0.2);
 
@@ -445,10 +476,11 @@
         cycleRandomCharacters(); // Restart cycling after reset
       }
 
-      function render(time) {
-        requestAnimationFrame(render);
-
-        if (isMicrophoneEnabled) {
+      function render(ctx) {
+        if (ctx.analyser) {
+          analyser = ctx.analyser;
+          dataArray = getFrequencyData(ctx.analyser);
+          isMicrophoneEnabled = true;
           const beatStrength = getBeat();
 
           if (beatStrength > sensitivity) {
@@ -457,13 +489,9 @@
           } else {
             gridElement.style.transform = 'scale(1)';
           }
+        } else {
+          isMicrophoneEnabled = false;
         }
-      }
-
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showError(
-          'Your browser does not support microphone access. Please update to a modern browser.'
-        );
       }
 
       // Initialize color scheme
