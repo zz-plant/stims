@@ -121,11 +121,11 @@ export default [
     requiresWebGPU: false,
   },
   {
-    slug: 'particle-orbit',
-    title: 'Particle Orbit',
+    slug: 'cosmic-particles',
+    title: 'Cosmic Particles',
     description:
-      'Thousands of particles swirling faster as the music intensifies.',
-    module: 'assets/js/toys/particle-orbit.ts',
+      'Jump between orbiting swirls and nebula fly-throughs with a single toggle.',
+    module: 'assets/js/toys/cosmic-particles.ts',
     type: 'module',
     requiresWebGPU: false,
   },
