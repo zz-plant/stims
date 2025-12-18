@@ -7,19 +7,27 @@ function setupDarkModeToggle() {
   const btn = document.getElementById('theme-toggle');
   if (!btn) return;
   let dark = localStorage.getItem('theme') !== 'light';
-  btn.textContent = dark ? 'Light Mode' : 'Dark Mode';
+  const updateButtonState = () => {
+    btn.textContent = dark ? 'Light Mode' : 'Dark Mode';
+    btn.setAttribute('aria-pressed', String(dark));
+    btn.setAttribute(
+      'aria-label',
+      dark ? 'Switch to light mode' : 'Switch to dark mode',
+    );
+  };
+
+  updateButtonState();
   btn.addEventListener('click', () => {
     dark = !dark;
     const root = document.documentElement;
     if (dark) {
       root.classList.remove('light');
       localStorage.setItem('theme', 'dark');
-      btn.textContent = 'Light Mode';
     } else {
       root.classList.add('light');
       localStorage.setItem('theme', 'light');
-      btn.textContent = 'Dark Mode';
     }
+    updateButtonState();
   });
 }
 
