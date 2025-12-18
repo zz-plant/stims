@@ -130,6 +130,15 @@ export default [
     requiresWebGPU: false,
   },
   {
+    slug: 'bubble-harmonics',
+    title: 'Bubble Harmonics',
+    description:
+      'Translucent, audio-inflated bubbles that split into harmonics on high frequencies.',
+    module: 'assets/js/toys/bubble-harmonics.ts',
+    type: 'module',
+    requiresWebGPU: false,
+  },
+  {
     slug: 'cosmic-particles',
     title: 'Cosmic Particles',
     description:
