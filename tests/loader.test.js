@@ -54,6 +54,17 @@ describe('loadToy', () => {
         json: () => Promise.resolve([{ slug: 'brand', module: './toy.html?toy=brand' }]),
       })
     );
+    mock.module('../assets/js/toys-data.js', () => ({
+      default: [
+        {
+          slug: 'brand',
+          title: 'Test Brand Toy',
+          module: './__mocks__/fake-module.js',
+          type: 'module',
+          requiresWebGPU: false,
+        },
+      ],
+    }));
     const location = createMockLocation('http://example.com');
     Object.defineProperty(window, 'location', {
       writable: true,
@@ -170,19 +181,18 @@ describe('active toy navigation affordance', () => {
 
 describe('WebGPU requirements', () => {
   beforeEach(() => {
-    jest.resetModules();
+    mock.restore();
     document.body.innerHTML = '<div id="toy-list"></div>';
     Object.defineProperty(global, 'navigator', {
       writable: true,
       configurable: true,
       value: {},
     });
-    global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
+    global.fetch = mock(() => Promise.resolve({ ok: false }));
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.resetModules();
+    mock.restore();
     document.body.innerHTML = '';
     delete global.fetch;
     Object.defineProperty(global, 'navigator', {
@@ -203,7 +213,7 @@ describe('WebGPU requirements', () => {
   });
 
   test('shows capability error instead of loading module toy', async () => {
-    await jest.unstable_mockModule('../assets/js/toys-data.js', () => ({
+    mock.module('../assets/js/toys-data.js', () => ({
       default: [
         {
           slug: 'webgpu-toy',
@@ -215,7 +225,7 @@ describe('WebGPU requirements', () => {
       ],
     }));
 
-    const { loadToy } = await import(loaderModule);
+    const { loadToy } = await freshImport(loaderModule);
     await loadToy('webgpu-toy', { pushState: true });
 
     const status = document.querySelector('.active-toy-status.is-error');
