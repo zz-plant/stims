@@ -137,10 +137,10 @@ npm run build
 # or
 bun run build
 
-python3 -m http.server dist
+bun run serve
 ```
 
-Then open `http://localhost:8000`.
+By default the Bun server binds to `0.0.0.0:4173` (use `PORT`/`HOST` to override) and serves `dist/` with gzip/brotli enabled plus long-lived caching headers for bundled JS/CSS/assets. HTML remains uncached so live reloads and SPA routes keep working. Use this when you want a lightweight production-style host without the Vite middleware layer. `vite preview` still works the same way, but it runs the Vite preview server instead of pure static files if you need closer parity with Vite plugins. Then open `http://localhost:4173` (or your chosen port).
 
 All JavaScript dependencies are installed via npm (or Bun) and bundled locally with Vite, so everything works offline without hitting a CDN.
 
