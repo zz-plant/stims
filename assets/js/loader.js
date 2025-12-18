@@ -97,7 +97,9 @@ function createStatusElement(container, { title, message, type }) {
   }
 
   const status = document.createElement('div');
-  status.className = `active-toy-status ${type === 'error' ? 'is-error' : 'is-loading'}`;
+  const statusVariant =
+    type === 'error' ? 'is-error' : type === 'warning' ? 'is-warning' : 'is-loading';
+  status.className = `active-toy-status ${statusVariant}`;
 
   const glow = document.createElement('div');
   glow.className = 'active-toy-status__glow';
@@ -192,15 +194,19 @@ function showImportError(container, toy, { moduleUrl, importError } = {}) {
   status.querySelector('.active-toy-status__content')?.appendChild(actions);
 }
 
-function showCapabilityError(container, toy) {
+function showCapabilityError(container, toy, { allowFallback = false } = {}) {
   clearActiveToyContainer();
 
   const status = createStatusElement(container, {
-    type: 'error',
-    title: 'WebGPU not available',
-    message: toy?.title
-      ? `${toy.title} needs WebGPU, which is not supported in this browser.`
-      : 'This toy requires WebGPU, which is not supported in this browser.',
+    type: allowFallback ? 'warning' : 'error',
+    title: allowFallback ? 'WebGPU is unavailable' : 'WebGPU not available',
+    message: allowFallback
+      ? toy?.title
+        ? `${toy.title} works best with WebGPU. We can try a lighter WebGL version instead.`
+        : 'This toy works best with WebGPU. We can try a lighter WebGL version instead.'
+      : toy?.title
+        ? `${toy.title} needs WebGPU, which is not supported in this browser.`
+        : 'This toy requires WebGPU, which is not supported in this browser.',
   });
 
   if (!status) return;
@@ -218,7 +224,28 @@ function showCapabilityError(container, toy) {
   });
 
   actions.appendChild(back);
+
+  let onContinue;
+
+  if (allowFallback) {
+    const continueButton = document.createElement('button');
+    continueButton.type = 'button';
+    continueButton.className = 'cta-button primary';
+    continueButton.textContent = 'Continue with WebGL';
+    continueButton.addEventListener('click', () => {
+      onContinue?.();
+    });
+
+    actions.appendChild(continueButton);
+  }
+
   status.querySelector('.active-toy-status__content')?.appendChild(actions);
+
+  return {
+    onContinue(callback) {
+      onContinue = callback;
+    },
+  };
 }
 
 function showLibraryView() {
@@ -369,50 +396,68 @@ export async function loadToy(slug, { pushState = false } = {}) {
     disposeActiveToy();
     showActiveToyView();
 
-    if (toy.requiresWebGPU && !hasWebGPUSupport()) {
-      const container = ensureActiveToyContainer();
-      showCapabilityError(container, toy);
-      return;
-    }
-
     const container = ensureActiveToyContainer();
-    showLoadingIndicator(container, toy.title || toy.slug);
 
-    const moduleUrl = await resolveModulePath(toy.module);
-    let importError = null;
+    const startToy = async () => {
+      showLoadingIndicator(container, toy.title || toy.slug);
 
-    let moduleExports = null;
+      const moduleUrl = await resolveModulePath(toy.module);
+      let importError = null;
 
-    await import(moduleUrl)
-      .then((mod) => {
-        moduleExports = mod;
-      })
-      .catch((error) => {
-        importError = error;
-      });
+      let moduleExports = null;
 
-    if (importError) {
-      console.error('Error loading toy module:', importError);
-      showImportError(container, toy, { moduleUrl, importError });
-      return;
-    }
+      await import(moduleUrl)
+        .then((mod) => {
+          moduleExports = mod;
+        })
+        .catch((error) => {
+          importError = error;
+        });
 
-    const starter = moduleExports?.start ?? moduleExports?.default?.start;
-
-    if (starter) {
-      try {
-        const active = await starter({ container, slug });
-        if (active && !globalThis.__activeWebToy) {
-          globalThis.__activeWebToy = active;
-        }
-      } catch (error) {
-        console.error('Error starting toy module:', error);
-        showImportError(container, toy);
+      if (importError) {
+        console.error('Error loading toy module:', importError);
+        showImportError(container, toy, { moduleUrl, importError });
         return;
       }
+
+      const starter = moduleExports?.start ?? moduleExports?.default?.start;
+
+      if (starter) {
+        try {
+          const active = await starter({ container, slug });
+          if (active && !globalThis.__activeWebToy) {
+            globalThis.__activeWebToy = active;
+          }
+        } catch (error) {
+          console.error('Error starting toy module:', error);
+          showImportError(container, toy);
+          return;
+        }
+      }
+
+      removeStatusElement(container);
+    };
+
+    if (toy.requiresWebGPU && !hasWebGPUSupport()) {
+      const capabilityStatus = showCapabilityError(container, toy, {
+        allowFallback: toy.allowWebGLFallback,
+      });
+
+      if (toy.allowWebGLFallback && capabilityStatus?.onContinue) {
+        capabilityStatus.onContinue(() => {
+          clearActiveToyContainer();
+          startToy();
+        });
+      }
+
+      if (!toy.allowWebGLFallback) {
+        return;
+      }
+
+      return;
     }
 
-    removeStatusElement(container);
+    await startToy();
   } else {
     disposeActiveToy();
     window.location.href = toy.module;

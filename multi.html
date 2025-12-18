@@ -14,11 +14,30 @@
         height: 100%;
         background-color: #000000;
       }
+
+      .capability-banner {
+        position: fixed;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 196, 105, 0.12);
+        color: #ffe5bd;
+        border: 1px solid rgba(255, 196, 105, 0.5);
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        letter-spacing: 0.01em;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        display: none;
+        z-index: 5;
+      }
     </style>
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <canvas id="webglCanvas" class="toy-canvas"></canvas>
+    <div id="capability-banner" class="capability-banner" aria-live="polite"></div>
     <div id="error-message" style="display: none"></div>
     <script type="module">
       import * as THREE from 'three';
@@ -33,12 +52,13 @@
       import { createMultiFunAdapter } from './assets/multi/fun-adapter.ts';
 
       const canvas = document.getElementById('webglCanvas');
+      const capabilityBanner = document.getElementById('capability-banner');
+      const hasWebGPU = Boolean(navigator.gpu);
 
-      if (!navigator.gpu) {
-        showError(
-          'error-message',
-          'Running in WebGL mode. Optional WebGPU features add extra bloom and lighting polish when available.'
-        );
+      if (!hasWebGPU && capabilityBanner) {
+        capabilityBanner.textContent =
+          'Running in WebGL fallback mode. WebGPU adds extra bloom and lighting polish when supported.';
+        capabilityBanner.style.display = 'block';
       }
 
       initHints({
@@ -56,11 +76,17 @@
           fov: 75,
           position: { x: 0, y: 0, z: 50 },
         },
-        rendererOptions: {
-          antialias: true,
-          exposure: 1,
-          maxPixelRatio: 2,
-        },
+        rendererOptions: hasWebGPU
+          ? {
+              antialias: true,
+              exposure: 1,
+              maxPixelRatio: 2,
+            }
+          : {
+              antialias: false,
+              exposure: 0.9,
+              maxPixelRatio: 1.25,
+            },
         ambientLightOptions: { color: 0xffffff, intensity: 1 },
       });
 
@@ -79,7 +105,7 @@
       toy.scene.add(pointLight);
 
       const particlesGeometry = new THREE.BufferGeometry();
-      const particlesCount = 1000;
+      const particlesCount = hasWebGPU ? 1200 : 450;
       const particlesPosition = new Float32Array(particlesCount * 3);
       for (let i = 0; i < particlesCount * 3; i++) {
         particlesPosition[i] = (Math.random() - 0.5) * 500;
