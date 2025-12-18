@@ -1,4 +1,4 @@
-import { loadToy, loadFromQuery } from './loader.js';
+import { initNavigation, loadToy, loadFromQuery } from './loader.js';
 import toysData from './toys-data.js';
 
 let allToys = [];
@@ -15,7 +15,7 @@ function createCard(toy) {
 
   card.addEventListener('click', () => {
     if (toy.type === 'module') {
-      loadToy(toy.slug);
+      loadToy(toy.slug, { pushState: true });
     } else {
       window.location.href = toy.module;
     }
@@ -47,6 +47,7 @@ async function init() {
 
   const search = document.getElementById('search-bar');
   search?.addEventListener('input', (e) => filterToys(e.target.value));
+  initNavigation();
   await loadFromQuery();
 }
 
