@@ -58,6 +58,20 @@ function ensureStyles() {
         gap: 0.25rem;
         justify-content: space-between;
       }
+      .fun-subsection {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 0.5rem;
+        margin-top: 0.35rem;
+        display: grid;
+        gap: 0.35rem;
+      }
+      .fun-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
       .fun-controls legend {
         font-size: 0.85rem;
         margin-bottom: 0.25rem;
@@ -232,6 +246,7 @@ export function initFunControls(options: FunControlsInit = {}) {
   notifyAudio();
 
   return {
+    container,
     setAudioAvailable(available: boolean) {
       audioAvailable = available;
       if (audioToggle) {
@@ -249,6 +264,8 @@ export function initFunControls(options: FunControlsInit = {}) {
       }
       notifyAudio();
     },
-    container,
+    appendControl(element: HTMLElement) {
+      container.appendChild(element);
+    },
   };
 }
