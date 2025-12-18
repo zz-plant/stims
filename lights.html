@@ -6,6 +6,52 @@
     <title>Audio-Responsive Visualizer</title>
     <link rel="stylesheet" href="assets/css/base.css" />
     <link rel="stylesheet" href="assets/css/index.css" />
+    <style>
+      body,
+      html {
+        padding: 0;
+        background-color: #111;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      #controls {
+        position: absolute;
+        top: 20px;
+        display: flex;
+        gap: 10px;
+        z-index: 10;
+      }
+
+      select,
+      button {
+        padding: 10px;
+        background-color: #333;
+        color: white;
+        border: none;
+        border-radius: 5px;
+      }
+
+      select:hover,
+      button:hover {
+        background-color: #555;
+      }
+
+      #error-message {
+        color: red;
+        font-size: 14px;
+        margin-top: 10px;
+        display: none;
+      }
+
+      #toy-canvas {
+        display: block;
+      }
+    </style>
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
