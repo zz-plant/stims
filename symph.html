@@ -35,6 +35,7 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { initHints } from './assets/ui/hints.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const ctx2d = canvas.getContext('2d');
@@ -46,6 +47,15 @@
           errorEl.style.display = 'block';
         }
       }
+
+      initHints({
+        id: 'symph-visualizer',
+        tips: [
+          'Play music or tap to trigger sparkles.',
+          'Switch to Party Mode for bigger motion.',
+          'Drag across the canvas to nudge the spectrograph ripples.',
+        ],
+      });
 
       function hideError() {
         if (errorEl) {

@@ -25,6 +25,7 @@
         getContextFrequencyData,
       } from './assets/js/core/animation-loop.ts';
       import { getAverageFrequency } from './assets/js/utils/audio-handler.ts';
+      import { initHints } from './assets/ui/hints.ts';
 
       const canvas = document.getElementById('webglCanvas');
 
@@ -35,6 +36,15 @@
           el.style.display = 'block';
         }
       }
+
+      initHints({
+        id: 'multi-visualizer',
+        tips: [
+          'Play music or tap to trigger sparkles.',
+          'Switch to Party Mode for bigger motion.',
+          'Tilt or move your device to shove the shapes around.',
+        ],
+      });
 
       const toy = new WebToy({
         canvas,
