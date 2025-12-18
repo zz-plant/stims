@@ -232,14 +232,20 @@
       import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
       import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
       import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
+      import {
+        getFrequencyData,
+        initAudio,
+      } from './assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
       if (!ensureWebGL()) {
         return;
       }
       let scene, camera, renderer, composer, bloomPass, fxaaPass;
       let visualizerShape, particles;
-      let audioContext, audioAnalyser, dataArray;
-      let isAudioInitialized = false;
+      let dataArray = new Uint8Array(0);
+      let analyser = null;
+      let sampleRate = 44100;
       let lastTap = 0;
       let zoomDistance = 5;
       const shapes = ['sphere', 'cube', 'torus', 'dodecahedron'];
@@ -482,37 +488,19 @@
         createShape();
       }
 
-      // Setup Audio Processing
-      async function setupAudio() {
-        try {
-          audioContext = new (window.AudioContext ||
-            window.webkitAudioContext)();
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-          });
-          const source = audioContext.createMediaStreamSource(stream);
-          audioAnalyser = audioContext.createAnalyser();
-          audioAnalyser.fftSize = 1024;
-          source.connect(audioAnalyser);
-          dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
-          isAudioInitialized = true;
-          hideError();
-        } catch (err) {
-          console.error('Error accessing microphone:', err);
-          showError(
-            'Microphone access is required for the visualizer to work.'
-          );
-        }
-      }
-
       // Animation Loop
-      function animate() {
+      function animate(ctx) {
         const delta = clock.getDelta();
         const elapsed = clock.getElapsedTime();
 
-        if (isAudioInitialized) {
-          audioAnalyser.getByteFrequencyData(dataArray);
+        if (ctx.analyser) {
+          analyser = ctx.analyser;
+          sampleRate = ctx.analyser.context.sampleRate;
+          dataArray = getFrequencyData(ctx.analyser);
           updateVisualizer(elapsed);
+        } else {
+          analyser = null;
+          dataArray = new Uint8Array(0);
         }
 
         // Update Dynamic Background
@@ -578,8 +566,8 @@
 
       // Get Frequencies within a Range
       function getFrequencyRange(low, high) {
-        if (!audioAnalyser) return [];
-        const nyquist = audioContext.sampleRate / 2;
+        if (!analyser || dataArray.length === 0) return [];
+        const nyquist = sampleRate / 2;
         const lowIndex = Math.floor((low / nyquist) * dataArray.length);
         const highIndex = Math.floor((high / nyquist) * dataArray.length);
         return dataArray.slice(lowIndex, highIndex);
@@ -711,9 +699,36 @@
       startButton.addEventListener('click', async () => {
         startButton.style.display = 'none';
         init();
-        await setupAudio();
-        loadingOverlay.style.display = 'none';
-        renderer.setAnimationLoop(animate);
+
+        const toy = {
+          renderer,
+          analyser: null,
+          audioCleanup: null,
+          async initAudio(options = {}) {
+            const audio = await initAudio(options);
+            this.analyser = audio.analyser;
+            this.audioCleanup = audio.cleanup;
+            return audio;
+          },
+          dispose() {
+            this.audioCleanup?.();
+          },
+        };
+
+        try {
+          await startToyAudio(toy, animate, {
+            fftSize: 1024,
+            fallbackToSynthetic: true,
+          });
+          hideError();
+          loadingOverlay.style.display = 'none';
+        } catch (err) {
+          console.error('Error accessing microphone:', err);
+          showError(
+            'Microphone access is required for the visualizer to work.'
+          );
+          startButton.style.display = 'block';
+        }
       });
 
       // Settings Panel Initialization
