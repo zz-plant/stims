@@ -1,38 +1,35 @@
 # Toy and Visualizer Script Index
 
-This index lists which JavaScript or TypeScript entry points power each toy/visualizer. It is organized by how the experiences are loaded so contributors can quickly find the right source files.
+This index maps each toy slug to the module that powers it and how the experience loads inside `toy.html`. Use it to find the right entry point quickly when updating assets or debugging loading behavior.
 
 ## Query-driven toys (`toy.html`)
-`toy.html` pulls the toy slug from the `toy` query parameter and uses `assets/js/toyMain.js` and `assets/js/loader.js` to load the matching module from `assets/js/toys-data.js`.
+`toy.html` reads the `toy` query parameter, looks up the matching entry in `assets/js/toys-data.js`, and imports the corresponding module through `assets/js/toyMain.js` and `assets/js/loader.js`. Many modules render directly; others use the `startIframeToy` helper to embed an existing HTML page inside the library shell.
 
-| Slug | Entry module (TypeScript) | How to load |
+| Slug | Entry module | How it loads |
 | --- | --- | --- |
-| `3dtoy` | `assets/js/toys/three-d-toy.ts` | `toy.html?toy=3dtoy` |
-| `aurora-painter` | `assets/js/toys/aurora-painter.ts` | `toy.html?toy=aurora-painter` |
-| `cube-wave` | `assets/js/toys/cube-wave.ts` | `toy.html?toy=cube-wave` |
-| `bubble-harmonics` | `assets/js/toys/bubble-harmonics.ts` | `toy.html?toy=bubble-harmonics` |
-| `cosmic-particles` | `assets/js/toys/cosmic-particles.ts` | `toy.html?toy=cosmic-particles` |
-| `spiral-burst` | `assets/js/toys/spiral-burst.ts` | `toy.html?toy=spiral-burst` |
-| `rainbow-tunnel` | `assets/js/toys/rainbow-tunnel.ts` | `toy.html?toy=rainbow-tunnel` |
-| `star-field` | `assets/js/toys/star-field.ts` | `toy.html?toy=star-field` |
-| `fractal-kite-garden` | `assets/js/toys/fractal-kite-garden.ts` | `toy.html?toy=fractal-kite-garden` |
+| `3dtoy` | `assets/js/toys/three-d-toy.ts` | Direct module; load with `toy.html?toy=3dtoy`. |
+| `aurora-painter` | `assets/js/toys/aurora-painter.ts` | Direct module; load with `toy.html?toy=aurora-painter`. |
+| `brand` | `assets/js/toys/brand.ts` | Iframe wrapper around `brand.html`. |
+| `clay` | `assets/js/toys/clay.ts` | Iframe wrapper around `clay.html`. |
+| `defrag` | `assets/js/toys/defrag.ts` | Iframe wrapper around `defrag.html`. |
+| `evol` | `assets/js/toys/evol.ts` | Iframe wrapper around `evol.html`. |
+| `geom` | `assets/js/toys/geom.ts` | Iframe wrapper around `geom.html`. |
+| `holy` | `assets/js/toys/holy.ts` | Iframe wrapper around `holy.html`. |
+| `multi` | `assets/js/toys/multi.ts` | Iframe wrapper around `multi.html`; requires WebGPU support. |
+| `seary` | `assets/js/toys/seary.ts` | Iframe wrapper around `seary.html`. |
+| `sgpat` | `assets/js/toys/sgpat.ts` | Direct module; load with `toy.html?toy=sgpat`. |
+| `legible` | `assets/js/toys/legible.ts` | Direct module; load with `toy.html?toy=legible`. |
+| `svgtest` | `assets/js/toys/svgtest.ts` | Iframe wrapper around `svgtest.html`. |
+| `symph` | `assets/js/toys/symph.ts` | Iframe wrapper around `symph.html`. |
+| `words` | `assets/js/toys/words.ts` | Iframe wrapper around `words.html`. |
+| `cube-wave` | `assets/js/toys/cube-wave.ts` | Direct module; load with `toy.html?toy=cube-wave`. |
+| `bubble-harmonics` | `assets/js/toys/bubble-harmonics.ts` | Direct module; load with `toy.html?toy=bubble-harmonics`. |
+| `cosmic-particles` | `assets/js/toys/cosmic-particles.ts` | Direct module; load with `toy.html?toy=cosmic-particles`. |
+| `lights` | `assets/js/toys/lights.ts` | Iframe wrapper around `lights.html`. |
+| `spiral-burst` | `assets/js/toys/spiral-burst.ts` | Direct module; load with `toy.html?toy=spiral-burst`. |
+| `rainbow-tunnel` | `assets/js/toys/rainbow-tunnel.ts` | Direct module; load with `toy.html?toy=rainbow-tunnel`. |
+| `star-field` | `assets/js/toys/star-field.ts` | Direct module; load with `toy.html?toy=star-field`. |
+| `fractal-kite-garden` | `assets/js/toys/fractal-kite-garden.ts` | Direct module; load with `toy.html?toy=fractal-kite-garden`. |
 
-## Standalone HTML visualizers
-These pages embed their own module scripts. Use the imports below to find the main logic.
-
-- **brand.html** → imports `assets/js/core/web-toy.ts`, `assets/js/core/animation-loop.ts`, `assets/js/utils/error-display.ts`, `assets/js/utils/start-audio.ts`, `assets/ui/hints.ts`, `assets/ui/fun-controls.ts`, and `assets/brand/fun-adapter.ts`.
-- **clay.html** → imports `assets/js/utils/webgl-check.ts`.
-- **defrag.html** → imports `assets/js/utils/audio-handler.ts` and `assets/js/utils/error-display.ts`.
-- **evol.html** → imports `assets/js/utils/audio-handler.ts` and `assets/js/utils/canvas-resize.ts`.
-- **geom.html** → uses inline canvas and Web Audio logic only (no repo modules).
-- **holy.html** → imports `assets/js/utils/webgl-check.ts` alongside Three.js helpers.
-- **index.html** → uses `assets/js/main.js` to render the toy library.
-- **legible.html** → contains only inline logic plus `particles.js` from a CDN.
-- **lights.html** → loads `assets/js/app.js` as the entry module.
-- **multi.html** → imports `assets/js/core/web-toy.ts`, `assets/js/core/animation-loop.ts`, `assets/js/utils/peak-detector.ts`, `assets/js/utils/audio-handler.ts`, `assets/js/utils/error-display.ts`, `assets/js/utils/start-audio.ts`, `assets/ui/hints.ts`, `assets/ui/fun-controls.ts`, and `assets/multi/fun-adapter.ts`.
-- **seary.html** → imports `assets/js/utils/audio-handler.ts`, `assets/js/utils/peak-detector.ts`, `assets/js/utils/error-display.ts`, `assets/ui/hints.ts`, `assets/ui/fun-controls.ts`, `assets/seary/fun-adapter.ts`, and `assets/js/utils/canvas-resize.ts`.
-- **sgpat.html** → executes `assets/js/toys/sgpat.ts` directly.
-- **svgtest.html** → imports `assets/js/utils/webgl-check.ts` and `assets/js/utils/audio-handler.ts` alongside Three.js.
-- **symph.html** → imports `assets/js/utils/audio-handler.ts`, `assets/js/utils/canvas-resize.ts`, `assets/js/utils/error-display.ts`, `assets/ui/hints.ts`, `assets/ui/fun-controls.ts`, and `assets/symph/fun-adapter.ts`.
-- **toy.html** → uses `assets/js/toyMain.js`, which delegates to the loader to import modules listed above.
-- **words.html** → imports `assets/js/utils/audio-handler.ts` and `assets/js/utils/error-display.ts` (alongside `wordcloud2` from CDN).
+## Standalone HTML entry points
+All iframe-backed toys can still be visited directly via their HTML pages (for example, `brand.html` or `holy.html`). The library view now embeds those same pages for consistency with query-loaded modules.
