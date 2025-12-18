@@ -76,7 +76,7 @@ export default [
     description: 'Shapes and lights move with both sound and device motion.',
     module: 'assets/js/toys/multi.ts',
     type: 'module',
-    requiresWebGPU: true,
+    requiresWebGPU: false,
   },
   {
     slug: 'seary',
