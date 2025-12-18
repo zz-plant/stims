@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Audio-Responsive Visualizer</title>
     <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/index.css" />
     <style>
       body,
       html {
@@ -55,21 +56,38 @@
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <!-- Controls for light type and starting audio -->
-    <div id="controls">
-      <select id="light-type">
-        <option value="PointLight">Point Light</option>
-        <option value="DirectionalLight">Directional Light</option>
-        <option value="SpotLight">Spot Light</option>
-        <option value="HemisphereLight">Hemisphere Light</option>
-      </select>
-      <button id="start-audio-btn">Start Audio & Visualization</button>
+    <div class="control-panel">
+      <div class="control-panel__heading">Lighting controls</div>
+      <p class="control-panel__description">Choose a light and start the visualization.</p>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Light type</span>
+          <small>Update the scene illumination.</small>
+        </div>
+        <select id="light-type">
+          <option value="PointLight">Point Light</option>
+          <option value="DirectionalLight">Directional Light</option>
+          <option value="SpotLight">Spot Light</option>
+          <option value="HemisphereLight">Hemisphere Light</option>
+        </select>
+      </div>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Audio</span>
+          <small>Start microphone input and animation.</small>
+        </div>
+        <button id="start-audio-btn" class="cta-button primary">Start Audio &amp; Visualization</button>
+      </div>
+      <p
+        id="error-message"
+        class="control-panel__description"
+        aria-live="polite"
+        hidden
+      ></p>
     </div>
 
     <!-- WebGL Canvas -->
     <canvas id="toy-canvas"></canvas>
-
-    <!-- Error message for microphone access -->
-    <div id="error-message"></div>
 
     <script type="module" src="assets/js/app.js"></script>
   </body>
