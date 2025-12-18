@@ -63,6 +63,11 @@ bun test tests/filename.test.js
 - Three.js rendering defaults to `window.devicePixelRatio`; pass `maxPixelRatio` to `initRenderer` to cap DPI when targeting lower-powered devices.
 - Profile heavy scenes with the browser performance tools. Reduce geometry complexity, particle counts, or shader work when frame times exceed 16ms.
 - Debounce expensive resize handlers and cache allocations in animation loops.
+- A shared floating settings panel now exposes quality presets used across toys. Defaults:
+  - **Battery saver**: `maxPixelRatio: 1.25`, `renderScale: 0.9`, ~65% particle counts.
+  - **Balanced (default)**: `maxPixelRatio: 2`, `renderScale: 1`, 100% particle counts.
+  - **Hi-fi visuals**: `maxPixelRatio: 2.5`, `renderScale: 1`, ~135% particle counts.
+  These settings persist between toys so you can cap GPU load once per session. Updating a preset calls `toy.updateRendererSettings()` to apply the new pixel ratio without a page reload.
 
 ## Testing Expectations
 
