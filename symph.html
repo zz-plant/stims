@@ -35,6 +35,11 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import {
+        initFunControls,
+        FUN_PALETTES,
+      } from './assets/ui/fun-controls.ts';
+      import { createSymphAdapter } from './assets/symph/fun-adapter.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const ctx2d = canvas.getContext('2d');
@@ -194,6 +199,33 @@
       let touchPoint = [0.0, 0.0];
       let analyser;
 
+      function paletteToOffset(palette) {
+        const hex = FUN_PALETTES[palette][2];
+        const num = parseInt(hex.replace('#', ''), 16);
+        return [
+          ((num >> 16) & 255) / 255,
+          ((num >> 8) & 255) / 255,
+          (num & 255) / 255,
+        ];
+      }
+
+      const symphAdapter = createSymphAdapter({
+        gl,
+        colorOffsetLocation: colorOffsetUniformLocation,
+      });
+      const funControls = initFunControls({
+        onPaletteChange: (palette) => {
+          symphAdapter.applyPalette(palette);
+          colorOffset = paletteToOffset(palette);
+        },
+        onMotionChange: symphAdapter.setMotion,
+        onAudioReactiveChange: symphAdapter.setAudioReactive,
+      });
+      colorOffset = paletteToOffset(funControls.state.palette);
+      symphAdapter.applyPalette(funControls.state.palette);
+      symphAdapter.setMotion(funControls.state.motion, funControls.state.mode);
+      symphAdapter.setAudioReactive(funControls.state.audioReactive);
+
       async function setupAudio() {
         try {
           const { analyser: a } = await initAudio();
@@ -205,6 +237,7 @@
             'Microphone access is required for the visualization to work. Please allow microphone access.'
           );
           console.error('Error capturing audio: ', err);
+          funControls.setAudioAvailable(false);
         }
       }
 
@@ -214,7 +247,7 @@
           const dataArray = getFrequencyData(analyser);
           const average =
             dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-          audioData = average / 128.0;
+          audioData = symphAdapter.transformAudioData(average / 128.0);
           updateSpectrograph(dataArray);
         }
       }

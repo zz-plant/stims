@@ -25,6 +25,8 @@
         getContextFrequencyData,
       } from './assets/js/core/animation-loop.ts';
       import { getAverageFrequency } from './assets/js/utils/audio-handler.ts';
+      import { initFunControls } from './assets/ui/fun-controls.ts';
+      import { createMultiAdapter } from './assets/multi/fun-adapter.ts';
 
       const canvas = document.getElementById('webglCanvas');
 
@@ -118,6 +120,20 @@
         createRandomShape();
       }
 
+      const multiAdapter = createMultiAdapter({
+        torusMaterial: torusKnot.material as THREE.MeshStandardMaterial,
+        particlesMaterial: particles.material as THREE.PointsMaterial,
+        shapes,
+        pointLight,
+      });
+
+      const funControls = initFunControls({
+        onPaletteChange: multiAdapter.applyPalette,
+        onMotionChange: multiAdapter.setMotion,
+        onAudioReactiveChange: multiAdapter.setAudioReactive,
+      });
+      multiAdapter.applyPalette(funControls.state.palette);
+
       window.addEventListener('deviceorientation', (event) => {
         toy.camera.rotation.x = (event.beta / 180) * Math.PI;
         toy.camera.rotation.y = (event.gamma / 90) * Math.PI;
@@ -126,18 +142,19 @@
       function animate(ctx) {
         const dataArray = getContextFrequencyData(ctx);
         const avgFrequency = getAverageFrequency(dataArray);
+        const motionValues = multiAdapter.getMotionValues(avgFrequency);
 
-        torusKnot.rotation.x += avgFrequency / 5000;
-        torusKnot.rotation.y += avgFrequency / 5000;
+        torusKnot.rotation.x += motionValues.rotationStep;
+        torusKnot.rotation.y += motionValues.rotationStep;
 
-        pointLight.intensity = avgFrequency / 100;
+        pointLight.intensity = motionValues.lightIntensity;
 
-        particles.rotation.y += 0.001 + avgFrequency / 100000;
+        particles.rotation.y += motionValues.particleSpin;
 
         shapes.forEach((shape) => {
           shape.rotation.x += 0.01;
           shape.rotation.y += 0.01;
-          shape.position.z += 0.5;
+          shape.position.z += motionValues.shapeAdvance;
 
           if (shape.position.z > 10) {
             shape.position.z = -500;
@@ -149,6 +166,7 @@
 
       startAudioLoop(toy, animate).catch((err) => {
         console.error('The following error occurred: ' + err);
+        funControls.setAudioAvailable(false);
         displayError(
           'Microphone access is required for the visualization to work. Please allow microphone access.'
         );

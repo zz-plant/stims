@@ -33,6 +33,8 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { initFunControls } from './assets/ui/fun-controls.ts';
+      import { createSearyAdapter } from './assets/seary/fun-adapter.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
       function displayError(message) {
@@ -95,6 +97,9 @@
             uniform vec2 u_touch0;
             uniform vec2 u_touch1;
             uniform vec3 u_orientation;
+            uniform vec3 u_paletteTint;
+            uniform float u_motionScale;
+            uniform float u_audioMix;
             varying vec2 v_uv;
             
             float noise(vec2 p) {
@@ -112,23 +117,24 @@
                     0.5 + 0.5 * cos(u_time + angle * 2.0 + u_mid_freq * 3.0),
                     0.5 + 0.5 * sin(u_time * 0.5 + angle * 3.0 + u_high_freq * 7.0)
                 );
+                baseColor = mix(baseColor, baseColor * u_paletteTint, 0.45);
 
                 // Low frequency pulsing waves
-                float lowWave = 0.5 + 0.5 * sin(15.0 * dist - u_time + angle * 3.0) * (u_low_freq + 0.3);
+                float lowWave = 0.5 + 0.5 * sin(15.0 * dist - u_time + angle * 3.0) * (u_low_freq + 0.3) * u_motionScale;
                 vec3 lowColor = vec3(lowWave * 0.5, lowWave * 0.3, lowWave);
 
                 // Mid frequency oscillations with noise distortion
-                float midOscillation = 0.5 + 0.5 * cos(20.0 * dist - u_time * 1.5 + angle * 4.0) * (u_mid_freq + 0.4);
-                midOscillation += noise(uv * 10.0) * 0.2 * u_mid_freq;
+                float midOscillation = 0.5 + 0.5 * cos(20.0 * dist - u_time * 1.5 + angle * 4.0) * (u_mid_freq + 0.4) * u_motionScale;
+                midOscillation += noise(uv * 10.0) * 0.2 * u_mid_freq * u_motionScale;
                 vec3 midColor = vec3(midOscillation * 0.3, midOscillation, midOscillation * 0.6);
 
                 // High frequency sparks with strobe effect
                 float highSpark = 0.5 + 0.5 * sin(25.0 * dist - u_time * 2.0 + angle * 6.0) * (u_high_freq + 0.5);
-                highSpark += step(0.9, fract(sin(u_time * 10.0) * 43758.5453)) * 0.3 * u_high_freq;
+                highSpark += step(0.9, fract(sin(u_time * 10.0) * 43758.5453)) * 0.3 * u_high_freq * u_motionScale;
                 vec3 highColor = vec3(highSpark, highSpark * 0.5, highSpark * 0.2);
 
                 // Blend low, mid, and high colors together for synesthetic experience
-                vec3 color = baseColor + lowColor + midColor + highColor;
+                vec3 color = (baseColor + lowColor + midColor + highColor) * mix(0.5 + 0.35 * u_motionScale, 1.0, u_audioMix);
 
                 // Add ripple effects from multi-touch interactions
                 float touchEffect0 = 0.0;
@@ -198,6 +204,29 @@
         program,
         'u_orientation'
       );
+      const paletteTintLocation = gl.getUniformLocation(
+        program,
+        'u_paletteTint'
+      );
+      const motionScaleLocation = gl.getUniformLocation(
+        program,
+        'u_motionScale'
+      );
+      const audioMixLocation = gl.getUniformLocation(program, 'u_audioMix');
+
+      const searyAdapter = createSearyAdapter(gl, {
+        paletteTint: paletteTintLocation,
+        motionScale: motionScaleLocation,
+        audioMix: audioMixLocation,
+      });
+      const funControls = initFunControls({
+        onPaletteChange: searyAdapter.applyPalette,
+        onMotionChange: searyAdapter.setMotion,
+        onAudioReactiveChange: searyAdapter.setAudioReactive,
+      });
+      searyAdapter.applyPalette(funControls.state.palette);
+      searyAdapter.setMotion(funControls.state.motion, funControls.state.mode);
+      searyAdapter.setAudioReactive(funControls.state.audioReactive);
 
       // Audio setup for beat detection and frequency analysis
       let audioContext, analyser, source;
@@ -227,6 +256,7 @@
                 })
                 .catch((err) => {
                   console.error('Error capturing audio: ', err);
+                  funControls.setAudioAvailable(false);
                   displayError(
                     'Microphone access is required for the visualization to work. Please allow microphone access.'
                   );
@@ -352,17 +382,23 @@
                 (bufferLength / 3) /
                 256.0;
 
+              const scaledFrequencies = searyAdapter.scaleFrequencies(
+                lowFreq,
+                midFreq,
+                highFreq
+              );
+
               // Beat detection based on low frequency threshold
-              if (lowFreq > 0.5) {
+              if (scaledFrequencies.low > 0.5) {
                 canvas.style.transform = 'scale(1.1)';
                 setTimeout(() => {
                   canvas.style.transform = 'scale(1)';
                 }, 100);
               }
 
-              gl.uniform1f(lowFreqLocation, lowFreq);
-              gl.uniform1f(midFreqLocation, midFreq);
-              gl.uniform1f(highFreqLocation, highFreq);
+              gl.uniform1f(lowFreqLocation, scaledFrequencies.low);
+              gl.uniform1f(midFreqLocation, scaledFrequencies.mid);
+              gl.uniform1f(highFreqLocation, scaledFrequencies.high);
               gl.uniform3f(
                 orientationLocation,
                 orientation.alpha / 360.0,
@@ -373,8 +409,17 @@
               gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
               gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
 
-              vibrateBasedOnAudio(lowFreq, midFreq, highFreq);
-              vibrateBasedOnVisuals(lowFreq, midFreq, highFreq, Math.random());
+              vibrateBasedOnAudio(
+                scaledFrequencies.low,
+                scaledFrequencies.mid,
+                scaledFrequencies.high
+              );
+              vibrateBasedOnVisuals(
+                scaledFrequencies.low,
+                scaledFrequencies.mid,
+                scaledFrequencies.high,
+                Math.random()
+              );
 
               requestAnimationFrame(updateAudioData);
             }
@@ -382,6 +427,7 @@
           })
           .catch((err) => {
             console.error('Error accessing microphone: ' + err);
+            funControls.setAudioAvailable(false);
           });
       }
 
