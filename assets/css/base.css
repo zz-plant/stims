@@ -1,8 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 html,
 body {
   margin: 0;
   overflow: hidden;
   height: 100%;
+  font-family: 'Space Grotesk', 'Inter', 'Segoe UI', system-ui, -apple-system,
+    sans-serif;
+  color: #f5f5f5;
+  line-height: 1.6;
 }
 canvas {
   display: block;
