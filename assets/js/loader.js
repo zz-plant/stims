@@ -1,5 +1,5 @@
 import toysData from './toys-data.js';
-import { ensureWebGL } from './utils/webgl-check.ts';
+import { ensureWebGL } from './utils/webgl-check.js';
 
 const TOY_QUERY_PARAM = 'toy';
 let manifestPromise;
