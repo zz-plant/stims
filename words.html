@@ -74,6 +74,55 @@
         justify-content: center;
       }
 
+      .manual-panel {
+        background: rgba(0, 0, 0, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 12px 14px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(12px);
+      }
+
+      .manual-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .manual-input {
+        min-width: 240px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        outline: none;
+        font-size: 0.95rem;
+      }
+
+      .pill-button {
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 999px;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .pill-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      }
+
+      .pill-button.secondary {
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.12);
+      }
+
       .control-button {
         background: rgba(255, 255, 255, 0.2);
         padding: 20px;
@@ -179,9 +228,29 @@
           />
         </button>
       </div>
-      <p class="control-hint">
-        Unmute to sync the visuals with your microphone. Enable speech to drop your spoken words into the cloud—if your browser supports it.
+      <p class="control-hint" id="status-message">
+        Unmute to sync the visuals with your microphone. Speech controls appear when your browser supports them.
       </p>
+      <div class="manual-panel" id="manual-panel">
+        <div class="manual-row">
+          <label class="visually-hidden" for="manual-words">Add words manually</label>
+          <input
+            id="manual-words"
+            class="manual-input"
+            name="manual-words"
+            type="text"
+            autocomplete="off"
+            placeholder="Type words, separate with commas or spaces"
+          />
+          <button id="add-words-button" class="pill-button" type="button">Add words</button>
+          <button id="demo-words-button" class="pill-button secondary" type="button">
+            Add sample words
+          </button>
+        </div>
+        <p class="control-hint" style="margin-top: 8px; margin-bottom: 0">
+          Press Enter to submit. Tap "Add sample words" or press Space to pulse the cloud even without a mic.
+        </p>
+      </div>
     </div>
 
     <div id="word-cloud-container">
@@ -200,6 +269,11 @@
       );
       const unmuteIcon = document.getElementById('unmute-icon');
       const toggleSpeechIcon = document.getElementById('toggle-speech-icon');
+      const manualPanel = document.getElementById('manual-panel');
+      const manualInput = document.getElementById('manual-words');
+      const addWordsButton = document.getElementById('add-words-button');
+      const demoWordsButton = document.getElementById('demo-words-button');
+      const statusMessage = document.getElementById('status-message');
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
       const speechSupported = Boolean(SpeechRecognition);
@@ -218,6 +292,38 @@
         'wave',
         'rhythm',
       ];
+
+      const demoWordSets = [
+        ['vibe', 'cosmos', 'pixel', 'wisp', 'lumen', 'glide'],
+        ['glitter', 'orbital', 'sonic', 'river', 'spark'],
+        ['neon', 'drift', 'hush', 'glow', 'warp', 'pulse'],
+      ];
+
+      function setStatus(text) {
+        if (statusMessage) {
+          statusMessage.textContent = text;
+        }
+      }
+
+      function addWordsToCloud(words) {
+        if (!Array.isArray(words) || !words.length) return;
+
+        wordsArray = wordsArray.concat(words);
+
+        if (wordsArray.length > 1000) {
+          wordsArray = wordsArray.slice(wordsArray.length - 1000);
+        }
+
+        updateWordCloud(wordsArray);
+      }
+
+      function normalizeInputWords(text) {
+        return text
+          .split(/[,\n]+|\s{2,}/)
+          .flatMap((chunk) => chunk.trim().split(/\s+/))
+          .map((word) => word.trim())
+          .filter(Boolean);
+      }
 
       class AudioToy {
         constructor() {
@@ -284,6 +390,8 @@
       }
 
       function updateSpeechIcon() {
+        if (!toggleSpeechIcon) return;
+
         toggleSpeechIcon.src = isAddingWords
           ? './assets/ui/speech-on.svg'
           : './assets/ui/speech-off.svg';
@@ -291,16 +399,22 @@
 
       function disableSpeechToggle(message) {
         isAddingWords = false;
-        toggleSpeechButton.classList.remove('active');
-        toggleSpeechButton.disabled = true;
-        toggleSpeechButton.title = message;
+
+        if (toggleSpeechButton) {
+          toggleSpeechButton.classList.remove('active');
+          toggleSpeechButton.disabled = true;
+          toggleSpeechButton.title = message;
+        }
+
         updateSpeechIcon();
-        showError('error-message', message);
+        setStatus(message);
       }
 
       function initSpeechRecognition() {
         if (!speechSupported) {
           disableSpeechToggle(speechUnavailableMessage);
+          toggleSpeechButton?.remove();
+          updateSpeechIcon();
           return;
         }
 
@@ -340,6 +454,26 @@
         }
       }
 
+      function handleManualWordSubmit() {
+        const manualText = manualInput?.value ?? '';
+        const words = normalizeInputWords(manualText);
+
+        if (!words.length) return;
+
+        addWordsToCloud(words);
+
+        if (manualInput) {
+          manualInput.value = '';
+        }
+      }
+
+      function addDemoWords() {
+        const sample = demoWordSets[Math.floor(Math.random() * demoWordSets.length)];
+        addWordsToCloud(sample);
+        updateWordCloudWithVisualizer(90);
+        createParticleEffects(90);
+      }
+
       // Unmute button logic for music visualizer activation
       unmuteButton.addEventListener('click', () => {
         if (!isUnmuted) {
@@ -353,6 +487,26 @@
           unmuteButton.classList.remove('active');
           updateUnmuteIcon();
           deactivateVisualizer();
+        }
+      });
+
+      addWordsButton?.addEventListener('click', handleManualWordSubmit);
+      demoWordsButton?.addEventListener('click', addDemoWords);
+
+      manualInput?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          handleManualWordSubmit();
+        }
+      });
+
+      window.addEventListener('keydown', (event) => {
+        const target = event.target;
+        const isTypingTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+
+        if (event.code === 'Space' && !isTypingTarget) {
+          event.preventDefault();
+          addDemoWords();
         }
       });
 
@@ -431,7 +585,7 @@
       }
 
       // Toggle speech button logic for speech detection
-      toggleSpeechButton.addEventListener('click', () => {
+      toggleSpeechButton?.addEventListener('click', () => {
         if (!recognition) {
           disableSpeechToggle(speechUnavailableMessage);
           return;
@@ -442,6 +596,7 @@
           toggleSpeechButton.classList.add('active');
           updateSpeechIcon();
           deactivateVisualizer(); // Ensure visualizer is turned off before starting speech recognition
+          setStatus('Listening for words…');
           try {
             recognition.start();
           } catch (error) {
@@ -455,6 +610,7 @@
           toggleSpeechButton.classList.remove('active');
           updateSpeechIcon();
           recognition.stop();
+          setStatus('Speech paused. Keep typing or add sample words to grow the cloud.');
         }
       });
 
@@ -469,18 +625,17 @@
 
       initSpeechRecognition();
 
+      if (speechSupported) {
+        setStatus('Unmute to sync with your mic. Enable speech to sprinkle your words into the cloud.');
+      } else {
+        setStatus('Speech recognition is unavailable. Type words or use sample words to keep playing.');
+      }
+
       if (recognition) {
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
           const newWords = transcript.split(' ');
-
-          wordsArray = wordsArray.concat(newWords);
-
-          if (wordsArray.length > 1000) {
-            wordsArray = wordsArray.slice(wordsArray.length - 1000);
-          }
-
-          updateWordCloud(wordsArray);
+          addWordsToCloud(newWords);
         };
 
         recognition.onspeechend = () => {
@@ -498,8 +653,11 @@
             disableSpeechToggle(
               'Speech recognition permission was denied. You can keep using the default word cloud.'
             );
+            setStatus('Speech recognition permission was denied. Type words or use sample words instead.');
             return;
           }
+
+          setStatus('Speech recognition hiccuped. Keep typing or try toggling speech again.');
 
           if (isAddingWords) {
             recognition.start();
