@@ -58,6 +58,94 @@ function clearActiveToyContainer() {
   }
 }
 
+function createStatusElement(container, { title, message, type }) {
+  if (!container) return null;
+
+  const existing = container.querySelector('.active-toy-status');
+  if (existing) {
+    existing.remove();
+  }
+
+  const status = document.createElement('div');
+  status.className = `active-toy-status ${type === 'error' ? 'is-error' : 'is-loading'}`;
+
+  const glow = document.createElement('div');
+  glow.className = 'active-toy-status__glow';
+  status.appendChild(glow);
+
+  const content = document.createElement('div');
+  content.className = 'active-toy-status__content';
+  status.appendChild(content);
+
+  if (type === 'loading') {
+    const spinner = document.createElement('div');
+    spinner.className = 'toy-loading-spinner';
+    content.appendChild(spinner);
+  }
+
+  const heading = document.createElement('h2');
+  heading.textContent = title;
+  content.appendChild(heading);
+
+  const body = document.createElement('p');
+  body.textContent = message;
+  content.appendChild(body);
+
+  container.appendChild(status);
+  return status;
+}
+
+function showLoadingIndicator(container, toyTitle) {
+  return createStatusElement(container, {
+    type: 'loading',
+    title: 'Preparing toy...',
+    message: toyTitle ? `${toyTitle} is loading.` : 'Loading toy...'
+  });
+}
+
+function removeStatusElement(container) {
+  const status = container?.querySelector('.active-toy-status');
+  if (status) {
+    status.remove();
+  }
+}
+
+function showImportError(container, toy) {
+  clearActiveToyContainer();
+
+  const status = createStatusElement(container, {
+    type: 'error',
+    title: 'Unable to load this toy',
+    message:
+      toy?.title
+        ? `${toy.title} hit a snag while loading. Try again or return to the library.`
+        : 'Something went wrong while loading this toy. Try again or return to the library.'
+  });
+
+  if (!status) return;
+
+  const actions = document.createElement('div');
+  actions.className = 'active-toy-status__actions';
+
+  const retry = document.createElement('button');
+  retry.className = 'cta-button primary';
+  retry.type = 'button';
+  retry.textContent = 'Back to library';
+  retry.addEventListener('click', () => {
+    disposeActiveToy();
+    const win = getWindow();
+    if (win?.history) {
+      const url = new URL(win.location.href);
+      url.searchParams.delete(TOY_QUERY_PARAM);
+      win.history.pushState({}, '', url);
+    }
+    showLibraryView();
+  });
+
+  actions.appendChild(retry);
+  status.querySelector('.active-toy-status__content')?.appendChild(actions);
+}
+
 function showLibraryView() {
   showElement(getToyList());
   hideElement(findActiveToyContainer());
@@ -65,7 +153,44 @@ function showLibraryView() {
 
 function showActiveToyView() {
   hideElement(getToyList());
-  showElement(ensureActiveToyContainer());
+  const container = ensureActiveToyContainer();
+  ensureBackToLibraryControl(container);
+  showElement(container);
+}
+
+function updateHistoryToLibraryView() {
+  const win = getWindow();
+  if (!win?.history) return;
+
+  const url = new URL(win.location.href);
+  if (!url.searchParams.has(TOY_QUERY_PARAM)) {
+    return;
+  }
+
+  url.searchParams.delete(TOY_QUERY_PARAM);
+  win.history.pushState({}, '', url);
+}
+
+function ensureBackToLibraryControl(container) {
+  const doc = getDocument();
+  if (!doc || !container) return null;
+
+  let control = container.querySelector('[data-back-to-library]');
+  if (control) return control;
+
+  control = doc.createElement('button');
+  control.type = 'button';
+  control.className = 'home-link';
+  control.textContent = 'Back to Library';
+  control.setAttribute('data-back-to-library', 'true');
+  control.addEventListener('click', () => {
+    disposeActiveToy();
+    showLibraryView();
+    updateHistoryToLibraryView();
+  });
+
+  container.appendChild(control);
+  return control;
 }
 
 function disposeActiveToy() {
@@ -136,8 +261,23 @@ export async function loadToy(slug, { pushState = false } = {}) {
 
     disposeActiveToy();
     showActiveToyView();
+    const container = ensureActiveToyContainer();
+    showLoadingIndicator(container, toy.title || toy.slug);
+
     const moduleUrl = await resolveModulePath(toy.module);
-    await import(moduleUrl);
+    let importError = null;
+
+    await import(moduleUrl).catch((error) => {
+      importError = error;
+    });
+
+    if (importError) {
+      console.error('Error loading toy module:', importError);
+      showImportError(container, toy);
+      return;
+    }
+
+    removeStatusElement(container);
   } else {
     disposeActiveToy();
     window.location.href = toy.module;
