@@ -4,30 +4,43 @@ import { ensureWebGL } from '../utils/webgl-check.ts';
 
 export function initRenderer(
   canvas,
-  config: { antialias?: boolean; exposure?: number; maxPixelRatio?: number } = {
+  config: {
+    antialias?: boolean;
+    exposure?: number;
+    maxPixelRatio?: number;
+    alpha?: boolean;
+  } = {
     antialias: true,
     exposure: 1,
     maxPixelRatio: 2,
+    alpha: false,
   }
 ) {
   if (!ensureWebGL()) {
     return null;
   }
 
+  const {
+    antialias = true,
+    exposure = 1,
+    maxPixelRatio = 2,
+    alpha = false,
+  } = config;
+
   let renderer;
   if (navigator.gpu) {
-    renderer = new WebGPURenderer({ canvas, antialias: config.antialias });
+    renderer = new WebGPURenderer({ canvas, antialias, alpha });
   } else {
     renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: config.antialias,
+      antialias,
+      alpha,
     });
   }
-  const maxPixelRatio = config.maxPixelRatio ?? 2;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = config.exposure ?? 1;
+  renderer.toneMappingExposure = exposure;
   return renderer;
 }
