@@ -33,16 +33,22 @@ export default class WebToy {
     lightingOptions = null,
     ambientLightOptions = null,
     canvas = null,
+    host,
   } = {}) {
     if (!ensureWebGL()) {
       throw new Error('WebGL not supported');
     }
 
     this.canvas = canvas || document.createElement('canvas');
-
-    const host =
-      document.getElementById('active-toy-container') || document.body;
-    host.appendChild(this.canvas);
+    const defaultHost =
+      typeof document !== 'undefined'
+        ? document.getElementById('active-toy-container')
+        : null;
+    const resolvedHost =
+      typeof host === 'string'
+        ? document.querySelector<HTMLElement>(host)
+        : host ?? defaultHost;
+    resolvedHost?.appendChild(this.canvas);
 
     this.scene = initScene(sceneOptions);
     this.camera = initCamera(cameraOptions);
@@ -84,8 +90,6 @@ export default class WebToy {
     this.audioCleanup = null;
     this.resizeHandler = () => this.handleResize();
     window.addEventListener('resize', this.resizeHandler);
-
-    (globalThis as Record<string, unknown>).__activeWebToy = this;
   }
 
   handleResize() {
@@ -189,10 +193,6 @@ export default class WebToy {
 
     if (this.canvas?.parentElement) {
       this.canvas.parentElement.removeChild(this.canvas);
-    }
-
-    if ((globalThis as Record<string, unknown>).__activeWebToy === this) {
-      delete (globalThis as Record<string, unknown>).__activeWebToy;
     }
   }
 }

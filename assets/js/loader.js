@@ -1,5 +1,10 @@
 import toysData from './toys-data.js';
 import { ensureWebGL } from './utils/webgl-check.js';
+import {
+  disposeActiveToy as disposeManagedToy,
+  getActiveToy,
+  setActiveToy,
+} from './core/toy-manager.ts';
 
 const TOY_QUERY_PARAM = 'toy';
 let manifestPromise;
@@ -269,20 +274,10 @@ function ensureBackToLibraryControl(container) {
 }
 
 function disposeActiveToy() {
-  const activeToy = globalThis.__activeWebToy;
-
-  if (activeToy?.dispose) {
-    try {
-      activeToy.dispose();
-    } catch (error) {
-      console.error('Error disposing existing toy', error);
-    }
+  if (getActiveToy()) {
+    disposeManagedToy();
   }
-
   clearActiveToyContainer();
-
-  const globalObject = globalThis;
-  delete globalObject.__activeWebToy;
 }
 
 async function fetchManifest() {
@@ -402,8 +397,8 @@ export async function loadToy(slug, { pushState = false } = {}) {
     if (starter) {
       try {
         const active = await starter({ container, slug });
-        if (active && !globalThis.__activeWebToy) {
-          globalThis.__activeWebToy = active;
+        if (active) {
+          setActiveToy(active);
         }
       } catch (error) {
         console.error('Error starting toy module:', error);

@@ -5,7 +5,5 @@ export function start({ container } = {}) {
   placeholder.setAttribute('data-fake-toy', 'true');
   container?.appendChild(placeholder);
 
-  const active = { dispose: () => placeholder.remove() };
-  globalThis.__activeWebToy = active;
-  return active;
+  return { dispose: () => placeholder.remove() };
 }

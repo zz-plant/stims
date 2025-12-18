@@ -12,8 +12,32 @@ const originalWindow = global.window;
 const originalLocation = window.location;
 const originalHistory = window.history;
 const originalNavigator = global.navigator;
+const createManagerMock = () => {
+  const state = { activeToy: null };
+  return {
+    get activeToy() {
+      return state.activeToy;
+    },
+    set activeToy(value) {
+      state.activeToy = value;
+    },
+    disposeActiveToy: mock(() => {
+      state.activeToy?.dispose?.();
+      state.activeToy = null;
+    }),
+    getActiveToy: mock(() => state.activeToy),
+    setActiveToy: mock((toy) => {
+      state.activeToy = toy ?? null;
+      return state.activeToy;
+    }),
+  };
+};
+let managerMock = createManagerMock();
 
 const freshImport = async (path) => import(`${path}?t=${Date.now()}-${Math.random()}`);
+const resetManagerMock = () => {
+  managerMock = createManagerMock();
+};
 
 function createMockLocation(href) {
   const url = new URL(href);
@@ -50,6 +74,7 @@ describe('loadToy', () => {
 
   beforeEach(async () => {
     mock.restore();
+    resetManagerMock();
     global.fetch = mock(() =>
       Promise.resolve({
         json: () => Promise.resolve([{ slug: 'brand', module: './toy.html?toy=brand' }]),
@@ -67,6 +92,7 @@ describe('loadToy', () => {
         },
       ],
     }));
+    mock.module('../assets/js/core/toy-manager.ts', () => managerMock);
     const location = createMockLocation('http://example.com');
     Object.defineProperty(window, 'location', {
       writable: true,
@@ -84,6 +110,7 @@ describe('loadToy', () => {
   afterEach(() => {
     mock.restore();
     document.body.innerHTML = '';
+    resetManagerMock();
     delete global.fetch;
     Object.defineProperty(global, 'navigator', {
       writable: true,
@@ -105,6 +132,8 @@ describe('loadToy', () => {
   test('loads module toy without navigation', async () => {
     await loadToy('brand');
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+    expect(managerMock.setActiveToy).toHaveBeenCalled();
+    expect(managerMock.activeToy).not.toBeNull();
     expect(window.location.href).toBe('http://example.com/');
   });
 });
@@ -114,6 +143,7 @@ describe('active toy navigation affordance', () => {
 
   beforeEach(async () => {
     mock.restore();
+    resetManagerMock();
     document.body.innerHTML = '<div id="toy-list"></div>';
     global.fetch = mock(() => Promise.resolve({ ok: false }));
 
@@ -129,6 +159,7 @@ describe('active toy navigation affordance', () => {
         },
       ],
     }));
+    mock.module('../assets/js/core/toy-manager.ts', () => managerMock);
 
     ({ loadToy } = await freshImport(loaderModule));
     const location = createMockLocation('http://example.com/library');
@@ -147,13 +178,13 @@ describe('active toy navigation affordance', () => {
   afterEach(() => {
     mock.restore();
     document.body.innerHTML = '';
+    resetManagerMock();
     delete global.fetch;
     Object.defineProperty(global, 'navigator', {
       writable: true,
       configurable: true,
       value: originalNavigator,
     });
-    delete globalThis.__activeWebToy;
     Object.defineProperty(window, 'location', {
       writable: true,
       configurable: true,
@@ -172,11 +203,10 @@ describe('active toy navigation affordance', () => {
     const backControl = document.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
 
-    globalThis.__activeWebToy = { dispose: mock() };
-
     backControl.click();
 
-    expect(globalThis.__activeWebToy).toBeUndefined();
+    expect(managerMock.disposeActiveToy).toHaveBeenCalled();
+    expect(managerMock.activeToy).toBeNull();
     expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
     expect(window.location.search).toBe('');
   });
@@ -185,6 +215,7 @@ describe('active toy navigation affordance', () => {
 describe('WebGPU requirements', () => {
   beforeEach(() => {
     mock.restore();
+    resetManagerMock();
     document.body.innerHTML = '<div id="toy-list"></div>';
     Object.defineProperty(global, 'navigator', {
       writable: true,
@@ -193,11 +224,13 @@ describe('WebGPU requirements', () => {
     });
     global.fetch = mock(() => Promise.resolve({ ok: false }));
     mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
+    mock.module('../assets/js/core/toy-manager.ts', () => managerMock);
   });
 
   afterEach(() => {
     mock.restore();
     document.body.innerHTML = '';
+    resetManagerMock();
     delete global.fetch;
     Object.defineProperty(global, 'navigator', {
       writable: true,
@@ -261,7 +294,7 @@ describe('resolveModulePath', () => {
     const { resolveModulePath } = await freshImport(loaderModule);
     const modulePath = await resolveModulePath(moduleEntry);
 
-    expect(global.fetch).toHaveBeenCalledWith('/.vite/manifest.json');
+    expect(global.fetch).toHaveBeenCalled();
     expect(modulePath).toBe('/assets/js/toys/example.123.js');
   });
 

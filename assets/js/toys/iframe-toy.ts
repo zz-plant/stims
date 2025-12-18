@@ -25,17 +25,11 @@ export function startIframeToy({ container, path, title, allow }: StartOptions) 
   iframe.style.height = '100%';
   iframe.style.border = 'none';
 
-  const activeToy = {
-    dispose() {
-      iframe.remove();
-      if ((globalThis as Record<string, unknown>).__activeWebToy === activeToy) {
-        delete (globalThis as Record<string, unknown>).__activeWebToy;
-      }
-    },
-  };
-
-  (globalThis as Record<string, unknown>).__activeWebToy = activeToy;
   target.appendChild(iframe);
 
-  return activeToy;
+  return {
+    dispose() {
+      iframe.remove();
+    },
+  };
 }
