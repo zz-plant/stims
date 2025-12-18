@@ -34,9 +34,13 @@ function getWindow() {
   return typeof window === 'undefined' ? null : window;
 }
 
-function getManifestPath() {
+function getManifestPaths() {
   const baseUrl = getBaseUrl();
-  return baseUrl ? new URL('./.vite/manifest.json', baseUrl).pathname : '/.vite/manifest.json';
+
+  const resolve = (relativePath) =>
+    baseUrl ? new URL(relativePath, baseUrl).pathname : relativePath.replace(/^\.\//, '/');
+
+  return [resolve('./manifest.json'), resolve('./.vite/manifest.json')];
 }
 
 function getToyList() {
@@ -283,9 +287,18 @@ function disposeActiveToy() {
 
 async function fetchManifest() {
   if (!manifestPromise) {
-    manifestPromise = fetch(getManifestPath())
-      .then((response) => (response.ok ? response.json() : null))
-      .catch(() => null);
+    manifestPromise = (async () => {
+      for (const path of getManifestPaths()) {
+        try {
+          const response = await fetch(path);
+          if (response.ok) return response.json();
+        } catch (error) {
+          console.warn('Error fetching manifest from', path, error);
+        }
+      }
+
+      return null;
+    })();
   }
   return manifestPromise;
 }
