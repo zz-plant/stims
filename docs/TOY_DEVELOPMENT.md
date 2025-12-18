@@ -73,4 +73,5 @@ Adjust imports to match the actual helpers you use.
 - Update `README.md` and `CONTRIBUTING.md` if you introduce new scripts or global expectations.
 - Describe user-facing controls or setup steps in the associated HTML entry point if they deviate from existing patterns.
 - Include inline comments for novel shader parameters, math tricks, or input handling quirks.
+- When you wrap an existing HTML page for use in `toy.html`, expose it through `startIframeToy` (see `assets/js/toys/*`) and add the slug to `assets/js/toys-data.js` so the loader can surface it in the library view.
 
