@@ -14,7 +14,8 @@ function disposeActiveToy() {
     }
   }
 
-  delete (globalThis as Record<string, unknown>).__activeWebToy;
+  const globalObject = globalThis;
+  delete globalObject.__activeWebToy;
 }
 
 async function fetchManifest() {
