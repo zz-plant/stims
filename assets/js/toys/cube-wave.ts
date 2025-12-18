@@ -2,83 +2,334 @@ import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import type { ToyConfig } from '../core/types';
 import {
-  getContextFrequencyData,
   AnimationContext,
+  getContextFrequencyData,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { applyAudioColor, type AudioColorParams } from '../utils/color-audio';
 import { startToyAudio } from '../utils/start-audio';
-import { mapFrequencyToItems } from '../utils/audio-mapper';
-import { applyAudioColor } from '../utils/color-audio';
+
+type ShapeMode = 'cubes' | 'spheres';
+
+type GridItem = {
+  mesh: THREE.Mesh;
+  row: number;
+  col: number;
+};
+
+type GridPreset = {
+  label: string;
+  primitive: ShapeMode;
+  grid: {
+    rows: number;
+    cols: number;
+    spacingX: number;
+    spacingZ: number;
+  };
+  geometryFactory: (row: number, col: number) => THREE.BufferGeometry;
+  materialFactory: (row: number, col: number) => THREE.MeshStandardMaterial;
+  colorFor: (row: number, col: number) => AudioColorParams;
+  animation: {
+    heightMode: 'position' | 'scaleY';
+    baseHeight: number;
+    audioHeight: number;
+    wave?: {
+      amplitude: number;
+      frequency: number;
+      phase: (row: number, col: number) => number;
+    };
+    baseScale: number;
+    audioScale: number;
+    rotation: {
+      x?: number;
+      y?: number;
+      audioBoost?: number;
+    };
+  };
+  camera: {
+    position: THREE.Vector3;
+    lookAtY: number;
+    sway?: {
+      amplitude: number;
+      frequency: number;
+    };
+  };
+  extras?: (group: THREE.Group) => void;
+};
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 30, z: 80 } },
   lightingOptions: {
     type: 'DirectionalLight',
     position: { x: 0, y: 50, z: 50 },
+    intensity: 1.25,
   },
-  ambientLightOptions: {},
+  ambientLightOptions: { intensity: 0.6 },
 } as ToyConfig);
 
-const cubes: THREE.Mesh[] = [];
+const gridGroup = new THREE.Group();
+const gridItems: GridItem[] = [];
 
-function init() {
-  const { scene } = toy;
-  const gridSize = 10;
-  const spacing = 5;
-  const geometry = new THREE.BoxGeometry(4, 4, 4);
-  const material = new THREE.MeshStandardMaterial({ color: 0x66ccff });
+const presets: Record<ShapeMode, GridPreset> = {
+  cubes: {
+    label: 'Cubes',
+    primitive: 'cubes',
+    grid: { rows: 10, cols: 10, spacingX: 5, spacingZ: 5 },
+    geometryFactory: () => new THREE.BoxGeometry(4, 4, 4),
+    materialFactory: () =>
+      new THREE.MeshStandardMaterial({
+        color: 0x66ccff,
+        metalness: 0.35,
+        roughness: 0.35,
+      }),
+    colorFor: () => ({
+      baseHue: 0.58,
+      hueRange: -0.45,
+      baseSaturation: 0.8,
+      baseLuminance: 0.5,
+    }),
+    animation: {
+      heightMode: 'scaleY',
+      baseHeight: 0,
+      audioHeight: 0,
+      baseScale: 1,
+      audioScale: 1.2,
+      rotation: { y: 0.006, audioBoost: 0.02 },
+    },
+    camera: {
+      position: new THREE.Vector3(0, 30, 80),
+      lookAtY: 0,
+    },
+  },
+  spheres: {
+    label: 'Spheres',
+    primitive: 'spheres',
+    grid: { rows: 3, cols: 7, spacingX: 8, spacingZ: 10 },
+    geometryFactory: () => new THREE.SphereGeometry(2.5, 32, 32),
+    materialFactory: (_row, col) => {
+      const hue = (col / 7) * 0.3 + 0.8;
+      return new THREE.MeshStandardMaterial({
+        color: new THREE.Color().setHSL(hue % 1, 0.7, 0.5),
+        metalness: 0.4,
+        roughness: 0.28,
+        emissive: new THREE.Color().setHSL(hue % 1, 0.5, 0.08),
+      });
+    },
+    colorFor: (_row, col) => {
+      const baseHue = (col / 7) * 0.3 + 0.8;
+      return {
+        baseHue,
+        hueRange: 0.2,
+        baseSaturation: 0.7,
+        saturationRange: 0.3,
+        baseLuminance: 0.5,
+        luminanceRange: 0.2,
+        emissive: {
+          baseHue,
+          baseSaturation: 0.5,
+          baseLuminance: 0,
+          luminanceRange: 0.3,
+        },
+      };
+    },
+    animation: {
+      heightMode: 'position',
+      baseHeight: 0,
+      audioHeight: 15,
+      wave: {
+        amplitude: 3,
+        frequency: 3,
+        phase: (row, col) => col * 0.3 + row * 0.5,
+      },
+      baseScale: 1,
+      audioScale: 0.5,
+      rotation: { x: 0.01, y: 0.015, audioBoost: 0.05 },
+    },
+    camera: {
+      position: new THREE.Vector3(0, 26, 70),
+      lookAtY: 5,
+      sway: { amplitude: 5, frequency: 0.2 },
+    },
+    extras: (group) => {
+      const floorGeometry = new THREE.PlaneGeometry(100, 60);
+      const floorMaterial = new THREE.MeshStandardMaterial({
+        color: 0x111122,
+        metalness: 0.9,
+        roughness: 0.2,
+      });
+      const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -8;
+      group.add(floor);
 
-  for (let x = -gridSize / 2; x < gridSize / 2; x++) {
-    for (let z = -gridSize / 2; z < gridSize / 2; z++) {
-      const cube = new THREE.Mesh(geometry, material.clone());
-      cube.position.set(x * spacing, 0, z * spacing);
-      scene.add(cube);
-      cubes.push(cube);
+      const colors = [0xff00ff, 0x00ffff, 0xffff00];
+      colors.forEach((color, i) => {
+        const light = new THREE.PointLight(color, 0.5, 50);
+        light.position.set((i - 1) * 30, 20, 0);
+        group.add(light);
+      });
+    },
+  },
+};
+
+let currentPreset: GridPreset = presets.cubes;
+let activeMode: ShapeMode = 'cubes';
+
+function disposeGroup(group: THREE.Group) {
+  group.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if ((mesh as unknown as { isMesh?: boolean }).isMesh) {
+      mesh.geometry?.dispose();
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((material) => material.dispose());
+      } else {
+        mesh.material?.dispose();
+      }
+    }
+  });
+  group.clear();
+}
+
+function rebuildGrid(mode: ShapeMode) {
+  disposeGroup(gridGroup);
+  currentPreset = presets[mode];
+  activeMode = mode;
+
+  toy.camera.position.copy(currentPreset.camera.position);
+  toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
+
+  const { rows, cols, spacingX, spacingZ } = currentPreset.grid;
+  const startX = -((cols - 1) * spacingX) / 2;
+  const startZ = -((rows - 1) * spacingZ) / 2;
+
+  if (currentPreset.extras) {
+    currentPreset.extras(gridGroup);
+  }
+
+  gridItems.length = 0;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const geometry = currentPreset.geometryFactory(row, col);
+      const material = currentPreset.materialFactory(row, col);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(startX + col * spacingX, currentPreset.animation.baseHeight, startZ + row * spacingZ);
+      gridGroup.add(mesh);
+      gridItems.push({ mesh, row, col });
     }
   }
+}
+
+function createShapeSelector() {
+  const panel = document.createElement('div');
+  panel.className = 'control-panel';
+
+  const heading = document.createElement('div');
+  heading.className = 'control-panel__heading';
+  heading.textContent = 'Grid Visualizer';
+
+  const description = document.createElement('p');
+  description.className = 'control-panel__description';
+  description.textContent = 'Swap between cube waves and bouncing spheres.';
+
+  const row = document.createElement('label');
+  row.className = 'control-panel__row';
+
+  const text = document.createElement('div');
+  text.className = 'control-panel__text';
+  const label = document.createElement('span');
+  label.className = 'control-panel__label';
+  label.textContent = 'Shape';
+  const hint = document.createElement('small');
+  hint.textContent = 'Change the primitive without restarting audio.';
+  text.appendChild(label);
+  text.appendChild(hint);
+
+  const select = document.createElement('select');
+  Object.entries(presets).forEach(([key, preset]) => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = preset.label;
+    select.appendChild(option);
+  });
+  select.value = activeMode;
+  select.addEventListener('change', () => {
+    const nextMode = select.value as ShapeMode;
+    rebuildGrid(nextMode);
+  });
+
+  row.appendChild(text);
+  row.appendChild(select);
+
+  [heading, description, row].forEach((el) => panel.appendChild(el));
+  document.body.appendChild(panel);
+}
+
+function updateTransforms(
+  item: GridItem,
+  normalizedValue: number,
+  rawValue: number,
+  time: number
+) {
+  const { mesh, row, col } = item;
+  const anim = currentPreset.animation;
+  const waveOffset =
+    anim.wave?.amplitude && anim.wave.frequency
+      ? Math.sin(time * anim.wave.frequency + anim.wave.phase(row, col)) *
+        anim.wave.amplitude
+      : 0;
+
+  if (anim.heightMode === 'position') {
+    mesh.position.y = anim.baseHeight + waveOffset + normalizedValue * anim.audioHeight;
+    const scale = anim.baseScale + normalizedValue * anim.audioScale;
+    mesh.scale.setScalar(scale);
+  } else {
+    const yScale = anim.baseScale + normalizedValue * anim.audioScale;
+    mesh.scale.set(1, yScale, 1);
+    mesh.position.y = anim.baseHeight + waveOffset;
+  }
+
+  if (anim.rotation.x) {
+    mesh.rotation.x += anim.rotation.x + normalizedValue * (anim.rotation.audioBoost ?? 0);
+  }
+  if (anim.rotation.y) {
+    mesh.rotation.y += anim.rotation.y + rawValue / 100000 + normalizedValue * (anim.rotation.audioBoost ?? 0);
+  }
+
+  applyAudioColor(mesh.material, normalizedValue, currentPreset.colorFor(row, col));
 }
 
 function animate(ctx: AnimationContext) {
   const dataArray = getContextFrequencyData(ctx);
   const avg = getAverageFrequency(dataArray);
+  const time = Date.now() / 1000;
 
-  mapFrequencyToItems(
-    dataArray,
-    cubes,
-    (cube, i, value) => {
-      const scale = 1 + value / 128;
-      cube.scale.y = scale;
-      (cube.material as THREE.MeshStandardMaterial).color.setHSL(
-        0.6 - value / 512,
-        0.8,
-        0.5
-      );
-      cube.rotation.y += value / 100000;
-    },
-    { fallbackValue: avg }
-  );
-  const binsPerCube = dataArray.length / cubes.length;
-  
-  cubes.forEach((cube, i) => {
-    const bin = Math.floor(i * binsPerCube);
-    const value = dataArray[bin] || avg;
+  const binsPerItem = dataArray.length / Math.max(gridItems.length, 1);
+
+  gridItems.forEach((item, index) => {
+    const bin = Math.floor(index * binsPerItem);
+    const value = dataArray[bin] ?? avg;
     const normalizedValue = value / 255;
-    const scale = 1 + value / 128;
-    cube.scale.y = scale;
-    applyAudioColor(cube.material, normalizedValue, {
-      baseHue: 0.6,
-      hueRange: -0.5,
-      baseSaturation: 0.8,
-      baseLuminance: 0.5,
-    });
-    cube.rotation.y += value / 100000;
+    updateTransforms(item, normalizedValue, value, time);
   });
+
+  const sway = currentPreset.camera.sway;
+  if (sway) {
+    toy.camera.position.x = Math.sin(time * sway.frequency) * sway.amplitude;
+    toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
+  }
 
   ctx.toy.render();
 }
 
 async function startAudio() {
-  return startToyAudio(toy, animate, 128);
+  return startToyAudio(toy, animate, 256);
+}
+
+function init() {
+  toy.scene.add(gridGroup);
+  rebuildGrid(activeMode);
+  createShapeSelector();
 }
 
 init();
