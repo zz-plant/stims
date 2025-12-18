@@ -33,3 +33,6 @@ This index maps each toy slug to the module that powers it and how the experienc
 
 ## Standalone HTML entry points
 All iframe-backed toys can still be visited directly via their HTML pages (for example, `brand.html` or `holy.html`). The library view now embeds those same pages for consistency with query-loaded modules.
+
+## Touch-enabled and gesture-aware toys
+- `sgpat`: multi-touch pan/zoom/rotate gestures drive the spectrograph focus and ripple direction via `assets/js/utils/pointer-input.ts`.
