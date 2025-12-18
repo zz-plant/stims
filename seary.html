@@ -15,14 +15,23 @@
         background-color: #000000; /* OLED black */
       }
       canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100vw;
         height: 100vh;
+      }
+      #sparkleCanvas {
+        pointer-events: none;
+        mix-blend-mode: screen;
+        z-index: 5;
       }
     </style>
   </head>
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <canvas id="gpuCanvas"></canvas>
+    <canvas id="sparkleCanvas"></canvas>
     <div id="error-message" style="display: none"></div>
     <select id="audioSelect">
       <option value="mic">Microphone</option>
@@ -30,9 +39,9 @@
     </select>
     <script type="module">
       import {
-        initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { createPeakDetector } from './assets/js/utils/peak-detector.ts';
       import { showError } from './assets/js/utils/error-display.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
@@ -40,6 +49,26 @@
       import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
+      const sparkleCanvas = document.getElementById('sparkleCanvas');
+      const sparkleCtx = sparkleCanvas?.getContext('2d');
+
+      const sparkles = [];
+      const maxSparkles = 160;
+      const burstState = { scale: 1, rotation: 0, intensity: 0 };
+      let viewWidth = window.innerWidth;
+      let viewHeight = window.innerHeight;
+      let sparklesEnabled = true;
+      let burstsEnabled = true;
+      let peakSensitivity = 0.35;
+      let lastRenderTime = 0;
+
+      function displayError(message) {
+        const el = document.getElementById('error-message');
+        if (el) {
+          el.innerText = message;
+          el.style.display = 'block';
+        }
+      }
 
       initHints({
         id: 'seary-visualizer',
@@ -57,6 +86,24 @@
           adapter.setPalette(palette, colors),
         onMotionChange: (intensity, mode) => adapter.setMotion(intensity, mode),
         onAudioToggle: (enabled) => adapter.setAudioReactive(enabled),
+        onSparkleToggle: (enabled) => {
+          sparklesEnabled = enabled;
+        },
+        onBurstToggle: (enabled) => {
+          burstsEnabled = enabled;
+          if (!enabled) {
+            burstState.scale = 1;
+            burstState.rotation = 0;
+            burstState.intensity = 0;
+          }
+        },
+        onPeakSensitivityChange: (value) => {
+          peakSensitivity = value;
+          rebuildPeakDetector();
+        },
+        initialSparklesEnabled: sparklesEnabled,
+        initialBurstsEnabled: burstsEnabled,
+        initialPeakSensitivity: peakSensitivity,
       });
 
       const gl =
@@ -67,6 +114,29 @@
         throw new Error('WebGL not supported');
       }
 
+      // Resize canvas
+      function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        viewWidth = window.innerWidth;
+        viewHeight = window.innerHeight;
+
+        canvas.width = viewWidth * dpr;
+        canvas.height = viewHeight * dpr;
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        if (sparkleCanvas && sparkleCtx) {
+          sparkleCanvas.width = viewWidth * dpr;
+          sparkleCanvas.height = viewHeight * dpr;
+          sparkleCanvas.style.width = '100vw';
+          sparkleCanvas.style.height = '100vh';
+          sparkleCtx.setTransform(1, 0, 0, 1, 0, 0);
+          sparkleCtx.scale(dpr, dpr);
+        }
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
       const disposeResize = setupCanvasResize(canvas, gl, { maxPixelRatio: 2 });
 
       // Compile shader
@@ -105,6 +175,9 @@
             uniform vec2 u_touch1;
             uniform vec3 u_orientation;
             uniform vec3 u_palette_accent;
+            uniform float u_burst_scale;
+            uniform float u_burst_rotation;
+            uniform float u_burst_intensity;
             varying vec2 v_uv;
             
             float noise(vec2 p) {
@@ -113,6 +186,9 @@
 
             void main() {
                 vec2 uv = v_uv - 0.5;
+                float c = cos(u_burst_rotation);
+                float s = sin(u_burst_rotation);
+                uv = mat2(c, -s, s, c) * uv * u_burst_scale;
                 float dist = length(uv);
                 float angle = atan(uv.y, uv.x);
 
@@ -164,6 +240,8 @@
                 color += vec3(glow * 0.4, glow * 0.6, glow * 0.8);
 
                 color = mix(color, color * u_palette_accent, 0.35);
+                color *= 1.0 + u_burst_intensity * 0.6;
+                color += u_palette_accent * (u_burst_intensity * 0.25);
 
                 gl_FragColor = vec4(color, 1.0);
             }
@@ -214,6 +292,18 @@
         program,
         'u_palette_accent'
       );
+      const burstScaleLocation = gl.getUniformLocation(
+        program,
+        'u_burst_scale'
+      );
+      const burstRotationLocation = gl.getUniformLocation(
+        program,
+        'u_burst_rotation'
+      );
+      const burstIntensityLocation = gl.getUniformLocation(
+        program,
+        'u_burst_intensity'
+      );
 
       let currentFreqs = adapter.transformFrequencies({
         low: 0,
@@ -229,6 +319,7 @@
 
       canvas.addEventListener('pointerdown', (event) => {
         updatePointer(event);
+        spawnSparkles(18, { x: event.clientX, y: event.clientY });
         event.preventDefault();
       });
 
@@ -264,8 +355,93 @@
         }
       }
 
+      function spawnSparkles(count = 26, origin) {
+        if (!sparklesEnabled || !sparkleCtx) return;
+        const baseX = origin?.x ?? Math.random() * viewWidth;
+        const baseY = origin?.y ?? Math.random() * viewHeight;
+
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 40 + Math.random() * 120;
+          const hue = Math.floor(Math.random() * 360);
+          sparkles.push({
+            x: baseX,
+            y: baseY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 0,
+            maxLife: 0.6 + Math.random() * 0.5,
+            size: 1.5 + Math.random() * 2.5,
+            hue,
+          });
+        }
+
+        if (sparkles.length > maxSparkles) {
+          sparkles.splice(0, sparkles.length - maxSparkles);
+        }
+      }
+
+      function updateSparkles(dt) {
+        if (!sparkleCtx) return;
+        if (!sparklesEnabled) {
+          sparkleCtx.clearRect(0, 0, viewWidth, viewHeight);
+          return;
+        }
+        sparkleCtx.clearRect(0, 0, viewWidth, viewHeight);
+
+        for (let i = sparkles.length - 1; i >= 0; i--) {
+          const s = sparkles[i];
+          s.life += dt;
+          if (s.life >= s.maxLife) {
+            sparkles.splice(i, 1);
+            continue;
+          }
+
+          const lifeT = s.life / s.maxLife;
+          s.x += s.vx * dt;
+          s.y += s.vy * dt;
+          s.vx *= 0.98;
+          s.vy *= 0.98;
+
+          const alpha = 1 - lifeT;
+          const radius = s.size * (1 + lifeT * 1.2);
+          sparkleCtx.fillStyle = `hsla(${s.hue}, 85%, 70%, ${alpha})`;
+          sparkleCtx.beginPath();
+          sparkleCtx.arc(s.x, s.y, radius, 0, Math.PI * 2);
+          sparkleCtx.fill();
+        }
+      }
+
+      function handlePeak() {
+        spawnSparkles(36);
+        if (burstsEnabled) {
+          burstState.scale = Math.min(burstState.scale + 0.2, 1.5);
+          burstState.rotation += (Math.random() - 0.5) * 0.7;
+          burstState.intensity = Math.min(1, burstState.intensity + 0.85);
+        }
+      }
+
+      function handlePeakRelease() {
+        burstState.intensity *= 0.5;
+      }
+
+      function rebuildPeakDetector() {
+        if (!analyser) {
+          peakDetector = null;
+          return;
+        }
+
+        peakDetector = createPeakDetector({
+          getData: () => getFrequencyData(analyser),
+          sensitivity: peakSensitivity,
+          onPeak: handlePeak,
+          onRelease: handlePeakRelease,
+        });
+      }
+
       // Audio setup for beat detection and frequency analysis
       let audioContext, analyser, source;
+      let peakDetector = null;
       let bufferLength, dataArray;
       const audioSelect = document.getElementById('audioSelect');
 
@@ -276,6 +452,7 @@
         if (audioContext) {
           audioContext.close();
         }
+        peakDetector = null;
 
         navigator.mediaDevices
           .getUserMedia({ audio: true })
@@ -283,6 +460,8 @@
             funControls.setAudioAvailable(true);
             audioContext = new (window.AudioContext ||
               window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
             if (audioSelect.value === 'mic') {
               initAudio()
                 .then(({ analyser: a, dataArray: d }) => {
@@ -306,11 +485,10 @@
               source.connect(audioContext.destination); // To allow playback
               audioElement.play();
             }
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
             source.connect(analyser);
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
+            rebuildPeakDetector();
+            bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
             startProcessing(dataArray);
 
             let lastVibrateTime = 0;
@@ -388,6 +566,8 @@
                 high: highFreq,
               });
 
+              peakDetector?.update(dataArray);
+
               vibrateBasedOnAudio(
                 currentFreqs.low,
                 currentFreqs.mid,
@@ -407,6 +587,7 @@
           .catch((err) => {
             console.error('Error accessing microphone: ' + err);
             funControls.setAudioAvailable(false);
+            peakDetector = null;
             currentFreqs = adapter.transformFrequencies({
               low: 0,
               mid: 0,
@@ -418,6 +599,13 @@
       // Render loop
       function render(time) {
         time *= 0.001; // Convert time to seconds
+        const delta = lastRenderTime === 0 ? 0 : time - lastRenderTime;
+        const dt = Math.min(delta, 0.1);
+        lastRenderTime = time;
+
+        burstState.scale += (1 - burstState.scale) * Math.min(1, dt * 2.25);
+        burstState.rotation *= Math.max(0, 1 - dt * 1.35);
+        burstState.intensity = Math.max(0, burstState.intensity - dt * 1.2);
 
         // Set uniforms
         gl.uniform1f(timeLocation, time);
@@ -438,11 +626,22 @@
           adapter.paletteAccent[1],
           adapter.paletteAccent[2]
         );
+        gl.uniform1f(burstScaleLocation, burstsEnabled ? burstState.scale : 1);
+        gl.uniform1f(
+          burstRotationLocation,
+          burstsEnabled ? burstState.rotation : 0
+        );
+        gl.uniform1f(
+          burstIntensityLocation,
+          burstsEnabled ? burstState.intensity : 0
+        );
 
         // Draw
         gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        updateSparkles(dt || 0.016);
 
         requestAnimationFrame(render);
       }
