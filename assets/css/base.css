@@ -218,6 +218,44 @@ body {
   gap: 2px;
 }
 
+.control-panel__status {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(111, 247, 255, 0.35);
+}
+
+.control-panel__status[data-variant='error'] {
+  border-color: rgba(255, 82, 130, 0.8);
+  color: #ffd6e6;
+  background: linear-gradient(
+      120deg,
+      rgba(255, 0, 153, 0.15),
+      rgba(255, 255, 255, 0)
+    ),
+    rgba(0, 0, 0, 0.45);
+}
+
+.control-panel__status[data-variant='success'] {
+  border-color: rgba(17, 216, 255, 0.8);
+  color: #e9fbff;
+  background: linear-gradient(
+      120deg,
+      rgba(17, 216, 255, 0.12),
+      rgba(255, 255, 255, 0)
+    ),
+    rgba(0, 0, 0, 0.38);
+}
+
+.control-panel__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .control-panel__label {
   font-weight: 600;
   font-size: 0.95rem;
