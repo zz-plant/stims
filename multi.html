@@ -33,6 +33,14 @@
       import { createMultiFunAdapter } from './assets/multi/fun-adapter.ts';
 
       const canvas = document.getElementById('webglCanvas');
+
+      if (!navigator.gpu) {
+        showError(
+          'error-message',
+          'Running in WebGL mode. Optional WebGPU features add extra bloom and lighting polish when available.'
+        );
+      }
+
       initHints({
         id: 'multi-visualizer',
         tips: [
