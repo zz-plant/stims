@@ -150,6 +150,14 @@ body {
   overflow: hidden;
 }
 
+.control-panel--floating {
+  bottom: auto;
+  left: auto;
+  top: 12px;
+  right: 12px;
+  width: min(360px, 92vw);
+}
+
 .control-panel::before,
 .control-panel::after {
   content: '';
