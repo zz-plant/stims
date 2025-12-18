@@ -8,11 +8,14 @@ This index lists which JavaScript or TypeScript entry points power each toy/visu
 | Slug | Entry module (TypeScript) | How to load |
 | --- | --- | --- |
 | `3dtoy` | `assets/js/toys/three-d-toy.ts` | `toy.html?toy=3dtoy` |
+| `aurora-painter` | `assets/js/toys/aurora-painter.ts` | `toy.html?toy=aurora-painter` |
 | `cube-wave` | `assets/js/toys/cube-wave.ts` | `toy.html?toy=cube-wave` |
+| `bubble-harmonics` | `assets/js/toys/bubble-harmonics.ts` | `toy.html?toy=bubble-harmonics` |
 | `cosmic-particles` | `assets/js/toys/cosmic-particles.ts` | `toy.html?toy=cosmic-particles` |
 | `spiral-burst` | `assets/js/toys/spiral-burst.ts` | `toy.html?toy=spiral-burst` |
 | `rainbow-tunnel` | `assets/js/toys/rainbow-tunnel.ts` | `toy.html?toy=rainbow-tunnel` |
 | `star-field` | `assets/js/toys/star-field.ts` | `toy.html?toy=star-field` |
+| `fractal-kite-garden` | `assets/js/toys/fractal-kite-garden.ts` | `toy.html?toy=fractal-kite-garden` |
 
 ## Standalone HTML visualizers
 These pages embed their own module scripts. Use the imports below to find the main logic.
