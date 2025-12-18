@@ -19,22 +19,85 @@
         </div>
         <button id="start-audio-btn" class="cta-button primary">Start audio</button>
       </div>
+      <div id="audio-status" class="control-panel__status" role="status"></div>
+      <div class="control-panel__actions">
+        <button id="use-demo-audio" class="cta-button" hidden>
+          Use demo audio instead
+        </button>
+      </div>
     </div>
     <script type="module" src="assets/js/toyMain.js"></script>
     <script>
-      const btn = document.getElementById('start-audio-btn');
-      btn.addEventListener('click', async () => {
-        if (window.startAudio) {
-          btn.disabled = true;
-          try {
-            await window.startAudio();
-            btn.style.display = 'none';
-          } catch (error) {
-            console.error('Unable to start audio:', error);
-            btn.disabled = false;
-          }
+      const startButton = document.getElementById('start-audio-btn');
+      const fallbackButton = document.getElementById('use-demo-audio');
+      const statusElement = document.getElementById('audio-status');
+
+      if (statusElement) {
+        statusElement.hidden = true;
+      }
+
+      const setStatus = (message, variant = 'info') => {
+        if (!statusElement) return;
+        statusElement.textContent = message;
+        statusElement.dataset.variant = variant;
+        statusElement.hidden = !message;
+      };
+
+      const enableButtons = () => {
+        startButton.disabled = false;
+        fallbackButton.disabled = false;
+      };
+
+      const disableButtons = () => {
+        startButton.disabled = true;
+        fallbackButton.disabled = true;
+      };
+
+      const describeError = (error) => {
+        const reason = error?.reason;
+        if (reason === 'denied') {
+          return 'Microphone access was blocked. Check your browser address bar or system privacy settings to allow it.';
         }
-      });
+        if (reason === 'unsupported') {
+          return 'This browser cannot capture microphone audio. Try a different browser or load the demo audio below.';
+        }
+        return 'We could not access your microphone. You can retry or continue with demo audio.';
+      };
+
+      const finishSuccess = () => {
+        startButton.style.display = 'none';
+        fallbackButton.hidden = true;
+        setStatus('Microphone connected! Enjoy the visuals.', 'success');
+      };
+
+      const showFallback = () => {
+        fallbackButton.hidden = false;
+        enableButtons();
+      };
+
+      const startWithMode = async (useSyntheticAudio) => {
+        if (!window.startAudio) return;
+
+        disableButtons();
+        setStatus(
+          useSyntheticAudio
+            ? 'Loading demo audio (no microphone needed)...'
+            : 'Requesting microphone access...',
+          'info'
+        );
+
+        try {
+          await window.startAudio(useSyntheticAudio);
+          finishSuccess();
+        } catch (error) {
+          console.error('Unable to start audio:', error);
+          setStatus(describeError(error), 'error');
+          showFallback();
+        }
+      };
+
+      startButton.addEventListener('click', () => startWithMode(false));
+      fallbackButton.addEventListener('click', () => startWithMode(true));
     </script>
   </body>
 </html>
