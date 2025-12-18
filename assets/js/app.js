@@ -13,7 +13,15 @@ import PatternRecognizer from './utils/patternRecognition.ts';
 
 const DEFAULT_RENDERER_OPTIONS = { maxPixelRatio: 2 };
 
-let scene, camera, renderer, cube, analyser, patternRecognizer, audioCleanup;
+let scene,
+  camera,
+  renderer,
+  rendererBackend,
+  cube,
+  analyser,
+  patternRecognizer,
+  audioCleanup;
+let rendererReadyPromise;
 let currentLightType = 'PointLight'; // Default light type
 let animationFrameId = null;
 let isAnimating = false;
@@ -21,7 +29,7 @@ let audioListener = null;
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let isReducedMotionPreferred = prefersReducedMotion.matches;
 
-function initVisualization() {
+async function initVisualization() {
   if (!ensureWebGL()) {
     return;
   }
@@ -50,7 +58,15 @@ function initVisualization() {
   scene = initScene();
   camera = initCamera();
   const canvas = document.getElementById('toy-canvas');
-  renderer = initRenderer(canvas, DEFAULT_RENDERER_OPTIONS);
+  const rendererResult = await initRenderer(canvas, DEFAULT_RENDERER_OPTIONS);
+  if (!rendererResult) {
+    displayError('Unable to initialize a renderer on this device.');
+    return;
+  }
+
+  renderer = rendererResult.renderer;
+  rendererBackend = rendererResult.backend;
+  console.info(`Using renderer backend: ${rendererBackend}`);
 
   // Set up lighting based on user selection
   initLighting(scene, {
@@ -89,6 +105,13 @@ function stopAnimationLoop() {
 
 async function startAudioAndAnimation() {
   try {
+    if (rendererReadyPromise) {
+      await rendererReadyPromise;
+    }
+    if (!renderer) {
+      displayError('Unable to start because no renderer is available.');
+      return false;
+    }
     const audioData = await initAudio();
     analyser = audioData.analyser;
     audioListener = audioData.listener ?? null;
@@ -131,7 +154,7 @@ function animate() {
     }
   }
 
-  renderer.render(scene, camera);
+  renderer?.render(scene, camera);
 
   animationFrameId = requestAnimationFrame(animate);
 }
@@ -139,7 +162,7 @@ function animate() {
 function handleResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer?.setSize(window.innerWidth, window.innerHeight);
 }
 
 function renderSceneOnce() {
@@ -160,11 +183,11 @@ function displayError(message) {
 document.getElementById('light-type').addEventListener('change', (event) => {
   currentLightType = event.target.value;
   // Reinitialize lighting
-  initVisualization();
+  rendererReadyPromise = initVisualization();
 });
 
 // Start visualization
-initVisualization();
+rendererReadyPromise = initVisualization();
 
 // Handle audio start button click
 document

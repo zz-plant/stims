@@ -58,7 +58,9 @@ function createStarField(): StarFieldBuffers {
   toy.scene.add(points);
 
   toy.scene.fog = new THREE.FogExp2(0x030712, 0.0008);
-  toy.renderer?.setClearColor(0x030712, 1);
+  toy.rendererReady.then((result) => {
+    result?.renderer.setClearColor?.(0x030712, 1);
+  });
 
   return { geometry, material, velocities };
 }
