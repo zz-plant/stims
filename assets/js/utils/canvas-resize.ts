@@ -52,7 +52,8 @@ export function setupCanvasResize(
   };
 
   resize();
-  window.addEventListener('resize', resize);
+  const observer = new ResizeObserver(() => resize());
+  observer.observe(canvas.parentElement ?? canvas);
 
-  return () => window.removeEventListener('resize', resize);
+  return () => observer.disconnect();
 }
