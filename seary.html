@@ -33,6 +33,7 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { initHints } from './assets/ui/hints.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
       function displayError(message) {
@@ -42,6 +43,15 @@
           el.style.display = 'block';
         }
       }
+
+      initHints({
+        id: 'seary-visualizer',
+        tips: [
+          'Play music or tap to trigger sparkles.',
+          'Switch to Party Mode for bigger motion.',
+          'Use the audio source menu to swap between mic and device audio.',
+        ],
+      });
 
       const gl =
         canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
