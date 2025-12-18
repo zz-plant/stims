@@ -36,6 +36,8 @@
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
       import { initHints } from './assets/ui/hints.ts';
+      import { initFunControls } from './assets/ui/fun-controls.ts';
+      import { createSymphFunAdapter } from './assets/symph/fun-adapter.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const ctx2d = canvas.getContext('2d');
@@ -198,9 +200,22 @@
 
       gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
 
+      const adapter = createSymphFunAdapter();
+      const funControls = initFunControls({
+        paletteOptions: adapter.paletteOptions,
+        onPaletteChange: (palette, colors) => {
+          adapter.setPalette(palette, colors);
+          colorOffset = [...adapter.paletteAccent];
+          gradientStops = colors;
+        },
+        onMotionChange: (intensity, mode) => adapter.setMotion(intensity, mode),
+        onAudioToggle: (enabled) => adapter.setAudioReactive(enabled),
+      });
+
+      let gradientStops = adapter.paletteOptions.bright;
       let time = 0.0;
-      let audioData = 0.0;
-      let colorOffset = [0.0, 0.0, 0.0];
+      let audioData = adapter.transformAudioValue(0);
+      let colorOffset = [...adapter.paletteAccent];
       let touchPoint = [0.0, 0.0];
       let analyser;
 
@@ -210,10 +225,13 @@
           analyser = a;
           hideError();
           getAudioData();
+          funControls.setAudioAvailable(true);
         } catch (err) {
           displayError(
-            'Microphone access is required for the visualization to work. Please allow microphone access.'
+            'Microphone access is unavailable. Visuals will run without audio reactivity.'
           );
+          funControls.setAudioAvailable(false);
+          audioData = adapter.transformAudioValue(0);
           console.error('Error capturing audio: ', err);
         }
       }
@@ -224,7 +242,7 @@
           const dataArray = getFrequencyData(analyser);
           const average =
             dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-          audioData = average / 128.0;
+          audioData = adapter.transformAudioValue(average);
           updateSpectrograph(dataArray);
         }
       }
@@ -237,9 +255,9 @@
           canvas.width,
           canvas.height
         );
-        gradient.addColorStop(0, '#ff6ec7');
-        gradient.addColorStop(0.5, '#8e44ad');
-        gradient.addColorStop(1, '#3498db');
+        gradient.addColorStop(0, gradientStops[0]);
+        gradient.addColorStop(0.5, gradientStops[1]);
+        gradient.addColorStop(1, gradientStops[2]);
         ctx2d.fillStyle = gradient;
         const barWidth = (canvas.width / dataArray.length) * 1.5;
         let barHeight;
