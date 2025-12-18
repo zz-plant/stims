@@ -18,6 +18,10 @@ async function queryMicrophonePermissionState(): Promise<PermissionState | undef
   }
 }
 
+export async function getMicrophonePermissionState() {
+  return queryMicrophonePermissionState();
+}
+
 export class AudioAccessError extends Error {
   reason: AudioAccessReason;
 
