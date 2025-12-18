@@ -165,23 +165,16 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { showError } from './assets/js/utils/error-display.ts';
       const wordCloudCanvas = document.getElementById('word-cloud-canvas');
       const unmuteButton = document.getElementById('unmute-button');
       const toggleSpeechButton = document.getElementById(
         'toggle-speech-button'
       );
       const unmuteIcon = document.getElementById('unmute-icon');
-      }
       const recognition = new (window.SpeechRecognition ||
         window.webkitSpeechRecognition)();
       recognition.interimResults = false;
-      function displayError(message) {
-        const el = document.getElementById("error-message");
-        if (el) {
-          el.innerText = message;
-          el.style.display = "block";
-        }
-      }
       recognition.maxAlternatives = 1;
 
       let isUnmuted = false;
@@ -257,7 +250,10 @@
           visualize();
         } catch (error) {
           console.error('Error accessing microphone for visualizer:', error);
-          displayError('Microphone access is required for the visualization to work. Please allow microphone access.');
+          showError(
+            'error-message',
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
+          );
           deactivateVisualizer();
         }
       }
