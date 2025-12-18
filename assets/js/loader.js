@@ -284,17 +284,7 @@ export async function loadToy(slug, { pushState = false } = {}) {
     return;
   }
 
-  if (toy.type === 'page') {
-    if (toy.requiresWebGPU && !hasWebGPUSupport()) {
-      const container = ensureActiveToyContainer();
-      showActiveToyView();
-      showCapabilityError(container, toy);
-      return;
-    }
-
-    disposeActiveToy();
-    window.location.href = `./${slug}.html`;
-  } else if (toy.type === 'module') {
+  if (toy.type === 'module') {
     if (pushState) {
       pushToyState(slug);
     }
@@ -314,14 +304,35 @@ export async function loadToy(slug, { pushState = false } = {}) {
     const moduleUrl = await resolveModulePath(toy.module);
     let importError = null;
 
-    await import(moduleUrl).catch((error) => {
-      importError = error;
-    });
+    let moduleExports = null;
+
+    await import(moduleUrl)
+      .then((mod) => {
+        moduleExports = mod;
+      })
+      .catch((error) => {
+        importError = error;
+      });
 
     if (importError) {
       console.error('Error loading toy module:', importError);
       showImportError(container, toy);
       return;
+    }
+
+    const starter = moduleExports?.start ?? moduleExports?.default?.start;
+
+    if (starter) {
+      try {
+        const active = await starter({ container, slug });
+        if (active && !globalThis.__activeWebToy) {
+          globalThis.__activeWebToy = active;
+        }
+      } catch (error) {
+        console.error('Error starting toy module:', error);
+        showImportError(container, toy);
+        return;
+      }
     }
 
     removeStatusElement(container);

@@ -21,8 +21,8 @@ export default [
     title: 'Star Guitar Visualizer',
     description:
       'A visual journey inspired by an iconic music video, synced to your music.',
-    module: './brand.html',
-    type: 'page',
+    module: 'assets/js/toys/brand.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
@@ -30,8 +30,8 @@ export default [
     title: 'Pottery Wheel Sculptor',
     description:
       'Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.',
-    module: './clay.html',
-    type: 'page',
+    module: 'assets/js/toys/clay.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
@@ -39,8 +39,8 @@ export default [
     title: 'Defrag Visualizer',
     description:
       'A nostalgic, sound-reactive visualizer evoking old defragmentation screens.',
-    module: './toy.html?toy=defrag',
-    type: 'page',
+    module: 'assets/js/toys/defrag.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
@@ -48,8 +48,8 @@ export default [
     title: 'Evolutionary Weirdcore',
     description:
       'Watch surreal landscapes evolve with fractals and glitches that react to music.',
-    module: './toy.html?toy=evol',
-    type: 'page',
+    module: 'assets/js/toys/evol.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
@@ -57,8 +57,8 @@ export default [
     title: 'Microphone Geometry Visualizer',
     description:
       'Push shifting geometric forms directly from live mic input with responsive controls.',
-    module: './geom.html',
-    type: 'page',
+    module: 'assets/js/toys/geom.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
@@ -66,32 +66,32 @@ export default [
     title: 'Ultimate Satisfying Visualizer',
     description:
       'Layered halos, particles, and morphing shapes that respond to your music.',
-    module: './holy.html',
-    type: 'page',
+    module: 'assets/js/toys/holy.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
     slug: 'multi',
     title: 'Multi-Capability Visualizer',
     description: 'Shapes and lights move with both sound and device motion.',
-    module: './multi.html',
-    type: 'page',
+    module: 'assets/js/toys/multi.ts',
+    type: 'module',
     requiresWebGPU: true,
   },
   {
     slug: 'seary',
     title: 'Trippy Synesthetic Visualizer',
     description: 'Blend audio and visuals in a rich synesthetic experience.',
-    module: './seary.html',
-    type: 'page',
+    module: 'assets/js/toys/seary.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
     slug: 'sgpat',
     title: 'Pattern Recognition Visualizer',
     description: 'See patterns form dynamically in response to sound.',
-    module: './sgpat.html',
-    type: 'page',
+    module: 'assets/js/toys/sgpat.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
@@ -99,8 +99,8 @@ export default [
     title: 'Terminal Word Grid',
     description:
       'A retro green text grid that pulses to audio and surfaces fresh words as you play.',
-    module: './legible.html',
-    type: 'page',
+    module: 'assets/js/toys/legible.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
@@ -108,16 +108,16 @@ export default [
     title: 'SVG + Three.js Visualizer',
     description:
       'A hybrid visualizer blending 2D and 3D elements, reacting in real time.',
-    module: './svgtest.html',
-    type: 'page',
+    module: 'assets/js/toys/svgtest.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
     slug: 'symph',
     title: 'Dreamy Spectrograph',
     description: 'A relaxing spectrograph that moves gently with your audio.',
-    module: './symph.html',
-    type: 'page',
+    module: 'assets/js/toys/symph.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
@@ -125,8 +125,8 @@ export default [
     title: 'Interactive Word Cloud',
     description:
       'Speak and watch the word cloud react and shift with your voice.',
-    module: './toy.html?toy=words',
-    type: 'page',
+    module: 'assets/js/toys/words.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
@@ -161,8 +161,8 @@ export default [
     title: 'Audio Light Show',
     description:
       'Swap shader styles and color palettes while lights ripple with your microphone input.',
-    module: './lights.html',
-    type: 'page',
+    module: 'assets/js/toys/lights.ts',
+    type: 'module',
     requiresWebGPU: false,
   },
   {
