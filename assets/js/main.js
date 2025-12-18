@@ -1,5 +1,6 @@
 import { initNavigation, loadToy, loadFromQuery } from './loader.js';
 import { createLibraryView } from './library-view.js';
+import { initRepoStatusWidget } from './repo-status.js';
 import toysData from './toys-data.js';
 
 const libraryView = createLibraryView({
@@ -16,3 +17,4 @@ const libraryView = createLibraryView({
 });
 
 libraryView.init();
+initRepoStatusWidget();
