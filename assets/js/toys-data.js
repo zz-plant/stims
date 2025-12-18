@@ -53,6 +53,15 @@ export default [
     requiresWebGPU: false,
   },
   {
+    slug: 'holy',
+    title: 'Ultimate Satisfying Visualizer',
+    description:
+      'Layered halos, particles, and morphing shapes that respond to your music.',
+    module: './holy.html',
+    type: 'page',
+    requiresWebGPU: false,
+  },
+  {
     slug: 'multi',
     title: 'Multi-Capability Visualizer',
     description: 'Shapes and lights move with both sound and device motion.',
