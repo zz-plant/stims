@@ -35,6 +35,8 @@ export default [
         navigator: 'readonly',
         performance: 'readonly',
         Event: 'readonly',
+        Bun: 'readonly',
+        process: 'readonly',
         DOMException: 'readonly',
         URLSearchParams: 'readonly',
         URL: 'readonly',
