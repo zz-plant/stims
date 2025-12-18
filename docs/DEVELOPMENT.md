@@ -4,33 +4,30 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
 
 ## Tooling and Environment
 
-- **Bun 1.2+** is the fastest path for local installs and testing. The repo also supports **Node.js 22** (see `.nvmrc`) if you prefer npm for Vite or tooling.
-- Install dependencies once per clone:
+- **Bun 1.2+** is the default for installs and testing. **Node.js 22** (see `.nvmrc`) is supported as an optional fallback if you prefer npm for Vite or tooling.
+- Install dependencies once per clone with Bun:
   ```bash
-  npm install
-  # or
   bun install
   ```
-  If you install with Bun and rely on Git hooks, the `postinstall` script will invoke `husky install` when `npm_config_user_agent` starts with `bun`. If hooks still don’t appear, run `bun x husky install` (or `npx husky install`).
+  If you install with Bun and rely on Git hooks, the `postinstall` script will invoke `husky install` when `npm_config_user_agent` starts with `bun`. If hooks still don’t appear, run `bun x husky install`. When using Node, `npm install` is a backup option.
 - The project uses **TypeScript**, **Vite**, **Three.js**, and the Bun test runner. No extra ESM flags are required when running `bun test`.
-- Run the dev server locally:
+- Run the dev server locally with Bun:
   ```bash
-  npm run dev
-  # or
   bun run dev
   ```
+  If you’re on Node, use `npm run dev` instead.
   The site serves from `http://localhost:5173`.
 
-## Common Scripts
+## Common Scripts (Bun-first)
 
-| Task | Command (npm / Bun) |
-| ---- | ------------------ |
-| Start dev server | `npm run dev` / `bun run dev` |
-| Production build | `npm run build` / `bun run build` |
-| Preview build locally | `npm run preview` / `bun run preview` |
-| Run test suite | `bun test` / `bun run test` |
-| Lint | `npm run lint` / `bun run lint` |
-| Format with Prettier | `npm run format` / `bun run format` |
+| Task | Command (Bun / optional Node fallback) |
+| ---- | ------------------------------------- |
+| Start dev server | `bun run dev` (`npm run dev`) |
+| Production build | `bun run build` (`npm run build`) |
+| Preview build locally | `bun run preview` (`npm run preview`) |
+| Run test suite | `bun test` (`npm run test` proxies to Bun) |
+| Lint | `bun run lint` (`npm run lint`) |
+| Format with Prettier | `bun run format` (`npm run format`) |
 
 When debugging a single test file, run:
 ```bash
@@ -86,7 +83,7 @@ bun test tests/filename.test.js
 
 ## Deployment Checklist
 
-- `npm run build` completes without errors.
-- Verify the generated `dist/` assets load via `npm run preview` or a simple static server.
+- `bun run build` completes without errors. (`npm run build` is available if you’re on Node.)
+- Verify the generated `dist/` assets load via `bun run preview` or a simple static server. (`npm run preview` remains a fallback.)
 - Spot-check microphone prompts and toy selection flows in the production build.
 
