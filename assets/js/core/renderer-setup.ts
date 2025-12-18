@@ -2,8 +2,7 @@
 import * as THREE from 'three';
 import WebGPURenderer from 'three/src/renderers/webgpu/WebGPURenderer.js';
 import { ensureWebGL } from '../utils/webgl-check.js';
-
-type RendererBackend = 'webgl' | 'webgpu';
+import type { RendererBackend } from './renderer-capabilities.ts';
 
 export type RendererInitResult = {
   renderer: THREE.WebGLRenderer | WebGPURenderer;
@@ -21,6 +20,8 @@ export type RendererInitConfig = {
   maxPixelRatio?: number;
   alpha?: boolean;
   renderScale?: number;
+  preferredBackend?: RendererBackend;
+  adapter?: GPUAdapter | null;
 };
 
 export async function initRenderer(
@@ -43,6 +44,8 @@ export async function initRenderer(
     maxPixelRatio = 2,
     alpha = false,
     renderScale = 1,
+    preferredBackend,
+    adapter: providedAdapter,
   } = config;
 
   const finalize = (
@@ -80,13 +83,20 @@ export async function initRenderer(
     return finalize(renderer, 'webgl', null, null);
   };
 
-  const { gpu } = navigator as Navigator & { gpu?: GPU }; 
+  const backendChoice: RendererBackend = preferredBackend ?? 'webgpu';
+  const nav = typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { gpu?: GPU });
+  const { gpu } = nav ?? {};
+
+  if (backendChoice === 'webgl') {
+    return fallbackToWebGL('Using WebGL backend based on capability probe.');
+  }
+
   if (!gpu?.requestAdapter) {
     return fallbackToWebGL('WebGPU is not available in this browser.');
   }
 
   try {
-    const adapter = await gpu.requestAdapter();
+    const adapter = providedAdapter ?? (await gpu.requestAdapter());
     if (!adapter) {
       return fallbackToWebGL('No compatible WebGPU adapter was found.');
     }

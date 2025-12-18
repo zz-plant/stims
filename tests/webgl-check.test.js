@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 const freshImport = async () =>
-  import(`../assets/js/utils/webgl-check.ts?ts=${Date.now()}-${Math.random()}`);
+  import(`../assets/js/utils/webgl-check.js?ts=${Date.now()}-${Math.random()}`);
 
 const originalGpu = Object.getOwnPropertyDescriptor(navigator, 'gpu');
 

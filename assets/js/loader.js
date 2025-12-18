@@ -1,5 +1,5 @@
 import toysData from './toys-data.js';
-import { ensureWebGL } from './utils/webgl-check.js';
+import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 
 const TOY_QUERY_PARAM = 'toy';
 let manifestPromise;
@@ -20,10 +20,6 @@ function getBaseUrl() {
   }
 
   return null;
-}
-
-function hasWebGPUSupport() {
-  return typeof navigator !== 'undefined' && Boolean(navigator.gpu);
 }
 
 function getDocument() {
@@ -352,13 +348,9 @@ export async function loadToy(slug, { pushState = false } = {}) {
   }
 
   if (toy.type === 'module') {
-    const supportsRendering = ensureWebGL({
-      title: toy.title ? `${toy.title} needs graphics acceleration` : 'Graphics support required',
-      description:
-        'We could not detect WebGL or WebGPU support on this device. Try a modern browser with hardware acceleration enabled.',
-    });
+    const capabilities = await getRendererCapabilities();
 
-    if (!supportsRendering) {
+    if (!capabilities.hasRenderingSupport) {
       return;
     }
 
@@ -369,7 +361,7 @@ export async function loadToy(slug, { pushState = false } = {}) {
     disposeActiveToy();
     showActiveToyView();
 
-    if (toy.requiresWebGPU && !hasWebGPUSupport()) {
+    if (toy.requiresWebGPU && capabilities.preferredBackend !== 'webgpu') {
       const container = ensureActiveToyContainer();
       showCapabilityError(container, toy);
       return;

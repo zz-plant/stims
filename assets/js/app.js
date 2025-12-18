@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { initScene } from './core/scene-setup.ts';
 import { initCamera } from './core/camera-setup.ts';
 import { initRenderer } from './core/renderer-setup.ts';
+import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
-import { ensureWebGL } from './utils/webgl-check.js';
 import { initLighting, initAmbientLight } from './lighting/lighting-setup';
 import {
   createSyntheticAudioStream,
@@ -36,7 +36,10 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
 let isReducedMotionPreferred = prefersReducedMotion.matches;
 
 async function initVisualization() {
-  if (!ensureWebGL()) {
+  const capabilities = await getRendererCapabilities();
+
+  if (!capabilities.hasRenderingSupport) {
+    displayError('Unable to initialize a renderer on this device.');
     return;
   }
   if (renderer) {
@@ -64,7 +67,11 @@ async function initVisualization() {
   scene = initScene();
   camera = initCamera();
   const canvas = document.getElementById('toy-canvas');
-  const rendererResult = await initRenderer(canvas, DEFAULT_RENDERER_OPTIONS);
+  const rendererResult = await initRenderer(canvas, {
+    ...DEFAULT_RENDERER_OPTIONS,
+    preferredBackend: capabilities.preferredBackend,
+    adapter: capabilities.adapter,
+  });
   if (!rendererResult) {
     displayError('Unable to initialize a renderer on this device.');
     return;

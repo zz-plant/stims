@@ -76,3 +76,20 @@ export class Scene {
     this.children.push(light);
   }
 }
+
+export class WebGLRenderer {
+  outputColorSpace: unknown = null;
+  toneMapping: unknown = null;
+  toneMappingExposure = 1;
+
+  constructor() {}
+
+  setPixelRatio() {}
+
+  setSize() {}
+
+  dispose() {}
+}
+
+export const SRGBColorSpace = 'srgb';
+export const ACESFilmicToneMapping = 'aces';

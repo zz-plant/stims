@@ -8,7 +8,7 @@ import {
 } from './renderer-setup.ts';
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
 import { initAudio } from '../utils/audio-handler.ts';
-import { ensureWebGL } from '../utils/webgl-check.js';
+import { getRendererCapabilities } from './renderer-capabilities.ts';
 
 export default class WebToy {
   canvas: HTMLCanvasElement;
@@ -34,10 +34,6 @@ export default class WebToy {
     ambientLightOptions = null,
     canvas = null,
   } = {}) {
-    if (!ensureWebGL()) {
-      throw new Error('WebGL not supported');
-    }
-
     this.canvas = canvas || document.createElement('canvas');
 
     const host =
@@ -50,7 +46,17 @@ export default class WebToy {
     this.rendererBackend = null;
     this.rendererInfo = null;
     this.rendererOptions = rendererOptions;
-    this.rendererReady = initRenderer(this.canvas, rendererOptions);
+    this.rendererReady = getRendererCapabilities().then(async (capabilities) => {
+      if (!capabilities.hasRenderingSupport) {
+        throw new Error('WebGL not supported');
+      }
+
+      return initRenderer(this.canvas, {
+        ...rendererOptions,
+        preferredBackend: capabilities.preferredBackend,
+        adapter: capabilities.adapter,
+      });
+    });
     this.rendererReady
       .then((result) => {
         this.rendererInfo = result;

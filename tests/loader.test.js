@@ -8,6 +8,7 @@ import {
 } from 'bun:test';
 
 const loaderModule = '../assets/js/loader.js';
+const capabilityModule = '../assets/js/core/renderer-capabilities.ts';
 const originalWindow = global.window;
 const originalLocation = window.location;
 const originalHistory = window.history;
@@ -55,7 +56,18 @@ describe('loadToy', () => {
         json: () => Promise.resolve([{ slug: 'brand', module: './toy.html?toy=brand' }]),
       })
     );
-    mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
+    mock.module(capabilityModule, () => ({
+      getRendererCapabilities: () =>
+        Promise.resolve({
+          preferredBackend: 'webgl',
+          webglSupported: true,
+          webgpuSupported: false,
+          adapter: null,
+          attemptedWebGPU: false,
+          shouldRetryWebGPU: false,
+          hasRenderingSupport: true,
+        }),
+    }));
     mock.module('../assets/js/toys-data.js', () => ({
       default: [
         {
@@ -117,7 +129,18 @@ describe('active toy navigation affordance', () => {
     document.body.innerHTML = '<div id="toy-list"></div>';
     global.fetch = mock(() => Promise.resolve({ ok: false }));
 
-    mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
+    mock.module(capabilityModule, () => ({
+      getRendererCapabilities: () =>
+        Promise.resolve({
+          preferredBackend: 'webgl',
+          webglSupported: true,
+          webgpuSupported: false,
+          adapter: null,
+          attemptedWebGPU: false,
+          shouldRetryWebGPU: false,
+          hasRenderingSupport: true,
+        }),
+    }));
     mock.module('../assets/js/toys-data.js', () => ({
       default: [
         {
@@ -192,7 +215,18 @@ describe('WebGPU requirements', () => {
       value: {},
     });
     global.fetch = mock(() => Promise.resolve({ ok: false }));
-    mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
+    mock.module(capabilityModule, () => ({
+      getRendererCapabilities: () =>
+        Promise.resolve({
+          preferredBackend: 'webgl',
+          webglSupported: true,
+          webgpuSupported: false,
+          adapter: null,
+          attemptedWebGPU: false,
+          shouldRetryWebGPU: false,
+          hasRenderingSupport: true,
+        }),
+    }));
   });
 
   afterEach(() => {
@@ -261,7 +295,7 @@ describe('resolveModulePath', () => {
     const { resolveModulePath } = await freshImport(loaderModule);
     const modulePath = await resolveModulePath(moduleEntry);
 
-    expect(global.fetch).toHaveBeenCalledWith('/.vite/manifest.json');
+    expect(global.fetch).toHaveBeenCalledWith('/manifest.json');
     expect(modulePath).toBe('/assets/js/toys/example.123.js');
   });
 
