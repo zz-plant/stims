@@ -4,6 +4,9 @@ export interface FunControlsCallbacks {
   onPaletteChange?: (palette: PaletteOption, colors: string[]) => void;
   onMotionChange?: (intensity: number, mode: 'calm' | 'party') => void;
   onAudioToggle?: (enabled: boolean) => void;
+  onSparkleToggle?: (enabled: boolean) => void;
+  onBurstToggle?: (enabled: boolean) => void;
+  onPeakSensitivityChange?: (value: number) => void;
 }
 
 export interface FunControlsInit extends FunControlsCallbacks {
@@ -13,6 +16,9 @@ export interface FunControlsInit extends FunControlsCallbacks {
   initialMode?: 'calm' | 'party';
   audioAvailable?: boolean;
   audioEnabled?: boolean;
+  initialSparklesEnabled?: boolean;
+  initialBurstsEnabled?: boolean;
+  initialPeakSensitivity?: number;
 }
 
 const defaultPalettes: Record<PaletteOption, string[]> = {
@@ -159,6 +165,9 @@ export function initFunControls(options: FunControlsInit = {}) {
   let mode: 'calm' | 'party' = options.initialMode || 'calm';
   let audioAvailable = options.audioAvailable !== false;
   let audioEnabled = options.audioEnabled !== false;
+  let sparklesEnabled = options.initialSparklesEnabled !== false;
+  let burstsEnabled = options.initialBurstsEnabled !== false;
+  let peakSensitivity = options.initialPeakSensitivity ?? 0.35;
 
   const container = document.createElement('section');
   container.className = 'fun-controls';
@@ -189,6 +198,37 @@ export function initFunControls(options: FunControlsInit = {}) {
         } ${audioAvailable ? '' : 'disabled'} aria-label="Audio reactive" />
         Audio reactive
       </label>
+      <div class="fun-subsection" aria-label="Peak fun">
+        <div class="fun-row">
+          <label class="fun-toggle">
+            <input type="checkbox" class="fun-sparkles" ${
+              sparklesEnabled ? 'checked' : ''
+            } aria-label="Sparkles" />
+            Sparkles
+          </label>
+          <label class="fun-toggle">
+            <input type="checkbox" class="fun-bursts" ${
+              burstsEnabled ? 'checked' : ''
+            } aria-label="Bursts" />
+            Bursts
+          </label>
+        </div>
+        <label>
+          Peak sensitivity
+          <input
+            class="fun-slider fun-peak-sensitivity"
+            type="range"
+            min="0.05"
+            max="1"
+            step="0.01"
+            value="${peakSensitivity}"
+            aria-valuemin="0.05"
+            aria-valuemax="1"
+            aria-valuenow="${peakSensitivity}"
+            aria-label="Peak sensitivity"
+          />
+        </label>
+      </div>
     `;
 
   document.body.appendChild(container);
@@ -203,6 +243,18 @@ export function initFunControls(options: FunControlsInit = {}) {
 
   function notifyAudio() {
     options.onAudioToggle?.(audioEnabled && audioAvailable);
+  }
+
+  function notifySparkles() {
+    options.onSparkleToggle?.(sparklesEnabled);
+  }
+
+  function notifyBursts() {
+    options.onBurstToggle?.(burstsEnabled);
+  }
+
+  function notifySensitivity() {
+    options.onPeakSensitivityChange?.(peakSensitivity);
   }
 
   container
@@ -241,9 +293,36 @@ export function initFunControls(options: FunControlsInit = {}) {
     notifyAudio();
   });
 
+  const sparklesToggle = container.querySelector<HTMLInputElement>(
+    '.fun-sparkles'
+  );
+  sparklesToggle?.addEventListener('change', (event) => {
+    sparklesEnabled = (event.target as HTMLInputElement).checked;
+    notifySparkles();
+  });
+
+  const burstsToggle = container.querySelector<HTMLInputElement>('.fun-bursts');
+  burstsToggle?.addEventListener('change', (event) => {
+    burstsEnabled = (event.target as HTMLInputElement).checked;
+    notifyBursts();
+  });
+
+  const peakSlider = container.querySelector<HTMLInputElement>(
+    '.fun-peak-sensitivity'
+  );
+  peakSlider?.addEventListener('input', (event) => {
+    const value = Number((event.target as HTMLInputElement).value);
+    peakSensitivity = Math.min(1, Math.max(0.05, value));
+    peakSlider.setAttribute('aria-valuenow', peakSensitivity.toString());
+    notifySensitivity();
+  });
+
   notifyPalette();
   notifyMotion();
   notifyAudio();
+  notifySparkles();
+  notifyBursts();
+  notifySensitivity();
 
   return {
     container,
