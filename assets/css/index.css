@@ -1,33 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&display=swap');
 
 :root {
-  --bg-color: #05060f;
-  --bg-color-secondary: #0b0c1a;
-  --text-color: #e6ebff;
-  --accent-color: #64f4ff;
-  --accent-purple: #b37bff;
-  --accent-magenta: #ff2ee6;
-  --glow-color: rgba(100, 244, 255, 0.55);
-  --accent-soft: rgba(100, 244, 255, 0.18);
-  --card-bg: rgba(24, 26, 48, 0.85);
-  --hover-bg: rgba(100, 244, 255, 0.1);
-  --scanline-color: rgba(255, 255, 255, 0.04);
-  --star-color: rgba(255, 255, 255, 0.2);
+  --bg-color: #02030b;
+  --bg-color-secondary: #0a0f29;
+  --text-color: #eaf5ff;
+  --accent-color: #6df0ff;
+  --accent-purple: #9b7bff;
+  --accent-magenta: #ff6fe3;
+  --glow-color: rgba(109, 240, 255, 0.6);
+  --accent-soft: rgba(109, 240, 255, 0.12);
+  --card-bg: rgba(23, 27, 52, 0.8);
+  --hover-bg: rgba(109, 240, 255, 0.14);
+  --highlight-glow: rgba(255, 111, 227, 0.18);
 }
 
 html.light {
-  --bg-color: #f5f7ff;
-  --bg-color-secondary: #edf1ff;
-  --text-color: #0e1233;
-  --accent-color: #1ec8ff;
-  --accent-purple: #8f5dff;
-  --accent-magenta: #ff3cb4;
-  --glow-color: rgba(30, 200, 255, 0.35);
-  --accent-soft: rgba(30, 200, 255, 0.16);
-  --card-bg: rgba(14, 18, 51, 0.06);
-  --hover-bg: rgba(30, 200, 255, 0.1);
-  --scanline-color: rgba(0, 0, 0, 0.05);
-  --star-color: rgba(0, 0, 0, 0.18);
+  --bg-color: #f6f9ff;
+  --bg-color-secondary: #ecf1ff;
+  --text-color: #0b1030;
+  --accent-color: #00c2ff;
+  --accent-purple: #7f5fff;
+  --accent-magenta: #ff68c5;
+  --glow-color: rgba(0, 194, 255, 0.36);
+  --accent-soft: rgba(0, 194, 255, 0.18);
+  --card-bg: rgba(11, 16, 48, 0.06);
+  --hover-bg: rgba(0, 194, 255, 0.1);
+  --highlight-glow: rgba(255, 104, 197, 0.14);
 }
 
 .sr-only {
@@ -46,9 +44,10 @@ body,
 html {
   padding: 0;
   font-family: 'Space Grotesk', sans-serif;
-  background: radial-gradient(circle at 20% 20%, rgba(255, 46, 230, 0.08), transparent 30%),
-    radial-gradient(circle at 80% 0%, rgba(100, 244, 255, 0.12), transparent 28%),
-    linear-gradient(135deg, var(--bg-color) 0%, var(--bg-color-secondary) 100%);
+  background: radial-gradient(circle at 10% 20%, rgba(255, 111, 227, 0.08), transparent 28%),
+    radial-gradient(circle at 85% 10%, rgba(109, 240, 255, 0.16), transparent 32%),
+    radial-gradient(circle at 50% 80%, rgba(155, 123, 255, 0.12), transparent 40%),
+    linear-gradient(140deg, var(--bg-color) 0%, var(--bg-color-secondary) 100%);
   color: var(--text-color);
   overflow-x: hidden;
   overflow-y: auto;
@@ -154,11 +153,11 @@ header {
 
 header.hero {
   min-height: 55vh;
-  padding: 3rem 1.5rem;
+  padding: 3rem 2rem;
   overflow: hidden;
   border-radius: 24px;
-  background: linear-gradient(120deg, rgba(100, 244, 255, 0.12), rgba(179, 123, 255, 0.08));
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), 0 0 45px var(--glow-color);
+  background: linear-gradient(150deg, rgba(100, 244, 255, 0.18), rgba(255, 111, 227, 0.14));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35), 0 0 45px var(--glow-color);
 }
 
 .hero::before,
@@ -172,37 +171,31 @@ header.hero {
 }
 
 .hero::before {
-  background-image:
-    radial-gradient(1px 1px at 20% 30%, var(--star-color), transparent),
-    radial-gradient(1.5px 1.5px at 70% 20%, var(--star-color), transparent),
-    radial-gradient(2px 2px at 40% 70%, var(--star-color), transparent),
-    radial-gradient(1px 1px at 85% 60%, var(--star-color), transparent);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-  animation: starDrift 20s linear infinite;
+  background: radial-gradient(circle at 20% 40%, rgba(109, 240, 255, 0.3), transparent 35%),
+    radial-gradient(circle at 75% 20%, rgba(255, 111, 227, 0.24), transparent 32%);
+  filter: blur(18px);
+  animation: shimmerDrift 18s ease-in-out infinite;
 }
 
 .hero::after {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 8px,
-    var(--scanline-color) 9px,
-    transparent 12px
-  );
-  mix-blend-mode: soft-light;
+  background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.1), transparent 35%),
+    radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.08), transparent 40%);
+  mix-blend-mode: screen;
 }
 
 .hero-grid {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1.3fr 0.9fr;
+  gap: 2rem;
+  align-items: start;
   position: relative;
   z-index: 1;
 }
 
 .hero-copy {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
-  text-align: center;
+  text-align: left;
   display: grid;
   gap: 0.75rem;
 }
@@ -223,11 +216,11 @@ header.hero {
 }
 
 .tagline {
-  font-size: 1rem;
+  font-size: 1.05rem;
   margin-top: 0;
-  max-width: 520px;
-  line-height: 1.5;
-  opacity: 0.85;
+  max-width: 640px;
+  line-height: 1.6;
+  opacity: 0.9;
 }
 
 .cta-row {
@@ -307,10 +300,18 @@ header.hero {
 }
 
 .hero-list li {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(120deg, rgba(109, 240, 255, 0.12), rgba(255, 111, 227, 0.08));
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--accent-soft);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.hero-list li span {
+  font-size: 1.1rem;
 }
 
 @keyframes hueShift {
@@ -361,12 +362,15 @@ header.hero {
   }
 }
 
-@keyframes starDrift {
+@keyframes shimmerDrift {
   0% {
-    transform: translateY(0);
+    transform: translate3d(-6px, 4px, 0);
+  }
+  50% {
+    transform: translate3d(6px, -8px, 0);
   }
   100% {
-    transform: translateY(-12px);
+    transform: translate3d(-6px, 4px, 0);
   }
 }
 
@@ -536,6 +540,122 @@ footer {
   box-shadow: 0 0 20px var(--glow-color);
 }
 
+.hero-marquee {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--accent-soft);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  margin: 1rem 0 0.5rem;
+  display: flex;
+}
+
+.marquee-track {
+  display: inline-flex;
+  gap: 1.5rem;
+  padding: 0.75rem 1.25rem;
+  animation: marquee 22s linear infinite;
+  min-width: max-content;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex: 0 0 auto;
+}
+
+.marquee-track span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.hero-aside {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  position: relative;
+}
+
+.orbital {
+  width: 180px;
+  height: 180px;
+  margin-left: auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 2.5rem;
+  color: var(--text-color);
+  background: radial-gradient(circle at 30% 30%, rgba(109, 240, 255, 0.4), transparent 50%),
+    radial-gradient(circle at 70% 65%, rgba(255, 111, 227, 0.4), transparent 52%),
+    var(--card-bg);
+  box-shadow: 0 0 35px var(--glow-color), 0 14px 40px rgba(0, 0, 0, 0.35);
+  position: relative;
+  isolation: isolate;
+}
+
+.orbital::after {
+  content: '✺ ✧ ✦';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 0.2em;
+}
+
+.pill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.pill {
+  background: linear-gradient(120deg, rgba(109, 240, 255, 0.16), rgba(255, 111, 227, 0.12));
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--accent-soft);
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.25);
+}
+
+.pulse-card {
+  padding: 1.2rem 1.1rem;
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(109, 240, 255, 0.14), rgba(155, 123, 255, 0.14), rgba(255, 111, 227, 0.12));
+  border: 1px solid var(--accent-soft);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3), 0 0 24px var(--highlight-glow);
+  backdrop-filter: blur(8px);
+}
+
+.pulse-eyebrow {
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.pulse-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.3rem;
+  color: var(--accent-color);
+}
+
+.pulse-copy {
+  margin: 0;
+  opacity: 0.85;
+  line-height: 1.5;
+}
+
 @media (max-width: 768px) {
   h1 {
     font-size: 2rem;
@@ -547,5 +667,13 @@ footer {
 
   .top-nav {
     position: static;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .orbital {
+    margin: 0 auto;
   }
 }
