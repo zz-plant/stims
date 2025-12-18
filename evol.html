@@ -62,6 +62,7 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const errorEl = document.getElementById('error-message');
@@ -86,14 +87,6 @@
         );
         throw new Error('WebGL not supported');
       }
-
-      function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-      }
-      window.addEventListener('resize', resizeCanvas);
-      resizeCanvas();
 
       const vertexShaderSource = `
             attribute vec4 a_position;
@@ -265,7 +258,12 @@
         'u_fractalIntensity'
       );
 
-      gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+      const disposeResize = setupCanvasResize(canvas, gl, {
+        maxPixelRatio: 2,
+        onResize: ({ width, height }) => {
+          gl.uniform2f(resolutionUniformLocation, width, height);
+        },
+      });
 
       let time = 0.0;
       let audioData = 0.0;
@@ -317,6 +315,7 @@
       }
 
       requestAnimationFrame(render);
+      window.addEventListener('pagehide', disposeResize);
     </script>
   </body>
 </html>

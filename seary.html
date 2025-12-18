@@ -42,9 +42,11 @@
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
       import { createPeakDetector } from './assets/js/utils/peak-detector.ts';
+      import { showError } from './assets/js/utils/error-display.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createSearyFunAdapter } from './assets/seary/fun-adapter.ts';
+      import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
       const sparkleCanvas = document.getElementById('sparkleCanvas');
@@ -135,6 +137,7 @@
       }
       window.addEventListener('resize', resizeCanvas);
       resizeCanvas();
+      const disposeResize = setupCanvasResize(canvas, gl, { maxPixelRatio: 2 });
 
       // Compile shader
       function compileShader(source, type) {
@@ -460,7 +463,20 @@
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 256;
             if (audioSelect.value === 'mic') {
-              source = audioContext.createMediaStreamSource(stream);
+              initAudio()
+                .then(({ analyser: a, dataArray: d }) => {
+                  analyser = a;
+                  source = audioContext.createMediaStreamSource(stream);
+                  source.connect(analyser);
+                  startProcessing(d);
+                })
+                .catch((err) => {
+                  console.error('Error capturing audio: ', err);
+                  showError(
+                    'error-message',
+                    'Microphone access is required for the visualization to work. Please allow microphone access.'
+                  );
+                });
             } else {
               // Use the audio context's `createMediaElementSource` to capture device audio
               const audioElement = new Audio();
@@ -630,6 +646,7 @@
         requestAnimationFrame(render);
       }
       requestAnimationFrame(render);
+      window.addEventListener('pagehide', disposeResize);
     </script>
   </body>
 </html>
