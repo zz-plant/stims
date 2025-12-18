@@ -23,6 +23,20 @@ For setup, testing, and contribution guidelines, see [CONTRIBUTING.md](./CONTRIB
 
 Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond to sound, touch, and other inputs to create a chill or stimulating experience. If you’d rather play locally, follow the steps in **Local Setup** to run the dev server and open the toys at `http://localhost:5173`.
 
+## Repository Layout
+
+This project is organized so you can find the visuals, core utilities, and shared assets quickly:
+
+- `assets/js/toys/`: Individual toy implementations such as `cube-wave.ts`, `spiral-burst.ts`, and other sound-reactive scenes.
+- `assets/js/core/`: Rendering and input helpers used by multiple toys (for example, renderer initialization and audio analyzers).
+- `assets/js/utils/`: Small utility modules that support the core helpers and toys.
+- `assets/css/`: Shared styling for the various HTML entry points.
+- `assets/data/`: Static data files consumed by the toys.
+- `tests/`: Jest specs that validate core behaviors.
+- `toy.html`, `brand.html`, `seary.html`, and other HTML files: Entry points that load specific toys or collections of toys.
+
+If you add a new toy, place the implementation in `assets/js/toys/`, register it in `assets/js/toys-data.js`, and make sure there’s an entry point (often `toy.html?toy=<slug>`) that can load it.
+
 ## Toys in the Collection
 
 | Toy                                             | Description                                                                     |
@@ -110,6 +124,15 @@ python3 -m http.server dist
 Then open `http://localhost:8000`.
 
 All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
+
+### Helpful npm Scripts
+
+- `npm run dev`: Start the Vite development server for local exploration.
+- `npm run build`: Produce a production build in `dist/`.
+- `npm run preview`: Serve the production build locally to validate the output before deploying.
+- `npm test`: Run the Jest suite.
+- `npm run lint`: Check code quality with ESLint.
+- `npm run format`: Format files with Prettier.
 
 ## Code of Conduct and Contributions
 
