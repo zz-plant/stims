@@ -1,4 +1,3 @@
-/* global Bun */
 import process from "node:process";
 import { stat } from "node:fs/promises";
 import path from "node:path";
