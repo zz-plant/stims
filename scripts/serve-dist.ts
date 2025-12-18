@@ -6,6 +6,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distDir = path.resolve(__dirname, "../dist");
 const port = Number.parseInt(process.env.PORT ?? "8000", 10);
+const compressionCache = new Map<
+  string,
+  { mtime: number; size: number; gzip: Uint8Array }
+>();
 
 await ensureBuildExists();
 
@@ -37,16 +41,32 @@ const server = Bun.serve({
 
     const headers = new Headers();
     const contentType = file.type || "application/octet-stream";
+    const lastModified = new Date(file.lastModified).toUTCString();
+    const etag = makeEtag(file);
+
     headers.set("Content-Type", contentType);
     headers.set("Cache-Control", cacheControl(pathname));
+    headers.set("Last-Modified", lastModified);
+    headers.set("ETag", etag);
+
+    const cachedResponse = maybeNotModified(request, headers, etag, lastModified);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
 
     const acceptEncoding = request.headers.get("accept-encoding") ?? "";
 
+    if (request.method === "HEAD") {
+      return new Response(null, { status: 200, headers });
+    }
+
     if (shouldCompress(contentType) && acceptEncoding.includes("gzip")) {
+      const compressed = await gzipCached(filePath, file);
+
       headers.set("Content-Encoding", "gzip");
       headers.set("Vary", "Accept-Encoding");
 
-      const compressed = Bun.gzipSync(new Uint8Array(await file.arrayBuffer()));
       return new Response(compressed, { status: 200, headers });
     }
 
@@ -63,7 +83,7 @@ async function ensureBuildExists() {
     if (!stats.isDirectory()) {
       throw new Error();
     }
-  } catch (error) {
+  } catch {
     console.error("No dist/ directory found. Please run 'bun run build' first.");
     process.exit(1);
   }
@@ -100,4 +120,49 @@ function shouldCompress(contentType: string) {
     contentType.includes("xml") ||
     contentType === "image/svg+xml"
   );
+}
+
+function makeEtag(file: ReturnType<typeof Bun.file>) {
+  const fingerprint = `${file.lastModified}:${file.size}`;
+  const hash = Bun.hash(fingerprint).toString(36);
+
+  return `W/"${hash}"`;
+}
+
+function maybeNotModified(
+  request: Request,
+  headers: Headers,
+  etag: string,
+  lastModified: string,
+) {
+  const noneMatch = request.headers.get("if-none-match");
+  const modifiedSince = request.headers.get("if-modified-since");
+
+  if (noneMatch && noneMatch === etag) {
+    return new Response(null, { status: 304, headers });
+  }
+
+  if (modifiedSince && modifiedSince === lastModified) {
+    return new Response(null, { status: 304, headers });
+  }
+
+  return null;
+}
+
+async function gzipCached(filePath: string, file: ReturnType<typeof Bun.file>) {
+  const cached = compressionCache.get(filePath);
+
+  if (cached && cached.mtime === file.lastModified && cached.size === file.size) {
+    return cached.gzip;
+  }
+
+  const compressed = Bun.gzipSync(new Uint8Array(await file.arrayBuffer()));
+
+  compressionCache.set(filePath, {
+    mtime: file.lastModified,
+    size: file.size,
+    gzip: compressed,
+  });
+
+  return compressed;
 }
