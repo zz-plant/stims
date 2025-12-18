@@ -16,20 +16,13 @@
       import {
         startAudioLoop,
         getContextFrequencyData,
+        handleAudioFallback,
       } from './assets/js/core/animation-loop.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createBrandFunAdapter } from './assets/brand/fun-adapter.ts';
 
       const canvas = document.getElementById('vizCanvas');
-
-      function displayError(message) {
-        const el = document.getElementById('error-message');
-        if (el) {
-          el.innerText = message;
-          el.style.display = 'block';
-        }
-      }
 
       initHints({
         id: 'brand-visualizer',
@@ -268,15 +261,7 @@
       startAudioLoop(toy, animate, {
         positional: true,
         object: toy.camera,
-      }).catch((err) => {
-        console.error('Audio input error: ', err);
-        funControls.setAudioAvailable(false);
-        displayError(
-          'Microphone access is unavailable. Visuals will run without audio reactivity.'
-        );
-        const silentContext = { toy, analyser: null };
-        toy.renderer.setAnimationLoop(() => animate(silentContext));
-      });
+      }).catch(handleAudioFallback(toy, animate, funControls));
     </script>
   </body>
 </html>

@@ -1,6 +1,7 @@
 import type * as THREE from 'three';
 import { getFrequencyData } from '../utils/audio-handler';
 import type { AudioInitOptions } from '../utils/audio-handler';
+import { showAudioUnavailableError } from '../utils/error-helper';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WebToyInstance = any;
@@ -38,4 +39,22 @@ export async function startAudioLoop(
  */
 export function getContextFrequencyData(ctx: AnimationContext): Uint8Array {
   return ctx.analyser ? getFrequencyData(ctx.analyser) : new Uint8Array(0);
+}
+
+/**
+ * Handle audio initialization failures by disabling audio UI, showing a
+ * standardized error, and running the animation loop without audio.
+ */
+export function handleAudioFallback(
+  toy: WebToyInstance,
+  animate: (ctx: AnimationContext) => void,
+  controls?: { setAudioAvailable: (available: boolean) => void },
+) {
+  return (err: unknown) => {
+    console.error('Audio setup failed:', err);
+    controls?.setAudioAvailable(false);
+    showAudioUnavailableError();
+    const silentContext: AnimationContext = { toy, analyser: null };
+    toy.renderer.setAnimationLoop(() => animate(silentContext));
+  };
 }

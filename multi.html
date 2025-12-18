@@ -23,6 +23,7 @@
       import {
         startAudioLoop,
         getContextFrequencyData,
+        handleAudioFallback,
       } from './assets/js/core/animation-loop.ts';
       import createPeakDetector from './assets/js/utils/peak-detector.ts';
       import { getAverageFrequency } from './assets/js/utils/audio-handler.ts';
@@ -31,14 +32,6 @@
       import { createMultiFunAdapter } from './assets/multi/fun-adapter.ts';
 
       const canvas = document.getElementById('webglCanvas');
-
-      function displayError(message) {
-        const el = document.getElementById('error-message');
-        if (el) {
-          el.innerText = message;
-          el.style.display = 'block';
-        }
-      }
 
       initHints({
         id: 'multi-visualizer',
@@ -342,16 +335,9 @@
         ctx.toy.render();
       }
 
-      startAudioLoop(toy, animate)
-        .catch((err) => {
-          console.error('The following error occurred: ' + err);
-          funControls.setAudioAvailable(false);
-          displayError(
-            'Microphone access is unavailable. Visuals will run without audio reactivity.'
-          );
-          const silentContext = { toy, analyser: null };
-          toy.renderer.setAnimationLoop(() => animate(silentContext));
-        });
+      startAudioLoop(toy, animate).catch(
+        handleAudioFallback(toy, animate, funControls)
+      );
     </script>
   </body>
 </html>
