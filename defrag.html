@@ -39,6 +39,7 @@
         getAverageFrequency,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { showError } from './assets/js/utils/error-display.ts';
       const canvas = document.getElementById('canvas');
       const ctx = canvas.getContext('2d');
@@ -73,7 +74,6 @@
         }
       }
 
-      let analyser;
       let audioDataArray = neutralSpectrum.slice();
       let idleState = true;
       let movingAverageLevel = 0;
@@ -95,20 +95,52 @@
 
       updateStatusIndicator('waiting');
 
-      async function setupAudio() {
-        try {
-          const result = await initAudio({ fftSize: DEFAULT_FFT_SIZE });
-          analyser = result.analyser;
-          updateStatusIndicator('listening');
-        } catch (err) {
-          console.error('Error capturing audio: ', err);
-          showError(
-            'error-message',
-            'Microphone access is required for the visualization to work. Please allow microphone access.'
-          );
-          updateStatusIndicator('waiting');
+      class CanvasToy {
+        constructor(canvasEl) {
+          this.canvas = canvasEl;
+          this.analyser = null;
+          this.audioCleanup = null;
+          this.loopId = null;
+          this.renderLoop = null;
+          this.renderer = {
+            setAnimationLoop: (loop) => {
+              if (this.loopId) {
+                cancelAnimationFrame(this.loopId);
+              }
+
+              this.renderLoop = loop;
+
+              if (!loop) return;
+
+              const tick = () => {
+                this.renderLoop?.();
+                this.loopId = requestAnimationFrame(tick);
+              };
+
+              tick();
+            },
+          };
+        }
+
+        async initAudio(options = {}) {
+          const audio = await initAudio(options);
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          return audio;
+        }
+
+        dispose() {
+          if (this.loopId) {
+            cancelAnimationFrame(this.loopId);
+          }
+
+          this.renderLoop = null;
+          this.loopId = null;
+          this.audioCleanup?.();
         }
       }
+
+      const toy = new CanvasToy(canvas);
 
       function drawBlocks() {
         const frequencyData = audioDataArray.length
@@ -149,24 +181,35 @@
         }
       }
 
-      function defragLoop() {
-        if (analyser) {
-          audioDataArray = getFrequencyData(analyser);
+      function defragLoop(ctxAudio) {
+        if (ctxAudio.analyser) {
+          audioDataArray = getFrequencyData(ctxAudio.analyser);
           const averageLevel = getAverageFrequency(audioDataArray);
           movingAverageLevel =
             movingAverageLevel * 0.7 + averageLevel * 0.3;
           idleState = movingAverageLevel < idleThreshold;
           updateStatusIndicator(idleState ? 'idle' : 'listening');
         } else {
+          audioDataArray = neutralSpectrum;
           updateStatusIndicator('waiting');
         }
         drawBlocks();
         defragTextAnimation();
-        requestAnimationFrame(defragLoop);
       }
 
-      setupAudio();
-      defragLoop();
+      startToyAudio(toy, defragLoop, {
+        fftSize: DEFAULT_FFT_SIZE,
+        fallbackToSynthetic: true,
+        onCleanup: () => updateStatusIndicator('waiting'),
+      }).catch((err) => {
+        console.error('Error capturing audio: ', err);
+        showError(
+          'error-message',
+          'Microphone access is required for the visualization to work. Please allow microphone access.'
+        );
+        updateStatusIndicator('waiting');
+        toy.renderer.setAnimationLoop(() => defragLoop({ toy, analyser: null }));
+      });
     </script>
   </body>
 </html>

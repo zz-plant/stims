@@ -26,11 +26,9 @@
       </div>
     </div>
     <script type="module">
-      import {
-        initAudio,
-        getFrequencyData,
-      } from './assets/js/utils/audio-handler.ts';
+      import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.ts';
       import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const errorEl = document.getElementById('error-message');
@@ -233,36 +231,56 @@
         },
       });
 
+      class CanvasToy {
+        constructor(canvasEl) {
+          this.canvas = canvasEl;
+          this.analyser = null;
+          this.audioCleanup = null;
+          this.loopId = null;
+          this.renderLoop = null;
+          this.renderer = {
+            setAnimationLoop: (loop) => {
+              if (this.loopId) {
+                cancelAnimationFrame(this.loopId);
+              }
+
+              this.renderLoop = loop;
+
+              if (!loop) return;
+
+              const tick = () => {
+                this.renderLoop?.();
+                this.loopId = requestAnimationFrame(tick);
+              };
+
+              tick();
+            },
+          };
+        }
+
+        async initAudio(options = {}) {
+          const audio = await initAudio(options);
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          return audio;
+        }
+
+        dispose() {
+          if (this.loopId) {
+            cancelAnimationFrame(this.loopId);
+          }
+
+          this.renderLoop = null;
+          this.loopId = null;
+          this.audioCleanup?.();
+        }
+      }
+
+      const toy = new CanvasToy(canvas);
+
       let time = 0.0;
       let audioData = 0.0;
       let fractalIntensity = 1.0;
-      let analyser;
-
-      async function setupAudio() {
-        try {
-          const result = await initAudio();
-          analyser = result.analyser;
-          hideError();
-          getAudioData();
-        } catch (err) {
-          console.error('Error capturing audio: ', err);
-          displayError(
-            'Microphone access is required for the visualization to work. Please allow microphone access.'
-          );
-        }
-      }
-
-      function getAudioData() {
-        requestAnimationFrame(getAudioData);
-        if (analyser) {
-          const dataArray = getFrequencyData(analyser);
-          const average =
-            dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-          audioData = average / 128.0;
-        }
-      }
-
-      setupAudio();
 
       document
         .getElementById('fractalIntensity')
@@ -270,7 +288,17 @@
           fractalIntensity = event.target.value;
         });
 
-      function render() {
+      function render(ctxAudio) {
+        if (ctxAudio.analyser) {
+          const dataArray = getFrequencyData(ctxAudio.analyser);
+          const average =
+            dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+          audioData = average / 128.0;
+          hideError();
+        } else {
+          audioData = 0;
+        }
+
         time += 0.02;
         gl.uniform1f(timeUniformLocation, time);
         gl.uniform1f(audioDataUniformLocation, audioData);
@@ -278,12 +306,22 @@
 
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        requestAnimationFrame(render);
       }
 
-      requestAnimationFrame(render);
-      window.addEventListener('pagehide', disposeResize);
+      startToyAudio(toy, render, { fallbackToSynthetic: true })
+        .then(() => hideError())
+        .catch((err) => {
+          console.error('Error capturing audio: ', err);
+          displayError(
+            'Microphone access is required for the visualization to work. Please allow microphone access.'
+          );
+          toy.renderer.setAnimationLoop(() => render({ toy, analyser: null }));
+        });
+
+      window.addEventListener('pagehide', () => {
+        disposeResize();
+        toy.dispose?.();
+      });
     </script>
   </body>
 </html>

@@ -43,6 +43,7 @@
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createSymphFunAdapter } from './assets/symph/fun-adapter.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const ctx2d = canvas.getContext('2d');
@@ -232,12 +233,58 @@
       `;
       funControls.appendControl(extraControls);
 
+      class CanvasToy {
+        constructor(canvasEl) {
+          this.canvas = canvasEl;
+          this.analyser = null;
+          this.audioCleanup = null;
+          this.loopId = null;
+          this.renderLoop = null;
+          this.renderer = {
+            setAnimationLoop: (loop) => {
+              if (this.loopId) {
+                cancelAnimationFrame(this.loopId);
+              }
+
+              this.renderLoop = loop;
+
+              if (!loop) return;
+
+              const tick = () => {
+                this.renderLoop?.();
+                this.loopId = requestAnimationFrame(tick);
+              };
+
+              tick();
+            },
+          };
+        }
+
+        async initAudio(options = {}) {
+          const audio = await initAudio(options);
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          return audio;
+        }
+
+        dispose() {
+          if (this.loopId) {
+            cancelAnimationFrame(this.loopId);
+          }
+
+          this.renderLoop = null;
+          this.loopId = null;
+          this.audioCleanup?.();
+        }
+      }
+
+      const toy = new CanvasToy(canvas);
+
       let gradientStops = adapter.paletteOptions.bright;
       let time = 0.0;
       let audioData = adapter.transformAudioValue(0);
       let colorOffset = [...adapter.paletteAccent];
       let touchPoint = [0.0, 0.0];
-      let analyser;
       let smoothedLevel = 0;
       let burstEnergy = 0;
       let lastTransientTime = 0;
@@ -281,54 +328,6 @@
           event.target.setAttribute('aria-valuenow', transientSensitivity.toString());
         }
       });
-
-      async function setupAudio() {
-        try {
-          const { analyser: a } = await initAudio();
-          analyser = a;
-          clearError('error-message');
-          getAudioData();
-          funControls.setAudioAvailable(true);
-        } catch (err) {
-          showError(
-            'error-message',
-            'Microphone access is unavailable. Visuals will run without audio reactivity.'
-          );
-          funControls.setAudioAvailable(false);
-          audioData = adapter.transformAudioValue(0);
-          console.error('Error capturing audio: ', err);
-        }
-      }
-
-      function getAudioData() {
-        requestAnimationFrame(getAudioData);
-        if (analyser) {
-          const dataArray = getFrequencyData(analyser);
-          const average = getAverageFrequency(dataArray);
-          const normalized = average / 255;
-          smoothedLevel = smoothedLevel
-            ? smoothedLevel * 0.9 + normalized * 0.1
-            : normalized;
-          const threshold = 0.08 + (1 - transientSensitivity) * 0.25;
-          const transientDelta = normalized - smoothedLevel;
-          const now = performance.now();
-          if (
-            transientDelta > threshold &&
-            now - lastTransientTime > 110 &&
-            normalized > 0.05
-          ) {
-            const strength = Math.min(
-              1,
-              (transientDelta - threshold) * 3 + normalized * 0.35
-            );
-            lastTransientTime = now;
-            triggerBurst(strength);
-          }
-
-          audioData = adapter.transformAudioValue(average);
-          updateSpectrograph(dataArray);
-        }
-      }
 
       function updateSpectrograph(dataArray) {
         if (!ctx2d) return;
@@ -422,9 +421,38 @@
         }
       }
 
-      setupAudio();
+      function animate(ctxAudio) {
+        if (ctxAudio.analyser) {
+          const dataArray = getFrequencyData(ctxAudio.analyser);
+          const average = getAverageFrequency(dataArray);
+          const normalized = average / 255;
+          smoothedLevel = smoothedLevel
+            ? smoothedLevel * 0.9 + normalized * 0.1
+            : normalized;
+          const threshold = 0.08 + (1 - transientSensitivity) * 0.25;
+          const transientDelta = normalized - smoothedLevel;
+          const now = performance.now();
+          if (
+            transientDelta > threshold &&
+            now - lastTransientTime > 110 &&
+            normalized > 0.05
+          ) {
+            const strength = Math.min(
+              1,
+              (transientDelta - threshold) * 3 + normalized * 0.35
+            );
+            lastTransientTime = now;
+            triggerBurst(strength);
+          }
 
-      function render() {
+          audioData = adapter.transformAudioValue(average);
+          updateSpectrograph(dataArray);
+          funControls.setAudioAvailable(true);
+        } else {
+          audioData = adapter.transformAudioValue(0);
+          funControls.setAudioAvailable(false);
+        }
+
         time += 0.02;
         gl.uniform1f(timeUniformLocation, time);
         gl.uniform1f(audioDataUniformLocation, audioData);
@@ -446,10 +474,21 @@
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-        requestAnimationFrame(render);
+        updateSparkles();
       }
 
-      requestAnimationFrame(render);
+      startToyAudio(toy, animate, { fallbackToSynthetic: true })
+        .then(() => clearError('error-message'))
+        .catch((err) => {
+          showError(
+            'error-message',
+            'Microphone access is unavailable. Visuals will run without audio reactivity.'
+          );
+          funControls.setAudioAvailable(false);
+          audioData = adapter.transformAudioValue(0);
+          console.error('Error capturing audio: ', err);
+          toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
+        });
 
       // Handle pointer input
       canvas.addEventListener('pointerdown', (event) => {
@@ -463,7 +502,10 @@
         const y = -(event.clientY / canvas.clientHeight) * 2.0 + 1.0;
         touchPoint = [x, y];
       });
-      window.addEventListener('pagehide', disposeResize);
+      window.addEventListener('pagehide', () => {
+        disposeResize();
+        toy.dispose?.();
+      });
     </script>
   </body>
 </html>
