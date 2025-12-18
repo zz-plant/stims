@@ -1,30 +1,10 @@
 import toysData from './toys-data.js';
 import { ensureWebGL } from './utils/webgl-check.js';
+import { createManifestClient } from './core/manifest.ts';
+import { createRouter } from './core/router.ts';
+import { createToyView } from './core/view.ts';
 
 const TOY_QUERY_PARAM = 'toy';
-let manifestPromise;
-let navigationInitialized = false;
-
-function getBaseUrl() {
-  const win = getWindow();
-  if (!win) return null;
-
-  const href = win.location?.href;
-  if (href) {
-    return new URL(href);
-  }
-
-  const origin = win.location?.origin;
-  if (origin) {
-    return new URL(origin);
-  }
-
-  return null;
-}
-
-function hasWebGPUSupport() {
-  return typeof navigator !== 'undefined' && Boolean(navigator.gpu);
-}
 
 function getDocument() {
   return typeof document === 'undefined' ? null : document;
@@ -34,412 +14,164 @@ function getWindow() {
   return typeof window === 'undefined' ? null : window;
 }
 
-function getManifestPaths() {
-  const baseUrl = getBaseUrl();
-
-  const resolve = (relativePath) =>
-    baseUrl ? new URL(relativePath, baseUrl).pathname : relativePath.replace(/^\.\//, '/');
-
-  return [resolve('./manifest.json'), resolve('./.vite/manifest.json')];
+function hasWebGPUSupport(win = getWindow()) {
+  return Boolean(win?.navigator && 'gpu' in win.navigator);
 }
 
-function getToyList() {
-  const doc = getDocument();
-  return doc?.getElementById('toy-list') ?? null;
-}
+function createLifecycleManager(globalObject = globalThis) {
+  return {
+    getActiveToy() {
+      return globalObject.__activeWebToy;
+    },
+    setActiveToy(activeToy) {
+      globalObject.__activeWebToy = activeToy;
+    },
+    disposeActiveToy() {
+      const activeToy = globalObject.__activeWebToy;
 
-function findActiveToyContainer() {
-  const doc = getDocument();
-  return doc?.getElementById('active-toy-container') ?? null;
-}
-
-function ensureActiveToyContainer() {
-  const existing = findActiveToyContainer();
-  if (existing) return existing;
-
-  const doc = getDocument();
-  if (!doc) return null;
-
-  const container = doc.createElement('div');
-  container.id = 'active-toy-container';
-  container.className = 'active-toy-container is-hidden';
-  doc.body.appendChild(container);
-  return container;
-}
-
-function hideElement(element) {
-  if (element && !element.classList.contains('is-hidden')) {
-    element.classList.add('is-hidden');
-  }
-}
-
-function showElement(element) {
-  if (element && element.classList.contains('is-hidden')) {
-    element.classList.remove('is-hidden');
-  }
-}
-
-function clearActiveToyContainer() {
-  const container = findActiveToyContainer();
-  if (!container) return;
-
-  while (container.firstChild) {
-    container.removeChild(container.firstChild);
-  }
-}
-
-function createStatusElement(container, { title, message, type }) {
-  if (!container) return null;
-
-  const existing = container.querySelector('.active-toy-status');
-  if (existing) {
-    existing.remove();
-  }
-
-  const status = document.createElement('div');
-  status.className = `active-toy-status ${type === 'error' ? 'is-error' : 'is-loading'}`;
-
-  const glow = document.createElement('div');
-  glow.className = 'active-toy-status__glow';
-  status.appendChild(glow);
-
-  const content = document.createElement('div');
-  content.className = 'active-toy-status__content';
-  status.appendChild(content);
-
-  if (type === 'loading') {
-    const spinner = document.createElement('div');
-    spinner.className = 'toy-loading-spinner';
-    content.appendChild(spinner);
-  }
-
-  const heading = document.createElement('h2');
-  heading.textContent = title;
-  content.appendChild(heading);
-
-  const body = document.createElement('p');
-  body.textContent = message;
-  content.appendChild(body);
-
-  container.appendChild(status);
-  return status;
-}
-
-function showLoadingIndicator(container, toyTitle) {
-  return createStatusElement(container, {
-    type: 'loading',
-    title: 'Preparing toy...',
-    message: toyTitle ? `${toyTitle} is loading.` : 'Loading toy...'
-  });
-}
-
-function removeStatusElement(container) {
-  const status = container?.querySelector('.active-toy-status');
-  if (status) {
-    status.remove();
-  }
-}
-
-function buildImportErrorMessage(toy, { moduleUrl, importError } = {}) {
-  if (getWindow()?.location?.protocol === 'file:') {
-    return 'This toy needs a local web server to compile its TypeScript modules. Run `npm run dev` (or `bun run dev`) and reload from `http://localhost:5173`.';
-  }
-
-  const message = importError?.message ?? '';
-  if (typeof moduleUrl === 'string' && moduleUrl.endsWith('.ts')) {
-    return `${toy?.title ?? 'This toy'} could not be compiled. Make sure you are running through the dev server or a production build so the TypeScript bundle is available.`;
-  }
-
-  if (message.toLowerCase().includes('mime')) {
-    return `${toy?.title ?? 'This toy'} could not be loaded because the server is returning an unexpected file type. Try reloading from the dev server or production build.`;
-  }
-
-  return toy?.title
-    ? `${toy.title} hit a snag while loading. Try again or return to the library.`
-    : 'Something went wrong while loading this toy. Try again or return to the library.';
-}
-
-function showImportError(container, toy, { moduleUrl, importError } = {}) {
-  clearActiveToyContainer();
-
-  const status = createStatusElement(container, {
-    type: 'error',
-    title: 'Unable to load this toy',
-    message: buildImportErrorMessage(toy, { moduleUrl, importError }),
-  });
-
-  if (!status) return;
-
-  const actions = document.createElement('div');
-  actions.className = 'active-toy-status__actions';
-
-  const retry = document.createElement('button');
-  retry.className = 'cta-button primary';
-  retry.type = 'button';
-  retry.textContent = 'Back to library';
-  retry.addEventListener('click', () => {
-    disposeActiveToy();
-    const win = getWindow();
-    if (win?.history) {
-      const url = new URL(win.location.href);
-      url.searchParams.delete(TOY_QUERY_PARAM);
-      win.history.pushState({}, '', url);
-    }
-    showLibraryView();
-  });
-
-  actions.appendChild(retry);
-  status.querySelector('.active-toy-status__content')?.appendChild(actions);
-}
-
-function showCapabilityError(container, toy) {
-  clearActiveToyContainer();
-
-  const status = createStatusElement(container, {
-    type: 'error',
-    title: 'WebGPU not available',
-    message: toy?.title
-      ? `${toy.title} needs WebGPU, which is not supported in this browser.`
-      : 'This toy requires WebGPU, which is not supported in this browser.',
-  });
-
-  if (!status) return;
-
-  const actions = document.createElement('div');
-  actions.className = 'active-toy-actions';
-
-  const back = document.createElement('button');
-  back.type = 'button';
-  back.className = 'cta-button';
-  back.textContent = 'Back to Library';
-  back.addEventListener('click', () => {
-    showLibraryView();
-    updateHistoryToLibraryView();
-  });
-
-  actions.appendChild(back);
-  status.querySelector('.active-toy-status__content')?.appendChild(actions);
-}
-
-function showLibraryView() {
-  showElement(getToyList());
-  hideElement(findActiveToyContainer());
-}
-
-function showActiveToyView() {
-  hideElement(getToyList());
-  const container = ensureActiveToyContainer();
-  ensureBackToLibraryControl(container);
-  showElement(container);
-}
-
-function updateHistoryToLibraryView() {
-  const win = getWindow();
-  if (!win?.history) return;
-
-  const url = new URL(win.location.href);
-  if (!url.searchParams.has(TOY_QUERY_PARAM)) {
-    return;
-  }
-
-  url.searchParams.delete(TOY_QUERY_PARAM);
-  win.history.pushState({}, '', url);
-}
-
-function ensureBackToLibraryControl(container) {
-  const doc = getDocument();
-  if (!doc || !container) return null;
-
-  let control = container.querySelector('[data-back-to-library]');
-  if (control) return control;
-
-  control = doc.createElement('button');
-  control.type = 'button';
-  control.className = 'home-link';
-  control.textContent = 'Back to Library';
-  control.setAttribute('data-back-to-library', 'true');
-  control.addEventListener('click', () => {
-    disposeActiveToy();
-    showLibraryView();
-    updateHistoryToLibraryView();
-  });
-
-  container.appendChild(control);
-  return control;
-}
-
-function disposeActiveToy() {
-  const activeToy = globalThis.__activeWebToy;
-
-  if (activeToy?.dispose) {
-    try {
-      activeToy.dispose();
-    } catch (error) {
-      console.error('Error disposing existing toy', error);
-    }
-  }
-
-  clearActiveToyContainer();
-
-  const globalObject = globalThis;
-  delete globalObject.__activeWebToy;
-}
-
-async function fetchManifest() {
-  if (!manifestPromise) {
-    manifestPromise = (async () => {
-      for (const path of getManifestPaths()) {
+      if (activeToy?.dispose) {
         try {
-          const response = await fetch(path);
-          if (response.ok) return response.json();
+          activeToy.dispose();
         } catch (error) {
-          console.warn('Error fetching manifest from', path, error);
+          console.error('Error disposing existing toy', error);
         }
       }
 
-      return null;
-    })();
-  }
-  return manifestPromise;
+      delete globalObject.__activeWebToy;
+    },
+  };
 }
 
-export async function resolveModulePath(entry) {
-  const manifest = await fetchManifest();
-  const manifestEntry = manifest?.[entry];
+export function createLoader({
+  toys = toysData,
+  manifestClient = createManifestClient(),
+  window: win = getWindow(),
+  document: doc = getDocument(),
+  host = doc?.body ?? null,
+  ensureWebGLCheck = ensureWebGL,
+  globalObject = globalThis,
+  toyList = doc?.getElementById('toy-list') ?? null,
+} = {}) {
+  const lifecycle = createLifecycleManager(globalObject);
+  let router;
 
-  if (manifestEntry) {
-    const compiledFile = manifestEntry.file || manifestEntry.url;
-    if (compiledFile) {
-      const baseUrl = getBaseUrl();
-      return baseUrl
-        ? new URL(compiledFile, baseUrl).pathname
-        : new URL(compiledFile, window.location.origin).pathname;
-    }
-  }
+  const view = createToyView({
+    document: doc,
+    window: win,
+    host,
+    toyList,
+    onBackToLibrary: () => {
+      lifecycle.disposeActiveToy();
+      view.clearActiveToyContainer();
+      view.showLibraryView();
+      router?.updateHistoryToLibraryView();
+    },
+  });
 
-  if (entry.startsWith('./')) {
-    try {
-      return new URL(entry, import.meta.url).pathname;
-    } catch (error) {
-      console.error('Error resolving module path from import.meta.url:', error);
-    }
-  }
+  let loadToyRef;
+  router = createRouter({
+    window: win,
+    queryParam: TOY_QUERY_PARAM,
+    loadToy: async (slug) => loadToyRef?.(slug),
+    onLibraryRoute: () => {
+      lifecycle.disposeActiveToy();
+      view.clearActiveToyContainer();
+      view.showLibraryView();
+    },
+  });
 
-  const baseUrl = getBaseUrl();
-  if (baseUrl) {
-    return new URL(entry, baseUrl).pathname;
-  }
-
-  return entry.startsWith('/') || entry.startsWith('.') ? entry : `/${entry}`;
-}
-
-function pushToyState(slug) {
-  const win = getWindow();
-  if (!win?.history) return;
-
-  const url = new URL(win.location.href);
-  url.searchParams.set(TOY_QUERY_PARAM, slug);
-  win.history.pushState({ toy: slug }, '', url);
-}
-
-export async function loadToy(slug, { pushState = false } = {}) {
-  const toys = toysData;
-  const toy = toys.find((t) => t.slug === slug);
-  if (!toy) {
-    console.error(`Toy not found: ${slug}`);
-    showLibraryView();
-    return;
-  }
-
-  if (toy.type === 'module') {
-    const supportsRendering = ensureWebGL({
-      title: toy.title ? `${toy.title} needs graphics acceleration` : 'Graphics support required',
-      description:
-        'We could not detect WebGL or WebGPU support on this device. Try a modern browser with hardware acceleration enabled.',
-    });
-
-    if (!supportsRendering) {
+  const loadToy = (loadToyRef = async (slug, { pushState = false } = {}) => {
+    const toy = toys.find((t) => t.slug === slug);
+    if (!toy) {
+      console.error(`Toy not found: ${slug}`);
+      view.showLibraryView();
+      lifecycle.disposeActiveToy();
+      view.clearActiveToyContainer();
       return;
     }
 
-    if (pushState) {
-      pushToyState(slug);
-    }
-
-    disposeActiveToy();
-    showActiveToyView();
-
-    if (toy.requiresWebGPU && !hasWebGPUSupport()) {
-      const container = ensureActiveToyContainer();
-      showCapabilityError(container, toy);
-      return;
-    }
-
-    const container = ensureActiveToyContainer();
-    showLoadingIndicator(container, toy.title || toy.slug);
-
-    const moduleUrl = await resolveModulePath(toy.module);
-    let importError = null;
-
-    let moduleExports = null;
-
-    await import(moduleUrl)
-      .then((mod) => {
-        moduleExports = mod;
-      })
-      .catch((error) => {
-        importError = error;
+    if (toy.type === 'module') {
+      const supportsRendering = ensureWebGLCheck({
+        title: toy.title ? `${toy.title} needs graphics acceleration` : 'Graphics support required',
+        description:
+          'We could not detect WebGL or WebGPU support on this device. Try a modern browser with hardware acceleration enabled.',
       });
 
-    if (importError) {
-      console.error('Error loading toy module:', importError);
-      showImportError(container, toy, { moduleUrl, importError });
+      if (!supportsRendering) {
+        return;
+      }
+
+      if (pushState) {
+        router?.pushToyState(slug);
+      }
+
+      lifecycle.disposeActiveToy();
+      view.clearActiveToyContainer();
+      const container = view.showActiveToyView();
+
+      if (toy.requiresWebGPU && !hasWebGPUSupport(win)) {
+        view.showCapabilityError(toy);
+        return;
+      }
+
+      view.showLoadingIndicator(toy.title || toy.slug);
+
+      const moduleUrl = await manifestClient.resolveModulePath(toy.module);
+      let moduleExports = null;
+
+      try {
+        moduleExports = await import(moduleUrl);
+      } catch (error) {
+        console.error('Error loading toy module:', error);
+        view.showImportError(toy, { moduleUrl, importError: error });
+        return;
+      }
+
+      const starter = moduleExports?.start ?? moduleExports?.default?.start;
+
+      if (starter) {
+        try {
+          const active = await starter({ container, slug });
+          if (active && !lifecycle.getActiveToy()) {
+            lifecycle.setActiveToy(active);
+          }
+        } catch (error) {
+          console.error('Error starting toy module:', error);
+          view.showImportError(toy);
+          return;
+        }
+      }
+
+      view.removeStatusElement();
       return;
     }
 
-    const starter = moduleExports?.start ?? moduleExports?.default?.start;
-
-    if (starter) {
-      try {
-        const active = await starter({ container, slug });
-        if (active && !globalThis.__activeWebToy) {
-          globalThis.__activeWebToy = active;
-        }
-      } catch (error) {
-        console.error('Error starting toy module:', error);
-        showImportError(container, toy);
-        return;
-      }
+    lifecycle.disposeActiveToy();
+    view.clearActiveToyContainer();
+    if (win?.location) {
+      win.location.href = toy.module;
+    } else if (globalObject.location) {
+      globalObject.location.href = toy.module;
     }
-
-    removeStatusElement(container);
-  } else {
-    disposeActiveToy();
-    window.location.href = toy.module;
-  }
-}
-
-export async function loadFromQuery() {
-  const win = getWindow();
-  if (!win) return;
-
-  const params = new URLSearchParams(win.location.search);
-  const slug = params.get(TOY_QUERY_PARAM);
-
-  if (slug) {
-    await loadToy(slug);
-  } else {
-    disposeActiveToy();
-    showLibraryView();
-  }
-}
-
-export function initNavigation() {
-  const win = getWindow();
-  if (!win || navigationInitialized) return;
-
-  navigationInitialized = true;
-  win.addEventListener('popstate', () => {
-    loadFromQuery();
   });
+
+  return {
+    loadToy,
+    loadFromQuery: router.loadFromQuery,
+    pushToyState: router.pushToyState,
+    initNavigation: router.initNavigation,
+    updateHistoryToLibraryView: router.updateHistoryToLibraryView,
+    disposeActiveToy: lifecycle.disposeActiveToy,
+    resolveModulePath: manifestClient.resolveModulePath,
+    fetchManifest: manifestClient.fetchManifest,
+  };
 }
+
+const defaultLoader = createLoader();
+
+export const loadToy = defaultLoader.loadToy;
+export const loadFromQuery = defaultLoader.loadFromQuery;
+export const initNavigation = defaultLoader.initNavigation;
+export const pushToyState = defaultLoader.pushToyState;
+export const resolveModulePath = defaultLoader.resolveModulePath;
+export const fetchManifest = defaultLoader.fetchManifest;
