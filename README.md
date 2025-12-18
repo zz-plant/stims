@@ -39,23 +39,27 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 
 ## Toys in the Collection
 
-| Toy                                             | Description                                                                     |
-| ----------------------------------------------- | ------------------------------------------------------------------------------- |
-| [3D Toy](./toy.html?toy=3dtoy)                  | Dive into a twisting 3D tunnel that responds to sound.                          |
-| [Star Guitar Visualizer](./brand.html)          | A visual journey inspired by an iconic music video, synced to your music.       |
-| [Defrag Visualizer](./defrag.html)              | A nostalgic, sound-reactive visualizer evoking old defragmentation screens.     |
+| Toy                                             | Description |
+| ----------------------------------------------- | ----------- |
+| [3D Toy](./toy.html?toy=3dtoy)                  | Dive into a twisting 3D tunnel that responds to sound. |
+| [Star Guitar Visualizer](./brand.html)          | A visual journey inspired by an iconic music video, synced to your music. |
+| [Pottery Wheel Sculptor](./clay.html)           | Spin and shape a clay vessel with tactile smoothing and carving tools. |
+| [Defrag Visualizer](./defrag.html)              | A nostalgic, sound-reactive visualizer evoking old defragmentation screens. |
 | [Evolutionary Weirdcore](./evol.html)           | Watch surreal landscapes evolve with fractals and glitches that react to music. |
-| [Multi-Capability Visualizer](./multi.html)     | Shapes and lights move with both sound and device motion.                       |
-| [Trippy Synesthetic Visualizer](./seary.html)   | Blend audio and visuals in a rich synesthetic experience.                       |
-| [Pattern Recognition Visualizer](./sgpat.html)  | See patterns form dynamically in response to sound.                             |
-| [SVG + Three.js Visualizer](./svgtest.html)     | A hybrid visualizer blending 2D and 3D elements, reacting in real time.         |
-| [Dreamy Spectrograph](./symph.html)             | A relaxing spectrograph that moves gently with your audio.                      |
-| [Interactive Word Cloud](./words.html)          | Speak and watch the word cloud react and shift with your voice.                 |
-| [Grid Visualizer](./toy.html?toy=cube-wave)     | Swap between cube waves and bouncing spheres without stopping the music.              |
-| [Particle Orbit](./toy.html?toy=particle-orbit) | Thousands of particles swirling faster as the music intensifies.                |
-| [Spiral Burst](./toy.html?toy=spiral-burst)     | Colorful spirals rotate and expand with every beat.                             |
-| [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel) | Fly through colorful rings that spin to your music.                             |
-| [Star Field](./toy.html?toy=star-field)         | A field of shimmering stars reacts to the beat.                                 |
+| [Geometry Visualizer](./geom.html)              | Push shifting geometric forms directly from live mic input. |
+| [Ultimate Satisfying Visualizer](./holy.html)   | Layered halos, particles, and morphing shapes that respond to your music. |
+| [Lights Visualizer](./lights.html)              | Swap shader styles and palettes while lights ripple with your microphone input. |
+| [Multi-Capability Visualizer](./multi.html)     | Shapes and lights move with both sound and device motion. |
+| [Trippy Synesthetic Visualizer](./seary.html)   | Blend audio and visuals in a rich synesthetic experience. |
+| [Pattern Recognition Visualizer](./sgpat.html)  | See patterns form dynamically in response to sound. |
+| [SVG + Three.js Visualizer](./svgtest.html)     | A hybrid visualizer blending 2D and 3D elements, reacting in real time. |
+| [Dreamy Spectrograph](./symph.html)             | A relaxing spectrograph that moves gently with your audio. |
+| [Interactive Word Cloud](./words.html)          | Speak and watch the word cloud react and shift with your voice. |
+| [Grid Visualizer](./toy.html?toy=cube-wave)     | Swap between cube waves and bouncing spheres without stopping the music. |
+| [Cosmic Particles](./toy.html?toy=cosmic-particles) | Jump between orbiting swirls and nebula fly-throughs with a single toggle. |
+| [Spiral Burst](./toy.html?toy=spiral-burst)     | Colorful spirals rotate and expand with every beat. |
+| [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel) | Fly through colorful rings that spin to your music. |
+| [Star Field](./toy.html?toy=star-field)         | A field of shimmering stars reacts to the beat. |
 
 ---
 
