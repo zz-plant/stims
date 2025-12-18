@@ -26,6 +26,8 @@
       } from './assets/js/core/animation-loop.ts';
       import { getAverageFrequency } from './assets/js/utils/audio-handler.ts';
       import { initHints } from './assets/ui/hints.ts';
+      import { initFunControls } from './assets/ui/fun-controls.ts';
+      import { createMultiFunAdapter } from './assets/multi/fun-adapter.ts';
 
       const canvas = document.getElementById('webglCanvas');
 
@@ -128,6 +130,20 @@
         createRandomShape();
       }
 
+      const adapter = createMultiFunAdapter({
+        torusMaterial: torusKnot.material as THREE.MeshStandardMaterial,
+        pointLight,
+        particlesMaterial,
+        shapes,
+      });
+
+      const funControls = initFunControls({
+        paletteOptions: adapter.paletteOptions,
+        onPaletteChange: (palette, colors) => adapter.setPalette(palette, colors),
+        onMotionChange: (intensity, mode) => adapter.setMotion(intensity, mode),
+        onAudioToggle: (enabled) => adapter.setAudioReactive(enabled),
+      });
+
       window.addEventListener('deviceorientation', (event) => {
         toy.camera.rotation.x = (event.beta / 180) * Math.PI;
         toy.camera.rotation.y = (event.gamma / 90) * Math.PI;
@@ -137,17 +153,19 @@
         const dataArray = getContextFrequencyData(ctx);
         const avgFrequency = getAverageFrequency(dataArray);
 
-        torusKnot.rotation.x += avgFrequency / 5000;
-        torusKnot.rotation.y += avgFrequency / 5000;
+        const spin = adapter.computeMotion(avgFrequency);
 
-        pointLight.intensity = avgFrequency / 100;
+        torusKnot.rotation.x += spin;
+        torusKnot.rotation.y += spin;
 
-        particles.rotation.y += 0.001 + avgFrequency / 100000;
+        pointLight.intensity = Math.max(0.6, avgFrequency / 140) * (spin * 500 + 0.5);
+
+        particles.rotation.y += 0.001 + spin / 10;
 
         shapes.forEach((shape) => {
-          shape.rotation.x += 0.01;
-          shape.rotation.y += 0.01;
-          shape.position.z += 0.5;
+          shape.rotation.x += 0.01 + spin * 2;
+          shape.rotation.y += 0.01 + spin * 1.5;
+          shape.position.z += 0.5 + spin * 60;
 
           if (shape.position.z > 10) {
             shape.position.z = -500;
@@ -157,12 +175,16 @@
         ctx.toy.render();
       }
 
-      startAudioLoop(toy, animate).catch((err) => {
-        console.error('The following error occurred: ' + err);
-        displayError(
-          'Microphone access is required for the visualization to work. Please allow microphone access.'
-        );
-      });
+      startAudioLoop(toy, animate)
+        .catch((err) => {
+          console.error('The following error occurred: ' + err);
+          funControls.setAudioAvailable(false);
+          displayError(
+            'Microphone access is unavailable. Visuals will run without audio reactivity.'
+          );
+          const silentContext = { toy, analyser: null };
+          toy.renderer.setAnimationLoop(() => animate(silentContext));
+        });
     </script>
   </body>
 </html>
