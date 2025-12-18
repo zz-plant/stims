@@ -5,12 +5,13 @@ Thanks for helping build and refine the Stim Webtoys Library! This guide covers 
 ## Environment Setup
 
 - Use **Bun 1.2+** for the fastest installs and test runs (the repo records this in `package.json`). **Node.js 22** (see `.nvmrc`) is also supported if you prefer npm for Vite or tooling.
-- Install dependencies with:
+- Install dependencies (Bun is the only lockfile tracked in git):
   ```bash
-  npm install
-  # or
   bun install
+  # or, if you prefer npm locally
+  npm install
   ```
+  The repository pins installs via `bun.lock`, so use `bun install --frozen-lockfile` to honor it. If you generate a `package-lock.json` with npm, keep it local and untracked.
   Bun does not automatically run `prepare` scripts, so a `postinstall` script installs Husky when your user agent starts with `bun`. If that misses your setup, run `bun x husky install` (or `npx husky install`) after installing dependencies.
 
 ## Running the Dev Server
