@@ -15,6 +15,7 @@ export default class WebToy {
   audioListener: THREE.AudioListener | null;
   audio: THREE.Audio | THREE.PositionalAudio | null;
   audioStream: MediaStream | null;
+  audioCleanup: (() => void) | null;
   resizeHandler: (() => void) | null;
 
   constructor({
@@ -50,6 +51,7 @@ export default class WebToy {
     this.audioListener = null;
     this.audio = null;
     this.audioStream = null;
+    this.audioCleanup = null;
     this.resizeHandler = () => this.handleResize();
     window.addEventListener('resize', this.resizeHandler);
 
@@ -63,11 +65,21 @@ export default class WebToy {
   }
 
   async initAudio(options = {}) {
+    if (this.audioCleanup) {
+      this.audioCleanup();
+      this.audioCleanup = null;
+      this.analyser = null;
+      this.audioListener = null;
+      this.audio = null;
+      this.audioStream = null;
+    }
+
     const audio = await initAudio({ ...options, camera: this.camera });
     this.analyser = audio.analyser;
     this.audioListener = audio.listener;
     this.audio = audio.audio;
     this.audioStream = audio.stream ?? null;
+    this.audioCleanup = audio.cleanup;
     return audio;
   }
 
@@ -108,30 +120,13 @@ export default class WebToy {
       }
     }
 
-    if (this.audio) {
-      if ('stop' in this.audio && typeof this.audio.stop === 'function') {
-        this.audio.stop();
-      }
-      if (
-        'disconnect' in this.audio &&
-        typeof this.audio.disconnect === 'function'
-      ) {
-        this.audio.disconnect();
-      }
-    }
-
-    if (this.audioListener && 'remove' in this.camera) {
-      (
-        this.camera as THREE.Camera & { remove?: (obj: THREE.Object3D) => void }
-      ).remove(this.audioListener);
-    }
-
-    if (this.audioStream) {
-      this.audioStream.getTracks().forEach((track) => track.stop());
-    }
-
-    if (this.analyser?.analyser) {
-      this.analyser.analyser.disconnect();
+    if (this.audioCleanup) {
+      this.audioCleanup();
+      this.audioCleanup = null;
+      this.analyser = null;
+      this.audioListener = null;
+      this.audio = null;
+      this.audioStream = null;
     }
 
     if (this.canvas?.parentElement) {

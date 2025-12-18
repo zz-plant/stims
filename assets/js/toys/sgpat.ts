@@ -156,17 +156,15 @@ function updateStartButton(label: string, disabled: boolean) {
 }
 
 function stopCurrentAudio() {
-  if (toy.audioStream) {
-    toy.audioStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
-    toy.audioStream = null;
+  if (toy.audioCleanup) {
+    toy.audioCleanup();
   }
-  if (toy.audio && 'disconnect' in toy.audio && typeof toy.audio.disconnect === 'function') {
-    toy.audio.disconnect();
-  }
-  if (toy.audio && 'stop' in toy.audio && typeof toy.audio.stop === 'function') {
-    toy.audio.stop();
-  }
+
+  toy.audioCleanup = null;
   toy.analyser = null;
+  toy.audio = null;
+  toy.audioListener = null;
+  toy.audioStream = null;
 }
 
 function updateSpectrograph(dataArray: Uint8Array) {

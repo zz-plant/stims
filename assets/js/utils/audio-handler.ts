@@ -17,10 +17,30 @@ export type AudioInitOptions = {
   camera?: THREE.Camera;
   positional?: boolean;
   object?: THREE.Object3D;
+  constraints?: MediaStreamConstraints;
+  stream?: MediaStream;
+  onCleanup?: (ctx: {
+    analyser: THREE.AudioAnalyser;
+    listener: THREE.AudioListener;
+    audio: THREE.Audio | THREE.PositionalAudio;
+    stream?: MediaStream;
+  }) => void;
 };
 
 export async function initAudio(options: AudioInitOptions = {}) {
-  const { fftSize = 256, camera, positional = false, object } = options;
+  const {
+    fftSize = 256,
+    camera,
+    positional = false,
+    object,
+    constraints,
+    stream,
+    onCleanup,
+  } = options;
+
+  let listener: THREE.AudioListener | null = null;
+  let resolvedStream: MediaStream | null = null;
+  let ownsStream = false;
 
   if (typeof navigator === 'undefined') {
     throw new AudioAccessError(
@@ -37,24 +57,102 @@ export async function initAudio(options: AudioInitOptions = {}) {
   }
 
   try {
-    const listener = new THREE.AudioListener();
+    listener = new THREE.AudioListener();
     if (camera) {
       camera.add(listener);
     }
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (stream) {
+      resolvedStream = stream;
+    } else {
+      resolvedStream = await navigator.mediaDevices.getUserMedia(
+        constraints ?? { audio: { echoCancellation: true } }
+      );
+      ownsStream = true;
+    }
+
+    const streamSource = resolvedStream;
+    if (!streamSource) {
+      throw new AudioAccessError(
+        'unavailable',
+        'Microphone access is unavailable. Please check your device settings.'
+      );
+    }
+
     const audio = positional
       ? new THREE.PositionalAudio(listener)
       : new THREE.Audio(listener);
-    audio.setMediaStreamSource(stream);
+    audio.setMediaStreamSource(streamSource);
     if (positional && object) {
       object.add(audio);
     }
     const analyser = new THREE.AudioAnalyser(audio, fftSize);
 
-    return { analyser, listener, audio, stream };
+    let cleanedUp = false;
+    const cleanup = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+
+      if (audio && 'stop' in audio && typeof audio.stop === 'function') {
+        audio.stop();
+      }
+
+      if (
+        audio &&
+        'disconnect' in audio &&
+        typeof audio.disconnect === 'function'
+      ) {
+        audio.disconnect();
+      }
+
+      if (analyser?.analyser) {
+        analyser.analyser.disconnect();
+      }
+
+      if (streamSource) {
+        streamSource.getTracks().forEach((track) => track.stop());
+      }
+
+      if (camera && 'remove' in camera && listener) {
+        (
+          camera as THREE.Camera & { remove?: (obj: THREE.Object3D) => void }
+        ).remove(listener);
+      }
+
+      if (listener?.context?.close) {
+        listener.context.close();
+      }
+
+      if (positional && object && 'remove' in object) {
+        (object as THREE.Object3D & { remove?: (obj: THREE.Object3D) => void })
+          .remove?.(audio);
+      }
+
+      onCleanup?.({ analyser, listener, audio, stream: streamSource });
+    };
+
+    return { analyser, listener, audio, stream: streamSource, cleanup };
   } catch (error) {
     console.error('Error accessing audio:', error);
+
+    if (resolvedStream && ownsStream) {
+      resolvedStream.getTracks().forEach((track) => track.stop());
+    }
+
+    if (listener?.context?.close) {
+      listener.context.close();
+    }
+
+    if (camera && 'remove' in camera && listener) {
+      (
+        camera as THREE.Camera & { remove?: (obj: THREE.Object3D) => void }
+      ).remove(listener);
+    }
+
+    if (error instanceof AudioAccessError) {
+      throw error;
+    }
+
     if (
       error &&
       typeof error === 'object' &&
