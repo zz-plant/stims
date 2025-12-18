@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import {
   AnimationContext,
+  AudioLoopController,
   getContextFrequencyData,
   startAudioLoop,
 } from '../core/animation-loop';
@@ -69,6 +70,8 @@ const uniforms = {
 const startButton = document.getElementById('start-audio-button') as
   | HTMLButtonElement
   | null;
+
+let audioController: AudioLoopController | null = null;
 
 const fragmentShader = `
   uniform float u_time;
@@ -156,17 +159,13 @@ function updateStartButton(label: string, disabled: boolean) {
 }
 
 function stopCurrentAudio() {
-  if (toy.audioStream) {
-    toy.audioStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
-    toy.audioStream = null;
+  if (audioController) {
+    audioController.stop();
+  } else {
+    toy.renderer?.setAnimationLoop?.(null);
+    toy.stopAudio();
   }
-  if (toy.audio && 'disconnect' in toy.audio && typeof toy.audio.disconnect === 'function') {
-    toy.audio.disconnect();
-  }
-  if (toy.audio && 'stop' in toy.audio && typeof toy.audio.stop === 'function') {
-    toy.audio.stop();
-  }
-  toy.analyser = null;
+  patternRecognizer = null;
 }
 
 function updateSpectrograph(dataArray: Uint8Array) {
@@ -231,7 +230,9 @@ async function start() {
   }
   try {
     stopCurrentAudio();
-    const ctx = await startAudioLoop(toy, animate, { fftSize: 256 });
+    audioController =
+      audioController || startAudioLoop(toy, animate, { fftSize: 256 });
+    const ctx = await audioController.start();
     if (ctx.analyser) {
       patternRecognizer = new PatternRecognizer(ctx.analyser);
     }

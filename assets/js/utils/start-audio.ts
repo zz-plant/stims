@@ -1,26 +1,28 @@
 import type WebToy from '../core/web-toy';
-import { AnimationContext, startAudioLoop } from '../core/animation-loop';
+import type { AudioLoopController } from '../core/animation-loop';
+import { startAudioLoop } from '../core/animation-loop';
 import type { AudioInitOptions } from './audio-handler';
 
-type StartAudioOptions = AudioInitOptions | number | undefined;
+type StartAudioOptions = (AudioInitOptions & { autostart?: boolean }) | number | undefined;
 
-function normalizeOptions(options: StartAudioOptions): AudioInitOptions {
+function normalizeOptions(
+  options: StartAudioOptions
+): { audio: AudioInitOptions; autostart?: boolean } {
   if (typeof options === 'number') {
-    return { fftSize: options };
+    return { audio: { fftSize: options } };
   }
 
-  return options ?? {};
+  if (!options) return { audio: {} };
+
+  const { autostart, ...audio } = options;
+  return { audio, autostart };
 }
 
-export async function startToyAudio(
+export function startToyAudio(
   toy: WebToy,
-  animate: (ctx: AnimationContext) => void,
+  animate: Parameters<typeof startAudioLoop>[1],
   options?: StartAudioOptions
-): Promise<AnimationContext> {
-  try {
-    return await startAudioLoop(toy, animate, normalizeOptions(options));
-  } catch (error) {
-    console.error('Microphone access denied', error);
-    throw error;
-  }
+): AudioLoopController {
+  const { audio, autostart } = normalizeOptions(options);
+  return startAudioLoop(toy, animate, audio, { autostart });
 }

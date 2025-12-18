@@ -4,6 +4,7 @@ import type { ToyConfig } from '../core/types';
 import {
   getContextFrequencyData,
   AnimationContext,
+  type AudioLoopController,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
@@ -27,6 +28,7 @@ const presetButtons: Record<PresetKey, HTMLButtonElement> = {
   orbit: document.createElement('button'),
   nebula: document.createElement('button'),
 };
+let audioController: AudioLoopController | null = null;
 
 function createOrbitPreset(): PresetInstance {
   const group = new THREE.Group();
@@ -326,7 +328,9 @@ function animate(ctx: AnimationContext) {
 }
 
 async function startAudio() {
-  return startToyAudio(toy, animate, 256);
+  audioController =
+    audioController || startToyAudio(toy, animate, { fftSize: 256 });
+  return audioController.start();
 }
 
 init();

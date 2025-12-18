@@ -4,6 +4,7 @@ import type { ToyConfig } from '../core/types';
 import {
   getContextFrequencyData,
   AnimationContext,
+  type AudioLoopController,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
@@ -14,6 +15,8 @@ const toy = new WebToy({
   lightingOptions: { type: 'HemisphereLight' },
   ambientLightOptions: {},
 } as ToyConfig);
+
+let audioController: AudioLoopController | null = null;
 
 const lines: THREE.Line[] = [];
 
@@ -59,7 +62,8 @@ function animate(ctx: AnimationContext) {
 }
 
 async function startAudio() {
-  return startToyAudio(toy, animate);
+  audioController = audioController || startToyAudio(toy, animate);
+  return audioController.start();
 }
 
 init();

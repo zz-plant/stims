@@ -22,8 +22,8 @@
       import WebToy from './assets/js/core/web-toy.ts';
       import { getContextFrequencyData } from './assets/js/core/animation-loop.ts';
       import createPeakDetector from './assets/js/utils/peak-detector.ts';
-      import { getAverageFrequency } from './assets/js/utils/audio-handler.ts';
-      import { showError } from './assets/js/utils/error-display.ts';
+      import { AudioAccessError, getAverageFrequency } from './assets/js/utils/audio-handler.ts';
+      import { clearError, showError } from './assets/js/utils/error-display.ts';
       import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
@@ -332,17 +332,46 @@
         ctx.toy.render();
       }
 
-      startToyAudio(toy, animate)
-        .catch((err) => {
-          console.error('The following error occurred: ' + err);
+      const audioController = startToyAudio(toy, animate, {
+        fftSize: 256,
+        autostart: false,
+      });
+
+      const silentContext = { toy, analyser: null };
+      const runSilentLoop = () => toy.renderer.setAnimationLoop(() => animate(silentContext));
+      runSilentLoop();
+
+      const audioButton = document.createElement('button');
+      audioButton.type = 'button';
+      audioButton.className = 'fun-chip';
+      audioButton.textContent = 'Start audio';
+
+      async function startAudio() {
+        audioButton.disabled = true;
+        try {
+          await audioController.start();
+          clearError('error-message');
+          funControls.setAudioAvailable(true);
+          audioButton.textContent = 'Restart audio';
+        } catch (error) {
+          console.error('The following error occurred: ', error);
+          const reason = error instanceof AudioAccessError ? error.reason : null;
+          const message =
+            reason === 'denied'
+              ? 'Microphone access was denied. Enable it to make the visuals reactive.'
+              : reason === 'unsupported'
+                ? 'This browser does not support microphone capture.'
+                : 'Microphone access is unavailable. Visuals will run without audio reactivity.';
+          showError('error-message', message);
           funControls.setAudioAvailable(false);
-          showError(
-            'error-message',
-            'Microphone access is unavailable. Visuals will run without audio reactivity.'
-          );
-          const silentContext = { toy, analyser: null };
-          toy.renderer.setAnimationLoop(() => animate(silentContext));
-        });
+          runSilentLoop();
+          audioButton.textContent = 'Retry audio';
+        }
+        audioButton.disabled = false;
+      }
+
+      audioButton.addEventListener('click', startAudio);
+      funControls.appendControl(audioButton);
     </script>
   </body>
 </html>

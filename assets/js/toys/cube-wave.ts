@@ -4,6 +4,7 @@ import type { ToyConfig } from '../core/types';
 import {
   AnimationContext,
   getContextFrequencyData,
+  type AudioLoopController,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor, type AudioColorParams } from '../utils/color-audio';
@@ -69,6 +70,7 @@ const toy = new WebToy({
 
 const gridGroup = new THREE.Group();
 const gridItems: GridItem[] = [];
+let audioController: AudioLoopController | null = null;
 
 const presets: Record<ShapeMode, GridPreset> = {
   cubes: {
@@ -323,7 +325,9 @@ function animate(ctx: AnimationContext) {
 }
 
 async function startAudio() {
-  return startToyAudio(toy, animate, 256);
+  audioController =
+    audioController || startToyAudio(toy, animate, { fftSize: 256 });
+  return audioController.start();
 }
 
 function init() {

@@ -4,6 +4,7 @@ import type { ToyConfig } from '../core/types';
 import {
   getContextFrequencyData,
   AnimationContext,
+  type AudioLoopController,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { createIdleDetector } from '../utils/idle-detector';
@@ -34,6 +35,7 @@ let idleBlend = 0;
 let controlState: ControlPanelState;
 const idleDetector = createIdleDetector();
 const clock = new THREE.Clock();
+let audioController: AudioLoopController | null = null;
 
 const controlPanel = createControlPanel();
 controlState = controlPanel.getState();
@@ -204,7 +206,8 @@ function animate(ctx: AnimationContext) {
 
 async function startAudio() {
   try {
-    await startToyAudio(toy, animate);
+    audioController = audioController || startToyAudio(toy, animate);
+    await audioController.start();
     hideError();
     return true;
   } catch (e) {

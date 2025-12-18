@@ -4,6 +4,7 @@ import type { ToyConfig } from '../core/types';
 import {
   getContextFrequencyData,
   AnimationContext,
+  type AudioLoopController,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
@@ -25,6 +26,7 @@ const rings: RingData[] = [];
 const RING_COUNT = 20;
 const RING_SPACING = 30;
 const TUNNEL_LENGTH = RING_COUNT * RING_SPACING;
+let audioController: AudioLoopController | null = null;
 
 function init() {
   const { scene } = toy;
@@ -179,7 +181,9 @@ function animate(ctx: AnimationContext) {
 }
 
 async function startAudio() {
-  return startToyAudio(toy, animate, 256);
+  audioController =
+    audioController || startToyAudio(toy, animate, { fftSize: 256 });
+  return audioController.start();
 }
 
 init();

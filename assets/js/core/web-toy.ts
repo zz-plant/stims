@@ -75,6 +75,39 @@ export default class WebToy {
     this.renderer.render(this.scene, this.camera);
   }
 
+  stopAudio() {
+    if (this.audio) {
+      if ('stop' in this.audio && typeof this.audio.stop === 'function') {
+        this.audio.stop();
+      }
+      if (
+        'disconnect' in this.audio &&
+        typeof this.audio.disconnect === 'function'
+      ) {
+        this.audio.disconnect();
+      }
+    }
+
+    if (this.audioListener && 'remove' in this.camera) {
+      (
+        this.camera as THREE.Camera & { remove?: (obj: THREE.Object3D) => void }
+      ).remove(this.audioListener);
+    }
+
+    if (this.audioStream) {
+      this.audioStream.getTracks().forEach((track) => track.stop());
+    }
+
+    if (this.analyser?.analyser) {
+      this.analyser.analyser.disconnect();
+    }
+
+    this.analyser = null;
+    this.audioListener = null;
+    this.audio = null;
+    this.audioStream = null;
+  }
+
   dispose() {
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
@@ -108,31 +141,7 @@ export default class WebToy {
       }
     }
 
-    if (this.audio) {
-      if ('stop' in this.audio && typeof this.audio.stop === 'function') {
-        this.audio.stop();
-      }
-      if (
-        'disconnect' in this.audio &&
-        typeof this.audio.disconnect === 'function'
-      ) {
-        this.audio.disconnect();
-      }
-    }
-
-    if (this.audioListener && 'remove' in this.camera) {
-      (
-        this.camera as THREE.Camera & { remove?: (obj: THREE.Object3D) => void }
-      ).remove(this.audioListener);
-    }
-
-    if (this.audioStream) {
-      this.audioStream.getTracks().forEach((track) => track.stop());
-    }
-
-    if (this.analyser?.analyser) {
-      this.analyser.analyser.disconnect();
-    }
+    this.stopAudio();
 
     if (this.canvas?.parentElement) {
       this.canvas.parentElement.removeChild(this.canvas);

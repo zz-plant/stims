@@ -4,6 +4,7 @@ import type { ToyConfig } from '../core/types';
 import {
   getContextFrequencyData,
   AnimationContext,
+  type AudioLoopController,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
@@ -27,6 +28,7 @@ type StarFieldBuffers = {
 
 const STAR_COUNT = 2400;
 let starField!: StarFieldBuffers;
+let audioController: AudioLoopController | null = null;
 
 function createStarField(): StarFieldBuffers {
   const geometry = new THREE.BufferGeometry();
@@ -113,7 +115,9 @@ function animate(ctx: AnimationContext) {
 }
 
 async function startAudio() {
-  return startToyAudio(toy, animate, 256);
+  audioController =
+    audioController || startToyAudio(toy, animate, { fftSize: 256 });
+  return audioController.start();
 }
 
 init();
