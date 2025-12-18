@@ -7,6 +7,11 @@ import {
   AnimationContext,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { createIdleDetector } from '../utils/idle-detector';
+import {
+  createControlPanel,
+  type ControlPanelState,
+} from '../utils/control-panel';
 
 let errorElement: HTMLElement | null;
 
@@ -24,6 +29,18 @@ const toy = new WebToy({
 let torusKnot: THREE.Mesh;
 let particles: THREE.Points;
 const shapes: THREE.Mesh[] = [];
+let paletteHue = 0.6;
+let idleBlend = 0;
+let controlState: ControlPanelState;
+const idleDetector = createIdleDetector();
+const clock = new THREE.Clock();
+
+const controlPanel = createControlPanel();
+controlState = controlPanel.getState();
+document.body.appendChild(controlPanel.panel);
+controlPanel.onChange((state) => {
+  controlState = state;
+});
 
 function createRandomShape() {
   const shapeType = Math.floor(Math.random() * 3);
@@ -120,8 +137,39 @@ function animate(ctx: AnimationContext) {
   const dataArray = getContextFrequencyData(ctx);
   const avgFrequency = getAverageFrequency(dataArray);
 
+  const { idle, idleProgress } = idleDetector.update(dataArray);
+  const idleTarget = controlState.idleEnabled ? idleProgress : 0;
+  idleBlend = THREE.MathUtils.lerp(idleBlend, idleTarget, 0.05);
+  const idleStrength = controlState.mobilePreset ? 0.55 : 1;
+  const idleOffset = idleBlend * idleStrength;
+
+  const time = clock.getElapsedTime();
+  const paletteEnabled = controlState.paletteCycle;
+  const paletteSpeedBase = controlState.mobilePreset ? 0.003 : 0.006;
+  const activityDamp = idle ? 1 : 0.2;
+  const paletteSpeed = paletteEnabled
+    ? paletteSpeedBase * (idleBlend + activityDamp)
+    : 0;
+  paletteHue = (paletteHue + paletteSpeed) % 1;
+
+  const backgroundColor = new THREE.Color().setHSL(
+    paletteHue,
+    0.4,
+    0.08 + idleBlend * 0.1
+  );
+  toy.scene.background = backgroundColor;
+  document.body.style.backgroundImage = `radial-gradient(circle at 20% 20%, hsla(${
+    (paletteHue + 0.08) * 360
+  }, 70%, ${25 + idleBlend * 15}%, 0.9), hsla(${
+    (paletteHue + 0.26) * 360
+  }, 60%, ${6 + idleBlend * 10}%, 0.95))`;
+
   torusKnot.rotation.x += avgFrequency / 5000;
   torusKnot.rotation.y += avgFrequency / 7000;
+
+  const wobble = 1 + Math.sin(time * 0.6) * 0.15 * idleOffset;
+  const wobbleVec = new THREE.Vector3(wobble, wobble, wobble);
+  torusKnot.scale.lerp(wobbleVec, 0.08);
 
   particles.rotation.y += 0.001 + avgFrequency / 15000;
 
@@ -137,10 +185,19 @@ function animate(ctx: AnimationContext) {
         Math.random() * 0xffffff
       );
     }
+    const wobbleAmt =
+      1 + Math.sin(time * 0.9 + shape.position.x) * 0.08 * idleOffset;
+    shape.scale.lerp(new THREE.Vector3(wobbleAmt, wobbleAmt, wobbleAmt), 0.1);
   });
 
-  const randomScale = 1 + Math.sin(Date.now() * 0.001) * 0.3;
+  const randomScale =
+    1 + Math.sin(Date.now() * 0.001) * (controlState.mobilePreset ? 0.15 : 0.3);
   torusKnot.scale.set(randomScale, randomScale, randomScale);
+
+  const driftAmount = idleOffset * (controlState.mobilePreset ? 2.5 : 4.2);
+  toy.camera.position.x = Math.sin(time * 0.25) * driftAmount;
+  toy.camera.position.y = Math.cos(time * 0.2) * driftAmount * 0.6;
+  toy.camera.lookAt(0, 0, 0);
 
   ctx.toy.render();
 }
