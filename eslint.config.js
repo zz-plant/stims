@@ -41,6 +41,8 @@ export default [
         URLSearchParams: 'readonly',
         URL: 'readonly',
         localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        Intl: 'readonly',
         requestAnimationFrame: 'readonly',
         CustomEvent: 'readonly',
         define: 'readonly',
