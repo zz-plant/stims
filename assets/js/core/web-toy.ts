@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { initScene } from './scene-setup.ts';
 import { initCamera } from './camera-setup.ts';
-import { initRenderer } from './renderer-setup.ts';
+import { initRenderer, type RendererInitResult } from './renderer-setup.ts';
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
 import { initAudio } from '../utils/audio-handler.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
@@ -10,7 +10,10 @@ export default class WebToy {
   canvas: HTMLCanvasElement;
   scene: THREE.Scene;
   camera: THREE.Camera;
-  renderer: ReturnType<typeof initRenderer>;
+  renderer: RendererInitResult['renderer'] | null;
+  rendererBackend: RendererInitResult['backend'] | null;
+  rendererInfo: RendererInitResult | null;
+  rendererReady: Promise<RendererInitResult | null>;
   analyser: THREE.AudioAnalyser | null;
   audioListener: THREE.AudioListener | null;
   audio: THREE.Audio | THREE.PositionalAudio | null;
@@ -38,7 +41,19 @@ export default class WebToy {
 
     this.scene = initScene(sceneOptions);
     this.camera = initCamera(cameraOptions);
-    this.renderer = initRenderer(this.canvas, rendererOptions);
+    this.renderer = null;
+    this.rendererBackend = null;
+    this.rendererInfo = null;
+    this.rendererReady = initRenderer(this.canvas, rendererOptions);
+    this.rendererReady
+      .then((result) => {
+        this.rendererInfo = result;
+        this.renderer = result?.renderer ?? null;
+        this.rendererBackend = result?.backend ?? null;
+      })
+      .catch((error) => {
+        console.warn('Renderer initialization failed.', error);
+      });
 
     if (ambientLightOptions) {
       initAmbientLight(this.scene, ambientLightOptions);
@@ -61,7 +76,7 @@ export default class WebToy {
   handleResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer?.setSize(window.innerWidth, window.innerHeight);
   }
 
   async initAudio(options = {}) {
@@ -84,7 +99,7 @@ export default class WebToy {
   }
 
   render() {
-    this.renderer.render(this.scene, this.camera);
+    this.renderer?.render(this.scene, this.camera);
   }
 
   dispose() {
