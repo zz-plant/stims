@@ -35,6 +35,9 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { createPeakDetector } from './assets/js/utils/peak-detector.ts';
+      import { createSparkleLayer } from './assets/js/utils/sparkle-layer.ts';
+      import { FunControls } from './assets/js/utils/fun-controls.ts';
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const ctx2d = canvas.getContext('2d');
@@ -65,6 +68,7 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        sparkleLayer.resize(window.innerWidth, window.innerHeight);
       }
       window.addEventListener('resize', resizeCanvas);
       resizeCanvas();
@@ -83,6 +87,7 @@
             uniform float u_audioData;
             uniform vec3 u_colorOffset;
             uniform vec2 u_touch;
+            uniform float u_burst;
             
             vec3 dreamyGradient(vec2 uv, float timeOffset) {
                 vec3 color = vec3(0.4 + 0.4 * sin(uv.x * 10.0 + u_audioData * 6.0 + timeOffset),
@@ -100,12 +105,14 @@
                 float ripple = sin(dist * 15.0 - u_time * 3.0) * 0.15;
                 float bloom = 0.3 / (dist * dist + 0.25);
                 uv += ripple;
-                
+
                 vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData;
-                color += vec3(0.4 + 0.4 * sin(u_time * 0.4 + u_audioData * 2.0), 
-                              0.4 + 0.4 * cos(u_time * 0.5 + u_audioData * 3.0), 
+                color += vec3(0.4 + 0.4 * sin(u_time * 0.4 + u_audioData * 2.0),
+                              0.4 + 0.4 * cos(u_time * 0.5 + u_audioData * 3.0),
                               0.5 + 0.4 * sin(u_time * 0.6 + u_audioData * 1.5));
-                color += bloom * 0.6;
+                color += bloom * (0.6 + u_burst * 0.8);
+                color += vec3(u_burst * 0.35);
+                color *= 1.0 + u_burst * 0.45;
                 
                 gl_FragColor = vec4(color, 1.0);
             }
@@ -185,8 +192,42 @@
         'u_colorOffset'
       );
       const touchUniformLocation = gl.getUniformLocation(program, 'u_touch');
+      const burstUniformLocation = gl.getUniformLocation(program, 'u_burst');
 
       gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+
+      const sparkleLayer = createSparkleLayer(document.body, {
+        pixelRatio: Math.min(window.devicePixelRatio, 2),
+      });
+      const controls = new FunControls('Effects');
+      const settings = { sparkles: true, bursts: true, sensitivity: 1.4 };
+      controls.addToggle(
+        'symph-sparkles',
+        'Sparkles',
+        settings.sparkles,
+        (v) => {
+          settings.sparkles = v;
+        }
+      );
+      controls.addToggle('symph-bursts', 'Bursts', settings.bursts, (v) => {
+        settings.bursts = v;
+      });
+      const peakDetector = createPeakDetector({
+        sensitivity: settings.sensitivity,
+        cooldownMs: 200,
+      });
+      controls.addRange('symph-sensitivity', 'Peak Sensitivity', {
+        min: 1,
+        max: 2,
+        step: 0.02,
+        defaultValue: settings.sensitivity,
+        onChange: (v) => {
+          settings.sensitivity = v;
+          peakDetector.setSensitivity(v);
+        },
+      });
+      let burst = 0;
+      let lastFrame = performance.now();
 
       let time = 0.0;
       let audioData = 0.0;
@@ -215,6 +256,15 @@
           const average =
             dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
           audioData = average / 128.0;
+          const normalizedLevel = Math.min(audioData, 2);
+          if (peakDetector.update(normalizedLevel)) {
+            if (settings.sparkles) {
+              sparkleLayer.spawn(10);
+            }
+            if (settings.bursts) {
+              burst = Math.min(1, burst + normalizedLevel * 0.4);
+            }
+          }
           updateSpectrograph(dataArray);
         }
       }
@@ -245,14 +295,21 @@
       setupAudio();
 
       function render() {
+        const now = performance.now();
+        const delta = now - lastFrame;
+        lastFrame = now;
         time += 0.02;
+        burst = Math.max(0, burst * 0.94 - 0.001);
         gl.uniform1f(timeUniformLocation, time);
         gl.uniform1f(audioDataUniformLocation, audioData);
         gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
         gl.uniform2fv(touchUniformLocation, touchPoint);
+        gl.uniform1f(burstUniformLocation, burst);
 
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        sparkleLayer.update(delta);
 
         requestAnimationFrame(render);
       }

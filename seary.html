@@ -33,6 +33,9 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { createPeakDetector } from './assets/js/utils/peak-detector.ts';
+      import { createSparkleLayer } from './assets/js/utils/sparkle-layer.ts';
+      import { FunControls } from './assets/js/utils/fun-controls.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
       function displayError(message) {
@@ -95,6 +98,7 @@
             uniform vec2 u_touch0;
             uniform vec2 u_touch1;
             uniform vec3 u_orientation;
+            uniform float u_burst;
             varying vec2 v_uv;
             
             float noise(vec2 p) {
@@ -129,6 +133,10 @@
 
                 // Blend low, mid, and high colors together for synesthetic experience
                 vec3 color = baseColor + lowColor + midColor + highColor;
+
+                // Burst glow overlay on peaks
+                color += vec3(u_burst * 0.35);
+                color *= 1.0 + u_burst * 0.5;
 
                 // Add ripple effects from multi-touch interactions
                 float touchEffect0 = 0.0;
@@ -198,6 +206,41 @@
         program,
         'u_orientation'
       );
+      const burstLocation = gl.getUniformLocation(program, 'u_burst');
+
+      const sparkleLayer = createSparkleLayer(document.body, {
+        pixelRatio: Math.min(window.devicePixelRatio, 2),
+      });
+      let lastFrame = performance.now();
+      let burst = 0;
+
+      const controls = new FunControls('Effects');
+      const settings = { sparkles: true, bursts: true, sensitivity: 1.35 };
+      controls.addToggle(
+        'seary-sparkles',
+        'Sparkles',
+        settings.sparkles,
+        (v) => {
+          settings.sparkles = v;
+        }
+      );
+      controls.addToggle('seary-bursts', 'Bursts', settings.bursts, (v) => {
+        settings.bursts = v;
+      });
+      const peakDetector = createPeakDetector({
+        sensitivity: settings.sensitivity,
+        cooldownMs: 200,
+      });
+      controls.addRange('seary-sensitivity', 'Peak Sensitivity', {
+        min: 1,
+        max: 2,
+        step: 0.02,
+        defaultValue: settings.sensitivity,
+        onChange: (v) => {
+          settings.sensitivity = v;
+          peakDetector.setSensitivity(v);
+        },
+      });
 
       // Audio setup for beat detection and frequency analysis
       let audioContext, analyser, source;
@@ -352,6 +395,16 @@
                 (bufferLength / 3) /
                 256.0;
 
+              const overall = (lowFreq + midFreq + highFreq) / 3;
+              if (peakDetector.update(overall)) {
+                if (settings.sparkles) {
+                  sparkleLayer.spawn(12);
+                }
+                if (settings.bursts) {
+                  burst = Math.min(1, burst + overall * 0.6);
+                }
+              }
+
               // Beat detection based on low frequency threshold
               if (lowFreq > 0.5) {
                 canvas.style.transform = 'scale(1.1)';
@@ -369,6 +422,7 @@
                 orientation.beta / 90.0,
                 orientation.gamma / 90.0
               );
+              gl.uniform1f(burstLocation, burst);
 
               gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
               gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
@@ -388,6 +442,9 @@
       // Render loop
       function render(time) {
         time *= 0.001; // Convert time to seconds
+        const now = performance.now();
+        const delta = now - lastFrame;
+        lastFrame = now;
 
         // Set uniforms
         gl.uniform1f(timeLocation, time);
@@ -397,9 +454,19 @@
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
+        sparkleLayer.update(delta);
+        burst = Math.max(0, burst * 0.94 - 0.001);
+        gl.uniform1f(burstLocation, burst);
+
         requestAnimationFrame(render);
       }
       requestAnimationFrame(render);
+
+      function resize() {
+        sparkleLayer.resize(window.innerWidth, window.innerHeight);
+      }
+      window.addEventListener('resize', resize);
+      resize();
     </script>
   </body>
 </html>
