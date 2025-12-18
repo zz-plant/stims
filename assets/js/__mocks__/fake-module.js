@@ -1,5 +1,3 @@
-import { jest } from '@jest/globals';
-
 export default function noop() {}
 
 export function start({ container } = {}) {
@@ -7,7 +5,7 @@ export function start({ container } = {}) {
   placeholder.setAttribute('data-fake-toy', 'true');
   container?.appendChild(placeholder);
 
-  const active = { dispose: jest.fn(() => placeholder.remove()) };
+  const active = { dispose: () => placeholder.remove() };
   globalThis.__activeWebToy = active;
   return active;
 }
