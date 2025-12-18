@@ -32,7 +32,9 @@
     ],
     "globals": {
       "ts-jest": {
-        "useESM": true
+        "useESM": true,
+        "tsconfig": "./tsconfig.json",
+        "diagnostics": false
       }
     }
   },
@@ -40,7 +42,6 @@
     "node": "^22"
   },
   "dependencies": {
-    "cannon-es": "^0.20.0",
     "three": "^0.177.0"
   }
 }
