@@ -22,9 +22,6 @@
     </script>
   </head>
   <body>
-    <canvas id="bg-canvas"></canvas>
-    <div class="cursor"></div>
-    <div class="cursor-follower"></div>
     <div class="content">
       <nav class="top-nav">
         <div class="brand">
@@ -53,8 +50,9 @@
             <p class="eyebrow">New home for sensory experiments</p>
             <h1>Interactive playgrounds for curious minds.</h1>
             <p class="tagline">
-              Wander through a curated set of audiovisual toys, crafted for
-              play, inspiration, and a bit of mindful stimulus.
+              Browse a lean catalog of audiovisual toys. Each sketch loads
+              instantly—tap a card to jump in or share the link to invite
+              someone else.
             </p>
             <div class="cta-row">
               <a href="#toy-list" class="cta-button primary">Browse library</a>
@@ -66,32 +64,11 @@
                 >View the code</a
               >
             </div>
-            <div class="chip-row" aria-hidden="true">
-              <span class="chip">WebGL</span>
-              <span class="chip">Particles</span>
-              <span class="chip">Kinetic typography</span>
-              <span class="chip">Shader sketches</span>
-            </div>
-          </div>
-          <div class="hero-card">
-            <p class="eyebrow">Live signal</p>
-            <p class="hero-card-title">Stim stream</p>
-            <p class="hero-card-subtitle">Now featuring</p>
-            <ul class="feature-list">
-              <li>20 interactive sketches including HTML standalones</li>
-              <li>Instant load from query</li>
-              <li>Dark / light optimized</li>
+            <ul class="hero-list">
+              <li>Instant access to every stim, no extra clicks.</li>
+              <li>Light and dark modes saved to your preference.</li>
+              <li>Includes both module-based toys and standalone HTML sets.</li>
             </ul>
-            <div class="stat-grid">
-              <div class="stat-card">
-                <p class="stat-value">04</p>
-                <p class="stat-label">New arrivals</p>
-              </div>
-              <div class="stat-card">
-                <p class="stat-value">∞</p>
-                <p class="stat-label">Loops to explore</p>
-              </div>
-            </div>
           </div>
         </div>
       </header>
@@ -101,9 +78,9 @@
           <p class="eyebrow">Library</p>
           <h2>Browse every stim</h2>
           <p class="section-description">
-            Tap a card to open it instantly, or share a URL to load a toy from a
-            query param. The catalog now includes standalone HTML stims like
-            Clay, Geom, Legible, and Lights alongside the module-based set.
+            Tap a card to open it instantly. Standalone stims like Clay, Geom,
+            Legible, and Lights sit alongside the module-based set so everything
+            is easy to reach.
           </p>
         </div>
         <main id="toy-list" class="webtoy-container"></main>
@@ -123,71 +100,6 @@
       </footer>
     </div>
 
-    <script type="module">
-      import * as THREE from 'three';
-      import { initRenderer } from './assets/js/core/renderer-setup.ts';
-
-      function startBackground() {
-        // Three.js background
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(
-          75,
-          window.innerWidth / window.innerHeight,
-          0.1,
-          1000
-        );
-        const renderer = initRenderer(document.getElementById('bg-canvas'), {
-          maxPixelRatio: 1.5,
-          alpha: true,
-        });
-
-        if (!renderer) {
-          return;
-        }
-
-        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
-        const material = new THREE.MeshBasicMaterial({
-          color: 0x00ffaa,
-          wireframe: true,
-        });
-        const torusKnot = new THREE.Mesh(geometry, material);
-        scene.add(torusKnot);
-
-        camera.position.z = 30;
-
-        function animate() {
-          requestAnimationFrame(animate);
-          torusKnot.rotation.x += 0.01;
-          torusKnot.rotation.y += 0.01;
-          renderer.render(scene, camera);
-        }
-        animate();
-
-        // Custom cursor
-        const cursor = document.querySelector('.cursor');
-        const cursorFollower = document.querySelector('.cursor-follower');
-
-        document.addEventListener('pointermove', (e) => {
-          cursor.style.left = e.clientX + 'px';
-          cursor.style.top = e.clientY + 'px';
-
-          setTimeout(() => {
-            cursorFollower.style.left = e.clientX + 'px';
-            cursorFollower.style.top = e.clientY + 'px';
-          }, 100);
-        });
-
-        // Responsive canvas
-        window.addEventListener('resize', () => {
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-          renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-          renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-      }
-
-      startBackground();
-    </script>
     <script type="module" src="assets/js/main.js"></script>
   </body>
 </html>
