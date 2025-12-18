@@ -31,14 +31,6 @@ function setupDarkModeToggle() {
   });
 }
 
-function colorFromSlug(slug) {
-  let hash = 0;
-  for (const char of slug) {
-    hash = (hash * 31 + char.charCodeAt(0)) % 360;
-  }
-  return `hsl(${hash}, 70%, 60%)`;
-}
-
 function createSVGAnimation(slug) {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
