@@ -62,6 +62,36 @@ function createCard(toy) {
   card.appendChild(title);
   card.appendChild(desc);
 
+  const metaRow = document.createElement('div');
+  metaRow.className = 'webtoy-card-meta';
+
+  if (toy.requiresWebGPU) {
+    const badge = document.createElement('span');
+    badge.className = 'capability-badge';
+    badge.textContent = 'WebGPU';
+    badge.setAttribute('role', 'status');
+    badge.setAttribute('aria-label', 'Requires WebGPU');
+
+    const hasWebGPU = typeof navigator !== 'undefined' && Boolean(navigator.gpu);
+    if (!hasWebGPU) {
+      badge.classList.add('capability-badge--warning');
+      badge.title = 'WebGPU not detected; falling back to WebGL if available.';
+
+      const fallbackNote = document.createElement('span');
+      fallbackNote.className = 'capability-note';
+      fallbackNote.textContent = 'No WebGPU detected — will try WebGL fallback.';
+      metaRow.appendChild(fallbackNote);
+    } else {
+      badge.title = 'Requires WebGPU to run.';
+    }
+
+    metaRow.appendChild(badge);
+  }
+
+  if (metaRow.childElementCount > 0) {
+    card.appendChild(metaRow);
+  }
+
   card.addEventListener('click', () => openToy(toy));
 
   return card;

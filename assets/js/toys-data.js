@@ -5,6 +5,7 @@ export default [
     description: 'Dive into a twisting 3D tunnel that responds to sound.',
     module: 'assets/js/toys/three-d-toy.ts',
     type: 'module',
+    requiresWebGPU: false,
   },
   {
     slug: 'brand',
@@ -13,6 +14,7 @@ export default [
       'A visual journey inspired by an iconic music video, synced to your music.',
     module: './toy.html?toy=brand',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'clay',
@@ -21,6 +23,7 @@ export default [
       'Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.',
     module: './clay.html',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'defrag',
@@ -29,6 +32,7 @@ export default [
       'A nostalgic, sound-reactive visualizer evoking old defragmentation screens.',
     module: './toy.html?toy=defrag',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'evol',
@@ -37,6 +41,7 @@ export default [
       'Watch surreal landscapes evolve with fractals and glitches that react to music.',
     module: './toy.html?toy=evol',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'geom',
@@ -45,6 +50,7 @@ export default [
       'Push shifting geometric forms directly from live mic input with responsive controls.',
     module: './geom.html',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'multi',
@@ -52,6 +58,7 @@ export default [
     description: 'Shapes and lights move with both sound and device motion.',
     module: './toy.html?toy=multi',
     type: 'page',
+    requiresWebGPU: true,
   },
   {
     slug: 'seary',
@@ -59,6 +66,7 @@ export default [
     description: 'Blend audio and visuals in a rich synesthetic experience.',
     module: './toy.html?toy=seary',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'sgpat',
@@ -66,6 +74,7 @@ export default [
     description: 'See patterns form dynamically in response to sound.',
     module: './sgpat.html',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'legible',
@@ -74,6 +83,7 @@ export default [
       'A retro green text grid that pulses to audio and surfaces fresh words as you play.',
     module: './legible.html',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'svgtest',
@@ -82,6 +92,7 @@ export default [
       'A hybrid visualizer blending 2D and 3D elements, reacting in real time.',
     module: './toy.html?toy=svgtest',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'symph',
@@ -89,6 +100,7 @@ export default [
     description: 'A relaxing spectrograph that moves gently with your audio.',
     module: './toy.html?toy=symph',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'words',
@@ -97,6 +109,7 @@ export default [
       'Speak and watch the word cloud react and shift with your voice.',
     module: './toy.html?toy=words',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'cube-wave',
@@ -104,6 +117,7 @@ export default [
     description: 'A grid of cubes that rise and fall with your audio.',
     module: 'assets/js/toys/cube-wave.ts',
     type: 'module',
+    requiresWebGPU: false,
   },
   {
     slug: 'particle-orbit',
@@ -112,6 +126,7 @@ export default [
       'Thousands of particles swirling faster as the music intensifies.',
     module: 'assets/js/toys/particle-orbit.ts',
     type: 'module',
+    requiresWebGPU: false,
   },
   {
     slug: 'lights',
@@ -120,6 +135,7 @@ export default [
       'Swap shader styles and color palettes while lights ripple with your microphone input.',
     module: './lights.html',
     type: 'page',
+    requiresWebGPU: false,
   },
   {
     slug: 'spiral-burst',
@@ -127,6 +143,7 @@ export default [
     description: 'Colorful spirals rotate and expand with every beat.',
     module: 'assets/js/toys/spiral-burst.ts',
     type: 'module',
+    requiresWebGPU: false,
   },
   {
     slug: 'bouncy-spheres',
@@ -134,6 +151,7 @@ export default [
     description: 'Lines of spheres bounce and change color with audio.',
     module: 'assets/js/toys/bouncy-spheres.ts',
     type: 'module',
+    requiresWebGPU: false,
   },
   {
     slug: 'rainbow-tunnel',
@@ -141,6 +159,7 @@ export default [
     description: 'Fly through colorful rings that spin to your music.',
     module: 'assets/js/toys/rainbow-tunnel.ts',
     type: 'module',
+    requiresWebGPU: false,
   },
   {
     slug: 'star-field',
@@ -148,5 +167,6 @@ export default [
     description: 'A field of shimmering stars reacts to the beat.',
     module: 'assets/js/toys/star-field.ts',
     type: 'module',
+    requiresWebGPU: false,
   },
 ];
