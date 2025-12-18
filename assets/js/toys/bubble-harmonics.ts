@@ -243,12 +243,16 @@ function animate(ctx: AnimationContext) {
 
 const initPromise = init();
 
-async function startAudio() {
+async function startAudio(useSynthetic = false) {
   await initPromise;
   return startToyAudio(toy, animate, {
     fftSize: 2048,
     smoothingTimeConstant: 0.72,
+    fallbackToSynthetic: useSynthetic,
+    preferSynthetic: useSynthetic,
   });
 }
 
 (window as unknown as Record<string, unknown>).startAudio = startAudio;
+(window as unknown as Record<string, unknown>).startAudioFallback = () =>
+  startAudio(true);

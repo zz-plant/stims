@@ -27,6 +27,46 @@ export type AudioInitOptions = {
   }) => void;
 };
 
+export function createSyntheticAudioStream({
+  frequency = 220,
+  type = 'sawtooth',
+  gain = 0.12,
+}: {
+  frequency?: number;
+  type?: OscillatorType;
+  gain?: number;
+} = {}) {
+  const context = new AudioContext();
+
+  const oscillator = context.createOscillator();
+  oscillator.frequency.value = frequency;
+  oscillator.type = type;
+
+  const gainNode = context.createGain();
+  gainNode.gain.value = gain;
+
+  const destination = context.createMediaStreamDestination();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(destination);
+
+  oscillator.start();
+
+  const cleanup = () => {
+    try {
+      oscillator.stop();
+    } catch (error) {
+      console.error('Error stopping synthetic oscillator', error);
+    }
+
+    oscillator.disconnect();
+    gainNode.disconnect();
+    context.close();
+  };
+
+  return { stream: destination.stream, cleanup };
+}
+
 export async function initAudio(options: AudioInitOptions = {}) {
   const {
     fftSize = 256,
