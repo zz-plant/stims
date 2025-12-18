@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import type { ToyConfig } from '../core/types';
 import {
-  startAudioLoop,
   getContextFrequencyData,
   AnimationContext,
 } from '../core/animation-loop';
@@ -12,6 +11,7 @@ import {
   createControlPanel,
   type ControlPanelState,
 } from '../utils/control-panel';
+import { startToyAudio } from '../utils/start-audio';
 
 let errorElement: HTMLElement | null;
 
@@ -204,11 +204,10 @@ function animate(ctx: AnimationContext) {
 
 async function startAudio() {
   try {
-    await startAudioLoop(toy, animate);
+    await startToyAudio(toy, animate);
     hideError();
     return true;
   } catch (e) {
-    console.error('Error accessing microphone:', e);
     showError('Microphone access was denied. Please allow access and reload.');
     throw e;
   }

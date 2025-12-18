@@ -2,11 +2,11 @@ import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import type { ToyConfig } from '../core/types';
 import {
-  startAudioLoop,
   getContextFrequencyData,
   AnimationContext,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { startToyAudio } from '../utils/start-audio';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
 import { applyAudioColor } from '../utils/color-audio';
 
@@ -78,13 +78,7 @@ function animate(ctx: AnimationContext) {
 }
 
 async function startAudio() {
-  try {
-    await startAudioLoop(toy, animate, { fftSize: 128 });
-    return true;
-  } catch (e) {
-    console.error('Microphone access denied', e);
-    throw e;
-  }
+  return startToyAudio(toy, animate, 128);
 }
 
 init();
