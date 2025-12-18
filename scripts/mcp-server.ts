@@ -30,28 +30,14 @@ type ToyMetadata = {
 server.registerTool(
   'list_docs',
   {
-    description: 'Return quick-start, layout, and catalog pointers from README.md for navigation.',
-    inputSchema: z
-      .object({
-        topic: z
-          .enum(['quickstart', 'layout', 'toys', 'local-setup', 'all'])
-          .optional()
-          .describe('Optional focus area to limit the summary.'),
-      })
-      .strict(),
+    description:
+      'Return quick-start, runtime, repository layout, and toy catalog pointers from README.md with line references.',
+    inputSchema: z.object({}).strict(),
   },
-  async ({ topic }) => {
-    const readme = await loadReadme();
-    const sections = buildDocSections(readme);
+  async () => {
+    const pointers = await buildDocPointers();
 
-    const selected = topic && topic !== 'all' ? [sections[topic]] : Object.values(sections);
-    const text = selected
-      .filter(Boolean)
-      .map((section) => section?.trim())
-      .filter(Boolean)
-      .join('\n\n---\n\n');
-
-    return asTextResponse(text || 'README content was not available.');
+    return asTextResponse(pointers || 'README content was not available.');
   },
 );
 
@@ -158,6 +144,80 @@ async function loadReadme() {
   return readFile(readmePath, 'utf8');
 }
 
+async function loadReadmeLines() {
+  const readme = await loadReadme();
+  return readme.split(/\r?\n/);
+}
+
+type SectionExcerpt = {
+  startLine: number;
+  endLine: number;
+  content: string[];
+};
+
+async function buildDocPointers() {
+  const lines = await loadReadmeLines();
+
+  const quickStart = extractSectionWithRange(lines, 'Quick Start');
+  const layout = extractSectionWithRange(lines, 'Repository Layout');
+  const toys = extractSectionWithRange(lines, 'Toys in the Collection');
+  const runtime = extractRuntimeRange(lines);
+
+  const entries = [
+    quickStart && formatPointer('Quick start steps', quickStart),
+    runtime && formatPointer('Runtime options (Bun / Node)', runtime),
+    layout && formatPointer('Repository layout', layout),
+    toys && formatPointer('Toy catalog link targets', toys),
+  ].filter(Boolean) as string[];
+
+  return entries.join('\n\n');
+}
+
+function formatPointer(title: string, excerpt: SectionExcerpt) {
+  const range = `README.md:L${excerpt.startLine}-L${excerpt.endLine}`;
+  return `${title} (${range})\n${excerpt.content.join('\n')}`;
+}
+
+function extractSectionWithRange(lines: string[], heading: string): SectionExcerpt | null {
+  const headingIndex = lines.findIndex((line) => line.trim() === `## ${heading}`);
+
+  if (headingIndex === -1) return null;
+
+  const nextHeadingOffset = lines.slice(headingIndex + 1).findIndex((line) => line.trim().startsWith('## '));
+  const nextHeadingIndex = nextHeadingOffset === -1 ? lines.length : headingIndex + 1 + nextHeadingOffset;
+  const endIndex = Math.max(headingIndex, nextHeadingIndex - 1);
+
+  return {
+    startLine: headingIndex + 1,
+    endLine: endIndex + 1,
+    content: lines.slice(headingIndex, nextHeadingIndex),
+  };
+}
+
+function extractRuntimeRange(lines: string[]): SectionExcerpt | null {
+  const startIndex = lines.findIndex((line) => line.includes('Choose your runtime'));
+
+  if (startIndex === -1) return null;
+
+  let endIndex = startIndex;
+
+  for (let i = startIndex + 1; i < lines.length; i += 1) {
+    const trimmed = lines[i].trim();
+
+    if (/^\d+\.\s/.test(trimmed) || trimmed.startsWith('## ')) {
+      break;
+    }
+
+    endIndex = i;
+  }
+
+  return {
+    startLine: startIndex + 1,
+    endLine: endIndex + 1,
+    content: lines.slice(startIndex, endIndex + 1),
+  };
+}
+
 function extractSection(markdown: string, heading: string) {
   const pattern = new RegExp(`^##\\s+${escapeForRegex(heading)}\\s*$`, 'm');
   const match = pattern.exec(markdown);
@@ -170,15 +230,6 @@ function extractSection(markdown: string, heading: string) {
   const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
 
   return section.trim();
-}
-
-function buildDocSections(readme: string) {
-  return {
-    quickstart: extractSection(readme, 'Quick Start'),
-    layout: extractSection(readme, 'Repository Layout'),
-    toys: extractSection(readme, 'Toys in the Collection'),
-    'local-setup': extractSection(readme, 'Local Setup'),
-  } as const;
 }
 
 function escapeForRegex(input: string) {
