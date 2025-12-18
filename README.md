@@ -137,6 +137,8 @@ npm run build
 # or
 bun run build
 
+bun run serve:dist
+# or use Python as a fallback
 python3 -m http.server dist
 ```
 
@@ -153,6 +155,7 @@ All JavaScript dependencies are installed via npm (or Bun) and bundled locally w
 - `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
 - `npm run lint` / `bun run lint`: Check code quality with ESLint.
 - `npm run format` / `bun run format`: Format files with Prettier.
+- `bun run serve:dist`: Serve the `dist/` build with Bun (preferred for local production previews).
 
 ## Code of Conduct and Contributions
 
