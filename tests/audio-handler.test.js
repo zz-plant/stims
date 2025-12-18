@@ -63,8 +63,6 @@ beforeAll(async () => {
 
 describe('audio-handler utilities', () => {
   beforeEach(() => {
-    mock.restore();
-
     originalNavigatorDesc = Object.getOwnPropertyDescriptor(global, 'navigator');
     const nav = global.navigator;
     nav.mediaDevices = {
@@ -74,7 +72,6 @@ describe('audio-handler utilities', () => {
   });
 
   afterEach(() => {
-    mock.restore();
     if (originalNavigatorDesc) {
       Object.defineProperty(global, 'navigator', originalNavigatorDesc);
       originalNavigatorDesc = undefined;
