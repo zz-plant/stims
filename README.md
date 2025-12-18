@@ -134,15 +134,17 @@ To serve a static build instead of the dev server, run:
 
 ```bash
 npm run build
+npm run preview
 # or
 bun run build
 
 bun run serve:dist
 # or use Python as a fallback
 python3 -m http.server dist
+bun run preview
 ```
 
-Then open `http://localhost:8000`.
+The preview server hosts the contents of `dist/` on port `4173` using Vite's `--host` flag, so you can load the build from other devices on your LAN if needed.
 
 All JavaScript dependencies are installed via npm (or Bun) and bundled locally with Vite, so everything works offline without hitting a CDN.
 
@@ -150,7 +152,7 @@ All JavaScript dependencies are installed via npm (or Bun) and bundled locally w
 
 - `npm run dev` / `bun run dev`: Start the Vite development server for local exploration.
 - `npm run build` / `bun run build`: Produce a production build in `dist/`.
-- `npm run preview` / `bun run preview`: Serve the production build locally to validate the output before deploying.
+- `npm run preview` / `bun run preview`: Serve the production build locally (Vite preview with `--host` for LAN testing) to validate the output before deploying.
 - `bun test` (or `bun run test`): Run the Bun-native test suite. `npm run test` will also proxy to Bun if you have it installed.
 - `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
 - `npm run lint` / `bun run lint`: Check code quality with ESLint.
