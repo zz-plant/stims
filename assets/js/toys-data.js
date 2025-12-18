@@ -106,11 +106,11 @@ export default [
     type: 'module',
   },
   {
-    slug: 'particle-orbit',
-    title: 'Particle Orbit',
+    slug: 'cosmic-particles',
+    title: 'Cosmic Particles',
     description:
-      'Thousands of particles swirling faster as the music intensifies.',
-    module: 'assets/js/toys/particle-orbit.ts',
+      'Jump between orbiting swirls and nebula fly-throughs with a single toggle.',
+    module: 'assets/js/toys/cosmic-particles.ts',
     type: 'module',
   },
   {
@@ -140,13 +140,6 @@ export default [
     title: 'Rainbow Tunnel',
     description: 'Fly through colorful rings that spin to your music.',
     module: 'assets/js/toys/rainbow-tunnel.ts',
-    type: 'module',
-  },
-  {
-    slug: 'star-field',
-    title: 'Star Field',
-    description: 'A field of shimmering stars reacts to the beat.',
-    module: 'assets/js/toys/star-field.ts',
     type: 'module',
   },
 ];

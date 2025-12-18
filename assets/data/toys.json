@@ -66,10 +66,10 @@
     "module": "./assets/js/toys/cube-wave.ts"
   },
   {
-    "slug": "particle-orbit",
-    "title": "Particle Orbit",
-    "description": "Thousands of particles swirling faster as the music intensifies.",
-    "module": "./assets/js/toys/particle-orbit.ts"
+    "slug": "cosmic-particles",
+    "title": "Cosmic Particles",
+    "description": "Jump between orbiting swirls and nebula fly-throughs with a single toggle.",
+    "module": "./assets/js/toys/cosmic-particles.ts"
   },
   {
     "slug": "spiral-burst",
@@ -88,11 +88,5 @@
     "title": "Rainbow Tunnel",
     "description": "Fly through colorful rings that spin to your music.",
     "module": "./assets/js/toys/rainbow-tunnel.ts"
-  },
-  {
-    "slug": "star-field",
-    "title": "Star Field",
-    "description": "A field of shimmering stars reacts to the beat.",
-    "module": "./assets/js/toys/star-field.ts"
   }
 ]
