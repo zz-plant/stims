@@ -35,6 +35,7 @@
         initAudio,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
+      import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createSymphFunAdapter } from './assets/symph/fun-adapter.ts';
@@ -72,14 +73,6 @@
         );
         throw new Error('WebGL not supported');
       }
-
-      function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-      }
-      window.addEventListener('resize', resizeCanvas);
-      resizeCanvas();
 
       const vertexShaderSource = `
             attribute vec4 a_position;
@@ -198,7 +191,12 @@
       );
       const touchUniformLocation = gl.getUniformLocation(program, 'u_touch');
 
-      gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+      const disposeResize = setupCanvasResize(canvas, gl, {
+        maxPixelRatio: 2,
+        onResize: ({ width, height }) => {
+          gl.uniform2f(resolutionUniformLocation, width, height);
+        },
+      });
 
       const adapter = createSymphFunAdapter();
       const funControls = initFunControls({
@@ -289,10 +287,11 @@
 
       // Handle pointer input
       canvas.addEventListener('pointermove', (event) => {
-        const x = (event.clientX / canvas.width) * 2.0 - 1.0;
-        const y = -(event.clientY / canvas.height) * 2.0 + 1.0;
+        const x = (event.clientX / canvas.clientWidth) * 2.0 - 1.0;
+        const y = -(event.clientY / canvas.clientHeight) * 2.0 + 1.0;
         touchPoint = [x, y];
       });
+      window.addEventListener('pagehide', disposeResize);
     </script>
   </body>
 </html>

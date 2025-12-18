@@ -36,6 +36,7 @@
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createSearyFunAdapter } from './assets/seary/fun-adapter.ts';
+      import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
       function displayError(message) {
@@ -72,14 +73,7 @@
         throw new Error('WebGL not supported');
       }
 
-      // Resize canvas
-      function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        gl.viewport(0, 0, canvas.width, canvas.height);
-      }
-      window.addEventListener('resize', resizeCanvas);
-      resizeCanvas();
+      const disposeResize = setupCanvasResize(canvas, gl, { maxPixelRatio: 2 });
 
       // Compile shader
       function compileShader(source, type) {
@@ -458,6 +452,7 @@
         requestAnimationFrame(render);
       }
       requestAnimationFrame(render);
+      window.addEventListener('pagehide', disposeResize);
     </script>
   </body>
 </html>
