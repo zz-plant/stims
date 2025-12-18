@@ -7,6 +7,11 @@ import {
 } from '../core/animation-loop';
 import { AudioAccessError, getAverageFrequency } from '../utils/audio-handler';
 import { setupCanvasResize } from '../utils/canvas-resize';
+import {
+  createPointerInput,
+  type GestureUpdate,
+  type PointerSummary,
+} from '../utils/pointer-input';
 import PatternRecognizer from '../utils/patternRecognition';
 
 const toy = new WebToy({
@@ -57,6 +62,8 @@ spectroCanvas.style.left = '0';
 spectroCanvas.style.width = '100vw';
 spectroCanvas.style.height = '100vh';
 spectroCanvas.style.pointerEvents = 'none';
+spectroCanvas.classList.add('toy-canvas');
+document.documentElement.style.touchAction = 'none';
 
 const uniforms = {
   u_time: { value: 0 },
@@ -66,6 +73,8 @@ const uniforms = {
   u_audioData: { value: 0 },
   u_colorOffset: { value: new THREE.Vector3(0, 0, 0) },
   u_touch: { value: new THREE.Vector2(0, 0) },
+  u_touchScale: { value: 1 },
+  u_touchRotation: { value: 0 },
 };
 
 const startButton = document.getElementById('start-audio-button') as
@@ -78,6 +87,8 @@ const fragmentShader = `
   uniform float u_audioData;
   uniform vec3 u_colorOffset;
   uniform vec2 u_touch;
+  uniform float u_touchScale;
+  uniform float u_touchRotation;
 
   varying vec2 vUv;
 
@@ -92,6 +103,9 @@ const fragmentShader = `
 
   void main() {
     vec2 uv = vUv * 2.0 - 1.0;
+    float c = cos(u_touchRotation);
+    float s = sin(u_touchRotation);
+    uv = mat2(c, -s, s, c) * uv * u_touchScale;
     float dist = distance(uv, u_touch);
     float ripple = sin(dist * 15.0 - u_time * 3.0) * 0.15;
     float bloom = 0.3 / (dist * dist + 0.25);
@@ -135,7 +149,6 @@ let viewportWidth = window.innerWidth;
 let viewportHeight = window.innerHeight;
 let isStarting = false;
 let hasAudioStarted = false;
-const activePointers = new Map<number, { x: number; y: number }>();
 const disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
   maxPixelRatio: 2,
   onResize: ({ cssWidth, cssHeight }) => {
@@ -143,6 +156,33 @@ const disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
     viewportHeight = cssHeight;
     uniforms.u_resolution.value.set(cssWidth, cssHeight);
   },
+});
+
+function handlePointerUpdate(summary: PointerSummary) {
+  uniforms.u_touch.value.set(
+    summary.normalizedCentroid.x,
+    summary.normalizedCentroid.y
+  );
+  if (!summary.pointers.length) {
+    uniforms.u_colorOffset.value.z = 0;
+  }
+}
+
+function handleGestureUpdate(gesture: GestureUpdate) {
+  uniforms.u_touchScale.value = THREE.MathUtils.clamp(gesture.scale, 0.6, 2.8);
+  uniforms.u_touchRotation.value = gesture.rotation;
+  uniforms.u_colorOffset.value.z = THREE.MathUtils.clamp(
+    Math.abs(gesture.translation.x) + Math.abs(gesture.translation.y),
+    0,
+    1
+  );
+}
+
+const disposePointerInput = createPointerInput({
+  target: window,
+  boundsElement: spectroCanvas,
+  onChange: handlePointerUpdate,
+  onGesture: handleGestureUpdate,
 });
 
 function displayError(message: string) {
@@ -214,50 +254,6 @@ function animate(ctx: AnimationContext) {
   toy.render();
 }
 
-function updateTouchUniformFromPointers() {
-  if (!activePointers.size) {
-    uniforms.u_touch.value.set(0, 0);
-    return;
-  }
-
-  let sumX = 0;
-  let sumY = 0;
-  activePointers.forEach(({ x, y }) => {
-    sumX += x;
-    sumY += y;
-  });
-
-  const divisor = activePointers.size;
-  uniforms.u_touch.value.set(sumX / divisor, sumY / divisor);
-}
-
-function updatePointerPosition(event: PointerEvent) {
-  const x = (event.clientX / viewportWidth) * 2.0 - 1.0;
-  const y = -(event.clientY / viewportHeight) * 2.0 + 1.0;
-  activePointers.set(event.pointerId, { x, y });
-  updateTouchUniformFromPointers();
-}
-
-function handlePointerMove(event: PointerEvent) {
-  updatePointerPosition(event);
-}
-
-function handlePointerDown(event: PointerEvent) {
-  if (event.target instanceof Element && event.target.hasPointerCapture) {
-    try {
-      event.target.setPointerCapture(event.pointerId);
-    } catch {
-      // Pointer capture can fail on some elements or browsers; proceed without it.
-    }
-  }
-  updatePointerPosition(event);
-}
-
-function handlePointerEnd(event: PointerEvent) {
-  activePointers.delete(event.pointerId);
-  updateTouchUniformFromPointers();
-}
-
 async function start() {
   if (isStarting) return;
   isStarting = true;
@@ -295,10 +291,7 @@ async function start() {
 }
 
 startButton?.addEventListener('click', start);
-window.addEventListener('pointermove', handlePointerMove);
-window.addEventListener('pointerdown', handlePointerDown);
-window.addEventListener('pointerup', handlePointerEnd);
-window.addEventListener('pointercancel', handlePointerEnd);
-window.addEventListener('pointerout', handlePointerEnd);
-window.addEventListener('pointerleave', handlePointerEnd);
-window.addEventListener('pagehide', disposeResize);
+window.addEventListener('pagehide', () => {
+  disposePointerInput.dispose();
+  disposeResize();
+});
