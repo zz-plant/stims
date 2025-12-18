@@ -20,7 +20,9 @@ export function setupCanvasResize(
   { maxPixelRatio, onResize }: CanvasResizeOptions = {}
 ) {
   const resize = () => {
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, maxPixelRatio ?? window.devicePixelRatio || 1);
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const maxSupportedPixelRatio = maxPixelRatio ?? devicePixelRatio;
+    const pixelRatio = Math.min(devicePixelRatio, maxSupportedPixelRatio);
     const cssWidth = window.innerWidth;
     const cssHeight = window.innerHeight;
     const width = Math.max(1, Math.floor(cssWidth * pixelRatio));
