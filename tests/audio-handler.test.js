@@ -1,4 +1,12 @@
-import { jest } from '@jest/globals';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from 'bun:test';
 
 let originalNavigatorDesc;
 let initAudio;
@@ -6,22 +14,45 @@ let getFrequencyData;
 let AudioAccessError;
 
 beforeAll(async () => {
-  jest.unstable_mockModule('three', () => {
-    const actualThree = jest.requireActual('three');
+  mock.module('three', () => {
+    const AudioListener = mock(() => ({ add: mock(), context: { close: mock() } }));
+    const Audio = mock(() => ({
+      setMediaStreamSource: mock(),
+      stop: mock(),
+      disconnect: mock(),
+    }));
+    const PositionalAudio = mock(() => ({
+      setMediaStreamSource: mock(),
+      stop: mock(),
+      disconnect: mock(),
+    }));
+    const AudioAnalyser = mock((audio, fftSize = 256) => {
+      const data = new Uint8Array(fftSize / 2);
+      return {
+        analyser: { disconnect: mock() },
+        frequencyBinCount: data.length,
+        getFrequencyData: mock(() => data),
+      };
+    });
+
+    class Camera {
+      add = mock();
+      remove = mock();
+    }
+
+    class Object3D {
+      add = mock();
+      remove = mock();
+    }
 
     return {
       __esModule: true,
-      ...actualThree,
-      AudioListener: jest.fn(() => ({ add: jest.fn() })),
-      Audio: jest.fn(() => ({ setMediaStreamSource: jest.fn() })),
-      PositionalAudio: jest.fn(() => ({ setMediaStreamSource: jest.fn() })),
-      AudioAnalyser: jest.fn((_, fftSize = 256) => {
-        const data = new Uint8Array(fftSize / 2);
-        return {
-          frequencyBinCount: data.length,
-          getFrequencyData: jest.fn(() => data),
-        };
-      }),
+      Audio,
+      AudioAnalyser,
+      AudioListener,
+      Camera,
+      Object3D,
+      PositionalAudio,
     };
   });
 
@@ -32,36 +63,23 @@ beforeAll(async () => {
 
 describe('audio-handler utilities', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    mock.restore();
 
-    originalNavigatorDesc = Object.getOwnPropertyDescriptor(
-      global,
-      'navigator'
-    );
-    Object.defineProperty(global, 'navigator', {
-      configurable: true,
-      writable: true,
-      value: {
-        mediaDevices: {
-          getUserMedia: jest.fn().mockResolvedValue('stream'),
-        },
-      },
-    });
-
-    global.window = global.window || {};
-    global.window.navigator = global.navigator;
+    originalNavigatorDesc = Object.getOwnPropertyDescriptor(global, 'navigator');
+    const nav = global.navigator;
+    nav.mediaDevices = {
+      getUserMedia: mock().mockResolvedValue('stream'),
+    };
+    global.navigator = nav;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    mock.restore();
     if (originalNavigatorDesc) {
       Object.defineProperty(global, 'navigator', originalNavigatorDesc);
       originalNavigatorDesc = undefined;
     } else {
       delete global.navigator;
-    }
-    if (global.window) {
-      delete global.window.navigator;
     }
   });
 
@@ -76,7 +94,7 @@ describe('audio-handler utilities', () => {
   test('initAudio can create positional audio', async () => {
     const { audio } = await initAudio({
       positional: true,
-      object: { add: jest.fn() },
+      object: { add: mock(), remove: mock() },
     });
     expect(audio).toBeDefined();
   });
@@ -97,20 +115,18 @@ describe('audio-handler utilities', () => {
   });
 
   test('initAudio rejects with denied error when permission is blocked', async () => {
-    global.navigator.mediaDevices.getUserMedia = jest
-      .fn()
-      .mockRejectedValue(new DOMException('denied', 'NotAllowedError'));
+    global.navigator.mediaDevices.getUserMedia = mock().mockRejectedValue(
+      new DOMException('denied', 'NotAllowedError')
+    );
 
     await expect(initAudio()).rejects.toBeInstanceOf(AudioAccessError);
-    await expect(initAudio()).rejects.toEqual(
-      expect.objectContaining({ reason: 'denied' })
-    );
+    await expect(initAudio()).rejects.toEqual(expect.objectContaining({ reason: 'denied' }));
   });
 
   test('getFrequencyData returns array of the expected length', () => {
     const data = new Uint8Array(64);
     const analyser = {
-      getFrequencyData: jest.fn(() => data),
+      getFrequencyData: mock(() => data),
     };
 
     const result = getFrequencyData(analyser);

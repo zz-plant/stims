@@ -1,4 +1,11 @@
-import { jest } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from 'bun:test';
 
 const toyLibrary = [
   {
@@ -27,38 +34,41 @@ const toyLibrary = [
   },
 ];
 
+const loaderPath = '../assets/js/loader.js';
+const toysDataPath = '../assets/js/toys-data.js';
+const freshImport = async (path) => import(`${path}?t=${Date.now()}-${Math.random()}`);
+
 let mockLoadToy;
 let mockLoadFromQuery;
 let mockInitNavigation;
 
 async function loadAppShell() {
-  jest.unstable_mockModule('../assets/js/loader.js', () => ({
+  mock.module(loaderPath, () => ({
     initNavigation: mockInitNavigation,
     loadToy: mockLoadToy,
     loadFromQuery: mockLoadFromQuery,
   }));
 
-  jest.unstable_mockModule('../assets/js/toys-data.js', () => ({
+  mock.module(toysDataPath, () => ({
     default: toyLibrary,
   }));
 
-  await import('../assets/js/app-shell.js');
+  await freshImport('../assets/js/app-shell.js');
 }
 
 describe('app shell user journeys', () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
-    jest.resetModules();
+    mock.restore();
     document.body.innerHTML = '<input id="search-bar" /><div id="toy-list"></div>';
-    mockLoadToy = jest.fn();
-    mockLoadFromQuery = jest.fn();
-    mockInitNavigation = jest.fn();
+    mockLoadToy = mock();
+    mockLoadFromQuery = mock();
+    mockInitNavigation = mock();
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.resetModules();
+    mock.restore();
     document.body.innerHTML = '';
     window.location = originalLocation;
   });
@@ -79,9 +89,9 @@ describe('app shell user journeys', () => {
     search.value = 'cloud';
     search.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const visibleTitles = Array.from(
-      document.querySelectorAll('.webtoy-card h3')
-    ).map((node) => node.textContent);
+    const visibleTitles = Array.from(document.querySelectorAll('.webtoy-card h3')).map(
+      (node) => node.textContent
+    );
 
     expect(visibleTitles).toEqual(['Interactive Word Cloud']);
   });
