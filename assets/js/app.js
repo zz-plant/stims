@@ -3,7 +3,7 @@ import { initScene } from './core/scene-setup.ts';
 import { initCamera } from './core/camera-setup.ts';
 import { initRenderer } from './core/renderer-setup.ts';
 import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
-import { ensureWebGL } from './utils/webgl-check.ts';
+import { ensureWebGL } from './utils/webgl-check.js';
 import { initLighting, initAmbientLight } from './lighting/lighting-setup';
 import {
   createSyntheticAudioStream,
