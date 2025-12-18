@@ -21,12 +21,16 @@ type PresetInstance = {
   dispose: () => void;
 };
 
-let activePreset: PresetInstance;
+let activePreset: PresetInstance | null = null;
 let activePresetKey: PresetKey = 'orbit';
 const presetButtons: Record<PresetKey, HTMLButtonElement> = {
   orbit: document.createElement('button'),
   nebula: document.createElement('button'),
 };
+let presetControlsContainer: HTMLDivElement | null = null;
+
+const baseDispose = toy.dispose.bind(toy);
+let disposed = false;
 
 function createOrbitPreset(): PresetInstance {
   const group = new THREE.Group();
@@ -265,6 +269,8 @@ function updatePresetButtons() {
 }
 
 function createPresetControls() {
+  presetControlsContainer?.remove();
+
   const container = document.createElement('div');
   container.style.position = 'fixed';
   container.style.top = '16px';
@@ -314,10 +320,13 @@ function createPresetControls() {
   container.appendChild(buttonsRow);
   container.appendChild(hint);
   document.body.appendChild(container);
+
+  presetControlsContainer = container;
+  return container;
 }
 
 function init() {
-  createPresetControls();
+  presetControlsContainer = createPresetControls();
   setActivePreset(activePresetKey);
 }
 
@@ -333,7 +342,26 @@ async function startAudio(useSynthetic = false) {
   });
 }
 
+function dispose() {
+  if (disposed) return;
+  disposed = true;
+
+  activePreset?.dispose();
+  activePreset = null;
+
+  if (presetControlsContainer?.parentElement) {
+    presetControlsContainer.parentElement.removeChild(presetControlsContainer);
+  }
+  presetControlsContainer = null;
+
+  baseDispose();
+}
+
+toy.dispose = dispose;
+window.addEventListener('unload', dispose);
+
 init();
 (window as unknown as Record<string, unknown>).startAudio = startAudio;
 (window as unknown as Record<string, unknown>).startAudioFallback = () =>
   startAudio(true);
+(window as unknown as Record<string, unknown>).dispose = dispose;
