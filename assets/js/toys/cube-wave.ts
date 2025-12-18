@@ -7,6 +7,7 @@ import {
   AnimationContext,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { mapFrequencyToItems } from '../utils/audio-mapper';
 import { applyAudioColor } from '../utils/color-audio';
 
 const toy = new WebToy({
@@ -41,7 +42,23 @@ function animate(ctx: AnimationContext) {
   const dataArray = getContextFrequencyData(ctx);
   const avg = getAverageFrequency(dataArray);
 
+  mapFrequencyToItems(
+    dataArray,
+    cubes,
+    (cube, i, value) => {
+      const scale = 1 + value / 128;
+      cube.scale.y = scale;
+      (cube.material as THREE.MeshStandardMaterial).color.setHSL(
+        0.6 - value / 512,
+        0.8,
+        0.5
+      );
+      cube.rotation.y += value / 100000;
+    },
+    { fallbackValue: avg }
+  );
   const binsPerCube = dataArray.length / cubes.length;
+  
   cubes.forEach((cube, i) => {
     const bin = Math.floor(i * binsPerCube);
     const value = dataArray[bin] || avg;
