@@ -190,8 +190,9 @@ function createSVGAnimation(slug) {
 }
 
 function createCard(toy) {
-  const card = document.createElement('div');
+  const card = document.createElement('button');
   card.className = 'webtoy-card';
+  card.type = 'button';
   card.appendChild(createSVGAnimation(toy.slug));
   const title = document.createElement('h3');
   title.textContent = toy.title;
@@ -230,7 +231,15 @@ function createCard(toy) {
     card.appendChild(metaRow);
   }
 
-  card.addEventListener('click', () => openToy(toy));
+  const handleOpenToy = () => openToy(toy);
+
+  card.addEventListener('click', handleOpenToy);
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleOpenToy();
+    }
+  });
 
   return card;
 }
