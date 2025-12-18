@@ -4,6 +4,8 @@ Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil
 
 For setup, testing, and contribution guidelines, see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're building or updating toys, the developer docs in [`docs/`](./docs) cover common workflows and patterns.
 
+Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what’s new, what changed, and what’s coming next.
+
 ## Quick Start
 
 1. Clone the repo and `cd` into it.
