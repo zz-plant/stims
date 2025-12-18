@@ -55,6 +55,7 @@ describe('loadToy', () => {
         json: () => Promise.resolve([{ slug: 'brand', module: './toy.html?toy=brand' }]),
       })
     );
+    mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
     mock.module('../assets/js/toys-data.js', () => ({
       default: [
         {
@@ -116,6 +117,7 @@ describe('active toy navigation affordance', () => {
     document.body.innerHTML = '<div id="toy-list"></div>';
     global.fetch = mock(() => Promise.resolve({ ok: false }));
 
+    mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
     mock.module('../assets/js/toys-data.js', () => ({
       default: [
         {
@@ -190,6 +192,7 @@ describe('WebGPU requirements', () => {
       value: {},
     });
     global.fetch = mock(() => Promise.resolve({ ok: false }));
+    mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
   });
 
   afterEach(() => {
