@@ -10,6 +10,7 @@
     "format": "prettier --write .",
     "dev": "vite",
     "build": "vite build",
+    "serve:dist": "bun run scripts/serve-dist.ts",
     "prepare": "husky install",
     "postinstall": "if [ \"${npm_config_user_agent%%/*}\" = \"bun\" ]; then husky install; fi"
   },
