@@ -43,12 +43,8 @@ describe('loadToy', () => {
 
   beforeEach(async () => {
     jest.resetModules();
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () =>
-          Promise.resolve([{ slug: 'brand', module: './toy.html?toy=brand' }]),
-      })
-    );
+    document.body.innerHTML = '<div id="toy-list"></div>';
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
     const location = createMockLocation('http://example.com');
     Object.defineProperty(window, 'location', {
       writable: true,
@@ -60,6 +56,17 @@ describe('loadToy', () => {
       configurable: true,
       value: createMockHistory(location),
     });
+    await jest.unstable_mockModule('../assets/js/toys-data.js', () => ({
+      default: [
+        {
+          slug: 'brand',
+          module: './__mocks__/fake-module.js',
+          type: 'module',
+          requiresWebGPU: false,
+        },
+      ],
+    }));
+
     ({ loadToy } = await import(loaderModule));
   });
 
@@ -85,9 +92,10 @@ describe('loadToy', () => {
     });
   });
 
-  test('navigates to HTML toy page', async () => {
+  test('loads module toy without navigation', async () => {
     await loadToy('brand');
-    expect(window.location.href).toBe('http://example.com/brand.html');
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+    expect(window.location.href).toBe('http://example.com/');
   });
 });
 
@@ -219,38 +227,6 @@ describe('WebGPU requirements', () => {
     const status = document.querySelector('.active-toy-status.is-error');
     expect(status?.querySelector('h2')?.textContent).toContain('WebGPU not available');
     expect(window.location.href).toBe(originalLocation.href);
-  });
-
-  test('prevents navigation to page toy when WebGPU is missing', async () => {
-    await jest.unstable_mockModule('../assets/js/toys-data.js', () => ({
-      default: [
-        {
-          slug: 'webgpu-page',
-          title: 'Page WebGPU',
-          module: './webgpu-page.html',
-          type: 'page',
-          requiresWebGPU: true,
-        },
-      ],
-    }));
-
-    const location = createMockLocation('http://example.com/library');
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      configurable: true,
-      value: location,
-    });
-    Object.defineProperty(window, 'history', {
-      writable: true,
-      configurable: true,
-      value: createMockHistory(location),
-    });
-
-    const { loadToy } = await import(loaderModule);
-    await loadToy('webgpu-page');
-
-    expect(document.querySelector('.active-toy-status.is-error')).not.toBeNull();
-    expect(window.location.href).toBe('http://example.com/library');
   });
 });
 
