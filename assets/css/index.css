@@ -532,6 +532,7 @@ footer {
 .theme-toggle:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 3px;
+  background: var(--hover-bg);
   box-shadow: 0 0 20px var(--glow-color);
 }
 
