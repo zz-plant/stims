@@ -7,7 +7,18 @@ let navigationInitialized = false;
 function getBaseUrl() {
   const win = getWindow();
   if (!win) return null;
-  return new URL(win.location.href);
+
+  const href = win.location?.href;
+  if (href) {
+    return new URL(href);
+  }
+
+  const origin = win.location?.origin;
+  if (origin) {
+    return new URL(origin);
+  }
+
+  return null;
 }
 
 function hasWebGPUSupport() {
@@ -273,6 +284,14 @@ export async function resolveModulePath(entry) {
       return baseUrl
         ? new URL(compiledFile, baseUrl).pathname
         : new URL(compiledFile, window.location.origin).pathname;
+    }
+  }
+
+  if (entry.startsWith('./')) {
+    try {
+      return new URL(entry, import.meta.url).pathname;
+    } catch (error) {
+      console.error('Error resolving module path from import.meta.url:', error);
     }
   }
 

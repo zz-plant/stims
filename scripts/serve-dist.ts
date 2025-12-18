@@ -1,3 +1,5 @@
+/* global Bun */
+import process from "node:process";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -64,7 +66,7 @@ async function ensureBuildExists() {
       throw new Error();
     }
   } catch (error) {
-    console.error("No dist/ directory found. Please run 'bun run build' first.");
+    console.error("No dist/ directory found. Please run 'bun run build' first.", error);
     process.exit(1);
   }
 }
