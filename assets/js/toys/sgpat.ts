@@ -5,7 +5,7 @@ import {
   getContextFrequencyData,
   startAudioLoop,
 } from '../core/animation-loop';
-import { getAverageFrequency } from '../utils/audio-handler';
+import { AudioAccessError, getAverageFrequency } from '../utils/audio-handler';
 import { setupCanvasResize } from '../utils/canvas-resize';
 import PatternRecognizer from '../utils/patternRecognition';
 
@@ -65,6 +65,10 @@ const uniforms = {
   u_colorOffset: { value: new THREE.Vector3(0, 0, 0) },
   u_touch: { value: new THREE.Vector2(0, 0) },
 };
+
+const startButton = document.getElementById('start-audio-button') as
+  | HTMLButtonElement
+  | null;
 
 const fragmentShader = `
   uniform float u_time;
@@ -127,6 +131,8 @@ let patternRecognizer: PatternRecognizer | null = null;
 const clock = new THREE.Clock();
 let viewportWidth = window.innerWidth;
 let viewportHeight = window.innerHeight;
+let isStarting = false;
+let hasAudioStarted = false;
 const disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
   maxPixelRatio: 2,
   onResize: ({ cssWidth, cssHeight }) => {
@@ -141,6 +147,26 @@ function displayError(message: string) {
   if (!errorMessageElement) return;
   errorMessageElement.textContent = message;
   errorMessageElement.style.display = message ? 'block' : 'none';
+}
+
+function updateStartButton(label: string, disabled: boolean) {
+  if (!startButton) return;
+  startButton.textContent = label;
+  startButton.disabled = disabled;
+}
+
+function stopCurrentAudio() {
+  if (toy.audioStream) {
+    toy.audioStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+    toy.audioStream = null;
+  }
+  if (toy.audio && 'disconnect' in toy.audio && typeof toy.audio.disconnect === 'function') {
+    toy.audio.disconnect();
+  }
+  if (toy.audio && 'stop' in toy.audio && typeof toy.audio.stop === 'function') {
+    toy.audio.stop();
+  }
+  toy.analyser = null;
 }
 
 function updateSpectrograph(dataArray: Uint8Array) {
@@ -194,24 +220,40 @@ function handlePointerMove(event: PointerEvent) {
 }
 
 async function start() {
+  if (isStarting) return;
+  isStarting = true;
+  updateStartButton(hasAudioStarted ? 'Restarting...' : 'Starting...', true);
   if (!toy.renderer) {
     displayError('WebGL is not supported in this browser.');
+    updateStartButton('Start / Retry Audio', false);
+    isStarting = false;
     return;
   }
   try {
+    stopCurrentAudio();
     const ctx = await startAudioLoop(toy, animate, { fftSize: 256 });
     if (ctx.analyser) {
       patternRecognizer = new PatternRecognizer(ctx.analyser);
     }
+    hasAudioStarted = true;
     displayError('');
+    updateStartButton('Restart Audio', false);
   } catch (error) {
     console.error('Error capturing audio: ', error);
-    displayError(
-      'Microphone access is required for the visualization to work. Please allow microphone access.'
-    );
+    const isAudioError = error instanceof AudioAccessError;
+    const reason = isAudioError ? error.reason : null;
+    const message =
+      reason === 'denied'
+        ? 'Microphone access was denied. Please enable it to drive the spectrograph.'
+        : reason === 'unsupported'
+          ? 'This browser does not support microphone capture.'
+          : 'Microphone access is required for the visualization to work. Please allow microphone access.';
+    displayError(message);
+    updateStartButton('Start / Retry Audio', false);
   }
+  isStarting = false;
 }
 
-start();
+startButton?.addEventListener('click', start);
 window.addEventListener('pointermove', handlePointerMove);
 window.addEventListener('pagehide', disposeResize);
