@@ -23,26 +23,39 @@ For setup, testing, and contribution guidelines, see [CONTRIBUTING.md](./CONTRIB
 
 Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond to sound, touch, and other inputs to create a chill or stimulating experience. If you’d rather play locally, follow the steps in **Local Setup** to run the dev server and open the toys at `http://localhost:5173`.
 
+## Repository Layout
+
+This project is organized so you can find the visuals, core utilities, and shared assets quickly:
+
+- `assets/js/toys/`: Individual toy implementations such as `cube-wave.ts`, `spiral-burst.ts`, and other sound-reactive scenes.
+- `assets/js/core/`: Rendering and input helpers used by multiple toys (for example, renderer initialization and audio analyzers).
+- `assets/js/utils/`: Small utility modules that support the core helpers and toys.
+- `assets/css/`: Shared styling for the various HTML entry points.
+- `assets/data/`: Static data files consumed by the toys.
+- `tests/`: Jest specs that validate core behaviors.
+- `toy.html`, `brand.html`, `seary.html`, and other HTML files: Entry points that load specific toys or collections of toys.
+
+If you add a new toy, place the implementation in `assets/js/toys/`, register it in `assets/js/toys-data.js`, and make sure there’s an entry point (often `toy.html?toy=<slug>`) that can load it.
+
 ## Toys in the Collection
 
-| Toy | Description |
-| --- | --- |
-| [3D Toy](./toy.html?toy=3dtoy) | Dive into a twisting 3D tunnel that responds to sound. |
-| [Star Guitar Visualizer](./brand.html) | A visual journey inspired by an iconic music video, synced to your music. |
-| [Defrag Visualizer](./defrag.html) | A nostalgic, sound-reactive visualizer evoking old defragmentation screens. |
-| [Evolutionary Weirdcore](./evol.html) | Watch surreal landscapes evolve with fractals and glitches that react to music. |
-| [Multi-Capability Visualizer](./multi.html) | Shapes and lights move with both sound and device motion. |
-| [Trippy Synesthetic Visualizer](./seary.html) | Blend audio and visuals in a rich synesthetic experience. |
-| [Pattern Recognition Visualizer](./sgpat.html) | See patterns form dynamically in response to sound. |
-| [SVG + Three.js Visualizer](./svgtest.html) | A hybrid visualizer blending 2D and 3D elements, reacting in real time. |
-| [Dreamy Spectrograph](./symph.html) | A relaxing spectrograph that moves gently with your audio. |
-| [Interactive Word Cloud](./words.html) | Speak and watch the word cloud react and shift with your voice. |
-| [Cube Wave](./toy.html?toy=cube-wave) | A grid of cubes that rise and fall with your audio. |
-| [Cosmic Particles](./toy.html?toy=cosmic-particles) | Toggle between orbiting swirls and a warp-speed nebula journey. |
-| [Spiral Burst](./toy.html?toy=spiral-burst) | Colorful spirals rotate and expand with every beat. |
-| [Bouncy Spheres](./toy.html?toy=bouncy-spheres) | Lines of spheres bounce and change color with audio. |
-| [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel) | Fly through colorful rings that spin to your music. |
-
+| Toy                                             | Description                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------------- |
+| [3D Toy](./toy.html?toy=3dtoy)                  | Dive into a twisting 3D tunnel that responds to sound.                          |
+| [Star Guitar Visualizer](./brand.html)          | A visual journey inspired by an iconic music video, synced to your music.       |
+| [Defrag Visualizer](./defrag.html)              | A nostalgic, sound-reactive visualizer evoking old defragmentation screens.     |
+| [Evolutionary Weirdcore](./evol.html)           | Watch surreal landscapes evolve with fractals and glitches that react to music. |
+| [Multi-Capability Visualizer](./multi.html)     | Shapes and lights move with both sound and device motion.                       |
+| [Trippy Synesthetic Visualizer](./seary.html)   | Blend audio and visuals in a rich synesthetic experience.                       |
+| [Pattern Recognition Visualizer](./sgpat.html)  | See patterns form dynamically in response to sound.                             |
+| [SVG + Three.js Visualizer](./svgtest.html)     | A hybrid visualizer blending 2D and 3D elements, reacting in real time.         |
+| [Dreamy Spectrograph](./symph.html)             | A relaxing spectrograph that moves gently with your audio.                      |
+| [Interactive Word Cloud](./words.html)          | Speak and watch the word cloud react and shift with your voice.                 |
+| [Grid Visualizer](./toy.html?toy=cube-wave)     | Swap between cube waves and bouncing spheres without stopping the music.              |
+| [Particle Orbit](./toy.html?toy=particle-orbit) | Thousands of particles swirling faster as the music intensifies.                |
+| [Spiral Burst](./toy.html?toy=spiral-burst)     | Colorful spirals rotate and expand with every beat.                             |
+| [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel) | Fly through colorful rings that spin to your music.                             |
+| [Star Field](./toy.html?toy=star-field)         | A field of shimmering stars reacts to the beat.                                 |
 
 ---
 
@@ -111,6 +124,15 @@ python3 -m http.server dist
 Then open `http://localhost:8000`.
 
 All JavaScript dependencies are installed via npm and bundled locally with Vite, so everything works offline without hitting a CDN.
+
+### Helpful npm Scripts
+
+- `npm run dev`: Start the Vite development server for local exploration.
+- `npm run build`: Produce a production build in `dist/`.
+- `npm run preview`: Serve the production build locally to validate the output before deploying.
+- `npm test`: Run the Jest suite.
+- `npm run lint`: Check code quality with ESLint.
+- `npm run format`: Format files with Prettier.
 
 ## Code of Conduct and Contributions
 

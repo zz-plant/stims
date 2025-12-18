@@ -351,6 +351,38 @@ h1 {
   opacity: 0.8;
 }
 
+.webtoy-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.capability-badge {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--hover-bg);
+  background: rgba(76, 238, 167, 0.12);
+  color: var(--accent-color);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.capability-badge--warning {
+  border-color: rgba(255, 191, 71, 0.4);
+  background: rgba(255, 191, 71, 0.1);
+  color: #ffbf47;
+}
+
+.capability-note {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  color: var(--text-color);
+}
+
 .webtoy-card a {
   color: inherit;
   text-decoration: none;
