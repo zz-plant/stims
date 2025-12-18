@@ -20,13 +20,11 @@
     <script type="module">
       import * as THREE from 'three';
       import WebToy from './assets/js/core/web-toy.ts';
-      import {
-        startAudioLoop,
-        getContextFrequencyData,
-      } from './assets/js/core/animation-loop.ts';
+      import { getContextFrequencyData } from './assets/js/core/animation-loop.ts';
       import createPeakDetector from './assets/js/utils/peak-detector.ts';
       import { getAverageFrequency } from './assets/js/utils/audio-handler.ts';
       import { showError } from './assets/js/utils/error-display.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createMultiFunAdapter } from './assets/multi/fun-adapter.ts';
@@ -334,7 +332,7 @@
         ctx.toy.render();
       }
 
-      startAudioLoop(toy, animate)
+      startToyAudio(toy, animate)
         .catch((err) => {
           console.error('The following error occurred: ' + err);
           funControls.setAudioAvailable(false);
