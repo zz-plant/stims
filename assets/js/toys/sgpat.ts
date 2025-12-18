@@ -18,16 +18,18 @@ const toy = new WebToy({
   },
 });
 
-toy.renderer?.domElement.classList.add('sgpat-canvas');
-if (toy.renderer?.domElement) {
-  Object.assign(toy.renderer.domElement.style, {
+toy.rendererReady.then((result) => {
+  const canvasElement = result?.renderer.domElement;
+  if (!canvasElement) return;
+  canvasElement.classList.add('sgpat-canvas');
+  Object.assign(canvasElement.style, {
     position: 'fixed',
     top: '0',
     left: '0',
     width: '100vw',
     height: '100vh',
   });
-}
+});
 
 type SpectroContext = CanvasRenderingContext2D;
 
@@ -260,7 +262,8 @@ async function start() {
   if (isStarting) return;
   isStarting = true;
   updateStartButton(hasAudioStarted ? 'Restarting...' : 'Starting...', true);
-  if (!toy.renderer) {
+  const rendererResult = await toy.rendererReady;
+  if (!rendererResult?.renderer) {
     displayError('WebGL is not supported in this browser.');
     updateStartButton('Start / Retry Audio', false);
     isStarting = false;
