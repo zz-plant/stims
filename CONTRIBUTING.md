@@ -13,6 +13,7 @@ Thanks for helping build and refine the Stim Webtoys Library! This guide covers 
 ## Running the Dev Server
 
 Start the local development server and open the site at `http://localhost:5173`:
+
 ```bash
 npm run dev
 ```

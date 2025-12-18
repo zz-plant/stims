@@ -7,6 +7,7 @@ import {
   AnimationContext,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { updateCameraMotion } from '../utils/camera-motion';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 30, z: 70 } },
@@ -17,6 +18,9 @@ const toy = new WebToy({
   },
   ambientLightOptions: { intensity: 0.6 },
 } as ToyConfig);
+
+const baseCameraPosition = new THREE.Vector3(0, 30, 70);
+const cameraLookTarget = new THREE.Vector3(0, 5, 0);
 
 interface SphereData {
   mesh: THREE.Mesh;
@@ -123,9 +127,15 @@ function animate(ctx: AnimationContext) {
     material.emissive.setHSL(hue, 0.5, normalizedValue * 0.3);
   });
 
-  // Camera sway
-  toy.camera.position.x = Math.sin(time * 0.2) * 5;
-  toy.camera.lookAt(0, 5, 0);
+  updateCameraMotion(toy.camera, time, {
+    basePosition: baseCameraPosition,
+    oscillation: {
+      x: { amplitude: 5, frequency: 0.2 },
+    },
+    lookAt: {
+      target: cameraLookTarget,
+    },
+  });
 
   ctx.toy.render();
 }

@@ -7,12 +7,16 @@ import {
   AnimationContext,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { updateCameraMotion } from '../utils/camera-motion';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 100 } },
   lightingOptions: { type: 'PointLight', position: { x: 10, y: 20, z: 50 } },
   ambientLightOptions: { intensity: 0.3 },
 } as ToyConfig);
+
+const baseCameraPosition = new THREE.Vector3(0, 0, 100);
+const cameraLookTarget = new THREE.Vector3(0, 0, -100);
 
 let stars: THREE.Points;
 let starMaterial: THREE.PointsMaterial;
@@ -180,10 +184,16 @@ function animate(ctx: AnimationContext) {
   const hue = (normalizedAvg * 0.5 + time * 0.05) % 1;
   starMaterial.color.setHSL(hue, 0.3, 0.9);
 
-  // Camera effects
-  toy.camera.position.x = Math.sin(time * 0.3) * 10;
-  toy.camera.position.y = Math.cos(time * 0.2) * 5;
-  toy.camera.lookAt(0, 0, -100);
+  updateCameraMotion(toy.camera, time, {
+    basePosition: baseCameraPosition,
+    oscillation: {
+      x: { amplitude: 10, frequency: 0.3 },
+      y: { amplitude: 5, frequency: 0.2, fn: 'cos' },
+    },
+    lookAt: {
+      target: cameraLookTarget,
+    },
+  });
 
   ctx.toy.render();
 }
