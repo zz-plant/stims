@@ -78,7 +78,8 @@
             uniform float u_audioData;
             uniform vec3 u_colorOffset;
             uniform vec3 u_burstTint;
-            uniform vec2 u_touch;
+            uniform vec2 u_touches[3];
+            uniform float u_touchCount;
             uniform float u_rippleAmp;
             
             vec3 dreamyGradient(vec2 uv, float timeOffset) {
@@ -93,9 +94,20 @@
                 uv -= 0.5;
                 uv *= 2.0;
                 
-                float dist = distance(uv, u_touch);
-                float ripple = sin(dist * 15.0 - u_time * 3.0) * u_rippleAmp;
-                float bloom = 0.3 / (dist * dist + 0.25);
+                float ripple = 0.0;
+                float bloom = 0.0;
+                for (int i = 0; i < 3; i++) {
+                    if (float(i) < u_touchCount) {
+                        vec2 touch = u_touches[i];
+                        float dist = distance(uv, touch);
+                        ripple += sin(dist * 15.0 - u_time * 3.0) * u_rippleAmp;
+                        bloom += 0.3 / (dist * dist + 0.25);
+                    }
+                }
+
+                float touchFactor = max(1.0, u_touchCount);
+                ripple /= touchFactor;
+                bloom /= touchFactor;
                 uv += ripple;
 
                 vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData;
@@ -186,7 +198,14 @@
         program,
         'u_burstTint'
       );
-      const touchUniformLocation = gl.getUniformLocation(program, 'u_touch');
+      const touchUniformLocation = gl.getUniformLocation(
+        program,
+        'u_touches[0]'
+      );
+      const touchCountUniformLocation = gl.getUniformLocation(
+        program,
+        'u_touchCount'
+      );
       const rippleUniformLocation = gl.getUniformLocation(
         program,
         'u_rippleAmp'
@@ -236,7 +255,10 @@
       let time = 0.0;
       let audioData = adapter.transformAudioValue(0);
       let colorOffset = [...adapter.paletteAccent];
-      let touchPoint = [0.0, 0.0];
+      let touchCenter = [0.0, 0.0];
+      const maxTouches = 3;
+      const touchUniformData = new Float32Array(maxTouches * 2);
+      let touchCount = 1;
       let analyser;
       let smoothedLevel = 0;
       let burstEnergy = 0;
@@ -368,10 +390,10 @@
           SPARKLE_POOL_SIZE / 3,
           6 + Math.floor(strength * 12)
         );
-        const baseX = ((touchPoint[0] + 1) * 0.5 + Math.random() * 0.05) *
+        const baseX = ((touchCenter[0] + 1) * 0.5 + Math.random() * 0.05) *
           canvas.width;
         const baseY =
-          (1 - (touchPoint[1] + 1) * 0.5) * canvas.height * 0.9 +
+          (1 - (touchCenter[1] + 1) * 0.5) * canvas.height * 0.9 +
           Math.random() * 30;
 
         for (let i = 0; i < count; i += 1) {
@@ -429,7 +451,8 @@
         gl.uniform1f(timeUniformLocation, time);
         gl.uniform1f(audioDataUniformLocation, audioData);
         gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
-        gl.uniform2fv(touchUniformLocation, touchPoint);
+        gl.uniform2fv(touchUniformLocation, touchUniformData);
+        gl.uniform1f(touchCountUniformLocation, touchCount);
         const burstTint = burstsEnabled
           ? [
               colorOffset[0] * burstEnergy * 1.2,
@@ -451,18 +474,71 @@
 
       requestAnimationFrame(render);
 
+      const activePointers = new Map();
+
+      function refreshTouches() {
+        const width = canvas.clientWidth || canvas.width;
+        const height = canvas.clientHeight || canvas.height;
+        const values = Array.from(activePointers.values()).slice(0, maxTouches);
+        touchUniformData.fill(0);
+
+        if (!width || !height) {
+          touchCount = 1;
+          touchCenter = [0.0, 0.0];
+          return;
+        }
+
+        touchCount = Math.max(1, values.length);
+        if (values.length === 0) {
+          touchCenter = [0.0, 0.0];
+          return;
+        }
+
+        let sumX = 0;
+        let sumY = 0;
+
+        for (let i = 0; i < values.length; i += 1) {
+          const p = values[i];
+          const x = (p.x / width) * 2.0 - 1.0;
+          const y = -(p.y / height) * 2.0 + 1.0;
+          touchUniformData[i * 2] = x;
+          touchUniformData[i * 2 + 1] = y;
+          sumX += x;
+          sumY += y;
+        }
+
+        touchCenter = [sumX / values.length, sumY / values.length];
+      }
+
+      function updatePointer(event) {
+        activePointers.set(event.pointerId, {
+          x: event.clientX,
+          y: event.clientY,
+        });
+        refreshTouches();
+      }
+
+      function clearPointer(event) {
+        activePointers.delete(event.pointerId);
+        refreshTouches();
+      }
+
+      refreshTouches();
+
       // Handle pointer input
       canvas.addEventListener('pointerdown', (event) => {
-        const x = (event.clientX / canvas.width) * 2.0 - 1.0;
-        const y = -(event.clientY / canvas.height) * 2.0 + 1.0;
-        touchPoint = [x, y];
+        updatePointer(event);
         triggerBurst(0.5);
       });
+
       canvas.addEventListener('pointermove', (event) => {
-        const x = (event.clientX / canvas.clientWidth) * 2.0 - 1.0;
-        const y = -(event.clientY / canvas.clientHeight) * 2.0 + 1.0;
-        touchPoint = [x, y];
+        updatePointer(event);
       });
+
+      canvas.addEventListener('pointerup', clearPointer);
+      canvas.addEventListener('pointercancel', clearPointer);
+      canvas.addEventListener('pointerout', clearPointer);
+      canvas.addEventListener('pointerleave', clearPointer);
       window.addEventListener('pagehide', disposeResize);
     </script>
   </body>
