@@ -125,13 +125,9 @@
 
     <script type="module">
       import * as THREE from 'three';
-      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      import { initRenderer } from './assets/js/core/renderer-setup.ts';
 
       function startBackground() {
-        if (!ensureWebGL()) {
-          return;
-        }
-
         // Three.js background
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(
@@ -140,11 +136,14 @@
           0.1,
           1000
         );
-        const renderer = new THREE.WebGLRenderer({
-          canvas: document.getElementById('bg-canvas'),
+        const renderer = initRenderer(document.getElementById('bg-canvas'), {
+          maxPixelRatio: 1.5,
           alpha: true,
         });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        if (!renderer) {
+          return;
+        }
 
         const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
         const material = new THREE.MeshBasicMaterial({
@@ -182,6 +181,7 @@
         window.addEventListener('resize', () => {
           camera.aspect = window.innerWidth / window.innerHeight;
           camera.updateProjectionMatrix();
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
           renderer.setSize(window.innerWidth, window.innerHeight);
         });
       }
