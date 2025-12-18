@@ -15,7 +15,25 @@ let AudioAccessError;
 
 beforeAll(async () => {
   mock.module('three', () => {
-    const AudioListener = mock(() => ({ add: mock(), context: { close: mock() } }));
+    const AudioListener = mock(() => ({
+      add: mock(),
+      context: {
+        close: mock(),
+        createGain: mock(() => ({
+          gain: { value: 1 },
+          connect: mock(),
+          disconnect: mock(),
+        })),
+        createMediaStreamSource: mock(() => ({
+          connect: mock(),
+          disconnect: mock(),
+        })),
+        destination: {},
+        audioWorklet: {
+          addModule: mock().mockResolvedValue(undefined),
+        },
+      },
+    }));
     const Audio = mock(() => ({
       setMediaStreamSource: mock(),
       stop: mock(),
@@ -59,6 +77,19 @@ beforeAll(async () => {
   ({ initAudio, getFrequencyData, AudioAccessError } = await import(
     '../assets/js/utils/audio-handler.ts'
   ));
+
+  class AudioWorkletNode {
+    port = { onmessage: null, postMessage: mock() };
+    connect = mock();
+    disconnect = mock();
+    parameters;
+
+    constructor(context, name, options) {
+      this.parameters = { context, name, options };
+    }
+  }
+
+  global.AudioWorkletNode = AudioWorkletNode;
 });
 
 describe('audio-handler utilities', () => {
@@ -66,7 +97,9 @@ describe('audio-handler utilities', () => {
     originalNavigatorDesc = Object.getOwnPropertyDescriptor(global, 'navigator');
     const nav = global.navigator;
     nav.mediaDevices = {
-      getUserMedia: mock().mockResolvedValue('stream'),
+      getUserMedia: mock().mockResolvedValue({
+        getTracks: () => [{ stop: mock() }],
+      }),
     };
     global.navigator = nav;
   });

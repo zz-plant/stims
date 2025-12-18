@@ -1,8 +1,8 @@
-import type { AudioAnalyser } from 'three';
+import type { FrequencyAnalyser } from './audio-handler';
 import { getAverageFrequency, getFrequencyData } from './audio-handler';
 
 export interface PeakDetectorOptions {
-  analyser?: AudioAnalyser;
+  analyser?: FrequencyAnalyser;
   /** Custom provider for FFT data; use when you already have a buffer handy. */
   getData?: () => Uint8Array;
   /** How much louder than the baseline the signal must be to trigger a peak. */

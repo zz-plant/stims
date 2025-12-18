@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 
+export type FrequencyAnalyser = {
+  getFrequencyData(): Uint8Array;
+  averageLevel: number;
+};
+
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable';
 
 export class AudioAccessError extends Error {
@@ -20,12 +25,44 @@ export type AudioInitOptions = {
   constraints?: MediaStreamConstraints;
   stream?: MediaStream;
   onCleanup?: (ctx: {
-    analyser: THREE.AudioAnalyser;
+    analyser: FrequencyAnalyser;
     listener: THREE.AudioListener;
     audio: THREE.Audio | THREE.PositionalAudio;
     stream?: MediaStream;
   }) => void;
 };
+
+class WorkletAnalyser implements FrequencyAnalyser {
+  frequencyData: Uint8Array;
+  averageLevel: number;
+  node: AudioWorkletNode;
+
+  constructor(node: AudioWorkletNode, fftSize: number) {
+    this.node = node;
+    this.frequencyData = new Uint8Array(fftSize / 2);
+    this.averageLevel = 0;
+
+    this.node.port.onmessage = (event) => {
+      const message = event.data;
+      if (message?.type === 'fft') {
+        if (message.data) {
+          this.frequencyData = new Uint8Array(message.data);
+        }
+        if (typeof message.average === 'number') {
+          this.averageLevel = message.average;
+        }
+      }
+    };
+  }
+
+  disconnect() {
+    this.node.port.onmessage = null;
+  }
+
+  getFrequencyData() {
+    return this.frequencyData;
+  }
+}
 
 export function createSyntheticAudioStream({
   frequency = 220,
@@ -123,10 +160,41 @@ export async function initAudio(options: AudioInitOptions = {}) {
       ? new THREE.PositionalAudio(listener)
       : new THREE.Audio(listener);
     audio.setMediaStreamSource(streamSource);
+    const context = listener.context as AudioContext;
+
+    if (!context.audioWorklet?.addModule) {
+      throw new AudioAccessError(
+        'unsupported',
+        'AudioWorklet is not supported in this browser.'
+      );
+    }
+
+    await context.audioWorklet.addModule(
+      new URL('../worklets/audio-analyser.worklet.ts', import.meta.url)
+    );
+
+    const workletNode = new AudioWorkletNode(context, 'audio-analyser', {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+      processorOptions: { fftSize },
+    });
+
+    const gainNode = context.createGain();
+    gainNode.gain.value = 0;
+
+    const sourceNode =
+      (audio as THREE.Audio & { source?: MediaStreamAudioSourceNode }).source ||
+      context.createMediaStreamSource(streamSource);
+
+    sourceNode.connect(workletNode);
+    workletNode.connect(gainNode);
+    gainNode.connect(context.destination);
+
     if (positional && object) {
       object.add(audio);
     }
-    const analyser = new THREE.AudioAnalyser(audio, fftSize);
+    const analyser = new WorkletAnalyser(workletNode, fftSize);
 
     let cleanedUp = false;
     const cleanup = () => {
@@ -145,9 +213,10 @@ export async function initAudio(options: AudioInitOptions = {}) {
         audio.disconnect();
       }
 
-      if (analyser?.analyser) {
-        analyser.analyser.disconnect();
-      }
+      workletNode.disconnect();
+      gainNode.disconnect();
+      sourceNode.disconnect();
+      analyser.disconnect();
 
       if (streamSource) {
         streamSource.getTracks().forEach((track) => track.stop());
@@ -213,7 +282,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
   }
 }
 
-export function getFrequencyData(analyser: THREE.AudioAnalyser) {
+export function getFrequencyData(analyser: FrequencyAnalyser) {
   return analyser.getFrequencyData();
 }
 

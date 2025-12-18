@@ -3,7 +3,7 @@ import { initScene } from './scene-setup.ts';
 import { initCamera } from './camera-setup.ts';
 import { initRenderer } from './renderer-setup.ts';
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
-import { initAudio } from '../utils/audio-handler.ts';
+import { initAudio, type FrequencyAnalyser } from '../utils/audio-handler.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 
 export default class WebToy {
@@ -11,7 +11,7 @@ export default class WebToy {
   scene: THREE.Scene;
   camera: THREE.Camera;
   renderer: ReturnType<typeof initRenderer>;
-  analyser: THREE.AudioAnalyser | null;
+  analyser: FrequencyAnalyser | null;
   audioListener: THREE.AudioListener | null;
   audio: THREE.Audio | THREE.PositionalAudio | null;
   audioStream: MediaStream | null;
