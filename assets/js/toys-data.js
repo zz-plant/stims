@@ -64,7 +64,7 @@ export default [
     slug: 'sgpat',
     title: 'Pattern Recognition Visualizer',
     description: 'See patterns form dynamically in response to sound.',
-    module: './toy.html?toy=sgpat',
+    module: './sgpat.html',
     type: 'page',
   },
   {
