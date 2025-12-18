@@ -5,6 +5,10 @@ const TOY_QUERY_PARAM = 'toy';
 let manifestPromise;
 let navigationInitialized = false;
 
+function hasWebGPUSupport() {
+  return typeof navigator !== 'undefined' && Boolean(navigator.gpu);
+}
+
 function getDocument() {
   return typeof document === 'undefined' ? null : document;
 }
@@ -146,6 +150,35 @@ function showImportError(container, toy) {
   status.querySelector('.active-toy-status__content')?.appendChild(actions);
 }
 
+function showCapabilityError(container, toy) {
+  clearActiveToyContainer();
+
+  const status = createStatusElement(container, {
+    type: 'error',
+    title: 'WebGPU not available',
+    message: toy?.title
+      ? `${toy.title} needs WebGPU, which is not supported in this browser.`
+      : 'This toy requires WebGPU, which is not supported in this browser.',
+  });
+
+  if (!status) return;
+
+  const actions = document.createElement('div');
+  actions.className = 'active-toy-actions';
+
+  const back = document.createElement('button');
+  back.type = 'button';
+  back.className = 'cta-button';
+  back.textContent = 'Back to Library';
+  back.addEventListener('click', () => {
+    showLibraryView();
+    updateHistoryToLibraryView();
+  });
+
+  actions.appendChild(back);
+  status.querySelector('.active-toy-status__content')?.appendChild(actions);
+}
+
 function showLibraryView() {
   showElement(getToyList());
   hideElement(findActiveToyContainer());
@@ -252,6 +285,13 @@ export async function loadToy(slug, { pushState = false } = {}) {
   }
 
   if (toy.type === 'page') {
+    if (toy.requiresWebGPU && !hasWebGPUSupport()) {
+      const container = ensureActiveToyContainer();
+      showActiveToyView();
+      showCapabilityError(container, toy);
+      return;
+    }
+
     disposeActiveToy();
     window.location.href = `./${slug}.html`;
   } else if (toy.type === 'module') {
@@ -261,6 +301,13 @@ export async function loadToy(slug, { pushState = false } = {}) {
 
     disposeActiveToy();
     showActiveToyView();
+
+    if (toy.requiresWebGPU && !hasWebGPUSupport()) {
+      const container = ensureActiveToyContainer();
+      showCapabilityError(container, toy);
+      return;
+    }
+
     const container = ensureActiveToyContainer();
     showLoadingIndicator(container, toy.title || toy.slug);
 
