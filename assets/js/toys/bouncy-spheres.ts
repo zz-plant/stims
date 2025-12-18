@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import type { ToyConfig } from '../core/types';
 import {
-  startAudioLoop,
   getContextFrequencyData,
   AnimationContext,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { startToyAudio } from '../utils/start-audio';
+import { applyAudioColor } from '../utils/color-audio';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 30, z: 70 } },
@@ -112,15 +113,22 @@ function animate(ctx: AnimationContext) {
     mesh.rotation.x += 0.01 + normalizedValue * 0.05;
     mesh.rotation.y += 0.015 + normalizedValue * 0.03;
 
-    // Color shift based on audio
     const material = mesh.material as THREE.MeshStandardMaterial;
-    const hue = ((col / COLS) * 0.3 + 0.8 + normalizedValue * 0.2) % 1;
-    material.color.setHSL(
-      hue,
-      0.7 + normalizedValue * 0.3,
-      0.5 + normalizedValue * 0.2
-    );
-    material.emissive.setHSL(hue, 0.5, normalizedValue * 0.3);
+    const baseHue = (col / COLS) * 0.3 + 0.8;
+    applyAudioColor(material, normalizedValue, {
+      baseHue,
+      hueRange: 0.2,
+      baseSaturation: 0.7,
+      saturationRange: 0.3,
+      baseLuminance: 0.5,
+      luminanceRange: 0.2,
+      emissive: {
+        baseHue,
+        baseSaturation: 0.5,
+        baseLuminance: 0,
+        luminanceRange: 0.3,
+      },
+    });
   });
 
   // Camera sway
@@ -131,13 +139,7 @@ function animate(ctx: AnimationContext) {
 }
 
 async function startAudio() {
-  try {
-    await startAudioLoop(toy, animate, { fftSize: 256 });
-    return true;
-  } catch (e) {
-    console.error('Microphone access denied', e);
-    throw e;
-  }
+  return startToyAudio(toy, animate, 256);
 }
 
 init();

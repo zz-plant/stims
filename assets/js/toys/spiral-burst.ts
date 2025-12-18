@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import type { ToyConfig } from '../core/types';
 import {
-  startAudioLoop,
   getContextFrequencyData,
   AnimationContext,
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
+import { startToyAudio } from '../utils/start-audio';
+import { mapFrequencyToItems } from '../utils/audio-mapper';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 100 } },
@@ -41,28 +42,24 @@ function init() {
 function animate(ctx: AnimationContext) {
   const data = getContextFrequencyData(ctx);
   const avg = getAverageFrequency(data);
-  const binsPerLine = data.length / lines.length;
-  lines.forEach((line, idx) => {
-    const bin = Math.floor(idx * binsPerLine);
-    const value = data[bin] || avg;
-    line.rotation.z += 0.002 + value / 100000;
-    line.rotation.x += 0.001 + idx / 10000;
-    const scale = 1 + value / 256;
-    line.scale.set(scale, scale, scale);
-    const hue = (idx / lines.length + value / 512) % 1;
-    (line.material as THREE.LineBasicMaterial).color.setHSL(hue, 0.6, 0.5);
-  });
+  mapFrequencyToItems(
+    data,
+    lines,
+    (line, idx, value) => {
+      line.rotation.z += 0.002 + value / 100000;
+      line.rotation.x += 0.001 + idx / 10000;
+      const scale = 1 + value / 256;
+      line.scale.set(scale, scale, scale);
+      const hue = (idx / lines.length + value / 512) % 1;
+      (line.material as THREE.LineBasicMaterial).color.setHSL(hue, 0.6, 0.5);
+    },
+    { fallbackValue: avg }
+  );
   ctx.toy.render();
 }
 
 async function startAudio() {
-  try {
-    await startAudioLoop(toy, animate);
-    return true;
-  } catch (e) {
-    console.error('Microphone access denied', e);
-    throw e;
-  }
+  return startToyAudio(toy, animate);
 }
 
 init();
