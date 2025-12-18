@@ -105,3 +105,18 @@ body {
   outline: 2px solid rgba(112, 240, 255, 0.6);
   outline-offset: 2px;
 }
+
+#error-message {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: none;
+  color: #ff7b7b;
+  background: rgba(0, 0, 0, 0.78);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 123, 123, 0.35);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  z-index: 1200;
+  font-weight: 600;
+}
