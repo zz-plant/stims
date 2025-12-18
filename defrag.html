@@ -10,6 +10,13 @@
         background-color: #000000; /* OLED black */
         color: #00ff00; /* Old-school green text */
       }
+      #statusIndicator {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+        font-size: 16px;
+      }
       #defragText {
         position: absolute;
         bottom: 10px;
@@ -23,11 +30,13 @@
     <a href="index.html" class="home-link">Back to Library</a>
     <canvas id="canvas"></canvas>
     <div id="error-message" style="display: none"></div>
+    <div id="statusIndicator" aria-live="polite"></div>
     <div id="defragText">Defragmenting Drive C:</div>
 
     <script type="module">
       import {
         initAudio,
+        getAverageFrequency,
         getFrequencyData,
       } from './assets/js/utils/audio-handler.ts';
       import { showError } from './assets/js/utils/error-display.ts';
@@ -49,6 +58,8 @@
       const blocks = [];
       let idleAnimationTime = 0.0; // Idle state timer for defragmentation effects
       let idleColorShift = 0;
+      const DEFAULT_FFT_SIZE = 64;
+      const neutralSpectrum = new Uint8Array(DEFAULT_FFT_SIZE / 2);
 
       // Initialize grid with random colors
       for (let i = 0; i < rows; i++) {
@@ -63,27 +74,49 @@
       }
 
       let analyser;
-      let audioDataArray = [];
+      let audioDataArray = neutralSpectrum.slice();
       let idleState = true;
+      let movingAverageLevel = 0;
+      const idleThreshold = 5;
+
+      const statusIndicator = document.getElementById('statusIndicator');
+
+      function updateStatusIndicator(state) {
+        if (!statusIndicator) return;
+
+        const messages = {
+          waiting: 'Waiting for mic…',
+          listening: 'Listening…',
+          idle: 'Listening for sound…',
+        };
+
+        statusIndicator.textContent = messages[state] ?? '';
+      }
+
+      updateStatusIndicator('waiting');
 
       async function setupAudio() {
         try {
-          const result = await initAudio({ fftSize: 64 });
+          const result = await initAudio({ fftSize: DEFAULT_FFT_SIZE });
           analyser = result.analyser;
+          updateStatusIndicator('listening');
         } catch (err) {
           console.error('Error capturing audio: ', err);
           showError(
             'error-message',
             'Microphone access is required for the visualization to work. Please allow microphone access.'
           );
+          updateStatusIndicator('waiting');
         }
       }
 
       function drawBlocks() {
+        const frequencyData = audioDataArray.length
+          ? audioDataArray
+          : neutralSpectrum;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         blocks.forEach((block, index) => {
-          const frequency =
-            audioDataArray[index % audioDataArray.length] / 255.0; // Normalize frequency
+          const frequency = frequencyData[index % frequencyData.length] / 255.0; // Normalize frequency
           block.sizeModifier = frequency * 2; // Adjust block size based on frequency data
 
           if (idleState) {
@@ -119,8 +152,13 @@
       function defragLoop() {
         if (analyser) {
           audioDataArray = getFrequencyData(analyser);
-          idleState =
-            audioDataArray.reduce((sum, value) => sum + value, 0) === 0;
+          const averageLevel = getAverageFrequency(audioDataArray);
+          movingAverageLevel =
+            movingAverageLevel * 0.7 + averageLevel * 0.3;
+          idleState = movingAverageLevel < idleThreshold;
+          updateStatusIndicator(idleState ? 'idle' : 'listening');
+        } else {
+          updateStatusIndicator('waiting');
         }
         drawBlocks();
         defragTextAnimation();
