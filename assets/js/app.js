@@ -18,6 +18,8 @@ let currentLightType = 'PointLight'; // Default light type
 let animationFrameId = null;
 let isAnimating = false;
 let audioListener = null;
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+let isReducedMotionPreferred = prefersReducedMotion.matches;
 
 function initVisualization() {
   if (!ensureWebGL()) {
@@ -64,10 +66,12 @@ function initVisualization() {
   const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
   cube = new THREE.Mesh(geometry, material);
   scene.add(cube);
+
+  renderSceneOnce();
 }
 
 function startAnimationLoop() {
-  if (isAnimating) return;
+  if (isAnimating || isReducedMotionPreferred) return;
 
   isAnimating = true;
   animationFrameId = requestAnimationFrame(animate);
@@ -90,7 +94,12 @@ async function startAudioAndAnimation() {
     audioListener = audioData.listener ?? null;
     audioCleanup = audioData.cleanup;
     patternRecognizer = new PatternRecognizer(analyser);
-    startAnimationLoop();
+
+    if (isReducedMotionPreferred) {
+      renderSceneOnce();
+    } else {
+      startAnimationLoop();
+    }
     return true;
   } catch (error) {
     console.error('initAudio failed:', error);
@@ -106,8 +115,11 @@ function animate() {
 
   if (analyser) {
     const audioData = getFrequencyData(analyser);
-    applyAudioRotation(cube, audioData, 0.05);
-    applyAudioScale(cube, audioData, 50);
+
+    if (!isReducedMotionPreferred) {
+      applyAudioRotation(cube, audioData, 0.05);
+      applyAudioScale(cube, audioData, 50);
+    }
 
     patternRecognizer.updatePatternBuffer();
     const detectedPattern = patternRecognizer.detectPattern();
@@ -128,6 +140,12 @@ function handleResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function renderSceneOnce() {
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
 }
 
 function displayError(message) {
@@ -217,3 +235,16 @@ async function handleVisibilityChange() {
 document.addEventListener('visibilitychange', () => {
   handleVisibilityChange();
 });
+
+function handleReducedMotionChange(event) {
+  isReducedMotionPreferred = event.matches;
+
+  if (isReducedMotionPreferred) {
+    stopAnimationLoop();
+    renderSceneOnce();
+  } else if (analyser) {
+    startAnimationLoop();
+  }
+}
+
+prefersReducedMotion.addEventListener('change', handleReducedMotionChange);
