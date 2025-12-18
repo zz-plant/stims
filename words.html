@@ -187,10 +187,8 @@
     </div>
 
     <script type="module">
-      import {
-        initAudio,
-        getFrequencyData,
-      } from './assets/js/utils/audio-handler.ts';
+      import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { showError } from './assets/js/utils/error-display.ts';
       const wordCloudCanvas = document.getElementById('word-cloud-canvas');
       const unmuteButton = document.getElementById('unmute-button');
@@ -218,15 +216,57 @@
         'rhythm',
       ];
 
+      class AudioToy {
+        constructor() {
+          this.analyser = null;
+          this.audioCleanup = null;
+          this.loopId = null;
+          this.renderLoop = null;
+          this.renderer = {
+            setAnimationLoop: (loop) => {
+              if (this.loopId) {
+                cancelAnimationFrame(this.loopId);
+              }
+
+              this.renderLoop = loop;
+
+              if (!loop) return;
+
+              const tick = () => {
+                this.renderLoop?.();
+                this.loopId = requestAnimationFrame(tick);
+              };
+
+              tick();
+            },
+          };
+        }
+
+        async initAudio(options = {}) {
+          const audio = await initAudio(options);
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          return audio;
+        }
+
+        dispose() {
+          if (this.loopId) {
+            cancelAnimationFrame(this.loopId);
+          }
+
+          this.renderLoop = null;
+          this.loopId = null;
+          this.audioCleanup?.();
+          this.analyser = null;
+        }
+      }
+
+      let toy = null;
+
       let isUnmuted = false;
       let isAddingWords = false;
       let wordsArray = [...seedWords];
       let wordCloudData = [];
-
-      let audioContext = null;
-      let analyser = null;
-      let microphone = null;
-      let mediaStream = null;
 
       // Word cloud shapes for randomness
       const shapes = ['circle', 'star', 'triangle', 'diamond'];
@@ -315,13 +355,8 @@
 
       async function activateVisualizer() {
         try {
-          const { analyser: a, audioContext: ctx, stream } = await initAudio();
-          analyser = a;
-          audioContext = ctx;
-          mediaStream = stream;
-          microphone = audioContext.createMediaStreamSource(stream);
-          microphone.connect(analyser);
-          visualize();
+          toy = toy ?? new AudioToy();
+          await startToyAudio(toy, animate, { fallbackToSynthetic: true });
         } catch (error) {
           console.error('Error accessing microphone for visualizer:', error);
           showError(
@@ -335,36 +370,21 @@
         }
       }
 
-      function visualize() {
-        let dataArray = new Uint8Array(analyser.frequencyBinCount);
+      function animate(ctxAudio) {
+        if (!isUnmuted) return;
 
-        function draw() {
-          if (!isUnmuted) return;
+        const dataArray = ctxAudio.analyser
+          ? getFrequencyData(ctxAudio.analyser)
+          : new Uint8Array(0);
+        const maxVolume = dataArray.length ? Math.max(...dataArray) : 0;
 
-          dataArray = getFrequencyData(analyser);
-          const maxVolume = Math.max(...dataArray);
-
-          updateWordCloudWithVisualizer(maxVolume);
-          createParticleEffects(maxVolume);
-
-          requestAnimationFrame(draw);
-        }
-        draw();
+        updateWordCloudWithVisualizer(maxVolume);
+        createParticleEffects(maxVolume);
       }
 
       function deactivateVisualizer() {
-        if (audioContext) {
-          audioContext.close();
-          audioContext = null;
-          analyser = null;
-          microphone = null;
-
-          // Explicitly stop all tracks of the media stream
-          if (mediaStream) {
-            mediaStream.getTracks().forEach((track) => track.stop());
-            mediaStream = null;
-          }
-        }
+        toy?.dispose();
+        toy = null;
         document.querySelectorAll('.particle').forEach((p) => p.remove());
       }
 
