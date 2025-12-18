@@ -100,8 +100,9 @@ export default [
   },
   {
     slug: 'cube-wave',
-    title: 'Cube Wave',
-    description: 'A grid of cubes that rise and fall with your audio.',
+    title: 'Grid Visualizer',
+    description:
+      'Swap between cube waves and bouncing spheres without stopping the music.',
     module: 'assets/js/toys/cube-wave.ts',
     type: 'module',
   },
@@ -126,13 +127,6 @@ export default [
     title: 'Spiral Burst',
     description: 'Colorful spirals rotate and expand with every beat.',
     module: 'assets/js/toys/spiral-burst.ts',
-    type: 'module',
-  },
-  {
-    slug: 'bouncy-spheres',
-    title: 'Bouncy Spheres',
-    description: 'Lines of spheres bounce and change color with audio.',
-    module: 'assets/js/toys/bouncy-spheres.ts',
     type: 'module',
   },
   {
