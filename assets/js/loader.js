@@ -1,4 +1,5 @@
 import toysData from './toys-data.js';
+import { ensureWebGL } from './utils/webgl-check.ts';
 
 const TOY_QUERY_PARAM = 'toy';
 let manifestPromise;
@@ -338,6 +339,16 @@ export async function loadToy(slug, { pushState = false } = {}) {
   }
 
   if (toy.type === 'module') {
+    const supportsRendering = ensureWebGL({
+      title: toy.title ? `${toy.title} needs graphics acceleration` : 'Graphics support required',
+      description:
+        'We could not detect WebGL or WebGPU support on this device. Try a modern browser with hardware acceleration enabled.',
+    });
+
+    if (!supportsRendering) {
+      return;
+    }
+
     if (pushState) {
       pushToyState(slug);
     }
