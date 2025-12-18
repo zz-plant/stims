@@ -24,6 +24,7 @@
         startAudioLoop,
         getContextFrequencyData,
       } from './assets/js/core/animation-loop.ts';
+      import createPeakDetector from './assets/js/utils/peak-detector.ts';
       import { getAverageFrequency } from './assets/js/utils/audio-handler.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
@@ -144,33 +145,199 @@
         onAudioToggle: (enabled) => adapter.setAudioReactive(enabled),
       });
 
+      const extras = document.createElement('div');
+      extras.innerHTML = `
+        <label class="fun-toggle">
+          <input type="checkbox" class="fun-sparkles" checked aria-label="Enable sparkles" />
+          Sparkles
+        </label>
+        <label class="fun-toggle">
+          <input type="checkbox" class="fun-bursts" checked aria-label="Enable bursts" />
+          Bursts
+        </label>
+        <label>
+          Peak sensitivity
+          <input class="fun-slider fun-sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.35" aria-label="Peak sensitivity" />
+        </label>
+      `;
+
+      funControls.container.appendChild(extras);
+
       window.addEventListener('deviceorientation', (event) => {
         toy.camera.rotation.x = (event.beta / 180) * Math.PI;
         toy.camera.rotation.y = (event.gamma / 90) * Math.PI;
       });
 
-      function animate(ctx) {
-        const dataArray = getContextFrequencyData(ctx);
-        const avgFrequency = getAverageFrequency(dataArray);
+      const clock = new THREE.Clock();
+      const sparkleGroup = new THREE.Group();
+      toy.scene.add(sparkleGroup);
 
+      const sparklePool = Array.from({ length: 80 }, () => {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0], 3));
+        const material = new THREE.PointsMaterial({
+          color: 0xffffff,
+          size: 1,
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        });
+        const points = new THREE.Points(geometry, material);
+        points.visible = false;
+        sparkleGroup.add(points);
+        return {
+          points,
+          velocity: new THREE.Vector3(),
+          life: 0,
+          maxLife: 1,
+          sizeBase: 1,
+        };
+      });
+
+      let sparkleIndex = 0;
+      let sparklesEnabled = true;
+
+      function activateSparkle(origin) {
+        const sparkle = sparklePool[sparkleIndex];
+        sparkleIndex = (sparkleIndex + 1) % sparklePool.length;
+        const hue = Math.random();
+        const scale = 0.6 + Math.random() * 1.4;
+
+        sparkle.points.position.copy(origin).add(
+          new THREE.Vector3(
+            (Math.random() - 0.5) * 12,
+            (Math.random() - 0.5) * 12,
+            (Math.random() - 0.5) * 20
+          )
+        );
+        sparkle.velocity.set(
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.3) * 1.2
+        );
+        sparkle.life = sparkle.maxLife = 0.4 + Math.random() * 0.9;
+        sparkle.sizeBase = scale;
+        sparkle.points.visible = true;
+        (sparkle.points.material as THREE.PointsMaterial).color.setHSL(
+          hue,
+          0.8,
+          0.6
+        );
+      }
+
+      function triggerSparkles(count = 12) {
+        if (!sparklesEnabled) return;
+        for (let i = 0; i < count; i++) {
+          activateSparkle(torusKnot.position);
+        }
+      }
+
+      function updateSparkles(delta) {
+        sparklePool.forEach((sparkle) => {
+          if (sparkle.life <= 0) return;
+          sparkle.life -= delta;
+          const t = Math.max(sparkle.life / sparkle.maxLife, 0);
+          const material = sparkle.points.material as THREE.PointsMaterial;
+          material.opacity = t;
+          material.size = sparkle.sizeBase * (0.75 + t * 0.75);
+          sparkle.points.position.addScaledVector(sparkle.velocity, delta * 60);
+          sparkle.velocity.multiplyScalar(0.98);
+          if (sparkle.life <= 0) {
+            sparkle.points.visible = false;
+          }
+        });
+      }
+
+      let burstsEnabled = true;
+      let burstValue = 0;
+      let burstTarget = 0;
+      let lastFrequencyData = new Uint8Array(0);
+      let peakSensitivity = 0.35;
+
+      const handlePeak = (level, threshold) => {
+        const strength = Math.min(1.25, (level - threshold) * 3);
+        burstTarget = Math.max(burstTarget, strength);
+        triggerSparkles(Math.max(8, Math.floor(strength * 16)));
+      };
+
+      const handleRelease = () => {
+        burstTarget = 0;
+      };
+
+      let peakDetector = createPeakDetector({
+        getData: () => lastFrequencyData,
+        sensitivity: peakSensitivity,
+        onPeak: handlePeak,
+        onRelease: handleRelease,
+      });
+
+      const sensitivitySlider = funControls.container.querySelector(
+        '.fun-sensitivity'
+      ) as HTMLInputElement;
+      sensitivitySlider?.addEventListener('input', (event) => {
+        const nextValue = Number((event.target as HTMLInputElement).value);
+        peakSensitivity = nextValue;
+        peakDetector = createPeakDetector({
+          getData: () => lastFrequencyData,
+          sensitivity: peakSensitivity,
+          onPeak: handlePeak,
+          onRelease: handleRelease,
+        });
+      });
+
+      const sparklesToggle = funControls.container.querySelector(
+        '.fun-sparkles'
+      ) as HTMLInputElement;
+      sparklesToggle?.addEventListener('change', (event) => {
+        sparklesEnabled = (event.target as HTMLInputElement).checked;
+      });
+
+      const burstsToggle = funControls.container.querySelector(
+        '.fun-bursts'
+      ) as HTMLInputElement;
+      burstsToggle?.addEventListener('change', (event) => {
+        burstsEnabled = (event.target as HTMLInputElement).checked;
+      });
+
+      function animate(ctx) {
+        const delta = clock.getDelta();
+        lastFrequencyData = getContextFrequencyData(ctx);
+        const avgFrequency = getAverageFrequency(lastFrequencyData);
+
+        peakDetector.update(lastFrequencyData);
         const spin = adapter.computeMotion(avgFrequency);
 
-        torusKnot.rotation.x += spin;
-        torusKnot.rotation.y += spin;
+        burstValue = THREE.MathUtils.damp(
+          burstValue,
+          burstsEnabled ? burstTarget : 0,
+          5,
+          delta
+        );
+        burstTarget = THREE.MathUtils.damp(burstTarget, 0, 1.5, delta);
 
-        pointLight.intensity = Math.max(0.6, avgFrequency / 140) * (spin * 500 + 0.5);
+        const burstScale = 1 + burstValue * 0.65;
+        torusKnot.rotation.x += spin + burstValue * 0.02;
+        torusKnot.rotation.y += spin + burstValue * 0.02;
+        torusKnot.scale.setScalar(burstScale);
+
+        pointLight.intensity =
+          Math.max(0.6, avgFrequency / 140) * (spin * 500 + 0.5 + burstValue * 2);
 
         particles.rotation.y += 0.001 + spin / 10;
 
         shapes.forEach((shape) => {
-          shape.rotation.x += 0.01 + spin * 2;
-          shape.rotation.y += 0.01 + spin * 1.5;
-          shape.position.z += 0.5 + spin * 60;
+          shape.rotation.x += 0.01 + spin * 2 + burstValue * 0.03;
+          shape.rotation.y += 0.01 + spin * 1.5 + burstValue * 0.02;
+          shape.position.z += 0.5 + spin * 60 + burstValue * 4;
+          shape.scale.setScalar(1 + burstValue * 0.5);
 
           if (shape.position.z > 10) {
             shape.position.z = -500;
           }
         });
+
+        updateSparkles(delta);
 
         ctx.toy.render();
       }
