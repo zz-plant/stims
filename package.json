@@ -10,6 +10,7 @@
     "format": "prettier --write .",
     "dev": "vite",
     "build": "vite build",
+    "preview": "vite preview --host",
     "prepare": "husky install",
     "postinstall": "if [ \"${npm_config_user_agent%%/*}\" = \"bun\" ]; then husky install; fi"
   },
