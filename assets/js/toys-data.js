@@ -8,6 +8,15 @@ export default [
     requiresWebGPU: false,
   },
   {
+    slug: 'aurora-painter',
+    title: 'Aurora Painter',
+    description:
+      'Paint flowing aurora ribbons that react to your microphone in layered waves.',
+    module: 'assets/js/toys/aurora-painter.ts',
+    type: 'module',
+    requiresWebGPU: false,
+  },
+  {
     slug: 'brand',
     title: 'Star Guitar Visualizer',
     description:

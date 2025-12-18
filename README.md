@@ -45,6 +45,7 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 | [Star Guitar Visualizer](./brand.html)          | A visual journey inspired by an iconic music video, synced to your music. |
 | [Pottery Wheel Sculptor](./clay.html)           | Spin and shape a clay vessel with tactile smoothing and carving tools. |
 | [Defrag Visualizer](./defrag.html)              | A nostalgic, sound-reactive visualizer evoking old defragmentation screens. |
+| [Aurora Painter](./toy.html?toy=aurora-painter) | Paint flowing aurora ribbons that react to your microphone in layered waves. |
 | [Evolutionary Weirdcore](./evol.html)           | Watch surreal landscapes evolve with fractals and glitches that react to music. |
 | [Geometry Visualizer](./geom.html)              | Push shifting geometric forms directly from live mic input. |
 | [Ultimate Satisfying Visualizer](./holy.html)   | Layered halos, particles, and morphing shapes that respond to your music. |
