@@ -1,4 +1,4 @@
-import { loadToy, loadFromQuery } from './loader.js';
+import { initNavigation, loadToy, loadFromQuery } from './loader.js';
 import toysData from './toys-data.js';
 
 let allToys = [];
@@ -244,7 +244,7 @@ function renderToys(toys) {
 
 function openToy(toy) {
   if (toy.type === 'module') {
-    loadToy(toy.slug);
+    loadToy(toy.slug, { pushState: true });
   } else {
     window.location.href = toy.module;
   }
@@ -255,6 +255,7 @@ async function init() {
   renderToys(allToys);
 
   setupDarkModeToggle();
+  initNavigation();
   await loadFromQuery();
 }
 
