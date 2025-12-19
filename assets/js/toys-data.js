@@ -201,6 +201,16 @@ export default [
     controls: ['Pattern density slider', 'Palette switches'],
   },
   {
+    slug: 'tactile-sand-table',
+    title: 'Tactile Sand Table',
+    description:
+      'Heightfield sand ripples that respond to bass, mids, and device tilt.',
+    module: 'assets/js/toys/tactile-sand-table.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    controls: ['Grain size slider', 'Damping slider', 'Gravity lock toggle'],
+    },
+ {   
     slug: 'bioluminescent-tidepools',
     title: 'Bioluminescent Tidepools',
     description:
