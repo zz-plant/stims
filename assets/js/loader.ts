@@ -47,11 +47,35 @@ export function createLoader({
   toys?: Toy[];
 } = {}) {
   let navigationInitialized = false;
+  let escapeHandler: ((event: KeyboardEvent) => void) | null = null;
+
+  const removeEscapeHandler = () => {
+    const win = typeof window === 'undefined' ? null : window;
+    if (!win || !escapeHandler) return;
+
+    win.removeEventListener('keydown', escapeHandler);
+    escapeHandler = null;
+  };
 
   const backToLibrary = () => {
+    removeEscapeHandler();
     disposeActiveToy(view);
     view.showLibraryView();
     router.goToLibrary();
+  };
+
+  const registerEscapeHandler = () => {
+    const win = typeof window === 'undefined' ? null : window;
+    if (!win || escapeHandler) return;
+
+    escapeHandler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        backToLibrary();
+      }
+    };
+
+    win.addEventListener('keydown', escapeHandler);
   };
 
   const startModuleToy = async (toy: Toy, pushState: boolean) => {
@@ -68,9 +92,12 @@ export function createLoader({
     }
 
     disposeActiveToy(view);
+    removeEscapeHandler();
 
-    const container = view.showActiveToyView(backToLibrary);
+    const container = view.showActiveToyView(backToLibrary, toy);
     if (!container) return;
+
+    registerEscapeHandler();
 
     let navigated = false;
     const commitNavigation = () => {
@@ -82,7 +109,7 @@ export function createLoader({
 
     const runToy = async () => {
       commitNavigation();
-      view.showLoadingIndicator(toy.title || toy.slug);
+      view.showLoadingIndicator(toy.title || toy.slug, toy);
 
       let moduleUrl: string;
       try {
