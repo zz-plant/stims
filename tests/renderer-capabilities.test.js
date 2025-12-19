@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test';
-import {
-  getRendererCapabilities,
-  rememberRendererFallback,
-  resetRendererCapabilities,
-} from '../assets/js/core/renderer-capabilities.ts';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+
+const capabilitiesModule = '../assets/js/core/renderer-capabilities.ts';
+const freshImport = async () => import(`${capabilitiesModule}?t=${Date.now()}-${Math.random()}`);
+
+let getRendererCapabilities;
+let rememberRendererFallback;
+let resetRendererCapabilities;
 
 const originalNavigator = global.navigator;
 
@@ -17,6 +19,15 @@ function mockNavigatorWithGPU({ device = {} } = {}) {
   });
   return { requestAdapter, requestDevice };
 }
+
+beforeEach(async () => {
+  mock.restore();
+  ({
+    getRendererCapabilities,
+    rememberRendererFallback,
+    resetRendererCapabilities,
+  } = await freshImport());
+});
 
 afterEach(() => {
   resetRendererCapabilities();
