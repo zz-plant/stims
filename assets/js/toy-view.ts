@@ -39,12 +39,16 @@ function showElement(element: HTMLElement | null) {
   }
 }
 
-function clearElement(element: HTMLElement | null) {
-  if (!element) return;
+function clearContainerContent(container: HTMLElement | null) {
+  if (!container) return;
 
-  while (element.firstChild) {
-    element.removeChild(element.firstChild);
-  }
+  Array.from(container.children).forEach((child) => {
+    if (child instanceof HTMLElement && child.dataset.preserve === 'toy-ui') {
+      return;
+    }
+
+    child.remove();
+  });
 }
 
 function buildStatusElement(doc: Document, container: HTMLElement, { type, title, message }: StatusConfig) {
@@ -102,11 +106,77 @@ function buildImportErrorMessage(toy: Toy | undefined, { moduleUrl, importError 
     : 'Something went wrong while loading this toy. Try again or return to the library.';
 }
 
+function buildToyNav({
+  container,
+  doc,
+  toy,
+  onBack,
+}: {
+  container: HTMLElement | null;
+  doc: Document | null;
+  toy?: Toy;
+  onBack?: () => void;
+}) {
+  if (!container || !doc) return null;
+
+  let nav = container.querySelector('.active-toy-nav') as HTMLElement | null;
+  if (!nav) {
+    nav = doc.createElement('div');
+    nav.className = 'active-toy-nav';
+    nav.dataset.preserve = 'toy-ui';
+    container.appendChild(nav);
+  }
+
+  nav.replaceChildren();
+
+  const navContent = doc.createElement('div');
+  navContent.className = 'active-toy-nav__content';
+
+  const eyebrow = doc.createElement('p');
+  eyebrow.className = 'active-toy-nav__eyebrow';
+  eyebrow.textContent = 'Now playing';
+  navContent.appendChild(eyebrow);
+
+  const title = doc.createElement('p');
+  title.className = 'active-toy-nav__title';
+  title.textContent = toy?.title ?? 'Web toy';
+  navContent.appendChild(title);
+
+  const hint = doc.createElement('p');
+  hint.className = 'active-toy-nav__hint';
+  hint.textContent = 'Press Esc or use Back to return to the library.';
+  navContent.appendChild(hint);
+
+  if (toy?.slug) {
+    const chip = doc.createElement('span');
+    chip.className = 'active-toy-nav__pill';
+    chip.textContent = toy.slug;
+    navContent.appendChild(chip);
+  }
+
+  const actions = doc.createElement('div');
+  actions.className = 'active-toy-nav__actions';
+
+  const backControl = doc.createElement('button');
+  backControl.type = 'button';
+  backControl.className = 'toy-nav__back';
+  backControl.setAttribute('data-back-to-library', 'true');
+  backControl.innerHTML = '<span aria-hidden="true">←</span><span>Back to library</span>';
+  backControl.addEventListener('click', () => onBack?.());
+  actions.appendChild(backControl);
+
+  nav.appendChild(navContent);
+  nav.appendChild(actions);
+  return nav;
+}
+
 export function createToyView({
   documentRef = () => (typeof document === 'undefined' ? null : document),
   listId = 'toy-list',
   containerId = 'active-toy-container',
 }: { documentRef?: DocumentGetter; listId?: string; containerId?: string } = {}) {
+  let backHandler: (() => void) | undefined;
+
   const getDocument = () => documentRef();
 
   const getToyList = () => getDocument()?.getElementById(listId) ?? null;
@@ -127,41 +197,27 @@ export function createToyView({
     return container;
   };
 
-  const ensureBackControl = (container: HTMLElement | null, onBack?: () => void) => {
-    const doc = getDocument();
-    if (!doc || !container) return null;
-
-    let control = container.querySelector('[data-back-to-library]') as HTMLButtonElement | null;
-    if (control) return control;
-
-    control = doc.createElement('button');
-    control.type = 'button';
-    control.className = 'home-link';
-    control.textContent = 'Back to Library';
-    control.setAttribute('data-back-to-library', 'true');
-    control.addEventListener('click', () => onBack?.());
-
-    container.appendChild(control);
-    return control;
-  };
-
   const showLibraryView = () => {
+    backHandler = undefined;
     showElement(getToyList());
     hideElement(findActiveToyContainer());
   };
 
-  const showActiveToyView = (onBack?: () => void) => {
+  const showActiveToyView = (onBack?: () => void, toy?: Toy) => {
+    backHandler = onBack ?? backHandler;
     hideElement(getToyList());
     const container = ensureActiveToyContainer();
-    ensureBackControl(container, onBack);
+    buildToyNav({ container, doc: getDocument(), toy, onBack: backHandler });
     showElement(container);
     return container;
   };
 
-  const showLoadingIndicator = (toyTitle?: string) => {
+  const showLoadingIndicator = (toyTitle?: string, toy?: Toy) => {
     const container = ensureActiveToyContainer();
     const doc = getDocument();
     if (!container || !doc) return null;
+
+    buildToyNav({ container, doc, toy, onBack: backHandler });
 
     return buildStatusElement(doc, container, {
       type: 'loading',
@@ -180,7 +236,10 @@ export function createToyView({
     const doc = getDocument();
     if (!container || !doc) return null;
 
-    clearElement(container);
+    backHandler = options.onBack ?? backHandler;
+    clearContainerContent(container);
+    buildToyNav({ container, doc, toy, onBack: backHandler });
+
     const status = buildStatusElement(doc, container, {
       type: 'error',
       title: 'Unable to load this toy',
@@ -208,7 +267,9 @@ export function createToyView({
     const doc = getDocument();
     if (!container || !doc) return null;
 
-    clearElement(container);
+    backHandler = options.onBack ?? backHandler;
+    clearContainerContent(container);
+    buildToyNav({ container, doc, toy, onBack: backHandler });
 
     const status = buildStatusElement(doc, container, {
       type: options.allowFallback ? 'warning' : 'error',
@@ -256,7 +317,7 @@ export function createToyView({
     showImportError,
     showCapabilityError,
     removeStatusElement,
-    clearActiveToyContainer: () => clearElement(findActiveToyContainer()),
+    clearActiveToyContainer: () => clearContainerContent(findActiveToyContainer()),
     ensureActiveToyContainer,
   };
 }
