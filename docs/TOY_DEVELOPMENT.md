@@ -95,6 +95,7 @@ Manual scenarios to verify:
 - Add Jest specs for math and utility helpers in `assets/js/utils/` as they are shared by multiple toys.
 - For toy-specific logic, prefer unit-testing pure functions (e.g., color pickers, motion curves) rather than WebGL rendering.
 - Keep tests deterministic: mock `performance.now`, random seeds, and any time-based easing functions when needed.
+- Use the shared happy-dom preload in `tests/setup.ts` along with the stub helpers in `tests/toy-test-helpers.ts` (see `tests/sample-toy.test.ts`) to spin up a toy container, fake audio context/analyzer, or mock renderer. Follow that pattern to ensure `start` returns a cleanup function and disposes DOM nodes and audio handles.
 
 ## Documentation
 
@@ -102,4 +103,3 @@ Manual scenarios to verify:
 - Describe user-facing controls or setup steps in the associated HTML entry point if they deviate from existing patterns.
 - Include inline comments for novel shader parameters, math tricks, or input handling quirks.
 - When you wrap an existing HTML page for use in `toy.html`, expose it through `startIframeToy` (see `assets/js/toys/*`) and add the slug to `assets/js/toys-data.js` so the loader can surface it in the library view.
-
