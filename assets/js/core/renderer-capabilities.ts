@@ -18,6 +18,7 @@ type FallbackOptions = {
 
 let capabilitiesPromise: Promise<RendererCapabilities> | null = null;
 let cachedCapabilities: RendererCapabilities | null = null;
+let cachedEnvironmentKey: unknown = null;
 
 const buildFallback = (
   fallbackReason: string,
@@ -35,6 +36,17 @@ const cacheResult = (result: RendererCapabilities) => {
   cachedCapabilities = result;
   return result;
 };
+
+function getEnvironmentKey() {
+  if (typeof navigator === 'undefined') return 'no-navigator';
+  const nav = navigator as Navigator & { gpu?: GPU; userAgent?: string };
+  return nav.gpu ?? nav.userAgent ?? nav;
+}
+
+function resetCache() {
+  capabilitiesPromise = null;
+  cachedCapabilities = null;
+}
 
 async function probeRendererCapabilities(): Promise<RendererCapabilities> {
   if (typeof navigator === 'undefined') {
@@ -104,8 +116,8 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
 }
 
 export function resetRendererCapabilities() {
-  capabilitiesPromise = null;
-  cachedCapabilities = null;
+  resetCache();
+  cachedEnvironmentKey = null;
 }
 
 export function rememberRendererFallback(
@@ -121,14 +133,20 @@ export function rememberRendererFallback(
       shouldRetryWebGPU,
     })
   );
+  cachedEnvironmentKey = getEnvironmentKey();
   capabilitiesPromise = Promise.resolve(result);
   return result;
 }
 
 export async function getRendererCapabilities({ forceRetry = false } = {}) {
-  if (forceRetry) {
-    capabilitiesPromise = null;
+  const environmentKey = getEnvironmentKey();
+  const environmentChanged = environmentKey !== cachedEnvironmentKey;
+
+  if (forceRetry || environmentChanged) {
+    resetCache();
   }
+
+  cachedEnvironmentKey = environmentKey;
 
   if (!capabilitiesPromise) {
     capabilitiesPromise = probeRendererCapabilities();
