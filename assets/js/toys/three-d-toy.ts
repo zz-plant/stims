@@ -12,8 +12,16 @@ import {
   type ControlPanelState,
 } from '../utils/control-panel';
 import { startToyAudio } from '../utils/start-audio';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  getStoredQualityPreset,
+  type QualityPreset,
+} from '../core/settings-panel';
 
 let errorElement: HTMLElement | null;
+const settingsPanel = getSettingsPanel();
+let activeQuality: QualityPreset = getStoredQualityPreset();
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 80 } },
@@ -24,10 +32,14 @@ const toy = new WebToy({
     position: { x: 20, y: 30, z: 20 },
   },
   ambientLightOptions: { color: 0x404040, intensity: 0.8 },
+  rendererOptions: {
+    maxPixelRatio: activeQuality.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
+  },
 } as ToyConfig);
 
-let torusKnot: THREE.Mesh;
-let particles: THREE.Points;
+let torusKnot: THREE.Mesh | null = null;
+let particles: THREE.Points | null = null;
 const shapes: THREE.Mesh[] = [];
 let paletteHue = 0.6;
 let idleBlend = 0;
@@ -41,6 +53,27 @@ document.body.appendChild(controlPanel.panel);
 controlPanel.onChange((state) => {
   controlState = state;
 });
+
+function getCounts() {
+  const scale = activeQuality.particleScale ?? 1;
+  return {
+    particleCount: Math.max(600, Math.floor(1500 * scale)),
+    shapeCount: Math.max(3, Math.round(7 * scale)),
+    torusSegments: Math.max(40, Math.round(100 * scale)),
+    torusTubularSegments: Math.max(10, Math.round(16 * Math.sqrt(scale))),
+  };
+}
+
+function disposeMesh(mesh: THREE.Mesh | null) {
+  if (!mesh) return;
+  toy.scene.remove(mesh);
+  mesh.geometry?.dispose();
+  if (Array.isArray(mesh.material)) {
+    mesh.material.forEach((material) => material?.dispose());
+  } else {
+    mesh.material?.dispose();
+  }
+}
 
 function createRandomShape() {
   const shapeType = Math.floor(Math.random() * 3);
@@ -75,22 +108,32 @@ function createRandomShape() {
 }
 
 function init() {
-  const { scene } = toy;
+  setupSettingsPanel();
+  rebuildSceneContents();
+}
+
+function rebuildSceneContents() {
+  disposeMesh(torusKnot);
+  disposeMesh(particles as unknown as THREE.Mesh);
+  shapes.splice(0).forEach((shape) => disposeMesh(shape));
+  torusKnot = null;
+  particles = null;
+
+  const { particleCount, shapeCount, torusSegments, torusTubularSegments } = getCounts();
 
   torusKnot = new THREE.Mesh(
-    new THREE.TorusKnotGeometry(10, 3, 100, 16),
+    new THREE.TorusKnotGeometry(10, 3, torusSegments, torusTubularSegments),
     new THREE.MeshStandardMaterial({
       color: 0x00ffcc,
       metalness: 0.7,
       roughness: 0.4,
     })
   );
-  scene.add(torusKnot);
+  toy.scene.add(torusKnot);
 
   const particlesGeometry = new THREE.BufferGeometry();
-  const particlesCount = 1500;
-  const particlesPosition = new Float32Array(particlesCount * 3);
-  for (let i = 0; i < particlesCount * 3; i++) {
+  const particlesPosition = new Float32Array(particleCount * 3);
+  for (let i = 0; i < particleCount * 3; i++) {
     particlesPosition[i] = (Math.random() - 0.5) * 800;
   }
   particlesGeometry.setAttribute(
@@ -102,9 +145,9 @@ function init() {
     size: 1.8,
   });
   particles = new THREE.Points(particlesGeometry, particlesMaterial);
-  scene.add(particles);
+  toy.scene.add(particles);
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < shapeCount; i++) {
     createRandomShape();
   }
 }
@@ -134,6 +177,7 @@ function hideError() {
 }
 
 function animate(ctx: AnimationContext) {
+  if (!torusKnot || !particles) return;
   const dataArray = getContextFrequencyData(ctx);
   const avgFrequency = getAverageFrequency(dataArray);
 
@@ -200,6 +244,27 @@ function animate(ctx: AnimationContext) {
   toy.camera.lookAt(0, 0, 0);
 
   ctx.toy.render();
+}
+
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+  rebuildSceneContents();
+}
+
+function setupSettingsPanel() {
+  settingsPanel.configure({
+    title: '3D soundscape',
+    description: 'Resolution and particle density follow the preset you pick.',
+  });
+  settingsPanel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
 }
 
 async function startAudio(useSynthetic = false) {

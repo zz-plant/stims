@@ -11,6 +11,12 @@ import {
   type PointerPosition,
   type PointerSummary,
 } from '../utils/pointer-input';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  getStoredQualityPreset,
+  type QualityPreset,
+} from '../core/settings-panel';
 
 type TideBlob = {
   position: THREE.Vector2;
@@ -20,8 +26,11 @@ type TideBlob = {
   strength: number;
 };
 
+const settingsPanel = getSettingsPanel();
+let activeQuality: QualityPreset = getStoredQualityPreset();
+
 const MAX_BLOBS = 28;
-const sparkCount = 200;
+const BASE_SPARK_COUNT = 200;
 
 const controls = {
   trailLength: 2.4,
@@ -29,10 +38,24 @@ const controls = {
   currentSpeed: 1,
 };
 
+function getSparkCount() {
+  const scale = activeQuality.particleScale ?? 1;
+  return Math.max(80, Math.floor(BASE_SPARK_COUNT * scale));
+}
+
+function getBlobCap() {
+  const scale = activeQuality.particleScale ?? 1;
+  return Math.max(10, Math.min(MAX_BLOBS, Math.round(MAX_BLOBS * scale)));
+}
+
 const toy = new WebToy({
   cameraOptions: { fov: 50, position: { x: 0, y: 0, z: 1.6 } },
   sceneOptions: { background: '#03121c' },
-  rendererOptions: { exposure: 1.35, maxPixelRatio: 2 },
+  rendererOptions: {
+    exposure: 1.35,
+    maxPixelRatio: activeQuality.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
+  },
 } as ToyConfig);
 
 const blobs: TideBlob[] = [];
@@ -161,9 +184,9 @@ const plane = new THREE.Mesh(
 );
 
 const sparkGeometry = new THREE.BufferGeometry();
-const sparkPositions = new Float32Array(sparkCount * 3);
-const sparkVelocities = new Float32Array(sparkCount * 3);
-const sparkLife = new Float32Array(sparkCount);
+const sparkPositions = new Float32Array(BASE_SPARK_COUNT * 3);
+const sparkVelocities = new Float32Array(BASE_SPARK_COUNT * 3);
+const sparkLife = new Float32Array(BASE_SPARK_COUNT);
 const sparkMaterial = new THREE.PointsMaterial({
   color: new THREE.Color('#a8f3ff'),
   transparent: true,
@@ -174,6 +197,7 @@ const sparkMaterial = new THREE.PointsMaterial({
 });
 const sparks = new THREE.Points(sparkGeometry, sparkMaterial);
 
+let activeSparkCount = getSparkCount();
 const lastPointerPositions = new Map<number, PointerPosition>();
 const clock = new THREE.Clock();
 
@@ -202,8 +226,9 @@ function initializeScene() {
     'position',
     new THREE.BufferAttribute(sparkPositions, 3)
   );
+  sparkGeometry.setDrawRange(0, activeSparkCount);
 
-  for (let i = 0; i < sparkCount; i += 1) {
+  for (let i = 0; i < activeSparkCount; i += 1) {
     resetSpark(i);
   }
 }
@@ -222,7 +247,7 @@ function updateBlobs(delta: number) {
     }
   }
 
-  const count = Math.min(blobs.length, MAX_BLOBS);
+  const count = Math.min(blobs.length, getBlobCap());
   uniforms.u_blobCount.value = count;
   for (let i = 0; i < count; i += 1) {
     const blob = blobs[i];
@@ -255,8 +280,8 @@ function spawnBlobFromPointer(pointer: PointerPosition, intensity = 1) {
     strength,
   });
 
-  if (blobs.length > MAX_BLOBS) {
-    blobs.length = MAX_BLOBS;
+  if (blobs.length > getBlobCap()) {
+    blobs.length = getBlobCap();
   }
 
   lastPointerPositions.set(pointer.id, pointer);
@@ -282,10 +307,10 @@ createPointerInput({
 
 function updateSparks(delta: number, energy: number) {
   const positions = sparkGeometry.getAttribute('position') as THREE.BufferAttribute;
-  const respawnBudget = Math.min(sparkCount, Math.floor(4 + energy * 24));
+  const respawnBudget = Math.min(activeSparkCount, Math.floor(4 + energy * 24));
   let respawned = 0;
 
-  for (let i = 0; i < sparkCount; i += 1) {
+  for (let i = 0; i < activeSparkCount; i += 1) {
     const life = sparkLife[i];
     if (life <= 0 && respawned < respawnBudget) {
       resetSpark(i, blobs[THREE.MathUtils.randInt(0, Math.max(blobs.length - 1, 0))]);
@@ -293,7 +318,7 @@ function updateSparks(delta: number, energy: number) {
     }
   }
 
-  for (let i = 0; i < sparkCount; i += 1) {
+  for (let i = 0; i < activeSparkCount; i += 1) {
     if (sparkLife[i] <= 0) continue;
 
     sparkLife[i] -= delta * (0.6 + energy * 0.8);
@@ -314,6 +339,43 @@ function updateSparks(delta: number, energy: number) {
 
   positions.needsUpdate = true;
   sparkGeometry.computeBoundingSphere();
+}
+
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+
+  activeSparkCount = getSparkCount();
+  sparkGeometry.setDrawRange(0, activeSparkCount);
+  for (let i = 0; i < BASE_SPARK_COUNT; i += 1) {
+    sparkLife[i] = 0;
+    sparkPositions[i * 3 + 2] = -10;
+  }
+  for (let i = 0; i < activeSparkCount; i += 1) {
+    resetSpark(i);
+  }
+
+  if (blobs.length > getBlobCap()) {
+    blobs.length = getBlobCap();
+  }
+
+  handleResize();
+}
+
+function setupSettingsPanel() {
+  settingsPanel.configure({
+    title: 'Bioluminescent tidepools',
+    description:
+      'Quality presets update DPI caps, blob limits, and spark counts without reloading.',
+  });
+  settingsPanel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
 }
 
 function computeHighBandEnergy(data: Uint8Array) {
@@ -353,6 +415,7 @@ function handleResize() {
   uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
 }
 
+setupSettingsPanel();
 initializeScene();
 handleResize();
 window.addEventListener('resize', handleResize);
