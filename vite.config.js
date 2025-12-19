@@ -17,6 +17,9 @@ export default defineConfig({
     // directory is hidden or stripped by static hosts.
     manifest: 'manifest.json',
     rollupOptions: {
+      // Keep the toy entry exports intact so dynamic imports from the homepage
+      // can find the `start` functions even when they look unused at build time.
+      preserveEntrySignatures: 'strict',
       input: {
         main: path.resolve(rootDir, 'index.html'),
         ...moduleInputs,
