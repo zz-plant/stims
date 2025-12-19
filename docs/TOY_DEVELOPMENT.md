@@ -11,7 +11,7 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 
 ## Add-and-test checklist (fast path)
 
-Use this sequence when you want to stand up a fresh toy quickly:
+Use this sequence when you want to stand up a fresh toy quickly (you can also run `bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test` to automate steps 1–3):
 
 1. **Create a module** in `assets/js/toys/<slug>.ts` using the starter template below. Export `start({ container, canvas?, audioContext? })`. Prefer `canvas` from the loader if you need a fullscreen surface; otherwise mount your own elements inside `container`.
 2. **Register the slug** in `assets/js/toys-data.js` with a short title/description. Set `requiresWebGPU` or `allowWebGLFallback` if you depend on WebGPU features.

@@ -2,33 +2,50 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 type ToyType = 'module' | 'iframe';
+
+type ScaffoldOptions = {
+  slug?: string;
+  title?: string;
+  description?: string;
+  type?: ToyType;
+  createTest?: boolean;
+  root?: string;
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
 async function main() {
+  const parsed = parseArgs(process.argv.slice(2));
   const rl = createInterface({ input, output });
 
   try {
-    const slug = await promptSlug(rl);
-    const title = await promptTitle(rl, slug);
-    const type = await promptType(rl);
-    const shouldCreateTest = await promptBoolean(rl, 'Create a Bun spec to assert the module exports start? (y/N) ', false);
+    const slug = parsed.slug ?? (await promptSlug(rl, parsed.root));
+    const title = parsed.title ?? (await promptTitle(rl, slug));
+    const type = resolveType(parsed.type) ?? (await promptType(rl));
+    const description =
+      parsed.description ??
+      ((await rl.question(`Short description [Add description for ${title}]: `)).trim() ||
+        `Add description for ${title}.`);
+    const shouldCreateTest =
+      parsed.createTest ??
+      (await promptBoolean(rl, 'Create a Bun spec to assert the module exports start? (y/N) ', false));
 
-    await createToyModule(slug, title, type);
-    await appendToyMetadata(slug, title, type);
-    await updateToyIndex(slug, type);
-
-    if (shouldCreateTest) {
-      await createTestSpec(slug);
-    }
+    await scaffoldToy({
+      slug,
+      title,
+      description,
+      type,
+      createTest: shouldCreateTest,
+      root: parsed.root,
+    });
 
     console.log(`\nCreated scaffold for ${slug}.`);
-    console.log('- Module:', path.relative(repoRoot, toyModulePath(slug)));
+    console.log('- Module:', path.relative(parsed.root ?? repoRoot, toyModulePath(slug, parsed.root)));
     console.log('- Metadata: assets/js/toys-data.js');
     console.log('- Index: docs/TOY_SCRIPT_INDEX.md');
     if (shouldCreateTest) {
@@ -42,15 +59,83 @@ async function main() {
   }
 }
 
-function toyModulePath(slug: string) {
-  return path.join(repoRoot, 'assets/js/toys', `${slug}.ts`);
+export async function scaffoldToy({
+  slug,
+  title,
+  description,
+  type = 'module',
+  createTest = false,
+  root = repoRoot,
+}: Required<Omit<ScaffoldOptions, 'root'>> & { root?: string }) {
+  await createToyModule(slug, title, type, root);
+  await appendToyMetadata(slug, title, description, type, root);
+  await updateToyIndex(slug, type, root);
+
+  if (createTest) {
+    await createTestSpec(slug, root);
+  }
+}
+
+function toyModulePath(slug: string, root = repoRoot) {
+  return path.join(root, 'assets/js/toys', `${slug}.ts`);
 }
 
 function testFileName(slug: string) {
   return `${slug}.test.ts`;
 }
 
-async function promptSlug(rl: ReturnType<typeof createInterface>) {
+function parseArgs(args: string[]): ScaffoldOptions {
+  const options: ScaffoldOptions = {};
+
+  for (let i = 0; i < args.length; i += 1) {
+    const current = args[i];
+    const next = args[i + 1];
+
+    switch (current) {
+      case '--slug':
+      case '-s':
+        options.slug = next;
+        i += 1;
+        break;
+      case '--title':
+      case '-t':
+        options.title = next;
+        i += 1;
+        break;
+      case '--type':
+        options.type = next as ToyType;
+        i += 1;
+        break;
+      case '--description':
+      case '-d':
+        options.description = next;
+        i += 1;
+        break;
+      case '--with-test':
+        options.createTest = true;
+        break;
+      case '--root':
+        options.root = next ? path.resolve(next) : undefined;
+        i += 1;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return options;
+}
+
+function resolveType(type?: string): ToyType | null {
+  if (!type) return null;
+  if (type === 'module' || type === 'iframe') return type;
+  const normalized = type.toLowerCase();
+  if (normalized === 'm') return 'module';
+  if (normalized === 'i') return 'iframe';
+  throw new Error('Toy type must be "module" or "iframe".');
+}
+
+async function promptSlug(rl: ReturnType<typeof createInterface>, root = repoRoot) {
   const raw = (await rl.question('Toy slug (kebab-case, e.g., ripple-orb): ')).trim();
   const slug = raw.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -58,11 +143,11 @@ async function promptSlug(rl: ReturnType<typeof createInterface>) {
     throw new Error('A slug is required.');
   }
 
-  if (await fileExists(toyModulePath(slug))) {
+  if (await fileExists(toyModulePath(slug, root))) {
     throw new Error(`A toy module already exists for slug "${slug}".`);
   }
 
-  const toysDataPath = path.join(repoRoot, 'assets/js/toys-data.js');
+  const toysDataPath = path.join(root, 'assets/js/toys-data.js');
   const toysData = await fs.readFile(toysDataPath, 'utf8');
   if (toysData.includes(`slug: '${slug}'`)) {
     throw new Error(`Slug "${slug}" already exists in assets/js/toys-data.js.`);
@@ -102,24 +187,34 @@ async function promptBoolean(rl: ReturnType<typeof createInterface>, question: s
   return reply.startsWith('y');
 }
 
-async function createToyModule(slug: string, title: string, type: ToyType) {
-  const modulePath = toyModulePath(slug);
+async function createToyModule(slug: string, title: string, type: ToyType, root = repoRoot) {
+  const modulePath = toyModulePath(slug, root);
   await fs.mkdir(path.dirname(modulePath), { recursive: true });
 
   const contents = type === 'iframe' ? iframeTemplate(slug, title) : moduleTemplate();
   await fs.writeFile(modulePath, contents, 'utf8');
 }
 
-async function appendToyMetadata(slug: string, title: string, type: ToyType) {
-  const dataPath = path.join(repoRoot, 'assets/js/toys-data.js');
+async function appendToyMetadata(
+  slug: string,
+  title: string,
+  description: string,
+  type: ToyType,
+  root = repoRoot
+) {
+  const dataPath = path.join(root, 'assets/js/toys-data.js');
   const current = await fs.readFile(dataPath, 'utf8');
+
+  if (current.includes(`slug: '${slug}'`)) {
+    throw new Error(`Slug "${slug}" already exists in assets/js/toys-data.js.`);
+  }
 
   const newEntry = [
     '  {',
     `    slug: '${slug}',`,
     `    title: '${title.replace(/'/g, "\\'")}',`,
-    "    description:",
-    `      'Add description for ${title.replace(/'/g, "\\'")}.',`,
+    '    description:',
+    `      '${description.replace(/'/g, "\\'")}',`,
     `    module: 'assets/js/toys/${slug}.ts',`,
     `    type: '${type}',`,
     '    requiresWebGPU: false,',
@@ -139,8 +234,8 @@ async function appendToyMetadata(slug: string, title: string, type: ToyType) {
   await fs.writeFile(dataPath, updated, 'utf8');
 }
 
-async function updateToyIndex(slug: string, type: ToyType) {
-  const indexPath = path.join(repoRoot, 'docs/TOY_SCRIPT_INDEX.md');
+async function updateToyIndex(slug: string, type: ToyType, root = repoRoot) {
+  const indexPath = path.join(root, 'docs/TOY_SCRIPT_INDEX.md');
   const current = await fs.readFile(indexPath, 'utf8');
 
   const row = `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | ${
@@ -167,8 +262,8 @@ async function updateToyIndex(slug: string, type: ToyType) {
   await fs.writeFile(indexPath, updated, 'utf8');
 }
 
-async function createTestSpec(slug: string) {
-  const testsDir = path.join(repoRoot, 'tests');
+async function createTestSpec(slug: string, root = repoRoot) {
+  const testsDir = path.join(root, 'tests');
   await fs.mkdir(testsDir, { recursive: true });
   const testPath = path.join(testsDir, testFileName(slug));
 
@@ -194,4 +289,7 @@ function iframeTemplate(slug: string, title: string) {
   return `import { startIframeToy } from './iframe-toy';\n\nexport function start({ container } = {}) {\n  return startIframeToy({\n    container,\n    path: './${slug}.html',\n    title: '${title.replace(/'/g, "\\'")}',\n  });\n}\n`;
 }
 
-await main();
+const argvPath = process.argv[1] ? path.resolve(process.argv[1]) : '';
+if (argvPath && import.meta.url === pathToFileURL(argvPath).href) {
+  await main();
+}
