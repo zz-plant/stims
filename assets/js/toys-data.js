@@ -200,4 +200,14 @@ export default [
     requiresWebGPU: false,
     controls: ['Pattern density slider', 'Palette switches'],
   },
+  {
+    slug: 'bioluminescent-tidepools',
+    title: 'Bioluminescent Tidepools',
+    description:
+      'Sketch glowing currents that bloom with high-frequency sparkle from your music.',
+    module: 'assets/js/toys/bioluminescent-tidepools.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    controls: ['Trail length', 'Glow strength', 'Current speed'],
+  },
 ];
