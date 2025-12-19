@@ -31,6 +31,7 @@ This index maps each toy slug to the module that powers it and how the experienc
 | `star-field` | `assets/js/toys/star-field.ts` | Direct module; load with `toy.html?toy=star-field`. |
 | `fractal-kite-garden` | `assets/js/toys/fractal-kite-garden.ts` | Direct module; load with `toy.html?toy=fractal-kite-garden`. |
 | `tactile-sand-table` | `assets/js/toys/tactile-sand-table.ts` | Direct module; load with `toy.html?toy=tactile-sand-table`. |
+| `bioluminescent-tidepools` | `assets/js/toys/bioluminescent-tidepools.ts` | Direct module; load with `toy.html?toy=bioluminescent-tidepools`. |
 
 ## Standalone HTML entry points
 All iframe-backed toys can still be visited directly via their HTML pages (for example, `brand.html` or `holy.html`). The library view now embeds those same pages for consistency with query-loaded modules.
