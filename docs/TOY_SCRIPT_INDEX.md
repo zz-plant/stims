@@ -30,6 +30,7 @@ This index maps each toy slug to the module that powers it and how the experienc
 | `rainbow-tunnel` | `assets/js/toys/rainbow-tunnel.ts` | Direct module; load with `toy.html?toy=rainbow-tunnel`. |
 | `star-field` | `assets/js/toys/star-field.ts` | Direct module; load with `toy.html?toy=star-field`. |
 | `fractal-kite-garden` | `assets/js/toys/fractal-kite-garden.ts` | Direct module; load with `toy.html?toy=fractal-kite-garden`. |
+| `tactile-sand-table` | `assets/js/toys/tactile-sand-table.ts` | Direct module; load with `toy.html?toy=tactile-sand-table`. |
 | `bioluminescent-tidepools` | `assets/js/toys/bioluminescent-tidepools.ts` | Direct module; load with `toy.html?toy=bioluminescent-tidepools`. |
 
 ## Standalone HTML entry points
