@@ -46,7 +46,7 @@ type QualityOptions = {
   storageKey?: string;
 };
 
-const QUALITY_STORAGE_KEY = 'stims:quality-preset';
+export const QUALITY_STORAGE_KEY = 'stims:quality-preset';
 
 function getStorage(): Storage | null {
   try {
@@ -55,6 +55,24 @@ function getStorage(): Storage | null {
     console.debug('localStorage unavailable', error);
     return null;
   }
+}
+
+type StoredPresetOptions = {
+  presets?: QualityPreset[];
+  defaultPresetId?: string;
+  storageKey?: string;
+};
+
+export function getStoredQualityPreset({
+  presets = DEFAULT_QUALITY_PRESETS,
+  defaultPresetId = 'balanced',
+  storageKey = QUALITY_STORAGE_KEY,
+}: StoredPresetOptions = {}): QualityPreset {
+  const storedId = getStorage()?.getItem(storageKey);
+  const fromStorage = presets.find((preset) => preset.id === storedId);
+  if (fromStorage) return fromStorage;
+
+  return presets.find((preset) => preset.id === defaultPresetId) || presets[0];
 }
 
 class PersistentSettingsPanel {
@@ -180,14 +198,11 @@ class PersistentSettingsPanel {
   }
 
   private getInitialPreset(defaultPresetId: string): QualityPreset {
-    const storedId = getStorage()?.getItem(this.qualityStorageKey);
-    const fromStorage = this.qualityPresets.find((preset) => preset.id === storedId);
-    if (fromStorage) return fromStorage;
-
-    return (
-      this.qualityPresets.find((preset) => preset.id === defaultPresetId) ||
-      this.qualityPresets[0]
-    );
+    return getStoredQualityPreset({
+      presets: this.qualityPresets,
+      defaultPresetId,
+      storageKey: this.qualityStorageKey,
+    });
   }
 
   private handleQualityChange(presetId: string) {

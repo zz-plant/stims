@@ -8,6 +8,15 @@ import {
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  getStoredQualityPreset,
+  type QualityPreset,
+} from '../core/settings-panel';
+
+const settingsPanel = getSettingsPanel();
+let activeQuality: QualityPreset = getStoredQualityPreset();
 
 type Bubble = {
   mesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
@@ -29,7 +38,10 @@ const toy = new WebToy({
     fog: { color: 0x050914, density: 0.012 },
     background: '#03060f',
   },
-  rendererOptions: { maxPixelRatio: 1.8 },
+  rendererOptions: {
+    maxPixelRatio: activeQuality.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
+  },
   ambientLightOptions: { color: 0x88aaff, intensity: 0.25 },
   lightingOptions: {
     type: 'PointLight',
@@ -41,8 +53,19 @@ const toy = new WebToy({
 const bubbles: Bubble[] = [];
 const harmonicBubbles: HarmonicBubble[] = [];
 const bubbleGroup = new THREE.Group();
-const harmonicGeometry = new THREE.SphereGeometry(1, 32, 32);
+let bubbleGeometry: THREE.SphereGeometry | null = null;
+let harmonicGeometry: THREE.SphereGeometry | null = null;
+let bubbleDetail = getBubbleDetail();
 let shaderSources: { vertex: string; fragment: string } | null = null;
+
+function getBubbleDetail() {
+  const scale = activeQuality.particleScale ?? 1;
+  return {
+    bubbleCount: Math.max(12, Math.round(26 * scale)),
+    harmonicLimit: Math.max(40, Math.round(120 * scale)),
+    segments: Math.max(24, Math.round(64 * Math.sqrt(scale))),
+  };
+}
 
 async function loadShaderSource(path: string) {
   const response = await fetch(path);
@@ -84,8 +107,19 @@ function createBubbleMaterial(hue: number) {
   });
 }
 
+function refreshGeometries() {
+  bubbleGeometry?.dispose();
+  harmonicGeometry?.dispose();
+  bubbleGeometry = new THREE.SphereGeometry(1, bubbleDetail.segments, bubbleDetail.segments);
+  harmonicGeometry = new THREE.SphereGeometry(
+    1,
+    Math.max(16, Math.round(bubbleDetail.segments * 0.7)),
+    Math.max(16, Math.round(bubbleDetail.segments * 0.7))
+  );
+}
+
 function createBubble(hue: number) {
-  const geometry = new THREE.SphereGeometry(1, 64, 64);
+  const geometry = bubbleGeometry ?? new THREE.SphereGeometry(1, 64, 64);
   const material = createBubbleMaterial(hue);
   const mesh = new THREE.Mesh(geometry, material);
 
@@ -116,7 +150,9 @@ function createBubble(hue: number) {
 }
 
 function addHarmonicBubble(parent: Bubble, energy: number) {
-  if (harmonicBubbles.length > 120 || !shaderSources) return;
+  if (harmonicBubbles.length > bubbleDetail.harmonicLimit || !shaderSources || !harmonicGeometry) {
+    return;
+  }
 
   const hue = (parent.hue + 0.15 + energy * 0.2) % 1;
   const material = createBubbleMaterial(hue);
@@ -147,15 +183,35 @@ function addHarmonicBubble(parent: Bubble, energy: number) {
   bubbleGroup.add(mesh);
 }
 
+function clearBubbleMeshes() {
+  bubbleGroup.children.slice().forEach((child) => {
+    const mesh = child as THREE.Mesh;
+    bubbleGroup.remove(mesh);
+    if (Array.isArray(mesh.material)) {
+      mesh.material.forEach((material) => material.dispose());
+    } else {
+      (mesh.material as THREE.Material).dispose();
+    }
+  });
+  bubbles.length = 0;
+  harmonicBubbles.length = 0;
+}
+
 async function init() {
   await loadShaders();
   toy.scene.add(bubbleGroup);
-
   const rimLight = new THREE.PointLight(0x4ee6ff, 1.4, 120, 1.8);
   rimLight.position.set(-14, -18, 22);
   toy.scene.add(rimLight);
+  rebuildBubbles();
+}
 
-  const count = 26;
+function rebuildBubbles() {
+  clearBubbleMeshes();
+  bubbleDetail = getBubbleDetail();
+  refreshGeometries();
+
+  const count = bubbleDetail.bubbleCount;
   for (let i = 0; i < count; i++) {
     createBubble((i / count + Math.random() * 0.1) % 1);
   }
@@ -241,7 +297,32 @@ function animate(ctx: AnimationContext) {
   toy.render();
 }
 
+setupSettingsPanel();
 const initPromise = init();
+
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+  bubbleDetail = getBubbleDetail();
+  refreshGeometries();
+  if (!shaderSources) return;
+  rebuildBubbles();
+}
+
+function setupSettingsPanel() {
+  settingsPanel.configure({
+    title: 'Bubble harmonics',
+    description: 'Presets adjust DPI caps plus bubble and harmonic counts.',
+  });
+  settingsPanel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
+}
 
 async function startAudio(useSynthetic = false) {
   await initPromise;

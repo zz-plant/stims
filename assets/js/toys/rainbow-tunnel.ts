@@ -7,11 +7,24 @@ import {
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  getStoredQualityPreset,
+  type QualityPreset,
+} from '../core/settings-panel';
+
+const settingsPanel = getSettingsPanel();
+let activeQuality: QualityPreset = getStoredQualityPreset();
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 100 } },
   lightingOptions: { type: 'HemisphereLight' },
   ambientLightOptions: { intensity: 0.4 },
+  rendererOptions: {
+    maxPixelRatio: activeQuality.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
+  },
 } as ToyConfig);
 
 interface RingData {
@@ -22,20 +35,64 @@ interface RingData {
 }
 
 const rings: RingData[] = [];
-const RING_COUNT = 20;
-const RING_SPACING = 30;
-const TUNNEL_LENGTH = RING_COUNT * RING_SPACING;
+let particleTrail: THREE.Points | null = null;
+let particleGeometry: THREE.BufferGeometry | null = null;
+let particleMaterial: THREE.PointsMaterial | null = null;
+const lightSources: THREE.PointLight[] = [];
+let tunnelLength = 0;
+
+function getTunnelConfig() {
+  const scale = activeQuality.particleScale ?? 1;
+  const ringCount = Math.max(8, Math.round(20 * scale));
+  const ringSpacing = 30;
+  const tunnelLength = ringCount * ringSpacing;
+  const particleCount = Math.max(250, Math.floor(500 * scale));
+  const torusDetail = Math.max(24, Math.round(64 * Math.sqrt(scale)));
+  return { ringCount, ringSpacing, tunnelLength, particleCount, torusDetail };
+}
 
 function init() {
-  const { scene } = toy;
+  setupSettingsPanel();
+  rebuildScene();
+}
 
-  // Create rings with inner glow rings
-  for (let i = 0; i < RING_COUNT; i++) {
-    const hue = i / RING_COUNT;
-    const baseZ = -i * RING_SPACING;
+function disposeRingAssets() {
+  rings.splice(0).forEach((ring) => {
+    toy.scene.remove(ring.outer);
+    ring.outer.geometry.dispose();
+    (ring.outer.material as THREE.Material).dispose();
+    if (ring.inner) {
+      toy.scene.remove(ring.inner);
+      ring.inner.geometry.dispose();
+      (ring.inner.material as THREE.Material).dispose();
+    }
+  });
 
-    // Outer ring
-    const outerGeometry = new THREE.TorusGeometry(15, 2, 16, 64);
+  lightSources.splice(0).forEach((light) => {
+    toy.scene.remove(light);
+  });
+
+  if (particleTrail) {
+    toy.scene.remove(particleTrail);
+  }
+  particleTrail = null;
+  particleGeometry?.dispose();
+  particleMaterial?.dispose();
+  particleGeometry = null;
+  particleMaterial = null;
+}
+
+function rebuildScene() {
+  disposeRingAssets();
+  const { ringCount, ringSpacing, tunnelLength: nextLength, particleCount, torusDetail } =
+    getTunnelConfig();
+  tunnelLength = nextLength;
+
+  for (let i = 0; i < ringCount; i++) {
+    const hue = i / ringCount;
+    const baseZ = -i * ringSpacing;
+
+    const outerGeometry = new THREE.TorusGeometry(15, 2, 16, torusDetail);
     const outerMaterial = new THREE.MeshStandardMaterial({
       color: new THREE.Color().setHSL(hue, 0.8, 0.5),
       emissive: new THREE.Color().setHSL(hue, 0.5, 0.2),
@@ -44,10 +101,9 @@ function init() {
     });
     const outerRing = new THREE.Mesh(outerGeometry, outerMaterial);
     outerRing.position.z = baseZ;
-    scene.add(outerRing);
+    toy.scene.add(outerRing);
 
-    // Inner glow ring
-    const innerGeometry = new THREE.TorusGeometry(12, 1, 16, 64);
+    const innerGeometry = new THREE.TorusGeometry(12, 1, 16, torusDetail);
     const innerMaterial = new THREE.MeshStandardMaterial({
       color: new THREE.Color().setHSL((hue + 0.1) % 1, 0.9, 0.6),
       emissive: new THREE.Color().setHSL((hue + 0.1) % 1, 0.8, 0.4),
@@ -58,7 +114,7 @@ function init() {
     });
     const innerRing = new THREE.Mesh(innerGeometry, innerMaterial);
     innerRing.position.z = baseZ;
-    scene.add(innerRing);
+    toy.scene.add(innerRing);
 
     rings.push({
       outer: outerRing,
@@ -68,39 +124,38 @@ function init() {
     });
   }
 
-  // Add particle trail through tunnel
-  const particleGeometry = new THREE.BufferGeometry();
-  const particleCount = 500;
+  particleGeometry = new THREE.BufferGeometry();
   const positions = new Float32Array(particleCount * 3);
-
   for (let i = 0; i < particleCount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const radius = 5 + Math.random() * 8;
     positions[i * 3] = Math.cos(angle) * radius;
     positions[i * 3 + 1] = Math.sin(angle) * radius;
-    positions[i * 3 + 2] = Math.random() * -TUNNEL_LENGTH;
+    positions[i * 3 + 2] = Math.random() * -tunnelLength;
   }
 
   particleGeometry.setAttribute(
     'position',
     new THREE.BufferAttribute(positions, 3)
   );
-  const particleMaterial = new THREE.PointsMaterial({
+  particleMaterial = new THREE.PointsMaterial({
     color: 0xffffff,
     size: 0.5,
     transparent: true,
     opacity: 0.6,
   });
-  const particles = new THREE.Points(particleGeometry, particleMaterial);
-  scene.add(particles);
+  particleTrail = new THREE.Points(particleGeometry, particleMaterial);
+  toy.scene.add(particleTrail);
 
-  // Add colored point lights along tunnel
   const lightColors = [0xff0066, 0x00ff99, 0x6600ff, 0xffff00];
   lightColors.forEach((color, i) => {
     const light = new THREE.PointLight(color, 1, 100);
-    light.position.z = -i * (TUNNEL_LENGTH / 4);
-    scene.add(light);
+    light.position.z = -i * (tunnelLength / 4);
+    toy.scene.add(light);
+    lightSources.push(light);
   });
+
+  (toy as unknown as { tunnelLength?: number }).tunnelLength = tunnelLength;
 }
 
 function animate(ctx: AnimationContext) {
@@ -109,7 +164,7 @@ function animate(ctx: AnimationContext) {
   const normalizedAvg = avg / 255;
   const time = Date.now() / 1000;
 
-  const binsPerRing = Math.floor(data.length / rings.length);
+  const binsPerRing = Math.max(1, Math.floor(data.length / Math.max(rings.length, 1)));
 
   rings.forEach((ringData, idx) => {
     const bin = Math.min(Math.floor(idx * binsPerRing), data.length - 1);
@@ -164,7 +219,7 @@ function animate(ctx: AnimationContext) {
   toy.camera.position.y = Math.cos(time * 1.5) * 2;
 
   // Reset camera when it reaches the end
-  if (toy.camera.position.z < -TUNNEL_LENGTH + 50) {
+  if (toy.camera.position.z < -tunnelLength + 50) {
     toy.camera.position.z = 100;
   }
 
@@ -176,6 +231,27 @@ function animate(ctx: AnimationContext) {
   );
 
   ctx.toy.render();
+}
+
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+  rebuildScene();
+}
+
+function setupSettingsPanel() {
+  settingsPanel.configure({
+    title: 'Rainbow tunnel',
+    description: 'Preset tweaks update DPI and ring density together.',
+  });
+  settingsPanel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
 }
 
 async function startAudio(useSynthetic = false) {

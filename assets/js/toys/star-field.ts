@@ -8,6 +8,15 @@ import {
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
 import { applyAudioColor } from '../utils/color-audio';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  getStoredQualityPreset,
+  type QualityPreset,
+} from '../core/settings-panel';
+
+const settingsPanel = getSettingsPanel();
+let activeQuality: QualityPreset = getStoredQualityPreset();
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 70 } },
@@ -17,23 +26,34 @@ const toy = new WebToy({
     position: { x: 20, y: 10, z: 40 },
     intensity: 0.4,
   },
+  rendererOptions: {
+    maxPixelRatio: activeQuality.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
+  },
 } as ToyConfig);
 
 type StarFieldBuffers = {
   geometry: THREE.BufferGeometry;
   material: THREE.PointsMaterial;
   velocities: Float32Array;
+  points: THREE.Points;
+  count: number;
 };
 
-const STAR_COUNT = 2400;
-let starField!: StarFieldBuffers;
+let starField: StarFieldBuffers | null = null;
+
+function getStarCount() {
+  const scale = activeQuality.particleScale ?? 1;
+  return Math.max(900, Math.floor(2400 * scale));
+}
 
 function createStarField(): StarFieldBuffers {
+  const count = getStarCount();
   const geometry = new THREE.BufferGeometry();
-  const positions = new Float32Array(STAR_COUNT * 3);
-  const velocities = new Float32Array(STAR_COUNT);
+  const positions = new Float32Array(count * 3);
+  const velocities = new Float32Array(count);
 
-  for (let i = 0; i < STAR_COUNT; i++) {
+  for (let i = 0; i < count; i++) {
     const i3 = i * 3;
     positions[i3] = (Math.random() - 0.5) * 180;
     positions[i3 + 1] = (Math.random() - 0.5) * 140;
@@ -62,7 +82,15 @@ function createStarField(): StarFieldBuffers {
     result?.renderer.setClearColor?.(0x030712, 1);
   });
 
-  return { geometry, material, velocities };
+  return { geometry, material, velocities, points, count };
+}
+
+function disposeStarField() {
+  if (!starField) return;
+  toy.scene.remove(starField.points);
+  starField.geometry.dispose();
+  starField.material.dispose();
+  starField = null;
 }
 
 function resetStar(i: number, positions: Float32Array) {
@@ -73,17 +101,43 @@ function resetStar(i: number, positions: Float32Array) {
 }
 
 function init() {
+  setupSettingsPanel();
+  if (!starField) {
+    starField = createStarField();
+  }
+}
+
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+  disposeStarField();
   starField = createStarField();
 }
 
+function setupSettingsPanel() {
+  settingsPanel.configure({
+    title: 'Star field',
+    description: 'Tune render resolution and particle density for your GPU.',
+  });
+  settingsPanel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
+}
+
 function animate(ctx: AnimationContext) {
+  if (!starField) return;
   const data = getContextFrequencyData(ctx);
   const avg = getAverageFrequency(data);
   const normalizedAvg = avg / 255;
   const time = ctx.time;
 
   const positions = starField.geometry.attributes.position.array as Float32Array;
-  for (let i = 0; i < STAR_COUNT; i++) {
+  for (let i = 0; i < starField.count; i++) {
     const i3 = i * 3;
     const drift = Math.sin(time * 0.001 + i * 0.02) * 0.12;
     positions[i3] += drift;

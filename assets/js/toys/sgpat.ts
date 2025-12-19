@@ -13,6 +13,15 @@ import {
   type PointerSummary,
 } from '../utils/pointer-input';
 import PatternRecognizer from '../utils/patternRecognition';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  getStoredQualityPreset,
+  type QualityPreset,
+} from '../core/settings-panel';
+
+const settingsPanel = getSettingsPanel();
+let activeQuality: QualityPreset = getStoredQualityPreset();
 
 const toy = new WebToy({
   cameraOptions: {
@@ -20,6 +29,10 @@ const toy = new WebToy({
     near: 0.1,
     far: 10,
     position: { x: 0, y: 0, z: 1 },
+  },
+  rendererOptions: {
+    maxPixelRatio: activeQuality.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
   },
 });
 
@@ -149,8 +162,8 @@ let viewportWidth = window.innerWidth;
 let viewportHeight = window.innerHeight;
 let isStarting = false;
 let hasAudioStarted = false;
-const disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
-  maxPixelRatio: 2,
+let disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
+  maxPixelRatio: (activeQuality.renderScale ?? 1) * activeQuality.maxPixelRatio,
   onResize: ({ cssWidth, cssHeight }) => {
     viewportWidth = cssWidth;
     viewportHeight = cssHeight;
@@ -184,6 +197,37 @@ const disposePointerInput = createPointerInput({
   onChange: handlePointerUpdate,
   onGesture: handleGestureUpdate,
 });
+setupSettingsPanel();
+
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+
+  disposeResize();
+  disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
+    maxPixelRatio: (activeQuality.renderScale ?? 1) * activeQuality.maxPixelRatio,
+    onResize: ({ cssWidth, cssHeight }) => {
+      viewportWidth = cssWidth;
+      viewportHeight = cssHeight;
+      uniforms.u_resolution.value.set(cssWidth, cssHeight);
+    },
+  });
+}
+
+function setupSettingsPanel() {
+  settingsPanel.configure({
+    title: 'Spectrograph',
+    description: 'Quality presets update DPI caps for both the shader view and renderer.',
+  });
+  settingsPanel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
+}
 
 function displayError(message: string) {
   const errorMessageElement = document.getElementById('error-message');

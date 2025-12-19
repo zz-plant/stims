@@ -7,10 +7,23 @@ import {
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  getStoredQualityPreset,
+  type QualityPreset,
+} from '../core/settings-panel';
+
+const settingsPanel = getSettingsPanel();
+let activeQuality: QualityPreset = getStoredQualityPreset();
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 45 }, fov: 60 },
-  rendererOptions: { alpha: true, maxPixelRatio: 1.5 },
+  rendererOptions: {
+    alpha: true,
+    maxPixelRatio: activeQuality.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
+  },
   ambientLightOptions: { intensity: 0.5, color: 0x0c1327 },
   lightingOptions: {
     type: 'DirectionalLight',
@@ -21,26 +34,41 @@ const toy = new WebToy({
 toy.scene.background = new THREE.Color(0x03060c);
 toy.scene.fog = new THREE.FogExp2(0x03060c, 0.025);
 
+const ribbonGroup = new THREE.Group();
+toy.scene.add(ribbonGroup);
+
 const RIBBON_COUNT = 6;
 const RIBBON_POINTS = 70;
 const TUBE_SEGMENTS = 140;
+let ribbonDetail = getRibbonDetail();
 
 const ribbons: {
   points: THREE.Vector3[];
   curve: THREE.CatmullRomCurve3;
   mesh: THREE.Mesh;
   colorOffset: number;
+  tubeSegments: number;
 }[] = [];
 
 function randomRadius(base: number, variance: number) {
   return base + (Math.random() - 0.5) * variance;
 }
 
+function getRibbonDetail() {
+  const density = Math.max(0.6, activeQuality.particleScale ?? 1);
+  return {
+    count: Math.max(3, Math.round(RIBBON_COUNT * density)),
+    points: Math.max(40, Math.round(RIBBON_POINTS * density)),
+    tubeSegments: Math.max(70, Math.round(TUBE_SEGMENTS * Math.sqrt(density))),
+    radiusBase: 0.55 * Math.max(0.75, Math.sqrt(density)),
+  };
+}
+
 function buildRibbon(index: number) {
   const baseRadius = 6 + index * 0.6;
   const points: THREE.Vector3[] = [];
-  for (let i = 0; i < RIBBON_POINTS; i += 1) {
-    const angle = (i / RIBBON_POINTS) * Math.PI * 2 + index * 0.35;
+  for (let i = 0; i < ribbonDetail.points; i += 1) {
+    const angle = (i / ribbonDetail.points) * Math.PI * 2 + index * 0.35;
     points.push(
       new THREE.Vector3(
         Math.cos(angle) * randomRadius(baseRadius, 4),
@@ -51,7 +79,13 @@ function buildRibbon(index: number) {
   }
 
   const curve = new THREE.CatmullRomCurve3(points);
-  const geometry = new THREE.TubeGeometry(curve, TUBE_SEGMENTS, 0.6, 14, false);
+  const geometry = new THREE.TubeGeometry(
+    curve,
+    ribbonDetail.tubeSegments,
+    0.6,
+    14,
+    false
+  );
   const material = new THREE.MeshStandardMaterial({
     color: new THREE.Color().setHSL((index / RIBBON_COUNT + 0.5) % 1, 0.75, 0.55),
     emissive: 0x0b1327,
@@ -65,9 +99,15 @@ function buildRibbon(index: number) {
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.z = -index * 1.5;
-  toy.scene.add(mesh);
+  ribbonGroup.add(mesh);
 
-  ribbons.push({ points, curve, mesh, colorOffset: Math.random() });
+  ribbons.push({
+    points,
+    curve,
+    mesh,
+    colorOffset: Math.random(),
+    tubeSegments: ribbonDetail.tubeSegments,
+  });
 }
 
 function averageRange(data: Uint8Array, startRatio: number, endRatio: number) {
@@ -108,10 +148,10 @@ function updateRibbon(
 
   ribbon.curve.points = ribbon.points;
   ribbon.mesh.geometry.dispose();
-  const radius = 0.55 + bass / 240;
+  const radius = ribbonDetail.radiusBase + bass / 240;
   ribbon.mesh.geometry = new THREE.TubeGeometry(
     ribbon.curve,
-    TUBE_SEGMENTS,
+    ribbon.tubeSegments,
     radius,
     16,
     false
@@ -136,9 +176,48 @@ function animate(ctx: AnimationContext) {
   toy.render();
 }
 
-function init() {
-  for (let i = 0; i < RIBBON_COUNT; i += 1) {
+function disposeRibbons() {
+  ribbons.forEach((ribbon) => {
+    ribbonGroup.remove(ribbon.mesh);
+    ribbon.mesh.geometry.dispose();
+    (ribbon.mesh.material as THREE.Material).dispose();
+  });
+  ribbons.length = 0;
+}
+
+function rebuildRibbons() {
+  disposeRibbons();
+  ribbonDetail = getRibbonDetail();
+  for (let i = 0; i < ribbonDetail.count; i += 1) {
     buildRibbon(i);
+  }
+}
+
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+  rebuildRibbons();
+}
+
+function setupSettingsPanel() {
+  settingsPanel.configure({
+    title: 'Aurora painter',
+    description: 'Control render scale and ribbon density without restarting audio.',
+  });
+  settingsPanel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
+}
+
+function init() {
+  setupSettingsPanel();
+  if (!ribbons.length) {
+    rebuildRibbons();
   }
 }
 

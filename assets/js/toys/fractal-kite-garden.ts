@@ -6,6 +6,15 @@ import {
   getContextFrequencyData,
 } from '../core/animation-loop';
 import { startToyAudio } from '../utils/start-audio';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  getStoredQualityPreset,
+  type QualityPreset,
+} from '../core/settings-panel';
+
+const settingsPanel = getSettingsPanel();
+let activeQuality: QualityPreset = getStoredQualityPreset();
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 6, z: 26 } },
@@ -15,6 +24,10 @@ const toy = new WebToy({
     intensity: 1.15,
   },
   ambientLightOptions: { intensity: 0.35 },
+  rendererOptions: {
+    maxPixelRatio: activeQuality.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
+  },
 } as ToyConfig);
 
 type PaletteKey = 'aurora' | 'sunset' | 'midnight';
@@ -43,6 +56,12 @@ const settings = {
 let kiteGeometry: THREE.BufferGeometry | null = null;
 const kiteGroup = new THREE.Group();
 const kiteInstances: KiteInstance[] = [];
+let panelDensityInput: HTMLInputElement | null = null;
+
+function getDensity() {
+  const scale = activeQuality.particleScale ?? 1;
+  return THREE.MathUtils.clamp(settings.density * scale, 0.25, 1.6);
+}
 
 function getBandAverage(data: Uint8Array, start: number, end: number) {
   const startIndex = Math.max(0, Math.floor(data.length * start));
@@ -179,9 +198,10 @@ function growBranch(
 
 function buildGarden() {
   disposeGarden();
-  const maxKites = Math.floor(180 + settings.density * 220);
-  const branchDepth = 3 + Math.floor(settings.density * 3);
-  const branchCount = 8 + Math.floor(settings.density * 12);
+  const density = getDensity();
+  const maxKites = Math.floor(180 + density * 220);
+  const branchDepth = 3 + Math.floor(density * 3);
+  const branchCount = 8 + Math.floor(density * 12);
 
   for (let i = 0; i < branchCount; i++) {
     const angle = (i / branchCount) * Math.PI * 2 + Math.random() * 0.1;
@@ -205,36 +225,10 @@ function buildGarden() {
 }
 
 function createControls() {
-  const container = document.createElement('div');
-  container.style.position = 'fixed';
-  container.style.top = '16px';
-  container.style.right = '16px';
-  container.style.display = 'flex';
-  container.style.flexDirection = 'column';
-  container.style.gap = '10px';
-  container.style.padding = '12px 14px';
-  container.style.background = 'rgba(9, 12, 20, 0.6)';
-  container.style.border = '1px solid #1f2937';
-  container.style.borderRadius = '12px';
-  container.style.color = '#f8fafc';
-  container.style.fontFamily = 'Inter, system-ui, sans-serif';
-  container.style.zIndex = '10';
-  container.style.maxWidth = '260px';
-
-  const title = document.createElement('div');
-  title.textContent = 'Fractal Kite Garden';
-  title.style.fontWeight = '600';
-  title.style.letterSpacing = '0.01em';
-  title.style.fontSize = '14px';
-  container.appendChild(title);
-
-  const densityLabel = document.createElement('label');
-  densityLabel.textContent = 'Pattern density';
-  densityLabel.style.display = 'flex';
-  densityLabel.style.flexDirection = 'column';
-  densityLabel.style.gap = '6px';
-  densityLabel.style.fontSize = '12px';
-  densityLabel.style.opacity = '0.9';
+  const densityRow = settingsPanel.addSection(
+    'Pattern density',
+    'Higher settings add more branching kites.'
+  );
 
   const densityInput = document.createElement('input');
   densityInput.type = 'range';
@@ -246,55 +240,61 @@ function createControls() {
     settings.density = Number(densityInput.value);
     buildGarden();
   });
+  panelDensityInput = densityInput;
+  densityRow.appendChild(densityInput);
 
-  densityLabel.appendChild(densityInput);
-  container.appendChild(densityLabel);
-
-  const paletteLabel = document.createElement('div');
-  paletteLabel.textContent = 'Color palette';
-  paletteLabel.style.fontSize = '12px';
-  paletteLabel.style.opacity = '0.9';
-  container.appendChild(paletteLabel);
-
-  const paletteRow = document.createElement('div');
-  paletteRow.style.display = 'flex';
-  paletteRow.style.gap = '8px';
+  const paletteRow = settingsPanel.addSection(
+    'Color palette',
+    'Switch gradients without resetting audio.'
+  );
 
   (Object.keys(palettes) as PaletteKey[]).forEach((paletteKey) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1);
-    button.style.padding = '6px 10px';
-    button.style.borderRadius = '10px';
-    button.style.border = '1px solid #1f2937';
-    button.style.background =
-      paletteKey === settings.palette ? '#0ea5e9' : 'rgba(255,255,255,0.06)';
-    button.style.color = '#f8fafc';
-    button.style.cursor = 'pointer';
-    button.style.fontSize = '12px';
+    button.className = 'cta-button';
+    button.disabled = paletteKey === settings.palette;
     button.addEventListener('click', () => {
       settings.palette = paletteKey;
-      (paletteRow.childNodes as NodeListOf<HTMLButtonElement>).forEach(
-        (child) => {
-          child.style.background =
-            child.textContent?.toLowerCase() === paletteKey ? '#0ea5e9' : 'rgba(255,255,255,0.06)';
-        }
-      );
+      (paletteRow.childNodes as NodeListOf<HTMLButtonElement>).forEach((child) => {
+        child.classList.toggle(
+          'active',
+          child.textContent?.toLowerCase() === paletteKey
+        );
+        child.toggleAttribute(
+          'disabled',
+          child.textContent?.toLowerCase() === paletteKey
+        );
+      });
       buildGarden();
     });
     paletteRow.appendChild(button);
   });
+}
 
-  container.appendChild(paletteRow);
+function applyQualityPreset(preset: QualityPreset) {
+  activeQuality = preset;
+  toy.updateRendererSettings({
+    maxPixelRatio: preset.maxPixelRatio,
+    renderScale: preset.renderScale,
+  });
+  buildGarden();
+  if (panelDensityInput) {
+    panelDensityInput.value = settings.density.toString();
+  }
+}
 
-  const hint = document.createElement('div');
-  hint.textContent = 'Mid frequencies sway branches, highs brighten kite flashes.';
-  hint.style.fontSize = '11px';
-  hint.style.opacity = '0.75';
-  hint.style.lineHeight = '1.4';
-  container.appendChild(hint);
-
-  document.body.appendChild(container);
+function setupSettingsPanel() {
+  settingsPanel.configure({
+    title: 'Fractal Kite Garden',
+    description:
+      'Quality presets persist across toys so you can balance DPI and branching density.',
+  });
+  settingsPanel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: activeQuality.id,
+    onChange: applyQualityPreset,
+  });
 }
 
 function init() {
@@ -302,8 +302,11 @@ function init() {
   toy.rendererReady.then((result) => {
     result?.renderer.setClearColor?.(0x030712, 1);
   });
+  setupSettingsPanel();
   createControls();
-  buildGarden();
+  if (!kiteInstances.length) {
+    buildGarden();
+  }
 }
 
 function animate(ctx: AnimationContext) {
