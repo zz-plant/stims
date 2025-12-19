@@ -15,21 +15,7 @@ type Toy = {
 };
 
 const TOY_QUERY_PARAM = 'toy';
-
-function disposeActiveToy(view?: ReturnType<typeof createToyView>) {
-  const activeToy = (globalThis as typeof globalThis & { __activeWebToy?: { dispose?: () => void } }).__activeWebToy;
-
-  if (activeToy?.dispose) {
-    try {
-      activeToy.dispose();
-    } catch (error) {
-      console.error('Error disposing existing toy', error);
-    }
-  }
-
-  view?.clearActiveToyContainer();
-  delete (globalThis as typeof globalThis & { __activeWebToy?: unknown }).__activeWebToy;
-}
+type ActiveToyCandidate = { dispose?: () => void } | (() => void);
 
 export function createLoader({
   manifestClient = createManifestClient(),
@@ -48,6 +34,59 @@ export function createLoader({
 } = {}) {
   let navigationInitialized = false;
   let escapeHandler: ((event: KeyboardEvent) => void) | null = null;
+  let activeToy: { ref: ActiveToyCandidate; dispose?: () => void } | null = null;
+
+  const getGlobalActiveToy = () =>
+    (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy;
+
+  const normalizeActiveToy = (
+    candidate: unknown
+  ): { ref: ActiveToyCandidate; dispose?: () => void } | null => {
+    if (!candidate) return null;
+
+    if (typeof candidate === 'function') {
+      return { ref: candidate, dispose: candidate };
+    }
+
+    if (typeof candidate === 'object') {
+      const dispose = (candidate as { dispose?: unknown }).dispose;
+      return {
+        ref: candidate as ActiveToyCandidate,
+        dispose: typeof dispose === 'function' ? dispose.bind(candidate) : undefined,
+      };
+    }
+
+    return null;
+  };
+
+  const registerActiveToy = (candidate?: unknown) => {
+    const source = candidate === null ? null : candidate ?? getGlobalActiveToy();
+    activeToy = normalizeActiveToy(source);
+
+    if (activeToy?.ref) {
+      (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy =
+        activeToy.ref;
+    } else {
+      delete (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy;
+    }
+
+    return activeToy;
+  };
+
+  const disposeActiveToy = () => {
+    const current = activeToy ?? normalizeActiveToy(getGlobalActiveToy());
+
+    if (current?.dispose) {
+      try {
+        current.dispose();
+      } catch (error) {
+        console.error('Error disposing existing toy', error);
+      }
+    }
+
+    registerActiveToy(null);
+    view?.clearActiveToyContainer?.();
+  };
 
   const removeEscapeHandler = () => {
     const win = typeof window === 'undefined' ? null : window;
@@ -59,7 +98,7 @@ export function createLoader({
 
   const backToLibrary = () => {
     removeEscapeHandler();
-    disposeActiveToy(view);
+    disposeActiveToy();
     view.showLibraryView();
     router.goToLibrary();
   };
@@ -91,7 +130,7 @@ export function createLoader({
       return;
     }
 
-    disposeActiveToy(view);
+    disposeActiveToy();
     removeEscapeHandler();
 
     const container = view.showActiveToyView(backToLibrary, toy);
@@ -138,9 +177,7 @@ export function createLoader({
       if (starter) {
         try {
           const active = await starter({ container, slug: toy.slug });
-          if (active && !(globalThis as { __activeWebToy?: unknown }).__activeWebToy) {
-            (globalThis as { __activeWebToy?: unknown }).__activeWebToy = active;
-          }
+          registerActiveToy(active ?? getGlobalActiveToy());
         } catch (error) {
           console.error('Error starting toy module:', error);
           view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });
@@ -183,7 +220,7 @@ export function createLoader({
       return;
     }
 
-    disposeActiveToy(view);
+    disposeActiveToy();
 
     if (typeof window !== 'undefined') {
       window.location.href = toy.module;
