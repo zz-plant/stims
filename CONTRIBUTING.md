@@ -59,5 +59,6 @@ If you’re using Node as a fallback, run `npm run dev` instead.
 - Toy entry points are served through `toy.html` using a `?toy=` query string (for example, `toy.html?toy=cube-wave`). Ensure your toy slug matches the metadata entry.
 - Shared styling and assets live under `assets/css/` and `assets/data/`. Add new static assets there when needed.
 - Update or add tests under `tests/` to cover new behaviors. You can run targeted checks by passing the spec path to `bun test`.
+- Use `bun run scripts/scaffold-toy.ts` to scaffold a new toy: it prompts for slug/title/type, writes a starter module using the playbook template, updates `assets/js/toys-data.js` and `docs/TOY_SCRIPT_INDEX.md`, and can generate a minimal Bun spec that asserts `start` is exported.
 
 Happy building!
