@@ -1,4 +1,4 @@
-import { initNavigation, loadFromQuery } from './loader.js';
+import { initNavigation, loadFromQuery } from './loader.ts';
 
 initNavigation();
 loadFromQuery();

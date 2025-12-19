@@ -83,7 +83,7 @@ server.registerTool(
 server.registerTool(
   'describe_loader',
   {
-    description: 'Summarize how toy loading and error handling works based on assets/js/loader.js.',
+    description: 'Summarize how toy loading and error handling works based on assets/js/loader.ts.',
     inputSchema: z.object({}).strict(),
   },
   async () => {

@@ -1,12 +1,11 @@
-import { beforeAll, describe, expect, mock, test } from 'bun:test';
+import { beforeAll, describe, expect, test } from 'bun:test';
 
 let initLighting;
 let stubLighting;
 let Scene;
 
 beforeAll(async () => {
-  mock.module('three', () => import('./three-stub.ts'));
-  ({ initLighting } = await import('../assets/js/lighting/lighting-setup'));
+  ({ initLighting } = await import('../assets/js/lighting/lighting-setup.ts'));
   ({ Scene, ...stubLighting } = await import('./three-stub.ts'));
 });
 
