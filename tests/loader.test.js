@@ -3,11 +3,26 @@ import { createRouter } from '../assets/js/router.ts';
 import { createToyView } from '../assets/js/toy-view.ts';
 
 const loaderModule = '../assets/js/loader.ts';
+const capabilitiesModule = '../assets/js/core/renderer-capabilities.ts';
 const originalLocation = window.location;
 const originalHistory = window.history;
 const originalNavigator = global.navigator;
 
-const freshLoader = async () => (await import(`${loaderModule}?t=${Date.now()}-${Math.random()}`)).createLoader;
+const freshLoader = async () => {
+  mock.module(capabilitiesModule, () => capabilitiesMock);
+  return (await import(`${loaderModule}?t=${Date.now()}-${Math.random()}`)).createLoader;
+};
+
+const defaultCapabilities = {
+  preferredBackend: 'webgpu',
+  adapter: {},
+  device: {},
+  triedWebGPU: true,
+  fallbackReason: null,
+  shouldRetryWebGPU: false,
+};
+
+let capabilitiesMock;
 
 function createMockLocation(href) {
   const url = new URL(href);
@@ -80,6 +95,12 @@ async function buildLoader({
 
 beforeEach(() => {
   document.body.innerHTML = '<div id="toy-list"></div>';
+  capabilitiesMock = {
+    getRendererCapabilities: mock(async () => defaultCapabilities),
+    rememberRendererFallback: mock(),
+    resetRendererCapabilities: mock(),
+    getCachedRendererCapabilities: mock(() => defaultCapabilities),
+  };
 });
 
 afterEach(() => {
@@ -139,6 +160,15 @@ describe('WebGPU requirements', () => {
       value: {},
     });
 
+    capabilitiesMock.getRendererCapabilities.mockResolvedValue({
+      preferredBackend: 'webgl',
+      adapter: null,
+      device: null,
+      triedWebGPU: false,
+      fallbackReason: 'WebGPU unavailable',
+      shouldRetryWebGPU: false,
+    });
+
     const { loader } = await buildLoader({
       toys: [
         {
@@ -166,6 +196,15 @@ describe('WebGPU requirements', () => {
       value: {},
     });
 
+    capabilitiesMock.getRendererCapabilities.mockResolvedValue({
+      preferredBackend: 'webgl',
+      adapter: null,
+      device: null,
+      triedWebGPU: false,
+      fallbackReason: 'WebGPU unavailable',
+      shouldRetryWebGPU: false,
+    });
+
     const { loader } = await buildLoader({
       toys: [
         {
@@ -191,6 +230,36 @@ describe('WebGPU requirements', () => {
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
     expect(document.querySelector('.active-toy-status')).toBeNull();
+  });
+
+  test('consults shared renderer capabilities before gating WebGPU toys', async () => {
+    capabilitiesMock.getRendererCapabilities.mockResolvedValue({
+      preferredBackend: 'webgl',
+      adapter: null,
+      device: null,
+      triedWebGPU: true,
+      fallbackReason: 'Cached fallback',
+      shouldRetryWebGPU: false,
+    });
+
+    const { loader } = await buildLoader({
+      toys: [
+        {
+          slug: 'webgpu-toy',
+          title: 'Fancy WebGPU',
+          module: './__mocks__/fake-module.js',
+          type: 'module',
+          requiresWebGPU: true,
+          allowWebGLFallback: true,
+        },
+      ],
+    });
+
+    await loader.loadToy('webgpu-toy');
+
+    expect(capabilitiesMock.getRendererCapabilities).toHaveBeenCalledTimes(1);
+    const status = document.querySelector('.active-toy-status');
+    expect(status?.classList.contains('is-warning')).toBe(true);
   });
 });
 
