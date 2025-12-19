@@ -3,7 +3,7 @@
 This index maps each toy slug to the module that powers it and how the experience loads inside `toy.html`. Use it to find the right entry point quickly when updating assets or debugging loading behavior.
 
 ## Query-driven toys (`toy.html`)
-`toy.html` reads the `toy` query parameter, looks up the matching entry in `assets/js/toys-data.js`, and imports the corresponding module through `assets/js/toyMain.js` and `assets/js/loader.js`. Many modules render directly; others use the `startIframeToy` helper to embed an existing HTML page inside the library shell.
+`toy.html` reads the `toy` query parameter, looks up the matching entry in `assets/js/toys-data.js`, and imports the corresponding module through `assets/js/toyMain.js` and `assets/js/loader.ts`. Many modules render directly; others use the `startIframeToy` helper to embed an existing HTML page inside the library shell.
 
 | Slug | Entry module | How it loads |
 | --- | --- | --- |
