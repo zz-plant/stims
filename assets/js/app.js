@@ -18,293 +18,322 @@ import PatternRecognizer from './utils/patternRecognition.ts';
 
 const DEFAULT_RENDERER_OPTIONS = { maxPixelRatio: 2 };
 
-let scene,
-  camera,
-  renderer,
-  rendererBackend,
-  cube,
-  analyser,
-  patternRecognizer,
-  audioCleanup,
-  syntheticCleanup;
-let rendererReadyPromise;
-let currentLightType = 'PointLight'; // Default light type
-let animationFrameId = null;
-let isAnimating = false;
-let audioListener = null;
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-let isReducedMotionPreferred = prefersReducedMotion.matches;
+class VisualizationController {
+  constructor() {
+    this.scene = null;
+    this.camera = null;
+    this.renderer = null;
+    this.rendererBackend = null;
+    this.cube = null;
+    this.analyser = null;
+    this.patternRecognizer = null;
+    this.audioCleanup = null;
+    this.syntheticCleanup = null;
+    this.rendererReadyPromise = null;
+    this.currentLightType = document.getElementById('light-type')?.value || 'PointLight';
+    this.animationFrameId = null;
+    this.isAnimating = false;
+    this.audioListener = null;
+    this.hasRequestedAudio = false;
+    this.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this.isReducedMotionPreferred = this.prefersReducedMotion.matches;
 
-async function initVisualization() {
-  if (!ensureWebGL()) {
-    return;
-  }
-  if (renderer) {
-    renderer.dispose();
+    this.handleResize = this.handleResize.bind(this);
+    this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
+    this.handleReducedMotionChange = this.handleReducedMotionChange.bind(this);
+    this.handleLightChange = this.handleLightChange.bind(this);
+    this.handlePageHide = this.handlePageHide.bind(this);
+    this.animate = this.animate.bind(this);
   }
 
-  if (scene) {
-    scene.traverse((object) => {
-      if (object.isMesh) {
-        if (object.geometry) object.geometry.dispose();
-        if (object.material) {
+  init() {
+    this.rendererReadyPromise = this.initVisualization();
+
+    this.prefersReducedMotion.addEventListener('change', this.handleReducedMotionChange);
+    window.addEventListener('resize', this.handleResize);
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    window.addEventListener('pagehide', this.handlePageHide);
+    const lightTypeSelect = document.getElementById('light-type');
+    lightTypeSelect?.addEventListener('change', this.handleLightChange);
+
+    setupMicrophonePermissionFlow({
+      startButton: document.getElementById('start-audio-btn'),
+      fallbackButton: document.getElementById('use-sample-audio'),
+      statusElement: document.getElementById('audio-status'),
+      requestMicrophone: () => this.startAudioAndAnimation(false),
+      requestSampleAudio: () => this.startAudioAndAnimation(true),
+      analytics: {
+        log: (event, detail) => console.info(`[audio-flow] ${event}`, detail ?? {}),
+      },
+      onSuccess: () => {
+        const startButton = document.getElementById('start-audio-btn');
+        if (startButton instanceof window.HTMLButtonElement) {
+          startButton.style.display = 'none';
+        }
+
+        const fallbackButton = document.getElementById('use-sample-audio');
+        if (fallbackButton instanceof window.HTMLButtonElement) {
+          fallbackButton.hidden = true;
+        }
+      },
+    });
+  }
+
+  async initVisualization() {
+    if (!ensureWebGL()) {
+      this.displayError('WebGL support is required to render this visual.');
+      return null;
+    }
+
+    this.stopAnimationLoop();
+    this.disposeScene();
+
+    const canvas = document.getElementById('toy-canvas');
+    if (!canvas) {
+      this.displayError('Canvas element not found.');
+      return null;
+    }
+
+    this.scene = initScene();
+    this.camera = initCamera();
+
+    const rendererResult = await initRenderer(canvas, DEFAULT_RENDERER_OPTIONS);
+    if (!rendererResult) {
+      this.displayError('Unable to initialize a renderer on this device.');
+      return null;
+    }
+
+    this.renderer = rendererResult.renderer;
+    this.rendererBackend = rendererResult.backend;
+    console.info(`Using renderer backend: ${this.rendererBackend}`);
+
+    initLighting(this.scene, {
+      type: this.currentLightType,
+      color: 0xffffff,
+      intensity: 1,
+      position: { x: 10, y: 10, z: 20 },
+    });
+    initAmbientLight(this.scene, { color: 0x404040, intensity: 0.5 });
+
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    this.cube = new THREE.Mesh(geometry, material);
+    this.scene.add(this.cube);
+
+    this.renderSceneOnce();
+
+    if (this.analyser && !this.isReducedMotionPreferred) {
+      this.startAnimationLoop();
+    }
+
+    return this.renderer;
+  }
+
+  disposeScene() {
+    if (this.renderer) {
+      this.renderer.dispose();
+      this.renderer = null;
+    }
+
+    if (this.scene) {
+      this.scene.traverse((object) => {
+        if (object.isMesh) {
+          object.geometry?.dispose?.();
           if (Array.isArray(object.material)) {
-            object.material.forEach((mat) => mat.dispose());
+            object.material.forEach((material) => material.dispose?.());
           } else {
-            object.material.dispose();
+            object.material?.dispose?.();
           }
         }
+      });
+
+      while (this.scene.children.length > 0) {
+        this.scene.remove(this.scene.children[0]);
       }
-    });
-    while (scene.children.length > 0) {
-      scene.remove(scene.children[0]);
+
+      this.scene = null;
+    }
+
+    this.camera = null;
+    this.cube = null;
+    this.rendererBackend = null;
+  }
+
+  startAnimationLoop() {
+    if (this.isAnimating || this.isReducedMotionPreferred) return;
+
+    this.isAnimating = true;
+    this.animationFrameId = requestAnimationFrame(this.animate);
+  }
+
+  stopAnimationLoop() {
+    if (!this.isAnimating) return;
+
+    this.isAnimating = false;
+    if (this.animationFrameId !== null) {
+      window.cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
   }
 
-  scene = initScene();
-  camera = initCamera();
-  const canvas = document.getElementById('toy-canvas');
-  const rendererResult = await initRenderer(canvas, DEFAULT_RENDERER_OPTIONS);
-  if (!rendererResult) {
-    displayError('Unable to initialize a renderer on this device.');
-    return;
+  cleanupAudio() {
+    if (this.audioCleanup) {
+      this.audioCleanup();
+    }
+    if (this.syntheticCleanup) {
+      this.syntheticCleanup();
+    }
+
+    this.audioCleanup = null;
+    this.syntheticCleanup = null;
+    this.analyser = null;
+    this.patternRecognizer = null;
+    this.audioListener = null;
   }
 
-  renderer = rendererResult.renderer;
-  rendererBackend = rendererResult.backend;
-  console.info(`Using renderer backend: ${rendererBackend}`);
-
-  // Set up lighting based on user selection
-  initLighting(scene, {
-    type: currentLightType,
-    color: 0xffffff,
-    intensity: 1,
-    position: { x: 10, y: 10, z: 20 },
-  });
-  initAmbientLight(scene, { color: 0x404040, intensity: 0.5 });
-
-  // Add a cube to the scene
-  const geometry = new THREE.BoxGeometry();
-  const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-  cube = new THREE.Mesh(geometry, material);
-  scene.add(cube);
-
-  renderSceneOnce();
-}
-
-function startAnimationLoop() {
-  if (isAnimating || isReducedMotionPreferred) return;
-
-  isAnimating = true;
-  animationFrameId = requestAnimationFrame(animate);
-}
-
-function stopAnimationLoop() {
-  if (!isAnimating) return;
-
-  isAnimating = false;
-  if (animationFrameId !== null) {
-    window.cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  }
-}
-
-async function startAudioAndAnimation(useSampleAudio = false) {
-  try {
-    if (rendererReadyPromise) {
-      await rendererReadyPromise;
-    }
-    if (!renderer) {
-      throw new Error('Unable to start because no renderer is available.');
-    }
-    if (syntheticCleanup) {
-      syntheticCleanup();
-      syntheticCleanup = null;
-    }
-
-    const syntheticStream = useSampleAudio
-      ? createSyntheticAudioStream()
-      : null;
-
-    const audioData = await initAudio({ stream: syntheticStream?.stream });
-    analyser = audioData.analyser;
-    audioListener = audioData.listener ?? null;
-    audioCleanup = () => {
-      audioData.cleanup();
-      if (syntheticCleanup) {
-        syntheticCleanup();
-        syntheticCleanup = null;
+  async startAudioAndAnimation(useSampleAudio = false) {
+    this.hasRequestedAudio = true;
+    try {
+      if (this.rendererReadyPromise) {
+        await this.rendererReadyPromise;
       }
-    };
-    syntheticCleanup = syntheticStream?.cleanup ?? null;
-    patternRecognizer = new PatternRecognizer(analyser);
-
-    if (isReducedMotionPreferred) {
-      renderSceneOnce();
-    } else {
-      startAnimationLoop();
-    }
-    return true;
-  } catch (error) {
-    console.error('initAudio failed:', error);
-    if (syntheticCleanup) {
-      syntheticCleanup();
-      syntheticCleanup = null;
-    }
-    throw error;
-  }
-}
-
-function animate() {
-  if (!isAnimating) return;
-
-  if (analyser) {
-    const audioData = getFrequencyData(analyser);
-
-    if (!isReducedMotionPreferred) {
-      applyAudioRotation(cube, audioData, 0.05);
-      applyAudioScale(cube, audioData, 50);
-    }
-
-    patternRecognizer.updatePatternBuffer();
-    const detectedPattern = patternRecognizer.detectPattern();
-
-    if (detectedPattern) {
-      cube.material.color.setHex(0xff0000); // Detected pattern color
-    } else {
-      cube.material.color.setHex(0x00ff00); // Normal color
-    }
-  }
-
-  renderer?.render(scene, camera);
-
-  animationFrameId = requestAnimationFrame(animate);
-}
-
-function handleResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer?.setSize(window.innerWidth, window.innerHeight);
-}
-
-function renderSceneOnce() {
-  if (renderer && scene && camera) {
-    renderer.render(scene, camera);
-  }
-}
-
-function displayError(message) {
-  const errorElement = document.getElementById('audio-status');
-  if (!errorElement) return;
-
-  errorElement.innerText = message;
-  errorElement.dataset.variant = 'error';
-  errorElement.hidden = !message;
-}
-
-// Update lighting type on change
-document.getElementById('light-type').addEventListener('change', (event) => {
-  currentLightType = event.target.value;
-  // Reinitialize lighting
-  rendererReadyPromise = initVisualization();
-});
-
-// Start visualization
-rendererReadyPromise = initVisualization();
-
-setupMicrophonePermissionFlow({
-  startButton: document.getElementById('start-audio-btn'),
-  fallbackButton: document.getElementById('use-sample-audio'),
-  statusElement: document.getElementById('audio-status'),
-  requestMicrophone: () => startAudioAndAnimation(false),
-  requestSampleAudio: () => startAudioAndAnimation(true),
-  analytics: {
-    log: (event, detail) => console.info(`[audio-flow] ${event}`, detail ?? {}),
-  },
-  onSuccess: () => {
-    const startButton = document.getElementById('start-audio-btn');
-    if (startButton instanceof window.HTMLButtonElement) {
-      startButton.style.display = 'none';
-    }
-
-    const fallbackButton = document.getElementById('use-sample-audio');
-    if (fallbackButton instanceof window.HTMLButtonElement) {
-      fallbackButton.hidden = true;
-    }
-  },
-});
-
-// Handle window resize
-window.addEventListener('resize', handleResize);
-
-// Clean up audio when navigating away
-window.addEventListener('pagehide', () => {
-  if (audioCleanup) {
-    audioCleanup();
-    analyser = null;
-    patternRecognizer = null;
-    audioListener = null;
-  }
-  stopAnimationLoop();
-});
-
-async function handleVisibilityChange() {
-  if (document.visibilityState === 'hidden') {
-    stopAnimationLoop();
-
-    if (audioListener?.context?.state === 'running') {
-      try {
-        await audioListener.context.suspend();
-      } catch (error) {
-        console.error('Error suspending audio context:', error);
+      if (!this.renderer) {
+        throw new Error('Unable to start because no renderer is available.');
       }
-    } else if (audioCleanup) {
-      audioCleanup();
-      analyser = null;
-      patternRecognizer = null;
-      audioListener = null;
-    }
 
-    return;
+      this.cleanupAudio();
+      const syntheticStream = useSampleAudio ? createSyntheticAudioStream() : null;
+      const audioData = await initAudio({ stream: syntheticStream?.stream });
+      this.analyser = audioData.analyser;
+      this.audioListener = audioData.listener ?? null;
+      this.audioCleanup = () => audioData.cleanup();
+      this.syntheticCleanup = syntheticStream?.cleanup ?? null;
+      this.patternRecognizer = new PatternRecognizer(this.analyser);
+
+      if (this.isReducedMotionPreferred) {
+        this.renderSceneOnce();
+      } else {
+        this.startAnimationLoop();
+      }
+      return true;
+    } catch (error) {
+      console.error('initAudio failed:', error);
+      this.syntheticCleanup?.();
+      this.syntheticCleanup = null;
+      throw error;
+    }
   }
 
-  if (document.visibilityState === 'visible') {
-    if (audioListener?.context?.state === 'suspended') {
-      try {
-        await audioListener.context.resume();
-      } catch (error) {
-        console.error('Error resuming audio context:', error);
+  animate() {
+    if (!this.isAnimating) return;
+
+    if (this.analyser && this.cube) {
+      const audioData = getFrequencyData(this.analyser);
+
+      if (!this.isReducedMotionPreferred) {
+        applyAudioRotation(this.cube, audioData, 0.05);
+        applyAudioScale(this.cube, audioData, 50);
       }
-    } else if (!analyser && audioCleanup) {
-      try {
-        await startAudioAndAnimation();
-      } catch (error) {
-        displayError(
-          'Microphone access is required for the visualization to work. Please allow microphone access.'
-        );
-        console.error('Unable to restart audio after visibility change', error);
+
+      this.patternRecognizer?.updatePatternBuffer();
+      const detectedPattern = this.patternRecognizer?.detectPattern();
+
+      if (detectedPattern) {
+        this.cube.material.color.setHex(0xff0000); // Detected pattern color
+      } else {
+        this.cube.material.color.setHex(0x00ff00); // Normal color
       }
     }
 
-    if (analyser) {
-      startAnimationLoop();
+    this.renderer?.render(this.scene, this.camera);
+    this.animationFrameId = requestAnimationFrame(this.animate);
+  }
+
+  handleResize() {
+    if (!this.camera || !this.renderer) return;
+
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  renderSceneOnce() {
+    if (this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
     }
   }
-}
 
-document.addEventListener('visibilitychange', () => {
-  handleVisibilityChange();
-});
+  displayError(message) {
+    const errorElement = document.getElementById('audio-status');
+    if (!errorElement) return;
 
-function handleReducedMotionChange(event) {
-  isReducedMotionPreferred = event.matches;
+    errorElement.innerText = message;
+    errorElement.dataset.variant = 'error';
+    errorElement.hidden = !message;
+  }
 
-  if (isReducedMotionPreferred) {
-    stopAnimationLoop();
-    renderSceneOnce();
-  } else if (analyser) {
-    startAnimationLoop();
+  handleLightChange(event) {
+    this.currentLightType = event.target?.value || this.currentLightType;
+    this.rendererReadyPromise = this.initVisualization();
+  }
+
+  async handleVisibilityChange() {
+    if (document.visibilityState === 'hidden') {
+      this.stopAnimationLoop();
+
+      if (this.audioListener?.context?.state === 'running') {
+        try {
+          await this.audioListener.context.suspend();
+        } catch (error) {
+          console.error('Error suspending audio context:', error);
+        }
+      } else {
+        this.cleanupAudio();
+      }
+
+      return;
+    }
+
+    if (document.visibilityState === 'visible') {
+      if (this.audioListener?.context?.state === 'suspended') {
+        try {
+          await this.audioListener.context.resume();
+        } catch (error) {
+          console.error('Error resuming audio context:', error);
+        }
+      } else if (this.hasRequestedAudio && !this.analyser) {
+        try {
+          await this.startAudioAndAnimation();
+        } catch (error) {
+          this.displayError(
+            'Microphone access is required for the visualization to work. Please allow microphone access.',
+          );
+          console.error('Unable to restart audio after visibility change', error);
+        }
+      }
+
+      if (this.analyser) {
+        this.startAnimationLoop();
+      }
+    }
+  }
+
+  handleReducedMotionChange(event) {
+    this.isReducedMotionPreferred = event.matches;
+
+    if (this.isReducedMotionPreferred) {
+      this.stopAnimationLoop();
+      this.renderSceneOnce();
+    } else if (this.analyser) {
+      this.startAnimationLoop();
+    }
+  }
+
+  handlePageHide() {
+    this.cleanupAudio();
+    this.stopAnimationLoop();
   }
 }
 
-prefersReducedMotion.addEventListener('change', handleReducedMotionChange);
+const controller = new VisualizationController();
+controller.init();
