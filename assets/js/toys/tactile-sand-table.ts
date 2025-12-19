@@ -173,7 +173,7 @@ export async function start() {
   let rippleGain = 1;
   let activeQuality: QualityPreset =
     DEFAULT_QUALITY_PRESETS.find((preset) => preset.id === 'balanced') ??
-    DEFAULT_QUALITY_PRESETS[1];
+    DEFAULT_QUALITY_PRESETS[0];
 
   const motionSupported =
     typeof window !== 'undefined' && 'DeviceOrientationEvent' in window;
