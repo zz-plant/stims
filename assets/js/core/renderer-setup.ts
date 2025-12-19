@@ -1,9 +1,12 @@
-/* global GPUAdapter, GPUDevice, GPU */
+/* global GPUAdapter, GPUDevice */
 import * as THREE from 'three';
 import WebGPURenderer from 'three/src/renderers/webgpu/WebGPURenderer.js';
 import { ensureWebGL } from '../utils/webgl-check.ts';
-
-type RendererBackend = 'webgl' | 'webgpu';
+import {
+  getRendererCapabilities,
+  rememberRendererFallback,
+  type RendererBackend,
+} from './renderer-capabilities.ts';
 
 export type RendererInitResult = {
   renderer: THREE.WebGLRenderer | WebGPURenderer;
@@ -71,31 +74,32 @@ export async function initRenderer(
     };
   };
 
-  const fallbackToWebGL = (reason: string, error?: unknown) => {
+  const fallbackToWebGL = (
+    reason: string,
+    error?: unknown,
+    { shouldRetryWebGPU = true, triedWebGPU = true } = {}
+  ) => {
     console.info(`Falling back to WebGL renderer: ${reason}`);
     if (error) {
       console.debug(error);
     }
+    rememberRendererFallback(reason, { shouldRetryWebGPU, triedWebGPU });
     const renderer = new THREE.WebGLRenderer({ canvas, antialias, alpha });
     return finalize(renderer, 'webgl', null, null);
   };
 
-  const { gpu } = navigator as Navigator & { gpu?: GPU }; 
-  if (!gpu?.requestAdapter) {
-    return fallbackToWebGL('WebGPU is not available in this browser.');
-  }
+  const capabilities = await getRendererCapabilities();
 
-  try {
-    const adapter = await gpu.requestAdapter();
-    if (!adapter) {
-      return fallbackToWebGL('No compatible WebGPU adapter was found.');
-    }
+  if (capabilities.preferredBackend === 'webgpu' && capabilities.adapter) {
+    const adapter = capabilities.adapter;
+    let device = capabilities.device;
 
-    let device: GPUDevice | null = null;
-    try {
-      device = await adapter.requestDevice();
-    } catch (error) {
-      return fallbackToWebGL('Unable to acquire a WebGPU device.', error);
+    if (!device) {
+      try {
+        device = await adapter.requestDevice();
+      } catch (error) {
+        return fallbackToWebGL('Unable to acquire a WebGPU device.', error);
+      }
     }
 
     if (!device) {
@@ -108,7 +112,14 @@ export async function initRenderer(
     } catch (error) {
       return fallbackToWebGL('Failed to create a WebGPU renderer.', error);
     }
-  } catch (error) {
-    return fallbackToWebGL('WebGPU initialization failed.', error);
   }
+
+  return fallbackToWebGL(
+    capabilities.fallbackReason ?? 'WebGPU is not available in this browser.',
+    undefined,
+    {
+      shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
+      triedWebGPU: capabilities.triedWebGPU,
+    }
+  );
 }

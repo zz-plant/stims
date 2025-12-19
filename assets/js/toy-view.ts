@@ -15,6 +15,7 @@ type CapabilityOptions = {
   allowFallback?: boolean;
   onBack?: () => void;
   onContinue?: () => void;
+  details?: string | null;
 };
 
 type ImportErrorOptions = {
@@ -212,13 +213,15 @@ export function createToyView({
     const status = buildStatusElement(doc, container, {
       type: options.allowFallback ? 'warning' : 'error',
       title: options.allowFallback ? 'WebGPU is unavailable' : 'WebGPU not available',
-      message: options.allowFallback
+      message: `${
+        options.allowFallback
         ? toy?.title
           ? `${toy.title} works best with WebGPU. We can try a lighter WebGL version instead.`
           : 'This toy works best with WebGPU. We can try a lighter WebGL version instead.'
         : toy?.title
           ? `${toy.title} needs WebGPU, which is not supported in this browser.`
-          : 'This toy requires WebGPU, which is not supported in this browser.',
+          : 'This toy requires WebGPU, which is not supported in this browser.'
+      }${options.details ? ` (${options.details})` : ''}`,
     });
 
     if (!status) return null;
