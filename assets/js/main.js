@@ -16,5 +16,13 @@ const libraryView = createLibraryView({
   themeToggleId: 'theme-toggle',
 });
 
-libraryView.init();
-initRepoStatusWidget();
+const startApp = () => {
+  libraryView.init();
+  void initRepoStatusWidget();
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApp, { once: true });
+} else {
+  startApp();
+}
