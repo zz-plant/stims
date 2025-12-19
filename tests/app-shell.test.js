@@ -34,7 +34,7 @@ const toyLibrary = [
   },
 ];
 
-const loaderPath = '../assets/js/loader.js';
+const loaderPath = '../assets/js/loader.ts';
 const toysDataPath = '../assets/js/toys-data.js';
 const freshImport = async (path) => import(`${path}?t=${Date.now()}-${Math.random()}`);
 

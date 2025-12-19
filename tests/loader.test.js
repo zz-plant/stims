@@ -1,19 +1,13 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  mock,
-  test,
-} from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { createRouter } from '../assets/js/router.ts';
+import { createToyView } from '../assets/js/toy-view.ts';
 
-const loaderModule = '../assets/js/loader.js';
-const originalWindow = global.window;
+const loaderModule = '../assets/js/loader.ts';
 const originalLocation = window.location;
 const originalHistory = window.history;
 const originalNavigator = global.navigator;
 
-const freshImport = async (path) => import(`${path}?t=${Date.now()}-${Math.random()}`);
+const freshLoader = async () => (await import(`${loaderModule}?t=${Date.now()}-${Math.random()}`)).createLoader;
 
 function createMockLocation(href) {
   const url = new URL(href);
@@ -45,136 +39,91 @@ function createMockHistory(locationObject) {
   };
 }
 
-describe('loadToy', () => {
-  let loadToy;
+const defaultToys = [
+  {
+    slug: 'brand',
+    title: 'Test Brand Toy',
+    module: './__mocks__/fake-module.js',
+    type: 'module',
+    requiresWebGPU: false,
+  },
+];
 
-  beforeEach(async () => {
-    mock.restore();
-    global.fetch = mock(() =>
-      Promise.resolve({
-        json: () => Promise.resolve([{ slug: 'brand', module: './toy.html?toy=brand' }]),
-      })
-    );
-    mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
-    mock.module('../assets/js/toys-data.js', () => ({
-      default: [
-        {
-          slug: 'brand',
-          title: 'Test Brand Toy',
-          module: './__mocks__/fake-module.js',
-          type: 'module',
-          requiresWebGPU: false,
-        },
-      ],
-    }));
-    const location = createMockLocation('http://example.com');
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      configurable: true,
-      value: location,
-    });
-    Object.defineProperty(window, 'history', {
-      writable: true,
-      configurable: true,
-      value: createMockHistory(location),
-    });
-    ({ loadToy } = await freshImport(loaderModule));
+async function buildLoader({
+  toys = defaultToys,
+  locationHref = 'http://example.com/library',
+  manifestPath = './__mocks__/fake-module.js',
+  ensureWebGLCheck = () => true,
+} = {}) {
+  const createLoader = await freshLoader();
+  const location = createMockLocation(locationHref);
+
+  Object.defineProperty(window, 'location', {
+    writable: true,
+    configurable: true,
+    value: location,
+  });
+  Object.defineProperty(window, 'history', {
+    writable: true,
+    configurable: true,
+    value: createMockHistory(location),
   });
 
-  afterEach(() => {
-    mock.restore();
-    document.body.innerHTML = '';
-    delete global.fetch;
-    Object.defineProperty(global, 'navigator', {
-      writable: true,
-      configurable: true,
-      value: originalNavigator,
-    });
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      configurable: true,
-      value: originalLocation,
-    });
-    Object.defineProperty(window, 'history', {
-      writable: true,
-      configurable: true,
-      value: originalHistory,
-    });
-  });
+  const manifestClient = { resolveModulePath: mock(() => manifestPath) };
+  const router = createRouter({ windowRef: () => window, queryParam: 'toy' });
+  const view = createToyView({ documentRef: () => document });
 
-  test('loads module toy without navigation', async () => {
-    await loadToy('brand');
-    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
-    expect(window.location.href).toBe('http://example.com/');
+  const loader = createLoader({ manifestClient, router, view, ensureWebGLCheck, toys });
+
+  return { loader, manifestClient, router, view, location };
+}
+
+beforeEach(() => {
+  document.body.innerHTML = '<div id="toy-list"></div>';
+});
+
+afterEach(() => {
+  mock.restore();
+  document.body.innerHTML = '';
+  delete globalThis.__activeWebToy;
+  Object.defineProperty(window, 'location', {
+    writable: true,
+    configurable: true,
+    value: originalLocation,
+  });
+  Object.defineProperty(window, 'history', {
+    writable: true,
+    configurable: true,
+    value: originalHistory,
+  });
+  Object.defineProperty(global, 'navigator', {
+    writable: true,
+    configurable: true,
+    value: originalNavigator,
   });
 });
 
-describe('active toy navigation affordance', () => {
-  let loadToy;
+describe('loadToy', () => {
+  test('loads module toy without mutating history when pushState is false', async () => {
+    const { loader, manifestClient } = await buildLoader();
 
-  beforeEach(async () => {
-    mock.restore();
-    document.body.innerHTML = '<div id="toy-list"></div>';
-    global.fetch = mock(() => Promise.resolve({ ok: false }));
+    await loader.loadToy('brand');
 
-    mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
-    mock.module('../assets/js/toys-data.js', () => ({
-      default: [
-        {
-          slug: 'module-toy',
-          title: 'Module Test',
-          module: './__mocks__/fake-module.js',
-          type: 'module',
-          requiresWebGPU: false,
-        },
-      ],
-    }));
-
-    ({ loadToy } = await freshImport(loaderModule));
-    const location = createMockLocation('http://example.com/library');
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      configurable: true,
-      value: location,
-    });
-    Object.defineProperty(window, 'history', {
-      writable: true,
-      configurable: true,
-      value: createMockHistory(location),
-    });
-  });
-
-  afterEach(() => {
-    mock.restore();
-    document.body.innerHTML = '';
-    delete global.fetch;
-    Object.defineProperty(global, 'navigator', {
-      writable: true,
-      configurable: true,
-      value: originalNavigator,
-    });
-    delete globalThis.__activeWebToy;
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      configurable: true,
-      value: originalLocation,
-    });
-    Object.defineProperty(window, 'history', {
-      writable: true,
-      configurable: true,
-      value: originalHistory,
-    });
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+    expect(manifestClient.resolveModulePath).toHaveBeenCalledWith('./__mocks__/fake-module.js');
+    expect(window.location.search).toBe('');
   });
 
   test('renders and wires a Back to Library control', async () => {
-    await loadToy('module-toy', { pushState: true });
+    const { loader } = await buildLoader({ locationHref: 'http://example.com/library' });
+
+    await loader.loadToy('brand', { pushState: true });
 
     const backControl = document.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
+    expect(window.location.search).toBe('?toy=brand');
 
-    globalThis.__activeWebToy = { dispose: mock() };
-
-    backControl.click();
+    backControl?.dispatchEvent(new Event('click', { bubbles: true }));
 
     expect(globalThis.__activeWebToy).toBeUndefined();
     expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
@@ -183,94 +132,87 @@ describe('active toy navigation affordance', () => {
 });
 
 describe('WebGPU requirements', () => {
-  beforeEach(() => {
-    mock.restore();
-    document.body.innerHTML = '<div id="toy-list"></div>';
+  test('shows capability error instead of loading module toy', async () => {
     Object.defineProperty(global, 'navigator', {
       writable: true,
       configurable: true,
       value: {},
     });
-    global.fetch = mock(() => Promise.resolve({ ok: false }));
-    mock.module('../assets/js/utils/webgl-check.ts', () => ({ ensureWebGL: () => true }));
-  });
 
-  afterEach(() => {
-    mock.restore();
-    document.body.innerHTML = '';
-    delete global.fetch;
-    Object.defineProperty(global, 'navigator', {
-      writable: true,
-      configurable: true,
-      value: originalNavigator,
-    });
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      configurable: true,
-      value: originalLocation,
-    });
-    Object.defineProperty(window, 'history', {
-      writable: true,
-      configurable: true,
-      value: originalHistory,
-    });
-  });
-
-  test('shows capability error instead of loading module toy', async () => {
-    mock.module('../assets/js/toys-data.js', () => ({
-      default: [
+    const { loader } = await buildLoader({
+      toys: [
         {
           slug: 'webgpu-toy',
           title: 'Fancy WebGPU',
-          module: 'assets/js/toys/example.ts',
+          module: './__mocks__/fake-module.js',
           type: 'module',
           requiresWebGPU: true,
+          allowWebGLFallback: false,
         },
       ],
-    }));
+    });
 
-    const { loadToy } = await freshImport(loaderModule);
-    await loadToy('webgpu-toy', { pushState: true });
+    await loader.loadToy('webgpu-toy', { pushState: true });
 
     const status = document.querySelector('.active-toy-status.is-error');
     expect(status?.querySelector('h2')?.textContent).toContain('WebGPU not available');
-    expect(window.location.href).toBe(originalLocation.href);
+    expect(window.location.search).toBe('');
+  });
+
+  test('continues when WebGL fallback is allowed', async () => {
+    Object.defineProperty(global, 'navigator', {
+      writable: true,
+      configurable: true,
+      value: {},
+    });
+
+    const { loader } = await buildLoader({
+      toys: [
+        {
+          slug: 'webgpu-toy',
+          title: 'Fancy WebGPU',
+          module: './__mocks__/fake-module.js',
+          type: 'module',
+          requiresWebGPU: true,
+          allowWebGLFallback: true,
+        },
+      ],
+    });
+
+    await loader.loadToy('webgpu-toy');
+
+    const continueButton = document.querySelector('.active-toy-actions .cta-button.primary');
+    expect(continueButton).not.toBeNull();
+
+    continueButton?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    // eslint-disable-next-line no-undef
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+    expect(document.querySelector('.active-toy-status')).toBeNull();
   });
 });
 
-describe('resolveModulePath', () => {
-  const moduleEntry = 'assets/js/toys/example.ts';
+describe('loadFromQuery routing', () => {
+  test('loads from existing query param', async () => {
+    const { loader, location } = await buildLoader({
+      locationHref: 'http://example.com/library?toy=brand',
+    });
 
-  beforeEach(() => {
-    mock.restore();
-    global.window = { location: { origin: 'http://example.com' } };
+    await loader.loadFromQuery();
+
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+    expect(location.search).toBe('?toy=brand');
   });
 
-  afterEach(() => {
-    mock.restore();
-    delete global.fetch;
-    global.window = originalWindow;
-  });
+  test('returns to library when query param is missing', async () => {
+    const { loader } = await buildLoader({ locationHref: 'http://example.com/library' });
 
-  test('uses manifest entry when available', async () => {
-    const manifest = {
-      [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
-    };
-    global.fetch = mock(() => Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) }));
+    await loader.loadFromQuery();
 
-    const { resolveModulePath } = await freshImport(loaderModule);
-    const modulePath = await resolveModulePath(moduleEntry);
-
-    expect(global.fetch).toHaveBeenCalledWith('/.vite/manifest.json');
-    expect(modulePath).toBe('/assets/js/toys/example.123.js');
-  });
-
-  test('falls back when manifest is missing', async () => {
-    global.fetch = mock(() => Promise.resolve({ ok: false }));
-
-    const { resolveModulePath } = await freshImport(loaderModule);
-    const modulePath = await resolveModulePath(moduleEntry);
-
-    expect(modulePath).toBe('/assets/js/toys/example.ts');
+    expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
+    const activeContainer = document.querySelector('.active-toy-container');
+    expect(!activeContainer || activeContainer.classList.contains('is-hidden')).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { initNavigation, loadToy, loadFromQuery } from './loader.js';
+import { initNavigation, loadToy, loadFromQuery } from './loader.ts';
 import { createLibraryView } from './library-view.js';
 import toysData from './toys-data.js';
 

@@ -1,7 +1,7 @@
 /* global GPUAdapter, GPUDevice, GPU */
 import * as THREE from 'three';
 import WebGPURenderer from 'three/src/renderers/webgpu/WebGPURenderer.js';
-import { ensureWebGL } from '../utils/webgl-check.js';
+import { ensureWebGL } from '../utils/webgl-check.ts';
 
 type RendererBackend = 'webgl' | 'webgpu';
 

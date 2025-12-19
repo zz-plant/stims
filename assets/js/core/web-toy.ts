@@ -8,7 +8,7 @@ import {
 } from './renderer-setup.ts';
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
 import { initAudio } from '../utils/audio-handler.ts';
-import { ensureWebGL } from '../utils/webgl-check.js';
+import { ensureWebGL } from '../utils/webgl-check.ts';
 
 export default class WebToy {
   canvas: HTMLCanvasElement;

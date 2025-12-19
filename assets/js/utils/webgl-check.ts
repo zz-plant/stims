@@ -2,33 +2,27 @@ import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
 
 const OVERLAY_ID = 'rendering-capability-overlay';
 
-/**
- * @typedef {Object} TroubleshootingLink
- * @property {string} label
- * @property {string} href
- */
+type TroubleshootingLink = {
+  label: string;
+  href: string;
+};
 
-/**
- * @typedef {Object} OverlayContent
- * @property {string} title
- * @property {string} description
- * @property {string[]} steps
- * @property {TroubleshootingLink[]} links
- * @property {string} previewLabel
- */
+type OverlayContent = {
+  title: string;
+  description: string;
+  steps: string[];
+  links: TroubleshootingLink[];
+  previewLabel: string;
+};
 
-/**
- * Remove any previously rendered capability overlay.
- */
+type EnsureOptions = Partial<Pick<OverlayContent, 'title' | 'description' | 'previewLabel'>>;
+
 function removeExistingOverlay() {
   const existing = typeof document !== 'undefined' ? document.getElementById(OVERLAY_ID) : null;
   existing?.remove();
 }
 
-/**
- * @param {OverlayContent} content
- */
-function buildOverlay(content) {
+function buildOverlay(content: OverlayContent) {
   if (typeof document === 'undefined') return null;
 
   const overlay = document.createElement('div');
@@ -92,10 +86,7 @@ function buildOverlay(content) {
   return overlay;
 }
 
-/**
- * @param {OverlayContent} content
- */
-function addCapabilityOverlay(content) {
+function addCapabilityOverlay(content: OverlayContent) {
   if (typeof document === 'undefined' || typeof document.body === 'undefined') {
     return;
   }
@@ -115,19 +106,8 @@ function addCapabilityOverlay(content) {
   }
 }
 
-/**
- * @typedef {Partial<Pick<OverlayContent, 'title' | 'description' | 'previewLabel'>>} EnsureOptions
- */
-
-/**
- * Ensure the current environment supports WebGL or WebGPU.
- * If not, show an overlay explaining what to do.
- * @param {EnsureOptions} [options]
- * @returns {boolean}
- */
-export function ensureWebGL(options = {}) {
-  /** @type {OverlayContent} */
-  const defaultContent = {
+export function ensureWebGL(options: EnsureOptions = {}) {
+  const defaultContent: OverlayContent = {
     title: 'WebGL or WebGPU is required',
     description:
       'This visual needs GPU acceleration to draw its 3D graphics. Update your browser or enable hardware acceleration to continue.',
@@ -143,14 +123,19 @@ export function ensureWebGL(options = {}) {
     previewLabel: 'Static preview (visuals paused without GPU support)',
   };
 
-  const content = { ...defaultContent, ...options, steps: defaultContent.steps, links: defaultContent.links };
+  const content: OverlayContent = {
+    ...defaultContent,
+    ...options,
+    steps: defaultContent.steps,
+    links: defaultContent.links,
+  };
 
   if (typeof navigator === 'undefined' || typeof document === 'undefined') {
     return false;
   }
 
   const hasWebGPU = Boolean(navigator?.gpu);
-  const hasWebGL = typeof WebGL !== 'undefined' && WebGL.isWebGLAvailable();
+  const hasWebGL = typeof WebGL !== 'undefined' && (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
 
   if (hasWebGPU || hasWebGL) {
     removeExistingOverlay();
