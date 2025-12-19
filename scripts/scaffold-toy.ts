@@ -67,6 +67,10 @@ export async function scaffoldToy({
   createTest = false,
   root = repoRoot,
 }: Required<Omit<ScaffoldOptions, 'root'>> & { root?: string }) {
+  if (await fileExists(toyModulePath(slug, root))) {
+    throw new Error(`A toy module already exists for slug "${slug}".`);
+  }
+
   await createToyModule(slug, title, type, root);
   await appendToyMetadata(slug, title, description, type, root);
   await updateToyIndex(slug, type, root);
