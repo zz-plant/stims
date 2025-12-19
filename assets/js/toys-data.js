@@ -200,4 +200,24 @@ export default [
     requiresWebGPU: false,
     controls: ['Pattern density slider', 'Palette switches'],
   },
+  {
+    slug: 'tactile-sand-table',
+    title: 'Tactile Sand Table',
+    description:
+      'Heightfield sand ripples that respond to bass, mids, and device tilt.',
+    module: 'assets/js/toys/tactile-sand-table.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    controls: ['Grain size slider', 'Damping slider', 'Gravity lock toggle'],
+    },
+ {   
+    slug: 'bioluminescent-tidepools',
+    title: 'Bioluminescent Tidepools',
+    description:
+      'Sketch glowing currents that bloom with high-frequency sparkle from your music.',
+    module: 'assets/js/toys/bioluminescent-tidepools.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    controls: ['Trail length', 'Glow strength', 'Current speed'],
+  },
 ];
