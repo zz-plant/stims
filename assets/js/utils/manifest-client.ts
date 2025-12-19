@@ -26,7 +26,9 @@ function resolveBaseUrl(input?: BaseUrlInput): URL | null {
   }
 
   try {
-    return typeof input === 'string' ? new URL(input) : input;
+    const parsed = typeof input === 'string' ? new URL(input) : input;
+    if (parsed?.protocol === 'about:' || parsed?.protocol === 'null:') return null;
+    return parsed;
   } catch (error) {
     console.warn('Unable to parse base URL', error);
     return null;
@@ -34,8 +36,12 @@ function resolveBaseUrl(input?: BaseUrlInput): URL | null {
 }
 
 function resolveFromBase(baseUrl: URL | null, path: string) {
-  if (baseUrl) {
-    return new URL(path, baseUrl).pathname;
+  if (baseUrl && baseUrl.protocol !== 'about:') {
+    try {
+      return new URL(path, baseUrl).pathname;
+    } catch (error) {
+      console.warn('Unable to resolve manifest path from base URL', error);
+    }
   }
 
   return path.replace(/^\.\//, '/');
@@ -59,6 +65,16 @@ function resolveFallbackPath(entry: string, baseUrl: URL | null) {
   }
 
   return entry.startsWith('/') || entry.startsWith('.') ? entry : `/${entry}`;
+}
+
+function tryResolveUrl(target: string, base: string | URL | null) {
+  if (!base) return null;
+
+  try {
+    return new URL(target, base).pathname;
+  } catch {
+    return null;
+  }
 }
 
 export function createManifestClient({
@@ -101,12 +117,19 @@ export function createManifestClient({
       const compiledFile = manifestEntry.file || manifestEntry.url;
       if (compiledFile) {
         const base = getBaseUrl();
-        if (base) {
-          return new URL(compiledFile, base).pathname;
+        const resolvedFromBase = tryResolveUrl(compiledFile, base);
+        if (resolvedFromBase) {
+          return resolvedFromBase;
         }
 
-        if (typeof window !== 'undefined' && window.location?.origin) {
-          return new URL(compiledFile, window.location.origin).pathname;
+        const origin =
+          typeof window !== 'undefined' && window.location?.origin !== 'null'
+            ? window.location?.origin
+            : null;
+
+        const resolvedFromOrigin = tryResolveUrl(compiledFile, origin);
+        if (resolvedFromOrigin) {
+          return resolvedFromOrigin;
         }
 
         return compiledFile.startsWith('/') ? compiledFile : `/${compiledFile}`;

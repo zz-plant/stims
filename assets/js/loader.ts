@@ -3,6 +3,7 @@ import { createRouter } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import { createManifestClient } from './utils/manifest-client.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
+import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 
 type Toy = {
   slug: string;
@@ -14,10 +15,6 @@ type Toy = {
 };
 
 const TOY_QUERY_PARAM = 'toy';
-
-function hasWebGPUSupport() {
-  return typeof navigator !== 'undefined' && Boolean(navigator.gpu);
-}
 
 function disposeActiveToy(view?: ReturnType<typeof createToyView>) {
   const activeToy = (globalThis as typeof globalThis & { __activeWebToy?: { dispose?: () => void } }).__activeWebToy;
@@ -39,12 +36,14 @@ export function createLoader({
   router = createRouter({ queryParam: TOY_QUERY_PARAM }),
   view = createToyView(),
   ensureWebGLCheck = ensureWebGL,
+  rendererCapabilities = getRendererCapabilities,
   toys = toysData as Toy[],
 }: {
   manifestClient?: ReturnType<typeof createManifestClient>;
   router?: ReturnType<typeof createRouter>;
   view?: ReturnType<typeof createToyView>;
   ensureWebGLCheck?: typeof ensureWebGL;
+  rendererCapabilities?: typeof getRendererCapabilities;
   toys?: Toy[];
 } = {}) {
   let navigationInitialized = false;
@@ -56,6 +55,8 @@ export function createLoader({
   };
 
   const startModuleToy = async (toy: Toy, pushState: boolean) => {
+    const capabilities = await rendererCapabilities();
+
     const supportsRendering = ensureWebGLCheck({
       title: toy.title ? `${toy.title} needs graphics acceleration` : 'Graphics support required',
       description:
@@ -123,10 +124,11 @@ export function createLoader({
       view.removeStatusElement();
     };
 
-    if (toy.requiresWebGPU && !hasWebGPUSupport()) {
+    if (toy.requiresWebGPU && capabilities.preferredBackend !== 'webgpu') {
       view.showCapabilityError(toy, {
         allowFallback: toy.allowWebGLFallback,
         onBack: backToLibrary,
+        details: capabilities.fallbackReason,
         onContinue: toy.allowWebGLFallback
           ? () => {
               view.clearActiveToyContainer();
@@ -134,10 +136,6 @@ export function createLoader({
             }
           : undefined,
       });
-
-      if (!toy.allowWebGLFallback) {
-        return;
-      }
 
       return;
     }

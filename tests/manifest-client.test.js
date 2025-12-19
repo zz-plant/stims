@@ -1,8 +1,12 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { createManifestClient } from '../assets/js/utils/manifest-client.ts';
 
 describe('manifest client', () => {
   const moduleEntry = 'assets/js/toys/example.ts';
+
+  afterEach(() => {
+    mock.restore();
+  });
 
   test('uses manifest entry with provided base URL', async () => {
     const manifest = {
@@ -27,5 +31,22 @@ describe('manifest client', () => {
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(modulePath).toBe('/assets/js/toys/example.ts');
+  });
+
+  test('caches manifest retrieval across resolutions', async () => {
+    const manifest = {
+      [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
+    };
+
+    const fetchImpl = mock(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) })
+    );
+
+    const client = createManifestClient({ fetchImpl });
+
+    await client.resolveModulePath(moduleEntry);
+    await client.resolveModulePath(moduleEntry);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
