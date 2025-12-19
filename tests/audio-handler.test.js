@@ -135,6 +135,8 @@ describe('audio-handler utilities', () => {
     } else {
       delete global.AudioWorkletNode;
     }
+
+    mock.restore();
   });
 
   test('initAudio resolves with analyser and listener', async () => {
