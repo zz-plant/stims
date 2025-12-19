@@ -67,6 +67,8 @@ class PersistentSettingsPanel {
   private qualityChangeHandler?: (preset: QualityPreset) => void;
   private sectionHost: HTMLDivElement;
   private qualityStorageKey: string = QUALITY_STORAGE_KEY;
+  private qualityListeners = new Set<(preset: QualityPreset) => void>();
+  private selectedQualityPreset: QualityPreset | null = null;
 
   constructor() {
     this.container = document.createElement('div');
@@ -195,7 +197,32 @@ class PersistentSettingsPanel {
     if (!preset) return;
 
     getStorage()?.setItem(this.qualityStorageKey, preset.id);
+    this.selectedQualityPreset = preset;
     this.qualityChangeHandler?.(preset);
+    this.qualityListeners.forEach((listener) => {
+      try {
+        listener(preset);
+      } catch (error) {
+        console.error('Quality preset listener failed', error);
+      }
+    });
+  }
+
+  getSelectedQualityPreset(defaultPresetId = 'balanced') {
+    if (this.selectedQualityPreset) return this.selectedQualityPreset;
+    const fallbackPreset = this.getInitialPreset(defaultPresetId);
+    this.selectedQualityPreset = fallbackPreset;
+    return fallbackPreset;
+  }
+
+  onQualityPresetChange(callback: (preset: QualityPreset) => void) {
+    this.qualityListeners.add(callback);
+    if (this.selectedQualityPreset) {
+      callback(this.selectedQualityPreset);
+    }
+    return () => {
+      this.qualityListeners.delete(callback);
+    };
   }
 }
 

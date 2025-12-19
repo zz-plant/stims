@@ -6,6 +6,10 @@ const FREQUENCY_ANALYSER_PROCESSOR = new URL(
   './frequency-analyser-processor.ts',
   import.meta.url
 );
+type DemoTrackHandle = {
+  stream: MediaStream;
+  cleanup: () => void;
+};
 
 export class FrequencyAnalyser {
   frequencyBinCount: number;
@@ -127,6 +131,93 @@ export class FrequencyAnalyser {
     this.sourceNode.disconnect();
     this.silentGain.disconnect();
   }
+}
+
+let demoTrackBufferPromise: Promise<AudioBuffer> | null = null;
+
+async function getDemoTrackBuffer(): Promise<AudioBuffer> {
+  if (!demoTrackBufferPromise) {
+    const sampleRate = 48000;
+    const durationSeconds = 8;
+    const totalFrames = durationSeconds * sampleRate;
+    const offline = new OfflineAudioContext(1, totalFrames, sampleRate);
+    const buffer = offline.createBuffer(1, totalFrames, sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < totalFrames; i += 1) {
+      const t = i / sampleRate;
+      const base = Math.sin(2 * Math.PI * 180 * t) * 0.36;
+      const harmonic = Math.sin(2 * Math.PI * 360 * t + Math.sin(t * 0.6) * 0.9) * 0.24;
+      const shimmer = Math.sin(2 * Math.PI * 40 * t) * 0.08;
+      const beat = Math.sin(2 * Math.PI * 1.25 * t) * 0.45 + 0.55;
+      const fade = Math.min(1, Math.min(t / 0.35, (durationSeconds - t) / 0.6));
+      data[i] = (base + harmonic + shimmer) * beat * fade;
+    }
+
+    const source = offline.createBufferSource();
+    source.buffer = buffer;
+    source.connect(offline.destination);
+    source.start();
+
+    demoTrackBufferPromise = offline.startRendering().catch((error) => {
+      demoTrackBufferPromise = null;
+      throw error;
+    });
+  }
+
+  return demoTrackBufferPromise;
+}
+
+export async function createDemoTrackStream(): Promise<DemoTrackHandle> {
+  const AudioContextConstructor =
+    (globalThis as typeof globalThis & { AudioContext?: typeof AudioContext }).AudioContext ??
+    (globalThis as typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+  if (typeof AudioContextConstructor !== 'function') {
+    throw new Error('Web Audio is not available in this environment.');
+  }
+
+  const buffer = await getDemoTrackBuffer();
+  const context = new AudioContextConstructor();
+  const destination = context.createMediaStreamDestination();
+  const outputGain = context.createGain();
+  outputGain.gain.value = 0.9;
+  outputGain.connect(destination);
+  outputGain.connect(context.destination);
+
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  source.connect(outputGain);
+  source.start();
+
+  if (context.state === 'suspended') {
+    await context.resume();
+  }
+
+  const cleanup = () => {
+    try {
+      source.stop();
+    } catch (error) {
+      console.debug('Error stopping demo track source', error);
+    }
+
+    try {
+      source.disconnect();
+      outputGain.disconnect();
+      destination.disconnect();
+    } catch (error) {
+      console.debug('Error disconnecting demo track nodes', error);
+    }
+
+    if (context.state !== 'closed') {
+      context.close().catch((contextError) => {
+        console.debug('Error closing demo track AudioContext', contextError);
+      });
+    }
+  };
+
+  return { stream: destination.stream, cleanup };
 }
 
 async function queryMicrophonePermissionState(): Promise<PermissionState | undefined> {

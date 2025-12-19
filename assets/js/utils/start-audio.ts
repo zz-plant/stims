@@ -1,7 +1,11 @@
 import type WebToy from '../core/web-toy';
 import { AnimationContext, startAudioLoop } from '../core/animation-loop';
 import type { AudioInitOptions } from './audio-handler';
-import { AudioAccessError, createSyntheticAudioStream } from './audio-handler';
+import {
+  AudioAccessError,
+  createDemoTrackStream,
+  createSyntheticAudioStream,
+} from './audio-handler';
 
 type StartAudioOptions =
   | (AudioInitOptions & {
@@ -29,41 +33,54 @@ export async function startToyAudio(
   const { fallbackToSynthetic, preferSynthetic, ...audioOptions } =
     normalizeOptions(options);
 
-  if (preferSynthetic) {
+  const startWithStream = async (
+    streamFactory: () => Promise<{ stream: MediaStream; cleanup: () => void }>
+  ) => {
+    const source = await streamFactory();
+    return startAudioLoop(toy, animate, {
+      ...audioOptions,
+      stream: source.stream,
+      onCleanup: (ctx) => {
+        source.cleanup();
+        audioOptions.onCleanup?.(ctx);
+      },
+    });
+  };
+
+  const tryDemoTrack = async () => {
+    try {
+      return await startWithStream(() => createDemoTrackStream());
+    } catch (error) {
+      console.warn('Demo track unavailable; falling back to synthetic audio', error);
+      return null;
+    }
+  };
+
+  const startSynthetic = async () => {
     const synthetic = createSyntheticAudioStream();
-
-    const syntheticCleanup = () => {
-      synthetic.cleanup();
-    };
-
     return startAudioLoop(toy, animate, {
       ...audioOptions,
       stream: synthetic.stream,
       onCleanup: (ctx) => {
-        syntheticCleanup();
+        synthetic.cleanup();
         audioOptions.onCleanup?.(ctx);
       },
     });
+  };
+
+  if (preferSynthetic) {
+    const demo = await tryDemoTrack();
+    if (demo) return demo;
+    return startSynthetic();
   }
 
   try {
     return await startAudioLoop(toy, animate, audioOptions);
   } catch (error) {
     if (fallbackToSynthetic && error instanceof AudioAccessError) {
-      const synthetic = createSyntheticAudioStream();
-
-      const syntheticCleanup = () => {
-        synthetic.cleanup();
-      };
-
-      return startAudioLoop(toy, animate, {
-        ...audioOptions,
-        stream: synthetic.stream,
-        onCleanup: (ctx) => {
-          syntheticCleanup();
-          audioOptions.onCleanup?.(ctx);
-        },
-      });
+      const demo = await tryDemoTrack();
+      if (demo) return demo;
+      return startSynthetic();
     }
 
     console.error('Microphone access denied', error);

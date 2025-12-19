@@ -11,6 +11,15 @@ export type RendererCapabilities = {
   shouldRetryWebGPU: boolean;
 };
 
+export type RendererCapabilitySummary = {
+  backendLabel: string;
+  description: string;
+  fallbackDetail: string | null;
+  shouldRetryWebGPU: boolean;
+  triedWebGPU: boolean;
+  preferredBackend: RendererBackend;
+};
+
 type FallbackOptions = {
   triedWebGPU?: boolean;
   shouldRetryWebGPU?: boolean;
@@ -153,6 +162,32 @@ export async function getRendererCapabilities({ forceRetry = false } = {}) {
   }
 
   return capabilitiesPromise;
+}
+
+export function describeRendererCapabilities(
+  capabilities: RendererCapabilities
+): RendererCapabilitySummary {
+  const backendLabel = capabilities.preferredBackend === 'webgpu' ? 'WebGPU' : 'WebGL';
+  const fallbackDetail =
+    capabilities.preferredBackend === 'webgl'
+      ? capabilities.fallbackReason
+        ? `WebGPU unavailable: ${capabilities.fallbackReason}`
+        : 'Using WebGL renderer.'
+      : null;
+
+  const description =
+    capabilities.preferredBackend === 'webgpu'
+      ? 'WebGPU active'
+      : fallbackDetail ?? 'WebGL fallback';
+
+  return {
+    backendLabel,
+    description,
+    fallbackDetail,
+    shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
+    triedWebGPU: capabilities.triedWebGPU,
+    preferredBackend: capabilities.preferredBackend,
+  };
 }
 
 export function getCachedRendererCapabilities() {

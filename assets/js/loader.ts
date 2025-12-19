@@ -3,7 +3,16 @@ import { createRouter } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import { createManifestClient } from './utils/manifest-client.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
-import { getRendererCapabilities } from './core/renderer-capabilities.ts';
+import {
+  describeRendererCapabilities,
+  getRendererCapabilities,
+  resetRendererCapabilities,
+} from './core/renderer-capabilities.ts';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+  type QualityPreset,
+} from './core/settings-panel.ts';
 
 type Toy = {
   slug: string;
@@ -37,6 +46,7 @@ export function createLoader({
   view = createToyView(),
   ensureWebGLCheck = ensureWebGL,
   rendererCapabilities = getRendererCapabilities,
+  settingsPanel = getSettingsPanel(),
   toys = toysData as Toy[],
 }: {
   manifestClient?: ReturnType<typeof createManifestClient>;
@@ -44,14 +54,68 @@ export function createLoader({
   view?: ReturnType<typeof createToyView>;
   ensureWebGLCheck?: typeof ensureWebGL;
   rendererCapabilities?: typeof getRendererCapabilities;
+  settingsPanel?: ReturnType<typeof getSettingsPanel>;
   toys?: Toy[];
 } = {}) {
   let navigationInitialized = false;
+  let currentQualityPreset: QualityPreset | null = null;
+  let currentToySlug: string | null = null;
+
+  const applyQualityPresetToActiveToy = (preset: QualityPreset | null) => {
+    if (!preset) return;
+    const activeToy = (globalThis as typeof globalThis & { __activeWebToy?: unknown }).__activeWebToy;
+    if (!activeToy) return;
+
+    if (typeof activeToy === 'object' && activeToy && 'setQualityPreset' in activeToy) {
+      const setter = (activeToy as { setQualityPreset?: unknown }).setQualityPreset;
+      if (typeof setter === 'function') {
+        setter.call(activeToy, preset);
+        return;
+      }
+    }
+
+    if (typeof activeToy === 'object' && activeToy && 'updateRendererSettings' in activeToy) {
+      const updater = (activeToy as { updateRendererSettings?: unknown }).updateRendererSettings;
+      if (typeof updater === 'function') {
+        updater.call(activeToy, {
+          maxPixelRatio: preset.maxPixelRatio,
+          renderScale: preset.renderScale,
+        });
+      }
+      return;
+    }
+  };
+
+  const handleQualityPresetChange = (preset: QualityPreset) => {
+    currentQualityPreset = preset;
+    applyQualityPresetToActiveToy(preset);
+  };
+
+  settingsPanel.onQualityPresetChange(handleQualityPresetChange);
+  settingsPanel.setQualityPresets({ presets: DEFAULT_QUALITY_PRESETS });
+
+  const renderRendererStatus = async (
+    capabilities?: Awaited<ReturnType<typeof rendererCapabilities>>
+  ) => {
+    const resolvedCapabilities = capabilities ?? (await rendererCapabilities());
+    if (!view.updateRendererStatus) return;
+
+    view.updateRendererStatus(describeRendererCapabilities(resolvedCapabilities), {
+      onRetry: resolvedCapabilities.shouldRetryWebGPU
+        ? () => {
+            if (!currentToySlug) return;
+            resetRendererCapabilities();
+            void loadToy(currentToySlug, { pushState: false });
+          }
+        : undefined,
+    });
+  };
 
   const backToLibrary = () => {
     disposeActiveToy(view);
     view.showLibraryView();
     router.goToLibrary();
+    currentToySlug = null;
   };
 
   const startModuleToy = async (toy: Toy, pushState: boolean) => {
@@ -68,9 +132,11 @@ export function createLoader({
     }
 
     disposeActiveToy(view);
+    currentToySlug = toy.slug;
 
     const container = view.showActiveToyView(backToLibrary);
     if (!container) return;
+    void renderRendererStatus(capabilities);
 
     let navigated = false;
     const commitNavigation = () => {
@@ -108,12 +174,21 @@ export function createLoader({
         (moduleExports as { default?: { start?: unknown } })?.default?.start;
       const starter = typeof startCandidate === 'function' ? startCandidate : null;
 
+      const presetForToy = currentQualityPreset ?? settingsPanel.getSelectedQualityPreset();
+      const particleScale = presetForToy?.particleScale ?? 1;
+
       if (starter) {
         try {
-          const active = await starter({ container, slug: toy.slug });
+          const active = await starter({
+            container,
+            slug: toy.slug,
+            qualityPreset: presetForToy,
+            particleScale,
+          });
           if (active && !(globalThis as { __activeWebToy?: unknown }).__activeWebToy) {
             (globalThis as { __activeWebToy?: unknown }).__activeWebToy = active;
           }
+          applyQualityPresetToActiveToy(presetForToy);
         } catch (error) {
           console.error('Error starting toy module:', error);
           view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });
@@ -122,6 +197,7 @@ export function createLoader({
       }
 
       view.removeStatusElement();
+      void renderRendererStatus();
     };
 
     if (toy.requiresWebGPU && capabilities.preferredBackend !== 'webgpu') {
@@ -150,6 +226,7 @@ export function createLoader({
       backToLibrary();
       return;
     }
+    currentToySlug = slug;
 
     if (toy.type === 'module') {
       await startModuleToy(toy, pushState);

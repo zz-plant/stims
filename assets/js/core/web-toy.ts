@@ -9,6 +9,7 @@ import {
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
 import { initAudio } from '../utils/audio-handler.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
+import type { QualityPreset } from './settings-panel.ts';
 
 export default class WebToy {
   canvas: HTMLCanvasElement;
@@ -19,6 +20,7 @@ export default class WebToy {
   rendererInfo: RendererInitResult | null;
   rendererReady: Promise<RendererInitResult | null>;
   rendererOptions: RendererInitConfig;
+  qualityPreset: QualityPreset | null;
   analyser: THREE.AudioAnalyser | null;
   audioListener: THREE.AudioListener | null;
   audio: THREE.Audio | THREE.PositionalAudio | null;
@@ -33,6 +35,7 @@ export default class WebToy {
     lightingOptions = null,
     ambientLightOptions = null,
     canvas = null,
+    qualityPreset = null,
   } = {}) {
     if (!ensureWebGL()) {
       throw new Error('WebGL not supported');
@@ -49,8 +52,16 @@ export default class WebToy {
     this.renderer = null;
     this.rendererBackend = null;
     this.rendererInfo = null;
-    this.rendererOptions = rendererOptions;
-    this.rendererReady = initRenderer(this.canvas, rendererOptions);
+    this.qualityPreset = qualityPreset;
+    const initialRendererOptions = this.qualityPreset
+      ? {
+          ...rendererOptions,
+          maxPixelRatio: this.qualityPreset.maxPixelRatio,
+          renderScale: this.qualityPreset.renderScale,
+        }
+      : rendererOptions;
+    this.rendererOptions = initialRendererOptions;
+    this.rendererReady = initRenderer(this.canvas, initialRendererOptions);
     this.rendererReady
       .then((result) => {
         this.rendererInfo = result;
@@ -59,10 +70,14 @@ export default class WebToy {
         if (result) {
           this.rendererOptions = {
             ...this.rendererOptions,
-            maxPixelRatio: result.maxPixelRatio,
-            renderScale: result.renderScale,
+            maxPixelRatio: this.qualityPreset?.maxPixelRatio ?? result.maxPixelRatio,
+            renderScale: this.qualityPreset?.renderScale ?? result.renderScale,
             exposure: result.exposure,
           };
+          if (this.qualityPreset) {
+            this.rendererOptions.maxPixelRatio = this.qualityPreset.maxPixelRatio;
+            this.rendererOptions.renderScale = this.qualityPreset.renderScale;
+          }
           this.applyRendererSettings();
         }
       })
@@ -120,6 +135,24 @@ export default class WebToy {
   updateRendererSettings(options: Partial<RendererInitConfig>) {
     this.rendererOptions = { ...this.rendererOptions, ...options };
     this.applyRendererSettings();
+  }
+
+  setQualityPreset(preset: QualityPreset | null) {
+    this.qualityPreset = preset;
+    if (preset) {
+      this.updateRendererSettings({
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+    }
+  }
+
+  getQualityPreset() {
+    return this.qualityPreset;
+  }
+
+  getParticleScale() {
+    return this.qualityPreset?.particleScale ?? 1;
   }
 
   async initAudio(options = {}) {

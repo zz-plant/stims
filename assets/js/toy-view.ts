@@ -18,6 +18,13 @@ type CapabilityOptions = {
   details?: string | null;
 };
 
+type RendererStatus = {
+  backendLabel: string;
+  description: string;
+  fallbackDetail?: string | null;
+  shouldRetryWebGPU?: boolean;
+};
+
 type ImportErrorOptions = {
   moduleUrl?: string;
   importError?: Error;
@@ -127,6 +134,8 @@ export function createToyView({
     return container;
   };
 
+  let rendererStatusElement: HTMLElement | null = null;
+
   const ensureBackControl = (container: HTMLElement | null, onBack?: () => void) => {
     const doc = getDocument();
     if (!doc || !container) return null;
@@ -143,6 +152,54 @@ export function createToyView({
 
     container.appendChild(control);
     return control;
+  };
+
+  const renderRendererStatus = (
+    status: RendererStatus | null,
+    { onRetry }: { onRetry?: () => void } = {}
+  ) => {
+    const doc = getDocument();
+    const container = ensureActiveToyContainer();
+    if (!doc || !container) return null;
+
+    if (!rendererStatusElement) {
+      rendererStatusElement = doc.createElement('div');
+      rendererStatusElement.className = 'renderer-status';
+      container.appendChild(rendererStatusElement);
+    }
+
+    rendererStatusElement.replaceChildren();
+
+    if (!status) return rendererStatusElement;
+
+    const pill = doc.createElement('div');
+    pill.className = 'renderer-status__pill';
+    pill.dataset.backend = status.backendLabel.toLowerCase();
+
+    const label = doc.createElement('span');
+    label.className = 'renderer-status__label';
+    label.textContent = 'Renderer';
+
+    const backend = doc.createElement('strong');
+    backend.textContent = status.backendLabel;
+    pill.append(label, backend);
+
+    const detail = doc.createElement('div');
+    detail.className = 'renderer-status__detail';
+    detail.textContent = status.fallbackDetail ?? status.description;
+
+    rendererStatusElement.append(pill, detail);
+
+    if (status.shouldRetryWebGPU && onRetry) {
+      const retry = doc.createElement('button');
+      retry.type = 'button';
+      retry.className = 'renderer-status__retry';
+      retry.textContent = 'Retry WebGPU';
+      retry.addEventListener('click', () => onRetry());
+      rendererStatusElement.appendChild(retry);
+    }
+
+    return rendererStatusElement;
   };
 
   const showLibraryView = () => {
@@ -256,7 +313,14 @@ export function createToyView({
     showImportError,
     showCapabilityError,
     removeStatusElement,
-    clearActiveToyContainer: () => clearElement(findActiveToyContainer()),
+    clearActiveToyContainer: () => {
+      clearElement(findActiveToyContainer());
+      rendererStatusElement = null;
+    },
     ensureActiveToyContainer,
+    updateRendererStatus: (
+      status: RendererStatus | null,
+      options: { onRetry?: () => void } = {}
+    ) => renderRendererStatus(status, options),
   };
 }
