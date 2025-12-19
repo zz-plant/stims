@@ -9,6 +9,23 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 - Load toys through `toy.html?toy=<slug>` or a dedicated HTML entry point. Keep query string slugs in sync with `toys-data.js`.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
 
+## Add-and-test checklist (fast path)
+
+Use this sequence when you want to stand up a fresh toy quickly:
+
+1. **Create a module** in `assets/js/toys/<slug>.ts` using the starter template below. Export `start({ container, canvas?, audioContext? })`. Prefer `canvas` from the loader if you need a fullscreen surface; otherwise mount your own elements inside `container`.
+2. **Register the slug** in `assets/js/toys-data.js` with a short title/description. Set `requiresWebGPU` or `allowWebGLFallback` if you depend on WebGPU features.
+3. **Launch locally** with `bun run dev` and visit `http://localhost:5173/toy.html?toy=<slug>` to verify the manifest entry resolves and the loader shows your toy card.
+4. **Run quick tests** before opening a PR:
+   - `bun test tests/loader.test.js` (loader + capability checks)
+   - `bun test tests/app-shell.test.js` (library shell wiring)
+   - Add a focused spec for any pure helpers you introduce (e.g., easing/color math) in `tests/`.
+5. **Manual spot-checks**:
+   - Confirm the Back to Library control returns to the grid and removes your DOM nodes (cleanup).
+   - Verify microphone permission flows (granted, denied, and sample-audio fallback) if you request audio.
+   - For WebGPU toys, confirm the fallback/warning screen appears on non-WebGPU browsers.
+6. **Document any special controls** inside your module (inline comments) or in a short note in `README.md` if they differ from other toys.
+
 ## Starter Template
 
 Use this skeleton for new toys to standardize lifecycle hooks and cleanup:
