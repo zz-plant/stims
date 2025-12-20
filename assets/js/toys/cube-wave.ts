@@ -11,6 +11,7 @@ import { startToyAudio } from '../utils/start-audio';
 import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
+  getActiveQualityPreset,
   type QualityPreset,
 } from '../core/settings-panel';
 
@@ -75,9 +76,10 @@ const toy = new WebToy({
 const gridGroup = new THREE.Group();
 const gridItems: GridItem[] = [];
 
-let activeQuality: QualityPreset = DEFAULT_QUALITY_PRESETS.find(
-  (preset) => preset.id === 'balanced'
-)!;
+let activeQuality: QualityPreset = getActiveQualityPreset({
+  presets: DEFAULT_QUALITY_PRESETS,
+  defaultPresetId: 'balanced',
+});
 
 const presets: Record<ShapeMode, GridPreset> = {
   cubes: {
