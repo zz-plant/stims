@@ -28,6 +28,7 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
 | Run test suite | `bun test` (`npm run test` proxies to Bun) |
 | Lint | `bun run lint` (`npm run lint`) |
 | Format with Prettier | `bun run format` (`npm run format`) |
+| Type check without emit | `bun run typecheck` (`npm run typecheck`) |
 
 When debugging a single test file, run:
 ```bash
@@ -86,4 +87,3 @@ bun test tests/filename.test.js
 - `bun run build` completes without errors. (`npm run build` is available if you’re on Node.)
 - Verify the generated `dist/` assets load via `bun run preview` or a simple static server. (`npm run preview` remains a fallback.)
 - Spot-check microphone prompts and toy selection flows in the production build.
-
