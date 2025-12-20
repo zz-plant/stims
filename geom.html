@@ -49,6 +49,7 @@
       import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
       import { clearError, showError } from './assets/js/utils/error-display.ts';
       import { startToyAudio } from './assets/js/utils/start-audio.ts';
+      import { setupIframeQualitySync } from './assets/js/core/iframe-quality-sync.ts';
 
       const canvas = document.getElementById('gameCanvas');
       const ctx = canvas.getContext('2d');
@@ -56,14 +57,31 @@
 
       let viewWidth = window.innerWidth;
       let viewHeight = window.innerHeight;
+      let resizeCleanup = null;
+      let activeQuality = null;
+      const baseDensity = 0.6;
 
-      setupCanvasResize(canvas, ctx, {
-        maxPixelRatio: 2,
-        onResize: ({ cssWidth, cssHeight }) => {
-          viewWidth = cssWidth;
-          viewHeight = cssHeight;
-        },
-      });
+      function applyQualityPreset(preset) {
+        activeQuality = preset;
+        const effectivePixelRatio =
+          Math.min(window.devicePixelRatio || 1, preset.maxPixelRatio) *
+          (preset.renderScale ?? 1);
+
+        resizeCleanup?.();
+        resizeCleanup = setupCanvasResize(canvas, ctx, {
+          maxPixelRatio: effectivePixelRatio,
+          onResize: ({ cssWidth, cssHeight }) => {
+            viewWidth = cssWidth;
+            viewHeight = cssHeight;
+          },
+        });
+
+        const densityScale = Math.max(baseDensity, preset.particleScale ?? 1);
+        particleCount = Math.max(200, Math.round(baseParticleCount * densityScale));
+        rebuildParticles();
+      }
+
+      setupIframeQualitySync(applyQualityPreset);
 
       class CanvasToy {
         constructor(canvasEl) {
@@ -112,11 +130,8 @@
       const toy = new CanvasToy(canvas);
 
       const particles = [];
-      const particleCount = 800;
-
-      for (let i = 0; i < particleCount; i++) {
-        particles.push(createParticle());
-      }
+      const baseParticleCount = 800;
+      let particleCount = baseParticleCount;
 
       function createParticle() {
         return {
@@ -132,6 +147,13 @@
           rotation: Math.random() * 360,
           angularVelocity: (Math.random() - 0.5) * 2,
         };
+      }
+
+      function rebuildParticles() {
+        particles.length = 0;
+        for (let i = 0; i < particleCount; i++) {
+          particles.push(createParticle());
+        }
       }
 
       function animate(ctxAudio) {
