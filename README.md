@@ -201,6 +201,18 @@ bun run test:watch
 
 Before committing, run `bun run lint` to check code style and `bun run format` to automatically format your files. If you’re on Node, the `npm run lint` and `npm run format` fallbacks are available. This keeps the project consistent.
 
+## Cloudflare Pages (Bun) build & deploy
+
+Cloudflare Pages can build this project with Bun using the `wrangler.toml` in the repo root. Key settings:
+
+- Build command: `bun run build`
+- Build output directory: `dist/` (set via `pages_build_output_dir` in `wrangler.toml`)
+- Set the `BUN_VERSION` environment variable (for example, `BUN_VERSION=1.2.14`) in your Pages project so the hosted runtime matches local installs.
+- Enable Pages’ **Bun runtime** so the build runs under Bun instead of Node.
+- The `compatibility_date` in `wrangler.toml` keeps Pages aligned with the Cloudflare Workers API version.
+
+To verify the preview locally, run `bun run build` and inspect the generated `dist/` folder; it matches the assets Pages will serve when the Bun runtime is enabled and the build output directory is `dist/`.
+
 ## Contributing
 
 If you run into a problem or want to propose an improvement, please use the GitHub issue templates so we get the details we need:
