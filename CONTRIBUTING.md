@@ -27,9 +27,9 @@ If you’re using Node as a fallback, run `npm run dev` instead.
 
 - Run all tests:
   ```bash
-  bun test
+  bun run test
   ```
-  (`npm run test` proxies to Bun when available.)
+  Always invoke the script so the pinned `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags apply, loading happy-dom globals and a Three.js stub needed for headless specs. (`npm test` proxies to the same script when available.)
 - Run the Bun test runner with filters (for example, targeting specific files):
   ```bash
   bun test tests/path/to/spec.test.js
