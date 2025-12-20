@@ -195,13 +195,28 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
     }
   };
 
-  startButton?.addEventListener('click', () => runRequest('microphone'));
-  fallbackButton?.addEventListener('click', () => runRequest('sample'));
+  const handleStartClick = () => {
+    void runRequest('microphone');
+  };
+
+  const handleFallbackClick = () => {
+    void runRequest('sample');
+  };
+
+  startButton?.addEventListener('click', handleStartClick);
+  fallbackButton?.addEventListener('click', handleFallbackClick);
+
+  const dispose = () => {
+    startButton?.removeEventListener('click', handleStartClick);
+    fallbackButton?.removeEventListener('click', handleFallbackClick);
+  };
 
   return {
     startMicrophoneRequest: () => runRequest('microphone'),
     startSampleAudio: () => runRequest('sample'),
     setStatus: (message: string, variant: FlowStatus = 'info') =>
       setStatus(statusElement, message, variant),
+    dispose,
+    teardown: dispose,
   };
 }
