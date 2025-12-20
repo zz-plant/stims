@@ -23,7 +23,7 @@
     {
       "label": "bun:test",
       "type": "shell",
-      "command": "bun test",
+      "command": "bun run test",
       "problemMatcher": []
     }
   ]
