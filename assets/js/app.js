@@ -40,6 +40,8 @@ function createLightsExperience({
   let patternRecognizer = null;
   /** @type {'microphone' | 'sample' | null} */
   let audioMode = null;
+  /** @type {ReturnType<typeof setupMicrophonePermissionFlow> | null} */
+  let microphoneFlow = null;
 
   const elements = {
     startButton: doc?.getElementById('start-audio-btn'),
@@ -297,7 +299,10 @@ function createLightsExperience({
 
     await initializeToy();
 
-    setupMicrophonePermissionFlow({
+    microphoneFlow?.dispose?.();
+    microphoneFlow = null;
+
+    microphoneFlow = setupMicrophonePermissionFlow({
       startButton: elements.startButton,
       fallbackButton: elements.fallbackButton,
       statusElement: elements.statusElement,
@@ -324,6 +329,8 @@ function createLightsExperience({
   };
 
   const dispose = () => {
+    microphoneFlow?.dispose?.();
+    microphoneFlow = null;
     cleanupAudio();
     clearAnimationLoop();
     elements.lightSelect?.removeEventListener('change', handleLightChange);
