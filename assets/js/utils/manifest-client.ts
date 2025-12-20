@@ -114,13 +114,18 @@ export function createManifestClient({
       })();
     }
 
-    const manifest = await manifestPromise;
+    try {
+      const manifest = await manifestPromise;
 
-    if (manifest === null) {
+      if (manifest === null) {
+        manifestPromise = null;
+      }
+
+      return manifest;
+    } catch (error) {
       manifestPromise = null;
+      throw error;
     }
-
-    return manifest;
   };
 
   const resolveModulePath = async (entry: string) => {
