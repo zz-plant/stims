@@ -607,7 +607,8 @@ body {
   cursor: pointer;
 }
 
-.control-panel select {
+.control-panel select,
+.control-panel__select {
   background: linear-gradient(135deg, rgba(16, 24, 40, 0.9), rgba(11, 17, 29, 0.92));
   color: #e9fbff;
   border: 1px solid rgba(111, 247, 255, 0.8);
@@ -619,7 +620,89 @@ body {
   box-shadow: 0 0 14px rgba(17, 216, 255, 0.25), inset 0 0 12px rgba(255, 0, 153, 0.18);
 }
 
-.control-panel select:focus {
+.control-panel select:focus,
+.control-panel__select:focus {
+  outline: 2px solid rgba(255, 0, 153, 0.65);
+  outline-offset: 2px;
+  box-shadow: 0 0 18px rgba(255, 0, 153, 0.4), 0 0 10px rgba(111, 247, 255, 0.35);
+}
+
+.control-panel input[type='range'],
+.control-panel__slider {
+  appearance: none;
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(17, 216, 255, 0.16), rgba(255, 0, 153, 0.12));
+  border: 1px solid rgba(111, 247, 255, 0.65);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.55), 0 0 14px rgba(17, 216, 255, 0.25);
+  cursor: pointer;
+  flex: 1;
+}
+
+.control-panel input[type='range']:focus-visible,
+.control-panel__slider:focus-visible {
+  outline: 2px solid rgba(255, 0, 153, 0.65);
+  outline-offset: 3px;
+  box-shadow: 0 0 18px rgba(255, 0, 153, 0.4), 0 0 10px rgba(111, 247, 255, 0.35);
+}
+
+.control-panel input[type='range']::-webkit-slider-runnable-track,
+.control-panel__slider::-webkit-slider-runnable-track {
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(17, 216, 255, 0.18), rgba(255, 0, 153, 0.14));
+  border: 1px solid rgba(111, 247, 255, 0.55);
+}
+
+.control-panel input[type='range']::-webkit-slider-thumb,
+.control-panel__slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9), rgba(17, 216, 255, 0.8));
+  border: 1px solid rgba(111, 247, 255, 0.85);
+  box-shadow: 0 0 16px rgba(17, 216, 255, 0.5), 0 0 8px rgba(255, 0, 153, 0.25);
+  margin-top: -4px;
+}
+
+.control-panel input[type='range']::-moz-range-track,
+.control-panel__slider::-moz-range-track {
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(17, 216, 255, 0.18), rgba(255, 0, 153, 0.14));
+  border: 1px solid rgba(111, 247, 255, 0.55);
+}
+
+.control-panel input[type='range']::-moz-range-thumb,
+.control-panel__slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9), rgba(17, 216, 255, 0.8));
+  border: 1px solid rgba(111, 247, 255, 0.85);
+  box-shadow: 0 0 16px rgba(17, 216, 255, 0.5), 0 0 8px rgba(255, 0, 153, 0.25);
+}
+
+.control-panel__checkbox-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(111, 247, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #e9fbff;
+}
+
+.control-panel__checkbox-inline input[type='checkbox'] {
+  margin: 0;
+}
+
+.control-panel__checkbox-inline:focus-within {
   outline: 2px solid rgba(255, 0, 153, 0.65);
   outline-offset: 2px;
   box-shadow: 0 0 18px rgba(255, 0, 153, 0.4), 0 0 10px rgba(111, 247, 255, 0.35);
