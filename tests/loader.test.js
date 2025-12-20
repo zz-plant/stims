@@ -4,12 +4,21 @@ import { createToyView } from '../assets/js/toy-view.ts';
 
 const loaderModule = '../assets/js/loader.ts';
 const capabilitiesModule = '../assets/js/core/renderer-capabilities.ts';
+const renderServiceModule = '../assets/js/core/services/render-service.ts';
+const audioServiceModule = '../assets/js/core/services/audio-service.ts';
 const originalLocation = window.location;
 const originalHistory = window.history;
 const originalNavigator = global.navigator;
 
 const freshLoader = async () => {
   mock.module(capabilitiesModule, () => capabilitiesMock);
+  mock.module(renderServiceModule, () => ({
+    prewarmRendererCapabilities: servicesMock.prewarmRendererCapabilities,
+  }));
+  mock.module(audioServiceModule, () => ({
+    prewarmMicrophone: servicesMock.prewarmMicrophone,
+    resetAudioPool: servicesMock.resetAudioPool,
+  }));
   return (await import(`${loaderModule}?t=${Date.now()}-${Math.random()}`)).createLoader;
 };
 
@@ -23,6 +32,11 @@ const defaultCapabilities = {
 };
 
 let capabilitiesMock;
+const servicesMock = {
+  prewarmRendererCapabilities: mock(),
+  prewarmMicrophone: mock(),
+  resetAudioPool: mock(),
+};
 
 function createMockLocation(href) {
   const url = new URL(href);
@@ -101,6 +115,9 @@ beforeEach(() => {
     resetRendererCapabilities: mock(),
     getCachedRendererCapabilities: mock(() => defaultCapabilities),
   };
+  servicesMock.prewarmRendererCapabilities.mockReset();
+  servicesMock.prewarmMicrophone.mockReset();
+  servicesMock.resetAudioPool.mockReset();
 });
 
 afterEach(() => {
@@ -149,6 +166,7 @@ describe('loadToy', () => {
     expect(globalThis.__activeWebToy).toBeUndefined();
     expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
     expect(window.location.search).toBe('');
+    expect(servicesMock.resetAudioPool).toHaveBeenCalled();
   });
 });
 
