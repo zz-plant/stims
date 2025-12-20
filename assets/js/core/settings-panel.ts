@@ -284,6 +284,19 @@ let singletonPanel: PersistentSettingsPanel | null = null;
 export function getSettingsPanel() {
   if (!singletonPanel) {
     singletonPanel = new PersistentSettingsPanel();
+  } else if (!document.body.contains(singletonPanel.getElement())) {
+    document.body.appendChild(singletonPanel.getElement());
   }
   return singletonPanel;
+}
+
+export function resetSettingsPanelState(options: { removePanel?: boolean } = {}) {
+  activeQualityPreset = null;
+  activeQualityPresetStorageKey = null;
+  qualitySubscribers.clear();
+
+  if (options.removePanel && singletonPanel) {
+    singletonPanel.getElement().remove();
+    singletonPanel = null;
+  }
 }
