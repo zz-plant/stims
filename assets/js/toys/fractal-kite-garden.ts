@@ -236,6 +236,7 @@ function createControls() {
   densityInput.max = '1';
   densityInput.step = '0.05';
   densityInput.value = settings.density.toString();
+  densityInput.className = 'control-panel__slider';
   densityInput.addEventListener('input', () => {
     settings.density = Number(densityInput.value);
     buildGarden();
