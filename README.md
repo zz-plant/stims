@@ -163,6 +163,7 @@ All JavaScript dependencies are installed via npm (or Bun) and bundled locally w
 - `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
 - `bun run lint`: Check code quality with ESLint. (`npm run lint` is an optional fallback.)
 - `bun run format`: Format files with Prettier. (`npm run format` is an optional fallback.)
+- `bun run typecheck`: Run TypeScript’s type checker without emitting files. (`npm run typecheck` is an optional fallback.)
 - `bun run scripts/scaffold-toy.ts`: Interactive (or flag-driven) scaffolder that prompts for a slug/title/type, creates a starter module from [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), appends metadata to `assets/js/toys-data.js`, updates `docs/TOY_SCRIPT_INDEX.md`, and can optionally drop a minimal Bun spec. Pass flags such as `--slug ripple-orb --title "Ripple Orb" --type module --with-test` for non-interactive runs.
 - `bun run serve:dist`: Serve the `dist/` build with Bun (preferred for local production previews).
 
