@@ -83,27 +83,68 @@ export function createManifestClient({
 }: { fetchImpl?: FetchImpl; baseUrl?: BaseUrlInput } = {}) {
   const getBaseUrl = () => resolveBaseUrl(baseUrl);
   let manifestPromise: Promise<Record<string, ManifestEntry> | null> | null = null;
+  let failureCount = 0;
+  let nextRetryAfter = 0;
 
   const getManifestPaths = () => buildManifestPaths(getBaseUrl());
 
+  const resetBackoff = () => {
+    failureCount = 0;
+    nextRetryAfter = 0;
+  };
+
+  const scheduleBackoff = () => {
+    failureCount += 1;
+
+    if (failureCount === 1) {
+      nextRetryAfter = 0;
+      return;
+    }
+
+    const delay = Math.min(2 ** (failureCount - 2) * 100, 2000);
+    nextRetryAfter = Date.now() + delay;
+  };
+
   const fetchManifest = async () => {
     if (!manifestPromise) {
-      manifestPromise = (async () => {
+      if (nextRetryAfter && Date.now() < nextRetryAfter) {
+        return null;
+      }
+
+      const pendingManifest = (async () => {
         const paths = getManifestPaths();
 
         for (const path of paths) {
           try {
             const response = await fetchImpl?.(path);
+
             if (response?.ok) {
-              return response.json();
+              try {
+                const manifest = await response.json();
+                resetBackoff();
+                return manifest;
+              } catch (error) {
+                console.warn('Error parsing manifest from', path, error);
+              }
             }
           } catch (error) {
             console.warn('Error fetching manifest from', path, error);
           }
         }
 
+        scheduleBackoff();
         return null;
       })();
+
+      manifestPromise = pendingManifest;
+
+      const manifest = await pendingManifest;
+
+      if (!manifest) {
+        manifestPromise = null;
+      }
+
+      return manifest;
     }
 
     return manifestPromise;

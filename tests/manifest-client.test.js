@@ -49,4 +49,31 @@ describe('manifest client', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
+
+  test('retries after failed manifest fetch and uses new manifest', async () => {
+    const manifest = {
+      [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
+    };
+
+    let callCount = 0;
+    const fetchImpl = mock(() => {
+      callCount += 1;
+
+      if (callCount <= 2) {
+        return Promise.resolve({ ok: false });
+      }
+
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) });
+    });
+
+    const client = createManifestClient({ fetchImpl, baseUrl: 'http://example.com/' });
+
+    const fallbackPath = await client.resolveModulePath(moduleEntry);
+    expect(fallbackPath).toBe('/assets/js/toys/example.ts');
+
+    const resolvedPath = await client.resolveModulePath(moduleEntry);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(resolvedPath).toBe('/assets/js/toys/example.123.js');
+  });
 });
