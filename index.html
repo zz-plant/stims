@@ -73,6 +73,29 @@
               <p class="cta-helper">
               No installs or accounts. Code and contribution notes live on GitHub.
             </p>
+            <div class="repo-status" data-repo-status aria-live="polite">
+              <div class="repo-status__header">
+                <p class="eyebrow">Project health</p>
+                <p class="repo-status__title">GitHub status</p>
+                <p class="repo-status__description">
+                  Latest stats for <span class="repo-status__repo-name">zz-plant/stims</span>
+                  with live stars and recent activity.
+                </p>
+              </div>
+              <dl class="repo-status__metrics">
+                <div class="repo-status__metric">
+                  <dt>Stars</dt>
+                  <dd data-star-count aria-label="Stargazers">—</dd>
+                </div>
+                <div class="repo-status__metric">
+                  <dt>Last push</dt>
+                  <dd data-last-commit aria-label="Last commit date">—</dd>
+                </div>
+              </dl>
+              <p class="repo-status__message" data-status-fallback hidden role="status" aria-live="polite">
+                Loading GitHub stats…
+              </p>
+            </div>
             <ul class="hero-highlights">
               <li><span aria-hidden="true">🪩</span> Audio-reactive scenes and tactile controls.</li>
               <li><span aria-hidden="true">⚡</span> Zero-install links that open instantly.</li>
