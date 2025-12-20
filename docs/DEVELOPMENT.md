@@ -16,13 +16,14 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
   bun run dev
   ```
   If you’re on Node, use `npm run dev` instead.
-  The site serves from `http://localhost:5173`.
+  The site serves from `http://localhost:5173`. For LAN/mobile testing, start the server with `bun run dev:host` (or `npm run dev:host`) to bind Vite to all interfaces.
 
 ## Common Scripts (Bun-first)
 
 | Task | Command (Bun / optional Node fallback) |
 | ---- | ------------------------------------- |
 | Start dev server | `bun run dev` (`npm run dev`) |
+| Start dev server (LAN) | `bun run dev:host` (`npm run dev:host`) |
 | Production build | `bun run build` (`npm run build`) |
 | Preview build locally | `bun run preview` (`npm run preview`) |
 | Run test suite | `bun run test` (`npm test` proxies to Bun) |
