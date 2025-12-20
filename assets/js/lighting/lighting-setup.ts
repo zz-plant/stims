@@ -1,8 +1,7 @@
-import {
+import type {
   AmbientLight,
   DirectionalLight,
   HemisphereLight,
-  Light,
   PointLight,
   Scene,
   SpotLight,
@@ -21,16 +20,22 @@ export interface AmbientLightConfig {
   intensity?: number;
 }
 
-// Initialize a point light with configurable options
-type ThreeLighting = {
+type LightingModule = {
   DirectionalLight: typeof DirectionalLight;
   SpotLight: typeof SpotLight;
   HemisphereLight: typeof HemisphereLight;
   PointLight: typeof PointLight;
 };
 
+type AmbientLightingModule = {
+  AmbientLight: typeof AmbientLight;
+};
+
+type SceneLike = Pick<Scene, 'add'>;
+type LightingInstance = InstanceType<LightingModule[keyof LightingModule]>;
+
 export function initLighting(
-  scene: Scene,
+  scene: SceneLike,
   config: LightConfig = {
     type: 'PointLight',
     color: 0xffffff,
@@ -38,12 +43,7 @@ export function initLighting(
     position: { x: 10, y: 10, z: 10 },
     castShadow: false,
   },
-  lighting: ThreeLighting = {
-    DirectionalLight,
-    SpotLight,
-    HemisphereLight,
-    PointLight,
-  }
+  lighting: LightingModule
 ): void {
   const {
     type = 'PointLight',
@@ -54,7 +54,7 @@ export function initLighting(
   } = config ?? {};
 
   const { x, y, z } = { x: 10, y: 10, z: 10, ...(position ?? {}) };
-  let light: Light;
+  let light: LightingInstance;
 
   switch (type) {
     case 'DirectionalLight':
@@ -87,9 +87,10 @@ export function initLighting(
 }
 
 export function initAmbientLight(
-  scene: Scene,
-  config: AmbientLightConfig = { color: 0x404040, intensity: 0.5 }
+  scene: SceneLike,
+  config: AmbientLightConfig = { color: 0x404040, intensity: 0.5 },
+  lighting: AmbientLightingModule
 ): void {
-  const ambientLight = new AmbientLight(config.color, config.intensity);
+  const ambientLight = new lighting.AmbientLight(config.color, config.intensity);
   scene.add(ambientLight);
 }

@@ -71,10 +71,10 @@ export default class WebToy {
       });
 
     if (ambientLightOptions) {
-      initAmbientLight(this.scene, ambientLightOptions);
+      initAmbientLight(this.scene, ambientLightOptions, THREE);
     }
     if (lightingOptions) {
-      initLighting(this.scene, lightingOptions);
+      initLighting(this.scene, lightingOptions, THREE);
     }
 
     this.analyser = null;

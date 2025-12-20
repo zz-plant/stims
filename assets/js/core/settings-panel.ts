@@ -59,6 +59,7 @@ export const QUALITY_STORAGE_KEY = 'stims:quality-preset';
 
 const qualitySubscribers = new Set<QualitySubscriber>();
 let activeQualityPreset: QualityPreset | null = null;
+let activeQualityPresetStorageKey: string | null = null;
 
 function getStorage(): Storage | null {
   try {
@@ -92,12 +93,13 @@ export function getActiveQualityPreset({
   defaultPresetId = 'balanced',
   storageKey = QUALITY_STORAGE_KEY,
 }: StoredPresetOptions = {}): QualityPreset {
-  if (activeQualityPreset) {
+  if (activeQualityPreset && activeQualityPresetStorageKey === storageKey) {
     const match = presets.find((preset) => preset.id === activeQualityPreset?.id);
     if (match) return match;
   }
 
   activeQualityPreset = getStoredQualityPreset({ presets, defaultPresetId, storageKey });
+  activeQualityPresetStorageKey = storageKey;
   return activeQualityPreset;
 }
 
@@ -135,6 +137,10 @@ class PersistentSettingsPanel {
     this.container.appendChild(this.sectionHost);
 
     document.body.appendChild(this.container);
+  }
+
+  getElement() {
+    return this.container;
   }
 
   configure(config: PanelConfig = {}) {
@@ -267,6 +273,7 @@ class PersistentSettingsPanel {
 
     getStorage()?.setItem(this.qualityStorageKey, preset.id);
     activeQualityPreset = preset;
+    activeQualityPresetStorageKey = this.qualityStorageKey;
     qualitySubscribers.forEach((subscriber) => subscriber(preset));
     this.qualityChangeHandler?.(preset);
   }
