@@ -27,6 +27,9 @@ All tools are registered on the `stim-webtoys-mcp` server name and use zod-based
 - **`dev_commands`**
   - **Input:** optional `scope` enum (`setup`, `dev`, `build`, `test`, `lint`) to narrow the result.
   - **Output:** `text` response containing the requested setup or workflow commands from `README.md`. Without a scope, the tool returns all development snippets.
+- **`agent_workflow`**
+  - **Input:** none.
+  - **Output:** `text` list of best practices for MCP-driven development in this repository, including when to use other tools and how to keep context fresh.
 
 ## Inputs, outputs, and client expectations
 

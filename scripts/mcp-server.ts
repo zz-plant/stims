@@ -135,6 +135,28 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  'agent_workflow',
+  {
+    description:
+      'Surface best practices for MCP-driven development in this repo, including quick context and tool usage tips.',
+    inputSchema: z.object({}).strict(),
+  },
+  async () => {
+    const guidance = [
+      '- Run `bun run mcp` from the repository root so README and toy metadata are available to tools.',
+      '- Start with `list_docs` to pull quick-start, runtime, layout, and toy catalog context before making changes.',
+      '- Use `dev_commands` with scopes (setup, dev, build, test, lint) to copy-paste the exact commands for your workflow.',
+      '- Call `get_toys` with `slug` or `requiresWebGPU` when you need precise toy metadata for docs or debugging.',
+      '- Reach for `describe_loader` when investigating loader behavior, entry resolution, or WebGPU gating.',
+      '- Keep the repo synchronized with Bun installs and Vite artifacts (manifest) when testing loader paths.',
+      '- Use the MCP outputs as citations in PRs or reviews so changes reference specific README sections or toy data.',
+    ];
+
+    return asTextResponse(guidance.join('\n'));
+  },
+);
+
 const transport = new StdioServerTransport();
 await server.connect(transport);
 console.error('Stim Webtoys MCP server is running on stdio.');
