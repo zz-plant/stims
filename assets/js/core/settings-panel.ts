@@ -48,6 +48,13 @@ type QualityOptions = {
   storageKey?: string;
 };
 
+type ToggleOptions = {
+  label: string;
+  description?: string;
+  defaultValue?: boolean;
+  onChange?: (checked: boolean) => void;
+};
+
 export const QUALITY_STORAGE_KEY = 'stims:quality-preset';
 
 const qualitySubscribers = new Set<QualitySubscriber>();
@@ -114,6 +121,7 @@ class PersistentSettingsPanel {
   private qualityChangeHandler?: (preset: QualityPreset) => void;
   private sectionHost: HTMLDivElement;
   private qualityStorageKey: string = QUALITY_STORAGE_KEY;
+  private toggleCount = 0;
 
   constructor() {
     this.container = document.createElement('div');
@@ -224,6 +232,25 @@ class PersistentSettingsPanel {
     row.append(text, actions);
     this.sectionHost.appendChild(row);
     return actions;
+  }
+
+  addToggle(options: ToggleOptions) {
+    const { label, description, defaultValue = false, onChange } = options;
+    const actions = this.addSection(label, description);
+    actions.classList.add('control-panel__actions--inline');
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = defaultValue;
+
+    const toggleId = `settings-toggle-${this.toggleCount++}`;
+    input.id = toggleId;
+    input.setAttribute('aria-label', label);
+
+    input.addEventListener('change', () => onChange?.(input.checked));
+
+    actions.appendChild(input);
+    return input;
   }
 
   private getInitialPreset(defaultPresetId: string): QualityPreset {
