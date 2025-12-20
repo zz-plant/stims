@@ -14,7 +14,7 @@ Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what
    - **Bun 1.2+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle.
    - **Node.js 22** (see `.nvmrc`): still supported for Vite and general tooling if you prefer npm.
 3. Install dependencies with `bun install` (preferred). The repository tracks `bun.lock` for reproducible installs—use `bun install --frozen-lockfile` to respect it. If you use npm, run `npm install` locally; a `package-lock.json` will be generated but is not committed.
-4. Start the dev server with `npm run dev` or `bun run dev`, then open `http://localhost:5173` in your browser.
+4. Start the dev server with `npm run dev` or `bun run dev`, then open `http://localhost:5173` in your browser. If you need to load the dev server from another device on your network (for mobile checks), use `bun run dev:host` (or `npm run dev:host`) to bind the Vite server to all interfaces.
 
 ## Getting Started
 
@@ -157,6 +157,7 @@ All JavaScript dependencies are installed via npm (or Bun) and bundled locally w
 ### Helpful Scripts (Bun-first)
 
 - `bun run dev`: Start the Vite development server for local exploration. (`npm run dev` works if you’re on Node.)
+- `bun run dev:host`: Start the Vite dev server bound to your LAN interface for quick mobile/device testing. (`npm run dev:host` works if you’re on Node.)
 - `bun run build`: Produce a production build in `dist/`. (`npm run build` is available as a fallback.)
 - `bun run preview`: Serve the production build locally (Vite preview with `--host` for LAN testing) to validate the output before deploying. (`npm run preview` is the Node fallback.)
 - `bun run test`: Run the Bun-native test suite with the required `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags applied. These load happy-dom globals and a Three.js stub so specs run headlessly. `npm test` proxies to the same script when you’re on Node.
