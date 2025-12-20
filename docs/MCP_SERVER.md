@@ -1,6 +1,6 @@
 # MCP stdio server guide
 
-The repository includes a Model Context Protocol (MCP) stdio server at [`scripts/mcp-server.ts`](../scripts/mcp-server.ts). It exposes documentation, toy metadata, loader behavior, and development command references so MCP-compatible clients can retrieve structured information without scraping markdown.
+The repository includes a Model Context Protocol (MCP) stdio server at [`scripts/mcp-server.ts`](../scripts/mcp-server.ts) and a Cloudflare Worker transport at [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). Both expose documentation, toy metadata, loader behavior, and development command references so MCP-compatible clients can retrieve structured information without scraping markdown.
 
 ## Starting the server
 
@@ -42,3 +42,37 @@ All tools are registered on the `stim-webtoys-mcp` server name and use zod-based
 - **Manifest resolution:** The loader summary references `/.vite/manifest.json`; when discussing loader behavior with `describe_loader`, ensure a Vite dev server or build has produced the manifest so paths resolve correctly.
 - **Slug filters:** If `get_toys` returns “No toys matched the requested filters,” double-check the slug in `assets/js/toys-data.js` or omit filters to retrieve the full catalog.
 - **Client invocation:** MCP clients must launch `bun run mcp` in the repository root; running elsewhere can block access to `README.md`, the toy data file, or the Vite manifest.
+
+## Cloudflare Worker deployment
+
+[`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts) serves the same tools over Streamable HTTP (POST requests for JSON-RPC, GET + `text/event-stream` for streaming responses) and WebSocket upgrades on the `/mcp` route. The worker bundles markdown and toy metadata at build time via `?raw` imports, so it does not rely on file system access in production.
+
+- **Schema validation:** Uses `CfWorkerJsonSchemaValidator` from `@modelcontextprotocol/sdk/validation/cfworker` (peer dependency: `@cfworker/json-schema`).
+- **Bindings:** No KV, D1, or other bindings are required.
+
+### `wrangler.toml` example
+
+```toml
+name = "stim-webtoys-mcp"
+main = "scripts/mcp-worker.ts"
+compatibility_date = "2025-02-20"
+workers_dev = true
+compatibility_flags = ["nodejs_compat"]
+```
+
+### Deploying
+
+1. Install dependencies (`bun install`), ensuring `@cfworker/json-schema` is available for the Worker build.
+2. Deploy with Wrangler:
+   ```bash
+   bunx wrangler deploy
+   ```
+3. Local preview (Worker fetch + WebSocket support):
+   ```bash
+   bunx wrangler dev
+   ```
+
+### Client endpoints
+
+- **HTTP/SSE:** `https://<worker-name>.<account>.workers.dev/mcp` (or your mapped custom domain) handles POST requests for JSON-RPC and GET requests with `Accept: text/event-stream` for streaming responses. CORS headers are set to `*` for interoperability.
+- **WebSocket:** `wss://<worker-name>.<account>.workers.dev/mcp` accepts WebSocket upgrades for clients that prefer a persistent connection.
