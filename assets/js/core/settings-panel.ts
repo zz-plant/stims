@@ -153,7 +153,12 @@ class PersistentSettingsPanel {
       this.description = undefined;
     }
 
+    this.clearSections();
+  }
+
+  clearSections() {
     this.sectionHost.replaceChildren();
+    this.toggleCount = 0;
   }
 
   setQualityPresets(options: QualityOptions = {}) {
@@ -259,6 +264,10 @@ class PersistentSettingsPanel {
       defaultPresetId,
       storageKey: this.qualityStorageKey,
     });
+  }
+
+  getElement(): HTMLDivElement {
+    return this.container;
   }
 
   private handleQualityChange(presetId: string) {
