@@ -5,6 +5,8 @@ const windowInstance = new Window();
 globalThis.window = windowInstance as unknown as Window & typeof globalThis.window;
 globalThis.document = windowInstance.document;
 globalThis.navigator = windowInstance.navigator;
+globalThis.localStorage = windowInstance.localStorage;
+globalThis.sessionStorage = windowInstance.sessionStorage;
 
 // Align commonly used globals
 globalThis.HTMLElement = windowInstance.HTMLElement as typeof HTMLElement;
