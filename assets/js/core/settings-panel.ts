@@ -170,6 +170,9 @@ class PersistentSettingsPanel {
       storageKey = QUALITY_STORAGE_KEY,
     } = options;
 
+    const hadActivePreset =
+      !!activeQualityPreset && activeQualityPresetStorageKey === storageKey;
+
     this.qualityStorageKey = storageKey;
     this.qualityPresets = presets;
     this.qualityChangeHandler = onChange;
@@ -211,7 +214,10 @@ class PersistentSettingsPanel {
 
     const initialPreset = this.getInitialPreset(defaultPresetId);
     this.qualitySelect.value = initialPreset.id;
-    this.handleQualityChange(initialPreset.id);
+
+    if (!hadActivePreset) {
+      this.handleQualityChange(initialPreset.id);
+    }
   }
 
   addSection(title: string, description?: string): HTMLDivElement {

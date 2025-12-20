@@ -172,6 +172,8 @@ export type AudioInitOptions = {
     audio: THREE.Audio | THREE.PositionalAudio;
     stream?: MediaStream;
   }) => void;
+  stopStreamOnCleanup?: boolean;
+  closeContextOnCleanup?: boolean;
 };
 
 export function createSyntheticAudioStream({
@@ -320,6 +322,8 @@ export async function initAudio(options: AudioInitOptions = {}) {
     constraints,
     stream,
     onCleanup,
+    stopStreamOnCleanup = true,
+    closeContextOnCleanup = true,
   } = options;
 
   let listener: THREE.AudioListener | null = null;
@@ -406,7 +410,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
 
       analyser?.disconnect();
 
-      if (streamSource) {
+      if (streamSource && stopStreamOnCleanup) {
         streamSource.getTracks().forEach((track) => track.stop());
       }
 
@@ -416,7 +420,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
         ).remove(listener);
       }
 
-      if (listener?.context?.close) {
+      if (listener?.context?.close && closeContextOnCleanup) {
         listener.context.close();
       }
 
@@ -446,7 +450,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
       resolvedStream.getTracks().forEach((track) => track.stop());
     }
 
-    if (listener?.context?.close) {
+    if (listener?.context?.close && closeContextOnCleanup) {
       listener.context.close();
     }
 

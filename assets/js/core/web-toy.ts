@@ -1,30 +1,34 @@
 import * as THREE from 'three';
 import { initScene } from './scene-setup.ts';
 import { initCamera } from './camera-setup.ts';
-import {
-  initRenderer,
-  type RendererInitConfig,
-  type RendererInitResult,
-} from './renderer-setup.ts';
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
-import { initAudio } from '../utils/audio-handler.ts';
+import {
+  requestRenderer,
+  type RendererHandle,
+} from './services/render-service.ts';
+import {
+  acquireAudioHandle,
+  type AudioHandle,
+} from './services/audio-service.ts';
+import type { RendererInitConfig } from './renderer-setup.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 
 export default class WebToy {
   canvas: HTMLCanvasElement;
   scene: THREE.Scene;
   camera: THREE.Camera;
-  renderer: RendererInitResult['renderer'] | null;
-  rendererBackend: RendererInitResult['backend'] | null;
-  rendererInfo: RendererInitResult | null;
-  rendererReady: Promise<RendererInitResult | null>;
-  rendererOptions: RendererInitConfig;
+  renderer: RendererHandle['renderer'] | null;
+  rendererBackend: RendererHandle['backend'] | null;
+  rendererInfo: RendererHandle['info'] | null;
+  rendererReady: Promise<RendererHandle | null>;
+  rendererOptions: Parameters<typeof requestRenderer>[0]['options'];
   analyser: THREE.AudioAnalyser | null;
   audioListener: THREE.AudioListener | null;
   audio: THREE.Audio | THREE.PositionalAudio | null;
   audioStream: MediaStream | null;
-  audioCleanup: (() => void) | null;
+  audioHandle: AudioHandle | null;
   resizeHandler: (() => void) | null;
+  rendererHandle: RendererHandle | null;
 
   constructor({
     cameraOptions = {},
@@ -38,36 +42,29 @@ export default class WebToy {
       throw new Error('WebGL not supported');
     }
 
+    const host = document.getElementById('active-toy-container') || document.body;
     this.canvas = canvas || document.createElement('canvas');
-
-    const host =
-      document.getElementById('active-toy-container') || document.body;
-    host.appendChild(this.canvas);
 
     this.scene = initScene(sceneOptions);
     this.camera = initCamera(cameraOptions);
     this.renderer = null;
     this.rendererBackend = null;
     this.rendererInfo = null;
+    this.rendererHandle = null;
     this.rendererOptions = rendererOptions;
-    this.rendererReady = initRenderer(this.canvas, rendererOptions);
-    this.rendererReady
-      .then((result) => {
-        this.rendererInfo = result;
-        this.renderer = result?.renderer ?? null;
-        this.rendererBackend = result?.backend ?? null;
-        if (result) {
-          this.rendererOptions = {
-            ...this.rendererOptions,
-            maxPixelRatio: result.maxPixelRatio,
-            renderScale: result.renderScale,
-            exposure: result.exposure,
-          };
-          this.applyRendererSettings();
-        }
+    this.rendererReady = requestRenderer({ host, options: rendererOptions, canvas: this.canvas })
+      .then((handle) => {
+        this.rendererHandle = handle;
+        this.renderer = handle?.renderer ?? null;
+        this.rendererBackend = handle?.backend ?? null;
+        this.rendererInfo = handle?.info ?? null;
+        this.canvas = handle?.canvas ?? this.canvas;
+        this.applyRendererSettings();
+        return handle;
       })
       .catch((error) => {
         console.warn('Renderer initialization failed.', error);
+        return null;
       });
 
     if (ambientLightOptions) {
@@ -81,7 +78,7 @@ export default class WebToy {
     this.audioListener = null;
     this.audio = null;
     this.audioStream = null;
-    this.audioCleanup = null;
+    this.audioHandle = null;
     this.resizeHandler = () => this.handleResize();
     window.addEventListener('resize', this.resizeHandler);
 
@@ -97,24 +94,7 @@ export default class WebToy {
   applyRendererSettings() {
     if (!this.renderer) return;
 
-    const maxPixelRatio = this.rendererOptions.maxPixelRatio ?? 2;
-    const renderScale = this.rendererOptions.renderScale ?? 1;
-    const exposure = this.rendererOptions.exposure ?? 1;
-
-    const effectivePixelRatio = Math.min(
-      (window.devicePixelRatio || 1) * renderScale,
-      maxPixelRatio
-    );
-
-    this.renderer.setPixelRatio(effectivePixelRatio);
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.toneMappingExposure = exposure;
-
-    if (this.rendererInfo) {
-      this.rendererInfo.maxPixelRatio = maxPixelRatio;
-      this.rendererInfo.renderScale = renderScale;
-      this.rendererInfo.exposure = exposure;
-    }
+    this.rendererHandle?.applySettings(this.rendererOptions);
   }
 
   updateRendererSettings(options: Partial<RendererInitConfig>) {
@@ -123,21 +103,19 @@ export default class WebToy {
   }
 
   async initAudio(options = {}) {
-    if (this.audioCleanup) {
-      this.audioCleanup();
-      this.audioCleanup = null;
-      this.analyser = null;
-      this.audioListener = null;
-      this.audio = null;
-      this.audioStream = null;
-    }
+    this.audioHandle?.release?.();
+    this.audioHandle = null;
+    this.analyser = null;
+    this.audioListener = null;
+    this.audio = null;
+    this.audioStream = null;
 
-    const audio = await initAudio({ ...options, camera: this.camera });
+    const audio = await acquireAudioHandle({ ...options, camera: this.camera });
+    this.audioHandle = audio;
     this.analyser = audio.analyser;
     this.audioListener = audio.listener;
     this.audio = audio.audio;
     this.audioStream = audio.stream ?? null;
-    this.audioCleanup = audio.cleanup;
     return audio;
   }
 
@@ -150,13 +128,7 @@ export default class WebToy {
       window.removeEventListener('resize', this.resizeHandler);
     }
 
-    if (this.renderer?.setAnimationLoop) {
-      this.renderer.setAnimationLoop(null);
-    }
-
-    if (this.renderer?.dispose) {
-      this.renderer.dispose();
-    }
+    this.renderer?.setAnimationLoop?.(null);
 
     if (this.scene) {
       this.scene.traverse((object: THREE.Object3D) => {
@@ -178,18 +150,20 @@ export default class WebToy {
       }
     }
 
-    if (this.audioCleanup) {
-      this.audioCleanup();
-      this.audioCleanup = null;
+    if (this.audioHandle) {
+      this.audioHandle.release();
+      this.audioHandle = null;
       this.analyser = null;
       this.audioListener = null;
       this.audio = null;
       this.audioStream = null;
     }
 
-    if (this.canvas?.parentElement) {
-      this.canvas.parentElement.removeChild(this.canvas);
-    }
+    this.rendererHandle?.release();
+    this.rendererHandle = null;
+    this.renderer = null;
+    this.rendererInfo = null;
+    this.rendererBackend = null;
 
     if ((globalThis as Record<string, unknown>).__activeWebToy === this) {
       delete (globalThis as Record<string, unknown>).__activeWebToy;
