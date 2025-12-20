@@ -159,7 +159,7 @@ All JavaScript dependencies are installed via npm (or Bun) and bundled locally w
 - `bun run dev`: Start the Vite development server for local exploration. (`npm run dev` works if you’re on Node.)
 - `bun run build`: Produce a production build in `dist/`. (`npm run build` is available as a fallback.)
 - `bun run preview`: Serve the production build locally (Vite preview with `--host` for LAN testing) to validate the output before deploying. (`npm run preview` is the Node fallback.)
-- `bun test` (or `bun run test`): Run the Bun-native test suite. `npm run test` will proxy to Bun when available.
+- `bun run test`: Run the Bun-native test suite with the required `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags applied. These load happy-dom globals and a Three.js stub so specs run headlessly. `npm test` proxies to the same script when you’re on Node.
 - `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
 - `bun run lint`: Check code quality with ESLint. (`npm run lint` is an optional fallback.)
 - `bun run format`: Format files with Prettier. (`npm run format` is an optional fallback.)
@@ -183,12 +183,12 @@ dependencies and run the tests:
 
    (`npm install` is available if you’re using Node.)
 
-2. Run the tests:
+2. Run the tests (via the script so required flags are applied):
    ```bash
-   bun test
+   bun run test
    ```
 
-   (`npm run test` proxies to Bun when present.)
+   This script pins `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` to load happy-dom globals and a Three.js stub for headless execution. Use `npm test` as the Node equivalent.
 
 For quick iteration, use the watch mode:
 
