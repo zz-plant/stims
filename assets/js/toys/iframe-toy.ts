@@ -1,8 +1,16 @@
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+
 type StartOptions = {
   container?: HTMLElement | null;
   path: string;
   title?: string;
   allow?: string;
+  description?: string;
 };
 
 function resolveIframeSrc(path: string) {
@@ -10,12 +18,32 @@ function resolveIframeSrc(path: string) {
   return new URL(path, window.location.origin).toString();
 }
 
-export function startIframeToy({ container, path, title, allow }: StartOptions) {
+function postQualityPreset(iframe: HTMLIFrameElement, preset: QualityPreset) {
+  iframe.contentWindow?.postMessage({ type: 'apply-quality-preset', preset }, '*');
+}
+
+export function startIframeToy({
+  container,
+  path,
+  title,
+  allow,
+  description,
+}: StartOptions) {
   const target = container ?? document.getElementById('active-toy-container');
 
   if (!target) {
     throw new Error('Active toy container is missing.');
   }
+
+  const settingsPanel = getSettingsPanel();
+  const initialQuality = getActiveQualityPreset();
+
+  settingsPanel.configure({
+    title: title ?? 'Toy settings',
+    description:
+      description ??
+      'Adjust quality presets to balance performance and visual fidelity.',
+  });
 
   const iframe = document.createElement('iframe');
   iframe.src = resolveIframeSrc(path);
@@ -25,9 +53,25 @@ export function startIframeToy({ container, path, title, allow }: StartOptions) 
   iframe.style.height = '100%';
   iframe.style.border = 'none';
 
+  const sendPreset = (preset: QualityPreset) => postQualityPreset(iframe, preset);
+
+  settingsPanel.setQualityPresets({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: initialQuality.id,
+    onChange: sendPreset,
+  });
+
+  const handleMessage = (event: MessageEvent) => {
+    if ((event.data as { type?: string }).type === 'quality-sync-ready') {
+      sendPreset(getActiveQualityPreset());
+    }
+  };
+  window.addEventListener('message', handleMessage);
+
   const activeToy = {
     dispose() {
       iframe.remove();
+      window.removeEventListener('message', handleMessage);
       if ((globalThis as Record<string, unknown>).__activeWebToy === activeToy) {
         delete (globalThis as Record<string, unknown>).__activeWebToy;
       }

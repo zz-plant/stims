@@ -5,5 +5,6 @@ export function start({ container } = {}) {
     container,
     path: './toy.html?toy=defrag',
     title: 'Defrag Visualizer',
+    description: 'Control resolution for the retro spectrum grid.',
   });
 }
