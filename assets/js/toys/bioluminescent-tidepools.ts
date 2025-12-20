@@ -14,7 +14,7 @@ import {
 import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
-  getStoredQualityPreset,
+  getActiveQualityPreset,
   type QualityPreset,
 } from '../core/settings-panel';
 
@@ -27,7 +27,7 @@ type TideBlob = {
 };
 
 const settingsPanel = getSettingsPanel();
-let activeQuality: QualityPreset = getStoredQualityPreset();
+let activeQuality: QualityPreset = getActiveQualityPreset();
 
 const MAX_BLOBS = 28;
 const BASE_SPARK_COUNT = 200;

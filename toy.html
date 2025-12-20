@@ -27,7 +27,7 @@
       ></div>
       <div class="control-panel__actions">
         <button id="use-demo-audio" class="cta-button" hidden>
-          Load sample audio
+          Load demo audio
         </button>
       </div>
     </div>
@@ -61,7 +61,7 @@
         },
         requestSampleAudio: () => {
           const starter = getStarter(true) ?? getStarter();
-          if (!starter) throw new Error('Sample audio unavailable.');
+          if (!starter) throw new Error('Demo audio unavailable.');
           return starter(true);
         },
         analytics: {

@@ -15,13 +15,13 @@ import { startToyAudio } from '../utils/start-audio';
 import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
-  getStoredQualityPreset,
+  getActiveQualityPreset,
   type QualityPreset,
 } from '../core/settings-panel';
 
 let errorElement: HTMLElement | null;
 const settingsPanel = getSettingsPanel();
-let activeQuality: QualityPreset = getStoredQualityPreset();
+let activeQuality: QualityPreset = getActiveQualityPreset();
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 80 } },

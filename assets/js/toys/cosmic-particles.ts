@@ -11,6 +11,7 @@ import { applyAudioColor } from '../utils/color-audio';
 import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
+  getActiveQualityPreset,
   type QualityPreset,
 } from '../core/settings-panel';
 
@@ -21,9 +22,10 @@ const toy = new WebToy({
 
 type PresetKey = 'orbit' | 'nebula';
 
-let activeQuality: QualityPreset = DEFAULT_QUALITY_PRESETS.find(
-  (preset) => preset.id === 'balanced'
-)!;
+let activeQuality: QualityPreset = getActiveQualityPreset({
+  presets: DEFAULT_QUALITY_PRESETS,
+  defaultPresetId: 'balanced',
+});
 
 type PresetInstance = {
   animate: (ctx: AnimationContext) => void;

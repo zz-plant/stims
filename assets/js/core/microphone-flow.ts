@@ -44,21 +44,21 @@ function toggleButtons(
 function describeError(error: unknown, mode: FlowMode) {
   if (error instanceof AudioAccessError) {
     if (error.reason === 'denied') {
-      return 'Microphone access is blocked. Check your browser or system privacy settings and try again, or load the sample audio.';
+      return 'Microphone access is blocked. Check your browser or system privacy settings and try again, or load the demo audio.';
     }
     if (error.reason === 'unsupported') {
-      return 'This browser cannot capture microphone audio. Switch browsers or load the sample audio to keep exploring.';
+      return 'This browser cannot capture microphone audio. Switch browsers or load the demo audio to keep exploring.';
     }
-    return 'Microphone access is unavailable right now. Retry or continue with the sample audio.';
+    return 'Microphone access is unavailable right now. Retry or continue with the demo audio.';
   }
 
   if (error instanceof Error && /timed out/i.test(error.message)) {
-    return 'Microphone request timed out. Please retry or load the sample audio fallback.';
+    return 'Microphone request timed out. Please retry or load the demo audio fallback.';
   }
 
   return mode === 'sample'
-    ? 'Sample audio could not be loaded. Please retry.'
-    : 'We could not access your microphone. Retry or load the sample audio.';
+    ? 'Demo audio could not be loaded. Please retry.'
+    : 'We could not access your microphone. Retry or load the demo audio.';
 }
 
 function track(
@@ -153,7 +153,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
       setStatus(
         statusElement,
         mode === 'sample'
-          ? 'Loading sample audio (no microphone needed)...'
+          ? 'Loading demo audio (no microphone needed)...'
           : 'Requesting microphone access...',
         'info'
       );
@@ -163,7 +163,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
       setStatus(
         statusElement,
         mode === 'sample'
-          ? 'Sample audio connected. Visuals will react to the demo track.'
+          ? 'Demo audio connected. Visuals will react to the procedural track.'
           : 'Microphone connected! Enjoy the visuals.',
         'success'
       );
@@ -205,4 +205,3 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
       setStatus(statusElement, message, variant),
   };
 }
-

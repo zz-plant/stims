@@ -31,10 +31,26 @@ export function createLoader({
   ensureWebGLCheck?: typeof ensureWebGL;
   rendererCapabilities?: typeof getRendererCapabilities;
   toys?: Toy[];
-} = {}) {
+  } = {}) {
   let navigationInitialized = false;
   let escapeHandler: ((event: KeyboardEvent) => void) | null = null;
   let activeToy: { ref: ActiveToyCandidate; dispose?: () => void } | null = null;
+  const updateRendererStatus = (
+    capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
+    onRetry?: () => void
+  ) => {
+    view?.setRendererStatus?.(
+      capabilities
+        ? {
+            backend: capabilities.preferredBackend,
+            fallbackReason: capabilities.fallbackReason,
+            shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
+            triedWebGPU: capabilities.triedWebGPU,
+            onRetry,
+          }
+        : null
+    );
+  };
 
   const getGlobalActiveToy = () =>
     (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy;
@@ -101,6 +117,7 @@ export function createLoader({
     disposeActiveToy();
     view.showLibraryView();
     router.goToLibrary();
+    updateRendererStatus(null);
   };
 
   const registerEscapeHandler = () => {
@@ -117,8 +134,12 @@ export function createLoader({
     win.addEventListener('keydown', escapeHandler);
   };
 
-  const startModuleToy = async (toy: Toy, pushState: boolean) => {
-    const capabilities = await rendererCapabilities();
+  const startModuleToy = async (
+    toy: Toy,
+    pushState: boolean,
+    initialCapabilities?: Awaited<ReturnType<typeof rendererCapabilities>>
+  ) => {
+    let capabilities = initialCapabilities ?? (await rendererCapabilities());
 
     const supportsRendering = ensureWebGLCheck({
       title: toy.title ? `${toy.title} needs graphics acceleration` : 'Graphics support required',
@@ -135,6 +156,17 @@ export function createLoader({
 
     const container = view.showActiveToyView(backToLibrary, toy);
     if (!container) return;
+    updateRendererStatus(capabilities, capabilities.shouldRetryWebGPU
+      ? async () => {
+          capabilities = await rendererCapabilities({ forceRetry: true });
+          updateRendererStatus(capabilities);
+          if (capabilities.preferredBackend === 'webgpu') {
+            disposeActiveToy();
+            view.clearActiveToyContainer?.();
+            await startModuleToy(toy, false, capabilities);
+          }
+        }
+      : undefined);
 
     registerEscapeHandler();
 
@@ -221,6 +253,7 @@ export function createLoader({
     }
 
     disposeActiveToy();
+    updateRendererStatus(null);
 
     if (typeof window !== 'undefined') {
       window.location.href = toy.module;

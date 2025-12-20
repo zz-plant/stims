@@ -9,6 +9,7 @@ import { startToyAudio } from '../utils/start-audio';
 import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
+  getActiveQualityPreset,
   type QualityPreset,
 } from '../core/settings-panel';
 import { initHints } from '../../ui/hints.ts';
@@ -171,9 +172,10 @@ export async function start() {
   let damping = 0.984;
   let grainScale = 1.2;
   let rippleGain = 1;
-  let activeQuality: QualityPreset =
-    DEFAULT_QUALITY_PRESETS.find((preset) => preset.id === 'balanced') ??
-    DEFAULT_QUALITY_PRESETS[0];
+  let activeQuality: QualityPreset = getActiveQualityPreset({
+    presets: DEFAULT_QUALITY_PRESETS,
+    defaultPresetId: 'balanced',
+  });
 
   const motionSupported =
     typeof window !== 'undefined' && 'DeviceOrientationEvent' in window;
