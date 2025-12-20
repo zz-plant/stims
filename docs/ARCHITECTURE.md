@@ -91,6 +91,42 @@ graph LR
 - `microphone-flow.ts` and `utils/audio-handler.ts` request mic access, create a `THREE.AudioListener` and `THREE.Audio`, and expose an `AudioAnalyser` plus a cleanup function.
 - Toys access frequency/time-domain data from the analyser to drive visuals; when switching toys, the loader calls the cleanup hook to release the stream and listeners.
 
+## Toy Runtime Lifecycle
+
+`assets/js/core/toy-runtime.ts` centralizes the active-toy state machine so navigation, cleanup, and view updates listen to the same events instead of being called directly.
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> loading : startLoading()
+  loading --> active : setActiveToy()
+  loading --> error : setError()
+  active --> idle : dispose(reason: library|error)
+  active --> loading : dispose(reason: swap)
+  error --> loading : startLoading()
+```
+
+- **States**: `idle` (no toy), `loading` (import + bootstrap), `active` (toy running), and `error` (capability/import failures).
+- **Events**: `onLoading`, `onActive`, `onError`, `onDisposed`. Each listener receives the toy metadata and (for disposal) the reason (`swap` when moving to another toy, `library` for back navigation, `error` for fatal failures).
+- **Active ref**: `setActiveToy` normalizes a returned `dispose` function or object and keeps `__activeWebToy` in sync for legacy toys.
+- **Idempotent cleanup**: `dispose` swallows double-dispose calls and only invokes the active toy’s `dispose` once.
+
+Integrating a view means subscribing to these events instead of being invoked imperatively. `assets/js/toy-view.ts` wires itself up via `bindRuntime`:
+
+```ts
+const runtime = createToyRuntime();
+const view = createToyView();
+
+view.bindRuntime(runtime);
+runtime.onDisposed(({ reason }) => {
+  if (reason === 'library') router.goToLibrary();
+});
+
+runtime.startLoading({ toy, onBack: () => runtime.dispose({ reason: 'library' }) });
+```
+
+The loader now listens to runtime events for navigation/escape handling, while views respond to loading/active/error transitions independently.
+
 ## Adding or Debugging Toys
 
 - **Start from a slug**: register the module in `assets/js/toys-data.js` and ensure there is an HTML entry point (often `toy.html?toy=<slug>`).

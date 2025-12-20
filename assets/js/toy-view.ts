@@ -32,6 +32,14 @@ type RendererStatusState = {
   onRetry?: () => void;
 };
 
+type ToyRuntime = {
+  onLoading: (listener: (event: { toy?: Toy; onBack?: () => void }) => void) => () => void;
+  onActive: (listener: (event: { toy?: Toy; activeRef?: unknown; container?: HTMLElement | null }) => void) => () => void;
+  onError: (listener: (event: { toy?: Toy; error: { type: 'capability' | 'import'; options?: unknown } }) => void) => () => void;
+  onDisposed: (listener: (event: { reason: 'swap' | 'library' | 'error'; toy?: Toy }) => void) => () => void;
+  setContainer: (container: HTMLElement | null) => void;
+};
+
 const TOY_CONTAINER_CLASS = 'active-toy-container';
 const HIDDEN_CLASS = 'is-hidden';
 
@@ -227,6 +235,8 @@ export function createToyView({
 
   const findActiveToyContainer = () => getDocument()?.getElementById(containerId) ?? null;
 
+  const clearActiveToyContainer = () => clearContainerContent(findActiveToyContainer());
+
   const ensureActiveToyContainer = () => {
     const doc = getDocument();
     if (!doc) return null;
@@ -399,6 +409,38 @@ export function createToyView({
     }
   };
 
+  const bindRuntime = (runtime: ToyRuntime) => {
+    const cleanupListeners = [
+      runtime.onLoading(({ toy, onBack }) => {
+        const container = showActiveToyView(onBack, toy);
+        runtime.setContainer(container);
+        showLoadingIndicator(toy?.title || toy?.slug, toy);
+      }),
+      runtime.onActive(() => {
+        removeStatusElement();
+      }),
+      runtime.onError(({ toy, error }) => {
+        if (error.type === 'capability') {
+          showCapabilityError(toy, error.options as CapabilityOptions);
+          return;
+        }
+
+        showImportError(toy, error.options as ImportErrorOptions);
+      }),
+      runtime.onDisposed(({ reason }) => {
+        if (reason === 'library' || reason === 'error') {
+          showLibraryView();
+        }
+        clearActiveToyContainer();
+        removeStatusElement();
+      }),
+    ];
+
+    return () => {
+      cleanupListeners.forEach((dispose) => dispose());
+    };
+  };
+
   return {
     showLibraryView,
     showActiveToyView,
@@ -406,8 +448,9 @@ export function createToyView({
     showImportError,
     showCapabilityError,
     removeStatusElement,
-    clearActiveToyContainer: () => clearContainerContent(findActiveToyContainer()),
+    clearActiveToyContainer,
     ensureActiveToyContainer,
     setRendererStatus,
+    bindRuntime,
   };
 }

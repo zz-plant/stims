@@ -4,6 +4,7 @@ import { createToyView } from './toy-view.ts';
 import { createManifestClient } from './utils/manifest-client.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
+import { createToyRuntime } from './core/toy-runtime.ts';
 
 type Toy = {
   slug: string;
@@ -15,7 +16,6 @@ type Toy = {
 };
 
 const TOY_QUERY_PARAM = 'toy';
-type ActiveToyCandidate = { dispose?: () => void } | (() => void);
 
 export function createLoader({
   manifestClient = createManifestClient(),
@@ -24,6 +24,7 @@ export function createLoader({
   ensureWebGLCheck = ensureWebGL,
   rendererCapabilities = getRendererCapabilities,
   toys = toysData as Toy[],
+  runtime = createToyRuntime(),
 }: {
   manifestClient?: ReturnType<typeof createManifestClient>;
   router?: ReturnType<typeof createRouter>;
@@ -31,10 +32,10 @@ export function createLoader({
   ensureWebGLCheck?: typeof ensureWebGL;
   rendererCapabilities?: typeof getRendererCapabilities;
   toys?: Toy[];
+  runtime?: ReturnType<typeof createToyRuntime>;
   } = {}) {
   let navigationInitialized = false;
   let escapeHandler: ((event: KeyboardEvent) => void) | null = null;
-  let activeToy: { ref: ActiveToyCandidate; dispose?: () => void } | null = null;
   const updateRendererStatus = (
     capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
     onRetry?: () => void
@@ -52,58 +53,6 @@ export function createLoader({
     );
   };
 
-  const getGlobalActiveToy = () =>
-    (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy;
-
-  const normalizeActiveToy = (
-    candidate: unknown
-  ): { ref: ActiveToyCandidate; dispose?: () => void } | null => {
-    if (!candidate) return null;
-
-    if (typeof candidate === 'function') {
-      return { ref: candidate, dispose: candidate };
-    }
-
-    if (typeof candidate === 'object') {
-      const dispose = (candidate as { dispose?: unknown }).dispose;
-      return {
-        ref: candidate as ActiveToyCandidate,
-        dispose: typeof dispose === 'function' ? dispose.bind(candidate) : undefined,
-      };
-    }
-
-    return null;
-  };
-
-  const registerActiveToy = (candidate?: unknown) => {
-    const source = candidate === null ? null : candidate ?? getGlobalActiveToy();
-    activeToy = normalizeActiveToy(source);
-
-    if (activeToy?.ref) {
-      (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy =
-        activeToy.ref;
-    } else {
-      delete (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy;
-    }
-
-    return activeToy;
-  };
-
-  const disposeActiveToy = () => {
-    const current = activeToy ?? normalizeActiveToy(getGlobalActiveToy());
-
-    if (current?.dispose) {
-      try {
-        current.dispose();
-      } catch (error) {
-        console.error('Error disposing existing toy', error);
-      }
-    }
-
-    registerActiveToy(null);
-    view?.clearActiveToyContainer?.();
-  };
-
   const removeEscapeHandler = () => {
     const win = typeof window === 'undefined' ? null : window;
     if (!win || !escapeHandler) return;
@@ -114,10 +63,7 @@ export function createLoader({
 
   const backToLibrary = () => {
     removeEscapeHandler();
-    disposeActiveToy();
-    view.showLibraryView();
-    router.goToLibrary();
-    updateRendererStatus(null);
+    runtime.dispose({ reason: 'library' });
   };
 
   const registerEscapeHandler = () => {
@@ -151,18 +97,18 @@ export function createLoader({
       return;
     }
 
-    disposeActiveToy();
+    runtime.dispose({ reason: 'swap' });
     removeEscapeHandler();
 
-    const container = view.showActiveToyView(backToLibrary, toy);
+    runtime.startLoading({ toy, onBack: backToLibrary });
+    const container = runtime.getContainer();
     if (!container) return;
     updateRendererStatus(capabilities, capabilities.shouldRetryWebGPU
       ? async () => {
           capabilities = await rendererCapabilities({ forceRetry: true });
           updateRendererStatus(capabilities);
           if (capabilities.preferredBackend === 'webgpu') {
-            disposeActiveToy();
-            view.clearActiveToyContainer?.();
+            runtime.dispose({ reason: 'swap' });
             await startModuleToy(toy, false, capabilities);
           }
         }
@@ -180,14 +126,13 @@ export function createLoader({
 
     const runToy = async () => {
       commitNavigation();
-      view.showLoadingIndicator(toy.title || toy.slug, toy);
 
       let moduleUrl: string;
       try {
         moduleUrl = await manifestClient.resolveModulePath(toy.module);
       } catch (error) {
         console.error('Error resolving module path:', error);
-        view.showImportError(toy, { importError: error as Error, onBack: backToLibrary });
+        runtime.setError({ type: 'import', toy, options: { importError: error as Error, onBack: backToLibrary } });
         return;
       }
 
@@ -197,7 +142,11 @@ export function createLoader({
         moduleExports = await import(moduleUrl);
       } catch (error) {
         console.error('Error loading toy module:', error);
-        view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });
+        runtime.setError({
+          type: 'import',
+          toy,
+          options: { moduleUrl, importError: error as Error, onBack: backToLibrary },
+        });
         return;
       }
 
@@ -209,28 +158,38 @@ export function createLoader({
       if (starter) {
         try {
           const active = await starter({ container, slug: toy.slug });
-          registerActiveToy(active ?? getGlobalActiveToy());
+          runtime.setActiveToy(active);
         } catch (error) {
           console.error('Error starting toy module:', error);
-          view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });
+          runtime.setError({
+            type: 'import',
+            toy,
+            options: { moduleUrl, importError: error as Error, onBack: backToLibrary },
+          });
           return;
         }
       }
 
-      view.removeStatusElement();
+      if (!starter) {
+        runtime.setActiveToy(runtime.getActiveToy());
+      }
     };
 
     if (toy.requiresWebGPU && capabilities.preferredBackend !== 'webgpu') {
-      view.showCapabilityError(toy, {
-        allowFallback: toy.allowWebGLFallback,
-        onBack: backToLibrary,
-        details: capabilities.fallbackReason,
-        onContinue: toy.allowWebGLFallback
-          ? () => {
-              view.clearActiveToyContainer();
-              void runToy();
-            }
-          : undefined,
+      runtime.setError({
+        type: 'capability',
+        toy,
+        options: {
+          allowFallback: toy.allowWebGLFallback,
+          onBack: backToLibrary,
+          details: capabilities.fallbackReason,
+          onContinue: toy.allowWebGLFallback
+            ? () => {
+                runtime.startLoading({ toy, onBack: backToLibrary });
+                void runToy();
+              }
+            : undefined,
+        },
       });
 
       return;
@@ -252,7 +211,7 @@ export function createLoader({
       return;
     }
 
-    disposeActiveToy();
+    runtime.dispose({ reason: 'library' });
     updateRendererStatus(null);
 
     if (typeof window !== 'undefined') {
@@ -281,6 +240,16 @@ export function createLoader({
       }
     });
   };
+
+  runtime.onDisposed(({ reason }) => {
+    removeEscapeHandler();
+    updateRendererStatus(null);
+    if (reason === 'library' || reason === 'error') {
+      router.goToLibrary();
+    }
+  });
+
+  view?.bindRuntime?.(runtime);
 
   return {
     loadToy,
