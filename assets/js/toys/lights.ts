@@ -5,5 +5,6 @@ export function start({ container } = {}) {
     container,
     path: './lights.html',
     title: 'Audio Light Show',
+    description: 'Dial quality for the cube lighting playground.',
   });
 }

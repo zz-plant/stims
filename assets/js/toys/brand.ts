@@ -5,5 +5,6 @@ export function start({ container } = {}) {
     container,
     path: './brand.html',
     title: 'Star Guitar Visualizer',
+    description: 'Tweak quality while soaring through the neon skyline.',
   });
 }

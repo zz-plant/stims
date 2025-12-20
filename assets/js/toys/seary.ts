@@ -5,5 +5,6 @@ export function start({ container } = {}) {
     container,
     path: './seary.html',
     title: 'Trippy Synesthetic Visualizer',
+    description: 'Tune pixel ratio and density for sparkles and bursts.',
   });
 }

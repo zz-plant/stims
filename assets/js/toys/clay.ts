@@ -5,5 +5,6 @@ export function start({ container } = {}) {
     container,
     path: './clay.html',
     title: 'Pottery Wheel Sculptor',
+    description: 'Adjust render quality while you spin, smooth, and carve the clay.',
   });
 }

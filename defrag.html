@@ -44,38 +44,61 @@
       } from './assets/js/utils/audio-handler.ts';
       import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { showError } from './assets/js/utils/error-display.ts';
+      import { setupIframeQualitySync } from './assets/js/core/iframe-quality-sync.ts';
       const canvas = document.getElementById('canvas');
       const ctx = canvas.getContext('2d');
 
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
-      window.addEventListener('resize', () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      });
-
-      const rows = 30;
-      const cols = 40;
-      const blockWidth = canvas.width / cols;
-      const blockHeight = canvas.height / rows;
       const blocks = [];
+      const baseRows = 30;
+      const baseCols = 40;
+      let rows = baseRows;
+      let cols = baseCols;
+      let blockWidth = 0;
+      let blockHeight = 0;
+      let viewWidth = window.innerWidth;
+      let viewHeight = window.innerHeight;
+      let renderScale = 1;
+      let pixelRatio = 1;
       let idleAnimationTime = 0.0; // Idle state timer for defragmentation effects
       let idleColorShift = 0;
       const DEFAULT_FFT_SIZE = 64;
       const neutralSpectrum = new Uint8Array(DEFAULT_FFT_SIZE / 2);
+      let qualityDensity = 1;
 
-      // Initialize grid with random colors
-      for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < cols; j++) {
-          blocks.push({
-            x: j * blockWidth,
-            y: i * blockHeight,
-            color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-            sizeModifier: 1.0,
-          });
+      function resizeCanvas() {
+        const effectiveScale = pixelRatio * renderScale;
+        viewWidth = window.innerWidth;
+        viewHeight = window.innerHeight;
+        canvas.width = viewWidth * effectiveScale;
+        canvas.height = viewHeight * effectiveScale;
+        canvas.style.width = `${viewWidth}px`;
+        canvas.style.height = `${viewHeight}px`;
+        ctx.setTransform(effectiveScale, 0, 0, effectiveScale, 0, 0);
+        blockWidth = viewWidth / cols;
+        blockHeight = viewHeight / rows;
+      }
+
+      function rebuildGrid() {
+        blocks.length = 0;
+        for (let i = 0; i < rows; i++) {
+          for (let j = 0; j < cols; j++) {
+            blocks.push({
+              x: j * blockWidth,
+              y: i * blockHeight,
+              color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+              sizeModifier: 1.0,
+            });
+          }
         }
       }
+
+      resizeCanvas();
+      rebuildGrid();
+
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+        rebuildGrid();
+      });
 
       let audioDataArray = neutralSpectrum.slice();
       let idleState = true;
@@ -83,6 +106,18 @@
       const idleThreshold = 5;
 
       const statusIndicator = document.getElementById('statusIndicator');
+
+      function applyQualityPreset(preset) {
+        pixelRatio = Math.min(window.devicePixelRatio || 1, preset.maxPixelRatio);
+        renderScale = preset.renderScale ?? 1;
+        qualityDensity = Math.max(0.6, preset.particleScale ?? 1);
+        rows = Math.max(10, Math.round(baseRows * qualityDensity));
+        cols = Math.max(12, Math.round(baseCols * qualityDensity));
+        resizeCanvas();
+        rebuildGrid();
+      }
+
+      setupIframeQualitySync(applyQualityPreset);
 
       function updateStatusIndicator(state) {
         if (!statusIndicator) return;
