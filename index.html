@@ -131,6 +131,56 @@
       </footer>
     </div>
 
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        const list = document.getElementById('toy-list');
+        if (!list || list.childElementCount > 0) return;
+
+        fetch('./toys.json')
+          .then((response) => (response.ok ? response.json() : null))
+          .then((toys) => {
+            if (!toys || list.childElementCount > 0) return;
+
+            toys.forEach((toy) => {
+              const href =
+                toy.type === 'page'
+                  ? toy.module
+                  : `toy.html?toy=${encodeURIComponent(toy.slug)}`;
+
+              const card = document.createElement('a');
+              card.className = 'webtoy-card';
+              card.href = href;
+              card.setAttribute('data-toy-fallback', 'true');
+
+              const title = document.createElement('h3');
+              title.textContent = toy.title;
+
+              const desc = document.createElement('p');
+              desc.textContent = toy.description;
+
+              card.append(title, desc);
+
+              if (toy.requiresWebGPU) {
+                const badgeRow = document.createElement('div');
+                badgeRow.className = 'webtoy-card-meta';
+
+                const badge = document.createElement('span');
+                badge.className = 'capability-badge';
+                badge.textContent = 'WebGPU';
+                badge.title = 'Requires WebGPU to run.';
+
+                badgeRow.appendChild(badge);
+                card.appendChild(badgeRow);
+              }
+
+              list.appendChild(card);
+            });
+          })
+          .catch((error) => {
+            console.error('Unable to render library fallback', error);
+          });
+      });
+    </script>
     <script type="module" src="assets/js/main.js"></script>
   </body>
 </html>
