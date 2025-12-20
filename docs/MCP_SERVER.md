@@ -20,7 +20,10 @@ All tools are registered on the `stim-webtoys-mcp` server name and use zod-based
   - **Output:** `text` response with quick-start pointers, runtime notes, repository layout, and toy catalog references pulled from `README.md` with line ranges.
 - **`get_toys`**
   - **Input:** optional `slug` (string) to fetch a single toy and optional `requiresWebGPU` (boolean) to filter by WebGPU requirements.
-  - **Output:** `json` array of `{ slug, title, description, requiresWebGPU, url }` entries. Returns a helpful text message when no toys match the filters.
+  - **Output:** `json` array of `{ slug, title, description, requiresWebGPU, controls, module, type, allowWebGLFallback, url }` entries. Returns a helpful text message when no toys match the filters. Optional fields default to sensible fallbacks when missing from `assets/js/toys-data.js`.
+- **`read_doc_section`**
+  - **Input:** required `file` enum (e.g., `README.md`, `docs/MCP_SERVER.md`) and optional `heading` string.
+  - **Output:** `text` response containing the full markdown file when no heading is provided, or the matching section beginning at the requested heading. Returns a friendly error when the file or heading cannot be found.
 - **`describe_loader`**
   - **Input:** none.
   - **Output:** `text` summary of how the toy loader resolves entries and errors, including manifest resolution (`/.vite/manifest.json`), URL/history handling, WebGPU gating, and the recovery states shown when imports fail.
