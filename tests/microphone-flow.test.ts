@@ -16,7 +16,7 @@ function buildDom() {
   return { startButton, fallbackButton, statusElement };
 }
 
-function mockPermissionState(state) {
+function mockPermissionState(state: PermissionState) {
   Object.defineProperty(navigator, 'permissions', {
     configurable: true,
     value: {
@@ -25,9 +25,14 @@ function mockPermissionState(state) {
   });
 }
 
+const waitForAsyncTasks = () =>
+  new Promise<void>((resolve) => {
+    globalThis.setTimeout(resolve, 0);
+  });
+
 afterEach(() => {
   document.body.innerHTML = '';
-  delete navigator.permissions;
+  delete (navigator as { permissions?: { query: () => Promise<PermissionStatus> } }).permissions;
 });
 
 describe('setupMicrophonePermissionFlow', () => {
@@ -77,5 +82,38 @@ describe('setupMicrophonePermissionFlow', () => {
     expect(statusElement.textContent).toContain('blocked');
     expect(fallbackButton.hidden).toBe(false);
   });
-});
 
+  test('removes event listeners when disposed before reinitializing', async () => {
+    const { startButton, fallbackButton, statusElement } = buildDom();
+
+    mockPermissionState('granted');
+
+    const firstRequestMicrophone = mock().mockResolvedValue(undefined);
+
+    const firstFlow = setupMicrophonePermissionFlow({
+      startButton,
+      fallbackButton,
+      statusElement,
+      requestMicrophone: firstRequestMicrophone,
+    });
+
+    firstFlow.dispose?.();
+
+    const secondRequestMicrophone = mock().mockResolvedValue(undefined);
+
+    const secondFlow = setupMicrophonePermissionFlow({
+      startButton,
+      fallbackButton,
+      statusElement,
+      requestMicrophone: secondRequestMicrophone,
+    });
+
+    startButton.click();
+    await waitForAsyncTasks();
+
+    expect(firstRequestMicrophone).not.toHaveBeenCalled();
+    expect(secondRequestMicrophone).toHaveBeenCalledTimes(1);
+
+    secondFlow.dispose?.();
+  });
+});
