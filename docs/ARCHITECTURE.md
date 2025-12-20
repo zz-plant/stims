@@ -39,11 +39,11 @@ flowchart TD
 ### Loader lifecycle
 
 1. **Resolve toy**: look up the slug in `assets/js/toys-data.js` and ensure rendering support (`ensureWebGL`).
-2. **Navigate**: push state with the router when requested, set up Escape-to-library, and clear any previous toy.
-3. **Render shell**: ask `toy-view` to show the active toy container and loading indicator; bubble capability status to the UI.
+2. **Navigate**: push state with the router when requested, set up Escape-to-library, bump a monotonic `loadId`, and clear any previous toy.
+3. **Render shell**: ask `toy-view` to show the active toy container and loading indicator; bubble capability status to the UI. Every asynchronous hop (manifest lookup, dynamic import, module `start`) checks the current `loadId` so canceled navigations do not surface stale errors or DOM updates.
 4. **Import module**: resolve a Vite-friendly URL via the manifest client and `import()` it.
 5. **Start toy**: call the module’s `start` or default export; normalize the returned reference so `dispose` can be called on navigation.
-6. **Cleanup**: on Escape/back, dispose the active toy, clear the container, and reset renderer status in the view.
+6. **Cleanup**: on Escape/back, increment `loadId`, dispose the active toy immediately (plus event listeners), clear the container, and reset renderer status in the view.
 
 ## Rendering and Capability Detection
 

@@ -90,6 +90,12 @@ Use the `bun run test` (or `npm test`) script instead of raw `bun test` so the `
 - Provide feedback for permission failures, loading states, or unsupported browsers.
 - Avoid autoplaying audio; let users control start/stop actions.
 
+## Navigation and loader expectations
+
+- Navigation is coordinated through `createLoader` in `assets/js/loader.ts`. Each call to `loadToy` or the back/Escape flow bumps a monotonic `loadId`; asynchronous work (module resolution, dynamic imports, `start` handlers) short-circuits when that ID is no longer current. If you add new async steps to the loader, gate DOM mutations and error displays behind the active `loadId` to prevent stale updates.
+- Canceling a navigation should dispose the current toy and detach listeners immediately; avoid double-cleanup by checking `loadId` before calling `registerActiveToy`, removing status elements, or retrying capability probes.
+- Tests that simulate navigation should prefer `bun test tests/loader.test.js` and, when mocking imports, use deferred promises so you can assert the loader ignores stale completions.
+
 ## Deployment Checklist
 
 - `bun run build` completes without errors. (`npm run build` is available if you’re on Node.)

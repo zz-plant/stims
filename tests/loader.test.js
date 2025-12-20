@@ -8,6 +8,21 @@ const originalLocation = window.location;
 const originalHistory = window.history;
 const originalNavigator = global.navigator;
 
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return {
+    promise,
+    resolve: /** @type {(value: unknown) => void} */ (resolve),
+    reject: /** @type {(reason?: unknown) => void} */ (reject),
+  };
+}
+
 const freshLoader = async () => {
   mock.module(capabilitiesModule, () => capabilitiesMock);
   return (await import(`${loaderModule}?t=${Date.now()}-${Math.random()}`)).createLoader;
@@ -149,6 +164,42 @@ describe('loadToy', () => {
     expect(globalThis.__activeWebToy).toBeUndefined();
     expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
     expect(window.location.search).toBe('');
+  });
+
+  test('does not update the view after canceling a pending import', async () => {
+    const manifestPath = './__mocks__/slow-module.js';
+    const deferredModule = createDeferred();
+    const starter = mock(() => ({ dispose: mock() }));
+    mock.module(manifestPath, () => deferredModule.promise);
+
+    const { loader, location } = await buildLoader({
+      manifestPath,
+      toys: [
+        {
+          slug: 'brand',
+          title: 'Test Brand Toy',
+          module: manifestPath,
+          type: 'module',
+          requiresWebGPU: false,
+        },
+      ],
+    });
+
+    const loadPromise = loader.loadToy('brand', { pushState: true });
+
+    await Promise.resolve();
+    window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
+
+    deferredModule.resolve({ start: starter });
+
+    await loadPromise;
+
+    expect(starter).not.toHaveBeenCalled();
+    expect(document.querySelector('[data-fake-toy]')).toBeNull();
+    expect(location.search).toBe('');
+    const activeContainer = document.querySelector('.active-toy-container');
+    expect(!activeContainer || activeContainer.classList.contains('is-hidden')).toBe(true);
+    expect(document.querySelector('.active-toy-status')).toBeNull();
   });
 });
 

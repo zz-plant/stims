@@ -35,6 +35,9 @@ export function createLoader({
   let navigationInitialized = false;
   let escapeHandler: ((event: KeyboardEvent) => void) | null = null;
   let activeToy: { ref: ActiveToyCandidate; dispose?: () => void } | null = null;
+  let activeLoadId = 0;
+  const beginNavigation = () => ++activeLoadId;
+  const isActiveLoad = (loadId: number) => loadId === activeLoadId;
   const updateRendererStatus = (
     capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
     onRetry?: () => void
@@ -113,6 +116,7 @@ export function createLoader({
   };
 
   const backToLibrary = () => {
+    beginNavigation();
     removeEscapeHandler();
     disposeActiveToy();
     view.showLibraryView();
@@ -137,9 +141,12 @@ export function createLoader({
   const startModuleToy = async (
     toy: Toy,
     pushState: boolean,
+    loadId: number,
     initialCapabilities?: Awaited<ReturnType<typeof rendererCapabilities>>
   ) => {
     let capabilities = initialCapabilities ?? (await rendererCapabilities());
+
+    if (!isActiveLoad(loadId)) return;
 
     const supportsRendering = ensureWebGLCheck({
       title: toy.title ? `${toy.title} needs graphics acceleration` : 'Graphics support required',
@@ -147,59 +154,71 @@ export function createLoader({
         'We could not detect WebGL or WebGPU support on this device. Try a modern browser with hardware acceleration enabled.',
     });
 
-    if (!supportsRendering) {
-      return;
-    }
+    if (!supportsRendering || !isActiveLoad(loadId)) return;
 
     disposeActiveToy();
     removeEscapeHandler();
+    if (!isActiveLoad(loadId)) return;
 
     const container = view.showActiveToyView(backToLibrary, toy);
-    if (!container) return;
-    updateRendererStatus(capabilities, capabilities.shouldRetryWebGPU
+    if (!container || !isActiveLoad(loadId)) return;
+    const handleRetry = capabilities.shouldRetryWebGPU
       ? async () => {
+          const retryLoadId = beginNavigation();
           capabilities = await rendererCapabilities({ forceRetry: true });
-          updateRendererStatus(capabilities);
+          if (!isActiveLoad(retryLoadId)) return;
+          updateRendererStatus(capabilities, handleRetry);
           if (capabilities.preferredBackend === 'webgpu') {
             disposeActiveToy();
             view.clearActiveToyContainer?.();
-            await startModuleToy(toy, false, capabilities);
+            await startModuleToy(toy, false, retryLoadId, capabilities);
           }
         }
-      : undefined);
+      : undefined;
+    if (!isActiveLoad(loadId)) return;
+    updateRendererStatus(capabilities, handleRetry);
+
+    if (!isActiveLoad(loadId)) return;
 
     registerEscapeHandler();
 
     let navigated = false;
     const commitNavigation = () => {
+      if (!isActiveLoad(loadId)) return false;
       if (pushState && !navigated) {
         router.pushToyState(toy.slug);
         navigated = true;
       }
+      return true;
     };
 
     const runToy = async () => {
-      commitNavigation();
+      if (!commitNavigation()) return;
+      if (!isActiveLoad(loadId)) return;
       view.showLoadingIndicator(toy.title || toy.slug, toy);
 
       let moduleUrl: string;
       try {
         moduleUrl = await manifestClient.resolveModulePath(toy.module);
       } catch (error) {
+        if (!isActiveLoad(loadId)) return;
         console.error('Error resolving module path:', error);
         view.showImportError(toy, { importError: error as Error, onBack: backToLibrary });
         return;
       }
+      if (!isActiveLoad(loadId)) return;
 
       let moduleExports: unknown;
 
       try {
         moduleExports = await import(moduleUrl);
       } catch (error) {
+        if (!isActiveLoad(loadId)) return;
         console.error('Error loading toy module:', error);
         view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });
         return;
       }
+      if (!isActiveLoad(loadId)) return;
 
       const startCandidate =
         (moduleExports as { start?: unknown })?.start ??
@@ -209,24 +228,32 @@ export function createLoader({
       if (starter) {
         try {
           const active = await starter({ container, slug: toy.slug });
+          if (!isActiveLoad(loadId)) {
+            normalizeActiveToy(active ?? getGlobalActiveToy())?.dispose?.();
+            return;
+          }
           registerActiveToy(active ?? getGlobalActiveToy());
         } catch (error) {
+          if (!isActiveLoad(loadId)) return;
           console.error('Error starting toy module:', error);
           view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });
           return;
         }
       }
 
+      if (!isActiveLoad(loadId)) return;
       view.removeStatusElement();
     };
 
     if (toy.requiresWebGPU && capabilities.preferredBackend !== 'webgpu') {
+      if (!isActiveLoad(loadId)) return;
       view.showCapabilityError(toy, {
         allowFallback: toy.allowWebGLFallback,
         onBack: backToLibrary,
         details: capabilities.fallbackReason,
         onContinue: toy.allowWebGLFallback
           ? () => {
+              if (!isActiveLoad(loadId)) return;
               view.clearActiveToyContainer();
               void runToy();
             }
@@ -236,10 +263,12 @@ export function createLoader({
       return;
     }
 
+    if (!isActiveLoad(loadId)) return;
     await runToy();
   };
 
   const loadToy = async (slug: string, { pushState = false }: { pushState?: boolean } = {}) => {
+    const loadId = beginNavigation();
     const toy = toys.find((t) => t.slug === slug);
     if (!toy) {
       console.error(`Toy not found: ${slug}`);
@@ -248,7 +277,7 @@ export function createLoader({
     }
 
     if (toy.type === 'module') {
-      await startModuleToy(toy, pushState);
+      await startModuleToy(toy, pushState, loadId);
       return;
     }
 
