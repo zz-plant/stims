@@ -9,6 +9,21 @@ type ManifestEntry = {
 
 const MANIFEST_CANDIDATES = ['./manifest.json', './.vite/manifest.json'];
 
+function getCurrentOrigin() {
+  const origin = typeof window !== 'undefined' ? window.location?.origin : null;
+  if (!origin || origin === 'null') return null;
+  return origin;
+}
+
+function formatResolvedUrl(resolved: URL) {
+  const currentOrigin = getCurrentOrigin();
+  if (currentOrigin && resolved.origin === currentOrigin) {
+    return resolved.pathname;
+  }
+
+  return resolved.toString();
+}
+
 function resolveBaseUrl(input?: BaseUrlInput): URL | null {
   if (typeof input === 'function') {
     return resolveBaseUrl(input());
@@ -38,7 +53,7 @@ function resolveBaseUrl(input?: BaseUrlInput): URL | null {
 function resolveFromBase(baseUrl: URL | null, path: string) {
   if (baseUrl && baseUrl.protocol !== 'about:') {
     try {
-      return new URL(path, baseUrl).pathname;
+      return formatResolvedUrl(new URL(path, baseUrl));
     } catch (error) {
       console.warn('Unable to resolve manifest path from base URL', error);
     }
@@ -61,7 +76,11 @@ function resolveFallbackPath(entry: string, baseUrl: URL | null) {
   }
 
   if (baseUrl) {
-    return new URL(entry, baseUrl).pathname;
+    try {
+      return formatResolvedUrl(new URL(entry, baseUrl));
+    } catch (error) {
+      console.error('Error resolving fallback path from base URL:', error);
+    }
   }
 
   return entry.startsWith('/') || entry.startsWith('.') ? entry : `/${entry}`;
@@ -71,7 +90,7 @@ function tryResolveUrl(target: string, base: string | URL | null) {
   if (!base) return null;
 
   try {
-    return new URL(target, base).pathname;
+    return formatResolvedUrl(new URL(target, base));
   } catch {
     return null;
   }
