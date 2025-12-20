@@ -1,0 +1,6 @@
+name = "stims"
+compatibility_date = "2024-10-20"
+pages_build_output_dir = "dist"
+
+[pages]
+project_name = "stims"
