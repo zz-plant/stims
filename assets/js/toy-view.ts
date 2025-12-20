@@ -24,6 +24,14 @@ type ImportErrorOptions = {
   onBack?: () => void;
 };
 
+type RendererStatusState = {
+  backend: 'webgl' | 'webgpu';
+  fallbackReason?: string | null;
+  shouldRetryWebGPU?: boolean;
+  triedWebGPU?: boolean;
+  onRetry?: () => void;
+};
+
 const TOY_CONTAINER_CLASS = 'active-toy-container';
 const HIDDEN_CLASS = 'is-hidden';
 
@@ -111,11 +119,13 @@ function buildToyNav({
   doc,
   toy,
   onBack,
+  rendererStatus,
 }: {
   container: HTMLElement | null;
   doc: Document | null;
   toy?: Toy;
   onBack?: () => void;
+  rendererStatus?: RendererStatusState | null;
 }) {
   if (!container || !doc) return null;
 
@@ -157,6 +167,38 @@ function buildToyNav({
   const actions = doc.createElement('div');
   actions.className = 'active-toy-nav__actions';
 
+  if (rendererStatus) {
+    const statusContainer = doc.createElement('div');
+    statusContainer.className = 'renderer-status';
+
+    const pill = doc.createElement('span');
+    const fallback = rendererStatus.backend !== 'webgpu';
+    pill.className = `renderer-pill ${fallback ? 'renderer-pill--fallback' : 'renderer-pill--success'}`;
+    pill.textContent = fallback ? 'WebGL fallback' : 'WebGPU';
+    pill.title =
+      rendererStatus.fallbackReason ??
+      (fallback ? 'WebGPU unavailable, using WebGL.' : 'WebGPU renderer active.');
+    statusContainer.appendChild(pill);
+
+    if (rendererStatus.fallbackReason) {
+      const detail = doc.createElement('small');
+      detail.className = 'renderer-pill__detail';
+      detail.textContent = rendererStatus.fallbackReason;
+      statusContainer.appendChild(detail);
+    }
+
+    if (rendererStatus.shouldRetryWebGPU && rendererStatus.onRetry) {
+      const retry = doc.createElement('button');
+      retry.type = 'button';
+      retry.className = 'renderer-pill__retry';
+      retry.textContent = rendererStatus.triedWebGPU ? 'Retry WebGPU' : 'Try WebGPU';
+      retry.addEventListener('click', () => rendererStatus.onRetry?.());
+      statusContainer.appendChild(retry);
+    }
+
+    actions.appendChild(statusContainer);
+  }
+
   const backControl = doc.createElement('button');
   backControl.type = 'button';
   backControl.className = 'toy-nav__back';
@@ -176,6 +218,8 @@ export function createToyView({
   containerId = 'active-toy-container',
 }: { documentRef?: DocumentGetter; listId?: string; containerId?: string } = {}) {
   let backHandler: (() => void) | undefined;
+  let rendererStatus: RendererStatusState | null = null;
+  let activeToyMeta: Toy | undefined;
 
   const getDocument = () => documentRef();
 
@@ -199,15 +243,24 @@ export function createToyView({
 
   const showLibraryView = () => {
     backHandler = undefined;
+    rendererStatus = null;
+    activeToyMeta = undefined;
     showElement(getToyList());
     hideElement(findActiveToyContainer());
   };
 
   const showActiveToyView = (onBack?: () => void, toy?: Toy) => {
     backHandler = onBack ?? backHandler;
+    activeToyMeta = toy ?? activeToyMeta;
     hideElement(getToyList());
     const container = ensureActiveToyContainer();
-    buildToyNav({ container, doc: getDocument(), toy, onBack: backHandler });
+    buildToyNav({
+      container,
+      doc: getDocument(),
+      toy: activeToyMeta,
+      onBack: backHandler,
+      rendererStatus,
+    });
     showElement(container);
     return container;
   };
@@ -217,7 +270,14 @@ export function createToyView({
     const doc = getDocument();
     if (!container || !doc) return null;
 
-    buildToyNav({ container, doc, toy, onBack: backHandler });
+    activeToyMeta = toy ?? activeToyMeta;
+    buildToyNav({
+      container,
+      doc,
+      toy: activeToyMeta,
+      onBack: backHandler,
+      rendererStatus,
+    });
 
     return buildStatusElement(doc, container, {
       type: 'loading',
@@ -238,7 +298,14 @@ export function createToyView({
 
     backHandler = options.onBack ?? backHandler;
     clearContainerContent(container);
-    buildToyNav({ container, doc, toy, onBack: backHandler });
+    activeToyMeta = toy ?? activeToyMeta;
+    buildToyNav({
+      container,
+      doc,
+      toy: activeToyMeta,
+      onBack: backHandler,
+      rendererStatus,
+    });
 
     const status = buildStatusElement(doc, container, {
       type: 'error',
@@ -269,7 +336,14 @@ export function createToyView({
 
     backHandler = options.onBack ?? backHandler;
     clearContainerContent(container);
-    buildToyNav({ container, doc, toy, onBack: backHandler });
+    activeToyMeta = toy ?? activeToyMeta;
+    buildToyNav({
+      container,
+      doc,
+      toy: activeToyMeta,
+      onBack: backHandler,
+      rendererStatus,
+    });
 
     const status = buildStatusElement(doc, container, {
       type: options.allowFallback ? 'warning' : 'error',
@@ -310,6 +384,21 @@ export function createToyView({
     return status;
   };
 
+  const setRendererStatus = (status: RendererStatusState | null) => {
+    rendererStatus = status;
+    const container = findActiveToyContainer();
+    const doc = getDocument();
+    if (container && doc && (container.isConnected || doc.body.contains(container))) {
+      buildToyNav({
+        container,
+        doc,
+        toy: activeToyMeta,
+        onBack: backHandler,
+        rendererStatus,
+      });
+    }
+  };
+
   return {
     showLibraryView,
     showActiveToyView,
@@ -319,5 +408,6 @@ export function createToyView({
     removeStatusElement,
     clearActiveToyContainer: () => clearContainerContent(findActiveToyContainer()),
     ensureActiveToyContainer,
+    setRendererStatus,
   };
 }

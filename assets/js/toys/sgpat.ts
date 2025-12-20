@@ -16,12 +16,12 @@ import PatternRecognizer from '../utils/patternRecognition';
 import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
-  getStoredQualityPreset,
+  getActiveQualityPreset,
   type QualityPreset,
 } from '../core/settings-panel';
 
 const settingsPanel = getSettingsPanel();
-let activeQuality: QualityPreset = getStoredQualityPreset();
+let activeQuality: QualityPreset = getActiveQualityPreset();
 
 const toy = new WebToy({
   cameraOptions: {

@@ -1,7 +1,7 @@
 import type WebToy from '../core/web-toy';
 import { AnimationContext, startAudioLoop } from '../core/animation-loop';
 import type { AudioInitOptions } from './audio-handler';
-import { AudioAccessError, createSyntheticAudioStream } from './audio-handler';
+import { AudioAccessError, getCachedDemoAudioStream } from './audio-handler';
 
 type StartAudioOptions =
   | (AudioInitOptions & {
@@ -30,33 +30,13 @@ export async function startToyAudio(
     normalizeOptions(options);
 
   if (preferSynthetic) {
-    const synthetic = createSyntheticAudioStream();
-
+    const synthetic = getCachedDemoAudioStream();
     const syntheticCleanup = () => {
-      synthetic.cleanup();
+      void synthetic.cleanup();
     };
 
-    return startAudioLoop(toy, animate, {
-      ...audioOptions,
-      stream: synthetic.stream,
-      onCleanup: (ctx) => {
-        syntheticCleanup();
-        audioOptions.onCleanup?.(ctx);
-      },
-    });
-  }
-
-  try {
-    return await startAudioLoop(toy, animate, audioOptions);
-  } catch (error) {
-    if (fallbackToSynthetic && error instanceof AudioAccessError) {
-      const synthetic = createSyntheticAudioStream();
-
-      const syntheticCleanup = () => {
-        synthetic.cleanup();
-      };
-
-      return startAudioLoop(toy, animate, {
+    try {
+      return await startAudioLoop(toy, animate, {
         ...audioOptions,
         stream: synthetic.stream,
         onCleanup: (ctx) => {
@@ -64,6 +44,35 @@ export async function startToyAudio(
           audioOptions.onCleanup?.(ctx);
         },
       });
+    } catch (error) {
+      syntheticCleanup();
+      throw error;
+    }
+  }
+
+  try {
+    return await startAudioLoop(toy, animate, audioOptions);
+  } catch (error) {
+    if (fallbackToSynthetic && error instanceof AudioAccessError) {
+      const synthetic = getCachedDemoAudioStream();
+
+      const syntheticCleanup = () => {
+        void synthetic.cleanup();
+      };
+
+      try {
+        return await startAudioLoop(toy, animate, {
+          ...audioOptions,
+          stream: synthetic.stream,
+          onCleanup: (ctx) => {
+            syntheticCleanup();
+            audioOptions.onCleanup?.(ctx);
+          },
+        });
+      } catch (fallbackError) {
+        syntheticCleanup();
+        throw fallbackError;
+      }
     }
 
     console.error('Microphone access denied', error);

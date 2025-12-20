@@ -7,6 +7,8 @@ export type QualityPreset = {
   particleScale?: number;
 };
 
+type QualitySubscriber = (preset: QualityPreset) => void;
+
 export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
   {
     id: 'performance',
@@ -48,6 +50,9 @@ type QualityOptions = {
 
 export const QUALITY_STORAGE_KEY = 'stims:quality-preset';
 
+const qualitySubscribers = new Set<QualitySubscriber>();
+let activeQualityPreset: QualityPreset | null = null;
+
 function getStorage(): Storage | null {
   try {
     return typeof localStorage !== 'undefined' ? localStorage : null;
@@ -73,6 +78,30 @@ export function getStoredQualityPreset({
   if (fromStorage) return fromStorage;
 
   return presets.find((preset) => preset.id === defaultPresetId) || presets[0];
+}
+
+export function getActiveQualityPreset({
+  presets = DEFAULT_QUALITY_PRESETS,
+  defaultPresetId = 'balanced',
+  storageKey = QUALITY_STORAGE_KEY,
+}: StoredPresetOptions = {}): QualityPreset {
+  if (activeQualityPreset) {
+    const match = presets.find((preset) => preset.id === activeQualityPreset?.id);
+    if (match) return match;
+  }
+
+  activeQualityPreset = getStoredQualityPreset({ presets, defaultPresetId, storageKey });
+  return activeQualityPreset;
+}
+
+export function subscribeToQualityPreset(subscriber: QualitySubscriber) {
+  qualitySubscribers.add(subscriber);
+  if (activeQualityPreset) {
+    subscriber(activeQualityPreset);
+  }
+  return () => {
+    qualitySubscribers.delete(subscriber);
+  };
 }
 
 class PersistentSettingsPanel {
@@ -198,7 +227,7 @@ class PersistentSettingsPanel {
   }
 
   private getInitialPreset(defaultPresetId: string): QualityPreset {
-    return getStoredQualityPreset({
+    return getActiveQualityPreset({
       presets: this.qualityPresets,
       defaultPresetId,
       storageKey: this.qualityStorageKey,
@@ -210,6 +239,8 @@ class PersistentSettingsPanel {
     if (!preset) return;
 
     getStorage()?.setItem(this.qualityStorageKey, preset.id);
+    activeQualityPreset = preset;
+    qualitySubscribers.forEach((subscriber) => subscriber(preset));
     this.qualityChangeHandler?.(preset);
   }
 }

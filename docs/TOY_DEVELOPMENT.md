@@ -63,8 +63,8 @@ Adjust imports to match the actual helpers you use.
 
 ### Microphone permission flow
 
-- Reuse the centralized UI helper in `assets/js/core/microphone-flow.ts` to request mic access, surface denial/timeout states, and reveal a "Load sample audio" fallback.
-- Wire the helper to your toy by passing callbacks that start microphone audio and sample audio (e.g., `startToyAudio` with `fallbackToSynthetic: true`).
+- Reuse the centralized UI helper in `assets/js/core/microphone-flow.ts` to request mic access, surface denial/timeout states, and reveal a "Load demo audio" fallback.
+- Wire the helper to your toy by passing callbacks that start microphone audio and demo audio (e.g., `startToyAudio` with `fallbackToSynthetic: true`).
 - Optional analytics/logging hooks let you forward `microphone_request_started`, `microphone_request_succeeded`, and `microphone_request_failed` events to any telemetry client.
 
 Example snippet:
@@ -74,7 +74,7 @@ import { setupMicrophonePermissionFlow } from '../core/microphone-flow';
 
 setupMicrophonePermissionFlow({
   startButton: document.getElementById('start-audio-btn'),
-  fallbackButton: document.getElementById('use-sample-audio'),
+  fallbackButton: document.getElementById('use-demo-audio'),
   statusElement: document.getElementById('audio-status'),
   requestMicrophone: () => startToyAudio(toy, animate),
   requestSampleAudio: () => startToyAudio(toy, animate, { fallbackToSynthetic: true }),

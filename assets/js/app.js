@@ -43,7 +43,7 @@ function createLightsExperience({
 
   const elements = {
     startButton: doc?.getElementById('start-audio-btn'),
-    fallbackButton: doc?.getElementById('use-sample-audio'),
+    fallbackButton: doc?.getElementById('use-demo-audio'),
     statusElement: doc?.getElementById('audio-status'),
     lightSelect: doc?.getElementById('light-type'),
   };
@@ -249,7 +249,7 @@ function createLightsExperience({
           await startAudio(audioMode);
         } catch (error) {
           setStatus(
-            'Microphone or sample audio is required for the visualization to work. Please try again.',
+            'Microphone or demo audio is required for the visualization to work. Please try again.',
             'error'
           );
           console.error('Unable to restart audio after visibility change', error);

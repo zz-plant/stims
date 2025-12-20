@@ -214,6 +214,103 @@ export function createSyntheticAudioStream({
   return { stream: destination.stream, cleanup };
 }
 
+let cachedDemoAudio: {
+  stream: MediaStream;
+  teardown: () => Promise<void> | void;
+} | null = null;
+let cachedDemoUsers = 0;
+
+function createProceduralDemoAudio() {
+  const context = new AudioContext();
+
+  const carrier = context.createOscillator();
+  carrier.type = 'triangle';
+  carrier.frequency.value = 172;
+
+  const harmonic = context.createOscillator();
+  harmonic.type = 'sine';
+  harmonic.frequency.value = 0.32;
+
+  const harmonicGain = context.createGain();
+  harmonicGain.gain.value = 110;
+  harmonic.connect(harmonicGain);
+  harmonicGain.connect(carrier.frequency);
+
+  const wobble = context.createOscillator();
+  wobble.type = 'sine';
+  wobble.frequency.value = 2.25;
+
+  const wobbleGain = context.createGain();
+  wobbleGain.gain.value = 0.12;
+
+  const mainGain = context.createGain();
+  mainGain.gain.value = 0.14;
+
+  wobble.connect(wobbleGain);
+  wobbleGain.connect(mainGain.gain);
+
+  const destination = context.createMediaStreamDestination();
+
+  carrier.connect(mainGain);
+  mainGain.connect(destination);
+
+  carrier.start();
+  harmonic.start();
+  wobble.start();
+
+  let stopped = false;
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    try {
+      carrier.stop();
+      harmonic.stop();
+      wobble.stop();
+    } catch (error) {
+      console.error('Error stopping procedural demo audio nodes', error);
+    }
+  };
+
+  const disconnect = async () => {
+    stop();
+    carrier.disconnect();
+    harmonic.disconnect();
+    wobble.disconnect();
+    harmonicGain.disconnect();
+    wobbleGain.disconnect();
+    mainGain.disconnect();
+    try {
+      await context.close();
+    } catch (error) {
+      console.error('Error closing procedural demo audio context', error);
+    }
+  };
+
+  return { stream: destination.stream, teardown: disconnect };
+}
+
+export function getCachedDemoAudioStream() {
+  if (!cachedDemoAudio) {
+    cachedDemoAudio = createProceduralDemoAudio();
+  }
+
+  cachedDemoUsers += 1;
+  let released = false;
+
+  return {
+    stream: cachedDemoAudio.stream,
+    cleanup: async () => {
+      if (released) return;
+      released = true;
+      cachedDemoUsers = Math.max(0, cachedDemoUsers - 1);
+      if (cachedDemoUsers === 0 && cachedDemoAudio) {
+        await cachedDemoAudio.teardown();
+        cachedDemoAudio = null;
+      }
+    },
+  };
+}
+
 export async function initAudio(options: AudioInitOptions = {}) {
   const {
     fftSize = 256,
