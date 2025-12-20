@@ -42,6 +42,8 @@ export async function startAudioLoop(
 /**
  * Get frequency data from the animation context, with fallback to empty array.
  */
+const EMPTY_FREQUENCY_DATA = new Uint8Array(0);
+
 export function getContextFrequencyData(ctx: AnimationContext): Uint8Array {
-  return ctx.analyser ? getFrequencyData(ctx.analyser) : new Uint8Array(0);
+  return ctx.analyser ? getFrequencyData(ctx.analyser) : EMPTY_FREQUENCY_DATA;
 }

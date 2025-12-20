@@ -17,6 +17,35 @@ export class FrequencyAnalyser {
   private readonly workletNode?: AudioWorkletNode;
   private readonly analyserNode?: AnalyserNode;
 
+  private updateFrequencyData(
+    data: ArrayBufferView | ArrayBuffer | number[]
+  ) {
+    let incoming: Uint8Array | null = null;
+
+    if (data instanceof Uint8Array) {
+      incoming = data;
+    } else if (ArrayBuffer.isView(data)) {
+      incoming = new Uint8Array(
+        (data as ArrayBufferView).buffer,
+        (data as ArrayBufferView).byteOffset,
+        (data as ArrayBufferView).byteLength
+      );
+    } else if (data instanceof ArrayBuffer) {
+      incoming = new Uint8Array(data);
+    } else if (Array.isArray(data)) {
+      incoming = Uint8Array.from(data);
+    }
+
+    if (!incoming || incoming.length === 0) return;
+
+    if (incoming.length !== this.frequencyData.length) {
+      this.frequencyData = new Uint8Array(incoming.length);
+      this.frequencyBinCount = incoming.length;
+    }
+
+    this.frequencyData.set(incoming);
+  }
+
   private constructor({
     context,
     sourceNode,
@@ -44,7 +73,7 @@ export class FrequencyAnalyser {
       this.workletNode.port.onmessage = (event: MessageEvent) => {
         const { frequencyData, rms } = event.data ?? {};
         if (frequencyData) {
-          this.frequencyData = new Uint8Array(frequencyData);
+          this.updateFrequencyData(frequencyData as ArrayBufferView | ArrayBuffer | number[]);
         }
         if (typeof rms === 'number') {
           this.rms = rms;
