@@ -24,8 +24,28 @@ type ToyMetadata = {
   title: string;
   description: string;
   requiresWebGPU: boolean;
+  controls: string[];
+  module: string | null;
+  type: string | null;
+  allowWebGLFallback: boolean;
   url: string;
 };
+
+const markdownSources = {
+  'README.md': path.join(repoRoot, 'README.md'),
+  'docs/README.md': path.join(repoRoot, 'docs/README.md'),
+  'docs/MCP_SERVER.md': path.join(repoRoot, 'docs/MCP_SERVER.md'),
+  'docs/DEVELOPMENT.md': path.join(repoRoot, 'docs/DEVELOPMENT.md'),
+  'docs/TOY_DEVELOPMENT.md': path.join(repoRoot, 'docs/TOY_DEVELOPMENT.md'),
+  'docs/TOY_SCRIPT_INDEX.md': path.join(repoRoot, 'docs/TOY_SCRIPT_INDEX.md'),
+  'docs/toys.md': path.join(repoRoot, 'docs/toys.md'),
+} as const;
+
+type MarkdownSourceKey = keyof typeof markdownSources;
+
+type DocSectionResult =
+  | { ok: true; content: string }
+  | { ok: false; message: string };
 
 server.registerTool(
   'list_docs',
@@ -45,7 +65,7 @@ server.registerTool(
   'get_toys',
   {
     description:
-      'Return structured toy metadata from assets/js/toys-data.js with optional slug or WebGPU filters.',
+      'Return structured toy metadata (including controls and module info) from assets/js/toys-data.js with optional slug or WebGPU filters.',
     inputSchema: z
       .object({
         slug: z.string().trim().optional().describe('Limit results to a specific toy slug.'),
@@ -77,6 +97,31 @@ server.registerTool(
         },
       ],
     } as const;
+  },
+);
+
+server.registerTool(
+  'read_doc_section',
+  {
+    description:
+      'Return an entire markdown file or a specific heading section from README.md or docs/*.md.',
+    inputSchema: z
+      .object({
+        file: z
+          .enum(Object.keys(markdownSources) as [MarkdownSourceKey, ...MarkdownSourceKey[]])
+          .describe('Markdown file to read (e.g., README.md or docs/MCP_SERVER.md).'),
+        heading: z
+          .string()
+          .trim()
+          .optional()
+          .describe('Optional heading text to narrow the response to a single section.'),
+      })
+      .strict(),
+  },
+  async ({ file, heading }) => {
+    const result = await getDocSectionContent(file, heading);
+
+    return asTextResponse(result.ok ? result.content : result.message);
   },
 );
 
@@ -136,8 +181,14 @@ server.registerTool(
 );
 
 const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error('Stim Webtoys MCP server is running on stdio.');
+async function startServer() {
+  await server.connect(transport);
+  console.error('Stim Webtoys MCP server is running on stdio.');
+}
+
+if (import.meta.main) {
+  await startServer();
+}
 
 async function loadReadme() {
   const readmePath = path.join(repoRoot, 'README.md');
@@ -219,17 +270,7 @@ function extractRuntimeRange(lines: string[]): SectionExcerpt | null {
 }
 
 function extractSection(markdown: string, heading: string) {
-  const pattern = new RegExp(`^##\\s+${escapeForRegex(heading)}\\s*$`, 'm');
-  const match = pattern.exec(markdown);
-
-  if (!match) return null;
-
-  const startIndex = match.index + match[0].length;
-  const rest = markdown.slice(startIndex);
-  const nextHeading = rest.search(/^##\s+/m);
-  const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
-
-  return section.trim();
+  return extractMarkdownSection(markdown, heading)?.content ?? null;
 }
 
 function escapeForRegex(input: string) {
@@ -259,6 +300,12 @@ function normalizeToys(data: unknown): ToyMetadata[] {
       const title = typeof entry.title === 'string' ? entry.title : '';
       const description = typeof entry.description === 'string' ? entry.description : '';
       const requiresWebGPU = typeof entry.requiresWebGPU === 'boolean' ? entry.requiresWebGPU : false;
+      const module = typeof entry.module === 'string' ? entry.module : null;
+      const type = typeof entry.type === 'string' ? entry.type : null;
+      const allowWebGLFallback = typeof entry.allowWebGLFallback === 'boolean' ? entry.allowWebGLFallback : false;
+      const controls = Array.isArray(entry.controls)
+        ? entry.controls.filter((control): control is string => typeof control === 'string')
+        : [];
 
       if (!slug) return null;
 
@@ -267,8 +314,79 @@ function normalizeToys(data: unknown): ToyMetadata[] {
         title: title || slug,
         description,
         requiresWebGPU,
+        controls,
+        module,
+        type,
+        allowWebGLFallback,
         url: `toy.html?toy=${encodeURIComponent(slug)}`,
       };
     })
     .filter((entry): entry is ToyMetadata => Boolean(entry));
 }
+
+function extractMarkdownSection(markdown: string, heading: string) {
+  const pattern = new RegExp(`^(#{1,6}\\s+${escapeForRegex(heading)})\\s*$`, 'm');
+  const match = pattern.exec(markdown);
+
+  if (!match) return null;
+
+  const startIndex = match.index + match[0].length;
+  const rest = markdown.slice(startIndex);
+  const nextHeading = rest.search(/^#{1,6}\\s+/m);
+  const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
+
+  return {
+    heading: match[1].trim(),
+    content: section.trim(),
+  };
+}
+
+async function loadMarkdownFile(file: MarkdownSourceKey) {
+  const resolved = markdownSources[file];
+
+  if (!resolved) {
+    throw new Error(`Unsupported markdown file: ${file}`);
+  }
+
+  return readFile(resolved, 'utf8');
+}
+
+async function getDocSectionContent(file: MarkdownSourceKey, heading?: string | null): Promise<DocSectionResult> {
+  if (!markdownSources[file]) {
+    return { ok: false, message: `The file "${file}" is not available for reading.` };
+  }
+
+  try {
+    const markdown = await loadMarkdownFile(file);
+
+    if (!heading) {
+      return { ok: true, content: markdown.trim() };
+    }
+
+    const section = extractMarkdownSection(markdown, heading);
+
+    if (!section) {
+      return { ok: false, message: `Heading "${heading}" was not found in ${file}.` };
+    }
+
+    const text = `${section.heading}\n${section.content}`.trim();
+    return { ok: true, content: text };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { ok: false, message: `Could not read ${file}: ${message}` };
+  }
+}
+
+export type { ToyMetadata };
+export {
+  buildDocPointers,
+  extractMarkdownSection,
+  extractRuntimeRange,
+  extractSection,
+  extractSectionWithRange,
+  getDocSectionContent,
+  loadReadme,
+  loadReadmeLines,
+  normalizeToys,
+  startServer,
+};
