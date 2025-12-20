@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createRouter } from '../assets/js/router.ts';
 import { createToyView } from '../assets/js/toy-view.ts';
+import { disposeCalls, resetDisposeCalls } from '../assets/js/__mocks__/disposable-module.js';
 
 const loaderModule = '../assets/js/loader.ts';
 const capabilitiesModule = '../assets/js/core/renderer-capabilities.ts';
@@ -107,6 +108,7 @@ afterEach(() => {
   mock.restore();
   document.body.innerHTML = '';
   delete globalThis.__activeWebToy;
+  resetDisposeCalls();
   Object.defineProperty(window, 'location', {
     writable: true,
     configurable: true,
@@ -146,9 +148,61 @@ describe('loadToy', () => {
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
 
-    expect(globalThis.__activeWebToy).toBeUndefined();
+    expect(document.querySelector('[data-fake-toy]')).toBeNull();
     expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
     expect(window.location.search).toBe('');
+  });
+});
+
+describe('toy lifecycle', () => {
+  test('disposes start return values that implement dispose', async () => {
+    resetDisposeCalls();
+    const manifestPath = './__mocks__/disposable-module.js';
+
+    const { loader } = await buildLoader({
+      locationHref: 'http://example.com/library',
+      manifestPath,
+      toys: [
+        {
+          slug: 'brand',
+          title: 'Test Brand Toy',
+          module: manifestPath,
+          type: 'module',
+          requiresWebGPU: false,
+        },
+      ],
+    });
+
+    await loader.loadToy('brand');
+    expect(document.querySelector('[data-module="disposable"]')).not.toBeNull();
+
+    await loader.loadToy('brand');
+
+    expect(disposeCalls).toBe(1);
+    expect(document.querySelectorAll('[data-module="disposable"]').length).toBe(1);
+  });
+
+  test('ignores non-conforming start return values', async () => {
+    const manifestPath = './__mocks__/non-conforming-module.js';
+
+    const { loader } = await buildLoader({
+      locationHref: 'http://example.com/library',
+      manifestPath,
+      toys: [
+        {
+          slug: 'brand',
+          title: 'Test Brand Toy',
+          module: manifestPath,
+          type: 'module',
+          requiresWebGPU: false,
+        },
+      ],
+    });
+
+    await loader.loadToy('brand', { pushState: true });
+    document.querySelector('[data-back-to-library]')?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(document.querySelector('[data-fake-toy]')).toBeNull();
   });
 });
 

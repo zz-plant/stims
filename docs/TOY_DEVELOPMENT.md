@@ -4,7 +4,8 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 
 ## Core Expectations
 
-- Place new toy modules under `assets/js/toys/` and export a `start(options)` entry point.
+- Place new toy modules under `assets/js/toys/` and export a `start(options)` entry point. The signature is `start({ container, slug }: ToyStartOptions)`; `container` points at the active toy DOM node and `slug` matches the entry in `toys-data.js`.
+- Always return a `ToyInstance` (see `assets/js/toy-runtime.ts`) with an optional `dispose()` method for cleanup. The loader calls `normalizeToyInstance` to validate the return value—avoid relying on globals like `globalThis.__activeWebToy` for teardown.
 - Register the toy in `assets/js/toys-data.js` with a unique slug, label, and any default parameters.
 - Load toys through `toy.html?toy=<slug>` or a dedicated HTML entry point. Keep query string slugs in sync with `toys-data.js`.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
@@ -32,8 +33,9 @@ Use this skeleton for new toys to standardize lifecycle hooks and cleanup:
 ```ts
 import { initRenderer } from '../core/renderer';
 import { createAnalyzer } from '../core/audio';
+import type { ToyInstance, ToyStartOptions } from '../toy-runtime.ts';
 
-export async function start({ canvas, audioContext }) {
+export async function start({ container, slug, canvas, audioContext }: ToyStartOptions & { canvas?: HTMLCanvasElement; audioContext?: AudioContext }): Promise<ToyInstance> {
   const { renderer, scene, camera, resize } = initRenderer({ canvas, maxPixelRatio: 2 });
   const analyzer = await createAnalyzer(audioContext);
 
@@ -47,9 +49,11 @@ export async function start({ canvas, audioContext }) {
   resize();
   requestAnimationFrame(tick);
 
-  return () => {
-    analyzer.dispose?.();
-    renderer.dispose?.();
+  return {
+    dispose() {
+      analyzer.dispose?.();
+      renderer.dispose?.();
+    },
   };
 }
 ```

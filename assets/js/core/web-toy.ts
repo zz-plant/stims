@@ -9,8 +9,9 @@ import {
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
 import { initAudio } from '../utils/audio-handler.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
+import type { ToyInstance } from '../toy-runtime.ts';
 
-export default class WebToy {
+export default class WebToy implements ToyInstance {
   canvas: HTMLCanvasElement;
   scene: THREE.Scene;
   camera: THREE.Camera;
@@ -32,6 +33,7 @@ export default class WebToy {
     rendererOptions = {},
     lightingOptions = null,
     ambientLightOptions = null,
+    container = null,
     canvas = null,
   } = {}) {
     if (!ensureWebGL()) {
@@ -41,7 +43,9 @@ export default class WebToy {
     this.canvas = canvas || document.createElement('canvas');
 
     const host =
-      document.getElementById('active-toy-container') || document.body;
+      container ||
+      document.getElementById('active-toy-container') ||
+      document.body;
     host.appendChild(this.canvas);
 
     this.scene = initScene(sceneOptions);
@@ -84,8 +88,6 @@ export default class WebToy {
     this.audioCleanup = null;
     this.resizeHandler = () => this.handleResize();
     window.addEventListener('resize', this.resizeHandler);
-
-    (globalThis as Record<string, unknown>).__activeWebToy = this;
   }
 
   handleResize() {
@@ -189,10 +191,6 @@ export default class WebToy {
 
     if (this.canvas?.parentElement) {
       this.canvas.parentElement.removeChild(this.canvas);
-    }
-
-    if ((globalThis as Record<string, unknown>).__activeWebToy === this) {
-      delete (globalThis as Record<string, unknown>).__activeWebToy;
     }
   }
 }

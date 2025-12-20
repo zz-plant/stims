@@ -4,9 +4,9 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
+import type { ToyInstance, ToyStartOptions } from '../toy-runtime.ts';
 
-type StartOptions = {
-  container?: HTMLElement | null;
+type StartOptions = ToyStartOptions & {
   path: string;
   title?: string;
   allow?: string;
@@ -28,7 +28,7 @@ export function startIframeToy({
   title,
   allow,
   description,
-}: StartOptions) {
+}: StartOptions): ToyInstance {
   const target = container ?? document.getElementById('active-toy-container');
 
   if (!target) {
@@ -68,17 +68,13 @@ export function startIframeToy({
   };
   window.addEventListener('message', handleMessage);
 
-  const activeToy = {
+  const activeToy: ToyInstance = {
     dispose() {
       iframe.remove();
       window.removeEventListener('message', handleMessage);
-      if ((globalThis as Record<string, unknown>).__activeWebToy === activeToy) {
-        delete (globalThis as Record<string, unknown>).__activeWebToy;
-      }
     },
   };
 
-  (globalThis as Record<string, unknown>).__activeWebToy = activeToy;
   target.appendChild(iframe);
 
   return activeToy;

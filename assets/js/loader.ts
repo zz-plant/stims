@@ -4,6 +4,11 @@ import { createToyView } from './toy-view.ts';
 import { createManifestClient } from './utils/manifest-client.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
+import {
+  normalizeToyInstance,
+  type ToyInstance,
+  type ToyStarter,
+} from './toy-runtime.ts';
 
 type Toy = {
   slug: string;
@@ -15,7 +20,6 @@ type Toy = {
 };
 
 const TOY_QUERY_PARAM = 'toy';
-type ActiveToyCandidate = { dispose?: () => void } | (() => void);
 
 export function createLoader({
   manifestClient = createManifestClient(),
@@ -34,7 +38,7 @@ export function createLoader({
   } = {}) {
   let navigationInitialized = false;
   let escapeHandler: ((event: KeyboardEvent) => void) | null = null;
-  let activeToy: { ref: ActiveToyCandidate; dispose?: () => void } | null = null;
+  let activeToy: ToyInstance | null = null;
   const updateRendererStatus = (
     capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
     onRetry?: () => void
@@ -52,49 +56,15 @@ export function createLoader({
     );
   };
 
-  const getGlobalActiveToy = () =>
-    (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy;
-
-  const normalizeActiveToy = (
-    candidate: unknown
-  ): { ref: ActiveToyCandidate; dispose?: () => void } | null => {
-    if (!candidate) return null;
-
-    if (typeof candidate === 'function') {
-      return { ref: candidate, dispose: candidate };
-    }
-
-    if (typeof candidate === 'object') {
-      const dispose = (candidate as { dispose?: unknown }).dispose;
-      return {
-        ref: candidate as ActiveToyCandidate,
-        dispose: typeof dispose === 'function' ? dispose.bind(candidate) : undefined,
-      };
-    }
-
-    return null;
-  };
-
   const registerActiveToy = (candidate?: unknown) => {
-    const source = candidate === null ? null : candidate ?? getGlobalActiveToy();
-    activeToy = normalizeActiveToy(source);
-
-    if (activeToy?.ref) {
-      (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy =
-        activeToy.ref;
-    } else {
-      delete (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy;
-    }
-
+    activeToy = normalizeToyInstance(candidate);
     return activeToy;
   };
 
   const disposeActiveToy = () => {
-    const current = activeToy ?? normalizeActiveToy(getGlobalActiveToy());
-
-    if (current?.dispose) {
+    if (activeToy?.dispose) {
       try {
-        current.dispose();
+        activeToy.dispose();
       } catch (error) {
         console.error('Error disposing existing toy', error);
       }
@@ -204,12 +174,12 @@ export function createLoader({
       const startCandidate =
         (moduleExports as { start?: unknown })?.start ??
         (moduleExports as { default?: { start?: unknown } })?.default?.start;
-      const starter = typeof startCandidate === 'function' ? startCandidate : null;
+      const starter = typeof startCandidate === 'function' ? (startCandidate as ToyStarter) : null;
 
       if (starter) {
         try {
           const active = await starter({ container, slug: toy.slug });
-          registerActiveToy(active ?? getGlobalActiveToy());
+          registerActiveToy(active);
         } catch (error) {
           console.error('Error starting toy module:', error);
           view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });

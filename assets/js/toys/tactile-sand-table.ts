@@ -6,6 +6,7 @@ import {
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
+import type { ToyStartOptions } from '../toy-runtime.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
@@ -76,7 +77,7 @@ function mapOrientationToGravity(event: DeviceOrientationEvent, state: GravitySt
   state.target.set(gamma / 70, -1, -0.2 + beta / 90).normalize();
 }
 
-export async function start() {
+export async function start({ container }: ToyStartOptions) {
   const toy = new WebToy({
     cameraOptions: {
       fov: 55,
@@ -94,6 +95,7 @@ export async function start() {
       intensity: 1.1,
       color: 0xffffff,
     },
+    container,
   });
 
   const gravity: GravityState = {

@@ -42,7 +42,7 @@ flowchart TD
 2. **Navigate**: push state with the router when requested, set up Escape-to-library, and clear any previous toy.
 3. **Render shell**: ask `toy-view` to show the active toy container and loading indicator; bubble capability status to the UI.
 4. **Import module**: resolve a Vite-friendly URL via the manifest client and `import()` it.
-5. **Start toy**: call the module’s `start` or default export; normalize the returned reference so `dispose` can be called on navigation.
+5. **Start toy**: call the module’s `start` or default export, which must return a `ToyInstance` (`assets/js/toy-runtime.ts`). The loader runs `normalizeToyInstance` so only objects with an optional `dispose` hook are retained for cleanup.
 6. **Cleanup**: on Escape/back, dispose the active toy, clear the container, and reset renderer status in the view.
 
 ## Rendering and Capability Detection
@@ -95,6 +95,7 @@ graph LR
 
 - **Start from a slug**: register the module in `assets/js/toys-data.js` and ensure there is an HTML entry point (often `toy.html?toy=<slug>`).
 - **Use the core**: instantiate `WebToy` (or its helpers) to get camera/scene/renderer/audio defaults and return a `dispose` function for safe teardown.
+- **Return instances, not globals**: loader cleanup only honors objects shaped like `ToyInstance` (with an optional `dispose` method) returned from `start`. The legacy `globalThis.__activeWebToy` fallback has been removed.
 - **Respect presets**: honor `updateRendererSettings` for max pixel ratio and render scale; avoid hard-coding devicePixelRatio.
 - **Surface errors**: throw or log during init so the loader’s import error UI can respond; avoid swallowing dynamic import failures silently.
 
