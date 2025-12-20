@@ -220,6 +220,7 @@ export async function start() {
   grainSlider.step = '0.02';
   grainSlider.value = grainScale.toString();
   grainSlider.setAttribute('aria-label', 'Grain size');
+  grainSlider.className = 'control-panel__slider';
   grainSlider.addEventListener('input', (event) => {
     const value = Number((event.target as HTMLInputElement).value);
     grainScale = value;
@@ -238,6 +239,7 @@ export async function start() {
   dampingSlider.step = '0.001';
   dampingSlider.value = damping.toFixed(3);
   dampingSlider.setAttribute('aria-label', 'Ripple damping');
+  dampingSlider.className = 'control-panel__slider';
   dampingSlider.addEventListener('input', (event) => {
     damping = Number((event.target as HTMLInputElement).value);
   });
@@ -250,9 +252,10 @@ export async function start() {
   const gravityLock = document.createElement('input');
   gravityLock.type = 'checkbox';
   gravityLock.id = 'tactile-gravity-lock';
-  const gravityLabel = document.createElement('label');
-  gravityLabel.htmlFor = gravityLock.id;
-  gravityLabel.textContent = 'Lock gravity';
+  const gravityToggle = document.createElement('label');
+  gravityToggle.className = 'control-panel__checkbox-inline';
+  gravityToggle.htmlFor = gravityLock.id;
+  gravityToggle.textContent = 'Lock gravity';
 
   gravityLock.checked = gravity.locked;
 
@@ -274,7 +277,8 @@ export async function start() {
     gravity.locked = true;
   });
 
-  gravityRow.append(gravityLock, gravityLabel, recenter);
+  gravityToggle.prepend(gravityLock);
+  gravityRow.append(gravityToggle, recenter);
 
   initHints({
     id: 'tactile-sand-table',
