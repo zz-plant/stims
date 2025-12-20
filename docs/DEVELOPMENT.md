@@ -35,6 +35,11 @@ When debugging a single test file, run:
 bun test tests/filename.test.js
 ```
 
+### Editor Tooling
+
+- VS Code users can install recommended extensions via `.vscode/extensions.json` (Prettier, ESLint, and the TypeScript ESLint language service).
+- `.vscode/settings.json` configures Prettier as the default formatter and enables format-on-save for common web languages.
+- `.vscode/launch.json` includes a Vite dev-server debug config (with a Bun-backed prelaunch task) and a Bun test debug config so you can attach the debugger without additional setup.
 Use the `bun run test` (or `npm test`) script instead of raw `bun test` so the `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags are always applied; they load happy-dom globals and a Three.js stub to keep specs headless and fast.
 
 ## Project Structure
