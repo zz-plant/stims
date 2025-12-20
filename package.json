@@ -8,6 +8,7 @@
     "test:watch": "bun test --watch --preload=./tests/setup.ts --importmap=./tests/importmap.json",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
     "dev": "vite",
     "build": "vite build",
     "serve:dist": "bun run scripts/serve-dist.ts",
@@ -32,6 +33,7 @@
     "bun": ">=1.2.0"
   },
   "dependencies": {
+    "@cfworker/json-schema": "^4.1.0",
     "@modelcontextprotocol/sdk": "^1.25.1",
     "three": "^0.177.0",
     "zod": "^4.2.1"
