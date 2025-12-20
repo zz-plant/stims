@@ -4,6 +4,8 @@ import { createToyView } from './toy-view.ts';
 import { createManifestClient } from './utils/manifest-client.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
+import { prewarmRendererCapabilities } from './core/services/render-service.ts';
+import { prewarmMicrophone, resetAudioPool } from './core/services/audio-service.ts';
 
 type Toy = {
   slug: string;
@@ -118,6 +120,7 @@ export function createLoader({
     view.showLibraryView();
     router.goToLibrary();
     updateRendererStatus(null);
+    void resetAudioPool({ stopStreams: true });
   };
 
   const registerEscapeHandler = () => {
@@ -139,6 +142,8 @@ export function createLoader({
     pushState: boolean,
     initialCapabilities?: Awaited<ReturnType<typeof rendererCapabilities>>
   ) => {
+    void prewarmRendererCapabilities();
+    void prewarmMicrophone();
     let capabilities = initialCapabilities ?? (await rendererCapabilities());
 
     const supportsRendering = ensureWebGLCheck({

@@ -9,6 +9,7 @@ This document summarizes how the Stim Webtoys app is assembled, from the entry H
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
 - **Manifest resolution** (`assets/js/utils/manifest-client.ts`) maps logical module paths to the correct dev/build URLs for dynamic `import()`.
 - **Core runtime** (`assets/js/core/*`) initializes the scene, camera, renderer (WebGPU or WebGL), audio pipeline, and quality controls. Helpers such as `animation-loop.ts`, `settings-panel.ts`, and `iframe-quality-sync.ts` manage per-frame work and preset propagation.
+- **Shared services** (`assets/js/core/services/*`) pool renderers and microphone streams so toys can hand off resources without re-allocating (and re-prompting for mic access).
 - **Toys** (`assets/js/toys/*.ts`) compose the core primitives, export a `start` entry, and provide a cleanup hook (commonly via `dispose`).
 
 ## App Shell and Loader Flow
@@ -38,7 +39,7 @@ flowchart TD
 
 ### Loader lifecycle
 
-1. **Resolve toy**: look up the slug in `assets/js/toys-data.js` and ensure rendering support (`ensureWebGL`).
+1. **Resolve toy**: look up the slug in `assets/js/toys-data.js` and ensure rendering support (`ensureWebGL`). Renderer capabilities and microphone permission checks are prewarmed so subsequent toy loads skip redundant probes/prompts.
 2. **Navigate**: push state with the router when requested, set up Escape-to-library, and clear any previous toy.
 3. **Render shell**: ask `toy-view` to show the active toy container and loading indicator; bubble capability status to the UI.
 4. **Import module**: resolve a Vite-friendly URL via the manifest client and `import()` it.
@@ -74,22 +75,30 @@ graph LR
   WebToy --> Camera[camera-setup.ts]
   WebToy --> Lighting[lighting-setup.ts /
   initAmbientLight]
-  WebToy --> Renderer[renderer-setup.ts
-  backend + info]
-  WebToy --> Audio[utils/audio-handler.ts
-  microphone-flow.ts]
+  WebToy --> Renderer[services/render-service.ts
+  pooled backend + info]
+  WebToy --> Audio[services/audio-service.ts
+  pooled microphone]
   WebToy --> Loop[animation-loop.ts]
   Settings[settings-panel.ts
   iframe-quality-sync.ts] --> WebToy
 ```
 
-- **Resize safety**: `web-toy.ts` hooks window resize to update aspect ratio and renderer size.
-- **Lifecycle cleanup**: disposal tears down animation loops, disposes geometries/materials, stops audio, and removes the canvas; the loader also clears the DOM container.
+- **Renderer pooling**: `services/render-service.ts` initializes WebGPU/WebGL once, applies the active quality preset from `settings-panel.ts`, and hands a typed handle (`renderer`, `canvas`, `backend`, `applySettings`, `release`) to toys. Returning the handle releases the canvas back into the pool without disposing the renderer, so switching toys avoids expensive re-creation.
+- **Resize safety**: `web-toy.ts` hooks window resize to update aspect ratio and renderer size via the pooled handle.
+- **Lifecycle cleanup**: disposal tears down animation loops, disposes geometries/materials, releases audio/renderer handles back to their pools, and clears the DOM container.
 
 ## Audio Path
 
-- `microphone-flow.ts` and `utils/audio-handler.ts` request mic access, create a `THREE.AudioListener` and `THREE.Audio`, and expose an `AudioAnalyser` plus a cleanup function.
-- Toys access frequency/time-domain data from the analyser to drive visuals; when switching toys, the loader calls the cleanup hook to release the stream and listeners.
+- `services/audio-service.ts` reuses a single `MediaStream` to avoid repeat prompts; each acquisition gets a fresh `THREE.AudioListener`/`THREE.Audio`/`AudioAnalyser` while sharing the mic stream. Release the handle to stop the analyser and return the stream to the pool.
+- `resetAudioPool({ stopStreams: true })` is used by the loader on navigation back to the library to fully stop tracks; `prewarmMicrophone()` can be called before a toy starts to hide mic latency when permission is already granted.
+- `microphone-flow.ts` remains the UI flow for permission buttons; it can be wired to `prewarmMicrophone`/`acquireAudioHandle` to respect pooling.
+
+## Renderer + Audio Pooling Guidance
+
+- Default to the shared services (`services/render-service.ts` and `services/audio-service.ts`) inside new toys so renderer/mic acquisition is cached between toys.
+- Quality presets from `settings-panel.ts` are re-applied whenever a pooled renderer is handed off. If a toy needs bespoke renderer settings, call `handle.applySettings()` with overrides after acquisition.
+- Specialized toys that need their own renderer/mic can opt out: pass `{ reuseMicrophone: false }` to `acquireAudioHandle`, or bypass `requestRenderer` in favor of a bespoke renderer. In those cases, clean up aggressively and avoid modifying the pooled handles.
 
 ## Adding or Debugging Toys
 
