@@ -15,6 +15,7 @@ let getFrequencyData;
 let AudioAccessError;
 let originalAudioContext;
 let originalAudioWorkletNode;
+let FrequencyAnalyser;
 
 class FakeAudioWorklet {
   addModule = mock().mockResolvedValue(undefined);
@@ -96,9 +97,12 @@ beforeAll(async () => {
     };
   });
 
-  ({ initAudio, getFrequencyData, AudioAccessError } = await import(
-    '../assets/js/utils/audio-handler.ts'
-  ));
+  ({
+    initAudio,
+    getFrequencyData,
+    AudioAccessError,
+    FrequencyAnalyser,
+  } = await import('../assets/js/utils/audio-handler.ts'));
 });
 
 describe('audio-handler utilities', () => {
@@ -189,5 +193,26 @@ describe('audio-handler utilities', () => {
 
     expect(result).toBe(data);
     expect(analyser.getFrequencyData).toHaveBeenCalled();
+  });
+
+  test('FrequencyAnalyser reuses its buffer when worklet updates frequency data', async () => {
+    const analyser = await FrequencyAnalyser.create(
+      new FakeAudioContext(),
+      {},
+      256
+    );
+    const initialData = analyser.getFrequencyData();
+
+    const payload = new Uint8Array(initialData.length);
+    payload.fill(7);
+
+    analyser.workletNode.port.onmessage({
+      data: { frequencyData: payload, rms: 0.25 },
+    });
+
+    const updated = analyser.getFrequencyData();
+    expect(updated).toBe(initialData);
+    expect(updated[0]).toBe(7);
+    expect(analyser.getRmsLevel()).toBeCloseTo(0.25);
   });
 });
