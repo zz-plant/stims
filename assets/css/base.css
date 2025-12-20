@@ -589,6 +589,11 @@ body {
   margin-top: 8px;
 }
 
+.control-panel__actions--inline {
+  align-items: center;
+  margin-top: 0;
+}
+
 .control-panel__label {
   font-weight: 600;
   font-size: 0.95rem;

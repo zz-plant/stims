@@ -47,13 +47,6 @@ let controlState: ControlPanelState;
 const idleDetector = createIdleDetector();
 const clock = new THREE.Clock();
 
-const controlPanel = createControlPanel();
-controlState = controlPanel.getState();
-document.body.appendChild(controlPanel.panel);
-controlPanel.onChange((state) => {
-  controlState = state;
-});
-
 function getCounts() {
   const scale = activeQuality.particleScale ?? 1;
   return {
@@ -109,6 +102,11 @@ function createRandomShape() {
 
 function init() {
   setupSettingsPanel();
+  const controlPanel = createControlPanel();
+  controlState = controlPanel.getState();
+  controlPanel.onChange((state) => {
+    controlState = state;
+  });
   rebuildSceneContents();
 }
 
