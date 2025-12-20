@@ -8,6 +8,7 @@
     "test:watch": "bun test --watch --preload=./tests/setup.ts --importmap=./tests/importmap.json",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
     "dev": "vite",
     "build": "vite build",
     "serve:dist": "bun run scripts/serve-dist.ts",

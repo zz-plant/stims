@@ -28,6 +28,7 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
 | Run test suite | `bun run test` (`npm test` proxies to Bun) |
 | Lint | `bun run lint` (`npm run lint`) |
 | Format with Prettier | `bun run format` (`npm run format`) |
+| Type check without emit | `bun run typecheck` (`npm run typecheck`) |
 
 When debugging a single test file, run:
 ```bash
