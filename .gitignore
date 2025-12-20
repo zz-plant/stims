@@ -2,7 +2,11 @@
 node_modules/
 
 # Editor directories
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # Logs
 npm-debug.log*
@@ -14,4 +18,3 @@ yarn-error.log*
 
 # Build directories
 /dist/
-
