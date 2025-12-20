@@ -3,7 +3,10 @@ import { createRouter } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import { createManifestClient } from './utils/manifest-client.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
-import { getRendererCapabilities } from './core/renderer-capabilities.ts';
+import {
+  getCachedRendererCapabilities,
+  getRendererCapabilities,
+} from './core/renderer-capabilities.ts';
 
 type Toy = {
   slug: string;
@@ -23,6 +26,7 @@ export function createLoader({
   view = createToyView(),
   ensureWebGLCheck = ensureWebGL,
   rendererCapabilities = getRendererCapabilities,
+  cachedRendererCapabilities = getCachedRendererCapabilities,
   toys = toysData as Toy[],
 }: {
   manifestClient?: ReturnType<typeof createManifestClient>;
@@ -30,6 +34,7 @@ export function createLoader({
   view?: ReturnType<typeof createToyView>;
   ensureWebGLCheck?: typeof ensureWebGL;
   rendererCapabilities?: typeof getRendererCapabilities;
+  cachedRendererCapabilities?: typeof getCachedRendererCapabilities;
   toys?: Toy[];
   } = {}) {
   let navigationInitialized = false;
@@ -156,17 +161,25 @@ export function createLoader({
 
     const container = view.showActiveToyView(backToLibrary, toy);
     if (!container) return;
-    updateRendererStatus(capabilities, capabilities.shouldRetryWebGPU
+    const refreshCachedRendererStatus = (onRetry?: () => void) => {
+      const cachedCapabilities = cachedRendererCapabilities?.();
+      if (cachedCapabilities) {
+        updateRendererStatus(cachedCapabilities, onRetry);
+      }
+    };
+    const onRetry = capabilities.shouldRetryWebGPU
       ? async () => {
           capabilities = await rendererCapabilities({ forceRetry: true });
-          updateRendererStatus(capabilities);
+          updateRendererStatus(capabilities, onRetry);
+          refreshCachedRendererStatus(onRetry);
           if (capabilities.preferredBackend === 'webgpu') {
             disposeActiveToy();
             view.clearActiveToyContainer?.();
             await startModuleToy(toy, false, capabilities);
           }
         }
-      : undefined);
+      : undefined;
+    updateRendererStatus(capabilities, onRetry);
 
     registerEscapeHandler();
 
@@ -217,6 +230,7 @@ export function createLoader({
         }
       }
 
+      refreshCachedRendererStatus(onRetry);
       view.removeStatusElement();
     };
 

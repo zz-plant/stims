@@ -150,6 +150,29 @@ describe('loadToy', () => {
     expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
     expect(window.location.search).toBe('');
   });
+
+  test('refreshes renderer status from cached capabilities after toy init', async () => {
+    const fallbackCapabilities = {
+      preferredBackend: 'webgl',
+      adapter: null,
+      device: null,
+      triedWebGPU: true,
+      fallbackReason: 'Mock WebGPU init failure',
+      shouldRetryWebGPU: true,
+    };
+
+    capabilitiesMock.getRendererCapabilities.mockResolvedValue(defaultCapabilities);
+    capabilitiesMock.getCachedRendererCapabilities.mockImplementation(() => fallbackCapabilities);
+
+    const { loader } = await buildLoader();
+
+    await loader.loadToy('brand');
+
+    const fallbackPill = document.querySelector('.renderer-pill');
+    expect(fallbackPill?.textContent).toContain('WebGL fallback');
+    const detail = document.querySelector('.renderer-pill__detail');
+    expect(detail?.textContent).toContain('Mock WebGPU init failure');
+  });
 });
 
 describe('WebGPU requirements', () => {

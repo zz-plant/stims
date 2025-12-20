@@ -65,6 +65,14 @@ flowchart LR
 - **Initialization**: `renderer-setup.ts` builds a renderer using the preferred backend, applies tone mapping, sets pixel ratio/size, and returns metadata consumed by `web-toy.ts`.
 - **Quality presets**: `settings-panel.ts` and `iframe-quality-sync.ts` broadcast max pixel ratio, render scale, and exposure; `WebToy.updateRendererSettings` re-applies them without a reload.
 
+### Renderer status propagation
+
+1. **Probe**: `loader.ts` asks `getRendererCapabilities` for cached-or-probed support before showing a toy view.
+2. **Renderer init**: `renderer-setup.ts` finalizes WebGPU or falls back to WebGL and emits the chosen backend plus any `rememberRendererFallback` reason.
+3. **Status refresh**: after a toy initializes, the loader calls `getCachedRendererCapabilities` to refresh `setRendererStatus`, ensuring the badge reflects runtime fallbacks as well as startup probes.
+
+Runtime fallbacks (anything that calls `rememberRendererFallback` or otherwise changes the cached renderer capability) must refresh the UI so the badge and retry affordances stay accurate.
+
 ## WebToy Composition
 
 ```mermaid

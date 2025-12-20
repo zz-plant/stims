@@ -3,9 +3,11 @@ import * as THREE from 'three';
 import WebGPURenderer from 'three/src/renderers/webgpu/WebGPURenderer.js';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 import {
+  getCachedRendererCapabilities,
   getRendererCapabilities,
   rememberRendererFallback,
   type RendererBackend,
+  type RendererCapabilities,
 } from './renderer-capabilities.ts';
 
 export type RendererInitResult = {
@@ -24,6 +26,7 @@ export type RendererInitConfig = {
   maxPixelRatio?: number;
   alpha?: boolean;
   renderScale?: number;
+  onCapabilitiesResolved?: (capabilities: RendererCapabilities) => void;
 };
 
 export async function initRenderer(
@@ -46,7 +49,14 @@ export async function initRenderer(
     maxPixelRatio = 2,
     alpha = false,
     renderScale = 1,
+    onCapabilitiesResolved,
   } = config;
+
+  const emitCapabilities = (capabilities?: RendererCapabilities | null) => {
+    if (capabilities && typeof onCapabilitiesResolved === 'function') {
+      onCapabilitiesResolved(capabilities);
+    }
+  };
 
   const finalize = (
     renderer: THREE.WebGLRenderer | WebGPURenderer,
@@ -83,7 +93,8 @@ export async function initRenderer(
     if (error) {
       console.debug(error);
     }
-    rememberRendererFallback(reason, { shouldRetryWebGPU, triedWebGPU });
+    const capabilities = rememberRendererFallback(reason, { shouldRetryWebGPU, triedWebGPU });
+    emitCapabilities(capabilities);
     const renderer = new THREE.WebGLRenderer({ canvas, antialias, alpha });
     return finalize(renderer, 'webgl', null, null);
   };
@@ -108,6 +119,7 @@ export async function initRenderer(
 
     try {
       const renderer = new WebGPURenderer({ canvas, antialias, alpha, adapter, device });
+      emitCapabilities(getCachedRendererCapabilities() ?? capabilities);
       return finalize(renderer, 'webgpu', adapter, device);
     } catch (error) {
       return fallbackToWebGL('Failed to create a WebGPU renderer.', error);
