@@ -49,4 +49,27 @@ describe('manifest client', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
+
+  test('retries fetching when manifest retrieval returned null', async () => {
+    const manifest = {
+      [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
+    };
+
+    const responses = [
+      { ok: false },
+      { ok: false },
+      { ok: true, json: () => Promise.resolve(manifest) },
+    ];
+
+    const fetchImpl = mock(() => Promise.resolve(responses.shift()));
+
+    const client = createManifestClient({ fetchImpl });
+
+    const fallbackPath = await client.resolveModulePath(moduleEntry);
+    expect(fallbackPath).toBe('/assets/js/toys/example.ts');
+
+    const resolvedPath = await client.resolveModulePath(moduleEntry);
+    expect(resolvedPath).toBe('/assets/js/toys/example.123.js');
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
 });

@@ -61,7 +61,11 @@ function resolveFallbackPath(entry: string, baseUrl: URL | null) {
   }
 
   if (baseUrl) {
-    return new URL(entry, baseUrl).pathname;
+    try {
+      return new URL(entry, baseUrl).pathname;
+    } catch (error) {
+      console.warn('Unable to resolve fallback path from base URL', error);
+    }
   }
 
   return entry.startsWith('/') || entry.startsWith('.') ? entry : `/${entry}`;
@@ -83,11 +87,15 @@ export function createManifestClient({
 }: { fetchImpl?: FetchImpl; baseUrl?: BaseUrlInput } = {}) {
   const getBaseUrl = () => resolveBaseUrl(baseUrl);
   let manifestPromise: Promise<Record<string, ManifestEntry> | null> | null = null;
+  let manifestBaseUrl: string | null | undefined;
 
   const getManifestPaths = () => buildManifestPaths(getBaseUrl());
 
   const fetchManifest = async () => {
-    if (!manifestPromise) {
+    const currentBaseUrl = getBaseUrl()?.toString() ?? null;
+
+    if (!manifestPromise || manifestBaseUrl !== currentBaseUrl) {
+      manifestBaseUrl = currentBaseUrl;
       manifestPromise = (async () => {
         const paths = getManifestPaths();
 
@@ -106,7 +114,13 @@ export function createManifestClient({
       })();
     }
 
-    return manifestPromise;
+    const manifest = await manifestPromise;
+
+    if (manifest === null) {
+      manifestPromise = null;
+    }
+
+    return manifest;
   };
 
   const resolveModulePath = async (entry: string) => {
@@ -141,6 +155,7 @@ export function createManifestClient({
 
   const reset = () => {
     manifestPromise = null;
+    manifestBaseUrl = null;
   };
 
   return {
