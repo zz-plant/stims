@@ -25,9 +25,10 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
 | Start dev server | `bun run dev` (`npm run dev`) |
 | Production build | `bun run build` (`npm run build`) |
 | Preview build locally | `bun run preview` (`npm run preview`) |
-| Run test suite | `bun test` (`npm run test` proxies to Bun) |
+| Run test suite | `bun run test` (`npm test` proxies to Bun) |
 | Lint | `bun run lint` (`npm run lint`) |
 | Format with Prettier | `bun run format` (`npm run format`) |
+| Type check without emit | `bun run typecheck` (`npm run typecheck`) |
 
 When debugging a single test file, run:
 ```bash
@@ -39,6 +40,7 @@ bun test tests/filename.test.js
 - VS Code users can install recommended extensions via `.vscode/extensions.json` (Prettier, ESLint, and the TypeScript ESLint language service).
 - `.vscode/settings.json` configures Prettier as the default formatter and enables format-on-save for common web languages.
 - `.vscode/launch.json` includes a Vite dev-server debug config (with a Bun-backed prelaunch task) and a Bun test debug config so you can attach the debugger without additional setup.
+Use the `bun run test` (or `npm test`) script instead of raw `bun test` so the `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags are always applied; they load happy-dom globals and a Three.js stub to keep specs headless and fast.
 
 ## Project Structure
 

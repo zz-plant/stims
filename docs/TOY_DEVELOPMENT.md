@@ -109,10 +109,10 @@ Manual scenarios to verify:
 
 ## Testing Guidance
 
-- Add Jest specs for math and utility helpers in `assets/js/utils/` as they are shared by multiple toys.
+- Add Bun specs for math and utility helpers in `assets/js/utils/` as they are shared by multiple toys.
 - For toy-specific logic, prefer unit-testing pure functions (e.g., color pickers, motion curves) rather than WebGL rendering.
 - Keep tests deterministic: mock `performance.now`, random seeds, and any time-based easing functions when needed.
-- Use the shared happy-dom preload in `tests/setup.ts` along with the stub helpers in `tests/toy-test-helpers.ts` (see `tests/sample-toy.test.ts`) to spin up a toy container, fake audio context/analyzer, or mock renderer. Follow that pattern to ensure `start` returns a cleanup function and disposes DOM nodes and audio handles.
+- Use the Bun test runner with the shared happy-dom preload in `tests/setup.ts` and the import map in `tests/importmap.json` along with the stub helpers in `tests/toy-test-helpers.ts` (see `tests/sample-toy.test.ts`) to spin up a toy container, fake audio context/analyzer, or mock renderer. Follow that pattern to ensure `start` returns a cleanup function and disposes DOM nodes and audio handles.
 
 ## Documentation
 
