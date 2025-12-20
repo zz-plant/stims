@@ -76,12 +76,10 @@
           },
         });
 
-        const densityScale = Math.max(baseDensity, preset.particleScale ?? 1);
-        particleCount = Math.max(200, Math.round(baseParticleCount * densityScale));
-        rebuildParticles();
+      const densityScale = Math.max(baseDensity, preset.particleScale ?? 1);
+      particleCount = Math.max(200, Math.round(baseParticleCount * densityScale));
+      rebuildParticles();
       }
-
-      setupIframeQualitySync(applyQualityPreset);
 
       class CanvasToy {
         constructor(canvasEl) {
@@ -155,6 +153,8 @@
           particles.push(createParticle());
         }
       }
+
+      setupIframeQualitySync(applyQualityPreset);
 
       function animate(ctxAudio) {
         const frequencyData = getContextFrequencyData(ctxAudio);
