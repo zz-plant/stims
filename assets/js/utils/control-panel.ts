@@ -21,6 +21,8 @@ export function createControlPanel(initial: Partial<ControlPanelState> = {}) {
 
   const listeners: ChangeHandler[] = [];
   const settingsPanel = getSettingsPanel();
+  const panel = settingsPanel.getElement();
+  settingsPanel.clearSections();
 
   settingsPanel.addToggle({
     label: 'Idle visuals',
@@ -65,5 +67,5 @@ export function createControlPanel(initial: Partial<ControlPanelState> = {}) {
     return { ...state };
   }
 
-  return { getState, onChange };
+  return { panel, getState, onChange };
 }
