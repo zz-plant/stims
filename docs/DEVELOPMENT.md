@@ -34,6 +34,12 @@ When debugging a single test file, run:
 bun test tests/filename.test.js
 ```
 
+### Editor Tooling
+
+- VS Code users can install recommended extensions via `.vscode/extensions.json` (Prettier, ESLint, and the TypeScript ESLint language service).
+- `.vscode/settings.json` configures Prettier as the default formatter and enables format-on-save for common web languages.
+- `.vscode/launch.json` includes a Vite dev-server debug config (with a Bun-backed prelaunch task) and a Bun test debug config so you can attach the debugger without additional setup.
+
 ## Project Structure
 
 - `assets/js/toys/`: Individual toy implementations. Each module exports a `start` function that receives a DOM canvas/audio context.
@@ -86,4 +92,3 @@ bun test tests/filename.test.js
 - `bun run build` completes without errors. (`npm run build` is available if you’re on Node.)
 - Verify the generated `dist/` assets load via `bun run preview` or a simple static server. (`npm run preview` remains a fallback.)
 - Spot-check microphone prompts and toy selection flows in the production build.
-
