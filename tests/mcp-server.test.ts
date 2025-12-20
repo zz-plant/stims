@@ -6,12 +6,13 @@ describe('normalizeToys', () => {
     const [toy] = normalizeToys([
       {
         slug: 'example',
+        title: 'Example Toy',
         description: 'example toy',
         requiresWebGPU: true,
         module: 'assets/example.ts',
         type: 'module',
         allowWebGLFallback: true,
-        controls: ['alpha', 'beta', 1],
+        controls: ['alpha', 'beta'],
       },
     ]);
 
@@ -22,18 +23,41 @@ describe('normalizeToys', () => {
     expect(toy?.controls).toEqual(['alpha', 'beta']);
   });
 
-  test('defaults optional metadata when fields are missing', () => {
-    const [toy] = normalizeToys([{ slug: 'fallback' }]);
+  test('defaults capability metadata when optional fields are missing', () => {
+    const [toy] = normalizeToys([
+      {
+        slug: 'fallback',
+        title: 'Fallback Toy',
+        description: 'Provides defaults',
+        module: 'assets/example.ts',
+        type: 'module',
+      },
+    ]);
 
     expect(toy).toBeDefined();
-    expect(toy?.title).toBe('fallback');
-    expect(toy?.description).toBe('');
     expect(toy?.requiresWebGPU).toBe(false);
     expect(toy?.controls).toEqual([]);
-    expect(toy?.module).toBeNull();
-    expect(toy?.type).toBeNull();
     expect(toy?.allowWebGLFallback).toBe(false);
     expect(toy?.url).toContain('toy=fallback');
+  });
+
+  test('throws for incomplete toy definitions', () => {
+    expect(() => normalizeToys([{ slug: 'broken' }])).toThrow();
+  });
+
+  test('throws when controls include non-string values', () => {
+    expect(() =>
+      normalizeToys([
+        {
+          slug: 'invalid-controls',
+          title: 'Bad Controls',
+          description: 'Contains invalid control types',
+          module: 'assets/example.ts',
+          type: 'module',
+          controls: ['ok', 42],
+        },
+      ])
+    ).toThrow();
   });
 });
 

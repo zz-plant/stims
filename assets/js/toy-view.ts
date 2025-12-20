@@ -15,7 +15,7 @@ type CapabilityOptions = {
   allowFallback?: boolean;
   onBack?: () => void;
   onContinue?: () => void;
-  details?: string | null;
+  fallbackReason?: string | null;
 };
 
 type ImportErrorOptions = {
@@ -356,7 +356,7 @@ export function createToyView({
         : toy?.title
           ? `${toy.title} needs WebGPU, which is not supported in this browser.`
           : 'This toy requires WebGPU, which is not supported in this browser.'
-      }${options.details ? ` (${options.details})` : ''}`,
+      }${options.fallbackReason ? ` (${options.fallbackReason})` : ''}`,
     });
 
     if (!status) return null;

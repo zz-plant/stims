@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createRouter } from '../assets/js/router.ts';
 import { createToyView } from '../assets/js/toy-view.ts';
+import { validateToyMetadata } from '../assets/js/utils/toy-schema.ts';
 
 const loaderModule = '../assets/js/loader.ts';
 const capabilitiesModule = '../assets/js/core/renderer-capabilities.ts';
@@ -58,6 +59,7 @@ const defaultToys = [
   {
     slug: 'brand',
     title: 'Test Brand Toy',
+    description: 'A test toy',
     module: './__mocks__/fake-module.js',
     type: 'module',
     requiresWebGPU: false,
@@ -88,7 +90,13 @@ async function buildLoader({
   const router = createRouter({ windowRef: () => window, queryParam: 'toy' });
   const view = createToyView({ documentRef: () => document });
 
-  const loader = createLoader({ manifestClient, router, view, ensureWebGLCheck, toys });
+  const loader = createLoader({
+    manifestClient,
+    router,
+    view,
+    ensureWebGLCheck,
+    toys: validateToyMetadata(toys),
+  });
 
   return { loader, manifestClient, router, view, location };
 }
@@ -174,6 +182,7 @@ describe('WebGPU requirements', () => {
         {
           slug: 'webgpu-toy',
           title: 'Fancy WebGPU',
+          description: 'Requires WebGPU for shaders',
           module: './__mocks__/fake-module.js',
           type: 'module',
           requiresWebGPU: true,
@@ -210,6 +219,7 @@ describe('WebGPU requirements', () => {
         {
           slug: 'webgpu-toy',
           title: 'Fancy WebGPU',
+          description: 'Requires WebGPU for shaders',
           module: './__mocks__/fake-module.js',
           type: 'module',
           requiresWebGPU: true,
@@ -247,6 +257,7 @@ describe('WebGPU requirements', () => {
         {
           slug: 'webgpu-toy',
           title: 'Fancy WebGPU',
+          description: 'Requires WebGPU for shaders',
           module: './__mocks__/fake-module.js',
           type: 'module',
           requiresWebGPU: true,

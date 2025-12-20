@@ -1,18 +1,10 @@
-import toysData from './toys-data.js';
 import { createRouter } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import { createManifestClient } from './utils/manifest-client.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
+import toysData, { type ValidatedToyEntry } from './toys-metadata.ts';
+import { evaluateCapabilityPolicy } from './utils/toy-schema.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
-
-type Toy = {
-  slug: string;
-  title?: string;
-  module: string;
-  type: 'module' | 'page';
-  requiresWebGPU?: boolean;
-  allowWebGLFallback?: boolean;
-};
 
 const TOY_QUERY_PARAM = 'toy';
 type ActiveToyCandidate = { dispose?: () => void } | (() => void);
@@ -23,14 +15,14 @@ export function createLoader({
   view = createToyView(),
   ensureWebGLCheck = ensureWebGL,
   rendererCapabilities = getRendererCapabilities,
-  toys = toysData as Toy[],
+  toys = toysData,
 }: {
   manifestClient?: ReturnType<typeof createManifestClient>;
   router?: ReturnType<typeof createRouter>;
   view?: ReturnType<typeof createToyView>;
   ensureWebGLCheck?: typeof ensureWebGL;
   rendererCapabilities?: typeof getRendererCapabilities;
-  toys?: Toy[];
+  toys?: ValidatedToyEntry[];
   } = {}) {
   let navigationInitialized = false;
   let escapeHandler: ((event: KeyboardEvent) => void) | null = null;
@@ -135,7 +127,7 @@ export function createLoader({
   };
 
   const startModuleToy = async (
-    toy: Toy,
+    toy: ValidatedToyEntry,
     pushState: boolean,
     initialCapabilities?: Awaited<ReturnType<typeof rendererCapabilities>>
   ) => {
@@ -220,19 +212,20 @@ export function createLoader({
       view.removeStatusElement();
     };
 
-    if (toy.requiresWebGPU && capabilities.preferredBackend !== 'webgpu') {
+    const capabilityDecision = evaluateCapabilityPolicy(toy.capabilityPolicy, capabilities);
+    if (capabilityDecision.status !== 'ok') {
       view.showCapabilityError(toy, {
-        allowFallback: toy.allowWebGLFallback,
+        allowFallback: capabilityDecision.policy.allowWebGLFallback,
         onBack: backToLibrary,
-        details: capabilities.fallbackReason,
-        onContinue: toy.allowWebGLFallback
-          ? () => {
-              view.clearActiveToyContainer();
-              void runToy();
-            }
-          : undefined,
+        fallbackReason: capabilityDecision.fallbackReason,
+        onContinue:
+          capabilityDecision.status === 'warn'
+            ? () => {
+                view.clearActiveToyContainer();
+                void runToy();
+              }
+            : undefined,
       });
-
       return;
     }
 

@@ -10,6 +10,6 @@
     "allowImportingTsExtensions": true,
     "jsx": "preserve"
   },
-  "include": ["assets/**/*", "tests/**/*", "scripts/**/*"],
+  "include": ["assets/**/*", "tests/**/*", "scripts/**/*", "vite.config.ts"],
   "exclude": ["dist"]
 }

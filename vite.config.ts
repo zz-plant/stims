@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
-import toysData from './assets/js/toys-data.js';
+import toysData from './assets/js/toys-metadata.ts';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const moduleInputs = Object.fromEntries(

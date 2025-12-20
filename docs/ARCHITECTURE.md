@@ -38,7 +38,7 @@ flowchart TD
 
 ### Loader lifecycle
 
-1. **Resolve toy**: look up the slug in `assets/js/toys-data.js` and ensure rendering support (`ensureWebGL`).
+1. **Resolve toy**: look up the slug in `assets/js/toys-metadata.ts` (validated through `utils/toy-schema.ts`) and ensure rendering support (`ensureWebGL`).
 2. **Navigate**: push state with the router when requested, set up Escape-to-library, and clear any previous toy.
 3. **Render shell**: ask `toy-view` to show the active toy container and loading indicator; bubble capability status to the UI.
 4. **Import module**: resolve a Vite-friendly URL via the manifest client and `import()` it.
@@ -64,6 +64,13 @@ flowchart LR
 - **Capability probe**: `renderer-capabilities.ts` caches the adapter/device decision and records fallback reasons so the UI can surface retry prompts.
 - **Initialization**: `renderer-setup.ts` builds a renderer using the preferred backend, applies tone mapping, sets pixel ratio/size, and returns metadata consumed by `web-toy.ts`.
 - **Quality presets**: `settings-panel.ts` and `iframe-quality-sync.ts` broadcast max pixel ratio, render scale, and exposure; `WebToy.updateRendererSettings` re-applies them without a reload.
+
+### Capability policy flow
+
+- **Metadata + schema**: toy entries live in `assets/js/toys-data.js` and are parsed through `assets/js/toys-metadata.ts`, which applies `utils/toy-schema.ts` (Zod) to enforce `type`, `requiresWebGPU`, and `allowWebGLFallback` flags.
+- **Validation gates**: `evaluateCapabilityPolicy` (from the schema helper) merges the declared policy with runtime capabilities from `renderer-capabilities.ts`, returning `ok`, `warn` (fallback allowed), or `block` decisions.
+- **Loader UI**: `loader.ts` passes the structured capability reason to `toy-view.ts`, which renders either a WebGPU warning (with a WebGL continue action) or a blocking error with retry/back controls. Renderer status pills reuse the same fallback reason.
+- **Add new toys safely**: keep new entries in `assets/js/toys-data.js` in sync with their HTML entry points (e.g., `multi.html`), set `requiresWebGPU` only when needed, and flip `allowWebGLFallback` to `true` only when a real fallback path exists. Schema validation fails fast during builds/tests when flags conflict.
 
 ## WebToy Composition
 
@@ -93,7 +100,7 @@ graph LR
 
 ## Adding or Debugging Toys
 
-- **Start from a slug**: register the module in `assets/js/toys-data.js` and ensure there is an HTML entry point (often `toy.html?toy=<slug>`).
+- **Start from a slug**: register the module in `assets/js/toys-data.js` (validated through `assets/js/toys-metadata.ts`) and ensure there is an HTML entry point (often `toy.html?toy=<slug>`).
 - **Use the core**: instantiate `WebToy` (or its helpers) to get camera/scene/renderer/audio defaults and return a `dispose` function for safe teardown.
 - **Respect presets**: honor `updateRendererSettings` for max pixel ratio and render scale; avoid hard-coding devicePixelRatio.
 - **Surface errors**: throw or log during init so the loader’s import error UI can respond; avoid swallowing dynamic import failures silently.

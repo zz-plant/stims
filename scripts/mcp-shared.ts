@@ -1,7 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/types.js';
 import { z } from 'zod';
-import toysData from '../assets/js/toys-data.js';
+import toysData from '../assets/js/toys-metadata.ts';
+import { validateToyMetadata, type ValidatedToyEntry } from '../assets/js/utils/toy-schema.ts';
 import docsDevelopment from '../docs/DEVELOPMENT.md?raw';
 import docsMcpServer from '../docs/MCP_SERVER.md?raw';
 import docsReadme from '../docs/README.md?raw';
@@ -40,8 +41,8 @@ type ToyMetadata = {
   description: string;
   requiresWebGPU: boolean;
   controls: string[];
-  module: string | null;
-  type: string | null;
+  module: string;
+  type: ValidatedToyEntry['type'];
   allowWebGLFallback: boolean;
   url: string;
 };
@@ -79,7 +80,7 @@ function registerTools(server: McpServer) {
     'get_toys',
     {
       description:
-        'Return structured toy metadata (including controls and module info) from assets/js/toys-data.js with optional slug or WebGPU filters.',
+        'Return structured toy metadata (including controls and module info) from the validated assets/js/toys-data.js entries with optional slug or WebGPU filters.',
       inputSchema: z
         .object({
           slug: z.string().trim().optional().describe('Limit results to a specific toy slug.'),
@@ -294,41 +295,24 @@ function asTextResponse(text: string) {
   } as const;
 }
 
-function normalizeToys(data: unknown): ToyMetadata[] {
-  if (!Array.isArray(data)) return [];
+function normalizeToys(data: unknown = toysData): ToyMetadata[] {
+  const source: ValidatedToyEntry[] =
+    Array.isArray(data) &&
+    data.every((item) => Boolean(item && typeof item === 'object' && 'capabilityPolicy' in item))
+      ? (data as ValidatedToyEntry[])
+      : validateToyMetadata(data);
 
-  return data
-    .map((item) => {
-      if (!item || typeof item !== 'object') return null;
-      const entry = item as Record<string, unknown>;
-
-      const slug = typeof entry.slug === 'string' ? entry.slug : null;
-      const title = typeof entry.title === 'string' ? entry.title : '';
-      const description = typeof entry.description === 'string' ? entry.description : '';
-      const requiresWebGPU = typeof entry.requiresWebGPU === 'boolean' ? entry.requiresWebGPU : false;
-      const module = typeof entry.module === 'string' ? entry.module : null;
-      const type = typeof entry.type === 'string' ? entry.type : null;
-      const allowWebGLFallback =
-        typeof entry.allowWebGLFallback === 'boolean' ? entry.allowWebGLFallback : false;
-      const controls = Array.isArray(entry.controls)
-        ? entry.controls.filter((control): control is string => typeof control === 'string')
-        : [];
-
-      if (!slug) return null;
-
-      return {
-        slug,
-        title: title || slug,
-        description,
-        requiresWebGPU,
-        controls,
-        module,
-        type,
-        allowWebGLFallback,
-        url: `toy.html?toy=${encodeURIComponent(slug)}`,
-      };
-    })
-    .filter((entry): entry is ToyMetadata => Boolean(entry));
+  return source.map((toy) => ({
+    slug: toy.slug,
+    title: toy.title,
+    description: toy.description,
+    requiresWebGPU: toy.capabilityPolicy.requiresWebGPU,
+    controls: toy.controls,
+    module: toy.module,
+    type: toy.capabilityPolicy.entryType,
+    allowWebGLFallback: toy.capabilityPolicy.allowWebGLFallback,
+    url: `toy.html?toy=${encodeURIComponent(toy.slug)}`,
+  }));
 }
 
 function extractMarkdownSection(markdown: string, heading: string) {

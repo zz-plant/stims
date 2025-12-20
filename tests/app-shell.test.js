@@ -6,6 +6,7 @@ import {
   mock,
   test,
 } from 'bun:test';
+import { validateToyMetadata } from '../assets/js/utils/toy-schema.ts';
 
 const toyLibrary = [
   {
@@ -35,7 +36,7 @@ const toyLibrary = [
 ];
 
 const loaderPath = '../assets/js/loader.ts';
-const toysDataPath = '../assets/js/toys-data.js';
+const toysDataPath = '../assets/js/toys-metadata.ts';
 const freshImport = async (path) => import(`${path}?t=${Date.now()}-${Math.random()}`);
 
 let mockLoadToy;
@@ -50,7 +51,7 @@ async function loadAppShell() {
   }));
 
   mock.module(toysDataPath, () => ({
-    default: toyLibrary,
+    default: validateToyMetadata(toyLibrary),
   }));
 
   await freshImport('../assets/js/app-shell.js');

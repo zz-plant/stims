@@ -1,7 +1,7 @@
 import { initNavigation, loadToy, loadFromQuery } from './loader.ts';
 import { createLibraryView } from './library-view.js';
 import { initRepoStatusWidget } from './repo-status.js';
-import toysData from './toys-data.js';
+import toysData from './toys-metadata.ts';
 
 const libraryView = createLibraryView({
   toys: toysData,
