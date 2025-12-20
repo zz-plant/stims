@@ -10,6 +10,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "dev": "vite",
+    "dev:host": "vite --host",
     "build": "vite build",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "vite preview --host",
