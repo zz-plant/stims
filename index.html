@@ -58,10 +58,19 @@
             <h1>Launch an interactive webtoy in seconds.</h1>
             <p class="tagline">
               Explore audio, color, and motion without setup. Every stim opens
-              fast, works with mic and touch, and ships with clear controls.
+              fast, works with mic and touch, and ships with clear controls. When
+              you launch a toy, we’ll ask for microphone access so visuals can
+              react to your sound.
             </p>
             <div class="cta-row">
-              <a href="#toy-list" class="cta-button primary">Browse library</a>
+              <a
+                href="toy.html?toy=holy"
+                class="cta-button primary"
+                data-quickstart-slug="holy"
+              >
+                Start with Halo Flow
+              </a>
+              <a href="#toy-list" class="cta-button ghost">Browse library</a>
               <a
                 href="https://github.com/zz-plant/stims"
                 target="_blank"
@@ -71,7 +80,8 @@
               >
             </div>
               <p class="cta-helper">
-              No installs or accounts. Code and contribution notes live on GitHub.
+              No installs or accounts. Enable your mic when prompted to see the
+              visuals react. Code and contribution notes live on GitHub.
             </p>
             <div class="repo-status" data-repo-status aria-live="polite">
               <div class="repo-status__header">
@@ -114,6 +124,20 @@
             and Lights sit alongside the module-based set so everything is easy
             to reach.
           </p>
+          <div class="library-search">
+            <label class="sr-only" for="toy-search">Search the library</label>
+            <div class="search-field">
+              <input
+                id="toy-search"
+                type="search"
+                name="toy-search"
+                placeholder="Search by name or vibe (e.g., aurora, fractal, WebGPU)"
+                autocomplete="off"
+                inputmode="search"
+              />
+              <span aria-hidden="true" class="search-field__hint">⌘/Ctrl + F to search</span>
+            </div>
+          </div>
         </div>
         <main id="toy-list" class="webtoy-container"></main>
       </section>
@@ -159,45 +183,69 @@
         const list = document.getElementById('toy-list');
         if (!list || list.childElementCount > 0) return;
 
+        const renderCards = (toys) => {
+          list.innerHTML = '';
+
+          toys.forEach((toy) => {
+            const href =
+              toy.type === 'page'
+                ? toy.module
+                : `toy.html?toy=${encodeURIComponent(toy.slug)}`;
+
+            const card = document.createElement('a');
+            card.className = 'webtoy-card';
+            card.href = href;
+            card.setAttribute('data-toy-fallback', 'true');
+
+            const title = document.createElement('h3');
+            title.textContent = toy.title;
+
+            const desc = document.createElement('p');
+            desc.textContent = toy.description;
+
+            card.append(title, desc);
+
+            if (toy.requiresWebGPU) {
+              const badgeRow = document.createElement('div');
+              badgeRow.className = 'webtoy-card-meta';
+
+              const badge = document.createElement('span');
+              badge.className = 'capability-badge';
+              badge.textContent = 'WebGPU';
+              badge.title = 'Requires WebGPU to run.';
+
+              badgeRow.appendChild(badge);
+              card.appendChild(badgeRow);
+            }
+
+            list.appendChild(card);
+          });
+        };
+
         fetch('./toys.json')
           .then((response) => (response.ok ? response.json() : null))
           .then((toys) => {
             if (!toys || list.childElementCount > 0) return;
 
-            toys.forEach((toy) => {
-              const href =
-                toy.type === 'page'
-                  ? toy.module
-                  : `toy.html?toy=${encodeURIComponent(toy.slug)}`;
+            const search = document.getElementById('toy-search');
+            renderCards(toys);
 
-              const card = document.createElement('a');
-              card.className = 'webtoy-card';
-              card.href = href;
-              card.setAttribute('data-toy-fallback', 'true');
+            if (search instanceof HTMLInputElement) {
+              search.addEventListener('input', () => {
+                const query = search.value.toLowerCase().trim();
+                if (!query) {
+                  renderCards(toys);
+                  return;
+                }
 
-              const title = document.createElement('h3');
-              title.textContent = toy.title;
-
-              const desc = document.createElement('p');
-              desc.textContent = toy.description;
-
-              card.append(title, desc);
-
-              if (toy.requiresWebGPU) {
-                const badgeRow = document.createElement('div');
-                badgeRow.className = 'webtoy-card-meta';
-
-                const badge = document.createElement('span');
-                badge.className = 'capability-badge';
-                badge.textContent = 'WebGPU';
-                badge.title = 'Requires WebGPU to run.';
-
-                badgeRow.appendChild(badge);
-                card.appendChild(badgeRow);
-              }
-
-              list.appendChild(card);
-            });
+                const filtered = toys.filter(
+                  (toy) =>
+                    toy.title?.toLowerCase().includes(query) ||
+                    toy.description?.toLowerCase().includes(query),
+                );
+                renderCards(filtered);
+              });
+            }
           })
           .catch((error) => {
             console.error('Unable to render library fallback', error);

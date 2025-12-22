@@ -1,26 +1,11 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createRouter } from '../assets/js/router.ts';
 import { createToyView } from '../assets/js/toy-view.ts';
+import { createLoader } from '../assets/js/loader.ts';
 
-const loaderModule = '../assets/js/loader.ts';
-const capabilitiesModule = '../assets/js/core/renderer-capabilities.ts';
-const renderServiceModule = '../assets/js/core/services/render-service.ts';
-const audioServiceModule = '../assets/js/core/services/audio-service.ts';
 const originalLocation = window.location;
 const originalHistory = window.history;
 const originalNavigator = global.navigator;
-
-const freshLoader = async () => {
-  mock.module(capabilitiesModule, () => capabilitiesMock);
-  mock.module(renderServiceModule, () => ({
-    prewarmRendererCapabilities: servicesMock.prewarmRendererCapabilities,
-  }));
-  mock.module(audioServiceModule, () => ({
-    prewarmMicrophone: servicesMock.prewarmMicrophone,
-    resetAudioPool: servicesMock.resetAudioPool,
-  }));
-  return (await import(`${loaderModule}?t=${Date.now()}-${Math.random()}`)).createLoader;
-};
 
 const defaultCapabilities = {
   preferredBackend: 'webgpu',
@@ -83,8 +68,11 @@ async function buildLoader({
   locationHref = 'http://example.com/library',
   manifestPath = './__mocks__/fake-module.js',
   ensureWebGLCheck = () => true,
+  rendererCapabilities = capabilitiesMock.getRendererCapabilities,
+  prewarmRendererCapabilities = servicesMock.prewarmRendererCapabilities,
+  prewarmMicrophone = servicesMock.prewarmMicrophone,
+  resetAudioPool = servicesMock.resetAudioPool,
 } = {}) {
-  const createLoader = await freshLoader();
   const location = createMockLocation(locationHref);
 
   Object.defineProperty(window, 'location', {
@@ -102,7 +90,17 @@ async function buildLoader({
   const router = createRouter({ windowRef: () => window, queryParam: 'toy' });
   const view = createToyView({ documentRef: () => document });
 
-  const loader = createLoader({ manifestClient, router, view, ensureWebGLCheck, toys });
+  const loader = createLoader({
+    manifestClient,
+    router,
+    view,
+    ensureWebGLCheck,
+    rendererCapabilities,
+    toys,
+    prewarmRendererCapabilitiesFn: prewarmRendererCapabilities,
+    prewarmMicrophoneFn: prewarmMicrophone,
+    resetAudioPoolFn: resetAudioPool,
+  });
 
   return { loader, manifestClient, router, view, location };
 }
