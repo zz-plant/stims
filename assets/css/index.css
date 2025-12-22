@@ -526,6 +526,49 @@ h1 {
   line-height: 1.6;
 }
 
+.library-search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: linear-gradient(
+      145deg,
+      rgba(109, 240, 255, 0.08),
+      rgba(155, 123, 255, 0.06),
+      rgba(255, 111, 227, 0.06)
+    );
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.8rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.search-field input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  font-size: 1rem;
+  padding: 0.55rem 0.35rem;
+  outline: none;
+}
+
+.search-field input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-field__hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 .webtoy-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

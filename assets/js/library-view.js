@@ -1106,7 +1106,7 @@ export function createLibraryView({
   loadFromQuery,
   targetId = 'toy-list',
   searchInputId,
-  cardElement = 'button',
+  cardElement = 'a',
   enableIcons = false,
   enableCapabilityBadges = false,
   enableKeyboardHandlers = false,
@@ -1126,8 +1126,15 @@ export function createLibraryView({
   const createCard = (toy) => {
     const card = document.createElement(cardElement);
     card.className = 'webtoy-card';
+    const href =
+      toy.type === 'module'
+        ? `toy.html?toy=${encodeURIComponent(toy.slug)}`
+        : toy.module;
     if (cardElement === 'button') {
       card.type = 'button';
+    } else if (cardElement === 'a') {
+      card.href = href;
+      card.setAttribute('data-toy-href', href);
     }
 
     if (enableIcons) {
@@ -1170,14 +1177,27 @@ export function createLibraryView({
       }
     }
 
-    const handleOpenToy = () => openToy(toy);
+    const handleOpenToy = (event) => {
+      const isModifiedClick = !!(
+        event &&
+        (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1)
+      );
+
+      if (cardElement === 'a' && event) {
+        if (isModifiedClick) return;
+        event.preventDefault();
+      }
+
+      openToy(toy);
+    };
+
     card.addEventListener('click', handleOpenToy);
 
     if (enableKeyboardHandlers) {
       card.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          handleOpenToy();
+          handleOpenToy(event);
         }
       });
     }
