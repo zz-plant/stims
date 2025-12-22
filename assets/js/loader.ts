@@ -26,6 +26,9 @@ export function createLoader({
   ensureWebGLCheck = ensureWebGL,
   rendererCapabilities = getRendererCapabilities,
   toys = toysData as Toy[],
+  prewarmRendererCapabilitiesFn = prewarmRendererCapabilities,
+  prewarmMicrophoneFn = prewarmMicrophone,
+  resetAudioPoolFn = resetAudioPool,
 }: {
   manifestClient?: ReturnType<typeof createManifestClient>;
   router?: ReturnType<typeof createRouter>;
@@ -33,6 +36,9 @@ export function createLoader({
   ensureWebGLCheck?: typeof ensureWebGL;
   rendererCapabilities?: typeof getRendererCapabilities;
   toys?: Toy[];
+  prewarmRendererCapabilitiesFn?: typeof prewarmRendererCapabilities;
+  prewarmMicrophoneFn?: typeof prewarmMicrophone;
+  resetAudioPoolFn?: typeof resetAudioPool;
   } = {}) {
   let navigationInitialized = false;
   let escapeHandler: ((event: KeyboardEvent) => void) | null = null;
@@ -120,7 +126,7 @@ export function createLoader({
     view.showLibraryView();
     router.goToLibrary();
     updateRendererStatus(null);
-    void resetAudioPool({ stopStreams: true });
+    void resetAudioPoolFn({ stopStreams: true });
   };
 
   const registerEscapeHandler = () => {
@@ -142,8 +148,8 @@ export function createLoader({
     pushState: boolean,
     initialCapabilities?: Awaited<ReturnType<typeof rendererCapabilities>>
   ) => {
-    void prewarmRendererCapabilities();
-    void prewarmMicrophone();
+    void prewarmRendererCapabilitiesFn();
+    void prewarmMicrophoneFn();
     let capabilities = initialCapabilities ?? (await rendererCapabilities());
 
     const supportsRendering = ensureWebGLCheck({
