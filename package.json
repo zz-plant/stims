@@ -14,6 +14,8 @@
     "build": "vite build",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "vite preview --host",
+    "pages:dev": "bun run build && bunx wrangler pages dev dist --compatibility-date=2024-10-20",
+    "pages:deploy": "bun run build && bunx wrangler pages deploy dist",
     "mcp": "bun run scripts/mcp-server.ts",
     "prepare": "husky install",
     "postinstall": "node scripts/postinstall.mjs || bun scripts/postinstall.mjs"
