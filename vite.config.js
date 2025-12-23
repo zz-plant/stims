@@ -11,6 +11,11 @@ const moduleInputs = Object.fromEntries(
 );
 
 export default defineConfig({
+  server: {
+    // Bind to all interfaces so forwarded browsers (e.g., Playwright) can reach
+    // the dev server instead of seeing connection refused.
+    host: true,
+  },
   build: {
     outDir: 'dist',
     // Emit a top-level manifest so runtime lookups work even when the .vite
