@@ -8,6 +8,7 @@ This folder contains resources for contributors who are building or maintaining 
 - [`stim-assessment.md`](./stim-assessment.md): Assessment findings and remediation plans.
 - [`toys.md`](./toys.md): per-toy notes, presets, and other focused references.
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md): end-to-end app architecture, loader flow, and core runtime composition with diagrams.
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md): build, preview, static hosting layout, and Cloudflare Worker deployment steps.
 - [`MCP_SERVER.md`](./MCP_SERVER.md): how to launch and use the MCP stdio server (`scripts/mcp-server.ts`) and its registered tools.
 
 If you add new tooling or patterns, update these docs so the next contributor has a reliable starting point.
