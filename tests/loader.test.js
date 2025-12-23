@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createRouter } from '../assets/js/router.ts';
 import { createToyView } from '../assets/js/toy-view.ts';
-import { createLoader } from '../assets/js/loader.ts';
 
 const originalLocation = window.location;
 const originalHistory = window.history;
@@ -89,6 +88,8 @@ async function buildLoader({
   const manifestClient = { resolveModulePath: mock(() => manifestPath) };
   const router = createRouter({ windowRef: () => window, queryParam: 'toy' });
   const view = createToyView({ documentRef: () => document });
+  // Bust module cache in case other specs mocked the loader exports.
+  const { createLoader } = await import(`../assets/js/loader.ts?t=${Date.now()}`);
 
   const loader = createLoader({
     manifestClient,
