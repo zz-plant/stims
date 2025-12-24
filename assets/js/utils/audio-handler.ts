@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable';
+type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 
 const FREQUENCY_ANALYSER_PROCESSOR = new URL(
   './frequency-analyser-processor.ts',
