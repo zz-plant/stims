@@ -362,7 +362,7 @@
         'u_burst_intensity'
       );
 
-      let currentFreqs = adapter.transformFrequencies({
+      currentFreqs = adapter.transformFrequencies({
         low: 0,
         mid: 0,
         high: 0,
@@ -482,20 +482,6 @@
         burstState.intensity *= 0.5;
       }
 
-      function rebuildPeakDetector() {
-        if (!analyser) {
-          peakDetector = null;
-          return;
-        }
-
-        peakDetector = createPeakDetector({
-          getData: () => getFrequencyData(analyser),
-          sensitivity: peakSensitivity,
-          onPeak: handlePeak,
-          onRelease: handlePeakRelease,
-        });
-      }
-
       // Audio setup for beat detection and frequency analysis
       let peakDetector = null;
       let lastVibrateTime = 0;
@@ -531,13 +517,14 @@
       }
 
       function rebuildPeakDetector(ctx) {
-        if (!ctx.analyser) {
+        const analyserNode = ctx?.analyser;
+        if (!analyserNode) {
           peakDetector = null;
           return;
         }
 
         peakDetector = createPeakDetector({
-          getData: () => getFrequencyData(ctx.analyser),
+          getData: () => getFrequencyData(analyserNode),
           sensitivity: peakSensitivity,
           onPeak: handlePeak,
           onRelease: handlePeakRelease,

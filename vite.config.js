@@ -1,9 +1,17 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import toysData from './assets/js/toys-data.js';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
+const htmlInputs = Object.fromEntries(
+  fs
+    .readdirSync(rootDir)
+    .filter((entry) => entry.endsWith('.html'))
+    .sort()
+    .map((file) => [path.parse(file).name, path.resolve(rootDir, file)])
+);
 const moduleInputs = Object.fromEntries(
   toysData
     .filter((toy) => toy.type === 'module')
@@ -26,7 +34,8 @@ export default defineConfig({
       // can find the `start` functions even when they look unused at build time.
       preserveEntrySignatures: 'strict',
       input: {
-        main: path.resolve(rootDir, 'index.html'),
+        main: htmlInputs.index ?? path.resolve(rootDir, 'index.html'),
+        ...htmlInputs,
         ...moduleInputs,
       },
     },
