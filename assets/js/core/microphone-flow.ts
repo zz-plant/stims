@@ -13,6 +13,7 @@ export type MicrophoneFlowOptions = {
   startButton?: HTMLButtonElement | null;
   fallbackButton?: HTMLButtonElement | null;
   statusElement?: HTMLElement | null;
+  toastHost?: HTMLElement | null;
   timeoutMs?: number;
   requestMicrophone: () => Promise<unknown>;
   requestSampleAudio?: () => Promise<unknown>;
@@ -44,16 +45,19 @@ function toggleButtons(
 function describeError(error: unknown, mode: FlowMode) {
   if (error instanceof AudioAccessError) {
     if (error.reason === 'denied') {
-      return 'Microphone access is blocked. Check your browser or system privacy settings and try again, or load the demo audio.';
+      return 'Microphone access is blocked. Allow it in your browser or system privacy settings, then retry or load the demo audio.';
+    }
+    if (error.reason === 'timeout') {
+      return 'Microphone request timed out. Re-open permissions and click retry, or load the demo audio fallback.';
     }
     if (error.reason === 'unsupported') {
       return 'This browser cannot capture microphone audio. Switch browsers or load the demo audio to keep exploring.';
     }
-    return 'Microphone access is unavailable right now. Retry or continue with the demo audio.';
+    return 'Microphone access is unavailable right now. Retry, or continue with the demo audio fallback.';
   }
 
   if (error instanceof Error && /timed out/i.test(error.message)) {
-    return 'Microphone request timed out. Please retry or load the demo audio fallback.';
+    return 'Microphone request timed out. Re-open permissions and click retry, or load the demo audio fallback.';
   }
 
   return mode === 'sample'
@@ -68,6 +72,28 @@ function track(
 ) {
   analytics?.track?.(event, detail);
   analytics?.log?.(event, detail);
+}
+
+function createToastHost(host: HTMLElement | null | undefined) {
+  if (!host) return null;
+  const toast = host.ownerDocument.createElement('div');
+  toast.dataset.audioToast = 'true';
+  toast.setAttribute('role', 'alert');
+  toast.style.position = 'fixed';
+  toast.style.bottom = '16px';
+  toast.style.left = '50%';
+  toast.style.transform = 'translateX(-50%)';
+  toast.style.padding = '12px 14px';
+  toast.style.maxWidth = '420px';
+  toast.style.background = 'rgba(20, 24, 34, 0.95)';
+  toast.style.border = '1px solid rgba(255, 82, 130, 0.8)';
+  toast.style.borderRadius = '12px';
+  toast.style.color = '#f9f9f9';
+  toast.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.45)';
+  toast.style.zIndex = '9999';
+  toast.style.lineHeight = '1.4';
+  toast.style.textAlign = 'center';
+  return toast;
 }
 
 async function guardDeniedPermission() {
@@ -87,6 +113,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
     startButton,
     fallbackButton,
     statusElement,
+    toastHost = typeof document !== 'undefined' ? document.body : null,
     requestMicrophone,
     requestSampleAudio,
     analytics,
@@ -96,6 +123,8 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
   } = options;
 
   let pending = false;
+  const originalStartLabel = startButton?.textContent ?? null;
+  let toastElement: HTMLElement | null = null;
 
   const showFallback = () => {
     if (fallbackButton) {
@@ -103,15 +132,27 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
     }
   };
 
+  const showToast = (message: string, variant: FlowStatus = 'error') => {
+    if (!toastHost) return;
+    if (toastElement?.isConnected) toastElement.remove();
+    toastElement = createToastHost(toastHost);
+    if (!toastElement) return;
+    toastElement.dataset.variant = variant;
+    toastElement.textContent = message;
+    toastHost.appendChild(toastElement);
+
+    globalThis.setTimeout(() => {
+      toastElement?.remove();
+      toastElement = null;
+    }, 7000);
+  };
+
   const runRequest = async (mode: FlowMode) => {
     if (pending) return;
     pending = true;
     toggleButtons(startButton, fallbackButton, true);
 
-    const timeoutError = new AudioAccessError(
-      'unavailable',
-      'Microphone request timed out.'
-    );
+    const timeoutError = new AudioAccessError('timeout', 'Microphone request timed out.');
 
     const withTimeout = async (promise: Promise<unknown>) => {
       let timeoutHandle: ReturnType<typeof globalThis.setTimeout> | null = null;
@@ -172,6 +213,11 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
         fallbackButton.hidden = true;
       }
 
+      if (startButton && originalStartLabel) {
+        startButton.textContent = originalStartLabel;
+        delete startButton.dataset.state;
+      }
+
       track(analytics, 'microphone_request_succeeded', {
         mode,
         permissionState: permissionState ?? 'unknown',
@@ -187,6 +233,19 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
 
       setStatus(statusElement, describeError(error, mode), 'error');
       showFallback();
+
+      if (startButton && mode === 'microphone') {
+        startButton.textContent = 'Retry microphone access';
+        startButton.dataset.state = 'retry';
+        startButton.ariaLabel = `${startButton.textContent}. Update site permissions, then click to try again.`;
+      }
+
+      if (mode === 'microphone') {
+        showToast(
+          'Microphone was blocked or timed out. Re-open permissions in your browser bar, then press Retry microphone or load the demo audio.',
+          'error'
+        );
+      }
       onError?.(mode, error);
       throw error;
     } finally {
