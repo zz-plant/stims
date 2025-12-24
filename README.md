@@ -16,7 +16,7 @@ Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what
 3. Install dependencies with `bun install` (preferred). The repository tracks `bun.lock` for reproducible installs—use `bun install --frozen-lockfile` to respect it. If you use npm, run `npm install` locally; a `package-lock.json` will be generated but is not committed.
 4. Start the dev server with `npm run dev` or `bun run dev`, then open `http://localhost:5173` in your browser. The dev server already binds to all interfaces for easy forwarding and mobile checks; `bun run dev:host` (or `npm run dev:host`) remains available as an explicit alternative.
 
-See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static hosting, and Cloudflare Worker instructions.
+See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static hosting, and Cloudflare Worker instructions. That playbook also covers PR preview validation and multi-entry-point checks before merging.
 
 ## Getting Started
 
