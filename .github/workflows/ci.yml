@@ -14,6 +14,13 @@ jobs:
         with:
           node-version: 22
       - uses: oven-sh/setup-bun@v1
+      - name: Cache Bun and node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun test
