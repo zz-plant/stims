@@ -1,6 +1,6 @@
 /* global GPUAdapter, GPUDevice */
 import * as THREE from 'three';
-import WebGPURenderer from 'three/src/renderers/webgpu/WebGPURenderer.js';
+import { WebGPURenderer } from './webgpu-renderer.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 import {
   getRendererCapabilities,

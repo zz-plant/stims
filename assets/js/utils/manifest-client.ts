@@ -7,7 +7,7 @@ type ManifestEntry = {
   url?: string;
 };
 
-const MANIFEST_CANDIDATES = ['./.vite/manifest.json', './manifest.json'];
+const MANIFEST_CANDIDATES = ['./manifest.json', './.vite/manifest.json'];
 
 function getCurrentOrigin() {
   const origin = typeof window !== 'undefined' ? window.location?.origin : null;
