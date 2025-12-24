@@ -14,10 +14,19 @@ import {
   getActiveQualityPreset,
   type QualityPreset,
 } from '../core/settings-panel';
+import {
+  getActivePerformanceSettings,
+  getPerformancePanel,
+  subscribeToPerformanceSettings,
+  type PerformanceSettings,
+} from '../core/performance-panel';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 80 } },
   ambientLightOptions: { intensity: 0.35 },
+  rendererOptions: {
+    maxPixelRatio: getActivePerformanceSettings().maxPixelRatio,
+  },
 } as ToyConfig);
 
 type PresetKey = 'orbit' | 'nebula';
@@ -26,6 +35,7 @@ let activeQuality: QualityPreset = getActiveQualityPreset({
   presets: DEFAULT_QUALITY_PRESETS,
   defaultPresetId: 'balanced',
 });
+let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
 
 type PresetInstance = {
   animate: (ctx: AnimationContext) => void;
@@ -39,11 +49,19 @@ const presetButtons: Record<PresetKey, HTMLButtonElement> = {
   nebula: document.createElement('button'),
 };
 
+function getParticleScale(quality: QualityPreset) {
+  return (quality.particleScale ?? 1) * performanceSettings.particleBudget;
+}
+
 function createOrbitPreset(quality: QualityPreset): PresetInstance {
   const group = new THREE.Group();
 
   const particlesGeometry = new THREE.BufferGeometry();
-  const count = Math.max(900, Math.floor(2400 * (quality.particleScale ?? 1)));
+  const detail = performanceSettings.shaderQuality === 'high' ? 1.2 : 1;
+  const count = Math.max(
+    900,
+    Math.floor(2400 * getParticleScale(quality) * detail)
+  );
   const positions = new Float32Array(count * 3);
   for (let i = 0; i < count * 3; i++) {
     positions[i] = (Math.random() - 0.5) * 90;
@@ -59,6 +77,10 @@ function createOrbitPreset(quality: QualityPreset): PresetInstance {
     size: 1.6,
     transparent: true,
     opacity: 0.9,
+    blending:
+      performanceSettings.shaderQuality === 'low'
+        ? THREE.NormalBlending
+        : THREE.AdditiveBlending,
   });
 
   const particles = new THREE.Points(particlesGeometry, particlesMaterial);
@@ -97,7 +119,16 @@ function createNebulaPreset(quality: QualityPreset): PresetInstance {
   const group = new THREE.Group();
 
   const starGeometry = new THREE.BufferGeometry();
-  const STAR_COUNT = Math.max(1200, Math.floor(4000 * (quality.particleScale ?? 1)));
+  const shaderDetail =
+    performanceSettings.shaderQuality === 'high'
+      ? 1.25
+      : performanceSettings.shaderQuality === 'low'
+        ? 0.9
+        : 1;
+  const STAR_COUNT = Math.max(
+    1200,
+    Math.floor(4000 * getParticleScale(quality) * shaderDetail)
+  );
   const starPositions = new Float32Array(STAR_COUNT * 3);
   const starSizes = new Float32Array(STAR_COUNT);
   const starColors = new Float32Array(STAR_COUNT * 3);
@@ -147,7 +178,10 @@ function createNebulaPreset(quality: QualityPreset): PresetInstance {
   group.add(stars);
 
   const nebulaGeometry = new THREE.BufferGeometry();
-  const NEBULA_COUNT = Math.max(80, Math.floor(200 * (quality.particleScale ?? 1)));
+  const NEBULA_COUNT = Math.max(
+    80,
+    Math.floor(200 * getParticleScale(quality) * shaderDetail)
+  );
   const nebulaPositions = new Float32Array(NEBULA_COUNT * 3);
   const nebulaColors = new Float32Array(NEBULA_COUNT * 3);
 
@@ -281,8 +315,17 @@ function updatePresetButtons() {
 function applyQualityPreset(preset: QualityPreset) {
   activeQuality = preset;
   toy.updateRendererSettings({
-    maxPixelRatio: preset.maxPixelRatio,
+    maxPixelRatio: performanceSettings.maxPixelRatio,
     renderScale: preset.renderScale,
+  });
+  setActivePreset(activePresetKey, { force: true });
+}
+
+function applyPerformanceSettings(settings: PerformanceSettings) {
+  performanceSettings = settings;
+  toy.updateRendererSettings({
+    maxPixelRatio: performanceSettings.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
   });
   setActivePreset(activePresetKey, { force: true });
 }
@@ -317,8 +360,19 @@ function setupSettingsPanel() {
   });
 }
 
+function setupPerformancePanel() {
+  getPerformancePanel({
+    title: 'Performance',
+    description:
+      'Cap DPI, trim particle budgets, or lower shader detail for smoother play.',
+  });
+
+  subscribeToPerformanceSettings(applyPerformanceSettings);
+}
+
 function init() {
   setupSettingsPanel();
+  setupPerformancePanel();
   setActivePreset(activePresetKey);
 }
 

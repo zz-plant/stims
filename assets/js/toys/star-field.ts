@@ -14,9 +14,16 @@ import {
   getActiveQualityPreset,
   type QualityPreset,
 } from '../core/settings-panel';
+import {
+  getActivePerformanceSettings,
+  getPerformancePanel,
+  subscribeToPerformanceSettings,
+  type PerformanceSettings,
+} from '../core/performance-panel';
 
 const settingsPanel = getSettingsPanel();
 let activeQuality: QualityPreset = getActiveQualityPreset();
+let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 70 } },
@@ -27,7 +34,7 @@ const toy = new WebToy({
     intensity: 0.4,
   },
   rendererOptions: {
-    maxPixelRatio: activeQuality.maxPixelRatio,
+    maxPixelRatio: performanceSettings.maxPixelRatio,
     renderScale: activeQuality.renderScale,
   },
 } as ToyConfig);
@@ -42,8 +49,14 @@ type StarFieldBuffers = {
 
 let starField: StarFieldBuffers | null = null;
 
+function getShaderSizeMultiplier() {
+  if (performanceSettings.shaderQuality === 'high') return 1.2;
+  if (performanceSettings.shaderQuality === 'low') return 0.85;
+  return 1;
+}
+
 function getStarCount() {
-  const scale = activeQuality.particleScale ?? 1;
+  const scale = (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
   return Math.max(900, Math.floor(2400 * scale));
 }
 
@@ -66,11 +79,14 @@ function createStarField(): StarFieldBuffers {
 
   const material = new THREE.PointsMaterial({
     color: 0xffffff,
-    size: 1.2,
-    sizeAttenuation: true,
+    size: 1.2 * getShaderSizeMultiplier(),
+    sizeAttenuation: performanceSettings.shaderQuality !== 'low',
     transparent: true,
     opacity: 0.9,
-    blending: THREE.AdditiveBlending,
+    blending:
+      performanceSettings.shaderQuality === 'low'
+        ? THREE.NormalBlending
+        : THREE.AdditiveBlending,
     depthWrite: false,
   });
 
@@ -102,6 +118,7 @@ function resetStar(i: number, positions: Float32Array) {
 
 function init() {
   setupSettingsPanel();
+  setupPerformancePanel();
   if (!starField) {
     starField = createStarField();
   }
@@ -110,8 +127,18 @@ function init() {
 function applyQualityPreset(preset: QualityPreset) {
   activeQuality = preset;
   toy.updateRendererSettings({
-    maxPixelRatio: preset.maxPixelRatio,
+    maxPixelRatio: performanceSettings.maxPixelRatio,
     renderScale: preset.renderScale,
+  });
+  disposeStarField();
+  starField = createStarField();
+}
+
+function applyPerformanceSettings(settings: PerformanceSettings) {
+  performanceSettings = settings;
+  toy.updateRendererSettings({
+    maxPixelRatio: performanceSettings.maxPixelRatio,
+    renderScale: activeQuality.renderScale,
   });
   disposeStarField();
   starField = createStarField();
@@ -127,6 +154,14 @@ function setupSettingsPanel() {
     defaultPresetId: activeQuality.id,
     onChange: applyQualityPreset,
   });
+}
+
+function setupPerformancePanel() {
+  getPerformancePanel({
+    title: 'Performance',
+    description: 'Cap DPI or scale particle budgets to match your device.',
+  });
+  subscribeToPerformanceSettings(applyPerformanceSettings);
 }
 
 function animate(ctx: AnimationContext) {
@@ -151,7 +186,7 @@ function animate(ctx: AnimationContext) {
 
   starField.geometry.attributes.position.needsUpdate = true;
 
-  const baseSize = 1.2 + normalizedAvg * 2.2;
+  const baseSize = 1.2 * getShaderSizeMultiplier() + normalizedAvg * 2.2;
   starField.material.size = baseSize;
   starField.material.opacity = 0.65 + normalizedAvg * 0.3;
   applyAudioColor(starField.material, normalizedAvg, {

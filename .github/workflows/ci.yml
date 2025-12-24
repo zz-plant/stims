@@ -6,22 +6,69 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  quality:
+    name: "${{ matrix.runtime }} / checks"
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [bun, node]
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - uses: oven-sh/setup-bun@v1
-      - name: Cache Bun and node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.bun
-            node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-      - run: bun install --frozen-lockfile
-      - run: bun run lint
-      - run: bun test
-      - run: bun run build
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: |
+          if [ "${{ matrix.runtime }}" = "bun" ]; then
+            bun install --frozen-lockfile
+          else
+            npm install --no-package-lock
+          fi
+
+      - name: Dev server check
+        run: |
+          if [ "${{ matrix.runtime }}" = "bun" ]; then
+            bun run dev:check
+          else
+            npm run dev:check
+          fi
+
+      - name: Lint
+        run: |
+          if [ "${{ matrix.runtime }}" = "bun" ]; then
+            bun run lint
+          else
+            npm run lint
+          fi
+
+      - name: Type check
+        run: |
+          if [ "${{ matrix.runtime }}" = "bun" ]; then
+            bun run typecheck
+          else
+            npm run typecheck
+          fi
+
+      - name: Build
+        run: |
+          if [ "${{ matrix.runtime }}" = "bun" ]; then
+            bun run build
+          else
+            npm run build
+          fi
+
+      - name: Test
+        run: |
+          if [ "${{ matrix.runtime }}" = "bun" ]; then
+            bun run test
+          else
+            npm test
+          fi
