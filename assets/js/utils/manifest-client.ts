@@ -7,6 +7,7 @@ type ManifestEntry = {
   url?: string;
 };
 
+// Prefer the public manifest first; fall back to the hidden Vite output when present.
 const MANIFEST_CANDIDATES = ['./manifest.json', './.vite/manifest.json'];
 
 function getCurrentOrigin() {
