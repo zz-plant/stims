@@ -10,5 +10,7 @@
 
 ## Checklist
 
-- [ ] Linting (`npm run lint`) if applicable
-- [ ] Tests (`npm test`) if applicable
+- [ ] Linting (`bun run lint`) if applicable
+- [ ] Tests (`bun test`) if applicable
+- [ ] Build (`bun run build`) if applicable
+- [ ] Type checking (`bun run typecheck`) if applicable
