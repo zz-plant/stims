@@ -34,6 +34,8 @@ describe('manifest client', () => {
     const client = createManifestClient({ fetchImpl, baseUrl: 'http://example.com/' });
     const modulePath = await client.resolveModulePath(moduleEntry);
 
+    expect(fetchImpl).toHaveBeenNthCalledWith(1, '/.vite/manifest.json');
+    expect(fetchImpl).toHaveBeenNthCalledWith(2, '/manifest.json');
     expect(modulePath).toBe('/assets/js/toys/example.ts');
   });
 
