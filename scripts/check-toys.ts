@@ -95,7 +95,7 @@ function validateEntries(
 ) {
   for (const entry of entries) {
     const modulePath = path.join(root, entry.module);
-    if (!entry.module.startsWith('assets/js/toys/')) {
+    if (entry.type === 'module' && !entry.module.startsWith('assets/js/toys/')) {
       issues.push(`Module path for ${entry.slug} should live under assets/js/toys/.`);
     }
 
@@ -107,6 +107,11 @@ function validateEntries(
 
     if (entry.type === 'iframe') {
       const htmlPath = path.join(root, `${entry.slug}.html`);
+
+      if (path.normalize(entry.module) !== path.normalize(`${entry.slug}.html`)) {
+        issues.push(`Iframe toy ${entry.slug} should point module to ${entry.slug}.html.`);
+      }
+
       missingFiles(entry, htmlPath, root).forEach((missing) => issues.push(missing));
     }
 
@@ -129,7 +134,16 @@ async function detectUnregisteredToyFiles(
   issues: string[],
   root = repoRoot
 ) {
-  const registeredModules = new Set(entries.map((entry) => path.normalize(entry.module)));
+  const registeredModules = new Set(
+    entries.flatMap((entry) => {
+      const normalizedModule = path.normalize(entry.module);
+      if (entry.type === 'iframe') {
+        return [normalizedModule, path.normalize(path.join('assets/js/toys', `${entry.slug}.ts`))];
+      }
+
+      return [normalizedModule];
+    })
+  );
   const toyDir = path.join(root, 'assets/js/toys');
   const files = await fs.readdir(toyDir);
 
