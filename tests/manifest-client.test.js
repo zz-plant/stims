@@ -24,7 +24,7 @@ describe('manifest client', () => {
     const client = createManifestClient({ fetchImpl, baseUrl: 'http://example.com/app/' });
     const modulePath = await client.resolveModulePath(moduleEntry);
 
-    expect(fetchImpl).toHaveBeenCalledWith('/app/manifest.json');
+    expect(fetchImpl).toHaveBeenCalledWith('/app/.vite/manifest.json');
     expect(modulePath).toBe('/app/assets/js/toys/example.123.js');
   });
 
@@ -72,7 +72,7 @@ describe('manifest client', () => {
 
     const modulePath = await client.resolveModulePath(moduleEntry);
 
-    expect(fetchImpl).toHaveBeenCalledWith('https://cdn.example.com/app/manifest.json');
+    expect(fetchImpl).toHaveBeenCalledWith('https://cdn.example.com/app/.vite/manifest.json');
     expect(modulePath).toBe('https://cdn.example.com/app/assets/js/toys/example.123.js');
   });
 
