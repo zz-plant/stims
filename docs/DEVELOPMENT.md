@@ -2,6 +2,19 @@
 
 This guide focuses on day-to-day development tasks for the Stim Webtoys Library. It complements the quick start notes in `README.md` and the contribution checklist in `CONTRIBUTING.md`.
 
+If you’re spinning up the project for the first time, confirm the basics before diving into code:
+
+1. Install **Bun 1.2+** (preferred) or **Node.js 22** (see `.nvmrc`). Run `nvm use` if you use nvm to match the recorded version.
+2. Install dependencies with **Bun**: `bun install`. If you need to fall back to npm, run `npm install --no-package-lock` so the repo continues to track only `bun.lock`.
+3. Smoke-test the dev server wiring without opening a browser:
+   ```bash
+   bun run dev:check
+   # or
+   npm run dev:check
+   ```
+   This starts Vite on a fixed port, fetches the root page once, and exits—helpful when you’re validating a fresh clone or CI runner.
+4. Start the dev server for interactive work with `bun run dev` (or `npm run dev`).
+
 ## Tooling and Environment
 
 - **Bun 1.2+** is the default for installs and testing. **Node.js 22** (see `.nvmrc`) is supported as an optional fallback if you prefer npm for Vite or tooling.
@@ -41,6 +54,17 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
 | Lint | `bun run lint` (`npm run lint`) |
 | Format with Prettier | `bun run format` (`npm run format`) |
 | Type check without emit | `bun run typecheck` (`npm run typecheck`) |
+| Dev server smoke test (no browser) | `bun run dev:check` (`npm run dev:check`) |
+| Validate toy registry and docs | `bun run check:toys` |
+| Serve built assets from `dist/` | `bun run serve:dist` |
+| Cloudflare Pages preview | `bun run pages:dev` |
+| Cloudflare Pages deploy | `bun run pages:deploy` |
+
+Notes:
+
+- `bun run check:toys` verifies that every toy listed in `assets/js/toys-data.js` has the expected TypeScript entry file, that iframe toys have matching HTML entry points, and that `docs/TOY_SCRIPT_INDEX.md` references each slug. Run this when adding or renaming toys.
+- `bun run serve:dist` is a quick way to host the built assets without Vite’s dev server. Use it to validate the `dist/` output locally.
+- The Pages scripts rely on `wrangler`; they rebuild before starting a preview session or deploying.
 
 When debugging a single test file, run:
 ```bash

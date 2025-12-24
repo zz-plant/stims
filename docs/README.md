@@ -12,3 +12,9 @@ This folder contains resources for contributors who are building or maintaining 
 - [`MCP_SERVER.md`](./MCP_SERVER.md): how to launch and use the MCP stdio server (`scripts/mcp-server.ts`) and its registered tools.
 
 If you add new tooling or patterns, update these docs so the next contributor has a reliable starting point.
+
+## Onboarding highlights
+
+- Use **Bun 1.2+** for installs and scripts (Node 22 is available as a fallback). Run `bun install` in a fresh clone to populate `bun.lock`-aligned dependencies.
+- Run a **dev server smoke test** without opening a browser via `bun run dev:check` (or `npm run dev:check`) to confirm Vite wiring before you start coding.
+- When adding or renaming toys, run `bun run check:toys` to ensure `assets/js/toys-data.js` entries, TypeScript modules, iframe HTML files, and `docs/TOY_SCRIPT_INDEX.md` stay in sync.
