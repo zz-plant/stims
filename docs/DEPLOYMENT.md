@@ -53,6 +53,16 @@ If your platform supports immutable caching, enable it for `dist/assets/**`; kee
 
 Cloudflare Pages reads the build command from the project settings in the dashboard, so keep `wrangler.toml` limited to the shared metadata (`name`, `compatibility_date`, and `pages_build_output_dir`). Do **not** add a `[build]` table—Pages rejects it and will surface a configuration validation error. Configure the build command (for example, `bun run build`) directly in Pages, or rely on `CF_PAGES=1` with the existing install script to generate `dist/` during install.
 
+For local CLI flows, run the bundled scripts so Wrangler always sees a built `dist/` folder and avoids the "output directory not found" error:
+
+```bash
+# Build and serve locally with wrangler pages dev
+bun run pages:dev
+
+# Build and deploy static assets to Cloudflare Pages
+bun run pages:deploy
+```
+
 ## Cloudflare Worker (MCP) Deployment
 
 The MCP HTTP/WebSocket endpoint lives in [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). Deploy it with Wrangler using the existing [`wrangler.toml`](../wrangler.toml) (name, compatibility date, and Pages output dir are already defined).
