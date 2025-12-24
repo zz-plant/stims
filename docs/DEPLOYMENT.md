@@ -53,7 +53,9 @@ If your platform supports immutable caching, enable it for `dist/assets/**`; kee
 
 Cloudflare Pages reads the build command from the project settings in the dashboard, so keep `wrangler.toml` limited to the shared metadata (`name`, `compatibility_date`, and `pages_build_output_dir`). Do **not** add a `[build]` table—Pages rejects it and will surface a configuration validation error. Configure the build command (for example, `bun run build`) directly in Pages, or rely on `CF_PAGES=1` with the existing install script to generate `dist/` during install.
 
-For local CLI flows, run the bundled scripts so Wrangler always sees a built `dist/` folder and avoids the "output directory not found" error:
+### Pages CLI flows
+
+Use the dedicated scripts to avoid drift between local and CI deployments:
 
 ```bash
 # Build and serve locally with wrangler pages dev
@@ -62,6 +64,12 @@ bun run pages:dev
 # Build and deploy static assets to Cloudflare Pages
 bun run pages:deploy
 ```
+
+Expected artifacts for both commands:
+
+- `dist/` with the HTML entry points and hashed assets under `dist/assets/`.
+- `dist/.vite/manifest.json` co-located with the assets (required for debugging and any server-side asset lookups).
+- A Wrangler-generated preview URL during `pages:dev` and a production deployment URL during `pages:deploy` (visible in the command output and the Cloudflare dashboard).
 
 ## Cloudflare Worker (MCP) Deployment
 
@@ -81,11 +89,28 @@ Common commands (Bun-first):
   bunx wrangler deploy scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
   ```
 
-Flags and bindings to keep in mind:
+Expected artifacts and checkpoints:
 
-- `--name` should match or override the `name` in `wrangler.toml` if you need a different environment-specific Worker name.
-- `--compatibility-date` should stay aligned with `wrangler.toml` (`2024-10-20`) to ensure the MCP server runs with the intended platform APIs.
-- No KV, Durable Objects, or secrets are required for the current worker; it only needs standard Worker APIs plus WebSocket support enabled by the compatibility date.
+- Worker script bundled by Wrangler (appears as `stims` or the overridden `--name` in the dashboard).
+- Preview URL surfaced by `wrangler dev` for local testing and a production URL after `wrangler deploy`.
+- Compatibility date pinned to `2024-10-20` so WebSocket support is enabled for the MCP server.
+- No KV, Durable Objects, or secrets are required; if you introduce bindings, add them to the deploy commands and `wrangler.toml`.
+
+## Preview-per-PR workflow
+
+Cloudflare Pages issues a unique preview deployment for each pull request. Every push to the PR rebuilds `dist/` and publishes a new preview URL. Use that URL to validate the production bundle before merging:
+
+1. Open the Pages preview link from the PR status or Cloudflare dashboard.
+2. Confirm that all static assets load without 404s and that console logs remain clean.
+3. Smoke-test a representative sample of HTML entry points (see below) to ensure routing and asset resolution work in the CDN environment.
+
+## Validate multiple HTML entry points before merge
+
+The project ships several standalone HTML entry points (e.g., `index.html`, `legible.html`, `multi.html`, `symph.html`, `toy.html`). Validate them locally and on the PR preview:
+
+1. Run `bun run build` followed by `bun run preview` and open each entry point path manually (for example, `http://localhost:4173/legible.html`).
+2. Repeat the checks against the PR’s Cloudflare Pages preview URL to ensure CDN caching and hashed asset references behave the same as local preview.
+3. If any entry point relies on audio or interaction-specific features, perform at least one interaction test (mic input, pointer/touch) to confirm runtime permissions and event handling.
 
 ## Release Checklist
 
