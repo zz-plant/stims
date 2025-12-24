@@ -12,6 +12,7 @@
     "dev": "vite",
     "dev:host": "vite --host",
     "dev:check": "node scripts/dev-check.mjs",
+    "check:toys": "bun run scripts/check-toys.ts",
     "build": "vite build",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "vite preview --host",

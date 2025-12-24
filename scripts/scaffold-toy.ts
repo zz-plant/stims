@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { z } from 'zod';
 
 type ToyType = 'module' | 'iframe';
 
@@ -12,6 +14,7 @@ type ScaffoldOptions = {
   description?: string;
   type?: ToyType;
   createTest?: boolean;
+  createSpec?: boolean;
   root?: string;
 };
 
@@ -33,6 +36,7 @@ async function main() {
         `Add description for ${title}.`);
     const shouldCreateTest =
       parsed.createTest ??
+      parsed.createSpec ??
       (await promptBoolean(rl, 'Create a Bun spec to assert the module exports start? (y/N) ', false));
 
     await scaffoldToy({
@@ -46,6 +50,9 @@ async function main() {
 
     console.log(`\nCreated scaffold for ${slug}.`);
     console.log('- Module:', path.relative(parsed.root ?? repoRoot, toyModulePath(slug, parsed.root)));
+    if (type === 'iframe') {
+      console.log('- HTML entry:', path.relative(parsed.root ?? repoRoot, toyHtmlPath(slug, parsed.root)));
+    }
     console.log('- Metadata: assets/js/toys-data.js');
     console.log('- Index: docs/TOY_SCRIPT_INDEX.md');
     if (shouldCreateTest) {
@@ -67,12 +74,20 @@ export async function scaffoldToy({
   createTest = false,
   root = repoRoot,
 }: Required<Omit<ScaffoldOptions, 'root'>> & { root?: string }) {
+  await ensureToysDataValid(root);
+
   if (await fileExists(toyModulePath(slug, root))) {
     throw new Error(`A toy module already exists for slug "${slug}".`);
   }
 
+  if (type === 'iframe' && (await fileExists(toyHtmlPath(slug, root)))) {
+    throw new Error(`HTML entry point ${toyHtmlPath(slug, root)} already exists.`);
+  }
+
   await createToyModule(slug, title, type, root);
+  await ensureEntryPoint(slug, type, title, root);
   await appendToyMetadata(slug, title, description, type, root);
+  await validateMetadataEntry(slug, title, description, type, root);
   await updateToyIndex(slug, type, root);
 
   if (createTest) {
@@ -82,6 +97,10 @@ export async function scaffoldToy({
 
 function toyModulePath(slug: string, root = repoRoot) {
   return path.join(root, 'assets/js/toys', `${slug}.ts`);
+}
+
+function toyHtmlPath(slug: string, root = repoRoot) {
+  return path.join(root, `${slug}.html`);
 }
 
 function testFileName(slug: string) {
@@ -118,6 +137,9 @@ function parseArgs(args: string[]): ScaffoldOptions {
       case '--with-test':
         options.createTest = true;
         break;
+      case '--with-spec':
+        options.createSpec = true;
+        break;
       case '--root':
         options.root = next ? path.resolve(next) : undefined;
         i += 1;
@@ -128,6 +150,35 @@ function parseArgs(args: string[]): ScaffoldOptions {
   }
 
   return options;
+}
+
+const toyEntrySchema = z
+  .object({
+    slug: z.string().min(1),
+    title: z.string().min(1),
+    description: z.string().min(1),
+    module: z.string().min(1),
+    type: z.enum(['module', 'iframe']),
+    requiresWebGPU: z.boolean().optional(),
+    allowWebGLFallback: z.boolean().optional(),
+  })
+  .passthrough();
+
+const toysDataSchema = z.array(toyEntrySchema);
+
+async function ensureToysDataValid(root = repoRoot) {
+  const entries = await loadToysData(root);
+  const parsed = toysDataSchema.parse(entries);
+  const seen = new Set<string>();
+
+  for (const entry of parsed) {
+    if (seen.has(entry.slug)) {
+      throw new Error(`Duplicate slug detected in assets/js/toys-data.js: ${entry.slug}`);
+    }
+    seen.add(entry.slug);
+  }
+
+  return parsed;
 }
 
 function resolveType(type?: string): ToyType | null {
@@ -191,6 +242,54 @@ async function promptBoolean(rl: ReturnType<typeof createInterface>, question: s
   return reply.startsWith('y');
 }
 
+async function loadToysData(root = repoRoot) {
+  const dataPath = path.join(root, 'assets/js/toys-data.js');
+  const source = await fs.readFile(dataPath, 'utf8');
+  const tempPath = path.join(
+    tmpdir(),
+    `toys-data-${Date.now()}-${Math.random().toString(16).slice(2)}.mjs`
+  );
+  await fs.writeFile(tempPath, source, 'utf8');
+  const module = await import(pathToFileURL(tempPath).href);
+  await fs.unlink(tempPath).catch(() => {});
+  const entries = module.default;
+
+  if (!Array.isArray(entries)) {
+    throw new Error('Expected assets/js/toys-data.js to export an array.');
+  }
+
+  return entries;
+}
+
+async function ensureEntryPoint(slug: string, type: ToyType, title: string, root = repoRoot) {
+  if (type !== 'iframe') return;
+
+  const htmlPath = toyHtmlPath(slug, root);
+  if (await fileExists(htmlPath)) return;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>${title}</title>
+    <link rel="stylesheet" href="assets/css/base.css" />
+  </head>
+  <body>
+    <a href="index.html" class="home-link">Back to Library</a>
+    <main class="toy-canvas" style="display: grid; place-items: center; min-height: 100vh;">
+      <p style="text-align: center; max-width: 38rem;">
+        Replace this placeholder with your experience for <strong>${title}</strong>.
+        Mount canvases or DOM elements here; the iframe wrapper will embed this page.
+      </p>
+    </main>
+  </body>
+</html>
+`;
+
+  await fs.writeFile(htmlPath, html, 'utf8');
+}
+
 async function createToyModule(slug: string, title: string, type: ToyType, root = repoRoot) {
   const modulePath = toyModulePath(slug, root);
   await fs.mkdir(path.dirname(modulePath), { recursive: true });
@@ -236,6 +335,37 @@ async function appendToyMetadata(
   }
 
   await fs.writeFile(dataPath, updated, 'utf8');
+}
+
+async function validateMetadataEntry(
+  slug: string,
+  title: string,
+  description: string,
+  type: ToyType,
+  root = repoRoot
+) {
+  const entries = await ensureToysDataValid(root);
+  const entry = entries.find((item) => item.slug === slug);
+
+  if (!entry) {
+    throw new Error(`Failed to register ${slug} in assets/js/toys-data.js.`);
+  }
+
+  if (entry.module !== `assets/js/toys/${slug}.ts`) {
+    throw new Error(`Module path for ${slug} must be assets/js/toys/${slug}.ts.`);
+  }
+
+  if (entry.type !== type) {
+    throw new Error(`Metadata type for ${slug} should be "${type}".`);
+  }
+
+  if (!entry.description || !entry.title) {
+    throw new Error(`Metadata for ${slug} must include a title and description.`);
+  }
+
+  if (entry.title !== title || entry.description !== description) {
+    console.warn('Metadata text differs from scaffold input; keeping file values.');
+  }
 }
 
 async function updateToyIndex(slug: string, type: ToyType, root = repoRoot) {
