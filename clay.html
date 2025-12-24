@@ -55,7 +55,7 @@
       import * as THREE from 'three';
       import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
       if (!ensureWebGL()) {
-        return;
+        throw new Error('WebGL support is required for the clay toy.');
       }
       // Basic Three.js setup
       let scene, camera, renderer;

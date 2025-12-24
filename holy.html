@@ -239,7 +239,7 @@
       import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
       if (!ensureWebGL()) {
-        return;
+        throw new Error('WebGL support is required for the Holy visualizer.');
       }
       let scene, camera, renderer, composer, bloomPass, fxaaPass;
       let visualizerShape, particles;
