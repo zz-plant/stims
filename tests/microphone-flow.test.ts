@@ -81,6 +81,37 @@ describe('setupMicrophonePermissionFlow', () => {
     expect(statusElement.dataset.variant).toBe('error');
     expect(statusElement.textContent).toContain('blocked');
     expect(fallbackButton.hidden).toBe(false);
+    expect(startButton.textContent).toContain('Retry microphone');
+
+    const toast = document.querySelector('[data-audio-toast="true"]');
+    expect(toast).not.toBeNull();
+    expect(toast?.textContent).toContain('permissions');
+    expect(toast?.getAttribute('role')).toBe('alert');
+  });
+
+  test('communicates timeout guidance and shows retry affordance', async () => {
+    const { startButton, fallbackButton, statusElement } = buildDom();
+
+    mockPermissionState('prompt');
+
+    const timeoutPromise = new Promise(() => {});
+
+    const flow = setupMicrophonePermissionFlow({
+      startButton,
+      fallbackButton,
+      statusElement,
+      requestMicrophone: () => timeoutPromise,
+      timeoutMs: 5,
+    });
+
+    await expect(flow.startMicrophoneRequest()).rejects.toBeInstanceOf(
+      AudioAccessError
+    );
+
+    expect(statusElement.dataset.variant).toBe('error');
+    expect(statusElement.textContent).toContain('timed out');
+    expect(fallbackButton.hidden).toBe(false);
+    expect(startButton.textContent).toContain('Retry microphone');
   });
 
   test('removes event listeners when disposed before reinitializing', async () => {
