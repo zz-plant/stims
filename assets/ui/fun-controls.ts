@@ -39,15 +39,84 @@ function ensureStyles() {
         right: 1rem;
         display: grid;
         gap: 0.5rem;
-        padding: 0.75rem;
-        background: rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        backdrop-filter: blur(8px);
-        color: #f5f5f5;
+        padding: 1rem;
+        background: radial-gradient(
+            140% 140% at 15% 20%,
+            rgba(81, 135, 255, 0.14),
+            rgba(9, 9, 18, 0.08)
+          ),
+          rgba(10, 12, 20, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        border-radius: 16px;
+        backdrop-filter: blur(12px) saturate(140%);
+        color: #f7f8ff;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        min-width: 240px;
+        min-width: 260px;
         z-index: 20;
+        overflow: hidden;
+      }
+      .fun-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        justify-content: space-between;
+        padding: 0.35rem 0.5rem 0.25rem;
+        border-radius: 12px;
+        background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .fun-labels {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+      }
+      .fun-eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.7rem;
+        opacity: 0.8;
+        margin: 0;
+      }
+      .fun-title {
+        font-size: 1.1rem;
+        margin: 0;
+        letter-spacing: 0.01em;
+      }
+      .fun-badges {
+        display: flex;
+        gap: 0.35rem;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+      .fun-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.06);
+        font-size: 0.8rem;
+        color: inherit;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      }
+      .fun-pill[data-state='party'] {
+        background: linear-gradient(120deg, rgba(255, 102, 178, 0.35), rgba(255, 221, 102, 0.2));
+        border-color: rgba(255, 221, 102, 0.4);
+      }
+      .fun-pill[data-state='calm'] {
+        background: linear-gradient(120deg, rgba(109, 211, 255, 0.3), rgba(92, 255, 204, 0.18));
+        border-color: rgba(109, 211, 255, 0.4);
+      }
+      .fun-pill[data-audio='off'] {
+        opacity: 0.72;
+        border-style: dashed;
+      }
+      .fun-grid {
+        display: grid;
+        gap: 0.75rem;
       }
       .fun-controls label {
         font-size: 0.85rem;
@@ -81,11 +150,12 @@ function ensureStyles() {
       .fun-controls legend {
         font-size: 0.85rem;
         margin-bottom: 0.25rem;
+        letter-spacing: 0.01em;
       }
       .fun-chip {
         flex: 1;
         border: 1px solid rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.06);
+        background: linear-gradient(140deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
         color: inherit;
         border-radius: 8px;
         padding: 0.35rem 0.5rem;
@@ -97,7 +167,7 @@ function ensureStyles() {
       .fun-chip:focus-visible {
         outline: 2px solid #6dd3ff;
         outline-offset: 2px;
-        background: rgba(109, 211, 255, 0.15);
+        background: linear-gradient(140deg, rgba(109, 211, 255, 0.25), rgba(109, 211, 255, 0.08));
         border-color: rgba(109, 211, 255, 0.5);
       }
       .fun-slider {
@@ -105,7 +175,8 @@ function ensureStyles() {
         appearance: none;
         height: 6px;
         border-radius: 999px;
-        background: linear-gradient(90deg, #ff3366, #ffd166, #33ffcc);
+        background: linear-gradient(90deg, #6dd3ff, #ffd166, #ff66b2);
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
       }
       .fun-slider::-webkit-slider-thumb {
         appearance: none;
@@ -135,6 +206,11 @@ function ensureStyles() {
         height: 18px;
         accent-color: #6dd3ff;
       }
+      .fun-caption {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        margin: 0;
+      }
       @media (max-width: 640px) {
         .fun-controls {
           left: 0.5rem;
@@ -142,7 +218,7 @@ function ensureStyles() {
           bottom: 0.5rem;
           min-width: unset;
           grid-template-columns: 1fr;
-          font-size: 0.9rem;
+          font-size: 0.95rem;
         }
         .fun-controls fieldset {
           flex-wrap: wrap;
@@ -173,65 +249,102 @@ export function initFunControls(options: FunControlsInit = {}) {
   container.className = 'fun-controls';
   container.setAttribute('aria-label', 'Visualizer controls');
   container.innerHTML = `
-      <fieldset>
-        <legend>Palette</legend>
-        ${(['bright', 'pastel', 'neon'] as PaletteOption[])
-          .map(
-            (key) => `
-              <button class="fun-chip" data-palette="${key}" aria-pressed="${
-              palette === key
-            }">${key}</button>
-            `
-          )
-          .join('')}
-      </fieldset>
-      <label>
-        Motion
-        <input class="fun-slider" type="range" min="0" max="1" step="0.01" value="${motion}" aria-valuemin="0" aria-valuemax="1" aria-valuenow="${motion}" aria-label="Motion intensity" />
-      </label>
-      <button class="fun-chip" data-mode="toggle" aria-pressed="${
-        mode === 'party'
-      }">${mode === 'party' ? 'Party' : 'Calm'} mode</button>
-      <label class="fun-toggle">
-        <input type="checkbox" class="fun-audio" ${
-          audioEnabled ? 'checked' : ''
-        } ${audioAvailable ? '' : 'disabled'} aria-label="Audio reactive" />
-        Audio reactive
-      </label>
-      <div class="fun-subsection" aria-label="Peak fun">
-        <div class="fun-row">
-          <label class="fun-toggle">
-            <input type="checkbox" class="fun-sparkles" ${
-              sparklesEnabled ? 'checked' : ''
-            } aria-label="Sparkles" />
-            Sparkles
-          </label>
-          <label class="fun-toggle">
-            <input type="checkbox" class="fun-bursts" ${
-              burstsEnabled ? 'checked' : ''
-            } aria-label="Bursts" />
-            Bursts
+      <div class="fun-header">
+        <div class="fun-labels">
+          <p class="fun-eyebrow">Visualizer HUD</p>
+          <p class="fun-title">Live controls</p>
+        </div>
+        <div class="fun-badges">
+          <span class="fun-pill" data-mode-indicator data-state="${mode}">
+            ${mode === 'party' ? 'Party mode' : 'Calm mode'}
+          </span>
+          <span
+            class="fun-pill"
+            data-audio-indicator
+            data-audio="${audioEnabled && audioAvailable ? 'on' : 'off'}"
+          >
+            ${audioEnabled && audioAvailable ? 'Audio reactive' : 'Manual control'}
+          </span>
+        </div>
+      </div>
+      <p class="fun-caption">Tweak the mood live—nothing here pauses the show.</p>
+      <div class="fun-grid">
+        <fieldset>
+          <legend>Palette</legend>
+          ${(['bright', 'pastel', 'neon'] as PaletteOption[])
+            .map(
+              (key) => `
+                <button class="fun-chip" data-palette="${key}" aria-pressed="${
+                palette === key
+              }">${key}</button>
+              `
+            )
+            .join('')}
+        </fieldset>
+        <label>
+          Motion
+          <input class="fun-slider" type="range" min="0" max="1" step="0.01" value="${motion}" aria-valuemin="0" aria-valuemax="1" aria-valuenow="${motion}" aria-label="Motion intensity" />
+        </label>
+        <button class="fun-chip" data-mode="toggle" aria-pressed="${
+          mode === 'party'
+        }">${mode === 'party' ? 'Party' : 'Calm'} mode</button>
+        <label class="fun-toggle">
+          <input type="checkbox" class="fun-audio" ${
+            audioEnabled ? 'checked' : ''
+          } ${audioAvailable ? '' : 'disabled'} aria-label="Audio reactive" />
+          Audio reactive
+        </label>
+        <div class="fun-subsection" aria-label="Peak fun">
+          <div class="fun-row">
+            <label class="fun-toggle">
+              <input type="checkbox" class="fun-sparkles" ${
+                sparklesEnabled ? 'checked' : ''
+              } aria-label="Sparkles" />
+              Sparkles
+            </label>
+            <label class="fun-toggle">
+              <input type="checkbox" class="fun-bursts" ${
+                burstsEnabled ? 'checked' : ''
+              } aria-label="Bursts" />
+              Bursts
+            </label>
+          </div>
+          <label>
+            Peak sensitivity
+            <input
+              class="fun-slider fun-peak-sensitivity"
+              type="range"
+              min="0.05"
+              max="1"
+              step="0.01"
+              value="${peakSensitivity}"
+              aria-valuemin="0.05"
+              aria-valuemax="1"
+              aria-valuenow="${peakSensitivity}"
+              aria-label="Peak sensitivity"
+            />
           </label>
         </div>
-        <label>
-          Peak sensitivity
-          <input
-            class="fun-slider fun-peak-sensitivity"
-            type="range"
-            min="0.05"
-            max="1"
-            step="0.01"
-            value="${peakSensitivity}"
-            aria-valuemin="0.05"
-            aria-valuemax="1"
-            aria-valuenow="${peakSensitivity}"
-            aria-label="Peak sensitivity"
-          />
-        </label>
       </div>
     `;
 
   document.body.appendChild(container);
+
+  const modeIndicator = container.querySelector<HTMLElement>('[data-mode-indicator]');
+  const audioIndicator = container.querySelector<HTMLElement>('[data-audio-indicator]');
+
+  function updateModeIndicator() {
+    if (!modeIndicator) return;
+    modeIndicator.textContent = mode === 'party' ? 'Party mode' : 'Calm mode';
+    modeIndicator.dataset.state = mode;
+  }
+
+  function updateAudioIndicator() {
+    if (!audioIndicator) return;
+    const audioOn = audioEnabled && audioAvailable;
+    audioIndicator.textContent = audioOn ? 'Audio reactive' : 'Manual control';
+    audioIndicator.dataset.audio = audioOn ? 'on' : 'off';
+  }
 
   function notifyPalette() {
     options.onPaletteChange?.(palette, palettes[palette]);
@@ -239,10 +352,12 @@ export function initFunControls(options: FunControlsInit = {}) {
 
   function notifyMotion() {
     options.onMotionChange?.(motion, mode);
+    updateModeIndicator();
   }
 
   function notifyAudio() {
     options.onAudioToggle?.(audioEnabled && audioAvailable);
+    updateAudioIndicator();
   }
 
   function notifySparkles() {
