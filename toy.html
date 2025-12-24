@@ -31,13 +31,50 @@
         </button>
       </div>
     </div>
-    <script type="module" src="assets/js/toyMain.js"></script>
+    <script type="module" src="assets/js/toyMain.ts"></script>
     <script type="module">
+      import { attachCapabilityPreflight } from './assets/js/core/capability-preflight.ts';
       import { setupMicrophonePermissionFlow } from './assets/js/core/microphone-flow.ts';
+      import { startToyPage } from './assets/js/toyMain.ts';
 
       const startButton = document.getElementById('start-audio-btn');
       const fallbackButton = document.getElementById('use-demo-audio');
       const statusElement = document.getElementById('audio-status');
+
+      let loaderStarted = false;
+      const startLoaderIfNeeded = () => {
+        if (loaderStarted) return;
+        loaderStarted = true;
+        startToyPage();
+      };
+
+      const updateStatus = (message, variant = 'error') => {
+        if (!statusElement) return;
+        statusElement.hidden = false;
+        statusElement.dataset.variant = variant;
+        statusElement.textContent = message;
+      };
+
+      attachCapabilityPreflight({
+        heading: 'Capability check',
+        onComplete: (result) => {
+          if (result.canProceed) {
+            updateStatus('Loading toy...', 'success');
+            startLoaderIfNeeded();
+          } else {
+            updateStatus(
+              'Rendering is unavailable. Enable hardware acceleration or update your browser, then retry the checks.'
+            );
+          }
+        },
+        onRetry: (result) => {
+          if (result.canProceed) {
+            updateStatus('Loading toy...', 'success');
+            startLoaderIfNeeded();
+          }
+        },
+        host: document.body,
+      });
 
       const getStarter = (fallback = false) => {
         const globalStart = window.startAudio;
