@@ -112,6 +112,7 @@ describe('scaffold-toy CLI helpers', () => {
     const data = await import(pathToFileURL(path.join(root, 'assets/js/toys-data.js')).href);
     const entry = data.default.find((item: { slug: string }) => item.slug === slug);
     expect(entry).toBeDefined();
+    expect(entry.module).toBe(`${slug}.html`);
     expect(entry.type).toBe('iframe');
   });
 });

@@ -312,13 +312,15 @@ async function appendToyMetadata(
     throw new Error(`Slug "${slug}" already exists in assets/js/toys-data.js.`);
   }
 
+  const modulePath = type === 'iframe' ? `${slug}.html` : `assets/js/toys/${slug}.ts`;
+
   const newEntry = [
     '  {',
     `    slug: '${slug}',`,
     `    title: '${title.replace(/'/g, "\\'")}',`,
     '    description:',
     `      '${description.replace(/'/g, "\\'")}',`,
-    `    module: 'assets/js/toys/${slug}.ts',`,
+    `    module: '${modulePath}',`,
     `    type: '${type}',`,
     '    requiresWebGPU: false,',
     '  },',
@@ -351,8 +353,10 @@ async function validateMetadataEntry(
     throw new Error(`Failed to register ${slug} in assets/js/toys-data.js.`);
   }
 
-  if (entry.module !== `assets/js/toys/${slug}.ts`) {
-    throw new Error(`Module path for ${slug} must be assets/js/toys/${slug}.ts.`);
+  const expectedModule = type === 'iframe' ? `${slug}.html` : `assets/js/toys/${slug}.ts`;
+
+  if (entry.module !== expectedModule) {
+    throw new Error(`Module path for ${slug} must be ${expectedModule}.`);
   }
 
   if (entry.type !== type) {
@@ -372,7 +376,8 @@ async function updateToyIndex(slug: string, type: ToyType, root = repoRoot) {
   const indexPath = path.join(root, 'docs/TOY_SCRIPT_INDEX.md');
   const current = await fs.readFile(indexPath, 'utf8');
 
-  const row = `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | ${
+  const modulePath = type === 'iframe' ? `${slug}.html` : `assets/js/toys/${slug}.ts`;
+  const row = `| \`${slug}\` | \`${modulePath}\` | ${
     type === 'iframe'
       ? `Iframe wrapper around \`${slug}.html\`.`
       : `Direct module; load with \`toy.html?toy=${slug}\`.`

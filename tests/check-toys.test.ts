@@ -30,11 +30,11 @@ describe('check-toys script', () => {
     await fs.writeFile(path.join(root, `${slug}.html`), '<!doctype html>');
     await fs.writeFile(
       path.join(root, 'assets/js/toys-data.js'),
-      `export default [{ slug: '${slug}', title: 'Aligned', description: 'ok', module: 'assets/js/toys/${slug}.ts', type: 'iframe' }];\n`
+      `export default [{ slug: '${slug}', title: 'Aligned', description: 'ok', module: '${slug}.html', type: 'iframe' }];\n`
     );
     await fs.appendFile(
       path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
-      `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Iframe wrapper |\n`
+      `| \`${slug}\` | \`${slug}.html\` | Iframe wrapper |\n`
     );
 
     const result = await runToyChecks(root);
@@ -48,7 +48,7 @@ describe('check-toys script', () => {
     await writeToyModule(root, slug);
     await fs.writeFile(
       path.join(root, 'assets/js/toys-data.js'),
-      `export default [{ slug: '${slug}', title: 'Missing Entry', description: 'oops', module: 'assets/js/toys/${slug}.ts', type: 'iframe' }];\n`
+      `export default [{ slug: '${slug}', title: 'Missing Entry', description: 'oops', module: '${slug}.html', type: 'iframe' }];\n`
     );
 
     const result = await runToyChecks(root);

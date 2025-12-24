@@ -11,7 +11,7 @@ type Toy = {
   slug: string;
   title?: string;
   module: string;
-  type: 'module' | 'page';
+  type: 'module' | 'page' | 'iframe';
   requiresWebGPU?: boolean;
   allowWebGLFallback?: boolean;
 };
