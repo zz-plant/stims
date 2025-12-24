@@ -159,7 +159,7 @@
       }
 
       const adapter = createMultiFunAdapter({
-        torusMaterial: torusKnot.material as THREE.MeshStandardMaterial,
+        torusMaterial: torusKnot.material,
         pointLight,
         particlesMaterial,
         shapes,
@@ -246,11 +246,10 @@
         sparkle.life = sparkle.maxLife = 0.4 + Math.random() * 0.9;
         sparkle.sizeBase = scale;
         sparkle.points.visible = true;
-        (sparkle.points.material as THREE.PointsMaterial).color.setHSL(
-          hue,
-          0.8,
-          0.6
-        );
+        const sparkleMaterial = sparkle.points.material;
+        if (sparkleMaterial instanceof THREE.PointsMaterial) {
+          sparkleMaterial.color.setHSL(hue, 0.8, 0.6);
+        }
       }
 
       function triggerSparkles(count = 12) {
@@ -265,9 +264,11 @@
           if (sparkle.life <= 0) return;
           sparkle.life -= delta;
           const t = Math.max(sparkle.life / sparkle.maxLife, 0);
-          const material = sparkle.points.material as THREE.PointsMaterial;
-          material.opacity = t;
-          material.size = sparkle.sizeBase * (0.75 + t * 0.75);
+          const material = sparkle.points.material;
+          if (material instanceof THREE.PointsMaterial) {
+            material.opacity = t;
+            material.size = sparkle.sizeBase * (0.75 + t * 0.75);
+          }
           sparkle.points.position.addScaledVector(sparkle.velocity, delta * 60);
           sparkle.velocity.multiplyScalar(0.98);
           if (sparkle.life <= 0) {
@@ -301,9 +302,13 @@
 
       const sensitivitySlider = funControls.container.querySelector(
         '.fun-sensitivity'
-      ) as HTMLInputElement;
+      );
       sensitivitySlider?.addEventListener('input', (event) => {
-        const nextValue = Number((event.target as HTMLInputElement).value);
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+          return;
+        }
+        const nextValue = Number(target.value);
         peakSensitivity = nextValue;
         peakDetector = createPeakDetector({
           getData: () => lastFrequencyData,
@@ -315,16 +320,24 @@
 
       const sparklesToggle = funControls.container.querySelector(
         '.fun-sparkles'
-      ) as HTMLInputElement;
+      );
       sparklesToggle?.addEventListener('change', (event) => {
-        sparklesEnabled = (event.target as HTMLInputElement).checked;
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+          return;
+        }
+        sparklesEnabled = target.checked;
       });
 
       const burstsToggle = funControls.container.querySelector(
         '.fun-bursts'
-      ) as HTMLInputElement;
+      );
       burstsToggle?.addEventListener('change', (event) => {
-        burstsEnabled = (event.target as HTMLInputElement).checked;
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+          return;
+        }
+        burstsEnabled = target.checked;
       });
 
       function animate(ctx) {
