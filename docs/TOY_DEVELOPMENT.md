@@ -5,21 +5,26 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 ## Core Expectations
 
 - Place new toy modules under `assets/js/toys/` and export a `start(options)` entry point.
-- Register the toy in `assets/js/toys-data.js` with a unique slug, label, and any default parameters.
+- Register the toy in `assets/js/toys-data.js` with a unique slug, label, and any default parameters. Keep the module path under `assets/js/toys/`.
 - Load toys through `toy.html?toy=<slug>` or a dedicated HTML entry point. Keep query string slugs in sync with `toys-data.js`.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
+- Run `bun run check:toys` before committing to confirm every module in `assets/js/toys/` is registered and iframe-backed toys have matching HTML entry points.
 
 ## Add-and-test checklist (fast path)
 
 Use this sequence when you want to stand up a fresh toy quickly (you can also run `bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test` to automate steps 1–3):
 
 1. **Create a module** in `assets/js/toys/<slug>.ts` using the starter template below. Export `start({ container, canvas?, audioContext? })`. Prefer `canvas` from the loader if you need a fullscreen surface; otherwise mount your own elements inside `container`.
-2. **Register the slug** in `assets/js/toys-data.js` with a short title/description. Set `requiresWebGPU` or `allowWebGLFallback` if you depend on WebGPU features.
-3. **Launch locally** with `bun run dev` and visit `http://localhost:5173/toy.html?toy=<slug>` to verify the manifest entry resolves and the loader shows your toy card.
+2. **Register the slug** in `assets/js/toys-data.js` with a short title/description. Set `requiresWebGPU` or `allowWebGLFallback` if you depend on WebGPU features. The scaffold script validates that metadata entries live under `assets/js/toys/` and that slugs remain unique.
+3. **Create entry points**: module-based toys use `toy.html?toy=<slug>`; iframe-backed toys also need an HTML page (`<slug>.html`). The scaffold script writes a starter iframe page if one does not already exist.
+4. **Launch locally** with `bun run dev` and visit `http://localhost:5173/toy.html?toy=<slug>` to verify the manifest entry resolves and the loader shows your toy card.
 4. **Run quick tests** before opening a PR:
    - `bun test tests/loader.test.js` (loader + capability checks)
    - `bun test tests/app-shell.test.js` (library shell wiring)
    - Add a focused spec for any pure helpers you introduce (e.g., easing/color math) in `tests/`.
+   - `bun run check:toys` (ensures metadata, modules, and iframe entry points stay in sync)
+
+The scaffold script can also generate a minimal Bun spec for you (`--with-spec`) that asserts the module exports `start`, and it will create a placeholder HTML page for iframe-based toys when one is missing.
 5. **Manual spot-checks**:
    - Confirm the Back to Library control returns to the grid and removes your DOM nodes (cleanup).
    - Verify microphone permission flows (granted, denied, and sample-audio fallback) if you request audio.
