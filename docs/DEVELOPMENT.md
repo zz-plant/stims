@@ -5,11 +5,22 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
 ## Tooling and Environment
 
 - **Bun 1.2+** is the default for installs and testing. **Node.js 22** (see `.nvmrc`) is supported as an optional fallback if you prefer npm for Vite or tooling.
+- Use the **Bun/Node matrix** below to match local commands to CI:
+  | Task | Bun command | Node 22 command |
+  | ---- | ----------- | --------------- |
+  | Install deps | `bun install --frozen-lockfile` | `npm install --no-package-lock` |
+  | Dev server smoke test | `bun run dev:check` | `npm run dev:check` |
+  | Lint | `bun run lint` | `npm run lint` |
+  | Type check | `bun run typecheck` | `npm run typecheck` |
+  | Build | `bun run build` | `npm run build` |
+  | Tests | `bun run test` | `npm test` |
+  The CI workflows run this same matrix for Bun and Node 22 to ensure both paths stay healthy.
 - Install dependencies once per clone with Bun:
   ```bash
   bun install
   ```
-  If you install with Bun and rely on Git hooks, the `postinstall` script will invoke `husky install` when `npm_config_user_agent` starts with `bun`. If hooks still don’t appear, run `bun x husky install`. When using Node, `npm install` is a backup option.
+  If you install with Bun and rely on Git hooks, the `postinstall` script will invoke `husky install` when `npm_config_user_agent` starts with `bun`. If hooks still don’t appear, run `bun x husky install`. When using Node, `npm install --no-package-lock` is a backup option.
+  - Keep `bun.lock` authoritative; avoid committing `package-lock.json`. Use `bun install --frozen-lockfile` in CI and prefer Bun locally to keep dependency resolution consistent.
 - The project uses **TypeScript**, **Vite**, **Three.js**, and the Bun test runner. No extra ESM flags are required when running `bun test`.
 - Run the dev server locally with Bun:
   ```bash
