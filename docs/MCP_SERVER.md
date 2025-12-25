@@ -65,11 +65,11 @@ compatibility_flags = ["nodejs_compat"]
 1. Install dependencies (`bun install`), ensuring `@cfworker/json-schema` is available for the Worker build.
 2. Deploy with Wrangler:
    ```bash
-   bunx wrangler deploy
+   bunx wrangler deploy scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
    ```
 3. Local preview (Worker fetch + WebSocket support):
    ```bash
-   bunx wrangler dev
+   bunx wrangler dev scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
    ```
 
 ### Client endpoints
