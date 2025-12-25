@@ -52,10 +52,12 @@ All tools are registered on the `stim-webtoys-mcp` server name and use zod-based
 
 ### `wrangler.toml` example
 
+The Worker uses the repository’s pinned compatibility date (`2024-10-20`) to keep WebSocket support consistent with `wrangler.toml` and the deployment snippets in `docs/DEPLOYMENT.md`.
+
 ```toml
 name = "stim-webtoys-mcp"
 main = "scripts/mcp-worker.ts"
-compatibility_date = "2025-02-20"
+compatibility_date = "2024-10-20"
 workers_dev = true
 compatibility_flags = ["nodejs_compat"]
 ```
@@ -65,11 +67,11 @@ compatibility_flags = ["nodejs_compat"]
 1. Install dependencies (`bun install`), ensuring `@cfworker/json-schema` is available for the Worker build.
 2. Deploy with Wrangler:
    ```bash
-   bunx wrangler deploy
+   bunx wrangler deploy scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
    ```
 3. Local preview (Worker fetch + WebSocket support):
    ```bash
-   bunx wrangler dev
+   bunx wrangler dev scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
    ```
 
 ### Client endpoints
