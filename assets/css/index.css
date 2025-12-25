@@ -690,6 +690,20 @@ h1 {
   margin-top: 1rem;
 }
 
+.search-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--text-muted);
+}
+
+.search-meta__results {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-color);
+}
+
 .search-field {
   display: flex;
   align-items: center;
@@ -731,6 +745,25 @@ h1 {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: calc(var(--section-gap) * 0.7);
   margin: 0 auto;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  border: 1px dashed var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  background: var(--surface-strong);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+  box-shadow: var(--shadow-soft);
+}
+
+.empty-state__message {
+  margin: 0;
+  color: var(--text-muted);
 }
 
 .webtoy-card {
