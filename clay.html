@@ -51,25 +51,32 @@
         <button data-tool="pinch">Pinch</button>
       </div>
     </div>
+    <div id="fallback-root"></div>
     <script type="module">
       import * as THREE from 'three';
-      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
-      if (!ensureWebGL()) {
-        throw new Error('WebGL support is required for the clay toy.');
-      }
-      // Basic Three.js setup
-      let scene, camera, renderer;
-      let potteryMesh, wheelMesh;
-      let isInteracting = false;
-      let previousTouches = [];
-      const maxRadius = 5;
-      const minRadius = 0.5;
-      const height = 12;
-      const segments = 100; // Increased for better detail
-      let currentTool = 'smooth';
+      import { bootstrapWebGL } from './assets/js/utils/webgl-bootstrap.ts';
 
-      init();
-      animate();
+      const hasRenderingSupport = bootstrapWebGL({ mountSelector: '#fallback-root' });
+      if (!hasRenderingSupport) {
+        document.body.classList.add('rendering-disabled');
+      } else {
+        startClayToy();
+      }
+
+      function startClayToy() {
+        // Basic Three.js setup
+        let scene, camera, renderer;
+        let potteryMesh, wheelMesh;
+        let isInteracting = false;
+        let previousTouches = [];
+        const maxRadius = 5;
+        const minRadius = 0.5;
+        const height = 12;
+        const segments = 100; // Increased for better detail
+        let currentTool = 'smooth';
+
+        init();
+        animate();
 
       function init() {
         // Scene and Camera
@@ -307,6 +314,8 @@
         camera.updateProjectionMatrix();
 
         renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
       }
     </script>
   </body>

@@ -59,6 +59,7 @@
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <div id="error-message" style="display: none"></div>
+    <div id="fallback-root"></div>
     <!-- The SVG element for the CSS displacement map -->
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0">
       <defs>
@@ -150,7 +151,7 @@
     <!-- Include Three.js -->
     <script type="module">
       import * as THREE from 'three';
-      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      import { bootstrapWebGL } from './assets/js/utils/webgl-bootstrap.ts';
       import {
         initAudio,
         getFrequencyData,
@@ -172,10 +173,14 @@
         }
       }
 
-      if (!ensureWebGL()) {
+      const hasRenderingSupport = bootstrapWebGL({ mountSelector: '#fallback-root' });
+      if (!hasRenderingSupport) {
         displayError('WebGL is not supported in your browser.');
+      } else {
+        startVisualizer();
       }
 
+      function startVisualizer() {
       // Set up the Three.js scene
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
@@ -396,6 +401,7 @@
         });
 
       window.addEventListener('pagehide', () => toy.dispose());
+      }
     </script>
   </body>
 </html>

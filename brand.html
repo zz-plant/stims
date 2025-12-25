@@ -12,32 +12,33 @@
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <canvas id="vizCanvas" class="toy-canvas"></canvas>
-    <div id="error-message" style="display: none"></div>
+    <div id="fallback-root"></div>
+    <div id="error-message"></div>
     <script type="module">
       import * as THREE from 'three';
       import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
       import WebToy from './assets/js/core/web-toy.ts';
       import { getContextFrequencyData } from './assets/js/core/animation-loop.ts';
-      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      import { bootstrapWebGL } from './assets/js/utils/webgl-bootstrap.ts';
       import { showError } from './assets/js/utils/error-display.ts';
       import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { initHints } from './assets/ui/hints.ts';
       import { initFunControls } from './assets/ui/fun-controls.ts';
       import { createBrandFunAdapter } from './assets/brand/fun-adapter.ts';
 
-      const hasRenderingSupport = ensureWebGL({
-        title: 'WebGL/WebGPU required for the Star Guitar visualizer',
-        description:
+      const hasRenderingSupport = bootstrapWebGL({
+        mountSelector: '#fallback-root',
+        overlayTitle: 'WebGL/WebGPU required for the Star Guitar visualizer',
+        overlayDescription:
           'This scene uses GPU acceleration for its neon skyline. Enable hardware acceleration or try a modern browser to continue.',
         previewLabel: 'Static preview (audio-reactive motion paused)',
       });
 
-      if (!hasRenderingSupport) {
-        showError(
-          'error-message',
-          'This visualizer needs WebGL or WebGPU. Try switching browsers or enabling hardware acceleration.'
-        );
-      } else {
+      if (hasRenderingSupport) {
+        startVisualizer();
+      }
+
+      function startVisualizer() {
         const canvas = document.getElementById('vizCanvas');
 
       initHints({

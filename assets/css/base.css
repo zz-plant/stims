@@ -459,6 +459,32 @@ body {
   animation: hueShift 12s linear infinite;
 }
 
+.rendering-fallback {
+  margin: 32px auto;
+  padding: 20px 22px;
+  width: min(640px, 92vw);
+  background: rgba(4, 8, 18, 0.8);
+  border: 1px solid rgba(111, 247, 255, 0.45);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35), 0 0 18px rgba(17, 216, 255, 0.25);
+  color: #e9fbff;
+}
+
+.rendering-fallback h2 {
+  margin: 6px 0 10px;
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
+}
+
+.rendering-fallback__description {
+  margin: 0 0 12px;
+  color: rgba(233, 251, 255, 0.82);
+}
+
+.rendering-fallback__preview {
+  margin-top: 6px;
+}
+
 .control-panel {
   position: fixed;
   bottom: 16px;

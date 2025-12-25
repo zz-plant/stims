@@ -223,6 +223,7 @@
         />
       </div>
     </div>
+    <div id="fallback-root"></div>
 
     <!-- Main Visualizer Script -->
     <script type="module">
@@ -237,10 +238,16 @@
         initAudio,
       } from './assets/js/utils/audio-handler.ts';
       import { startToyAudio } from './assets/js/utils/start-audio.ts';
-      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
-      if (!ensureWebGL()) {
-        throw new Error('WebGL support is required for the Holy visualizer.');
+      import { bootstrapWebGL } from './assets/js/utils/webgl-bootstrap.ts';
+
+      const hasRenderingSupport = bootstrapWebGL({ mountSelector: '#fallback-root' });
+      if (!hasRenderingSupport) {
+        document.body.classList.add('rendering-disabled');
+      } else {
+        startHolyVisualizer();
       }
+
+      function startHolyVisualizer() {
       let scene, camera, renderer, composer, bloomPass, fxaaPass;
       let visualizerShape, particles;
       let dataArray = new Uint8Array(0);
@@ -742,6 +749,7 @@
         e.stopPropagation();
         return false;
       };
+      }
     </script>
   </body>
 </html>
