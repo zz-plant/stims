@@ -32,7 +32,9 @@ const waitForAsyncTasks = () =>
 
 afterEach(() => {
   document.body.innerHTML = '';
-  delete (navigator as { permissions?: { query: () => Promise<PermissionStatus> } }).permissions;
+  delete (
+    navigator as { permissions?: { query: () => Promise<PermissionStatus> } }
+  ).permissions;
 });
 
 describe('setupMicrophonePermissionFlow', () => {
@@ -145,7 +147,9 @@ describe('setupMicrophonePermissionFlow', () => {
     );
 
     expect(startButton.dataset.state).toBe('retry');
-    expect(startButton.getAttribute('aria-label')).toContain('Retry microphone');
+    expect(startButton.getAttribute('aria-label')).toContain(
+      'Retry microphone'
+    );
     expect(fallbackButton.hidden).toBe(false);
 
     await flow.startMicrophoneRequest();
@@ -154,7 +158,9 @@ describe('setupMicrophonePermissionFlow', () => {
     expect(statusElement.dataset.variant).toBe('success');
     expect(startButton.dataset.state).toBeUndefined();
     expect(startButton.textContent).toBe('Enable mic');
-    expect(startButton.getAttribute('aria-label')).toBe('Enable microphone visuals');
+    expect(startButton.getAttribute('aria-label')).toBe(
+      'Enable microphone visuals'
+    );
     expect(fallbackButton.hidden).toBe(true);
   });
 

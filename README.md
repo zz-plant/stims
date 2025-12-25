@@ -22,12 +22,12 @@ If you add new scripts, toys, or deployment options, update the relevant doc abo
 
 **When to update docs**
 
-| Change type | Docs to touch |
-| --- | --- |
-| New toy or renamed slug | `docs/TOY_DEVELOPMENT.md`, `docs/TOY_SCRIPT_INDEX.md`, `docs/toys.md` |
-| New script or workflow change | `docs/DEVELOPMENT.md` |
-| Hosting or CI change | `docs/DEPLOYMENT.md`, `docs/ARCHITECTURE.md` (if it alters runtime/data flow) |
-| MCP server updates | `docs/MCP_SERVER.md` |
+| Change type                   | Docs to touch                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------- |
+| New toy or renamed slug       | `docs/TOY_DEVELOPMENT.md`, `docs/TOY_SCRIPT_INDEX.md`, `docs/toys.md`         |
+| New script or workflow change | `docs/DEVELOPMENT.md`                                                         |
+| Hosting or CI change          | `docs/DEPLOYMENT.md`, `docs/ARCHITECTURE.md` (if it alters runtime/data flow) |
+| MCP server updates            | `docs/MCP_SERVER.md`                                                          |
 
 ## Quick Start
 
@@ -68,31 +68,31 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 
 ## Toys in the Collection
 
-| Toy | Description |
-| --- | --- |
-| [3D Toy](./toy.html?toy=3dtoy) | Dive into a twisting 3D tunnel that responds to sound. |
-| [Aurora Painter](./toy.html?toy=aurora-painter) | Paint flowing aurora ribbons that react to your microphone in layered waves. |
-| [Star Guitar Visualizer](./toy.html?toy=brand) | A visual journey inspired by an iconic music video, synced to your music. |
-| [Pottery Wheel Sculptor](./toy.html?toy=clay) | Spin and shape a clay vessel with tactile smoothing and carving tools. |
-| [Defrag Visualizer](./toy.html?toy=defrag) | A nostalgic, sound-reactive visualizer evoking old defragmentation screens. |
-| [Evolutionary Weirdcore](./toy.html?toy=evol) | Watch surreal landscapes evolve with fractals and glitches that react to music. |
-| [Geometry Visualizer](./toy.html?toy=geom) | Push shifting geometric forms directly from live mic input. |
-| [Ultimate Satisfying Visualizer](./toy.html?toy=holy) | Layered halos, particles, and morphing shapes that respond to your music. |
-| [Multi-Capability Visualizer](./toy.html?toy=multi) | Shapes and lights move with both sound and device motion. (Requires WebGPU.) |
-| [Trippy Synesthetic Visualizer](./toy.html?toy=seary) | Blend audio and visuals in a rich synesthetic experience. |
-| [Pattern Recognition Visualizer](./toy.html?toy=sgpat) | See patterns form dynamically in response to sound. |
-| [Terminal Word Grid](./toy.html?toy=legible) | A retro green text grid that pulses to audio and surfaces fresh words as you play. |
-| [SVG + Three.js Visualizer](./toy.html?toy=svgtest) | A hybrid visualizer blending 2D and 3D elements, reacting in real time. |
-| [Dreamy Spectrograph](./toy.html?toy=symph) | A relaxing spectrograph that moves gently with your audio. |
-| [Interactive Word Cloud](./toy.html?toy=words) | Speak and watch the word cloud react and shift with your voice. |
-| [Grid Visualizer](./toy.html?toy=cube-wave) | Swap between cube waves and bouncing spheres without stopping the music. |
-| [Bubble Harmonics](./toy.html?toy=bubble-harmonics) | Translucent, audio-inflated bubbles that split into harmonics on high frequencies. |
-| [Cosmic Particles](./toy.html?toy=cosmic-particles) | Jump between orbiting swirls and nebula fly-throughs with a single toggle. |
-| [Audio Light Show](./toy.html?toy=lights) | Swap shader styles and color palettes while lights ripple with your microphone input. |
-| [Spiral Burst](./toy.html?toy=spiral-burst) | Colorful spirals rotate and expand with every beat. |
-| [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel) | Fly through colorful rings that spin to your music. |
-| [Star Field](./toy.html?toy=star-field) | A field of shimmering stars reacts to the beat. |
-| [Fractal Kite Garden](./toy.html?toy=fractal-kite-garden) | Grow branching kite fractals that sway with mids and shimmer with crisp highs. |
+| Toy                                                       | Description                                                                           |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [3D Toy](./toy.html?toy=3dtoy)                            | Dive into a twisting 3D tunnel that responds to sound.                                |
+| [Aurora Painter](./toy.html?toy=aurora-painter)           | Paint flowing aurora ribbons that react to your microphone in layered waves.          |
+| [Star Guitar Visualizer](./toy.html?toy=brand)            | A visual journey inspired by an iconic music video, synced to your music.             |
+| [Pottery Wheel Sculptor](./toy.html?toy=clay)             | Spin and shape a clay vessel with tactile smoothing and carving tools.                |
+| [Defrag Visualizer](./toy.html?toy=defrag)                | A nostalgic, sound-reactive visualizer evoking old defragmentation screens.           |
+| [Evolutionary Weirdcore](./toy.html?toy=evol)             | Watch surreal landscapes evolve with fractals and glitches that react to music.       |
+| [Geometry Visualizer](./toy.html?toy=geom)                | Push shifting geometric forms directly from live mic input.                           |
+| [Ultimate Satisfying Visualizer](./toy.html?toy=holy)     | Layered halos, particles, and morphing shapes that respond to your music.             |
+| [Multi-Capability Visualizer](./toy.html?toy=multi)       | Shapes and lights move with both sound and device motion. (Requires WebGPU.)          |
+| [Trippy Synesthetic Visualizer](./toy.html?toy=seary)     | Blend audio and visuals in a rich synesthetic experience.                             |
+| [Pattern Recognition Visualizer](./toy.html?toy=sgpat)    | See patterns form dynamically in response to sound.                                   |
+| [Terminal Word Grid](./toy.html?toy=legible)              | A retro green text grid that pulses to audio and surfaces fresh words as you play.    |
+| [SVG + Three.js Visualizer](./toy.html?toy=svgtest)       | A hybrid visualizer blending 2D and 3D elements, reacting in real time.               |
+| [Dreamy Spectrograph](./toy.html?toy=symph)               | A relaxing spectrograph that moves gently with your audio.                            |
+| [Interactive Word Cloud](./toy.html?toy=words)            | Speak and watch the word cloud react and shift with your voice.                       |
+| [Grid Visualizer](./toy.html?toy=cube-wave)               | Swap between cube waves and bouncing spheres without stopping the music.              |
+| [Bubble Harmonics](./toy.html?toy=bubble-harmonics)       | Translucent, audio-inflated bubbles that split into harmonics on high frequencies.    |
+| [Cosmic Particles](./toy.html?toy=cosmic-particles)       | Jump between orbiting swirls and nebula fly-throughs with a single toggle.            |
+| [Audio Light Show](./toy.html?toy=lights)                 | Swap shader styles and color palettes while lights ripple with your microphone input. |
+| [Spiral Burst](./toy.html?toy=spiral-burst)               | Colorful spirals rotate and expand with every beat.                                   |
+| [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel)           | Fly through colorful rings that spin to your music.                                   |
+| [Star Field](./toy.html?toy=star-field)                   | A field of shimmering stars reacts to the beat.                                       |
+| [Fractal Kite Garden](./toy.html?toy=fractal-kite-garden) | Grow branching kite fractals that sway with mids and shimmer with crisp highs.        |
 
 ---
 
@@ -230,6 +230,7 @@ dependencies and run the tests:
    (`npm install` is available if you’re using Node.)
 
 2. Run the tests (via the script so required flags are applied):
+
    ```bash
    bun run test
    ```

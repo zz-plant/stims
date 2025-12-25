@@ -47,7 +47,10 @@ function createMockLocation(href) {
 function createMockHistory(locationObject) {
   return {
     pushState: (_state, _title, nextUrl) => {
-      const targetUrl = typeof nextUrl === 'string' ? new URL(nextUrl, locationObject.href) : nextUrl;
+      const targetUrl =
+        typeof nextUrl === 'string'
+          ? new URL(nextUrl, locationObject.href)
+          : nextUrl;
       locationObject.href = targetUrl.href;
     },
   };
@@ -90,7 +93,9 @@ async function buildLoader({
   const router = createRouter({ windowRef: () => window, queryParam: 'toy' });
   const view = createToyView({ documentRef: () => document });
   // Bust module cache in case other specs mocked the loader exports.
-  const { createLoader } = await import(`../assets/js/loader.ts?t=${Date.now()}`);
+  const { createLoader } = await import(
+    `../assets/js/loader.ts?t=${Date.now()}`
+  );
 
   const loader = createLoader({
     manifestClient,
@@ -148,12 +153,16 @@ describe('loadToy', () => {
     await loader.loadToy('brand');
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
-    expect(manifestClient.resolveModulePath).toHaveBeenCalledWith('./__mocks__/fake-module.js');
+    expect(manifestClient.resolveModulePath).toHaveBeenCalledWith(
+      './__mocks__/fake-module.js'
+    );
     expect(window.location.search).toBe('');
   });
 
   test('renders and wires a Back to Library control', async () => {
-    const { loader } = await buildLoader({ locationHref: 'http://example.com/library' });
+    const { loader } = await buildLoader({
+      locationHref: 'http://example.com/library',
+    });
 
     await loader.loadToy('brand', { pushState: true });
 
@@ -164,7 +173,9 @@ describe('loadToy', () => {
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
 
     expect(defaultToyLifecycle.getActiveToy()).toBeNull();
-    expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
+    expect(
+      document.getElementById('toy-list')?.classList.contains('is-hidden')
+    ).toBe(false);
     expect(window.location.search).toBe('');
     expect(servicesMock.resetAudioPool).toHaveBeenCalled();
   });
@@ -203,7 +214,9 @@ describe('WebGPU requirements', () => {
     await loader.loadToy('webgpu-toy', { pushState: true });
 
     const status = document.querySelector('.active-toy-status.is-error');
-    expect(status?.querySelector('h2')?.textContent).toContain('WebGPU not available');
+    expect(status?.querySelector('h2')?.textContent).toContain(
+      'WebGPU not available'
+    );
     expect(window.location.search).toBe('');
   });
 
@@ -238,7 +251,9 @@ describe('WebGPU requirements', () => {
 
     await loader.loadToy('webgpu-toy');
 
-    const continueButton = document.querySelector('.active-toy-actions .cta-button.primary');
+    const continueButton = document.querySelector(
+      '.active-toy-actions .cta-button.primary'
+    );
     expect(continueButton).not.toBeNull();
 
     continueButton?.dispatchEvent(new Event('click', { bubbles: true }));
@@ -294,12 +309,18 @@ describe('loadFromQuery routing', () => {
   });
 
   test('returns to library when query param is missing', async () => {
-    const { loader } = await buildLoader({ locationHref: 'http://example.com/library' });
+    const { loader } = await buildLoader({
+      locationHref: 'http://example.com/library',
+    });
 
     await loader.loadFromQuery();
 
-    expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
+    expect(
+      document.getElementById('toy-list')?.classList.contains('is-hidden')
+    ).toBe(false);
     const activeContainer = document.querySelector('.active-toy-container');
-    expect(!activeContainer || activeContainer.classList.contains('is-hidden')).toBe(true);
+    expect(
+      !activeContainer || activeContainer.classList.contains('is-hidden')
+    ).toBe(true);
   });
 });

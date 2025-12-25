@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -44,10 +44,16 @@
     <div id="error-message" style="display: none"></div>
     <canvas id="gameCanvas" class="toy-canvas"></canvas>
     <script type="module">
-      import { AudioAccessError, initAudio } from './assets/js/utils/audio-handler.ts';
+      import {
+        AudioAccessError,
+        initAudio,
+      } from './assets/js/utils/audio-handler.ts';
       import { getContextFrequencyData } from './assets/js/core/animation-loop.ts';
       import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
-      import { clearError, showError } from './assets/js/utils/error-display.ts';
+      import {
+        clearError,
+        showError,
+      } from './assets/js/utils/error-display.ts';
       import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { setupIframeQualitySync } from './assets/js/core/iframe-quality-sync.ts';
 
@@ -77,7 +83,10 @@
         });
 
         const densityScale = Math.max(baseDensity, preset.particleScale ?? 1);
-        particleCount = Math.max(200, Math.round(baseParticleCount * densityScale));
+        particleCount = Math.max(
+          200,
+          Math.round(baseParticleCount * densityScale)
+        );
         rebuildParticles();
       }
 

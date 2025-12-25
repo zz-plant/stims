@@ -44,21 +44,21 @@ If you’re spinning up the project for the first time, confirm the basics befor
 
 ## Common Scripts (Bun-first)
 
-| Task | Command (Bun / optional Node fallback) |
-| ---- | ------------------------------------- |
-| Start dev server | `bun run dev` (`npm run dev`) |
-| Start dev server (LAN) | `bun run dev:host` (`npm run dev:host`) |
-| Production build | `bun run build` (`npm run build`) |
-| Preview build locally | `bun run preview` (`npm run preview`) |
-| Run test suite | `bun run test` (`npm test` proxies to Bun) |
-| Lint | `bun run lint` (`npm run lint`) |
-| Format with Prettier | `bun run format` (`npm run format`) |
-| Type check without emit | `bun run typecheck` (`npm run typecheck`) |
-| Dev server smoke test (no browser) | `bun run dev:check` (`npm run dev:check`) |
-| Validate toy registry and docs | `bun run check:toys` |
-| Serve built assets from `dist/` | `bun run serve:dist` |
-| Cloudflare Pages preview | `bun run pages:dev` |
-| Cloudflare Pages deploy | `bun run pages:deploy` |
+| Task                               | Command (Bun / optional Node fallback)     |
+| ---------------------------------- | ------------------------------------------ |
+| Start dev server                   | `bun run dev` (`npm run dev`)              |
+| Start dev server (LAN)             | `bun run dev:host` (`npm run dev:host`)    |
+| Production build                   | `bun run build` (`npm run build`)          |
+| Preview build locally              | `bun run preview` (`npm run preview`)      |
+| Run test suite                     | `bun run test` (`npm test` proxies to Bun) |
+| Lint                               | `bun run lint` (`npm run lint`)            |
+| Format with Prettier               | `bun run format` (`npm run format`)        |
+| Type check without emit            | `bun run typecheck` (`npm run typecheck`)  |
+| Dev server smoke test (no browser) | `bun run dev:check` (`npm run dev:check`)  |
+| Validate toy registry and docs     | `bun run check:toys`                       |
+| Serve built assets from `dist/`    | `bun run serve:dist`                       |
+| Cloudflare Pages preview           | `bun run pages:dev`                        |
+| Cloudflare Pages deploy            | `bun run pages:deploy`                     |
 
 Notes:
 
@@ -67,6 +67,7 @@ Notes:
 - The Pages scripts rely on `wrangler`; they rebuild before starting a preview session or deploying.
 
 When debugging a single test file, run:
+
 ```bash
 bun test tests/filename.test.js
 ```
@@ -76,7 +77,7 @@ bun test tests/filename.test.js
 - VS Code users can install recommended extensions via `.vscode/extensions.json` (Prettier, ESLint, and the TypeScript ESLint language service).
 - `.vscode/settings.json` configures Prettier as the default formatter and enables format-on-save for common web languages.
 - `.vscode/launch.json` includes a Vite dev-server debug config (with a Bun-backed prelaunch task) and a Bun test debug config so you can attach the debugger without additional setup.
-Use the `bun run test` (or `npm test`) script instead of raw `bun test` so the `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags are always applied; they load happy-dom globals and a Three.js stub to keep specs headless and fast.
+  Use the `bun run test` (or `npm test`) script instead of raw `bun test` so the `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags are always applied; they load happy-dom globals and a Three.js stub to keep specs headless and fast.
 
 ## Project Structure
 
@@ -111,7 +112,7 @@ Use the `bun run test` (or `npm test`) script instead of raw `bun test` so the `
   - **Battery saver**: `maxPixelRatio: 1.25`, `renderScale: 0.9`, ~65% particle counts.
   - **Balanced (default)**: `maxPixelRatio: 2`, `renderScale: 1`, 100% particle counts.
   - **Hi-fi visuals**: `maxPixelRatio: 2.5`, `renderScale: 1`, ~135% particle counts.
-  These settings persist between toys so you can cap GPU load once per session. Updating a preset calls `toy.updateRendererSettings()` to apply the new pixel ratio without a page reload.
+    These settings persist between toys so you can cap GPU load once per session. Updating a preset calls `toy.updateRendererSettings()` to apply the new pixel ratio without a page reload.
 
 ## Testing Expectations
 

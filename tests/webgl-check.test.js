@@ -9,7 +9,10 @@ describe('ensureWebGL overlay', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     mock.restore();
-    Object.defineProperty(navigator, 'gpu', { configurable: true, value: undefined });
+    Object.defineProperty(navigator, 'gpu', {
+      configurable: true,
+      value: undefined,
+    });
   });
 
   afterEach(() => {
@@ -35,6 +38,8 @@ describe('ensureWebGL overlay', () => {
     const overlay = document.getElementById('rendering-capability-overlay');
     expect(overlay).toBeTruthy();
     expect(overlay?.textContent).toContain('WebGL');
-    expect(overlay?.querySelector('.rendering-overlay__preview-pane')).not.toBeNull();
+    expect(
+      overlay?.querySelector('.rendering-overlay__preview-pane')
+    ).not.toBeNull();
   });
 });

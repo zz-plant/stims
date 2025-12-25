@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -37,7 +37,11 @@
   <body>
     <a href="index.html" class="home-link">Back to Library</a>
     <canvas id="webglCanvas" class="toy-canvas"></canvas>
-    <div id="capability-banner" class="capability-banner" aria-live="polite"></div>
+    <div
+      id="capability-banner"
+      class="capability-banner"
+      aria-live="polite"
+    ></div>
     <div id="error-message" style="display: none"></div>
     <script type="module">
       import * as THREE from 'three';
@@ -167,7 +171,8 @@
 
       const funControls = initFunControls({
         paletteOptions: adapter.paletteOptions,
-        onPaletteChange: (palette, colors) => adapter.setPalette(palette, colors),
+        onPaletteChange: (palette, colors) =>
+          adapter.setPalette(palette, colors),
         onMotionChange: (intensity, mode) => adapter.setMotion(intensity, mode),
         onAudioToggle: (enabled) => adapter.setAudioReactive(enabled),
       });
@@ -201,7 +206,10 @@
 
       const sparklePool = Array.from({ length: 80 }, () => {
         const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0], 3));
+        geometry.setAttribute(
+          'position',
+          new THREE.Float32BufferAttribute([0, 0, 0], 3)
+        );
         const material = new THREE.PointsMaterial({
           color: 0xffffff,
           size: 1,
@@ -231,13 +239,15 @@
         const hue = Math.random();
         const scale = 0.6 + Math.random() * 1.4;
 
-        sparkle.points.position.copy(origin).add(
-          new THREE.Vector3(
-            (Math.random() - 0.5) * 12,
-            (Math.random() - 0.5) * 12,
-            (Math.random() - 0.5) * 20
-          )
-        );
+        sparkle.points.position
+          .copy(origin)
+          .add(
+            new THREE.Vector3(
+              (Math.random() - 0.5) * 12,
+              (Math.random() - 0.5) * 12,
+              (Math.random() - 0.5) * 20
+            )
+          );
         sparkle.velocity.set(
           (Math.random() - 0.5) * 0.8,
           (Math.random() - 0.5) * 0.8,
@@ -300,9 +310,8 @@
         onRelease: handleRelease,
       });
 
-      const sensitivitySlider = funControls.container.querySelector(
-        '.fun-sensitivity'
-      );
+      const sensitivitySlider =
+        funControls.container.querySelector('.fun-sensitivity');
       sensitivitySlider?.addEventListener('input', (event) => {
         const target = event.target;
         if (!(target instanceof HTMLInputElement)) {
@@ -318,9 +327,8 @@
         });
       });
 
-      const sparklesToggle = funControls.container.querySelector(
-        '.fun-sparkles'
-      );
+      const sparklesToggle =
+        funControls.container.querySelector('.fun-sparkles');
       sparklesToggle?.addEventListener('change', (event) => {
         const target = event.target;
         if (!(target instanceof HTMLInputElement)) {
@@ -329,9 +337,7 @@
         sparklesEnabled = target.checked;
       });
 
-      const burstsToggle = funControls.container.querySelector(
-        '.fun-bursts'
-      );
+      const burstsToggle = funControls.container.querySelector('.fun-bursts');
       burstsToggle?.addEventListener('change', (event) => {
         const target = event.target;
         if (!(target instanceof HTMLInputElement)) {
@@ -362,7 +368,8 @@
         torusKnot.scale.setScalar(burstScale);
 
         pointLight.intensity =
-          Math.max(0.6, avgFrequency / 140) * (spin * 500 + 0.5 + burstValue * 2);
+          Math.max(0.6, avgFrequency / 140) *
+          (spin * 500 + 0.5 + burstValue * 2);
 
         particles.rotation.y += 0.001 + spin / 10;
 
@@ -382,17 +389,16 @@
         ctx.toy.render();
       }
 
-      startToyAudio(toy, animate)
-        .catch((err) => {
-          console.error('The following error occurred: ' + err);
-          funControls.setAudioAvailable(false);
-          showError(
-            'error-message',
-            'Microphone access is unavailable. Visuals will run without audio reactivity.'
-          );
-          const silentContext = { toy, analyser: null };
-          toy.renderer.setAnimationLoop(() => animate(silentContext));
-        });
+      startToyAudio(toy, animate).catch((err) => {
+        console.error('The following error occurred: ' + err);
+        funControls.setAudioAvailable(false);
+        showError(
+          'error-message',
+          'Microphone access is unavailable. Visuals will run without audio reactivity.'
+        );
+        const silentContext = { toy, analyser: null };
+        toy.renderer.setAnimationLoop(() => animate(silentContext));
+      });
     </script>
   </body>
 </html>

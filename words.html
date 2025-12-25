@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -110,7 +110,9 @@
         color: #fff;
         cursor: pointer;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
       }
 
       .pill-button:hover {
@@ -130,7 +132,9 @@
         border: none;
         cursor: pointer;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        transition: box-shadow 0.4s ease, transform 0.3s ease;
+        transition:
+          box-shadow 0.4s ease,
+          transform 0.3s ease;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -229,11 +233,14 @@
         </button>
       </div>
       <p class="control-hint" id="status-message">
-        Unmute to sync the visuals with your microphone. Speech controls appear when your browser supports them.
+        Unmute to sync the visuals with your microphone. Speech controls appear
+        when your browser supports them.
       </p>
       <div class="manual-panel" id="manual-panel">
         <div class="manual-row">
-          <label class="visually-hidden" for="manual-words">Add words manually</label>
+          <label class="visually-hidden" for="manual-words"
+            >Add words manually</label
+          >
           <input
             id="manual-words"
             class="manual-input"
@@ -242,13 +249,20 @@
             autocomplete="off"
             placeholder="Type words, separate with commas or spaces"
           />
-          <button id="add-words-button" class="pill-button" type="button">Add words</button>
-          <button id="demo-words-button" class="pill-button secondary" type="button">
+          <button id="add-words-button" class="pill-button" type="button">
+            Add words
+          </button>
+          <button
+            id="demo-words-button"
+            class="pill-button secondary"
+            type="button"
+          >
             Add sample words
           </button>
         </div>
         <p class="control-hint" style="margin-top: 8px; margin-bottom: 0">
-          Press Enter to submit. Tap "Add sample words" or press Space to pulse the cloud even without a mic.
+          Press Enter to submit. Tap "Add sample words" or press Space to pulse
+          the cloud even without a mic.
         </p>
       </div>
     </div>
@@ -259,7 +273,10 @@
     </div>
 
     <script type="module">
-      import { initAudio, getFrequencyData } from './assets/js/utils/audio-handler.ts';
+      import {
+        initAudio,
+        getFrequencyData,
+      } from './assets/js/utils/audio-handler.ts';
       import { startToyAudio } from './assets/js/utils/start-audio.ts';
       import { showError } from './assets/js/utils/error-display.ts';
       const wordCloudCanvas = document.getElementById('word-cloud-canvas');
@@ -468,7 +485,8 @@
       }
 
       function addDemoWords() {
-        const sample = demoWordSets[Math.floor(Math.random() * demoWordSets.length)];
+        const sample =
+          demoWordSets[Math.floor(Math.random() * demoWordSets.length)];
         addWordsToCloud(sample);
         updateWordCloudWithVisualizer(90);
         createParticleEffects(90);
@@ -502,7 +520,9 @@
 
       window.addEventListener('keydown', (event) => {
         const target = event.target;
-        const isTypingTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+        const isTypingTarget =
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement;
 
         if (event.code === 'Space' && !isTypingTarget) {
           event.preventDefault();
@@ -610,7 +630,9 @@
           toggleSpeechButton.classList.remove('active');
           updateSpeechIcon();
           recognition.stop();
-          setStatus('Speech paused. Keep typing or add sample words to grow the cloud.');
+          setStatus(
+            'Speech paused. Keep typing or add sample words to grow the cloud.'
+          );
         }
       });
 
@@ -626,9 +648,13 @@
       initSpeechRecognition();
 
       if (speechSupported) {
-        setStatus('Unmute to sync with your mic. Enable speech to sprinkle your words into the cloud.');
+        setStatus(
+          'Unmute to sync with your mic. Enable speech to sprinkle your words into the cloud.'
+        );
       } else {
-        setStatus('Speech recognition is unavailable. Type words or use sample words to keep playing.');
+        setStatus(
+          'Speech recognition is unavailable. Type words or use sample words to keep playing.'
+        );
       }
 
       if (recognition) {
@@ -649,15 +675,22 @@
         recognition.onerror = (event) => {
           console.error('Speech recognition error:', event.error);
 
-          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          if (
+            event.error === 'not-allowed' ||
+            event.error === 'service-not-allowed'
+          ) {
             disableSpeechToggle(
               'Speech recognition permission was denied. You can keep using the default word cloud.'
             );
-            setStatus('Speech recognition permission was denied. Type words or use sample words instead.');
+            setStatus(
+              'Speech recognition permission was denied. Type words or use sample words instead.'
+            );
             return;
           }
 
-          setStatus('Speech recognition hiccuped. Keep typing or try toggling speech again.');
+          setStatus(
+            'Speech recognition hiccuped. Keep typing or try toggling speech again.'
+          );
 
           if (isAddingWords) {
             recognition.start();
