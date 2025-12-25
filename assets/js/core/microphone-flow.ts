@@ -124,6 +124,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
 
   let pending = false;
   const originalStartLabel = startButton?.textContent ?? null;
+  const originalStartAriaLabel = startButton?.getAttribute('aria-label');
   let toastElement: HTMLElement | null = null;
 
   const showFallback = () => {
@@ -213,8 +214,15 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
         fallbackButton.hidden = true;
       }
 
-      if (startButton && originalStartLabel) {
-        startButton.textContent = originalStartLabel;
+      if (startButton) {
+        if (originalStartLabel !== null) {
+          startButton.textContent = originalStartLabel;
+        }
+        if (originalStartAriaLabel === null) {
+          startButton.removeAttribute('aria-label');
+        } else {
+          startButton.setAttribute('aria-label', originalStartAriaLabel);
+        }
         delete startButton.dataset.state;
       }
 
@@ -237,7 +245,10 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
       if (startButton && mode === 'microphone') {
         startButton.textContent = 'Retry microphone access';
         startButton.dataset.state = 'retry';
-        startButton.ariaLabel = `${startButton.textContent}. Update site permissions, then click to try again.`;
+        startButton.setAttribute(
+          'aria-label',
+          `${startButton.textContent}. Update site permissions, then click to try again.`
+        );
       }
 
       if (mode === 'microphone') {
