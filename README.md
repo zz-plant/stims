@@ -2,10 +2,22 @@
 
 Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). This is a collection of interactive web-based toys designed to provide some fun sensory stimulation. They’re built with **Three.js**, **WebGL**, and live **audio interaction** for anyone who enjoys engaging, responsive visuals. These are great for casual play, or as a form of sensory exploration, especially for neurodiverse folks.
 
-For setup, testing, and contribution guidelines, see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're building or updating toys, the developer docs in [`docs/`](./docs) cover common workflows and patterns.
-If you’re using the Model Context Protocol server in [`scripts/mcp-server.ts`](./scripts/mcp-server.ts), see the dedicated guide in [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md).
+For setup, testing, and contribution guidelines, see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're building or updating toys, the developer docs in [`docs/`](./docs) cover common workflows and patterns. If you’re using the Model Context Protocol server in [`scripts/mcp-server.ts`](./scripts/mcp-server.ts), see the dedicated guide in [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md).
 
 Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what’s new, what changed, and what’s coming next.
+
+## Documentation map
+
+Use these entry points to find the right docs quickly:
+
+- [`docs/README.md`](./docs/README.md): overview of all project docs plus onboarding highlights.
+- [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md): day-to-day setup, tooling, scripts, and workflow expectations.
+- [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md) and [`docs/TOY_SCRIPT_INDEX.md`](./docs/TOY_SCRIPT_INDEX.md): how to build or modify toys, plus a map from toy slugs to their TypeScript entry points.
+- [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md): production build/preview steps, Cloudflare Pages/Workers notes, and static hosting tips.
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md): runtime composition, loaders, and diagrams for the core systems.
+- [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md): Model Context Protocol stdio server usage and available tools.
+
+If you add new scripts, toys, or deployment options, update the relevant doc above so the workflows stay discoverable.
 
 ## Quick Start
 
