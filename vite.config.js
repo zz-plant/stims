@@ -17,6 +17,14 @@ const moduleInputs = Object.fromEntries(
     .filter((toy) => toy.type === 'module')
     .map((toy) => [toy.module, path.resolve(rootDir, toy.module)])
 );
+const rollupInputs = {
+  ...htmlInputs,
+  ...moduleInputs,
+};
+
+if (!rollupInputs.index) {
+  rollupInputs.index = path.resolve(rootDir, 'index.html');
+}
 
 export default defineConfig({
   server: {
@@ -33,11 +41,7 @@ export default defineConfig({
       // Keep the toy entry exports intact so dynamic imports from the homepage
       // can find the `start` functions even when they look unused at build time.
       preserveEntrySignatures: 'strict',
-      input: {
-        main: htmlInputs.index ?? path.resolve(rootDir, 'index.html'),
-        ...htmlInputs,
-        ...moduleInputs,
-      },
+      input: rollupInputs,
     },
   },
 });
