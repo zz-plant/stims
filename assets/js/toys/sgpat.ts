@@ -90,9 +90,9 @@ const uniforms = {
   u_touchRotation: { value: 0 },
 };
 
-const startButton = document.getElementById('start-audio-button') as
-  | HTMLButtonElement
-  | null;
+const startButton = document.getElementById(
+  'start-audio-button'
+) as HTMLButtonElement | null;
 
 const fragmentShader = `
   uniform float u_time;
@@ -208,7 +208,8 @@ function applyQualityPreset(preset: QualityPreset) {
 
   disposeResize();
   disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
-    maxPixelRatio: (activeQuality.renderScale ?? 1) * activeQuality.maxPixelRatio,
+    maxPixelRatio:
+      (activeQuality.renderScale ?? 1) * activeQuality.maxPixelRatio,
     onResize: ({ cssWidth, cssHeight }) => {
       viewportWidth = cssWidth;
       viewportHeight = cssHeight;
@@ -220,7 +221,8 @@ function applyQualityPreset(preset: QualityPreset) {
 function setupSettingsPanel() {
   settingsPanel.configure({
     title: 'Spectrograph',
-    description: 'Quality presets update DPI caps for both the shader view and renderer.',
+    description:
+      'Quality presets update DPI caps for both the shader view and renderer.',
   });
   settingsPanel.setQualityPresets({
     presets: DEFAULT_QUALITY_PRESETS,
@@ -261,7 +263,12 @@ function updateSpectrograph(dataArray: Uint8Array) {
   }
 
   spectroCtx.clearRect(0, 0, viewportWidth, viewportHeight);
-  const gradient = spectroCtx.createLinearGradient(0, 0, viewportWidth, viewportHeight);
+  const gradient = spectroCtx.createLinearGradient(
+    0,
+    0,
+    viewportWidth,
+    viewportHeight
+  );
   gradient.addColorStop(0, '#ff6ec7');
   gradient.addColorStop(0.5, '#8e44ad');
   gradient.addColorStop(1, '#3498db');
@@ -272,12 +279,7 @@ function updateSpectrograph(dataArray: Uint8Array) {
 
   for (let i = 0; i < dataArray.length; i++) {
     barHeight = dataArray[i] / 2;
-    spectroCtx.fillRect(
-      x,
-      viewportHeight - barHeight,
-      barWidth,
-      barHeight
-    );
+    spectroCtx.fillRect(x, viewportHeight - barHeight, barWidth, barHeight);
     x += barWidth + 1;
   }
 }

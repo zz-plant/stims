@@ -239,7 +239,11 @@ function rebuildGrid(mode: ShapeMode) {
       const geometry = currentPreset.geometryFactory(row, col);
       const material = currentPreset.materialFactory(row, col);
       const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(startX + col * spacingX, currentPreset.animation.baseHeight, startZ + row * spacingZ);
+      mesh.position.set(
+        startX + col * spacingX,
+        currentPreset.animation.baseHeight,
+        startZ + row * spacingZ
+      );
       gridGroup.add(mesh);
       gridItems.push({ mesh, row, col });
     }
@@ -307,7 +311,8 @@ function updateTransforms(
       : 0;
 
   if (anim.heightMode === 'position') {
-    mesh.position.y = anim.baseHeight + waveOffset + normalizedValue * anim.audioHeight;
+    mesh.position.y =
+      anim.baseHeight + waveOffset + normalizedValue * anim.audioHeight;
     const scale = anim.baseScale + normalizedValue * anim.audioScale;
     mesh.scale.setScalar(scale);
   } else {
@@ -317,13 +322,21 @@ function updateTransforms(
   }
 
   if (anim.rotation.x) {
-    mesh.rotation.x += anim.rotation.x + normalizedValue * (anim.rotation.audioBoost ?? 0);
+    mesh.rotation.x +=
+      anim.rotation.x + normalizedValue * (anim.rotation.audioBoost ?? 0);
   }
   if (anim.rotation.y) {
-    mesh.rotation.y += anim.rotation.y + rawValue / 100000 + normalizedValue * (anim.rotation.audioBoost ?? 0);
+    mesh.rotation.y +=
+      anim.rotation.y +
+      rawValue / 100000 +
+      normalizedValue * (anim.rotation.audioBoost ?? 0);
   }
 
-  applyAudioColor(mesh.material, normalizedValue, currentPreset.colorFor(row, col));
+  applyAudioColor(
+    mesh.material,
+    normalizedValue,
+    currentPreset.colorFor(row, col)
+  );
 }
 
 function animate(ctx: AnimationContext) {

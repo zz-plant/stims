@@ -1,6 +1,11 @@
 type FetchImpl = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
-type BaseUrlInput = string | URL | null | undefined | (() => string | URL | null | undefined);
+type BaseUrlInput =
+  | string
+  | URL
+  | null
+  | undefined
+  | (() => string | URL | null | undefined);
 
 type ManifestEntry = {
   file?: string;
@@ -43,7 +48,8 @@ function resolveBaseUrl(input?: BaseUrlInput): URL | null {
 
   try {
     const parsed = typeof input === 'string' ? new URL(input) : input;
-    if (parsed?.protocol === 'about:' || parsed?.protocol === 'null:') return null;
+    if (parsed?.protocol === 'about:' || parsed?.protocol === 'null:')
+      return null;
     return parsed;
   } catch (error) {
     console.warn('Unable to parse base URL', error);
@@ -102,7 +108,8 @@ export function createManifestClient({
   baseUrl,
 }: { fetchImpl?: FetchImpl; baseUrl?: BaseUrlInput } = {}) {
   const getBaseUrl = () => resolveBaseUrl(baseUrl);
-  let manifestPromise: Promise<Record<string, ManifestEntry> | null> | null = null;
+  let manifestPromise: Promise<Record<string, ManifestEntry> | null> | null =
+    null;
 
   const getManifestPaths = () => buildManifestPaths(getBaseUrl());
 

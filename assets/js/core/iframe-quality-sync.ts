@@ -29,7 +29,8 @@ export function setupIframeQualitySync(applyQuality: QualityHandler) {
 
   window.addEventListener('message', (event) => {
     const preset = (event.data as { type?: string; preset?: unknown })?.preset;
-    if ((event.data as { type?: string }).type !== 'apply-quality-preset') return;
+    if ((event.data as { type?: string }).type !== 'apply-quality-preset')
+      return;
 
     if (isQualityPreset(preset)) {
       apply(preset);

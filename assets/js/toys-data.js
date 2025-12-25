@@ -209,8 +209,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     controls: ['Grain size slider', 'Damping slider', 'Gravity lock toggle'],
-    },
- {   
+  },
+  {
     slug: 'bioluminescent-tidepools',
     title: 'Bioluminescent Tidepools',
     description:

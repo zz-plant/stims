@@ -35,11 +35,13 @@ export function setupCanvasResize(
 
     if ('viewport' in context && typeof context.viewport === 'function') {
       const viewportWidth =
-        'drawingBufferWidth' in context && typeof context.drawingBufferWidth === 'number'
+        'drawingBufferWidth' in context &&
+        typeof context.drawingBufferWidth === 'number'
           ? context.drawingBufferWidth
           : width;
       const viewportHeight =
-        'drawingBufferHeight' in context && typeof context.drawingBufferHeight === 'number'
+        'drawingBufferHeight' in context &&
+        typeof context.drawingBufferHeight === 'number'
           ? context.drawingBufferHeight
           : height;
 

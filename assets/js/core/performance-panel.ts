@@ -105,12 +105,16 @@ function getStoredSettings(storageKey = STORAGE_KEY): PerformanceSettings {
       ...parsed,
       ...overrides,
       maxPixelRatio: clamp(
-        parsed.maxPixelRatio ?? overrides.maxPixelRatio ?? DEFAULT_SETTINGS.maxPixelRatio,
+        parsed.maxPixelRatio ??
+          overrides.maxPixelRatio ??
+          DEFAULT_SETTINGS.maxPixelRatio,
         MIN_PIXEL_RATIO,
         MAX_PIXEL_RATIO
       ),
       particleBudget: clamp(
-        parsed.particleBudget ?? overrides.particleBudget ?? DEFAULT_SETTINGS.particleBudget,
+        parsed.particleBudget ??
+          overrides.particleBudget ??
+          DEFAULT_SETTINGS.particleBudget,
         MIN_PARTICLE_BUDGET,
         MAX_PARTICLE_BUDGET
       ),
@@ -143,13 +147,19 @@ export function subscribeToPerformanceSettings(
   return () => subscribers.delete(subscriber);
 }
 
-function persistSettings(settings: PerformanceSettings, storageKey = STORAGE_KEY) {
+function persistSettings(
+  settings: PerformanceSettings,
+  storageKey = STORAGE_KEY
+) {
   const storage = getStorage();
   if (!storage) return;
   storage.setItem(storageKey, JSON.stringify(settings));
 }
 
-function applySettings(settings: PerformanceSettings, storageKey = STORAGE_KEY) {
+function applySettings(
+  settings: PerformanceSettings,
+  storageKey = STORAGE_KEY
+) {
   activeSettings = settings;
   activeStorageKey = storageKey;
   subscribers.forEach((subscriber) => subscriber(settings));
@@ -168,7 +178,11 @@ class PerformancePanel {
   private storageKey: string;
 
   constructor(options: PerformancePanelOptions = {}) {
-    const { title = 'Performance', description, storageKey = STORAGE_KEY } = options;
+    const {
+      title = 'Performance',
+      description,
+      storageKey = STORAGE_KEY,
+    } = options;
     this.storageKey = storageKey;
 
     this.container = document.createElement('div');
@@ -196,7 +210,9 @@ class PerformancePanel {
     this.pixelRatioInput.min = MIN_PIXEL_RATIO.toString();
     this.pixelRatioInput.max = MAX_PIXEL_RATIO.toString();
     this.pixelRatioInput.step = '0.05';
-    this.pixelRatioInput.addEventListener('input', () => this.handlePixelRatioInput());
+    this.pixelRatioInput.addEventListener('input', () =>
+      this.handlePixelRatioInput()
+    );
     pixelRow.actions.appendChild(this.pixelRatioInput);
 
     const particleRow = this.createRow(
@@ -209,7 +225,9 @@ class PerformancePanel {
     this.particleInput.min = MIN_PARTICLE_BUDGET.toString();
     this.particleInput.max = MAX_PARTICLE_BUDGET.toString();
     this.particleInput.step = '0.05';
-    this.particleInput.addEventListener('input', () => this.handleParticleInput());
+    this.particleInput.addEventListener('input', () =>
+      this.handleParticleInput()
+    );
     particleRow.actions.appendChild(this.particleInput);
 
     const shaderRow = this.createRow(
@@ -228,7 +246,9 @@ class PerformancePanel {
             : 'Balanced';
       this.shaderSelect.appendChild(option);
     });
-    this.shaderSelect.addEventListener('change', () => this.handleShaderChange());
+    this.shaderSelect.addEventListener('change', () =>
+      this.handleShaderChange()
+    );
     shaderRow.actions.appendChild(this.shaderSelect);
 
     document.body.appendChild(this.container);
@@ -248,7 +268,10 @@ class PerformancePanel {
       if (!this.description) {
         this.description = document.createElement('p');
         this.description.className = 'control-panel__description';
-        this.container.insertBefore(this.description, this.container.children[1]);
+        this.container.insertBefore(
+          this.description,
+          this.container.children[1]
+        );
       }
       this.description.textContent = description;
     }
@@ -295,7 +318,10 @@ class PerformancePanel {
       MIN_PIXEL_RATIO,
       MAX_PIXEL_RATIO
     );
-    const next = { ...(activeSettings ?? DEFAULT_SETTINGS), maxPixelRatio: value };
+    const next = {
+      ...(activeSettings ?? DEFAULT_SETTINGS),
+      maxPixelRatio: value,
+    };
     applySettings(next, this.storageKey);
   }
 
@@ -305,13 +331,21 @@ class PerformancePanel {
       MIN_PARTICLE_BUDGET,
       MAX_PARTICLE_BUDGET
     );
-    const next = { ...(activeSettings ?? DEFAULT_SETTINGS), particleBudget: value };
+    const next = {
+      ...(activeSettings ?? DEFAULT_SETTINGS),
+      particleBudget: value,
+    };
     applySettings(next, this.storageKey);
   }
 
   private handleShaderChange() {
-    const quality = parseShaderQuality(this.shaderSelect.value) ?? DEFAULT_SETTINGS.shaderQuality;
-    const next = { ...(activeSettings ?? DEFAULT_SETTINGS), shaderQuality: quality };
+    const quality =
+      parseShaderQuality(this.shaderSelect.value) ??
+      DEFAULT_SETTINGS.shaderQuality;
+    const next = {
+      ...(activeSettings ?? DEFAULT_SETTINGS),
+      shaderQuality: quality,
+    };
     applySettings(next, this.storageKey);
   }
 
@@ -340,7 +374,8 @@ export function getPerformancePanel(options: PerformancePanelOptions = {}) {
 
 export function setPerformanceSettings(settings: Partial<PerformanceSettings>) {
   const current =
-    activeSettings ?? getActivePerformanceSettings({ storageKey: activeStorageKey });
+    activeSettings ??
+    getActivePerformanceSettings({ storageKey: activeStorageKey });
   const merged: PerformanceSettings = {
     ...current,
     ...settings,
@@ -354,12 +389,15 @@ export function setPerformanceSettings(settings: Partial<PerformanceSettings>) {
       MIN_PARTICLE_BUDGET,
       MAX_PARTICLE_BUDGET
     ),
-    shaderQuality: parseShaderQuality(settings.shaderQuality ?? '') ?? current.shaderQuality,
+    shaderQuality:
+      parseShaderQuality(settings.shaderQuality ?? '') ?? current.shaderQuality,
   };
   applySettings(merged, activeStorageKey);
 }
 
-export function resetPerformancePanelState(options: { removePanel?: boolean } = {}) {
+export function resetPerformancePanelState(
+  options: { removePanel?: boolean } = {}
+) {
   activeSettings = null;
   activeStorageKey = STORAGE_KEY;
   subscribers.clear();

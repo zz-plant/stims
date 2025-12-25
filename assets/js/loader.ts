@@ -5,8 +5,14 @@ import { createManifestClient } from './utils/manifest-client.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import { prewarmRendererCapabilities } from './core/services/render-service.ts';
-import { prewarmMicrophone, resetAudioPool } from './core/services/audio-service.ts';
-import { defaultToyLifecycle, type ToyLifecycle } from './core/toy-lifecycle.ts';
+import {
+  prewarmMicrophone,
+  resetAudioPool,
+} from './core/services/audio-service.ts';
+import {
+  defaultToyLifecycle,
+  type ToyLifecycle,
+} from './core/toy-lifecycle.ts';
 
 type Toy = {
   slug: string;
@@ -41,7 +47,7 @@ export function createLoader({
   prewarmMicrophoneFn?: typeof prewarmMicrophone;
   resetAudioPoolFn?: typeof resetAudioPool;
   toyLifecycle?: ToyLifecycle;
-  } = {}) {
+} = {}) {
   let navigationInitialized = false;
   const lifecycle = toyLifecycle ?? defaultToyLifecycle;
   lifecycle.reset();
@@ -92,7 +98,9 @@ export function createLoader({
     let capabilities = initialCapabilities ?? (await rendererCapabilities());
 
     const supportsRendering = ensureWebGLCheck({
-      title: toy.title ? `${toy.title} needs graphics acceleration` : 'Graphics support required',
+      title: toy.title
+        ? `${toy.title} needs graphics acceleration`
+        : 'Graphics support required',
       description:
         'We could not detect WebGL or WebGPU support on this device. Try a modern browser with hardware acceleration enabled.',
     });
@@ -106,17 +114,20 @@ export function createLoader({
 
     const container = view.showActiveToyView(backToLibrary, toy);
     if (!container) return;
-    updateRendererStatus(capabilities, capabilities.shouldRetryWebGPU
-      ? async () => {
-          capabilities = await rendererCapabilities({ forceRetry: true });
-          updateRendererStatus(capabilities);
-          if (capabilities.preferredBackend === 'webgpu') {
-            disposeActiveToy();
-            view.clearActiveToyContainer?.();
-            await startModuleToy(toy, false, capabilities);
+    updateRendererStatus(
+      capabilities,
+      capabilities.shouldRetryWebGPU
+        ? async () => {
+            capabilities = await rendererCapabilities({ forceRetry: true });
+            updateRendererStatus(capabilities);
+            if (capabilities.preferredBackend === 'webgpu') {
+              disposeActiveToy();
+              view.clearActiveToyContainer?.();
+              await startModuleToy(toy, false, capabilities);
+            }
           }
-        }
-      : undefined);
+        : undefined
+    );
 
     registerEscapeHandler();
 
@@ -137,7 +148,10 @@ export function createLoader({
         moduleUrl = await manifestClient.resolveModulePath(toy.module);
       } catch (error) {
         console.error('Error resolving module path:', error);
-        view.showImportError(toy, { importError: error as Error, onBack: backToLibrary });
+        view.showImportError(toy, {
+          importError: error as Error,
+          onBack: backToLibrary,
+        });
         return;
       }
 
@@ -147,14 +161,19 @@ export function createLoader({
         moduleExports = await import(moduleUrl);
       } catch (error) {
         console.error('Error loading toy module:', error);
-        view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });
+        view.showImportError(toy, {
+          moduleUrl,
+          importError: error as Error,
+          onBack: backToLibrary,
+        });
         return;
       }
 
       const startCandidate =
         (moduleExports as { start?: unknown })?.start ??
         (moduleExports as { default?: { start?: unknown } })?.default?.start;
-      const starter = typeof startCandidate === 'function' ? startCandidate : null;
+      const starter =
+        typeof startCandidate === 'function' ? startCandidate : null;
 
       if (starter) {
         try {
@@ -162,7 +181,11 @@ export function createLoader({
           lifecycle.adoptActiveToy(active ?? lifecycle.getActiveToy()?.ref);
         } catch (error) {
           console.error('Error starting toy module:', error);
-          view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });
+          view.showImportError(toy, {
+            moduleUrl,
+            importError: error as Error,
+            onBack: backToLibrary,
+          });
           return;
         }
       }
@@ -189,7 +212,10 @@ export function createLoader({
     await runToy();
   };
 
-  const loadToy = async (slug: string, { pushState = false }: { pushState?: boolean } = {}) => {
+  const loadToy = async (
+    slug: string,
+    { pushState = false }: { pushState?: boolean } = {}
+  ) => {
     const toy = toys.find((t) => t.slug === slug);
     if (!toy) {
       console.error(`Toy not found: ${slug}`);

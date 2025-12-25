@@ -107,7 +107,13 @@ export async function initRenderer(
     }
 
     try {
-      const renderer = new WebGPURenderer({ canvas, antialias, alpha, adapter, device });
+      const renderer = new WebGPURenderer({
+        canvas,
+        antialias,
+        alpha,
+        adapter,
+        device,
+      });
       return finalize(renderer, 'webgpu', adapter, device);
     } catch (error) {
       return fallbackToWebGL('Failed to create a WebGPU renderer.', error);

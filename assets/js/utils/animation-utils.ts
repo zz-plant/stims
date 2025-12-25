@@ -67,7 +67,8 @@ function averageFrequencyRange(
     audioData.length,
     Math.ceil(audioData.length * endRatio)
   );
-  const bucketWidth = Math.ceil(audioData.length * endRatio) -
+  const bucketWidth =
+    Math.ceil(audioData.length * endRatio) -
     Math.floor(audioData.length * startRatio);
 
   if (bucketWidth <= 0 || endIndex <= startIndex) return 0;

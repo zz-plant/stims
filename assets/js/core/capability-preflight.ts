@@ -57,14 +57,18 @@ async function getMicrophonePermissionState() {
     return {
       supported: true,
       state: result.state,
-      reason: result.state === 'denied' ? 'Microphone access is blocked for this site.' : null,
+      reason:
+        result.state === 'denied'
+          ? 'Microphone access is blocked for this site.'
+          : null,
     };
   } catch (error) {
     console.warn('Microphone permission probe failed', error);
     return {
       supported: true,
       state: 'error' as const,
-      reason: 'Unable to read microphone permission state. The browser will still prompt when needed.',
+      reason:
+        'Unable to read microphone permission state. The browser will still prompt when needed.',
     };
   }
 }
@@ -88,7 +92,8 @@ export async function runCapabilityPreflight(): Promise<CapabilityPreflightResul
 
   const hasWebGL = checkWebGLAvailability();
 
-  const renderingBackend = capabilities?.preferredBackend ?? (hasWebGL ? 'webgl' : null);
+  const renderingBackend =
+    capabilities?.preferredBackend ?? (hasWebGL ? 'webgl' : null);
   const webgpuFallbackReason = capabilities?.fallbackReason ?? null;
 
   const blockingIssues: string[] = [];
@@ -103,7 +108,9 @@ export async function runCapabilityPreflight(): Promise<CapabilityPreflightResul
   if (!microphone.supported) {
     warnings.push('Microphone APIs are unavailable in this browser.');
   } else if (microphone.state === 'denied') {
-    warnings.push('Microphone access is blocked; visuals will fall back to demo audio.');
+    warnings.push(
+      'Microphone access is blocked; visuals will fall back to demo audio.'
+    );
   }
 
   const reducedMotionQuery =
@@ -112,9 +119,13 @@ export async function runCapabilityPreflight(): Promise<CapabilityPreflightResul
       : false;
 
   const environment = {
-    secureContext: typeof window !== 'undefined' ? Boolean(window.isSecureContext) : false,
+    secureContext:
+      typeof window !== 'undefined' ? Boolean(window.isSecureContext) : false,
     reducedMotion: reducedMotionQuery,
-    hardwareConcurrency: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency ?? null : null,
+    hardwareConcurrency:
+      typeof navigator !== 'undefined'
+        ? (navigator.hardwareConcurrency ?? null)
+        : null,
   };
 
   const canProceed = blockingIssues.length === 0;
@@ -135,7 +146,11 @@ export async function runCapabilityPreflight(): Promise<CapabilityPreflightResul
   };
 }
 
-function buildStatusBadge(label: string, value: string, variant: 'ok' | 'warn' | 'error') {
+function buildStatusBadge(
+  label: string,
+  value: string,
+  variant: 'ok' | 'warn' | 'error'
+) {
   const badge = document.createElement('div');
   badge.className = 'preflight-status';
   badge.dataset.variant = variant;
@@ -153,7 +168,10 @@ function buildStatusBadge(label: string, value: string, variant: 'ok' | 'warn' |
   return badge;
 }
 
-function updateStatusList(container: HTMLElement, result: CapabilityPreflightResult) {
+function updateStatusList(
+  container: HTMLElement,
+  result: CapabilityPreflightResult
+) {
   container.innerHTML = '';
 
   const rendererStatus = buildStatusBadge(
@@ -163,7 +181,11 @@ function updateStatusList(container: HTMLElement, result: CapabilityPreflightRes
       : result.rendering.rendererBackend === 'webgl'
         ? 'WebGL fallback'
         : 'Unavailable',
-    result.rendering.rendererBackend ? (result.rendering.rendererBackend === 'webgpu' ? 'ok' : 'warn') : 'error'
+    result.rendering.rendererBackend
+      ? result.rendering.rendererBackend === 'webgpu'
+        ? 'ok'
+        : 'warn'
+      : 'error'
   );
 
   const rendererNote = document.createElement('p');
@@ -172,7 +194,8 @@ function updateStatusList(container: HTMLElement, result: CapabilityPreflightRes
     result.rendering.rendererBackend === 'webgpu'
       ? 'Best fidelity enabled.'
       : result.rendering.rendererBackend === 'webgl'
-        ? result.rendering.webgpuFallbackReason ?? 'WebGPU was not available; using WebGL.'
+        ? (result.rendering.webgpuFallbackReason ??
+          'WebGPU was not available; using WebGL.')
         : 'GPU acceleration was not detected. Enable hardware acceleration or update your browser.';
   rendererStatus.appendChild(rendererNote);
 
@@ -223,9 +246,14 @@ function updateStatusList(container: HTMLElement, result: CapabilityPreflightRes
   });
 }
 
-function renderIssueList(container: HTMLElement, result: CapabilityPreflightResult) {
+function renderIssueList(
+  container: HTMLElement,
+  result: CapabilityPreflightResult
+) {
   container.innerHTML = '';
-  const issues = result.blockingIssues.length ? result.blockingIssues : result.warnings;
+  const issues = result.blockingIssues.length
+    ? result.blockingIssues
+    : result.warnings;
   if (!issues.length) {
     const success = document.createElement('p');
     success.className = 'preflight-panel__success';
@@ -236,7 +264,9 @@ function renderIssueList(container: HTMLElement, result: CapabilityPreflightResu
 
   const heading = document.createElement('p');
   heading.className = 'preflight-panel__eyebrow';
-  heading.textContent = result.blockingIssues.length ? 'Action needed before loading' : 'Heads up';
+  heading.textContent = result.blockingIssues.length
+    ? 'Action needed before loading'
+    : 'Heads up';
   container.appendChild(heading);
 
   const list = document.createElement('ul');
@@ -271,7 +301,8 @@ export function attachCapabilityPreflight({
 
   const description = document.createElement('p');
   description.className = 'control-panel__description';
-  description.textContent = 'We check graphics and microphone support before loading heavy scenes.';
+  description.textContent =
+    'We check graphics and microphone support before loading heavy scenes.';
   panel.appendChild(description);
 
   const statusContainer = document.createElement('div');

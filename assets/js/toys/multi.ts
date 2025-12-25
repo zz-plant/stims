@@ -5,6 +5,7 @@ export function start({ container } = {}) {
     container,
     path: './multi.html',
     title: 'Multi-Capability Visualizer',
-    description: 'Balance performance with render scale before joining the multi-mode scene.',
+    description:
+      'Balance performance with render scale before joining the multi-mode scene.',
   });
 }

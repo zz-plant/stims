@@ -15,10 +15,15 @@ type OverlayContent = {
   previewLabel: string;
 };
 
-type EnsureOptions = Partial<Pick<OverlayContent, 'title' | 'description' | 'previewLabel'>>;
+type EnsureOptions = Partial<
+  Pick<OverlayContent, 'title' | 'description' | 'previewLabel'>
+>;
 
 function removeExistingOverlay() {
-  const existing = typeof document !== 'undefined' ? document.getElementById(OVERLAY_ID) : null;
+  const existing =
+    typeof document !== 'undefined'
+      ? document.getElementById(OVERLAY_ID)
+      : null;
   existing?.remove();
 }
 
@@ -135,7 +140,9 @@ export function ensureWebGL(options: EnsureOptions = {}) {
   }
 
   const hasWebGPU = Boolean(navigator?.gpu);
-  const hasWebGL = typeof WebGL !== 'undefined' && (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
+  const hasWebGL =
+    typeof WebGL !== 'undefined' &&
+    (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
 
   if (hasWebGPU || hasWebGL) {
     removeExistingOverlay();

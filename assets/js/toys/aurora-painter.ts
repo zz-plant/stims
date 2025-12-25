@@ -27,7 +27,11 @@ const toy = new WebToy({
   ambientLightOptions: { intensity: 0.5, color: 0x0c1327 },
   lightingOptions: {
     type: 'DirectionalLight',
-    options: { color: 0xaadfff, intensity: 0.75, position: { x: 18, y: 26, z: 18 } },
+    options: {
+      color: 0xaadfff,
+      intensity: 0.75,
+      position: { x: 18, y: 26, z: 18 },
+    },
   },
 } as ToyConfig);
 
@@ -87,7 +91,11 @@ function buildRibbon(index: number) {
     false
   );
   const material = new THREE.MeshStandardMaterial({
-    color: new THREE.Color().setHSL((index / RIBBON_COUNT + 0.5) % 1, 0.75, 0.55),
+    color: new THREE.Color().setHSL(
+      (index / RIBBON_COUNT + 0.5) % 1,
+      0.75,
+      0.55
+    ),
     emissive: 0x0b1327,
     emissiveIntensity: 0.35,
     metalness: 0.15,
@@ -137,8 +145,10 @@ function updateRibbon(
   }
 
   const swirl = time * 0.65 + ribbon.colorOffset * Math.PI * 2;
-  const sway = Math.sin(time * 1.3 + ribbon.colorOffset * 4) * (0.7 + bass / 260);
-  const lift = Math.cos(time * 0.9 + ribbon.colorOffset * 2) * (0.6 + treble / 400);
+  const sway =
+    Math.sin(time * 1.3 + ribbon.colorOffset * 4) * (0.7 + bass / 260);
+  const lift =
+    Math.cos(time * 0.9 + ribbon.colorOffset * 2) * (0.6 + treble / 400);
 
   ribbon.points[0].set(
     Math.cos(swirl) * (8 + avg / 45) + sway,
@@ -205,7 +215,8 @@ function applyQualityPreset(preset: QualityPreset) {
 function setupSettingsPanel() {
   settingsPanel.configure({
     title: 'Aurora painter',
-    description: 'Control render scale and ribbon density without restarting audio.',
+    description:
+      'Control render scale and ribbon density without restarting audio.',
   });
   settingsPanel.setQualityPresets({
     presets: DEFAULT_QUALITY_PRESETS,

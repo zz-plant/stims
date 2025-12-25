@@ -78,7 +78,11 @@ function clearContainerContent(container: HTMLElement | null) {
   });
 }
 
-function renderStatusElement(doc: Document, container: HTMLElement, status: StatusConfig | null) {
+function renderStatusElement(
+  doc: Document,
+  container: HTMLElement,
+  status: StatusConfig | null
+) {
   const existing = container.querySelector('.active-toy-status');
   if (!status) {
     existing?.remove();
@@ -89,7 +93,11 @@ function renderStatusElement(doc: Document, container: HTMLElement, status: Stat
 
   const statusElement = doc.createElement('div');
   const statusVariant =
-    status.variant === 'error' ? 'is-error' : status.variant === 'warning' ? 'is-warning' : 'is-loading';
+    status.variant === 'error'
+      ? 'is-error'
+      : status.variant === 'warning'
+        ? 'is-warning'
+        : 'is-loading';
   statusElement.className = `active-toy-status ${statusVariant}`;
 
   const glow = doc.createElement('div');
@@ -138,7 +146,10 @@ function renderStatusElement(doc: Document, container: HTMLElement, status: Stat
   return statusElement;
 }
 
-function buildImportErrorMessage(toy: Toy | undefined, { moduleUrl, importError }: ImportErrorOptions = {}) {
+function buildImportErrorMessage(
+  toy: Toy | undefined,
+  { moduleUrl, importError }: ImportErrorOptions = {}
+) {
   if (typeof window !== 'undefined' && window.location?.protocol === 'file:') {
     return 'This toy needs a local web server to compile its TypeScript modules. Run `npm run dev` (or `bun run dev`) and reload from `http://localhost:5173`.';
   }
@@ -219,7 +230,9 @@ function buildToyNav({
     pill.textContent = fallback ? 'WebGL fallback' : 'WebGPU';
     pill.title =
       rendererStatus.fallbackReason ??
-      (fallback ? 'WebGPU unavailable, using WebGL.' : 'WebGPU renderer active.');
+      (fallback
+        ? 'WebGPU unavailable, using WebGL.'
+        : 'WebGPU renderer active.');
     statusContainer.appendChild(pill);
 
     if (rendererStatus.fallbackReason) {
@@ -233,7 +246,9 @@ function buildToyNav({
       const retry = doc.createElement('button');
       retry.type = 'button';
       retry.className = 'renderer-pill__retry';
-      retry.textContent = rendererStatus.triedWebGPU ? 'Retry WebGPU' : 'Try WebGPU';
+      retry.textContent = rendererStatus.triedWebGPU
+        ? 'Retry WebGPU'
+        : 'Try WebGPU';
       retry.addEventListener('click', () => rendererStatus.onRetry?.());
       statusContainer.appendChild(retry);
     }
@@ -245,7 +260,8 @@ function buildToyNav({
   backControl.type = 'button';
   backControl.className = 'toy-nav__back';
   backControl.setAttribute('data-back-to-library', 'true');
-  backControl.innerHTML = '<span aria-hidden="true">←</span><span>Back to library</span>';
+  backControl.innerHTML =
+    '<span aria-hidden="true">←</span><span>Back to library</span>';
   backControl.addEventListener('click', () => onBack?.());
   actions.appendChild(backControl);
 
@@ -258,7 +274,11 @@ export function createToyView({
   documentRef = () => (typeof document === 'undefined' ? null : document),
   listId = 'toy-list',
   containerId = 'active-toy-container',
-}: { documentRef?: DocumentGetter; listId?: string; containerId?: string } = {}) {
+}: {
+  documentRef?: DocumentGetter;
+  listId?: string;
+  containerId?: string;
+} = {}) {
   const state: ViewState = {
     mode: 'library',
     rendererStatus: null,
@@ -269,7 +289,8 @@ export function createToyView({
 
   const getToyList = () => getDocument()?.getElementById(listId) ?? null;
 
-  const findActiveToyContainer = () => getDocument()?.getElementById(containerId) ?? null;
+  const findActiveToyContainer = () =>
+    getDocument()?.getElementById(containerId) ?? null;
 
   const ensureActiveToyContainer = () => {
     const doc = getDocument();
@@ -285,13 +306,18 @@ export function createToyView({
     return container;
   };
 
-  const render = ({ clearContainer = false }: { clearContainer?: boolean } = {}) => {
+  const render = ({
+    clearContainer = false,
+  }: { clearContainer?: boolean } = {}) => {
     const doc = getDocument();
     const toyList = getToyList();
     const container = ensureActiveToyContainer();
 
     if (!doc || !container) {
-      return { container: null as HTMLElement | null, status: null as HTMLElement | null };
+      return {
+        container: null as HTMLElement | null,
+        status: null as HTMLElement | null,
+      };
     }
 
     if (clearContainer) {
@@ -355,7 +381,10 @@ export function createToyView({
     render();
   };
 
-  const showImportError = (toy: Toy | undefined, options: ImportErrorOptions = {}) => {
+  const showImportError = (
+    toy: Toy | undefined,
+    options: ImportErrorOptions = {}
+  ) => {
     state.mode = 'toy';
     state.backHandler = options.onBack ?? state.backHandler;
     state.activeToyMeta = toy ?? state.activeToyMeta;
@@ -377,13 +406,18 @@ export function createToyView({
     return status;
   };
 
-  const showCapabilityError = (toy: Toy | undefined, options: CapabilityOptions = {}) => {
+  const showCapabilityError = (
+    toy: Toy | undefined,
+    options: CapabilityOptions = {}
+  ) => {
     state.mode = 'toy';
     state.backHandler = options.onBack ?? state.backHandler;
     state.activeToyMeta = toy ?? state.activeToyMeta;
     state.status = {
       variant: options.allowFallback ? 'warning' : 'error',
-      title: options.allowFallback ? 'WebGPU is unavailable' : 'WebGPU not available',
+      title: options.allowFallback
+        ? 'WebGPU is unavailable'
+        : 'WebGPU not available',
       message: `${
         options.allowFallback
           ? toy?.title
@@ -400,7 +434,13 @@ export function createToyView({
           onClick: options.onBack,
         },
         ...(options.allowFallback && options.onContinue
-          ? [{ label: 'Continue with WebGL', onClick: options.onContinue, primary: true }]
+          ? [
+              {
+                label: 'Continue with WebGL',
+                onClick: options.onContinue,
+                primary: true,
+              },
+            ]
           : []),
       ],
     };
@@ -421,7 +461,8 @@ export function createToyView({
     showImportError,
     showCapabilityError,
     removeStatusElement,
-    clearActiveToyContainer: () => clearContainerContent(findActiveToyContainer()),
+    clearActiveToyContainer: () =>
+      clearContainerContent(findActiveToyContainer()),
     ensureActiveToyContainer,
     setRendererStatus,
   };

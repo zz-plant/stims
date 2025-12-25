@@ -26,7 +26,11 @@ describe('initLighting', () => {
   test('merges partial position values with defaults', () => {
     const scene = new Scene();
 
-    initLighting(scene, { type: 'DirectionalLight', position: { y: 5 } }, stubLighting);
+    initLighting(
+      scene,
+      { type: 'DirectionalLight', position: { y: 5 } },
+      stubLighting
+    );
 
     const light = scene.children[0];
     expect(light.position.x).toBe(10);
@@ -37,7 +41,9 @@ describe('initLighting', () => {
   test('does not require a position for non-positional lights', () => {
     const scene = new Scene();
 
-    expect(() => initLighting(scene, { type: 'HemisphereLight' }, stubLighting)).not.toThrow();
+    expect(() =>
+      initLighting(scene, { type: 'HemisphereLight' }, stubLighting)
+    ).not.toThrow();
     expect(scene.children[0]).toBeInstanceOf(stubLighting.HemisphereLight);
   });
 });

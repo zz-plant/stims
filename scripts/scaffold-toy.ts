@@ -32,12 +32,18 @@ async function main() {
     const type = resolveType(parsed.type) ?? (await promptType(rl));
     const description =
       parsed.description ??
-      ((await rl.question(`Short description [Add description for ${title}]: `)).trim() ||
+      ((
+        await rl.question(`Short description [Add description for ${title}]: `)
+      ).trim() ||
         `Add description for ${title}.`);
     const shouldCreateTest =
       parsed.createTest ??
       parsed.createSpec ??
-      (await promptBoolean(rl, 'Create a Bun spec to assert the module exports start? (y/N) ', false));
+      (await promptBoolean(
+        rl,
+        'Create a Bun spec to assert the module exports start? (y/N) ',
+        false
+      ));
 
     await scaffoldToy({
       slug,
@@ -49,9 +55,15 @@ async function main() {
     });
 
     console.log(`\nCreated scaffold for ${slug}.`);
-    console.log('- Module:', path.relative(parsed.root ?? repoRoot, toyModulePath(slug, parsed.root)));
+    console.log(
+      '- Module:',
+      path.relative(parsed.root ?? repoRoot, toyModulePath(slug, parsed.root))
+    );
     if (type === 'iframe') {
-      console.log('- HTML entry:', path.relative(parsed.root ?? repoRoot, toyHtmlPath(slug, parsed.root)));
+      console.log(
+        '- HTML entry:',
+        path.relative(parsed.root ?? repoRoot, toyHtmlPath(slug, parsed.root))
+      );
     }
     console.log('- Metadata: assets/js/toys-data.js');
     console.log('- Index: docs/TOY_SCRIPT_INDEX.md');
@@ -59,7 +71,10 @@ async function main() {
       console.log('- Test: tests/' + testFileName(slug));
     }
   } catch (error) {
-    console.error('\nScaffold failed:', error instanceof Error ? error.message : error);
+    console.error(
+      '\nScaffold failed:',
+      error instanceof Error ? error.message : error
+    );
     process.exitCode = 1;
   } finally {
     rl.close();
@@ -81,7 +96,9 @@ export async function scaffoldToy({
   }
 
   if (type === 'iframe' && (await fileExists(toyHtmlPath(slug, root)))) {
-    throw new Error(`HTML entry point ${toyHtmlPath(slug, root)} already exists.`);
+    throw new Error(
+      `HTML entry point ${toyHtmlPath(slug, root)} already exists.`
+    );
   }
 
   await createToyModule(slug, title, type, root);
@@ -173,7 +190,9 @@ async function ensureToysDataValid(root = repoRoot) {
 
   for (const entry of parsed) {
     if (seen.has(entry.slug)) {
-      throw new Error(`Duplicate slug detected in assets/js/toys-data.js: ${entry.slug}`);
+      throw new Error(
+        `Duplicate slug detected in assets/js/toys-data.js: ${entry.slug}`
+      );
     }
     seen.add(entry.slug);
   }
@@ -190,9 +209,17 @@ function resolveType(type?: string): ToyType | null {
   throw new Error('Toy type must be "module" or "iframe".');
 }
 
-async function promptSlug(rl: ReturnType<typeof createInterface>, root = repoRoot) {
-  const raw = (await rl.question('Toy slug (kebab-case, e.g., ripple-orb): ')).trim();
-  const slug = raw.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/(^-|-$)/g, '');
+async function promptSlug(
+  rl: ReturnType<typeof createInterface>,
+  root = repoRoot
+) {
+  const raw = (
+    await rl.question('Toy slug (kebab-case, e.g., ripple-orb): ')
+  ).trim();
+  const slug = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 
   if (!slug) {
     throw new Error('A slug is required.');
@@ -211,14 +238,18 @@ async function promptSlug(rl: ReturnType<typeof createInterface>, root = repoRoo
   return slug;
 }
 
-async function promptTitle(rl: ReturnType<typeof createInterface>, slug: string) {
+async function promptTitle(
+  rl: ReturnType<typeof createInterface>,
+  slug: string
+) {
   const suggested = slug
     .split('-')
     .filter(Boolean)
     .map((part) => part[0].toUpperCase() + part.slice(1))
     .join(' ');
 
-  const title = (await rl.question(`Display title [${suggested}]: `)).trim() || suggested;
+  const title =
+    (await rl.question(`Display title [${suggested}]: `)).trim() || suggested;
 
   if (!title) {
     throw new Error('A title is required.');
@@ -227,8 +258,12 @@ async function promptTitle(rl: ReturnType<typeof createInterface>, slug: string)
   return title;
 }
 
-async function promptType(rl: ReturnType<typeof createInterface>): Promise<ToyType> {
-  const rawType = (await rl.question('Toy type (module/iframe) [module]: ')).trim().toLowerCase();
+async function promptType(
+  rl: ReturnType<typeof createInterface>
+): Promise<ToyType> {
+  const rawType = (await rl.question('Toy type (module/iframe) [module]: '))
+    .trim()
+    .toLowerCase();
 
   if (!rawType || rawType === 'module' || rawType === 'm') return 'module';
   if (rawType === 'iframe' || rawType === 'i') return 'iframe';
@@ -236,7 +271,11 @@ async function promptType(rl: ReturnType<typeof createInterface>): Promise<ToyTy
   throw new Error('Toy type must be "module" or "iframe".');
 }
 
-async function promptBoolean(rl: ReturnType<typeof createInterface>, question: string, defaultValue: boolean) {
+async function promptBoolean(
+  rl: ReturnType<typeof createInterface>,
+  question: string,
+  defaultValue: boolean
+) {
   const reply = (await rl.question(question)).trim().toLowerCase();
   if (!reply) return defaultValue;
   return reply.startsWith('y');
@@ -261,7 +300,12 @@ async function loadToysData(root = repoRoot) {
   return entries;
 }
 
-async function ensureEntryPoint(slug: string, type: ToyType, title: string, root = repoRoot) {
+async function ensureEntryPoint(
+  slug: string,
+  type: ToyType,
+  title: string,
+  root = repoRoot
+) {
   if (type !== 'iframe') return;
 
   const htmlPath = toyHtmlPath(slug, root);
@@ -290,11 +334,17 @@ async function ensureEntryPoint(slug: string, type: ToyType, title: string, root
   await fs.writeFile(htmlPath, html, 'utf8');
 }
 
-async function createToyModule(slug: string, title: string, type: ToyType, root = repoRoot) {
+async function createToyModule(
+  slug: string,
+  title: string,
+  type: ToyType,
+  root = repoRoot
+) {
   const modulePath = toyModulePath(slug, root);
   await fs.mkdir(path.dirname(modulePath), { recursive: true });
 
-  const contents = type === 'iframe' ? iframeTemplate(slug, title) : moduleTemplate();
+  const contents =
+    type === 'iframe' ? iframeTemplate(slug, title) : moduleTemplate();
   await fs.writeFile(modulePath, contents, 'utf8');
 }
 
@@ -325,13 +375,17 @@ async function appendToyMetadata(
   ].join('\n');
 
   if (!current.includes('];')) {
-    throw new Error('Could not find toys array terminator in assets/js/toys-data.js.');
+    throw new Error(
+      'Could not find toys array terminator in assets/js/toys-data.js.'
+    );
   }
 
   const updated = current.replace(/\n\];\s*$/, `\n${newEntry}\n];\n`);
 
   if (updated === current) {
-    throw new Error('Failed to update assets/js/toys-data.js with new metadata.');
+    throw new Error(
+      'Failed to update assets/js/toys-data.js with new metadata.'
+    );
   }
 
   await fs.writeFile(dataPath, updated, 'utf8');
@@ -352,7 +406,9 @@ async function validateMetadataEntry(
   }
 
   if (entry.module !== `assets/js/toys/${slug}.ts`) {
-    throw new Error(`Module path for ${slug} must be assets/js/toys/${slug}.ts.`);
+    throw new Error(
+      `Module path for ${slug} must be assets/js/toys/${slug}.ts.`
+    );
   }
 
   if (entry.type !== type) {
@@ -360,11 +416,15 @@ async function validateMetadataEntry(
   }
 
   if (!entry.description || !entry.title) {
-    throw new Error(`Metadata for ${slug} must include a title and description.`);
+    throw new Error(
+      `Metadata for ${slug} must include a title and description.`
+    );
   }
 
   if (entry.title !== title || entry.description !== description) {
-    console.warn('Metadata text differs from scaffold input; keeping file values.');
+    console.warn(
+      'Metadata text differs from scaffold input; keeping file values.'
+    );
   }
 }
 
@@ -380,13 +440,17 @@ async function updateToyIndex(slug: string, type: ToyType, root = repoRoot) {
 
   if (current.includes(row)) return;
   if (current.includes(`| \`${slug}\``)) {
-    throw new Error(`Slug "${slug}" already exists in docs/TOY_SCRIPT_INDEX.md.`);
+    throw new Error(
+      `Slug "${slug}" already exists in docs/TOY_SCRIPT_INDEX.md.`
+    );
   }
 
   const marker = '## Standalone HTML entry points';
   const markerIndex = current.indexOf(marker);
   if (markerIndex === -1) {
-    throw new Error('Could not find insertion point in docs/TOY_SCRIPT_INDEX.md.');
+    throw new Error(
+      'Could not find insertion point in docs/TOY_SCRIPT_INDEX.md.'
+    );
   }
 
   const before = current.slice(0, markerIndex).replace(/\s*$/, '');

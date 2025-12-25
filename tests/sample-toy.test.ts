@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { start as startDemoToy } from './demo-toy.ts';
-import { createMockRenderer, createToyContainer, FakeAudioContext } from './toy-test-helpers.ts';
+import {
+  createMockRenderer,
+  createToyContainer,
+  FakeAudioContext,
+} from './toy-test-helpers.ts';
 
 describe('toy harness example', () => {
   afterEach(() => {
@@ -15,7 +19,9 @@ describe('toy harness example', () => {
     const cleanup = startDemoToy({ container, audioContext });
 
     expect(typeof cleanup).toBe('function');
-    expect(container.querySelector('[data-toy-mount="demo-toy"]')).not.toBeNull();
+    expect(
+      container.querySelector('[data-toy-mount="demo-toy"]')
+    ).not.toBeNull();
 
     await cleanup();
 
@@ -41,6 +47,8 @@ describe('toy harness example', () => {
     const samples = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(samples);
 
-    expect(Array.from(samples)).toEqual(new Array(analyser.frequencyBinCount).fill(128));
+    expect(Array.from(samples)).toEqual(
+      new Array(analyser.frequencyBinCount).fill(128)
+    );
   });
 });

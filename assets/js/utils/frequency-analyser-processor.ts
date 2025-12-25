@@ -97,15 +97,14 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         Math.sqrt(
           this.outputReal[i] * this.outputReal[i] +
             this.outputImag[i] * this.outputImag[i]
-        ) /
-        this.frequencyBinCount;
-      frequencyData[i] = Math.min(255, Math.max(0, Math.round(magnitude * 255)));
+        ) / this.frequencyBinCount;
+      frequencyData[i] = Math.min(
+        255,
+        Math.max(0, Math.round(magnitude * 255))
+      );
     }
 
-    this.port.postMessage(
-      { frequencyData, rms },
-      [frequencyData.buffer]
-    );
+    this.port.postMessage({ frequencyData, rms }, [frequencyData.buffer]);
   }
 
   process(inputs: Float32Array[][], outputs: Float32Array[][]) {

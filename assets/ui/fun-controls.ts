@@ -275,8 +275,8 @@ export function initFunControls(options: FunControlsInit = {}) {
             .map(
               (key) => `
                 <button class="fun-chip" data-palette="${key}" aria-pressed="${
-                palette === key
-              }">${key}</button>
+                  palette === key
+                }">${key}</button>
               `
             )
             .join('')}
@@ -330,8 +330,12 @@ export function initFunControls(options: FunControlsInit = {}) {
 
   document.body.appendChild(container);
 
-  const modeIndicator = container.querySelector<HTMLElement>('[data-mode-indicator]');
-  const audioIndicator = container.querySelector<HTMLElement>('[data-audio-indicator]');
+  const modeIndicator = container.querySelector<HTMLElement>(
+    '[data-mode-indicator]'
+  );
+  const audioIndicator = container.querySelector<HTMLElement>(
+    '[data-audio-indicator]'
+  );
 
   function updateModeIndicator() {
     if (!modeIndicator) return;
@@ -408,9 +412,8 @@ export function initFunControls(options: FunControlsInit = {}) {
     notifyAudio();
   });
 
-  const sparklesToggle = container.querySelector<HTMLInputElement>(
-    '.fun-sparkles'
-  );
+  const sparklesToggle =
+    container.querySelector<HTMLInputElement>('.fun-sparkles');
   sparklesToggle?.addEventListener('change', (event) => {
     sparklesEnabled = (event.target as HTMLInputElement).checked;
     notifySparkles();

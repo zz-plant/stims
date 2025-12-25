@@ -34,10 +34,10 @@ function applyHsl(
   const { color } = material;
   if (!color) return;
 
-  const hue =
-    (params.baseHue + normalizedValue * (params.hueRange ?? 0)) % 1;
+  const hue = (params.baseHue + normalizedValue * (params.hueRange ?? 0)) % 1;
   const saturation = clamp01(
-    (params.baseSaturation ?? 0) + normalizedValue * (params.saturationRange ?? 0)
+    (params.baseSaturation ?? 0) +
+      normalizedValue * (params.saturationRange ?? 0)
   );
   const luminance = clamp01(
     (params.baseLuminance ?? 0) + normalizedValue * (params.luminanceRange ?? 0)
@@ -56,7 +56,8 @@ function applyEmissive(
   const hue =
     ((params.baseHue ?? 0) + normalizedValue * (params.hueRange ?? 0)) % 1;
   const saturation = clamp01(
-    (params.baseSaturation ?? 0) + normalizedValue * (params.saturationRange ?? 0)
+    (params.baseSaturation ?? 0) +
+      normalizedValue * (params.saturationRange ?? 0)
   );
   const luminance = clamp01(
     (params.baseLuminance ?? 0) + normalizedValue * (params.luminanceRange ?? 0)

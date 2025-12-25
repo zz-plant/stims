@@ -110,7 +110,11 @@ function createBubbleMaterial(hue: number) {
 function refreshGeometries() {
   bubbleGeometry?.dispose();
   harmonicGeometry?.dispose();
-  bubbleGeometry = new THREE.SphereGeometry(1, bubbleDetail.segments, bubbleDetail.segments);
+  bubbleGeometry = new THREE.SphereGeometry(
+    1,
+    bubbleDetail.segments,
+    bubbleDetail.segments
+  );
   harmonicGeometry = new THREE.SphereGeometry(
     1,
     Math.max(16, Math.round(bubbleDetail.segments * 0.7)),
@@ -150,7 +154,11 @@ function createBubble(hue: number) {
 }
 
 function addHarmonicBubble(parent: Bubble, energy: number) {
-  if (harmonicBubbles.length > bubbleDetail.harmonicLimit || !shaderSources || !harmonicGeometry) {
+  if (
+    harmonicBubbles.length > bubbleDetail.harmonicLimit ||
+    !shaderSources ||
+    !harmonicGeometry
+  ) {
     return;
   }
 

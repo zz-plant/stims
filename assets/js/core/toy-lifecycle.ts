@@ -13,7 +13,8 @@ function normalizeActiveToy(candidate: unknown): ActiveToyRecord {
     const dispose = (candidate as { dispose?: unknown }).dispose;
     return {
       ref: candidate as ActiveToyCandidate,
-      dispose: typeof dispose === 'function' ? dispose.bind(candidate) : undefined,
+      dispose:
+        typeof dispose === 'function' ? dispose.bind(candidate) : undefined,
     };
   }
 
@@ -92,7 +93,8 @@ export function createToyLifecycle(): ToyLifecycle {
 
   return {
     getActiveToy: () => activeToy,
-    adoptActiveToy: (candidate?: unknown) => (candidate !== undefined ? setActiveToy(candidate) : activeToy),
+    adoptActiveToy: (candidate?: unknown) =>
+      candidate !== undefined ? setActiveToy(candidate) : activeToy,
     disposeActiveToy,
     unregisterActiveToy,
     attachEscapeHandler,

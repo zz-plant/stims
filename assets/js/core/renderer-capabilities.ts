@@ -78,7 +78,10 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
     try {
       device = await adapter.requestDevice();
     } catch (error) {
-      console.warn('WebGPU device request failed. Falling back to WebGL.', error);
+      console.warn(
+        'WebGPU device request failed. Falling back to WebGL.',
+        error
+      );
       return cacheResult(
         buildFallback('Unable to acquire a WebGPU device.', {
           triedWebGPU: true,

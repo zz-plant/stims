@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 const capabilitiesModule = '../assets/js/core/renderer-capabilities.ts';
-const freshImport = async () => import(`${capabilitiesModule}?t=${Date.now()}-${Math.random()}`);
+const freshImport = async () =>
+  import(`${capabilitiesModule}?t=${Date.now()}-${Math.random()}`);
 
 let getRendererCapabilities;
 let rememberRendererFallback;
@@ -41,7 +42,9 @@ afterEach(() => {
 
 describe('renderer capabilities', () => {
   test('caches adapter probing across calls', async () => {
-    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({ device: { label: 'device' } });
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'device' },
+    });
 
     const first = await getRendererCapabilities();
     const second = await getRendererCapabilities();
@@ -71,7 +74,9 @@ describe('renderer capabilities', () => {
     mockNavigatorWithGPU({ device: { label: 'device' } });
 
     await getRendererCapabilities({ forceRetry: true });
-    const recorded = rememberRendererFallback('Renderer creation failed.', { shouldRetryWebGPU: true });
+    const recorded = rememberRendererFallback('Renderer creation failed.', {
+      shouldRetryWebGPU: true,
+    });
 
     expect(recorded.preferredBackend).toBe('webgl');
     const replay = await getRendererCapabilities();

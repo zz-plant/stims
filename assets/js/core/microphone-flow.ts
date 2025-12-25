@@ -1,4 +1,7 @@
-import { AudioAccessError, getMicrophonePermissionState } from '../utils/audio-handler';
+import {
+  AudioAccessError,
+  getMicrophonePermissionState,
+} from '../utils/audio-handler';
 
 type FlowMode = 'microphone' | 'sample';
 
@@ -153,7 +156,10 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
     pending = true;
     toggleButtons(startButton, fallbackButton, true);
 
-    const timeoutError = new AudioAccessError('timeout', 'Microphone request timed out.');
+    const timeoutError = new AudioAccessError(
+      'timeout',
+      'Microphone request timed out.'
+    );
 
     const withTimeout = async (promise: Promise<unknown>) => {
       let timeoutHandle: ReturnType<typeof globalThis.setTimeout> | null = null;
@@ -174,9 +180,8 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
     let permissionState: PermissionState | undefined;
 
     try {
-      permissionState = mode === 'microphone'
-        ? await guardDeniedPermission()
-        : undefined;
+      permissionState =
+        mode === 'microphone' ? await guardDeniedPermission() : undefined;
 
       track(analytics, 'microphone_request_started', {
         mode,
@@ -185,7 +190,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
 
       const request =
         mode === 'sample'
-          ? requestSampleAudio ?? requestMicrophone
+          ? (requestSampleAudio ?? requestMicrophone)
           : requestMicrophone;
 
       if (!request) {

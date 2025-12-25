@@ -94,11 +94,17 @@ export function getActiveQualityPreset({
   storageKey = QUALITY_STORAGE_KEY,
 }: StoredPresetOptions = {}): QualityPreset {
   if (activeQualityPreset && activeQualityPresetStorageKey === storageKey) {
-    const match = presets.find((preset) => preset.id === activeQualityPreset?.id);
+    const match = presets.find(
+      (preset) => preset.id === activeQualityPreset?.id
+    );
     if (match) return match;
   }
 
-  activeQualityPreset = getStoredQualityPreset({ presets, defaultPresetId, storageKey });
+  activeQualityPreset = getStoredQualityPreset({
+    presets,
+    defaultPresetId,
+    storageKey,
+  });
   activeQualityPresetStorageKey = storageKey;
   return activeQualityPreset;
 }
@@ -194,7 +200,9 @@ class PersistentSettingsPanel {
       text.append(label, hint);
 
       const select = document.createElement('select');
-      select.addEventListener('change', () => this.handleQualityChange(select.value));
+      select.addEventListener('change', () =>
+        this.handleQualityChange(select.value)
+      );
 
       this.qualitySelect = select;
       this.qualityRow.append(text, select);
@@ -296,7 +304,9 @@ export function getSettingsPanel() {
   return singletonPanel;
 }
 
-export function resetSettingsPanelState(options: { removePanel?: boolean } = {}) {
+export function resetSettingsPanelState(
+  options: { removePanel?: boolean } = {}
+) {
   activeQualityPreset = null;
   activeQualityPresetStorageKey = null;
   qualitySubscribers.clear();

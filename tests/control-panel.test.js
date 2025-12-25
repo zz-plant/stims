@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
 function setUserAgent(userAgent) {
-  Object.defineProperty(navigator, 'userAgent', { value: userAgent, configurable: true });
+  Object.defineProperty(navigator, 'userAgent', {
+    value: userAgent,
+    configurable: true,
+  });
 }
 
 const freshImport = async () =>
-  import(`../assets/js/utils/control-panel.ts?t=${Date.now()}-${Math.random()}`);
+  import(
+    `../assets/js/utils/control-panel.ts?t=${Date.now()}-${Math.random()}`
+  );
 
 const DEFAULT_DESKTOP_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';

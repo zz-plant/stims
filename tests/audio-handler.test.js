@@ -24,8 +24,15 @@ class FakeAudioContext {
   audioWorklet = new FakeAudioWorklet();
   destination = {};
 
-  createMediaStreamSource = mock(() => ({ connect: mock(), disconnect: mock() }));
-  createGain = mock(() => ({ gain: { value: 1 }, connect: mock(), disconnect: mock() }));
+  createMediaStreamSource = mock(() => ({
+    connect: mock(),
+    disconnect: mock(),
+  }));
+  createGain = mock(() => ({
+    gain: { value: 1 },
+    connect: mock(),
+    disconnect: mock(),
+  }));
   createAnalyser = mock(() => ({
     fftSize: 0,
     frequencyBinCount: 128,
@@ -96,14 +103,16 @@ beforeAll(async () => {
     };
   });
 
-  ({ initAudio, getFrequencyData, AudioAccessError } = await import(
-    '../assets/js/utils/audio-handler.ts'
-  ));
+  ({ initAudio, getFrequencyData, AudioAccessError } =
+    await import('../assets/js/utils/audio-handler.ts'));
 });
 
 describe('audio-handler utilities', () => {
   beforeEach(() => {
-    originalNavigatorDesc = Object.getOwnPropertyDescriptor(global, 'navigator');
+    originalNavigatorDesc = Object.getOwnPropertyDescriptor(
+      global,
+      'navigator'
+    );
     const nav = global.navigator;
     const track = { stop: mock() };
     const stream = { getTracks: mock(() => [track]) };
@@ -176,7 +185,9 @@ describe('audio-handler utilities', () => {
     );
 
     await expect(initAudio()).rejects.toBeInstanceOf(AudioAccessError);
-    await expect(initAudio()).rejects.toEqual(expect.objectContaining({ reason: 'denied' }));
+    await expect(initAudio()).rejects.toEqual(
+      expect.objectContaining({ reason: 'denied' })
+    );
   });
 
   test('getFrequencyData returns array of the expected length', () => {
