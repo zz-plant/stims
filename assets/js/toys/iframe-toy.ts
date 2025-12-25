@@ -4,6 +4,7 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
+import { defaultToyLifecycle } from '../core/toy-lifecycle.ts';
 
 type StartOptions = {
   container?: HTMLElement | null;
@@ -72,13 +73,11 @@ export function startIframeToy({
     dispose() {
       iframe.remove();
       window.removeEventListener('message', handleMessage);
-      if ((globalThis as Record<string, unknown>).__activeWebToy === activeToy) {
-        delete (globalThis as Record<string, unknown>).__activeWebToy;
-      }
+      defaultToyLifecycle.unregisterActiveToy(activeToy);
     },
   };
 
-  (globalThis as Record<string, unknown>).__activeWebToy = activeToy;
+  defaultToyLifecycle.adoptActiveToy(activeToy);
   target.appendChild(iframe);
 
   return activeToy;

@@ -17,6 +17,15 @@ type AudioPoolEntry = {
 let pooledStream: AudioPoolEntry | null = null;
 let streamPromise: Promise<MediaStream | null> | null = null;
 
+function stopPooledStream() {
+  if (pooledStream?.stream) {
+    pooledStream.stream.getTracks().forEach((track) => track.stop());
+  }
+
+  pooledStream = null;
+  streamPromise = null;
+}
+
 async function getOrCreateStream(constraints?: MediaStreamConstraints) {
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
     throw new Error('Microphone capture is not available in this environment.');
@@ -40,9 +49,13 @@ async function getOrCreateStream(constraints?: MediaStreamConstraints) {
 }
 
 export async function acquireAudioHandle(
-  options: AudioInitOptions & { reuseMicrophone?: boolean; initAudioImpl?: typeof initAudio } = {}
+  options: AudioInitOptions & {
+    reuseMicrophone?: boolean;
+    initAudioImpl?: typeof initAudio;
+    teardownOnRelease?: boolean;
+  } = {}
 ): Promise<AudioHandle> {
-  const { reuseMicrophone = true, initAudioImpl = initAudio, ...audioOptions } = options;
+  const { reuseMicrophone = true, initAudioImpl = initAudio, teardownOnRelease = false, ...audioOptions } = options;
 
   let stream: MediaStream | null = audioOptions.stream ?? null;
 
@@ -64,6 +77,10 @@ export async function acquireAudioHandle(
 
     if (reuseMicrophone && pooledStream && stream === pooledStream.stream) {
       pooledStream.users = Math.max(0, pooledStream.users - 1);
+
+      if (pooledStream.users === 0 && (teardownOnRelease || reuseMicrophone)) {
+        stopPooledStream();
+      }
     }
   };
 
@@ -85,9 +102,11 @@ export async function prewarmMicrophone(constraints?: MediaStreamConstraints) {
 }
 
 export async function resetAudioPool({ stopStreams = true } = {}) {
-  if (pooledStream?.stream && stopStreams) {
-    pooledStream.stream.getTracks().forEach((track) => track.stop());
+  if (stopStreams) {
+    stopPooledStream();
+    return;
   }
+
   pooledStream = null;
   streamPromise = null;
 }
