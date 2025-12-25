@@ -15,7 +15,11 @@ type OverlayContent = {
   previewLabel: string;
 };
 
-type EnsureOptions = Partial<Pick<OverlayContent, 'title' | 'description' | 'previewLabel'>>;
+type EnsureOptions = Partial<
+  Pick<OverlayContent, 'title' | 'description' | 'previewLabel'>
+> & {
+  renderOverlay?: boolean;
+};
 
 function removeExistingOverlay() {
   const existing = typeof document !== 'undefined' ? document.getElementById(OVERLAY_ID) : null;
@@ -107,6 +111,8 @@ function addCapabilityOverlay(content: OverlayContent) {
 }
 
 export function ensureWebGL(options: EnsureOptions = {}) {
+  const { renderOverlay, ...overlayOverrides } = options;
+
   const defaultContent: OverlayContent = {
     title: 'WebGL or WebGPU is required',
     description:
@@ -125,10 +131,12 @@ export function ensureWebGL(options: EnsureOptions = {}) {
 
   const content: OverlayContent = {
     ...defaultContent,
-    ...options,
+    ...overlayOverrides,
     steps: defaultContent.steps,
     links: defaultContent.links,
   };
+
+  const shouldRenderOverlay = renderOverlay ?? true;
 
   if (typeof navigator === 'undefined' || typeof document === 'undefined') {
     return false;
@@ -142,6 +150,8 @@ export function ensureWebGL(options: EnsureOptions = {}) {
     return true;
   }
 
-  addCapabilityOverlay(content);
+  if (shouldRenderOverlay) {
+    addCapabilityOverlay(content);
+  }
   return false;
 }

@@ -87,6 +87,7 @@ export function bootstrapWebGL(options: BootstrapOptions = {}) {
     title: content.title,
     description: content.description,
     previewLabel: content.previewLabel,
+    renderOverlay: false,
   });
 
   if (supported) {
