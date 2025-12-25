@@ -91,6 +91,9 @@ export function initAmbientLight(
   config: AmbientLightConfig = { color: 0x404040, intensity: 0.5 },
   lighting: AmbientLightingModule
 ): void {
-  const ambientLight = new lighting.AmbientLight(config.color, config.intensity);
+  const ambientLight = new lighting.AmbientLight(
+    config.color,
+    config.intensity
+  );
   scene.add(ambientLight);
 }

@@ -1,5 +1,9 @@
 import * as THREE from 'three';
-import { getMicrophonePermissionState, initAudio, type AudioInitOptions } from '../../utils/audio-handler.ts';
+import {
+  getMicrophonePermissionState,
+  initAudio,
+  type AudioInitOptions,
+} from '../../utils/audio-handler.ts';
 
 export type AudioHandle = {
   analyser: THREE.AudioAnalyser;
@@ -27,7 +31,10 @@ function stopPooledStream() {
 }
 
 async function getOrCreateStream(constraints?: MediaStreamConstraints) {
-  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+  if (
+    typeof navigator === 'undefined' ||
+    !navigator.mediaDevices?.getUserMedia
+  ) {
     throw new Error('Microphone capture is not available in this environment.');
   }
 
@@ -55,7 +62,12 @@ export async function acquireAudioHandle(
     teardownOnRelease?: boolean;
   } = {}
 ): Promise<AudioHandle> {
-  const { reuseMicrophone = true, initAudioImpl = initAudio, teardownOnRelease = false, ...audioOptions } = options;
+  const {
+    reuseMicrophone = true,
+    initAudioImpl = initAudio,
+    teardownOnRelease = false,
+    ...audioOptions
+  } = options;
 
   let stream: MediaStream | null = audioOptions.stream ?? null;
 

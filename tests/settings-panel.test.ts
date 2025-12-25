@@ -21,14 +21,18 @@ describe('quality preset subscriptions', () => {
   test('notifies subscribers for initial and subsequent preset changes', () => {
     const panel = getSettingsPanel();
     const calls: string[] = [];
-    const unsubscribe = subscribeToQualityPreset((preset) => calls.push(preset.id));
+    const unsubscribe = subscribeToQualityPreset((preset) =>
+      calls.push(preset.id)
+    );
 
     panel.setQualityPresets({
       presets: DEFAULT_QUALITY_PRESETS,
       defaultPresetId: 'balanced',
     });
 
-    const select = document.querySelector('.control-panel select') as HTMLSelectElement | null;
+    const select = document.querySelector(
+      '.control-panel select'
+    ) as HTMLSelectElement | null;
     expect(select).not.toBeNull();
 
     if (select) {
@@ -59,7 +63,10 @@ describe('quality preset subscriptions', () => {
       { id: 'max', label: 'Max', maxPixelRatio: 2.5 },
     ];
 
-    const resolved = getActiveQualityPreset({ presets, defaultPresetId: 'low' });
+    const resolved = getActiveQualityPreset({
+      presets,
+      defaultPresetId: 'low',
+    });
     expect(resolved.id).toBe('low');
   });
 });

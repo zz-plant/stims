@@ -20,7 +20,10 @@ function resolveIframeSrc(path: string) {
 }
 
 function postQualityPreset(iframe: HTMLIFrameElement, preset: QualityPreset) {
-  iframe.contentWindow?.postMessage({ type: 'apply-quality-preset', preset }, '*');
+  iframe.contentWindow?.postMessage(
+    { type: 'apply-quality-preset', preset },
+    '*'
+  );
 }
 
 export function startIframeToy({
@@ -54,7 +57,8 @@ export function startIframeToy({
   iframe.style.height = '100%';
   iframe.style.border = 'none';
 
-  const sendPreset = (preset: QualityPreset) => postQualityPreset(iframe, preset);
+  const sendPreset = (preset: QualityPreset) =>
+    postQualityPreset(iframe, preset);
 
   settingsPanel.setQualityPresets({
     presets: DEFAULT_QUALITY_PRESETS,

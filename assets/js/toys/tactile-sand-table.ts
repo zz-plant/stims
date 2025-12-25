@@ -67,7 +67,10 @@ function bandAverage(data: Uint8Array, start: number, end: number): number {
   return sum / (clampedEnd - clampedStart);
 }
 
-function mapOrientationToGravity(event: DeviceOrientationEvent, state: GravityState) {
+function mapOrientationToGravity(
+  event: DeviceOrientationEvent,
+  state: GravityState
+) {
   if (state.locked) return;
 
   const gamma = THREE.MathUtils.clamp(event.gamma ?? 0, -70, 70);
@@ -148,7 +151,10 @@ export async function start() {
     dustPositions[i * 3 + 1] = THREE.MathUtils.randFloat(6, 14);
     dustPositions[i * 3 + 2] = Math.sin(angle) * radius;
   }
-  dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+  dustGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(dustPositions, 3)
+  );
   const dust = new THREE.Points(
     dustGeometry,
     new THREE.PointsMaterial({
@@ -321,9 +327,10 @@ export async function start() {
   function updateHeightfield(delta: number) {
     const { size, heights, velocities, textureData } = heightfield;
     const waveTension = 0.22;
-    const gravitySkew = new THREE.Vector2(gravity.vector.x, gravity.vector.z).multiplyScalar(
-      0.06
-    );
+    const gravitySkew = new THREE.Vector2(
+      gravity.vector.x,
+      gravity.vector.z
+    ).multiplyScalar(0.06);
 
     for (let y = 1; y < size - 1; y += 1) {
       for (let x = 1; x < size - 1; x += 1) {
@@ -343,7 +350,11 @@ export async function start() {
         velocities[idx] += (laplacian * waveTension - slope) * delta;
         velocities[idx] *= damping;
         heights[idx] += velocities[idx] * delta * 60;
-        heights[idx] = THREE.MathUtils.clamp(heights[idx], -MAX_HEIGHT, MAX_HEIGHT);
+        heights[idx] = THREE.MathUtils.clamp(
+          heights[idx],
+          -MAX_HEIGHT,
+          MAX_HEIGHT
+        );
         textureData[idx] = 0.5 + heights[idx];
       }
     }
@@ -357,7 +368,11 @@ export async function start() {
     const data = getContextFrequencyData(ctx);
     const avg = getAverageFrequency(data);
     const low = bandAverage(data, 0, Math.floor(data.length * 0.16));
-    const mids = bandAverage(data, Math.floor(data.length * 0.16), Math.floor(data.length * 0.45));
+    const mids = bandAverage(
+      data,
+      Math.floor(data.length * 0.16),
+      Math.floor(data.length * 0.45)
+    );
 
     const rippleIntensity = ((low * 0.65 + mids * 0.35) / 255) * rippleGain;
 

@@ -52,9 +52,11 @@ export function createPointerInput({
 }: PointerInputOptions) {
   const activePointers = new Map<number, PointerPosition>();
   const listenerTarget: HTMLElement | Window = target;
-  const boundsSource = boundsElement ?? (target instanceof Window
-    ? document.documentElement
-    : (target as HTMLElement));
+  const boundsSource =
+    boundsElement ??
+    (target instanceof Window
+      ? document.documentElement
+      : (target as HTMLElement));
 
   let gestureAnchor: {
     centroid: { x: number; y: number };

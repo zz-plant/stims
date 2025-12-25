@@ -6,9 +6,13 @@ import {
 
 function expectedBandAverage(audioData, startRatio, endRatio) {
   const startIndex = Math.max(0, Math.floor(audioData.length * startRatio));
-  const endIndex = Math.min(audioData.length, Math.ceil(audioData.length * endRatio));
+  const endIndex = Math.min(
+    audioData.length,
+    Math.ceil(audioData.length * endRatio)
+  );
   const bucketWidth =
-    Math.ceil(audioData.length * endRatio) - Math.floor(audioData.length * startRatio);
+    Math.ceil(audioData.length * endRatio) -
+    Math.floor(audioData.length * startRatio);
 
   if (bucketWidth <= 0 || endIndex <= startIndex) return 0;
 
@@ -34,7 +38,9 @@ describe('animation-utils', () => {
   });
 
   test('applyAudioRotation uses consistent bucket widths for low/mid/high bands', () => {
-    const audioData = new Uint8Array([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]);
+    const audioData = new Uint8Array([
+      5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,
+    ]);
     const object = { rotation: { x: 0, y: 0 } };
 
     const bands = [

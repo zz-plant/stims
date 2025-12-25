@@ -158,7 +158,11 @@ function createKite(
   kiteInstances.push({
     mesh,
     basePosition: position.clone(),
-    swayAxis: new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.6, Math.random() - 0.5).normalize(),
+    swayAxis: new THREE.Vector3(
+      Math.random() - 0.5,
+      Math.random() * 0.6,
+      Math.random() - 0.5
+    ).normalize(),
     flutterSpeed: Math.random() * Math.PI * 2,
     branchDepth,
     baseColor,
@@ -252,21 +256,24 @@ function createControls() {
   (Object.keys(palettes) as PaletteKey[]).forEach((paletteKey) => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1);
+    button.textContent =
+      paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1);
     button.className = 'cta-button';
     button.disabled = paletteKey === settings.palette;
     button.addEventListener('click', () => {
       settings.palette = paletteKey;
-      (paletteRow.childNodes as NodeListOf<HTMLButtonElement>).forEach((child) => {
-        child.classList.toggle(
-          'active',
-          child.textContent?.toLowerCase() === paletteKey
-        );
-        child.toggleAttribute(
-          'disabled',
-          child.textContent?.toLowerCase() === paletteKey
-        );
-      });
+      (paletteRow.childNodes as NodeListOf<HTMLButtonElement>).forEach(
+        (child) => {
+          child.classList.toggle(
+            'active',
+            child.textContent?.toLowerCase() === paletteKey
+          );
+          child.toggleAttribute(
+            'disabled',
+            child.textContent?.toLowerCase() === paletteKey
+          );
+        }
+      );
       buildGarden();
     });
     paletteRow.appendChild(button);
@@ -318,14 +325,17 @@ function animate(ctx: AnimationContext) {
 
   kiteInstances.forEach((kite) => {
     const mesh = kite.mesh;
-    const flutter = Math.sin(time * 0.0012 + kite.flutterSpeed) * (0.4 + mid * 1.6);
+    const flutter =
+      Math.sin(time * 0.0012 + kite.flutterSpeed) * (0.4 + mid * 1.6);
     const sway = kite.swayAxis
       .clone()
       .multiplyScalar(flutter * (0.6 + kite.branchDepth * 0.35));
 
     mesh.position.copy(kite.basePosition).add(sway);
     mesh.rotation.z =
-      kite.twist + Math.sin(time * 0.0009 + kite.flutterSpeed * 2) * 0.18 + mid * 0.35;
+      kite.twist +
+      Math.sin(time * 0.0009 + kite.flutterSpeed * 2) * 0.18 +
+      mid * 0.35;
     mesh.rotation.y += 0.0025 + high * 0.02;
 
     const scale = 0.9 + kite.branchDepth * 0.06 + high * 0.9 + mid * 0.45;
@@ -336,7 +346,9 @@ function animate(ctx: AnimationContext) {
       .clone()
       .lerp(new THREE.Color(0xffffff), Math.min(1, high * 0.7 + mid * 0.3));
     material.color.copy(targetColor);
-    material.emissive.copy(targetColor.clone().multiplyScalar(0.2 + high * 0.4));
+    material.emissive.copy(
+      targetColor.clone().multiplyScalar(0.2 + high * 0.4)
+    );
   });
 
   ctx.toy.render();

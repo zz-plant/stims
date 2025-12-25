@@ -9,7 +9,8 @@ const MCP_PATH = '/mcp';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,mcp-session-id,Last-Event-ID,mcp-protocol-version',
+  'Access-Control-Allow-Headers':
+    'Content-Type,mcp-session-id,Last-Event-ID,mcp-protocol-version',
   'Access-Control-Expose-Headers': 'mcp-session-id,mcp-protocol-version',
 };
 
@@ -72,7 +73,8 @@ class WorkerWebSocketTransport implements Transport {
         const parsed = JSON.parse(payload) as JSONRPCMessage;
         this.onmessage?.(parsed);
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
         this.onerror?.(new Error(`Invalid JSON message: ${message}`));
       }
     });
@@ -95,7 +97,10 @@ class WorkerWebSocketTransport implements Transport {
   }
 
   async close() {
-    if (this.socket.readyState === WebSocket.CLOSED || this.socket.readyState === WebSocket.CLOSING) {
+    if (
+      this.socket.readyState === WebSocket.CLOSED ||
+      this.socket.readyState === WebSocket.CLOSING
+    ) {
       return;
     }
 
@@ -125,7 +130,9 @@ async function handleWebSocket(request: Request) {
   const upgradeHeader = request.headers.get('upgrade');
 
   if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
-    return new Response('Expected a WebSocket upgrade request.', { status: 400 });
+    return new Response('Expected a WebSocket upgrade request.', {
+      status: 400,
+    });
   }
 
   const pair = new WebSocketPair();
@@ -134,7 +141,10 @@ async function handleWebSocket(request: Request) {
   server.accept();
 
   createWebSocketSession(server).catch((error) => {
-    server.close(1011, error instanceof Error ? error.message : 'Unexpected error');
+    server.close(
+      1011,
+      error instanceof Error ? error.message : 'Unexpected error'
+    );
   });
 
   return new Response(null, { status: 101, webSocket: client });

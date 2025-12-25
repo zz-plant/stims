@@ -21,7 +21,10 @@ describe('manifest client', () => {
       Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) })
     );
 
-    const client = createManifestClient({ fetchImpl, baseUrl: 'http://example.com/app/' });
+    const client = createManifestClient({
+      fetchImpl,
+      baseUrl: 'http://example.com/app/',
+    });
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(fetchImpl).toHaveBeenCalledWith('/app/manifest.json');
@@ -31,7 +34,10 @@ describe('manifest client', () => {
   test('falls back when manifest is missing', async () => {
     const fetchImpl = mock(() => Promise.resolve({ ok: false }));
 
-    const client = createManifestClient({ fetchImpl, baseUrl: 'http://example.com/' });
+    const client = createManifestClient({
+      fetchImpl,
+      baseUrl: 'http://example.com/',
+    });
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(modulePath).toBe('/assets/js/toys/example.ts');
@@ -72,8 +78,12 @@ describe('manifest client', () => {
 
     const modulePath = await client.resolveModulePath(moduleEntry);
 
-    expect(fetchImpl).toHaveBeenCalledWith('https://cdn.example.com/app/manifest.json');
-    expect(modulePath).toBe('https://cdn.example.com/app/assets/js/toys/example.123.js');
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://cdn.example.com/app/manifest.json'
+    );
+    expect(modulePath).toBe(
+      'https://cdn.example.com/app/assets/js/toys/example.123.js'
+    );
   });
 
   test('falls back to remote base for missing manifest entry', async () => {
@@ -88,6 +98,8 @@ describe('manifest client', () => {
 
     const modulePath = await client.resolveModulePath(moduleEntry);
 
-    expect(modulePath).toBe('https://cdn.example.com/app/assets/js/toys/example.ts');
+    expect(modulePath).toBe(
+      'https://cdn.example.com/app/assets/js/toys/example.ts'
+    );
   });
 });

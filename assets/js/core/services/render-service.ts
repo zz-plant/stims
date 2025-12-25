@@ -35,9 +35,8 @@ type RendererPoolEntry = {
 
 const rendererPool: RendererPoolEntry[] = [];
 let activeQuality: QualityPreset = getActiveQualityPreset();
-const rendererCapabilitiesInitializer = createSharedInitializer<RendererCapabilities>(
-  getRendererCapabilities,
-);
+const rendererCapabilitiesInitializer =
+  createSharedInitializer<RendererCapabilities>(getRendererCapabilities);
 
 subscribeToQualityPreset((preset) => {
   activeQuality = preset;
@@ -51,8 +50,15 @@ function buildSettings(
   info?: RendererInitResult | null
 ): RendererInitConfig {
   return {
-    maxPixelRatio: options.maxPixelRatio ?? info?.maxPixelRatio ?? activeQuality.maxPixelRatio,
-    renderScale: options.renderScale ?? info?.renderScale ?? activeQuality.renderScale ?? 1,
+    maxPixelRatio:
+      options.maxPixelRatio ??
+      info?.maxPixelRatio ??
+      activeQuality.maxPixelRatio,
+    renderScale:
+      options.renderScale ??
+      info?.renderScale ??
+      activeQuality.renderScale ??
+      1,
     exposure: options.exposure ?? info?.exposure ?? 1,
     antialias: options.antialias ?? true,
     alpha: options.alpha ?? false,
@@ -95,7 +101,8 @@ async function createRendererHandle(
     backend: initResult.backend,
     info: initResult,
     canvas,
-    applySettings: (nextOptions) => applyRendererSettings(initResult.renderer, initResult, nextOptions),
+    applySettings: (nextOptions) =>
+      applyRendererSettings(initResult.renderer, initResult, nextOptions),
     release: () => {},
   };
 
@@ -160,7 +167,9 @@ export async function prewarmRendererCapabilities() {
   return rendererCapabilitiesInitializer.run();
 }
 
-export function resetRendererPool({ dispose = false }: { dispose?: boolean } = {}) {
+export function resetRendererPool({
+  dispose = false,
+}: { dispose?: boolean } = {}) {
   rendererPool.forEach((entry) => {
     entry.inUse = false;
     if (dispose) {

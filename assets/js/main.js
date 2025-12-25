@@ -27,7 +27,11 @@ const bindQuickstartCta = () => {
 
   quickstart.addEventListener('click', (event) => {
     const isModifiedClick =
-      event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1;
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button === 1;
     if (isModifiedClick) return;
 
     event.preventDefault();

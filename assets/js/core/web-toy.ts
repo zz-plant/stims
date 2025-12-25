@@ -43,7 +43,8 @@ export default class WebToy {
       throw new Error('WebGL not supported');
     }
 
-    const host = document.getElementById('active-toy-container') || document.body;
+    const host =
+      document.getElementById('active-toy-container') || document.body;
     this.canvas = canvas || document.createElement('canvas');
 
     this.scene = initScene(sceneOptions);
@@ -53,7 +54,11 @@ export default class WebToy {
     this.rendererInfo = null;
     this.rendererHandle = null;
     this.rendererOptions = rendererOptions;
-    this.rendererReady = requestRenderer({ host, options: rendererOptions, canvas: this.canvas })
+    this.rendererReady = requestRenderer({
+      host,
+      options: rendererOptions,
+      canvas: this.canvas,
+    })
       .then((handle) => {
         this.rendererHandle = handle;
         this.renderer = handle?.renderer ?? null;

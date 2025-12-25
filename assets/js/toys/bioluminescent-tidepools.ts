@@ -65,7 +65,9 @@ const blobUniforms = new Array<THREE.Vector4>(MAX_BLOBS)
 
 const uniforms = {
   u_time: { value: 0 },
-  u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+  u_resolution: {
+    value: new THREE.Vector2(window.innerWidth, window.innerHeight),
+  },
   u_blobs: { value: blobUniforms },
   u_blobCount: { value: 0 },
   u_threshold: { value: 0.9 },
@@ -202,7 +204,8 @@ const lastPointerPositions = new Map<number, PointerPosition>();
 const clock = new THREE.Clock();
 
 function resetSpark(index: number, anchor?: TideBlob) {
-  const uv = anchor?.position ?? new THREE.Vector2(Math.random(), Math.random());
+  const uv =
+    anchor?.position ?? new THREE.Vector2(Math.random(), Math.random());
   const x = uv.x * 2 - 1;
   const y = uv.y * 2 - 1;
 
@@ -237,7 +240,10 @@ function updateBlobs(delta: number) {
   for (let i = blobs.length - 1; i >= 0; i -= 1) {
     const blob = blobs[i];
     blob.life -= delta / controls.trailLength;
-    blob.position.addScaledVector(blob.velocity, delta * 0.35 * controls.currentSpeed);
+    blob.position.addScaledVector(
+      blob.velocity,
+      delta * 0.35 * controls.currentSpeed
+    );
 
     blob.position.x = (blob.position.x + 1.0) % 1.0;
     blob.position.y = (blob.position.y + 1.0) % 1.0;
@@ -251,7 +257,12 @@ function updateBlobs(delta: number) {
   uniforms.u_blobCount.value = count;
   for (let i = 0; i < count; i += 1) {
     const blob = blobs[i];
-    blobUniforms[i].set(blob.position.x, blob.position.y, blob.radius, blob.strength);
+    blobUniforms[i].set(
+      blob.position.x,
+      blob.position.y,
+      blob.radius,
+      blob.strength
+    );
   }
 }
 
@@ -306,14 +317,19 @@ createPointerInput({
 });
 
 function updateSparks(delta: number, energy: number) {
-  const positions = sparkGeometry.getAttribute('position') as THREE.BufferAttribute;
+  const positions = sparkGeometry.getAttribute(
+    'position'
+  ) as THREE.BufferAttribute;
   const respawnBudget = Math.min(activeSparkCount, Math.floor(4 + energy * 24));
   let respawned = 0;
 
   for (let i = 0; i < activeSparkCount; i += 1) {
     const life = sparkLife[i];
     if (life <= 0 && respawned < respawnBudget) {
-      resetSpark(i, blobs[THREE.MathUtils.randInt(0, Math.max(blobs.length - 1, 0))]);
+      resetSpark(
+        i,
+        blobs[THREE.MathUtils.randInt(0, Math.max(blobs.length - 1, 0))]
+      );
       respawned += 1;
     }
   }
@@ -325,7 +341,11 @@ function updateSparks(delta: number, energy: number) {
     sparkPositions[i * 3] += sparkVelocities[i * 3] * delta * 0.4;
     sparkPositions[i * 3 + 1] += sparkVelocities[i * 3 + 1] * delta * 0.4;
 
-    sparkPositions[i * 3] = THREE.MathUtils.clamp(sparkPositions[i * 3], -1.2, 1.2);
+    sparkPositions[i * 3] = THREE.MathUtils.clamp(
+      sparkPositions[i * 3],
+      -1.2,
+      1.2
+    );
     sparkPositions[i * 3 + 1] = THREE.MathUtils.clamp(
       sparkPositions[i * 3 + 1],
       -1.2,

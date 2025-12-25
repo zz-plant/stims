@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -108,7 +108,10 @@
       const statusIndicator = document.getElementById('statusIndicator');
 
       function applyQualityPreset(preset) {
-        pixelRatio = Math.min(window.devicePixelRatio || 1, preset.maxPixelRatio);
+        pixelRatio = Math.min(
+          window.devicePixelRatio || 1,
+          preset.maxPixelRatio
+        );
         renderScale = preset.renderScale ?? 1;
         qualityDensity = Math.max(0.6, preset.particleScale ?? 1);
         rows = Math.max(10, Math.round(baseRows * qualityDensity));
@@ -223,8 +226,7 @@
         if (ctxAudio.analyser) {
           audioDataArray = getFrequencyData(ctxAudio.analyser);
           const averageLevel = getAverageFrequency(audioDataArray);
-          movingAverageLevel =
-            movingAverageLevel * 0.7 + averageLevel * 0.3;
+          movingAverageLevel = movingAverageLevel * 0.7 + averageLevel * 0.3;
           idleState = movingAverageLevel < idleThreshold;
           updateStatusIndicator(idleState ? 'idle' : 'listening');
         } else {
@@ -246,7 +248,9 @@
           'Microphone access is required for the visualization to work. Please allow microphone access.'
         );
         updateStatusIndicator('waiting');
-        toy.renderer.setAnimationLoop(() => defragLoop({ toy, analyser: null }));
+        toy.renderer.setAnimationLoop(() =>
+          defragLoop({ toy, analyser: null })
+        );
       });
     </script>
   </body>

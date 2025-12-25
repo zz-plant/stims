@@ -125,7 +125,7 @@ export function initHints({
   id,
   tips,
   title = 'Quick tips',
-  ctaLabel = "Got it",
+  ctaLabel = 'Got it',
   container = document.body,
 }: HintOptions): void {
   if (!tips?.length || hasDismissed(id)) return;

@@ -4,17 +4,36 @@ import WebToy from './core/web-toy';
 import { getContextFrequencyData } from './core/animation-loop';
 import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
-import { applyAudioRotation, applyAudioScale } from './utils/animation-utils.ts';
+import {
+  applyAudioRotation,
+  applyAudioScale,
+} from './utils/animation-utils.ts';
 import { startToyAudio } from './utils/start-audio.ts';
 import PatternRecognizer from './utils/patternRecognition.ts';
 
 const DEFAULT_RENDERER_OPTIONS = { maxPixelRatio: 2 };
 
 const LIGHT_CONFIGS = {
-  PointLight: { type: 'PointLight', position: { x: 10, y: 10, z: 20 }, intensity: 1 },
-  DirectionalLight: { type: 'DirectionalLight', position: { x: 10, y: 10, z: 20 }, intensity: 1 },
-  SpotLight: { type: 'SpotLight', position: { x: 10, y: 15, z: 18 }, intensity: 1.25 },
-  HemisphereLight: { type: 'HemisphereLight', position: { x: 0, y: 10, z: 0 }, intensity: 1 },
+  PointLight: {
+    type: 'PointLight',
+    position: { x: 10, y: 10, z: 20 },
+    intensity: 1,
+  },
+  DirectionalLight: {
+    type: 'DirectionalLight',
+    position: { x: 10, y: 10, z: 20 },
+    intensity: 1,
+  },
+  SpotLight: {
+    type: 'SpotLight',
+    position: { x: 10, y: 15, z: 18 },
+    intensity: 1.25,
+  },
+  HemisphereLight: {
+    type: 'HemisphereLight',
+    position: { x: 0, y: 10, z: 0 },
+    intensity: 1,
+  },
 };
 
 function createLightsExperience({
@@ -24,7 +43,8 @@ function createLightsExperience({
   const doc = documentRef;
   const win = windowRef;
 
-  const prefersReducedMotion = win?.matchMedia?.('(prefers-reduced-motion: reduce)') ?? null;
+  const prefersReducedMotion =
+    win?.matchMedia?.('(prefers-reduced-motion: reduce)') ?? null;
 
   let isReducedMotionPreferred = prefersReducedMotion?.matches ?? false;
   let shouldAnimate = true;
@@ -185,7 +205,11 @@ function createLightsExperience({
 
     cube = new THREE.Mesh(
       new THREE.BoxGeometry(),
-      new THREE.MeshStandardMaterial({ color: 0x00ff00, metalness: 0.3, roughness: 0.4 })
+      new THREE.MeshStandardMaterial({
+        color: 0x00ff00,
+        metalness: 0.3,
+        roughness: 0.4,
+      })
     );
     toy.scene.add(cube);
 
@@ -254,7 +278,10 @@ function createLightsExperience({
             'Microphone or demo audio is required for the visualization to work. Please try again.',
             'error'
           );
-          console.error('Unable to restart audio after visibility change', error);
+          console.error(
+            'Unable to restart audio after visibility change',
+            error
+          );
         }
       }
 
@@ -309,14 +336,18 @@ function createLightsExperience({
       requestMicrophone: () => startAudio('microphone'),
       requestSampleAudio: () => startAudio('sample'),
       analytics: {
-        log: (event, detail) => console.info(`[audio-flow] ${event}`, detail ?? {}),
+        log: (event, detail) =>
+          console.info(`[audio-flow] ${event}`, detail ?? {}),
       },
       onSuccess: (mode) => {
         if (elements.startButton instanceof HTMLButtonElement) {
           elements.startButton.style.display = 'none';
         }
 
-        if (mode === 'microphone' && elements.fallbackButton instanceof HTMLButtonElement) {
+        if (
+          mode === 'microphone' &&
+          elements.fallbackButton instanceof HTMLButtonElement
+        ) {
           elements.fallbackButton.hidden = true;
         }
       },
@@ -334,7 +365,10 @@ function createLightsExperience({
     cleanupAudio();
     clearAnimationLoop();
     elements.lightSelect?.removeEventListener('change', handleLightChange);
-    prefersReducedMotion?.removeEventListener('change', handleReducedMotionChange);
+    prefersReducedMotion?.removeEventListener(
+      'change',
+      handleReducedMotionChange
+    );
     doc?.removeEventListener('visibilitychange', handleVisibilityChange);
     win?.removeEventListener('pagehide', handlePageHide);
     toy?.dispose();
@@ -349,7 +383,9 @@ function createLightsExperience({
 const experience = createLightsExperience();
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => experience.init(), { once: true });
+  document.addEventListener('DOMContentLoaded', () => experience.init(), {
+    once: true,
+  });
 } else {
   void experience.init();
 }

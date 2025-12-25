@@ -66,12 +66,16 @@ export class FrequencyAnalyser {
       try {
         await context.audioWorklet.addModule(FREQUENCY_ANALYSER_PROCESSOR);
 
-        const workletNode = new AudioWorkletNode(context, 'frequency-analyser', {
-          numberOfInputs: 1,
-          numberOfOutputs: 1,
-          outputChannelCount: [1],
-          processorOptions: { fftSize },
-        });
+        const workletNode = new AudioWorkletNode(
+          context,
+          'frequency-analyser',
+          {
+            numberOfInputs: 1,
+            numberOfOutputs: 1,
+            outputChannelCount: [1],
+            processorOptions: { fftSize },
+          }
+        );
 
         sourceNode.connect(workletNode);
         workletNode.connect(silentGain);
@@ -85,7 +89,10 @@ export class FrequencyAnalyser {
           silentGain,
         });
       } catch (error) {
-        console.warn('Falling back to AnalyserNode after AudioWorklet failure', error);
+        console.warn(
+          'Falling back to AnalyserNode after AudioWorklet failure',
+          error
+        );
       }
     }
 
@@ -129,7 +136,9 @@ export class FrequencyAnalyser {
   }
 }
 
-async function queryMicrophonePermissionState(): Promise<PermissionState | undefined> {
+async function queryMicrophonePermissionState(): Promise<
+  PermissionState | undefined
+> {
   if (typeof navigator === 'undefined') return undefined;
   if (!navigator.permissions?.query) return undefined;
 
@@ -425,15 +434,17 @@ export async function initAudio(options: AudioInitOptions = {}) {
       }
 
       if (positional && object && 'remove' in object) {
-        (object as THREE.Object3D & { remove?: (obj: THREE.Object3D) => void })
-          .remove?.(audio);
+        (
+          object as THREE.Object3D & { remove?: (obj: THREE.Object3D) => void }
+        ).remove?.(audio);
       }
 
       onCleanup?.({ analyser, listener, audio, stream: streamSource });
     };
 
     const effectivePermissionState =
-      permissionState ?? (streamSource ? ('granted' as PermissionState) : undefined);
+      permissionState ??
+      (streamSource ? ('granted' as PermissionState) : undefined);
 
     return {
       analyser,

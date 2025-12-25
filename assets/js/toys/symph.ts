@@ -5,6 +5,7 @@ export function start({ container } = {}) {
     container,
     path: './symph.html',
     title: 'Dreamy Spectrograph',
-    description: 'Adjust render quality for the flowing spectrograph and sparkles.',
+    description:
+      'Adjust render quality for the flowing spectrograph and sparkles.',
   });
 }

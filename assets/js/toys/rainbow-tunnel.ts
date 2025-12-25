@@ -84,8 +84,13 @@ function disposeRingAssets() {
 
 function rebuildScene() {
   disposeRingAssets();
-  const { ringCount, ringSpacing, tunnelLength: nextLength, particleCount, torusDetail } =
-    getTunnelConfig();
+  const {
+    ringCount,
+    ringSpacing,
+    tunnelLength: nextLength,
+    particleCount,
+    torusDetail,
+  } = getTunnelConfig();
   tunnelLength = nextLength;
 
   for (let i = 0; i < ringCount; i++) {
@@ -164,7 +169,10 @@ function animate(ctx: AnimationContext) {
   const normalizedAvg = avg / 255;
   const time = Date.now() / 1000;
 
-  const binsPerRing = Math.max(1, Math.floor(data.length / Math.max(rings.length, 1)));
+  const binsPerRing = Math.max(
+    1,
+    Math.floor(data.length / Math.max(rings.length, 1))
+  );
 
   rings.forEach((ringData, idx) => {
     const bin = Math.min(Math.floor(idx * binsPerRing), data.length - 1);

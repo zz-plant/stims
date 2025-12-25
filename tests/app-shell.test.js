@@ -1,11 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  mock,
-  test,
-} from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 const toyLibrary = [
   {
@@ -36,7 +29,8 @@ const toyLibrary = [
 
 const loaderPath = '../assets/js/loader.ts';
 const toysDataPath = '../assets/js/toys-data.js';
-const freshImport = async (path) => import(`${path}?t=${Date.now()}-${Math.random()}`);
+const freshImport = async (path) =>
+  import(`${path}?t=${Date.now()}-${Math.random()}`);
 
 let mockLoadToy;
 let mockLoadFromQuery;
@@ -61,7 +55,8 @@ describe('app shell user journeys', () => {
 
   beforeEach(() => {
     mock.restore();
-    document.body.innerHTML = '<input id="search-bar" /><div id="toy-list"></div>';
+    document.body.innerHTML =
+      '<input id="search-bar" /><div id="toy-list"></div>';
     mockLoadToy = mock();
     mockLoadFromQuery = mock();
     mockInitNavigation = mock();
@@ -89,22 +84,27 @@ describe('app shell user journeys', () => {
     search.value = 'cloud';
     search.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const visibleTitles = Array.from(document.querySelectorAll('.webtoy-card h3')).map(
-      (node) => node.textContent
-    );
+    const visibleTitles = Array.from(
+      document.querySelectorAll('.webtoy-card h3')
+    ).map((node) => node.textContent);
 
     expect(visibleTitles).toEqual(['Interactive Word Cloud']);
   });
 
   test('launching toys routes module entries and navigates for HTML pages', async () => {
     const mockLocation = { href: 'http://example.com/library' };
-    Object.defineProperty(window, 'location', { value: mockLocation, writable: true });
+    Object.defineProperty(window, 'location', {
+      value: mockLocation,
+      writable: true,
+    });
 
     await loadAppShell();
 
     const cards = document.querySelectorAll('.webtoy-card');
     cards[0].dispatchEvent(new Event('click', { bubbles: true }));
-    expect(mockLoadToy).toHaveBeenCalledWith('aurora-painter', { pushState: true });
+    expect(mockLoadToy).toHaveBeenCalledWith('aurora-painter', {
+      pushState: true,
+    });
 
     cards[1].dispatchEvent(new Event('click', { bubbles: true }));
     expect(window.location.href).toBe('./brand.html');

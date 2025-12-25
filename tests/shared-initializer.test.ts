@@ -9,7 +9,10 @@ describe('createSharedInitializer', () => {
       return 'ready';
     });
 
-    const [first, second] = await Promise.all([initializer.run(), initializer.run()]);
+    const [first, second] = await Promise.all([
+      initializer.run(),
+      initializer.run(),
+    ]);
 
     expect(first).toBe('ready');
     expect(second).toBe('ready');

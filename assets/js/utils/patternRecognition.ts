@@ -21,8 +21,9 @@ class PatternRecognizer {
     // Get current frequency data and add to pattern buffer
     const data = this.analyser.getFrequencyData();
     if (this.patternBuffer.length === 0) {
-      this.patternBuffer = Array.from({ length: this.bufferSize }, () =>
-        new (data.constructor as typeof Uint8Array)(data.length)
+      this.patternBuffer = Array.from(
+        { length: this.bufferSize },
+        () => new (data.constructor as typeof Uint8Array)(data.length)
       );
     }
 
@@ -40,7 +41,8 @@ class PatternRecognizer {
     if (this.filled < this.bufferSize) return null;
 
     const lastIndex = (this.writeIndex + this.bufferSize - 1) % this.bufferSize;
-    const secondLastIndex = (this.writeIndex + this.bufferSize - 2) % this.bufferSize;
+    const secondLastIndex =
+      (this.writeIndex + this.bufferSize - 2) % this.bufferSize;
 
     const lastPattern = this.patternBuffer[lastIndex];
     const secondLastPattern = this.patternBuffer[secondLastIndex];

@@ -56,7 +56,8 @@ function getShaderSizeMultiplier() {
 }
 
 function getStarCount() {
-  const scale = (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
+  const scale =
+    (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
   return Math.max(900, Math.floor(2400 * scale));
 }
 
@@ -171,7 +172,8 @@ function animate(ctx: AnimationContext) {
   const normalizedAvg = avg / 255;
   const time = ctx.time;
 
-  const positions = starField.geometry.attributes.position.array as Float32Array;
+  const positions = starField.geometry.attributes.position
+    .array as Float32Array;
   for (let i = 0; i < starField.count; i++) {
     const i3 = i * 3;
     const drift = Math.sin(time * 0.001 + i * 0.02) * 0.12;

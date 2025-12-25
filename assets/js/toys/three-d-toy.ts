@@ -117,7 +117,8 @@ function rebuildSceneContents() {
   torusKnot = null;
   particles = null;
 
-  const { particleCount, shapeCount, torusSegments, torusTubularSegments } = getCounts();
+  const { particleCount, shapeCount, torusSegments, torusTubularSegments } =
+    getCounts();
 
   torusKnot = new THREE.Mesh(
     new THREE.TorusKnotGeometry(10, 3, torusSegments, torusTubularSegments),

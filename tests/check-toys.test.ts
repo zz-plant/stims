@@ -12,7 +12,10 @@ async function createTempRepo() {
   const index = `# Toy and Visualizer Script Index\n\n| Slug | Entry module | How it loads |\n| --- | --- | --- |\n`;
   await fs.writeFile(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'), index);
 
-  await fs.writeFile(path.join(root, 'assets/js/toys-data.js'), 'export default []\n');
+  await fs.writeFile(
+    path.join(root, 'assets/js/toys-data.js'),
+    'export default []\n'
+  );
   return root;
 }
 
@@ -52,7 +55,11 @@ describe('check-toys script', () => {
     );
 
     const result = await runToyChecks(root);
-    expect(result.issues.some((issue) => issue.includes('Missing file for missing-entry'))).toBe(true);
+    expect(
+      result.issues.some((issue) =>
+        issue.includes('Missing file for missing-entry')
+      )
+    ).toBe(true);
   });
 
   test('detects unregistered toy modules', async () => {
@@ -60,6 +67,8 @@ describe('check-toys script', () => {
     await writeToyModule(root, 'rogue');
 
     const result = await runToyChecks(root);
-    expect(result.issues).toContain('Unregistered toy module detected: assets/js/toys/rogue.ts');
+    expect(result.issues).toContain(
+      'Unregistered toy module detected: assets/js/toys/rogue.ts'
+    );
   });
 });

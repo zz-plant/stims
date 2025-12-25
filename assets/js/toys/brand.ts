@@ -21,7 +21,7 @@ export async function startBrandToy({
   const errorTargetId =
     typeof errorElement === 'string'
       ? errorElement
-      : errorElement?.id ?? 'error-message';
+      : (errorElement?.id ?? 'error-message');
   const hasRenderingSupport = ensureWebGL({
     title: 'WebGL/WebGPU required for the Star Guitar visualizer',
     description:
@@ -100,7 +100,8 @@ export async function startBrandToy({
   ground.position.y = -1.5;
   toy.scene.add(ground);
 
-  const elements: Array<{ type: string; x: number; z: number; scale: number }> = [];
+  const elements: Array<{ type: string; x: number; z: number; scale: number }> =
+    [];
   const types = ['building', 'tree', 'pole'] as const;
   for (let i = 0; i < 100; i++) {
     const z = -Math.random() * 300;
@@ -140,7 +141,9 @@ export async function startBrandToy({
   }
   trunkGeo.setAttribute('color', new THREE.BufferAttribute(trunkColors, 3));
   const leavesColor = new THREE.Color(0x228b22);
-  const leavesColors = new Float32Array(leavesGeo.attributes.position.count * 3);
+  const leavesColors = new Float32Array(
+    leavesGeo.attributes.position.count * 3
+  );
   for (let i = 0; i < leavesColors.length; i += 3) {
     leavesColors[i] = leavesColor.r;
     leavesColors[i + 1] = leavesColor.g;
@@ -205,9 +208,15 @@ export async function startBrandToy({
   });
   poleMesh.instanceMatrix.needsUpdate = true;
 
-  const animate = (ctx: { analyser: THREE.AudioAnalyser | null; toy: WebToy }) => {
+  const animate = (ctx: {
+    analyser: THREE.AudioAnalyser | null;
+    toy: WebToy;
+  }) => {
     const dataArray = getContextFrequencyData(ctx);
-    const bassBand = dataArray.slice(0, Math.max(1, Math.min(10, dataArray.length)));
+    const bassBand = dataArray.slice(
+      0,
+      Math.max(1, Math.min(10, dataArray.length))
+    );
     const bass = bassBand.length
       ? bassBand.reduce((a, b) => a + b, 0) / bassBand.length
       : 0;
@@ -283,7 +292,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     canvas:
       (container?.querySelector('canvas') as HTMLCanvasElement | null) ??
       (document.getElementById('vizCanvas') as HTMLCanvasElement | null),
-    errorElement: container?.querySelector('#error-message') ??
+    errorElement:
+      container?.querySelector('#error-message') ??
       (document.getElementById('error-message') as HTMLElement | null),
   });
 }

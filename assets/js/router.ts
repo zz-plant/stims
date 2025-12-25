@@ -8,7 +8,8 @@ export function createRouter({
 
   const getWindow = () => windowRef();
 
-  const getUrl = (win: Window & typeof globalThis) => new URL(win.location.href);
+  const getUrl = (win: Window & typeof globalThis) =>
+    new URL(win.location.href);
 
   const getCurrentSlug = () => {
     const win = getWindow();
