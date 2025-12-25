@@ -12,6 +12,7 @@ import {
 } from './services/audio-service.ts';
 import type { RendererInitConfig } from './renderer-setup.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
+import { defaultToyLifecycle } from './toy-lifecycle.ts';
 
 export default class WebToy {
   canvas: HTMLCanvasElement;
@@ -82,7 +83,7 @@ export default class WebToy {
     this.resizeHandler = () => this.handleResize();
     window.addEventListener('resize', this.resizeHandler);
 
-    (globalThis as Record<string, unknown>).__activeWebToy = this;
+    defaultToyLifecycle.adoptActiveToy(this);
   }
 
   handleResize() {
@@ -165,8 +166,6 @@ export default class WebToy {
     this.rendererInfo = null;
     this.rendererBackend = null;
 
-    if ((globalThis as Record<string, unknown>).__activeWebToy === this) {
-      delete (globalThis as Record<string, unknown>).__activeWebToy;
-    }
+    defaultToyLifecycle.unregisterActiveToy(this);
   }
 }

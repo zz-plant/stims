@@ -1,3 +1,5 @@
+import { defaultToyLifecycle } from '../core/toy-lifecycle.ts';
+
 export default function noop() {}
 
 export function start({ container } = {}) {
@@ -6,6 +8,6 @@ export function start({ container } = {}) {
   container?.appendChild(placeholder);
 
   const active = { dispose: () => placeholder.remove() };
-  globalThis.__activeWebToy = active;
+  defaultToyLifecycle.adoptActiveToy(active);
   return active;
 }

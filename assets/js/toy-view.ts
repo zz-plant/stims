@@ -5,10 +5,21 @@ type Toy = {
   title?: string;
 };
 
+type StatusVariant = 'loading' | 'error' | 'warning';
+
 type StatusConfig = {
-  type: 'loading' | 'error' | 'warning';
+  variant: StatusVariant;
   title: string;
   message: string;
+  actions?: StatusAction[];
+  actionsClassName?: string;
+};
+
+type StatusAction = {
+  label: string;
+  onClick?: () => void;
+  primary?: boolean;
+  className?: string;
 };
 
 type CapabilityOptions = {
@@ -30,6 +41,14 @@ type RendererStatusState = {
   shouldRetryWebGPU?: boolean;
   triedWebGPU?: boolean;
   onRetry?: () => void;
+};
+
+type ViewState = {
+  mode: 'library' | 'toy';
+  backHandler?: () => void;
+  rendererStatus: RendererStatusState | null;
+  activeToyMeta?: Toy;
+  status: StatusConfig | null;
 };
 
 const TOY_CONTAINER_CLASS = 'active-toy-container';
@@ -59,40 +78,64 @@ function clearContainerContent(container: HTMLElement | null) {
   });
 }
 
-function buildStatusElement(doc: Document, container: HTMLElement, { type, title, message }: StatusConfig) {
+function renderStatusElement(doc: Document, container: HTMLElement, status: StatusConfig | null) {
   const existing = container.querySelector('.active-toy-status');
-  if (existing) {
-    existing.remove();
+  if (!status) {
+    existing?.remove();
+    return null;
   }
 
-  const status = doc.createElement('div');
-  const statusVariant = type === 'error' ? 'is-error' : type === 'warning' ? 'is-warning' : 'is-loading';
-  status.className = `active-toy-status ${statusVariant}`;
+  existing?.remove();
+
+  const statusElement = doc.createElement('div');
+  const statusVariant =
+    status.variant === 'error' ? 'is-error' : status.variant === 'warning' ? 'is-warning' : 'is-loading';
+  statusElement.className = `active-toy-status ${statusVariant}`;
 
   const glow = doc.createElement('div');
   glow.className = 'active-toy-status__glow';
-  status.appendChild(glow);
+  statusElement.appendChild(glow);
 
   const content = doc.createElement('div');
   content.className = 'active-toy-status__content';
-  status.appendChild(content);
+  statusElement.appendChild(content);
 
-  if (type === 'loading') {
+  if (status.variant === 'loading') {
     const spinner = doc.createElement('div');
     spinner.className = 'toy-loading-spinner';
     content.appendChild(spinner);
   }
 
   const heading = doc.createElement('h2');
-  heading.textContent = title;
+  heading.textContent = status.title;
   content.appendChild(heading);
 
   const body = doc.createElement('p');
-  body.textContent = message;
+  body.textContent = status.message;
   content.appendChild(body);
 
-  container.appendChild(status);
-  return status;
+  if (status.actions?.length) {
+    const actions = doc.createElement('div');
+    actions.className = status.actionsClassName ?? 'active-toy-status__actions';
+
+    status.actions.forEach((action) => {
+      const button = doc.createElement('button');
+      button.type = 'button';
+      button.textContent = action.label;
+      const baseClass = action.primary ? 'cta-button primary' : 'cta-button';
+      button.className = action.className ?? baseClass;
+      if (!action.className && !action.primary) {
+        button.className = 'cta-button';
+      }
+      button.addEventListener('click', () => action.onClick?.());
+      actions.appendChild(button);
+    });
+
+    content.appendChild(actions);
+  }
+
+  container.appendChild(statusElement);
+  return statusElement;
 }
 
 function buildImportErrorMessage(toy: Toy | undefined, { moduleUrl, importError }: ImportErrorOptions = {}) {
@@ -125,15 +168,14 @@ function buildToyNav({
   doc: Document | null;
   toy?: Toy;
   onBack?: () => void;
-  rendererStatus?: RendererStatusState | null;
+  rendererStatus: RendererStatusState | null;
 }) {
   if (!container || !doc) return null;
 
-  let nav = container.querySelector('.active-toy-nav') as HTMLElement | null;
+  let nav = container.querySelector('.active-toy-nav');
   if (!nav) {
     nav = doc.createElement('div');
     nav.className = 'active-toy-nav';
-    nav.dataset.preserve = 'toy-ui';
     container.appendChild(nav);
   }
 
@@ -217,9 +259,11 @@ export function createToyView({
   listId = 'toy-list',
   containerId = 'active-toy-container',
 }: { documentRef?: DocumentGetter; listId?: string; containerId?: string } = {}) {
-  let backHandler: (() => void) | undefined;
-  let rendererStatus: RendererStatusState | null = null;
-  let activeToyMeta: Toy | undefined;
+  const state: ViewState = {
+    mode: 'library',
+    rendererStatus: null,
+    status: null,
+  };
 
   const getDocument = () => documentRef();
 
@@ -241,162 +285,133 @@ export function createToyView({
     return container;
   };
 
+  const render = ({ clearContainer = false }: { clearContainer?: boolean } = {}) => {
+    const doc = getDocument();
+    const toyList = getToyList();
+    const container = ensureActiveToyContainer();
+
+    if (!doc || !container) {
+      return { container: null as HTMLElement | null, status: null as HTMLElement | null };
+    }
+
+    if (clearContainer) {
+      clearContainerContent(container);
+    }
+
+    if (state.mode === 'library') {
+      showElement(toyList);
+      hideElement(container);
+      state.status = null;
+      return { container, status: null };
+    }
+
+    hideElement(toyList);
+    showElement(container);
+
+    buildToyNav({
+      container,
+      doc,
+      toy: state.activeToyMeta,
+      onBack: state.backHandler,
+      rendererStatus: state.rendererStatus,
+    });
+
+    const statusElement = renderStatusElement(doc, container, state.status);
+    return { container, status: statusElement };
+  };
+
   const showLibraryView = () => {
-    backHandler = undefined;
-    rendererStatus = null;
-    activeToyMeta = undefined;
-    showElement(getToyList());
-    hideElement(findActiveToyContainer());
+    state.mode = 'library';
+    state.backHandler = undefined;
+    state.rendererStatus = null;
+    state.activeToyMeta = undefined;
+    state.status = null;
+    render({ clearContainer: true });
   };
 
   const showActiveToyView = (onBack?: () => void, toy?: Toy) => {
-    backHandler = onBack ?? backHandler;
-    activeToyMeta = toy ?? activeToyMeta;
-    hideElement(getToyList());
-    const container = ensureActiveToyContainer();
-    buildToyNav({
-      container,
-      doc: getDocument(),
-      toy: activeToyMeta,
-      onBack: backHandler,
-      rendererStatus,
-    });
-    showElement(container);
+    state.mode = 'toy';
+    state.backHandler = onBack ?? state.backHandler;
+    state.activeToyMeta = toy ?? state.activeToyMeta;
+    const { container } = render();
     return container;
   };
 
   const showLoadingIndicator = (toyTitle?: string, toy?: Toy) => {
-    const container = ensureActiveToyContainer();
-    const doc = getDocument();
-    if (!container || !doc) return null;
-
-    activeToyMeta = toy ?? activeToyMeta;
-    buildToyNav({
-      container,
-      doc,
-      toy: activeToyMeta,
-      onBack: backHandler,
-      rendererStatus,
-    });
-
-    return buildStatusElement(doc, container, {
-      type: 'loading',
+    state.mode = 'toy';
+    state.activeToyMeta = toy ?? state.activeToyMeta;
+    state.status = {
+      variant: 'loading',
       title: 'Preparing toy...',
       message: toyTitle ? `${toyTitle} is loading.` : 'Loading toy...',
-    });
+    };
+
+    const { status } = render();
+    return status;
   };
 
   const removeStatusElement = () => {
-    const container = findActiveToyContainer();
-    container?.querySelector('.active-toy-status')?.remove();
+    state.status = null;
+    render();
   };
 
   const showImportError = (toy: Toy | undefined, options: ImportErrorOptions = {}) => {
-    const container = ensureActiveToyContainer();
-    const doc = getDocument();
-    if (!container || !doc) return null;
-
-    backHandler = options.onBack ?? backHandler;
-    clearContainerContent(container);
-    activeToyMeta = toy ?? activeToyMeta;
-    buildToyNav({
-      container,
-      doc,
-      toy: activeToyMeta,
-      onBack: backHandler,
-      rendererStatus,
-    });
-
-    const status = buildStatusElement(doc, container, {
-      type: 'error',
+    state.mode = 'toy';
+    state.backHandler = options.onBack ?? state.backHandler;
+    state.activeToyMeta = toy ?? state.activeToyMeta;
+    state.status = {
+      variant: 'error',
       title: 'Unable to load this toy',
       message: buildImportErrorMessage(toy, options),
-    });
+      actionsClassName: 'active-toy-status__actions',
+      actions: [
+        {
+          label: 'Back to library',
+          onClick: options.onBack,
+          primary: true,
+        },
+      ],
+    };
 
-    if (!status) return null;
-
-    const actions = doc.createElement('div');
-    actions.className = 'active-toy-status__actions';
-
-    const back = doc.createElement('button');
-    back.type = 'button';
-    back.className = 'cta-button primary';
-    back.textContent = 'Back to library';
-    back.addEventListener('click', () => options.onBack?.());
-    actions.appendChild(back);
-
-    status.querySelector('.active-toy-status__content')?.appendChild(actions);
+    const { status } = render({ clearContainer: true });
     return status;
   };
 
   const showCapabilityError = (toy: Toy | undefined, options: CapabilityOptions = {}) => {
-    const container = ensureActiveToyContainer();
-    const doc = getDocument();
-    if (!container || !doc) return null;
-
-    backHandler = options.onBack ?? backHandler;
-    clearContainerContent(container);
-    activeToyMeta = toy ?? activeToyMeta;
-    buildToyNav({
-      container,
-      doc,
-      toy: activeToyMeta,
-      onBack: backHandler,
-      rendererStatus,
-    });
-
-    const status = buildStatusElement(doc, container, {
-      type: options.allowFallback ? 'warning' : 'error',
+    state.mode = 'toy';
+    state.backHandler = options.onBack ?? state.backHandler;
+    state.activeToyMeta = toy ?? state.activeToyMeta;
+    state.status = {
+      variant: options.allowFallback ? 'warning' : 'error',
       title: options.allowFallback ? 'WebGPU is unavailable' : 'WebGPU not available',
       message: `${
         options.allowFallback
-        ? toy?.title
-          ? `${toy.title} works best with WebGPU. We can try a lighter WebGL version instead.`
-          : 'This toy works best with WebGPU. We can try a lighter WebGL version instead.'
-        : toy?.title
-          ? `${toy.title} needs WebGPU, which is not supported in this browser.`
-          : 'This toy requires WebGPU, which is not supported in this browser.'
+          ? toy?.title
+            ? `${toy.title} works best with WebGPU. We can try a lighter WebGL version instead.`
+            : 'This toy works best with WebGPU. We can try a lighter WebGL version instead.'
+          : toy?.title
+            ? `${toy.title} needs WebGPU, which is not supported in this browser.`
+            : 'This toy requires WebGPU, which is not supported in this browser.'
       }${options.details ? ` (${options.details})` : ''}`,
-    });
+      actionsClassName: 'active-toy-actions',
+      actions: [
+        {
+          label: 'Back to Library',
+          onClick: options.onBack,
+        },
+        ...(options.allowFallback && options.onContinue
+          ? [{ label: 'Continue with WebGL', onClick: options.onContinue, primary: true }]
+          : []),
+      ],
+    };
 
-    if (!status) return null;
-
-    const actions = doc.createElement('div');
-    actions.className = 'active-toy-actions';
-
-    const back = doc.createElement('button');
-    back.type = 'button';
-    back.className = 'cta-button';
-    back.textContent = 'Back to Library';
-    back.addEventListener('click', () => options.onBack?.());
-    actions.appendChild(back);
-
-    if (options.allowFallback && options.onContinue) {
-      const continueButton = doc.createElement('button');
-      continueButton.type = 'button';
-      continueButton.className = 'cta-button primary';
-      continueButton.textContent = 'Continue with WebGL';
-      continueButton.addEventListener('click', () => options.onContinue?.());
-      actions.appendChild(continueButton);
-    }
-
-    status.querySelector('.active-toy-status__content')?.appendChild(actions);
+    const { status } = render({ clearContainer: true });
     return status;
   };
 
   const setRendererStatus = (status: RendererStatusState | null) => {
-    rendererStatus = status;
-    const container = findActiveToyContainer();
-    const doc = getDocument();
-    if (container && doc && (container.isConnected || doc.body.contains(container))) {
-      buildToyNav({
-        container,
-        doc,
-        toy: activeToyMeta,
-        onBack: backHandler,
-        rendererStatus,
-      });
-    }
+    state.rendererStatus = status;
+    render();
   };
 
   return {

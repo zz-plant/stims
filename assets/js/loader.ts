@@ -6,6 +6,7 @@ import { ensureWebGL } from './utils/webgl-check.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import { prewarmRendererCapabilities } from './core/services/render-service.ts';
 import { prewarmMicrophone, resetAudioPool } from './core/services/audio-service.ts';
+import { defaultToyLifecycle, type ToyLifecycle } from './core/toy-lifecycle.ts';
 
 type Toy = {
   slug: string;
@@ -17,7 +18,6 @@ type Toy = {
 };
 
 const TOY_QUERY_PARAM = 'toy';
-type ActiveToyCandidate = { dispose?: () => void } | (() => void);
 
 export function createLoader({
   manifestClient = createManifestClient(),
@@ -29,6 +29,7 @@ export function createLoader({
   prewarmRendererCapabilitiesFn = prewarmRendererCapabilities,
   prewarmMicrophoneFn = prewarmMicrophone,
   resetAudioPoolFn = resetAudioPool,
+  toyLifecycle = defaultToyLifecycle,
 }: {
   manifestClient?: ReturnType<typeof createManifestClient>;
   router?: ReturnType<typeof createRouter>;
@@ -39,10 +40,11 @@ export function createLoader({
   prewarmRendererCapabilitiesFn?: typeof prewarmRendererCapabilities;
   prewarmMicrophoneFn?: typeof prewarmMicrophone;
   resetAudioPoolFn?: typeof resetAudioPool;
+  toyLifecycle?: ToyLifecycle;
   } = {}) {
   let navigationInitialized = false;
-  let escapeHandler: ((event: KeyboardEvent) => void) | null = null;
-  let activeToy: { ref: ActiveToyCandidate; dispose?: () => void } | null = null;
+  const lifecycle = toyLifecycle ?? defaultToyLifecycle;
+  lifecycle.reset();
   const updateRendererStatus = (
     capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
     onRetry?: () => void
@@ -60,65 +62,12 @@ export function createLoader({
     );
   };
 
-  const getGlobalActiveToy = () =>
-    (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy;
-
-  const normalizeActiveToy = (
-    candidate: unknown
-  ): { ref: ActiveToyCandidate; dispose?: () => void } | null => {
-    if (!candidate) return null;
-
-    if (typeof candidate === 'function') {
-      return { ref: candidate, dispose: candidate };
-    }
-
-    if (typeof candidate === 'object') {
-      const dispose = (candidate as { dispose?: unknown }).dispose;
-      return {
-        ref: candidate as ActiveToyCandidate,
-        dispose: typeof dispose === 'function' ? dispose.bind(candidate) : undefined,
-      };
-    }
-
-    return null;
-  };
-
-  const registerActiveToy = (candidate?: unknown) => {
-    const source = candidate === null ? null : candidate ?? getGlobalActiveToy();
-    activeToy = normalizeActiveToy(source);
-
-    if (activeToy?.ref) {
-      (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy =
-        activeToy.ref;
-    } else {
-      delete (globalThis as typeof globalThis & { __activeWebToy?: ActiveToyCandidate }).__activeWebToy;
-    }
-
-    return activeToy;
-  };
-
   const disposeActiveToy = () => {
-    const current = activeToy ?? normalizeActiveToy(getGlobalActiveToy());
-
-    if (current?.dispose) {
-      try {
-        current.dispose();
-      } catch (error) {
-        console.error('Error disposing existing toy', error);
-      }
-    }
-
-    registerActiveToy(null);
+    lifecycle.disposeActiveToy();
     view?.clearActiveToyContainer?.();
   };
 
-  const removeEscapeHandler = () => {
-    const win = typeof window === 'undefined' ? null : window;
-    if (!win || !escapeHandler) return;
-
-    win.removeEventListener('keydown', escapeHandler);
-    escapeHandler = null;
-  };
+  const removeEscapeHandler = () => lifecycle.removeEscapeHandler();
 
   const backToLibrary = () => {
     removeEscapeHandler();
@@ -130,17 +79,7 @@ export function createLoader({
   };
 
   const registerEscapeHandler = () => {
-    const win = typeof window === 'undefined' ? null : window;
-    if (!win || escapeHandler) return;
-
-    escapeHandler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        backToLibrary();
-      }
-    };
-
-    win.addEventListener('keydown', escapeHandler);
+    lifecycle.attachEscapeHandler(backToLibrary);
   };
 
   const startModuleToy = async (
@@ -220,7 +159,7 @@ export function createLoader({
       if (starter) {
         try {
           const active = await starter({ container, slug: toy.slug });
-          registerActiveToy(active ?? getGlobalActiveToy());
+          lifecycle.adoptActiveToy(active ?? lifecycle.getActiveToy()?.ref);
         } catch (error) {
           console.error('Error starting toy module:', error);
           view.showImportError(toy, { moduleUrl, importError: error as Error, onBack: backToLibrary });
