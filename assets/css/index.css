@@ -262,6 +262,91 @@ header.hero {
   line-height: 1.5;
 }
 
+.readiness-panel {
+  margin-top: 0.4rem;
+  padding: 1.15rem 1.2rem;
+  border-radius: calc(var(--radius-lg) + 2px);
+  background: radial-gradient(circle at 18% 10%, rgba(109, 240, 255, 0.18), transparent 40%),
+    radial-gradient(circle at 82% 30%, rgba(255, 111, 227, 0.18), transparent 40%),
+    linear-gradient(145deg, rgba(109, 240, 255, 0.1), rgba(155, 123, 255, 0.1));
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+.readiness-header {
+  display: grid;
+  gap: 0.1rem;
+  margin-bottom: 0.65rem;
+}
+
+.readiness-title {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+  font-weight: 700;
+}
+
+.readiness-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.readiness-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.readiness-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.65rem 0.6rem;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.readiness-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+}
+
+.readiness-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(234, 245, 255, 0.6);
+  position: relative;
+  box-shadow: 0 0 0 4px rgba(234, 245, 255, 0.08);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.readiness-dot[data-status='ready'] {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+  box-shadow: 0 0 0 4px rgba(109, 240, 255, 0.2), 0 0 0 10px rgba(109, 240, 255, 0.08);
+}
+
+.readiness-dot[data-status='warn'] {
+  background: linear-gradient(135deg, #f5c768, #ff7b7b);
+  box-shadow: 0 0 0 4px rgba(245, 199, 104, 0.2), 0 0 0 10px rgba(255, 123, 123, 0.08);
+}
+
+.readiness-name {
+  letter-spacing: 0.01em;
+}
+
+.readiness-note {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
 .hero-visual {
   position: relative;
   display: grid;
