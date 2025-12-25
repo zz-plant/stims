@@ -14,6 +14,41 @@
     />
     <link rel="stylesheet" href="assets/css/base.css" />
     <link rel="stylesheet" href="assets/css/index.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://no.toil.fyi/#organization",
+            "name": "Stim Lab",
+            "url": "https://no.toil.fyi/",
+            "sameAs": [
+              "https://github.com/zz-plant/stims"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://no.toil.fyi/#website",
+            "url": "https://no.toil.fyi/",
+            "name": "Stim Webtoys Library",
+            "publisher": { "@id": "https://no.toil.fyi/#organization" },
+            "inLanguage": "en"
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://no.toil.fyi/#webpage",
+            "url": "https://no.toil.fyi/",
+            "name": "Stim Webtoys Library",
+            "headline": "Feel-first visuals that breathe with your audio.",
+            "description": "Explore audio, color, and motion without setup. Every stim opens fast, responds to mic and touch, and comes with sensible defaults that keep you in flow.",
+            "isPartOf": { "@id": "https://no.toil.fyi/#website" },
+            "publisher": { "@id": "https://no.toil.fyi/#organization" },
+            "inLanguage": "en"
+          }
+        ]
+      }
+    </script>
     <script>
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme === 'light') {
