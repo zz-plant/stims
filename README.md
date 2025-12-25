@@ -12,12 +12,21 @@ Use these entry points to find the right docs quickly:
 
 - [`docs/README.md`](./docs/README.md): overview of all project docs plus onboarding highlights.
 - [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md): day-to-day setup, tooling, scripts, and workflow expectations.
-- [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md) and [`docs/TOY_SCRIPT_INDEX.md`](./docs/TOY_SCRIPT_INDEX.md): how to build or modify toys, plus a map from toy slugs to their TypeScript entry points.
+- [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), [`docs/TOY_SCRIPT_INDEX.md`](./docs/TOY_SCRIPT_INDEX.md), and [`docs/toys.md`](./docs/toys.md): how to build or modify toys, toy script index, and per-toy notes.
 - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md): production build/preview steps, Cloudflare Pages/Workers notes, and static hosting tips.
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md): runtime composition, loaders, and diagrams for the core systems.
 - [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md): Model Context Protocol stdio server usage and available tools.
 
 If you add new scripts, toys, or deployment options, update the relevant doc above so the workflows stay discoverable.
+
+**When to update docs**
+
+| Change type | Docs to touch |
+| --- | --- |
+| New toy or renamed slug | `docs/TOY_DEVELOPMENT.md`, `docs/TOY_SCRIPT_INDEX.md`, `docs/toys.md` |
+| New script or workflow change | `docs/DEVELOPMENT.md` |
+| Hosting or CI change | `docs/DEPLOYMENT.md`, `docs/ARCHITECTURE.md` (if it alters runtime/data flow) |
+| MCP server updates | `docs/MCP_SERVER.md` |
 
 ## Quick Start
 
