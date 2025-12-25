@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createRouter } from '../assets/js/router.ts';
 import { createToyView } from '../assets/js/toy-view.ts';
+import { defaultToyLifecycle } from '../assets/js/core/toy-lifecycle.ts';
 
 const originalLocation = window.location;
 const originalHistory = window.history;
@@ -122,7 +123,7 @@ beforeEach(() => {
 afterEach(() => {
   mock.restore();
   document.body.innerHTML = '';
-  delete globalThis.__activeWebToy;
+  defaultToyLifecycle.reset();
   Object.defineProperty(window, 'location', {
     writable: true,
     configurable: true,
@@ -162,7 +163,7 @@ describe('loadToy', () => {
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
 
-    expect(globalThis.__activeWebToy).toBeUndefined();
+    expect(defaultToyLifecycle.getActiveToy()).toBeNull();
     expect(document.getElementById('toy-list')?.classList.contains('is-hidden')).toBe(false);
     expect(window.location.search).toBe('');
     expect(servicesMock.resetAudioPool).toHaveBeenCalled();
