@@ -16,6 +16,7 @@ import {
   type RendererInitConfig,
   type RendererInitResult,
 } from '../renderer-setup.ts';
+import { createSharedInitializer } from '../../utils/shared-initializer.ts';
 
 export type RendererHandle = {
   renderer: THREE.WebGLRenderer | WebGPURenderer;
@@ -34,7 +35,9 @@ type RendererPoolEntry = {
 
 const rendererPool: RendererPoolEntry[] = [];
 let activeQuality: QualityPreset = getActiveQualityPreset();
-let capabilitiesPromise: Promise<RendererCapabilities> | null = null;
+const rendererCapabilitiesInitializer = createSharedInitializer<RendererCapabilities>(
+  getRendererCapabilities,
+);
 
 subscribeToQualityPreset((preset) => {
   activeQuality = preset;
@@ -154,10 +157,7 @@ export async function requestRenderer({
 }
 
 export async function prewarmRendererCapabilities() {
-  if (!capabilitiesPromise) {
-    capabilitiesPromise = getRendererCapabilities();
-  }
-  return capabilitiesPromise;
+  return rendererCapabilitiesInitializer.run();
 }
 
 export function resetRendererPool({ dispose = false }: { dispose?: boolean } = {}) {
@@ -174,5 +174,5 @@ export function resetRendererPool({ dispose = false }: { dispose?: boolean } = {
   if (dispose) {
     rendererPool.splice(0, rendererPool.length);
   }
-  capabilitiesPromise = null;
+  rendererCapabilitiesInitializer.reset();
 }
