@@ -37,5 +37,5 @@ If you add new tooling or patterns, update these docs so the next contributor ha
 
 - Add or update a link here whenever you create a new guide under `docs/` so contributors can discover it.
 - Cross-link new scripts or workflows from the relevant guide (for example, record new npm/bun scripts in `DEVELOPMENT.md` and toy-scaffolding changes in `TOY_DEVELOPMENT.md`).
-- Keep toy-related documentation synchronized: update `TOY_SCRIPT_INDEX.md` and `toys.md` when adding, renaming, or removing a toy entry point.
+- Keep toy-related documentation synchronized: update `TOY_DEVELOPMENT.md`, `TOY_SCRIPT_INDEX.md`, and `toys.md` when adding, renaming, or removing a toy entry point.
 - Before shipping a PR, skim the docs above for stale script names, flags, or file paths introduced by your change.
