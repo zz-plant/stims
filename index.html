@@ -106,6 +106,36 @@
                 <p class="signal-value">Keyboard, touch, and reduced-motion aware so focus stays on the sensation, not the setup.</p>
               </div>
             </div>
+            <div class="readiness-panel" role="status" aria-live="polite">
+              <div class="readiness-header">
+                <p class="eyebrow">Interaction readiness</p>
+                <p class="readiness-title">Quick pulse before you launch</p>
+                <p class="readiness-subtitle">We check capabilities without requesting permission so you know what to expect.</p>
+              </div>
+              <ul class="readiness-list">
+                <li class="readiness-item">
+                  <div class="readiness-label">
+                    <span class="readiness-dot" data-status-dot="mic" aria-hidden="true"></span>
+                    <span class="readiness-name">Microphone input</span>
+                  </div>
+                  <p class="readiness-note" data-status-note="mic">Detecting audio support…</p>
+                </li>
+                <li class="readiness-item">
+                  <div class="readiness-label">
+                    <span class="readiness-dot" data-status-dot="motion" aria-hidden="true"></span>
+                    <span class="readiness-name">Motion controls</span>
+                  </div>
+                  <p class="readiness-note" data-status-note="motion">Checking for device motion…</p>
+                </li>
+                <li class="readiness-item">
+                  <div class="readiness-label">
+                    <span class="readiness-dot" data-status-dot="reduced" aria-hidden="true"></span>
+                    <span class="readiness-name">Reduced motion preference</span>
+                  </div>
+                  <p class="readiness-note" data-status-note="reduced">Reading your animation comfort settings…</p>
+                </li>
+              </ul>
+            </div>
             <div class="cta-row">
               <a
                 href="toy.html?toy=holy"
@@ -449,6 +479,76 @@
           .catch((error) => {
             console.error('Unable to render library fallback', error);
           });
+
+        const readinessDots = {
+          mic: document.querySelector('[data-status-dot="mic"]'),
+          motion: document.querySelector('[data-status-dot="motion"]'),
+          reduced: document.querySelector('[data-status-dot="reduced"]'),
+        };
+
+        const readinessNotes = {
+          mic: document.querySelector('[data-status-note="mic"]'),
+          motion: document.querySelector('[data-status-note="motion"]'),
+          reduced: document.querySelector('[data-status-note="reduced"]'),
+        };
+
+        const setReadinessState = (key, state, message) => {
+          const dot = readinessDots[key];
+          const note = readinessNotes[key];
+          if (dot instanceof HTMLElement) {
+            dot.dataset.status = state;
+          }
+          if (note instanceof HTMLElement) {
+            note.textContent = message;
+          }
+        };
+
+        const hasMediaDevices = () => !!navigator.mediaDevices?.getUserMedia;
+        const hasMotionSensors = () =>
+          'DeviceMotionEvent' in window || 'LinearAccelerationSensor' in window;
+
+        const updateMicStatus = () => {
+          if (hasMediaDevices()) {
+            setReadinessState('mic', 'ready', 'Live audio available — you can grant mic access when a toy asks.');
+          } else {
+            setReadinessState(
+              'mic',
+              'warn',
+              'No microphone detected. Use demo audio or plug in a mic before starting.'
+            );
+          }
+        };
+
+        const updateMotionStatus = () => {
+          if (hasMotionSensors()) {
+            setReadinessState('motion', 'ready', 'Motion/tilt supported — toys will adapt if permission is granted.');
+          } else {
+            setReadinessState(
+              'motion',
+              'warn',
+              'Motion controls unavailable or locked down. Try on mobile or enable motion access.'
+            );
+          }
+        };
+
+        const updateReducedMotionStatus = () => {
+          const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+          const applyPreference = (query) => {
+            if (query.matches) {
+              setReadinessState('reduced', 'ready', 'Animations will soften because you prefer reduced motion.');
+            } else {
+              setReadinessState('reduced', 'ready', 'Full motion is enabled. Toggle reduced motion in your OS to soften effects.');
+            }
+          };
+
+          applyPreference(mediaQuery);
+          mediaQuery.addEventListener('change', applyPreference);
+        };
+
+        updateMicStatus();
+        updateMotionStatus();
+        updateReducedMotionStatus();
       });
     </script>
     <script type="module" src="assets/js/main.js"></script>
