@@ -7,6 +7,7 @@ This folder contains resources for contributors who are building or maintaining 
 - [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md): map from each toy/visualizer to the JS/TS entry points it uses.
 - [`stim-assessment.md`](./stim-assessment.md): Assessment findings and remediation plans.
 - [`toys.md`](./toys.md): per-toy notes, presets, and other focused references.
+- [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md): page-level specifications for the library landing and toy shell, including data, layout, and accessibility expectations.
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md): end-to-end app architecture, loader flow, and core runtime composition with diagrams.
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md): build, preview, static hosting layout, and Cloudflare Worker deployment steps.
 - [`MCP_SERVER.md`](./MCP_SERVER.md): how to launch and use the MCP stdio server (`scripts/mcp-server.ts`) and its registered tools.
