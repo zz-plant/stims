@@ -114,6 +114,50 @@ describe('setupMicrophonePermissionFlow', () => {
     expect(startButton.textContent).toContain('Retry microphone');
   });
 
+  test('restores the original start button label and aria-label after a retry', async () => {
+    const { startButton, fallbackButton, statusElement } = buildDom();
+
+    startButton.textContent = 'Enable mic';
+    startButton.setAttribute('aria-label', 'Enable microphone visuals');
+
+    const permissionQuery = mock()
+      .mockResolvedValueOnce({ state: 'prompt' })
+      .mockResolvedValueOnce({ state: 'granted' });
+
+    Object.defineProperty(navigator, 'permissions', {
+      configurable: true,
+      value: { query: permissionQuery },
+    });
+
+    const requestMicrophone = mock()
+      .mockRejectedValueOnce(new AudioAccessError('timeout', 'timed out'))
+      .mockResolvedValueOnce(undefined);
+
+    const flow = setupMicrophonePermissionFlow({
+      startButton,
+      fallbackButton,
+      statusElement,
+      requestMicrophone,
+    });
+
+    await expect(flow.startMicrophoneRequest()).rejects.toBeInstanceOf(
+      AudioAccessError
+    );
+
+    expect(startButton.dataset.state).toBe('retry');
+    expect(startButton.getAttribute('aria-label')).toContain('Retry microphone');
+    expect(fallbackButton.hidden).toBe(false);
+
+    await flow.startMicrophoneRequest();
+
+    expect(requestMicrophone).toHaveBeenCalledTimes(2);
+    expect(statusElement.dataset.variant).toBe('success');
+    expect(startButton.dataset.state).toBeUndefined();
+    expect(startButton.textContent).toBe('Enable mic');
+    expect(startButton.getAttribute('aria-label')).toBe('Enable microphone visuals');
+    expect(fallbackButton.hidden).toBe(true);
+  });
+
   test('removes event listeners when disposed before reinitializing', async () => {
     const { startButton, fallbackButton, statusElement } = buildDom();
 
