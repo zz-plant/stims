@@ -235,11 +235,16 @@
                 id="toy-search"
                 type="search"
                 name="toy-search"
-                placeholder="Search by name or vibe (e.g., aurora, fractal, WebGPU)"
+                placeholder="Search by name, tags, moods, or capabilities (try: calm, motion, demo audio)"
                 autocomplete="off"
                 inputmode="search"
               />
-              <span aria-hidden="true" class="search-field__hint">⌘/Ctrl + F to search</span>
+              <span aria-hidden="true" class="search-field__hint">Search name, tags, mood, mic/motion/demo audio</span>
+            </div>
+            <div class="search-meta">
+              <p class="search-meta__results" data-search-results role="status" aria-live="polite">
+                Loading library…
+              </p>
             </div>
           </div>
         </div>
@@ -287,8 +292,51 @@
         const list = document.getElementById('toy-list');
         if (!list || list.childElementCount > 0) return;
 
-        const renderCards = (toys) => {
+        const search = document.getElementById('toy-search');
+        const searchResults = document.querySelector('[data-search-results]');
+        let cachedQuery = '';
+        let allToys = [];
+
+        const updateResultsMeta = (count, total, query = '') => {
+          if (!(searchResults instanceof HTMLElement)) return;
+          const countLabel = `${count} ${count === 1 ? 'match' : 'matches'}`;
+          const totalLabel = `${total} ${total === 1 ? 'stim' : 'stims'}`;
+          searchResults.textContent = query
+            ? `${countLabel} for “${query}”`
+            : `Showing all ${totalLabel}`;
+        };
+
+        const renderEmptyState = () => {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          const message = document.createElement('p');
+          message.className = 'empty-state__message';
+          message.textContent = 'No stims match your search.';
+
+          const reset = document.createElement('button');
+          reset.type = 'button';
+          reset.className = 'cta-button ghost';
+          reset.textContent = 'Clear search';
+          reset.addEventListener('click', () => {
+            if (search instanceof HTMLInputElement) {
+              search.value = '';
+              cachedQuery = '';
+            }
+            renderCards(allToys, '');
+          });
+
+          empty.append(message, reset);
+          list.appendChild(empty);
+        };
+
+        const renderCards = (toys, query = '') => {
           list.innerHTML = '';
+          updateResultsMeta(toys.length, allToys.length, query || cachedQuery);
+
+          if (toys.length === 0) {
+            renderEmptyState();
+            return;
+          }
 
           toys.forEach((toy) => {
             const href =
@@ -309,16 +357,45 @@
 
             card.append(title, desc);
 
+            const badgeRow = document.createElement('div');
+            badgeRow.className = 'webtoy-card-meta';
+
+            const badges = [];
+
             if (toy.requiresWebGPU) {
-              const badgeRow = document.createElement('div');
-              badgeRow.className = 'webtoy-card-meta';
+              badges.push({ label: 'WebGPU', title: 'Requires WebGPU to run.' });
+            }
 
-              const badge = document.createElement('span');
-              badge.className = 'capability-badge';
-              badge.textContent = 'WebGPU';
-              badge.title = 'Requires WebGPU to run.';
+            if (toy.capabilities?.microphone) {
+              badges.push({
+                label: 'Microphone',
+                title: 'Uses live microphone input for audio.',
+              });
+            }
 
-              badgeRow.appendChild(badge);
+            if (toy.capabilities?.demoAudio) {
+              badges.push({
+                label: 'Demo audio',
+                title: 'Includes a demo track if you skip the mic.',
+              });
+            }
+
+            if (toy.capabilities?.motion) {
+              badges.push({
+                label: 'Motion',
+                title: 'Responds to device motion or tilt.',
+              });
+            }
+
+            if (badges.length > 0) {
+              badges.forEach((badgeData) => {
+                const badge = document.createElement('span');
+                badge.className = 'capability-badge';
+                badge.textContent = badgeData.label;
+                badge.title = badgeData.title;
+                badgeRow.appendChild(badge);
+              });
+
               card.appendChild(badgeRow);
             }
 
@@ -331,23 +408,41 @@
           .then((toys) => {
             if (!toys || list.childElementCount > 0) return;
 
-            const search = document.getElementById('toy-search');
-            renderCards(toys);
+            allToys = toys;
+            renderCards(allToys);
 
             if (search instanceof HTMLInputElement) {
               search.addEventListener('input', () => {
                 const query = search.value.toLowerCase().trim();
+                cachedQuery = query;
+
                 if (!query) {
-                  renderCards(toys);
+                  renderCards(allToys);
                   return;
                 }
 
-                const filtered = toys.filter(
-                  (toy) =>
-                    toy.title?.toLowerCase().includes(query) ||
-                    toy.description?.toLowerCase().includes(query),
-                );
-                renderCards(filtered);
+                const filtered = allToys.filter((toy) => {
+                  const capabilityTerms = Object.entries(toy.capabilities || {})
+                    .filter(([, enabled]) => !!enabled)
+                    .map(([key]) => key.toLowerCase());
+
+                  const haystack = [
+                    toy.title,
+                    toy.slug,
+                    toy.description,
+                    ...(toy.tags ?? []),
+                    ...(toy.moods ?? []),
+                    ...capabilityTerms,
+                    toy.requiresWebGPU ? 'webgpu' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+
+                  return haystack.includes(query);
+                });
+
+                renderCards(filtered, query);
               });
             }
           })

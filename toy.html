@@ -11,13 +11,22 @@
     <a href="index.html" class="home-link">Back to Library</a>
     <div class="control-panel">
       <div class="control-panel__heading">Audio controls</div>
-      <p class="control-panel__description">Start microphone input to play the toy.</p>
+      <p class="control-panel__description">
+        Choose how to feed audio: use your microphone for live input, or load our demo track to preview instantly.
+      </p>
       <div class="control-panel__row">
         <div class="control-panel__text">
           <span class="control-panel__label">Microphone</span>
-          <small>Enable audio to begin the experience.</small>
+          <small>Uses your device mic for the most responsive visuals.</small>
         </div>
-        <button id="start-audio-btn" class="cta-button primary">Start audio</button>
+        <button id="start-audio-btn" class="cta-button primary">Use microphone</button>
+      </div>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Demo audio</span>
+          <small>No mic needed—start with a built-in track.</small>
+        </div>
+        <button id="use-demo-audio" class="cta-button">Use demo audio</button>
       </div>
       <div
         id="audio-status"
@@ -25,11 +34,6 @@
         role="status"
         hidden
       ></div>
-      <div class="control-panel__actions">
-        <button id="use-demo-audio" class="cta-button" hidden>
-          Load demo audio
-        </button>
-      </div>
     </div>
     <script type="module" src="assets/js/toyMain.ts"></script>
     <script type="module">
@@ -92,11 +96,13 @@
         fallbackButton,
         statusElement,
         requestMicrophone: () => {
+          startLoaderIfNeeded();
           const starter = getStarter();
           if (!starter) throw new Error('Microphone starter unavailable.');
           return starter(false);
         },
         requestSampleAudio: () => {
+          startLoaderIfNeeded();
           const starter = getStarter(true) ?? getStarter();
           if (!starter) throw new Error('Demo audio unavailable.');
           return starter(true);
