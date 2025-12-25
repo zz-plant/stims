@@ -48,7 +48,10 @@ type ToyMetadata = {
 
 const serverInfo = { name: 'stim-webtoys-mcp', version: '1.0.0' } as const;
 
-function createMcpServer({ instructions = defaultInstructions, jsonSchemaValidator }: CreateServerOptions = {}) {
+function createMcpServer({
+  instructions = defaultInstructions,
+  jsonSchemaValidator,
+}: CreateServerOptions = {}) {
   const server = new McpServer(serverInfo, {
     capabilities: { tools: {} },
     instructions,
@@ -72,7 +75,7 @@ function registerTools(server: McpServer) {
       const pointers = await buildDocPointers();
 
       return asTextResponse(pointers || 'README content was not available.');
-    },
+    }
   );
 
   server.registerTool(
@@ -82,11 +85,17 @@ function registerTools(server: McpServer) {
         'Return structured toy metadata (including controls and module info) from assets/js/toys-data.js with optional slug or WebGPU filters.',
       inputSchema: z
         .object({
-          slug: z.string().trim().optional().describe('Limit results to a specific toy slug.'),
+          slug: z
+            .string()
+            .trim()
+            .optional()
+            .describe('Limit results to a specific toy slug.'),
           requiresWebGPU: z
             .boolean()
             .optional()
-            .describe('Filter by WebGPU requirement (true = only WebGPU toys).'),
+            .describe(
+              'Filter by WebGPU requirement (true = only WebGPU toys).'
+            ),
         })
         .strict(),
     },
@@ -95,7 +104,11 @@ function registerTools(server: McpServer) {
 
       const filtered = toys.filter((toy) => {
         if (slug && toy.slug !== slug) return false;
-        if (typeof requiresWebGPU === 'boolean' && toy.requiresWebGPU !== requiresWebGPU) return false;
+        if (
+          typeof requiresWebGPU === 'boolean' &&
+          toy.requiresWebGPU !== requiresWebGPU
+        )
+          return false;
         return true;
       });
 
@@ -111,7 +124,7 @@ function registerTools(server: McpServer) {
           },
         ],
       } as const;
-    },
+    }
   );
 
   server.registerTool(
@@ -122,13 +135,22 @@ function registerTools(server: McpServer) {
       inputSchema: z
         .object({
           file: z
-            .enum(Object.keys(markdownSources) as [MarkdownSourceKey, ...MarkdownSourceKey[]])
-            .describe('Markdown file to read (e.g., README.md or docs/MCP_SERVER.md).'),
+            .enum(
+              Object.keys(markdownSources) as [
+                MarkdownSourceKey,
+                ...MarkdownSourceKey[],
+              ]
+            )
+            .describe(
+              'Markdown file to read (e.g., README.md or docs/MCP_SERVER.md).'
+            ),
           heading: z
             .string()
             .trim()
             .optional()
-            .describe('Optional heading text to narrow the response to a single section.'),
+            .describe(
+              'Optional heading text to narrow the response to a single section.'
+            ),
         })
         .strict(),
     },
@@ -136,13 +158,14 @@ function registerTools(server: McpServer) {
       const result = await getDocSectionContent(file, heading);
 
       return asTextResponse(result.ok ? result.content : result.message);
-    },
+    }
   );
 
   server.registerTool(
     'describe_loader',
     {
-      description: 'Summarize how toy loading and error handling works based on assets/js/loader.ts.',
+      description:
+        'Summarize how toy loading and error handling works based on assets/js/loader.ts.',
       inputSchema: z.object({}).strict(),
     },
     async () => {
@@ -156,13 +179,14 @@ function registerTools(server: McpServer) {
       ];
 
       return asTextResponse(loaderDetails.join('\n'));
-    },
+    }
   );
 
   server.registerTool(
     'dev_commands',
     {
-      description: 'Return installation and development commands from README.md.',
+      description:
+        'Return installation and development commands from README.md.',
       inputSchema: z
         .object({
           scope: z
@@ -176,12 +200,18 @@ function registerTools(server: McpServer) {
       const readmeContent = await loadReadme();
       const quickStart = extractSection(readmeContent, 'Quick Start');
       const localSetup = extractSection(readmeContent, 'Local Setup');
-      const helpfulScripts = extractSection(readmeContent, 'Helpful Scripts (npm or Bun)');
+      const helpfulScripts = extractSection(
+        readmeContent,
+        'Helpful Scripts (npm or Bun)'
+      );
       const tests = extractSection(readmeContent, 'Running Tests');
       const linting = extractSection(readmeContent, 'Linting and Formatting');
 
       const sections: Record<string, string | null> = {
-        setup: quickStart && localSetup ? `${quickStart}\n\n${localSetup}` : quickStart ?? localSetup,
+        setup:
+          quickStart && localSetup
+            ? `${quickStart}\n\n${localSetup}`
+            : (quickStart ?? localSetup),
         dev: helpfulScripts,
         build: helpfulScripts,
         test: tests,
@@ -190,10 +220,14 @@ function registerTools(server: McpServer) {
 
       const text = scope
         ? sections[scope]
-        : [quickStart, localSetup, helpfulScripts, tests, linting].filter(Boolean).join('\n\n');
+        : [quickStart, localSetup, helpfulScripts, tests, linting]
+            .filter(Boolean)
+            .join('\n\n');
 
-      return asTextResponse(text || 'No development guidance was found in README.md.');
-    },
+      return asTextResponse(
+        text || 'No development guidance was found in README.md.'
+      );
+    }
   );
 }
 
@@ -235,13 +269,23 @@ function formatPointer(title: string, excerpt: SectionExcerpt) {
   return `${title} (${range})\n${excerpt.content.join('\n')}`;
 }
 
-function extractSectionWithRange(lines: string[], heading: string): SectionExcerpt | null {
-  const headingIndex = lines.findIndex((line) => line.trim() === `## ${heading}`);
+function extractSectionWithRange(
+  lines: string[],
+  heading: string
+): SectionExcerpt | null {
+  const headingIndex = lines.findIndex(
+    (line) => line.trim() === `## ${heading}`
+  );
 
   if (headingIndex === -1) return null;
 
-  const nextHeadingOffset = lines.slice(headingIndex + 1).findIndex((line) => line.trim().startsWith('## '));
-  const nextHeadingIndex = nextHeadingOffset === -1 ? lines.length : headingIndex + 1 + nextHeadingOffset;
+  const nextHeadingOffset = lines
+    .slice(headingIndex + 1)
+    .findIndex((line) => line.trim().startsWith('## '));
+  const nextHeadingIndex =
+    nextHeadingOffset === -1
+      ? lines.length
+      : headingIndex + 1 + nextHeadingOffset;
   const endIndex = Math.max(headingIndex, nextHeadingIndex - 1);
 
   return {
@@ -252,7 +296,9 @@ function extractSectionWithRange(lines: string[], heading: string): SectionExcer
 }
 
 function extractRuntimeRange(lines: string[]): SectionExcerpt | null {
-  const startIndex = lines.findIndex((line) => line.includes('Choose your runtime'));
+  const startIndex = lines.findIndex((line) =>
+    line.includes('Choose your runtime')
+  );
 
   if (startIndex === -1) return null;
 
@@ -304,14 +350,22 @@ function normalizeToys(data: unknown): ToyMetadata[] {
 
       const slug = typeof entry.slug === 'string' ? entry.slug : null;
       const title = typeof entry.title === 'string' ? entry.title : '';
-      const description = typeof entry.description === 'string' ? entry.description : '';
-      const requiresWebGPU = typeof entry.requiresWebGPU === 'boolean' ? entry.requiresWebGPU : false;
+      const description =
+        typeof entry.description === 'string' ? entry.description : '';
+      const requiresWebGPU =
+        typeof entry.requiresWebGPU === 'boolean'
+          ? entry.requiresWebGPU
+          : false;
       const module = typeof entry.module === 'string' ? entry.module : null;
       const type = typeof entry.type === 'string' ? entry.type : null;
       const allowWebGLFallback =
-        typeof entry.allowWebGLFallback === 'boolean' ? entry.allowWebGLFallback : false;
+        typeof entry.allowWebGLFallback === 'boolean'
+          ? entry.allowWebGLFallback
+          : false;
       const controls = Array.isArray(entry.controls)
-        ? entry.controls.filter((control): control is string => typeof control === 'string')
+        ? entry.controls.filter(
+            (control): control is string => typeof control === 'string'
+          )
         : [];
 
       if (!slug) return null;
@@ -332,7 +386,10 @@ function normalizeToys(data: unknown): ToyMetadata[] {
 }
 
 function extractMarkdownSection(markdown: string, heading: string) {
-  const pattern = new RegExp(`^(#{1,6}\\s+${escapeForRegex(heading)})\\s*$`, 'm');
+  const pattern = new RegExp(
+    `^(#{1,6}\\s+${escapeForRegex(heading)})\\s*$`,
+    'm'
+  );
   const match = pattern.exec(markdown);
 
   if (!match) return null;
@@ -358,9 +415,15 @@ async function loadMarkdownFile(file: MarkdownSourceKey) {
   return resolved;
 }
 
-async function getDocSectionContent(file: MarkdownSourceKey, heading?: string | null): Promise<DocSectionResult> {
+async function getDocSectionContent(
+  file: MarkdownSourceKey,
+  heading?: string | null
+): Promise<DocSectionResult> {
   if (!markdownSources[file]) {
-    return { ok: false, message: `The file "${file}" is not available for reading.` };
+    return {
+      ok: false,
+      message: `The file "${file}" is not available for reading.`,
+    };
   }
 
   try {
@@ -373,7 +436,10 @@ async function getDocSectionContent(file: MarkdownSourceKey, heading?: string | 
     const section = extractMarkdownSection(markdown, heading);
 
     if (!section) {
-      return { ok: false, message: `Heading "${heading}" was not found in ${file}.` };
+      return {
+        ok: false,
+        message: `Heading "${heading}" was not found in ${file}.`,
+      };
     }
 
     const text = `${section.heading}\n${section.content}`.trim();

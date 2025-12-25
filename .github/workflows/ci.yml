@@ -7,7 +7,7 @@ on:
 
 jobs:
   quality:
-    name: "${{ matrix.runtime }} / checks"
+    name: '${{ matrix.runtime }} / checks'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

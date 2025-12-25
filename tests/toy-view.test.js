@@ -14,13 +14,20 @@ describe('toy view helpers', () => {
     const view = createToyView();
     const onBack = mock();
 
-    const container = view.showActiveToyView(onBack, { slug: 'demo', title: 'Demo Toy' });
+    const container = view.showActiveToyView(onBack, {
+      slug: 'demo',
+      title: 'Demo Toy',
+    });
 
     expect(container?.classList.contains('is-hidden')).toBe(false);
     const backControl = container?.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
-    expect(container?.querySelectorAll('[data-back-to-library]')).toHaveLength(1);
-    expect(container?.querySelector('.active-toy-nav__title')?.textContent).toBe('Demo Toy');
+    expect(container?.querySelectorAll('[data-back-to-library]')).toHaveLength(
+      1
+    );
+    expect(
+      container?.querySelector('.active-toy-nav__title')?.textContent
+    ).toBe('Demo Toy');
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
     expect(onBack).toHaveBeenCalledTimes(1);
@@ -56,6 +63,8 @@ describe('toy view helpers', () => {
     );
 
     expect(status?.textContent).toContain('could not be compiled');
-    expect(status?.querySelector('.active-toy-status__actions button')).not.toBeNull();
+    expect(
+      status?.querySelector('.active-toy-status__actions button')
+    ).not.toBeNull();
   });
 });

@@ -39,7 +39,10 @@ describe('normalizeToys', () => {
 
 describe('getDocSectionContent', () => {
   test('returns a specific heading section when present', async () => {
-    const result = await getDocSectionContent('docs/MCP_SERVER.md', 'Registered tools');
+    const result = await getDocSectionContent(
+      'docs/MCP_SERVER.md',
+      'Registered tools'
+    );
 
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -49,7 +52,10 @@ describe('getDocSectionContent', () => {
   });
 
   test('returns a friendly error when a heading is missing', async () => {
-    const result = await getDocSectionContent('docs/MCP_SERVER.md', 'This heading does not exist');
+    const result = await getDocSectionContent(
+      'docs/MCP_SERVER.md',
+      'This heading does not exist'
+    );
 
     expect(result.ok).toBe(false);
     if (!result.ok) {

@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-import { requestRenderer, resetRendererPool } from '../assets/js/core/services/render-service.ts';
-import { acquireAudioHandle, resetAudioPool } from '../assets/js/core/services/audio-service.ts';
+import {
+  requestRenderer,
+  resetRendererPool,
+} from '../assets/js/core/services/render-service.ts';
+import {
+  acquireAudioHandle,
+  resetAudioPool,
+} from '../assets/js/core/services/audio-service.ts';
 
 describe('render-service pooling', () => {
   const fakeRenderer = {
@@ -47,7 +53,8 @@ describe('audio-service pooling', () => {
 
   afterEach(async () => {
     trackStop.mockReset();
-    delete (globalThis.navigator as { mediaDevices?: MediaDevices }).mediaDevices;
+    delete (globalThis.navigator as { mediaDevices?: MediaDevices })
+      .mediaDevices;
     await resetAudioPool({ stopStreams: true });
   });
 
@@ -139,7 +146,10 @@ describe('audio-service pooling', () => {
       cleanup: () => {},
     }));
 
-    const handle = await acquireAudioHandle({ initAudioImpl, teardownOnRelease: true });
+    const handle = await acquireAudioHandle({
+      initAudioImpl,
+      teardownOnRelease: true,
+    });
     handle.release();
 
     expect(trackStop).toHaveBeenCalledTimes(1);

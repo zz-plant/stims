@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -40,7 +40,9 @@
         padding: 10px 16px;
         font-size: 16px;
         cursor: pointer;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
       }
       .control-panel button:hover:enabled {
@@ -80,7 +82,8 @@
         Start / Retry Audio
       </button>
       <div class="caption" id="mic-caption">
-        Allow microphone access to animate the spectrograph; the hues pulse harder when the pattern recognizer hears repeating motifs.
+        Allow microphone access to animate the spectrograph; the hues pulse
+        harder when the pattern recognizer hears repeating motifs.
       </div>
     </div>
     <div id="error-message" style="display: none"></div>
