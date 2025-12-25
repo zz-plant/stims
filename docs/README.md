@@ -13,6 +13,13 @@ This folder contains resources for contributors who are building or maintaining 
 
 If you add new tooling or patterns, update these docs so the next contributor has a reliable starting point.
 
+### How to add a new guide
+
+1. Create the Markdown file under `docs/` with a clear title and a short purpose statement in the first paragraph.
+2. Add a bullet link in this README under the list above so others can find it.
+3. Cross-link the guide from the relevant primary doc (for example, reference new build steps from `DEVELOPMENT.md`).
+4. If the guide introduces new scripts, toy entry points, or deployment steps, update the checklists and indexes they depend on.
+
 ## Onboarding highlights
 
 - Use **Bun 1.2+** for installs and scripts (Node 22 is available as a fallback). Run `bun install` in a fresh clone to populate `bun.lock`-aligned dependencies.
@@ -30,4 +37,5 @@ If you add new tooling or patterns, update these docs so the next contributor ha
 
 - Add or update a link here whenever you create a new guide under `docs/` so contributors can discover it.
 - Cross-link new scripts or workflows from the relevant guide (for example, record new npm/bun scripts in `DEVELOPMENT.md` and toy-scaffolding changes in `TOY_DEVELOPMENT.md`).
-- Keep toy-related documentation synchronized: update `TOY_SCRIPT_INDEX.md` and `toys.md` when adding, renaming, or removing a toy entry point.
+- Keep toy-related documentation synchronized: update `TOY_DEVELOPMENT.md`, `TOY_SCRIPT_INDEX.md`, and `toys.md` when adding, renaming, or removing a toy entry point.
+- Before shipping a PR, skim the docs above for stale script names, flags, or file paths introduced by your change.
