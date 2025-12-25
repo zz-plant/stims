@@ -52,10 +52,12 @@ All tools are registered on the `stim-webtoys-mcp` server name and use zod-based
 
 ### `wrangler.toml` example
 
+The Worker uses the repository’s pinned compatibility date (`2024-10-20`) to keep WebSocket support consistent with `wrangler.toml` and the deployment snippets in `docs/DEPLOYMENT.md`.
+
 ```toml
 name = "stim-webtoys-mcp"
 main = "scripts/mcp-worker.ts"
-compatibility_date = "2025-02-20"
+compatibility_date = "2024-10-20"
 workers_dev = true
 compatibility_flags = ["nodejs_compat"]
 ```
