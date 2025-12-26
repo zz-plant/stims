@@ -1213,9 +1213,19 @@ const iconRenderers = {
 function setupDarkModeToggle(themeToggleId = 'theme-toggle') {
   const btn = document.getElementById(themeToggleId);
   if (!btn) return;
+  const label = btn.querySelector('[data-theme-label]');
+  const icon = btn.querySelector('.theme-toggle__icon');
   let dark = localStorage.getItem('theme') !== 'light';
   const updateButtonState = () => {
-    btn.textContent = dark ? 'Light Mode' : 'Dark Mode';
+    const labelText = dark ? 'Light mode' : 'Dark mode';
+    if (label) {
+      label.textContent = labelText;
+    } else {
+      btn.textContent = labelText;
+    }
+    if (icon) {
+      icon.textContent = dark ? '☀️' : '🌙';
+    }
     btn.setAttribute('aria-pressed', String(dark));
     btn.setAttribute(
       'aria-label',
@@ -1254,6 +1264,113 @@ export function createLibraryView({
 } = {}) {
   let allToys = toys;
   let iconInstance = 0;
+  let originalOrder = new Map();
+  let searchQuery = '';
+  let sortBy = 'featured';
+  let resultsMeta;
+  const activeFilters = new Set();
+
+  const ensureMetaNode = () => {
+    if (!resultsMeta) {
+      resultsMeta = document.querySelector('[data-search-results]');
+    }
+    return resultsMeta;
+  };
+
+  const getOriginalIndex = (toy) => originalOrder.get(toy.slug) ?? 0;
+
+  const updateResultsMeta = (visibleCount) => {
+    const meta = ensureMetaNode();
+    if (!meta) return;
+    const total = allToys.length;
+    const hasFilters = searchQuery.trim() || activeFilters.size > 0;
+    const descriptor = hasFilters ? 'matching stims' : 'total stims';
+    meta.textContent = `${visibleCount} ${descriptor} • ${total} in library`;
+  };
+
+  const getHaystack = (toy) => {
+    const capabilityTerms = Object.entries(toy.capabilities || {})
+      .filter(([, enabled]) => Boolean(enabled))
+      .map(([key]) => key.toLowerCase());
+
+    return [
+      toy.title,
+      toy.slug,
+      toy.description,
+      ...(toy.tags ?? []),
+      ...(toy.moods ?? []),
+      ...capabilityTerms,
+      toy.requiresWebGPU ? 'webgpu' : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+  };
+
+  const capabilityScore = (toy) =>
+    (toy.requiresWebGPU ? 2 : 0) +
+    Number(toy.capabilities?.microphone) +
+    Number(toy.capabilities?.demoAudio) +
+    Number(toy.capabilities?.motion);
+
+  const sortList = (list) => {
+    const sorted = [...list];
+    switch (sortBy) {
+      case 'newest':
+        return sorted.sort((a, b) => getOriginalIndex(b) - getOriginalIndex(a));
+      case 'az':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      case 'immersive':
+        return sorted.sort(
+          (a, b) =>
+            capabilityScore(b) - capabilityScore(a) ||
+            getOriginalIndex(a) - getOriginalIndex(b)
+        );
+      default:
+        return sorted.sort((a, b) => getOriginalIndex(a) - getOriginalIndex(b));
+    }
+  };
+
+  const matchesFilter = (toy, token) => {
+    const [type, value] = token.split(':');
+    if (!type || !value) return true;
+
+    switch (type) {
+      case 'mood':
+        return (toy.moods ?? []).some(
+          (mood) => mood.toLowerCase() === value.toLowerCase()
+        );
+      case 'capability':
+        return Boolean(toy.capabilities?.[value]);
+      case 'feature':
+        return value === 'webgpu' ? Boolean(toy.requiresWebGPU) : true;
+      default:
+        return true;
+    }
+  };
+
+  const applyFilters = () => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const filtered = allToys.filter((toy) => {
+      const matchesQuery =
+        !normalizedQuery || getHaystack(toy).includes(normalizedQuery);
+      const matchesChips =
+        activeFilters.size === 0 ||
+        Array.from(activeFilters).every((token) => matchesFilter(toy, token));
+      return matchesQuery && matchesChips;
+    });
+
+    const sorted = sortList(filtered);
+    updateResultsMeta(sorted.length);
+    return sorted;
+  };
+
+  const setToys = (nextToys = []) => {
+    allToys = nextToys;
+    originalOrder = new Map(
+      nextToys.map((toy, index) => [toy.slug ?? `toy-${index}`, index])
+    );
+  };
 
   const openToy = (toy) => {
     if (toy.type === 'module' && typeof loadToy === 'function') {
@@ -1361,16 +1478,39 @@ export function createLibraryView({
     list.innerHTML = '';
     iconInstance = 0;
     listToRender.forEach((toy) => list.appendChild(createCard(toy)));
+    updateResultsMeta(listToRender.length);
   };
 
   const filterToys = (query) => {
-    const search = query.toLowerCase();
-    const filtered = allToys.filter(
-      (t) =>
-        t.title.toLowerCase().includes(search) ||
-        t.description.toLowerCase().includes(search)
-    );
-    renderToys(filtered);
+    searchQuery = query;
+    renderToys(applyFilters());
+  };
+
+  const initFilters = () => {
+    const chips = document.querySelectorAll('[data-filter-chip]');
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const type = chip.getAttribute('data-filter-type');
+        const value = chip.getAttribute('data-filter-value');
+        if (!type || !value) return;
+        const token = `${type}:${value.toLowerCase()}`;
+        const isActive = chip.classList.toggle('is-active');
+        if (isActive) {
+          activeFilters.add(token);
+        } else {
+          activeFilters.delete(token);
+        }
+        renderToys(applyFilters());
+      });
+    });
+
+    const sortControl = document.querySelector('[data-sort-control]');
+    if (sortControl && sortControl.tagName === 'SELECT') {
+      sortControl.addEventListener('change', () => {
+        sortBy = sortControl.value;
+        renderToys(applyFilters());
+      });
+    }
   };
 
   const initSearch = () => {
@@ -1382,13 +1522,15 @@ export function createLibraryView({
   };
 
   const init = async () => {
-    renderToys(allToys);
+    setToys(allToys);
+    renderToys(applyFilters());
 
     if (enableDarkModeToggle) {
       setupDarkModeToggle(themeToggleId);
     }
 
     initSearch();
+    initFilters();
     if (typeof initNavigation === 'function') {
       initNavigation();
     }
@@ -1399,6 +1541,7 @@ export function createLibraryView({
 
   return {
     init,
+    setToys,
     renderToys,
     filterToys,
   };
