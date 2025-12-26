@@ -13,7 +13,7 @@
     "dev:host": "vite --host",
     "dev:check": "node scripts/dev-check.mjs",
     "check:toys": "bun run scripts/check-toys.ts",
-    "build": "vite build",
+    "build": "node scripts/build.mjs",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "vite preview --host",
     "pages:dev": "bun run build && bunx wrangler pages dev dist",
