@@ -163,6 +163,52 @@ function createToyIcon(toy) {
   return renderer(toy);
 }
 
+const iconTemplateCache = new Map();
+
+function ensureIconTemplate(toy) {
+  if (!iconTemplateCache.has(toy.slug)) {
+    iconTemplateCache.set(toy.slug, createToyIcon(toy));
+  }
+  return iconTemplateCache.get(toy.slug);
+}
+
+function cloneSvgWithUniqueIds(template, prefix) {
+  const svgClone = template.cloneNode(true);
+  const idMap = new Map();
+
+  svgClone.querySelectorAll('[id]').forEach((el) => {
+    const originalId = el.getAttribute('id');
+    if (!originalId) return;
+    const newId = `${prefix}-${originalId}`;
+    idMap.set(originalId, newId);
+    el.setAttribute('id', newId);
+  });
+
+  if (idMap.size === 0) return svgClone;
+
+  const rewriteValue = (value) => {
+    let updated = value;
+    idMap.forEach((newId, oldId) => {
+      updated = updated.replace(new RegExp(`url\\(#${oldId}\\)`, 'g'), `url(#${newId})`);
+      updated = updated.replace(new RegExp(`#${oldId}(?![\\w-])`, 'g'), `#${newId}`);
+    });
+    return updated;
+  };
+
+  svgClone.querySelectorAll('*').forEach((el) => {
+    Array.from(el.attributes).forEach((attr) => {
+      const { name, value } = attr;
+      if (!value) return;
+      const updated = rewriteValue(value);
+      if (updated !== value) {
+        el.setAttribute(name, updated);
+      }
+    });
+  });
+
+  return svgClone;
+}
+
 const iconRenderers = {
   '3dtoy': (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
@@ -1207,6 +1253,7 @@ export function createLibraryView({
   themeToggleId = 'theme-toggle',
 } = {}) {
   let allToys = toys;
+  let iconInstance = 0;
 
   const openToy = (toy) => {
     if (toy.type === 'module' && typeof loadToy === 'function') {
@@ -1231,7 +1278,10 @@ export function createLibraryView({
     }
 
     if (enableIcons) {
-      card.appendChild(createToyIcon(toy));
+      const template = ensureIconTemplate(toy);
+      const icon = cloneSvgWithUniqueIds(template, `${toy.slug}-icon-${iconInstance}`);
+      iconInstance += 1;
+      card.appendChild(icon);
     }
 
     const title = document.createElement('h3');
@@ -1309,6 +1359,7 @@ export function createLibraryView({
     const list = document.getElementById(targetId);
     if (!list) return;
     list.innerHTML = '';
+    iconInstance = 0;
     listToRender.forEach((toy) => list.appendChild(createCard(toy)));
   };
 
