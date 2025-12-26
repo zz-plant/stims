@@ -7,14 +7,18 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const normalizeBoolean = (value) => value?.toLowerCase?.() ?? '';
-const isCloudflarePages = ['1', 'true'].includes(normalizeBoolean(process.env.CF_PAGES));
+const isCloudflarePages = ['1', 'true'].includes(
+  normalizeBoolean(process.env.CF_PAGES)
+);
 const distDir = join(process.cwd(), 'dist');
 const distIndex = join(distDir, 'index.html');
 const manifest = join(distDir, '.vite', 'manifest.json');
 const hasReusableArtifacts = existsSync(distIndex) && existsSync(manifest);
 
 if (isCloudflarePages && hasReusableArtifacts) {
-  console.log('[build] CF_PAGES detected and dist/ already populated; skipping Vite rebuild.');
+  console.log(
+    '[build] CF_PAGES detected and dist/ already populated; skipping Vite rebuild.'
+  );
   process.exit(0);
 }
 
