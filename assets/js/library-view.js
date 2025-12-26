@@ -189,8 +189,14 @@ function cloneSvgWithUniqueIds(template, prefix) {
   const rewriteValue = (value) => {
     let updated = value;
     idMap.forEach((newId, oldId) => {
-      updated = updated.replace(new RegExp(`url\\(#${oldId}\\)`, 'g'), `url(#${newId})`);
-      updated = updated.replace(new RegExp(`#${oldId}(?![\\w-])`, 'g'), `#${newId}`);
+      updated = updated.replace(
+        new RegExp(`url\\(#${oldId}\\)`, 'g'),
+        `url(#${newId})`
+      );
+      updated = updated.replace(
+        new RegExp(`#${oldId}(?![\\w-])`, 'g'),
+        `#${newId}`
+      );
     });
     return updated;
   };
@@ -1396,7 +1402,10 @@ export function createLibraryView({
 
     if (enableIcons) {
       const template = ensureIconTemplate(toy);
-      const icon = cloneSvgWithUniqueIds(template, `${toy.slug}-icon-${iconInstance}`);
+      const icon = cloneSvgWithUniqueIds(
+        template,
+        `${toy.slug}-icon-${iconInstance}`
+      );
       iconInstance += 1;
       card.appendChild(icon);
     }

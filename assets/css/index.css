@@ -443,6 +443,7 @@ header.hero {
     transform 0.2s ease;
 }
 
+.readiness-dot[data-status='success'],
 .readiness-dot[data-status='ready'] {
   background: linear-gradient(
     135deg,
@@ -459,6 +460,13 @@ header.hero {
   box-shadow:
     0 0 0 4px rgba(245, 199, 104, 0.2),
     0 0 0 10px rgba(255, 123, 123, 0.08);
+}
+
+.readiness-dot[data-status='error'] {
+  background: linear-gradient(135deg, #ff8a8a, #e8333c);
+  box-shadow:
+    0 0 0 4px rgba(232, 51, 60, 0.2),
+    0 0 0 10px rgba(232, 51, 60, 0.12);
 }
 
 .readiness-name {
@@ -554,11 +562,19 @@ header.hero {
 }
 
 .preview-media--clay {
-  background: linear-gradient(140deg, rgba(255, 200, 150, 0.18), rgba(109, 240, 255, 0.08));
+  background: linear-gradient(
+    140deg,
+    rgba(255, 200, 150, 0.18),
+    rgba(109, 240, 255, 0.08)
+  );
 }
 
 .preview-media--geom {
-  background: linear-gradient(140deg, rgba(109, 240, 255, 0.18), rgba(155, 123, 255, 0.14));
+  background: linear-gradient(
+    140deg,
+    rgba(109, 240, 255, 0.18),
+    rgba(155, 123, 255, 0.14)
+  );
 }
 
 .preview-frame {
@@ -583,13 +599,31 @@ header.hero {
 }
 
 .preview-glow--clay {
-  background: radial-gradient(circle at 20% 20%, rgba(255, 200, 150, 0.4), transparent 45%),
-    radial-gradient(circle at 80% 60%, rgba(109, 240, 255, 0.35), transparent 40%);
+  background:
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(255, 200, 150, 0.4),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 80% 60%,
+      rgba(109, 240, 255, 0.35),
+      transparent 40%
+    );
 }
 
 .preview-glow--geom {
-  background: radial-gradient(circle at 30% 40%, rgba(109, 240, 255, 0.4), transparent 45%),
-    radial-gradient(circle at 70% 35%, rgba(155, 123, 255, 0.4), transparent 42%);
+  background:
+    radial-gradient(
+      circle at 30% 40%,
+      rgba(109, 240, 255, 0.4),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 70% 35%,
+      rgba(155, 123, 255, 0.4),
+      transparent 42%
+    );
 }
 
 .preview-tag {
@@ -628,7 +662,11 @@ header.hero {
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.02)
+  );
   border: 1px solid var(--surface-border);
   border-radius: 16px;
   padding: 0.95rem 1rem;
@@ -676,7 +714,11 @@ header.hero {
 
 .preview-dot.is-active {
   width: 26px;
-  background: linear-gradient(135deg, var(--accent-color), var(--accent-purple));
+  background: linear-gradient(
+    135deg,
+    var(--accent-color),
+    var(--accent-purple)
+  );
   box-shadow:
     0 0 0 4px rgba(109, 240, 255, 0.24),
     0 12px 24px rgba(0, 0, 0, 0.35);
@@ -1171,7 +1213,11 @@ h1 {
 
 .filter-chip {
   border: 1px solid var(--surface-border);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.02)
+  );
   color: var(--text-color);
   border-radius: var(--radius-pill);
   padding: 0.45rem 0.85rem;
@@ -1192,7 +1238,11 @@ h1 {
 }
 
 .filter-chip.is-active {
-  background: linear-gradient(135deg, rgba(109, 240, 255, 0.18), rgba(155, 123, 255, 0.14));
+  background: linear-gradient(
+    135deg,
+    rgba(109, 240, 255, 0.18),
+    rgba(155, 123, 255, 0.14)
+  );
   border-color: rgba(109, 240, 255, 0.4);
   box-shadow:
     0 12px 28px rgba(109, 240, 255, 0.2),
@@ -1206,7 +1256,11 @@ h1 {
   padding: 0.45rem 0.75rem;
   border-radius: var(--radius-pill);
   border: 1px solid var(--surface-border);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.02)
+  );
   color: var(--text-color);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
 }
