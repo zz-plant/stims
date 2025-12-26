@@ -183,17 +183,18 @@ export async function start() {
     defaultPresetId: 'balanced',
   });
 
+  type MotionAccessState = 'prompt' | 'granted' | 'denied' | 'unavailable';
   const motionSupported =
     typeof window !== 'undefined' && 'DeviceOrientationEvent' in window;
-  const motionCleanup = motionSupported
-    ? (() => {
-        const handler = (event: DeviceOrientationEvent) =>
-          mapOrientationToGravity(event, gravity);
-        window.addEventListener('deviceorientation', handler);
-        return () => window.removeEventListener('deviceorientation', handler);
-      })()
-    : null;
-  gravity.locked = !motionSupported;
+  let motionCleanup: (() => void) | null = null;
+  const cleanupMotion = () => {
+    motionCleanup?.();
+    motionCleanup = null;
+  };
+  let motionAccess: MotionAccessState = motionSupported ? 'prompt' : 'unavailable';
+  gravity.locked = motionAccess !== 'granted';
+
+  (toy as WebToy & { cleanupMotion?: () => void }).cleanupMotion = cleanupMotion;
 
   const panel = getSettingsPanel();
   panel.configure({
@@ -285,6 +286,112 @@ export async function start() {
 
   gravityToggle.prepend(gravityLock);
   gravityRow.append(gravityToggle, recenter);
+
+  const motionStatus = document.createElement('p');
+  motionStatus.className = 'control-panel__note';
+  motionStatus.textContent = motionSupported
+    ? 'Enable device motion to steer the sand with tilt.'
+    : 'Device motion is unavailable; gravity will stay locked.';
+
+  const motionButton = document.createElement('button');
+  motionButton.type = 'button';
+  motionButton.className = 'cta-button';
+  motionButton.textContent = 'Enable motion control';
+  motionButton.disabled = !motionSupported;
+
+  gravityRow.append(motionStatus, motionButton);
+
+  const syncGravityLock = (locked: boolean) => {
+    gravity.locked = locked;
+    gravityLock.checked = locked;
+    gravityLock.disabled = motionAccess !== 'granted';
+    if (locked) {
+      gravity.target.copy(DEFAULT_GRAVITY);
+      gravity.vector.copy(DEFAULT_GRAVITY);
+    }
+  };
+
+  const updateMotionUI = () => {
+    gravityLock.disabled = motionAccess !== 'granted';
+    motionButton.disabled =
+      motionAccess === 'granted' ||
+      motionAccess === 'unavailable' ||
+      motionAccess === 'denied';
+
+    if (!motionSupported) {
+      motionButton.textContent = 'Motion unsupported';
+      motionStatus.textContent =
+        'Device motion is unavailable; gravity will stay locked.';
+      syncGravityLock(true);
+      return;
+    }
+
+    if (motionAccess === 'granted') {
+      motionButton.textContent = 'Motion enabled';
+      motionStatus.textContent = 'Motion control is active. Tilt to steer gravity.';
+      syncGravityLock(false);
+      return;
+    }
+
+    if (motionAccess === 'denied') {
+      motionButton.textContent = 'Motion permission denied';
+      motionStatus.textContent =
+        'Motion access was denied. Gravity remains locked to default.';
+      syncGravityLock(true);
+      return;
+    }
+
+    motionButton.textContent = 'Enable motion control';
+    motionButton.disabled = false;
+    motionStatus.textContent =
+      'Enable device motion to steer the sand with tilt.';
+    syncGravityLock(true);
+  };
+
+  updateMotionUI();
+
+  const registerMotionListener = () => {
+    cleanupMotion();
+    const handler = (event: DeviceOrientationEvent) =>
+      mapOrientationToGravity(event, gravity);
+    window.addEventListener('deviceorientation', handler);
+    motionCleanup = () => window.removeEventListener('deviceorientation', handler);
+  };
+
+  const requestMotionAccess = async () => {
+    if (!motionSupported) return;
+
+    try {
+      if (
+        typeof DeviceOrientationEvent !== 'undefined' &&
+        'requestPermission' in DeviceOrientationEvent
+      ) {
+        const response = await (
+          DeviceOrientationEvent as unknown as {
+            requestPermission?: () => Promise<PermissionState>;
+          }
+        ).requestPermission?.();
+
+        if (response !== 'granted') {
+          motionAccess = response === 'denied' ? 'denied' : 'prompt';
+          updateMotionUI();
+          return;
+        }
+      }
+
+      registerMotionListener();
+      motionAccess = 'granted';
+      updateMotionUI();
+    } catch (error) {
+      motionAccess = 'denied';
+      updateMotionUI();
+      console.error('Error requesting motion permission', error);
+    }
+  };
+
+  motionButton.addEventListener('click', () => {
+    void requestMotionAccess();
+  });
 
   initHints({
     id: 'tactile-sand-table',
@@ -403,7 +510,7 @@ export async function start() {
 
   const originalDispose = toy.dispose.bind(toy);
   toy.dispose = () => {
-    motionCleanup?.();
+    cleanupMotion();
     originalDispose();
   };
 
