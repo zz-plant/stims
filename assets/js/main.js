@@ -1,6 +1,7 @@
 import { initNavigation, loadToy, loadFromQuery } from './loader.ts';
 import { createLibraryView } from './library-view.js';
 import { initRepoStatusWidget } from './repo-status.js';
+import { initReadinessProbe } from './readiness-probe.js';
 import toysData from './toys-data.js';
 
 const libraryView = createLibraryView({
@@ -162,6 +163,7 @@ const initPreviewReels = () => {
 };
 
 const startApp = async () => {
+  initReadinessProbe();
   const resolvedToys = await resolveToys();
   libraryView.setToys(resolvedToys);
   libraryView.init();
