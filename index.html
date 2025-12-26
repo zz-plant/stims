@@ -56,7 +56,7 @@
   </head>
   <body>
     <div class="content">
-      <nav class="top-nav">
+      <nav class="top-nav" data-top-nav>
         <div class="brand">
           <span class="brand-mark"></span>
           <div class="brand-copy">
@@ -71,7 +71,7 @@
             href="https://github.com/zz-plant/stims"
             target="_blank"
             rel="noopener noreferrer"
-            >GitHub</a
+          >GitHub</a
           >
           <button
             id="theme-toggle"
@@ -79,7 +79,8 @@
             aria-pressed="false"
             aria-label="Switch to dark mode"
           >
-            Dark Mode
+            <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
+            <span class="theme-toggle__label" data-theme-label>Dark mode</span>
           </button>
         </div>
       </nav>
@@ -237,11 +238,124 @@
             </div>
           </div>
           <div class="hero-visual" aria-hidden="true">
-            <div class="orbital">
-              <span class="orbital__ring orbital__ring--outer"></span>
-              <span class="orbital__ring orbital__ring--inner"></span>
-              <span class="orbital__pulse"></span>
-              <span class="orbital__core"></span>
+            <div class="preview-reel" data-preview-reel>
+              <div class="preview-track">
+                <article
+                  class="preview-card is-active"
+                  data-preview-card
+                  data-preview-src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80"
+                >
+                  <div class="preview-media">
+                    <div class="preview-glow preview-glow--halo"></div>
+                    <div class="preview-frame">
+                      <span class="preview-tag">Halo Flow</span>
+                      <p class="preview-title">Halo Flow</p>
+                      <p class="preview-caption">
+                        Ribbons, halos, and soft bloom that ride your music.
+                      </p>
+                      <div class="preview-badges">
+                        <span class="pill pill--accent">Mic reactive</span>
+                        <span class="pill pill--contrast">Web-ready</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="preview-meta">
+                    <div class="preview-meta__copy">
+                      <p class="eyebrow">Featured</p>
+                      <p class="preview-meta__title">Start with Halo Flow</p>
+                      <p class="preview-meta__description">
+                        Our most popular stim. Crisp halos, layered gradients,
+                        and instant audio response.
+                      </p>
+                    </div>
+                    <a
+                      class="cta-button primary preview-launch"
+                      href="toy.html?toy=holy"
+                    >
+                      Launch
+                    </a>
+                  </div>
+                </article>
+                <article
+                  class="preview-card"
+                  data-preview-card
+                  data-preview-src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80"
+                >
+                  <div class="preview-media preview-media--clay">
+                    <div class="preview-glow preview-glow--clay"></div>
+                    <div class="preview-frame">
+                      <span class="preview-tag">Clay</span>
+                      <p class="preview-title">Pottery Wheel</p>
+                      <p class="preview-caption">
+                        Sculpt smooth vessels with tactile carving and soft
+                        lighting.
+                      </p>
+                      <div class="preview-badges">
+                        <span class="pill pill--soft">Touch friendly</span>
+                        <span class="pill pill--accent">Demo audio</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="preview-meta">
+                    <div class="preview-meta__copy">
+                      <p class="eyebrow">Haptic calm</p>
+                      <p class="preview-meta__title">Spin the clay wheel</p>
+                      <p class="preview-meta__description">
+                        A softer, calmer start when you want tactile focus with
+                        slow motion.
+                      </p>
+                    </div>
+                    <a
+                      class="cta-button primary preview-launch"
+                      href="toy.html?toy=clay"
+                    >
+                      Launch
+                    </a>
+                  </div>
+                </article>
+                <article
+                  class="preview-card"
+                  data-preview-card
+                  data-preview-src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80"
+                >
+                  <div class="preview-media preview-media--geom">
+                    <div class="preview-glow preview-glow--geom"></div>
+                    <div class="preview-frame">
+                      <span class="preview-tag">Geom</span>
+                      <p class="preview-title">Geometry Visualizer</p>
+                      <p class="preview-caption">
+                        Shifting prisms with crisp depth cues and kinetic
+                        lighting.
+                      </p>
+                      <div class="preview-badges">
+                        <span class="pill pill--contrast">WebGPU ready</span>
+                        <span class="pill">Motion aware</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="preview-meta">
+                    <div class="preview-meta__copy">
+                      <p class="eyebrow">High energy</p>
+                      <p class="preview-meta__title">Push geometry hard</p>
+                      <p class="preview-meta__description">
+                        Great when you want sharper motion, tilt input, and
+                        immediate depth.
+                      </p>
+                    </div>
+                    <a
+                      class="cta-button primary preview-launch"
+                      href="toy.html?toy=geom"
+                    >
+                      Launch
+                    </a>
+                  </div>
+                </article>
+              </div>
+              <div class="preview-dots" role="presentation">
+                <span class="preview-dot is-active" data-preview-dot></span>
+                <span class="preview-dot" data-preview-dot></span>
+                <span class="preview-dot" data-preview-dot></span>
+              </div>
             </div>
             <div class="hero-callouts">
               <div class="callout-card">
@@ -341,6 +455,73 @@
                 >Search name, tags, mood, mic/motion/demo audio</span
               >
             </div>
+            <div class="filter-row" role="group" aria-label="Curated filters">
+              <div class="chip-row" data-chip-row>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="mood"
+                  data-filter-value="calm"
+                >
+                  Calm
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="mood"
+                  data-filter-value="energetic"
+                >
+                  Energetic
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="capability"
+                  data-filter-value="microphone"
+                >
+                  Microphone
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="capability"
+                  data-filter-value="motion"
+                >
+                  Motion
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="capability"
+                  data-filter-value="demoAudio"
+                >
+                  Demo audio
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="feature"
+                  data-filter-value="webgpu"
+                >
+                  WebGPU
+                </button>
+              </div>
+              <label class="sort-control">
+                <span>Sort</span>
+                <select data-sort-control>
+                  <option value="featured">Featured</option>
+                  <option value="newest">Newest</option>
+                  <option value="immersive">Most immersive</option>
+                  <option value="az">A → Z</option>
+                </select>
+              </label>
+            </div>
             <div class="search-meta">
               <p
                 class="search-meta__results"
@@ -400,6 +581,72 @@
         const search = document.getElementById('toy-search');
         const searchResults = document.querySelector('[data-search-results]');
         let cachedQuery = '';
+        let sortBy = 'featured';
+        const activeFilters = new Set();
+
+        const shouldDeferToEnhanced = () =>
+          document.body.dataset.libraryEnhanced === 'true';
+
+        const getHaystack = (toy) => {
+          const capabilityTerms = Object.entries(toy.capabilities || {})
+            .filter(([, enabled]) => !!enabled)
+            .map(([key]) => key.toLowerCase());
+
+          return [
+            toy.title,
+            toy.slug,
+            toy.description,
+            ...(toy.tags ?? []),
+            ...(toy.moods ?? []),
+            ...capabilityTerms,
+            toy.requiresWebGPU ? 'webgpu' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+        };
+
+        const matchesFilters = (toy) => {
+          if (activeFilters.size === 0) return true;
+          return Array.from(activeFilters).every((token) => {
+            const [type, value] = token.split(':');
+            if (!type || !value) return true;
+            if (type === 'mood') {
+              return (toy.moods ?? []).some(
+                (mood) => mood.toLowerCase() === value
+              );
+            }
+            if (type === 'capability') {
+              return Boolean(toy.capabilities?.[value]);
+            }
+            if (type === 'feature') {
+              return value === 'webgpu' ? Boolean(toy.requiresWebGPU) : true;
+            }
+            return true;
+          });
+        };
+
+        const capabilityScore = (toy) =>
+          (toy.requiresWebGPU ? 2 : 0) +
+          Number(toy.capabilities?.microphone) +
+          Number(toy.capabilities?.motion) +
+          Number(toy.capabilities?.demoAudio);
+
+        const sortList = (list) => {
+          const sorted = [...list];
+          switch (sortBy) {
+            case 'newest':
+              return sorted.reverse();
+            case 'az':
+              return sorted.sort((a, b) => a.title.localeCompare(b.title));
+            case 'immersive':
+              return sorted.sort(
+                (a, b) => capabilityScore(b) - capabilityScore(a)
+              );
+            default:
+              return sorted;
+          }
+        };
         let allToys = [];
 
         const updateResultsMeta = (count, total, query = '') => {
@@ -434,9 +681,25 @@
           list.appendChild(empty);
         };
 
-        const renderCards = (toys, query = '') => {
+        const applyFilters = (query = cachedQuery) => {
+          const normalized = (query || '').toLowerCase();
+          const filtered = allToys.filter((toy) => {
+            const matchesQuery = !normalized || getHaystack(toy).includes(normalized);
+            return matchesQuery && matchesFilters(toy);
+          });
+
+          return sortList(filtered);
+        };
+
+        const renderCards = (toys = applyFilters(), query = '') => {
+          if (shouldDeferToEnhanced()) return;
+
           list.innerHTML = '';
-          updateResultsMeta(toys.length, allToys.length, query || cachedQuery);
+          updateResultsMeta(
+            toys.length,
+            allToys.length,
+            query || cachedQuery
+          );
 
           if (toys.length === 0) {
             renderEmptyState();
@@ -517,40 +780,37 @@
             if (!toys || list.childElementCount > 0) return;
 
             allToys = toys;
-            renderCards(allToys);
+            renderCards(applyFilters());
 
             if (search instanceof HTMLInputElement) {
               search.addEventListener('input', () => {
-                const query = search.value.toLowerCase().trim();
-                cachedQuery = query;
+                cachedQuery = search.value.toLowerCase().trim();
+                renderCards(applyFilters(cachedQuery), cachedQuery);
+              });
+            }
 
-                if (!query) {
-                  renderCards(allToys);
-                  return;
+            const chips = document.querySelectorAll('[data-filter-chip]');
+            chips.forEach((chip) => {
+              chip.addEventListener('click', () => {
+                const type = chip.getAttribute('data-filter-type');
+                const value = chip.getAttribute('data-filter-value');
+                if (!type || !value) return;
+                const token = `${type}:${value.toLowerCase()}`;
+                const isActive = chip.classList.toggle('is-active');
+                if (isActive) {
+                  activeFilters.add(token);
+                } else {
+                  activeFilters.delete(token);
                 }
+                renderCards(applyFilters(), cachedQuery);
+              });
+            });
 
-                const filtered = allToys.filter((toy) => {
-                  const capabilityTerms = Object.entries(toy.capabilities || {})
-                    .filter(([, enabled]) => !!enabled)
-                    .map(([key]) => key.toLowerCase());
-
-                  const haystack = [
-                    toy.title,
-                    toy.slug,
-                    toy.description,
-                    ...(toy.tags ?? []),
-                    ...(toy.moods ?? []),
-                    ...capabilityTerms,
-                    toy.requiresWebGPU ? 'webgpu' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')
-                    .toLowerCase();
-
-                  return haystack.includes(query);
-                });
-
-                renderCards(filtered, query);
+            const sortControl = document.querySelector('[data-sort-control]');
+            if (sortControl && sortControl.tagName === 'SELECT') {
+              sortControl.addEventListener('change', () => {
+                sortBy = sortControl.value;
+                renderCards(applyFilters(), cachedQuery);
               });
             }
           })
