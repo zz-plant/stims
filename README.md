@@ -13,6 +13,7 @@ Use these entry points to find the right docs quickly:
 - [`docs/README.md`](./docs/README.md): overview of all project docs plus onboarding highlights.
 - [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md): day-to-day setup, tooling, scripts, and workflow expectations.
 - [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), [`docs/TOY_SCRIPT_INDEX.md`](./docs/TOY_SCRIPT_INDEX.md), and [`docs/toys.md`](./docs/toys.md): how to build or modify toys, toy script index, and per-toy notes.
+- [`docs/QA_PLAN.md`](./docs/QA_PLAN.md): QA coverage for high-impact flows and how to run the automation that protects them.
 - [`docs/PAGE_SPECIFICATIONS.md`](./docs/PAGE_SPECIFICATIONS.md): page-level specs for the library landing and toy shell, covering data, layout, and accessibility expectations.
 - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md): production build/preview steps, Cloudflare Pages/Workers notes, and static hosting tips.
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md): runtime composition, loaders, and diagrams for the core systems.
