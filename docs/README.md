@@ -6,6 +6,7 @@ This folder contains resources for contributors who are building or maintaining 
 - [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md): playbook for creating or updating toy experiences, including audio, rendering, and debugging tips.
 - [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md): map from each toy/visualizer to the JS/TS entry points it uses.
 - [`stim-assessment.md`](./stim-assessment.md): Assessment findings and remediation plans.
+- [`QA_PLAN.md`](./QA_PLAN.md): coverage for the highest-impact flows and the automation that protects them.
 - [`toys.md`](./toys.md): per-toy notes, presets, and other focused references.
 - [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md): page-level specifications for the library landing and toy shell, including data, layout, and accessibility expectations.
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md): end-to-end app architecture, loader flow, and core runtime composition with diagrams.

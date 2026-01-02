@@ -4,6 +4,7 @@ import {
   getActiveQualityPreset,
   getSettingsPanel,
   QUALITY_STORAGE_KEY,
+  resetSettingsPanelState,
   subscribeToQualityPreset,
 } from '../assets/js/core/settings-panel.ts';
 
@@ -11,11 +12,13 @@ describe('quality preset subscriptions', () => {
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = '';
+    resetSettingsPanelState({ removePanel: true });
   });
 
   afterEach(() => {
     localStorage.clear();
     document.body.innerHTML = '';
+    resetSettingsPanelState({ removePanel: true });
   });
 
   test('notifies subscribers for initial and subsequent preset changes', () => {
@@ -68,5 +71,36 @@ describe('quality preset subscriptions', () => {
       defaultPresetId: 'low',
     });
     expect(resolved.id).toBe('low');
+  });
+
+  test('quality selection persists across panel reuse for different toys', () => {
+    const panel = getSettingsPanel();
+    const calls: string[] = [];
+
+    subscribeToQualityPreset((preset) => calls.push(preset.id));
+
+    panel.configure({ title: 'Grid visualizer' });
+    panel.setQualityPresets({
+      presets: DEFAULT_QUALITY_PRESETS,
+      defaultPresetId: 'balanced',
+    });
+
+    const select = document.querySelector(
+      '.control-panel select'
+    ) as HTMLSelectElement | null;
+    expect(select?.value).toBe('balanced');
+
+    select!.value = 'hi-fi';
+    select!.dispatchEvent(new Event('change', { bubbles: true }));
+
+    panel.configure({ title: 'Cosmic particles' });
+    panel.setQualityPresets({
+      presets: DEFAULT_QUALITY_PRESETS,
+      defaultPresetId: 'balanced',
+    });
+
+    expect(select?.value).toBe('hi-fi');
+    expect(localStorage.getItem(QUALITY_STORAGE_KEY)).toBe('hi-fi');
+    expect(calls).toEqual(['balanced', 'hi-fi']);
   });
 });
