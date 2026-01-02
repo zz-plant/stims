@@ -1294,6 +1294,23 @@ export function createLibraryView({
     meta.textContent = `${visibleCount} ${descriptor} • ${total} in library`;
   };
 
+  const resetFiltersAndSearch = () => {
+    searchQuery = '';
+    activeFilters.clear();
+
+    const chips = document.querySelectorAll('[data-filter-chip].is-active');
+    chips.forEach((chip) => chip.classList.remove('is-active'));
+
+    if (searchInputId) {
+      const search = document.getElementById(searchInputId);
+      if (search && 'value' in search) {
+        search.value = '';
+      }
+    }
+
+    renderToys(applyFilters());
+  };
+
   const getHaystack = (toy) => {
     const capabilityTerms = Object.entries(toy.capabilities || {})
       .filter(([, enabled]) => Boolean(enabled))
@@ -1486,6 +1503,31 @@ export function createLibraryView({
     if (!list) return;
     list.innerHTML = '';
     iconInstance = 0;
+
+    if (listToRender.length === 0) {
+      const emptyState = document.createElement('div');
+      emptyState.className = 'library-empty-state';
+      emptyState.setAttribute('role', 'status');
+      emptyState.setAttribute('aria-live', 'polite');
+
+      const message = document.createElement('p');
+      message.className = 'library-empty-state__message';
+      message.textContent =
+        'No stims match your search or filters. Try adjusting your query.';
+
+      const resetButton = document.createElement('button');
+      resetButton.type = 'button';
+      resetButton.className = 'cta-button';
+      resetButton.textContent = 'Clear filters';
+      resetButton.addEventListener('click', () => resetFiltersAndSearch());
+
+      emptyState.appendChild(message);
+      emptyState.appendChild(resetButton);
+      list.appendChild(emptyState);
+      updateResultsMeta(0);
+      return;
+    }
+
     listToRender.forEach((toy) => list.appendChild(createCard(toy)));
     updateResultsMeta(listToRender.length);
   };
