@@ -4,6 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stim Webtoys Library</title>
+    <script>
+      (function () {
+        const resolveThemePreference = () => {
+          const stored = localStorage.getItem('theme');
+          if (stored === 'light' || stored === 'dark') {
+            return stored;
+          }
+          return window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+        };
+
+        const applyTheme = (theme, persist = false) => {
+          const root = document.documentElement;
+          if (theme === 'light') {
+            root.classList.add('light');
+          } else {
+            root.classList.remove('light');
+          }
+          if (persist) {
+            localStorage.setItem('theme', theme);
+          }
+        };
+
+        window.__stimsTheme = { resolveThemePreference, applyTheme };
+
+        applyTheme(resolveThemePreference());
+      })();
+    </script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
@@ -45,12 +74,6 @@
             "inLanguage": "en"
           }
         ]
-      }
-    </script>
-    <script>
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'light') {
-        document.documentElement.classList.add('light');
       }
     </script>
   </head>
