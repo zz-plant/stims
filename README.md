@@ -255,7 +255,7 @@ Cloudflare Pages can build this project with Bun using the `wrangler.toml` in th
 - Project name: `stims` (top-level `name` in `wrangler.toml`)
 - Build output directory: `dist/` (set via `pages_build_output_dir` in `wrangler.toml`)
 - Build command: `bun run build` (set in the Pages UI under **Settings → Builds & deployments → Build command**; Pages rejects a `[build]` table in `wrangler.toml`)
-- Set the `BUN_VERSION` environment variable (for example, `BUN_VERSION=1.2.14`) in your Pages project so the hosted runtime matches local installs. Cloudflare Pages also reads the repo’s `.bun-version` file to infer this automatically.
+- Cloudflare Pages automatically detects the Bun version from the repo’s `.bun-version` file. As a fallback, you can set the `BUN_VERSION` environment variable (for example, `BUN_VERSION=1.2.14`) in your Pages project to ensure the hosted runtime matches local installs.
 - Enable Pages’ **Bun runtime** so the build runs under Bun instead of Node.
 - The `compatibility_date` in `wrangler.toml` keeps Pages aligned with the Cloudflare Workers API version.
 - Do not add a `[pages]` table in `wrangler.toml`; Cloudflare Pages expects project linkage to be configured in the dashboard.
