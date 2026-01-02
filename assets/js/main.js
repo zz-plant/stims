@@ -89,9 +89,16 @@ const initPreviewReels = () => {
   reels.forEach((reel) => {
     const cards = Array.from(reel.querySelectorAll('[data-preview-card]'));
     const dots = Array.from(reel.querySelectorAll('[data-preview-dot]'));
+    const status = reel.querySelector('[data-preview-status]');
+    const prevButton = reel.querySelector('[data-preview-prev]');
+    const nextButton = reel.querySelector('[data-preview-next]');
+    const toggleButton = reel.querySelector('[data-preview-toggle]');
     if (cards.length === 0) return;
 
     let timerId;
+    let isIntersecting = false;
+    let isFocused = false;
+    let isAutoPlay = !prefersReducedMotion.matches;
     let activeIndex = Math.max(
       0,
       cards.findIndex((card) => card.classList.contains('is-active'))
@@ -107,16 +114,34 @@ const initPreviewReels = () => {
       card.dataset.loaded = 'true';
     };
 
+    const updateToggleState = () => {
+      if (!toggleButton) return;
+      toggleButton.textContent = isAutoPlay ? 'Pause' : 'Play';
+      toggleButton.setAttribute(
+        'aria-label',
+        isAutoPlay ? 'Pause auto-advance' : 'Play auto-advance'
+      );
+      toggleButton.setAttribute('aria-pressed', String(isAutoPlay));
+    };
+
+    const announceStatus = (index) => {
+      if (!status) return;
+      status.textContent = `Preview ${index + 1} of ${cards.length}`;
+    };
+
     const setActive = (index) => {
       activeIndex = index;
       cards.forEach((card, idx) => {
         const isActive = idx === index;
         card.classList.toggle('is-active', isActive);
+        card.setAttribute('aria-hidden', String(!isActive));
         if (dots[idx]) {
           dots[idx].classList.toggle('is-active', isActive);
+          dots[idx].setAttribute('aria-selected', String(isActive));
         }
         if (isActive) lazyLoadMedia(card);
       });
+      announceStatus(index);
     };
 
     const tick = () => {
@@ -125,7 +150,15 @@ const initPreviewReels = () => {
     };
 
     const startTimer = () => {
-      if (prefersReducedMotion.matches || cards.length < 2) return;
+      if (
+        prefersReducedMotion.matches ||
+        cards.length < 2 ||
+        timerId ||
+        !isAutoPlay ||
+        !isIntersecting ||
+        isFocused
+      )
+        return;
       timerId = window.setInterval(tick, 5200);
     };
 
@@ -139,6 +172,7 @@ const initPreviewReels = () => {
     const observer = new Observer(
       (entries) => {
         entries.forEach((entry) => {
+          isIntersecting = entry.isIntersecting;
           if (entry.isIntersecting) {
             lazyLoadMedia(cards[activeIndex]);
             startTimer();
@@ -152,12 +186,68 @@ const initPreviewReels = () => {
 
     observer.observe(reel);
     setActive(activeIndex);
+    updateToggleState();
 
     prefersReducedMotion.addEventListener('change', () => {
       stopTimer();
-      if (!prefersReducedMotion.matches) {
-        startTimer();
+      if (prefersReducedMotion.matches) {
+        isAutoPlay = false;
+        updateToggleState();
+        return;
       }
+      if (isAutoPlay) startTimer();
+    });
+
+    if (prevButton) {
+      prevButton.addEventListener('click', () => {
+        stopTimer();
+        isAutoPlay = false;
+        updateToggleState();
+        const nextIndex = (activeIndex - 1 + cards.length) % cards.length;
+        setActive(nextIndex);
+      });
+    }
+
+    if (nextButton) {
+      nextButton.addEventListener('click', () => {
+        stopTimer();
+        isAutoPlay = false;
+        updateToggleState();
+        tick();
+      });
+    }
+
+    if (toggleButton) {
+      toggleButton.addEventListener('click', () => {
+        if (isAutoPlay) {
+          isAutoPlay = false;
+          stopTimer();
+        } else {
+          isAutoPlay = true;
+        }
+        updateToggleState();
+        startTimer();
+      });
+    }
+
+    dots.forEach((dot, index) => {
+      dot.addEventListener('click', () => {
+        stopTimer();
+        isAutoPlay = false;
+        updateToggleState();
+        setActive(index);
+      });
+    });
+
+    reel.addEventListener('focusin', () => {
+      isFocused = true;
+      stopTimer();
+    });
+
+    reel.addEventListener('focusout', (event) => {
+      if (event.relatedTarget && reel.contains(event.relatedTarget)) return;
+      isFocused = false;
+      if (isAutoPlay) startTimer();
     });
   });
 };

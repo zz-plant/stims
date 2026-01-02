@@ -262,6 +262,7 @@
           </div>
           <div class="hero-visual" aria-hidden="true">
             <div class="preview-reel" data-preview-reel>
+              <p class="sr-only" data-preview-status aria-live="polite"></p>
               <div class="preview-track">
                 <article
                   class="preview-card is-active"
@@ -374,10 +375,57 @@
                   </div>
                 </article>
               </div>
-              <div class="preview-dots" role="presentation">
-                <span class="preview-dot is-active" data-preview-dot></span>
-                <span class="preview-dot" data-preview-dot></span>
-                <span class="preview-dot" data-preview-dot></span>
+              <div class="preview-controls" aria-label="Preview controls">
+                <div class="preview-control-buttons">
+                  <button
+                    class="preview-control"
+                    type="button"
+                    aria-label="Previous preview"
+                    data-preview-prev
+                  >
+                    ←
+                  </button>
+                  <button
+                    class="preview-control"
+                    type="button"
+                    aria-label="Pause auto-advance"
+                    aria-pressed="true"
+                    data-preview-toggle
+                  >
+                    Pause
+                  </button>
+                  <button
+                    class="preview-control"
+                    type="button"
+                    aria-label="Next preview"
+                    data-preview-next
+                  >
+                    →
+                  </button>
+                </div>
+                <div class="preview-dots" role="tablist" aria-label="Preview slides">
+                  <button
+                    class="preview-dot is-active"
+                    data-preview-dot
+                    type="button"
+                    aria-label="Slide 1"
+                    aria-selected="true"
+                  ></button>
+                  <button
+                    class="preview-dot"
+                    data-preview-dot
+                    type="button"
+                    aria-label="Slide 2"
+                    aria-selected="false"
+                  ></button>
+                  <button
+                    class="preview-dot"
+                    data-preview-dot
+                    type="button"
+                    aria-label="Slide 3"
+                    aria-selected="false"
+                  ></button>
+                </div>
               </div>
             </div>
             <div class="hero-callouts">
