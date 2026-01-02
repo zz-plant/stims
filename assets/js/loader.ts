@@ -219,7 +219,7 @@ export function createLoader({
     const toy = toys.find((t) => t.slug === slug);
     if (!toy) {
       console.error(`Toy not found: ${slug}`);
-      backToLibrary();
+      view.showUnavailableToy?.(slug, { onBack: backToLibrary });
       return;
     }
 

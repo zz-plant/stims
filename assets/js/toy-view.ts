@@ -99,6 +99,14 @@ function renderStatusElement(
         ? 'is-warning'
         : 'is-loading';
   statusElement.className = `active-toy-status ${statusVariant}`;
+  statusElement.setAttribute(
+    'role',
+    status.variant === 'error' ? 'alert' : 'status'
+  );
+  statusElement.setAttribute(
+    'aria-live',
+    status.variant === 'error' ? 'assertive' : 'polite'
+  );
 
   const glow = doc.createElement('div');
   glow.className = 'active-toy-status__glow';
@@ -406,6 +414,30 @@ export function createToyView({
     return status;
   };
 
+  const showUnavailableToy = (
+    slug: string,
+    { onBack }: { onBack?: () => void } = {}
+  ) => {
+    state.mode = 'toy';
+    state.backHandler = onBack ?? state.backHandler;
+    state.activeToyMeta = undefined;
+    state.status = {
+      variant: 'error',
+      title: 'Toy unavailable',
+      message: `We couldn't find the stim "${slug}". It may have been moved or removed.`,
+      actions: [
+        {
+          label: 'Back to library',
+          onClick: onBack,
+          primary: true,
+        },
+      ],
+    };
+
+    const { status } = render({ clearContainer: true });
+    return status;
+  };
+
   const showCapabilityError = (
     toy: Toy | undefined,
     options: CapabilityOptions = {}
@@ -465,5 +497,6 @@ export function createToyView({
       clearContainerContent(findActiveToyContainer()),
     ensureActiveToyContainer,
     setRendererStatus,
+    showUnavailableToy,
   };
 }
