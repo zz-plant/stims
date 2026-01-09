@@ -14,18 +14,18 @@
     "typecheck:watch": "tsc --noEmit --watch",
     "dev": "vite",
     "dev:host": "vite --host",
-    "dev:check": "node scripts/dev-check.mjs",
+    "dev:check": "bun scripts/dev-check.mjs || node scripts/dev-check.mjs",
     "check": "bun run lint && bun run typecheck && bun run test",
     "check:quick": "bun run lint && bun run typecheck",
     "check:toys": "bun run scripts/check-toys.ts",
-    "build": "node scripts/build.mjs || bun scripts/build.mjs",
+    "build": "bun scripts/build.mjs || node scripts/build.mjs",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "vite preview --host",
     "pages:dev": "bun run build && bunx wrangler pages dev dist",
     "pages:deploy": "bun run build && bunx wrangler pages deploy dist",
     "mcp": "bun run scripts/mcp-server.ts",
     "prepare": "husky install",
-    "postinstall": "node scripts/postinstall.mjs || bun scripts/postinstall.mjs"
+    "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs"
   },
   "devDependencies": {
     "@types/three": "^0.181.0",
