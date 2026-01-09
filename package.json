@@ -18,7 +18,7 @@
     "check": "bun run lint && bun run typecheck && bun run test",
     "check:quick": "bun run lint && bun run typecheck",
     "check:toys": "bun run scripts/check-toys.ts",
-    "build": "node scripts/build.mjs",
+    "build": "node scripts/build.mjs || bun scripts/build.mjs",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "vite preview --host",
     "pages:dev": "bun run build && bunx wrangler pages dev dist",
