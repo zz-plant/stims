@@ -208,8 +208,13 @@ All JavaScript dependencies are installed via npm (or Bun) and bundled locally w
 - `bun run test`: Run the Bun-native test suite with the required `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags applied. These load happy-dom globals and a Three.js stub so specs run headlessly. `npm test` proxies to the same script when you’re on Node.
 - `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
 - `bun run lint`: Check code quality with ESLint. (`npm run lint` is an optional fallback.)
+- `bun run lint:fix`: Apply ESLint auto-fixes locally. (`npm run lint:fix` is an optional fallback.)
 - `bun run format`: Format files with Prettier. (`npm run format` is an optional fallback.)
+- `bun run format:check`: Validate formatting without writing changes. (`npm run format:check` is an optional fallback.)
 - `bun run typecheck`: Run TypeScript’s type checker without emitting files. (`npm run typecheck` is an optional fallback.)
+- `bun run typecheck:watch`: Keep TypeScript checking in watch mode without emitting files.
+- `bun run check`: Run lint, typecheck, and tests in one go (handy before opening a PR).
+- `bun run check:quick`: Run lint and typecheck only (fast guardrail during iteration).
 - `bun run scripts/scaffold-toy.ts`: Interactive (or flag-driven) scaffolder that prompts for a slug/title/type, creates a starter module from [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), appends metadata to `assets/js/toys-data.js`, updates `docs/TOY_SCRIPT_INDEX.md`, and can optionally drop a minimal Bun spec. Pass flags such as `--slug ripple-orb --title "Ripple Orb" --type module --with-test` for non-interactive runs.
 - `bun run serve:dist`: Serve the `dist/` build with Bun (preferred for local production previews).
 

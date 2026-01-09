@@ -44,21 +44,27 @@ If you’re spinning up the project for the first time, confirm the basics befor
 
 ## Common Scripts (Bun-first)
 
-| Task                               | Command (Bun / optional Node fallback)     |
-| ---------------------------------- | ------------------------------------------ |
-| Start dev server                   | `bun run dev` (`npm run dev`)              |
-| Start dev server (LAN)             | `bun run dev:host` (`npm run dev:host`)    |
-| Production build                   | `bun run build` (`npm run build`)          |
-| Preview build locally              | `bun run preview` (`npm run preview`)      |
-| Run test suite                     | `bun run test` (`npm test` proxies to Bun) |
-| Lint                               | `bun run lint` (`npm run lint`)            |
-| Format with Prettier               | `bun run format` (`npm run format`)        |
-| Type check without emit            | `bun run typecheck` (`npm run typecheck`)  |
-| Dev server smoke test (no browser) | `bun run dev:check` (`npm run dev:check`)  |
-| Validate toy registry and docs     | `bun run check:toys`                       |
-| Serve built assets from `dist/`    | `bun run serve:dist`                       |
-| Cloudflare Pages preview           | `bun run pages:dev`                        |
-| Cloudflare Pages deploy            | `bun run pages:deploy`                     |
+| Task                               | Command (Bun / optional Node fallback)          |
+| ---------------------------------- | ----------------------------------------------- |
+| Start dev server                   | `bun run dev` (`npm run dev`)                   |
+| Start dev server (LAN)             | `bun run dev:host` (`npm run dev:host`)         |
+| Production build                   | `bun run build` (`npm run build`)               |
+| Preview build locally              | `bun run preview` (`npm run preview`)           |
+| Run test suite                     | `bun run test` (`npm test` proxies to Bun)      |
+| Run test suite (watch)             | `bun run test:watch`                            |
+| Lint                               | `bun run lint` (`npm run lint`)                 |
+| Lint with auto-fix                 | `bun run lint:fix` (`npm run lint:fix`)         |
+| Format with Prettier               | `bun run format` (`npm run format`)             |
+| Format check (no writes)           | `bun run format:check` (`npm run format:check`) |
+| Type check without emit            | `bun run typecheck` (`npm run typecheck`)       |
+| Type check (watch)                 | `bun run typecheck:watch`                       |
+| Dev server smoke test (no browser) | `bun run dev:check` (`npm run dev:check`)       |
+| Validate toy registry and docs     | `bun run check:toys`                            |
+| Quality gate (lint/typecheck/test) | `bun run check`                                 |
+| Quality gate (lint/typecheck)      | `bun run check:quick`                           |
+| Serve built assets from `dist/`    | `bun run serve:dist`                            |
+| Cloudflare Pages preview           | `bun run pages:dev`                             |
+| Cloudflare Pages deploy            | `bun run pages:deploy`                          |
 
 Notes:
 

@@ -40,11 +40,25 @@ If you’re using Node as a fallback, run `npm run dev` instead.
   bun run lint
   ```
   (`npm run lint` is available as an optional fallback.)
+- Apply lint auto-fixes:
+  ```bash
+  bun run lint:fix
+  ```
+  (`npm run lint:fix` is available as an optional fallback.)
 - Format the codebase:
   ```bash
   bun run format
   ```
   (`npm run format` is available as an optional fallback.)
+- Check formatting without writing:
+  ```bash
+  bun run format:check
+  ```
+  (`npm run format:check` is available as an optional fallback.)
+- Run lint, typecheck, and tests together:
+  ```bash
+  bun run check
+  ```
 
 ## Branching and Pull Requests
 
