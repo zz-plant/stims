@@ -22,5 +22,8 @@ if (isCloudflarePages && hasReusableArtifacts) {
   process.exit(0);
 }
 
-console.log('[build] Running Vite build...');
-execSync('vite build', { stdio: 'inherit' });
+const hasBunRuntime = typeof process.versions?.bun === 'string';
+const viteCommand = hasBunRuntime ? 'bunx vite build' : 'npx vite build';
+
+console.log(`[build] Running Vite build with "${viteCommand}"...`);
+execSync(viteCommand, { stdio: 'inherit' });
