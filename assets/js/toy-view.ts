@@ -294,6 +294,27 @@ export function createToyView({
   };
 
   const getDocument = () => documentRef();
+  const prefersReducedMotion = () =>
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const runViewTransition = <T>(action: () => T) => {
+    const doc = getDocument();
+    if (
+      !doc ||
+      typeof doc.startViewTransition !== 'function' ||
+      prefersReducedMotion()
+    ) {
+      return action();
+    }
+
+    let result: T;
+    doc.startViewTransition(() => {
+      result = action();
+    });
+    return result!;
+  };
 
   const getToyList = () => getDocument()?.getElementById(listId) ?? null;
 
@@ -360,14 +381,14 @@ export function createToyView({
     state.rendererStatus = null;
     state.activeToyMeta = undefined;
     state.status = null;
-    render({ clearContainer: true });
+    runViewTransition(() => render({ clearContainer: true }));
   };
 
   const showActiveToyView = (onBack?: () => void, toy?: Toy) => {
     state.mode = 'toy';
     state.backHandler = onBack ?? state.backHandler;
     state.activeToyMeta = toy ?? state.activeToyMeta;
-    const { container } = render();
+    const { container } = runViewTransition(() => render());
     return container;
   };
 
@@ -380,7 +401,7 @@ export function createToyView({
       message: toyTitle ? `${toyTitle} is loading.` : 'Loading toy...',
     };
 
-    const { status } = render();
+    const { status } = runViewTransition(() => render());
     return status;
   };
 
@@ -410,7 +431,9 @@ export function createToyView({
       ],
     };
 
-    const { status } = render({ clearContainer: true });
+    const { status } = runViewTransition(() =>
+      render({ clearContainer: true })
+    );
     return status;
   };
 
@@ -434,7 +457,9 @@ export function createToyView({
       ],
     };
 
-    const { status } = render({ clearContainer: true });
+    const { status } = runViewTransition(() =>
+      render({ clearContainer: true })
+    );
     return status;
   };
 
@@ -477,7 +502,9 @@ export function createToyView({
       ],
     };
 
-    const { status } = render({ clearContainer: true });
+    const { status } = runViewTransition(() =>
+      render({ clearContainer: true })
+    );
     return status;
   };
 
