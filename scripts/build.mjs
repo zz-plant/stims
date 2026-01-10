@@ -29,10 +29,15 @@ if (isCloudflarePages && hasReusableArtifacts) {
 }
 
 const hasBunRuntime = typeof process.versions?.bun === 'string';
-const installCommand = hasBunRuntime
-  ? 'bun install --frozen-lockfile'
-  : 'npm ci';
-const viteCommand = hasBunRuntime ? 'bunx vite build' : 'npx vite build';
+const installCommand = 'bun install --frozen-lockfile';
+const viteCommand = 'bunx vite build';
+
+if (!hasBunRuntime) {
+  console.error(
+    '[build] Bun is required to install dependencies and run the Vite build.'
+  );
+  process.exit(1);
+}
 
 if (!existsSync(vitePackagePath)) {
   console.log(`[build] Installing dependencies with "${installCommand}"...`);
