@@ -1255,6 +1255,25 @@ function setupDarkModeToggle(themeToggleId = 'theme-toggle') {
 
   const label = btn.querySelector('[data-theme-label]');
   const icon = btn.querySelector('.theme-toggle__icon');
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const runViewTransition = (action) => {
+    const doc = btn.ownerDocument;
+    if (
+      !doc ||
+      typeof doc.startViewTransition !== 'function' ||
+      prefersReducedMotion?.matches
+    ) {
+      action();
+      return;
+    }
+    doc.startViewTransition(() => {
+      action();
+    });
+  };
 
   const updateButtonState = () => {
     const isDark = theme === 'dark';
@@ -1278,9 +1297,11 @@ function setupDarkModeToggle(themeToggleId = 'theme-toggle') {
   updateButtonState();
 
   btn.addEventListener('click', () => {
-    theme = theme === 'dark' ? 'light' : 'dark';
-    applyTheme(theme, true);
-    updateButtonState();
+    runViewTransition(() => {
+      theme = theme === 'dark' ? 'light' : 'dark';
+      applyTheme(theme, true);
+      updateButtonState();
+    });
   });
 }
 
