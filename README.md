@@ -185,6 +185,7 @@ All JavaScript dependencies are installed via npm (or Bun) and bundled locally w
 
 - If the browser denied microphone access, re-allow it via the address bar/site settings and click the start button again. Hard-refreshing the page will re-trigger the prompt on most browsers.
 - Switch to demo audio if you keep seeing timeouts or “blocked” errors—the UI exposes a fallback button for a pre-mixed track so you can keep exploring without mic input.
+- Use the YouTube audio option on `toy.html` to paste a video link and capture tab audio when you want a shared playback source instead of live mic input.
 - For deeper debugging (including timeouts and permission-state checks), see the microphone flow helper in [`assets/js/core/microphone-flow.ts`](./assets/js/core/microphone-flow.ts).
 
 #### WebGPU gating
