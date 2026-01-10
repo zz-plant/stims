@@ -13,6 +13,7 @@ import {
 import type { RendererInitConfig } from './renderer-setup.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 import { defaultToyLifecycle } from './toy-lifecycle.ts';
+import type { FrequencyAnalyser } from '../utils/audio-handler.ts';
 
 export default class WebToy {
   canvas: HTMLCanvasElement;
@@ -23,7 +24,7 @@ export default class WebToy {
   rendererInfo: RendererHandle['info'] | null;
   rendererReady: Promise<RendererHandle | null>;
   rendererOptions: Parameters<typeof requestRenderer>[0]['options'];
-  analyser: THREE.AudioAnalyser | null;
+  analyser: FrequencyAnalyser | null;
   audioListener: THREE.AudioListener | null;
   audio: THREE.Audio | THREE.PositionalAudio | null;
   audioStream: MediaStream | null;

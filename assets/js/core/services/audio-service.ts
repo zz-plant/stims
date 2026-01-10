@@ -3,10 +3,11 @@ import {
   getMicrophonePermissionState,
   initAudio,
   type AudioInitOptions,
+  type FrequencyAnalyser,
 } from '../../utils/audio-handler.ts';
 
 export type AudioHandle = {
-  analyser: THREE.AudioAnalyser;
+  analyser: FrequencyAnalyser;
   listener: THREE.AudioListener;
   audio: THREE.Audio | THREE.PositionalAudio;
   stream?: MediaStream;
