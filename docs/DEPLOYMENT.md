@@ -48,6 +48,7 @@ Any static host should point its document root to the `dist/` directory and pres
 - `dist/.vite/manifest.json` for asset lookups.
 
 If your platform supports immutable caching, enable it for `dist/assets/**`; keep HTML un-cached or lightly cached so updates propagate.
+Cloudflare Pages can read caching rules from `public/_headers`, which Vite copies into `dist/_headers` at build time. The repo ships defaults that set long-term caching for `assets/*` and force revalidation for HTML and `.vite` metadata; adjust those if your host requires a different policy.
 
 ## Cloudflare Pages Configuration
 
