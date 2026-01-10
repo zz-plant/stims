@@ -7,6 +7,10 @@ import {
 } from '../core/animation-loop';
 import { startToyAudio } from '../utils/start-audio';
 import {
+  resolveToyAudioOptions,
+  type ToyAudioRequest,
+} from '../utils/audio-start';
+import {
   createPointerInput,
   type PointerPosition,
   type PointerSummary,
@@ -440,14 +444,17 @@ initializeScene();
 handleResize();
 window.addEventListener('resize', handleResize);
 
-async function startAudio(useSynthetic = false) {
+async function startAudio(request: ToyAudioRequest = false) {
   try {
-    return await startToyAudio(toy, animate, {
-      fftSize: 1024,
-      smoothingTimeConstant: 0.8,
-      fallbackToSynthetic: true,
-      preferSynthetic: useSynthetic,
-    });
+    return await startToyAudio(
+      toy,
+      animate,
+      resolveToyAudioOptions(request, {
+        fftSize: 1024,
+        smoothingTimeConstant: 0.8,
+        fallbackToSynthetic: true,
+      })
+    );
   } catch (error) {
     console.warn('Falling back to silent animation', error);
     const ctx: AnimationContext = { toy, analyser: null };

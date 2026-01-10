@@ -8,6 +8,10 @@ import {
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
 import {
+  resolveToyAudioOptions,
+  type ToyAudioRequest,
+} from '../utils/audio-start';
+import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
   getActiveQualityPreset,
@@ -262,12 +266,12 @@ function setupSettingsPanel() {
   });
 }
 
-async function startAudio(useSynthetic = false) {
-  return startToyAudio(toy, animate, {
-    fftSize: 256,
-    fallbackToSynthetic: useSynthetic,
-    preferSynthetic: useSynthetic,
-  });
+async function startAudio(request: ToyAudioRequest = false) {
+  return startToyAudio(
+    toy,
+    animate,
+    resolveToyAudioOptions(request, { fftSize: 256 })
+  );
 }
 
 init();

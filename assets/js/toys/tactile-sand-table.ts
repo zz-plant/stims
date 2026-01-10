@@ -7,6 +7,10 @@ import {
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
 import {
+  resolveToyAudioOptions,
+  type ToyAudioRequest,
+} from '../utils/audio-start';
+import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
   getActiveQualityPreset,
@@ -191,10 +195,13 @@ export async function start() {
     motionCleanup?.();
     motionCleanup = null;
   };
-  let motionAccess: MotionAccessState = motionSupported ? 'prompt' : 'unavailable';
+  let motionAccess: MotionAccessState = motionSupported
+    ? 'prompt'
+    : 'unavailable';
   gravity.locked = motionAccess !== 'granted';
 
-  (toy as WebToy & { cleanupMotion?: () => void }).cleanupMotion = cleanupMotion;
+  (toy as WebToy & { cleanupMotion?: () => void }).cleanupMotion =
+    cleanupMotion;
 
   const panel = getSettingsPanel();
   panel.configure({
@@ -328,7 +335,8 @@ export async function start() {
 
     if (motionAccess === 'granted') {
       motionButton.textContent = 'Motion enabled';
-      motionStatus.textContent = 'Motion control is active. Tilt to steer gravity.';
+      motionStatus.textContent =
+        'Motion control is active. Tilt to steer gravity.';
       syncGravityLock(false);
       return;
     }
@@ -355,7 +363,8 @@ export async function start() {
     const handler = (event: DeviceOrientationEvent) =>
       mapOrientationToGravity(event, gravity);
     window.addEventListener('deviceorientation', handler);
-    motionCleanup = () => window.removeEventListener('deviceorientation', handler);
+    motionCleanup = () =>
+      window.removeEventListener('deviceorientation', handler);
   };
 
   const requestMotionAccess = async () => {
@@ -500,12 +509,12 @@ export async function start() {
     ctx.toy.render();
   }
 
-  async function startAudio(useSynthetic = false) {
-    return startToyAudio(toy, animate, {
-      fftSize: 512,
-      fallbackToSynthetic: useSynthetic,
-      preferSynthetic: useSynthetic,
-    });
+  async function startAudio(request: ToyAudioRequest = false) {
+    return startToyAudio(
+      toy,
+      animate,
+      resolveToyAudioOptions(request, { fftSize: 512 })
+    );
   }
 
   const originalDispose = toy.dispose.bind(toy);

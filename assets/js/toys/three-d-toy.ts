@@ -13,6 +13,10 @@ import {
 } from '../utils/control-panel';
 import { startToyAudio } from '../utils/start-audio';
 import {
+  resolveToyAudioOptions,
+  type ToyAudioRequest,
+} from '../utils/audio-start';
+import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
   getActiveQualityPreset,
@@ -266,12 +270,9 @@ function setupSettingsPanel() {
   });
 }
 
-async function startAudio(useSynthetic = false) {
+async function startAudio(request: ToyAudioRequest = false) {
   try {
-    await startToyAudio(toy, animate, {
-      fallbackToSynthetic: useSynthetic,
-      preferSynthetic: useSynthetic,
-    });
+    await startToyAudio(toy, animate, resolveToyAudioOptions(request));
     hideError();
     return true;
   } catch (e) {

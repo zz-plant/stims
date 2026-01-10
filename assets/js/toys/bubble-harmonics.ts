@@ -7,6 +7,10 @@ import {
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
+import {
+  resolveToyAudioOptions,
+  type ToyAudioRequest,
+} from '../utils/audio-start';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
 import {
   DEFAULT_QUALITY_PRESETS,
@@ -332,14 +336,16 @@ function setupSettingsPanel() {
   });
 }
 
-async function startAudio(useSynthetic = false) {
+async function startAudio(request: ToyAudioRequest = false) {
   await initPromise;
-  return startToyAudio(toy, animate, {
-    fftSize: 2048,
-    smoothingTimeConstant: 0.72,
-    fallbackToSynthetic: useSynthetic,
-    preferSynthetic: useSynthetic,
-  });
+  return startToyAudio(
+    toy,
+    animate,
+    resolveToyAudioOptions(request, {
+      fftSize: 2048,
+      smoothingTimeConstant: 0.72,
+    })
+  );
 }
 
 (window as unknown as Record<string, unknown>).startAudio = startAudio;
