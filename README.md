@@ -34,10 +34,9 @@ If you add new scripts, toys, or deployment options, update the relevant doc abo
 
 1. Clone the repo and `cd` into it.
 2. Choose your runtime (the repo records `bun@1.2.14` in `package.json` via `packageManager`):
-   - **Bun 1.2+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle.
-   - **Node.js 22** (see `.nvmrc`): still supported for Vite and general tooling if you prefer npm.
-3. Install dependencies with `bun install` (preferred). The repository tracks `bun.lock` for reproducible installs—use `bun install --frozen-lockfile` to respect it. If you use npm, run `npm install` locally; a `package-lock.json` will be generated but is not committed.
-4. Start the dev server with `npm run dev` or `bun run dev`, then open `http://localhost:5173` in your browser. The dev server already binds to all interfaces for easy forwarding and mobile checks; `bun run dev:host` (or `npm run dev:host`) remains available as an explicit alternative.
+   - **Bun 1.2+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle and the supported workflow.
+3. Install dependencies with `bun install`. The repository tracks `bun.lock` for reproducible installs—use `bun install --frozen-lockfile` to respect it.
+4. Start the dev server with `bun run dev`, then open `http://localhost:5173` in your browser. The dev server already binds to all interfaces for easy forwarding and mobile checks; `bun run dev:host` remains available as an explicit alternative.
 
 See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static hosting, and Cloudflare Worker instructions. That playbook also covers PR preview validation and multi-entry-point checks before merging.
 
@@ -136,27 +135,23 @@ To play with the toys locally you’ll need to run them from a local web server.
    cd stims
    ```
 
-2. Use Bun 1.2+ (recorded in `package.json`). Node.js 22 (see `.nvmrc`) is available as an optional fallback; if you have nvm installed, run `nvm use` to select it.
+2. Use Bun 1.2+ (recorded in `package.json`).
 
-3. Install dependencies (Bun is preferred and the only locked flow):
+3. Install dependencies (Bun is required and the only locked flow):
 
    ```bash
    bun install
-   # or, if you prefer npm locally
-   npm install
    ```
 
-   The repository tracks `bun.lock`; pin installs with `bun install --frozen-lockfile`. If you use npm, regenerate `package-lock.json` locally as needed, but do not commit it.
+   The repository tracks `bun.lock`; pin installs with `bun install --frozen-lockfile`.
 
-   Bun does not automatically run `prepare` scripts, so the repo includes a `postinstall` hook that installs Husky when `npm_config_user_agent` starts with `bun`. If that step fails for any reason, fall back to `bun x husky install` (or `npx husky install`).
+   Bun does not automatically run `prepare` scripts, so the repo includes a `postinstall` hook that installs Husky when `npm_config_user_agent` starts with `bun`. If that step fails for any reason, fall back to `bun x husky install`.
 
-4. Start the development server (Bun by default):
+4. Start the development server:
 
    ```bash
    bun run dev
    ```
-
-   If you’re on Node, use `npm run dev` instead.
 
 Open `http://localhost:5173` in your browser.
 
@@ -169,15 +164,11 @@ bun run preview
 bun run serve:dist
 # or use Python as a fallback
 python3 -m http.server dist
-
-# Node fallback
-npm run build
-npm run preview
 ```
 
 The preview server hosts the contents of `dist/` on port `4173` using Vite's `--host` flag, so you can load the build from other devices on your LAN if needed.
 
-All JavaScript dependencies are installed via npm (or Bun) and bundled locally with Vite, so everything works offline without hitting a CDN.
+All JavaScript dependencies are installed via Bun and bundled locally with Vite, so everything works offline without hitting a CDN.
 
 ### Troubleshooting
 
@@ -196,23 +187,23 @@ All JavaScript dependencies are installed via npm (or Bun) and bundled locally w
 
 #### Dev-server hosting
 
-- Use `bun run dev:host` (or `npm run dev:host`) to bind the dev server to your LAN interface for mobile/device testing; the script mirrors the default `dev` command but with explicit hosting.
+- Use `bun run dev:host` to bind the dev server to your LAN interface for mobile/device testing; the script mirrors the default `dev` command but with explicit hosting.
 - Check the served port in the terminal output (Vite defaults to `5173`; preview uses `4173`). Connect from other devices via `http://<your-ip>:<port>`.
 - Avoid loading toys over `file://`; the modules and JSON fetches require an HTTP server, so always use the dev server, preview server, or another static host.
 
 ### Helpful Scripts (Bun-first)
 
-- `bun run dev`: Start the Vite development server for local exploration. (`npm run dev` works if you’re on Node.)
-- `bun run dev:host`: Start the Vite dev server bound to your LAN interface for quick mobile/device testing. (`npm run dev:host` works if you’re on Node.)
-- `bun run build`: Produce a production build in `dist/`. (`npm run build` is available as a fallback.)
-- `bun run preview`: Serve the production build locally (Vite preview with `--host` for LAN testing) to validate the output before deploying. (`npm run preview` is the Node fallback.)
-- `bun run test`: Run the Bun-native test suite with the required `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags applied. These load happy-dom globals and a Three.js stub so specs run headlessly. `npm test` proxies to the same script when you’re on Node.
+- `bun run dev`: Start the Vite development server for local exploration.
+- `bun run dev:host`: Start the Vite dev server bound to your LAN interface for quick mobile/device testing.
+- `bun run build`: Produce a production build in `dist/`.
+- `bun run preview`: Serve the production build locally (Vite preview with `--host` for LAN testing) to validate the output before deploying.
+- `bun run test`: Run the Bun-native test suite with the required `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags applied. These load happy-dom globals and a Three.js stub so specs run headlessly.
 - `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
-- `bun run lint`: Check code quality with ESLint. (`npm run lint` is an optional fallback.)
-- `bun run lint:fix`: Apply ESLint auto-fixes locally. (`npm run lint:fix` is an optional fallback.)
-- `bun run format`: Format files with Prettier. (`npm run format` is an optional fallback.)
-- `bun run format:check`: Validate formatting without writing changes. (`npm run format:check` is an optional fallback.)
-- `bun run typecheck`: Run TypeScript’s type checker without emitting files. (`npm run typecheck` is an optional fallback.)
+- `bun run lint`: Check code quality with ESLint.
+- `bun run lint:fix`: Apply ESLint auto-fixes locally.
+- `bun run format`: Format files with Prettier.
+- `bun run format:check`: Validate formatting without writing changes.
+- `bun run typecheck`: Run TypeScript’s type checker without emitting files.
 - `bun run typecheck:watch`: Keep TypeScript checking in watch mode without emitting files.
 - `bun run check`: Run lint, typecheck, and tests in one go (handy before opening a PR).
 - `bun run check:quick`: Run lint and typecheck only (fast guardrail during iteration).
@@ -234,15 +225,13 @@ dependencies and run the tests:
    bun install
    ```
 
-   (`npm install` is available if you’re using Node.)
-
 2. Run the tests (via the script so required flags are applied):
 
    ```bash
    bun run test
    ```
 
-   This script pins `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` to load happy-dom globals and a Three.js stub for headless execution. Use `npm test` as the Node equivalent.
+   This script pins `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` to load happy-dom globals and a Three.js stub for headless execution.
 
 For quick iteration, use the watch mode:
 
@@ -252,7 +241,7 @@ bun run test:watch
 
 ### Linting and Formatting
 
-Before committing, run `bun run lint` to check code style and `bun run format` to automatically format your files. If you’re on Node, the `npm run lint` and `npm run format` fallbacks are available. This keeps the project consistent.
+Before committing, run `bun run lint` to check code style and `bun run format` to automatically format your files. This keeps the project consistent.
 
 ## Cloudflare Pages (Bun) build & deploy
 
@@ -265,7 +254,7 @@ Cloudflare Pages can build this project with Bun using the `wrangler.toml` in th
 - Enable Pages’ **Bun runtime** so the build runs under Bun instead of Node.
 - The `compatibility_date` in `wrangler.toml` keeps Pages aligned with the Cloudflare Workers API version.
 - Do not add a `[pages]` table in `wrangler.toml`; Cloudflare Pages expects project linkage to be configured in the dashboard.
-- If you prefer to omit the build command in the Pages UI, keep `CF_PAGES=1` in the environment; `scripts/postinstall.mjs` will run `bun run build` (or `npm run build`) during `npm install` to populate `dist/` automatically. The script still only installs Husky when the installer is Bun, matching local behavior.
+- If you prefer to omit the build command in the Pages UI, keep `CF_PAGES=1` in the environment; `scripts/postinstall.mjs` will run `bun run build` during install to populate `dist/` automatically. The script still only installs Husky when the installer is Bun, matching local behavior.
 
 To verify the preview locally, run `bun run build` and inspect the generated `dist/` folder; it matches the assets Pages will serve when the Bun runtime is enabled and the build output directory is `dist/`.
 
