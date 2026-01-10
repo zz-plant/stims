@@ -202,7 +202,7 @@ function registerTools(server: McpServer) {
       const localSetup = extractSection(readmeContent, 'Local Setup');
       const helpfulScripts = extractSection(
         readmeContent,
-        'Helpful Scripts (npm or Bun)'
+        'Helpful Scripts (Bun-first)'
       );
       const tests = extractSection(readmeContent, 'Running Tests');
       const linting = extractSection(readmeContent, 'Linting and Formatting');
@@ -256,7 +256,7 @@ async function buildDocPointers() {
 
   const entries = [
     quickStart && formatPointer('Quick start steps', quickStart),
-    runtime && formatPointer('Runtime options (Bun / Node)', runtime),
+    runtime && formatPointer('Runtime options (Bun)', runtime),
     layout && formatPointer('Repository layout', layout),
     toys && formatPointer('Toy catalog link targets', toys),
   ].filter(Boolean) as string[];

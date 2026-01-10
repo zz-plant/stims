@@ -24,8 +24,8 @@ If you add new tooling or patterns, update these docs so the next contributor ha
 
 ## Onboarding highlights
 
-- Use **Bun 1.2+** for installs and scripts (Node 22 is available as a fallback). Run `bun install` in a fresh clone to populate `bun.lock`-aligned dependencies.
-- Run a **dev server smoke test** without opening a browser via `bun run dev:check` (or `npm run dev:check`) to confirm Vite wiring before you start coding.
+- Use **Bun 1.2+** for installs and scripts. Run `bun install` in a fresh clone to populate `bun.lock`-aligned dependencies.
+- Run a **dev server smoke test** without opening a browser via `bun run dev:check` to confirm Vite wiring before you start coding.
 - When adding or renaming toys, run `bun run check:toys` to ensure `assets/js/toys-data.js` entries, TypeScript modules, iframe HTML files, and `docs/TOY_SCRIPT_INDEX.md` stay in sync.
 
 ## Navigation tips
@@ -38,6 +38,6 @@ If you add new tooling or patterns, update these docs so the next contributor ha
 ## Doc maintenance checklist
 
 - Add or update a link here whenever you create a new guide under `docs/` so contributors can discover it.
-- Cross-link new scripts or workflows from the relevant guide (for example, record new npm/bun scripts in `DEVELOPMENT.md` and toy-scaffolding changes in `TOY_DEVELOPMENT.md`).
+- Cross-link new scripts or workflows from the relevant guide (for example, record new Bun scripts in `DEVELOPMENT.md` and toy-scaffolding changes in `TOY_DEVELOPMENT.md`).
 - Keep toy-related documentation synchronized: update `TOY_DEVELOPMENT.md`, `TOY_SCRIPT_INDEX.md`, and `toys.md` when adding, renaming, or removing a toy entry point.
 - Before shipping a PR, skim the docs above for stale script names, flags, or file paths introduced by your change.
