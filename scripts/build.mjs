@@ -14,6 +14,12 @@ const distDir = join(process.cwd(), 'dist');
 const distIndex = join(distDir, 'index.html');
 const manifest = join(distDir, '.vite', 'manifest.json');
 const hasReusableArtifacts = existsSync(distIndex) && existsSync(manifest);
+const vitePackagePath = join(
+  process.cwd(),
+  'node_modules',
+  'vite',
+  'package.json'
+);
 
 if (isCloudflarePages && hasReusableArtifacts) {
   console.log(
@@ -22,5 +28,16 @@ if (isCloudflarePages && hasReusableArtifacts) {
   process.exit(0);
 }
 
-console.log('[build] Running Vite build...');
-execSync('vite build', { stdio: 'inherit' });
+const hasBunRuntime = typeof process.versions?.bun === 'string';
+const installCommand = hasBunRuntime
+  ? 'bun install --frozen-lockfile'
+  : 'npm ci';
+const viteCommand = hasBunRuntime ? 'bunx vite build' : 'npx vite build';
+
+if (!existsSync(vitePackagePath)) {
+  console.log(`[build] Installing dependencies with "${installCommand}"...`);
+  execSync(installCommand, { stdio: 'inherit' });
+}
+
+console.log(`[build] Running Vite build with "${viteCommand}"...`);
+execSync(viteCommand, { stdio: 'inherit' });
