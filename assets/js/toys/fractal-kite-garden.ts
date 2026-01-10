@@ -7,6 +7,10 @@ import {
 } from '../core/animation-loop';
 import { startToyAudio } from '../utils/start-audio';
 import {
+  resolveToyAudioOptions,
+  type ToyAudioRequest,
+} from '../utils/audio-start';
+import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
   getActiveQualityPreset,
@@ -354,12 +358,12 @@ function animate(ctx: AnimationContext) {
   ctx.toy.render();
 }
 
-async function startAudio(useSynthetic = false) {
-  return startToyAudio(toy, animate, {
-    fftSize: 512,
-    fallbackToSynthetic: useSynthetic,
-    preferSynthetic: useSynthetic,
-  });
+async function startAudio(request: ToyAudioRequest = false) {
+  return startToyAudio(
+    toy,
+    animate,
+    resolveToyAudioOptions(request, { fftSize: 512 })
+  );
 }
 
 init();

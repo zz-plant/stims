@@ -7,6 +7,10 @@ import {
 } from '../core/animation-loop';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { startToyAudio } from '../utils/start-audio';
+import {
+  resolveToyAudioOptions,
+  type ToyAudioRequest,
+} from '../utils/audio-start';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
 import {
   DEFAULT_QUALITY_PRESETS,
@@ -118,11 +122,8 @@ function animate(ctx: AnimationContext) {
   ctx.toy.render();
 }
 
-async function startAudio(useSynthetic = false) {
-  return startToyAudio(toy, animate, {
-    fallbackToSynthetic: useSynthetic,
-    preferSynthetic: useSynthetic,
-  });
+async function startAudio(request: ToyAudioRequest = false) {
+  return startToyAudio(toy, animate, resolveToyAudioOptions(request));
 }
 
 init();
