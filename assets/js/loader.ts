@@ -68,6 +68,40 @@ export function createLoader({
     );
   };
 
+  const showModuleImportError = (
+    toy: Toy,
+    { moduleUrl, importError }: { moduleUrl?: string; importError: Error }
+  ) => {
+    view.showImportError(toy, {
+      moduleUrl,
+      importError,
+      onBack: backToLibrary,
+    });
+  };
+
+  const resolveToyModuleUrl = async (toy: Toy) => {
+    try {
+      return await manifestClient.resolveModulePath(toy.module);
+    } catch (error) {
+      console.error('Error resolving module path:', error);
+      showModuleImportError(toy, { importError: error as Error });
+      return null;
+    }
+  };
+
+  const importToyModule = async (toy: Toy, moduleUrl: string) => {
+    try {
+      return await import(moduleUrl);
+    } catch (error) {
+      console.error('Error loading toy module:', error);
+      showModuleImportError(toy, {
+        moduleUrl,
+        importError: error as Error,
+      });
+      return null;
+    }
+  };
+
   const disposeActiveToy = () => {
     lifecycle.disposeActiveToy();
     view?.clearActiveToyContainer?.();
@@ -143,31 +177,11 @@ export function createLoader({
       commitNavigation();
       view.showLoadingIndicator(toy.title || toy.slug, toy);
 
-      let moduleUrl: string;
-      try {
-        moduleUrl = await manifestClient.resolveModulePath(toy.module);
-      } catch (error) {
-        console.error('Error resolving module path:', error);
-        view.showImportError(toy, {
-          importError: error as Error,
-          onBack: backToLibrary,
-        });
-        return;
-      }
+      const moduleUrl = await resolveToyModuleUrl(toy);
+      if (!moduleUrl) return;
 
-      let moduleExports: unknown;
-
-      try {
-        moduleExports = await import(moduleUrl);
-      } catch (error) {
-        console.error('Error loading toy module:', error);
-        view.showImportError(toy, {
-          moduleUrl,
-          importError: error as Error,
-          onBack: backToLibrary,
-        });
-        return;
-      }
+      const moduleExports = await importToyModule(toy, moduleUrl);
+      if (!moduleExports) return;
 
       const startCandidate =
         (moduleExports as { start?: unknown })?.start ??
@@ -181,10 +195,9 @@ export function createLoader({
           lifecycle.adoptActiveToy(active ?? lifecycle.getActiveToy()?.ref);
         } catch (error) {
           console.error('Error starting toy module:', error);
-          view.showImportError(toy, {
+          showModuleImportError(toy, {
             moduleUrl,
             importError: error as Error,
-            onBack: backToLibrary,
           });
           return;
         }
