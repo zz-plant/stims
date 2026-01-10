@@ -1,6 +1,8 @@
-import type * as THREE from 'three';
 import { getFrequencyData } from '../utils/audio-handler';
-import type { AudioInitOptions } from '../utils/audio-handler';
+import type {
+  AudioInitOptions,
+  FrequencyAnalyser,
+} from '../utils/audio-handler';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WebToyInstance = any;
@@ -10,7 +12,7 @@ type WebToyInstance = any;
  */
 export interface AnimationContext {
   toy: WebToyInstance;
-  analyser: THREE.AudioAnalyser | null;
+  analyser: FrequencyAnalyser | null;
 }
 
 /**

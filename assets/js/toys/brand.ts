@@ -5,6 +5,7 @@ import { getContextFrequencyData } from '../core/animation-loop';
 import { ensureWebGL } from '../utils/webgl-check';
 import { showError } from '../utils/error-display';
 import { startToyAudio } from '../utils/start-audio';
+import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { initHints } from '../../ui/hints';
 import { initFunControls } from '../../ui/fun-controls';
 import { createBrandFunAdapter } from '../../brand/fun-adapter';
@@ -209,7 +210,7 @@ export async function startBrandToy({
   poleMesh.instanceMatrix.needsUpdate = true;
 
   const animate = (ctx: {
-    analyser: THREE.AudioAnalyser | null;
+    analyser: FrequencyAnalyser | null;
     toy: WebToy;
   }) => {
     const dataArray = getContextFrequencyData(ctx);
