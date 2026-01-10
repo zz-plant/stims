@@ -4,15 +4,13 @@ Thanks for helping build and refine the Stim Webtoys Library! This guide covers 
 
 ## Environment Setup
 
-- Use **Bun 1.2+** for the fastest installs and test runs (the repo records this in `package.json`). **Node.js 22** (see `.nvmrc`) is also supported if you prefer npm for Vite or tooling.
+- Use **Bun 1.2+** for installs and test runs (the repo records this in `package.json`).
 - Install dependencies (Bun is the only lockfile tracked in git):
   ```bash
   bun install
-  # or, if you prefer npm locally
-  npm install
   ```
-  The repository pins installs via `bun.lock`, so use `bun install --frozen-lockfile` to honor it. If you generate a `package-lock.json` with npm, keep it local and untracked.
-  Bun does not automatically run `prepare` scripts, so a `postinstall` script installs Husky when your user agent starts with `bun`. If that misses your setup, run `bun x husky install` (or `npx husky install`) after installing dependencies.
+  The repository pins installs via `bun.lock`, so use `bun install --frozen-lockfile` to honor it.
+  Bun does not automatically run `prepare` scripts, so a `postinstall` script installs Husky when your user agent starts with `bun`. If that misses your setup, run `bun x husky install` after installing dependencies.
 
 ## Running the Dev Server
 
@@ -22,15 +20,13 @@ Start the local development server and open the site at `http://localhost:5173`:
 bun run dev
 ```
 
-If you’re using Node as a fallback, run `npm run dev` instead.
-
 ## Testing, Linting, and Formatting
 
 - Run all tests:
   ```bash
   bun run test
   ```
-  Always invoke the script so the pinned `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags apply, loading happy-dom globals and a Three.js stub needed for headless specs. (`npm test` proxies to the same script when available.)
+  Always invoke the script so the pinned `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags apply, loading happy-dom globals and a Three.js stub needed for headless specs.
 - Run the Bun test runner with filters (for example, targeting specific files):
   ```bash
   bun test tests/path/to/spec.test.js
@@ -39,22 +35,18 @@ If you’re using Node as a fallback, run `npm run dev` instead.
   ```bash
   bun run lint
   ```
-  (`npm run lint` is available as an optional fallback.)
 - Apply lint auto-fixes:
   ```bash
   bun run lint:fix
   ```
-  (`npm run lint:fix` is available as an optional fallback.)
 - Format the codebase:
   ```bash
   bun run format
   ```
-  (`npm run format` is available as an optional fallback.)
 - Check formatting without writing:
   ```bash
   bun run format:check
   ```
-  (`npm run format:check` is available as an optional fallback.)
 - Run lint, typecheck, and tests together:
   ```bash
   bun run check

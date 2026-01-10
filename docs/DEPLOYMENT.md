@@ -56,7 +56,7 @@ Cloudflare Pages reads the build command from the project settings in the dashbo
 
 Pages builders occasionally default to older Bun versions, which causes `bun install` to fail against the `bun.lock` that tracks Bun `1.2.14`. This repository includes a `.bun-version` file that Cloudflare Pages automatically detects, ensuring the install step always runs with a compatible runtime. If you need to override this, you can set the `BUN_VERSION=1.2.14` environment variable.
 
-> **Install step:** Make sure devDependencies are present so `vite` exists at build time. In Cloudflare Pages, set the install command to `bun install` (or `npm install`) and keep `NPM_CONFIG_PRODUCTION=false` (the repo ships `.npmrc` with `production=false` for this). If you prefer Bun, set `BUN_INSTALL_DEV=true` to mirror local installs.
+> **Install step:** Make sure devDependencies are present so `vite` exists at build time. In Cloudflare Pages, set the install command to `bun install` and set `BUN_INSTALL_DEV=true` to mirror local installs.
 
 ### Pages CLI flows
 

@@ -25,13 +25,17 @@ const hasBun = (() => {
   }
 })();
 
-const buildRunner = hasBun ? 'bun' : 'npm';
-
 if (isCloudflarePages) {
+  if (!hasBun) {
+    console.error(
+      '[postinstall] Bun is required to build dist/ on Cloudflare Pages.'
+    );
+    process.exit(1);
+  }
   console.log(
-    `[postinstall] Cloudflare Pages detected; running "${buildRunner} run build" to produce dist/.`
+    '[postinstall] Cloudflare Pages detected; running "bun run build" to produce dist/.'
   );
-  run(`${buildRunner} run build`);
+  run('bun run build');
 } else {
   console.log('[postinstall] CF_PAGES not set; skipping build.');
 }
