@@ -5,6 +5,7 @@ import { createManifestClient } from './utils/manifest-client.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import { prewarmRendererCapabilities } from './core/services/render-service.ts';
+import { assessToyCapabilities } from './core/toy-capabilities.ts';
 import {
   prewarmMicrophone,
   resetAudioPool,
@@ -13,6 +14,7 @@ import {
   defaultToyLifecycle,
   type ToyLifecycle,
 } from './core/toy-lifecycle.ts';
+import { loadToyModuleStarter } from './utils/toy-module-loader.ts';
 
 type Toy = {
   slug: string;
@@ -25,6 +27,8 @@ type Toy = {
 
 const TOY_QUERY_PARAM = 'toy';
 
+// createLoader orchestrates routing/navigation, renderer capability checks,
+// module resolution/import, view updates, and lifecycle management.
 export function createLoader({
   manifestClient = createManifestClient(),
   router = createRouter({ queryParam: TOY_QUERY_PARAM }),
@@ -79,29 +83,6 @@ export function createLoader({
     });
   };
 
-  const resolveToyModuleUrl = async (toy: Toy) => {
-    try {
-      return await manifestClient.resolveModulePath(toy.module);
-    } catch (error) {
-      console.error('Error resolving module path:', error);
-      showModuleImportError(toy, { importError: error as Error });
-      return null;
-    }
-  };
-
-  const importToyModule = async (toy: Toy, moduleUrl: string) => {
-    try {
-      return await import(moduleUrl);
-    } catch (error) {
-      console.error('Error loading toy module:', error);
-      showModuleImportError(toy, {
-        moduleUrl,
-        importError: error as Error,
-      });
-      return null;
-    }
-  };
-
   const disposeActiveToy = () => {
     lifecycle.disposeActiveToy();
     view?.clearActiveToyContainer?.();
@@ -129,17 +110,16 @@ export function createLoader({
   ) => {
     void prewarmRendererCapabilitiesFn();
     void prewarmMicrophoneFn();
-    let capabilities = initialCapabilities ?? (await rendererCapabilities());
-
-    const supportsRendering = ensureWebGLCheck({
-      title: toy.title
-        ? `${toy.title} needs graphics acceleration`
-        : 'Graphics support required',
-      description:
-        'We could not detect WebGL or WebGPU support on this device. Try a modern browser with hardware acceleration enabled.',
+    const capabilityDecision = await assessToyCapabilities({
+      toy,
+      rendererCapabilities,
+      ensureWebGLCheck,
+      initialCapabilities,
     });
 
-    if (!supportsRendering) {
+    let capabilities = capabilityDecision.capabilities;
+
+    if (!capabilityDecision.supportsRendering) {
       return;
     }
 
@@ -177,41 +157,42 @@ export function createLoader({
       commitNavigation();
       view.showLoadingIndicator(toy.title || toy.slug, toy);
 
-      const moduleUrl = await resolveToyModuleUrl(toy);
-      if (!moduleUrl) return;
+      const moduleResult = await loadToyModuleStarter({
+        moduleId: toy.module,
+        manifestClient,
+      });
+      if (!moduleResult.ok) {
+        console.error('Error loading toy module:', moduleResult.error);
+        showModuleImportError(toy, {
+          moduleUrl: moduleResult.moduleUrl,
+          importError: moduleResult.error,
+        });
+        return;
+      }
 
-      const moduleExports = await importToyModule(toy, moduleUrl);
-      if (!moduleExports) return;
+      const { moduleUrl, starter } = moduleResult;
 
-      const startCandidate =
-        (moduleExports as { start?: unknown })?.start ??
-        (moduleExports as { default?: { start?: unknown } })?.default?.start;
-      const starter =
-        typeof startCandidate === 'function' ? startCandidate : null;
-
-      if (starter) {
-        try {
-          const active = await starter({ container, slug: toy.slug });
-          lifecycle.adoptActiveToy(active ?? lifecycle.getActiveToy()?.ref);
-        } catch (error) {
-          console.error('Error starting toy module:', error);
-          showModuleImportError(toy, {
-            moduleUrl,
-            importError: error as Error,
-          });
-          return;
-        }
+      try {
+        const active = await starter({ container, slug: toy.slug });
+        lifecycle.adoptActiveToy(active ?? lifecycle.getActiveToy()?.ref);
+      } catch (error) {
+        console.error('Error starting toy module:', error);
+        showModuleImportError(toy, {
+          moduleUrl,
+          importError: error as Error,
+        });
+        return;
       }
 
       view.removeStatusElement();
     };
 
-    if (toy.requiresWebGPU && capabilities.preferredBackend !== 'webgpu') {
+    if (capabilityDecision.shouldShowCapabilityError) {
       view.showCapabilityError(toy, {
-        allowFallback: toy.allowWebGLFallback,
+        allowFallback: capabilityDecision.allowWebGLFallback,
         onBack: backToLibrary,
         details: capabilities.fallbackReason,
-        onContinue: toy.allowWebGLFallback
+        onContinue: capabilityDecision.allowWebGLFallback
           ? () => {
               view.clearActiveToyContainer();
               void runToy();
