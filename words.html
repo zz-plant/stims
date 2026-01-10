@@ -83,6 +83,16 @@
         backdrop-filter: blur(12px);
       }
 
+      .manual-banner {
+        margin: 0 0 8px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.95);
+        font-size: 0.9rem;
+      }
+
       .manual-row {
         display: flex;
         gap: 10px;
@@ -237,6 +247,10 @@
         when your browser supports them.
       </p>
       <div class="manual-panel" id="manual-panel">
+        <p class="manual-banner" id="manual-banner">
+          No mic? Type a few words below or hit “Add sample words” (or press
+          Space) to demo the word cloud animation.
+        </p>
         <div class="manual-row">
           <label class="visually-hidden" for="manual-words"
             >Add words manually</label
@@ -261,8 +275,8 @@
           </button>
         </div>
         <p class="control-hint" style="margin-top: 8px; margin-bottom: 0">
-          Press Enter to submit. Tap "Add sample words" or press Space to pulse
-          the cloud even without a mic.
+          Press Enter to submit. Use “Add sample words” or press Space to pulse
+          the cloud for a no-mic demo.
         </p>
       </div>
     </div>
@@ -287,6 +301,7 @@
       const unmuteIcon = document.getElementById('unmute-icon');
       const toggleSpeechIcon = document.getElementById('toggle-speech-icon');
       const manualPanel = document.getElementById('manual-panel');
+      const manualBanner = document.getElementById('manual-banner');
       const manualInput = document.getElementById('manual-words');
       const addWordsButton = document.getElementById('add-words-button');
       const demoWordsButton = document.getElementById('demo-words-button');
@@ -398,7 +413,13 @@
       const shapes = ['circle', 'star', 'triangle', 'diamond'];
 
       const speechUnavailableMessage =
-        'Speech recognition is unavailable. Words will stay on the default seed set unless you add more manually in a supported browser.';
+        'Speech recognition is unavailable. Use the manual input below or add sample words to keep the cloud active.';
+
+      function focusManualInput() {
+        if (!manualInput || !manualPanel) return;
+        manualPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => manualInput.focus(), 120);
+      }
 
       function updateUnmuteIcon() {
         unmuteIcon.src = isUnmuted
@@ -432,6 +453,9 @@
           disableSpeechToggle(speechUnavailableMessage);
           toggleSpeechButton?.remove();
           updateSpeechIcon();
+          manualBanner.textContent =
+            'Speech isn’t supported here. Add words manually or tap “Add sample words” to animate the cloud.';
+          focusManualInput();
           return;
         }
 
@@ -653,7 +677,7 @@
         );
       } else {
         setStatus(
-          'Speech recognition is unavailable. Type words or use sample words to keep playing.'
+          'Speech recognition is unavailable. Type words, press Enter, or add sample words to keep the cloud moving.'
         );
       }
 
@@ -685,6 +709,9 @@
             setStatus(
               'Speech recognition permission was denied. Type words or use sample words instead.'
             );
+            manualBanner.textContent =
+              'Mic access is blocked. Keep typing below or use “Add sample words” to animate without speech.';
+            focusManualInput();
             return;
           }
 
