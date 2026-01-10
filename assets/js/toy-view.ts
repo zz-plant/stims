@@ -159,7 +159,7 @@ function buildImportErrorMessage(
   { moduleUrl, importError }: ImportErrorOptions = {}
 ) {
   if (typeof window !== 'undefined' && window.location?.protocol === 'file:') {
-    return 'This toy needs a local web server to compile its TypeScript modules. Run `npm run dev` (or `bun run dev`) and reload from `http://localhost:5173`.';
+    return 'This toy needs a local web server to compile its TypeScript modules. Run `bun run dev` and reload from `http://localhost:5173`.';
   }
 
   const message = importError?.message ?? '';
