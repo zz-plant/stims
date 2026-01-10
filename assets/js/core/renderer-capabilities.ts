@@ -11,6 +11,18 @@ export type RendererCapabilities = {
   shouldRetryWebGPU: boolean;
 };
 
+export type RendererTelemetryEvent = {
+  preferredBackend: RendererBackend;
+  triedWebGPU: boolean;
+  fallbackReason: string | null;
+  isWebGPUSupported: boolean;
+};
+
+export type RendererTelemetryHandler = (
+  event: 'renderer_capabilities',
+  detail: RendererTelemetryEvent
+) => void;
+
 type FallbackOptions = {
   triedWebGPU?: boolean;
   shouldRetryWebGPU?: boolean;
@@ -19,6 +31,8 @@ type FallbackOptions = {
 let capabilitiesPromise: Promise<RendererCapabilities> | null = null;
 let cachedCapabilities: RendererCapabilities | null = null;
 let cachedEnvironmentKey: unknown = null;
+let telemetryHandler: RendererTelemetryHandler | null = null;
+let telemetryReportedKey: unknown = null;
 
 const buildFallback = (
   fallbackReason: string,
@@ -32,8 +46,27 @@ const buildFallback = (
   shouldRetryWebGPU,
 });
 
+const reportRendererTelemetry = (result: RendererCapabilities) => {
+  const environmentKey = cachedEnvironmentKey ?? getEnvironmentKey();
+  if (telemetryReportedKey === environmentKey) return;
+  telemetryReportedKey = environmentKey;
+  const detail: RendererTelemetryEvent = {
+    preferredBackend: result.preferredBackend,
+    triedWebGPU: result.triedWebGPU,
+    fallbackReason: result.fallbackReason,
+    isWebGPUSupported: result.preferredBackend === 'webgpu',
+  };
+  telemetryHandler?.('renderer_capabilities', detail);
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(
+      new CustomEvent('stims:renderer-capabilities', { detail })
+    );
+  }
+};
+
 const cacheResult = (result: RendererCapabilities) => {
   cachedCapabilities = result;
+  reportRendererTelemetry(result);
   return result;
 };
 
@@ -46,6 +79,7 @@ function getEnvironmentKey() {
 function resetCache() {
   capabilitiesPromise = null;
   cachedCapabilities = null;
+  telemetryReportedKey = null;
 }
 
 async function probeRendererCapabilities(): Promise<RendererCapabilities> {
@@ -123,6 +157,12 @@ export function resetRendererCapabilities() {
   cachedEnvironmentKey = null;
 }
 
+export function setRendererTelemetryHandler(
+  handler: RendererTelemetryHandler | null
+) {
+  telemetryHandler = handler;
+}
+
 export function rememberRendererFallback(
   fallbackReason: string,
   {
@@ -130,13 +170,13 @@ export function rememberRendererFallback(
     triedWebGPU = true,
   }: { shouldRetryWebGPU?: boolean; triedWebGPU?: boolean } = {}
 ) {
+  cachedEnvironmentKey = getEnvironmentKey();
   const result = cacheResult(
     buildFallback(fallbackReason, {
       triedWebGPU,
       shouldRetryWebGPU,
     })
   );
-  cachedEnvironmentKey = getEnvironmentKey();
   capabilitiesPromise = Promise.resolve(result);
   return result;
 }
