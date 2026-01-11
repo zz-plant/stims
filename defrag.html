@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Defrag Sound-Reactive Visualizer</title>
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <style>
+      body {
+        background-color: #000000; /* OLED black */
+        color: #00ff00; /* Old-school green text */
+      }
+      #statusIndicator {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+        font-size: 16px;
+      }
+      #defragText {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        z-index: 10;
+        font-size: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="index.html" class="home-link">Back to Library</a>
+    <canvas id="canvas" class="toy-canvas"></canvas>
+    <div id="error-message" style="display: none"></div>
+    <div id="statusIndicator" aria-live="polite"></div>
+    <div id="defragText">Defragmenting Drive C:</div>
+
+    <script type="module">
+      import {
+        initAudio,
+        getAverageFrequency,
+        getFrequencyData,
+      } from './assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from './assets/js/utils/start-audio.ts';
+      import { showError } from './assets/js/utils/error-display.ts';
+      import { setupIframeQualitySync } from './assets/js/core/iframe-quality-sync.ts';
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const blocks = [];
+      const baseRows = 30;
+      const baseCols = 40;
+      let rows = baseRows;
+      let cols = baseCols;
+      let blockWidth = 0;
+      let blockHeight = 0;
+      let viewWidth = window.innerWidth;
+      let viewHeight = window.innerHeight;
+      let renderScale = 1;
+      let pixelRatio = 1;
+      let idleAnimationTime = 0.0; // Idle state timer for defragmentation effects
+      let idleColorShift = 0;
+      const DEFAULT_FFT_SIZE = 64;
+      const neutralSpectrum = new Uint8Array(DEFAULT_FFT_SIZE / 2);
+      let qualityDensity = 1;
+
+      function resizeCanvas() {
+        const effectiveScale = pixelRatio * renderScale;
+        viewWidth = window.innerWidth;
+        viewHeight = window.innerHeight;
+        canvas.width = viewWidth * effectiveScale;
+        canvas.height = viewHeight * effectiveScale;
+        canvas.style.width = `${viewWidth}px`;
+        canvas.style.height = `${viewHeight}px`;
+        ctx.setTransform(effectiveScale, 0, 0, effectiveScale, 0, 0);
+        blockWidth = viewWidth / cols;
+        blockHeight = viewHeight / rows;
+      }
+
+      function rebuildGrid() {
+        blocks.length = 0;
+        for (let i = 0; i < rows; i++) {
+          for (let j = 0; j < cols; j++) {
+            blocks.push({
+              x: j * blockWidth,
+              y: i * blockHeight,
+              color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+              sizeModifier: 1.0,
+            });
+          }
+        }
+      }
+
+      resizeCanvas();
+      rebuildGrid();
+
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+        rebuildGrid();
+      });
+
+      let audioDataArray = neutralSpectrum.slice();
+      let idleState = true;
+      let movingAverageLevel = 0;
+      const idleThreshold = 5;
+
+      const statusIndicator = document.getElementById('statusIndicator');
+
+      function applyQualityPreset(preset) {
+        pixelRatio = Math.min(
+          window.devicePixelRatio || 1,
+          preset.maxPixelRatio
+        );
+        renderScale = preset.renderScale ?? 1;
+        qualityDensity = Math.max(0.6, preset.particleScale ?? 1);
+        rows = Math.max(10, Math.round(baseRows * qualityDensity));
+        cols = Math.max(12, Math.round(baseCols * qualityDensity));
+        resizeCanvas();
+        rebuildGrid();
+      }
+
+      setupIframeQualitySync(applyQualityPreset);
+
+      function updateStatusIndicator(state) {
+        if (!statusIndicator) return;
+
+        const messages = {
+          waiting: 'Waiting for mic…',
+          listening: 'Listening…',
+          idle: 'Listening for sound…',
+        };
+
+        statusIndicator.textContent = messages[state] ?? '';
+      }
+
+      updateStatusIndicator('waiting');
+
+      class CanvasToy {
+        constructor(canvasEl) {
+          this.canvas = canvasEl;
+          this.analyser = null;
+          this.audioCleanup = null;
+          this.loopId = null;
+          this.renderLoop = null;
+          this.renderer = {
+            setAnimationLoop: (loop) => {
+              if (this.loopId) {
+                cancelAnimationFrame(this.loopId);
+              }
+
+              this.renderLoop = loop;
+
+              if (!loop) return;
+
+              const tick = () => {
+                this.renderLoop?.();
+                this.loopId = requestAnimationFrame(tick);
+              };
+
+              tick();
+            },
+          };
+        }
+
+        async initAudio(options = {}) {
+          const audio = await initAudio(options);
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          return audio;
+        }
+
+        dispose() {
+          if (this.loopId) {
+            cancelAnimationFrame(this.loopId);
+          }
+
+          this.renderLoop = null;
+          this.loopId = null;
+          this.audioCleanup?.();
+        }
+      }
+
+      const toy = new CanvasToy(canvas);
+
+      function drawBlocks() {
+        const frequencyData = audioDataArray.length
+          ? audioDataArray
+          : neutralSpectrum;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        blocks.forEach((block, index) => {
+          const frequency = frequencyData[index % frequencyData.length] / 255.0; // Normalize frequency
+          block.sizeModifier = frequency * 2; // Adjust block size based on frequency data
+
+          if (idleState) {
+            // If idle, perform defragmentation-style rearrangement of blocks
+            idleAnimationTime += 0.005;
+            const idleEffect = Math.sin(idleAnimationTime + index * 0.1);
+            block.sizeModifier = 1.0 + idleEffect * 0.2; // Small fluctuations
+            block.color = `hsl(${(idleColorShift + index) % 360}, 100%, 50%)`; // Gradual color shift
+          } else {
+            const colorMod = Math.floor(frequency * 360); // Adjust block color based on frequency data
+            block.color = `hsl(${colorMod}, 100%, 50%)`;
+          }
+
+          const adjustedWidth = blockWidth * block.sizeModifier;
+          const adjustedHeight = blockHeight * block.sizeModifier;
+
+          ctx.fillStyle = block.color;
+          ctx.fillRect(block.x, block.y, adjustedWidth, adjustedHeight);
+        });
+
+        idleColorShift += 1; // Slow color shift during idle state
+      }
+
+      function defragTextAnimation() {
+        const text = document.getElementById('defragText');
+        if (text.innerHTML.endsWith('...')) {
+          text.innerHTML = 'Defragmenting Drive C:';
+        } else {
+          text.innerHTML += '.';
+        }
+      }
+
+      function defragLoop(ctxAudio) {
+        if (ctxAudio.analyser) {
+          audioDataArray = getFrequencyData(ctxAudio.analyser);
+          const averageLevel = getAverageFrequency(audioDataArray);
+          movingAverageLevel = movingAverageLevel * 0.7 + averageLevel * 0.3;
+          idleState = movingAverageLevel < idleThreshold;
+          updateStatusIndicator(idleState ? 'idle' : 'listening');
+        } else {
+          audioDataArray = neutralSpectrum;
+          updateStatusIndicator('waiting');
+        }
+        drawBlocks();
+        defragTextAnimation();
+      }
+
+      startToyAudio(toy, defragLoop, {
+        fftSize: DEFAULT_FFT_SIZE,
+        fallbackToSynthetic: true,
+        onCleanup: () => updateStatusIndicator('waiting'),
+      }).catch((err) => {
+        console.error('Error capturing audio: ', err);
+        showError(
+          'error-message',
+          'Microphone access is required for the visualization to work. Please allow microphone access.'
+        );
+        updateStatusIndicator('waiting');
+        toy.renderer.setAnimationLoop(() =>
+          defragLoop({ toy, analyser: null })
+        );
+      });
+    </script>
+  </body>
+</html>

@@ -1,324 +1,896 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Trippy Synesthetic Visualizer with WebGL</title>
-    <style>
-        body, html {
-            margin: 0;
-            overflow: hidden;
-            height: 100%;
-            background-color: #000000; /* OLED black */
-        }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-        }
-    </style>
-</head>
-<body>
-    <canvas id="gpuCanvas"></canvas>
-    <select id="audioSelect">
-        <option value="mic">Microphone</option>
-        <option value="device">Device Audio</option>
-    </select>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stim Webtoys Library</title>
     <script>
-        // Fallback to WebGL
-        const canvas = document.getElementById('gpuCanvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      (function () {
+        const resolveThemePreference = () => {
+          const stored = localStorage.getItem('theme');
+          if (stored === 'light' || stored === 'dark') {
+            return stored;
+          }
+          return window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+        };
 
-        if (!gl) {
-            console.error('WebGL not supported');
-            throw new Error('WebGL not supported');
-        }
+        const applyTheme = (theme, persist = false) => {
+          const root = document.documentElement;
+          if (theme === 'light') {
+            root.classList.add('light');
+          } else {
+            root.classList.remove('light');
+          }
+          if (persist) {
+            localStorage.setItem('theme', theme);
+          }
+        };
 
-        // Resize canvas
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        window.__stimsTheme = { resolveThemePreference, applyTheme };
 
-        // Compile shader
-        function compileShader(source, type) {
-            const shader = gl.createShader(type);
-            gl.shaderSource(shader, source);
-            gl.compileShader(shader);
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error('Shader compile failed: ' + gl.getShaderInfoLog(shader));
-                gl.deleteShader(shader);
-                throw new Error('Shader compile error');
-            }
-            return shader;
-        }
-
-        // Vertex shader source
-        const vertexShaderSource = `
-            attribute vec2 a_position;
-            varying vec2 v_uv;
-            void main() {
-                v_uv = a_position * 0.5 + 0.5;
-                gl_Position = vec4(a_position, 0.0, 1.0);
-            }
-        `;
-
-        // Fragment shader source
-        const fragmentShaderSource = `
-            precision mediump float;
-            uniform float u_time;
-            uniform float u_low_freq;
-            uniform float u_mid_freq;
-            uniform float u_high_freq;
-            uniform vec2 u_touch0;
-            uniform vec2 u_touch1;
-            uniform vec3 u_orientation;
-            varying vec2 v_uv;
-            
-            float noise(vec2 p) {
-                return sin(p.x * 12.9898 + p.y * 78.233) * 43758.5453 - floor(sin(p.x * 12.9898 + p.y * 78.233) * 43758.5453);
-            }
-
-            void main() {
-                vec2 uv = v_uv - 0.5;
-                float dist = length(uv);
-                float angle = atan(uv.y, uv.x);
-
-                // Background color shifting and dynamic gradients
-                vec3 baseColor = vec3(
-                    0.5 + 0.5 * sin(u_time + angle + u_low_freq * 5.0),
-                    0.5 + 0.5 * cos(u_time + angle * 2.0 + u_mid_freq * 3.0),
-                    0.5 + 0.5 * sin(u_time * 0.5 + angle * 3.0 + u_high_freq * 7.0)
-                );
-
-                // Low frequency pulsing waves
-                float lowWave = 0.5 + 0.5 * sin(15.0 * dist - u_time + angle * 3.0) * (u_low_freq + 0.3);
-                vec3 lowColor = vec3(lowWave * 0.5, lowWave * 0.3, lowWave);
-
-                // Mid frequency oscillations with noise distortion
-                float midOscillation = 0.5 + 0.5 * cos(20.0 * dist - u_time * 1.5 + angle * 4.0) * (u_mid_freq + 0.4);
-                midOscillation += noise(uv * 10.0) * 0.2 * u_mid_freq;
-                vec3 midColor = vec3(midOscillation * 0.3, midOscillation, midOscillation * 0.6);
-
-                // High frequency sparks with strobe effect
-                float highSpark = 0.5 + 0.5 * sin(25.0 * dist - u_time * 2.0 + angle * 6.0) * (u_high_freq + 0.5);
-                highSpark += step(0.9, fract(sin(u_time * 10.0) * 43758.5453)) * 0.3 * u_high_freq;
-                vec3 highColor = vec3(highSpark, highSpark * 0.5, highSpark * 0.2);
-
-                // Blend low, mid, and high colors together for synesthetic experience
-                vec3 color = baseColor + lowColor + midColor + highColor;
-
-                // Add ripple effects from multi-touch interactions
-                float touchEffect0 = 0.0;
-                float touchEffect1 = 0.0;
-                if (length(u_touch0) > 0.0) {
-                    touchEffect0 = 0.2 / length(uv - (u_touch0 - 0.5));
-                }
-                if (length(u_touch1) > 0.0) {
-                    touchEffect1 = 0.2 / length(uv - (u_touch1 - 0.5));
-                }
-                color += vec3(touchEffect0 + touchEffect1);
-
-                // Orientation-based distortion to make visuals more fluid and trippy
-                float orientationEffect = sin(u_orientation.x * uv.x * 10.0 + u_time) * 0.1 * u_orientation.y;
-                uv += vec2(orientationEffect, orientationEffect);
-
-                // Kaleidoscope-like radial gradient with more vivid effects
-                float radialGradient = smoothstep(0.6, 0.0, dist) * (1.0 + sin(u_time * 5.0 + dist * 15.0) * 0.1);
-                color *= radialGradient;
-
-                // Add more glow and blur for a dreamy, synesthetic feel
-                float glow = exp(-10.0 * dist) * (u_low_freq + u_mid_freq + u_high_freq);
-                color += vec3(glow * 0.4, glow * 0.6, glow * 0.8);
-
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `;
-
-        // Create and link program
-        const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
-        const fragmentShader = compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER);
-        const program = gl.createProgram();
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
-
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error('Program link failed: ' + gl.getProgramInfoLog(program));
-            throw new Error('Program link error');
-        }
-        gl.useProgram(program);
-
-        // Set up geometry
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-            -1, -1,
-            1, -1,
-            -1, 1,
-            -1, 1,
-            1, -1,
-            1, 1,
-        ]), gl.STATIC_DRAW);
-
-        const positionLocation = gl.getAttribLocation(program, 'a_position');
-        gl.enableVertexAttribArray(positionLocation);
-        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-        // Set up uniforms
-        const timeLocation = gl.getUniformLocation(program, 'u_time');
-        const lowFreqLocation = gl.getUniformLocation(program, 'u_low_freq');
-        const midFreqLocation = gl.getUniformLocation(program, 'u_mid_freq');
-        const highFreqLocation = gl.getUniformLocation(program, 'u_high_freq');
-        const touch0Location = gl.getUniformLocation(program, 'u_touch0');
-        const touch1Location = gl.getUniformLocation(program, 'u_touch1');
-        const orientationLocation = gl.getUniformLocation(program, 'u_orientation');
-
-        // Audio setup for beat detection and frequency analysis
-        let audioContext, analyser, source;
-        const audioSelect = document.getElementById('audioSelect');
-
-        audioSelect.addEventListener('change', initializeAudio);
-        initializeAudio();
-
-        function initializeAudio() {
-            if (audioContext) {
-                audioContext.close();
-            }
-
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-
-                if (audioSelect.value === 'mic') {
-                    source = audioContext.createMediaStreamSource(stream);
-                } else {
-                    // Use the audio context's `createMediaElementSource` to capture device audio
-                    const audioElement = new Audio();
-                    audioElement.crossOrigin = 'anonymous';
-                    source = audioContext.createMediaElementSource(audioElement);
-                    source.connect(audioContext.destination); // To allow playback
-                    audioElement.play();
-                }
-
-                source.connect(analyser);
-                analyser.fftSize = 256;
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-
-                let lastVibrateTime = 0;
-
-                function vibrateBasedOnAudio(lowFreq, midFreq, highFreq) {
-                    const intensity = Math.max(lowFreq, midFreq, highFreq);
-                    const currentTime = Date.now();
-
-                    // Vibrate only during significant visual events and not too frequently
-                    if (intensity > 0.7 && currentTime - lastVibrateTime > 500) {
-                        if (navigator.vibrate) {
-                            navigator.vibrate([intensity * 100, 50, intensity * 100]);
-                        }
-                        lastVibrateTime = currentTime;
-                    }
-                }
-
-                function vibrateBasedOnVisuals(lowFreq, midFreq, highFreq, dist) {
-                    const vibrateIntensity = Math.max(lowFreq, midFreq, highFreq) * (1.0 - dist);
-                    if (navigator.vibrate && vibrateIntensity > 0.5) {
-                        navigator.vibrate([Math.floor(vibrateIntensity * 200), 50, Math.floor(vibrateIntensity * 200)]);
-                    }
-                }
-
-                // Device orientation-based distortion
-                let orientation = { alpha: 0, beta: 0, gamma: 0 };
-                window.addEventListener('deviceorientation', (event) => {
-                    orientation.alpha = event.alpha;
-                    orientation.beta = event.beta;
-                    orientation.gamma = event.gamma;
-                });
-
-                // Multi-touch effects
-                let touches = [
-                    { x: 0.0, y: 0.0 },
-                    { x: 0.0, y: 0.0 }
-                ];
-
-                canvas.addEventListener('touchstart', (event) => {
-                    updateTouches(event.touches);
-                });
-
-                canvas.addEventListener('touchmove', (event) => {
-                    updateTouches(event.touches);
-                    event.preventDefault();
-                });
-
-                canvas.addEventListener('touchend', (event) => {
-                    updateTouches(event.touches);
-                });
-
-                function updateTouches(touchList) {
-                    for (let i = 0; i < touches.length; i++) {
-                        if (i < touchList.length) {
-                            const touch = touchList[i];
-                            touches[i].x = (touch.clientX / window.innerWidth) * 2.0 - 1.0;
-                            touches[i].y = 1.0 - (touch.clientY / window.innerHeight) * 2.0;
-                        } else {
-                            touches[i].x = 0.0;
-                            touches[i].y = 0.0;
-                        }
-                    }
-                }
-
-                function updateAudioData() {
-                    analyser.getByteFrequencyData(dataArray);
-                    const lowFreq = dataArray.slice(0, bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
-                    const midFreq = dataArray.slice(bufferLength / 3, 2 * bufferLength / 3).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
-                    const highFreq = dataArray.slice(2 * bufferLength / 3, bufferLength).reduce((sum, value) => sum + value, 0) / (bufferLength / 3) / 256.0;
-
-                    // Beat detection based on low frequency threshold
-                    if (lowFreq > 0.5) {
-                        canvas.style.transform = 'scale(1.1)';
-                        setTimeout(() => {
-                            canvas.style.transform = 'scale(1)';
-                        }, 100);
-                    }
-
-                    gl.uniform1f(lowFreqLocation, lowFreq);
-                    gl.uniform1f(midFreqLocation, midFreq);
-                    gl.uniform1f(highFreqLocation, highFreq);
-                    gl.uniform3f(orientationLocation, orientation.alpha / 360.0, orientation.beta / 90.0, orientation.gamma / 90.0);
-
-                    gl.uniform2f(touch0Location, touches[0].x, touches[0].y);
-                    gl.uniform2f(touch1Location, touches[1].x, touches[1].y);
-
-                    vibrateBasedOnAudio(lowFreq, midFreq, highFreq);
-                    vibrateBasedOnVisuals(lowFreq, midFreq, highFreq, Math.random());
-
-                    requestAnimationFrame(updateAudioData);
-                }
-                updateAudioData();
-            }).catch(err => {
-                console.error('Error accessing microphone: ' + err);
-            });
-        }
-
-        // Render loop
-        function render(time) {
-            time *= 0.001; // Convert time to seconds
-
-            // Set uniforms
-            gl.uniform1f(timeLocation, time);
-
-            // Draw
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-            requestAnimationFrame(render);
-        }
-        requestAnimationFrame(render);
+        applyTheme(resolveThemePreference());
+      })();
     </script>
-</body>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/index.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://no.toil.fyi/#organization",
+            "name": "Stim Lab",
+            "url": "https://no.toil.fyi/",
+            "sameAs": ["https://github.com/zz-plant/stims"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://no.toil.fyi/#website",
+            "url": "https://no.toil.fyi/",
+            "name": "Stim Webtoys Library",
+            "publisher": { "@id": "https://no.toil.fyi/#organization" },
+            "inLanguage": "en"
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://no.toil.fyi/#webpage",
+            "url": "https://no.toil.fyi/",
+            "name": "Stim Webtoys Library",
+            "headline": "Feel-first visuals that breathe with your audio.",
+            "description": "Explore audio, color, and motion without setup. Every stim opens fast, responds to mic and touch, and comes with sensible defaults that keep you in flow.",
+            "isPartOf": { "@id": "https://no.toil.fyi/#website" },
+            "publisher": { "@id": "https://no.toil.fyi/#organization" },
+            "inLanguage": "en"
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div class="content">
+      <nav class="top-nav" data-top-nav>
+        <div class="brand">
+          <span class="brand-mark"></span>
+          <div class="brand-copy">
+            <p class="eyebrow">Stim Lab</p>
+            <p class="brand-title">Webtoy Library ✦</p>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <a class="nav-link" href="#toy-list">Library</a>
+          <a
+            class="nav-link"
+            href="https://github.com/zz-plant/stims"
+            target="_blank"
+            rel="noopener noreferrer"
+            >GitHub</a
+          >
+          <button
+            id="theme-toggle"
+            class="theme-toggle"
+            aria-pressed="false"
+            aria-label="Switch to dark mode"
+          >
+            <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
+            <span class="theme-toggle__label" data-theme-label>Dark mode</span>
+          </button>
+        </div>
+      </nav>
+
+      <header class="hero">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">
+              Open-source stims • Quick to try • No accounts
+            </p>
+            <h1>Feel-first visuals that breathe with your audio.</h1>
+            <p class="tagline">
+              Explore audio, color, and motion without setup. Every stim opens
+              fast, responds to mic and touch, and comes with sensible defaults
+              that keep you in flow. When you launch a toy, we’ll ask for
+              microphone access so visuals can react to your sound.
+            </p>
+            <div class="signal-grid" role="list">
+              <div class="signal-card" role="listitem">
+                <p class="signal-label">Cinematic by default</p>
+                <p class="signal-value">
+                  Layered gradients, softened edges, and light/dark palettes
+                  that respect your theme.
+                </p>
+              </div>
+              <div class="signal-card" role="listitem">
+                <p class="signal-label">Responsive everywhere</p>
+                <p class="signal-value">
+                  Keyboard, touch, and reduced-motion aware so focus stays on
+                  the sensation, not the setup.
+                </p>
+              </div>
+            </div>
+            <div class="readiness-panel" role="status" aria-live="polite">
+              <div class="readiness-header">
+                <p class="eyebrow">Interaction readiness</p>
+                <p class="readiness-title">Quick pulse before you launch</p>
+                <p class="readiness-subtitle">
+                  We check capabilities without requesting permission so you
+                  know what to expect.
+                </p>
+              </div>
+              <ul class="readiness-list">
+                <li class="readiness-item">
+                  <div class="readiness-label">
+                    <span
+                      class="readiness-dot"
+                      data-status-dot="mic"
+                      aria-hidden="true"
+                    ></span>
+                    <span class="readiness-name">Microphone input</span>
+                  </div>
+                  <p class="readiness-note" data-status-note="mic">
+                    Detecting audio support…
+                  </p>
+                </li>
+                <li class="readiness-item">
+                  <div class="readiness-label">
+                    <span
+                      class="readiness-dot"
+                      data-status-dot="motion"
+                      aria-hidden="true"
+                    ></span>
+                    <span class="readiness-name">Motion controls</span>
+                  </div>
+                  <p class="readiness-note" data-status-note="motion">
+                    Checking for device motion…
+                  </p>
+                </li>
+                <li class="readiness-item">
+                  <div class="readiness-label">
+                    <span
+                      class="readiness-dot"
+                      data-status-dot="reduced"
+                      aria-hidden="true"
+                    ></span>
+                    <span class="readiness-name"
+                      >Reduced motion preference</span
+                    >
+                  </div>
+                  <p class="readiness-note" data-status-note="reduced">
+                    Reading your animation comfort settings…
+                  </p>
+                </li>
+              </ul>
+            </div>
+            <div class="cta-row">
+              <a
+                href="toy.html?toy=holy"
+                class="cta-button primary"
+                data-quickstart-slug="holy"
+              >
+                Start with Halo Flow
+              </a>
+              <a href="#toy-list" class="cta-button ghost">Browse library</a>
+              <a
+                href="https://github.com/zz-plant/stims"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="cta-button ghost"
+                >View the code</a
+              >
+            </div>
+            <p class="cta-helper">
+              No installs or accounts. Enable your mic when prompted to see the
+              visuals react. Code and contribution notes live on GitHub.
+            </p>
+            <div class="repo-status" data-repo-status aria-live="polite">
+              <div class="repo-status__header">
+                <p class="eyebrow">Project health</p>
+                <p class="repo-status__title">GitHub status</p>
+                <p class="repo-status__description">
+                  Latest stats for
+                  <span class="repo-status__repo-name">zz-plant/stims</span>
+                  with live stars and recent activity.
+                </p>
+              </div>
+              <dl class="repo-status__metrics">
+                <div class="repo-status__metric">
+                  <dt>Stars</dt>
+                  <dd data-star-count aria-label="Stargazers">—</dd>
+                </div>
+                <div class="repo-status__metric">
+                  <dt>Last push</dt>
+                  <dd data-last-commit aria-label="Last commit date">—</dd>
+                </div>
+              </dl>
+              <p
+                class="repo-status__message"
+                data-status-fallback
+                hidden
+                role="status"
+                aria-live="polite"
+              >
+                Loading GitHub stats…
+              </p>
+            </div>
+            <div class="hero-highlights">
+              <div class="highlight-chip">
+                <span aria-hidden="true">🪩</span> Audio-reactive scenes and
+                tactile controls.
+              </div>
+              <div class="highlight-chip">
+                <span aria-hidden="true">⚡</span> Zero-install links that open
+                instantly.
+              </div>
+              <div class="highlight-chip">
+                <span aria-hidden="true">🌗</span> Light/dark mode remembers
+                your choice.
+              </div>
+              <div class="highlight-chip">
+                <span aria-hidden="true">🧭</span> Curated paths help you find a
+                vibe fast.
+              </div>
+            </div>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="preview-reel" data-preview-reel>
+              <p class="sr-only" data-preview-status aria-live="polite"></p>
+              <div class="preview-track">
+                <article
+                  class="preview-card is-active"
+                  data-preview-card
+                  data-preview-src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80"
+                >
+                  <div class="preview-media">
+                    <div class="preview-glow preview-glow--halo"></div>
+                    <div class="preview-frame">
+                      <span class="preview-tag">Halo Flow</span>
+                      <p class="preview-title">Halo Flow</p>
+                      <p class="preview-caption">
+                        Ribbons, halos, and soft bloom that ride your music.
+                      </p>
+                      <div class="preview-badges">
+                        <span class="pill pill--accent">Mic reactive</span>
+                        <span class="pill pill--contrast">Web-ready</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="preview-meta">
+                    <div class="preview-meta__copy">
+                      <p class="eyebrow">Featured</p>
+                      <p class="preview-meta__title">Start with Halo Flow</p>
+                      <p class="preview-meta__description">
+                        Our most popular stim. Crisp halos, layered gradients,
+                        and instant audio response.
+                      </p>
+                    </div>
+                    <a
+                      class="cta-button primary preview-launch"
+                      href="toy.html?toy=holy"
+                    >
+                      Launch
+                    </a>
+                  </div>
+                </article>
+                <article
+                  class="preview-card"
+                  data-preview-card
+                  data-preview-src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80"
+                >
+                  <div class="preview-media preview-media--clay">
+                    <div class="preview-glow preview-glow--clay"></div>
+                    <div class="preview-frame">
+                      <span class="preview-tag">Clay</span>
+                      <p class="preview-title">Pottery Wheel</p>
+                      <p class="preview-caption">
+                        Sculpt smooth vessels with tactile carving and soft
+                        lighting.
+                      </p>
+                      <div class="preview-badges">
+                        <span class="pill pill--soft">Touch friendly</span>
+                        <span class="pill pill--accent">Demo audio</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="preview-meta">
+                    <div class="preview-meta__copy">
+                      <p class="eyebrow">Haptic calm</p>
+                      <p class="preview-meta__title">Spin the clay wheel</p>
+                      <p class="preview-meta__description">
+                        A softer, calmer start when you want tactile focus with
+                        slow motion.
+                      </p>
+                    </div>
+                    <a
+                      class="cta-button primary preview-launch"
+                      href="toy.html?toy=clay"
+                    >
+                      Launch
+                    </a>
+                  </div>
+                </article>
+                <article
+                  class="preview-card"
+                  data-preview-card
+                  data-preview-src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80"
+                >
+                  <div class="preview-media preview-media--geom">
+                    <div class="preview-glow preview-glow--geom"></div>
+                    <div class="preview-frame">
+                      <span class="preview-tag">Geom</span>
+                      <p class="preview-title">Geometry Visualizer</p>
+                      <p class="preview-caption">
+                        Shifting prisms with crisp depth cues and kinetic
+                        lighting.
+                      </p>
+                      <div class="preview-badges">
+                        <span class="pill pill--contrast">WebGPU ready</span>
+                        <span class="pill">Motion aware</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="preview-meta">
+                    <div class="preview-meta__copy">
+                      <p class="eyebrow">High energy</p>
+                      <p class="preview-meta__title">Push geometry hard</p>
+                      <p class="preview-meta__description">
+                        Great when you want sharper motion, tilt input, and
+                        immediate depth.
+                      </p>
+                    </div>
+                    <a
+                      class="cta-button primary preview-launch"
+                      href="toy.html?toy=geom"
+                    >
+                      Launch
+                    </a>
+                  </div>
+                </article>
+              </div>
+              <div class="preview-controls" aria-label="Preview controls">
+                <div class="preview-control-buttons">
+                  <button
+                    class="preview-control"
+                    type="button"
+                    aria-label="Previous preview"
+                    data-preview-prev
+                  >
+                    ←
+                  </button>
+                  <button
+                    class="preview-control"
+                    type="button"
+                    aria-label="Pause auto-advance"
+                    aria-pressed="true"
+                    data-preview-toggle
+                  >
+                    Pause
+                  </button>
+                  <button
+                    class="preview-control"
+                    type="button"
+                    aria-label="Next preview"
+                    data-preview-next
+                  >
+                    →
+                  </button>
+                </div>
+                <div
+                  class="preview-dots"
+                  role="tablist"
+                  aria-label="Preview slides"
+                >
+                  <button
+                    class="preview-dot is-active"
+                    data-preview-dot
+                    type="button"
+                    aria-label="Slide 1"
+                    aria-selected="true"
+                  ></button>
+                  <button
+                    class="preview-dot"
+                    data-preview-dot
+                    type="button"
+                    aria-label="Slide 2"
+                    aria-selected="false"
+                  ></button>
+                  <button
+                    class="preview-dot"
+                    data-preview-dot
+                    type="button"
+                    aria-label="Slide 3"
+                    aria-selected="false"
+                  ></button>
+                </div>
+              </div>
+            </div>
+            <div class="hero-callouts">
+              <div class="callout-card">
+                <p class="callout-title">Built for instant focus</p>
+                <p class="callout-copy">
+                  Clean typography, generous spacing, and animated gradients
+                  keep the landing experience calm while you choose a stim.
+                </p>
+              </div>
+              <div class="callout-row">
+                <span class="pill pill--accent">Live audio reactive</span>
+                <span class="pill pill--soft">Touch + keyboard friendly</span>
+                <span class="pill pill--contrast">WebGPU ready toys</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="feature-bands">
+        <div class="section-heading">
+          <p class="eyebrow">Design refresh</p>
+          <h2>Curated paths make discovery calmer</h2>
+          <p class="section-description">
+            We rebuilt the landing layout with layered glass, new gradients, and
+            cushioned cards. Spotlights and sound-first tips now sit above the
+            full library so you can either follow a vibe or dive straight into
+            every toy.
+          </p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🌈</div>
+            <div class="feature-body">
+              <h3>Color-first spotlights</h3>
+              <p>
+                New highlight cards pair atmospheric gradients with clear
+                descriptions so you can pick a palette that matches your mood.
+              </p>
+              <p class="feature-meta">
+                Glassy borders, subtle glow, and rounded corners that feel
+                tactile.
+              </p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🎧</div>
+            <div class="feature-body">
+              <h3>Audio-aware guidance</h3>
+              <p>
+                Callouts explain how to start with microphone input, demos, or
+                device motion without ever feeling technical.
+              </p>
+              <p class="feature-meta">
+                Lightweight help text with improved readability on both themes.
+              </p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🧭</div>
+            <div class="feature-body">
+              <h3>Wayfinding that hugs the grid</h3>
+              <p>
+                New section spacing, pill-shaped highlights, and soft dividers
+                keep the experience airy even with dozens of entries.
+              </p>
+              <p class="feature-meta">
+                Library search and cards inherit the refreshed styling
+                automatically.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="library">
+        <div class="section-heading">
+          <p class="eyebrow">Library</p>
+          <h2>Browse every stim</h2>
+          <p class="section-description">
+            Tap a card to open it. Standalone stims like Clay, Geom, Legible,
+            and Lights sit alongside the module-based set so everything is easy
+            to reach.
+          </p>
+          <div class="library-search">
+            <label class="sr-only" for="toy-search">Search the library</label>
+            <div class="search-field">
+              <input
+                id="toy-search"
+                type="search"
+                name="toy-search"
+                placeholder="Search by name, tags, moods, or capabilities (try: calm, motion, demo audio)"
+                autocomplete="off"
+                inputmode="search"
+              />
+              <span aria-hidden="true" class="search-field__hint"
+                >Search name, tags, mood, mic/motion/demo audio</span
+              >
+            </div>
+            <div class="filter-row" role="group" aria-label="Curated filters">
+              <div class="chip-row" data-chip-row>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="mood"
+                  data-filter-value="calm"
+                >
+                  Calm
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="mood"
+                  data-filter-value="energetic"
+                >
+                  Energetic
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="capability"
+                  data-filter-value="microphone"
+                >
+                  Microphone
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="capability"
+                  data-filter-value="motion"
+                >
+                  Motion
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="capability"
+                  data-filter-value="demoAudio"
+                >
+                  Demo audio
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="feature"
+                  data-filter-value="webgpu"
+                >
+                  WebGPU
+                </button>
+              </div>
+              <label class="sort-control">
+                <span>Sort</span>
+                <select data-sort-control>
+                  <option value="featured">Featured</option>
+                  <option value="newest">Newest</option>
+                  <option value="immersive">Most immersive</option>
+                  <option value="az">A → Z</option>
+                </select>
+              </label>
+            </div>
+            <div class="search-meta">
+              <p
+                class="search-meta__results"
+                data-search-results
+                role="status"
+                aria-live="polite"
+              >
+                Loading library…
+              </p>
+            </div>
+          </div>
+        </div>
+        <main id="toy-list" class="webtoy-container"></main>
+      </section>
+
+      <footer>
+        <div class="footer-actions">
+          <p>
+            Curious about how these work?
+            <a
+              href="https://github.com/zz-plant/stims"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Check out our open-source project.
+            </a>
+          </p>
+          <div class="cta-row footer-cta-row">
+            <a
+              href="https://github.com/zz-plant/stims/issues/new/choose"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="cta-button ghost"
+              >Report an issue</a
+            >
+            <a
+              href="https://github.com/zz-plant/stims/blob/main/CONTRIBUTING.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="cta-button ghost"
+              >Contribute</a
+            >
+          </div>
+          <p class="cta-helper footer-helper">
+            GitHub links include issue forms plus the contribution guide if
+            you're preparing a pull request.
+          </p>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        const list = document.getElementById('toy-list');
+        if (!list || list.childElementCount > 0) return;
+
+        const search = document.getElementById('toy-search');
+        const searchResults = document.querySelector('[data-search-results]');
+        let cachedQuery = '';
+        let sortBy = 'featured';
+        const activeFilters = new Set();
+
+        const shouldDeferToEnhanced = () =>
+          document.body.dataset.libraryEnhanced === 'true';
+
+        const getHaystack = (toy) => {
+          const capabilityTerms = Object.entries(toy.capabilities || {})
+            .filter(([, enabled]) => !!enabled)
+            .map(([key]) => key.toLowerCase());
+
+          return [
+            toy.title,
+            toy.slug,
+            toy.description,
+            ...(toy.tags ?? []),
+            ...(toy.moods ?? []),
+            ...capabilityTerms,
+            toy.requiresWebGPU ? 'webgpu' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+        };
+
+        const matchesFilters = (toy) => {
+          if (activeFilters.size === 0) return true;
+          return Array.from(activeFilters).every((token) => {
+            const [type, value] = token.split(':');
+            if (!type || !value) return true;
+            if (type === 'mood') {
+              return (toy.moods ?? []).some(
+                (mood) => mood.toLowerCase() === value
+              );
+            }
+            if (type === 'capability') {
+              return Boolean(toy.capabilities?.[value]);
+            }
+            if (type === 'feature') {
+              return value === 'webgpu' ? Boolean(toy.requiresWebGPU) : true;
+            }
+            return true;
+          });
+        };
+
+        const capabilityScore = (toy) =>
+          (toy.requiresWebGPU ? 2 : 0) +
+          Number(toy.capabilities?.microphone) +
+          Number(toy.capabilities?.motion) +
+          Number(toy.capabilities?.demoAudio);
+
+        const sortList = (list) => {
+          const sorted = [...list];
+          switch (sortBy) {
+            case 'newest':
+              return sorted.reverse();
+            case 'az':
+              return sorted.sort((a, b) => a.title.localeCompare(b.title));
+            case 'immersive':
+              return sorted.sort(
+                (a, b) => capabilityScore(b) - capabilityScore(a)
+              );
+            default:
+              return sorted;
+          }
+        };
+        let allToys = [];
+
+        const updateResultsMeta = (count, total, query = '') => {
+          if (!(searchResults instanceof HTMLElement)) return;
+          const countLabel = `${count} ${count === 1 ? 'match' : 'matches'}`;
+          const totalLabel = `${total} ${total === 1 ? 'stim' : 'stims'}`;
+          searchResults.textContent = query
+            ? `${countLabel} for “${query}”`
+            : `Showing all ${totalLabel}`;
+        };
+
+        const renderEmptyState = () => {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          const message = document.createElement('p');
+          message.className = 'empty-state__message';
+          message.textContent = 'No stims match your search.';
+
+          const reset = document.createElement('button');
+          reset.type = 'button';
+          reset.className = 'cta-button ghost';
+          reset.textContent = 'Clear search';
+          reset.addEventListener('click', () => {
+            if (search instanceof HTMLInputElement) {
+              search.value = '';
+              cachedQuery = '';
+            }
+            renderCards(allToys, '');
+          });
+
+          empty.append(message, reset);
+          list.appendChild(empty);
+        };
+
+        const applyFilters = (query = cachedQuery) => {
+          const normalized = (query || '').toLowerCase();
+          const filtered = allToys.filter((toy) => {
+            const matchesQuery =
+              !normalized || getHaystack(toy).includes(normalized);
+            return matchesQuery && matchesFilters(toy);
+          });
+
+          return sortList(filtered);
+        };
+
+        const renderCards = (toys = applyFilters(), query = '') => {
+          if (shouldDeferToEnhanced()) return;
+
+          list.innerHTML = '';
+          updateResultsMeta(toys.length, allToys.length, query || cachedQuery);
+
+          if (toys.length === 0) {
+            renderEmptyState();
+            return;
+          }
+
+          toys.forEach((toy) => {
+            const href =
+              toy.type === 'page'
+                ? toy.module
+                : `toy.html?toy=${encodeURIComponent(toy.slug)}`;
+
+            const card = document.createElement('a');
+            card.className = 'webtoy-card';
+            card.href = href;
+            card.setAttribute('data-toy-fallback', 'true');
+
+            const title = document.createElement('h3');
+            title.textContent = toy.title;
+
+            const desc = document.createElement('p');
+            desc.textContent = toy.description;
+
+            card.append(title, desc);
+
+            const badgeRow = document.createElement('div');
+            badgeRow.className = 'webtoy-card-meta';
+
+            const badges = [];
+
+            if (toy.requiresWebGPU) {
+              badges.push({
+                label: 'WebGPU',
+                title: 'Requires WebGPU to run.',
+              });
+            }
+
+            if (toy.capabilities?.microphone) {
+              badges.push({
+                label: 'Microphone',
+                title: 'Uses live microphone input for audio.',
+              });
+            }
+
+            if (toy.capabilities?.demoAudio) {
+              badges.push({
+                label: 'Demo audio',
+                title: 'Includes a demo track if you skip the mic.',
+              });
+            }
+
+            if (toy.capabilities?.motion) {
+              badges.push({
+                label: 'Motion',
+                title: 'Responds to device motion or tilt.',
+              });
+            }
+
+            if (badges.length > 0) {
+              badges.forEach((badgeData) => {
+                const badge = document.createElement('span');
+                badge.className = 'capability-badge';
+                badge.textContent = badgeData.label;
+                badge.title = badgeData.title;
+                badgeRow.appendChild(badge);
+              });
+
+              card.appendChild(badgeRow);
+            }
+
+            list.appendChild(card);
+          });
+        };
+
+        fetch('./toys.json')
+          .then((response) => (response.ok ? response.json() : null))
+          .then((toys) => {
+            if (!toys || list.childElementCount > 0) return;
+
+            allToys = toys;
+            renderCards(applyFilters());
+
+            if (search instanceof HTMLInputElement) {
+              search.addEventListener('input', () => {
+                cachedQuery = search.value.toLowerCase().trim();
+                renderCards(applyFilters(cachedQuery), cachedQuery);
+              });
+            }
+
+            const chips = document.querySelectorAll('[data-filter-chip]');
+            chips.forEach((chip) => {
+              chip.addEventListener('click', () => {
+                const type = chip.getAttribute('data-filter-type');
+                const value = chip.getAttribute('data-filter-value');
+                if (!type || !value) return;
+                const token = `${type}:${value.toLowerCase()}`;
+                const isActive = chip.classList.toggle('is-active');
+                if (isActive) {
+                  activeFilters.add(token);
+                } else {
+                  activeFilters.delete(token);
+                }
+                renderCards(applyFilters(), cachedQuery);
+              });
+            });
+
+            const sortControl = document.querySelector('[data-sort-control]');
+            if (sortControl && sortControl.tagName === 'SELECT') {
+              sortControl.addEventListener('change', () => {
+                sortBy = sortControl.value;
+                renderCards(applyFilters(), cachedQuery);
+              });
+            }
+          })
+          .catch((error) => {
+            console.error('Unable to render library fallback', error);
+          });
+      });
+    </script>
+    <script type="module" src="assets/js/main.js"></script>
+  </body>
 </html>

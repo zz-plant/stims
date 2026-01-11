@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Enhanced Pottery Wheel Simulation</title>
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <style>
+      body {
+        background: #000;
+      }
+      canvas {
+        touch-action: none;
+      }
+      #ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: #fff;
+        z-index: 1;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 10px;
+        border-radius: 5px;
+        opacity: 0; /* Start hidden */
+        transition: opacity 0.5s;
+      }
+      #ui button {
+        margin-top: 5px;
+        padding: 5px 10px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      #toolPanel {
+        margin-top: 10px;
+      }
+      #toolPanel button {
+        margin-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="index.html" class="home-link">Back to Library</a>
+    <div id="ui">
+      <button id="resetButton">Reset Clay</button>
+      <div id="toolPanel">
+        <button data-tool="smooth">Smooth</button>
+        <button data-tool="carve">Carve</button>
+        <button data-tool="pinch">Pinch</button>
+      </div>
+    </div>
+    <script type="module">
+      import { bootstrapClayPage } from './assets/js/toys/clay.ts';
+
+      bootstrapClayPage();
+    </script>
+  </body>
+</html>
