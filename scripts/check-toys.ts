@@ -1,7 +1,7 @@
-import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
-import path from 'node:path';
+import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { z } from 'zod';
 
@@ -54,7 +54,7 @@ export async function runToyChecks(root = repoRoot) {
     const entries = await loadToyData(root);
     const indexContents = await fs.readFile(
       path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
-      'utf8'
+      'utf8',
     );
 
     validateEntries(entries, issues, warnings, indexContents, root);
@@ -71,7 +71,7 @@ async function loadToyData(root = repoRoot) {
   const source = await fs.readFile(dataPath, 'utf8');
   const tempPath = path.join(
     tmpdir(),
-    `toys-data-${Date.now()}-${Math.random().toString(16).slice(2)}.mjs`
+    `toys-data-${Date.now()}-${Math.random().toString(16).slice(2)}.mjs`,
   );
   await fs.writeFile(tempPath, source, 'utf8');
   const module = await import(pathToFileURL(tempPath).href);
@@ -82,7 +82,7 @@ async function loadToyData(root = repoRoot) {
   for (const entry of parsed) {
     if (seen.has(entry.slug)) {
       throw new Error(
-        `Duplicate slug detected in assets/js/toys-data.js: ${entry.slug}`
+        `Duplicate slug detected in assets/js/toys-data.js: ${entry.slug}`,
       );
     }
     seen.add(entry.slug);
@@ -96,13 +96,13 @@ function validateEntries(
   issues: string[],
   warnings: string[],
   indexContents: string,
-  root = repoRoot
+  root = repoRoot,
 ) {
   for (const entry of entries) {
     const modulePath = path.join(root, entry.module);
     if (!entry.module.startsWith('assets/js/toys/')) {
       issues.push(
-        `Module path for ${entry.slug} should live under assets/js/toys/.`
+        `Module path for ${entry.slug} should live under assets/js/toys/.`,
       );
     }
 
@@ -115,13 +115,13 @@ function validateEntries(
     if (entry.type === 'iframe') {
       const htmlPath = path.join(root, `${entry.slug}.html`);
       missingFiles(entry, htmlPath, root).forEach((missing) =>
-        issues.push(missing)
+        issues.push(missing),
       );
     }
 
     if (!indexContents.includes(`| \`${entry.slug}\``)) {
       warnings.push(
-        `docs/TOY_SCRIPT_INDEX.md is missing an entry for ${entry.slug}.`
+        `docs/TOY_SCRIPT_INDEX.md is missing an entry for ${entry.slug}.`,
       );
     }
   }
@@ -130,7 +130,7 @@ function validateEntries(
 function missingFiles(
   entry: z.infer<typeof toyEntrySchema>,
   targetPath: string,
-  root = repoRoot
+  root = repoRoot,
 ) {
   return [targetPath]
     .filter((filePath) => filePath)
@@ -138,17 +138,17 @@ function missingFiles(
     .filter(({ exists }) => !exists)
     .map(
       ({ filePath }) =>
-        `Missing file for ${entry.slug}: ${path.relative(root, filePath)}`
+        `Missing file for ${entry.slug}: ${path.relative(root, filePath)}`,
     );
 }
 
 async function detectUnregisteredToyFiles(
   entries: z.infer<typeof toysDataSchema>,
   issues: string[],
-  root = repoRoot
+  root = repoRoot,
 ) {
   const registeredModules = new Set(
-    entries.map((entry) => path.normalize(entry.module))
+    entries.map((entry) => path.normalize(entry.module)),
   );
   const toyDir = path.join(root, 'assets/js/toys');
   const files = await fs.readdir(toyDir);

@@ -18,7 +18,7 @@ describe('manifest client', () => {
     };
 
     const fetchImpl = mock(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) })
+      Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) }),
     );
 
     const client = createManifestClient({
@@ -49,7 +49,7 @@ describe('manifest client', () => {
     };
 
     const fetchImpl = mock(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) })
+      Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) }),
     );
 
     const client = createManifestClient({ fetchImpl });
@@ -68,7 +68,7 @@ describe('manifest client', () => {
     };
 
     const fetchImpl = mock(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) })
+      Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) }),
     );
 
     const client = createManifestClient({
@@ -79,10 +79,10 @@ describe('manifest client', () => {
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      'https://cdn.example.com/app/manifest.json'
+      'https://cdn.example.com/app/manifest.json',
     );
     expect(modulePath).toBe(
-      'https://cdn.example.com/app/assets/js/toys/example.123.js'
+      'https://cdn.example.com/app/assets/js/toys/example.123.js',
     );
   });
 
@@ -99,7 +99,7 @@ describe('manifest client', () => {
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(modulePath).toBe(
-      'https://cdn.example.com/app/assets/js/toys/example.ts'
+      'https://cdn.example.com/app/assets/js/toys/example.ts',
     );
   });
 });

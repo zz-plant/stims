@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 const normalizeBoolean = (value) => value?.toLowerCase?.() ?? '';
 const isCloudflarePages = ['1', 'true'].includes(
-  normalizeBoolean(process.env.CF_PAGES)
+  normalizeBoolean(process.env.CF_PAGES),
 );
 const distDir = join(process.cwd(), 'dist');
 const distIndex = join(distDir, 'index.html');
@@ -18,12 +18,12 @@ const vitePackagePath = join(
   process.cwd(),
   'node_modules',
   'vite',
-  'package.json'
+  'package.json',
 );
 
 if (isCloudflarePages && hasReusableArtifacts) {
   console.log(
-    '[build] CF_PAGES detected and dist/ already populated; skipping Vite rebuild.'
+    '[build] CF_PAGES detected and dist/ already populated; skipping Vite rebuild.',
   );
   process.exit(0);
 }
@@ -34,7 +34,7 @@ const viteCommand = 'bunx vite build';
 
 if (!hasBunRuntime) {
   console.error(
-    '[build] Bun is required to install dependencies and run the Vite build.'
+    '[build] Bun is required to install dependencies and run the Vite build.',
   );
   process.exit(1);
 }

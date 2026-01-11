@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Dreamy Interactive Spectrograph Music Visualizer</title>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body {
         background-color: black;
@@ -29,24 +29,25 @@
     </style>
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <div id="error-message" style="display: none"></div>
     <canvas id="glCanvas" class="toy-canvas"></canvas>
     <script type="module">
       import {
-        initAudio,
         getAverageFrequency,
         getFrequencyData,
-      } from './assets/js/utils/audio-handler.ts';
-      import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
+        initAudio,
+      } from '../assets/js/utils/audio-handler.ts';
+      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import {
         clearError,
         showError,
-      } from './assets/js/utils/error-display.ts';
-      import { initHints } from './assets/ui/hints.ts';
-      import { initFunControls } from './assets/ui/fun-controls.ts';
-      import { createSymphFunAdapter } from './assets/symph/fun-adapter.ts';
-      import { startToyAudio } from './assets/js/utils/start-audio.ts';
+      } from '../assets/js/utils/error-display.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { createSymphFunAdapter } from '../assets/symph/fun-adapter.ts';
+      import { initFunControls } from '../assets/ui/fun-controls.ts';
+      import { initHints } from '../assets/ui/hints.ts';
+
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const ctx2d = canvas.getContext('2d');

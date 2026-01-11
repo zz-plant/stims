@@ -85,7 +85,7 @@ describe('app shell user journeys', () => {
     search.dispatchEvent(new Event('input', { bubbles: true }));
 
     const visibleTitles = Array.from(
-      document.querySelectorAll('.webtoy-card h3')
+      document.querySelectorAll('.webtoy-card h3'),
     ).map((node) => node.textContent);
 
     expect(visibleTitles).toEqual(['Interactive Word Cloud']);

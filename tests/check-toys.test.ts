@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { runToyChecks } from '../scripts/check-toys.ts';
 
 async function createTempRepo() {
@@ -14,7 +14,7 @@ async function createTempRepo() {
 
   await fs.writeFile(
     path.join(root, 'assets/js/toys-data.js'),
-    'export default []\n'
+    'export default []\n',
   );
   return root;
 }
@@ -33,11 +33,11 @@ describe('check-toys script', () => {
     await fs.writeFile(path.join(root, `${slug}.html`), '<!doctype html>');
     await fs.writeFile(
       path.join(root, 'assets/js/toys-data.js'),
-      `export default [{ slug: '${slug}', title: 'Aligned', description: 'ok', module: 'assets/js/toys/${slug}.ts', type: 'iframe' }];\n`
+      `export default [{ slug: '${slug}', title: 'Aligned', description: 'ok', module: 'assets/js/toys/${slug}.ts', type: 'iframe' }];\n`,
     );
     await fs.appendFile(
       path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
-      `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Iframe wrapper |\n`
+      `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Iframe wrapper |\n`,
     );
 
     const result = await runToyChecks(root);
@@ -51,14 +51,14 @@ describe('check-toys script', () => {
     await writeToyModule(root, slug);
     await fs.writeFile(
       path.join(root, 'assets/js/toys-data.js'),
-      `export default [{ slug: '${slug}', title: 'Missing Entry', description: 'oops', module: 'assets/js/toys/${slug}.ts', type: 'iframe' }];\n`
+      `export default [{ slug: '${slug}', title: 'Missing Entry', description: 'oops', module: 'assets/js/toys/${slug}.ts', type: 'iframe' }];\n`,
     );
 
     const result = await runToyChecks(root);
     expect(
       result.issues.some((issue) =>
-        issue.includes('Missing file for missing-entry')
-      )
+        issue.includes('Missing file for missing-entry'),
+      ),
     ).toBe(true);
   });
 
@@ -68,7 +68,7 @@ describe('check-toys script', () => {
 
     const result = await runToyChecks(root);
     expect(result.issues).toContain(
-      'Unregistered toy module detected: assets/js/toys/rogue.ts'
+      'Unregistered toy module detected: assets/js/toys/rogue.ts',
     );
   });
 });

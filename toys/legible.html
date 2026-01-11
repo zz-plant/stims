@@ -7,7 +7,7 @@
 
     <!-- Particles.js Library -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
 
     <style>
       body {
@@ -125,7 +125,7 @@
     </style>
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <div id="error-message" style="display: none"></div>
     <div class="controls">
       <button id="start-button">Start Microphone</button>
@@ -162,8 +162,8 @@
       import {
         getFrequencyData,
         initAudio,
-      } from './assets/js/utils/audio-handler.ts';
-      import { startToyAudio } from './assets/js/utils/start-audio.ts';
+      } from '../assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
 
       let analyser,
         dataArray = new Uint8Array(0),
@@ -174,7 +174,7 @@
       const colorSchemeSelect = document.getElementById('color-scheme');
       let sensitivity = parseFloat(sensitivitySlider.value);
       let wordIndex = 0;
-      let cyclingActive = true;
+      const cyclingActive = true;
 
       const errorEl = document.getElementById('error-message');
 
@@ -447,7 +447,7 @@
       }
 
       function isOverlap(index, length) {
-        for (let location of revealedLocations) {
+        for (const location of revealedLocations) {
           if (
             index < location.index + location.length &&
             index + length > location.index

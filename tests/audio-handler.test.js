@@ -1,6 +1,6 @@
 import {
-  afterEach,
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -103,15 +103,16 @@ beforeAll(async () => {
     };
   });
 
-  ({ initAudio, getFrequencyData, AudioAccessError } =
-    await import('../assets/js/utils/audio-handler.ts'));
+  ({ initAudio, getFrequencyData, AudioAccessError } = await import(
+    '../assets/js/utils/audio-handler.ts'
+  ));
 });
 
 describe('audio-handler utilities', () => {
   beforeEach(() => {
     originalNavigatorDesc = Object.getOwnPropertyDescriptor(
       global,
-      'navigator'
+      'navigator',
     );
     const nav = global.navigator;
     const track = { stop: mock() };
@@ -175,18 +176,18 @@ describe('audio-handler utilities', () => {
       expect.objectContaining({
         reason: 'unsupported',
         message: expect.stringContaining('does not support'),
-      })
+      }),
     );
   });
 
   test('initAudio rejects with denied error when permission is blocked', async () => {
     global.navigator.mediaDevices.getUserMedia = mock().mockRejectedValue(
-      new DOMException('denied', 'NotAllowedError')
+      new DOMException('denied', 'NotAllowedError'),
     );
 
     await expect(initAudio()).rejects.toBeInstanceOf(AudioAccessError);
     await expect(initAudio()).rejects.toEqual(
-      expect.objectContaining({ reason: 'denied' })
+      expect.objectContaining({ reason: 'denied' }),
     );
   });
 

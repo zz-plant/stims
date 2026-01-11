@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ultimate Satisfying Audio Visualizer</title>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body {
         background-color: black;
@@ -153,7 +153,7 @@
     </style>
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <div id="error-message" style="display: none"></div>
     <!-- Loading Overlay -->
     <div id="loadingOverlay">
@@ -257,15 +257,16 @@
       import * as THREE from 'three';
       import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
       import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-      import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
       import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+      import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
       import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
       import {
         getFrequencyData,
         initAudio,
-      } from './assets/js/utils/audio-handler.ts';
-      import { startToyAudio } from './assets/js/utils/start-audio.ts';
-      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
+      } from '../assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { ensureWebGL } from '../assets/js/utils/webgl-check.ts';
+
       if (!ensureWebGL()) {
         throw new Error('WebGL support is required for the Holy visualizer.');
       }
@@ -794,7 +795,7 @@
       particleScaleSlider.addEventListener('input', updateParticleScale);
 
       // Prevent Context Menu on Long Press
-      window.oncontextmenu = function (e) {
+      window.oncontextmenu = (e) => {
         e.preventDefault();
         e.stopPropagation();
         return false;

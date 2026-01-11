@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Microphone Input Music Visualizer</title>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body {
         background: #000;
@@ -53,7 +53,7 @@
     </style>
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <div id="controls">
       <button id="startButton">Start Microphone Visualizer</button>
       <div class="control-group">
@@ -102,18 +102,18 @@
     <div id="error-message" style="display: none"></div>
     <canvas id="gameCanvas" class="toy-canvas"></canvas>
     <script type="module">
+      import { getContextFrequencyData } from '../assets/js/core/animation-loop.ts';
+      import { setupIframeQualitySync } from '../assets/js/core/iframe-quality-sync.ts';
       import {
         AudioAccessError,
         initAudio,
-      } from './assets/js/utils/audio-handler.ts';
-      import { getContextFrequencyData } from './assets/js/core/animation-loop.ts';
-      import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
+      } from '../assets/js/utils/audio-handler.ts';
+      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import {
         clearError,
         showError,
-      } from './assets/js/utils/error-display.ts';
-      import { startToyAudio } from './assets/js/utils/start-audio.ts';
-      import { setupIframeQualitySync } from './assets/js/core/iframe-quality-sync.ts';
+      } from '../assets/js/utils/error-display.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
 
       const canvas = document.getElementById('gameCanvas');
       const ctx = canvas.getContext('2d');

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { defaultToyLifecycle } from '../assets/js/core/toy-lifecycle.ts';
 import { createRouter } from '../assets/js/router.ts';
 import { createToyView } from '../assets/js/toy-view.ts';
-import { defaultToyLifecycle } from '../assets/js/core/toy-lifecycle.ts';
 
 const originalLocation = window.location;
 const originalHistory = window.history;
@@ -154,7 +154,7 @@ describe('loadToy', () => {
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
     expect(manifestClient.resolveModulePath).toHaveBeenCalledWith(
-      './__mocks__/fake-module.js'
+      './__mocks__/fake-module.js',
     );
     expect(window.location.search).toBe('');
   });
@@ -174,7 +174,7 @@ describe('loadToy', () => {
 
     expect(defaultToyLifecycle.getActiveToy()).toBeNull();
     expect(
-      document.getElementById('toy-list')?.classList.contains('is-hidden')
+      document.getElementById('toy-list')?.classList.contains('is-hidden'),
     ).toBe(false);
     expect(window.location.search).toBe('');
     expect(servicesMock.resetAudioPool).toHaveBeenCalled();
@@ -215,7 +215,7 @@ describe('WebGPU requirements', () => {
 
     const status = document.querySelector('.active-toy-status.is-error');
     expect(status?.querySelector('h2')?.textContent).toContain(
-      'WebGPU not available'
+      'WebGPU not available',
     );
     expect(window.location.search).toBe('');
   });
@@ -252,7 +252,7 @@ describe('WebGPU requirements', () => {
     await loader.loadToy('webgpu-toy');
 
     const continueButton = document.querySelector(
-      '.active-toy-actions .cta-button.primary'
+      '.active-toy-actions .cta-button.primary',
     );
     expect(continueButton).not.toBeNull();
 
@@ -316,11 +316,11 @@ describe('loadFromQuery routing', () => {
     await loader.loadFromQuery();
 
     expect(
-      document.getElementById('toy-list')?.classList.contains('is-hidden')
+      document.getElementById('toy-list')?.classList.contains('is-hidden'),
     ).toBe(false);
     const activeContainer = document.querySelector('.active-toy-container');
     expect(
-      !activeContainer || activeContainer.classList.contains('is-hidden')
+      !activeContainer || activeContainer.classList.contains('is-hidden'),
     ).toBe(true);
   });
 });

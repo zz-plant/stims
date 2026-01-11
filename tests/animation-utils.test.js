@@ -8,7 +8,7 @@ function expectedBandAverage(audioData, startRatio, endRatio) {
   const startIndex = Math.max(0, Math.floor(audioData.length * startRatio));
   const endIndex = Math.min(
     audioData.length,
-    Math.ceil(audioData.length * endRatio)
+    Math.ceil(audioData.length * endRatio),
   );
   const bucketWidth =
     Math.ceil(audioData.length * endRatio) -

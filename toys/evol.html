@@ -7,10 +7,10 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Evolutionary Weirdcore Visualizer</title>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <div id="error-message"></div>
     <canvas id="glCanvas" class="toy-canvas"></canvas>
     <div class="control-panel">
@@ -69,11 +69,12 @@
     </div>
     <script type="module">
       import {
-        initAudio,
         getFrequencyData,
-      } from './assets/js/utils/audio-handler.ts';
-      import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
-      import { startToyAudio } from './assets/js/utils/start-audio.ts';
+        initAudio,
+      } from '../assets/js/utils/audio-handler.ts';
+      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
       const errorEl = document.getElementById('error-message');

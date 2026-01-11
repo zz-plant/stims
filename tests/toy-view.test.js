@@ -23,10 +23,10 @@ describe('toy view helpers', () => {
     const backControl = container?.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
     expect(container?.querySelectorAll('[data-back-to-library]')).toHaveLength(
-      1
+      1,
     );
     expect(
-      container?.querySelector('.active-toy-nav__title')?.textContent
+      container?.querySelector('.active-toy-nav__title')?.textContent,
     ).toBe('Demo Toy');
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
@@ -40,7 +40,7 @@ describe('toy view helpers', () => {
 
     const status = view.showCapabilityError(
       { slug: 'webgpu-toy', title: 'Fancy WebGPU' },
-      { allowFallback: true, onBack, onContinue }
+      { allowFallback: true, onBack, onContinue },
     );
 
     expect(status?.classList.contains('is-warning')).toBe(true);
@@ -59,12 +59,12 @@ describe('toy view helpers', () => {
     const view = createToyView();
     const status = view.showImportError(
       { slug: 'import-error', title: 'Broken Toy' },
-      { moduleUrl: 'assets/js/toys/broken.ts' }
+      { moduleUrl: 'assets/js/toys/broken.ts' },
     );
 
     expect(status?.textContent).toContain('could not be compiled');
     expect(
-      status?.querySelector('.active-toy-status__actions button')
+      status?.querySelector('.active-toy-status__actions button'),
     ).not.toBeNull();
   });
 });

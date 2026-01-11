@@ -39,7 +39,7 @@ describe('ensureWebGL overlay', () => {
     expect(overlay).toBeTruthy();
     expect(overlay?.textContent).toContain('WebGL');
     expect(
-      overlay?.querySelector('.rendering-overlay__preview-pane')
+      overlay?.querySelector('.rendering-overlay__preview-pane'),
     ).not.toBeNull();
   });
 });

@@ -12,5 +12,3 @@ declare global {
   var CustomEvent: typeof globalThis.CustomEvent;
   var DOMParser: typeof globalThis.DOMParser;
 }
-
-export {};

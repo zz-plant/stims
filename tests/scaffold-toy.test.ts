@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { scaffoldToy } from '../scripts/scaffold-toy.ts';
 
@@ -11,7 +11,7 @@ async function createTempRepo() {
   await fs.mkdir(path.join(root, 'assets/js'), { recursive: true });
   await fs.writeFile(
     path.join(root, 'assets/js/toys-data.js'),
-    'export default [\n];\n'
+    'export default [\n];\n',
   );
 
   await fs.mkdir(path.join(root, 'docs'), { recursive: true });
@@ -24,7 +24,7 @@ async function createTempRepo() {
 | --- | --- | --- |
 
 ## Standalone HTML entry points
-`
+`,
   );
 
   await fs.mkdir(path.join(root, 'tests'), { recursive: true });
@@ -62,7 +62,7 @@ describe('scaffold-toy CLI helpers', () => {
 
     const data = await fs.readFile(
       path.join(root, 'assets/js/toys-data.js'),
-      'utf8'
+      'utf8',
     );
     expect(data).toContain(`slug: '${slug}'`);
     expect(data).toContain(`title: '${title}'`);
@@ -70,16 +70,16 @@ describe('scaffold-toy CLI helpers', () => {
 
     const index = await fs.readFile(
       path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
-      'utf8'
+      'utf8',
     );
     expect(index).toContain(`| \`${slug}\``);
     expect(index.indexOf(slug)).toBeLessThan(
-      index.indexOf('## Standalone HTML entry points')
+      index.indexOf('## Standalone HTML entry points'),
     );
 
     const testSpec = await fs.readFile(
       path.join(root, 'tests', `${slug}.test.ts`),
-      'utf8'
+      'utf8',
     );
     expect(testSpec).toContain(`describe('${slug} toy scaffold'`);
 
@@ -90,7 +90,7 @@ describe('scaffold-toy CLI helpers', () => {
     const root = await createTempRepo();
     await fs.writeFile(
       path.join(root, 'assets/js/toys-data.js'),
-      "export default [\n  { slug: 'dupe', title: 'Existing', description: 'Dupe', module: 'assets/js/toys/dupe.ts', type: 'module' },\n];\n"
+      "export default [\n  { slug: 'dupe', title: 'Existing', description: 'Dupe', module: 'assets/js/toys/dupe.ts', type: 'module' },\n];\n",
     );
 
     await expect(
@@ -101,7 +101,7 @@ describe('scaffold-toy CLI helpers', () => {
         type: 'module',
         createTest: false,
         root,
-      })
+      }),
     ).rejects.toThrow(/already exists/);
   });
 
@@ -129,7 +129,7 @@ describe('scaffold-toy CLI helpers', () => {
       pathToFileURL(path.join(root, 'assets/js/toys-data.js')).href
     );
     const entry = data.default.find(
-      (item: { slug: string }) => item.slug === slug
+      (item: { slug: string }) => item.slug === slug,
     );
     expect(entry).toBeDefined();
     expect(entry.type).toBe('iframe');
