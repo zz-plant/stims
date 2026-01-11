@@ -21,7 +21,7 @@ Use these entry points to find the right docs quickly:
 
 If you add new scripts, toys, or deployment options, update the relevant doc above so the workflows stay discoverable.
 
-**When to update docs**
+### When to update docs
 
 | Change type                   | Docs to touch                                                                 |
 | ----------------------------- | ----------------------------------------------------------------------------- |
@@ -42,13 +42,13 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 
 ## Getting Started
 
-### What You’ll Need:
+### What You’ll Need
 
 - **A Modern Web Browser**: Anything that supports WebGL should work (think Chrome, Firefox, Edge).
 - **Microphone Access**: A lot of these toys respond to sound, so you’ll want to enable that.
 - **Touch Devices**: Some toys are enhanced by touch, but that’s optional.
 
-### How to Play:
+### How to Play
 
 Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond to sound, touch, and other inputs to create a chill or stimulating experience. If you’d rather play locally, follow the steps in **Local Setup** to run the dev server and open the toys at `http://localhost:5173`.
 
@@ -73,10 +73,10 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 | [3D Toy](./toy.html?toy=3dtoy)                            | Dive into a twisting 3D tunnel that responds to sound.                                |
 | [Aurora Painter](./toy.html?toy=aurora-painter)           | Paint flowing aurora ribbons that react to your microphone in layered waves.          |
 | [Star Guitar Visualizer](./toy.html?toy=brand)            | A visual journey inspired by an iconic music video, synced to your music.             |
-| [Pottery Wheel Sculptor](./toy.html?toy=clay)             | Spin and shape a clay vessel with tactile smoothing and carving tools.                |
+| [Pottery Wheel Sculptor](./toy.html?toy=clay)             | Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.          |
 | [Defrag Visualizer](./toy.html?toy=defrag)                | A nostalgic, sound-reactive visualizer evoking old defragmentation screens.           |
 | [Evolutionary Weirdcore](./toy.html?toy=evol)             | Watch surreal landscapes evolve with fractals and glitches that react to music.       |
-| [Geometry Visualizer](./toy.html?toy=geom)                | Push shifting geometric forms directly from live mic input.                           |
+| [Geometry Visualizer](./toy.html?toy=geom)                | Push shifting geometric forms directly from live mic input with responsive controls.   |
 | [Ultimate Satisfying Visualizer](./toy.html?toy=holy)     | Layered halos, particles, and morphing shapes that respond to your music.             |
 | [Multi-Capability Visualizer](./toy.html?toy=multi)       | Shapes and lights move with both sound and device motion. (Requires WebGPU.)          |
 | [Trippy Synesthetic Visualizer](./toy.html?toy=seary)     | Blend audio and visuals in a rich synesthetic experience.                             |
@@ -93,6 +93,8 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 | [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel)           | Fly through colorful rings that spin to your music.                                   |
 | [Star Field](./toy.html?toy=star-field)                   | A field of shimmering stars reacts to the beat.                                       |
 | [Fractal Kite Garden](./toy.html?toy=fractal-kite-garden) | Grow branching kite fractals that sway with mids and shimmer with crisp highs.        |
+| [Tactile Sand Table](./toy.html?toy=tactile-sand-table)   | Heightfield sand ripples that respond to bass, mids, and device tilt.                 |
+| [Bioluminescent Tidepools](./toy.html?toy=bioluminescent-tidepools) | Sketch glowing currents that bloom with high-frequency sparkle from your music. |
 
 ---
 
@@ -199,10 +201,10 @@ All JavaScript dependencies are installed via Bun and bundled locally with Vite,
 - `bun run preview`: Serve the production build locally (Vite preview with `--host` for LAN testing) to validate the output before deploying.
 - `bun run test`: Run the Bun-native test suite with the required `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags applied. These load happy-dom globals and a Three.js stub so specs run headlessly.
 - `bun run test:watch`: Keep the Bun test runner active while you iterate on specs.
-- `bun run lint`: Check code quality with ESLint.
-- `bun run lint:fix`: Apply ESLint auto-fixes locally.
-- `bun run format`: Format files with Prettier.
-- `bun run format:check`: Validate formatting without writing changes.
+- `bun run lint`: Check code quality with Biome.
+- `bun run lint:fix`: Apply Biome auto-fixes and formatting.
+- `bun run format`: Format files with Biome.
+- `bun run format:check`: Validate formatting with Biome.
 - `bun run typecheck`: Run TypeScript’s type checker without emitting files.
 - `bun run typecheck:watch`: Keep TypeScript checking in watch mode without emitting files.
 - `bun run check`: Run lint, typecheck, and tests in one go (handy before opening a PR).
@@ -241,7 +243,7 @@ bun run test:watch
 
 ### Linting and Formatting
 
-Before committing, run `bun run lint` to check code style and `bun run format` to automatically format your files. This keeps the project consistent.
+Before committing, run `bun run lint` to check code style and `bun run format` to automatically format your files with Biome. This keeps the project consistent.
 
 ## Cloudflare Pages (Bun) build & deploy
 

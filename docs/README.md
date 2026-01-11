@@ -2,7 +2,7 @@
 
 This folder contains resources for contributors who are building or maintaining the Stim Webtoys Library:
 
-- [`DEVELOPMENT.md`](./DEVELOPMENT.md): day-to-day setup, scripts, workflow, and performance/testing expectations.
+- [`DEVELOPMENT.md`](./DEVELOPMENT.md): day-to-day setup, scripts, workflow (leveraging **Biome**), and performance/testing expectations.
 - [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md): playbook for creating or updating toy experiences, including audio, rendering, and debugging tips.
 - [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md): map from each toy/visualizer to the JS/TS entry points it uses.
 - [`stim-assessment.md`](./stim-assessment.md): Assessment findings and remediation plans.
@@ -15,7 +15,7 @@ This folder contains resources for contributors who are building or maintaining 
 
 If you add new tooling or patterns, update these docs so the next contributor has a reliable starting point.
 
-### How to add a new guide
+## How to add a new guide
 
 1. Create the Markdown file under `docs/` with a clear title and a short purpose statement in the first paragraph.
 2. Add a bullet link in this README under the list above so others can find it.
@@ -26,6 +26,7 @@ If you add new tooling or patterns, update these docs so the next contributor ha
 
 - Use **Bun 1.2+** for installs and scripts. Run `bun install` in a fresh clone to populate `bun.lock`-aligned dependencies.
 - Run a **dev server smoke test** without opening a browser via `bun run dev:check` to confirm Vite wiring before you start coding.
+- Use `bun run check:quick` as a fast local gate to run **Biome** and TypeScript checks.
 - When adding or renaming toys, run `bun run check:toys` to ensure `assets/js/toys-data.js` entries, TypeScript modules, iframe HTML files, and `docs/TOY_SCRIPT_INDEX.md` stay in sync.
 
 ## Navigation tips
