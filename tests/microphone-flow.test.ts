@@ -32,9 +32,10 @@ const waitForAsyncTasks = () =>
 
 afterEach(() => {
   document.body.innerHTML = '';
-  delete (
-    navigator as { permissions?: { query: () => Promise<PermissionStatus> } }
-  ).permissions;
+  Object.defineProperty(navigator, 'permissions', {
+    configurable: true,
+    value: undefined,
+  });
 });
 
 describe('setupMicrophonePermissionFlow', () => {

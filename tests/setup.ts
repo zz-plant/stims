@@ -10,7 +10,9 @@ globalThis.localStorage = windowInstance.localStorage;
 globalThis.sessionStorage = windowInstance.sessionStorage;
 
 // Align commonly used globals
-globalThis.HTMLElement = windowInstance.HTMLElement as unknown as typeof HTMLElement;
+globalThis.HTMLElement =
+  windowInstance.HTMLElement as unknown as typeof HTMLElement;
 globalThis.Event = windowInstance.Event as unknown as typeof Event;
-globalThis.CustomEvent = windowInstance.CustomEvent as unknown as typeof CustomEvent;
+globalThis.CustomEvent =
+  windowInstance.CustomEvent as unknown as typeof CustomEvent;
 globalThis.DOMParser = windowInstance.DOMParser as unknown as typeof DOMParser;

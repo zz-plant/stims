@@ -39,10 +39,12 @@ describe('scaffold-toy CLI helpers', () => {
     const title = 'Ripple Orb';
     const description = 'Gentle rippling spheres.';
 
-    const log = mock(() => {});
+    const log = mock((...args: unknown[]) => {
+      void args;
+    });
     const originalConsoleLog = console.log;
     console.log = (...args) => {
-      log(args);
+      log(...args);
     };
 
     await scaffoldToy({
