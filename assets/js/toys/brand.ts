@@ -15,16 +15,19 @@ import { ensureWebGL } from '../utils/webgl-check';
 type BrandStartOptions = {
   canvas?: HTMLCanvasElement | null;
   errorElement?: HTMLElement | string | null;
+  container?: HTMLElement | null;
 };
 
 export async function startBrandToy({
-  canvas = document.getElementById('vizCanvas') as HTMLCanvasElement | null,
-  errorElement = document.getElementById('error-message') as HTMLElement | null,
+  canvas,
+  errorElement,
+  container,
 }: BrandStartOptions = {}) {
   const errorTargetId =
     typeof errorElement === 'string'
       ? errorElement
       : (errorElement?.id ?? 'error-message');
+  
   const hasRenderingSupport = ensureWebGL({
     title: 'WebGL/WebGPU required for the Star Guitar visualizer',
     description:
@@ -40,10 +43,6 @@ export async function startBrandToy({
     return null;
   }
 
-  if (!canvas) {
-    throw new Error('Brand visualizer canvas is missing.');
-  }
-
   initHints({
     id: 'brand-visualizer',
     tips: [
@@ -53,7 +52,7 @@ export async function startBrandToy({
   });
 
   const toy = new WebToy({
-    canvas,
+    canvas: canvas ?? container?.querySelector('canvas'),
     cameraOptions: {
       fov: 75,
       position: { x: 0, y: 2, z: 5 },
@@ -263,38 +262,52 @@ export async function startBrandToy({
     ctx.toy.render();
   };
 
-  const audioPromise = startToyAudio(toy, animate, {
-    positional: true,
-    object: toy.camera,
-  }).catch((err) => {
-    console.error('Audio input error: ', err);
-    funControls.setAudioAvailable(false);
-    showError(
-      errorTargetId,
-      'Microphone access is unavailable. Visuals will run without audio reactivity.',
-    );
-    const silentContext = { toy, analyser: null, time: 0 } as const;
-    toy.renderer?.setAnimationLoop(() => animate(silentContext));
-    return null;
+  async function startAudio(request: any = false) {
+     return startToyAudio(toy, animate, {
+      positional: true,
+      object: toy.camera,
+      fallbackToSynthetic: request === true,
+      preferSynthetic: request === 'sample' || request === true
+    }).catch((err) => {
+      console.error('Audio input error: ', err);
+      funControls.setAudioAvailable(false);
+      showError(
+        errorTargetId,
+        'Microphone access is unavailable. Visuals will run without audio reactivity.',
+      );
+      const silentContext = { toy, analyser: null, time: 0 } as const;
+      toy.renderer?.setAnimationLoop(() => animate(silentContext as any));
+      return null;
+    });
+  }
+
+  // Register globals for toy.html buttons
+  const win = (container?.ownerDocument.defaultView ?? window) as any;
+  win.startAudio = startAudio;
+  win.startAudioFallback = () => startAudio(true);
+
+  // If we have no auto-start, we wait for the UI.
+  // But brand.ts used to auto-start.
+  // To keep compatibility, we can try to start audio if allowed.
+  startAudio().catch(() => {
+    // Expected if no gesture
   });
 
   return {
     dispose: () => {
-      void audioPromise;
       toy.renderer?.setAnimationLoop(null);
       toy.dispose();
+      win.startAudio = undefined;
+      win.startAudioFallback = undefined;
     },
   };
 }
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   return startBrandToy({
-    canvas:
-      (container?.querySelector('canvas') as HTMLCanvasElement | null) ??
-      (document.getElementById('vizCanvas') as HTMLCanvasElement | null),
-    errorElement:
-      container?.querySelector<HTMLElement>('#error-message') ??
-      (document.getElementById('error-message') as HTMLElement | null),
+    container,
+    canvas: container?.querySelector('canvas'),
+    errorElement: container?.querySelector<HTMLElement>('#error-message')
   });
 }
 

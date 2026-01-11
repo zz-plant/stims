@@ -138,7 +138,7 @@ function missingFiles(
     .filter(({ exists }) => !exists)
     .map(
       ({ filePath }) =>
-        `Missing file for ${entry.slug}: ${path.relative(root, filePath)}`,
+        `Missing file for ${entry.slug}: ${path.relative(root, filePath).replace(/\\/g, '/')}`,
     );
 }
 
@@ -148,7 +148,7 @@ async function detectUnregisteredToyFiles(
   root = repoRoot,
 ) {
   const registeredModules = new Set(
-    entries.map((entry) => path.normalize(entry.module)),
+    entries.map((entry) => entry.module.replace(/\\/g, '/')),
   );
   const toyDir = path.join(root, 'assets/js/toys');
   const files = await fs.readdir(toyDir);
@@ -157,7 +157,7 @@ async function detectUnregisteredToyFiles(
     if (!file.endsWith('.ts')) continue;
     if (IGNORED_TOY_FILES.has(file)) continue;
 
-    const modulePath = path.normalize(path.join('assets/js/toys', file));
+    const modulePath = path.join('assets/js/toys', file).replace(/\\/g, '/');
     if (!registeredModules.has(modulePath)) {
       issues.push(`Unregistered toy module detected: ${modulePath}`);
     }

@@ -3,7 +3,7 @@ import { startIframeToy } from './iframe-toy';
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   return startIframeToy({
     container,
-    path: './toy.html?toy=evol',
+    path: './toys/evol.html',
     title: 'Evolutionary Weirdcore',
   });
 }

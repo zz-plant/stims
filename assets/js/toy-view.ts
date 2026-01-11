@@ -49,7 +49,9 @@ type ViewState = {
   rendererStatus: RendererStatusState | null;
   activeToyMeta?: Toy;
   status: StatusConfig | null;
+  audioPromptActive: boolean;
 };
+
 
 const TOY_CONTAINER_CLASS = 'active-toy-container';
 const HIDDEN_CLASS = 'is-hidden';
@@ -278,6 +280,50 @@ function buildToyNav({
   return nav;
 }
 
+function buildAudioPrompt({
+  container,
+  doc,
+}: {
+  container: HTMLElement | null;
+  doc: Document | null;
+}) {
+  if (!container || !doc) return null;
+
+  let prompt = container.querySelector('.control-panel');
+  if (prompt) return prompt;
+
+  prompt = doc.createElement('div');
+  prompt.className = 'control-panel control-panel--floating';
+  prompt.innerHTML = `
+    <div class="control-panel__heading">Audio controls</div>
+    <p class="control-panel__description">
+      Choose how to feed audio: use your microphone for live input, or load
+      our demo track to preview instantly.
+    </p>
+    <div class="control-panel__row">
+      <div class="control-panel__text">
+        <span class="control-panel__label">Microphone</span>
+        <small>Uses your device mic for the most responsive visuals.</small>
+      </div>
+      <button id="start-audio-btn" class="cta-button primary">
+        Use microphone
+      </button>
+    </div>
+    <div class="control-panel__row">
+      <div class="control-panel__text">
+        <span class="control-panel__label">Demo audio</span>
+        <small>No mic needed—start with a built-in track.</small>
+      </div>
+      <button id="use-demo-audio" class="cta-button">Use demo audio</button>
+    </div>
+    <div id="audio-status" class="control-panel__status" role="status" hidden></div>
+  `;
+
+  container.appendChild(prompt);
+  return prompt;
+}
+
+
 export function createToyView({
   documentRef = () => (typeof document === 'undefined' ? null : document),
   listId = 'toy-list',
@@ -291,6 +337,7 @@ export function createToyView({
     mode: 'library',
     rendererStatus: null,
     status: null,
+    audioPromptActive: false,
   };
 
   const getDocument = () => documentRef();
@@ -374,8 +421,16 @@ export function createToyView({
     });
 
     const statusElement = renderStatusElement(doc, container, state.status);
+
+    if (state.audioPromptActive) {
+      buildAudioPrompt({ container, doc });
+    } else {
+      container.querySelector('.control-panel')?.remove();
+    }
+
     return { container, status: statusElement };
   };
+
 
   const showLibraryView = () => {
     state.mode = 'library';
@@ -383,6 +438,7 @@ export function createToyView({
     state.rendererStatus = null;
     state.activeToyMeta = undefined;
     state.status = null;
+    state.audioPromptActive = false;
     runViewTransition(() => render({ clearContainer: true }));
   };
 
@@ -527,5 +583,10 @@ export function createToyView({
     ensureActiveToyContainer,
     setRendererStatus,
     showUnavailableToy,
+    showAudioPrompt: (active: boolean = true) => {
+      state.audioPromptActive = active;
+      render();
+    },
   };
 }
+

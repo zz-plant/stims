@@ -3,7 +3,9 @@ import {
   prewarmMicrophone,
   resetAudioPool,
 } from './core/services/audio-service.ts';
+import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
 import { prewarmRendererCapabilities } from './core/services/render-service.ts';
+
 import { assessToyCapabilities } from './core/toy-capabilities.ts';
 import {
   defaultToyLifecycle,
@@ -185,7 +187,55 @@ export function createLoader({
       }
 
       view.removeStatusElement();
+
+      // Setup audio prompt if startAudio globals are registered by the toy
+      const win = (container?.ownerDocument.defaultView ?? window) as any;
+      if (typeof win.startAudio === 'function') {
+        const startBtn = container?.querySelector('#start-audio-btn') as HTMLButtonElement;
+        const fallbackBtn = container?.querySelector('#use-demo-audio') as HTMLButtonElement;
+        const statusEl = container?.querySelector('#audio-status') as HTMLElement;
+
+        if (startBtn && fallbackBtn) {
+          view.showAudioPrompt(true);
+          setupMicrophonePermissionFlow({
+            startButton: startBtn,
+            fallbackButton: fallbackBtn,
+            statusElement: statusEl,
+            requestMicrophone: async () => {
+              let starter = win.startAudio;
+              if (typeof starter !== 'function') {
+                for (let i = 0; i < 30; i++) {
+                  await new Promise((r) => setTimeout(r, 100));
+                  starter = win.startAudio;
+                  if (typeof starter === 'function') break;
+                }
+              }
+              if (typeof starter !== 'function') throw new Error('Microphone starter unavailable.');
+              return starter('microphone');
+            },
+            requestSampleAudio: async () => {
+              let starter = win.startAudioFallback ?? win.startAudio;
+              if (typeof starter !== 'function') {
+                for (let i = 0; i < 30; i++) {
+                  await new Promise((r) => setTimeout(r, 100));
+                  starter = win.startAudioFallback ?? win.startAudio;
+                  if (typeof starter === 'function') break;
+                }
+              }
+              if (typeof starter !== 'function') throw new Error('Demo audio unavailable.');
+              if (typeof win.startAudioFallback === 'function') {
+                return win.startAudioFallback();
+              }
+              return starter('sample');
+            },
+            onSuccess: () => {
+              view.showAudioPrompt(false);
+            }
+          });
+        }
+      }
     };
+
 
     if (capabilityDecision.shouldShowCapabilityError) {
       view.showCapabilityError(toy, {

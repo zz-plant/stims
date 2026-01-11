@@ -13,6 +13,7 @@ type StartAudioOptions =
 
 function normalizeOptions(options: StartAudioOptions): AudioInitOptions & {
   fallbackToSynthetic?: boolean;
+  preferSynthetic?: boolean;
 } {
   if (typeof options === 'number') {
     return { fftSize: options };

@@ -3,7 +3,7 @@ import { startIframeToy } from './iframe-toy';
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   return startIframeToy({
     container,
-    path: './legible.html',
+    path: './toys/legible.html',
     title: 'Terminal Word Grid',
   });
 }

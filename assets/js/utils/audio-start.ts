@@ -2,6 +2,8 @@ import type { AudioInitOptions } from './audio-handler';
 
 export type ToyAudioRequest =
   | boolean
+  | 'sample'
+  | 'microphone'
   | (AudioInitOptions & {
       fallbackToSynthetic?: boolean;
       preferSynthetic?: boolean;
@@ -15,6 +17,20 @@ export function resolveToyAudioOptions(
   fallbackToSynthetic?: boolean;
   preferSynthetic?: boolean;
 } {
+  if (request === 'sample') {
+    return {
+      ...baseOptions,
+      preferSynthetic: true,
+    };
+  }
+
+  if (request === 'microphone') {
+    return {
+      ...baseOptions,
+      preferSynthetic: false,
+    };
+  }
+
   if (typeof request === 'boolean') {
     return {
       ...baseOptions,
@@ -35,3 +51,4 @@ export function resolveToyAudioOptions(
     preferSynthetic,
   };
 }
+

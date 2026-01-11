@@ -83,7 +83,7 @@ function mapOrientationToGravity(
   state.target.set(gamma / 70, -1, -0.2 + beta / 90).normalize();
 }
 
-export async function start() {
+export function start({ container }: { container?: HTMLElement | null } = {}) {
   const toy = new WebToy({
     cameraOptions: {
       fov: 55,
@@ -101,6 +101,7 @@ export async function start() {
       intensity: 1.1,
       color: 0xffffff,
     },
+    canvas: container?.querySelector('canvas'),
   });
 
   const gravity: GravityState = {
@@ -199,9 +200,6 @@ export async function start() {
     motionSupported ? 'prompt' : 'unavailable'
   ) as MotionAccessState;
   gravity.locked = motionAccess !== 'granted';
-
-  (toy as WebToy & { cleanupMotion?: () => void }).cleanupMotion =
-    cleanupMotion;
 
   const panel = getSettingsPanel();
   panel.configure({
@@ -470,7 +468,7 @@ export async function start() {
           heights[idx],
           -MAX_HEIGHT,
           MAX_HEIGHT,
-        );
+          );
         textureData[idx] = 0.5 + heights[idx];
       }
     }
@@ -517,15 +515,28 @@ export async function start() {
     );
   }
 
-  const originalDispose = toy.dispose.bind(toy);
-  toy.dispose = () => {
-    cleanupMotion();
-    originalDispose();
+  // Register globals for toy.html buttons
+  const win = (container?.ownerDocument.defaultView ?? window) as any;
+  win.startAudio = startAudio;
+  win.startAudioFallback = () => startAudio(true);
+
+  return {
+    dispose: () => {
+      cleanupMotion();
+      toy.dispose();
+      heightfield.texture.dispose();
+      sandGeometry.dispose();
+      sandMaterial.dispose();
+      rim.geometry.dispose();
+      (rim.material as THREE.Material).dispose();
+      dustGeometry.dispose();
+      (dust.material as THREE.Material).dispose();
+      win.startAudio = undefined;
+      win.startAudioFallback = undefined;
+    },
   };
+}
 
-  (window as unknown as Record<string, unknown>).startAudio = startAudio;
-  (window as unknown as Record<string, unknown>).startAudioFallback = () =>
-    startAudio(true);
-
-  return toy;
+export function bootstrapSandPage() {
+  return start();
 }
