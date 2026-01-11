@@ -9,6 +9,7 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
+import { registerToyGlobals } from '../core/toy-globals';
 import type { ToyConfig } from '../core/types';
 import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
@@ -281,22 +282,21 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   setupSettingsPanel();
   const controlPanel = createControlPanel();
   controlState = controlPanel.getState();
-  const controlPanelUnsub = controlPanel.onChange((state) => {
+  const _controlPanelUnsub = controlPanel.onChange((state) => {
     controlState = state;
   });
   rebuildSceneContents();
 
   // Register globals for toy.html buttons
-  const win = (container?.ownerDocument.defaultView ?? window) as any;
-  win.startAudio = startAudio;
-  win.startAudioFallback = () => startAudio(true);
+  // Register globals for toy.html buttons
+  const unregisterGlobals = registerToyGlobals(container, startAudio);
 
   return {
     dispose: () => {
       toy.dispose();
       errorElement?.remove();
-      win.startAudio = undefined;
-      win.startAudioFallback = undefined;
+      errorElement?.remove();
+      unregisterGlobals();
     },
   };
 }

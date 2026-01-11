@@ -28,7 +28,7 @@ const readCache = () => {
     if (!payload || typeof timestamp !== 'number') return null;
 
     return { payload, etag, timestamp };
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 };
@@ -43,7 +43,7 @@ const writeCache = (payload, etag) => {
         timestamp: Date.now(),
       }),
     );
-  } catch (error) {
+  } catch (_error) {
     // Ignore cache write errors
   }
 };

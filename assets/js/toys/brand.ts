@@ -7,7 +7,9 @@ import {
   type AnimationContext,
   getContextFrequencyData,
 } from '../core/animation-loop';
+import { registerToyGlobals } from '../core/toy-globals';
 import WebToy from '../core/web-toy';
+import type { ToyAudioRequest } from '../utils/audio-start';
 import { showError } from '../utils/error-display';
 import { startToyAudio } from '../utils/start-audio';
 import { ensureWebGL } from '../utils/webgl-check';
@@ -193,7 +195,10 @@ export async function startBrandToy({
     buildingMesh.instanceColor?.setXYZ(i, color.r, color.g, color.b);
   });
   buildingMesh.instanceMatrix.needsUpdate = true;
-  buildingMesh.instanceColor!.needsUpdate = true;
+  buildingMesh.instanceMatrix.needsUpdate = true;
+  if (buildingMesh.instanceColor) {
+    buildingMesh.instanceColor.needsUpdate = true;
+  }
 
   treeData.forEach((d, i) => {
     dummy.position.set(d.x, 0, d.z);
@@ -262,7 +267,7 @@ export async function startBrandToy({
     ctx.toy.render();
   };
 
-  async function startAudio(request: any = false) {
+  async function startAudio(request: ToyAudioRequest = false) {
     return startToyAudio(toy, animate, {
       positional: true,
       object: toy.camera,
@@ -275,16 +280,14 @@ export async function startBrandToy({
         errorTargetId,
         'Microphone access is unavailable. Visuals will run without audio reactivity.',
       );
-      const silentContext = { toy, analyser: null, time: 0 } as const;
-      toy.renderer?.setAnimationLoop(() => animate(silentContext as any));
+      const silentContext: AnimationContext = { toy, analyser: null, time: 0 };
+      toy.renderer?.setAnimationLoop(() => animate(silentContext));
       return null;
     });
   }
 
   // Register globals for toy.html buttons
-  const win = (container?.ownerDocument.defaultView ?? window) as any;
-  win.startAudio = startAudio;
-  win.startAudioFallback = () => startAudio(true);
+  const unregisterGlobals = registerToyGlobals(container, startAudio);
 
   // If we have no auto-start, we wait for the UI.
   // But brand.ts used to auto-start.
@@ -297,8 +300,7 @@ export async function startBrandToy({
     dispose: () => {
       toy.renderer?.setAnimationLoop(null);
       toy.dispose();
-      win.startAudio = undefined;
-      win.startAudioFallback = undefined;
+      unregisterGlobals();
     },
   };
 }

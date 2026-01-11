@@ -1,6 +1,6 @@
 const ns = 'http://www.w3.org/2000/svg';
 
-function createSvgContext(slug, label) {
+function createSvgContext(_slug, label) {
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', '0 0 120 120');
   svg.setAttribute('role', 'img');

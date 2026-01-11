@@ -43,6 +43,7 @@ html.light {
 }
 
 .sr-only {
+  /* biome-ignore lint/complexity/noImportantStyles: a11y utility */
   position: absolute !important;
   width: 1px;
   height: 1px;

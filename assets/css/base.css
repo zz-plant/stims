@@ -26,6 +26,7 @@ body {
 }
 
 .is-hidden {
+  /* biome-ignore lint/complexity/noImportantStyles: utility class needs override */
   display: none !important;
 }
 

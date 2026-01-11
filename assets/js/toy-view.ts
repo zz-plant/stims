@@ -62,7 +62,7 @@ function hideElement(element: HTMLElement | null) {
 }
 
 function showElement(element: HTMLElement | null) {
-  if (element && element.classList.contains(HIDDEN_CLASS)) {
+  if (element?.classList.contains(HIDDEN_CLASS)) {
     element.classList.remove(HIDDEN_CLASS);
   }
 }
@@ -358,6 +358,7 @@ export function createToyView({
     doc.startViewTransition(() => {
       result = action();
     });
+    // biome-ignore lint/style/noNonNullAssertion: callback runs synchronously
     return result!;
   };
 

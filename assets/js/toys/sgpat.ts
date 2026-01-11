@@ -9,8 +9,9 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
+import { registerToyGlobals } from '../core/toy-globals';
 import WebToy from '../core/web-toy';
-import { AudioAccessError, getAverageFrequency } from '../utils/audio-handler';
+import { getAverageFrequency } from '../utils/audio-handler';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
@@ -334,9 +335,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   setupSettingsPanel();
 
   // Register globals for toy.html buttons
-  const win = (container?.ownerDocument.defaultView ?? window) as any;
-  win.startAudio = startAudio;
-  win.startAudioFallback = () => startAudio(true);
+  // Register globals for toy.html buttons
+  const unregisterGlobals = registerToyGlobals(container, startAudio);
 
   return {
     dispose: () => {
@@ -344,12 +344,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       stopCurrentAudio();
       disposePointerInput.dispose();
       disposeResize();
-      if (spectroCanvas && spectroCanvas.parentElement) {
+      if (spectroCanvas?.parentElement) {
         spectroCanvas.parentElement.removeChild(spectroCanvas);
       }
       document.documentElement.style.touchAction = originalTouchAction;
-      win.startAudio = undefined;
-      win.startAudioFallback = undefined;
+      document.documentElement.style.touchAction = originalTouchAction;
+      unregisterGlobals();
     },
   };
 }

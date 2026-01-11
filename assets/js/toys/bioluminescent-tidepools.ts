@@ -9,6 +9,7 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
+import { registerToyGlobals } from '../core/toy-globals';
 import type { ToyConfig } from '../core/types';
 import WebToy from '../core/web-toy';
 import {
@@ -475,9 +476,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   // Register globals for toy.html buttons
-  const win = (container?.ownerDocument.defaultView ?? window) as any;
-  win.startAudio = startAudio;
-  win.startAudioFallback = () => startAudio(true);
+  const unregisterGlobals = registerToyGlobals(container, startAudio);
 
   return {
     dispose: () => {
@@ -486,8 +485,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       window.removeEventListener('resize', handleResize);
       sparkGeometry.dispose();
       sparkMaterial.dispose();
-      win.startAudio = undefined;
-      win.startAudioFallback = undefined;
+      sparkMaterial.dispose();
+      unregisterGlobals();
     },
   };
 }

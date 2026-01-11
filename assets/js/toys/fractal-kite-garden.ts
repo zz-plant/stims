@@ -9,6 +9,7 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
+import { registerToyGlobals } from '../core/toy-globals';
 import type { ToyConfig } from '../core/types';
 import WebToy from '../core/web-toy';
 import {
@@ -374,9 +375,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   init();
 
   // Register globals for toy.html buttons
-  const win = (container?.ownerDocument.defaultView ?? window) as any;
-  win.startAudio = startAudio;
-  win.startAudioFallback = () => startAudio(true);
+  // Register globals for toy.html buttons
+  const unregisterGlobals = registerToyGlobals(container, startAudio);
 
   return {
     dispose: () => {
@@ -386,8 +386,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         kiteGeometry.dispose();
         kiteGeometry = null;
       }
-      win.startAudio = undefined;
-      win.startAudioFallback = undefined;
+      unregisterGlobals();
     },
   };
 }

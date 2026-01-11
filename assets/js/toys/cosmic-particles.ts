@@ -15,6 +15,7 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
+import { registerToyGlobals } from '../core/toy-globals';
 import type { ToyConfig } from '../core/types';
 import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
@@ -397,17 +398,16 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   setActivePreset(activePresetKey);
 
   // Register globals for toy.html buttons
-  const win = (container?.ownerDocument.defaultView ?? window) as any;
-  win.startAudio = startAudio;
-  win.startAudioFallback = () => startAudio(true);
+  // Register globals for toy.html buttons
+  const unregisterGlobals = registerToyGlobals(container, startAudio);
 
   return {
     dispose: () => {
       toy.dispose();
       activePreset?.dispose();
       perfUnsub();
-      win.startAudio = undefined;
-      win.startAudioFallback = undefined;
+      perfUnsub();
+      unregisterGlobals();
     },
   };
 }

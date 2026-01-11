@@ -1,12 +1,13 @@
+import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import {
   prewarmMicrophone,
   resetAudioPool,
 } from './core/services/audio-service.ts';
-import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
 import { prewarmRendererCapabilities } from './core/services/render-service.ts';
 
 import { assessToyCapabilities } from './core/toy-capabilities.ts';
+import type { ToyWindow } from './core/toy-globals';
 import {
   defaultToyLifecycle,
   type ToyLifecycle,
@@ -189,7 +190,8 @@ export function createLoader({
       view.removeStatusElement();
 
       // Setup audio prompt if startAudio globals are registered by the toy
-      const win = (container?.ownerDocument.defaultView ?? window) as any;
+      const win = (container?.ownerDocument.defaultView ??
+        window) as unknown as ToyWindow;
       if (typeof win.startAudio === 'function') {
         const startBtn = container?.querySelector(
           '#start-audio-btn',

@@ -11,28 +11,24 @@ export class FrequencyAnalyser {
   frequencyBinCount: number;
   private frequencyData: Uint8Array;
   private rms = 0;
-  private readonly context: AudioContext;
   private readonly sourceNode: MediaStreamAudioSourceNode;
   private readonly silentGain: GainNode;
   private readonly workletNode?: AudioWorkletNode;
   private readonly analyserNode?: AnalyserNode;
 
   private constructor({
-    context,
     sourceNode,
     workletNode,
     analyserNode,
     fftSize,
     silentGain,
   }: {
-    context: AudioContext;
     sourceNode: MediaStreamAudioSourceNode;
     workletNode?: AudioWorkletNode;
     analyserNode?: AnalyserNode;
     fftSize: number;
     silentGain: GainNode;
   }) {
-    this.context = context;
     this.sourceNode = sourceNode;
     this.workletNode = workletNode;
     this.analyserNode = analyserNode;
@@ -83,7 +79,6 @@ export class FrequencyAnalyser {
         silentGain.connect(context.destination);
 
         return new FrequencyAnalyser({
-          context,
           sourceNode,
           workletNode,
           fftSize,
@@ -107,7 +102,6 @@ export class FrequencyAnalyser {
     silentGain.connect(context.destination);
 
     return new FrequencyAnalyser({
-      context,
       sourceNode,
       analyserNode,
       fftSize,
@@ -117,7 +111,8 @@ export class FrequencyAnalyser {
 
   getFrequencyData() {
     if (this.analyserNode) {
-      this.analyserNode.getByteFrequencyData(this.frequencyData);
+      // biome-ignore lint/suspicious/noExplicitAny: ArrayBuffer mismatch
+      this.analyserNode.getByteFrequencyData(this.frequencyData as any);
     }
 
     return this.frequencyData;

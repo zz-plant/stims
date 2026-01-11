@@ -73,6 +73,7 @@ const server = Bun.serve({
       headers.set('Content-Encoding', 'gzip');
       headers.set('Vary', 'Accept-Encoding');
 
+      // @ts-expect-error: Bun Response supports Uint8Array
       return new Response(compressed, { status: 200, headers });
     }
 
