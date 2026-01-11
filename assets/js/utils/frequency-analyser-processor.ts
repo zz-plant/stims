@@ -66,9 +66,10 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private readonly outputReal: Float32Array;
   private readonly outputImag: Float32Array;
 
-  constructor(options: AudioWorkletNodeOptions) {
+  constructor(options?: AudioWorkletNodeOptions) {
     super();
-    this.fftSize = options.processorOptions?.fftSize ?? 256;
+    const resolvedOptions = options ?? {};
+    this.fftSize = resolvedOptions.processorOptions?.fftSize ?? 256;
     this.frequencyBinCount = this.fftSize / 2;
     this.window = buildHannWindow(this.fftSize);
     this.buffer = new Float32Array(this.fftSize);

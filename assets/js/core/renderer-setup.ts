@@ -111,7 +111,6 @@ export async function initRenderer(
         canvas,
         antialias,
         alpha,
-        adapter,
         device,
       });
       return finalize(renderer, 'webgpu', adapter, device);

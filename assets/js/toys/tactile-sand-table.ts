@@ -195,9 +195,9 @@ export async function start() {
     motionCleanup?.();
     motionCleanup = null;
   };
-  let motionAccess: MotionAccessState = motionSupported
-    ? 'prompt'
-    : 'unavailable';
+  let motionAccess = (
+    motionSupported ? 'prompt' : 'unavailable'
+  ) as MotionAccessState;
   gravity.locked = motionAccess !== 'granted';
 
   (toy as WebToy & { cleanupMotion?: () => void }).cleanupMotion =

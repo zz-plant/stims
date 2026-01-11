@@ -34,7 +34,7 @@ export type WebToyOptions = {
 export default class WebToy {
   canvas: HTMLCanvasElement;
   scene: THREE.Scene;
-  camera: THREE.Camera;
+  camera: THREE.PerspectiveCamera;
   renderer: RendererHandle['renderer'] | null;
   rendererBackend: RendererHandle['backend'] | null;
   rendererInfo: RendererHandle['info'] | null;
@@ -45,6 +45,7 @@ export default class WebToy {
   audio: THREE.Audio | THREE.PositionalAudio | null;
   audioStream: MediaStream | null;
   audioHandle: AudioHandle | null;
+  audioCleanup: (() => void) | null;
   resizeHandler: (() => void) | null;
   rendererHandle: RendererHandle | null;
 
@@ -102,6 +103,7 @@ export default class WebToy {
     this.audio = null;
     this.audioStream = null;
     this.audioHandle = null;
+    this.audioCleanup = null;
     this.resizeHandler = () => this.handleResize();
     window.addEventListener('resize', this.resizeHandler);
 

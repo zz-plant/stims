@@ -49,8 +49,6 @@ toy.rendererReady.then((result) => {
   });
 });
 
-type SpectroContext = CanvasRenderingContext2D;
-
 const spectroCanvas =
   (document.getElementById('glCanvas') as HTMLCanvasElement | null) ||
   document.createElement('canvas');
@@ -63,11 +61,13 @@ if (!spectroCanvas.parentElement) {
   document.body.appendChild(spectroCanvas);
 }
 
-const spectroCtx = spectroCanvas.getContext('2d') as SpectroContext | null;
+const spectroCtx = spectroCanvas.getContext('2d');
 
 if (!spectroCtx) {
   throw new Error('Unable to acquire 2D rendering context for spectrograph.');
 }
+
+const spectroContext = spectroCtx;
 
 spectroCanvas.style.position = 'fixed';
 spectroCanvas.style.top = '0';
@@ -207,7 +207,7 @@ function applyQualityPreset(preset: QualityPreset) {
   });
 
   disposeResize();
-  disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
+  disposeResize = setupCanvasResize(spectroCanvas, spectroContext, {
     maxPixelRatio:
       (activeQuality.renderScale ?? 1) * activeQuality.maxPixelRatio,
     onResize: ({ cssWidth, cssHeight }) => {
@@ -258,12 +258,12 @@ function stopCurrentAudio() {
 
 function updateSpectrograph(dataArray: Uint8Array) {
   if (!dataArray.length) {
-    spectroCtx.clearRect(0, 0, viewportWidth, viewportHeight);
+    spectroContext.clearRect(0, 0, viewportWidth, viewportHeight);
     return;
   }
 
-  spectroCtx.clearRect(0, 0, viewportWidth, viewportHeight);
-  const gradient = spectroCtx.createLinearGradient(
+  spectroContext.clearRect(0, 0, viewportWidth, viewportHeight);
+  const gradient = spectroContext.createLinearGradient(
     0,
     0,
     viewportWidth,
@@ -272,14 +272,14 @@ function updateSpectrograph(dataArray: Uint8Array) {
   gradient.addColorStop(0, '#ff6ec7');
   gradient.addColorStop(0.5, '#8e44ad');
   gradient.addColorStop(1, '#3498db');
-  spectroCtx.fillStyle = gradient;
+  spectroContext.fillStyle = gradient;
   const barWidth = (viewportWidth / dataArray.length) * 1.5;
   let barHeight;
   let x = 0;
 
   for (let i = 0; i < dataArray.length; i++) {
     barHeight = dataArray[i] / 2;
-    spectroCtx.fillRect(x, viewportHeight - barHeight, barWidth, barHeight);
+    spectroContext.fillRect(x, viewportHeight - barHeight, barWidth, barHeight);
     x += barWidth + 1;
   }
 }

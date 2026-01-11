@@ -64,7 +64,10 @@ export async function loadToyModuleStarter({
   const startCandidate =
     (moduleExports as { start?: unknown })?.start ??
     (moduleExports as { default?: { start?: unknown } })?.default?.start;
-  const starter = typeof startCandidate === 'function' ? startCandidate : null;
+  const starter =
+    typeof startCandidate === 'function'
+      ? (startCandidate as ToyModuleStarter)
+      : null;
 
   if (!starter) {
     return {

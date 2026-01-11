@@ -336,11 +336,14 @@ function updateTransforms(
       normalizedValue * (anim.rotation.audioBoost ?? 0);
   }
 
-  applyAudioColor(
-    mesh.material,
-    normalizedValue,
-    currentPreset.colorFor(row, col)
-  );
+  const colorParams = currentPreset.colorFor(row, col);
+  if (Array.isArray(mesh.material)) {
+    mesh.material.forEach((material) => {
+      applyAudioColor(material, normalizedValue, colorParams);
+    });
+  } else {
+    applyAudioColor(mesh.material, normalizedValue, colorParams);
+  }
 }
 
 function animate(ctx: AnimationContext) {

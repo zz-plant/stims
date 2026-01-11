@@ -71,14 +71,17 @@ export const createAudioController = ({
     patternRecognizer?.updatePatternBuffer();
     const detectedPattern = patternRecognizer?.detectPattern();
 
+    const targetColor = detectedPattern ? 0xff0000 : 0x00ff00;
+    const applyMaterialColor = (material: unknown) => {
+      const color = (material as { color?: { setHex?: (hex: number) => void } })
+        .color;
+      color?.setHex?.(targetColor);
+    };
+
     if (Array.isArray(cube.material)) {
-      cube.material.forEach((material) => {
-        if ('color' in material && material.color) {
-          material.color.setHex(detectedPattern ? 0xff0000 : 0x00ff00);
-        }
-      });
-    } else if ('color' in cube.material && cube.material.color) {
-      cube.material.color.setHex(detectedPattern ? 0xff0000 : 0x00ff00);
+      cube.material.forEach((material) => applyMaterialColor(material));
+    } else {
+      applyMaterialColor(cube.material);
     }
 
     renderOnce();
@@ -86,7 +89,8 @@ export const createAudioController = ({
 
   const restartAnimationLoop = () => {
     if (!toy.renderer || !animationContext || !shouldAnimate) return;
-    toy.renderer.setAnimationLoop(() => animate(animationContext));
+    const context = animationContext;
+    toy.renderer.setAnimationLoop(() => animate(context));
   };
 
   const cleanupAudio = () => {

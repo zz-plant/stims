@@ -5,7 +5,7 @@ type InstancedMesh = THREE.InstancedMesh<
   THREE.BufferGeometry,
   THREE.Material
 > & {
-  instanceColor?: THREE.InstancedBufferAttribute;
+  instanceColor?: THREE.InstancedBufferAttribute | null;
   count: number;
 };
 

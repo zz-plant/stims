@@ -56,7 +56,8 @@ export class FrequencyAnalyser {
   static async create(
     context: AudioContext,
     stream: MediaStream,
-    fftSize: number
+    fftSize: number,
+    smoothingTimeConstant?: number
   ): Promise<FrequencyAnalyser> {
     const sourceNode = context.createMediaStreamSource(stream);
     const silentGain = context.createGain();
@@ -98,6 +99,9 @@ export class FrequencyAnalyser {
 
     const analyserNode = context.createAnalyser();
     analyserNode.fftSize = fftSize;
+    if (typeof smoothingTimeConstant === 'number') {
+      analyserNode.smoothingTimeConstant = smoothingTimeConstant;
+    }
     sourceNode.connect(analyserNode);
     analyserNode.connect(silentGain);
     silentGain.connect(context.destination);
@@ -170,11 +174,14 @@ export class AudioAccessError extends Error {
 
 export type AudioInitOptions = {
   fftSize?: number;
+  smoothingTimeConstant?: number;
   camera?: THREE.Camera;
   positional?: boolean;
   object?: THREE.Object3D;
   constraints?: MediaStreamConstraints;
   stream?: MediaStream;
+  fallbackToSynthetic?: boolean;
+  preferSynthetic?: boolean;
   onCleanup?: (ctx: {
     analyser: FrequencyAnalyser;
     listener: THREE.AudioListener;
@@ -325,6 +332,7 @@ export function getCachedDemoAudioStream() {
 export async function initAudio(options: AudioInitOptions = {}) {
   const {
     fftSize = 256,
+    smoothingTimeConstant,
     camera,
     positional = false,
     object,
@@ -355,9 +363,10 @@ export async function initAudio(options: AudioInitOptions = {}) {
   }
 
   try {
-    listener = new THREE.AudioListener();
+    const activeListener = new THREE.AudioListener();
+    listener = activeListener;
     if (camera) {
-      camera.add(listener);
+      camera.add(activeListener);
     }
 
     if (stream) {
@@ -388,16 +397,17 @@ export async function initAudio(options: AudioInitOptions = {}) {
     }
 
     const audio = positional
-      ? new THREE.PositionalAudio(listener)
-      : new THREE.Audio(listener);
+      ? new THREE.PositionalAudio(activeListener)
+      : new THREE.Audio(activeListener);
     audio.setMediaStreamSource(streamSource);
     if (positional && object) {
       object.add(audio);
     }
     const analyser = await FrequencyAnalyser.create(
-      listener.context,
+      activeListener.context,
       streamSource,
-      fftSize
+      fftSize,
+      smoothingTimeConstant
     );
 
     let cleanedUp = false;
@@ -439,7 +449,12 @@ export async function initAudio(options: AudioInitOptions = {}) {
         ).remove?.(audio);
       }
 
-      onCleanup?.({ analyser, listener, audio, stream: streamSource });
+      onCleanup?.({
+        analyser,
+        listener: activeListener,
+        audio,
+        stream: streamSource,
+      });
     };
 
     const effectivePermissionState =
@@ -448,7 +463,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
 
     return {
       analyser,
-      listener,
+      listener: activeListener,
       audio,
       stream: streamSource,
       cleanup,

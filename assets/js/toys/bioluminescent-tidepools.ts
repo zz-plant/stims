@@ -63,9 +63,10 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const blobs: TideBlob[] = [];
-const blobUniforms = new Array<THREE.Vector4>(MAX_BLOBS)
-  .fill(null)
-  .map(() => new THREE.Vector4());
+const blobUniforms = Array.from(
+  { length: MAX_BLOBS },
+  () => new THREE.Vector4()
+);
 
 const uniforms = {
   u_time: { value: 0 },
@@ -457,7 +458,7 @@ async function startAudio(request: ToyAudioRequest = false) {
     );
   } catch (error) {
     console.warn('Falling back to silent animation', error);
-    const ctx: AnimationContext = { toy, analyser: null };
+    const ctx: AnimationContext = { toy, analyser: null, time: 0 };
 
     if (toy.rendererReady) {
       await toy.rendererReady;

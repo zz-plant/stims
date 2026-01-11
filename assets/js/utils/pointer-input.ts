@@ -162,7 +162,10 @@ export function createPointerInput({
   }
 
   function handlePointerDown(event: PointerEvent) {
-    if (event.target instanceof Element && event.target.hasPointerCapture) {
+    if (
+      event.target instanceof Element &&
+      typeof event.target.hasPointerCapture === 'function'
+    ) {
       try {
         event.target.setPointerCapture(event.pointerId);
       } catch {
@@ -182,20 +185,34 @@ export function createPointerInput({
     updateGesture(summary);
   }
 
-  listenerTarget.addEventListener('pointermove', handlePointerMove);
-  listenerTarget.addEventListener('pointerdown', handlePointerDown);
-  listenerTarget.addEventListener('pointerup', handlePointerEnd);
-  listenerTarget.addEventListener('pointercancel', handlePointerEnd);
-  listenerTarget.addEventListener('pointerout', handlePointerEnd);
-  listenerTarget.addEventListener('pointerleave', handlePointerEnd);
+  const addPointerListener = (
+    type: keyof GlobalEventHandlersEventMap,
+    handler: (event: PointerEvent) => void
+  ) => {
+    listenerTarget.addEventListener(type, handler as EventListener);
+  };
+
+  const removePointerListener = (
+    type: keyof GlobalEventHandlersEventMap,
+    handler: (event: PointerEvent) => void
+  ) => {
+    listenerTarget.removeEventListener(type, handler as EventListener);
+  };
+
+  addPointerListener('pointermove', handlePointerMove);
+  addPointerListener('pointerdown', handlePointerDown);
+  addPointerListener('pointerup', handlePointerEnd);
+  addPointerListener('pointercancel', handlePointerEnd);
+  addPointerListener('pointerout', handlePointerEnd);
+  addPointerListener('pointerleave', handlePointerEnd);
 
   function dispose() {
-    listenerTarget.removeEventListener('pointermove', handlePointerMove);
-    listenerTarget.removeEventListener('pointerdown', handlePointerDown);
-    listenerTarget.removeEventListener('pointerup', handlePointerEnd);
-    listenerTarget.removeEventListener('pointercancel', handlePointerEnd);
-    listenerTarget.removeEventListener('pointerout', handlePointerEnd);
-    listenerTarget.removeEventListener('pointerleave', handlePointerEnd);
+    removePointerListener('pointermove', handlePointerMove);
+    removePointerListener('pointerdown', handlePointerDown);
+    removePointerListener('pointerup', handlePointerEnd);
+    removePointerListener('pointercancel', handlePointerEnd);
+    removePointerListener('pointerout', handlePointerEnd);
+    removePointerListener('pointerleave', handlePointerEnd);
     activePointers.clear();
     gestureAnchor = null;
   }
