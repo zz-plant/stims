@@ -18,6 +18,15 @@ type ScaffoldOptions = {
   root?: string;
 };
 
+type ScaffoldToyOptions = {
+  slug: string;
+  title: string;
+  description: string;
+  type?: ToyType;
+  createTest?: boolean;
+  root?: string;
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
@@ -88,7 +97,7 @@ export async function scaffoldToy({
   type = 'module',
   createTest = false,
   root = repoRoot,
-}: Required<Omit<ScaffoldOptions, 'root'>> & { root?: string }) {
+}: ScaffoldToyOptions) {
   await ensureToysDataValid(root);
 
   if (await fileExists(toyModulePath(slug, root))) {
