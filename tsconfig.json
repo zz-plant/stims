@@ -2,13 +2,18 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "three": ["node_modules/@types/three/index.d.ts"],
+      "three/*": ["node_modules/@types/three/*"]
+    }
   },
   "include": ["assets/**/*", "tests/**/*", "scripts/**/*"],
   "exclude": ["dist"]
