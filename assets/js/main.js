@@ -6,13 +6,23 @@ import { initQuickstartCta } from './utils/init-quickstart.ts';
 import { initNavScrollEffects } from './utils/init-nav-scroll.ts';
 import { initPreviewReels } from './utils/init-preview-reels.ts';
 
+const safeInit = async (label, init) => {
+  try {
+    await init();
+  } catch (error) {
+    console.error(`Failed to initialize ${label}`, error);
+  }
+};
+
 const startApp = async () => {
   initReadinessProbe();
-  await initLibraryView({ loadToy, initNavigation, loadFromQuery });
-  initQuickstartCta({ loadToy });
-  initNavScrollEffects();
-  initPreviewReels();
-  void initRepoStatusWidget();
+  await safeInit('library view', () =>
+    initLibraryView({ loadToy, initNavigation, loadFromQuery })
+  );
+  await safeInit('quickstart CTA', () => initQuickstartCta({ loadToy }));
+  await safeInit('nav scroll effects', initNavScrollEffects);
+  await safeInit('preview reels', initPreviewReels);
+  await safeInit('repo status widget', initRepoStatusWidget);
 };
 
 if (document.readyState === 'loading') {
