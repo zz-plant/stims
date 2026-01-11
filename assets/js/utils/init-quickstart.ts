@@ -6,7 +6,7 @@ type InitQuickstartOptions = {
 
 export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
   const quickstart = document.querySelector(DATA_SELECTORS.quickstart);
-  if (!quickstart || !('dataset' in quickstart)) return;
+  if (!(quickstart instanceof HTMLElement)) return;
 
   const quickstartSlug = quickstart.dataset[DATASET_KEYS.quickstartSlug];
   if (!quickstartSlug) return;
