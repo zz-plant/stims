@@ -9,6 +9,7 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 - Load toys through `toy.html?toy=<slug>` or a dedicated HTML entry point. Keep query string slugs in sync with `toys-data.js`.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
 - Run `bun run check:toys` before committing to confirm every module in `assets/js/toys/` is registered and iframe-backed toys have matching HTML entry points.
+- Run `bun run check:quick` to validate types and code quality with Biome before opening a PR.
 
 ## Add-and-test checklist (fast path)
 
@@ -23,8 +24,9 @@ Use this sequence when you want to stand up a fresh toy quickly (you can also ru
    - `bun test tests/app-shell.test.js` (library shell wiring)
    - Add a focused spec for any pure helpers you introduce (e.g., easing/color math) in `tests/`.
    - `bun run check:toys` (ensures metadata, modules, and iframe entry points stay in sync)
+   - `bun run check:quick` (Biome linting and TypeScript check)
 
-The scaffold script can also generate a minimal Bun spec for you (`--with-spec`) that asserts the module exports `start`, and it will create a placeholder HTML page for iframe-based toys when one is missing. 5. **Manual spot-checks**:
+The scaffold script can also generate a minimal Bun spec for you (`--with-spec`) that asserts the module exports `start`, and it will create a placeholder HTML page for iframe-based toys when one is missing. 6. **Manual spot-checks**:
 
 - Confirm the Back to Library control returns to the grid and removes your DOM nodes (cleanup).
 - Verify microphone permission flows (granted, denied, and sample-audio fallback) if you request audio.

@@ -9,7 +9,7 @@ The repository includes a Model Context Protocol (MCP) stdio server at [`scripts
   ```bash
   bun run mcp
   ```
-  MCP clients should launch the command above with the working directory set to the repository root so the server can read `README.md` and `assets/js/toys-data.js`. The server writes responses over stdio using the MCP protocol.
+  MCP clients should launch the command above with the working directory set to the repository root so the server can read `README.md`, `assets/js/toys-data.js`, and the Biome-enforced quality markers. The server writes responses over stdio using the MCP protocol.
 
 ## Registered tools
 
@@ -29,7 +29,7 @@ All tools are registered on the `stim-webtoys-mcp` server name and use zod-based
   - **Output:** `text` summary of how the toy loader resolves entries and errors, including manifest resolution (`/.vite/manifest.json`), URL/history handling, WebGPU gating, and the recovery states shown when imports fail.
 - **`dev_commands`**
   - **Input:** optional `scope` enum (`setup`, `dev`, `build`, `test`, `lint`) to narrow the result.
-  - **Output:** `text` response containing the requested setup or workflow commands from `README.md`. Without a scope, the tool returns all development snippets.
+  - **Output:** `text` response containing the requested setup or workflow commands from `README.md`. Without a scope, the tool returns all development snippets including **Biome** and Bun references.
 
 ## Inputs, outputs, and client expectations
 

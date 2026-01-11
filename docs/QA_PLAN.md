@@ -23,11 +23,15 @@ Use Bun to match the repository tooling:
   ```bash
   bun run test tests/app-shell.test.js tests/settings-panel.test.ts tests/microphone-flow.test.ts
   ```
+
 - For a quick server wiring check before pushing UI changes:
+
   ```bash
   bun run dev:check
   ```
+
 - Full project sweep (lint, types, build, tests) as enforced in CI:
+
   ```bash
-  bun run lint && bun run typecheck && bun run build && bun run test
+  bun run check
   ```

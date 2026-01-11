@@ -5,28 +5,37 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
 If you’re spinning up the project for the first time, confirm the basics before diving into code:
 
 1. Install **Bun 1.2+** (required). Run `bun --version` to confirm the runtime matches the repo’s `packageManager` entry.
+
 2. Install dependencies with **Bun**: `bun install`. The repo tracks `bun.lock`, so keep installs aligned with `bun install --frozen-lockfile` when you need reproducibility.
+
 3. Smoke-test the dev server wiring without opening a browser:
+
    ```bash
    bun run dev:check
    ```
+
    This starts Vite on a fixed port, fetches the root page once, and exits—helpful when you’re validating a fresh clone or CI runner.
+
 4. Start the dev server for interactive work with `bun run dev`.
 
 ## Tooling and Environment
 
 - **Bun 1.2+** is the default for installs, scripts, and testing. Keep your local runtime aligned with `packageManager` to avoid lockfile drift.
 - Install dependencies once per clone with Bun:
+
   ```bash
   bun install
   ```
+
   If you install with Bun and rely on Git hooks, the `postinstall` script will invoke `husky install` when `npm_config_user_agent` starts with `bun`. If hooks still don’t appear, run `bun x husky install`.
   - Keep `bun.lock` authoritative. Use `bun install --frozen-lockfile` in CI and prefer Bun locally to keep dependency resolution consistent.
-- The project uses **TypeScript**, **Vite**, **Three.js**, and the Bun test runner. No extra ESM flags are required when running `bun test`.
+- The project uses **TypeScript**, **Vite**, **Three.js**, **Biome**, and the Bun test runner. No extra ESM flags are required when running `bun test`.
 - Run the dev server locally with Bun:
+
   ```bash
   bun run dev
   ```
+
   The site serves from `http://localhost:5173`. For LAN/mobile testing, start the server with `bun run dev:host` to bind Vite to all interfaces.
 
 ## Common Scripts (Bun-first)
@@ -41,7 +50,7 @@ If you’re spinning up the project for the first time, confirm the basics befor
 | Run test suite (watch)             | `bun run test:watch`      |
 | Lint                               | `bun run lint`            |
 | Lint with auto-fix                 | `bun run lint:fix`        |
-| Format with Prettier               | `bun run format`          |
+| Format with Biome                  | `bun run format`          |
 | Format check (no writes)           | `bun run format:check`    |
 | Type check without emit            | `bun run typecheck`       |
 | Type check (watch)                 | `bun run typecheck:watch` |
@@ -67,8 +76,8 @@ bun test tests/filename.test.js
 
 ### Editor Tooling
 
-- VS Code users can install recommended extensions via `.vscode/extensions.json` (Prettier, ESLint, and the TypeScript ESLint language service).
-- `.vscode/settings.json` configures Prettier as the default formatter and enables format-on-save for common web languages.
+- VS Code users can install recommended extensions via `.vscode/extensions.json` (Biome and the TypeScript ESLint language service).
+- `.vscode/settings.json` configures Biome as the default formatter and enables format-on-save for common web languages.
 - `.vscode/launch.json` includes a Vite dev-server debug config (with a Bun-backed prelaunch task) and a Bun test debug config so you can attach the debugger without additional setup.
   Use the `bun run test` script instead of raw `bun test` so the `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags are always applied; they load happy-dom globals and a Three.js stub to keep specs headless and fast.
 

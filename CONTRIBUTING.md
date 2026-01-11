@@ -9,6 +9,7 @@ Thanks for helping build and refine the Stim Webtoys Library! This guide covers 
   ```bash
   bun install
   ```
+
   The repository pins installs via `bun.lock`, so use `bun install --frozen-lockfile` to honor it.
   Bun does not automatically run `prepare` scripts, so a `postinstall` script installs Husky when your user agent starts with `bun`. If that misses your setup, run `bun x husky install` after installing dependencies.
 
@@ -35,7 +36,7 @@ bun run dev
   ```bash
   bun run lint
   ```
-- Apply lint auto-fixes:
+- Apply lint auto-fixes and formatting:
   ```bash
   bun run lint:fix
   ```
