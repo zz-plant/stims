@@ -7,12 +7,22 @@ import { initNavScrollEffects } from './utils/init-nav-scroll.ts';
 import { initPreviewReels } from './utils/init-preview-reels.ts';
 
 const startApp = async () => {
-  initReadinessProbe();
-  await initLibraryView({ loadToy, initNavigation, loadFromQuery });
-  initQuickstartCta({ loadToy });
-  initNavScrollEffects();
-  initPreviewReels();
-  void initRepoStatusWidget();
+  const safeInit = async (name, fn) => {
+    try {
+      await fn();
+    } catch (error) {
+      console.error(`[main] ${name} failed`, error);
+    }
+  };
+
+  await safeInit('initReadinessProbe', () => initReadinessProbe());
+  await safeInit('initLibraryView', () =>
+    initLibraryView({ loadToy, initNavigation, loadFromQuery })
+  );
+  await safeInit('initQuickstartCta', () => initQuickstartCta({ loadToy }));
+  await safeInit('initNavScrollEffects', () => initNavScrollEffects());
+  await safeInit('initPreviewReels', () => initPreviewReels());
+  void safeInit('initRepoStatusWidget', () => initRepoStatusWidget());
 };
 
 if (document.readyState === 'loading') {
