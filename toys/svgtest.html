@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SVG + Three.js Visualizer</title>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       #overlay {
         position: absolute;
@@ -57,7 +57,7 @@
     </style>
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <div id="error-message" style="display: none"></div>
     <!-- The SVG element for the CSS displacement map -->
     <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0">
@@ -150,12 +150,12 @@
     <!-- Include Three.js -->
     <script type="module">
       import * as THREE from 'three';
-      import { ensureWebGL } from './assets/js/utils/webgl-check.ts';
       import {
-        initAudio,
         getFrequencyData,
-      } from './assets/js/utils/audio-handler.ts';
-      import { startToyAudio } from './assets/js/utils/start-audio.ts';
+        initAudio,
+      } from '../assets/js/utils/audio-handler.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { ensureWebGL } from '../assets/js/utils/webgl-check.ts';
 
       const errorEl = document.getElementById('error-message');
 

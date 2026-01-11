@@ -4,7 +4,7 @@ type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 
 const FREQUENCY_ANALYSER_PROCESSOR = new URL(
   './frequency-analyser-processor.ts',
-  import.meta.url
+  import.meta.url,
 );
 
 export class FrequencyAnalyser {
@@ -57,7 +57,7 @@ export class FrequencyAnalyser {
     context: AudioContext,
     stream: MediaStream,
     fftSize: number,
-    smoothingTimeConstant?: number
+    smoothingTimeConstant?: number,
   ): Promise<FrequencyAnalyser> {
     const sourceNode = context.createMediaStreamSource(stream);
     const silentGain = context.createGain();
@@ -75,7 +75,7 @@ export class FrequencyAnalyser {
             numberOfOutputs: 1,
             outputChannelCount: [1],
             processorOptions: { fftSize },
-          }
+          },
         );
 
         sourceNode.connect(workletNode);
@@ -92,7 +92,7 @@ export class FrequencyAnalyser {
       } catch (error) {
         console.warn(
           'Falling back to AnalyserNode after AudioWorklet failure',
-          error
+          error,
         );
       }
     }
@@ -351,14 +351,14 @@ export async function initAudio(options: AudioInitOptions = {}) {
   if (typeof navigator === 'undefined') {
     throw new AudioAccessError(
       'unsupported',
-      'Audio capture is not available in this environment.'
+      'Audio capture is not available in this environment.',
     );
   }
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     throw new AudioAccessError(
       'unsupported',
-      'This browser does not support microphone capture.'
+      'This browser does not support microphone capture.',
     );
   }
 
@@ -377,12 +377,12 @@ export async function initAudio(options: AudioInitOptions = {}) {
       if (permissionState === 'denied') {
         throw new AudioAccessError(
           'denied',
-          'Microphone access is blocked. Please allow microphone access in your browser settings and try again.'
+          'Microphone access is blocked. Please allow microphone access in your browser settings and try again.',
         );
       }
 
       resolvedStream = await navigator.mediaDevices.getUserMedia(
-        constraints ?? { audio: { echoCancellation: true } }
+        constraints ?? { audio: { echoCancellation: true } },
       );
       ownsStream = true;
       permissionState = permissionState ?? 'granted';
@@ -392,7 +392,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
     if (!streamSource) {
       throw new AudioAccessError(
         'unavailable',
-        'Microphone access is unavailable. Please check your device settings.'
+        'Microphone access is unavailable. Please check your device settings.',
       );
     }
 
@@ -407,7 +407,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
       activeListener.context,
       streamSource,
       fftSize,
-      smoothingTimeConstant
+      smoothingTimeConstant,
     );
 
     let cleanedUp = false;
@@ -499,13 +499,13 @@ export async function initAudio(options: AudioInitOptions = {}) {
     ) {
       throw new AudioAccessError(
         'denied',
-        'Microphone access was denied by the user.'
+        'Microphone access was denied by the user.',
       );
     }
 
     throw new AudioAccessError(
       'unavailable',
-      'Microphone access is unavailable. Please check your device settings.'
+      'Microphone access is unavailable. Please check your device settings.',
     );
   }
 }

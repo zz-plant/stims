@@ -1,23 +1,23 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
+  type AnimationContext,
   getContextFrequencyData,
-  AnimationContext,
 } from '../core/animation-loop';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
-import { startToyAudio } from '../utils/start-audio';
+import { mapFrequencyToItems } from '../utils/audio-mapper';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import { mapFrequencyToItems } from '../utils/audio-mapper';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
+import { startToyAudio } from '../utils/start-audio';
 
 const settingsPanel = getSettingsPanel();
 let activeQuality: QualityPreset = getActiveQualityPreset();
@@ -69,7 +69,11 @@ function buildLines() {
       const angle = j * 0.2 + i * 0.1;
       const radius = j * 0.5 + i;
       points.push(
-        new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, j)
+        new THREE.Vector3(
+          Math.cos(angle) * radius,
+          Math.sin(angle) * radius,
+          j,
+        ),
       );
     }
     geometry.setFromPoints(points);
@@ -117,7 +121,7 @@ function animate(ctx: AnimationContext) {
       const hue = (idx / lines.length + value / 512) % 1;
       (line.material as THREE.LineBasicMaterial).color.setHSL(hue, 0.6, 0.5);
     },
-    { fallbackValue: avg }
+    { fallbackValue: avg },
   );
   ctx.toy.render();
 }

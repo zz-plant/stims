@@ -1,29 +1,29 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
+  type AnimationContext,
   getContextFrequencyData,
-  AnimationContext,
 } from '../core/animation-loop';
+import {
+  getActivePerformanceSettings,
+  getPerformancePanel,
+  type PerformanceSettings,
+  subscribeToPerformanceSettings,
+} from '../core/performance-panel';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
-import { startToyAudio } from '../utils/start-audio';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
 import { applyAudioColor } from '../utils/color-audio';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
-import {
-  getActivePerformanceSettings,
-  getPerformancePanel,
-  subscribeToPerformanceSettings,
-  type PerformanceSettings,
-} from '../core/performance-panel';
+import { startToyAudio } from '../utils/start-audio';
 
 const toy = new WebToy({
   cameraOptions: { position: { x: 0, y: 0, z: 80 } },
@@ -64,7 +64,7 @@ function createOrbitPreset(quality: QualityPreset): PresetInstance {
   const detail = performanceSettings.shaderQuality === 'high' ? 1.2 : 1;
   const count = Math.max(
     900,
-    Math.floor(2400 * getParticleScale(quality) * detail)
+    Math.floor(2400 * getParticleScale(quality) * detail),
   );
   const positions = new Float32Array(count * 3);
   for (let i = 0; i < count * 3; i++) {
@@ -73,7 +73,7 @@ function createOrbitPreset(quality: QualityPreset): PresetInstance {
 
   particlesGeometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(positions, 3)
+    new THREE.BufferAttribute(positions, 3),
   );
 
   const particlesMaterial = new THREE.PointsMaterial({
@@ -131,7 +131,7 @@ function createNebulaPreset(quality: QualityPreset): PresetInstance {
         : 1;
   const STAR_COUNT = Math.max(
     1200,
-    Math.floor(4000 * getParticleScale(quality) * shaderDetail)
+    Math.floor(4000 * getParticleScale(quality) * shaderDetail),
   );
   const starPositions = new Float32Array(STAR_COUNT * 3);
   const starSizes = new Float32Array(STAR_COUNT);
@@ -184,7 +184,7 @@ function createNebulaPreset(quality: QualityPreset): PresetInstance {
   const nebulaGeometry = new THREE.BufferGeometry();
   const NEBULA_COUNT = Math.max(
     80,
-    Math.floor(200 * getParticleScale(quality) * shaderDetail)
+    Math.floor(200 * getParticleScale(quality) * shaderDetail),
   );
   const nebulaPositions = new Float32Array(NEBULA_COUNT * 3);
   const nebulaColors = new Float32Array(NEBULA_COUNT * 3);
@@ -206,11 +206,11 @@ function createNebulaPreset(quality: QualityPreset): PresetInstance {
 
   nebulaGeometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(nebulaPositions, 3)
+    new THREE.BufferAttribute(nebulaPositions, 3),
   );
   nebulaGeometry.setAttribute(
     'color',
-    new THREE.BufferAttribute(nebulaColors, 3)
+    new THREE.BufferAttribute(nebulaColors, 3),
   );
 
   const nebulaMaterial = new THREE.PointsMaterial({
@@ -350,7 +350,7 @@ function setupSettingsPanel() {
 
   const presetRow = panel.addSection(
     'Cosmic preset',
-    'Switch between swirling orbits and deep nebula fly-throughs.'
+    'Switch between swirling orbits and deep nebula fly-throughs.',
   );
 
   presetButtons.orbit.textContent = 'Orbit';
@@ -388,7 +388,7 @@ async function startAudio(request: ToyAudioRequest = false) {
   return startToyAudio(
     toy,
     animate,
-    resolveToyAudioOptions(request, { fftSize: 256 })
+    resolveToyAudioOptions(request, { fftSize: 256 }),
   );
 }
 

@@ -191,11 +191,11 @@ function cloneSvgWithUniqueIds(template, prefix) {
     idMap.forEach((newId, oldId) => {
       updated = updated.replace(
         new RegExp(`url\\(#${oldId}\\)`, 'g'),
-        `url(#${newId})`
+        `url(#${newId})`,
       );
       updated = updated.replace(
         new RegExp(`#${oldId}(?![\\w-])`, 'g'),
-        `#${newId}`
+        `#${newId}`,
       );
     });
     return updated;
@@ -219,7 +219,7 @@ const iconRenderers = {
   '3dtoy': (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
 
     const glow = createGradient('radial', `glow-${toy.slug}`, [
@@ -234,7 +234,7 @@ const iconRenderers = {
         cy: 60,
         r: 54,
         fill: glow,
-      })
+      }),
     );
 
     const grid = createNode('g', { transform: 'translate(60 60) rotate(-15)' });
@@ -248,7 +248,7 @@ const iconRenderers = {
           stroke: '#e2e8f0',
           'stroke-width': 1.2,
           opacity: 0.35,
-        })
+        }),
       );
       grid.appendChild(
         createNode('line', {
@@ -259,7 +259,7 @@ const iconRenderers = {
           stroke: '#e2e8f0',
           'stroke-width': 1.2,
           opacity: 0.35,
-        })
+        }),
       );
     }
     svg.appendChild(grid);
@@ -297,7 +297,7 @@ const iconRenderers = {
   'aurora-painter': (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const sky = createGradient(
       'linear',
@@ -307,7 +307,7 @@ const iconRenderers = {
         { offset: '50%', color: '#1e293b' },
         { offset: '100%', color: '#0ea5e9' },
       ],
-      { x1: '0%', x2: '0%', y1: '0%', y2: '100%' }
+      { x1: '0%', x2: '0%', y1: '0%', y2: '100%' },
     );
 
     svg.appendChild(
@@ -319,7 +319,7 @@ const iconRenderers = {
         rx: 18,
         ry: 18,
         fill: sky,
-      })
+      }),
     );
 
     const ribbons = [
@@ -338,7 +338,7 @@ const iconRenderers = {
           'stroke-linecap': 'round',
           'stroke-linejoin': 'round',
           opacity: 0.8,
-        })
+        }),
       );
     });
 
@@ -356,7 +356,7 @@ const iconRenderers = {
   brand: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
 
     const starGradient = createGradient(
@@ -367,7 +367,7 @@ const iconRenderers = {
         { offset: '50%', color: '#f472b6' },
         { offset: '100%', color: '#60a5fa' },
       ],
-      { x1: '0%', x2: '100%', y1: '0%', y2: '100%' }
+      { x1: '0%', x2: '100%', y1: '0%', y2: '100%' },
     );
 
     svg.appendChild(
@@ -379,7 +379,7 @@ const iconRenderers = {
         stroke: '#c084fc',
         'stroke-width': 2,
         opacity: 0.85,
-      })
+      }),
     );
 
     const star = createNode('path', {
@@ -402,7 +402,7 @@ const iconRenderers = {
   clay: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const wheel = createGradient('radial', `clay-${toy.slug}`, [
       { offset: '0%', color: '#f97316', opacity: 0.9 },
@@ -417,7 +417,7 @@ const iconRenderers = {
         r: 52,
         fill: '#0f172a',
         opacity: 0.85,
-      })
+      }),
     );
 
     addRings(svg, createNode, [
@@ -433,7 +433,7 @@ const iconRenderers = {
         fill: wheel,
         stroke: '#f59e0b',
         'stroke-width': 2.4,
-      })
+      }),
     );
 
     const tool = createNode('rect', {
@@ -466,7 +466,7 @@ const iconRenderers = {
         fill: '#0f172a',
         stroke: '#38bdf8',
         'stroke-width': 2,
-      })
+      }),
     );
 
     addGrid(svg, createNode, {
@@ -491,7 +491,7 @@ const iconRenderers = {
           rx: 2,
           fill: colors[i % colors.length],
           opacity: 0.8,
-        })
+        }),
       );
     }
     svg.appendChild(activity);
@@ -502,7 +502,7 @@ const iconRenderers = {
   evol: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const nebula = createGradient('radial', `evol-${toy.slug}`, [
       { offset: '0%', color: '#8b5cf6', opacity: 0.9 },
@@ -519,7 +519,7 @@ const iconRenderers = {
         rx: 20,
         ry: 20,
         fill: '#020617',
-      })
+      }),
     );
 
     svg.appendChild(
@@ -529,7 +529,7 @@ const iconRenderers = {
         r: 46,
         fill: nebula,
         opacity: 0.9,
-      })
+      }),
     );
 
     const tendrils = [
@@ -546,7 +546,7 @@ const iconRenderers = {
           'stroke-width': 3,
           'stroke-linecap': 'round',
           opacity: 0.7,
-        })
+        }),
       );
     });
 
@@ -556,7 +556,7 @@ const iconRenderers = {
   geom: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const gridStroke = createGradient(
       'linear',
@@ -565,7 +565,7 @@ const iconRenderers = {
         { offset: '0%', color: '#38bdf8' },
         { offset: '100%', color: '#c084fc' },
       ],
-      { x1: '0%', x2: '100%', y1: '0%', y2: '0%' }
+      { x1: '0%', x2: '100%', y1: '0%', y2: '0%' },
     );
 
     addGrid(svg, createNode, {
@@ -594,7 +594,7 @@ const iconRenderers = {
         r: 12,
         fill: '#c084fc',
         opacity: 0.9,
-      })
+      }),
     );
     return svg;
   },
@@ -602,7 +602,7 @@ const iconRenderers = {
   holy: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const halo = createGradient('radial', `holy-${toy.slug}`, [
       { offset: '0%', color: '#fef9c3', opacity: 0.9 },
@@ -611,7 +611,7 @@ const iconRenderers = {
     ]);
 
     svg.appendChild(
-      createNode('circle', { cx: 60, cy: 60, r: 50, fill: halo })
+      createNode('circle', { cx: 60, cy: 60, r: 50, fill: halo }),
     );
 
     addRings(svg, createNode, [
@@ -633,7 +633,7 @@ const iconRenderers = {
   multi: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const circles = [
       { r: 36, stroke: '#38bdf8', offset: '-6,-4' },
@@ -647,7 +647,7 @@ const iconRenderers = {
     ]);
 
     svg.appendChild(
-      createNode('circle', { cx: 60, cy: 60, r: 52, fill: glow })
+      createNode('circle', { cx: 60, cy: 60, r: 52, fill: glow }),
     );
 
     circles.forEach(({ r, stroke, offset }) => {
@@ -661,7 +661,7 @@ const iconRenderers = {
           stroke,
           'stroke-width': 3,
           opacity: 0.85,
-        })
+        }),
       );
     });
 
@@ -672,7 +672,7 @@ const iconRenderers = {
         stroke: '#e0f2fe',
         'stroke-width': 3,
         'stroke-linecap': 'round',
-      })
+      }),
     );
     return svg;
   },
@@ -680,7 +680,7 @@ const iconRenderers = {
   seary: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const swirl = createGradient(
       'linear',
@@ -690,7 +690,7 @@ const iconRenderers = {
         { offset: '50%', color: '#22d3ee' },
         { offset: '100%', color: '#c084fc' },
       ],
-      { x1: '0%', x2: '100%', y1: '0%', y2: '0%' }
+      { x1: '0%', x2: '100%', y1: '0%', y2: '0%' },
     );
 
     svg.appendChild(
@@ -701,7 +701,7 @@ const iconRenderers = {
         height: 100,
         rx: 16,
         fill: '#0b1020',
-      })
+      }),
     );
 
     svg.appendChild(
@@ -712,7 +712,7 @@ const iconRenderers = {
         'stroke-width': 10,
         'stroke-linecap': 'round',
         opacity: 0.9,
-      })
+      }),
     );
 
     addBurst(svg, createNode, {
@@ -750,7 +750,7 @@ const iconRenderers = {
           'stroke-width': 3,
           'stroke-linecap': 'round',
           opacity: 0.8,
-        })
+        }),
       );
     }
     svg.appendChild(diagonals);
@@ -769,7 +769,7 @@ const iconRenderers = {
         fill: '#0b2e11',
         stroke: '#22c55e',
         'stroke-width': 2,
-      })
+      }),
     );
 
     for (let row = 0; row < 6; row += 1) {
@@ -782,7 +782,7 @@ const iconRenderers = {
           rx: 2,
           fill: '#22c55e',
           opacity: 0.35 + row * 0.08,
-        })
+        }),
       );
     }
 
@@ -795,7 +795,7 @@ const iconRenderers = {
         rx: 3,
         fill: '#16a34a',
         opacity: 0.9,
-      })
+      }),
     );
 
     return svg;
@@ -804,7 +804,7 @@ const iconRenderers = {
   svgtest: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const mesh = createGradient(
       'linear',
@@ -813,7 +813,7 @@ const iconRenderers = {
         { offset: '0%', color: '#38bdf8' },
         { offset: '100%', color: '#9333ea' },
       ],
-      { x1: '0%', x2: '100%', y1: '0%', y2: '100%' }
+      { x1: '0%', x2: '100%', y1: '0%', y2: '100%' },
     );
 
     addGrid(svg, createNode, {
@@ -834,7 +834,7 @@ const iconRenderers = {
         fill: '#0b1220',
         stroke: mesh,
         'stroke-width': 3,
-      })
+      }),
     );
 
     svg.appendChild(
@@ -844,13 +844,13 @@ const iconRenderers = {
         stroke: '#e0f2fe',
         'stroke-width': 4,
         'stroke-linecap': 'round',
-      })
+      }),
     );
     svg.appendChild(
-      createNode('circle', { cx: 50, cy: 52, r: 6, fill: '#22d3ee' })
+      createNode('circle', { cx: 50, cy: 52, r: 6, fill: '#22d3ee' }),
     );
     svg.appendChild(
-      createNode('circle', { cx: 70, cy: 52, r: 6, fill: '#c084fc' })
+      createNode('circle', { cx: 70, cy: 52, r: 6, fill: '#c084fc' }),
     );
     return svg;
   },
@@ -892,14 +892,14 @@ const iconRenderers = {
         fill: '#0f172a',
         stroke: '#38bdf8',
         'stroke-width': 2,
-      })
+      }),
     );
     svg.appendChild(
       createNode('polygon', {
         points: '46,82 62,82 58,98',
         fill: '#38bdf8',
         opacity: 0.85,
-      })
+      }),
     );
 
     const lines = ['#e2e8f0', '#c084fc', '#22d3ee'];
@@ -913,7 +913,7 @@ const iconRenderers = {
           rx: 3,
           fill: color,
           opacity: 0.85,
-        })
+        }),
       );
     });
     return svg;
@@ -942,7 +942,7 @@ const iconRenderers = {
           rx: 2,
           fill: ['#38bdf8', '#22c55e', '#a855f7', '#f59e0b', '#38bdf8'][i],
           opacity: 0.85,
-        })
+        }),
       );
     }
     return svg;
@@ -951,7 +951,7 @@ const iconRenderers = {
   'bubble-harmonics': (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const bubble = createGradient('radial', `bubble-${toy.slug}`, [
       { offset: '0%', color: '#e0f2fe', opacity: 0.9 },
@@ -969,7 +969,7 @@ const iconRenderers = {
           stroke: '#38bdf8',
           'stroke-width': 1.6 - index * 0.2,
           opacity: 0.8 - index * 0.15,
-        })
+        }),
       );
     });
 
@@ -989,7 +989,7 @@ const iconRenderers = {
   'cosmic-particles': (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const space = createGradient('radial', `cosmic-${toy.slug}`, [
       { offset: '0%', color: '#0f172a', opacity: 1 },
@@ -1004,7 +1004,7 @@ const iconRenderers = {
         height: 104,
         rx: 20,
         fill: space,
-      })
+      }),
     );
 
     addRings(svg, createNode, [
@@ -1026,7 +1026,7 @@ const iconRenderers = {
           r: 4,
           fill: orbitColors[i % orbitColors.length],
           opacity: 0.85,
-        })
+        }),
       );
     }
     svg.appendChild(orbitGroup);
@@ -1036,7 +1036,7 @@ const iconRenderers = {
   lights: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const beam = createGradient(
       'linear',
@@ -1045,7 +1045,7 @@ const iconRenderers = {
         { offset: '0%', color: '#22d3ee' },
         { offset: '100%', color: '#6366f1' },
       ],
-      { x1: '0%', x2: '100%', y1: '0%', y2: '0%' }
+      { x1: '0%', x2: '100%', y1: '0%', y2: '0%' },
     );
 
     const group = createNode('g', { transform: 'translate(60 60)' });
@@ -1074,7 +1074,7 @@ const iconRenderers = {
   'spiral-burst': (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const spiral = createGradient(
       'linear',
@@ -1084,7 +1084,7 @@ const iconRenderers = {
         { offset: '50%', color: '#f472b6' },
         { offset: '100%', color: '#22d3ee' },
       ],
-      { x1: '0%', x2: '100%', y1: '0%', y2: '100%' }
+      { x1: '0%', x2: '100%', y1: '0%', y2: '100%' },
     );
 
     svg.appendChild(
@@ -1094,7 +1094,7 @@ const iconRenderers = {
         stroke: spiral,
         'stroke-width': 8,
         'stroke-linecap': 'round',
-      })
+      }),
     );
 
     addBurst(svg, createNode, {
@@ -1110,7 +1110,7 @@ const iconRenderers = {
   'rainbow-tunnel': (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
-      `${toy.title} icon`
+      `${toy.title} icon`,
     );
     const tunnel = createGradient('radial', `tunnel-${toy.slug}`, [
       { offset: '0%', color: '#22d3ee', opacity: 0.9 },
@@ -1119,7 +1119,7 @@ const iconRenderers = {
     ]);
 
     svg.appendChild(
-      createNode('circle', { cx: 60, cy: 60, r: 52, fill: tunnel })
+      createNode('circle', { cx: 60, cy: 60, r: 52, fill: tunnel }),
     );
 
     addRings(svg, createNode, [
@@ -1135,7 +1135,7 @@ const iconRenderers = {
         stroke: '#e0f2fe',
         'stroke-width': 3,
         'stroke-linecap': 'round',
-      })
+      }),
     );
 
     return svg;
@@ -1151,7 +1151,7 @@ const iconRenderers = {
         height: 104,
         rx: 20,
         fill: '#0f172a',
-      })
+      }),
     );
     addBurst(svg, createNode, {
       count: 20,
@@ -1169,7 +1169,7 @@ const iconRenderers = {
           r: 3,
           fill: ['#e0f2fe', '#38bdf8', '#c084fc'][i % 3],
           opacity: 0.9,
-        })
+        }),
       );
     }
     return svg;
@@ -1185,7 +1185,7 @@ const iconRenderers = {
           fill: ['#22d3ee', '#c084fc', '#22c55e', '#f59e0b'][i],
           opacity: 0.85,
           transform: `rotate(${i * 18}) scale(${1 - i * 0.12}) translate(${i * 14} ${i * 6})`,
-        })
+        }),
       );
     }
     svg.appendChild(group);
@@ -1210,7 +1210,7 @@ const iconRenderers = {
         r: 16,
         fill: '#38bdf8',
         opacity: 0.75,
-      })
+      }),
     );
     return svg;
   },
@@ -1289,7 +1289,7 @@ function setupDarkModeToggle(themeToggleId = 'theme-toggle') {
     btn.setAttribute('aria-pressed', String(isDark));
     btn.setAttribute(
       'aria-label',
-      isDark ? 'Switch to light mode' : 'Switch to dark mode'
+      isDark ? 'Switch to light mode' : 'Switch to dark mode',
     );
   };
 
@@ -1398,7 +1398,7 @@ export function createLibraryView({
         return sorted.sort(
           (a, b) =>
             capabilityScore(b) - capabilityScore(a) ||
-            getOriginalIndex(a) - getOriginalIndex(b)
+            getOriginalIndex(a) - getOriginalIndex(b),
         );
       default:
         return sorted.sort((a, b) => getOriginalIndex(a) - getOriginalIndex(b));
@@ -1412,7 +1412,7 @@ export function createLibraryView({
     switch (type) {
       case 'mood':
         return (toy.moods ?? []).some(
-          (mood) => mood.toLowerCase() === value.toLowerCase()
+          (mood) => mood.toLowerCase() === value.toLowerCase(),
         );
       case 'capability':
         return Boolean(toy.capabilities?.[value]);
@@ -1442,7 +1442,7 @@ export function createLibraryView({
   const setToys = (nextToys = []) => {
     allToys = nextToys;
     originalOrder = new Map(
-      nextToys.map((toy, index) => [toy.slug ?? `toy-${index}`, index])
+      nextToys.map((toy, index) => [toy.slug ?? `toy-${index}`, index]),
     );
   };
 
@@ -1472,7 +1472,7 @@ export function createLibraryView({
       const template = ensureIconTemplate(toy);
       const icon = cloneSvgWithUniqueIds(
         template,
-        `${toy.slug}-icon-${iconInstance}`
+        `${toy.slug}-icon-${iconInstance}`,
       );
       iconInstance += 1;
       card.appendChild(icon);

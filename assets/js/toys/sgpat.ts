@@ -1,24 +1,24 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
 import {
-  AnimationContext,
+  type AnimationContext,
   getContextFrequencyData,
   startAudioLoop,
 } from '../core/animation-loop';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import WebToy from '../core/web-toy';
 import { AudioAccessError, getAverageFrequency } from '../utils/audio-handler';
 import { setupCanvasResize } from '../utils/canvas-resize';
+import PatternRecognizer from '../utils/patternRecognition';
 import {
   createPointerInput,
   type GestureUpdate,
   type PointerSummary,
 } from '../utils/pointer-input';
-import PatternRecognizer from '../utils/patternRecognition';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
 
 const settingsPanel = getSettingsPanel();
 let activeQuality: QualityPreset = getActiveQualityPreset();
@@ -91,7 +91,7 @@ const uniforms = {
 };
 
 const startButton = document.getElementById(
-  'start-audio-button'
+  'start-audio-button',
 ) as HTMLButtonElement | null;
 
 const fragmentShader = `
@@ -151,7 +151,7 @@ const quad = new THREE.Mesh(
     uniforms,
     vertexShader,
     fragmentShader,
-  })
+  }),
 );
 
 toy.scene.add(quad);
@@ -174,7 +174,7 @@ let disposeResize = setupCanvasResize(spectroCanvas, spectroCtx, {
 function handlePointerUpdate(summary: PointerSummary) {
   uniforms.u_touch.value.set(
     summary.normalizedCentroid.x,
-    summary.normalizedCentroid.y
+    summary.normalizedCentroid.y,
   );
   if (!summary.pointers.length) {
     uniforms.u_colorOffset.value.z = 0;
@@ -187,7 +187,7 @@ function handleGestureUpdate(gesture: GestureUpdate) {
   uniforms.u_colorOffset.value.z = THREE.MathUtils.clamp(
     Math.abs(gesture.translation.x) + Math.abs(gesture.translation.y),
     0,
-    1
+    1,
   );
 }
 
@@ -267,14 +267,14 @@ function updateSpectrograph(dataArray: Uint8Array) {
     0,
     0,
     viewportWidth,
-    viewportHeight
+    viewportHeight,
   );
   gradient.addColorStop(0, '#ff6ec7');
   gradient.addColorStop(0.5, '#8e44ad');
   gradient.addColorStop(1, '#3498db');
   spectroContext.fillStyle = gradient;
   const barWidth = (viewportWidth / dataArray.length) * 1.5;
-  let barHeight;
+  let barHeight = 0;
   let x = 0;
 
   for (let i = 0; i < dataArray.length; i++) {

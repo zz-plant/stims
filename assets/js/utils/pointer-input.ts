@@ -30,7 +30,7 @@ export type PointerInputOptions = {
 function normalizePoint(
   clientX: number,
   clientY: number,
-  bounds: DOMRect
+  bounds: DOMRect,
 ): { normalizedX: number; normalizedY: number } {
   const width = Math.max(bounds.width, 1);
   const height = Math.max(bounds.height, 1);
@@ -91,7 +91,7 @@ export function createPointerInput({
         acc.normalizedY += pointer.normalizedY;
         return acc;
       },
-      { x: 0, y: 0, normalizedX: 0, normalizedY: 0 }
+      { x: 0, y: 0, normalizedX: 0, normalizedY: 0 },
     );
 
     const divisor = pointers.length || 1;
@@ -187,14 +187,14 @@ export function createPointerInput({
 
   const addPointerListener = (
     type: keyof GlobalEventHandlersEventMap,
-    handler: (event: PointerEvent) => void
+    handler: (event: PointerEvent) => void,
   ) => {
     listenerTarget.addEventListener(type, handler as EventListener);
   };
 
   const removePointerListener = (
     type: keyof GlobalEventHandlersEventMap,
-    handler: (event: PointerEvent) => void
+    handler: (event: PointerEvent) => void,
   ) => {
     listenerTarget.removeEventListener(type, handler as EventListener);
   };

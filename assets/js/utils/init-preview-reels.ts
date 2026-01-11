@@ -6,7 +6,7 @@ export const initPreviewReels = () => {
   if (reels.length === 0 || typeof Observer === 'undefined') return;
 
   const prefersReducedMotion = window.matchMedia(
-    '(prefers-reduced-motion: reduce)'
+    '(prefers-reduced-motion: reduce)',
   );
 
   reels.forEach((reel) => {
@@ -24,7 +24,7 @@ export const initPreviewReels = () => {
     let isAutoPlay = !prefersReducedMotion.matches;
     let activeIndex = Math.max(
       0,
-      cards.findIndex((card) => card.classList.contains('is-active'))
+      cards.findIndex((card) => card.classList.contains('is-active')),
     );
 
     const lazyLoadMedia = (card: Element) => {
@@ -43,7 +43,7 @@ export const initPreviewReels = () => {
       toggleButton.textContent = isAutoPlay ? 'Pause' : 'Play';
       toggleButton.setAttribute(
         'aria-label',
-        isAutoPlay ? 'Pause auto-advance' : 'Play auto-advance'
+        isAutoPlay ? 'Pause auto-advance' : 'Play auto-advance',
       );
       toggleButton.setAttribute('aria-pressed', String(isAutoPlay));
     };
@@ -105,7 +105,7 @@ export const initPreviewReels = () => {
           }
         });
       },
-      { threshold: 0.4 }
+      { threshold: 0.4 },
     );
 
     observer.observe(reel);

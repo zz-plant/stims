@@ -20,6 +20,6 @@ export const initNavScrollEffects = () => {
         ticking = true;
       }
     },
-    { passive: true }
+    { passive: true },
   );
 };

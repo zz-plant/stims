@@ -1,20 +1,20 @@
-import toysData from './toys-data.js';
-import { createRouter } from './router.ts';
-import { createToyView } from './toy-view.ts';
-import { createManifestClient } from './utils/manifest-client.ts';
-import { ensureWebGL } from './utils/webgl-check.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
-import { prewarmRendererCapabilities } from './core/services/render-service.ts';
-import { assessToyCapabilities } from './core/toy-capabilities.ts';
 import {
   prewarmMicrophone,
   resetAudioPool,
 } from './core/services/audio-service.ts';
+import { prewarmRendererCapabilities } from './core/services/render-service.ts';
+import { assessToyCapabilities } from './core/toy-capabilities.ts';
 import {
   defaultToyLifecycle,
   type ToyLifecycle,
 } from './core/toy-lifecycle.ts';
+import { createRouter } from './router.ts';
+import { createToyView } from './toy-view.ts';
+import toysData from './toys-data.js';
+import { createManifestClient } from './utils/manifest-client.ts';
 import { loadToyModuleStarter } from './utils/toy-module-loader.ts';
+import { ensureWebGL } from './utils/webgl-check.ts';
 
 type Toy = {
   slug: string;
@@ -57,7 +57,7 @@ export function createLoader({
   lifecycle.reset();
   const updateRendererStatus = (
     capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
-    onRetry?: () => void
+    onRetry?: () => void,
   ) => {
     view?.setRendererStatus?.(
       capabilities
@@ -68,13 +68,13 @@ export function createLoader({
             triedWebGPU: capabilities.triedWebGPU,
             onRetry,
           }
-        : null
+        : null,
     );
   };
 
   const showModuleImportError = (
     toy: Toy,
-    { moduleUrl, importError }: { moduleUrl?: string; importError: Error }
+    { moduleUrl, importError }: { moduleUrl?: string; importError: Error },
   ) => {
     view.showImportError(toy, {
       moduleUrl,
@@ -106,7 +106,7 @@ export function createLoader({
   const startModuleToy = async (
     toy: Toy,
     pushState: boolean,
-    initialCapabilities?: Awaited<ReturnType<typeof rendererCapabilities>>
+    initialCapabilities?: Awaited<ReturnType<typeof rendererCapabilities>>,
   ) => {
     void prewarmRendererCapabilitiesFn();
     void prewarmMicrophoneFn();
@@ -140,7 +140,7 @@ export function createLoader({
               await startModuleToy(toy, false, capabilities);
             }
           }
-        : undefined
+        : undefined,
     );
 
     registerEscapeHandler();
@@ -208,7 +208,7 @@ export function createLoader({
 
   const loadToy = async (
     slug: string,
-    { pushState = false }: { pushState?: boolean } = {}
+    { pushState = false }: { pushState?: boolean } = {},
   ) => {
     const toy = toys.find((t) => t.slug === slug);
     if (!toy) {

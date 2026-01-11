@@ -109,7 +109,7 @@ export async function runCapabilityPreflight(): Promise<CapabilityPreflightResul
     warnings.push('Microphone APIs are unavailable in this browser.');
   } else if (microphone.state === 'denied') {
     warnings.push(
-      'Microphone access is blocked; visuals will fall back to demo audio.'
+      'Microphone access is blocked; visuals will fall back to demo audio.',
     );
   }
 
@@ -149,7 +149,7 @@ export async function runCapabilityPreflight(): Promise<CapabilityPreflightResul
 function buildStatusBadge(
   label: string,
   value: string,
-  variant: 'ok' | 'warn' | 'error'
+  variant: 'ok' | 'warn' | 'error',
 ) {
   const badge = document.createElement('div');
   badge.className = 'preflight-status';
@@ -170,7 +170,7 @@ function buildStatusBadge(
 
 function updateStatusList(
   container: HTMLElement,
-  result: CapabilityPreflightResult
+  result: CapabilityPreflightResult,
 ) {
   container.innerHTML = '';
 
@@ -185,7 +185,7 @@ function updateStatusList(
       ? result.rendering.rendererBackend === 'webgpu'
         ? 'ok'
         : 'warn'
-      : 'error'
+      : 'error',
   );
 
   const rendererNote = document.createElement('p');
@@ -212,7 +212,7 @@ function updateStatusList(
       ? 'warn'
       : result.microphone.state === 'granted'
         ? 'ok'
-        : 'warn'
+        : 'warn',
   );
 
   const microphoneNote = document.createElement('p');
@@ -227,7 +227,7 @@ function updateStatusList(
   const environmentStatus = buildStatusBadge(
     'Environment',
     result.environment.secureContext ? 'Secure context' : 'Insecure context',
-    result.environment.secureContext ? 'ok' : 'warn'
+    result.environment.secureContext ? 'ok' : 'warn',
   );
 
   const environmentNote = document.createElement('p');
@@ -248,7 +248,7 @@ function updateStatusList(
 
 function renderIssueList(
   container: HTMLElement,
-  result: CapabilityPreflightResult
+  result: CapabilityPreflightResult,
 ) {
   container.innerHTML = '';
   const issues = result.blockingIssues.length

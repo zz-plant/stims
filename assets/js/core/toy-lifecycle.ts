@@ -8,7 +8,7 @@ const isActiveToyObject = (candidate: unknown): candidate is ActiveToyObject =>
   typeof candidate === 'object' && candidate !== null;
 
 const isActiveToyCandidate = (
-  candidate: unknown
+  candidate: unknown,
 ): candidate is ActiveToyCandidate =>
   typeof candidate === 'function' || isActiveToyObject(candidate);
 

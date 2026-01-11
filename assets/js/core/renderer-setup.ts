@@ -1,12 +1,12 @@
 /* global GPUAdapter, GPUDevice */
 import * as THREE from 'three';
-import { WebGPURenderer } from './webgpu-renderer.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 import {
   getRendererCapabilities,
-  rememberRendererFallback,
   type RendererBackend,
+  rememberRendererFallback,
 } from './renderer-capabilities.ts';
+import { WebGPURenderer } from './webgpu-renderer.ts';
 
 export type RendererInitResult = {
   renderer: THREE.WebGLRenderer | WebGPURenderer;
@@ -34,7 +34,7 @@ export async function initRenderer(
     maxPixelRatio: 2,
     alpha: false,
     renderScale: 1,
-  }
+  },
 ): Promise<RendererInitResult | null> {
   if (!ensureWebGL()) {
     return null;
@@ -52,11 +52,11 @@ export async function initRenderer(
     renderer: THREE.WebGLRenderer | WebGPURenderer,
     backend: RendererBackend,
     adapter: GPUAdapter | null,
-    device: GPUDevice | null
+    device: GPUDevice | null,
   ): RendererInitResult => {
     const effectivePixelRatio = Math.min(
       (window.devicePixelRatio || 1) * renderScale,
-      maxPixelRatio
+      maxPixelRatio,
     );
     renderer.setPixelRatio(effectivePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -77,7 +77,7 @@ export async function initRenderer(
   const fallbackToWebGL = (
     reason: string,
     error?: unknown,
-    { shouldRetryWebGPU = true, triedWebGPU = true } = {}
+    { shouldRetryWebGPU = true, triedWebGPU = true } = {},
   ) => {
     console.info(`Falling back to WebGL renderer: ${reason}`);
     if (error) {
@@ -125,6 +125,6 @@ export async function initRenderer(
     {
       shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
       triedWebGPU: capabilities.triedWebGPU,
-    }
+    },
   );
 }

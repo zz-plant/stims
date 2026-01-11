@@ -1,23 +1,23 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
-  AnimationContext,
+  type AnimationContext,
   getContextFrequencyData,
 } from '../core/animation-loop';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
-import { startToyAudio } from '../utils/start-audio';
+import { mapFrequencyToItems } from '../utils/audio-mapper';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import { mapFrequencyToItems } from '../utils/audio-mapper';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
+import { startToyAudio } from '../utils/start-audio';
 
 const settingsPanel = getSettingsPanel();
 let activeQuality: QualityPreset = getActiveQualityPreset();
@@ -118,12 +118,12 @@ function refreshGeometries() {
   bubbleGeometry = new THREE.SphereGeometry(
     1,
     bubbleDetail.segments,
-    bubbleDetail.segments
+    bubbleDetail.segments,
   );
   harmonicGeometry = new THREE.SphereGeometry(
     1,
     Math.max(16, Math.round(bubbleDetail.segments * 0.7)),
-    Math.max(16, Math.round(bubbleDetail.segments * 0.7))
+    Math.max(16, Math.round(bubbleDetail.segments * 0.7)),
   );
 }
 
@@ -137,13 +137,13 @@ function createBubble(hue: number) {
   mesh.position.set(
     THREE.MathUtils.randFloatSpread(24),
     THREE.MathUtils.randFloatSpread(18),
-    THREE.MathUtils.randFloatSpread(10)
+    THREE.MathUtils.randFloatSpread(10),
   );
 
   const velocity = new THREE.Vector3(
     THREE.MathUtils.randFloatSpread(0.05),
     THREE.MathUtils.randFloat(0.02, 0.06),
-    THREE.MathUtils.randFloatSpread(0.03)
+    THREE.MathUtils.randFloatSpread(0.03),
   );
 
   const bubble: Bubble = {
@@ -177,8 +177,8 @@ function addHarmonicBubble(parent: Bubble, energy: number) {
     new THREE.Vector3(
       THREE.MathUtils.randFloatSpread(2.2),
       THREE.MathUtils.randFloatSpread(2.2),
-      THREE.MathUtils.randFloatSpread(2.2)
-    )
+      THREE.MathUtils.randFloatSpread(2.2),
+    ),
   );
 
   const velocity = parent.velocity
@@ -188,8 +188,8 @@ function addHarmonicBubble(parent: Bubble, energy: number) {
       new THREE.Vector3(
         THREE.MathUtils.randFloatSpread(0.35),
         THREE.MathUtils.randFloat(0.12, 0.32),
-        THREE.MathUtils.randFloatSpread(0.35)
-      )
+        THREE.MathUtils.randFloatSpread(0.35),
+      ),
     );
 
   harmonicBubbles.push({ mesh, velocity, life: 1.1 });
@@ -269,7 +269,7 @@ function animateBubbles(data: Uint8Array, avg: number, time: number) {
       const drift = new THREE.Vector3(
         Math.sin(time * 0.45 + index) * 0.002,
         0.003 + energy * 0.014 + normalizedAvg * 0.01,
-        Math.cos(time * 0.38 + index) * 0.002
+        Math.cos(time * 0.38 + index) * 0.002,
       );
 
       bubble.mesh.position.add(bubble.velocity.clone().add(drift));
@@ -282,7 +282,7 @@ function animateBubbles(data: Uint8Array, avg: number, time: number) {
       const baseColor = new THREE.Color().setHSL(
         (bubble.hue + hueShift) % 1,
         0.5,
-        0.45 + energy * 0.2
+        0.45 + energy * 0.2,
       );
       const highlightColor = baseColor.clone().offsetHSL(0.08, 0, 0.22);
       const material = bubble.mesh.material;
@@ -296,7 +296,7 @@ function animateBubbles(data: Uint8Array, avg: number, time: number) {
         bubble.harmonicCharge = 0.12;
       }
     },
-    { fallbackValue: avg }
+    { fallbackValue: avg },
   );
 }
 
@@ -346,7 +346,7 @@ async function startAudio(request: ToyAudioRequest = false) {
     resolveToyAudioOptions(request, {
       fftSize: 2048,
       smoothingTimeConstant: 0.72,
-    })
+    }),
   );
 }
 

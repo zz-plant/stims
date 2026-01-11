@@ -43,7 +43,7 @@ export function initLighting(
     position: { x: 10, y: 10, z: 10 },
     castShadow: false,
   },
-  lighting: LightingModule
+  lighting: LightingModule,
 ): void {
   const {
     type = 'PointLight',
@@ -89,11 +89,11 @@ export function initLighting(
 export function initAmbientLight(
   scene: SceneLike,
   config: AmbientLightConfig = { color: 0x404040, intensity: 0.5 },
-  lighting: AmbientLightingModule
+  lighting: AmbientLightingModule,
 ): void {
   const ambientLight = new lighting.AmbientLight(
     config.color,
-    config.intensity
+    config.intensity,
   );
   scene.add(ambientLight);
 }

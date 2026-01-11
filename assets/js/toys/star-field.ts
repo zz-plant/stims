@@ -1,29 +1,29 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
+  type AnimationContext,
   getContextFrequencyData,
-  AnimationContext,
 } from '../core/animation-loop';
+import {
+  getActivePerformanceSettings,
+  getPerformancePanel,
+  type PerformanceSettings,
+  subscribeToPerformanceSettings,
+} from '../core/performance-panel';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
-import { startToyAudio } from '../utils/start-audio';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
 import { applyAudioColor } from '../utils/color-audio';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
-import {
-  getActivePerformanceSettings,
-  getPerformancePanel,
-  subscribeToPerformanceSettings,
-  type PerformanceSettings,
-} from '../core/performance-panel';
+import { startToyAudio } from '../utils/start-audio';
 
 const settingsPanel = getSettingsPanel();
 let activeQuality: QualityPreset = getActiveQualityPreset();
@@ -213,7 +213,7 @@ async function startAudio(request: ToyAudioRequest = false) {
   return startToyAudio(
     toy,
     animate,
-    resolveToyAudioOptions(request, { fftSize: 256 })
+    resolveToyAudioOptions(request, { fftSize: 256 }),
   );
 }
 

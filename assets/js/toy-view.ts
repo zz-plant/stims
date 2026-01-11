@@ -81,7 +81,7 @@ function clearContainerContent(container: HTMLElement | null) {
 function renderStatusElement(
   doc: Document,
   container: HTMLElement,
-  status: StatusConfig | null
+  status: StatusConfig | null,
 ) {
   const existing = container.querySelector('.active-toy-status');
   if (!status) {
@@ -101,11 +101,11 @@ function renderStatusElement(
   statusElement.className = `active-toy-status ${statusVariant}`;
   statusElement.setAttribute(
     'role',
-    status.variant === 'error' ? 'alert' : 'status'
+    status.variant === 'error' ? 'alert' : 'status',
   );
   statusElement.setAttribute(
     'aria-live',
-    status.variant === 'error' ? 'assertive' : 'polite'
+    status.variant === 'error' ? 'assertive' : 'polite',
   );
 
   const glow = doc.createElement('div');
@@ -156,7 +156,7 @@ function renderStatusElement(
 
 function buildImportErrorMessage(
   toy: Toy | undefined,
-  { moduleUrl, importError }: ImportErrorOptions = {}
+  { moduleUrl, importError }: ImportErrorOptions = {},
 ) {
   if (typeof window !== 'undefined' && window.location?.protocol === 'file:') {
     return 'This toy needs a local web server to compile its TypeScript modules. Run `bun run dev` and reload from `http://localhost:5173`.';
@@ -337,7 +337,9 @@ export function createToyView({
 
   const render = ({
     clearContainer = false,
-  }: { clearContainer?: boolean } = {}) => {
+  }: {
+    clearContainer?: boolean;
+  } = {}) => {
     const doc = getDocument();
     const toyList = getToyList();
     const container = ensureActiveToyContainer();
@@ -412,7 +414,7 @@ export function createToyView({
 
   const showImportError = (
     toy: Toy | undefined,
-    options: ImportErrorOptions = {}
+    options: ImportErrorOptions = {},
   ) => {
     state.mode = 'toy';
     state.backHandler = options.onBack ?? state.backHandler;
@@ -432,14 +434,14 @@ export function createToyView({
     };
 
     const { status } = runViewTransition(() =>
-      render({ clearContainer: true })
+      render({ clearContainer: true }),
     );
     return status;
   };
 
   const showUnavailableToy = (
     slug: string,
-    { onBack }: { onBack?: () => void } = {}
+    { onBack }: { onBack?: () => void } = {},
   ) => {
     state.mode = 'toy';
     state.backHandler = onBack ?? state.backHandler;
@@ -458,14 +460,14 @@ export function createToyView({
     };
 
     const { status } = runViewTransition(() =>
-      render({ clearContainer: true })
+      render({ clearContainer: true }),
     );
     return status;
   };
 
   const showCapabilityError = (
     toy: Toy | undefined,
-    options: CapabilityOptions = {}
+    options: CapabilityOptions = {},
   ) => {
     state.mode = 'toy';
     state.backHandler = options.onBack ?? state.backHandler;
@@ -503,7 +505,7 @@ export function createToyView({
     };
 
     const { status } = runViewTransition(() =>
-      render({ clearContainer: true })
+      render({ clearContainer: true }),
     );
     return status;
   };

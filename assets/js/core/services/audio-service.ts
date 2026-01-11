@@ -1,9 +1,9 @@
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import {
-  getMicrophonePermissionState,
-  initAudio,
   type AudioInitOptions,
   type FrequencyAnalyser,
+  getMicrophonePermissionState,
+  initAudio,
 } from '../../utils/audio-handler.ts';
 
 export type AudioHandle = {
@@ -61,7 +61,7 @@ export async function acquireAudioHandle(
     reuseMicrophone?: boolean;
     initAudioImpl?: typeof initAudio;
     teardownOnRelease?: boolean;
-  } = {}
+  } = {},
 ): Promise<AudioHandle> {
   const {
     reuseMicrophone = true,

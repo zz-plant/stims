@@ -1,6 +1,6 @@
 import type {
-  LightConfig,
   AmbientLightConfig,
+  LightConfig,
 } from '../lighting/lighting-setup';
 
 /**

@@ -39,7 +39,7 @@
     "slug": "sgpat",
     "title": "Pattern Recognition Visualizer",
     "description": "See patterns form dynamically in response to sound.",
-    "module": "./sgpat.html"
+    "module": "./toys/sgpat.html"
   },
   {
     "slug": "svgtest",

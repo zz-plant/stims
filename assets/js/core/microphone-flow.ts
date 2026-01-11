@@ -28,7 +28,7 @@ export type MicrophoneFlowOptions = {
 function setStatus(
   element: HTMLElement | null | undefined,
   message: string,
-  variant: FlowStatus = 'info'
+  variant: FlowStatus = 'info',
 ) {
   if (!element) return;
   element.textContent = message;
@@ -39,7 +39,7 @@ function setStatus(
 function toggleButtons(
   startButton: HTMLButtonElement | null | undefined,
   fallbackButton: HTMLButtonElement | null | undefined,
-  disabled: boolean
+  disabled: boolean,
 ) {
   if (startButton) startButton.disabled = disabled;
   if (fallbackButton) fallbackButton.disabled = disabled;
@@ -71,7 +71,7 @@ function describeError(error: unknown, mode: FlowMode) {
 function track(
   analytics: FlowAnalytics | undefined,
   event: string,
-  detail?: Record<string, unknown>
+  detail?: Record<string, unknown>,
 ) {
   analytics?.track?.(event, detail);
   analytics?.log?.(event, detail);
@@ -104,7 +104,7 @@ async function guardDeniedPermission() {
   if (permissionState === 'denied') {
     throw new AudioAccessError(
       'denied',
-      'Microphone access is blocked. Update permissions to continue.'
+      'Microphone access is blocked. Update permissions to continue.',
     );
   }
 
@@ -159,7 +159,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
 
     const timeoutError = new AudioAccessError(
       'timeout',
-      'Microphone request timed out.'
+      'Microphone request timed out.',
     );
 
     const withTimeout = async (promise: Promise<unknown>) => {
@@ -167,7 +167,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
       const timeoutPromise = new Promise((_, reject) => {
         timeoutHandle = globalThis.setTimeout(
           () => reject(timeoutError),
-          timeoutMs
+          timeoutMs,
         );
       });
 
@@ -203,7 +203,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
         mode === 'sample'
           ? 'Loading demo audio (no microphone needed)...'
           : 'Requesting microphone access...',
-        'info'
+        'info',
       );
 
       await withTimeout(request());
@@ -213,7 +213,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
         mode === 'sample'
           ? 'Demo audio connected. Visuals will react to the procedural track.'
           : 'Microphone connected! Enjoy the visuals.',
-        'success'
+        'success',
       );
 
       if (mode === 'microphone' && fallbackButton) {
@@ -254,14 +254,14 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
         startButton.dataset.state = 'retry';
         startButton.setAttribute(
           'aria-label',
-          `${retryLabel}. Update site permissions, then click to try again.`
+          `${retryLabel}. Update site permissions, then click to try again.`,
         );
       }
 
       if (mode === 'microphone') {
         showToast(
           'Microphone was blocked or timed out. Re-open permissions in your browser bar, then press Retry microphone or load the demo audio.',
-          'error'
+          'error',
         );
       }
       onError?.(mode, error);

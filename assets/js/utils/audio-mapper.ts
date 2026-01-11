@@ -6,7 +6,7 @@ export function mapFrequencyToItems<T>(
   data: Uint8Array,
   items: T[],
   callback: (item: T, index: number, value: number) => void,
-  options: AudioMapperOptions = {}
+  options: AudioMapperOptions = {},
 ) {
   if (items.length === 0) return;
 

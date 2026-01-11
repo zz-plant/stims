@@ -23,7 +23,7 @@ class PatternRecognizer {
     if (this.patternBuffer.length === 0) {
       this.patternBuffer = Array.from(
         { length: this.bufferSize },
-        () => new (data.constructor as typeof Uint8Array)(data.length)
+        () => new (data.constructor as typeof Uint8Array)(data.length),
       );
     }
 
@@ -58,7 +58,7 @@ class PatternRecognizer {
   comparePatterns(
     pattern1: Uint8Array,
     pattern2: Uint8Array,
-    tolerance = 0.85
+    tolerance = 0.85,
   ): boolean {
     // Higher tolerance for stricter matching
     // Calculate similarity score between two patterns

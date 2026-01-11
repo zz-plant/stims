@@ -1,22 +1,22 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
-  AnimationContext,
+  type AnimationContext,
   getContextFrequencyData,
 } from '../core/animation-loop';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
-import { startToyAudio } from '../utils/start-audio';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
+import { startToyAudio } from '../utils/start-audio';
 
 const settingsPanel = getSettingsPanel();
 let activeQuality: QualityPreset = getActiveQualityPreset();
@@ -81,8 +81,8 @@ function buildRibbon(index: number) {
       new THREE.Vector3(
         Math.cos(angle) * randomRadius(baseRadius, 4),
         Math.sin(angle) * randomRadius(3.5, 3),
-        -i * 0.4 - index
-      )
+        -i * 0.4 - index,
+      ),
     );
   }
 
@@ -92,13 +92,13 @@ function buildRibbon(index: number) {
     ribbonDetail.tubeSegments,
     0.6,
     14,
-    false
+    false,
   );
   const material = new THREE.MeshStandardMaterial({
     color: new THREE.Color().setHSL(
       (index / RIBBON_COUNT + 0.5) % 1,
       0.75,
-      0.55
+      0.55,
     ),
     emissive: 0x0b1327,
     emissiveIntensity: 0.35,
@@ -138,7 +138,7 @@ function averageRange(data: Uint8Array, startRatio: number, endRatio: number) {
 function updateRibbon(
   ribbon: (typeof ribbons)[number],
   data: Uint8Array,
-  time: number
+  time: number,
 ) {
   const avg = getAverageFrequency(data);
   const bass = averageRange(data, 0, 0.32);
@@ -157,7 +157,7 @@ function updateRibbon(
   ribbon.points[0].set(
     Math.cos(swirl) * (8 + avg / 45) + sway,
     Math.sin(swirl * 0.8) * (5 + treble / 60) + lift,
-    Math.sin(time * 0.35 + ribbon.colorOffset) * 3
+    Math.sin(time * 0.35 + ribbon.colorOffset) * 3,
   );
 
   ribbon.curve.points = ribbon.points;
@@ -168,7 +168,7 @@ function updateRibbon(
     ribbon.tubeSegments,
     radius,
     16,
-    false
+    false,
   );
 
   const material = ribbon.mesh.material as THREE.MeshStandardMaterial;
@@ -240,7 +240,7 @@ async function startAudio(request: ToyAudioRequest = false) {
   return startToyAudio(
     toy,
     animate,
-    resolveToyAudioOptions(request, { fftSize: 512 })
+    resolveToyAudioOptions(request, { fftSize: 512 }),
   );
 }
 

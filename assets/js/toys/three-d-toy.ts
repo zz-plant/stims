@@ -1,27 +1,27 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
+  type AnimationContext,
   getContextFrequencyData,
-  AnimationContext,
 } from '../core/animation-loop';
-import { getAverageFrequency } from '../utils/audio-handler';
-import { createIdleDetector } from '../utils/idle-detector';
 import {
-  createControlPanel,
-  type ControlPanelState,
-} from '../utils/control-panel';
-import { startToyAudio } from '../utils/start-audio';
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
+import { getAverageFrequency } from '../utils/audio-handler';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
 import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
+  type ControlPanelState,
+  createControlPanel,
+} from '../utils/control-panel';
+import { createIdleDetector } from '../utils/idle-detector';
+import { startToyAudio } from '../utils/start-audio';
 
 let errorElement: HTMLElement | null;
 const settingsPanel = getSettingsPanel();
@@ -74,7 +74,7 @@ function disposeMesh(mesh: THREE.Mesh | null) {
 
 function createRandomShape() {
   const shapeType = Math.floor(Math.random() * 3);
-  let geometry;
+  let geometry: THREE.BufferGeometry;
   const material = new THREE.MeshStandardMaterial({
     color: Math.random() * 0xffffff,
     emissive: Math.random() * 0x444444,
@@ -98,7 +98,7 @@ function createRandomShape() {
   mesh.position.set(
     Math.random() * 120 - 60,
     Math.random() * 120 - 60,
-    Math.random() * -800
+    Math.random() * -800,
   );
   toy.scene.add(mesh);
   shapes.push(mesh);
@@ -130,7 +130,7 @@ function rebuildSceneContents() {
       color: 0x00ffcc,
       metalness: 0.7,
       roughness: 0.4,
-    })
+    }),
   );
   toy.scene.add(torusKnot);
 
@@ -141,7 +141,7 @@ function rebuildSceneContents() {
   }
   particlesGeometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(particlesPosition, 3)
+    new THREE.BufferAttribute(particlesPosition, 3),
   );
   const particlesMaterial = new THREE.PointsMaterial({
     color: 0xffffff,
@@ -202,7 +202,7 @@ function animate(ctx: AnimationContext) {
   const backgroundColor = new THREE.Color().setHSL(
     paletteHue,
     0.4,
-    0.08 + idleBlend * 0.1
+    0.08 + idleBlend * 0.1,
   );
   toy.scene.background = backgroundColor;
   document.body.style.backgroundImage = `radial-gradient(circle at 20% 20%, hsla(${
@@ -229,7 +229,7 @@ function animate(ctx: AnimationContext) {
       shape.position.x = Math.random() * 120 - 60;
       shape.position.y = Math.random() * 120 - 60;
       (shape.material as THREE.MeshStandardMaterial).color.set(
-        Math.random() * 0xffffff
+        Math.random() * 0xffffff,
       );
     }
     const wobbleAmt =

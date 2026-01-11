@@ -96,7 +96,7 @@ export const startLightsExperience = ({
     if (handleReducedMotionChange) {
       prefersReducedMotion?.removeEventListener(
         'change',
-        handleReducedMotionChange
+        handleReducedMotionChange,
       );
     }
     if (handleVisibilityChange) {

@@ -3,7 +3,10 @@ type WindowGetter = () => (Window & typeof globalThis) | null;
 export function createRouter({
   windowRef = () => (typeof window === 'undefined' ? null : window),
   queryParam = 'toy',
-}: { windowRef?: WindowGetter; queryParam?: string } = {}) {
+}: {
+  windowRef?: WindowGetter;
+  queryParam?: string;
+} = {}) {
   let isListening = false;
 
   const getWindow = () => windowRef();

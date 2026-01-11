@@ -5,17 +5,25 @@ import { defineConfig } from 'vite';
 import toysData from './assets/js/toys-data.js';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
-const htmlInputs = Object.fromEntries(
-  fs
-    .readdirSync(rootDir)
-    .filter((entry) => entry.endsWith('.html'))
-    .sort()
-    .map((file) => [path.parse(file).name, path.resolve(rootDir, file)])
-);
+const getHtmlInputs = (dir) => {
+  if (!fs.existsSync(dir)) return {};
+  return Object.fromEntries(
+    fs
+      .readdirSync(dir)
+      .filter((entry) => entry.endsWith('.html'))
+      .sort()
+      .map((file) => [path.parse(file).name, path.resolve(dir, file)]),
+  );
+};
+
+const htmlInputs = {
+  ...getHtmlInputs(rootDir),
+  ...getHtmlInputs(path.resolve(rootDir, 'toys')),
+};
 const moduleInputs = Object.fromEntries(
   toysData
     .filter((toy) => toy.type === 'module')
-    .map((toy) => [toy.module, path.resolve(rootDir, toy.module)])
+    .map((toy) => [toy.module, path.resolve(rootDir, toy.module)]),
 );
 const rollupInputs = {
   ...htmlInputs,

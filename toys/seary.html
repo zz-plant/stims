@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Trippy Synesthetic Visualizer with WebGL</title>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body,
       html {
@@ -29,7 +29,7 @@
     </style>
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <canvas id="gpuCanvas" class="toy-canvas"></canvas>
     <canvas id="sparkleCanvas" class="toy-canvas"></canvas>
     <div id="error-message" style="display: none"></div>
@@ -45,16 +45,17 @@
     </div>
     <script type="module">
       import {
-        initAudio,
         getFrequencyData,
-      } from './assets/js/utils/audio-handler.ts';
-      import { createPeakDetector } from './assets/js/utils/peak-detector.ts';
-      import { showError } from './assets/js/utils/error-display.ts';
-      import { initHints } from './assets/ui/hints.ts';
-      import { initFunControls } from './assets/ui/fun-controls.ts';
-      import { createSearyFunAdapter } from './assets/seary/fun-adapter.ts';
-      import { setupCanvasResize } from './assets/js/utils/canvas-resize.ts';
-      import { startToyAudio } from './assets/js/utils/start-audio.ts';
+        initAudio,
+      } from '../assets/js/utils/audio-handler.ts';
+      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
+      import { showError } from '../assets/js/utils/error-display.ts';
+      import { createPeakDetector } from '../assets/js/utils/peak-detector.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { createSearyFunAdapter } from '../assets/seary/fun-adapter.ts';
+      import { initFunControls } from '../assets/ui/fun-controls.ts';
+      import { initHints } from '../assets/ui/hints.ts';
+
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
       const sparkleCanvas = document.getElementById('sparkleCanvas');
@@ -367,7 +368,7 @@
         mid: 0,
         high: 0,
       });
-      let orientation = { alpha: 0, beta: 0, gamma: 0 };
+      const orientation = { alpha: 0, beta: 0, gamma: 0 };
       const touches = [
         { x: 0.0, y: 0.0 },
         { x: 0.0, y: 0.0 },

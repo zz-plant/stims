@@ -23,7 +23,7 @@ export function createIdleDetector({
 
   function update(
     data: Uint8Array,
-    now: number = performance.now()
+    now: number = performance.now(),
   ): IdleState {
     const average = getAverageFrequency(data);
     smoothedLevel = smoothedLevel * 0.8 + average * 0.2;

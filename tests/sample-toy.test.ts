@@ -20,7 +20,7 @@ describe('toy harness example', () => {
 
     expect(typeof cleanup).toBe('function');
     expect(
-      container.querySelector('[data-toy-mount="demo-toy"]')
+      container.querySelector('[data-toy-mount="demo-toy"]'),
     ).not.toBeNull();
 
     await cleanup();
@@ -48,7 +48,7 @@ describe('toy harness example', () => {
     analyser.getByteFrequencyData(samples);
 
     expect(Array.from(samples)).toEqual(
-      new Array(analyser.frequencyBinCount).fill(128)
+      new Array(analyser.frequencyBinCount).fill(128),
     );
   });
 });

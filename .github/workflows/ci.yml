@@ -7,68 +7,28 @@ on:
 
 jobs:
   quality:
-    name: '${{ matrix.runtime }} / checks'
+    name: quality checks
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        runtime: [bun, node]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
       - name: Set up Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Install dependencies
-        run: |
-          if [ "${{ matrix.runtime }}" = "bun" ]; then
-            bun install --frozen-lockfile
-          else
-            npm install --no-package-lock
-          fi
+        run: bun install --frozen-lockfile
 
       - name: Dev server check
-        run: |
-          if [ "${{ matrix.runtime }}" = "bun" ]; then
-            bun run dev:check
-          else
-            npm run dev:check
-          fi
+        run: bun run dev:check
 
-      - name: Lint
-        run: |
-          if [ "${{ matrix.runtime }}" = "bun" ]; then
-            bun run lint
-          else
-            npm run lint
-          fi
-
-      - name: Type check
-        run: |
-          if [ "${{ matrix.runtime }}" = "bun" ]; then
-            bun run typecheck
-          else
-            npm run typecheck
-          fi
+      - name: Biome Check
+        run: bun run check:quick
 
       - name: Build
-        run: |
-          if [ "${{ matrix.runtime }}" = "bun" ]; then
-            bun run build
-          else
-            npm run build
-          fi
+        run: bun run build
 
       - name: Test
-        run: |
-          if [ "${{ matrix.runtime }}" = "bun" ]; then
-            bun run test
-          else
-            npm test
-          fi
+        run: bun run test

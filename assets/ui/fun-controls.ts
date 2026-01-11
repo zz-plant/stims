@@ -277,7 +277,7 @@ export function initFunControls(options: FunControlsInit = {}) {
                 <button class="fun-chip" data-palette="${key}" aria-pressed="${
                   palette === key
                 }">${key}</button>
-              `
+              `,
             )
             .join('')}
         </fieldset>
@@ -331,10 +331,10 @@ export function initFunControls(options: FunControlsInit = {}) {
   document.body.appendChild(container);
 
   const modeIndicator = container.querySelector<HTMLElement>(
-    '[data-mode-indicator]'
+    '[data-mode-indicator]',
   );
   const audioIndicator = container.querySelector<HTMLElement>(
-    '[data-audio-indicator]'
+    '[data-audio-indicator]',
   );
 
   function updateModeIndicator() {
@@ -397,7 +397,7 @@ export function initFunControls(options: FunControlsInit = {}) {
   });
 
   const modeButton = container.querySelector<HTMLButtonElement>(
-    '[data-mode="toggle"]'
+    '[data-mode="toggle"]',
   );
   modeButton?.addEventListener('click', () => {
     mode = mode === 'party' ? 'calm' : 'party';
@@ -426,7 +426,7 @@ export function initFunControls(options: FunControlsInit = {}) {
   });
 
   const peakSlider = container.querySelector<HTMLInputElement>(
-    '.fun-peak-sensitivity'
+    '.fun-peak-sensitivity',
   );
   peakSlider?.addEventListener('input', (event) => {
     const value = Number((event.target as HTMLInputElement).value);

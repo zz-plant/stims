@@ -1,11 +1,16 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
-  AnimationContext,
+  type AnimationContext,
   getContextFrequencyData,
 } from '../core/animation-loop';
-import { startToyAudio } from '../utils/start-audio';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
@@ -15,12 +20,7 @@ import {
   type PointerPosition,
   type PointerSummary,
 } from '../utils/pointer-input';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
+import { startToyAudio } from '../utils/start-audio';
 
 type TideBlob = {
   position: THREE.Vector2;
@@ -65,7 +65,7 @@ const toy = new WebToy({
 const blobs: TideBlob[] = [];
 const blobUniforms = Array.from(
   { length: MAX_BLOBS },
-  () => new THREE.Vector4()
+  () => new THREE.Vector4(),
 );
 
 const uniforms = {
@@ -187,7 +187,7 @@ const plane = new THREE.Mesh(
     uniforms,
     vertexShader,
     fragmentShader,
-  })
+  }),
 );
 
 const sparkGeometry = new THREE.BufferGeometry();
@@ -232,7 +232,7 @@ function initializeScene() {
 
   sparkGeometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(sparkPositions, 3)
+    new THREE.BufferAttribute(sparkPositions, 3),
   );
   sparkGeometry.setDrawRange(0, activeSparkCount);
 
@@ -247,7 +247,7 @@ function updateBlobs(delta: number) {
     blob.life -= delta / controls.trailLength;
     blob.position.addScaledVector(
       blob.velocity,
-      delta * 0.35 * controls.currentSpeed
+      delta * 0.35 * controls.currentSpeed,
     );
 
     blob.position.x = (blob.position.x + 1.0) % 1.0;
@@ -266,7 +266,7 @@ function updateBlobs(delta: number) {
       blob.position.x,
       blob.position.y,
       blob.radius,
-      blob.strength
+      blob.strength,
     );
   }
 }
@@ -275,13 +275,13 @@ function spawnBlobFromPointer(pointer: PointerPosition, intensity = 1) {
   const last = lastPointerPositions.get(pointer.id);
   const current = new THREE.Vector2(
     pointer.normalizedX * 0.5 + 0.5,
-    pointer.normalizedY * 0.5 + 0.5
+    pointer.normalizedY * 0.5 + 0.5,
   );
 
   const velocity = last
     ? new THREE.Vector2(
         current.x - (last.normalizedX * 0.5 + 0.5),
-        current.y - (last.normalizedY * 0.5 + 0.5)
+        current.y - (last.normalizedY * 0.5 + 0.5),
       )
     : new THREE.Vector2(0, 0);
 
@@ -323,7 +323,7 @@ createPointerInput({
 
 function updateSparks(delta: number, energy: number) {
   const positions = sparkGeometry.getAttribute(
-    'position'
+    'position',
   ) as THREE.BufferAttribute;
   const respawnBudget = Math.min(activeSparkCount, Math.floor(4 + energy * 24));
   let respawned = 0;
@@ -333,7 +333,7 @@ function updateSparks(delta: number, energy: number) {
     if (life <= 0 && respawned < respawnBudget) {
       resetSpark(
         i,
-        blobs[THREE.MathUtils.randInt(0, Math.max(blobs.length - 1, 0))]
+        blobs[THREE.MathUtils.randInt(0, Math.max(blobs.length - 1, 0))],
       );
       respawned += 1;
     }
@@ -349,12 +349,12 @@ function updateSparks(delta: number, energy: number) {
     sparkPositions[i * 3] = THREE.MathUtils.clamp(
       sparkPositions[i * 3],
       -1.2,
-      1.2
+      1.2,
     );
     sparkPositions[i * 3 + 1] = THREE.MathUtils.clamp(
       sparkPositions[i * 3 + 1],
       -1.2,
-      1.2
+      1.2,
     );
 
     if (sparkLife[i] <= 0) {
@@ -423,12 +423,12 @@ function animate(ctx: AnimationContext) {
   uniforms.u_audioGlow.value = THREE.MathUtils.lerp(
     uniforms.u_audioGlow.value,
     0.25 + highBand * 1.5,
-    0.08
+    0.08,
   );
   uniforms.u_audioSpark.value = THREE.MathUtils.lerp(
     uniforms.u_audioSpark.value,
     highBand,
-    0.15
+    0.15,
   );
 
   updateBlobs(delta);
@@ -454,7 +454,7 @@ async function startAudio(request: ToyAudioRequest = false) {
         fftSize: 1024,
         smoothingTimeConstant: 0.8,
         fallbackToSynthetic: true,
-      })
+      }),
     );
   } catch (error) {
     console.warn('Falling back to silent animation', error);
@@ -472,5 +472,3 @@ async function startAudio(request: ToyAudioRequest = false) {
 (window as unknown as Record<string, unknown>).startAudio = startAudio;
 (window as unknown as Record<string, unknown>).startAudioFallback = () =>
   startAudio(true);
-
-export {}; // Ensure this module is treated as an ES module

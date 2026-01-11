@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import WebToy from '../core/web-toy';
+import { createBrandFunAdapter } from '../../brand/fun-adapter';
+import { initFunControls } from '../../ui/fun-controls';
+import { initHints } from '../../ui/hints';
 import {
-  getContextFrequencyData,
   type AnimationContext,
+  getContextFrequencyData,
 } from '../core/animation-loop';
-import { ensureWebGL } from '../utils/webgl-check';
+import WebToy from '../core/web-toy';
 import { showError } from '../utils/error-display';
 import { startToyAudio } from '../utils/start-audio';
-import { initHints } from '../../ui/hints';
-import { initFunControls } from '../../ui/fun-controls';
-import { createBrandFunAdapter } from '../../brand/fun-adapter';
+import { ensureWebGL } from '../utils/webgl-check';
 
 type BrandStartOptions = {
   canvas?: HTMLCanvasElement | null;
@@ -35,7 +35,7 @@ export async function startBrandToy({
   if (!hasRenderingSupport) {
     showError(
       errorTargetId,
-      'This visualizer needs WebGL or WebGPU. Try switching browsers or enabling hardware acceleration.'
+      'This visualizer needs WebGL or WebGPU. Try switching browsers or enabling hardware acceleration.',
     );
     return null;
   }
@@ -123,12 +123,12 @@ export async function startBrandToy({
   const buildingMesh = new THREE.InstancedMesh(
     buildingGeo,
     buildingMat,
-    buildingData.length
+    buildingData.length,
   );
   buildingMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   buildingMesh.instanceColor = new THREE.InstancedBufferAttribute(
     new Float32Array(buildingData.length * 3),
-    3
+    3,
   );
   toy.scene.add(buildingMesh);
 
@@ -145,7 +145,7 @@ export async function startBrandToy({
   trunkGeo.setAttribute('color', new THREE.BufferAttribute(trunkColors, 3));
   const leavesColor = new THREE.Color(0x228b22);
   const leavesColors = new Float32Array(
-    leavesGeo.attributes.position.count * 3
+    leavesGeo.attributes.position.count * 3,
   );
   for (let i = 0; i < leavesColors.length; i += 3) {
     leavesColors[i] = leavesColor.r;
@@ -215,7 +215,7 @@ export async function startBrandToy({
     const dataArray = getContextFrequencyData(ctx);
     const bassBand = dataArray.slice(
       0,
-      Math.max(1, Math.min(10, dataArray.length))
+      Math.max(1, Math.min(10, dataArray.length)),
     );
     const bass = bassBand.length
       ? bassBand.reduce((a, b) => a + b, 0) / bassBand.length
@@ -271,7 +271,7 @@ export async function startBrandToy({
     funControls.setAudioAvailable(false);
     showError(
       errorTargetId,
-      'Microphone access is unavailable. Visuals will run without audio reactivity.'
+      'Microphone access is unavailable. Visuals will run without audio reactivity.',
     );
     const silentContext = { toy, analyser: null, time: 0 } as const;
     toy.renderer?.setAnimationLoop(() => animate(silentContext));

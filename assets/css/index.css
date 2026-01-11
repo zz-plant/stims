@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&display=swap");
 
 :root {
   --bg-color: #0b0f1a;
@@ -57,7 +57,7 @@ html.light {
 body,
 html {
   padding: 0;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   background: linear-gradient(
     180deg,
     var(--bg-color) 0%,
@@ -101,7 +101,7 @@ html {
 }
 
 .top-nav::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -133,7 +133,7 @@ html {
 }
 
 .brand-mark::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 2px;
   border-radius: 10px;
@@ -144,7 +144,7 @@ html {
 }
 
 .brand-mark::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -3px;
   border-radius: 14px;
@@ -165,7 +165,7 @@ html {
   margin: 0;
   font-weight: 700;
   letter-spacing: 0.01em;
-  font-family: 'Orbitron', 'Space Grotesk', sans-serif;
+  font-family: "Orbitron", "Space Grotesk", sans-serif;
 }
 
 .nav-actions {
@@ -211,7 +211,7 @@ header.hero {
 
 .hero::before,
 .hero::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -343,8 +343,8 @@ header.hero {
     transform 0.2s ease;
 }
 
-.readiness-dot[data-status='success'],
-.readiness-dot[data-status='ready'] {
+.readiness-dot[data-status="success"],
+.readiness-dot[data-status="ready"] {
   background: linear-gradient(
     135deg,
     var(--accent-color),
@@ -353,12 +353,12 @@ header.hero {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.22);
 }
 
-.readiness-dot[data-status='warn'] {
+.readiness-dot[data-status="warn"] {
   background: linear-gradient(135deg, #f5c768, #ff7b7b);
   box-shadow: 0 0 0 2px rgba(245, 199, 104, 0.22);
 }
 
-.readiness-dot[data-status='error'] {
+.readiness-dot[data-status="error"] {
   background: linear-gradient(135deg, #ff8a8a, #e8333c);
   box-shadow: 0 0 0 2px rgba(232, 51, 60, 0.24);
 }
@@ -679,7 +679,7 @@ header.hero {
 .hero-copy h1 {
   font-size: clamp(2.25rem, 1.2rem + 2.5vw, 3.2rem);
   margin-bottom: 0.5rem;
-  font-family: 'Orbitron', 'Space Grotesk', sans-serif;
+  font-family: "Orbitron", "Space Grotesk", sans-serif;
   text-shadow: none;
 }
 
@@ -760,7 +760,7 @@ header.hero {
 }
 
 .cta-button::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background: none;

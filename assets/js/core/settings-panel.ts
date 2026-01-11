@@ -95,7 +95,7 @@ export function getActiveQualityPreset({
 }: StoredPresetOptions = {}): QualityPreset {
   if (activeQualityPreset && activeQualityPresetStorageKey === storageKey) {
     const match = presets.find(
-      (preset) => preset.id === activeQualityPreset?.id
+      (preset) => preset.id === activeQualityPreset?.id,
     );
     if (match) return match;
   }
@@ -201,7 +201,7 @@ class PersistentSettingsPanel {
 
       const select = document.createElement('select');
       select.addEventListener('change', () =>
-        this.handleQualityChange(select.value)
+        this.handleQualityChange(select.value),
       );
 
       this.qualitySelect = select;
@@ -305,7 +305,7 @@ export function getSettingsPanel() {
 }
 
 export function resetSettingsPanelState(
-  options: { removePanel?: boolean } = {}
+  options: { removePanel?: boolean } = {},
 ) {
   activeQualityPreset = null;
   activeQualityPresetStorageKey = null;

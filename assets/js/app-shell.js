@@ -1,5 +1,5 @@
-import { initNavigation, loadToy, loadFromQuery } from './loader.ts';
 import { createLibraryView } from './library-view.js';
+import { initNavigation, loadFromQuery, loadToy } from './loader.ts';
 import toysData from './toys-data.js';
 
 const libraryView = createLibraryView({

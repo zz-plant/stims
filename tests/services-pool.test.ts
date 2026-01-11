@@ -6,13 +6,13 @@ import type {
   WebGLRenderer,
 } from 'three';
 import {
-  requestRenderer,
-  resetRendererPool,
-} from '../assets/js/core/services/render-service.ts';
-import {
   acquireAudioHandle,
   resetAudioPool,
 } from '../assets/js/core/services/audio-service.ts';
+import {
+  requestRenderer,
+  resetRendererPool,
+} from '../assets/js/core/services/render-service.ts';
 import type { FrequencyAnalyser } from '../assets/js/utils/audio-handler.ts';
 
 describe('render-service pooling', () => {

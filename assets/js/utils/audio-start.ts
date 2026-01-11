@@ -10,7 +10,7 @@ export type ToyAudioRequest =
 
 export function resolveToyAudioOptions(
   request: ToyAudioRequest,
-  baseOptions: AudioInitOptions = {}
+  baseOptions: AudioInitOptions = {},
 ): AudioInitOptions & {
   fallbackToSynthetic?: boolean;
   preferSynthetic?: boolean;

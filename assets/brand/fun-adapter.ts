@@ -37,7 +37,7 @@ export function createBrandFunAdapter({
       const color = new THREE.Color(primary).offsetHSL(
         0,
         0,
-        (Math.random() - 0.5) * 0.08
+        (Math.random() - 0.5) * 0.08,
       );
       buildingMesh.instanceColor?.setXYZ(i, color.r, color.g, color.b);
     }

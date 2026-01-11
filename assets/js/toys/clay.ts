@@ -17,7 +17,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
     60,
     window.innerWidth / window.innerHeight,
     0.1,
-    1000
+    1000,
   );
   camera.position.set(0, 8, 10);
   camera.lookAt(0, 5, 0);
@@ -180,7 +180,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
         if (navigator.vibrate) {
           const intensity = Math.min(
             Math.abs(currentTouches[0].y - previousTouches[0].y),
-            100
+            100,
           );
           navigator.vibrate(intensity);
         }

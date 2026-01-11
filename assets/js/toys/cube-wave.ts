@@ -1,23 +1,23 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
-  AnimationContext,
+  type AnimationContext,
   getContextFrequencyData,
 } from '../core/animation-loop';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
-import { applyAudioColor, type AudioColorParams } from '../utils/color-audio';
-import { startToyAudio } from '../utils/start-audio';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
+import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
+import { startToyAudio } from '../utils/start-audio';
 
 type ShapeMode = 'cubes' | 'spheres';
 
@@ -246,7 +246,7 @@ function rebuildGrid(mode: ShapeMode) {
       mesh.position.set(
         startX + col * spacingX,
         currentPreset.animation.baseHeight,
-        startZ + row * spacingZ
+        startZ + row * spacingZ,
       );
       gridGroup.add(mesh);
       gridItems.push({ mesh, row, col });
@@ -279,7 +279,7 @@ function setupSettingsPanel() {
 
   const shapeRow = panel.addSection(
     'Shape',
-    'Change the primitive without restarting audio.'
+    'Change the primitive without restarting audio.',
   );
 
   const select = document.createElement('select');
@@ -304,7 +304,7 @@ function updateTransforms(
   item: GridItem,
   normalizedValue: number,
   rawValue: number,
-  time: number
+  time: number,
 ) {
   const { mesh, row, col } = item;
   const anim = currentPreset.animation;
@@ -373,7 +373,7 @@ async function startAudio(request: ToyAudioRequest = false) {
   return startToyAudio(
     toy,
     animate,
-    resolveToyAudioOptions(request, { fftSize: 256 })
+    resolveToyAudioOptions(request, { fftSize: 256 }),
   );
 }
 

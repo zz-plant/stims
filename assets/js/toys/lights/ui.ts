@@ -14,17 +14,17 @@ export type LightsUI = {
   setStatus: (message: string, variant?: StatusVariant) => void;
   getSelectedLightType: () => LightType;
   bindLightTypeChange: (
-    handler: (lightType: LightType) => void
+    handler: (lightType: LightType) => void,
   ) => (() => void) | undefined;
 };
 
 export const createLightsUI = (doc: Document | null): LightsUI => {
   const elements: LightsUIElements = {
     startButton: doc?.getElementById(
-      'start-audio-btn'
+      'start-audio-btn',
     ) as HTMLButtonElement | null,
     fallbackButton: doc?.getElementById(
-      'use-demo-audio'
+      'use-demo-audio',
     ) as HTMLButtonElement | null,
     statusElement: doc?.getElementById('audio-status') as HTMLElement | null,
     lightSelect: doc?.getElementById('light-type') as HTMLSelectElement | null,

@@ -1,5 +1,5 @@
-import type { RendererCapabilities } from './renderer-capabilities.ts';
 import type { ensureWebGL } from '../utils/webgl-check.ts';
+import type { RendererCapabilities } from './renderer-capabilities.ts';
 
 type ToyCapabilityOptions = {
   title?: string;

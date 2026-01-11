@@ -1,22 +1,22 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
+import { initHints } from '../../ui/hints.ts';
 import {
-  AnimationContext,
+  type AnimationContext,
   getContextFrequencyData,
 } from '../core/animation-loop';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
-import { startToyAudio } from '../utils/start-audio';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
-import { initHints } from '../../ui/hints.ts';
+import { startToyAudio } from '../utils/start-audio';
 
 type GravityState = {
   vector: THREE.Vector3;
@@ -48,7 +48,7 @@ function createHeightfield(size: number): Heightfield {
     size,
     size,
     THREE.RedFormat,
-    THREE.FloatType
+    THREE.FloatType,
   );
   texture.needsUpdate = true;
   texture.generateMipmaps = false;
@@ -73,7 +73,7 @@ function bandAverage(data: Uint8Array, start: number, end: number): number {
 
 function mapOrientationToGravity(
   event: DeviceOrientationEvent,
-  state: GravityState
+  state: GravityState,
 ) {
   if (state.locked) return;
 
@@ -115,7 +115,7 @@ export async function start() {
     TABLE_SIZE,
     TABLE_SIZE,
     heightfield.size - 1,
-    heightfield.size - 1
+    heightfield.size - 1,
   );
 
   const sandMaterial = new THREE.MeshStandardMaterial({
@@ -138,7 +138,7 @@ export async function start() {
       color: 0x1b1f2a,
       metalness: 0.25,
       roughness: 0.4,
-    })
+    }),
   );
   rim.position.y = sandMesh.position.y - 0.6;
 
@@ -157,7 +157,7 @@ export async function start() {
   }
   dustGeometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(dustPositions, 3)
+    new THREE.BufferAttribute(dustPositions, 3),
   );
   const dust = new THREE.Points(
     dustGeometry,
@@ -168,7 +168,7 @@ export async function start() {
       opacity: 0.6,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-    })
+    }),
   );
 
   const table = new THREE.Group();
@@ -225,7 +225,7 @@ export async function start() {
 
   const grainRow = panel.addSection(
     'Grain size',
-    'Scale the displacement height for taller or flatter dunes.'
+    'Scale the displacement height for taller or flatter dunes.',
   );
   const grainSlider = document.createElement('input');
   grainSlider.type = 'range';
@@ -244,7 +244,7 @@ export async function start() {
 
   const dampingRow = panel.addSection(
     'Damping',
-    'Higher damping calms ripples faster; lower values keep waves lively.'
+    'Higher damping calms ripples faster; lower values keep waves lively.',
   );
   const dampingSlider = document.createElement('input');
   dampingSlider.type = 'range';
@@ -261,7 +261,7 @@ export async function start() {
 
   const gravityRow = panel.addSection(
     'Gravity',
-    'Lock to the default downward pull on desktop, or let device tilt steer the sand.'
+    'Lock to the default downward pull on desktop, or let device tilt steer the sand.',
   );
   const gravityLock = document.createElement('input');
   gravityLock.type = 'checkbox';
@@ -415,11 +415,11 @@ export async function start() {
     const centerJitter = 0.25 * (1 + Math.random() * 0.5);
     const x = Math.floor(
       heightfield.size / 2 +
-        (Math.random() - 0.5) * heightfield.size * centerJitter
+        (Math.random() - 0.5) * heightfield.size * centerJitter,
     );
     const y = Math.floor(
       heightfield.size / 2 +
-        (Math.random() - 0.5) * heightfield.size * centerJitter
+        (Math.random() - 0.5) * heightfield.size * centerJitter,
     );
     const radius = Math.max(2, Math.floor(3 + strength * 6));
 
@@ -445,7 +445,7 @@ export async function start() {
     const waveTension = 0.22;
     const gravitySkew = new THREE.Vector2(
       gravity.vector.x,
-      gravity.vector.z
+      gravity.vector.z,
     ).multiplyScalar(0.06);
 
     for (let y = 1; y < size - 1; y += 1) {
@@ -469,7 +469,7 @@ export async function start() {
         heights[idx] = THREE.MathUtils.clamp(
           heights[idx],
           -MAX_HEIGHT,
-          MAX_HEIGHT
+          MAX_HEIGHT,
         );
         textureData[idx] = 0.5 + heights[idx];
       }
@@ -487,7 +487,7 @@ export async function start() {
     const mids = bandAverage(
       data,
       Math.floor(data.length * 0.16),
-      Math.floor(data.length * 0.45)
+      Math.floor(data.length * 0.45),
     );
 
     const rippleIntensity = ((low * 0.65 + mids * 0.35) / 255) * rippleGain;
@@ -499,7 +499,7 @@ export async function start() {
     const shimmer = 0.12 + (avg / 255) * 0.3;
     (dust.material as THREE.PointsMaterial).opacity = shimmer;
 
-    gravity.vector.lerp(gravity.target, 1 - Math.pow(0.0004, delta));
+    gravity.vector.lerp(gravity.target, 1 - 0.0004 ** delta);
     table.rotation.x = gravity.vector.z * 0.32;
     table.rotation.z = -gravity.vector.x * 0.32;
 
@@ -513,7 +513,7 @@ export async function start() {
     return startToyAudio(
       toy,
       animate,
-      resolveToyAudioOptions(request, { fftSize: 512 })
+      resolveToyAudioOptions(request, { fftSize: 512 }),
     );
   }
 

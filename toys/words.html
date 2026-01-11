@@ -7,8 +7,8 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Interactive Word Cloud & Visualizer</title>
-    <script type="module" src="assets/js/lib/wordcloud2.min.js"></script>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <script type="module" src="../assets/js/lib/wordcloud2.min.js"></script>
+    <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       * {
         box-sizing: border-box;
@@ -211,7 +211,7 @@
     </style>
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <div class="control-panel">
       <div class="controls">
         <button
@@ -288,11 +288,12 @@
 
     <script type="module">
       import {
-        initAudio,
         getFrequencyData,
-      } from './assets/js/utils/audio-handler.ts';
-      import { startToyAudio } from './assets/js/utils/start-audio.ts';
-      import { showError } from './assets/js/utils/error-display.ts';
+        initAudio,
+      } from '../assets/js/utils/audio-handler.ts';
+      import { showError } from '../assets/js/utils/error-display.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+
       const wordCloudCanvas = document.getElementById('word-cloud-canvas');
       const unmuteButton = document.getElementById('unmute-button');
       const toggleSpeechButton = document.getElementById(

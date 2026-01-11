@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Multi-Capability Visualizer (WebGPU/WebGL Fallback)</title>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body,
       html {
@@ -35,7 +35,7 @@
     </style>
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <canvas id="webglCanvas" class="toy-canvas"></canvas>
     <div
       id="capability-banner"
@@ -45,15 +45,15 @@
     <div id="error-message" style="display: none"></div>
     <script type="module">
       import * as THREE from 'three';
-      import WebToy from './assets/js/core/web-toy.ts';
-      import { getContextFrequencyData } from './assets/js/core/animation-loop.ts';
-      import createPeakDetector from './assets/js/utils/peak-detector.ts';
-      import { getAverageFrequency } from './assets/js/utils/audio-handler.ts';
-      import { showError } from './assets/js/utils/error-display.ts';
-      import { startToyAudio } from './assets/js/utils/start-audio.ts';
-      import { initHints } from './assets/ui/hints.ts';
-      import { initFunControls } from './assets/ui/fun-controls.ts';
-      import { createMultiFunAdapter } from './assets/multi/fun-adapter.ts';
+      import { getContextFrequencyData } from '../assets/js/core/animation-loop.ts';
+      import WebToy from '../assets/js/core/web-toy.ts';
+      import { getAverageFrequency } from '../assets/js/utils/audio-handler.ts';
+      import { showError } from '../assets/js/utils/error-display.ts';
+      import createPeakDetector from '../assets/js/utils/peak-detector.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { createMultiFunAdapter } from '../assets/multi/fun-adapter.ts';
+      import { initFunControls } from '../assets/ui/fun-controls.ts';
+      import { initHints } from '../assets/ui/hints.ts';
 
       const canvas = document.getElementById('webglCanvas');
       const capabilityBanner = document.getElementById('capability-banner');

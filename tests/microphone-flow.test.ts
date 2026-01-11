@@ -77,7 +77,7 @@ describe('setupMicrophonePermissionFlow', () => {
     });
 
     await expect(flow.startMicrophoneRequest()).rejects.toBeInstanceOf(
-      AudioAccessError
+      AudioAccessError,
     );
 
     expect(statusElement.hidden).toBe(false);
@@ -108,7 +108,7 @@ describe('setupMicrophonePermissionFlow', () => {
     });
 
     await expect(flow.startMicrophoneRequest()).rejects.toBeInstanceOf(
-      AudioAccessError
+      AudioAccessError,
     );
 
     expect(statusElement.dataset.variant).toBe('error');
@@ -144,12 +144,12 @@ describe('setupMicrophonePermissionFlow', () => {
     });
 
     await expect(flow.startMicrophoneRequest()).rejects.toBeInstanceOf(
-      AudioAccessError
+      AudioAccessError,
     );
 
     expect(startButton.dataset.state).toBe('retry');
     expect(startButton.getAttribute('aria-label')).toContain(
-      'Retry microphone'
+      'Retry microphone',
     );
     expect(fallbackButton.hidden).toBe(false);
 
@@ -160,7 +160,7 @@ describe('setupMicrophonePermissionFlow', () => {
     expect(startButton.dataset.state).toBeUndefined();
     expect(startButton.textContent).toBe('Enable mic');
     expect(startButton.getAttribute('aria-label')).toBe(
-      'Enable microphone visuals'
+      'Enable microphone visuals',
     );
     expect(fallbackButton.hidden).toBe(true);
   });

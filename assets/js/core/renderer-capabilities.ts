@@ -20,7 +20,7 @@ export type RendererTelemetryEvent = {
 
 export type RendererTelemetryHandler = (
   event: 'renderer_capabilities',
-  detail: RendererTelemetryEvent
+  detail: RendererTelemetryEvent,
 ) => void;
 
 type FallbackOptions = {
@@ -36,7 +36,7 @@ let telemetryReportedKey: unknown = null;
 
 const buildFallback = (
   fallbackReason: string,
-  { triedWebGPU = false, shouldRetryWebGPU = false }: FallbackOptions = {}
+  { triedWebGPU = false, shouldRetryWebGPU = false }: FallbackOptions = {},
 ): RendererCapabilities => ({
   preferredBackend: 'webgl',
   adapter: null,
@@ -59,7 +59,7 @@ const reportRendererTelemetry = (result: RendererCapabilities) => {
   telemetryHandler?.('renderer_capabilities', detail);
   if (typeof window !== 'undefined' && window.dispatchEvent) {
     window.dispatchEvent(
-      new CustomEvent('stims:renderer-capabilities', { detail })
+      new CustomEvent('stims:renderer-capabilities', { detail }),
     );
   }
 };
@@ -93,7 +93,7 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
       buildFallback('WebGPU is not available in this browser.', {
         triedWebGPU: false,
         shouldRetryWebGPU: false,
-      })
+      }),
     );
   }
 
@@ -104,7 +104,7 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
         buildFallback('No compatible WebGPU adapter was found.', {
           triedWebGPU: true,
           shouldRetryWebGPU: true,
-        })
+        }),
       );
     }
 
@@ -114,13 +114,13 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
     } catch (error) {
       console.warn(
         'WebGPU device request failed. Falling back to WebGL.',
-        error
+        error,
       );
       return cacheResult(
         buildFallback('Unable to acquire a WebGPU device.', {
           triedWebGPU: true,
           shouldRetryWebGPU: true,
-        })
+        }),
       );
     }
 
@@ -129,7 +129,7 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
         buildFallback('WebGPU device request returned no device.', {
           triedWebGPU: true,
           shouldRetryWebGPU: true,
-        })
+        }),
       );
     }
 
@@ -147,7 +147,7 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
       buildFallback('WebGPU initialization failed.', {
         triedWebGPU: true,
         shouldRetryWebGPU: true,
-      })
+      }),
     );
   }
 }
@@ -158,7 +158,7 @@ export function resetRendererCapabilities() {
 }
 
 export function setRendererTelemetryHandler(
-  handler: RendererTelemetryHandler | null
+  handler: RendererTelemetryHandler | null,
 ) {
   telemetryHandler = handler;
 }
@@ -168,14 +168,14 @@ export function rememberRendererFallback(
   {
     shouldRetryWebGPU = false,
     triedWebGPU = true,
-  }: { shouldRetryWebGPU?: boolean; triedWebGPU?: boolean } = {}
+  }: { shouldRetryWebGPU?: boolean; triedWebGPU?: boolean } = {},
 ) {
   cachedEnvironmentKey = getEnvironmentKey();
   const result = cacheResult(
     buildFallback(fallbackReason, {
       triedWebGPU,
       shouldRetryWebGPU,
-    })
+    }),
   );
   capabilitiesPromise = Promise.resolve(result);
   return result;

@@ -34,7 +34,7 @@ export function createMultiFunAdapter({
           emissiveIntensity: 0.2,
           metalness: 0.6,
           roughness: 0.35,
-        })
+        }),
     );
 
     shapes.forEach((shape, idx) => {

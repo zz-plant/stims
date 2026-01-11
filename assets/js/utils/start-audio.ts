@@ -1,5 +1,5 @@
+import { type AnimationContext, startAudioLoop } from '../core/animation-loop';
 import type WebToy from '../core/web-toy';
-import { AnimationContext, startAudioLoop } from '../core/animation-loop';
 import type { AudioInitOptions } from './audio-handler';
 import { AudioAccessError, getCachedDemoAudioStream } from './audio-handler';
 
@@ -24,7 +24,7 @@ function normalizeOptions(options: StartAudioOptions): AudioInitOptions & {
 export async function startToyAudio(
   toy: WebToy,
   animate: (ctx: AnimationContext) => void,
-  options?: StartAudioOptions
+  options?: StartAudioOptions,
 ): Promise<AnimationContext> {
   const { fallbackToSynthetic, preferSynthetic, ...audioOptions } =
     normalizeOptions(options);

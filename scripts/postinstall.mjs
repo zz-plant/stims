@@ -28,12 +28,12 @@ const hasBun = (() => {
 if (isCloudflarePages) {
   if (!hasBun) {
     console.error(
-      '[postinstall] Bun is required to build dist/ on Cloudflare Pages.'
+      '[postinstall] Bun is required to build dist/ on Cloudflare Pages.',
     );
     process.exit(1);
   }
   console.log(
-    '[postinstall] Cloudflare Pages detected; running "bun run build" to produce dist/.'
+    '[postinstall] Cloudflare Pages detected; running "bun run build" to produce dist/.',
   );
   run('bun run build');
 } else {
@@ -44,6 +44,6 @@ if (isBunUserAgent) {
   run('husky install');
 } else {
   console.log(
-    '[postinstall] Husky install skipped (Bun not detected as installer).'
+    '[postinstall] Husky install skipped (Bun not detected as installer).',
   );
 }

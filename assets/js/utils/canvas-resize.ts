@@ -17,7 +17,7 @@ export interface CanvasResizeOptions {
 export function setupCanvasResize(
   canvas: HTMLCanvasElement,
   context: CanvasContext,
-  { maxPixelRatio, onResize }: CanvasResizeOptions = {}
+  { maxPixelRatio, onResize }: CanvasResizeOptions = {},
 ) {
   const resize = () => {
     const devicePixelRatio = window.devicePixelRatio || 1;

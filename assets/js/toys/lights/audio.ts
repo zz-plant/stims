@@ -2,13 +2,13 @@ import type { Mesh } from 'three';
 import type { AnimationContext } from '../../core/animation-loop';
 import { getContextFrequencyData } from '../../core/animation-loop';
 import { setupMicrophonePermissionFlow } from '../../core/microphone-flow.ts';
+import type WebToy from '../../core/web-toy';
 import {
   applyAudioRotation,
   applyAudioScale,
 } from '../../utils/animation-utils.ts';
-import { startToyAudio } from '../../utils/start-audio.ts';
 import PatternRecognizer from '../../utils/patternRecognition.ts';
-import type WebToy from '../../core/web-toy';
+import { startToyAudio } from '../../utils/start-audio.ts';
 
 export type AudioMode = 'microphone' | 'sample';
 
@@ -164,11 +164,11 @@ export const createAudioController = ({
         } catch (error) {
           setStatus(
             'Microphone or demo audio is required for the visualization to work. Please try again.',
-            'error'
+            'error',
           );
           console.error(
             'Unable to restart audio after visibility change',
-            error
+            error,
           );
         }
       }

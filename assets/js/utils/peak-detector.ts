@@ -1,5 +1,5 @@
-import { getAverageFrequency, getFrequencyData } from './audio-handler';
 import type { FrequencyAnalyser } from './audio-handler';
+import { getAverageFrequency, getFrequencyData } from './audio-handler';
 
 export interface PeakDetectorOptions {
   analyser?: FrequencyAnalyser;
@@ -56,7 +56,7 @@ const DEFAULT_DECAY = 0.9;
 const DEFAULT_COOLDOWN_MS = 150;
 
 export const createPeakDetector = (
-  options: PeakDetectorOptions
+  options: PeakDetectorOptions,
 ): PeakDetector => {
   const {
     sensitivity = DEFAULT_SENSITIVITY,

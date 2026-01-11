@@ -25,7 +25,7 @@ describe('quality preset subscriptions', () => {
     const panel = getSettingsPanel();
     const calls: string[] = [];
     const unsubscribe = subscribeToQualityPreset((preset) =>
-      calls.push(preset.id)
+      calls.push(preset.id),
     );
 
     panel.setQualityPresets({
@@ -34,7 +34,7 @@ describe('quality preset subscriptions', () => {
     });
 
     const select = document.querySelector(
-      '.control-panel select'
+      '.control-panel select',
     ) as HTMLSelectElement | null;
     expect(select).not.toBeNull();
 
@@ -86,7 +86,7 @@ describe('quality preset subscriptions', () => {
     });
 
     const select = document.querySelector(
-      '.control-panel select'
+      '.control-panel select',
     ) as HTMLSelectElement | null;
     expect(select?.value).toBe('balanced');
 

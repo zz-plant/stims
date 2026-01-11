@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import type * as THREE from 'three';
 
 type MaterialWithColor = THREE.Material & {
   color?: THREE.Color;
@@ -29,7 +29,7 @@ function clamp01(value: number) {
 function applyHsl(
   material: MaterialWithColor,
   normalizedValue: number,
-  params: AudioColorParams
+  params: AudioColorParams,
 ) {
   const { color } = material;
   if (!color) return;
@@ -37,10 +37,11 @@ function applyHsl(
   const hue = (params.baseHue + normalizedValue * (params.hueRange ?? 0)) % 1;
   const saturation = clamp01(
     (params.baseSaturation ?? 0) +
-      normalizedValue * (params.saturationRange ?? 0)
+      normalizedValue * (params.saturationRange ?? 0),
   );
   const luminance = clamp01(
-    (params.baseLuminance ?? 0) + normalizedValue * (params.luminanceRange ?? 0)
+    (params.baseLuminance ?? 0) +
+      normalizedValue * (params.luminanceRange ?? 0),
   );
 
   color.setHSL(hue, saturation, luminance);
@@ -49,7 +50,7 @@ function applyHsl(
 function applyEmissive(
   material: MaterialWithColor,
   normalizedValue: number,
-  params: AudioColorParams['emissive']
+  params: AudioColorParams['emissive'],
 ) {
   if (!params || !material.emissive) return;
 
@@ -57,10 +58,11 @@ function applyEmissive(
     ((params.baseHue ?? 0) + normalizedValue * (params.hueRange ?? 0)) % 1;
   const saturation = clamp01(
     (params.baseSaturation ?? 0) +
-      normalizedValue * (params.saturationRange ?? 0)
+      normalizedValue * (params.saturationRange ?? 0),
   );
   const luminance = clamp01(
-    (params.baseLuminance ?? 0) + normalizedValue * (params.luminanceRange ?? 0)
+    (params.baseLuminance ?? 0) +
+      normalizedValue * (params.luminanceRange ?? 0),
   );
 
   material.emissive.setHSL(hue, saturation, luminance);
@@ -69,7 +71,7 @@ function applyEmissive(
 export function applyAudioColor(
   material: THREE.Material,
   normalizedValue: number,
-  params: AudioColorParams
+  params: AudioColorParams,
 ) {
   const clampedValue = clamp01(normalizedValue);
   const materialWithColor = material as MaterialWithColor;

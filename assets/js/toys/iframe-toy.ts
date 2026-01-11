@@ -22,7 +22,7 @@ function resolveIframeSrc(path: string) {
 function postQualityPreset(iframe: HTMLIFrameElement, preset: QualityPreset) {
   iframe.contentWindow?.postMessage(
     { type: 'apply-quality-preset', preset },
-    '*'
+    '*',
   );
 }
 

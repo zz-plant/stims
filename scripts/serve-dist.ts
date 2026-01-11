@@ -1,6 +1,6 @@
-import process from 'node:process';
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,7 +54,7 @@ const server = Bun.serve({
       request,
       headers,
       etag,
-      lastModified
+      lastModified,
     );
 
     if (cachedResponse) {
@@ -92,7 +92,7 @@ async function ensureBuildExists() {
   } catch (error) {
     console.error(
       "No dist/ directory found. Please run 'bun run build' first.",
-      error
+      error,
     );
     process.exit(1);
   }
@@ -142,7 +142,7 @@ function maybeNotModified(
   request: Request,
   headers: Headers,
   etag: string,
-  lastModified: string
+  lastModified: string,
 ) {
   const noneMatch = request.headers.get('if-none-match');
   const modifiedSince = request.headers.get('if-modified-since');

@@ -1,21 +1,21 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
-  AnimationContext,
+  type AnimationContext,
   getContextFrequencyData,
 } from '../core/animation-loop';
-import { startToyAudio } from '../utils/start-audio';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
+import { startToyAudio } from '../utils/start-audio';
 
 const settingsPanel = getSettingsPanel();
 let activeQuality: QualityPreset = getActiveQualityPreset();
@@ -132,7 +132,7 @@ function pickPaletteColor() {
 function createKite(
   position: THREE.Vector3,
   direction: THREE.Vector3,
-  branchDepth: number
+  branchDepth: number,
 ) {
   const geometry = createKiteGeometry();
   const baseColor = pickPaletteColor();
@@ -152,7 +152,7 @@ function createKite(
   const directionVector = direction.clone().normalize();
   const quaternion = new THREE.Quaternion().setFromUnitVectors(
     new THREE.Vector3(0, 1, 0),
-    directionVector
+    directionVector,
   );
   mesh.quaternion.copy(quaternion);
   mesh.rotateY((Math.random() - 0.5) * 0.6);
@@ -165,7 +165,7 @@ function createKite(
     swayAxis: new THREE.Vector3(
       Math.random() - 0.5,
       Math.random() * 0.6,
-      Math.random() - 0.5
+      Math.random() - 0.5,
     ).normalize(),
     flutterSpeed: Math.random() * Math.PI * 2,
     branchDepth,
@@ -178,7 +178,7 @@ function growBranch(
   origin: THREE.Vector3,
   direction: THREE.Vector3,
   depth: number,
-  maxKites: number
+  maxKites: number,
 ) {
   if (depth <= 0 || kiteInstances.length >= maxKites) return;
 
@@ -217,12 +217,12 @@ function buildGarden() {
     const origin = new THREE.Vector3(
       Math.cos(angle) * radius,
       -3 + Math.random() * 1.5,
-      Math.sin(angle) * radius
+      Math.sin(angle) * radius,
     );
     const direction = new THREE.Vector3(
       -origin.x * 0.06 + (Math.random() - 0.5) * 0.2,
       1,
-      -origin.z * 0.06 + (Math.random() - 0.5) * 0.2
+      -origin.z * 0.06 + (Math.random() - 0.5) * 0.2,
     ).normalize();
 
     growBranch(origin, direction, branchDepth, maxKites);
@@ -235,7 +235,7 @@ function buildGarden() {
 function createControls() {
   const densityRow = settingsPanel.addSection(
     'Pattern density',
-    'Higher settings add more branching kites.'
+    'Higher settings add more branching kites.',
   );
 
   const densityInput = document.createElement('input');
@@ -254,7 +254,7 @@ function createControls() {
 
   const paletteRow = settingsPanel.addSection(
     'Color palette',
-    'Switch gradients without resetting audio.'
+    'Switch gradients without resetting audio.',
   );
 
   (Object.keys(palettes) as PaletteKey[]).forEach((paletteKey) => {
@@ -270,13 +270,13 @@ function createControls() {
         (child) => {
           child.classList.toggle(
             'active',
-            child.textContent?.toLowerCase() === paletteKey
+            child.textContent?.toLowerCase() === paletteKey,
           );
           child.toggleAttribute(
             'disabled',
-            child.textContent?.toLowerCase() === paletteKey
+            child.textContent?.toLowerCase() === paletteKey,
           );
-        }
+        },
       );
       buildGarden();
     });
@@ -351,7 +351,7 @@ function animate(ctx: AnimationContext) {
       .lerp(new THREE.Color(0xffffff), Math.min(1, high * 0.7 + mid * 0.3));
     material.color.copy(targetColor);
     material.emissive.copy(
-      targetColor.clone().multiplyScalar(0.2 + high * 0.4)
+      targetColor.clone().multiplyScalar(0.2 + high * 0.4),
     );
   });
 
@@ -362,7 +362,7 @@ async function startAudio(request: ToyAudioRequest = false) {
   return startToyAudio(
     toy,
     animate,
-    resolveToyAudioOptions(request, { fftSize: 512 })
+    resolveToyAudioOptions(request, { fftSize: 512 }),
   );
 }
 

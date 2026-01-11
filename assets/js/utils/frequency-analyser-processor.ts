@@ -97,11 +97,11 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
       const magnitude =
         Math.sqrt(
           this.outputReal[i] * this.outputReal[i] +
-            this.outputImag[i] * this.outputImag[i]
+            this.outputImag[i] * this.outputImag[i],
         ) / this.frequencyBinCount;
       frequencyData[i] = Math.min(
         255,
-        Math.max(0, Math.round(magnitude * 255))
+        Math.max(0, Math.round(magnitude * 255)),
       );
     }
 

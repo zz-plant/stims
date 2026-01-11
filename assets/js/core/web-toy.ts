@@ -1,23 +1,23 @@
 import * as THREE from 'three';
-import { initScene, type SceneConfig } from './scene-setup.ts';
-import { initCamera } from './camera-setup.ts';
-import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
-import {
-  requestRenderer,
-  type RendererHandle,
-} from './services/render-service.ts';
-import {
-  acquireAudioHandle,
-  type AudioHandle,
-} from './services/audio-service.ts';
-import type { RendererInitConfig } from './renderer-setup.ts';
-import { ensureWebGL } from '../utils/webgl-check.ts';
-import { defaultToyLifecycle } from './toy-lifecycle.ts';
-import type { FrequencyAnalyser } from '../utils/audio-handler.ts';
 import type {
   AmbientLightConfig,
   LightConfig,
 } from '../lighting/lighting-setup';
+import { initAmbientLight, initLighting } from '../lighting/lighting-setup';
+import type { FrequencyAnalyser } from '../utils/audio-handler.ts';
+import { ensureWebGL } from '../utils/webgl-check.ts';
+import { initCamera } from './camera-setup.ts';
+import type { RendererInitConfig } from './renderer-setup.ts';
+import { initScene, type SceneConfig } from './scene-setup.ts';
+import {
+  type AudioHandle,
+  acquireAudioHandle,
+} from './services/audio-service.ts';
+import {
+  type RendererHandle,
+  requestRenderer,
+} from './services/render-service.ts';
+import { defaultToyLifecycle } from './toy-lifecycle.ts';
 
 type CameraOptions = NonNullable<Parameters<typeof initCamera>[0]>;
 type SceneOptions = SceneConfig & Record<string, unknown>;

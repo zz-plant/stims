@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -51,7 +51,7 @@ async function main() {
       (await promptBoolean(
         rl,
         'Create a Bun spec to assert the module exports start? (y/N) ',
-        false
+        false,
       ));
 
     await scaffoldToy({
@@ -66,12 +66,12 @@ async function main() {
     console.log(`\nCreated scaffold for ${slug}.`);
     console.log(
       '- Module:',
-      path.relative(parsed.root ?? repoRoot, toyModulePath(slug, parsed.root))
+      path.relative(parsed.root ?? repoRoot, toyModulePath(slug, parsed.root)),
     );
     if (type === 'iframe') {
       console.log(
         '- HTML entry:',
-        path.relative(parsed.root ?? repoRoot, toyHtmlPath(slug, parsed.root))
+        path.relative(parsed.root ?? repoRoot, toyHtmlPath(slug, parsed.root)),
       );
     }
     console.log('- Metadata: assets/js/toys-data.js');
@@ -82,7 +82,7 @@ async function main() {
   } catch (error) {
     console.error(
       '\nScaffold failed:',
-      error instanceof Error ? error.message : error
+      error instanceof Error ? error.message : error,
     );
     process.exitCode = 1;
   } finally {
@@ -106,7 +106,7 @@ export async function scaffoldToy({
 
   if (type === 'iframe' && (await fileExists(toyHtmlPath(slug, root)))) {
     throw new Error(
-      `HTML entry point ${toyHtmlPath(slug, root)} already exists.`
+      `HTML entry point ${toyHtmlPath(slug, root)} already exists.`,
     );
   }
 
@@ -200,7 +200,7 @@ async function ensureToysDataValid(root = repoRoot) {
   for (const entry of parsed) {
     if (seen.has(entry.slug)) {
       throw new Error(
-        `Duplicate slug detected in assets/js/toys-data.js: ${entry.slug}`
+        `Duplicate slug detected in assets/js/toys-data.js: ${entry.slug}`,
       );
     }
     seen.add(entry.slug);
@@ -220,7 +220,7 @@ function resolveType(type?: string): ToyType | null {
 
 async function promptSlug(
   rl: ReturnType<typeof createInterface>,
-  root = repoRoot
+  root = repoRoot,
 ) {
   const raw = (
     await rl.question('Toy slug (kebab-case, e.g., ripple-orb): ')
@@ -249,7 +249,7 @@ async function promptSlug(
 
 async function promptTitle(
   rl: ReturnType<typeof createInterface>,
-  slug: string
+  slug: string,
 ) {
   const suggested = slug
     .split('-')
@@ -268,7 +268,7 @@ async function promptTitle(
 }
 
 async function promptType(
-  rl: ReturnType<typeof createInterface>
+  rl: ReturnType<typeof createInterface>,
 ): Promise<ToyType> {
   const rawType = (await rl.question('Toy type (module/iframe) [module]: '))
     .trim()
@@ -283,7 +283,7 @@ async function promptType(
 async function promptBoolean(
   rl: ReturnType<typeof createInterface>,
   question: string,
-  defaultValue: boolean
+  defaultValue: boolean,
 ) {
   const reply = (await rl.question(question)).trim().toLowerCase();
   if (!reply) return defaultValue;
@@ -295,7 +295,7 @@ async function loadToysData(root = repoRoot) {
   const source = await fs.readFile(dataPath, 'utf8');
   const tempPath = path.join(
     tmpdir(),
-    `toys-data-${Date.now()}-${Math.random().toString(16).slice(2)}.mjs`
+    `toys-data-${Date.now()}-${Math.random().toString(16).slice(2)}.mjs`,
   );
   await fs.writeFile(tempPath, source, 'utf8');
   const module = await import(pathToFileURL(tempPath).href);
@@ -313,7 +313,7 @@ async function ensureEntryPoint(
   slug: string,
   type: ToyType,
   title: string,
-  root = repoRoot
+  root = repoRoot,
 ) {
   if (type !== 'iframe') return;
 
@@ -347,7 +347,7 @@ async function createToyModule(
   slug: string,
   title: string,
   type: ToyType,
-  root = repoRoot
+  root = repoRoot,
 ) {
   const modulePath = toyModulePath(slug, root);
   await fs.mkdir(path.dirname(modulePath), { recursive: true });
@@ -362,7 +362,7 @@ async function appendToyMetadata(
   title: string,
   description: string,
   type: ToyType,
-  root = repoRoot
+  root = repoRoot,
 ) {
   const dataPath = path.join(root, 'assets/js/toys-data.js');
   const current = await fs.readFile(dataPath, 'utf8');
@@ -385,7 +385,7 @@ async function appendToyMetadata(
 
   if (!current.includes('];')) {
     throw new Error(
-      'Could not find toys array terminator in assets/js/toys-data.js.'
+      'Could not find toys array terminator in assets/js/toys-data.js.',
     );
   }
 
@@ -393,7 +393,7 @@ async function appendToyMetadata(
 
   if (updated === current) {
     throw new Error(
-      'Failed to update assets/js/toys-data.js with new metadata.'
+      'Failed to update assets/js/toys-data.js with new metadata.',
     );
   }
 
@@ -405,7 +405,7 @@ async function validateMetadataEntry(
   title: string,
   description: string,
   type: ToyType,
-  root = repoRoot
+  root = repoRoot,
 ) {
   const entries = await ensureToysDataValid(root);
   const entry = entries.find((item) => item.slug === slug);
@@ -416,7 +416,7 @@ async function validateMetadataEntry(
 
   if (entry.module !== `assets/js/toys/${slug}.ts`) {
     throw new Error(
-      `Module path for ${slug} must be assets/js/toys/${slug}.ts.`
+      `Module path for ${slug} must be assets/js/toys/${slug}.ts.`,
     );
   }
 
@@ -426,13 +426,13 @@ async function validateMetadataEntry(
 
   if (!entry.description || !entry.title) {
     throw new Error(
-      `Metadata for ${slug} must include a title and description.`
+      `Metadata for ${slug} must include a title and description.`,
     );
   }
 
   if (entry.title !== title || entry.description !== description) {
     console.warn(
-      'Metadata text differs from scaffold input; keeping file values.'
+      'Metadata text differs from scaffold input; keeping file values.',
     );
   }
 }
@@ -450,7 +450,7 @@ async function updateToyIndex(slug: string, type: ToyType, root = repoRoot) {
   if (current.includes(row)) return;
   if (current.includes(`| \`${slug}\``)) {
     throw new Error(
-      `Slug "${slug}" already exists in docs/TOY_SCRIPT_INDEX.md.`
+      `Slug "${slug}" already exists in docs/TOY_SCRIPT_INDEX.md.`,
     );
   }
 
@@ -458,7 +458,7 @@ async function updateToyIndex(slug: string, type: ToyType, root = repoRoot) {
   const markerIndex = current.indexOf(marker);
   if (markerIndex === -1) {
     throw new Error(
-      'Could not find insertion point in docs/TOY_SCRIPT_INDEX.md.'
+      'Could not find insertion point in docs/TOY_SCRIPT_INDEX.md.',
     );
   }
 

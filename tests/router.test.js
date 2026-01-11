@@ -26,7 +26,7 @@ function createWindowStub(href = 'http://example.com/library') {
 describe('router utilities', () => {
   test('pushes toy state and resets to library', () => {
     const { windowStub, location } = createWindowStub(
-      'http://example.com/library'
+      'http://example.com/library',
     );
     const router = createRouter({
       windowRef: () => windowStub,
@@ -42,7 +42,7 @@ describe('router utilities', () => {
 
   test('notifies listeners on popstate', () => {
     const { windowStub, listeners, location } = createWindowStub(
-      'http://example.com/library?toy=brand'
+      'http://example.com/library?toy=brand',
     );
     const originalHref = location.href;
     const router = createRouter({
@@ -58,7 +58,7 @@ describe('router utilities', () => {
     windowStub.history.pushState(
       {},
       '',
-      'http://example.com/library?toy=aurora'
+      'http://example.com/library?toy=aurora',
     );
     listeners.get('popstate')?.();
 

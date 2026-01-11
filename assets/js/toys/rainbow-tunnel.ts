@@ -1,22 +1,22 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
-import type { ToyConfig } from '../core/types';
 import {
+  type AnimationContext,
   getContextFrequencyData,
-  AnimationContext,
 } from '../core/animation-loop';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getActiveQualityPreset,
+  getSettingsPanel,
+  type QualityPreset,
+} from '../core/settings-panel';
+import type { ToyConfig } from '../core/types';
+import WebToy from '../core/web-toy';
 import { getAverageFrequency } from '../utils/audio-handler';
-import { startToyAudio } from '../utils/start-audio';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-  getActiveQualityPreset,
-  type QualityPreset,
-} from '../core/settings-panel';
+import { startToyAudio } from '../utils/start-audio';
 
 const settingsPanel = getSettingsPanel();
 let activeQuality: QualityPreset = getActiveQualityPreset();
@@ -145,7 +145,7 @@ function rebuildScene() {
 
   particleGeometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(positions, 3)
+    new THREE.BufferAttribute(positions, 3),
   );
   particleMaterial = new THREE.PointsMaterial({
     color: 0xffffff,
@@ -175,7 +175,7 @@ function animate(ctx: AnimationContext) {
 
   const binsPerRing = Math.max(
     1,
-    Math.floor(data.length / Math.max(rings.length, 1))
+    Math.floor(data.length / Math.max(rings.length, 1)),
   );
 
   rings.forEach((ringData, idx) => {
@@ -211,12 +211,12 @@ function animate(ctx: AnimationContext) {
       innerMaterial.color.setHSL(
         (hueShift + 0.1) % 1,
         0.9,
-        0.6 + normalizedValue * 0.2
+        0.6 + normalizedValue * 0.2,
       );
       innerMaterial.emissive.setHSL(
         (hueShift + 0.1) % 1,
         0.8,
-        normalizedValue * 0.5
+        normalizedValue * 0.5,
       );
       innerMaterial.opacity = 0.5 + normalizedValue * 0.4;
     }
@@ -239,7 +239,7 @@ function animate(ctx: AnimationContext) {
   toy.camera.lookAt(
     Math.sin(time * 0.5) * 3,
     Math.cos(time * 0.5) * 3,
-    toy.camera.position.z - 50
+    toy.camera.position.z - 50,
   );
 
   ctx.toy.render();
@@ -270,7 +270,7 @@ async function startAudio(request: ToyAudioRequest = false) {
   return startToyAudio(
     toy,
     animate,
-    resolveToyAudioOptions(request, { fftSize: 256 })
+    resolveToyAudioOptions(request, { fftSize: 256 }),
   );
 }
 

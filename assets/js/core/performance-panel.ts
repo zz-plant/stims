@@ -72,7 +72,7 @@ function parseUrlSettings(): Partial<PerformanceSettings> {
       parsed.particleBudget = clamp(
         value,
         MIN_PARTICLE_BUDGET,
-        MAX_PARTICLE_BUDGET
+        MAX_PARTICLE_BUDGET,
       );
     }
   }
@@ -109,14 +109,14 @@ function getStoredSettings(storageKey = STORAGE_KEY): PerformanceSettings {
           overrides.maxPixelRatio ??
           DEFAULT_SETTINGS.maxPixelRatio,
         MIN_PIXEL_RATIO,
-        MAX_PIXEL_RATIO
+        MAX_PIXEL_RATIO,
       ),
       particleBudget: clamp(
         parsed.particleBudget ??
           overrides.particleBudget ??
           DEFAULT_SETTINGS.particleBudget,
         MIN_PARTICLE_BUDGET,
-        MAX_PARTICLE_BUDGET
+        MAX_PARTICLE_BUDGET,
       ),
       shaderQuality:
         parseShaderQuality(parsed.shaderQuality ?? '') ||
@@ -131,7 +131,9 @@ function getStoredSettings(storageKey = STORAGE_KEY): PerformanceSettings {
 
 export function getActivePerformanceSettings({
   storageKey = STORAGE_KEY,
-}: { storageKey?: string } = {}): PerformanceSettings {
+}: {
+  storageKey?: string;
+} = {}): PerformanceSettings {
   if (activeSettings && activeStorageKey === storageKey) return activeSettings;
 
   activeSettings = getStoredSettings(storageKey);
@@ -140,7 +142,7 @@ export function getActivePerformanceSettings({
 }
 
 export function subscribeToPerformanceSettings(
-  subscriber: (settings: PerformanceSettings) => void
+  subscriber: (settings: PerformanceSettings) => void,
 ) {
   subscribers.add(subscriber);
   if (activeSettings) subscriber(activeSettings);
@@ -149,7 +151,7 @@ export function subscribeToPerformanceSettings(
 
 function persistSettings(
   settings: PerformanceSettings,
-  storageKey = STORAGE_KEY
+  storageKey = STORAGE_KEY,
 ) {
   const storage = getStorage();
   if (!storage) return;
@@ -158,7 +160,7 @@ function persistSettings(
 
 function applySettings(
   settings: PerformanceSettings,
-  storageKey = STORAGE_KEY
+  storageKey = STORAGE_KEY,
 ) {
   activeSettings = settings;
   activeStorageKey = storageKey;
@@ -202,7 +204,7 @@ class PerformancePanel {
 
     const pixelRow = this.createRow(
       'Pixel ratio cap',
-      'Limit resolution on high-DPI displays to reduce GPU load.'
+      'Limit resolution on high-DPI displays to reduce GPU load.',
     );
     this.pixelRatioLabel = this.createValueLabel(pixelRow.actions);
     this.pixelRatioInput = document.createElement('input');
@@ -211,13 +213,13 @@ class PerformancePanel {
     this.pixelRatioInput.max = MAX_PIXEL_RATIO.toString();
     this.pixelRatioInput.step = '0.05';
     this.pixelRatioInput.addEventListener('input', () =>
-      this.handlePixelRatioInput()
+      this.handlePixelRatioInput(),
     );
     pixelRow.actions.appendChild(this.pixelRatioInput);
 
     const particleRow = this.createRow(
       'Particle budget',
-      'Scale particle counts to fit your device. 1.0 keeps defaults.'
+      'Scale particle counts to fit your device. 1.0 keeps defaults.',
     );
     this.particleLabel = this.createValueLabel(particleRow.actions);
     this.particleInput = document.createElement('input');
@@ -226,13 +228,13 @@ class PerformancePanel {
     this.particleInput.max = MAX_PARTICLE_BUDGET.toString();
     this.particleInput.step = '0.05';
     this.particleInput.addEventListener('input', () =>
-      this.handleParticleInput()
+      this.handleParticleInput(),
     );
     particleRow.actions.appendChild(this.particleInput);
 
     const shaderRow = this.createRow(
       'Shader quality',
-      'Choose lighter or heavier shader paths.'
+      'Choose lighter or heavier shader paths.',
     );
     this.shaderSelect = document.createElement('select');
     ['low', 'balanced', 'high'].forEach((value) => {
@@ -247,7 +249,7 @@ class PerformancePanel {
       this.shaderSelect.appendChild(option);
     });
     this.shaderSelect.addEventListener('change', () =>
-      this.handleShaderChange()
+      this.handleShaderChange(),
     );
     shaderRow.actions.appendChild(this.shaderSelect);
 
@@ -270,7 +272,7 @@ class PerformancePanel {
         this.description.className = 'control-panel__description';
         this.container.insertBefore(
           this.description,
-          this.container.children[1]
+          this.container.children[1],
         );
       }
       this.description.textContent = description;
@@ -316,7 +318,7 @@ class PerformancePanel {
     const value = clamp(
       Number.parseFloat(this.pixelRatioInput.value),
       MIN_PIXEL_RATIO,
-      MAX_PIXEL_RATIO
+      MAX_PIXEL_RATIO,
     );
     const next = {
       ...(activeSettings ?? DEFAULT_SETTINGS),
@@ -329,7 +331,7 @@ class PerformancePanel {
     const value = clamp(
       Number.parseFloat(this.particleInput.value),
       MIN_PARTICLE_BUDGET,
-      MAX_PARTICLE_BUDGET
+      MAX_PARTICLE_BUDGET,
     );
     const next = {
       ...(activeSettings ?? DEFAULT_SETTINGS),
@@ -382,12 +384,12 @@ export function setPerformanceSettings(settings: Partial<PerformanceSettings>) {
     maxPixelRatio: clamp(
       settings.maxPixelRatio ?? current.maxPixelRatio,
       MIN_PIXEL_RATIO,
-      MAX_PIXEL_RATIO
+      MAX_PIXEL_RATIO,
     ),
     particleBudget: clamp(
       settings.particleBudget ?? current.particleBudget,
       MIN_PARTICLE_BUDGET,
-      MAX_PARTICLE_BUDGET
+      MAX_PARTICLE_BUDGET,
     ),
     shaderQuality:
       parseShaderQuality(settings.shaderQuality ?? '') ?? current.shaderQuality,
@@ -396,7 +398,7 @@ export function setPerformanceSettings(settings: Partial<PerformanceSettings>) {
 }
 
 export function resetPerformancePanelState(
-  options: { removePanel?: boolean } = {}
+  options: { removePanel?: boolean } = {},
 ) {
   activeSettings = null;
   activeStorageKey = STORAGE_KEY;

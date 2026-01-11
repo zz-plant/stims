@@ -36,7 +36,7 @@ export type LightsScene = {
 
 export const applyLighting = (
   lightingGroup: THREE.Group,
-  lightType: LightType
+  lightType: LightType,
 ) => {
   while (lightingGroup.children.length > 0) {
     lightingGroup.remove(lightingGroup.children[0]);
@@ -99,7 +99,7 @@ export const createLightsScene = async ({
       color: 0x00ff00,
       metalness: 0.3,
       roughness: 0.4,
-    })
+    }),
   );
   toy.scene.add(cube);
 

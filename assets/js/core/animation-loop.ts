@@ -1,8 +1,8 @@
-import { getFrequencyData } from '../utils/audio-handler';
 import type {
   AudioInitOptions,
   FrequencyAnalyser,
 } from '../utils/audio-handler';
+import { getFrequencyData } from '../utils/audio-handler';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WebToyInstance = any;
@@ -28,7 +28,7 @@ export interface AnimationContext {
 export async function startAudioLoop(
   toy: WebToyInstance,
   animate: (ctx: AnimationContext) => void,
-  audioOptions: AudioInitOptions = {}
+  audioOptions: AudioInitOptions = {},
 ): Promise<AnimationContext> {
   if (toy.rendererReady) {
     await toy.rendererReady;

@@ -5,9 +5,9 @@ export function applyAudioRotation(
   object: { rotation: { x: number; y: number } },
   audioData: Uint8Array,
   rotationSpeed: number,
-  band: 'low' | 'mid' | 'high' | 'average' = 'average'
+  band: 'low' | 'mid' | 'high' | 'average' = 'average',
 ) {
-  let avgFrequency;
+  let avgFrequency = 0;
 
   switch (band) {
     case 'low':
@@ -33,9 +33,9 @@ export function applyAudioScale(
   object: { scale: { set: (x: number, y: number, z: number) => void } },
   audioData: Uint8Array,
   scaleFactor: number,
-  band: 'low' | 'mid' | 'high' | 'average' = 'average'
+  band: 'low' | 'mid' | 'high' | 'average' = 'average',
 ) {
-  let avgFrequency;
+  let avgFrequency = 0;
 
   switch (band) {
     case 'low':
@@ -60,12 +60,12 @@ export function applyAudioScale(
 function averageFrequencyRange(
   audioData: Uint8Array,
   startRatio: number,
-  endRatio: number
+  endRatio: number,
 ) {
   const startIndex = Math.max(0, Math.floor(audioData.length * startRatio));
   const endIndex = Math.min(
     audioData.length,
-    Math.ceil(audioData.length * endRatio)
+    Math.ceil(audioData.length * endRatio),
   );
   const bucketWidth =
     Math.ceil(audioData.length * endRatio) -

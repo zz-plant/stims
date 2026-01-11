@@ -29,7 +29,7 @@ describe('initLighting', () => {
     initLighting(
       scene,
       { type: 'DirectionalLight', position: { y: 5 } },
-      stubLighting
+      stubLighting,
     );
 
     const light = scene.children[0];
@@ -42,7 +42,7 @@ describe('initLighting', () => {
     const scene = new Scene();
 
     expect(() =>
-      initLighting(scene, { type: 'HemisphereLight' }, stubLighting)
+      initLighting(scene, { type: 'HemisphereLight' }, stubLighting),
     ).not.toThrow();
     expect(scene.children[0]).toBeInstanceOf(stubLighting.HemisphereLight);
   });

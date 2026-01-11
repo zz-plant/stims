@@ -41,7 +41,7 @@ const writeCache = (payload, etag) => {
         payload,
         etag: etag ?? null,
         timestamp: Date.now(),
-      })
+      }),
     );
   } catch (error) {
     // Ignore cache write errors
@@ -163,7 +163,7 @@ export const initRepoStatusWidget = async () => {
         : 'Please try again later.';
       showFallback(
         container,
-        `GitHub rate limit reached. ${cached ? 'Showing cached stats for now.' : 'Live metrics are paused.'} ${resetMessage}`
+        `GitHub rate limit reached. ${cached ? 'Showing cached stats for now.' : 'Live metrics are paused.'} ${resetMessage}`,
       );
       return;
     }
@@ -172,8 +172,8 @@ export const initRepoStatusWidget = async () => {
       showFallback(
         container,
         `Connection hiccup. Showing cached GitHub stats from ${formatDate(
-          new Date(cached.timestamp).toISOString()
-        )}.`
+          new Date(cached.timestamp).toISOString(),
+        )}.`,
       );
       return;
     }
@@ -181,7 +181,7 @@ export const initRepoStatusWidget = async () => {
     updateMetrics(container, null);
     showFallback(
       container,
-      'GitHub status is taking a break. Try again later.'
+      'GitHub status is taking a break. Try again later.',
     );
   }
 };

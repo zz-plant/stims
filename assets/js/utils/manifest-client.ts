@@ -106,7 +106,10 @@ function tryResolveUrl(target: string, base: string | URL | null) {
 export function createManifestClient({
   fetchImpl = globalThis.fetch as FetchImpl | undefined,
   baseUrl,
-}: { fetchImpl?: FetchImpl; baseUrl?: BaseUrlInput } = {}) {
+}: {
+  fetchImpl?: FetchImpl;
+  baseUrl?: BaseUrlInput;
+} = {}) {
   const getBaseUrl = () => resolveBaseUrl(baseUrl);
   let manifestPromise: Promise<Record<string, ManifestEntry> | null> | null =
     null;

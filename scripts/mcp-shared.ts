@@ -75,7 +75,7 @@ function registerTools(server: McpServer) {
       const pointers = await buildDocPointers();
 
       return asTextResponse(pointers || 'README content was not available.');
-    }
+    },
   );
 
   server.registerTool(
@@ -94,7 +94,7 @@ function registerTools(server: McpServer) {
             .boolean()
             .optional()
             .describe(
-              'Filter by WebGPU requirement (true = only WebGPU toys).'
+              'Filter by WebGPU requirement (true = only WebGPU toys).',
             ),
         })
         .strict(),
@@ -117,7 +117,7 @@ function registerTools(server: McpServer) {
       }
 
       return asTextResponse(JSON.stringify(filtered, null, 2));
-    }
+    },
   );
 
   server.registerTool(
@@ -132,17 +132,17 @@ function registerTools(server: McpServer) {
               Object.keys(markdownSources) as [
                 MarkdownSourceKey,
                 ...MarkdownSourceKey[],
-              ]
+              ],
             )
             .describe(
-              'Markdown file to read (e.g., README.md or docs/MCP_SERVER.md).'
+              'Markdown file to read (e.g., README.md or docs/MCP_SERVER.md).',
             ),
           heading: z
             .string()
             .trim()
             .optional()
             .describe(
-              'Optional heading text to narrow the response to a single section.'
+              'Optional heading text to narrow the response to a single section.',
             ),
         })
         .strict(),
@@ -151,7 +151,7 @@ function registerTools(server: McpServer) {
       const result = await getDocSectionContent(file, heading);
 
       return asTextResponse(result.ok ? result.content : result.message);
-    }
+    },
   );
 
   server.registerTool(
@@ -172,7 +172,7 @@ function registerTools(server: McpServer) {
       ];
 
       return asTextResponse(loaderDetails.join('\n'));
-    }
+    },
   );
 
   server.registerTool(
@@ -195,7 +195,7 @@ function registerTools(server: McpServer) {
       const localSetup = extractSection(readmeContent, 'Local Setup');
       const helpfulScripts = extractSection(
         readmeContent,
-        'Helpful Scripts (Bun-first)'
+        'Helpful Scripts (Bun-first)',
       );
       const tests = extractSection(readmeContent, 'Running Tests');
       const linting = extractSection(readmeContent, 'Linting and Formatting');
@@ -218,9 +218,9 @@ function registerTools(server: McpServer) {
             .join('\n\n');
 
       return asTextResponse(
-        text || 'No development guidance was found in README.md.'
+        text || 'No development guidance was found in README.md.',
       );
-    }
+    },
   );
 }
 
@@ -264,10 +264,10 @@ function formatPointer(title: string, excerpt: SectionExcerpt) {
 
 function extractSectionWithRange(
   lines: string[],
-  heading: string
+  heading: string,
 ): SectionExcerpt | null {
   const headingIndex = lines.findIndex(
-    (line) => line.trim() === `## ${heading}`
+    (line) => line.trim() === `## ${heading}`,
   );
 
   if (headingIndex === -1) return null;
@@ -290,7 +290,7 @@ function extractSectionWithRange(
 
 function extractRuntimeRange(lines: string[]): SectionExcerpt | null {
   const startIndex = lines.findIndex((line) =>
-    line.includes('Choose your runtime')
+    line.includes('Choose your runtime'),
   );
 
   if (startIndex === -1) return null;
@@ -357,7 +357,7 @@ function normalizeToys(data: unknown): ToyMetadata[] {
           : false;
       const controls = Array.isArray(entry.controls)
         ? entry.controls.filter(
-            (control): control is string => typeof control === 'string'
+            (control): control is string => typeof control === 'string',
           )
         : [];
 
@@ -381,7 +381,7 @@ function normalizeToys(data: unknown): ToyMetadata[] {
 function extractMarkdownSection(markdown: string, heading: string) {
   const pattern = new RegExp(
     `^(#{1,6}\\s+${escapeForRegex(heading)})\\s*$`,
-    'm'
+    'm',
   );
   const match = pattern.exec(markdown);
 
@@ -410,7 +410,7 @@ async function loadMarkdownFile(file: MarkdownSourceKey) {
 
 async function getDocSectionContent(
   file: MarkdownSourceKey,
-  heading?: string | null
+  heading?: string | null,
 ): Promise<DocSectionResult> {
   if (!markdownSources[file]) {
     return {
