@@ -224,6 +224,32 @@
           value="0.8"
         />
       </div>
+      <div class="slider-container">
+        <label for="bloomStrength"
+          >Bloom Strength: <span id="bloomStrengthValue">1.5</span></label
+        >
+        <input
+          type="range"
+          id="bloomStrength"
+          min="0.2"
+          max="2.5"
+          step="0.1"
+          value="1.5"
+        />
+      </div>
+      <div class="slider-container">
+        <label for="particleScale"
+          >Particle Size: <span id="particleScaleValue">1.0</span></label
+        >
+        <input
+          type="range"
+          id="particleScale"
+          min="0.5"
+          max="2"
+          step="0.1"
+          value="1"
+        />
+      </div>
     </div>
 
     <!-- Main Visualizer Script -->
@@ -255,6 +281,8 @@
       let particleCount = 600;
       let shapeDetail = 32;
       let shapeOpacity = 0.8;
+      let bloomStrength = 1.5;
+      let particleScale = 1;
       let instancedParticles;
       let particleMaterial;
       let particleGeometry;
@@ -273,6 +301,10 @@
       const shapeDetailValue = document.getElementById('shapeDetailValue');
       const opacitySlider = document.getElementById('opacity');
       const opacityValue = document.getElementById('opacityValue');
+      const bloomStrengthSlider = document.getElementById('bloomStrength');
+      const bloomStrengthValue = document.getElementById('bloomStrengthValue');
+      const particleScaleSlider = document.getElementById('particleScale');
+      const particleScaleValue = document.getElementById('particleScaleValue');
       const errorEl = document.getElementById('error-message');
 
       function showError(message) {
@@ -315,12 +347,12 @@
         // Bloom Pass for Glow Effect
         bloomPass = new UnrealBloomPass(
           new THREE.Vector2(window.innerWidth, window.innerHeight),
-          1.5, // strength
+          bloomStrength, // strength
           0.4, // radius
           0.85 // threshold
         );
         bloomPass.threshold = 0.21;
-        bloomPass.strength = 1.5;
+        bloomPass.strength = bloomStrength;
         bloomPass.radius = 0.55;
         composer.addPass(bloomPass);
 
@@ -452,6 +484,7 @@
             (Math.random() - 0.5) * 20,
             (Math.random() - 0.5) * 20
           );
+          dummy.scale.setScalar(particleScale);
           dummy.updateMatrix();
           instancedParticles.setMatrixAt(i, dummy.matrix);
           // Initialize colors
@@ -554,6 +587,7 @@
           dummy.position.y += (audioValue - 0.5) * 0.1;
           dummy.rotation.x += 0.01 * audioValue;
           dummy.rotation.y += 0.01 * audioValue;
+          dummy.scale.setScalar(particleScale);
           dummy.updateMatrix();
           instancedParticles.setMatrixAt(i, dummy.matrix);
 
@@ -697,6 +731,19 @@
         }
       }
 
+      function updateBloomStrength() {
+        bloomStrength = parseFloat(bloomStrengthSlider.value);
+        bloomStrengthValue.textContent = bloomStrength.toFixed(1);
+        if (bloomPass) {
+          bloomPass.strength = bloomStrength;
+        }
+      }
+
+      function updateParticleScale() {
+        particleScale = parseFloat(particleScaleSlider.value);
+        particleScaleValue.textContent = particleScale.toFixed(1);
+      }
+
       // Start Button Click Handler
       startButton.addEventListener('click', async () => {
         startButton.style.display = 'none';
@@ -737,6 +784,14 @@
       particleCountValue.textContent = particleCount;
       shapeDetailValue.textContent = shapeDetail;
       opacityValue.textContent = shapeOpacity.toFixed(1);
+      bloomStrengthValue.textContent = bloomStrength.toFixed(1);
+      particleScaleValue.textContent = particleScale.toFixed(1);
+
+      particleCountSlider.addEventListener('input', updateParticleCount);
+      shapeDetailSlider.addEventListener('input', updateShapeDetail);
+      opacitySlider.addEventListener('input', updateShapeOpacity);
+      bloomStrengthSlider.addEventListener('input', updateBloomStrength);
+      particleScaleSlider.addEventListener('input', updateParticleScale);
 
       // Prevent Context Menu on Long Press
       window.oncontextmenu = function (e) {

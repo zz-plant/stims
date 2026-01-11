@@ -146,6 +146,10 @@
       const particles = new THREE.Points(particlesGeometry, particlesMaterial);
       toy.scene.add(particles);
 
+      const hazeColor = 0x050505;
+      let hazeDensity = useWebGLFallback ? 0.0025 : 0.0018;
+      toy.scene.fog = new THREE.FogExp2(hazeColor, hazeDensity);
+
       const shapes = [];
       function createRandomShape() {
         const shapeType = Math.floor(Math.random() * 3);
@@ -215,6 +219,16 @@
         <label>
           Peak sensitivity
           <input class="fun-slider fun-sensitivity" type="range" min="0.1" max="1" step="0.05" value="0.35" aria-label="Peak sensitivity" />
+        </label>
+        <label>
+          Particle size <span class="fun-particle-size-value">0.6</span>
+          <input class="fun-slider fun-particle-size" type="range" min="0.3" max="1.2" step="0.05" value="${
+            useWebGLFallback ? 0.6 : 0.5
+          }" aria-label="Particle size" />
+        </label>
+        <label>
+          Haze density <span class="fun-haze-value">0.002</span>
+          <input class="fun-slider fun-haze" type="range" min="0" max="0.01" step="0.0005" value="${hazeDensity}" aria-label="Haze density" />
         </label>
       `;
 
@@ -370,6 +384,47 @@
         }
         burstsEnabled = target.checked;
       });
+
+      const particleSizeSlider =
+        funControls.container.querySelector('.fun-particle-size');
+      const particleSizeValue = funControls.container.querySelector(
+        '.fun-particle-size-value'
+      );
+      particleSizeSlider?.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+          return;
+        }
+        const nextValue = Number(target.value);
+        particlesMaterial.size = nextValue;
+        if (particleSizeValue) {
+          particleSizeValue.textContent = nextValue.toFixed(2);
+        }
+      });
+      if (particleSizeValue) {
+        particleSizeValue.textContent = particlesMaterial.size.toFixed(2);
+      }
+
+      const hazeSlider = funControls.container.querySelector('.fun-haze');
+      const hazeValue = funControls.container.querySelector('.fun-haze-value');
+      hazeSlider?.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+          return;
+        }
+        hazeDensity = Number(target.value);
+        if (toy.scene.fog instanceof THREE.FogExp2) {
+          toy.scene.fog.density = hazeDensity;
+        } else {
+          toy.scene.fog = new THREE.FogExp2(hazeColor, hazeDensity);
+        }
+        if (hazeValue) {
+          hazeValue.textContent = hazeDensity.toFixed(4);
+        }
+      });
+      if (hazeValue) {
+        hazeValue.textContent = hazeDensity.toFixed(4);
+      }
 
       function animate(ctx) {
         const delta = clock.getDelta();

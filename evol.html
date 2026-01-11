@@ -27,6 +27,45 @@
           value="1.0"
         />
       </div>
+      <div class="control-panel__row">
+        <label class="control-panel__text" for="audioImpact">
+          <span class="control-panel__label">Audio Impact</span>
+        </label>
+        <input
+          type="range"
+          id="audioImpact"
+          min="2"
+          max="14"
+          step="0.5"
+          value="8"
+        />
+      </div>
+      <div class="control-panel__row">
+        <label class="control-panel__text" for="warpStrength">
+          <span class="control-panel__label">Warp Strength</span>
+        </label>
+        <input
+          type="range"
+          id="warpStrength"
+          min="0"
+          max="1.5"
+          step="0.05"
+          value="1.0"
+        />
+      </div>
+      <div class="control-panel__row">
+        <label class="control-panel__text" for="glitchStrength">
+          <span class="control-panel__label">Glitch Strength</span>
+        </label>
+        <input
+          type="range"
+          id="glitchStrength"
+          min="0"
+          max="1"
+          step="0.05"
+          value="0.8"
+        />
+      </div>
     </div>
     <script type="module">
       import {
@@ -75,6 +114,9 @@
             uniform vec2 u_resolution;
             uniform float u_audioData;
             uniform float u_fractalIntensity;
+            uniform float u_audioImpact;
+            uniform float u_warpStrength;
+            uniform float u_glitchStrength;
             varying vec2 v_uv;
 
             float random(vec2 p) {
@@ -116,19 +158,19 @@
                 vec2 pos = (gl_FragCoord.xy / u_resolution.xy) * 2.0 - 1.0;
                 pos.x *= u_resolution.x / u_resolution.y;
 
-                float audioEffect = u_audioData * 8.0;
+                float audioEffect = u_audioData * u_audioImpact;
                 
                 // Warped coordinates for surreal effect
                 vec2 warpedUV = uv + vec2(
-                    sin(uv.y * 10.0 + u_time + audioEffect) * 0.05,
-                    cos(uv.x * 10.0 + u_time * 1.3) * 0.05
+                    sin(uv.y * 10.0 + u_time + audioEffect) * (0.05 * u_warpStrength),
+                    cos(uv.x * 10.0 + u_time * 1.3) * (0.05 * u_warpStrength)
                 );
                 
                 float distortion = fbm(warpedUV * u_fractalIntensity * 3.0 + audioEffect) * 0.6;
                 float distortion2 = fbm(warpedUV * u_fractalIntensity * 1.5 - u_time * 0.5) * 0.4;
                 
                 // Enhanced glitch effects
-                float glitch = step(0.92, random(uv * u_time * 3.0)) * 0.8;
+                float glitch = step(0.92, random(uv * u_time * 3.0)) * u_glitchStrength;
                 float scanline = sin(gl_FragCoord.y * 0.5 + u_time * 10.0) * 0.03;
                 float vhsNoise = random(vec2(u_time * 0.1, gl_FragCoord.y * 0.01)) * 0.05;
                 
@@ -229,6 +271,18 @@
         program,
         'u_fractalIntensity'
       );
+      const audioImpactLocation = gl.getUniformLocation(
+        program,
+        'u_audioImpact'
+      );
+      const warpStrengthLocation = gl.getUniformLocation(
+        program,
+        'u_warpStrength'
+      );
+      const glitchStrengthLocation = gl.getUniformLocation(
+        program,
+        'u_glitchStrength'
+      );
 
       const disposeResize = setupCanvasResize(canvas, gl, {
         maxPixelRatio: 2,
@@ -287,11 +341,29 @@
       let time = 0.0;
       let audioData = 0.0;
       let fractalIntensity = 1.0;
+      let audioImpact = 8.0;
+      let warpStrength = 1.0;
+      let glitchStrength = 0.8;
 
       document
         .getElementById('fractalIntensity')
         .addEventListener('input', (event) => {
-          fractalIntensity = event.target.value;
+          fractalIntensity = Number(event.target.value);
+        });
+      document
+        .getElementById('audioImpact')
+        .addEventListener('input', (event) => {
+          audioImpact = Number(event.target.value);
+        });
+      document
+        .getElementById('warpStrength')
+        .addEventListener('input', (event) => {
+          warpStrength = Number(event.target.value);
+        });
+      document
+        .getElementById('glitchStrength')
+        .addEventListener('input', (event) => {
+          glitchStrength = Number(event.target.value);
         });
 
       function render(ctxAudio) {
@@ -309,6 +381,9 @@
         gl.uniform1f(timeUniformLocation, time);
         gl.uniform1f(audioDataUniformLocation, audioData);
         gl.uniform1f(fractalIntensityLocation, fractalIntensity);
+        gl.uniform1f(audioImpactLocation, audioImpact);
+        gl.uniform1f(warpStrengthLocation, warpStrength);
+        gl.uniform1f(glitchStrengthLocation, glitchStrength);
 
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
