@@ -18,11 +18,27 @@
         left: 10px;
         color: #fff;
         z-index: 1;
+        background: rgba(0, 0, 0, 0.55);
+        padding: 12px 14px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 220px;
       }
       #startButton {
         padding: 10px 20px;
         font-size: 16px;
         cursor: pointer;
+      }
+      .control-group label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      .control-group input[type='range'] {
+        width: 100%;
       }
       #error-message {
         position: absolute;
@@ -40,6 +56,48 @@
     <a href="index.html" class="home-link">Back to Library</a>
     <div id="controls">
       <button id="startButton">Start Microphone Visualizer</button>
+      <div class="control-group">
+        <label for="densityControl">
+          <span>Particle Density</span>
+          <span id="densityValue">1.0x</span>
+        </label>
+        <input
+          type="range"
+          id="densityControl"
+          min="0.5"
+          max="2"
+          step="0.1"
+          value="1"
+        />
+      </div>
+      <div class="control-group">
+        <label for="speedControl">
+          <span>Motion Speed</span>
+          <span id="speedValue">1.0x</span>
+        </label>
+        <input
+          type="range"
+          id="speedControl"
+          min="0.5"
+          max="2.5"
+          step="0.1"
+          value="1"
+        />
+      </div>
+      <div class="control-group">
+        <label for="trailControl">
+          <span>Trail Blend</span>
+          <span id="trailValue">0.25</span>
+        </label>
+        <input
+          type="range"
+          id="trailControl"
+          min="0.05"
+          max="0.6"
+          step="0.05"
+          value="0.25"
+        />
+      </div>
     </div>
     <div id="error-message" style="display: none"></div>
     <canvas id="gameCanvas" class="toy-canvas"></canvas>
@@ -60,12 +118,21 @@
       const canvas = document.getElementById('gameCanvas');
       const ctx = canvas.getContext('2d');
       const startButton = document.getElementById('startButton');
+      const densityControl = document.getElementById('densityControl');
+      const densityValue = document.getElementById('densityValue');
+      const speedControl = document.getElementById('speedControl');
+      const speedValue = document.getElementById('speedValue');
+      const trailControl = document.getElementById('trailControl');
+      const trailValue = document.getElementById('trailValue');
 
       let viewWidth = window.innerWidth;
       let viewHeight = window.innerHeight;
       let resizeCleanup = null;
       let activeQuality = null;
       const baseDensity = 0.6;
+      let densityMultiplier = 1;
+      let speedMultiplier = 1;
+      let trailBlend = 0.25;
 
       function applyQualityPreset(preset) {
         activeQuality = preset;
@@ -85,7 +152,7 @@
         const densityScale = Math.max(baseDensity, preset.particleScale ?? 1);
         particleCount = Math.max(
           200,
-          Math.round(baseParticleCount * densityScale)
+          Math.round(baseParticleCount * densityScale * densityMultiplier)
         );
         rebuildParticles();
       }
@@ -185,11 +252,13 @@
         } else {
           ctx.fillStyle = '#000';
         }
+        ctx.globalAlpha = trailBlend;
         ctx.fillRect(0, 0, viewWidth, viewHeight);
+        ctx.globalAlpha = 1;
 
         particles.forEach((p, index) => {
-          p.x += p.velocityX;
-          p.y += p.velocityY;
+          p.x += p.velocityX * speedMultiplier;
+          p.y += p.velocityY * speedMultiplier;
           p.rotation += p.angularVelocity;
 
           if (p.x < -p.size) p.x = viewWidth + p.size;
@@ -297,6 +366,32 @@
           console.error('Error starting audio:', error);
         }
       });
+
+      function updateDensity() {
+        densityMultiplier = Number(densityControl.value);
+        densityValue.textContent = `${densityMultiplier.toFixed(1)}x`;
+        applyQualityPreset(
+          activeQuality ?? { maxPixelRatio: 2, renderScale: 1 }
+        );
+      }
+
+      function updateSpeed() {
+        speedMultiplier = Number(speedControl.value);
+        speedValue.textContent = `${speedMultiplier.toFixed(1)}x`;
+      }
+
+      function updateTrail() {
+        trailBlend = Number(trailControl.value);
+        trailValue.textContent = trailBlend.toFixed(2);
+      }
+
+      densityControl.addEventListener('input', updateDensity);
+      speedControl.addEventListener('input', updateSpeed);
+      trailControl.addEventListener('input', updateTrail);
+
+      updateDensity();
+      updateSpeed();
+      updateTrail();
 
       window.addEventListener('beforeunload', () => {
         toy.dispose?.();
