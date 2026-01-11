@@ -55,6 +55,7 @@ const toy = new WebToy({
 } as ToyConfig);
 
 const bubbles: Bubble[] = [];
+const tempScale = new THREE.Vector3();
 const harmonicBubbles: HarmonicBubble[] = [];
 const bubbleGroup = new THREE.Group();
 let bubbleGeometry: THREE.SphereGeometry | null = null;
@@ -262,7 +263,8 @@ function animateBubbles(data: Uint8Array, avg: number, time: number) {
       const wobble = Math.sin(time + index * 0.35) * 0.15;
       const scaleTarget =
         bubble.baseScale * (0.9 + energy * 1.8 + wobble * 0.1);
-      bubble.mesh.scale.lerpScalar(scaleTarget, 0.08);
+      tempScale.setScalar(scaleTarget);
+      bubble.mesh.scale.lerp(tempScale, 0.08);
 
       const drift = new THREE.Vector3(
         Math.sin(time * 0.45 + index) * 0.002,

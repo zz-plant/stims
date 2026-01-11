@@ -46,7 +46,10 @@ export function setupCanvasResize(
           : height;
 
       context.viewport(0, 0, viewportWidth, viewportHeight);
-    } else {
+    } else if (
+      'setTransform' in context &&
+      typeof context.setTransform === 'function'
+    ) {
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     }
 

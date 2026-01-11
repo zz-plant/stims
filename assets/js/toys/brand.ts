@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import WebToy from '../core/web-toy';
-import { getContextFrequencyData } from '../core/animation-loop';
+import {
+  getContextFrequencyData,
+  type AnimationContext,
+} from '../core/animation-loop';
 import { ensureWebGL } from '../utils/webgl-check';
 import { showError } from '../utils/error-display';
 import { startToyAudio } from '../utils/start-audio';
-import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { initHints } from '../../ui/hints';
 import { initFunControls } from '../../ui/fun-controls';
 import { createBrandFunAdapter } from '../../brand/fun-adapter';
@@ -17,7 +19,7 @@ type BrandStartOptions = {
 
 export async function startBrandToy({
   canvas = document.getElementById('vizCanvas') as HTMLCanvasElement | null,
-  errorElement = document.getElementById('error-message'),
+  errorElement = document.getElementById('error-message') as HTMLElement | null,
 }: BrandStartOptions = {}) {
   const errorTargetId =
     typeof errorElement === 'string'
@@ -209,10 +211,7 @@ export async function startBrandToy({
   });
   poleMesh.instanceMatrix.needsUpdate = true;
 
-  const animate = (ctx: {
-    analyser: FrequencyAnalyser | null;
-    toy: WebToy;
-  }) => {
+  const animate = (ctx: AnimationContext) => {
     const dataArray = getContextFrequencyData(ctx);
     const bassBand = dataArray.slice(
       0,
@@ -274,15 +273,15 @@ export async function startBrandToy({
       errorTargetId,
       'Microphone access is unavailable. Visuals will run without audio reactivity.'
     );
-    const silentContext = { toy, analyser: null } as const;
-    toy.renderer.setAnimationLoop(() => animate(silentContext));
+    const silentContext = { toy, analyser: null, time: 0 } as const;
+    toy.renderer?.setAnimationLoop(() => animate(silentContext));
     return null;
   });
 
   return {
     dispose: () => {
       void audioPromise;
-      toy.renderer.setAnimationLoop(null);
+      toy.renderer?.setAnimationLoop(null);
       toy.dispose();
     },
   };
@@ -294,7 +293,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       (container?.querySelector('canvas') as HTMLCanvasElement | null) ??
       (document.getElementById('vizCanvas') as HTMLCanvasElement | null),
     errorElement:
-      container?.querySelector('#error-message') ??
+      container?.querySelector<HTMLElement>('#error-message') ??
       (document.getElementById('error-message') as HTMLElement | null),
   });
 }

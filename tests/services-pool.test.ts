@@ -1,4 +1,10 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
+import type {
+  Audio,
+  AudioListener,
+  PositionalAudio,
+  WebGLRenderer,
+} from 'three';
 import {
   requestRenderer,
   resetRendererPool,
@@ -7,6 +13,7 @@ import {
   acquireAudioHandle,
   resetAudioPool,
 } from '../assets/js/core/services/audio-service.ts';
+import type { FrequencyAnalyser } from '../assets/js/utils/audio-handler.ts';
 
 describe('render-service pooling', () => {
   const fakeRenderer = {
@@ -15,7 +22,7 @@ describe('render-service pooling', () => {
     setAnimationLoop: mock(),
     dispose: mock(),
     toneMappingExposure: 1,
-  };
+  } as unknown as WebGLRenderer;
 
   afterEach(() => {
     document.body.innerHTML = '';
@@ -71,11 +78,12 @@ describe('audio-service pooling', () => {
     });
 
     const initAudioImpl = mock(async ({ stream }) => ({
-      analyser: {} as unknown as AnalyserNode,
-      listener: { context: { close: mock() } },
-      audio: {},
+      analyser: {} as FrequencyAnalyser,
+      listener: { context: { close: mock() } } as unknown as AudioListener,
+      audio: {} as Audio | PositionalAudio,
       stream,
       cleanup: () => {},
+      permissionState: 'granted' as PermissionState,
     }));
 
     const first = await acquireAudioHandle({ initAudioImpl });
@@ -107,15 +115,16 @@ describe('audio-service pooling', () => {
     });
 
     const initAudioImpl = mock(async ({ stream, stopStreamOnCleanup }) => ({
-      analyser: {} as unknown as AnalyserNode,
-      listener: { context: { close: mock() } },
-      audio: {},
+      analyser: {} as FrequencyAnalyser,
+      listener: { context: { close: mock() } } as unknown as AudioListener,
+      audio: {} as Audio | PositionalAudio,
       stream,
       cleanup: () => {
         if (stopStreamOnCleanup && stream) {
-          stream.getTracks().forEach((track) => track.stop());
+          stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
         }
       },
+      permissionState: 'granted' as PermissionState,
     }));
 
     const handle = await acquireAudioHandle({ initAudioImpl });
@@ -139,11 +148,12 @@ describe('audio-service pooling', () => {
     });
 
     const initAudioImpl = mock(async ({ stream }) => ({
-      analyser: {} as unknown as AnalyserNode,
-      listener: { context: { close: mock() } },
-      audio: {},
+      analyser: {} as FrequencyAnalyser,
+      listener: { context: { close: mock() } } as unknown as AudioListener,
+      audio: {} as Audio | PositionalAudio,
       stream,
       cleanup: () => {},
+      permissionState: 'granted' as PermissionState,
     }));
 
     const handle = await acquireAudioHandle({

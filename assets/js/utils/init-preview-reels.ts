@@ -169,9 +169,10 @@ export const initPreviewReels = () => {
     });
 
     reel.addEventListener('focusout', (event) => {
+      const focusEvent = event as FocusEvent;
       if (
-        event.relatedTarget instanceof Node &&
-        reel.contains(event.relatedTarget)
+        focusEvent.relatedTarget instanceof Node &&
+        reel.contains(focusEvent.relatedTarget)
       )
         return;
       isFocused = false;

@@ -1,6 +1,6 @@
 import { startIframeToy } from './iframe-toy';
 
-export function start({ container } = {}) {
+export function start({ container }: { container?: HTMLElement | null } = {}) {
   return startIframeToy({
     container,
     path: './seary.html',

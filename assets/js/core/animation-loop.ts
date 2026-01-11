@@ -13,6 +13,7 @@ type WebToyInstance = any;
 export interface AnimationContext {
   toy: WebToyInstance;
   analyser: FrequencyAnalyser | null;
+  time: number;
 }
 
 /**
@@ -33,11 +34,16 @@ export async function startAudioLoop(
     await toy.rendererReady;
   }
   await toy.initAudio(audioOptions);
-  const ctx: AnimationContext = { toy, analyser: toy.analyser };
+  const ctx: AnimationContext = { toy, analyser: toy.analyser, time: 0 };
   if (!toy.renderer?.setAnimationLoop) {
     throw new Error('Renderer is not available to start the animation loop.');
   }
-  toy.renderer.setAnimationLoop(() => animate(ctx));
+  toy.renderer.setAnimationLoop(() => {
+    const now =
+      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    ctx.time = now / 1000;
+    animate(ctx);
+  });
   return ctx;
 }
 
