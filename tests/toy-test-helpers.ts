@@ -42,6 +42,7 @@ export function createToyContainer(id = 'toy-container') {
 
   const dispose = () => {
     container.remove();
+    document.body.innerHTML = '';
   };
 
   return { container, dispose };

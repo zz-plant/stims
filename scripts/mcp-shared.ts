@@ -116,14 +116,7 @@ function registerTools(server: McpServer) {
         return asTextResponse('No toys matched the requested filters.');
       }
 
-      return {
-        content: [
-          {
-            type: 'json',
-            json: filtered,
-          },
-        ],
-      } as const;
+      return asTextResponse(JSON.stringify(filtered, null, 2));
     }
   );
 
@@ -333,11 +326,11 @@ function asTextResponse(text: string) {
   return {
     content: [
       {
-        type: 'text',
+        type: 'text' as const,
         text,
       },
     ],
-  } as const;
+  };
 }
 
 function normalizeToys(data: unknown): ToyMetadata[] {
