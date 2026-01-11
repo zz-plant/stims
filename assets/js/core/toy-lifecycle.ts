@@ -1,24 +1,31 @@
-export type ActiveToyCandidate = { dispose?: () => void } | (() => void);
+type ActiveToyObject = { dispose?: () => void };
+
+export type ActiveToyCandidate = ActiveToyObject | (() => void);
 
 type ActiveToyRecord = { ref: ActiveToyCandidate; dispose?: () => void } | null;
 
+const isActiveToyObject = (candidate: unknown): candidate is ActiveToyObject =>
+  typeof candidate === 'object' && candidate !== null;
+
+const isActiveToyCandidate = (
+  candidate: unknown
+): candidate is ActiveToyCandidate =>
+  typeof candidate === 'function' || isActiveToyObject(candidate);
+
 function normalizeActiveToy(candidate: unknown): ActiveToyRecord {
   if (!candidate) return null;
+
+  if (!isActiveToyCandidate(candidate)) return null;
 
   if (typeof candidate === 'function') {
     return { ref: candidate, dispose: candidate };
   }
 
-  if (typeof candidate === 'object') {
-    const dispose = (candidate as { dispose?: unknown }).dispose;
-    return {
-      ref: candidate as ActiveToyCandidate,
-      dispose:
-        typeof dispose === 'function' ? dispose.bind(candidate) : undefined,
-    };
-  }
-
-  return null;
+  const dispose = candidate.dispose;
+  return {
+    ref: candidate,
+    dispose: dispose ? dispose.bind(candidate) : undefined,
+  };
 }
 
 export type ToyLifecycle = {

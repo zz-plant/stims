@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { initScene } from './scene-setup.ts';
+import { initScene, type SceneConfig } from './scene-setup.ts';
 import { initCamera } from './camera-setup.ts';
 import { initLighting, initAmbientLight } from '../lighting/lighting-setup';
 import {
@@ -14,6 +14,22 @@ import type { RendererInitConfig } from './renderer-setup.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 import { defaultToyLifecycle } from './toy-lifecycle.ts';
 import type { FrequencyAnalyser } from '../utils/audio-handler.ts';
+import type {
+  AmbientLightConfig,
+  LightConfig,
+} from '../lighting/lighting-setup';
+
+type CameraOptions = NonNullable<Parameters<typeof initCamera>[0]>;
+type SceneOptions = SceneConfig & Record<string, unknown>;
+
+export type WebToyOptions = {
+  cameraOptions?: CameraOptions;
+  sceneOptions?: SceneOptions;
+  rendererOptions?: Partial<RendererInitConfig>;
+  lightingOptions?: LightConfig | null;
+  ambientLightOptions?: AmbientLightConfig | null;
+  canvas?: HTMLCanvasElement | null;
+};
 
 export default class WebToy {
   canvas: HTMLCanvasElement;
@@ -23,7 +39,7 @@ export default class WebToy {
   rendererBackend: RendererHandle['backend'] | null;
   rendererInfo: RendererHandle['info'] | null;
   rendererReady: Promise<RendererHandle | null>;
-  rendererOptions: Parameters<typeof requestRenderer>[0]['options'];
+  rendererOptions: Partial<RendererInitConfig>;
   analyser: FrequencyAnalyser | null;
   audioListener: THREE.AudioListener | null;
   audio: THREE.Audio | THREE.PositionalAudio | null;
@@ -39,7 +55,7 @@ export default class WebToy {
     lightingOptions = null,
     ambientLightOptions = null,
     canvas = null,
-  } = {}) {
+  }: WebToyOptions = {}) {
     if (!ensureWebGL()) {
       throw new Error('WebGL not supported');
     }

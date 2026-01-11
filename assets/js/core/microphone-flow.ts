@@ -127,7 +127,8 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
 
   let pending = false;
   const originalStartLabel = startButton?.textContent ?? null;
-  const originalStartAriaLabel = startButton?.getAttribute('aria-label');
+  const originalStartAriaLabel =
+    startButton?.getAttribute('aria-label') ?? null;
   let toastElement: HTMLElement | null = null;
 
   const showFallback = () => {
@@ -248,11 +249,12 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
       showFallback();
 
       if (startButton && mode === 'microphone') {
-        startButton.textContent = 'Retry microphone access';
+        const retryLabel = 'Retry microphone access';
+        startButton.textContent = retryLabel;
         startButton.dataset.state = 'retry';
         startButton.setAttribute(
           'aria-label',
-          `${startButton.textContent}. Update site permissions, then click to try again.`
+          `${retryLabel}. Update site permissions, then click to try again.`
         );
       }
 
