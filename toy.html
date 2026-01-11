@@ -252,15 +252,31 @@
         startButton,
         fallbackButton,
         statusElement,
-        requestMicrophone: () => {
+        requestMicrophone: async () => {
           startLoaderIfNeeded();
-          const starter = getStarter();
+          let starter = getStarter();
+          if (!starter) {
+            // Wait up to 3 seconds for starter
+            for (let i = 0; i < 30; i++) {
+              await new Promise((r) => setTimeout(r, 100));
+              starter = getStarter();
+              if (starter) break;
+            }
+          }
           if (!starter) throw new Error('Microphone starter unavailable.');
           return starter(false);
         },
-        requestSampleAudio: () => {
+        requestSampleAudio: async () => {
           startLoaderIfNeeded();
-          const starter = getStarter(true) ?? getStarter();
+          let starter = getStarter(true) ?? getStarter();
+          if (!starter) {
+            // Wait up to 3 seconds for starter
+            for (let i = 0; i < 30; i++) {
+              await new Promise((r) => setTimeout(r, 100));
+              starter = getStarter(true) ?? getStarter();
+              if (starter) break;
+            }
+          }
           if (!starter) throw new Error('Demo audio unavailable.');
           return starter(true);
         },
