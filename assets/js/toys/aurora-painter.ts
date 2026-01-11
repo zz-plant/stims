@@ -69,7 +69,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     return {
       count: Math.max(3, Math.round(RIBBON_COUNT * density)),
       points: Math.max(40, Math.round(RIBBON_POINTS * density)),
-      tubeSegments: Math.max(70, Math.round(TUBE_SEGMENTS * Math.sqrt(density))),
+      tubeSegments: Math.max(
+        70,
+        Math.round(TUBE_SEGMENTS * Math.sqrt(density)),
+      ),
       radiusBase: 0.55 * Math.max(0.75, Math.sqrt(density)),
     };
   }
@@ -124,7 +127,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  function averageRange(data: Uint8Array, startRatio: number, endRatio: number) {
+  function averageRange(
+    data: Uint8Array,
+    startRatio: number,
+    endRatio: number,
+  ) {
     if (data.length === 0) return 0;
     const start = Math.max(0, Math.floor(data.length * startRatio));
     const end = Math.min(data.length, Math.ceil(data.length * endRatio));

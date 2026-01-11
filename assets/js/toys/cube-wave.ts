@@ -344,7 +344,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         applyAudioColor(material, normalizedValue, colorParams);
       });
     } else {
-      applyAudioColor(mesh.material as THREE.MeshStandardMaterial, normalizedValue, colorParams);
+      applyAudioColor(
+        mesh.material as THREE.MeshStandardMaterial,
+        normalizedValue,
+        colorParams,
+      );
     }
   }
 

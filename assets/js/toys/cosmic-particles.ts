@@ -171,7 +171,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const sizeAttribute = new THREE.BufferAttribute(starSizes, 1);
     sizeAttribute.setUsage(THREE.DynamicDrawUsage);
     starGeometry.setAttribute('size', sizeAttribute);
-    starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+    starGeometry.setAttribute(
+      'color',
+      new THREE.BufferAttribute(starColors, 3),
+    );
 
     const starMaterial = new THREE.PointsMaterial({
       size: 1.5,

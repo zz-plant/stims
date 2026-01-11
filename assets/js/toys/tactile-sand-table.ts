@@ -468,7 +468,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           heights[idx],
           -MAX_HEIGHT,
           MAX_HEIGHT,
-          );
+        );
         textureData[idx] = 0.5 + heights[idx];
       }
     }

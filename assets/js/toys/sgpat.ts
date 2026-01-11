@@ -291,11 +291,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     if (ctx.analyser && patternRecognizer) {
       patternRecognizer.updatePatternBuffer();
       const detectedPattern = patternRecognizer.detectPattern();
-      uniforms.u_colorOffset.value.set(
-        detectedPattern ? 1.0 : 0.0,
-        0.0,
-        0.0,
-      );
+      uniforms.u_colorOffset.value.set(detectedPattern ? 1.0 : 0.0, 0.0, 0.0);
     }
 
     updateSpectrograph(dataArray);
@@ -307,7 +303,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   async function startAudio(request: ToyAudioRequest = false) {
     if (isStarting) return;
     isStarting = true;
-    
+
     stopCurrentAudio();
 
     const rendererResult = await toy.rendererReady;
@@ -318,20 +314,20 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     try {
       const ctx = await startToyAudio(
-        toy, 
-        animate, 
-        resolveToyAudioOptions(request, { fftSize: 256 })
+        toy,
+        animate,
+        resolveToyAudioOptions(request, { fftSize: 256 }),
       );
-      
+
       if (ctx.analyser) {
         patternRecognizer = new PatternRecognizer(ctx.analyser);
       }
       isStarting = false;
       return ctx;
     } catch (error) {
-       console.error('Error capturing audio: ', error);
-       isStarting = false;
-       throw error;
+      console.error('Error capturing audio: ', error);
+      isStarting = false;
+      throw error;
     }
   }
 

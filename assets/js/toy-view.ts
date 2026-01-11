@@ -52,7 +52,6 @@ type ViewState = {
   audioPromptActive: boolean;
 };
 
-
 const TOY_CONTAINER_CLASS = 'active-toy-container';
 const HIDDEN_CLASS = 'is-hidden';
 
@@ -323,7 +322,6 @@ function buildAudioPrompt({
   return prompt;
 }
 
-
 export function createToyView({
   documentRef = () => (typeof document === 'undefined' ? null : document),
   listId = 'toy-list',
@@ -430,7 +428,6 @@ export function createToyView({
 
     return { container, status: statusElement };
   };
-
 
   const showLibraryView = () => {
     state.mode = 'library';
@@ -589,4 +586,3 @@ export function createToyView({
     },
   };
 }
-

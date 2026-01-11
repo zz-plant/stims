@@ -185,13 +185,16 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     if (depth <= 0 || kiteInstances.length >= maxKites) return;
 
     const segmentLength = 3 + Math.random() * 2;
-    const nextPosition = origin.clone().addScaledVector(direction, segmentLength);
+    const nextPosition = origin
+      .clone()
+      .addScaledVector(direction, segmentLength);
     createKite(nextPosition, direction, depth);
 
     const remainingDepth = depth - 1;
     if (remainingDepth <= 0 || kiteInstances.length >= maxKites) return;
 
-    const childCount = 1 + Math.floor(Math.random() * (settings.density * 2 + 1));
+    const childCount =
+      1 + Math.floor(Math.random() * (settings.density * 2 + 1));
     for (let i = 0; i < childCount; i++) {
       const yaw = (Math.random() - 0.5) * (0.8 + settings.density * 0.8);
       const pitch = (Math.random() - 0.35) * 0.4;

@@ -191,9 +191,15 @@ export function createLoader({
       // Setup audio prompt if startAudio globals are registered by the toy
       const win = (container?.ownerDocument.defaultView ?? window) as any;
       if (typeof win.startAudio === 'function') {
-        const startBtn = container?.querySelector('#start-audio-btn') as HTMLButtonElement;
-        const fallbackBtn = container?.querySelector('#use-demo-audio') as HTMLButtonElement;
-        const statusEl = container?.querySelector('#audio-status') as HTMLElement;
+        const startBtn = container?.querySelector(
+          '#start-audio-btn',
+        ) as HTMLButtonElement;
+        const fallbackBtn = container?.querySelector(
+          '#use-demo-audio',
+        ) as HTMLButtonElement;
+        const statusEl = container?.querySelector(
+          '#audio-status',
+        ) as HTMLElement;
 
         if (startBtn && fallbackBtn) {
           view.showAudioPrompt(true);
@@ -210,7 +216,8 @@ export function createLoader({
                   if (typeof starter === 'function') break;
                 }
               }
-              if (typeof starter !== 'function') throw new Error('Microphone starter unavailable.');
+              if (typeof starter !== 'function')
+                throw new Error('Microphone starter unavailable.');
               return starter('microphone');
             },
             requestSampleAudio: async () => {
@@ -222,7 +229,8 @@ export function createLoader({
                   if (typeof starter === 'function') break;
                 }
               }
-              if (typeof starter !== 'function') throw new Error('Demo audio unavailable.');
+              if (typeof starter !== 'function')
+                throw new Error('Demo audio unavailable.');
               if (typeof win.startAudioFallback === 'function') {
                 return win.startAudioFallback();
               }
@@ -230,12 +238,11 @@ export function createLoader({
             },
             onSuccess: () => {
               view.showAudioPrompt(false);
-            }
+            },
           });
         }
       }
     };
-
 
     if (capabilityDecision.shouldShowCapabilityError) {
       view.showCapabilityError(toy, {

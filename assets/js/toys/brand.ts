@@ -27,7 +27,7 @@ export async function startBrandToy({
     typeof errorElement === 'string'
       ? errorElement
       : (errorElement?.id ?? 'error-message');
-  
+
   const hasRenderingSupport = ensureWebGL({
     title: 'WebGL/WebGPU required for the Star Guitar visualizer',
     description:
@@ -263,11 +263,11 @@ export async function startBrandToy({
   };
 
   async function startAudio(request: any = false) {
-     return startToyAudio(toy, animate, {
+    return startToyAudio(toy, animate, {
       positional: true,
       object: toy.camera,
       fallbackToSynthetic: request === true,
-      preferSynthetic: request === 'sample' || request === true
+      preferSynthetic: request === 'sample' || request === true,
     }).catch((err) => {
       console.error('Audio input error: ', err);
       funControls.setAudioAvailable(false);
@@ -307,7 +307,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   return startBrandToy({
     container,
     canvas: container?.querySelector('canvas'),
-    errorElement: container?.querySelector<HTMLElement>('#error-message')
+    errorElement: container?.querySelector<HTMLElement>('#error-message'),
   });
 }
 

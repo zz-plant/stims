@@ -196,7 +196,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
       // Dynamic color shift
       const hueShift = (ringData.hue + normalizedAvg * 0.3 + time * 0.05) % 1;
-      const outerMaterial = ringData.outer.material as THREE.MeshStandardMaterial;
+      const outerMaterial = ringData.outer
+        .material as THREE.MeshStandardMaterial;
       outerMaterial.color.setHSL(hueShift, 0.8, 0.5 + normalizedValue * 0.2);
       outerMaterial.emissive.setHSL(hueShift, 0.6, normalizedValue * 0.4);
 

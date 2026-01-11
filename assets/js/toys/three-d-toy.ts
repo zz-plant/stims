@@ -231,7 +231,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
 
     const randomScale =
-      1 + Math.sin(Date.now() * 0.001) * (controlState.mobilePreset ? 0.15 : 0.3);
+      1 +
+      Math.sin(Date.now() * 0.001) * (controlState.mobilePreset ? 0.15 : 0.3);
     torusKnot.scale.set(randomScale, randomScale, randomScale);
 
     const driftAmount = idleOffset * (controlState.mobilePreset ? 2.5 : 4.2);
@@ -254,7 +255,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function setupSettingsPanel() {
     settingsPanel.configure({
       title: '3D soundscape',
-      description: 'Resolution and particle density follow the preset you pick.',
+      description:
+        'Resolution and particle density follow the preset you pick.',
     });
     settingsPanel.setQualityPresets({
       presets: DEFAULT_QUALITY_PRESETS,
@@ -269,7 +271,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       hideError();
       return true;
     } catch (e) {
-      showError('Microphone access was denied. Please allow access and reload.');
+      showError(
+        'Microphone access was denied. Please allow access and reload.',
+      );
       throw e;
     }
   }
