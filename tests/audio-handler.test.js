@@ -47,8 +47,6 @@ class FakeAudioWorkletNode {
   port = { onmessage: null, postMessage: mock() };
   connect = mock();
   disconnect = mock();
-
-  constructor() {}
 }
 
 beforeAll(async () => {
@@ -73,7 +71,7 @@ beforeAll(async () => {
       stop: mock(),
       disconnect: mock(),
     }));
-    const AudioAnalyser = mock((audio, fftSize = 256) => {
+    const AudioAnalyser = mock((_audio, fftSize = 256) => {
       const data = new Uint8Array(fftSize / 2);
       return {
         analyser: { disconnect: mock() },

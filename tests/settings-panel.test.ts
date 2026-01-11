@@ -90,8 +90,10 @@ describe('quality preset subscriptions', () => {
     ) as HTMLSelectElement | null;
     expect(select?.value).toBe('balanced');
 
-    select!.value = 'hi-fi';
-    select!.dispatchEvent(new Event('change', { bubbles: true }));
+    if (select) {
+      select.value = 'hi-fi';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
 
     panel.configure({ title: 'Cosmic particles' });
     panel.setQualityPresets({

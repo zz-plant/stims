@@ -77,7 +77,7 @@ async function main() {
     console.log('- Metadata: assets/js/toys-data.js');
     console.log('- Index: docs/TOY_SCRIPT_INDEX.md');
     if (shouldCreateTest) {
-      console.log('- Test: tests/' + testFileName(slug));
+      console.log(`- Test: tests/${testFileName(slug)}`);
     }
   } catch (error) {
     console.error(

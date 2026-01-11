@@ -17,7 +17,9 @@ globalThis.CustomEvent =
   windowInstance.CustomEvent as unknown as typeof CustomEvent;
 globalThis.DOMParser = windowInstance.DOMParser as unknown as typeof DOMParser;
 globalThis.requestAnimationFrame = (callback: FrameRequestCallback) =>
+  // biome-ignore lint/suspicious/noExplicitAny: polyfill mismatch
   setTimeout(() => callback(Date.now()), 16) as any as number;
+// biome-ignore lint/suspicious/noExplicitAny: polyfill mismatch
 globalThis.cancelAnimationFrame = (id: number) => clearTimeout(id as any);
 
 // WebGPU stubs for Three.js
