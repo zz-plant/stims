@@ -169,7 +169,7 @@ export const initPreviewReels = () => {
     });
 
     reel.addEventListener('focusout', (event) => {
-      if (event.relatedTarget && reel.contains(event.relatedTarget)) return;
+      if (event.relatedTarget instanceof Node && reel.contains(event.relatedTarget)) return;
       isFocused = false;
       if (isAutoPlay) startTimer();
     });
