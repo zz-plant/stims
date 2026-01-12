@@ -80,7 +80,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let bloomMesh: THREE.Mesh | null = null;
 
   function getArmConfig() {
-    const scale = (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
+    const scale =
+      (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
     const armCount = Math.max(3, Math.round(6 * scale));
     const linesPerArm = Math.max(8, Math.round(16 * scale));
     const pointsPerLine = Math.max(20, Math.round(40 * Math.sqrt(scale)));
@@ -88,7 +89,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function getParticleCount() {
-    const scale = (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
+    const scale =
+      (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
     return Math.max(400, Math.round(1200 * scale));
   }
 
@@ -131,7 +133,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
       positions[i3 + 2] = radius * Math.cos(phi) - 40;
       velocities[i] = 0.2 + Math.random() * 0.4;
-      
+
       const hue = Math.random();
       const color = new THREE.Color().setHSL(hue, 0.8, 0.6);
       colors[i3] = color.r;
@@ -199,7 +201,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           const angle = phaseOffset + t * Math.PI * 4 + lineOffset;
           const radius = t * 50 + i * 2;
           const wobble = Math.sin(t * Math.PI * 3 + i) * 3;
-          
+
           points.push(
             new THREE.Vector3(
               Math.cos(angle) * radius + wobble,
@@ -210,8 +212,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         }
 
         geometry.setFromPoints(points);
-        
-        const color = new THREE.Color().setHSL((armHue + i / linesPerArm * 0.3) % 1, 0.8, 0.6);
+
+        const color = new THREE.Color().setHSL(
+          (armHue + (i / linesPerArm) * 0.3) % 1,
+          0.8,
+          0.6,
+        );
         const material = new THREE.LineBasicMaterial({
           color,
           transparent: true,
@@ -284,7 +290,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function setupSettingsPanel() {
     settingsPanel.configure({
       title: 'Spiral Burst',
-      description: 'Explosive spirals that pulse with your music. Try different modes!',
+      description:
+        'Explosive spirals that pulse with your music. Try different modes!',
     });
     settingsPanel.setQualityPresets({
       presets: DEFAULT_QUALITY_PRESETS,
@@ -295,8 +302,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     // Add mode buttons
     const modeRow = document.createElement('div');
     modeRow.className = 'control-panel__row';
-    modeRow.style.cssText = 'display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;';
-    
+    modeRow.style.cssText =
+      'display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;';
+
     const modes: SpiralMode[] = ['burst', 'bloom', 'vortex', 'heartbeat'];
     modes.forEach((mode) => {
       const btn = document.createElement('button');
@@ -337,12 +345,16 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     // Frequency band analysis
     const bassSlice = data.slice(0, Math.floor(data.length * 0.15));
-    const midsSlice = data.slice(Math.floor(data.length * 0.15), Math.floor(data.length * 0.6));
+    const midsSlice = data.slice(
+      Math.floor(data.length * 0.15),
+      Math.floor(data.length * 0.6),
+    );
     const highsSlice = data.slice(Math.floor(data.length * 0.6));
 
     const bass = bassSlice.reduce((a, b) => a + b, 0) / bassSlice.length / 255;
     const mids = midsSlice.reduce((a, b) => a + b, 0) / midsSlice.length / 255;
-    const highs = highsSlice.reduce((a, b) => a + b, 0) / highsSlice.length / 255;
+    const highs =
+      highsSlice.reduce((a, b) => a + b, 0) / highsSlice.length / 255;
 
     // Smooth values
     smoothedBass = smoothedBass * 0.85 + bass * 0.15;
@@ -383,10 +395,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     // Animate spiral arms
     spiralArms.forEach((arm, armIdx) => {
-      arm.group.rotation.z += baseRotationSpeed * arm.direction * (1 + smoothedBass * 2);
-      arm.group.rotation.x = Math.sin(time * 0.001 + armIdx) * 0.15 * smoothedMids;
-      
-      const armScale = expansionFactor + Math.sin(time * 0.002 + arm.phaseOffset) * 0.1;
+      arm.group.rotation.z +=
+        baseRotationSpeed * arm.direction * (1 + smoothedBass * 2);
+      arm.group.rotation.x =
+        Math.sin(time * 0.001 + armIdx) * 0.15 * smoothedMids;
+
+      const armScale =
+        expansionFactor + Math.sin(time * 0.002 + arm.phaseOffset) * 0.1;
       arm.group.scale.setScalar(armScale);
 
       mapFrequencyToItems(
@@ -395,16 +410,21 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         (line, idx, value) => {
           const normalizedValue = value / 255;
           const lineMaterial = line.material as THREE.LineBasicMaterial;
-          
+
           // Dynamic rotation
           line.rotation.z += (0.001 + normalizedValue * 0.01) * arm.direction;
-          
+
           // Pulsing scale
           const lineScale = 1 + normalizedValue * pulseIntensity * 0.5;
           line.scale.setScalar(lineScale);
-          
+
           // Color shifting
-          const hue = (arm.baseHue + idx / arm.lines.length * 0.2 + time * 0.0001 + normalizedValue * 0.15) % 1;
+          const hue =
+            (arm.baseHue +
+              (idx / arm.lines.length) * 0.2 +
+              time * 0.0001 +
+              normalizedValue * 0.15) %
+            1;
           const saturation = 0.7 + normalizedValue * 0.3;
           const lightness = 0.4 + normalizedValue * 0.3;
           lineMaterial.color.setHSL(hue, saturation, lightness);
@@ -418,10 +438,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     if (bloomMesh) {
       bloomMesh.rotation.x += 0.008 + smoothedMids * 0.02;
       bloomMesh.rotation.y += 0.012 + smoothedHighs * 0.015;
-      
+
       const bloomScale = 1 + smoothedBass * 0.8 + beatIntensity * 0.5;
       bloomMesh.scale.setScalar(bloomScale);
-      
+
       const bloomMaterial = bloomMesh.material as THREE.MeshStandardMaterial;
       bloomMaterial.emissiveIntensity = 0.3 + smoothedBass * 0.7;
       applyAudioColor(bloomMaterial, normalizedAvg, {
@@ -434,38 +454,47 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     // Animate particle field
     if (particleField) {
-      const positions = particleField.geometry.attributes.position.array as Float32Array;
-      const colors = particleField.geometry.attributes.color.array as Float32Array;
-      
+      const positions = particleField.geometry.attributes.position
+        .array as Float32Array;
+      const colors = particleField.geometry.attributes.color
+        .array as Float32Array;
+
       for (let i = 0; i < particleField.count; i++) {
         const i3 = i * 3;
-        
+
         // Orbital motion
         const x = positions[i3];
         const y = positions[i3 + 1];
         const angle = Math.atan2(y, x);
         const radius = Math.sqrt(x * x + y * y);
-        const orbitSpeed = particleField.velocities[i] * 0.02 * (1 + smoothedMids * 2);
-        
+        const orbitSpeed =
+          particleField.velocities[i] * 0.02 * (1 + smoothedMids * 2);
+
         const newAngle = angle + orbitSpeed;
         const radialPush = currentMode === 'burst' ? beatIntensity * 2 : 0;
-        
+
         positions[i3] = Math.cos(newAngle) * (radius + radialPush);
         positions[i3 + 1] = Math.sin(newAngle) * (radius + radialPush);
-        positions[i3 + 2] += (smoothedBass * 3 - 0.5) * particleField.velocities[i];
-        
+        positions[i3 + 2] +=
+          (smoothedBass * 3 - 0.5) * particleField.velocities[i];
+
         // Wrap around
         if (positions[i3 + 2] > 60) positions[i3 + 2] = -60;
         if (positions[i3 + 2] < -60) positions[i3 + 2] = 60;
-        
+
         // Dynamic colors
-        const hue = (i / particleField.count + time * 0.00005 + smoothedHighs * 0.2) % 1;
-        const color = new THREE.Color().setHSL(hue, 0.9, 0.5 + smoothedHighs * 0.3);
+        const hue =
+          (i / particleField.count + time * 0.00005 + smoothedHighs * 0.2) % 1;
+        const color = new THREE.Color().setHSL(
+          hue,
+          0.9,
+          0.5 + smoothedHighs * 0.3,
+        );
         colors[i3] = color.r;
         colors[i3 + 1] = color.g;
         colors[i3 + 2] = color.b;
       }
-      
+
       particleField.geometry.attributes.position.needsUpdate = true;
       particleField.geometry.attributes.color.needsUpdate = true;
       particleField.material.size = 1.2 + smoothedBass * 2;
@@ -484,7 +513,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     toy.rendererReady.then((result) => {
       if (result) {
         const bgHue = (0.7 + smoothedMids * 0.1) % 1;
-        const bgColor = new THREE.Color().setHSL(bgHue, 0.3, 0.02 + beatIntensity * 0.03);
+        const bgColor = new THREE.Color().setHSL(
+          bgHue,
+          0.3,
+          0.02 + beatIntensity * 0.03,
+        );
         result.renderer.setClearColor(bgColor);
       }
     });
