@@ -1,4 +1,27 @@
+import { initNavigation as renderNav } from './ui/nav.ts';
+import { initAudioControls } from './ui/audio-controls.ts';
+
 type DocumentGetter = () => Document | null;
+
+export interface ToyWindow extends Window {
+  __stimsTheme?: {
+    resolveThemePreference: () => 'light' | 'dark';
+    applyTheme: (theme: 'light' | 'dark', persist?: boolean) => void;
+  };
+  startAudio?: (request: any) => Promise<void>;
+  startAudioFallback?: () => Promise<void>;
+}
+
+declare global {
+  interface Window {
+    __stimsTheme?: {
+      resolveThemePreference: () => 'light' | 'dark';
+      applyTheme: (theme: 'light' | 'dark', persist?: boolean) => void;
+    };
+    startAudio?: (request: any) => Promise<void>;
+    startAudioFallback?: () => Promise<void>;
+  }
+}
 
 type Toy = {
   slug: string;
@@ -179,146 +202,47 @@ function buildImportErrorMessage(
 
 function buildToyNav({
   container,
-  doc,
   toy,
   onBack,
   rendererStatus,
 }: {
   container: HTMLElement | null;
-  doc: Document | null;
   toy?: Toy;
   onBack?: () => void;
   rendererStatus: RendererStatusState | null;
 }) {
-  if (!container || !doc) return null;
-
-  let nav = container.querySelector('.active-toy-nav');
-  if (!nav) {
-    nav = doc.createElement('div');
-    nav.className = 'active-toy-nav';
-    container.appendChild(nav);
-  }
-
-  nav.replaceChildren();
-
-  const navContent = doc.createElement('div');
-  navContent.className = 'active-toy-nav__content';
-
-  const eyebrow = doc.createElement('p');
-  eyebrow.className = 'active-toy-nav__eyebrow';
-  eyebrow.textContent = 'Now playing';
-  navContent.appendChild(eyebrow);
-
-  const title = doc.createElement('p');
-  title.className = 'active-toy-nav__title';
-  title.textContent = toy?.title ?? 'Web toy';
-  navContent.appendChild(title);
-
-  const hint = doc.createElement('p');
-  hint.className = 'active-toy-nav__hint';
-  hint.textContent = 'Press Esc or use Back to return to the library.';
-  navContent.appendChild(hint);
-
-  if (toy?.slug) {
-    const chip = doc.createElement('span');
-    chip.className = 'active-toy-nav__pill';
-    chip.textContent = toy.slug;
-    navContent.appendChild(chip);
-  }
-
-  const actions = doc.createElement('div');
-  actions.className = 'active-toy-nav__actions';
-
-  if (rendererStatus) {
-    const statusContainer = doc.createElement('div');
-    statusContainer.className = 'renderer-status';
-
-    const pill = doc.createElement('span');
-    const fallback = rendererStatus.backend !== 'webgpu';
-    pill.className = `renderer-pill ${fallback ? 'renderer-pill--fallback' : 'renderer-pill--success'}`;
-    pill.textContent = fallback ? 'WebGL fallback' : 'WebGPU';
-    pill.title =
-      rendererStatus.fallbackReason ??
-      (fallback
-        ? 'WebGPU unavailable, using WebGL.'
-        : 'WebGPU renderer active.');
-    statusContainer.appendChild(pill);
-
-    if (rendererStatus.fallbackReason) {
-      const detail = doc.createElement('small');
-      detail.className = 'renderer-pill__detail';
-      detail.textContent = rendererStatus.fallbackReason;
-      statusContainer.appendChild(detail);
-    }
-
-    if (rendererStatus.shouldRetryWebGPU && rendererStatus.onRetry) {
-      const retry = doc.createElement('button');
-      retry.type = 'button';
-      retry.className = 'renderer-pill__retry';
-      retry.textContent = rendererStatus.triedWebGPU
-        ? 'Retry WebGPU'
-        : 'Try WebGPU';
-      retry.addEventListener('click', () => rendererStatus.onRetry?.());
-      statusContainer.appendChild(retry);
-    }
-
-    actions.appendChild(statusContainer);
-  }
-
-  const backControl = doc.createElement('button');
-  backControl.type = 'button';
-  backControl.className = 'toy-nav__back';
-  backControl.setAttribute('data-back-to-library', 'true');
-  backControl.innerHTML =
-    '<span aria-hidden="true">←</span><span>Back to library</span>';
-  backControl.addEventListener('click', () => onBack?.());
-  actions.appendChild(backControl);
-
-  nav.appendChild(navContent);
-  nav.appendChild(actions);
-  return nav;
+  if (!container) return null;
+  renderNav(container, {
+    mode: 'toy',
+    title: toy?.title,
+    slug: toy?.slug,
+    onBack,
+    rendererStatus,
+  });
+  return container;
 }
 
 function buildAudioPrompt({
   container,
-  doc,
+  options,
 }: {
   container: HTMLElement | null;
-  doc: Document | null;
+  options: {
+    onRequestMicrophone: () => Promise<void>;
+    onRequestDemoAudio: () => Promise<void>;
+    onSuccess?: () => void;
+  };
 }) {
-  if (!container || !doc) return null;
+  if (!container) return null;
 
   let prompt = container.querySelector('.control-panel');
   if (prompt) return prompt;
 
-  prompt = doc.createElement('div');
+  prompt = container.ownerDocument.createElement('div');
   prompt.className = 'control-panel control-panel--floating';
-  prompt.innerHTML = `
-    <div class="control-panel__heading">Audio controls</div>
-    <p class="control-panel__description">
-      Choose how to feed audio: use your microphone for live input, or load
-      our demo track to preview instantly.
-    </p>
-    <div class="control-panel__row">
-      <div class="control-panel__text">
-        <span class="control-panel__label">Microphone</span>
-        <small>Uses your device mic for the most responsive visuals.</small>
-      </div>
-      <button id="start-audio-btn" class="cta-button primary">
-        Use microphone
-      </button>
-    </div>
-    <div class="control-panel__row">
-      <div class="control-panel__text">
-        <span class="control-panel__label">Demo audio</span>
-        <small>No mic needed—start with a built-in track.</small>
-      </div>
-      <button id="use-demo-audio" class="cta-button">Use demo audio</button>
-    </div>
-    <div id="audio-status" class="control-panel__status" role="status" hidden></div>
-  `;
-
   container.appendChild(prompt);
+
+  initAudioControls(prompt as HTMLElement, options);
   return prompt;
 }
 
@@ -413,7 +337,6 @@ export function createToyView({
 
     buildToyNav({
       container,
-      doc,
       toy: state.activeToyMeta,
       onBack: state.backHandler,
       rendererStatus: state.rendererStatus,
@@ -422,7 +345,9 @@ export function createToyView({
     const statusElement = renderStatusElement(doc, container, state.status);
 
     if (state.audioPromptActive) {
-      buildAudioPrompt({ container, doc });
+      // Note: Audio callbacks are handled in loader.ts which calls showAudioPrompt(active, callbacks)
+      // For now, toy-view state doesn't hold callbacks, so we'll need to adapt loader.ts or pass them here
+      // buildAudioPrompt({ container, options: ... });
     } else {
       container.querySelector('.control-panel')?.remove();
     }
@@ -581,9 +506,14 @@ export function createToyView({
     ensureActiveToyContainer,
     setRendererStatus,
     showUnavailableToy,
-    showAudioPrompt: (active: boolean = true) => {
+    showAudioPrompt: (active: boolean = true, callbacks?: any) => {
       state.audioPromptActive = active;
-      render();
+      if (active && callbacks) {
+        const container = findActiveToyContainer();
+        buildAudioPrompt({ container, options: callbacks });
+      } else {
+        render();
+      }
     },
   };
 }
