@@ -1,9 +1,9 @@
-import type {
+import {
   AmbientLight,
   DirectionalLight,
   HemisphereLight,
   PointLight,
-  Scene,
+  type Scene,
   SpotLight,
 } from 'three';
 
@@ -20,19 +20,12 @@ export interface AmbientLightConfig {
   intensity?: number;
 }
 
-type LightingModule = {
-  DirectionalLight: typeof DirectionalLight;
-  SpotLight: typeof SpotLight;
-  HemisphereLight: typeof HemisphereLight;
-  PointLight: typeof PointLight;
-};
-
-type AmbientLightingModule = {
-  AmbientLight: typeof AmbientLight;
-};
-
 type SceneLike = Pick<Scene, 'add'>;
-type LightingInstance = InstanceType<LightingModule[keyof LightingModule]>;
+type LightingInstance =
+  | DirectionalLight
+  | SpotLight
+  | HemisphereLight
+  | PointLight;
 
 export function initLighting(
   scene: SceneLike,
@@ -43,7 +36,6 @@ export function initLighting(
     position: { x: 10, y: 10, z: 10 },
     castShadow: false,
   },
-  lighting: LightingModule,
 ): void {
   const {
     type = 'PointLight',
@@ -58,24 +50,24 @@ export function initLighting(
 
   switch (type) {
     case 'DirectionalLight':
-      light = new lighting.DirectionalLight(color, intensity);
+      light = new DirectionalLight(color, intensity);
       light.position.set(x, y, z);
       if (castShadow) {
         light.castShadow = true;
       }
       break;
     case 'SpotLight':
-      light = new lighting.SpotLight(color, intensity);
+      light = new SpotLight(color, intensity);
       light.position.set(x, y, z);
       if (castShadow) {
         light.castShadow = true;
       }
       break;
     case 'HemisphereLight':
-      light = new lighting.HemisphereLight(color, 0x444444, intensity);
+      light = new HemisphereLight(color, 0x444444, intensity);
       break;
     default:
-      light = new lighting.PointLight(color, intensity);
+      light = new PointLight(color, intensity);
       light.position.set(x, y, z);
       if (castShadow) {
         light.castShadow = true;
@@ -89,11 +81,7 @@ export function initLighting(
 export function initAmbientLight(
   scene: SceneLike,
   config: AmbientLightConfig = { color: 0x404040, intensity: 0.5 },
-  lighting: AmbientLightingModule,
 ): void {
-  const ambientLight = new lighting.AmbientLight(
-    config.color,
-    config.intensity,
-  );
+  const ambientLight = new AmbientLight(config.color, config.intensity);
   scene.add(ambientLight);
 }

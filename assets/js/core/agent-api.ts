@@ -15,17 +15,19 @@ export type StimState = {
 export type StimAPI = {
   // Current state
   getState: () => StimState;
-  
+
   // Control methods
   enableDemoAudio: () => Promise<void>;
   enableMicrophone: () => Promise<void>;
   returnToLibrary: () => void;
-  
+
   // Event listeners
   onToyLoad: (callback: (slug: string) => void) => () => void;
-  onAudioStart: (callback: (source: 'microphone' | 'demo') => void) => () => void;
+  onAudioStart: (
+    callback: (source: 'microphone' | 'demo') => void,
+  ) => () => void;
   onAudioStop: (callback: () => void) => () => void;
-  
+
   // Utility
   waitForToyLoad: () => Promise<string>;
   waitForAudioActive: () => Promise<'microphone' | 'demo'>;
@@ -56,11 +58,11 @@ export function initAgentAPI(): StimAPI {
       const demoBtn = document.querySelector(
         '[data-demo-audio-btn], #use-demo-audio',
       ) as HTMLButtonElement;
-      
+
       if (!demoBtn) {
         throw new Error('Demo audio button not found');
       }
-      
+
       demoBtn.click();
       await waitForAudioActive();
     },
@@ -69,18 +71,20 @@ export function initAgentAPI(): StimAPI {
       const micBtn = document.querySelector(
         '[data-mic-audio-btn], #start-audio-btn',
       ) as HTMLButtonElement;
-      
+
       if (!micBtn) {
         throw new Error('Microphone button not found');
       }
-      
+
       micBtn.click();
       await waitForAudioActive();
     },
 
     returnToLibrary: () => {
-      const backBtn = document.querySelector('[data-back-to-library]') as HTMLButtonElement;
-      
+      const backBtn = document.querySelector(
+        '[data-back-to-library]',
+      ) as HTMLButtonElement;
+
       if (backBtn) {
         backBtn.click();
       } else {
@@ -90,13 +94,15 @@ export function initAgentAPI(): StimAPI {
     },
 
     onToyLoad: (callback) => {
-      const handler = ((e: CustomEvent) => callback(e.detail.slug)) as EventListener;
+      const handler = ((e: CustomEvent) =>
+        callback(e.detail.slug)) as EventListener;
       eventTarget.addEventListener('toy:load', handler);
       return () => eventTarget.removeEventListener('toy:load', handler);
     },
 
     onAudioStart: (callback) => {
-      const handler = ((e: CustomEvent) => callback(e.detail.source)) as EventListener;
+      const handler = ((e: CustomEvent) =>
+        callback(e.detail.source)) as EventListener;
       eventTarget.addEventListener('audio:start', handler);
       return () => eventTarget.removeEventListener('audio:start', handler);
     },
@@ -129,7 +135,7 @@ function waitForToyLoad(): Promise<string> {
       eventTarget.removeEventListener('toy:load', handler as EventListener);
       resolve(e.detail.slug);
     }) as EventListener;
-    
+
     eventTarget.addEventListener('toy:load', handler);
   });
 }
@@ -144,7 +150,7 @@ function waitForAudioActive(): Promise<'microphone' | 'demo'> {
       eventTarget.removeEventListener('audio:start', handler as EventListener);
       resolve(e.detail.source);
     }) as EventListener;
-    
+
     eventTarget.addEventListener('audio:start', handler);
   });
 }
@@ -153,12 +159,12 @@ function waitForAudioActive(): Promise<'microphone' | 'demo'> {
 export function setCurrentToy(slug: string | null) {
   state.currentToy = slug;
   state.toyLoaded = slug !== null;
-  
+
   if (slug) {
     eventTarget.dispatchEvent(
       new CustomEvent('toy:load', { detail: { slug } }),
     );
-    
+
     // Add data attribute to body
     if (typeof document !== 'undefined') {
       document.body.dataset.currentToy = slug;
@@ -172,22 +178,25 @@ export function setCurrentToy(slug: string | null) {
   }
 }
 
-export function setAudioActive(active: boolean, source: 'microphone' | 'demo' | null = null) {
+export function setAudioActive(
+  active: boolean,
+  source: 'microphone' | 'demo' | null = null,
+) {
   state.audioActive = active;
   state.audioSource = source;
-  
+
   if (active && source) {
     eventTarget.dispatchEvent(
       new CustomEvent('audio:start', { detail: { source } }),
     );
-    
+
     if (typeof document !== 'undefined') {
       document.body.dataset.audioActive = 'true';
       document.body.dataset.audioSource = source;
     }
   } else {
     eventTarget.dispatchEvent(new CustomEvent('audio:stop'));
-    
+
     if (typeof document !== 'undefined') {
       document.body.dataset.audioActive = 'false';
       delete document.body.dataset.audioSource;

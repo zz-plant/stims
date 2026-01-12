@@ -1,4 +1,18 @@
-import * as THREE from 'three';
+import {
+  AmbientLight,
+  Color,
+  CylinderGeometry,
+  LatheGeometry,
+  MathUtils,
+  Mesh,
+  MeshStandardMaterial,
+  PerspectiveCamera,
+  PlaneGeometry,
+  Scene,
+  SpotLight,
+  Vector2,
+  WebGLRenderer,
+} from 'three';
 import { ensureWebGL } from '../utils/webgl-check';
 
 type ClayStartOptions = {
@@ -10,10 +24,10 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
     throw new Error('WebGL support is required for the clay toy.');
   }
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x222222);
+  const scene = new Scene();
+  scene.background = new Color(0x222222);
 
-  const camera = new THREE.PerspectiveCamera(
+  const camera = new PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
     0.1,
@@ -22,7 +36,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   camera.position.set(0, 8, 10);
   camera.lookAt(0, 5, 0);
 
-  const renderer = new THREE.WebGLRenderer({
+  const renderer = new WebGLRenderer({
     antialias: true,
     powerPreference: 'default', // Better battery life on mobile
     failIfMajorPerformanceCaveat: false, // Don't fail on mobile GPU limitations
@@ -31,10 +45,10 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   renderer.shadowMap.enabled = true;
   (container ?? document.body).appendChild(renderer.domElement);
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  const ambientLight = new AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
 
-  const spotLight = new THREE.SpotLight(0xffffff, 1);
+  const spotLight = new SpotLight(0xffffff, 1);
   spotLight.position.set(15, 40, 35);
   spotLight.angle = Math.PI / 4;
   spotLight.penumbra = 0.1;
@@ -43,20 +57,20 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   spotLight.castShadow = true;
   scene.add(spotLight);
 
-  const wheelGeometry = new THREE.CylinderGeometry(6, 6, 1, 64);
-  const wheelMaterial = new THREE.MeshStandardMaterial({
+  const wheelGeometry = new CylinderGeometry(6, 6, 1, 64);
+  const wheelMaterial = new MeshStandardMaterial({
     color: 0x555555,
   });
-  const wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
+  const wheelMesh = new Mesh(wheelGeometry, wheelMaterial);
   wheelMesh.position.y = 0.5;
   wheelMesh.receiveShadow = true;
   scene.add(wheelMesh);
 
-  const groundGeometry = new THREE.PlaneGeometry(200, 200);
-  const groundMaterial = new THREE.MeshStandardMaterial({
+  const groundGeometry = new PlaneGeometry(200, 200);
+  const groundMaterial = new MeshStandardMaterial({
     color: 0x333333,
   });
-  const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+  const groundMesh = new Mesh(groundGeometry, groundMaterial);
   groundMesh.rotation.x = -Math.PI / 2;
   groundMesh.position.y = 0;
   groundMesh.receiveShadow = true;
@@ -66,21 +80,21 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   const minRadius = 0.5;
   const height = 12;
   const segments = 100;
-  let potteryMesh!: THREE.Mesh<THREE.LatheGeometry, THREE.MeshStandardMaterial>;
+  let potteryMesh!: Mesh<LatheGeometry, MeshStandardMaterial>;
 
   function createClay() {
-    const profilePoints: THREE.Vector2[] = [];
+    const profilePoints: Vector2[] = [];
     const step = height / segments;
     for (let i = 0; i <= segments; i++) {
       const y = i * step;
       const radius = maxRadius;
-      profilePoints.push(new THREE.Vector2(radius, y));
+      profilePoints.push(new Vector2(radius, y));
     }
 
-    const clayGeometry = new THREE.LatheGeometry(profilePoints, 200);
+    const clayGeometry = new LatheGeometry(profilePoints, 200);
     clayGeometry.computeVertexNormals();
 
-    const clayMaterial = new THREE.MeshStandardMaterial({
+    const clayMaterial = new MeshStandardMaterial({
       color: 0xd2a679,
       roughness: 0.6,
       metalness: 0.3,
@@ -92,7 +106,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
       potteryMesh.material.dispose();
     }
 
-    potteryMesh = new THREE.Mesh(clayGeometry, clayMaterial);
+    potteryMesh = new Mesh(clayGeometry, clayMaterial);
     potteryMesh.position.y = 0;
     potteryMesh.castShadow = true;
     potteryMesh.receiveShadow = true;
@@ -130,7 +144,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
 
         switch (currentTool) {
           case 'smooth':
-            newRadius = THREE.MathUtils.lerp(radius, newRadius, 0.5);
+            newRadius = MathUtils.lerp(radius, newRadius, 0.5);
             break;
           case 'carve':
             newRadius = radius - Math.abs(factor);
@@ -140,7 +154,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
             break;
         }
 
-        newRadius = THREE.MathUtils.clamp(newRadius, minRadius, maxRadius);
+        newRadius = MathUtils.clamp(newRadius, minRadius, maxRadius);
         x = newRadius * Math.cos(angle);
         z = newRadius * Math.sin(angle);
         positions.setX(i, x);

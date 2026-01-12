@@ -54,14 +54,14 @@ export async function playToy(options: {
   try {
     const url = `http://localhost:${port}/toy.html?toy=${encodeURIComponent(options.slug)}&agent=true`;
     console.log(`Navigating to ${url}...`);
-    
+
     await page.goto(url);
 
     // Wait for toy to load
-    await page.waitForFunction(() => 
-      document.body.dataset.toyLoaded === 'true',
+    await page.waitForFunction(
+      () => document.body.dataset.toyLoaded === 'true',
       undefined,
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
     console.log('Toy loaded.');
 
@@ -70,13 +70,19 @@ export async function playToy(options: {
     if (demoBtn) {
       console.log('Enabling demo audio...');
       await demoBtn.click();
-      
+
       // Wait for audio activation
-      await page.waitForFunction(() =>
-        document.body.dataset.audioActive === 'true',
-        undefined,
-        { timeout: 5000 }
-      ).catch(() => console.warn('Audio activation timed out or not detected via data attribute.'));
+      await page
+        .waitForFunction(
+          () => document.body.dataset.audioActive === 'true',
+          undefined,
+          { timeout: 5000 },
+        )
+        .catch(() =>
+          console.warn(
+            'Audio activation timed out or not detected via data attribute.',
+          ),
+        );
     } else {
       console.log('No demo audio button found. Checking if auto-started...');
     }
@@ -92,7 +98,9 @@ export async function playToy(options: {
     };
 
     // Check audio state
-    const audioState = await page.evaluate(() => document.body.dataset.audioActive === 'true');
+    const audioState = await page.evaluate(
+      () => document.body.dataset.audioActive === 'true',
+    );
     result.audioActive = audioState;
 
     if (options.screenshot) {
@@ -106,9 +114,8 @@ export async function playToy(options: {
     await page.close();
     await context.close(); // Saves video if enabled
     await browser.close();
-    
-    return result;
 
+    return result;
   } catch (error) {
     console.error(`Error playing toy ${options.slug}:`, error);
     await browser.close();
@@ -125,14 +132,16 @@ export async function playToy(options: {
 if (import.meta.main) {
   const args = process.argv.slice(2);
   const slug = args[0];
-  
+
   if (!slug || slug.startsWith('--')) {
     console.error('Usage: bun scripts/play-toy.ts <slug> [options]');
     console.error('Options:');
     console.error('  --port <number>     Dev server port (default: 5173)');
     console.error('  --duration <ms>     Duration to run (default: 5000)');
     console.error('  --no-headless       Run in visible window');
-    console.error('  --output <dir>      Output directory (default: ./screenshots)');
+    console.error(
+      '  --output <dir>      Output directory (default: ./screenshots)',
+    );
     process.exit(1);
   }
 

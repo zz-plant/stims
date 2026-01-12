@@ -1,4 +1,25 @@
-import * as THREE from 'three';
+import {
+  AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
+  CircleGeometry,
+  Color,
+  DoubleSide,
+  FogExp2,
+  Group,
+  Line,
+  LineBasicMaterial,
+  type Material,
+  Mesh,
+  MeshBasicMaterial,
+  PlaneGeometry,
+  Points,
+  PointsMaterial,
+  ShaderMaterial,
+  Vector2,
+  Vector3,
+  type WebGLRenderer,
+} from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -91,10 +112,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let bloomPass: UnrealBloomPass | null = null;
 
   // Scene elements
-  const waveGroup = new THREE.Group();
-  const gridGroup = new THREE.Group();
-  const particleGroup = new THREE.Group();
-  const horizonGroup = new THREE.Group();
+  const waveGroup = new Group();
+  const gridGroup = new Group();
+  const particleGroup = new Group();
+  const horizonGroup = new Group();
 
   toy.scene.add(waveGroup);
   toy.scene.add(gridGroup);
@@ -109,21 +130,21 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let lastBeatTime = 0;
 
   // Wave mesh
-  let waveMesh: THREE.Mesh | null = null;
-  let waveGeometry: THREE.PlaneGeometry | null = null;
-  let waveMaterial: THREE.ShaderMaterial | null = null;
+  let waveMesh: Mesh | null = null;
+  let waveGeometry: PlaneGeometry | null = null;
+  let waveMaterial: ShaderMaterial | null = null;
 
   // Grid lines
-  const gridLines: THREE.Line[] = [];
+  const gridLines: Line[] = [];
 
   // Particles
-  let particles: THREE.Points | null = null;
-  let particleGeometry: THREE.BufferGeometry | null = null;
-  let particleMaterial: THREE.PointsMaterial | null = null;
+  let particles: Points | null = null;
+  let particleGeometry: BufferGeometry | null = null;
+  let particleMaterial: PointsMaterial | null = null;
   let particleVelocities: Float32Array | null = null;
 
   // Horizon sun/moon
-  let horizonMesh: THREE.Mesh | null = null;
+  let horizonMesh: Mesh | null = null;
 
   function getWaveSegments() {
     const scale =
@@ -220,18 +241,18 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     const { widthSegments, heightSegments } = getWaveSegments();
-    waveGeometry = new THREE.PlaneGeometry(
+    waveGeometry = new PlaneGeometry(
       180,
       180,
       widthSegments,
       heightSegments,
     );
 
-    const primaryColor = new THREE.Color(palette.primary);
-    const secondaryColor = new THREE.Color(palette.secondary);
-    const accentColor = new THREE.Color(palette.accent);
+    const primaryColor = new Color(palette.primary);
+    const secondaryColor = new Color(palette.secondary);
+    const accentColor = new Color(palette.accent);
 
-    waveMaterial = new THREE.ShaderMaterial({
+    waveMaterial = new ShaderMaterial({
       vertexShader: waveVertexShader,
       fragmentShader: waveFragmentShader,
       uniforms: {
@@ -245,11 +266,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         uColorAccent: { value: accentColor },
       },
       transparent: true,
-      side: THREE.DoubleSide,
+      side: DoubleSide,
       depthWrite: false,
     });
 
-    waveMesh = new THREE.Mesh(waveGeometry, waveMaterial);
+    waveMesh = new Mesh(waveGeometry, waveMaterial);
     waveMesh.rotation.x = -Math.PI / 2.5;
     waveMesh.position.y = -20;
     waveGroup.add(waveMesh);
@@ -260,12 +281,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     gridLines.forEach((line) => {
       gridGroup.remove(line);
       line.geometry.dispose();
-      (line.material as THREE.Material).dispose();
+      (line.material as Material).dispose();
     });
     gridLines.length = 0;
 
-    const gridColor = new THREE.Color(palette.primary);
-    const lineMaterial = new THREE.LineBasicMaterial({
+    const gridColor = new Color(palette.primary);
+    const lineMaterial = new LineBasicMaterial({
       color: gridColor,
       transparent: true,
       opacity: 0.4,
@@ -274,11 +295,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     // Horizontal lines
     for (let i = -10; i <= 10; i++) {
       const points = [
-        new THREE.Vector3(-100, -25, i * 10),
-        new THREE.Vector3(100, -25, i * 10),
+        new Vector3(-100, -25, i * 10),
+        new Vector3(100, -25, i * 10),
       ];
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, lineMaterial.clone());
+      const geometry = new BufferGeometry().setFromPoints(points);
+      const line = new Line(geometry, lineMaterial.clone());
       gridGroup.add(line);
       gridLines.push(line);
     }
@@ -286,11 +307,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     // Vertical lines
     for (let i = -10; i <= 10; i++) {
       const points = [
-        new THREE.Vector3(i * 10, -25, -100),
-        new THREE.Vector3(i * 10, -25, 100),
+        new Vector3(i * 10, -25, -100),
+        new Vector3(i * 10, -25, 100),
       ];
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, lineMaterial.clone());
+      const geometry = new BufferGeometry().setFromPoints(points);
+      const line = new Line(geometry, lineMaterial.clone());
       gridGroup.add(line);
       gridLines.push(line);
     }
@@ -304,13 +325,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     const count = getParticleCount();
-    particleGeometry = new THREE.BufferGeometry();
+    particleGeometry = new BufferGeometry();
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     particleVelocities = new Float32Array(count);
 
-    const primaryCol = new THREE.Color(palette.primary);
-    const secondaryCol = new THREE.Color(palette.secondary);
+    const primaryCol = new Color(palette.primary);
+    const secondaryCol = new Color(palette.secondary);
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
@@ -319,7 +340,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       positions[i3 + 2] = (Math.random() - 0.5) * 200 - 50;
       particleVelocities[i] = 0.1 + Math.random() * 0.3;
 
-      const mixColor = new THREE.Color().lerpColors(
+      const mixColor = new Color().lerpColors(
         primaryCol,
         secondaryCol,
         Math.random(),
@@ -331,42 +352,42 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     particleGeometry.setAttribute(
       'position',
-      new THREE.BufferAttribute(positions, 3),
+      new BufferAttribute(positions, 3),
     );
     particleGeometry.setAttribute(
       'color',
-      new THREE.BufferAttribute(colors, 3),
+      new BufferAttribute(colors, 3),
     );
 
-    particleMaterial = new THREE.PointsMaterial({
+    particleMaterial = new PointsMaterial({
       size: 2,
       sizeAttenuation: true,
       transparent: true,
       opacity: 0.8,
       vertexColors: true,
-      blending: THREE.AdditiveBlending,
+      blending: AdditiveBlending,
       depthWrite: false,
     });
 
-    particles = new THREE.Points(particleGeometry, particleMaterial);
+    particles = new Points(particleGeometry, particleMaterial);
     particleGroup.add(particles);
   }
 
   function createHorizon() {
     if (horizonMesh) {
       horizonGroup.remove(horizonMesh);
-      (horizonMesh.geometry as THREE.BufferGeometry).dispose();
-      (horizonMesh.material as THREE.Material).dispose();
+      (horizonMesh.geometry as BufferGeometry).dispose();
+      (horizonMesh.material as Material).dispose();
     }
 
-    const geometry = new THREE.CircleGeometry(25, 64);
-    const material = new THREE.MeshBasicMaterial({
+    const geometry = new CircleGeometry(25, 64);
+    const material = new MeshBasicMaterial({
       color: palette.accent,
       transparent: true,
       opacity: 0.9,
     });
 
-    horizonMesh = new THREE.Mesh(geometry, material);
+    horizonMesh = new Mesh(geometry, material);
     horizonMesh.position.set(0, 10, -120);
     horizonGroup.add(horizonMesh);
   }
@@ -379,15 +400,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       // Only set up post-processing with WebGLRenderer (not WebGPURenderer)
       if (!('capabilities' in renderer && 'extensions' in renderer)) return;
 
-      const webglRenderer = renderer as THREE.WebGLRenderer;
+      const webglRenderer = renderer as WebGLRenderer;
       composer = new EffectComposer(webglRenderer);
 
       const renderPass = new RenderPass(toy.scene, toy.camera);
       composer.addPass(renderPass);
 
-      const size = webglRenderer.getSize(new THREE.Vector2());
+      const size = webglRenderer.getSize(new Vector2());
       bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(size.x, size.y),
+        new Vector2(size.x, size.y),
         palette.bloomStrength,
         0.4,
         0.85,
@@ -402,25 +423,25 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     // Update wave colors
     if (waveMaterial) {
-      waveMaterial.uniforms.uColorPrimary.value = new THREE.Color(
+      waveMaterial.uniforms.uColorPrimary.value = new Color(
         palette.primary,
       );
-      waveMaterial.uniforms.uColorSecondary.value = new THREE.Color(
+      waveMaterial.uniforms.uColorSecondary.value = new Color(
         palette.secondary,
       );
-      waveMaterial.uniforms.uColorAccent.value = new THREE.Color(
+      waveMaterial.uniforms.uColorAccent.value = new Color(
         palette.accent,
       );
     }
 
     // Update grid colors
     gridLines.forEach((line) => {
-      (line.material as THREE.LineBasicMaterial).color.setHex(palette.primary);
+      (line.material as LineBasicMaterial).color.setHex(palette.primary);
     });
 
     // Update horizon
     if (horizonMesh) {
-      (horizonMesh.material as THREE.MeshBasicMaterial).color.setHex(
+      (horizonMesh.material as MeshBasicMaterial).color.setHex(
         palette.accent,
       );
     }
@@ -563,7 +584,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     // Animate grid
     gridGroup.position.z = (time * 5) % 10;
     gridLines.forEach((line, i) => {
-      const mat = line.material as THREE.LineBasicMaterial;
+      const mat = line.material as LineBasicMaterial;
       mat.opacity = 0.3 + smoothedBass * 0.3 + Math.sin(time + i * 0.2) * 0.1;
     });
 
@@ -612,7 +633,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       horizonMesh.scale.setScalar(scale);
 
       // Subtle glow pulse
-      (horizonMesh.material as THREE.MeshBasicMaterial).opacity =
+      (horizonMesh.material as MeshBasicMaterial).opacity =
         0.7 + smoothedMids * 0.3;
     }
 
@@ -654,7 +675,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   });
 
   // Fog for depth
-  toy.scene.fog = new THREE.FogExp2(palette.background, 0.008);
+  toy.scene.fog = new FogExp2(palette.background, 0.008);
 
   const unregisterGlobals = registerToyGlobals(container, startAudio);
 
@@ -667,11 +688,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       particleMaterial?.dispose();
       gridLines.forEach((line) => {
         line.geometry.dispose();
-        (line.material as THREE.Material).dispose();
+        (line.material as Material).dispose();
       });
       if (horizonMesh) {
-        (horizonMesh.geometry as THREE.BufferGeometry).dispose();
-        (horizonMesh.material as THREE.Material).dispose();
+        (horizonMesh.geometry as BufferGeometry).dispose();
+        (horizonMesh.material as Material).dispose();
       }
       composer?.dispose();
       perfUnsub();

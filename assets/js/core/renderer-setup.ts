@@ -1,5 +1,9 @@
 /* global GPUAdapter, GPUDevice */
-import * as THREE from 'three';
+import {
+  ACESFilmicToneMapping,
+  SRGBColorSpace,
+  WebGLRenderer,
+} from 'three';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 import {
   getRendererCapabilities,
@@ -9,7 +13,7 @@ import {
 import { WebGPURenderer } from './webgpu-renderer.ts';
 
 export type RendererInitResult = {
-  renderer: THREE.WebGLRenderer | WebGPURenderer;
+  renderer: WebGLRenderer | WebGPURenderer;
   backend: RendererBackend;
   adapter?: GPUAdapter | null;
   device?: GPUDevice | null;
@@ -49,7 +53,7 @@ export async function initRenderer(
   } = config;
 
   const finalize = (
-    renderer: THREE.WebGLRenderer | WebGPURenderer,
+    renderer: WebGLRenderer | WebGPURenderer,
     backend: RendererBackend,
     adapter: GPUAdapter | null,
     device: GPUDevice | null,
@@ -60,8 +64,8 @@ export async function initRenderer(
     );
     renderer.setPixelRatio(effectivePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.outputColorSpace = SRGBColorSpace;
+    renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = exposure;
     return {
       renderer,
@@ -91,7 +95,7 @@ export async function initRenderer(
         navigator.userAgent,
       );
 
-    const renderer = new THREE.WebGLRenderer({
+    const renderer = new WebGLRenderer({
       canvas,
       antialias,
       alpha,

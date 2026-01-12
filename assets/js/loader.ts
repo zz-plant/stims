@@ -1,4 +1,9 @@
-import { initAgentAPI, isAgentMode, setAudioActive, setCurrentToy } from './core/agent-api.ts';
+import {
+  initAgentAPI,
+  isAgentMode,
+  setAudioActive,
+  setCurrentToy,
+} from './core/agent-api.ts';
 import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import {
@@ -191,7 +196,7 @@ export function createLoader({
       }
 
       view.removeStatusElement();
-      
+
       // Track toy load for agents
       setCurrentToy(toy.slug);
 

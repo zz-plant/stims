@@ -1,4 +1,12 @@
-import * as THREE from 'three';
+import {
+  Audio as ThreeAudio,
+  type AudioListener,
+  Mesh,
+  type Object3D,
+  type PerspectiveCamera,
+  type PositionalAudio,
+  type Scene,
+} from 'three';
 import type {
   AmbientLightConfig,
   LightConfig,
@@ -33,16 +41,16 @@ export type WebToyOptions = {
 
 export default class WebToy {
   canvas: HTMLCanvasElement;
-  scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera;
+  scene: Scene;
+  camera: PerspectiveCamera;
   renderer: RendererHandle['renderer'] | null;
   rendererBackend: RendererHandle['backend'] | null;
   rendererInfo: RendererHandle['info'] | null;
   rendererReady: Promise<RendererHandle | null>;
   rendererOptions: Partial<RendererInitConfig>;
   analyser: FrequencyAnalyser | null;
-  audioListener: THREE.AudioListener | null;
-  audio: THREE.Audio | THREE.PositionalAudio | null;
+  audioListener: AudioListener | null;
+  audio: ThreeAudio | PositionalAudio | null;
   audioStream: MediaStream | null;
   audioHandle: AudioHandle | null;
   audioCleanup: (() => void) | null;
@@ -92,10 +100,10 @@ export default class WebToy {
       });
 
     if (ambientLightOptions) {
-      initAmbientLight(this.scene, ambientLightOptions, THREE);
+      initAmbientLight(this.scene, ambientLightOptions);
     }
     if (lightingOptions) {
-      initLighting(this.scene, lightingOptions, THREE);
+      initLighting(this.scene, lightingOptions);
     }
 
     this.analyser = null;
@@ -156,15 +164,14 @@ export default class WebToy {
     this.renderer?.setAnimationLoop?.(null);
 
     if (this.scene) {
-      this.scene.traverse((object: THREE.Object3D) => {
-        const mesh = object as THREE.Mesh;
-        if ((mesh as unknown as { isMesh?: boolean }).isMesh) {
-          if (mesh.geometry) mesh.geometry.dispose();
-          if (mesh.material) {
-            if (Array.isArray(mesh.material)) {
-              mesh.material.forEach((material) => material?.dispose());
+      this.scene.traverse((object: Object3D) => {
+        if (object instanceof Mesh) {
+          if (object.geometry) object.geometry.dispose();
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((material) => material?.dispose());
             } else {
-              mesh.material.dispose();
+              object.material.dispose();
             }
           }
         }
