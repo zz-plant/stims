@@ -19,19 +19,27 @@ This guide captures the highest-impact flows to validate and how we keep them co
 
 Use Bun to match the repository tooling:
 
+- For a single command that mirrors CI (lint + typecheck + tests):
+  ```bash
+  bun run check
+  ```
+
 - Run the happy-dom suites for the app shell, settings panel, and microphone flows:
   ```bash
   bun run test tests/app-shell.test.js tests/settings-panel.test.ts tests/microphone-flow.test.ts
   ```
 
 - For a quick server wiring check before pushing UI changes:
-
   ```bash
   bun run dev:check
   ```
 
-- Full project sweep (lint, types, build, tests) as enforced in CI:
+## Agent-friendly QA shortcut
 
-  ```bash
-  bun run check
-  ```
+When you want a fast, reproducible QA pass without browsing the docs, run the full
+quality gate and then the focused QA suite:
+
+```bash
+bun run check
+bun run test tests/app-shell.test.js tests/settings-panel.test.ts tests/microphone-flow.test.ts
+```
