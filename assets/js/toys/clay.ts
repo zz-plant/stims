@@ -22,7 +22,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   camera.position.set(0, 8, 10);
   camera.lookAt(0, 5, 0);
 
-  const renderer = new THREE.WebGLRenderer({ 
+  const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: 'default', // Better battery life on mobile
     failIfMajorPerformanceCaveat: false, // Don't fail on mobile GPU limitations
