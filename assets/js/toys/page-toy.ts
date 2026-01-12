@@ -84,7 +84,7 @@ export function startPageToy({
   newTabLink.textContent = 'Open in new tab';
   newTabLink.href = pageUrl;
   newTabLink.target = '_blank';
-  newTabLink.rel = 'noopener';
+  newTabLink.rel = 'noopener noreferrer';
 
   actions.append(openButton, newTabLink);
   content.appendChild(actions);
