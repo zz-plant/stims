@@ -1,6 +1,6 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { createMcpServer, asTextResponse } from './mcp-shared.ts';
+import { asTextResponse, createMcpServer } from './mcp-shared.ts';
 import { playToy } from './play-toy.ts';
 
 const server = createMcpServer();

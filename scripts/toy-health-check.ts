@@ -1,5 +1,5 @@
-import { playToy } from './play-toy.ts';
 import toysData from '../assets/js/toys-data.js';
+import { playToy } from './play-toy.ts';
 
 async function checkToys() {
   console.log('Starting toy health check...');

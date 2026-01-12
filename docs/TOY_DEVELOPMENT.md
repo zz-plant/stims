@@ -5,6 +5,7 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 ## Core Expectations
 
 - Place new toy modules under `assets/js/toys/` and export a `start(options)` entry point.
+- Export `start({ container, canvas?, audioContext? })`. `container` is the preferred target for rendering.
 - Register the toy in `assets/js/toys-data.js` with a unique slug, label, and any default parameters. Keep the module path under `assets/js/toys/`.
 - Load toys through `toy.html?toy=<slug>` or a dedicated HTML entry point. Keep query string slugs in sync with `toys-data.js`.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
@@ -15,7 +16,7 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 
 Use this sequence when you want to stand up a fresh toy quickly (you can also run `bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test` to automate steps 1–3):
 
-1. **Create a module** in `assets/js/toys/<slug>.ts` using the starter template below. Export `start({ container, canvas?, audioContext? })`. Prefer `canvas` from the loader if you need a fullscreen surface; otherwise mount your own elements inside `container`.
+1. **Create a module** in `assets/js/toys/<slug>.ts` using the starter template below. Export `start({ container, canvas?, audioContext? })`. Use `container` to scope your DOM operations (settings panels, etc.) and `WebToy` to handle the canvas and resize logic within that container.
 2. **Register the slug** in `assets/js/toys-data.js` with a short title/description. Set `requiresWebGPU` or `allowWebGLFallback` if you depend on WebGPU features. The scaffold script validates that metadata entries live under `assets/js/toys/` and that slugs remain unique.
 3. **Create entry points**: module-based toys use `toy.html?toy=<slug>`; iframe-backed toys also need an HTML page (`<slug>.html`). The scaffold script writes a starter iframe page if one does not already exist.
 4. **Launch locally** with `bun run dev` and visit `http://localhost:5173/toy.html?toy=<slug>` to verify the manifest entry resolves and the loader shows your toy card.
@@ -26,42 +27,52 @@ Use this sequence when you want to stand up a fresh toy quickly (you can also ru
    - `bun run check:toys` (ensures metadata, modules, and iframe entry points stay in sync)
    - `bun run check:quick` (Biome linting and TypeScript check)
 
-The scaffold script can also generate a minimal Bun spec for you (`--with-spec`) that asserts the module exports `start`, and it will create a placeholder HTML page for iframe-based toys when one is missing. 6. **Manual spot-checks**:
+   The scaffold script can also generate a minimal Bun spec for you (`--with-spec`) that asserts the module exports `start`, and it will create a placeholder HTML page for iframe-based toys when one is missing.
 
-- Confirm the Back to Library control returns to the grid and removes your DOM nodes (cleanup).
-- Verify microphone permission flows (granted, denied, and sample-audio fallback) if you request audio.
-- For WebGPU toys, confirm the fallback/warning screen appears on non-WebGPU browsers.
+6. **Manual spot-checks**:
+   - Confirm the Back to Library control returns to the grid and removes your DOM nodes (cleanup).
+   - Verify microphone permission flows (granted, denied, and sample-audio fallback) if you request audio.
+   - For WebGPU toys, confirm the fallback/warning screen appears on non-WebGPU browsers.
 
-6. **Document any special controls** inside your module (inline comments) or in a short note in `README.md` if they differ from other toys.
+7. **Document any special controls** inside your module (inline comments) or in a short note in `README.md` if they differ from other toys.
 
 ## Starter Template
 
 Use this skeleton for new toys to standardize lifecycle hooks and cleanup:
 
 ```ts
-import { initRenderer } from '../core/renderer';
-import { createAnalyzer } from '../core/audio';
+import WebToy, { type WebToyOptions } from '../core/web-toy';
+import type { ToyStartFunction } from '../core/toy-interface';
 
-export async function start({ canvas, audioContext }) {
-  const { renderer, scene, camera, resize } = initRenderer({
+export const start: ToyStartFunction = async ({ container, canvas, audioContext }) => {
+  const toy = new WebToy({
+    container,
     canvas,
-    maxPixelRatio: 2,
+    cameraOptions: { position: { z: 50 } },
   });
-  const analyzer = await createAnalyzer(audioContext);
 
-  function tick(time) {
-    const { frequency, waveform } = analyzer.sample();
-    // update your objects using frequency/waveform data here
-    renderer.render(scene, camera);
-    requestAnimationFrame(tick);
+  // Example: Add a mesh
+  // const mesh = new Mesh(geometry, material);
+  // toy.scene.add(mesh);
+
+  function animate(time: number) {
+    if (!toy.renderer) return;
+    
+    // Update logic here
+    
+    toy.render();
+    requestAnimationFrame(animate);
   }
 
-  resize();
-  requestAnimationFrame(tick);
+  requestAnimationFrame(animate);
 
-  return () => {
-    analyzer.dispose?.();
-    renderer.dispose?.();
+  return {
+    dispose: () => {
+      toy.dispose();
+      // Clean up other resources
+    },
+    // Optional: add methods to control the toy
+    // updateOptions: (options) => { ... },
   };
 }
 ```
