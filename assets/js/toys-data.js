@@ -220,4 +220,20 @@ export default [
     requiresWebGPU: false,
     controls: ['Trail length', 'Glow strength', 'Current speed'],
   },
+  {
+    slug: 'neon-wave',
+    title: 'Neon Wave',
+    description:
+      'Premium retro-wave visualizer with bloom effects, custom shaders, and four stunning color themes.',
+    module: 'assets/js/toys/neon-wave.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    capabilities: {
+      microphone: true,
+      demoAudio: true,
+    },
+    moods: ['energetic', 'immersive'],
+    tags: ['synthwave', 'cyberpunk', 'retro', 'visualizer', 'bloom'],
+    controls: ['Theme selector', 'Quality presets'],
+  },
 ];
