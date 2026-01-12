@@ -241,12 +241,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     const { widthSegments, heightSegments } = getWaveSegments();
-    waveGeometry = new PlaneGeometry(
-      180,
-      180,
-      widthSegments,
-      heightSegments,
-    );
+    waveGeometry = new PlaneGeometry(180, 180, widthSegments, heightSegments);
 
     const primaryColor = new Color(palette.primary);
     const secondaryColor = new Color(palette.secondary);
@@ -354,10 +349,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       'position',
       new BufferAttribute(positions, 3),
     );
-    particleGeometry.setAttribute(
-      'color',
-      new BufferAttribute(colors, 3),
-    );
+    particleGeometry.setAttribute('color', new BufferAttribute(colors, 3));
 
     particleMaterial = new PointsMaterial({
       size: 2,
@@ -423,15 +415,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     // Update wave colors
     if (waveMaterial) {
-      waveMaterial.uniforms.uColorPrimary.value = new Color(
-        palette.primary,
-      );
+      waveMaterial.uniforms.uColorPrimary.value = new Color(palette.primary);
       waveMaterial.uniforms.uColorSecondary.value = new Color(
         palette.secondary,
       );
-      waveMaterial.uniforms.uColorAccent.value = new Color(
-        palette.accent,
-      );
+      waveMaterial.uniforms.uColorAccent.value = new Color(palette.accent);
     }
 
     // Update grid colors
@@ -441,9 +429,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     // Update horizon
     if (horizonMesh) {
-      (horizonMesh.material as MeshBasicMaterial).color.setHex(
-        palette.accent,
-      );
+      (horizonMesh.material as MeshBasicMaterial).color.setHex(palette.accent);
     }
 
     // Update bloom

@@ -1,9 +1,5 @@
 /* global GPUAdapter, GPUDevice */
-import {
-  ACESFilmicToneMapping,
-  SRGBColorSpace,
-  WebGLRenderer,
-} from 'three';
+import { ACESFilmicToneMapping, SRGBColorSpace, WebGLRenderer } from 'three';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 import {
   getRendererCapabilities,
