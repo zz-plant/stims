@@ -194,8 +194,7 @@ function updateStatusList(
     result.rendering.rendererBackend === 'webgpu'
       ? 'Enabled.'
       : result.rendering.rendererBackend === 'webgl'
-        ? (result.rendering.webgpuFallbackReason ??
-          'Using WebGL.')
+        ? (result.rendering.webgpuFallbackReason ?? 'Using WebGL.')
         : 'GPU acceleration not detected.';
   rendererStatus.appendChild(rendererNote);
 
@@ -297,8 +296,7 @@ export function attachCapabilityPreflight({
 
   const description = document.createElement('p');
   description.className = 'control-panel__description';
-  description.textContent =
-    'Quick check for graphics and microphone support.';
+  description.textContent = 'Quick check for graphics and microphone support.';
   panel.appendChild(description);
 
   const statusContainer = document.createElement('div');
