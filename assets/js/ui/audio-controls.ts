@@ -1,3 +1,5 @@
+import { YouTubeController } from './youtube-controller';
+
 export interface AudioControlsOptions {
   onRequestMicrophone: () => Promise<void>;
   onRequestDemoAudio: () => Promise<void>;
@@ -11,6 +13,7 @@ export function initAudioControls(
   options: AudioControlsOptions,
 ) {
   const doc = container.ownerDocument;
+  const youtubeController = new YouTubeController();
 
   container.className = 'control-panel';
   container.innerHTML = `
@@ -59,12 +62,18 @@ export function initAudioControls(
         />
         <button id="load-youtube" class="cta-button">Load video</button>
       </div>
+      <div id="recent-youtube" class="control-panel__recent" hidden>
+        <span class="control-panel__label small">Recent</span>
+        <div id="recent-list" class="control-panel__chip-list"></div>
+      </div>
       <div class="control-panel__actions control-panel__actions--inline">
         <button id="use-youtube-audio" class="cta-button" disabled>
           Use YouTube audio
         </button>
       </div>
-      <div id="youtube-player" class="control-panel__embed" hidden></div>
+      <div id="youtube-player-container" class="control-panel__embed" hidden>
+        <div id="youtube-player"></div>
+      </div>
     </div>
     `
         : ''
@@ -113,6 +122,7 @@ export function initAudioControls(
   if (options.onRequestYouTubeAudio) {
     setupYouTubeLogic(
       container,
+      youtubeController,
       options.onRequestYouTubeAudio,
       updateStatus,
       options.onSuccess,
@@ -122,6 +132,7 @@ export function initAudioControls(
 
 function setupYouTubeLogic(
   container: HTMLElement,
+  controller: YouTubeController,
   onUse: (stream: MediaStream) => Promise<void>,
   updateStatus: (msg: string, v?: 'success' | 'error') => void,
   onSuccess?: () => void,
@@ -131,31 +142,59 @@ function setupYouTubeLogic(
   const useBtn = container.querySelector(
     '#use-youtube-audio',
   ) as HTMLButtonElement;
-  const player = container.querySelector('#youtube-player') as HTMLElement;
+  const playerContainer = container.querySelector('#youtube-player-container') as HTMLElement;
+  const recentContainer = container.querySelector('#recent-youtube') as HTMLElement;
+  const recentList = container.querySelector('#recent-list') as HTMLElement;
 
-  let videoId: string | null = null;
-
-  const parseId = (val: string) => {
-    const trimmed = val.trim();
-    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-    const match = trimmed.match(
-      /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    );
-    return match?.[1] ?? null;
+  const updateRecentList = () => {
+    const recent = controller.getRecentVideos();
+    if (recent.length === 0) {
+      recentContainer.hidden = true;
+      return;
+    }
+    recentContainer.hidden = false;
+    recentList.innerHTML = '';
+    recent.forEach((v) => {
+      const chip = document.createElement('button');
+      chip.className = 'control-panel__chip';
+      chip.textContent = v.id;
+      chip.title = `Load video ${v.id}`;
+      chip.addEventListener('click', () => {
+        input.value = `https://www.youtube.com/watch?v=${v.id}`;
+        loadVideo(v.id);
+      });
+      recentList.appendChild(chip);
+    });
   };
 
+  const loadVideo = async (id: string) => {
+    try {
+      playerContainer.hidden = false;
+      updateStatus('Loading player...', 'success');
+      await controller.loadVideo('youtube-player', id, (state) => {
+        if (state === 1) { // Playing
+           updateStatus('Video playing. Ready to capture audio.', 'success');
+           useBtn.disabled = false;
+        }
+      });
+      updateStatus('Video loaded. Press play to start.', 'success');
+      updateRecentList();
+    } catch (err) {
+      updateStatus('Failed to load YouTube player.');
+      playerContainer.hidden = true;
+    }
+  };
+
+  updateRecentList();
+
   loadBtn?.addEventListener('click', () => {
-    videoId = parseId(input.value);
+    const videoId = controller.parseVideoId(input.value);
     if (!videoId) {
       updateStatus('Paste a valid YouTube link.');
       useBtn.disabled = true;
       return;
     }
-
-    player.hidden = false;
-    player.innerHTML = `<iframe width="100%" height="150" src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    updateStatus('Video loaded. Ready to capture audio.', 'success');
-    useBtn.disabled = false;
+    loadVideo(videoId);
   });
 
   useBtn?.addEventListener('click', async () => {

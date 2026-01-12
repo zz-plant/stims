@@ -763,6 +763,13 @@ body {
   font-size: 0.95rem;
 }
 
+.control-panel__label.small {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
 .control-panel__input {
   flex: 1 1 180px;
   width: 100%;
@@ -771,6 +778,37 @@ body {
   border: 1px solid rgba(111, 247, 255, 0.6);
   background: rgba(8, 12, 20, 0.85);
   color: #e9fbff;
+}
+
+.control-panel__recent {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-panel__chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.control-panel__chip {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(111, 247, 255, 0.1);
+  border: 1px solid rgba(111, 247, 255, 0.3);
+  color: #9bf3ff;
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-panel__chip:hover {
+  background: rgba(111, 247, 255, 0.2);
+  border-color: rgba(111, 247, 255, 0.6);
+  transform: translateY(-1px);
 }
 
 .control-panel__embed {
