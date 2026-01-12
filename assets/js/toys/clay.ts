@@ -22,7 +22,11 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   camera.position.set(0, 8, 10);
   camera.lookAt(0, 5, 0);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ 
+    antialias: true,
+    powerPreference: 'default', // Better battery life on mobile
+    failIfMajorPerformanceCaveat: false, // Don't fail on mobile GPU limitations
+  });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   (container ?? document.body).appendChild(renderer.domElement);

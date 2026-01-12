@@ -306,13 +306,13 @@ export function initHeroCanvas(
     animationId = requestAnimationFrame(animate);
   }
 
-  function onMouseMove(e: MouseEvent) {
+  function onPointerMove(e: PointerEvent) {
     const rect = canvas.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
     mouseY = e.clientY - rect.top;
   }
 
-  function onMouseLeave() {
+  function onPointerLeave() {
     mouseX = -1000;
     mouseY = -1000;
   }
@@ -322,8 +322,8 @@ export function initHeroCanvas(
 
   // Event listeners
   window.addEventListener('resize', resize);
-  canvas.addEventListener('mousemove', onMouseMove);
-  canvas.addEventListener('mouseleave', onMouseLeave);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerleave', onPointerLeave);
 
   // Start animation
   animate();
@@ -334,8 +334,8 @@ export function initHeroCanvas(
       cancelAnimationFrame(animationId);
     }
     window.removeEventListener('resize', resize);
-    canvas.removeEventListener('mousemove', onMouseMove);
-    canvas.removeEventListener('mouseleave', onMouseLeave);
+    canvas.removeEventListener('pointermove', onPointerMove);
+    canvas.removeEventListener('pointerleave', onPointerLeave);
   };
 }
 

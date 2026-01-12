@@ -84,7 +84,25 @@ export async function initRenderer(
       console.debug(error);
     }
     rememberRendererFallback(reason, { shouldRetryWebGPU, triedWebGPU });
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias, alpha });
+    
+    // Mobile-optimized WebGL context attributes
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+    
+    const renderer = new THREE.WebGLRenderer({ 
+      canvas, 
+      antialias, 
+      alpha,
+      // Use high-performance mode on desktop, default on mobile for better battery life
+      powerPreference: isMobile ? 'default' : 'high-performance',
+      // Don't fail if there are performance caveats - mobile GPUs often have them
+      failIfMajorPerformanceCaveat: false,
+      // Enable stencil buffer for better rendering compatibility
+      stencil: true,
+      // Preserve drawing buffer for screenshots/recording if needed
+      preserveDrawingBuffer: false,
+    });
     return finalize(renderer, 'webgl', null, null);
   };
 

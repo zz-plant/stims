@@ -9,9 +9,17 @@ body {
     "Space Grotesk", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   color: #f5f5f5;
   line-height: 1.6;
+  /* Mobile-specific improvements */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 canvas {
   display: block;
+  /* Prevent text selection on canvas */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .toy-canvas {
@@ -20,6 +28,9 @@ canvas {
   max-width: 100%;
   max-height: 100%;
   touch-action: none;
+  /* Force GPU acceleration for better mobile performance */
+  transform: translateZ(0);
+  will-change: transform;
 }
 body {
   background-color: #000;
