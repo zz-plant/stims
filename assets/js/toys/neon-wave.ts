@@ -486,8 +486,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function setupSettingsPanel() {
     settingsPanel.configure({
       title: 'Neon Wave',
-      description:
-        'Premium retro-wave visualizer with bloom effects. Pick a theme!',
+      description: 'Retro-wave visualizer with bloom effects. Pick a theme!',
     });
     settingsPanel.setQualityPresets({
       presets: DEFAULT_QUALITY_PRESETS,
