@@ -1,21 +1,21 @@
 import * as THREE from 'three';
-import WebToy from '../core/web-toy';
+import {
+  type AnimationContext,
+  getContextFrequencyData,
+} from '../core/animation-loop';
+import {
+  DEFAULT_QUALITY_PRESETS,
+  getSettingsPanel,
+} from '../core/settings-panel';
 import { registerToyGlobals } from '../core/toy-globals';
-import { startToyAudio } from '../utils/start-audio';
+import WebToy from '../core/web-toy';
 import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import {
-  getContextFrequencyData,
-  type AnimationContext,
-} from '../core/animation-loop';
 import FeedbackManager from '../utils/feedback-manager';
+import { startToyAudio } from '../utils/start-audio';
 import WarpShader from '../utils/warp-shader';
-import {
-  getSettingsPanel,
-  DEFAULT_QUALITY_PRESETS,
-} from '../core/settings-panel';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const toy = new WebToy({

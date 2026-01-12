@@ -1,5 +1,5 @@
-import { initNavigation as renderNav } from './ui/nav.ts';
 import { initAudioControls } from './ui/audio-controls.ts';
+import { initNavigation as renderNav } from './ui/nav.ts';
 
 type DocumentGetter = () => Document | null;
 

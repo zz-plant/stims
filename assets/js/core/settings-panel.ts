@@ -119,7 +119,7 @@ export function subscribeToQualityPreset(subscriber: QualitySubscriber) {
   };
 }
 
-class PersistentSettingsPanel {
+export class PersistentSettingsPanel {
   private container: HTMLDivElement;
   private heading: HTMLDivElement;
   private description?: HTMLParagraphElement;
@@ -131,7 +131,7 @@ class PersistentSettingsPanel {
   private qualityStorageKey: string = QUALITY_STORAGE_KEY;
   private toggleCount = 0;
 
-  constructor() {
+  constructor(root: HTMLElement = document.body) {
     this.container = document.createElement('div');
     this.container.className = 'control-panel control-panel--floating';
 
@@ -142,7 +142,7 @@ class PersistentSettingsPanel {
     this.sectionHost = document.createElement('div');
     this.container.appendChild(this.sectionHost);
 
-    document.body.appendChild(this.container);
+    root.appendChild(this.container);
   }
 
   getElement() {

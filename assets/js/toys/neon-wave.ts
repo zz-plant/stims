@@ -36,7 +36,7 @@ import {
 import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
-  getSettingsPanel,
+  PersistentSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
 import { registerToyGlobals } from '../core/toy-globals';
@@ -90,7 +90,7 @@ const THEMES: Record<NeonTheme, ThemePalette> = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const settingsPanel = getSettingsPanel();
+  const settingsPanel = new PersistentSettingsPanel(container || undefined);
   let activeQuality: QualityPreset = getActiveQualityPreset();
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let currentTheme: NeonTheme = 'synthwave';
@@ -105,6 +105,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       renderScale: activeQuality.renderScale,
     },
     canvas: container?.querySelector('canvas'),
+    container,
   } as ToyConfig);
 
   // Post-processing
@@ -536,7 +537,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function animate(ctx: AnimationContext) {
-    const data = getContextFrequencyData(ctx);
+    // const data = getContextFrequencyData(ctx);
     const time = ctx.time / 1000;
 
     // Multi-band frequency analysis using FrequencyAnalyser
@@ -683,6 +684,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       composer?.dispose();
       perfUnsub();
       unregisterGlobals();
+      settingsPanel.getElement().remove();
     },
   };
 }

@@ -1,6 +1,6 @@
-import { chromium } from 'playwright';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import { chromium } from 'playwright';
 
 export type PlayToyResult = {
   slug: string;

@@ -1,11 +1,11 @@
 import {
-  Audio as ThreeAudio,
   type AudioListener,
   Mesh,
   type Object3D,
   type PerspectiveCamera,
   type PositionalAudio,
   type Scene,
+  type Audio as ThreeAudio,
 } from 'three';
 import type {
   AmbientLightConfig,
@@ -37,9 +37,11 @@ export type WebToyOptions = {
   lightingOptions?: LightConfig | null;
   ambientLightOptions?: AmbientLightConfig | null;
   canvas?: HTMLCanvasElement | null;
+  container?: HTMLElement | null;
 };
 
 export default class WebToy {
+  container: HTMLElement | null;
   canvas: HTMLCanvasElement;
   scene: Scene;
   camera: PerspectiveCamera;
@@ -54,6 +56,7 @@ export default class WebToy {
   audioStream: MediaStream | null;
   audioHandle: AudioHandle | null;
   audioCleanup: (() => void) | null;
+  resizeObserver: ResizeObserver | null;
   resizeHandler: (() => void) | null;
   rendererHandle: RendererHandle | null;
 
@@ -64,13 +67,16 @@ export default class WebToy {
     lightingOptions = null,
     ambientLightOptions = null,
     canvas = null,
+    container = null,
   }: WebToyOptions = {}) {
     if (!ensureWebGL()) {
       throw new Error('WebGL not supported');
     }
 
-    const host =
-      document.getElementById('active-toy-container') || document.body;
+    this.container =
+      container ||
+      document.getElementById('active-toy-container') ||
+      document.body;
     this.canvas = canvas || document.createElement('canvas');
 
     this.scene = initScene(sceneOptions);
@@ -80,8 +86,9 @@ export default class WebToy {
     this.rendererInfo = null;
     this.rendererHandle = null;
     this.rendererOptions = rendererOptions;
+
     this.rendererReady = requestRenderer({
-      host,
+      host: this.container,
       options: rendererOptions,
       canvas: this.canvas,
     })
@@ -92,6 +99,7 @@ export default class WebToy {
         this.rendererInfo = handle?.info ?? null;
         this.canvas = handle?.canvas ?? this.canvas;
         this.applyRendererSettings();
+        this.handleResize();
         return handle;
       })
       .catch((error) => {
@@ -112,14 +120,32 @@ export default class WebToy {
     this.audioStream = null;
     this.audioHandle = null;
     this.audioCleanup = null;
-    this.resizeHandler = () => this.handleResize();
-    window.addEventListener('resize', this.resizeHandler);
+    this.resizeObserver = null;
+    this.resizeHandler = null;
+
+    if (typeof ResizeObserver !== 'undefined' && this.container) {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.handleResize();
+      });
+      this.resizeObserver.observe(this.container);
+    } else {
+      this.resizeHandler = () => this.handleResize();
+      window.addEventListener('resize', this.resizeHandler);
+    }
 
     defaultToyLifecycle.adoptActiveToy(this);
   }
 
   handleResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    if (this.container && this.container !== document.body) {
+      width = this.container.clientWidth;
+      height = this.container.clientHeight;
+    }
+
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.applyRendererSettings();
   }
@@ -157,8 +183,14 @@ export default class WebToy {
   }
 
   dispose() {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
+      this.resizeHandler = null;
     }
 
     this.renderer?.setAnimationLoop?.(null);

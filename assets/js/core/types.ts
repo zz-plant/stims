@@ -19,4 +19,5 @@ export interface ToyConfig {
   lightingOptions?: LightConfig;
   ambientLightOptions?: AmbientLightConfig;
   canvas?: HTMLCanvasElement | null;
+  container?: HTMLElement | null;
 }
