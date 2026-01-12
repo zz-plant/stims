@@ -11,34 +11,14 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>Stim Webtoys Library</title>
-    <script>
-      (() => {
-        const resolveThemePreference = () => {
-          const stored = localStorage.getItem('theme');
-          if (stored === 'light' || stored === 'dark') {
-            return stored;
-          }
-          return window.matchMedia('(prefers-color-scheme: dark)').matches
-            ? 'dark'
-            : 'light';
-        };
-
-        const applyTheme = (theme, persist = false) => {
-          const root = document.documentElement;
-          if (theme === 'light') {
-            root.classList.add('light');
-          } else {
-            root.classList.remove('light');
-          }
-          if (persist) {
-            localStorage.setItem('theme', theme);
-          }
-        };
-
-        window.__stimsTheme = { resolveThemePreference, applyTheme };
-
-        applyTheme(resolveThemePreference());
-      })();
+    <script type="module">
+      import { initNavigation } from './assets/js/ui/nav.ts';
+      window.addEventListener('DOMContentLoaded', () => {
+        const navContainer = document.querySelector('[data-top-nav-container]');
+        if (navContainer) {
+          initNavigation(navContainer, { mode: 'library' });
+        }
+      });
     </script>
     <link
       rel="stylesheet"
@@ -87,34 +67,7 @@
   <body>
     <canvas class="hero-background-canvas" data-hero-canvas data-color-scheme="cosmic" aria-hidden="true"></canvas>
     <div class="content">
-      <nav class="top-nav" data-top-nav>
-        <div class="brand">
-          <span class="brand-mark"></span>
-          <div class="brand-copy">
-            <p class="eyebrow">Stim Lab</p>
-            <p class="brand-title">Webtoy Library ✦</p>
-          </div>
-        </div>
-        <div class="nav-actions">
-          <a class="nav-link" href="#toy-list">Library</a>
-          <a
-            class="nav-link"
-            href="https://github.com/zz-plant/stims"
-            target="_blank"
-            rel="noopener noreferrer"
-            >GitHub</a
-          >
-          <button
-            id="theme-toggle"
-            class="theme-toggle"
-            aria-pressed="false"
-            aria-label="Switch to dark mode"
-          >
-            <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
-            <span class="theme-toggle__label" data-theme-label>Dark mode</span>
-          </button>
-        </div>
-      </nav>
+      <div data-top-nav-container></div>
 
       <header class="hero">
         <div class="hero-grid">

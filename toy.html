@@ -8,113 +8,24 @@
     <link rel="stylesheet" href="assets/css/index.css" />
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
-    <div class="control-panel">
-      <div class="control-panel__heading">Audio controls</div>
-      <p class="control-panel__description">
-        Choose how to feed audio: use your microphone for live input, or load
-        our demo track to preview instantly.
-      </p>
-      <div class="control-panel__row">
-        <div class="control-panel__text">
-          <span class="control-panel__label">Microphone</span>
-          <small>Uses your device mic for the most responsive visuals.</small>
-        </div>
-        <button id="start-audio-btn" class="cta-button primary">
-          Use microphone
-        </button>
-      </div>
-      <div class="control-panel__row">
-        <div class="control-panel__text">
-          <span class="control-panel__label">Demo audio</span>
-          <small>No mic needed—start with a built-in track.</small>
-        </div>
-        <button id="use-demo-audio" class="cta-button">Use demo audio</button>
-      </div>
-      <div class="control-panel__row control-panel__row--stacked">
-        <div class="control-panel__text">
-          <span class="control-panel__label">YouTube audio</span>
-          <small>
-            Paste a YouTube link to load a video. When you start audio, choose
-            “This tab” and enable audio sharing.
-          </small>
-        </div>
-        <div class="control-panel__field">
-          <label class="sr-only" for="youtube-url">YouTube URL</label>
-          <input
-            id="youtube-url"
-            class="control-panel__input"
-            type="url"
-            placeholder="https://www.youtube.com/watch?v=..."
-            autocomplete="off"
-            inputmode="url"
-          />
-          <button id="load-youtube" class="cta-button">Load video</button>
-        </div>
-        <div class="control-panel__actions control-panel__actions--inline">
-          <button id="use-youtube-audio" class="cta-button" disabled>
-            Use YouTube audio
-          </button>
-        </div>
-        <div id="youtube-player" class="control-panel__embed" hidden></div>
-      </div>
-      <div
-        id="audio-status"
-        class="control-panel__status"
-        role="status"
-        hidden
-      ></div>
-    </div>
+    <div id="nav-container"></div>
+    <div id="controls-container"></div>
     <script type="module" src="assets/js/toyMain.ts"></script>
     <script type="module">
       import { attachCapabilityPreflight } from './assets/js/core/capability-preflight.ts';
-      import { setupMicrophonePermissionFlow } from './assets/js/core/microphone-flow.ts';
       import { startToyPage } from './assets/js/toyMain.ts';
+      import { initNavigation } from './assets/js/ui/nav.ts';
+      import { initAudioControls } from './assets/js/ui/audio-controls.ts';
 
-      const startButton = document.getElementById('start-audio-btn');
-      const fallbackButton = document.getElementById('use-demo-audio');
-      const youtubeInput = document.getElementById('youtube-url');
-      const youtubeLoadButton = document.getElementById('load-youtube');
-      const youtubeUseButton = document.getElementById('use-youtube-audio');
-      const youtubePlayer = document.getElementById('youtube-player');
-      const statusElement = document.getElementById('audio-status');
-
+      const navContainer = document.getElementById('nav-container');
+      const controlsContainer = document.getElementById('controls-container');
+      
       let loaderStarted = false;
-      let youtubeVideoId = null;
-      let youtubeStream = null;
       const startLoaderIfNeeded = () => {
         if (loaderStarted) return;
         loaderStarted = true;
         startToyPage();
       };
-
-      const updateStatus = (message, variant = 'error') => {
-        if (!statusElement) return;
-        statusElement.hidden = false;
-        statusElement.dataset.variant = variant;
-        statusElement.textContent = message;
-      };
-
-      attachCapabilityPreflight({
-        heading: 'Capability check',
-        onComplete: (result) => {
-          if (result.canProceed) {
-            updateStatus('Loading toy...', 'success');
-            startLoaderIfNeeded();
-          } else {
-            updateStatus(
-              'Rendering is unavailable. Enable hardware acceleration or update your browser, then retry the checks.'
-            );
-          }
-        },
-        onRetry: (result) => {
-          if (result.canProceed) {
-            updateStatus('Loading toy...', 'success');
-            startLoaderIfNeeded();
-          }
-        },
-        host: document.body,
-      });
 
       const getStarter = (fallback = false) => {
         const globalStart = window.startAudio;
@@ -127,187 +38,81 @@
         return null;
       };
 
-      const stopYoutubeStream = () => {
-        if (!youtubeStream) return;
-        youtubeStream.getTracks().forEach((track) => track.stop());
-        youtubeStream = null;
-      };
+      // Get toy slug from URL for navigation
+      const toySlug = new URLSearchParams(window.location.search).get('toy') || 'Web toy';
 
-      const parseYouTubeId = (value) => {
-        if (!value) return null;
-        const trimmed = value.trim();
-        if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
-          return trimmed;
-        }
-        const match = trimmed.match(
-          /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-        );
-        return match?.[1] ?? null;
-      };
+      if (navContainer) {
+        initNavigation(navContainer, {
+          mode: 'toy',
+          title: toySlug.charAt(0).toUpperCase() + toySlug.slice(1),
+          slug: toySlug,
+          onBack: () => { window.location.href = 'index.html'; }
+        });
+      }
 
-      const ensureYouTubePlayer = (id) => {
-        if (!youtubePlayer) return;
-        youtubePlayer.hidden = false;
-        youtubePlayer.innerHTML = '';
-        const iframe = document.createElement('iframe');
-        iframe.width = '100%';
-        iframe.height = '150';
-        iframe.allow =
-          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-        iframe.allowFullscreen = true;
-        iframe.referrerPolicy = 'origin';
-        iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
-        iframe.title = 'YouTube audio source';
-        youtubePlayer.appendChild(iframe);
-      };
+      const setupAudio = () => {
+        if (!controlsContainer) return;
 
-      const loadYouTube = () => {
-        const value =
-          youtubeInput instanceof HTMLInputElement ? youtubeInput.value : '';
-        const id = parseYouTubeId(value);
-        if (!id) {
-          updateStatus('Paste a valid YouTube link to load a video.', 'error');
-          if (youtubeUseButton instanceof HTMLButtonElement) {
-            youtubeUseButton.disabled = true;
-          }
-          return;
-        }
-
-        youtubeVideoId = id;
-        ensureYouTubePlayer(id);
-        updateStatus(
-          'YouTube video loaded. Ready to capture audio.',
-          'success'
-        );
-        if (youtubeUseButton instanceof HTMLButtonElement) {
-          youtubeUseButton.disabled = false;
-        }
-      };
-
-      const captureYouTubeAudio = async () => {
-        if (!youtubeVideoId) {
-          updateStatus('Load a YouTube video first.', 'error');
-          return;
-        }
-
-        if (!navigator.mediaDevices?.getDisplayMedia) {
-          updateStatus(
-            'Screen capture is unavailable in this browser.',
-            'error'
-          );
-          return;
-        }
-
-        stopYoutubeStream();
-
-        try {
-          updateStatus(
-            'Choose “This tab” and enable audio sharing to connect YouTube.',
-            'success'
-          );
-          const stream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: true,
-          });
-
-          if (!stream.getAudioTracks().length) {
-            stream.getTracks().forEach((track) => track.stop());
-            updateStatus(
-              'No audio track detected. Retry and enable “Share audio.”',
-              'error'
-            );
-            return;
-          }
-
-          startLoaderIfNeeded();
-          const starter = getStarter();
-          if (!starter) throw new Error('Audio starter unavailable.');
-          youtubeStream = stream;
-          await starter({ stream });
-          updateStatus(
-            'YouTube audio connected. Visuals will react to the video.',
-            'success'
-          );
-
-          if (startButton instanceof HTMLButtonElement) {
-            startButton.style.display = 'none';
-          }
-          if (fallbackButton instanceof HTMLButtonElement) {
-            fallbackButton.hidden = true;
-          }
-          if (youtubeUseButton instanceof HTMLButtonElement) {
-            youtubeUseButton.disabled = true;
-          }
-        } catch (error) {
-          stopYoutubeStream();
-          updateStatus(
-            'Unable to capture YouTube audio. Retry and share this tab with audio enabled.',
-            'error'
-          );
-          console.error('YouTube audio capture failed', error);
-        }
-      };
-
-      setupMicrophonePermissionFlow({
-        startButton,
-        fallbackButton,
-        statusElement,
-        requestMicrophone: async () => {
-          startLoaderIfNeeded();
-          let starter = getStarter();
-          if (!starter) {
-            // Wait up to 3 seconds for starter
-            for (let i = 0; i < 30; i++) {
-              await new Promise((r) => setTimeout(r, 100));
-              starter = getStarter();
-              if (starter) break;
+        initAudioControls(controlsContainer, {
+          onRequestMicrophone: async () => {
+            startLoaderIfNeeded();
+            let starter = getStarter();
+            if (!starter) {
+              for (let i = 0; i < 30; i++) {
+                await new Promise((r) => setTimeout(r, 100));
+                starter = getStarter();
+                if (starter) break;
+              }
             }
-          }
-          if (!starter) throw new Error('Microphone starter unavailable.');
-          return starter(false);
-        },
-        requestSampleAudio: async () => {
-          startLoaderIfNeeded();
-          let starter = getStarter(true) ?? getStarter();
-          if (!starter) {
-            // Wait up to 3 seconds for starter
-            for (let i = 0; i < 30; i++) {
-              await new Promise((r) => setTimeout(r, 100));
-              starter = getStarter(true) ?? getStarter();
-              if (starter) break;
+            if (!starter) throw new Error('Microphone starter unavailable.');
+            return starter(false);
+          },
+          onRequestDemoAudio: async () => {
+            startLoaderIfNeeded();
+            let starter = getStarter(true) ?? getStarter();
+            if (!starter) {
+              for (let i = 0; i < 30; i++) {
+                await new Promise((r) => setTimeout(r, 100));
+                starter = getStarter(true) ?? getStarter();
+                if (starter) break;
+              }
             }
+            if (!starter) throw new Error('Demo audio unavailable.');
+            return starter(true);
+          },
+          onRequestYouTubeAudio: async (stream) => {
+            startLoaderIfNeeded();
+            const starter = getStarter();
+            if (!starter) throw new Error('Audio starter unavailable.');
+            return starter({ stream });
+          },
+          onSuccess: () => {
+            if (controlsContainer) controlsContainer.hidden = true;
           }
-          if (!starter) throw new Error('Demo audio unavailable.');
-          return starter(true);
-        },
-        analytics: {
-          log: (event, detail) =>
-            console.info(`[audio-flow] ${event}`, detail ?? {}),
-        },
-        onSuccess: () => {
-          if (startButton instanceof HTMLButtonElement) {
-            startButton.style.display = 'none';
-          }
-          if (fallbackButton instanceof HTMLButtonElement) {
-            fallbackButton.hidden = true;
-          }
-        },
-      });
+        });
+      };
 
-      youtubeLoadButton?.addEventListener('click', loadYouTube);
-      youtubeInput?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          loadYouTube();
-        }
-      });
-      youtubeUseButton?.addEventListener('click', () => {
-        void captureYouTubeAudio();
+      attachCapabilityPreflight({
+        heading: 'Capability check',
+        onComplete: (result) => {
+          if (result.canProceed) {
+            startLoaderIfNeeded();
+            setupAudio();
+          }
+        },
+        onRetry: (result) => {
+          if (result.canProceed) {
+            startLoaderIfNeeded();
+            setupAudio();
+          }
+        },
+        host: document.body,
       });
 
       window.addEventListener('pagehide', () => {
-        stopYoutubeStream();
+        // Cleanup if needed
       });
+    </script>
     </script>
   </body>
 </html>
