@@ -30,6 +30,12 @@ All tools are registered on the `stim-webtoys-mcp` server name and use zod-based
 - **`dev_commands`**
   - **Input:** optional `scope` enum (`setup`, `dev`, `build`, `test`, `lint`) to narrow the result.
   - **Output:** `text` response containing the requested setup or workflow commands from `README.md`. Without a scope, the tool returns all development snippets including **Biome** and Bun references.
+- **`launch_toy`**
+  - **Input:** required `slug` (string) for the toy to launch and optional `port` (number) for the dev server port (defaults to 5173).
+  - **Output:** `text` response with step-by-step instructions for launching the toy, enabling demo audio, and observing audio-reactive visual effects. Includes the toy URL, description, controls, and guidance on what to observe.
+- **`get_toy_audio_reactivity_guide`**
+  - **Input:** optional `slug` (string) to get toy-specific guidance.
+  - **Output:** `text` response explaining how toys respond to different audio frequencies (bass, mids, highs), what visual effects to expect, and slug-specific behavioral hints for known toys like "holy", "spiral-burst", "neon-wave", and "geom".
 
 ## Inputs, outputs, and client expectations
 
