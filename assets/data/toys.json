@@ -2,13 +2,13 @@
   {
     "slug": "3dtoy",
     "title": "3D Toy",
-    "description": "Dive into a twisting 3D tunnel that responds to sound.",
+    "description": "A twisting 3D tunnel that responds to sound.",
     "module": "./assets/js/toys/three-d-toy.ts"
   },
   {
     "slug": "brand",
     "title": "Star Guitar Visualizer",
-    "description": "A visual journey inspired by an iconic music video, synced to your music.",
+    "description": "Visuals inspired by an iconic music video, synced to your music.",
     "module": "./toy.html?toy=brand"
   },
   {
@@ -31,8 +31,8 @@
   },
   {
     "slug": "seary",
-    "title": "Trippy Synesthetic Visualizer",
-    "description": "Blend audio and visuals in a rich synesthetic experience.",
+    "title": "Synesthetic Visualizer",
+    "description": "Blend audio and visuals into linked patterns.",
     "module": "./toy.html?toy=seary"
   },
   {
@@ -49,8 +49,8 @@
   },
   {
     "slug": "symph",
-    "title": "Dreamy Spectrograph",
-    "description": "A relaxing spectrograph that moves gently with your audio.",
+    "title": "Spectrograph",
+    "description": "A spectrograph that moves gently with your audio.",
     "module": "./toy.html?toy=symph"
   },
   {

@@ -70,20 +70,20 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 
 | Toy                                                       | Description                                                                           |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [3D Toy](./toy.html?toy=3dtoy)                            | Dive into a twisting 3D tunnel that responds to sound.                                |
+| [3D Toy](./toy.html?toy=3dtoy)                            | A twisting 3D tunnel that responds to sound.                                          |
 | [Aurora Painter](./toy.html?toy=aurora-painter)           | Paint flowing aurora ribbons that react to your microphone in layered waves.          |
-| [Star Guitar Visualizer](./toy.html?toy=brand)            | A visual journey inspired by an iconic music video, synced to your music.             |
+| [Star Guitar Visualizer](./toy.html?toy=brand)            | Visuals inspired by an iconic music video, synced to your music.                      |
 | [Pottery Wheel Sculptor](./toy.html?toy=clay)             | Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.          |
 | [Defrag Visualizer](./toy.html?toy=defrag)                | A nostalgic, sound-reactive visualizer evoking old defragmentation screens.           |
 | [Evolutionary Weirdcore](./toy.html?toy=evol)             | Watch surreal landscapes evolve with fractals and glitches that react to music.       |
 | [Geometry Visualizer](./toy.html?toy=geom)                | Push shifting geometric forms directly from live mic input with responsive controls.   |
-| [Ultimate Satisfying Visualizer](./toy.html?toy=holy)     | Layered halos, particles, and morphing shapes that respond to your music.             |
+| [Halo Visualizer](./toy.html?toy=holy)                   | Layered halos, particles, and shapes that respond to your music.                      |
 | [Multi-Capability Visualizer](./toy.html?toy=multi)       | Shapes and lights move with both sound and device motion. (Requires WebGPU.)          |
-| [Trippy Synesthetic Visualizer](./toy.html?toy=seary)     | Blend audio and visuals in a rich synesthetic experience.                             |
+| [Synesthetic Visualizer](./toy.html?toy=seary)           | Blend audio and visuals into linked patterns.                                         |
 | [Pattern Recognition Visualizer](./toy.html?toy=sgpat)    | See patterns form dynamically in response to sound.                                   |
 | [Terminal Word Grid](./toy.html?toy=legible)              | A retro green text grid that pulses to audio and surfaces fresh words as you play.    |
 | [SVG + Three.js Visualizer](./toy.html?toy=svgtest)       | A hybrid visualizer blending 2D and 3D elements, reacting in real time.               |
-| [Dreamy Spectrograph](./toy.html?toy=symph)               | A relaxing spectrograph that moves gently with your audio.                            |
+| [Spectrograph](./toy.html?toy=symph)                     | A spectrograph that moves gently with your audio.                                     |
 | [Interactive Word Cloud](./toy.html?toy=words)            | Speak and watch the word cloud react and shift with your voice.                       |
 | [Grid Visualizer](./toy.html?toy=cube-wave)               | Swap between cube waves and bouncing spheres without stopping the music.              |
 | [Bubble Harmonics](./toy.html?toy=bubble-harmonics)       | Translucent, audio-inflated bubbles that split into harmonics on high frequencies.    |

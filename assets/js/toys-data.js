@@ -2,7 +2,7 @@ export default [
   {
     slug: '3dtoy',
     title: '3D Toy',
-    description: 'Dive into a twisting 3D tunnel that responds to sound.',
+    description: 'A twisting 3D tunnel that responds to sound.',
     module: 'assets/js/toys/three-d-toy.ts',
     type: 'module',
     requiresWebGPU: false,
@@ -20,7 +20,7 @@ export default [
     slug: 'brand',
     title: 'Star Guitar Visualizer',
     description:
-      'A visual journey inspired by an iconic music video, synced to your music.',
+      'Visuals inspired by an iconic music video, synced to your music.',
     module: 'assets/js/toys/brand.ts',
     type: 'module',
     requiresWebGPU: false,
@@ -63,9 +63,9 @@ export default [
   },
   {
     slug: 'holy',
-    title: 'Ultimate Satisfying Visualizer',
+    title: 'Halo Visualizer',
     description:
-      'Layered halos, particles, and morphing shapes that respond to your music.',
+      'Layered halos, particles, and shapes that respond to your music.',
     module: 'assets/js/toys/holy.ts',
     type: 'module',
     requiresWebGPU: false,
@@ -81,8 +81,8 @@ export default [
   },
   {
     slug: 'seary',
-    title: 'Trippy Synesthetic Visualizer',
-    description: 'Blend audio and visuals in a rich synesthetic experience.',
+    title: 'Synesthetic Visualizer',
+    description: 'Blend audio and visuals into linked patterns.',
     module: 'assets/js/toys/seary.ts',
     type: 'module',
     requiresWebGPU: false,
@@ -115,8 +115,8 @@ export default [
   },
   {
     slug: 'symph',
-    title: 'Dreamy Spectrograph',
-    description: 'A relaxing spectrograph that moves gently with your audio.',
+    title: 'Spectrograph',
+    description: 'A spectrograph that moves gently with your audio.',
     module: 'assets/js/toys/symph.ts',
     type: 'module',
     requiresWebGPU: false,
@@ -224,7 +224,7 @@ export default [
     slug: 'neon-wave',
     title: 'Neon Wave',
     description:
-      'Premium retro-wave visualizer with bloom effects, custom shaders, and four stunning color themes.',
+      'Retro-wave visualizer with bloom effects, custom shaders, and four color themes.',
     module: 'assets/js/toys/neon-wave.ts',
     type: 'module',
     requiresWebGPU: false,
@@ -240,7 +240,7 @@ export default [
     slug: 'milkdrop',
     title: 'MilkDrop Proto',
     description:
-      'A hardware-accelerated feedback engine inspired by the legendary MilkDrop visualizer system.',
+      'A hardware-accelerated feedback engine inspired by the MilkDrop visualizer system.',
     module: 'assets/js/toys/milkdrop-toy.ts',
     type: 'module',
     requiresWebGPU: false,
