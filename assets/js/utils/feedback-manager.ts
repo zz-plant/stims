@@ -6,8 +6,8 @@ export interface FeedbackOptions {
   height?: number;
   format?: THREE.PixelFormat;
   type?: THREE.TextureDataType;
-  minFilter?: THREE.TextureFilter;
-  magFilter?: THREE.TextureFilter;
+  minFilter?: THREE.MinificationTextureFilter;
+  magFilter?: THREE.MagnificationTextureFilter;
 }
 
 /**
@@ -28,8 +28,8 @@ export class FeedbackManager {
     const rtOptions: THREE.RenderTargetOptions = {
       format: options.format ?? THREE.RGBAFormat,
       type: options.type ?? THREE.UnsignedByteType,
-      minFilter: (options.minFilter as any) ?? THREE.LinearFilter,
-      magFilter: (options.magFilter as any) ?? THREE.LinearFilter,
+      minFilter: options.minFilter ?? THREE.LinearFilter,
+      magFilter: options.magFilter ?? THREE.LinearFilter,
       stencilBuffer: false,
       depthBuffer: true,
     };
@@ -60,6 +60,13 @@ export class FeedbackManager {
    */
   get texture(): THREE.Texture {
     return this.readBuffer.texture;
+  }
+
+  /**
+   * Gets the current write buffer.
+   */
+  get writeTarget(): THREE.WebGLRenderTarget {
+    return this.writeBuffer;
   }
 
   /**

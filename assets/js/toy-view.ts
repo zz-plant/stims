@@ -1,5 +1,6 @@
 import { initAudioControls } from './ui/audio-controls.ts';
 import { initNavigation as renderNav } from './ui/nav.ts';
+import type { ToyAudioRequest } from './utils/audio-start.ts';
 
 type DocumentGetter = () => Document | null;
 
@@ -8,7 +9,7 @@ export interface ToyWindow extends Window {
     resolveThemePreference: () => 'light' | 'dark';
     applyTheme: (theme: 'light' | 'dark', persist?: boolean) => void;
   };
-  startAudio?: (request: any) => Promise<unknown>;
+  startAudio?: (request?: ToyAudioRequest) => Promise<unknown>;
   startAudioFallback?: () => Promise<unknown>;
 }
 
@@ -18,7 +19,7 @@ declare global {
       resolveThemePreference: () => 'light' | 'dark';
       applyTheme: (theme: 'light' | 'dark', persist?: boolean) => void;
     };
-    startAudio?: (request: any) => Promise<unknown>;
+    startAudio?: (request?: ToyAudioRequest) => Promise<unknown>;
     startAudioFallback?: () => Promise<unknown>;
   }
 }
@@ -64,6 +65,12 @@ type RendererStatusState = {
   shouldRetryWebGPU?: boolean;
   triedWebGPU?: boolean;
   onRetry?: () => void;
+};
+
+type AudioPromptCallbacks = {
+  onRequestMicrophone: () => Promise<void>;
+  onRequestDemoAudio: () => Promise<void>;
+  onSuccess?: () => void;
 };
 
 type ViewState = {
@@ -227,11 +234,7 @@ function buildAudioPrompt({
   options,
 }: {
   container: HTMLElement | null;
-  options: {
-    onRequestMicrophone: () => Promise<void>;
-    onRequestDemoAudio: () => Promise<void>;
-    onSuccess?: () => void;
-  };
+  options: AudioPromptCallbacks;
 }) {
   if (!container) return null;
 
@@ -506,7 +509,10 @@ export function createToyView({
     ensureActiveToyContainer,
     setRendererStatus,
     showUnavailableToy,
-    showAudioPrompt: (active: boolean = true, callbacks?: any) => {
+    showAudioPrompt: (
+      active: boolean = true,
+      callbacks?: AudioPromptCallbacks,
+    ) => {
       state.audioPromptActive = active;
       if (active && callbacks) {
         const container = findActiveToyContainer();

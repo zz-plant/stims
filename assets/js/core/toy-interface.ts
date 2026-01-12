@@ -18,7 +18,7 @@ export interface ToyInstance {
   /**
    * Optional: Updates configuration parameters dynamically.
    */
-  updateOptions?(options: Record<string, any>): void;
+  updateOptions?(options: Record<string, unknown>): void;
 }
 
 export interface ToyStartOptions {

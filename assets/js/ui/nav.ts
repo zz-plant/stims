@@ -24,7 +24,7 @@ export function initNavigation(container: HTMLElement, options: NavOptions) {
   setupThemeToggle(container);
 }
 
-function renderLibraryNav(container: HTMLElement, doc: Document) {
+function renderLibraryNav(container: HTMLElement, _doc: Document) {
   container.innerHTML = `
     <nav class="top-nav" data-top-nav>
       <div class="brand">
@@ -86,7 +86,7 @@ function renderToyNav(
 
 function renderRendererStatus(
   container: HTMLElement,
-  doc: Document,
+  _doc: Document,
   status: NonNullable<NavOptions['rendererStatus']>,
 ) {
   const fallback = status.backend !== 'webgpu';

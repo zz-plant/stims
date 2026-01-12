@@ -23,10 +23,7 @@ import {
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
+import type { AnimationContext } from '../core/animation-loop';
 import {
   getActivePerformanceSettings,
   getPerformancePanel,
