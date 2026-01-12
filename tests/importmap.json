@@ -1,7 +1,7 @@
 {
   "imports": {
-    "three": "./tests/three-stub.ts",
-    "three/examples/jsm/renderers/webgpu/WebGPURenderer.js": "./tests/three-webgpu-renderer-stub.ts",
-    "three/src/renderers/webgpu/WebGPURenderer.js": "./tests/three-webgpu-renderer-stub.ts"
+    "three": "./three-stub.ts",
+    "three/examples/jsm/renderers/webgpu/WebGPURenderer.js": "./three-webgpu-renderer-stub.ts",
+    "three/src/renderers/webgpu/WebGPURenderer.js": "./three-webgpu-renderer-stub.ts"
   }
 }

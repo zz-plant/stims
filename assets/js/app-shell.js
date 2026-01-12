@@ -3,7 +3,7 @@ import { initNavigation, loadFromQuery, loadToy } from './loader.ts';
 import toysData from './toys-data.js';
 
 const libraryView = createLibraryView({
-  toys: toysData,
+  toys: globalThis.__stimsToyLibrary ?? toysData,
   loadToy,
   initNavigation,
   loadFromQuery,

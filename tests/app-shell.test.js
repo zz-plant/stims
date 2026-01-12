@@ -27,8 +27,7 @@ const toyLibrary = [
   },
 ];
 
-const loaderPath = '../assets/js/loader.ts';
-const toysDataPath = '../assets/js/toys-data.js';
+const loaderPath = new URL('../assets/js/loader.ts', import.meta.url).href;
 const freshImport = async (path) =>
   import(`${path}?t=${Date.now()}-${Math.random()}`);
 
@@ -43,9 +42,7 @@ async function loadAppShell() {
     loadFromQuery: mockLoadFromQuery,
   }));
 
-  mock.module(toysDataPath, () => ({
-    default: toyLibrary,
-  }));
+  globalThis.__stimsToyLibrary = toyLibrary;
 
   await freshImport('../assets/js/app-shell.js');
 }
@@ -66,6 +63,7 @@ describe('app shell user journeys', () => {
     mock.restore();
     document.body.innerHTML = '';
     window.location = originalLocation;
+    delete globalThis.__stimsToyLibrary;
   });
 
   test('library landing renders cards and kicks off query-based loading', async () => {
