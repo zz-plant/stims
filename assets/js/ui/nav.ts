@@ -14,7 +14,7 @@ export interface NavOptions {
 
 export function initNavigation(container: HTMLElement, options: NavOptions) {
   const doc = container.ownerDocument;
-  
+
   if (options.mode === 'library') {
     renderLibraryNav(container, doc);
   } else {
@@ -46,7 +46,11 @@ function renderLibraryNav(container: HTMLElement, doc: Document) {
   `;
 }
 
-function renderToyNav(container: HTMLElement, doc: Document, options: NavOptions) {
+function renderToyNav(
+  container: HTMLElement,
+  doc: Document,
+  options: NavOptions,
+) {
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
@@ -64,9 +68,15 @@ function renderToyNav(container: HTMLElement, doc: Document, options: NavOptions
   `;
 
   if (options.rendererStatus) {
-    const statusContainer = container.querySelector('.renderer-status-container');
+    const statusContainer = container.querySelector(
+      '.renderer-status-container',
+    );
     if (statusContainer) {
-      renderRendererStatus(statusContainer as HTMLElement, doc, options.rendererStatus);
+      renderRendererStatus(
+        statusContainer as HTMLElement,
+        doc,
+        options.rendererStatus,
+      );
     }
   }
 
@@ -74,10 +84,16 @@ function renderToyNav(container: HTMLElement, doc: Document, options: NavOptions
   backBtn?.addEventListener('click', () => options.onBack?.());
 }
 
-function renderRendererStatus(container: HTMLElement, doc: Document, status: NonNullable<NavOptions['rendererStatus']>) {
+function renderRendererStatus(
+  container: HTMLElement,
+  doc: Document,
+  status: NonNullable<NavOptions['rendererStatus']>,
+) {
   const fallback = status.backend !== 'webgpu';
-  const pillClass = fallback ? 'renderer-pill--fallback' : 'renderer-pill--success';
-  
+  const pillClass = fallback
+    ? 'renderer-pill--fallback'
+    : 'renderer-pill--success';
+
   container.innerHTML = `
     <div class="renderer-status">
       <span class="renderer-pill ${pillClass}" title="${status.fallbackReason ?? (fallback ? 'WebGPU unavailable, using WebGL.' : 'WebGPU renderer active.')}">
@@ -107,13 +123,15 @@ function setupThemeToggle(container: HTMLElement) {
   };
 
   // Initial state
-  const currentTheme = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+  const currentTheme = document.documentElement.classList.contains('light')
+    ? 'light'
+    : 'dark';
   updateUI(currentTheme);
 
   toggle.addEventListener('click', () => {
     const isLight = document.documentElement.classList.contains('light');
     const nextTheme = isLight ? 'dark' : 'light';
-    
+
     // Use the global helper if available
     if (window.__stimsTheme) {
       window.__stimsTheme.applyTheme(nextTheme, true);
@@ -125,7 +143,7 @@ function setupThemeToggle(container: HTMLElement) {
       }
       localStorage.setItem('theme', nextTheme);
     }
-    
+
     updateUI(nextTheme);
   });
 }
