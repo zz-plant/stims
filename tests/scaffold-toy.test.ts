@@ -28,6 +28,7 @@ async function createTempRepo() {
   );
 
   await fs.mkdir(path.join(root, 'tests'), { recursive: true });
+  await fs.mkdir(path.join(root, 'toys'), { recursive: true });
 
   return root;
 }
@@ -105,25 +106,25 @@ describe('scaffold-toy CLI helpers', () => {
     ).rejects.toThrow(/already exists/);
   });
 
-  test('creates iframe HTML entry point and validates metadata', async () => {
+  test('creates a standalone HTML entry point and validates metadata', async () => {
     const root = await createTempRepo();
     const slug = 'portal-frame';
     const title = 'Portal Frame';
-    const description = 'Iframe wrapper placeholder.';
+    const description = 'Standalone page placeholder.';
 
     await scaffoldToy({
       slug,
       title,
       description,
-      type: 'iframe',
+      type: 'page',
       createTest: false,
       root,
     });
 
-    const htmlPath = path.join(root, `${slug}.html`);
+    const htmlPath = path.join(root, 'toys', `${slug}.html`);
     const html = await fs.readFile(htmlPath, 'utf8');
     expect(html).toContain('<title>Portal Frame</title>');
-    expect(html).toContain('iframe wrapper will embed this page');
+    expect(html).toContain('standalone toy page');
 
     const data = await import(
       pathToFileURL(path.join(root, 'assets/js/toys-data.js')).href
@@ -132,6 +133,7 @@ describe('scaffold-toy CLI helpers', () => {
       (item: { slug: string }) => item.slug === slug,
     );
     expect(entry).toBeDefined();
-    expect(entry.type).toBe('iframe');
+    expect(entry.type).toBe('page');
+    expect(entry.module).toBe(`toys/${slug}.html`);
   });
 });

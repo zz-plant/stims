@@ -8,6 +8,7 @@ async function createTempRepo() {
   const root = await fs.mkdtemp(path.join(tmpdir(), 'toy-checks-'));
   await fs.mkdir(path.join(root, 'assets/js/toys'), { recursive: true });
   await fs.mkdir(path.join(root, 'docs'), { recursive: true });
+  await fs.mkdir(path.join(root, 'toys'), { recursive: true });
 
   const index = `# Toy and Visualizer Script Index\n\n| Slug | Entry module | How it loads |\n| --- | --- | --- |\n`;
   await fs.writeFile(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'), index);
@@ -28,16 +29,23 @@ describe('check-toys script', () => {
   test('passes when metadata and files are consistent', async () => {
     const root = await createTempRepo();
     const slug = 'aligned';
+    const pageSlug = 'standalone';
 
     await writeToyModule(root, slug);
-    await fs.writeFile(path.join(root, `${slug}.html`), '<!doctype html>');
+    await fs.writeFile(
+      path.join(root, 'toys', `${pageSlug}.html`),
+      '<!doctype html>',
+    );
     await fs.writeFile(
       path.join(root, 'assets/js/toys-data.js'),
-      `export default [{ slug: '${slug}', title: 'Aligned', description: 'ok', module: 'assets/js/toys/${slug}.ts', type: 'iframe' }];\n`,
+      `export default [
+  { slug: '${slug}', title: 'Aligned', description: 'ok', module: 'assets/js/toys/${slug}.ts', type: 'module' },
+  { slug: '${pageSlug}', title: 'Standalone', description: 'ok', module: 'toys/${pageSlug}.html', type: 'page' },
+];\n`,
     );
     await fs.appendFile(
       path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
-      `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Iframe wrapper |\n`,
+      `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Direct module |\n| \`${pageSlug}\` | \`toys/${pageSlug}.html\` | Standalone HTML page |\n`,
     );
 
     const result = await runToyChecks(root);
@@ -48,10 +56,9 @@ describe('check-toys script', () => {
     const root = await createTempRepo();
     const slug = 'missing-entry';
 
-    await writeToyModule(root, slug);
     await fs.writeFile(
       path.join(root, 'assets/js/toys-data.js'),
-      `export default [{ slug: '${slug}', title: 'Missing Entry', description: 'oops', module: 'assets/js/toys/${slug}.ts', type: 'iframe' }];\n`,
+      `export default [{ slug: '${slug}', title: 'Missing Entry', description: 'oops', module: 'toys/${slug}.html', type: 'page' }];\n`,
     );
 
     const result = await runToyChecks(root);

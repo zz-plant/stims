@@ -11,7 +11,7 @@ The goal is to validate every toy's **lifecycle contract**: that each module can
 | Type | Pattern | Test Strategy |
 |------|---------|---------------|
 | `module` | Exports `start({ container, canvas?, audioContext? })` returning cleanup function | Import and invoke with stubs |
-| `iframe` | Exports `start({ container })` using `startIframeToy()` wrapper | Verify iframe creation and disposal |
+| `page` | Exports `start({ container })` using `startPageToy()` wrapper | Verify CTA status element creation and disposal |
 
 ---
 
@@ -149,7 +149,7 @@ describe.each(testableToys)('toy lifecycle: $slug', ({ slug, module }) => {
 ```
 
 > [!NOTE]
-> Some toys like `defrag`, `evol`, `geom` use `startIframeToy()`. A separate describe block should handle iframe-based toys by asserting iframe creation and removal.
+> Some toys like `defrag`, `evol`, `geom` use `startPageToy()`. A separate describe block should handle page-based toys by asserting the CTA status element is added and removed.
 
 ---
 
@@ -164,13 +164,13 @@ import path from 'node:path';
 import toys from '../assets/js/toys-data.js';
 
 describe('toy metadata smoke tests', () => {
-  test.each(toys)('$slug module file exists', async ({ slug, module }) => {
+  test.each(toys)('$slug entry exists', async ({ slug, module, type }) => {
     const modulePath = path.resolve(process.cwd(), module);
     const exists = await fs.access(modulePath).then(() => true).catch(() => false);
     expect(exists).toBe(true);
   });
 
-  test.each(toys)('$slug exports start function', async ({ module }) => {
+  test.each(toys.filter((toy) => toy.type === 'module'))('$slug exports start function', async ({ module }) => {
     const mod = await import(`../${module}`);
     expect(typeof mod.start).toBe('function');
   });
@@ -217,21 +217,21 @@ describe.skip.each(webgpuToys)('WebGPU toy: $slug (skipped in headless)', () => 
 });
 ```
 
-### Iframe-Based Toys
+### Page-Based Toys
 
-Toys like `defrag`, `evol`, `geom`, `holy`, `legible`, `lights`, `multi`, `seary`, `svgtest`, `symph`, `words` use `startIframeToy()`. Test their wrapper:
+Toys like `defrag`, `evol`, `geom`, `holy`, `legible`, `lights`, `multi`, `seary`, `svgtest`, `symph`, `words` use `startPageToy()`. Test their wrapper:
 
 ```typescript
-test('iframe toy creates and disposes iframe', async () => {
+test('page toy creates and disposes CTA status', async () => {
   const mod = await import('../assets/js/toys/defrag.ts');
   const container = document.createElement('div');
   document.body.appendChild(container);
   
   const activeToy = mod.start({ container });
-  expect(container.querySelector('iframe')).not.toBeNull();
+  expect(container.querySelector('.active-toy-status')).not.toBeNull();
   
   activeToy.dispose();
-  expect(container.querySelector('iframe')).toBeNull();
+  expect(container.querySelector('.active-toy-status')).toBeNull();
 });
 ```
 
