@@ -236,4 +236,19 @@ export default [
     tags: ['synthwave', 'cyberpunk', 'retro', 'visualizer', 'bloom'],
     controls: ['Theme selector', 'Quality presets'],
   },
+  {
+    slug: 'milkdrop',
+    title: 'MilkDrop Proto',
+    description: 'A hardware-accelerated feedback engine inspired by the legendary MilkDrop visualizer system.',
+    module: 'assets/js/toys/milkdrop-toy.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    capabilities: {
+      microphone: true,
+      demoAudio: true,
+    },
+    moods: ['immersive', 'psychedelic'],
+    tags: ['feedback', 'warp', 'visualizer', 'retro'],
+    controls: ['Quality presets'],
+  },
 ];

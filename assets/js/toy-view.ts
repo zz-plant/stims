@@ -8,8 +8,8 @@ export interface ToyWindow extends Window {
     resolveThemePreference: () => 'light' | 'dark';
     applyTheme: (theme: 'light' | 'dark', persist?: boolean) => void;
   };
-  startAudio?: (request: any) => Promise<void>;
-  startAudioFallback?: () => Promise<void>;
+  startAudio?: (request: any) => Promise<unknown>;
+  startAudioFallback?: () => Promise<unknown>;
 }
 
 declare global {
@@ -18,8 +18,8 @@ declare global {
       resolveThemePreference: () => 'light' | 'dark';
       applyTheme: (theme: 'light' | 'dark', persist?: boolean) => void;
     };
-    startAudio?: (request: any) => Promise<void>;
-    startAudioFallback?: () => Promise<void>;
+    startAudio?: (request: any) => Promise<unknown>;
+    startAudioFallback?: () => Promise<unknown>;
   }
 }
 

@@ -11,6 +11,12 @@ export class FrequencyAnalyser {
   frequencyBinCount: number;
   private frequencyData: Uint8Array;
   private rms = 0;
+  private readonly historySize = 64;
+  private energyHistory: { bass: number[]; mid: number[]; treble: number[] } = {
+    bass: [],
+    mid: [],
+    treble: [],
+  };
   private readonly sourceNode: MediaStreamAudioSourceNode;
   private readonly silentGain: GainNode;
   private readonly workletNode?: AudioWorkletNode;
@@ -41,6 +47,7 @@ export class FrequencyAnalyser {
         const { frequencyData, rms } = event.data ?? {};
         if (frequencyData) {
           this.frequencyData = new Uint8Array(frequencyData);
+          this.updateEnergyHistory();
         }
         if (typeof rms === 'number') {
           this.rms = rms;
@@ -116,6 +123,54 @@ export class FrequencyAnalyser {
     }
 
     return this.frequencyData;
+  }
+
+  private updateEnergyHistory() {
+    const { bass, mid, treble } = this.getMultiBandEnergy();
+    
+    this.energyHistory.bass.push(bass);
+    this.energyHistory.mid.push(mid);
+    this.energyHistory.treble.push(treble);
+
+    if (this.energyHistory.bass.length > this.historySize) {
+      this.energyHistory.bass.shift();
+      this.energyHistory.mid.shift();
+      this.energyHistory.treble.shift();
+    }
+  }
+
+  getMultiBandEnergy() {
+    const data = this.getFrequencyData();
+    const len = data.length;
+    
+    // Traditional bands: Bass (20-200Hz), Mid (200-2kHz), Treble (2k-20kHz)
+    // Approximation based on index:
+    const bassEnd = Math.floor(len * 0.1);
+    const midEnd = Math.floor(len * 0.5);
+
+    let bassSum = 0;
+    for (let i = 0; i < bassEnd; i++) bassSum += data[i];
+    
+    let midSum = 0;
+    for (let i = bassEnd; i < midEnd; i++) midSum += data[i];
+    
+    let trebleSum = 0;
+    for (let i = midEnd; i < len; i++) trebleSum += data[i];
+
+    return {
+      bass: bassSum / (bassEnd || 1) / 255,
+      mid: midSum / (midEnd - bassEnd || 1) / 255,
+      treble: trebleSum / (len - midEnd || 1) / 255,
+    };
+  }
+
+  getEnergyAverages() {
+    const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+    return {
+      bass: avg(this.energyHistory.bass),
+      mid: avg(this.energyHistory.mid),
+      treble: avg(this.energyHistory.treble),
+    };
   }
 
   getRmsLevel() {
