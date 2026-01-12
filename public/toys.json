@@ -46,12 +46,12 @@
   {
     "slug": "defrag",
     "title": "Defrag Visualizer",
-    "description": "A nostalgic, sound-reactive visualizer evoking old defragmentation screens.",
+    "description": "CRT-style disk defragmenter with 4 modes: Defrag, Analyze, Optimize, and Rave. Features scanlines, progress tracking, and beat-reactive cluster optimization.",
     "module": "assets/js/toys/defrag.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["retro", "grid", "scan"],
-    "moods": ["nostalgic", "steady"],
+    "tags": ["retro", "grid", "crt", "modes", "beat-detection"],
+    "moods": ["nostalgic", "energetic", "playful"],
     "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
   },
   {
@@ -135,12 +135,12 @@
   {
     "slug": "svgtest",
     "title": "SVG + Three.js Visualizer",
-    "description": "A hybrid visualizer blending 2D and 3D elements, reacting in real time.",
+    "description": "A stunning hybrid of 2D SVG and 3D Three.js with 4 modes: radial frequency bars, waveforms, hexagonal grids, orbiting spheres, and particle clouds.",
     "module": "assets/js/toys/svgtest.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["hybrid", "svg", "threejs"],
-    "moods": ["experimental", "bold"],
+    "tags": ["hybrid", "svg", "threejs", "particles", "modes", "waveform"],
+    "moods": ["experimental", "immersive", "cinematic"],
     "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
   },
   {
@@ -212,12 +212,12 @@
   {
     "slug": "spiral-burst",
     "title": "Spiral Burst",
-    "description": "Colorful spirals rotate and expand with every beat.",
+    "description": "Explosive multi-arm spirals with 4 modes (Burst, Bloom, Vortex, Heartbeat), particle clouds, central bloom mesh, and beat-reactive camera movement.",
     "module": "assets/js/toys/spiral-burst.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["spiral", "burst", "color"],
-    "moods": ["vivid", "excited"],
+    "tags": ["spiral", "burst", "particles", "modes", "beat-detection", "3d"],
+    "moods": ["vivid", "excited", "immersive", "energetic"],
     "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
   },
   {
