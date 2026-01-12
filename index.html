@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Audio-reactive visual toys for sensory stimulation and creative play. Open-source, no accounts required." />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>Stim Webtoys Library</title>
     <script>
       (() => {
@@ -78,6 +85,7 @@
     </script>
   </head>
   <body>
+    <canvas class="hero-background-canvas" data-hero-canvas data-color-scheme="cosmic" aria-hidden="true"></canvas>
     <div class="content">
       <nav class="top-nav" data-top-nav>
         <div class="brand">
@@ -891,6 +899,7 @@
           });
       });
     </script>
+    <script type="module" src="assets/js/hero-canvas.ts"></script>
     <script type="module" src="assets/js/main.js"></script>
   </body>
 </html>
