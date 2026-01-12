@@ -64,7 +64,7 @@ If you’re spinning up the project for the first time, confirm the basics befor
 
 Notes:
 
-- `bun run check:toys` verifies that every toy listed in `assets/js/toys-data.js` has the expected TypeScript entry file, that iframe toys have matching HTML entry points, and that `docs/TOY_SCRIPT_INDEX.md` references each slug. Run this when adding or renaming toys.
+- `bun run check:toys` verifies that every toy listed in `assets/js/toys-data.js` has the expected TypeScript entry file, that page-backed toys have matching HTML entry points, and that `docs/TOY_SCRIPT_INDEX.md` references each slug. Run this when adding or renaming toys.
 - `bun run serve:dist` is a quick way to host the built assets without Vite’s dev server. Use it to validate the `dist/` output locally.
 - The Pages scripts rely on `wrangler`; they rebuild before starting a preview session or deploying.
 

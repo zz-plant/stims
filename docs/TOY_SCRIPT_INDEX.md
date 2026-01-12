@@ -4,29 +4,29 @@ This index maps each toy slug to the module that powers it and how the experienc
 
 ## Query-driven toys (`toy.html`)
 
-`toy.html` reads the `toy` query parameter, looks up the matching entry in `assets/js/toys-data.js`, and imports the corresponding module through `assets/js/toyMain.js` and `assets/js/loader.ts`. Many modules render directly; others use the `startIframeToy` helper to embed an existing HTML page inside the library shell.
+`toy.html` reads the `toy` query parameter, looks up the matching entry in `assets/js/toys-data.js`, and imports the corresponding module through `assets/js/toyMain.js` and `assets/js/loader.ts`. Many modules render directly; others use the `startPageToy` helper to launch a standalone HTML page from the library shell.
 
 | Slug                       | Entry module                                 | How it loads                                                      |
 | -------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
 | `3dtoy`                    | `assets/js/toys/three-d-toy.ts`              | Direct module; load with `toy.html?toy=3dtoy`.                    |
 | `aurora-painter`           | `assets/js/toys/aurora-painter.ts`           | Direct module; load with `toy.html?toy=aurora-painter`.           |
-| `brand`                    | `assets/js/toys/brand.ts`                    | Iframe wrapper around `brand.html`.                               |
-| `clay`                     | `assets/js/toys/clay.ts`                     | Iframe wrapper around `clay.html`.                                |
-| `defrag`                   | `assets/js/toys/defrag.ts`                   | Iframe wrapper around `defrag.html`.                              |
-| `evol`                     | `assets/js/toys/evol.ts`                     | Iframe wrapper around `evol.html`.                                |
-| `geom`                     | `assets/js/toys/geom.ts`                     | Iframe wrapper around `geom.html`.                                |
-| `holy`                     | `assets/js/toys/holy.ts`                     | Iframe wrapper around `holy.html`.                                |
-| `multi`                    | `assets/js/toys/multi.ts`                    | Iframe wrapper around `multi.html`; requires WebGPU support.      |
-| `seary`                    | `assets/js/toys/seary.ts`                    | Iframe wrapper around `seary.html`.                               |
+| `brand`                    | `assets/js/toys/brand.ts`                    | Direct module; load with `toy.html?toy=brand`.                    |
+| `clay`                     | `assets/js/toys/clay.ts`                     | Standalone page launcher for `toys/clay.html`.                    |
+| `defrag`                   | `assets/js/toys/defrag.ts`                   | Standalone page launcher for `toys/defrag.html`.                  |
+| `evol`                     | `assets/js/toys/evol.ts`                     | Standalone page launcher for `toys/evol.html`.                    |
+| `geom`                     | `assets/js/toys/geom.ts`                     | Standalone page launcher for `toys/geom.html`.                    |
+| `holy`                     | `assets/js/toys/holy.ts`                     | Standalone page launcher for `toys/holy.html`.                    |
+| `multi`                    | `assets/js/toys/multi.ts`                    | Standalone page launcher for `toys/multi.html`; requires WebGPU.  |
+| `seary`                    | `assets/js/toys/seary.ts`                    | Standalone page launcher for `toys/seary.html`.                   |
 | `sgpat`                    | `assets/js/toys/sgpat.ts`                    | Direct module; load with `toy.html?toy=sgpat`.                    |
-| `legible`                  | `assets/js/toys/legible.ts`                  | Direct module; load with `toy.html?toy=legible`.                  |
-| `svgtest`                  | `assets/js/toys/svgtest.ts`                  | Iframe wrapper around `svgtest.html`.                             |
-| `symph`                    | `assets/js/toys/symph.ts`                    | Iframe wrapper around `symph.html`.                               |
-| `words`                    | `assets/js/toys/words.ts`                    | Iframe wrapper around `words.html`.                               |
+| `legible`                  | `assets/js/toys/legible.ts`                  | Standalone page launcher for `toys/legible.html`.                 |
+| `svgtest`                  | `assets/js/toys/svgtest.ts`                  | Standalone page launcher for `toys/svgtest.html`.                 |
+| `symph`                    | `assets/js/toys/symph.ts`                    | Standalone page launcher for `toys/symph.html`.                   |
+| `words`                    | `assets/js/toys/words.ts`                    | Standalone page launcher for `toys/words.html`.                   |
 | `cube-wave`                | `assets/js/toys/cube-wave.ts`                | Direct module; load with `toy.html?toy=cube-wave`.                |
 | `bubble-harmonics`         | `assets/js/toys/bubble-harmonics.ts`         | Direct module; load with `toy.html?toy=bubble-harmonics`.         |
 | `cosmic-particles`         | `assets/js/toys/cosmic-particles.ts`         | Direct module; load with `toy.html?toy=cosmic-particles`.         |
-| `lights`                   | `assets/js/toys/lights.ts`                   | Iframe wrapper around `lights.html`.                              |
+| `lights`                   | `assets/js/toys/lights.ts`                   | Standalone page launcher for `toys/lights.html`.                  |
 | `spiral-burst`             | `assets/js/toys/spiral-burst.ts`             | Direct module; load with `toy.html?toy=spiral-burst`.             |
 | `rainbow-tunnel`           | `assets/js/toys/rainbow-tunnel.ts`           | Direct module; load with `toy.html?toy=rainbow-tunnel`.           |
 | `star-field`               | `assets/js/toys/star-field.ts`               | Direct module; load with `toy.html?toy=star-field`.               |
@@ -36,7 +36,7 @@ This index maps each toy slug to the module that powers it and how the experienc
 
 ## Standalone HTML entry points
 
-All iframe-backed toys can still be visited directly via their HTML pages (for example, `brand.html` or `holy.html`). The library view now embeds those same pages for consistency with query-loaded modules.
+Standalone toys can still be visited directly via their HTML pages under `toys/` (for example, `toys/brand.html` or `toys/holy.html`).
 
 ## Touch-enabled and gesture-aware toys
 

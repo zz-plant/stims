@@ -6,7 +6,7 @@ import { createInterface } from 'node:readline/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { z } from 'zod';
 
-type ToyType = 'module' | 'iframe';
+type ToyType = 'module' | 'page';
 
 type ScaffoldOptions = {
   slug?: string;
@@ -64,11 +64,15 @@ async function main() {
     });
 
     console.log(`\nCreated scaffold for ${slug}.`);
-    console.log(
-      '- Module:',
-      path.relative(parsed.root ?? repoRoot, toyModulePath(slug, parsed.root)),
-    );
-    if (type === 'iframe') {
+    if (type === 'module') {
+      console.log(
+        '- Module:',
+        path.relative(
+          parsed.root ?? repoRoot,
+          toyModulePath(slug, parsed.root),
+        ),
+      );
+    } else {
       console.log(
         '- HTML entry:',
         path.relative(parsed.root ?? repoRoot, toyHtmlPath(slug, parsed.root)),
@@ -76,7 +80,7 @@ async function main() {
     }
     console.log('- Metadata: assets/js/toys-data.js');
     console.log('- Index: docs/TOY_SCRIPT_INDEX.md');
-    if (shouldCreateTest) {
+    if (shouldCreateTest && type === 'module') {
       console.log(`- Test: tests/${testFileName(slug)}`);
     }
   } catch (error) {
@@ -104,19 +108,19 @@ export async function scaffoldToy({
     throw new Error(`A toy module already exists for slug "${slug}".`);
   }
 
-  if (type === 'iframe' && (await fileExists(toyHtmlPath(slug, root)))) {
+  if (type === 'page' && (await fileExists(toyHtmlPath(slug, root)))) {
     throw new Error(
       `HTML entry point ${toyHtmlPath(slug, root)} already exists.`,
     );
   }
 
-  await createToyModule(slug, title, type, root);
+  await createToyModule(slug, type, root);
   await ensureEntryPoint(slug, type, title, root);
   await appendToyMetadata(slug, title, description, type, root);
   await validateMetadataEntry(slug, title, description, type, root);
   await updateToyIndex(slug, type, root);
 
-  if (createTest) {
+  if (createTest && type === 'module') {
     await createTestSpec(slug, root);
   }
 }
@@ -126,7 +130,7 @@ function toyModulePath(slug: string, root = repoRoot) {
 }
 
 function toyHtmlPath(slug: string, root = repoRoot) {
-  return path.join(root, `${slug}.html`);
+  return path.join(root, 'toys', `${slug}.html`);
 }
 
 function testFileName(slug: string) {
@@ -184,7 +188,7 @@ const toyEntrySchema = z
     title: z.string().min(1),
     description: z.string().min(1),
     module: z.string().min(1),
-    type: z.enum(['module', 'iframe']),
+    type: z.enum(['module', 'page']),
     requiresWebGPU: z.boolean().optional(),
     allowWebGLFallback: z.boolean().optional(),
   })
@@ -211,11 +215,11 @@ async function ensureToysDataValid(root = repoRoot) {
 
 function resolveType(type?: string): ToyType | null {
   if (!type) return null;
-  if (type === 'module' || type === 'iframe') return type;
+  if (type === 'module' || type === 'page') return type;
   const normalized = type.toLowerCase();
   if (normalized === 'm') return 'module';
-  if (normalized === 'i') return 'iframe';
-  throw new Error('Toy type must be "module" or "iframe".');
+  if (normalized === 'p') return 'page';
+  throw new Error('Toy type must be "module" or "page".');
 }
 
 async function promptSlug(
@@ -270,14 +274,14 @@ async function promptTitle(
 async function promptType(
   rl: ReturnType<typeof createInterface>,
 ): Promise<ToyType> {
-  const rawType = (await rl.question('Toy type (module/iframe) [module]: '))
+  const rawType = (await rl.question('Toy type (module/page) [module]: '))
     .trim()
     .toLowerCase();
 
   if (!rawType || rawType === 'module' || rawType === 'm') return 'module';
-  if (rawType === 'iframe' || rawType === 'i') return 'iframe';
+  if (rawType === 'page' || rawType === 'p') return 'page';
 
-  throw new Error('Toy type must be "module" or "iframe".');
+  throw new Error('Toy type must be "module" or "page".');
 }
 
 async function promptBoolean(
@@ -315,10 +319,11 @@ async function ensureEntryPoint(
   title: string,
   root = repoRoot,
 ) {
-  if (type !== 'iframe') return;
+  if (type !== 'page') return;
 
   const htmlPath = toyHtmlPath(slug, root);
   if (await fileExists(htmlPath)) return;
+  await fs.mkdir(path.dirname(htmlPath), { recursive: true });
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -326,14 +331,14 @@ async function ensureEntryPoint(
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>${title}</title>
-    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="../assets/css/base.css" />
   </head>
   <body>
-    <a href="index.html" class="home-link">Back to Library</a>
+    <a href="../index.html" class="home-link">Back to Library</a>
     <main class="toy-canvas" style="display: grid; place-items: center; min-height: 100vh;">
       <p style="text-align: center; max-width: 38rem;">
         Replace this placeholder with your experience for <strong>${title}</strong>.
-        Mount canvases or DOM elements here; the iframe wrapper will embed this page.
+        Mount canvases or DOM elements here for a standalone toy page.
       </p>
     </main>
   </body>
@@ -343,17 +348,12 @@ async function ensureEntryPoint(
   await fs.writeFile(htmlPath, html, 'utf8');
 }
 
-async function createToyModule(
-  slug: string,
-  title: string,
-  type: ToyType,
-  root = repoRoot,
-) {
+async function createToyModule(slug: string, type: ToyType, root = repoRoot) {
+  if (type === 'page') return;
   const modulePath = toyModulePath(slug, root);
   await fs.mkdir(path.dirname(modulePath), { recursive: true });
 
-  const contents =
-    type === 'iframe' ? iframeTemplate(slug, title) : moduleTemplate();
+  const contents = moduleTemplate();
   await fs.writeFile(modulePath, contents, 'utf8');
 }
 
@@ -377,7 +377,9 @@ async function appendToyMetadata(
     `    title: '${title.replace(/'/g, "\\'")}',`,
     '    description:',
     `      '${description.replace(/'/g, "\\'")}',`,
-    `    module: 'assets/js/toys/${slug}.ts',`,
+    type === 'page'
+      ? `    module: 'toys/${slug}.html',`
+      : `    module: 'assets/js/toys/${slug}.ts',`,
     `    type: '${type}',`,
     '    requiresWebGPU: false,',
     '  },',
@@ -414,10 +416,10 @@ async function validateMetadataEntry(
     throw new Error(`Failed to register ${slug} in assets/js/toys-data.js.`);
   }
 
-  if (entry.module !== `assets/js/toys/${slug}.ts`) {
-    throw new Error(
-      `Module path for ${slug} must be assets/js/toys/${slug}.ts.`,
-    );
+  const expectedModule =
+    type === 'page' ? `toys/${slug}.html` : `assets/js/toys/${slug}.ts`;
+  if (entry.module !== expectedModule) {
+    throw new Error(`Module path for ${slug} must be ${expectedModule}.`);
   }
 
   if (entry.type !== type) {
@@ -441,11 +443,10 @@ async function updateToyIndex(slug: string, type: ToyType, root = repoRoot) {
   const indexPath = path.join(root, 'docs/TOY_SCRIPT_INDEX.md');
   const current = await fs.readFile(indexPath, 'utf8');
 
-  const row = `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | ${
-    type === 'iframe'
-      ? `Iframe wrapper around \`${slug}.html\`.`
-      : `Direct module; load with \`toy.html?toy=${slug}\`.`
-  } |`;
+  const row =
+    type === 'page'
+      ? `| \`${slug}\` | \`toys/${slug}.html\` | Standalone HTML page. |`
+      : `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Direct module; load with \`toy.html?toy=${slug}\`. |`;
 
   if (current.includes(row)) return;
   if (current.includes(`| \`${slug}\``)) {
@@ -490,10 +491,6 @@ async function fileExists(targetPath: string) {
 
 function moduleTemplate() {
   return `import { initRenderer } from '../core/renderer';\nimport { createAnalyzer } from '../core/audio';\n\nexport async function start({ canvas, audioContext }) {\n  const { renderer, scene, camera, resize } = initRenderer({ canvas, maxPixelRatio: 2 });\n  const analyzer = await createAnalyzer(audioContext);\n\n  function tick(time) {\n    const { frequency, waveform } = analyzer.sample();\n    void frequency;\n    void waveform;\n    void time;\n\n    renderer.render(scene, camera);\n    requestAnimationFrame(tick);\n  }\n\n  resize();\n  requestAnimationFrame(tick);\n\n  return () => {\n    analyzer.dispose?.();\n    renderer.dispose?.();\n  };\n}\n`;
-}
-
-function iframeTemplate(slug: string, title: string) {
-  return `import { startIframeToy } from './iframe-toy';\n\nexport function start({ container } = {}) {\n  return startIframeToy({\n    container,\n    path: './${slug}.html',\n    title: '${title.replace(/'/g, "\\'")}',\n  });\n}\n`;
 }
 
 const argvPath = process.argv[1] ? path.resolve(process.argv[1]) : '';
