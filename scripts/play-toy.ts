@@ -1,6 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import { chromium } from 'playwright';
+import fs from 'node:fs';
+import path from 'node:path';
+import { type ConsoleMessage, chromium } from 'playwright';
 
 export type PlayToyResult = {
   slug: string;
@@ -41,13 +41,13 @@ export async function playToy(options: {
   const page = await context.newPage();
   const consoleErrors: string[] = [];
 
-  page.on('console', (msg) => {
+  page.on('console', (msg: ConsoleMessage) => {
     if (msg.type() === 'error') {
       consoleErrors.push(msg.text());
     }
   });
 
-  page.on('pageerror', (err) => {
+  page.on('pageerror', (err: Error) => {
     consoleErrors.push(err.message);
   });
 
