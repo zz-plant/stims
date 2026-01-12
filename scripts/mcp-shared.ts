@@ -222,6 +222,167 @@ function registerTools(server: McpServer) {
       );
     },
   );
+
+  server.registerTool(
+    'launch_toy',
+    {
+      description:
+        'Launch a toy in headless mode and enable demo audio for visualization. Returns instructions for capturing screenshots or observing audio reactivity.',
+      inputSchema: z
+        .object({
+          slug: z
+            .string()
+            .trim()
+            .describe('The toy slug to launch (e.g., "holy", "spiral-burst").'),
+          port: z
+            .number()
+            .int()
+            .min(1024)
+            .max(65535)
+            .optional()
+            .default(5173)
+            .describe('Dev server port (defaults to 5173).'),
+        })
+        .strict(),
+    },
+    async ({ slug, port = 5173 }) => {
+      const toy = normalizeToys(toysData).find((t) => t.slug === slug);
+
+      if (!toy) {
+        return asTextResponse(
+          `Toy "${slug}" not found. Use get_toys to list available toys.`,
+        );
+      }
+
+      const url = `http://localhost:${port}/toy.html?toy=${encodeURIComponent(slug)}`;
+
+      const instructions = [
+        `# Launching ${toy.title}`,
+        '',
+        `**URL:** ${url}`,
+        `**Description:** ${toy.description}`,
+        '',
+        '## Steps to interact:',
+        '1. Ensure dev server is running: `bun run dev`',
+        '2. Open the URL in a browser or headless browser',
+        '3. Look for the audio prompt modal',
+        '4. Click "Use demo audio" to enable procedural audio',
+        '5. Wait 3-5 seconds for the visualization to react',
+        '',
+        '## What to observe:',
+        toy.requiresWebGPU
+          ? '- This toy requires WebGPU support'
+          : '- This toy runs with WebGL',
+        '- Visual effects that pulse with bass frequencies',
+        '- Color changes responding to mid-range frequencies',
+        '- Sparkles or fine details reacting to high frequencies',
+        '',
+        '## Controls:',
+        ...(toy.controls.length > 0
+          ? toy.controls.map((c) => `- ${c}`)
+          : ['- No custom controls documented']),
+        '',
+        '**Press Escape to return to the library.**',
+      ].join('\n');
+
+      return asTextResponse(instructions);
+    },
+  );
+
+  server.registerTool(
+    'get_toy_audio_reactivity_guide',
+    {
+      description:
+        'Get a guide on how toys respond to audio frequencies and what visual effects to look for when a toy is playing with demo audio.',
+      inputSchema: z
+        .object({
+          slug: z
+            .string()
+            .trim()
+            .optional()
+            .describe('Specific toy slug for targeted guidance.'),
+        })
+        .strict(),
+    },
+    async ({ slug }) => {
+      const guide = [
+        '# Audio Reactivity Guide',
+        '',
+        '## How Toys React to Audio',
+        '',
+        'Stim toys use the AudioHandler to analyze frequency bands and translate them into visual effects:',
+        '',
+        '### Frequency Band Mapping',
+        '- **Bass (20-250 Hz)**: Large-scale movements, pulses, expansions',
+        '  - Examples: Halo size, spiral burst radius, camera shake',
+        '  - Visual cues: Scaling, position offsets, bloom intensity',
+        '',
+        '- **Mids (250-4000 Hz)**: Color shifts, rotations, secondary motion',
+        '  - Examples: Hue cycling, particle velocity, shape morphing',
+        '  - Visual cues: Color temperature, rotation speed, warp effects',
+        '',
+        '- **Highs (4000-20000 Hz)**: Fine details, sparkles, edge effects',
+        '  - Examples: Particle emission, shimmer, grain noise',
+        '  - Visual cues: Brightness spikes, detail layers, pixel shimmer',
+        '',
+        '### Common Audio-Reactive Patterns',
+        '1. **Beat detection**: Sudden visual changes on strong transients',
+        '2. **Smoothed envelopes**: Gradual visual changes following energy curves',
+        '3. **Multi-band visualization**: Different visual elements per frequency band',
+        '',
+        '## Demo Audio',
+        'Demo audio is procedural and contains:',
+        '- Consistent bass beats for rhythm',
+        '- Melodic mid-range content',
+        '- High-frequency harmonics and noise bursts',
+        '',
+        '## What to Look For',
+        'When observing a toy with demo audio:',
+        '- Note the timing between audio events and visual changes',
+        '- Watch for different elements reacting to different frequencies',
+        '- Check if effects are smooth (filtered) or immediate (unfiltered)',
+        '- Observe if there are distinct "layers" of reactivity',
+      ];
+
+      if (slug) {
+        const toy = normalizeToys(toysData).find((t) => t.slug === slug);
+        if (toy) {
+          guide.push('', `## Specific to "${toy.title}"`, '');
+          guide.push(`**Description:** ${toy.description}`);
+
+          // Add slug-specific hints based on known toys
+          const slugHints: Record<string, string[]> = {
+            holy: [
+              '- Watch for halos expanding on bass',
+              '- Particles burst on high frequencies',
+              '- Color cycles with melodic content',
+            ],
+            'spiral-burst': [
+              '- Spirals expand/contract with bass',
+              '- Rotation speed follows mid frequencies',
+              '- Multiple spiral arms react independently',
+            ],
+            'neon-wave': [
+              '- Grid ripples on bass hits',
+              '- Bloom intensity pulses with volume',
+              '- Color theme affects overall palette',
+            ],
+            geom: [
+              '- 3D shapes morph with frequencies',
+              '- Camera movement reacts to bass',
+              '- Geometry complexity changes with energy',
+            ],
+          };
+
+          if (slugHints[slug]) {
+            guide.push('', '### Expected Behaviors:', ...slugHints[slug]);
+          }
+        }
+      }
+
+      return asTextResponse(guide.join('\n'));
+    },
+  );
 }
 
 async function loadReadme() {

@@ -1,3 +1,4 @@
+import { initAgentAPI, isAgentMode, setAudioActive, setCurrentToy } from './core/agent-api.ts';
 import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import {
@@ -89,6 +90,8 @@ export function createLoader({
   const disposeActiveToy = () => {
     lifecycle.disposeActiveToy();
     view?.clearActiveToyContainer?.();
+    setCurrentToy(null);
+    setAudioActive(false);
   };
 
   const removeEscapeHandler = () => lifecycle.removeEscapeHandler();
@@ -188,6 +191,9 @@ export function createLoader({
       }
 
       view.removeStatusElement();
+      
+      // Track toy load for agents
+      setCurrentToy(toy.slug);
 
       // Setup audio prompt if startAudio globals are registered by the toy
       const win = (container?.ownerDocument.defaultView ??
@@ -240,6 +246,7 @@ export function createLoader({
             },
             onSuccess: () => {
               view.showAudioPrompt(false);
+              setAudioActive(true, 'demo');
             },
           });
         }
