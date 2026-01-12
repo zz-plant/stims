@@ -58,7 +58,7 @@ export const WarpShader = {
       // Clamp and output
       gl_FragColor = color * 0.98; // Gradual fade-out
     }
-  `
+  `,
 };
 
 export default WarpShader;

@@ -34,8 +34,16 @@ export class FeedbackManager {
       depthBuffer: true,
     };
 
-    this.readBuffer = new THREE.WebGLRenderTarget(this.width, this.height, rtOptions);
-    this.writeBuffer = new THREE.WebGLRenderTarget(this.width, this.height, rtOptions);
+    this.readBuffer = new THREE.WebGLRenderTarget(
+      this.width,
+      this.height,
+      rtOptions,
+    );
+    this.writeBuffer = new THREE.WebGLRenderTarget(
+      this.width,
+      this.height,
+      rtOptions,
+    );
   }
 
   /**

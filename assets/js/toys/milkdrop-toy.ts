@@ -2,11 +2,20 @@ import * as THREE from 'three';
 import WebToy from '../core/web-toy';
 import { registerToyGlobals } from '../core/toy-globals';
 import { startToyAudio } from '../utils/start-audio';
-import { resolveToyAudioOptions, type ToyAudioRequest } from '../utils/audio-start';
-import { getContextFrequencyData, type AnimationContext } from '../core/animation-loop';
+import {
+  resolveToyAudioOptions,
+  type ToyAudioRequest,
+} from '../utils/audio-start';
+import {
+  getContextFrequencyData,
+  type AnimationContext,
+} from '../core/animation-loop';
 import FeedbackManager from '../utils/feedback-manager';
 import WarpShader from '../utils/warp-shader';
-import { getSettingsPanel, DEFAULT_QUALITY_PRESETS } from '../core/settings-panel';
+import {
+  getSettingsPanel,
+  DEFAULT_QUALITY_PRESETS,
+} from '../core/settings-panel';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const toy = new WebToy({
@@ -35,7 +44,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     mesh.position.set(
       (Math.random() - 0.5) * 10,
       (Math.random() - 0.5) * 10,
-      (Math.random() - 0.5) * 5
+      (Math.random() - 0.5) * 5,
     );
     particles.add(mesh);
     particleMaterials.push(material);
@@ -52,7 +61,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         uniforms: THREE.UniformsUtils.clone(WarpShader.uniforms),
       });
       warpMaterial.uniforms.tDiffuse.value = feedback.texture;
-      warpMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+      warpMaterial.uniforms.uResolution.value.set(
+        window.innerWidth,
+        window.innerHeight,
+      );
 
       warpMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), warpMaterial);
       overlayScene.add(warpMesh);
@@ -64,8 +76,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const time = ctx.time;
 
     // Multi-band analysis
-    const energy = ctx.analyser ? ctx.analyser.getMultiBandEnergy() : { bass: 0, mid: 0, treble: 0 };
-    const averages = ctx.analyser ? ctx.analyser.getEnergyAverages() : { bass: 0, mid: 0, treble: 0 };
+    const energy = ctx.analyser
+      ? ctx.analyser.getMultiBandEnergy()
+      : { bass: 0, mid: 0, treble: 0 };
+    const averages = ctx.analyser
+      ? ctx.analyser.getEnergyAverages()
+      : { bass: 0, mid: 0, treble: 0 };
 
     // Update particles based on audio
     particles.children.forEach((child, i) => {
@@ -78,7 +94,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       mesh.scale.setScalar(scale);
 
       const hue = (i / particleCount + time * 0.1) % 1;
-      (mesh.material as THREE.MeshBasicMaterial).color.setHSL(hue, 0.8, 0.5 + energy.treble * 0.5);
+      (mesh.material as THREE.MeshBasicMaterial).color.setHSL(
+        hue,
+        0.8,
+        0.5 + energy.treble * 0.5,
+      );
     });
 
     // Feedback and Warp
@@ -94,16 +114,16 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       // 2. Render main scene + feedback into write buffer
       // In MilkDrop, we render the PREVIOUS frame (distorted) and then overlay new graphics
       renderer.setRenderTarget(null); // Clear default
-      
+
       // Actually, we need to render the warped texture BACK into the feedback buffer
       // or render the scene ON TOP of the warped texture.
-      
+
       // Sequence:
       // a. Render overlay (warpMesh showing feedback.texture) into writeBuffer
       // b. Render main scene (particles) into writeBuffer (no clear)
       // c. Render writeBuffer to screen
       // d. Swap
-      
+
       const writeTarget = (feedback as any).writeBuffer;
       renderer.setRenderTarget(writeTarget);
       renderer.clear();
@@ -111,10 +131,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       renderer.autoClear = false;
       renderer.render(toy.scene, toy.camera); // Draw new elements on top
       renderer.autoClear = true;
-      
+
       renderer.setRenderTarget(null);
       renderer.render(overlayScene, overlayCamera); // Final output to screen
-      
+
       feedback.swap();
       warpMaterial.uniforms.tDiffuse.value = feedback.texture;
     } else {
@@ -153,7 +173,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       toy.dispose();
       feedback?.dispose();
       particleGeometry.dispose();
-      particleMaterials.forEach(m => m.dispose());
+      particleMaterials.forEach((m) => m.dispose());
       warpMaterial?.dispose();
       warpMesh?.geometry.dispose();
       unregisterGlobals();

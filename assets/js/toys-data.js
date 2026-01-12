@@ -239,7 +239,8 @@ export default [
   {
     slug: 'milkdrop',
     title: 'MilkDrop Proto',
-    description: 'A hardware-accelerated feedback engine inspired by the legendary MilkDrop visualizer system.',
+    description:
+      'A hardware-accelerated feedback engine inspired by the legendary MilkDrop visualizer system.',
     module: 'assets/js/toys/milkdrop-toy.ts',
     type: 'module',
     requiresWebGPU: false,

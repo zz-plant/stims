@@ -85,7 +85,7 @@ export const createPeakDetector = (
     // Adaptive thresholding: threshold = baseline * (1 + sensitivity)
     // Baseline follows the signal with some decay.
     baseline = baseline === 0 ? level : baseline * decay + level * (1 - decay);
-    
+
     // MilkDrop style: sensitivity can be dynamic, but here we use a fixed multiplier
     const threshold = baseline * (1 + sensitivity);
     const now =
