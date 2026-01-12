@@ -219,7 +219,15 @@ function buildToyNav({
   rendererStatus: RendererStatusState | null;
 }) {
   if (!container) return null;
-  renderNav(container, {
+  let navContainer = container.querySelector<HTMLElement>('[data-toy-nav]');
+  if (!navContainer) {
+    navContainer = container.ownerDocument.createElement('div');
+    navContainer.dataset.toyNav = 'true';
+    navContainer.dataset.preserve = 'toy-ui';
+    container.prepend(navContainer);
+  }
+
+  renderNav(navContainer as HTMLElement, {
     mode: 'toy',
     title: toy?.title,
     slug: toy?.slug,

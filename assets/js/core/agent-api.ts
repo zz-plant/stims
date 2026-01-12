@@ -48,7 +48,10 @@ const state: StimState = {
   version: '1.0.0',
 };
 
-const eventTarget = new EventTarget();
+const eventTarget =
+  typeof window !== 'undefined' && window.EventTarget
+    ? new window.EventTarget()
+    : new EventTarget();
 
 // Check for agent mode from URL
 if (typeof window !== 'undefined') {
