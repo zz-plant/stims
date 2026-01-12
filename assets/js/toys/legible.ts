@@ -1,7 +1,7 @@
-import { startIframeToy } from './iframe-toy';
+import { startPageToy } from './page-toy';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  return startIframeToy({
+  return startPageToy({
     container,
     path: './toys/legible.html',
     title: 'Terminal Word Grid',

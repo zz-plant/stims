@@ -15,14 +15,14 @@ const toyEntrySchema = z
     title: z.string().min(1),
     description: z.string().min(1),
     module: z.string().min(1),
-    type: z.enum(['module', 'iframe']),
+    type: z.enum(['module', 'page']),
     requiresWebGPU: z.boolean().optional(),
     allowWebGLFallback: z.boolean().optional(),
   })
   .passthrough();
 
 const toysDataSchema = z.array(toyEntrySchema);
-const IGNORED_TOY_FILES = new Set(['iframe-toy.ts']);
+const IGNORED_TOY_FILES = new Set(['page-toy.ts']);
 
 async function main() {
   const { issues, warnings } = await runToyChecks();
@@ -100,20 +100,28 @@ function validateEntries(
 ) {
   for (const entry of entries) {
     const modulePath = path.join(root, entry.module);
-    if (!entry.module.startsWith('assets/js/toys/')) {
+    if (
+      entry.type === 'module' &&
+      !entry.module.startsWith('assets/js/toys/')
+    ) {
       issues.push(
         `Module path for ${entry.slug} should live under assets/js/toys/.`,
       );
+    }
+    if (entry.type === 'page' && !entry.module.endsWith('.html')) {
+      issues.push(`Page entry for ${entry.slug} should point to an HTML file.`);
     }
 
     if (!entry.description.trim()) {
       warnings.push(`Description missing or empty for ${entry.slug}.`);
     }
 
-    issues.push(...missingFiles(entry, modulePath, root));
+    if (entry.type === 'module') {
+      issues.push(...missingFiles(entry, modulePath, root));
+    }
 
-    if (entry.type === 'iframe') {
-      const htmlPath = path.join(root, `${entry.slug}.html`);
+    if (entry.type === 'page') {
+      const htmlPath = path.join(root, entry.module);
       missingFiles(entry, htmlPath, root).forEach((missing) =>
         issues.push(missing),
       );
