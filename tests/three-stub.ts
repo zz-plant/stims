@@ -80,3 +80,15 @@ export class Scene {
     this.children.push(light);
   }
 }
+
+export const SRGBColorSpace = 'srgb';
+export const ACESFilmicToneMapping = 'aces';
+
+export class WebGLRenderer {
+  outputColorSpace = SRGBColorSpace;
+  toneMapping = ACESFilmicToneMapping;
+  toneMappingExposure = 1;
+
+  setPixelRatio(_ratio: number) {}
+  setSize(_width: number, _height: number) {}
+}
