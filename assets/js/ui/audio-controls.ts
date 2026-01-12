@@ -12,7 +12,7 @@ export function initAudioControls(
   container: HTMLElement,
   options: AudioControlsOptions,
 ) {
-  const doc = container.ownerDocument;
+  const _doc = container.ownerDocument;
   const youtubeController = new YouTubeController();
 
   container.className = 'control-panel';
@@ -177,7 +177,7 @@ function setupYouTubeLogic(
       });
       updateStatus('Video loaded.', 'success');
       updateRecentList();
-    } catch (err) {
+    } catch (_err) {
       updateStatus('Failed to load YouTube player.');
       playerContainer.hidden = true;
     }
@@ -214,7 +214,7 @@ function setupYouTubeLogic(
       }
       await onUse(stream);
       onSuccess?.();
-    } catch (err) {
+    } catch (_err) {
       updateStatus('YouTube audio capture failed.');
     }
   });

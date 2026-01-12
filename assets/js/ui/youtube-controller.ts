@@ -4,10 +4,46 @@ export interface YouTubeVideo {
   timestamp: number;
 }
 
+type YouTubePlayerEvent = {
+  data: number;
+};
+
+type YouTubePlayerOptions = {
+  height: string;
+  width: string;
+  videoId: string;
+  playerVars: {
+    autoplay: number;
+    playsinline: number;
+    modestbranding: number;
+    rel: number;
+  };
+  events: {
+    onReady: () => void;
+    onStateChange: (event: YouTubePlayerEvent) => void;
+  };
+};
+
+type YouTubePlayer = {
+  destroy?: () => void;
+};
+
+declare global {
+  interface Window {
+    YT?: {
+      Player: new (
+        containerId: string,
+        options: YouTubePlayerOptions,
+      ) => YouTubePlayer;
+    };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
 export class YouTubeController {
   private static STORAGE_KEY = 'stims_recent_youtube';
   private static MAX_RECENT = 5;
-  private player: any = null;
+  private player: YouTubePlayer | null = null;
   private apiReady = false;
 
   constructor() {
@@ -15,7 +51,7 @@ export class YouTubeController {
   }
 
   private initAPI() {
-    if ((window as any).YT) {
+    if (window.YT) {
       this.apiReady = true;
       return;
     }
@@ -25,7 +61,7 @@ export class YouTubeController {
     const firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
 
-    (window as any).onYouTubeIframeAPIReady = () => {
+    window.onYouTubeIframeAPIReady = () => {
       this.apiReady = true;
     };
   }
@@ -42,7 +78,7 @@ export class YouTubeController {
 
     for (const pattern of patterns) {
       const match = trimmed.match(pattern);
-      if (match && match[1]) return match[1];
+      if (match?.[1]) return match[1];
     }
 
     return null;
@@ -65,7 +101,13 @@ export class YouTubeController {
     }
 
     return new Promise((resolve) => {
-      this.player = new (window as any).YT.Player(containerId, {
+      if (!window.YT) {
+        resolve();
+        return;
+      }
+
+      this.player?.destroy?.();
+      this.player = new window.YT.Player(containerId, {
         height: '180',
         width: '100%',
         videoId: videoId,
@@ -80,7 +122,7 @@ export class YouTubeController {
             this.saveToRecent(videoId);
             resolve();
           },
-          onStateChange: (event: any) => {
+          onStateChange: (event) => {
             onStateChange?.(event.data);
           },
         },

@@ -33,6 +33,12 @@ export type StimAPI = {
   waitForAudioActive: () => Promise<'microphone' | 'demo'>;
 };
 
+declare global {
+  interface Window {
+    stimState?: StimAPI;
+  }
+}
+
 const state: StimState = {
   currentToy: null,
   audioActive: false,
@@ -119,7 +125,7 @@ export function initAgentAPI(): StimAPI {
 
   // Expose globally for agents
   if (typeof window !== 'undefined') {
-    (window as any).stimState = api;
+    window.stimState = api;
   }
 
   return api;

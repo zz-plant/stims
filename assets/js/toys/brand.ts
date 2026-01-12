@@ -3,10 +3,7 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { createBrandFunAdapter } from '../../brand/fun-adapter';
 import { initFunControls } from '../../ui/fun-controls';
 import { initHints } from '../../ui/hints';
-import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
+import type { AnimationContext } from '../core/animation-loop';
 import { registerToyGlobals } from '../core/toy-globals';
 import WebToy from '../core/web-toy';
 import type { ToyAudioRequest } from '../utils/audio-start';
@@ -216,8 +213,6 @@ export async function startBrandToy({
   poleMesh.instanceMatrix.needsUpdate = true;
 
   const animate = (ctx: AnimationContext) => {
-    const dataArray = getContextFrequencyData(ctx);
-
     // Multi-band frequency analysis using FrequencyAnalyser
     const energy = ctx.analyser
       ? ctx.analyser.getMultiBandEnergy()

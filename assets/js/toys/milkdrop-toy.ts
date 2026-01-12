@@ -1,8 +1,5 @@
 import * as THREE from 'three';
-import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
+import type { AnimationContext } from '../core/animation-loop';
 import {
   DEFAULT_QUALITY_PRESETS,
   getSettingsPanel,
@@ -72,15 +69,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function animate(ctx: AnimationContext) {
-    const data = getContextFrequencyData(ctx);
     const time = ctx.time;
 
     // Multi-band analysis
     const energy = ctx.analyser
       ? ctx.analyser.getMultiBandEnergy()
-      : { bass: 0, mid: 0, treble: 0 };
-    const averages = ctx.analyser
-      ? ctx.analyser.getEnergyAverages()
       : { bass: 0, mid: 0, treble: 0 };
 
     // Update particles based on audio
@@ -124,8 +117,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       // c. Render writeBuffer to screen
       // d. Swap
 
-      const writeTarget = (feedback as any).writeBuffer;
-      renderer.setRenderTarget(writeTarget);
+      renderer.setRenderTarget(feedback.writeTarget);
       renderer.clear();
       renderer.render(overlayScene, overlayCamera); // Draw the warped previous frame
       renderer.autoClear = false;
