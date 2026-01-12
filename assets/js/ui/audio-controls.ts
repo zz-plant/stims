@@ -17,15 +17,12 @@ export function initAudioControls(
 
   container.className = 'control-panel';
   container.innerHTML = `
-    <div class="control-panel__heading">Audio controls</div>
     <p class="control-panel__description">
-      Choose how to feed audio: use your microphone for live input, or load
-      our demo track to preview instantly.
+      Choose an audio source to drive the visuals.
     </p>
     <div class="control-panel__row">
       <div class="control-panel__text">
         <span class="control-panel__label">Microphone</span>
-        <small>Uses your device mic for the most responsive visuals.</small>
       </div>
       <button id="start-audio-btn" class="cta-button primary">
         Use microphone
@@ -34,7 +31,6 @@ export function initAudioControls(
     <div class="control-panel__row">
       <div class="control-panel__text">
         <span class="control-panel__label">Demo audio</span>
-        <small>No mic needed—start with a built-in track.</small>
       </div>
       <button id="use-demo-audio" class="cta-button">Use demo audio</button>
     </div>
@@ -45,10 +41,7 @@ export function initAudioControls(
     <div class="control-panel__row control-panel__row--stacked">
       <div class="control-panel__text">
         <span class="control-panel__label">YouTube audio</span>
-        <small>
-          Paste a YouTube link to load a video. When you start audio, choose
-          “This tab” and enable audio sharing.
-        </small>
+        <small>Paste a link and enable audio sharing during capture.</small>
       </div>
       <div class="control-panel__field">
         <label class="sr-only" for="youtube-url">YouTube URL</label>
@@ -178,11 +171,11 @@ function setupYouTubeLogic(
       await controller.loadVideo('youtube-player', id, (state) => {
         if (state === 1) {
           // Playing
-          updateStatus('Video playing. Ready to capture audio.', 'success');
+          updateStatus('Ready to capture audio.', 'success');
           useBtn.disabled = false;
         }
       });
-      updateStatus('Video loaded. Press play to start.', 'success');
+      updateStatus('Video loaded.', 'success');
       updateRecentList();
     } catch (err) {
       updateStatus('Failed to load YouTube player.');

@@ -192,11 +192,11 @@ function updateStatusList(
   rendererNote.className = 'preflight-status__note';
   rendererNote.textContent =
     result.rendering.rendererBackend === 'webgpu'
-      ? 'Best fidelity enabled.'
+      ? 'Enabled.'
       : result.rendering.rendererBackend === 'webgl'
         ? (result.rendering.webgpuFallbackReason ??
-          'WebGPU was not available; using WebGL.')
-        : 'GPU acceleration was not detected. Enable hardware acceleration or update your browser.';
+          'Using WebGL.')
+        : 'GPU acceleration not detected.';
   rendererStatus.appendChild(rendererNote);
 
   const microphoneStatus = buildStatusBadge(
@@ -220,8 +220,8 @@ function updateStatusList(
   microphoneNote.textContent =
     result.microphone.reason ??
     (result.microphone.state === 'granted'
-      ? 'We will start listening when you click Start audio.'
-      : 'The browser will prompt for microphone access when audio starts.');
+      ? 'Ready.'
+      : 'The browser will prompt for access.');
   microphoneStatus.appendChild(microphoneNote);
 
   const environmentStatus = buildStatusBadge(
@@ -232,13 +232,9 @@ function updateStatusList(
 
   const environmentNote = document.createElement('p');
   environmentNote.className = 'preflight-status__note';
-  const hardwareCopy = result.environment.hardwareConcurrency
-    ? `Cores detected: ${result.environment.hardwareConcurrency}.`
-    : 'Hardware concurrency unknown.';
-  const motionCopy = result.environment.reducedMotion
-    ? 'Reduced motion preference detected.'
-    : 'Full motion effects enabled.';
-  environmentNote.textContent = `${hardwareCopy} ${motionCopy}`;
+  environmentNote.textContent = result.environment.reducedMotion
+    ? 'Reduced motion active.'
+    : 'Full effects enabled.';
   environmentStatus.appendChild(environmentNote);
 
   [rendererStatus, microphoneStatus, environmentStatus].forEach((status) => {
@@ -257,7 +253,7 @@ function renderIssueList(
   if (!issues.length) {
     const success = document.createElement('p');
     success.className = 'preflight-panel__success';
-    success.textContent = 'System check passed. Loading the toy now.';
+    success.textContent = 'System check passed.';
     container.appendChild(success);
     return;
   }
@@ -302,7 +298,7 @@ export function attachCapabilityPreflight({
   const description = document.createElement('p');
   description.className = 'control-panel__description';
   description.textContent =
-    'We check graphics and microphone support before loading heavy scenes.';
+    'Quick check for graphics and microphone support.';
   panel.appendChild(description);
 
   const statusContainer = document.createElement('div');
