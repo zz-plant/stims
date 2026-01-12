@@ -33,22 +33,26 @@ export class YouTubeController {
   parseVideoId(url: string): string | null {
     const trimmed = url.trim();
     if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-    
+
     // Support various formats: watch?v=, embed/, youtu.be/, shorts/
     const patterns = [
       /(?:v=|embed\/|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/,
-      /^[a-zA-Z0-9_-]{11}$/
+      /^[a-zA-Z0-9_-]{11}$/,
     ];
 
     for (const pattern of patterns) {
       const match = trimmed.match(pattern);
       if (match && match[1]) return match[1];
     }
-    
+
     return null;
   }
 
-  async loadVideo(containerId: string, videoId: string, onStateChange?: (state: number) => void): Promise<void> {
+  async loadVideo(
+    containerId: string,
+    videoId: string,
+    onStateChange?: (state: number) => void,
+  ): Promise<void> {
     if (!this.apiReady) {
       await new Promise<void>((resolve) => {
         const check = setInterval(() => {
@@ -69,7 +73,7 @@ export class YouTubeController {
           autoplay: 1,
           playsinline: 1,
           modestbranding: 1,
-          rel: 0
+          rel: 0,
         },
         events: {
           onReady: () => {
@@ -78,8 +82,8 @@ export class YouTubeController {
           },
           onStateChange: (event: any) => {
             onStateChange?.(event.data);
-          }
-        }
+          },
+        },
       });
     });
   }
@@ -96,7 +100,7 @@ export class YouTubeController {
   private saveToRecent(id: string) {
     let recent = this.getRecentVideos();
     // Move to front if exists, or add new
-    recent = recent.filter(v => v.id !== id);
+    recent = recent.filter((v) => v.id !== id);
     recent.unshift({ id, title: `Video ${id}`, timestamp: Date.now() });
     recent = recent.slice(0, YouTubeController.MAX_RECENT);
     localStorage.setItem(YouTubeController.STORAGE_KEY, JSON.stringify(recent));

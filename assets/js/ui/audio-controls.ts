@@ -142,8 +142,12 @@ function setupYouTubeLogic(
   const useBtn = container.querySelector(
     '#use-youtube-audio',
   ) as HTMLButtonElement;
-  const playerContainer = container.querySelector('#youtube-player-container') as HTMLElement;
-  const recentContainer = container.querySelector('#recent-youtube') as HTMLElement;
+  const playerContainer = container.querySelector(
+    '#youtube-player-container',
+  ) as HTMLElement;
+  const recentContainer = container.querySelector(
+    '#recent-youtube',
+  ) as HTMLElement;
   const recentList = container.querySelector('#recent-list') as HTMLElement;
 
   const updateRecentList = () => {
@@ -172,9 +176,10 @@ function setupYouTubeLogic(
       playerContainer.hidden = false;
       updateStatus('Loading player...', 'success');
       await controller.loadVideo('youtube-player', id, (state) => {
-        if (state === 1) { // Playing
-           updateStatus('Video playing. Ready to capture audio.', 'success');
-           useBtn.disabled = false;
+        if (state === 1) {
+          // Playing
+          updateStatus('Video playing. Ready to capture audio.', 'success');
+          useBtn.disabled = false;
         }
       });
       updateStatus('Video loaded. Press play to start.', 'success');
