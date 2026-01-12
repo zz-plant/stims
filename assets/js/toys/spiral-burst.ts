@@ -343,18 +343,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const normalizedAvg = avg / 255;
     const time = ctx.time;
 
-    // Frequency band analysis
-    const bassSlice = data.slice(0, Math.floor(data.length * 0.15));
-    const midsSlice = data.slice(
-      Math.floor(data.length * 0.15),
-      Math.floor(data.length * 0.6),
-    );
-    const highsSlice = data.slice(Math.floor(data.length * 0.6));
+    // Multi-band frequency analysis using FrequencyAnalyser
+    const energy = ctx.analyser
+      ? ctx.analyser.getMultiBandEnergy()
+      : { bass: 0, mid: 0, treble: 0 };
 
-    const bass = bassSlice.reduce((a, b) => a + b, 0) / bassSlice.length / 255;
-    const mids = midsSlice.reduce((a, b) => a + b, 0) / midsSlice.length / 255;
-    const highs =
-      highsSlice.reduce((a, b) => a + b, 0) / highsSlice.length / 255;
+    const bass = energy.bass;
+    const mids = energy.mid;
+    const highs = energy.treble;
 
     // Smooth values
     smoothedBass = smoothedBass * 0.85 + bass * 0.15;

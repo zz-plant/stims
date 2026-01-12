@@ -217,13 +217,12 @@ export async function startBrandToy({
 
   const animate = (ctx: AnimationContext) => {
     const dataArray = getContextFrequencyData(ctx);
-    const bassBand = dataArray.slice(
-      0,
-      Math.max(1, Math.min(10, dataArray.length)),
-    );
-    const bass = bassBand.length
-      ? bassBand.reduce((a, b) => a + b, 0) / bassBand.length
-      : 0;
+
+    // Multi-band frequency analysis using FrequencyAnalyser
+    const energy = ctx.analyser
+      ? ctx.analyser.getMultiBandEnergy()
+      : { bass: 0, mid: 0, treble: 0 };
+    const bass = energy.bass * 255; // Scale back for compatibility with computeSpeed
 
     const speed = adapter.computeSpeed(bass);
     buildingData.forEach((d, i) => {
