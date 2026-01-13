@@ -30,7 +30,9 @@ export async function startToyAudio(
   const { fallbackToSynthetic, preferSynthetic, ...audioOptions } =
     normalizeOptions(options);
 
-  if (preferSynthetic) {
+  const runWithSynthetic = async (
+    syntheticOptions: AudioInitOptions,
+  ): Promise<AnimationContext> => {
     const synthetic = getCachedDemoAudioStream();
     const syntheticCleanup = () => {
       void synthetic.cleanup();
@@ -38,42 +40,28 @@ export async function startToyAudio(
 
     try {
       return await startAudioLoop(toy, animate, {
-        ...audioOptions,
+        ...syntheticOptions,
         stream: synthetic.stream,
         onCleanup: (ctx) => {
           syntheticCleanup();
-          audioOptions.onCleanup?.(ctx);
+          syntheticOptions.onCleanup?.(ctx);
         },
       });
     } catch (error) {
       syntheticCleanup();
       throw error;
     }
+  };
+
+  if (preferSynthetic) {
+    return runWithSynthetic(audioOptions);
   }
 
   try {
     return await startAudioLoop(toy, animate, audioOptions);
   } catch (error) {
     if (fallbackToSynthetic && error instanceof AudioAccessError) {
-      const synthetic = getCachedDemoAudioStream();
-
-      const syntheticCleanup = () => {
-        void synthetic.cleanup();
-      };
-
-      try {
-        return await startAudioLoop(toy, animate, {
-          ...audioOptions,
-          stream: synthetic.stream,
-          onCleanup: (ctx) => {
-            syntheticCleanup();
-            audioOptions.onCleanup?.(ctx);
-          },
-        });
-      } catch (fallbackError) {
-        syntheticCleanup();
-        throw fallbackError;
-      }
+      return runWithSynthetic(audioOptions);
     }
 
     console.error('Microphone access denied', error);
