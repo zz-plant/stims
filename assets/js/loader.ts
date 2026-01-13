@@ -30,6 +30,32 @@ type Toy = {
 };
 
 const TOY_QUERY_PARAM = 'toy';
+const STARTER_POLL_DELAY_MS = 100;
+const STARTER_POLL_ATTEMPTS = 30;
+
+const waitForAudioStarter = async (
+  getStarter: () => ToyWindow['startAudio'] | ToyWindow['startAudioFallback'],
+  errorMessage: string,
+) => {
+  let starter = getStarter();
+  if (typeof starter !== 'function') {
+    for (let i = 0; i < STARTER_POLL_ATTEMPTS; i++) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, STARTER_POLL_DELAY_MS),
+      );
+      starter = getStarter();
+      if (typeof starter === 'function') {
+        break;
+      }
+    }
+  }
+
+  if (typeof starter !== 'function') {
+    throw new Error(errorMessage);
+  }
+
+  return starter;
+};
 
 // createLoader orchestrates routing/navigation, renderer capability checks,
 // module resolution/import, view updates, and lifecycle management.
@@ -216,33 +242,21 @@ export function createLoader({
             fallbackButton: fallbackBtn,
             statusElement: statusEl,
             requestMicrophone: async () => {
-              let starter = win.startAudio;
-              if (typeof starter !== 'function') {
-                for (let i = 0; i < 30; i++) {
-                  await new Promise((r) => setTimeout(r, 100));
-                  starter = win.startAudio;
-                  if (typeof starter === 'function') break;
-                }
-              }
-              if (typeof starter !== 'function')
-                throw new Error('Microphone starter unavailable.');
+              const starter = await waitForAudioStarter(
+                () => win.startAudio,
+                'Microphone starter unavailable.',
+              );
               return starter('microphone');
             },
             requestSampleAudio: async () => {
-              let starter = win.startAudioFallback ?? win.startAudio;
-              if (typeof starter !== 'function') {
-                for (let i = 0; i < 30; i++) {
-                  await new Promise((r) => setTimeout(r, 100));
-                  starter = win.startAudioFallback ?? win.startAudio;
-                  if (typeof starter === 'function') break;
-                }
-              }
-              if (typeof starter !== 'function')
-                throw new Error('Demo audio unavailable.');
+              const fallbackStarter = await waitForAudioStarter(
+                () => win.startAudioFallback ?? win.startAudio,
+                'Demo audio unavailable.',
+              );
               if (typeof win.startAudioFallback === 'function') {
                 return win.startAudioFallback();
               }
-              return starter('sample');
+              return fallbackStarter('sample');
             },
             onSuccess: () => {
               view.showAudioPrompt(false);
