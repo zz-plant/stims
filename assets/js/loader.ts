@@ -221,50 +221,59 @@ export function createLoader({
       // Track toy load for agents
       setCurrentToy(toy.slug);
 
-      // Setup audio prompt if startAudio globals are registered by the toy
+      // Setup audio prompt if startAudio globals are registered by the toy.
       const win = (container?.ownerDocument.defaultView ??
         window) as unknown as ToyWindow;
-      if (typeof win.startAudio === 'function') {
-        const startBtn = container?.querySelector(
-          '#start-audio-btn',
-        ) as HTMLButtonElement;
-        const fallbackBtn = container?.querySelector(
-          '#use-demo-audio',
-        ) as HTMLButtonElement;
-        const statusEl = container?.querySelector(
-          '#audio-status',
-        ) as HTMLElement;
+      const startBtn = container?.querySelector(
+        '#start-audio-btn',
+      ) as HTMLButtonElement;
+      const fallbackBtn = container?.querySelector(
+        '#use-demo-audio',
+      ) as HTMLButtonElement;
+      const statusEl = container?.querySelector('#audio-status') as HTMLElement;
 
-        if (startBtn && fallbackBtn) {
-          view.showAudioPrompt(true);
-          setupMicrophonePermissionFlow({
-            startButton: startBtn,
-            fallbackButton: fallbackBtn,
-            statusElement: statusEl,
-            requestMicrophone: async () => {
-              const starter = await waitForAudioStarter(
-                () => win.startAudio,
-                'Microphone starter unavailable.',
-              );
-              return starter('microphone');
-            },
-            requestSampleAudio: async () => {
-              const fallbackStarter = await waitForAudioStarter(
-                () => win.startAudioFallback ?? win.startAudio,
-                'Demo audio unavailable.',
-              );
-              if (typeof win.startAudioFallback === 'function') {
-                return win.startAudioFallback();
-              }
-              return fallbackStarter('sample');
-            },
-            onSuccess: () => {
-              view.showAudioPrompt(false);
-              setAudioActive(true, 'demo');
-            },
-          });
+      const setupAudioPrompt = async () => {
+        if (!startBtn || !fallbackBtn) return;
+
+        try {
+          await waitForAudioStarter(
+            () => win.startAudioFallback ?? win.startAudio,
+            'Audio starter unavailable.',
+          );
+        } catch (_error) {
+          return;
         }
-      }
+
+        view.showAudioPrompt(true);
+        setupMicrophonePermissionFlow({
+          startButton: startBtn,
+          fallbackButton: fallbackBtn,
+          statusElement: statusEl,
+          requestMicrophone: async () => {
+            const starter = await waitForAudioStarter(
+              () => win.startAudio,
+              'Microphone starter unavailable.',
+            );
+            return starter('microphone');
+          },
+          requestSampleAudio: async () => {
+            const fallbackStarter = await waitForAudioStarter(
+              () => win.startAudioFallback ?? win.startAudio,
+              'Demo audio unavailable.',
+            );
+            if (typeof win.startAudioFallback === 'function') {
+              return win.startAudioFallback();
+            }
+            return fallbackStarter('sample');
+          },
+          onSuccess: () => {
+            view.showAudioPrompt(false);
+            setAudioActive(true, 'demo');
+          },
+        });
+      };
+
+      void setupAudioPrompt();
     };
 
     if (capabilityDecision.shouldShowCapabilityError) {
