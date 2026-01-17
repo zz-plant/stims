@@ -33,11 +33,15 @@ header {
   background-color: #1f1f1f;
   color: #ffffff;
   transition: all 0.3s;
+  font-size: 1rem;
+  min-height: 44px;
 }
 
 #search-bar:focus {
   border-color: #1e90ff;
-  outline: none;
+  outline: 2px solid rgba(30, 144, 255, 0.9);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.35);
 }
 
 /* Webtoy Cards */
@@ -114,6 +118,9 @@ button {
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s;
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
 }
 
 button:hover {
@@ -121,5 +128,7 @@ button:hover {
 }
 
 button:focus {
-  outline: none;
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
 }

@@ -102,6 +102,11 @@ html.light .hero-background-canvas {
     background 0.2s ease,
     border-color 0.2s ease;
   z-index: 20;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .skip-link:focus-visible {
@@ -249,6 +254,11 @@ h6 {
   border-radius: 999px;
   transition: background 0.2s ease;
   touch-action: manipulation;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-link:hover {
@@ -788,6 +798,22 @@ header.hero {
   line-height: 1.5;
 }
 
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.25rem;
+  margin: -0.25rem 0;
+  border-radius: 8px;
+  touch-action: manipulation;
+}
+
+.text-link:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
 .cta-button {
   padding: 0.7rem 1.25rem;
   border-radius: var(--radius-pill);
@@ -812,6 +838,9 @@ header.hero {
   background-size: auto;
   animation: none;
   touch-action: manipulation;
+  min-height: 44px;
+  min-width: 44px;
+  justify-content: center;
 }
 
 .cta-button.primary {
@@ -1080,6 +1109,13 @@ h1 {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
+.search-field:focus-within {
+  border-color: rgba(96, 165, 250, 0.85);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.25),
+    0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
 .search-field input {
   flex: 1;
   background: transparent;
@@ -1087,7 +1123,8 @@ h1 {
   color: var(--text-color);
   font-size: 1rem;
   padding: 0.55rem 0.35rem;
-  outline: none;
+  min-height: 44px;
+  touch-action: manipulation;
 }
 
 .search-field input::placeholder {
@@ -1123,6 +1160,8 @@ h1 {
   cursor: pointer;
   font-weight: 600;
   letter-spacing: 0.01em;
+  min-height: 44px;
+  min-width: 44px;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -1143,6 +1182,12 @@ h1 {
   box-shadow: 0 12px 28px rgba(59, 130, 246, 0.2);
 }
 
+.filter-chip:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
 .sort-control {
   display: inline-flex;
   align-items: center;
@@ -1153,6 +1198,14 @@ h1 {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-color);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  min-height: 44px;
+}
+
+.sort-control:focus-within {
+  border-color: rgba(96, 165, 250, 0.85);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.2),
+    0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
 .sort-control select {
@@ -1160,8 +1213,9 @@ h1 {
   border: none;
   color: inherit;
   font-weight: 700;
-  outline: none;
   touch-action: manipulation;
+  font-size: 1rem;
+  min-height: 44px;
 }
 
 .webtoy-container {

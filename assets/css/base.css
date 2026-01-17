@@ -22,6 +22,15 @@ canvas {
   user-select: none;
 }
 
+a,
+button,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
+}
+
 .toy-canvas {
   width: 100vw;
   height: 100vh;
