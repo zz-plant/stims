@@ -140,6 +140,12 @@
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
       }
 
+      .pill-button:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.95);
+        outline-offset: 3px;
+        box-shadow: 0 0 0 4px rgba(64, 255, 255, 0.4);
+      }
+
       .pill-button.secondary {
         border-color: rgba(255, 255, 255, 0.2);
         background: rgba(255, 255, 255, 0.12);
@@ -179,6 +185,12 @@
 
       .control-button:active {
         transform: scale(0.9);
+      }
+
+      .control-button:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.95);
+        outline-offset: 4px;
+        box-shadow: 0 0 0 4px rgba(64, 255, 255, 0.45);
       }
 
       .control-icon {
@@ -328,6 +340,7 @@
         window.SpeechRecognition || window.webkitSpeechRecognition;
       const speechSupported = Boolean(SpeechRecognition);
       let recognition = null;
+      const STORAGE_KEY = 'stim-words-state';
 
       const seedWords = [
         'pulse',
@@ -365,6 +378,7 @@
         }
 
         updateWordCloud(wordsArray);
+        saveStoredState();
       }
 
       function normalizeInputWords(text) {
@@ -432,6 +446,44 @@
 
       const speechUnavailableMessage =
         'Speech recognition is unavailable. Use the manual input below or add sample words to keep the cloud active.';
+
+      function loadStoredState() {
+        if (!('sessionStorage' in window)) return null;
+
+        try {
+          const stored = window.sessionStorage.getItem(STORAGE_KEY);
+          if (!stored) return null;
+          const parsed = JSON.parse(stored);
+          if (!parsed || typeof parsed !== 'object') return null;
+          if (Array.isArray(parsed.words) && parsed.words.length) {
+            return {
+              words: parsed.words.filter((word) => typeof word === 'string'),
+              manualText:
+                typeof parsed.manualText === 'string' ? parsed.manualText : '',
+            };
+          }
+        } catch (error) {
+          console.warn('Unable to load stored word cloud state:', error);
+        }
+
+        return null;
+      }
+
+      function saveStoredState() {
+        if (!('sessionStorage' in window)) return;
+
+        try {
+          window.sessionStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              words: wordsArray,
+              manualText: manualInput?.value ?? '',
+            })
+          );
+        } catch (error) {
+          console.warn('Unable to save word cloud state:', error);
+        }
+      }
 
       function focusManualInput() {
         if (!manualInput || !manualPanel) return;
@@ -524,6 +576,8 @@
         if (manualInput) {
           manualInput.value = '';
         }
+
+        saveStoredState();
       }
 
       function addDemoWords() {
@@ -552,6 +606,10 @@
 
       addWordsButton?.addEventListener('click', handleManualWordSubmit);
       demoWordsButton?.addEventListener('click', addDemoWords);
+
+      manualInput?.addEventListener('input', () => {
+        saveStoredState();
+      });
 
       manualInput?.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
@@ -689,6 +747,15 @@
 
       initSpeechRecognition();
 
+      const storedState = loadStoredState();
+      if (storedState?.words?.length) {
+        wordsArray = storedState.words;
+      }
+
+      if (manualInput && storedState?.manualText) {
+        manualInput.value = storedState.manualText;
+      }
+
       if (speechSupported) {
         setStatus(
           'Unmute to sync with your mic. Enable speech to sprinkle your words into the cloud.'
@@ -747,6 +814,7 @@
       updateUnmuteIcon();
       updateSpeechIcon();
       updateWordCloud(wordsArray);
+      saveStoredState();
     </script>
   </body>
 </html>
