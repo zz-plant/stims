@@ -25,6 +25,10 @@
   --section-gap: clamp(1.75rem, 3vw, 2.6rem);
 }
 
+html {
+  color-scheme: dark;
+}
+
 html.light {
   --bg-color: #f5f7ff;
   --bg-color-secondary: #e6ecf9;
@@ -40,6 +44,7 @@ html.light {
   --highlight-glow: rgba(225, 29, 72, 0.1);
   --surface-gradient: linear-gradient(135deg, #ffffff, #e9eef9);
   --surface-border: rgba(11, 16, 48, 0.1);
+  color-scheme: light;
 }
 
 /* Hero Background Canvas */
@@ -79,6 +84,33 @@ html.light .hero-background-canvas {
   border: 0;
 }
 
+.skip-link {
+  position: absolute;
+  left: 1.5rem;
+  top: 1.25rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+  color: var(--text-color);
+  text-decoration: none;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--surface-border);
+  transform: translateY(-140%);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+  z-index: 20;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
 body,
 html {
   padding: 0;
@@ -92,6 +124,16 @@ html {
   overflow-x: hidden;
   overflow-y: auto;
   min-height: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  scroll-margin-top: 6rem;
+  text-wrap: balance;
 }
 
 .content {
@@ -206,6 +248,7 @@ html {
   padding: 0.5rem 0.75rem;
   border-radius: 999px;
   transition: background 0.2s ease;
+  touch-action: manipulation;
 }
 
 .nav-link:hover {
@@ -459,6 +502,7 @@ header.hero {
     background 0.2s ease,
     color 0.2s ease,
     box-shadow 0.2s ease;
+  touch-action: manipulation;
 }
 
 .preview-control:hover,
@@ -615,10 +659,15 @@ header.hero {
   background: rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
-  transition: all 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    background 0.3s ease,
+    box-shadow 0.3s ease;
   cursor: pointer;
   padding: 0;
   appearance: none;
+  transform: scaleX(1);
+  touch-action: manipulation;
 }
 
 .preview-dot:focus-visible {
@@ -627,7 +676,7 @@ header.hero {
 }
 
 .preview-dot.is-active {
-  width: 26px;
+  transform: scaleX(2.2);
   background: linear-gradient(
     135deg,
     var(--accent-color),
@@ -754,10 +803,15 @@ header.hero {
   overflow: hidden;
   box-shadow: var(--shadow-soft);
   transition:
-    all 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
     filter 0.35s ease;
   background-size: auto;
   animation: none;
+  touch-action: manipulation;
 }
 
 .cta-button.primary {
@@ -1074,6 +1128,7 @@ h1 {
     box-shadow 0.2s ease,
     border-color 0.2s ease,
     background 0.2s ease;
+  touch-action: manipulation;
 }
 
 .filter-chip:hover {
@@ -1106,6 +1161,7 @@ h1 {
   color: inherit;
   font-weight: 700;
   outline: none;
+  touch-action: manipulation;
 }
 
 .webtoy-container {
@@ -1138,7 +1194,11 @@ h1 {
   background: var(--surface-gradient);
   border-radius: var(--radius-lg);
   padding: 1.35rem 1.25rem;
-  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition:
+    transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 0.3s cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 0.3s ease,
+    background 0.3s ease;
   text-align: left;
   cursor: pointer;
   box-shadow: var(--shadow-soft);
@@ -1154,6 +1214,7 @@ h1 {
   appearance: none;
   position: relative;
   overflow: hidden;
+  touch-action: manipulation;
 }
 
 /* Gradient shimmer overlay */
@@ -1376,6 +1437,7 @@ footer {
     box-shadow 0.2s ease,
     border-color 0.2s ease;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+  touch-action: manipulation;
 }
 
 .theme-toggle:hover {
