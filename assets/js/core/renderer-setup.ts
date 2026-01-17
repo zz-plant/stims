@@ -26,6 +26,40 @@ export type RendererInitConfig = {
   renderScale?: number;
 };
 
+const isMobileUserAgent =
+  typeof navigator !== 'undefined' &&
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
+  );
+
+const getAdaptiveMaxPixelRatio = (maxPixelRatio: number) => {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+    return maxPixelRatio;
+  }
+
+  const deviceMemory =
+    'deviceMemory' in navigator
+      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
+        null)
+      : null;
+  const hardwareConcurrency = navigator.hardwareConcurrency ?? null;
+  const prefersReducedMotion = window.matchMedia
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
+
+  const lowPowerDevice =
+    isMobileUserAgent ||
+    prefersReducedMotion ||
+    (deviceMemory !== null && deviceMemory <= 4) ||
+    (hardwareConcurrency !== null && hardwareConcurrency <= 4);
+
+  if (!lowPowerDevice) {
+    return maxPixelRatio;
+  }
+
+  return Math.min(maxPixelRatio, 1.5);
+};
+
 export async function initRenderer(
   canvas: HTMLCanvasElement,
   config: RendererInitConfig = {
@@ -54,9 +88,10 @@ export async function initRenderer(
     adapter: GPUAdapter | null,
     device: GPUDevice | null,
   ): RendererInitResult => {
+    const adaptiveMaxPixelRatio = getAdaptiveMaxPixelRatio(maxPixelRatio);
     const effectivePixelRatio = Math.min(
       (window.devicePixelRatio || 1) * renderScale,
-      maxPixelRatio,
+      adaptiveMaxPixelRatio,
     );
     renderer.setPixelRatio(effectivePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -86,17 +121,12 @@ export async function initRenderer(
     rememberRendererFallback(reason, { shouldRetryWebGPU, triedWebGPU });
 
     // Mobile-optimized WebGL context attributes
-    const isMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent,
-      );
-
     const renderer = new WebGLRenderer({
       canvas,
       antialias,
       alpha,
       // Use high-performance mode on desktop, default on mobile for better battery life
-      powerPreference: isMobile ? 'default' : 'high-performance',
+      powerPreference: isMobileUserAgent ? 'default' : 'high-performance',
       // Don't fail if there are performance caveats - mobile GPUs often have them
       failIfMajorPerformanceCaveat: false,
       // Enable stencil buffer for better rendering compatibility

@@ -53,7 +53,36 @@
         });
       }
 
-      const setupAudio = () => {
+      const buildAudioInitState = (result) => {
+        if (!result) return {};
+
+        const microphone = result.microphone;
+        if (!microphone?.supported) {
+          return {
+            preferDemoAudio: true,
+            initialStatus: {
+              message:
+                'Microphone access is unavailable in this browser. Use demo audio to keep exploring.',
+              variant: 'error',
+            },
+          };
+        }
+
+        if (microphone.state === 'denied') {
+          return {
+            preferDemoAudio: true,
+            initialStatus: {
+              message:
+                'Microphone access is blocked. Update permissions or use demo audio to start the visuals.',
+              variant: 'error',
+            },
+          };
+        }
+
+        return {};
+      };
+
+      const setupAudio = (result) => {
         if (!controlsContainer) return;
 
         initAudioControls(controlsContainer, {
@@ -97,7 +126,8 @@
           },
           onSuccess: () => {
             if (controlsContainer) controlsContainer.hidden = true;
-          }
+          },
+          ...buildAudioInitState(result),
         });
       };
 
@@ -108,17 +138,18 @@
 
       attachCapabilityPreflight({
         heading: 'Capability check',
+        backHref: 'index.html',
         onComplete: (result) => {
           if (result.canProceed) {
             startLoaderIfNeeded();
-            setupAudio();
+            setupAudio(result);
             setupSystemControls();
           }
         },
         onRetry: (result) => {
           if (result.canProceed) {
             startLoaderIfNeeded();
-            setupAudio();
+            setupAudio(result);
             setupSystemControls();
           }
         },

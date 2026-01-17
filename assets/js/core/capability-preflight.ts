@@ -277,11 +277,15 @@ function renderIssueList(
 export function attachCapabilityPreflight({
   host = document.body,
   heading = 'Quick system check',
+  backHref,
+  backLabel = 'Back to library',
   onComplete,
   onRetry,
 }: {
   host?: HTMLElement;
   heading?: string;
+  backHref?: string;
+  backLabel?: string;
   onComplete?: (result: CapabilityPreflightResult) => void;
   onRetry?: (result: CapabilityPreflightResult) => void;
 } = {}) {
@@ -309,6 +313,13 @@ export function attachCapabilityPreflight({
 
   const actions = document.createElement('div');
   actions.className = 'control-panel__actions control-panel__actions--inline';
+  if (backHref) {
+    const backLink = document.createElement('a');
+    backLink.className = 'cta-button ghost';
+    backLink.href = backHref;
+    backLink.textContent = backLabel;
+    actions.appendChild(backLink);
+  }
   const retryButton = document.createElement('button');
   retryButton.className = 'cta-button';
   retryButton.type = 'button';

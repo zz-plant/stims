@@ -7,6 +7,8 @@ export interface AudioControlsOptions {
   onRequestTabAudio?: (stream: MediaStream) => Promise<void>;
   onSuccess?: () => void;
   statusElement?: HTMLElement;
+  initialStatus?: { message: string; variant?: 'success' | 'error' };
+  preferDemoAudio?: boolean;
 }
 
 export function initAudioControls(
@@ -120,6 +122,20 @@ export function initAudioControls(
     statusEl.dataset.variant = variant;
     statusEl.textContent = message;
   };
+
+  if (options.preferDemoAudio && demoBtn instanceof HTMLButtonElement) {
+    demoBtn.classList.add('primary');
+    if (micBtn instanceof HTMLButtonElement) {
+      micBtn.classList.remove('primary');
+    }
+  }
+
+  if (options.initialStatus) {
+    updateStatus(
+      options.initialStatus.message,
+      options.initialStatus.variant ?? 'error',
+    );
+  }
 
   const handleRequest = async (
     button: Element | null,
