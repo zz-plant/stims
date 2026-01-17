@@ -183,6 +183,8 @@ body {
   top: 12px;
   left: 12px;
   padding: 10px 14px;
+  min-height: 44px;
+  min-width: 44px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -208,6 +210,7 @@ body {
     background 200ms ease;
   z-index: 1000;
   font-weight: 700;
+  touch-action: manipulation;
 }
 
 .home-link::before {
