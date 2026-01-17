@@ -2,9 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Audio-reactive visual toys for sensory stimulation and creative play. Open-source, no accounts required." />
-    <meta name="theme-color" content="#3b82f6" />
+    <meta name="theme-color" content="#0b0f1a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="/manifest.json" />
@@ -65,6 +65,7 @@
     </script>
   </head>
   <body>
+    <a class="skip-link" href="#toy-list">Skip to library</a>
     <div class="content">
       <div data-top-nav-container></div>
 
@@ -114,13 +115,18 @@
                 id="toy-search"
                 type="search"
                 name="toy-search"
-                placeholder="Search by name, tags, moods, or capabilities (try: calm, motion, demo audio)"
+                placeholder="Search by name, tags, moods, or capabilities (try: calm, motion, demo audio)…"
                 autocomplete="off"
+                aria-describedby="toy-search-hint"
                 inputmode="search"
               />
-              <span aria-hidden="true" class="search-field__hint"
-                >Enter a name, tag, or capability</span
+              <span
+                id="toy-search-hint"
+                aria-hidden="true"
+                class="search-field__hint"
               >
+                Enter a name, tag, or capability
+              </span>
             </div>
             <div class="filter-row" role="group" aria-label="Curated filters">
               <div class="chip-row" data-chip-row>
