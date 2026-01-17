@@ -508,6 +508,8 @@ header.hero {
   font-weight: 700;
   letter-spacing: 0.01em;
   cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
   transition:
     background 0.2s ease,
     color 0.2s ease,
@@ -519,7 +521,8 @@ header.hero {
 .preview-control:focus-visible {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
-  outline: none;
+  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline-offset: 2px;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
@@ -1561,6 +1564,8 @@ footer {
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-pill);
   cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
   transition:
     background 0.2s ease,
     transform 0.2s ease,

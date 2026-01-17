@@ -27,7 +27,7 @@ export function initAudioControls(
       <div class="control-panel__text">
         <span class="control-panel__label">Microphone</span>
       </div>
-      <button id="start-audio-btn" class="cta-button primary">
+      <button id="start-audio-btn" class="cta-button primary" type="button">
         Use microphone
       </button>
     </div>
@@ -35,7 +35,7 @@ export function initAudioControls(
       <div class="control-panel__text">
         <span class="control-panel__label">Demo audio</span>
       </div>
-      <button id="use-demo-audio" class="cta-button">Use demo audio</button>
+      <button id="use-demo-audio" class="cta-button" type="button">Use demo audio</button>
     </div>
 
     ${
@@ -46,7 +46,7 @@ export function initAudioControls(
         <span class="control-panel__label">Tab audio</span>
         <small>Capture audio from the current browser tab.</small>
       </div>
-      <button id="use-tab-audio" class="cta-button">Capture tab audio</button>
+      <button id="use-tab-audio" class="cta-button" type="button">Capture tab audio</button>
     </div>
     `
         : ''
@@ -70,14 +70,14 @@ export function initAudioControls(
           autocomplete="off"
           inputmode="url"
         />
-        <button id="load-youtube" class="cta-button">Load video</button>
+        <button id="load-youtube" class="cta-button" type="button">Load video</button>
       </div>
       <div id="recent-youtube" class="control-panel__recent" hidden>
         <span class="control-panel__label small">Recent</span>
         <div id="recent-list" class="control-panel__chip-list"></div>
       </div>
       <div class="control-panel__actions control-panel__actions--inline">
-        <button id="use-youtube-audio" class="cta-button" disabled>
+        <button id="use-youtube-audio" class="cta-button" type="button">
           Use YouTube audio
         </button>
       </div>
@@ -258,6 +258,22 @@ function setupYouTubeLogic(
     '#recent-youtube',
   ) as HTMLElement;
   const recentList = container.querySelector('#recent-list') as HTMLElement;
+  const STORAGE_KEY = 'stims-youtube-url';
+  let youtubeReady = false;
+  const readStoredUrl = () => {
+    try {
+      return window.sessionStorage.getItem(STORAGE_KEY);
+    } catch (_error) {
+      return null;
+    }
+  };
+  const writeStoredUrl = (value: string) => {
+    try {
+      window.sessionStorage.setItem(STORAGE_KEY, value);
+    } catch (_error) {
+      // Ignore storage errors.
+    }
+  };
 
   const updateRecentList = () => {
     const recent = controller.getRecentVideos();
@@ -283,12 +299,13 @@ function setupYouTubeLogic(
   const loadVideo = async (id: string) => {
     try {
       playerContainer.hidden = false;
+      youtubeReady = false;
       updateStatus('Loading player...', 'success');
       await controller.loadVideo('youtube-player', id, (state) => {
         if (state === 1) {
           // Playing
           updateStatus('Ready to capture audio.', 'success');
-          useBtn.disabled = false;
+          youtubeReady = true;
         }
       });
       updateStatus('Video loaded.', 'success');
@@ -296,22 +313,40 @@ function setupYouTubeLogic(
     } catch (_err) {
       updateStatus('Failed to load YouTube player.');
       playerContainer.hidden = true;
+      youtubeReady = false;
     }
   };
 
   updateRecentList();
 
+  if (input) {
+    const storedUrl = readStoredUrl();
+    if (storedUrl) {
+      input.value = storedUrl;
+    }
+    input.addEventListener('input', () => {
+      writeStoredUrl(input.value);
+      youtubeReady = false;
+    });
+  }
+
   loadBtn?.addEventListener('click', () => {
     const videoId = controller.parseVideoId(input.value);
     if (!videoId) {
       updateStatus('Paste a valid YouTube link.');
-      useBtn.disabled = true;
+      youtubeReady = false;
+      input.focus();
       return;
     }
     loadVideo(videoId);
   });
 
   useBtn?.addEventListener('click', async () => {
+    if (!youtubeReady) {
+      updateStatus('Load a YouTube video before capturing audio.');
+      input.focus();
+      return;
+    }
     if (!navigator.mediaDevices?.getDisplayMedia) {
       updateStatus('Screen capture unavailable.');
       return;

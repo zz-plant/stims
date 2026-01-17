@@ -1515,6 +1515,18 @@ export function createLibraryView({
     return params;
   };
 
+  const resolvePathname = () => {
+    if (window.location?.pathname) return window.location.pathname;
+    if (window.location?.href) {
+      try {
+        return new URL(window.location.href).pathname;
+      } catch (_error) {
+        return '/';
+      }
+    }
+    return '/';
+  };
+
   const commitState = ({ replace }) => {
     const state = {
       query: searchQuery.trim(),
@@ -1522,13 +1534,17 @@ export function createLibraryView({
       sort: sortBy,
     };
     const params = stateToParams(state);
-    const nextUrl = `${window.location.pathname}${
+    const nextUrl = `${resolvePathname()}${
       params.toString() ? `?${params.toString()}` : ''
     }`;
-    if (replace) {
-      window.history.replaceState(state, '', nextUrl);
-    } else {
-      window.history.pushState(state, '', nextUrl);
+    try {
+      if (replace) {
+        window.history.replaceState(state, '', nextUrl);
+      } else {
+        window.history.pushState(state, '', nextUrl);
+      }
+    } catch (_error) {
+      // Ignore history errors in non-browser environments.
     }
     saveStateToStorage(state);
   };
@@ -1574,9 +1590,36 @@ export function createLibraryView({
     }
   };
 
+  const handleOpenToy = (toy, event) => {
+    const isModifiedClick =
+      event instanceof MouseEvent
+        ? event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey ||
+          event.button === 1
+        : false;
+
+    if (cardElement === 'a' && event) {
+      if (isModifiedClick) return;
+      event.preventDefault();
+    }
+
+    openToy(toy);
+  };
+
   const createCard = (toy) => {
     const card = document.createElement(cardElement);
     card.className = 'webtoy-card';
+    if (toy.slug) {
+      card.dataset.toySlug = toy.slug;
+    }
+    if (toy.type) {
+      card.dataset.toyType = toy.type;
+    }
+    if (toy.module) {
+      card.dataset.toyModule = toy.module;
+    }
     const href =
       toy.type === 'module'
         ? `toy.html?toy=${encodeURIComponent(toy.slug)}`
@@ -1637,31 +1680,13 @@ export function createLibraryView({
       }
     }
 
-    const handleOpenToy = (event) => {
-      const isModifiedClick = !!(
-        event &&
-        (event.metaKey ||
-          event.ctrlKey ||
-          event.shiftKey ||
-          event.altKey ||
-          event.button === 1)
-      );
-
-      if (cardElement === 'a' && event) {
-        if (isModifiedClick) return;
-        event.preventDefault();
-      }
-
-      openToy(toy);
-    };
-
-    card.addEventListener('click', handleOpenToy);
+    card.onclick = (event) => handleOpenToy(toy, event);
 
     if (enableKeyboardHandlers) {
       card.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          handleOpenToy(event);
+          handleOpenToy(toy, event);
         }
       });
     }

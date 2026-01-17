@@ -9,7 +9,7 @@ const libraryView = createLibraryView({
   loadFromQuery,
   targetId: 'toy-list',
   searchInputId: 'search-bar',
-  cardElement: 'div',
+  cardElement: 'a',
 });
 
 libraryView.init();
