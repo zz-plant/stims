@@ -1214,6 +1214,15 @@ body {
   gap: 8px;
 }
 
+.preflight-dialog {
+  margin: 0;
+}
+
+.preflight-dialog::backdrop {
+  background: rgba(6, 8, 16, 0.7);
+  backdrop-filter: blur(2px);
+}
+
 .preflight-panel__statuses {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
