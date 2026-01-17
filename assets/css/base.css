@@ -427,10 +427,13 @@ body {
   border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
+  min-height: 44px;
+  min-width: 44px;
   transition:
     transform 160ms ease,
     box-shadow 200ms ease,
     border-color 200ms ease;
+  touch-action: manipulation;
 }
 
 .renderer-pill__retry:hover {
@@ -461,6 +464,8 @@ body {
   font-weight: 700;
   letter-spacing: 0.01em;
   cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
   box-shadow:
     0 12px 26px rgba(0, 0, 0, 0.35),
     0 0 16px rgba(17, 216, 255, 0.35);
@@ -469,6 +474,7 @@ body {
     box-shadow 200ms ease,
     border-color 200ms ease,
     background 200ms ease;
+  touch-action: manipulation;
 }
 
 .toy-nav__back:hover {
