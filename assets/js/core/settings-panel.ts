@@ -190,9 +190,11 @@ export class PersistentSettingsPanel {
       const text = document.createElement('div');
       text.className = 'control-panel__text';
 
-      const label = document.createElement('span');
+      const selectId = 'quality-preset-select';
+      const label = document.createElement('label');
       label.className = 'control-panel__label';
       label.textContent = 'Quality preset';
+      label.htmlFor = selectId;
 
       const hint = document.createElement('small');
       hint.textContent = 'Adjust resolution and particle density.';
@@ -200,6 +202,7 @@ export class PersistentSettingsPanel {
       text.append(label, hint);
 
       const select = document.createElement('select');
+      select.id = selectId;
       select.addEventListener('change', () =>
         this.handleQualityChange(select.value),
       );
@@ -228,16 +231,23 @@ export class PersistentSettingsPanel {
     }
   }
 
-  addSection(title: string, description?: string): HTMLDivElement {
+  addSection(
+    title: string,
+    description?: string,
+    labelFor?: string,
+  ): HTMLDivElement {
     const row = document.createElement('div');
     row.className = 'control-panel__row';
 
     const text = document.createElement('div');
     text.className = 'control-panel__text';
 
-    const label = document.createElement('span');
+    const label = document.createElement(labelFor ? 'label' : 'span');
     label.className = 'control-panel__label';
     label.textContent = title;
+    if (labelFor && label instanceof HTMLLabelElement) {
+      label.htmlFor = labelFor;
+    }
     text.appendChild(label);
 
     if (description) {
@@ -256,8 +266,8 @@ export class PersistentSettingsPanel {
 
   addToggle(options: ToggleOptions) {
     const { label, description, defaultValue = false, onChange } = options;
-    const actions = this.addSection(label, description);
-    actions.classList.add('control-panel__actions--inline');
+    const row = document.createElement('label');
+    row.className = 'control-panel__row control-panel__row--toggle';
 
     const input = document.createElement('input');
     input.type = 'checkbox';
@@ -267,9 +277,28 @@ export class PersistentSettingsPanel {
     input.id = toggleId;
     input.setAttribute('aria-label', label);
 
+    const text = document.createElement('div');
+    text.className = 'control-panel__text';
+
+    const labelText = document.createElement('span');
+    labelText.className = 'control-panel__label';
+    labelText.textContent = label;
+    text.appendChild(labelText);
+
+    if (description) {
+      const hint = document.createElement('small');
+      hint.textContent = description;
+      text.appendChild(hint);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'control-panel__actions control-panel__actions--inline';
+
     input.addEventListener('change', () => onChange?.(input.checked));
 
     actions.appendChild(input);
+    row.append(text, actions);
+    this.sectionHost.appendChild(row);
     return input;
   }
 
