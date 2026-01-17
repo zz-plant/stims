@@ -123,6 +123,31 @@ export function initAudioControls(
     statusEl.textContent = message;
   };
 
+  const emphasizeDemoAudio = () => {
+    if (demoBtn instanceof HTMLButtonElement) {
+      demoBtn.classList.add('primary');
+    }
+    if (micBtn instanceof HTMLButtonElement) {
+      micBtn.classList.remove('primary');
+    }
+  };
+
+  const buildMicrophoneErrorMessage = (message: string) => {
+    if (!message) {
+      return 'Microphone access failed. Use demo audio to keep exploring.';
+    }
+
+    if (/demo audio/i.test(message)) {
+      return message;
+    }
+
+    if (/microphone|audio/i.test(message)) {
+      return `${message} Use demo audio to keep exploring.`;
+    }
+
+    return `${message} Use demo audio to keep exploring.`;
+  };
+
   if (options.preferDemoAudio && demoBtn instanceof HTMLButtonElement) {
     demoBtn.classList.add('primary');
     if (micBtn instanceof HTMLButtonElement) {
@@ -141,6 +166,7 @@ export function initAudioControls(
     button: Element | null,
     action: () => Promise<void>,
     errorMessage: string,
+    onError?: (message: string) => void,
   ) => {
     setButtonsDisabled(true);
     setPending(button, true);
@@ -148,7 +174,9 @@ export function initAudioControls(
       await action();
       options.onSuccess?.();
     } catch (err) {
-      updateStatus(err instanceof Error ? err.message : errorMessage);
+      const message = err instanceof Error ? err.message : errorMessage;
+      updateStatus(message);
+      onError?.(message);
     } finally {
       setPending(button, false);
       setButtonsDisabled(false);
@@ -160,6 +188,10 @@ export function initAudioControls(
       micBtn,
       options.onRequestMicrophone,
       'Microphone access failed.',
+      (message) => {
+        emphasizeDemoAudio();
+        updateStatus(buildMicrophoneErrorMessage(message));
+      },
     );
   });
 
