@@ -1,6 +1,10 @@
 import type * as THREE from 'three';
 import { createSharedInitializer } from '../../utils/shared-initializer.ts';
 import {
+  getActiveRenderPreferences,
+  subscribeToRenderPreferences,
+} from '../render-preferences.ts';
+import {
   getRendererCapabilities,
   type RendererBackend,
   type RendererCapabilities,
@@ -35,11 +39,19 @@ type RendererPoolEntry = {
 
 const rendererPool: RendererPoolEntry[] = [];
 let activeQuality: QualityPreset = getActiveQualityPreset();
+let activeRenderPreferences = getActiveRenderPreferences();
 const rendererCapabilitiesInitializer =
   createSharedInitializer<RendererCapabilities>(getRendererCapabilities);
 
 subscribeToQualityPreset((preset) => {
   activeQuality = preset;
+  rendererPool
+    .filter((entry) => entry.inUse)
+    .forEach((entry) => entry.handle.applySettings());
+});
+
+subscribeToRenderPreferences((preferences) => {
+  activeRenderPreferences = preferences;
   rendererPool
     .filter((entry) => entry.inUse)
     .forEach((entry) => entry.handle.applySettings());
@@ -53,10 +65,12 @@ function buildSettings(
     maxPixelRatio:
       options.maxPixelRatio ??
       info?.maxPixelRatio ??
+      activeRenderPreferences.maxPixelRatio ??
       activeQuality.maxPixelRatio,
     renderScale:
       options.renderScale ??
       info?.renderScale ??
+      activeRenderPreferences.renderScale ??
       activeQuality.renderScale ??
       1,
     exposure: options.exposure ?? info?.exposure ?? 1,

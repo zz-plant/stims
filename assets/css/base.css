@@ -312,6 +312,55 @@ body {
   justify-content: flex-end;
 }
 
+.toy-nav__share-wrapper {
+  display: grid;
+  gap: 4px;
+  justify-items: flex-end;
+}
+
+.toy-nav__share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(111, 247, 255, 0.6);
+  background: rgba(17, 216, 255, 0.12);
+  color: #e9fbff;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+  touch-action: manipulation;
+}
+
+.toy-nav__share:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 0, 153, 0.8);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.35),
+    0 0 16px rgba(255, 0, 153, 0.35);
+}
+
+.toy-nav__share:focus-visible {
+  outline: 2px solid rgba(111, 247, 255, 0.9);
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 3px rgba(0, 0, 0, 0.35),
+    0 0 18px rgba(17, 216, 255, 0.65);
+}
+
+.toy-nav__share-status {
+  min-height: 16px;
+  font-size: 0.75rem;
+  color: rgba(233, 251, 255, 0.75);
+}
+
 .renderer-status {
   display: grid;
   gap: 6px;
@@ -458,6 +507,15 @@ body {
     width: 100%;
   }
 
+  .toy-nav__share-wrapper {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .toy-nav__share {
+    width: 100%;
+  }
+
   .toy-nav__back {
     width: 100%;
     justify-content: center;
@@ -516,6 +574,7 @@ body {
     0 0 24px rgba(17, 216, 255, 0.35);
   backdrop-filter: blur(18px) saturate(130%);
   color: #e9fbff;
+  overscroll-behavior: contain;
 }
 
 .rendering-overlay__panel h1 {
@@ -550,6 +609,46 @@ body {
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 14px;
+}
+
+.rendering-overlay__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.rendering-overlay__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(111, 247, 255, 0.6);
+  background: rgba(17, 216, 255, 0.12);
+  color: #e9fbff;
+  text-decoration: none;
+  font-weight: 700;
+  transition:
+    transform 160ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+  touch-action: manipulation;
+}
+
+.rendering-overlay__button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 0, 153, 0.8);
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.25),
+    0 0 12px rgba(17, 216, 255, 0.35);
+}
+
+.rendering-overlay__button:focus-visible {
+  outline: 2px solid rgba(111, 247, 255, 0.9);
+  outline-offset: 3px;
 }
 
 .rendering-overlay__links a {
@@ -638,6 +737,7 @@ body {
   backdrop-filter: blur(12px) saturate(130%);
   z-index: 1100;
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .control-panel--floating {
@@ -772,6 +872,19 @@ body {
   font-size: 0.95rem;
 }
 
+.control-panel__note {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: rgba(233, 251, 255, 0.75);
+}
+
+.control-panel__value {
+  min-width: 52px;
+  text-align: right;
+  font-weight: 700;
+  color: rgba(233, 251, 255, 0.85);
+}
+
 .control-panel__label.small {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -787,6 +900,7 @@ body {
   border: 1px solid rgba(111, 247, 255, 0.6);
   background: rgba(8, 12, 20, 0.85);
   color: #e9fbff;
+  font-size: 1rem;
 }
 
 .control-panel__recent {
@@ -857,6 +971,7 @@ body {
   box-shadow:
     0 0 14px rgba(17, 216, 255, 0.25),
     inset 0 0 12px rgba(255, 0, 153, 0.18);
+  font-size: 1rem;
 }
 
 .control-panel select:focus,
@@ -977,6 +1092,23 @@ body {
   box-shadow:
     0 0 18px rgba(255, 0, 153, 0.4),
     0 0 10px rgba(111, 247, 255, 0.35);
+}
+
+.cta-button[data-loading="true"] {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.cta-button[data-loading="true"]::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  margin-right: 6px;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes grid-glide {

@@ -5,6 +5,10 @@ import {
   getContextFrequencyData,
 } from '../core/animation-loop';
 import {
+  getActiveMotionPreference,
+  subscribeToMotionPreference,
+} from '../core/motion-preferences';
+import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   getSettingsPanel,
@@ -190,8 +194,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   });
 
   type MotionAccessState = 'prompt' | 'granted' | 'denied' | 'unavailable';
-  const motionSupported =
+  const deviceMotionSupported =
     typeof window !== 'undefined' && 'DeviceOrientationEvent' in window;
+  let motionPreferenceEnabled = getActiveMotionPreference().enabled;
+  let motionSupported = deviceMotionSupported && motionPreferenceEnabled;
   let motionCleanup: (() => void) | null = null;
   const cleanupMotion = () => {
     motionCleanup?.();
@@ -297,7 +303,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   motionStatus.className = 'control-panel__note';
   motionStatus.textContent = motionSupported
     ? 'Enable device motion to steer the sand with tilt.'
-    : 'Device motion is unavailable; gravity will stay locked.';
+    : deviceMotionSupported
+      ? 'Motion input is off. Enable it in the global settings to steer the sand.'
+      : 'Device motion is unavailable; gravity will stay locked.';
 
   const motionButton = document.createElement('button');
   motionButton.type = 'button';
@@ -325,9 +333,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       motionAccess === 'denied';
 
     if (!motionSupported) {
-      motionButton.textContent = 'Motion unsupported';
-      motionStatus.textContent =
-        'Device motion is unavailable; gravity will stay locked.';
+      motionButton.textContent = deviceMotionSupported
+        ? 'Motion disabled'
+        : 'Motion unsupported';
+      motionStatus.textContent = deviceMotionSupported
+        ? 'Motion input is off. Enable it in the global settings to steer the sand.'
+        : 'Device motion is unavailable; gravity will stay locked.';
       syncGravityLock(true);
       return;
     }
@@ -400,6 +411,18 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   motionButton.addEventListener('click', () => {
     void requestMotionAccess();
   });
+
+  const unsubscribeMotionPreference = subscribeToMotionPreference(
+    (preference) => {
+      motionPreferenceEnabled = preference.enabled;
+      motionSupported = deviceMotionSupported && motionPreferenceEnabled;
+      if (!motionSupported) {
+        cleanupMotion();
+        motionAccess = deviceMotionSupported ? 'prompt' : 'unavailable';
+      }
+      updateMotionUI();
+    },
+  );
 
   initHints({
     id: 'tactile-sand-table',
@@ -523,6 +546,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   return {
     dispose: () => {
       cleanupMotion();
+      unsubscribeMotionPreference();
       toy.dispose();
       heightfield.texture.dispose();
       sandGeometry.dispose();
