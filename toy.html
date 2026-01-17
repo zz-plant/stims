@@ -10,15 +10,18 @@
   <body>
     <div id="nav-container"></div>
     <div id="controls-container"></div>
+    <div id="settings-container"></div>
     <script type="module" src="assets/js/toyMain.ts"></script>
     <script type="module">
       import { attachCapabilityPreflight } from './assets/js/core/capability-preflight.ts';
       import { startToyPage } from './assets/js/toyMain.ts';
       import { initNavigation } from './assets/js/ui/nav.ts';
       import { initAudioControls } from './assets/js/ui/audio-controls.ts';
+      import { initSystemControls } from './assets/js/ui/system-controls.ts';
 
       const navContainer = document.getElementById('nav-container');
       const controlsContainer = document.getElementById('controls-container');
+      const settingsContainer = document.getElementById('settings-container');
       
       let loaderStarted = false;
       const startLoaderIfNeeded = () => {
@@ -86,10 +89,21 @@
             if (!starter) throw new Error('Audio starter unavailable.');
             return starter({ stream });
           },
+          onRequestTabAudio: async (stream) => {
+            startLoaderIfNeeded();
+            const starter = getStarter();
+            if (!starter) throw new Error('Audio starter unavailable.');
+            return starter({ stream });
+          },
           onSuccess: () => {
             if (controlsContainer) controlsContainer.hidden = true;
           }
         });
+      };
+
+      const setupSystemControls = () => {
+        if (!settingsContainer || settingsContainer.childElementCount > 0) return;
+        initSystemControls(settingsContainer);
       };
 
       attachCapabilityPreflight({
@@ -98,12 +112,14 @@
           if (result.canProceed) {
             startLoaderIfNeeded();
             setupAudio();
+            setupSystemControls();
           }
         },
         onRetry: (result) => {
           if (result.canProceed) {
             startLoaderIfNeeded();
             setupAudio();
+            setupSystemControls();
           }
         },
         host: document.body,
