@@ -108,9 +108,9 @@
           <p class="section-description">
             Tap a card to launch. Everything is accessible and ready to play.
           </p>
-          <div class="library-search">
+          <search class="library-search">
             <label class="sr-only" for="toy-search">Search the library</label>
-            <div class="search-field">
+            <form class="search-field" role="search" data-search-form>
               <input
                 id="toy-search"
                 type="search"
@@ -119,6 +119,7 @@
                 autocomplete="off"
                 aria-describedby="toy-search-hint"
                 inputmode="search"
+                list="toy-search-suggestions"
               />
               <button
                 type="button"
@@ -135,7 +136,8 @@
               >
                 Enter a name, tag, or capability
               </span>
-            </div>
+              <datalist id="toy-search-suggestions"></datalist>
+            </form>
             <div class="filter-row" role="group" aria-label="Curated filters">
               <div class="chip-row" data-chip-row>
                 <button
@@ -216,7 +218,7 @@
                 Loading library…
               </p>
             </div>
-          </div>
+          </search>
         </div>
         <main id="toy-list" class="webtoy-container"></main>
       </section>
@@ -263,6 +265,10 @@
         if (!list || list.childElementCount > 0) return;
 
         const search = document.getElementById('toy-search');
+        const searchForm = document.querySelector('[data-search-form]');
+        const searchSuggestions = document.getElementById(
+          'toy-search-suggestions'
+        );
         const searchResults = document.querySelector('[data-search-results]');
         const clearSearchButton = document.querySelector('[data-search-clear]');
         const resetFiltersButton = document.querySelector('[data-filter-reset]');
@@ -421,18 +427,32 @@
                 ? toy.module
                 : `toy.html?toy=${encodeURIComponent(toy.slug)}`;
 
-            const card = document.createElement('a');
+            const card = document.createElement('article');
             card.className = 'webtoy-card';
-            card.href = href;
             card.setAttribute('data-toy-fallback', 'true');
+
+            const link = document.createElement('a');
+            link.className = 'webtoy-card__link';
+            link.href = href;
 
             const title = document.createElement('h3');
             title.textContent = toy.title;
+            const titleId = `toy-title-${toy.slug}`;
+            title.id = titleId;
 
             const desc = document.createElement('p');
             desc.textContent = toy.description;
+            const descId = `toy-desc-${toy.slug}`;
+            desc.id = descId;
 
-            card.append(title, desc);
+            link.setAttribute('aria-labelledby', titleId);
+            link.setAttribute('aria-describedby', descId);
+
+            const content = document.createElement('div');
+            content.className = 'webtoy-card__content';
+            content.append(title, desc);
+
+            card.append(link, content);
 
             const badgeRow = document.createElement('div');
             badgeRow.className = 'webtoy-card-meta';
@@ -469,11 +489,23 @@
 
             if (badges.length > 0) {
               badges.forEach((badgeData) => {
-                const badge = document.createElement('span');
+                const badge = document.createElement('button');
+                const popover = document.createElement('div');
+                const popoverId = `capability-${toy.slug}-${badgeData.label
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')}`;
                 badge.className = 'capability-badge';
+                badge.type = 'button';
                 badge.textContent = badgeData.label;
-                badge.title = badgeData.title;
+                badge.setAttribute('popovertarget', popoverId);
+                badge.setAttribute('popovertargetaction', 'toggle');
+                badge.setAttribute('aria-describedby', popoverId);
+                popover.className = 'capability-popover';
+                popover.id = popoverId;
+                popover.setAttribute('popover', 'auto');
+                popover.textContent = badgeData.title;
                 badgeRow.appendChild(badge);
+                badgeRow.appendChild(popover);
               });
 
               card.appendChild(badgeRow);
@@ -603,12 +635,35 @@
           updateControlVisibility();
         };
 
+        const updateSearchSuggestions = (toys) => {
+          if (!(searchSuggestions instanceof HTMLDataListElement)) return;
+          const suggestions = new Set();
+          toys.forEach((toy) => {
+            (toy.tags ?? []).forEach((tag) => suggestions.add(tag));
+            (toy.moods ?? []).forEach((mood) => suggestions.add(mood));
+            Object.entries(toy.capabilities || {})
+              .filter(([, enabled]) => !!enabled)
+              .forEach(([key]) => suggestions.add(key));
+            if (toy.requiresWebGPU) suggestions.add('webgpu');
+          });
+          searchSuggestions.innerHTML = '';
+          [...suggestions]
+            .filter((value) => typeof value === 'string' && value.trim())
+            .sort((a, b) => a.localeCompare(b))
+            .forEach((value) => {
+              const option = document.createElement('option');
+              option.value = value;
+              searchSuggestions.appendChild(option);
+            });
+        };
+
         fetch('./toys.json')
           .then((response) => (response.ok ? response.json() : null))
           .then((toys) => {
             if (!toys || list.childElementCount > 0) return;
 
             allToys = toys;
+            updateSearchSuggestions(allToys);
             const urlState = getStateFromUrl();
             const hasUrlState =
               urlState.query ||
@@ -624,6 +679,18 @@
               }
             }
             renderCards(applyFilters());
+
+            if (searchForm instanceof HTMLFormElement) {
+              searchForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                if (!(search instanceof HTMLInputElement)) return;
+                cachedQuery = search.value.toLowerCase().trim();
+                lastCommittedQuery = cachedQuery.trim();
+                commitState({ replace: false });
+                renderCards(applyFilters(cachedQuery), cachedQuery);
+                updateControlVisibility();
+              });
+            }
 
             if (search instanceof HTMLInputElement) {
               search.addEventListener('input', () => {
