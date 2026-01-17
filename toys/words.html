@@ -108,8 +108,15 @@
         border: 1px solid rgba(255, 255, 255, 0.35);
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
-        outline: none;
-        font-size: 0.95rem;
+        font-size: 16px;
+        min-height: 44px;
+        touch-action: manipulation;
+      }
+
+      .manual-input:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.9);
+        outline-offset: 3px;
+        box-shadow: 0 0 0 3px rgba(64, 255, 255, 0.35);
       }
 
       .pill-button {
@@ -120,6 +127,9 @@
         color: #fff;
         cursor: pointer;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        min-height: 44px;
+        min-width: 44px;
+        touch-action: manipulation;
         transition:
           transform 0.2s ease,
           box-shadow 0.2s ease;
@@ -142,6 +152,9 @@
         border: none;
         cursor: pointer;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        min-height: 44px;
+        min-width: 44px;
+        touch-action: manipulation;
         transition:
           box-shadow 0.4s ease,
           transform 0.3s ease;
@@ -225,6 +238,8 @@
             class="control-icon"
             src="./assets/ui/mic-off.svg"
             alt="Mic Access Icon"
+            width="35"
+            height="35"
           />
         </button>
 
@@ -239,6 +254,8 @@
             class="control-icon"
             src="./assets/ui/speech-off.svg"
             alt="Add Word Icon"
+            width="35"
+            height="35"
           />
         </button>
       </div>

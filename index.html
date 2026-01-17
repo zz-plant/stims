@@ -540,6 +540,18 @@
           return params;
         };
 
+        const resolvePathname = () => {
+          if (window.location?.pathname) return window.location.pathname;
+          if (window.location?.href) {
+            try {
+              return new URL(window.location.href).pathname;
+            } catch (_error) {
+              return '/';
+            }
+          }
+          return '/';
+        };
+
         const commitState = ({ replace }) => {
           const state = {
             query: cachedQuery.trim(),
@@ -547,13 +559,17 @@
             sort: sortBy,
           };
           const params = stateToParams(state);
-          const nextUrl = `${window.location.pathname}${
+          const nextUrl = `${resolvePathname()}${
             params.toString() ? `?${params.toString()}` : ''
           }`;
-          if (replace) {
-            window.history.replaceState(state, '', nextUrl);
-          } else {
-            window.history.pushState(state, '', nextUrl);
+          try {
+            if (replace) {
+              window.history.replaceState(state, '', nextUrl);
+            } else {
+              window.history.pushState(state, '', nextUrl);
+            }
+          } catch (_error) {
+            // Ignore history errors in non-browser environments.
           }
           saveStateToStorage(state);
         };
