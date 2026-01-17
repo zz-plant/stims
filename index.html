@@ -120,6 +120,14 @@
                 aria-describedby="toy-search-hint"
                 inputmode="search"
               />
+              <button
+                type="button"
+                class="search-clear"
+                data-search-clear
+                aria-label="Clear search"
+              >
+                Clear
+              </button>
               <span
                 id="toy-search-hint"
                 aria-hidden="true"
@@ -185,6 +193,9 @@
                   WebGPU
                 </button>
               </div>
+              <button type="button" class="filter-reset" data-filter-reset>
+                Clear filters
+              </button>
               <label class="sort-control">
                 <span>Sort</span>
                 <select data-sort-control>
@@ -253,6 +264,8 @@
 
         const search = document.getElementById('toy-search');
         const searchResults = document.querySelector('[data-search-results]');
+        const clearSearchButton = document.querySelector('[data-search-clear]');
+        const resetFiltersButton = document.querySelector('[data-filter-reset]');
         const STORAGE_KEY = 'stims-library-state';
         const QUERY_PARAM = 'q';
         const FILTER_PARAM = 'filters';
@@ -367,6 +380,17 @@
 
           empty.append(message, reset);
           list.appendChild(empty);
+        };
+
+        const updateControlVisibility = () => {
+          if (clearSearchButton instanceof HTMLElement) {
+            const hasQuery = cachedQuery.trim().length > 0;
+            clearSearchButton.classList.toggle('is-visible', hasQuery);
+          }
+          if (resetFiltersButton instanceof HTMLElement) {
+            const hasFilters = activeFilters.size > 0;
+            resetFiltersButton.classList.toggle('is-active', hasFilters);
+          }
         };
 
         const applyFilters = (query = cachedQuery) => {
@@ -551,13 +575,16 @@
             const value = chip.getAttribute('data-filter-value');
             if (!type || !value) return;
             const token = `${type}:${value.toLowerCase()}`;
-            chip.classList.toggle('is-active', activeFilters.has(token));
+            const isActive = activeFilters.has(token);
+            chip.classList.toggle('is-active', isActive);
+            chip.setAttribute('aria-pressed', String(isActive));
           });
 
           const sortControl = document.querySelector('[data-sort-control]');
           if (sortControl && sortControl.tagName === 'SELECT') {
             sortControl.value = sortBy;
           }
+          updateControlVisibility();
         };
 
         fetch('./toys.json')
@@ -596,6 +623,7 @@
                   }
                 }, 500);
                 renderCards(applyFilters(cachedQuery), cachedQuery);
+                updateControlVisibility();
               });
               search.addEventListener('blur', () => {
                 if (cachedQuery.trim() !== lastCommittedQuery) {
@@ -607,6 +635,10 @@
 
             const chips = document.querySelectorAll('[data-filter-chip]');
             chips.forEach((chip) => {
+              chip.setAttribute(
+                'aria-pressed',
+                String(chip.classList.contains('is-active'))
+              );
               chip.addEventListener('click', () => {
                 const type = chip.getAttribute('data-filter-type');
                 const value = chip.getAttribute('data-filter-value');
@@ -618,8 +650,10 @@
                 } else {
                   activeFilters.delete(token);
                 }
+                chip.setAttribute('aria-pressed', String(isActive));
                 commitState({ replace: false });
                 renderCards(applyFilters(), cachedQuery);
+                updateControlVisibility();
               });
             });
 
@@ -629,6 +663,35 @@
                 sortBy = sortControl.value;
                 commitState({ replace: false });
                 renderCards(applyFilters(), cachedQuery);
+              });
+            }
+
+            if (
+              clearSearchButton instanceof HTMLButtonElement &&
+              search instanceof HTMLInputElement
+            ) {
+              clearSearchButton.addEventListener('click', () => {
+                search.value = '';
+                cachedQuery = '';
+                lastCommittedQuery = '';
+                commitState({ replace: false });
+                renderCards(applyFilters(''), '');
+                updateControlVisibility();
+                search.focus();
+              });
+            }
+
+            if (resetFiltersButton instanceof HTMLButtonElement) {
+              resetFiltersButton.addEventListener('click', () => {
+                activeFilters.clear();
+                const chips = document.querySelectorAll('[data-filter-chip]');
+                chips.forEach((chip) => {
+                  chip.classList.remove('is-active');
+                  chip.setAttribute('aria-pressed', 'false');
+                });
+                commitState({ replace: false });
+                renderCards(applyFilters(), cachedQuery);
+                updateControlVisibility();
               });
             }
 
