@@ -1342,7 +1342,7 @@ h1 {
     border-color 0.3s ease,
     background 0.3s ease;
   text-align: left;
-  cursor: pointer;
+  cursor: default;
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(8px);
   border: 1px solid var(--surface-border);
@@ -1357,6 +1357,26 @@ h1 {
   position: relative;
   overflow: hidden;
   touch-action: manipulation;
+}
+
+.webtoy-card__link {
+  color: inherit;
+  text-decoration: none;
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  z-index: 1;
+}
+
+.webtoy-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* Gradient shimmer overlay */
@@ -1451,10 +1471,14 @@ h1 {
   justify-content: center;
   gap: 0.5rem;
   margin-top: 0.9rem;
+  position: relative;
+  z-index: 2;
 }
 
 .capability-badge {
   padding: 0.4rem 0.75rem;
+  min-height: 44px;
+  min-width: 44px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--hover-bg);
   background: var(--accent-soft);
@@ -1462,6 +1486,12 @@ h1 {
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .capability-badge--warning {
@@ -1470,18 +1500,29 @@ h1 {
   color: #ffbf47;
 }
 
+.capability-badge:focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.capability-popover {
+  max-width: 220px;
+  border-radius: 12px;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 14, 26, 0.92);
+  color: var(--text-color);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
+}
+
+.capability-popover:popover-open {
+  animation: fadeSlide 0.2s ease;
+}
+
 .capability-note {
   font-size: 0.8rem;
   color: var(--text-muted);
-}
-
-.webtoy-card a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.webtoy-card a:hover {
-  text-decoration: underline;
 }
 
 footer {

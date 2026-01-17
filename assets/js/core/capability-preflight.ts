@@ -368,9 +368,69 @@ export function attachCapabilityPreflight({
   onComplete?: (result: CapabilityPreflightResult) => void;
   onRetry?: (result: CapabilityPreflightResult) => void;
 } = {}) {
-  const panel = document.createElement('section');
-  panel.className = 'control-panel control-panel--floating preflight-panel';
+  const panel = document.createElement('dialog');
+  panel.className =
+    'control-panel control-panel--floating preflight-panel preflight-dialog';
   panel.setAttribute('aria-live', 'polite');
+
+  const MODAL_PARAM = 'modal';
+  const MODAL_VALUE = 'capability-check';
+  const previousActiveElement =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+  let closingFromHistory = false;
+
+  const resolvePathname = () => {
+    if (window.location?.pathname) return window.location.pathname;
+    if (window.location?.href) {
+      try {
+        return new URL(window.location.href).pathname;
+      } catch (_error) {
+        return '/';
+      }
+    }
+    return '/';
+  };
+
+  const updateModalParam = (nextValue: string | null, usePush = true) => {
+    const params = new URLSearchParams(window.location.search);
+    if (nextValue) {
+      params.set(MODAL_PARAM, nextValue);
+    } else {
+      params.delete(MODAL_PARAM);
+    }
+    const nextUrl = `${resolvePathname()}${
+      params.toString() ? `?${params.toString()}` : ''
+    }`;
+    try {
+      if (usePush) {
+        window.history.pushState({ modal: nextValue }, '', nextUrl);
+      } else {
+        window.history.replaceState({ modal: nextValue }, '', nextUrl);
+      }
+    } catch (_error) {
+      // Ignore history errors in non-browser environments.
+    }
+  };
+
+  const isPanelOpen = () => panel.open || panel.hasAttribute('open');
+  const openPanel = () => {
+    if (isPanelOpen()) return;
+    if (typeof panel.showModal === 'function') {
+      panel.showModal();
+    } else {
+      panel.setAttribute('open', 'true');
+    }
+  };
+  const closePanel = () => {
+    if (!isPanelOpen()) return;
+    if (typeof panel.close === 'function') {
+      panel.close();
+    } else {
+      panel.removeAttribute('open');
+    }
+  };
 
   const title = document.createElement('div');
   title.className = 'control-panel__heading';
@@ -471,17 +531,71 @@ export function attachCapabilityPreflight({
     void run(true);
   });
 
-  const attach = () => host.appendChild(panel);
+  panel.addEventListener('cancel', (event) => {
+    if (!latestResult?.canProceed) {
+      event.preventDefault();
+    }
+  });
+
+  panel.addEventListener('close', () => {
+    if (previousActiveElement) {
+      previousActiveElement.focus();
+    }
+    if (closingFromHistory) {
+      closingFromHistory = false;
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(MODAL_PARAM) === MODAL_VALUE) {
+      window.history.back();
+    }
+  });
+
+  const handlePopState = () => {
+    const params = new URLSearchParams(window.location.search);
+    const shouldBeOpen = params.get(MODAL_PARAM) === MODAL_VALUE;
+    if (!shouldBeOpen && isPanelOpen()) {
+      closingFromHistory = true;
+      closePanel();
+      return;
+    }
+    if (shouldBeOpen && !isPanelOpen()) {
+      openPanel();
+    }
+  };
+
+  const attach = () => {
+    host.appendChild(panel);
+    openPanel();
+  };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attach, { once: true });
   } else {
     attach();
   }
 
+  const params = new URLSearchParams(window.location.search);
+  if (params.get(MODAL_PARAM) !== MODAL_VALUE) {
+    updateModalParam(MODAL_VALUE, true);
+  } else {
+    updateModalParam(MODAL_VALUE, false);
+  }
+
+  window.addEventListener('popstate', handlePopState);
+
   void run();
 
   return {
     run,
-    destroy: () => panel.remove(),
+    destroy: () => {
+      window.removeEventListener('popstate', handlePopState);
+      closingFromHistory = true;
+      closePanel();
+      panel.remove();
+      const params = new URLSearchParams(window.location.search);
+      if (params.get(MODAL_PARAM) === MODAL_VALUE) {
+        updateModalParam(null, false);
+      }
+    },
   };
 }
