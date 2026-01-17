@@ -1,5 +1,7 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
+import { isCompatibilityModeEnabled } from './render-preferences.ts';
+
 export type RendererBackend = 'webgl' | 'webgpu';
 
 export type RendererCapabilities = {
@@ -85,6 +87,15 @@ function resetCache() {
 async function probeRendererCapabilities(): Promise<RendererCapabilities> {
   if (typeof navigator === 'undefined') {
     return cacheResult(buildFallback('Renderer capabilities are unavailable.'));
+  }
+
+  if (isCompatibilityModeEnabled()) {
+    return cacheResult(
+      buildFallback('Compatibility mode is enabled. Using WebGL.', {
+        triedWebGPU: false,
+        shouldRetryWebGPU: false,
+      }),
+    );
   }
 
   const { gpu } = navigator as Navigator & { gpu?: GPU };

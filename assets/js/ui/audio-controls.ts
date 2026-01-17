@@ -4,6 +4,7 @@ export interface AudioControlsOptions {
   onRequestMicrophone: () => Promise<void>;
   onRequestDemoAudio: () => Promise<void>;
   onRequestYouTubeAudio?: (stream: MediaStream) => Promise<void>;
+  onRequestTabAudio?: (stream: MediaStream) => Promise<void>;
   onSuccess?: () => void;
   statusElement?: HTMLElement;
 }
@@ -34,6 +35,20 @@ export function initAudioControls(
       </div>
       <button id="use-demo-audio" class="cta-button">Use demo audio</button>
     </div>
+
+    ${
+      options.onRequestTabAudio
+        ? `
+    <div class="control-panel__row">
+      <div class="control-panel__text">
+        <span class="control-panel__label">Tab audio</span>
+        <small>Capture audio from the current browser tab.</small>
+      </div>
+      <button id="use-tab-audio" class="cta-button">Capture tab audio</button>
+    </div>
+    `
+        : ''
+    }
     
     ${
       options.onRequestYouTubeAudio
@@ -72,13 +87,29 @@ export function initAudioControls(
         : ''
     }
     
-    <div id="audio-status" class="control-panel__status" role="status" hidden></div>
+    <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
   `;
 
   const micBtn = container.querySelector('#start-audio-btn');
   const demoBtn = container.querySelector('#use-demo-audio');
+  const tabBtn = container.querySelector('#use-tab-audio');
   const statusEl = (options.statusElement ||
     container.querySelector('#audio-status')) as HTMLElement;
+  const requestTabAudio = options.onRequestTabAudio;
+
+  const setPending = (button: Element | null, pending: boolean) => {
+    if (!(button instanceof HTMLElement)) return;
+    button.toggleAttribute('data-loading', pending);
+    button.setAttribute('aria-busy', pending ? 'true' : 'false');
+  };
+
+  const setButtonsDisabled = (disabled: boolean) => {
+    [micBtn, demoBtn, tabBtn].forEach((button) => {
+      if (button instanceof HTMLButtonElement) {
+        button.disabled = disabled;
+      }
+    });
+  };
 
   const updateStatus = (
     message: string,
@@ -90,26 +121,61 @@ export function initAudioControls(
     statusEl.textContent = message;
   };
 
-  micBtn?.addEventListener('click', async () => {
+  const handleRequest = async (
+    button: Element | null,
+    action: () => Promise<void>,
+    errorMessage: string,
+  ) => {
+    setButtonsDisabled(true);
+    setPending(button, true);
     try {
-      await options.onRequestMicrophone();
+      await action();
       options.onSuccess?.();
     } catch (err) {
-      updateStatus(
-        err instanceof Error ? err.message : 'Microphone access failed.',
-      );
+      updateStatus(err instanceof Error ? err.message : errorMessage);
+    } finally {
+      setPending(button, false);
+      setButtonsDisabled(false);
     }
+  };
+
+  micBtn?.addEventListener('click', () => {
+    void handleRequest(
+      micBtn,
+      options.onRequestMicrophone,
+      'Microphone access failed.',
+    );
   });
 
-  demoBtn?.addEventListener('click', async () => {
-    try {
-      await options.onRequestDemoAudio();
-      options.onSuccess?.();
-    } catch (err) {
-      updateStatus(
-        err instanceof Error ? err.message : 'Demo audio failed to load.',
-      );
-    }
+  demoBtn?.addEventListener('click', () => {
+    void handleRequest(
+      demoBtn,
+      options.onRequestDemoAudio,
+      'Demo audio failed to load.',
+    );
+  });
+
+  tabBtn?.addEventListener('click', () => {
+    if (!requestTabAudio) return;
+    void handleRequest(
+      tabBtn,
+      async () => {
+        if (!navigator.mediaDevices?.getDisplayMedia) {
+          throw new Error('Tab audio capture unavailable.');
+        }
+        updateStatus('Choose “This tab” and enable audio sharing.', 'success');
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true,
+        });
+        if (!stream.getAudioTracks().length) {
+          stream.getTracks().forEach((track) => track.stop());
+          throw new Error('No audio track detected. Enable “Share audio”.');
+        }
+        await requestTabAudio(stream);
+      },
+      'Tab audio capture failed.',
+    );
   });
 
   if (options.onRequestYouTubeAudio) {
@@ -119,6 +185,7 @@ export function initAudioControls(
       options.onRequestYouTubeAudio,
       updateStatus,
       options.onSuccess,
+      setButtonsDisabled,
     );
   }
 }
@@ -129,6 +196,7 @@ function setupYouTubeLogic(
   onUse: (stream: MediaStream) => Promise<void>,
   updateStatus: (msg: string, v?: 'success' | 'error') => void,
   onSuccess?: () => void,
+  setButtonsDisabled?: (disabled: boolean) => void,
 ) {
   const input = container.querySelector('#youtube-url') as HTMLInputElement;
   const loadBtn = container.querySelector('#load-youtube');
@@ -202,6 +270,10 @@ function setupYouTubeLogic(
     }
 
     try {
+      setButtonsDisabled?.(true);
+      useBtn.disabled = true;
+      useBtn.toggleAttribute('data-loading', true);
+      useBtn.setAttribute('aria-busy', 'true');
       updateStatus('Choose “This tab” and enable audio sharing.', 'success');
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
@@ -216,6 +288,11 @@ function setupYouTubeLogic(
       onSuccess?.();
     } catch (_err) {
       updateStatus('YouTube audio capture failed.');
+    } finally {
+      useBtn.disabled = false;
+      useBtn.toggleAttribute('data-loading', false);
+      useBtn.setAttribute('aria-busy', 'false');
+      setButtonsDisabled?.(false);
     }
   });
 }

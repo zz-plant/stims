@@ -3,6 +3,7 @@ export interface NavOptions {
   title?: string;
   slug?: string;
   onBack?: () => void;
+  onShare?: () => void;
   rendererStatus?: {
     backend: 'webgl' | 'webgpu';
     fallbackReason?: string | null;
@@ -61,6 +62,12 @@ function renderToyNav(
     </div>
     <div class="active-toy-nav__actions">
       <div class="renderer-status-container"></div>
+      <div class="toy-nav__share-wrapper">
+        <button type="button" class="toy-nav__share" data-share-toy="true">
+          Copy share link
+        </button>
+        <span class="toy-nav__share-status" role="status" aria-live="polite"></span>
+      </div>
       <button type="button" class="toy-nav__back" data-back-to-library="true">
         <span aria-hidden="true">←</span><span>Back to library</span>
       </button>
@@ -82,6 +89,55 @@ function renderToyNav(
 
   const backBtn = container.querySelector('.toy-nav__back');
   backBtn?.addEventListener('click', () => options.onBack?.());
+
+  const shareBtn = container.querySelector('.toy-nav__share');
+  const shareStatus = container.querySelector(
+    '.toy-nav__share-status',
+  ) as HTMLElement | null;
+
+  const showShareStatus = (message: string) => {
+    if (!shareStatus) return;
+    shareStatus.textContent = message;
+    if (!message) return;
+    const win = doc.defaultView ?? window;
+    win.setTimeout(() => {
+      if (shareStatus.textContent === message) {
+        shareStatus.textContent = '';
+      }
+    }, 3200);
+  };
+
+  const copyShareLink = async () => {
+    const win = doc.defaultView ?? window;
+    const url = win.location.href;
+    showShareStatus('Copying link…');
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const helper = doc.createElement('textarea');
+        helper.value = url;
+        helper.setAttribute('readonly', 'true');
+        helper.style.position = 'fixed';
+        helper.style.top = '-1000px';
+        doc.body.appendChild(helper);
+        helper.select();
+        doc.execCommand('copy');
+        helper.remove();
+      }
+      showShareStatus('Share link copied.');
+    } catch (_error) {
+      showShareStatus('Unable to copy link.');
+    }
+  };
+
+  shareBtn?.addEventListener('click', () => {
+    if (options.onShare) {
+      options.onShare();
+      return;
+    }
+    void copyShareLink();
+  });
 }
 
 function renderRendererStatus(

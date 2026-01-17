@@ -56,6 +56,15 @@ function buildOverlay(content: OverlayContent) {
   body.textContent = content.description;
   panel.appendChild(body);
 
+  const actions = document.createElement('div');
+  actions.className = 'rendering-overlay__actions';
+  const backLink = document.createElement('a');
+  backLink.className = 'rendering-overlay__button';
+  backLink.href = 'index.html';
+  backLink.textContent = 'Back to library';
+  actions.appendChild(backLink);
+  panel.appendChild(actions);
+
   const stepsList = document.createElement('ul');
   stepsList.className = 'rendering-overlay__steps';
   content.steps.forEach((step) => {
@@ -115,7 +124,7 @@ export function ensureWebGL(options: EnsureOptions = {}) {
   const defaultContent: OverlayContent = {
     title: 'WebGL or WebGPU is required',
     description:
-      'This visual needs GPU acceleration to draw its 3D graphics. Update your browser or enable hardware acceleration to continue.',
+      'This visual needs GPU acceleration to draw its 3D graphics. Update your browser, enable hardware acceleration, or return to the library to switch to compatibility mode.',
     steps: [
       'Use a modern browser like Chrome, Edge, or Firefox.',
       'Check that hardware acceleration is turned on in browser settings.',
