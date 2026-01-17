@@ -475,6 +475,10 @@ export function createToyView({
           : toy?.title
             ? `${toy.title} needs WebGPU, which is not supported in this browser.`
             : 'This toy requires WebGPU, which is not supported in this browser.'
+      }${
+        options.allowFallback
+          ? ' For the best results, try Chrome or Edge with WebGPU enabled.'
+          : ' Try a browser with WebGPU support or choose another toy.'
       }${options.details ? ` (${options.details})` : ''}`,
       actionsClassName: 'active-toy-actions',
       actions: [
