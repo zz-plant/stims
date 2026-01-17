@@ -218,6 +218,7 @@
               href="https://github.com/zz-plant/stims"
               target="_blank"
               rel="noopener noreferrer"
+              class="text-link"
             >
               Check out our open-source project.
             </a>
@@ -252,9 +253,15 @@
 
         const search = document.getElementById('toy-search');
         const searchResults = document.querySelector('[data-search-results]');
+        const STORAGE_KEY = 'stims-library-state';
+        const QUERY_PARAM = 'q';
+        const FILTER_PARAM = 'filters';
+        const SORT_PARAM = 'sort';
         let cachedQuery = '';
         let sortBy = 'featured';
         const activeFilters = new Set();
+        let lastCommittedQuery = '';
+        let pendingCommit;
 
         const shouldDeferToEnhanced = () =>
           document.body.dataset.libraryEnhanced === 'true';
@@ -346,6 +353,15 @@
               search.value = '';
               cachedQuery = '';
             }
+            activeFilters.clear();
+            sortBy = 'featured';
+            const chips = document.querySelectorAll('[data-filter-chip]');
+            chips.forEach((chip) => chip.classList.remove('is-active'));
+            const sortControl = document.querySelector('[data-sort-control]');
+            if (sortControl && sortControl.tagName === 'SELECT') {
+              sortControl.value = sortBy;
+            }
+            commitState({ replace: false });
             renderCards(allToys, '');
           });
 
@@ -443,18 +459,149 @@
           });
         };
 
+        const parseFilters = (value) => {
+          if (!value) return [];
+          return value
+            .split(',')
+            .map((token) => token.trim())
+            .filter(Boolean);
+        };
+
+        const getStateFromUrl = () => {
+          const params = new URLSearchParams(window.location.search);
+          return {
+            query: params.get(QUERY_PARAM) ?? '',
+            filters: parseFilters(params.get(FILTER_PARAM)),
+            sort: params.get(SORT_PARAM) ?? 'featured',
+          };
+        };
+
+        const saveStateToStorage = (state) => {
+          try {
+            window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          } catch (error) {
+            console.warn('Unable to persist library state', error);
+          }
+        };
+
+        const readStateFromStorage = () => {
+          try {
+            const stored = window.sessionStorage.getItem(STORAGE_KEY);
+            if (!stored) return null;
+            const parsed = JSON.parse(stored);
+            if (parsed && typeof parsed === 'object') return parsed;
+          } catch (error) {
+            console.warn('Unable to restore library state', error);
+          }
+          return null;
+        };
+
+        const stateToParams = (state) => {
+          const params = new URLSearchParams(window.location.search);
+          if (state.query) {
+            params.set(QUERY_PARAM, state.query);
+          } else {
+            params.delete(QUERY_PARAM);
+          }
+          if (state.filters?.length) {
+            params.set(FILTER_PARAM, state.filters.join(','));
+          } else {
+            params.delete(FILTER_PARAM);
+          }
+          if (state.sort && state.sort !== 'featured') {
+            params.set(SORT_PARAM, state.sort);
+          } else {
+            params.delete(SORT_PARAM);
+          }
+          return params;
+        };
+
+        const commitState = ({ replace }) => {
+          const state = {
+            query: cachedQuery.trim(),
+            filters: Array.from(activeFilters),
+            sort: sortBy,
+          };
+          const params = stateToParams(state);
+          const nextUrl = `${window.location.pathname}${
+            params.toString() ? `?${params.toString()}` : ''
+          }`;
+          if (replace) {
+            window.history.replaceState(state, '', nextUrl);
+          } else {
+            window.history.pushState(state, '', nextUrl);
+          }
+          saveStateToStorage(state);
+        };
+
+        const applyState = (state) => {
+          cachedQuery = state.query ?? '';
+          sortBy = state.sort ?? 'featured';
+          activeFilters.clear();
+          (state.filters ?? []).forEach((token) => activeFilters.add(token));
+          lastCommittedQuery = cachedQuery.trim();
+
+          if (search instanceof HTMLInputElement) {
+            search.value = cachedQuery;
+          }
+
+          const chips = document.querySelectorAll('[data-filter-chip]');
+          chips.forEach((chip) => {
+            const type = chip.getAttribute('data-filter-type');
+            const value = chip.getAttribute('data-filter-value');
+            if (!type || !value) return;
+            const token = `${type}:${value.toLowerCase()}`;
+            chip.classList.toggle('is-active', activeFilters.has(token));
+          });
+
+          const sortControl = document.querySelector('[data-sort-control]');
+          if (sortControl && sortControl.tagName === 'SELECT') {
+            sortControl.value = sortBy;
+          }
+        };
+
         fetch('./toys.json')
           .then((response) => (response.ok ? response.json() : null))
           .then((toys) => {
             if (!toys || list.childElementCount > 0) return;
 
             allToys = toys;
+            const urlState = getStateFromUrl();
+            const hasUrlState =
+              urlState.query ||
+              urlState.filters.length ||
+              urlState.sort !== 'featured';
+            if (hasUrlState) {
+              applyState(urlState);
+            } else {
+              const storedState = readStateFromStorage();
+              if (storedState) {
+                applyState(storedState);
+                commitState({ replace: true });
+              }
+            }
             renderCards(applyFilters());
 
             if (search instanceof HTMLInputElement) {
               search.addEventListener('input', () => {
                 cachedQuery = search.value.toLowerCase().trim();
+                commitState({ replace: true });
+                if (pendingCommit) {
+                  window.clearTimeout(pendingCommit);
+                }
+                pendingCommit = window.setTimeout(() => {
+                  if (cachedQuery.trim() !== lastCommittedQuery) {
+                    lastCommittedQuery = cachedQuery.trim();
+                    commitState({ replace: false });
+                  }
+                }, 500);
                 renderCards(applyFilters(cachedQuery), cachedQuery);
+              });
+              search.addEventListener('blur', () => {
+                if (cachedQuery.trim() !== lastCommittedQuery) {
+                  lastCommittedQuery = cachedQuery.trim();
+                  commitState({ replace: false });
+                }
               });
             }
 
@@ -471,6 +618,7 @@
                 } else {
                   activeFilters.delete(token);
                 }
+                commitState({ replace: false });
                 renderCards(applyFilters(), cachedQuery);
               });
             });
@@ -479,9 +627,16 @@
             if (sortControl && sortControl.tagName === 'SELECT') {
               sortControl.addEventListener('change', () => {
                 sortBy = sortControl.value;
+                commitState({ replace: false });
                 renderCards(applyFilters(), cachedQuery);
               });
             }
+
+            window.addEventListener('popstate', () => {
+              const nextState = getStateFromUrl();
+              applyState(nextState);
+              renderCards(applyFilters(), cachedQuery);
+            });
           })
           .catch((error) => {
             console.error('Unable to render library fallback', error);
