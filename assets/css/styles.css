@@ -37,7 +37,8 @@ header {
   min-height: 44px;
 }
 
-#search-bar:focus {
+#search-bar:focus,
+#search-bar:focus-visible {
   border-color: #1e90ff;
   outline: 2px solid rgba(30, 144, 255, 0.9);
   outline-offset: 2px;
@@ -51,6 +52,8 @@ header {
   justify-content: center;
   max-width: 1200px;
   gap: 20px;
+  container-type: inline-size;
+  container-name: webtoy-grid;
 }
 
 .webtoy-card {
@@ -59,10 +62,16 @@ header {
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  width: 250px;
+  width: clamp(220px, 30cqi, 280px);
   transition:
     transform 0.3s,
     background-color 0.3s;
+}
+
+@container webtoy-grid (max-width: 560px) {
+  .webtoy-card {
+    width: min(100%, 320px);
+  }
 }
 
 .webtoy-card:hover {
@@ -127,7 +136,8 @@ button:hover {
   background-color: #ff6347;
 }
 
-button:focus {
+button:focus,
+button:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.9);
   outline-offset: 2px;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
