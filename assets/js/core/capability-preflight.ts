@@ -1,4 +1,8 @@
 import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
+import {
+  getActiveRenderPreferences,
+  setRenderPreferences,
+} from './render-preferences.ts';
 import { getRendererCapabilities } from './renderer-capabilities.ts';
 
 export type CapabilityPreflightResult = {
@@ -18,6 +22,12 @@ export type CapabilityPreflightResult = {
     secureContext: boolean;
     reducedMotion: boolean;
     hardwareConcurrency: number | null;
+  };
+  performance: {
+    lowPower: boolean;
+    reason: string | null;
+    recommendedMaxPixelRatio: number;
+    recommendedRenderScale: number;
   };
   blockingIssues: string[];
   warnings: string[];
@@ -81,6 +91,46 @@ function checkWebGLAvailability() {
   return Boolean(hasWebGL);
 }
 
+const isMobileUserAgent =
+  typeof navigator !== 'undefined' &&
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
+  );
+
+function getPerformanceProfile() {
+  const deviceMemory =
+    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
+      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
+        null)
+      : null;
+  const hardwareConcurrency =
+    typeof navigator !== 'undefined'
+      ? (navigator.hardwareConcurrency ?? null)
+      : null;
+  const reducedMotionQuery =
+    typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
+
+  const reasons: string[] = [];
+  if (isMobileUserAgent) reasons.push('mobile device detected');
+  if (reducedMotionQuery) reasons.push('reduced motion preference');
+  if (deviceMemory !== null && deviceMemory <= 4) {
+    reasons.push('limited device memory');
+  }
+  if (hardwareConcurrency !== null && hardwareConcurrency <= 4) {
+    reasons.push('limited CPU cores');
+  }
+
+  const lowPower = reasons.length > 0;
+
+  return {
+    lowPower,
+    reason: reasons.length ? reasons.join(', ') : null,
+    reducedMotion: reducedMotionQuery,
+  };
+}
+
 export async function runCapabilityPreflight(): Promise<CapabilityPreflightResult> {
   const [capabilities, microphone] = await Promise.all([
     getRendererCapabilities().catch((error) => {
@@ -113,20 +163,30 @@ export async function runCapabilityPreflight(): Promise<CapabilityPreflightResul
     );
   }
 
-  const reducedMotionQuery =
-    typeof window !== 'undefined' && window.matchMedia
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false;
+  const performanceProfile = getPerformanceProfile();
 
   const environment = {
     secureContext:
       typeof window !== 'undefined' ? Boolean(window.isSecureContext) : false,
-    reducedMotion: reducedMotionQuery,
+    reducedMotion: performanceProfile.reducedMotion,
     hardwareConcurrency:
       typeof navigator !== 'undefined'
         ? (navigator.hardwareConcurrency ?? null)
         : null,
   };
+
+  const performance = {
+    lowPower: performanceProfile.lowPower,
+    reason: performanceProfile.reason,
+    recommendedMaxPixelRatio: 1.25,
+    recommendedRenderScale: 0.9,
+  };
+
+  if (performance.lowPower) {
+    warnings.push(
+      'Performance mode recommended for smoother visuals on this device.',
+    );
+  }
 
   const canProceed = blockingIssues.length === 0;
 
@@ -140,6 +200,7 @@ export async function runCapabilityPreflight(): Promise<CapabilityPreflightResul
     },
     microphone,
     environment,
+    performance,
     blockingIssues,
     warnings,
     canProceed,
@@ -236,7 +297,25 @@ function updateStatusList(
     : 'Full effects enabled.';
   environmentStatus.appendChild(environmentNote);
 
-  [rendererStatus, microphoneStatus, environmentStatus].forEach((status) => {
+  const performanceStatus = buildStatusBadge(
+    'Performance',
+    result.performance.lowPower ? 'Performance mode recommended' : 'Full speed',
+    result.performance.lowPower ? 'warn' : 'ok',
+  );
+
+  const performanceNote = document.createElement('p');
+  performanceNote.className = 'preflight-status__note';
+  performanceNote.textContent = result.performance.lowPower
+    ? `Detected ${result.performance.reason ?? 'lower-power hardware'}.`
+    : 'Device is ready for full-quality rendering.';
+  performanceStatus.appendChild(performanceNote);
+
+  [
+    rendererStatus,
+    microphoneStatus,
+    environmentStatus,
+    performanceStatus,
+  ].forEach((status) => {
     container.appendChild(status);
   });
 }
@@ -313,6 +392,12 @@ export function attachCapabilityPreflight({
 
   const actions = document.createElement('div');
   actions.className = 'control-panel__actions control-panel__actions--inline';
+  const performanceButton = document.createElement('button');
+  performanceButton.className = 'cta-button ghost';
+  performanceButton.type = 'button';
+  performanceButton.textContent = 'Enable performance mode';
+  performanceButton.hidden = true;
+  actions.appendChild(performanceButton);
   if (backHref) {
     const backLink = document.createElement('a');
     backLink.className = 'cta-button ghost';
@@ -327,6 +412,44 @@ export function attachCapabilityPreflight({
   actions.appendChild(retryButton);
   panel.appendChild(actions);
 
+  let latestResult: CapabilityPreflightResult | null = null;
+
+  const updatePerformanceButton = (result: CapabilityPreflightResult) => {
+    latestResult = result;
+    if (!result.performance.lowPower) {
+      performanceButton.hidden = true;
+      performanceButton.disabled = false;
+      performanceButton.textContent = 'Enable performance mode';
+      return;
+    }
+
+    performanceButton.hidden = false;
+    const preferences = getActiveRenderPreferences();
+    const performanceEnabled =
+      (preferences.maxPixelRatio !== null &&
+        preferences.maxPixelRatio <=
+          result.performance.recommendedMaxPixelRatio) ||
+      (preferences.renderScale !== null &&
+        preferences.renderScale <= result.performance.recommendedRenderScale);
+
+    if (performanceEnabled) {
+      performanceButton.textContent = 'Performance mode enabled';
+      performanceButton.disabled = true;
+    } else {
+      performanceButton.textContent = 'Enable performance mode';
+      performanceButton.disabled = false;
+    }
+  };
+
+  performanceButton.addEventListener('click', () => {
+    if (!latestResult) return;
+    setRenderPreferences({
+      maxPixelRatio: latestResult.performance.recommendedMaxPixelRatio,
+      renderScale: latestResult.performance.recommendedRenderScale,
+    });
+    updatePerformanceButton(latestResult);
+  });
+
   const run = async (isRetry = false) => {
     panel.dataset.state = 'running';
     retryButton.disabled = true;
@@ -335,6 +458,7 @@ export function attachCapabilityPreflight({
     retryButton.disabled = false;
     updateStatusList(statusContainer, result);
     renderIssueList(issueContainer, result);
+    updatePerformanceButton(result);
     if (isRetry) {
       onRetry?.(result);
     } else {

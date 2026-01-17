@@ -57,7 +57,7 @@ const getAdaptiveMaxPixelRatio = (maxPixelRatio: number) => {
     return maxPixelRatio;
   }
 
-  return Math.min(maxPixelRatio, 1.5);
+  return Math.min(maxPixelRatio, 1.25);
 };
 
 export async function initRenderer(
