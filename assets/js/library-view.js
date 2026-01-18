@@ -1681,7 +1681,10 @@ export function createLibraryView({
       }
     }
 
-    card.addEventListener('click', (event) => handleOpenToy(toy, event));
+    card.addEventListener('click', (event) => {
+      event.stopPropagation();
+      handleOpenToy(toy, event);
+    });
 
     if (enableKeyboardHandlers) {
       card.addEventListener('keydown', (event) => {
@@ -1693,6 +1696,23 @@ export function createLibraryView({
     }
 
     return card;
+  };
+
+  const initCardClickHandlers = () => {
+    const list = document.getElementById(targetId);
+    if (!list) return;
+    list.addEventListener('click', (event) => {
+      const target =
+        event.target && typeof event.target === 'object' ? event.target : null;
+      const card =
+        target && 'closest' in target ? target.closest?.('.webtoy-card') : null;
+      if (!(card instanceof HTMLElement)) return;
+      const slug = card.dataset.toySlug;
+      if (!slug) return;
+      const toy = allToys.find((entry) => entry.slug === slug);
+      if (!toy) return;
+      handleOpenToy(toy, event);
+    });
   };
 
   const renderToys = (listToRender) => {
@@ -1763,23 +1783,6 @@ export function createLibraryView({
     }
   };
 
-  const initCardClickHandlers = () => {
-    const list = document.getElementById(targetId);
-    if (!list) return;
-    list.addEventListener('click', (event) => {
-      const target =
-        event.target && typeof event.target === 'object' ? event.target : null;
-      const card =
-        target && 'closest' in target ? target.closest?.('.webtoy-card') : null;
-      if (!(card instanceof HTMLElement)) return;
-      const slug = card.dataset.toySlug;
-      if (!slug) return;
-      const toy = allToys.find((entry) => entry.slug === slug);
-      if (!toy) return;
-      handleOpenToy(toy, event);
-    });
-  };
-
   const initSearch = () => {
     if (!searchInputId) return;
     const search = document.getElementById(searchInputId);
@@ -1837,10 +1840,10 @@ export function createLibraryView({
 
     initSearch();
     initFilters();
-    initCardClickHandlers();
     if (typeof initNavigation === 'function') {
       initNavigation();
     }
+    initCardClickHandlers();
     if (typeof loadFromQuery === 'function') {
       await loadFromQuery();
     }
