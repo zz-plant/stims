@@ -1,0 +1,401 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Microphone Input Music Visualizer</title>
+    <link rel="stylesheet" href="../assets/css/base.css" />
+    <style>
+      body {
+        background: #000;
+      }
+      #controls {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: #fff;
+        z-index: 1;
+        background: rgba(0, 0, 0, 0.55);
+        padding: 12px 14px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 220px;
+      }
+      #startButton {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      .control-group label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      .control-group input[type='range'] {
+        width: 100%;
+      }
+      #error-message {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: #ff0000;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="../index.html" class="home-link">Back to Library</a>
+    <div id="controls">
+      <button id="startButton">Start Microphone Visualizer</button>
+      <div class="control-group">
+        <label for="densityControl">
+          <span>Particle Density</span>
+          <span id="densityValue">1.0x</span>
+        </label>
+        <input
+          type="range"
+          id="densityControl"
+          min="0.5"
+          max="2"
+          step="0.1"
+          value="1"
+        />
+      </div>
+      <div class="control-group">
+        <label for="speedControl">
+          <span>Motion Speed</span>
+          <span id="speedValue">1.0x</span>
+        </label>
+        <input
+          type="range"
+          id="speedControl"
+          min="0.5"
+          max="2.5"
+          step="0.1"
+          value="1"
+        />
+      </div>
+      <div class="control-group">
+        <label for="trailControl">
+          <span>Trail Blend</span>
+          <span id="trailValue">0.25</span>
+        </label>
+        <input
+          type="range"
+          id="trailControl"
+          min="0.05"
+          max="0.6"
+          step="0.05"
+          value="0.25"
+        />
+      </div>
+    </div>
+    <div id="error-message" style="display: none"></div>
+    <canvas id="gameCanvas" class="toy-canvas"></canvas>
+    <script type="module">
+      import { getContextFrequencyData } from '../assets/js/core/animation-loop.ts';
+      import { setupIframeQualitySync } from '../assets/js/core/iframe-quality-sync.ts';
+      import {
+        AudioAccessError,
+        initAudio,
+      } from '../assets/js/utils/audio-handler.ts';
+      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
+      import {
+        clearError,
+        showError,
+      } from '../assets/js/utils/error-display.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const startButton = document.getElementById('startButton');
+      const densityControl = document.getElementById('densityControl');
+      const densityValue = document.getElementById('densityValue');
+      const speedControl = document.getElementById('speedControl');
+      const speedValue = document.getElementById('speedValue');
+      const trailControl = document.getElementById('trailControl');
+      const trailValue = document.getElementById('trailValue');
+
+      let viewWidth = window.innerWidth;
+      let viewHeight = window.innerHeight;
+      let resizeCleanup = null;
+      let activeQuality = null;
+      const baseDensity = 0.6;
+      let densityMultiplier = 1;
+      let speedMultiplier = 1;
+      let trailBlend = 0.25;
+
+      function applyQualityPreset(preset) {
+        activeQuality = preset;
+        const effectivePixelRatio =
+          Math.min(window.devicePixelRatio || 1, preset.maxPixelRatio) *
+          (preset.renderScale ?? 1);
+
+        resizeCleanup?.();
+        resizeCleanup = setupCanvasResize(canvas, ctx, {
+          maxPixelRatio: effectivePixelRatio,
+          onResize: ({ cssWidth, cssHeight }) => {
+            viewWidth = cssWidth;
+            viewHeight = cssHeight;
+          },
+        });
+
+        const densityScale = Math.max(baseDensity, preset.particleScale ?? 1);
+        particleCount = Math.max(
+          200,
+          Math.round(baseParticleCount * densityScale * densityMultiplier)
+        );
+        rebuildParticles();
+      }
+
+      setupIframeQualitySync(applyQualityPreset);
+
+      class CanvasToy {
+        constructor(canvasEl) {
+          this.canvas = canvasEl;
+          this.analyser = null;
+          this.audioCleanup = null;
+          this.loopId = null;
+          this.renderLoop = null;
+          this.renderer = {
+            setAnimationLoop: (loop) => {
+              if (this.loopId) {
+                cancelAnimationFrame(this.loopId);
+              }
+
+              this.renderLoop = loop;
+              if (!loop) return;
+
+              const tick = () => {
+                this.renderLoop?.();
+                this.loopId = requestAnimationFrame(tick);
+              };
+
+              tick();
+            },
+          };
+        }
+
+        async initAudio(options = {}) {
+          const audio = await initAudio(options);
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          return audio;
+        }
+
+        dispose() {
+          if (this.loopId) {
+            cancelAnimationFrame(this.loopId);
+          }
+
+          this.renderLoop = null;
+          this.loopId = null;
+          this.audioCleanup?.();
+        }
+      }
+
+      const toy = new CanvasToy(canvas);
+
+      const particles = [];
+      const baseParticleCount = 800;
+      let particleCount = baseParticleCount;
+
+      function createParticle() {
+        return {
+          x: Math.random() * viewWidth,
+          y: Math.random() * viewHeight,
+          size: Math.random() * 3 + 1,
+          baseSize: Math.random() * 3 + 1,
+          velocityX: (Math.random() - 0.5) * 2,
+          velocityY: (Math.random() - 0.5) * 2,
+          hue: Math.random() * 360,
+          lightness: 50,
+          alpha: 0.5,
+          rotation: Math.random() * 360,
+          angularVelocity: (Math.random() - 0.5) * 2,
+        };
+      }
+
+      function rebuildParticles() {
+        particles.length = 0;
+        for (let i = 0; i < particleCount; i++) {
+          particles.push(createParticle());
+        }
+      }
+
+      function animate(ctxAudio) {
+        const frequencyData = getContextFrequencyData(ctxAudio);
+
+        if (ctxAudio.analyser) {
+          const bass = getBass(frequencyData);
+          const hue = (bass / 255) * 360;
+          const gradient = ctx.createRadialGradient(
+            viewWidth / 2,
+            viewHeight / 2,
+            0,
+            viewWidth / 2,
+            viewHeight / 2,
+            viewWidth
+          );
+          gradient.addColorStop(0, `hsl(${hue}, 100%, 30%)`);
+          gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 100%, 10%)`);
+          ctx.fillStyle = gradient;
+        } else {
+          ctx.fillStyle = '#000';
+        }
+        ctx.globalAlpha = trailBlend;
+        ctx.fillRect(0, 0, viewWidth, viewHeight);
+        ctx.globalAlpha = 1;
+
+        particles.forEach((p, index) => {
+          p.x += p.velocityX * speedMultiplier;
+          p.y += p.velocityY * speedMultiplier;
+          p.rotation += p.angularVelocity;
+
+          if (p.x < -p.size) p.x = viewWidth + p.size;
+          if (p.x > viewWidth + p.size) p.x = -p.size;
+          if (p.y < -p.size) p.y = viewHeight + p.size;
+          if (p.y > viewHeight + p.size) p.y = -p.size;
+
+          if (ctxAudio.analyser && frequencyData.length) {
+            const freqIndex = Math.floor(index % frequencyData.length);
+            const amplitude = frequencyData[freqIndex] / 255;
+            p.size = p.baseSize + amplitude * 15;
+            p.hue = (p.hue + amplitude * 10) % 360;
+            p.lightness = 40 + amplitude * 20;
+            p.alpha = 0.3 + amplitude * 0.7;
+          }
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = `hsla(${p.hue}, 100%, ${p.lightness}%, ${p.alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(0, -p.size / 2);
+          for (let i = 0; i < 5; i++) {
+            ctx.lineTo(
+              (p.size / 2) * Math.cos(((18 + i * 72) * Math.PI) / 180),
+              (p.size / 2) * Math.sin(((18 + i * 72) * Math.PI) / 180)
+            );
+            ctx.lineTo(
+              (p.size / 4) * Math.cos(((54 + i * 72) * Math.PI) / 180),
+              (p.size / 4) * Math.sin(((54 + i * 72) * Math.PI) / 180)
+            );
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        });
+
+        if (ctxAudio.analyser && frequencyData.length) {
+          const barWidth = (viewWidth / frequencyData.length) * 2.5;
+          let x = 0;
+          for (let i = 0; i < frequencyData.length; i++) {
+            const barHeight = frequencyData[i] * 1.2;
+            const hue = (i / frequencyData.length) * 360;
+            ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.7)`;
+            ctx.fillRect(x, viewHeight - barHeight, barWidth, barHeight);
+            x += barWidth + 1;
+          }
+        }
+
+        if (ctxAudio.analyser) {
+          const timeData = new Uint8Array(ctxAudio.analyser.fftSize);
+          ctxAudio.analyser.getByteTimeDomainData(timeData);
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.beginPath();
+          const sliceWidth = viewWidth / timeData.length;
+          let x = 0;
+          for (let i = 0; i < timeData.length; i++) {
+            const v = timeData[i] / 128.0;
+            const y = (v * viewHeight) / 2;
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+            x += sliceWidth;
+          }
+          ctx.lineTo(viewWidth, viewHeight / 2);
+          ctx.stroke();
+        }
+      }
+
+      function getBass(dataArray) {
+        if (!dataArray.length) return 0;
+        let sum = 0;
+        const bassCount = dataArray.length / 8;
+        for (let i = 0; i < bassCount; i++) {
+          sum += dataArray[i];
+        }
+        return sum / bassCount;
+      }
+
+      startButton.addEventListener('click', async () => {
+        startButton.disabled = true;
+        startButton.style.display = 'none';
+        clearError('error-message');
+
+        try {
+          await startToyAudio(toy, animate, {
+            fftSize: 1024,
+            fallbackToSynthetic: true,
+          });
+        } catch (error) {
+          startButton.disabled = false;
+          startButton.style.display = 'inline-block';
+
+          if (error instanceof AudioAccessError) {
+            showError('error-message', error.message);
+          } else {
+            showError(
+              'error-message',
+              'Error accessing microphone. Please check your settings and try again.'
+            );
+          }
+          console.error('Error starting audio:', error);
+        }
+      });
+
+      function updateDensity() {
+        densityMultiplier = Number(densityControl.value);
+        densityValue.textContent = `${densityMultiplier.toFixed(1)}x`;
+        applyQualityPreset(
+          activeQuality ?? { maxPixelRatio: 2, renderScale: 1 }
+        );
+      }
+
+      function updateSpeed() {
+        speedMultiplier = Number(speedControl.value);
+        speedValue.textContent = `${speedMultiplier.toFixed(1)}x`;
+      }
+
+      function updateTrail() {
+        trailBlend = Number(trailControl.value);
+        trailValue.textContent = trailBlend.toFixed(2);
+      }
+
+      densityControl.addEventListener('input', updateDensity);
+      speedControl.addEventListener('input', updateSpeed);
+      trailControl.addEventListener('input', updateTrail);
+
+      updateDensity();
+      updateSpeed();
+      updateTrail();
+
+      window.addEventListener('beforeunload', () => {
+        toy.dispose?.();
+      });
+    </script>
+  </body>
+</html>

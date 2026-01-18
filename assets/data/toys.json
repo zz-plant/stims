@@ -1,0 +1,86 @@
+[
+  {
+    "slug": "3dtoy",
+    "title": "3D Toy",
+    "description": "A twisting 3D tunnel that responds to sound.",
+    "module": "./assets/js/toys/three-d-toy.ts"
+  },
+  {
+    "slug": "brand",
+    "title": "Star Guitar Visualizer",
+    "description": "Visuals inspired by an iconic music video, synced to your music.",
+    "module": "./toy.html?toy=brand"
+  },
+  {
+    "slug": "defrag",
+    "title": "Defrag Visualizer",
+    "description": "A nostalgic, sound-reactive visualizer evoking old defragmentation screens.",
+    "module": "./toy.html?toy=defrag"
+  },
+  {
+    "slug": "evol",
+    "title": "Evolutionary Weirdcore",
+    "description": "Watch surreal landscapes evolve with fractals and glitches that react to music.",
+    "module": "./toy.html?toy=evol"
+  },
+  {
+    "slug": "multi",
+    "title": "Multi-Capability Visualizer",
+    "description": "Shapes and lights move with both sound and device motion.",
+    "module": "./toy.html?toy=multi"
+  },
+  {
+    "slug": "seary",
+    "title": "Synesthetic Visualizer",
+    "description": "Blend audio and visuals into linked patterns.",
+    "module": "./toy.html?toy=seary"
+  },
+  {
+    "slug": "sgpat",
+    "title": "Pattern Recognition Visualizer",
+    "description": "See patterns form dynamically in response to sound.",
+    "module": "./toys/sgpat.html"
+  },
+  {
+    "slug": "svgtest",
+    "title": "SVG + Three.js Visualizer",
+    "description": "A hybrid visualizer blending 2D and 3D elements, reacting in real time.",
+    "module": "./toy.html?toy=svgtest"
+  },
+  {
+    "slug": "symph",
+    "title": "Spectrograph",
+    "description": "A spectrograph that moves gently with your audio.",
+    "module": "./toy.html?toy=symph"
+  },
+  {
+    "slug": "words",
+    "title": "Interactive Word Cloud",
+    "description": "Speak and watch the word cloud react and shift with your voice.",
+    "module": "./toy.html?toy=words"
+  },
+  {
+    "slug": "cube-wave",
+    "title": "Grid Visualizer",
+    "description": "Swap between cube waves and bouncing spheres without stopping the music.",
+    "module": "./assets/js/toys/cube-wave.ts"
+  },
+  {
+    "slug": "cosmic-particles",
+    "title": "Cosmic Particles",
+    "description": "Jump between orbiting swirls and nebula fly-throughs with a single toggle.",
+    "module": "./assets/js/toys/cosmic-particles.ts"
+  },
+  {
+    "slug": "spiral-burst",
+    "title": "Spiral Burst",
+    "description": "Colorful spirals rotate and expand with every beat.",
+    "module": "./assets/js/toys/spiral-burst.ts"
+  },
+  {
+    "slug": "rainbow-tunnel",
+    "title": "Rainbow Tunnel",
+    "description": "Fly through colorful rings that spin to your music.",
+    "module": "./assets/js/toys/rainbow-tunnel.ts"
+  }
+]

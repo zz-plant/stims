@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Dreamy Interactive Spectrograph Music Visualizer</title>
+    <link rel="stylesheet" href="../assets/css/base.css" />
+    <style>
+      body {
+        background-color: black;
+        touch-action: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #error-message {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: #ff0000;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="../index.html" class="home-link">Back to Library</a>
+    <div id="error-message" style="display: none"></div>
+    <canvas id="glCanvas" class="toy-canvas"></canvas>
+    <script type="module">
+      import {
+        getAverageFrequency,
+        getFrequencyData,
+        initAudio,
+      } from '../assets/js/utils/audio-handler.ts';
+      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
+      import {
+        clearError,
+        showError,
+      } from '../assets/js/utils/error-display.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { createSymphFunAdapter } from '../assets/symph/fun-adapter.ts';
+      import { initFunControls } from '../assets/ui/fun-controls.ts';
+      import { initHints } from '../assets/ui/hints.ts';
+
+      const canvas = document.getElementById('glCanvas');
+      const gl = canvas.getContext('webgl');
+      const ctx2d = canvas.getContext('2d');
+
+      initHints({
+        id: 'symph-visualizer',
+        tips: [
+          'Play music or tap to trigger sparkles.',
+          'Switch to Party Mode for bigger motion.',
+          'Drag across the canvas to nudge the spectrograph ripples.',
+        ],
+      });
+
+      if (!gl) {
+        showError(
+          'error-message',
+          'Unable to initialize WebGL. Your browser may not support it.'
+        );
+        throw new Error('WebGL not supported');
+      }
+
+      const vertexShaderSource = `
+            attribute vec4 a_position;
+            void main() {
+                gl_Position = a_position;
+            }
+        `;
+
+      const fragmentShaderSource = `
+            precision highp float;
+            uniform float u_time;
+            uniform vec2 u_resolution;
+            uniform float u_audioData;
+            uniform vec3 u_colorOffset;
+            uniform vec3 u_burstTint;
+            uniform vec2 u_touch;
+            uniform float u_rippleAmp;
+            
+            vec3 dreamyGradient(vec2 uv, float timeOffset) {
+                vec3 color = vec3(0.4 + 0.4 * sin(uv.x * 10.0 + u_audioData * 6.0 + timeOffset),
+                                  0.4 + 0.4 * cos(uv.y * 10.0 + u_audioData * 6.0 + timeOffset),
+                                  0.5 + 0.4 * sin((uv.x + uv.y) * 8.0 + u_audioData * 6.0 + timeOffset));
+                return color + u_colorOffset * 0.7;
+            }
+            
+            void main() {
+                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+                uv -= 0.5;
+                uv *= 2.0;
+                
+                float dist = distance(uv, u_touch);
+                float ripple = sin(dist * 15.0 - u_time * 3.0) * u_rippleAmp;
+                float bloom = 0.3 / (dist * dist + 0.25);
+                uv += ripple;
+
+                vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData;
+                color += vec3(0.4 + 0.4 * sin(u_time * 0.4 + u_audioData * 2.0),
+                              0.4 + 0.4 * cos(u_time * 0.5 + u_audioData * 3.0),
+                              0.5 + 0.4 * sin(u_time * 0.6 + u_audioData * 1.5));
+                color += bloom * 0.6;
+                color += u_burstTint;
+
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+      function createShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          console.error(gl.getShaderInfoLog(shader));
+          gl.deleteShader(shader);
+          return null;
+        }
+        return shader;
+      }
+
+      const vertexShader = createShader(
+        gl,
+        gl.VERTEX_SHADER,
+        vertexShaderSource
+      );
+      const fragmentShader = createShader(
+        gl,
+        gl.FRAGMENT_SHADER,
+        fragmentShaderSource
+      );
+
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(program));
+        gl.deleteProgram(program);
+        throw new Error('Program failed to link');
+      }
+
+      gl.useProgram(program);
+
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      const positions = [
+        -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
+      ];
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array(positions),
+        gl.STATIC_DRAW
+      );
+
+      const positionAttributeLocation = gl.getAttribLocation(
+        program,
+        'a_position'
+      );
+      gl.enableVertexAttribArray(positionAttributeLocation);
+      gl.vertexAttribPointer(
+        positionAttributeLocation,
+        2,
+        gl.FLOAT,
+        false,
+        0,
+        0
+      );
+
+      const resolutionUniformLocation = gl.getUniformLocation(
+        program,
+        'u_resolution'
+      );
+      const timeUniformLocation = gl.getUniformLocation(program, 'u_time');
+      const audioDataUniformLocation = gl.getUniformLocation(
+        program,
+        'u_audioData'
+      );
+      const colorOffsetUniformLocation = gl.getUniformLocation(
+        program,
+        'u_colorOffset'
+      );
+      const burstTintUniformLocation = gl.getUniformLocation(
+        program,
+        'u_burstTint'
+      );
+      const touchUniformLocation = gl.getUniformLocation(program, 'u_touch');
+      const rippleUniformLocation = gl.getUniformLocation(
+        program,
+        'u_rippleAmp'
+      );
+
+      const disposeResize = setupCanvasResize(canvas, gl, {
+        maxPixelRatio: 2,
+        onResize: ({ width, height }) => {
+          gl.uniform2f(resolutionUniformLocation, width, height);
+        },
+      });
+
+      const adapter = createSymphFunAdapter();
+      const funControls = initFunControls({
+        paletteOptions: adapter.paletteOptions,
+        onPaletteChange: (palette, colors) => {
+          adapter.setPalette(palette, colors);
+          colorOffset = [...adapter.paletteAccent];
+          gradientStops = colors;
+        },
+        onMotionChange: (intensity, mode) => adapter.setMotion(intensity, mode),
+        onAudioToggle: (enabled) => adapter.setAudioReactive(enabled),
+      });
+
+      const defaultSensitivity = 0.7;
+      const extraControls = document.createElement('div');
+      extraControls.className = 'fun-subsection';
+      extraControls.innerHTML = `
+        <div class="fun-row">
+          <label class="fun-toggle">
+            <input type="checkbox" class="fun-sparkles" checked aria-label="Toggle sparkles" />
+            Sparkles
+          </label>
+          <label class="fun-toggle">
+            <input type="checkbox" class="fun-bursts" checked aria-label="Toggle burst pulses" />
+            Bursts
+          </label>
+        </div>
+        <label class="fun-row">
+          <span>Sensitivity</span>
+          <input class="fun-slider fun-sensitivity" type="range" min="0.3" max="1" step="0.01" value="${defaultSensitivity}" aria-valuemin="0.3" aria-valuemax="1" aria-valuenow="${defaultSensitivity}" aria-label="Transient sensitivity" />
+        </label>
+      `;
+      funControls.appendControl(extraControls);
+
+      class CanvasToy {
+        constructor(canvasEl) {
+          this.canvas = canvasEl;
+          this.analyser = null;
+          this.audioCleanup = null;
+          this.loopId = null;
+          this.renderLoop = null;
+          this.renderer = {
+            setAnimationLoop: (loop) => {
+              if (this.loopId) {
+                cancelAnimationFrame(this.loopId);
+              }
+
+              this.renderLoop = loop;
+
+              if (!loop) return;
+
+              const tick = () => {
+                this.renderLoop?.();
+                this.loopId = requestAnimationFrame(tick);
+              };
+
+              tick();
+            },
+          };
+        }
+
+        async initAudio(options = {}) {
+          const audio = await initAudio(options);
+          this.analyser = audio.analyser;
+          this.audioCleanup = audio.cleanup;
+          return audio;
+        }
+
+        dispose() {
+          if (this.loopId) {
+            cancelAnimationFrame(this.loopId);
+          }
+
+          this.renderLoop = null;
+          this.loopId = null;
+          this.audioCleanup?.();
+        }
+      }
+
+      const toy = new CanvasToy(canvas);
+
+      let gradientStops = adapter.paletteOptions.bright;
+      let time = 0.0;
+      let audioData = adapter.transformAudioValue(0);
+      let colorOffset = [...adapter.paletteAccent];
+      let touchPoint = [0.0, 0.0];
+      let smoothedLevel = 0;
+      let burstEnergy = 0;
+      let lastTransientTime = 0;
+      let transientSensitivity = defaultSensitivity;
+      let sparklesEnabled = true;
+      let burstsEnabled = true;
+      const rippleBase = 0.15;
+      const SPARKLE_POOL_SIZE = 120;
+      const sparklePool = Array.from({ length: SPARKLE_POOL_SIZE }, () => ({
+        active: false,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        life: 0,
+        maxLife: 0,
+        size: 0,
+        alpha: 0,
+        color: [255, 255, 255],
+      }));
+
+      const sparkleToggle = extraControls.querySelector('.fun-sparkles');
+      sparkleToggle?.addEventListener('change', (event) => {
+        if (event.target instanceof HTMLInputElement) {
+          sparklesEnabled = event.target.checked;
+        }
+      });
+
+      const burstToggle = extraControls.querySelector('.fun-bursts');
+      burstToggle?.addEventListener('change', (event) => {
+        if (event.target instanceof HTMLInputElement) {
+          burstsEnabled = event.target.checked;
+        }
+      });
+
+      const sensitivitySlider = extraControls.querySelector('.fun-sensitivity');
+      sensitivitySlider?.addEventListener('input', (event) => {
+        if (event.target instanceof HTMLInputElement) {
+          const value = Number(event.target.value);
+          transientSensitivity = Math.min(1, Math.max(0.3, value));
+          event.target.setAttribute(
+            'aria-valuenow',
+            transientSensitivity.toString()
+          );
+        }
+      });
+
+      function updateSpectrograph(dataArray) {
+        if (!ctx2d) return;
+        ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+        const gradient = ctx2d.createLinearGradient(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+        gradient.addColorStop(0, gradientStops[0]);
+        gradient.addColorStop(0.5, gradientStops[1]);
+        gradient.addColorStop(1, gradientStops[2]);
+        ctx2d.fillStyle = gradient;
+        const barWidth = (canvas.width / dataArray.length) * 1.5;
+        let barHeight;
+        let x = 0;
+
+        for (let i = 0; i < dataArray.length; i++) {
+          barHeight = dataArray[i] / 2;
+          ctx2d.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+          x += barWidth + 1;
+        }
+
+        updateSparkles();
+      }
+
+      function hexToRgbTuple(hex) {
+        const value = hex.startsWith('#') ? hex.slice(1) : hex;
+        const int = parseInt(value, 16);
+        return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
+      }
+
+      function spawnSparkles(strength) {
+        if (!sparklesEnabled || !ctx2d) return;
+        const count = Math.min(
+          SPARKLE_POOL_SIZE / 3,
+          6 + Math.floor(strength * 12)
+        );
+        const baseX =
+          ((touchPoint[0] + 1) * 0.5 + Math.random() * 0.05) * canvas.width;
+        const baseY =
+          (1 - (touchPoint[1] + 1) * 0.5) * canvas.height * 0.9 +
+          Math.random() * 30;
+
+        for (let i = 0; i < count; i += 1) {
+          const sparkle = sparklePool.find((p) => !p.active);
+          if (!sparkle) break;
+          sparkle.active = true;
+          sparkle.life = 0;
+          sparkle.maxLife = 18 + Math.floor(strength * 20) + (i % 4);
+          sparkle.size = 2 + Math.random() * (3 + strength * 4);
+          sparkle.alpha = 0.85;
+          sparkle.x = baseX + (Math.random() - 0.5) * 80;
+          sparkle.y = baseY + (Math.random() - 0.5) * 40;
+          sparkle.vx = (Math.random() - 0.5) * (1.4 + strength * 0.6);
+          sparkle.vy = -0.6 - Math.random() * (1.1 + strength * 0.8);
+          const colorIndex = i % gradientStops.length;
+          sparkle.color = hexToRgbTuple(gradientStops[colorIndex]);
+        }
+      }
+
+      function updateSparkles() {
+        if (!sparklesEnabled || !ctx2d) return;
+        ctx2d.save();
+        ctx2d.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < sparklePool.length; i += 1) {
+          const sparkle = sparklePool[i];
+          if (!sparkle.active) continue;
+          sparkle.life += 1;
+          if (sparkle.life >= sparkle.maxLife) {
+            sparkle.active = false;
+            continue;
+          }
+          sparkle.x += sparkle.vx;
+          sparkle.y += sparkle.vy;
+          const lifeT = 1 - sparkle.life / sparkle.maxLife;
+          const alpha = sparkle.alpha * lifeT;
+          ctx2d.fillStyle = `rgba(${sparkle.color[0]}, ${sparkle.color[1]}, ${sparkle.color[2]}, ${alpha})`;
+          ctx2d.beginPath();
+          ctx2d.arc(sparkle.x, sparkle.y, sparkle.size * lifeT, 0, Math.PI * 2);
+          ctx2d.fill();
+        }
+        ctx2d.restore();
+      }
+
+      function triggerBurst(strength) {
+        spawnSparkles(strength);
+        if (burstsEnabled) {
+          burstEnergy = Math.min(1.2, burstEnergy + strength * 0.9);
+        }
+      }
+
+      function animate(ctxAudio) {
+        if (ctxAudio.analyser) {
+          const dataArray = getFrequencyData(ctxAudio.analyser);
+          const average = getAverageFrequency(dataArray);
+          const normalized = average / 255;
+          smoothedLevel = smoothedLevel
+            ? smoothedLevel * 0.9 + normalized * 0.1
+            : normalized;
+          const threshold = 0.08 + (1 - transientSensitivity) * 0.25;
+          const transientDelta = normalized - smoothedLevel;
+          const now = performance.now();
+          if (
+            transientDelta > threshold &&
+            now - lastTransientTime > 110 &&
+            normalized > 0.05
+          ) {
+            const strength = Math.min(
+              1,
+              (transientDelta - threshold) * 3 + normalized * 0.35
+            );
+            lastTransientTime = now;
+            triggerBurst(strength);
+          }
+
+          audioData = adapter.transformAudioValue(average);
+          updateSpectrograph(dataArray);
+          funControls.setAudioAvailable(true);
+        } else {
+          audioData = adapter.transformAudioValue(0);
+          funControls.setAudioAvailable(false);
+        }
+
+        time += 0.02;
+        gl.uniform1f(timeUniformLocation, time);
+        gl.uniform1f(audioDataUniformLocation, audioData);
+        gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
+        gl.uniform2fv(touchUniformLocation, touchPoint);
+        const burstTint = burstsEnabled
+          ? [
+              colorOffset[0] * burstEnergy * 1.2,
+              colorOffset[1] * burstEnergy * 1.2,
+              colorOffset[2] * burstEnergy * 1.2,
+            ]
+          : [0, 0, 0];
+        const rippleAmp =
+          rippleBase * (1.0 + (burstsEnabled ? burstEnergy * 0.8 : 0));
+        gl.uniform3fv(burstTintUniformLocation, burstTint);
+        gl.uniform1f(rippleUniformLocation, rippleAmp);
+
+        burstEnergy = Math.max(0, burstEnergy - 0.015);
+
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        updateSparkles();
+      }
+
+      startToyAudio(toy, animate, { fallbackToSynthetic: true })
+        .then(() => clearError('error-message'))
+        .catch((err) => {
+          showError(
+            'error-message',
+            'Microphone access is unavailable. Visuals will run without audio reactivity.'
+          );
+          funControls.setAudioAvailable(false);
+          audioData = adapter.transformAudioValue(0);
+          console.error('Error capturing audio: ', err);
+          toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
+        });
+
+      // Handle pointer input
+      canvas.addEventListener('pointerdown', (event) => {
+        const x = (event.clientX / canvas.width) * 2.0 - 1.0;
+        const y = -(event.clientY / canvas.height) * 2.0 + 1.0;
+        touchPoint = [x, y];
+        triggerBurst(0.5);
+      });
+      canvas.addEventListener('pointermove', (event) => {
+        const x = (event.clientX / canvas.clientWidth) * 2.0 - 1.0;
+        const y = -(event.clientY / canvas.clientHeight) * 2.0 + 1.0;
+        touchPoint = [x, y];
+      });
+      window.addEventListener('pagehide', () => {
+        disposeResize();
+        toy.dispose?.();
+      });
+    </script>
+  </body>
+</html>

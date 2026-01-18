@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Web Toy</title>
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/index.css" />
+  </head>
+  <body>
+    <div id="nav-container"></div>
+    <div id="controls-container"></div>
+    <div id="settings-container"></div>
+    <script type="module" src="assets/js/toyMain.ts"></script>
+    <script type="module">
+      import { attachCapabilityPreflight } from './assets/js/core/capability-preflight.ts';
+      import { startToyPage } from './assets/js/toyMain.ts';
+      import { initNavigation } from './assets/js/ui/nav.ts';
+      import { initAudioControls } from './assets/js/ui/audio-controls.ts';
+      import { initSystemControls } from './assets/js/ui/system-controls.ts';
+
+      const navContainer = document.getElementById('nav-container');
+      const controlsContainer = document.getElementById('controls-container');
+      const settingsContainer = document.getElementById('settings-container');
+      
+      let loaderStarted = false;
+      const startLoaderIfNeeded = () => {
+        if (loaderStarted) return;
+        loaderStarted = true;
+        startToyPage();
+      };
+
+      const getStarter = (fallback = false) => {
+        const globalStart = window.startAudio;
+        if (fallback && typeof window.startAudioFallback === 'function') {
+          return window.startAudioFallback;
+        }
+        if (typeof globalStart === 'function') {
+          return (request) => globalStart(request);
+        }
+        return null;
+      };
+
+      // Get toy slug from URL for navigation
+      const toySlug = new URLSearchParams(window.location.search).get('toy') || 'Web toy';
+
+      if (navContainer) {
+        initNavigation(navContainer, {
+          mode: 'toy',
+          title: toySlug.charAt(0).toUpperCase() + toySlug.slice(1),
+          slug: toySlug,
+          onBack: () => { window.location.href = 'index.html'; }
+        });
+      }
+
+      const buildAudioInitState = (result) => {
+        if (!result) return {};
+
+        const microphone = result.microphone;
+        if (!microphone?.supported) {
+          return {
+            preferDemoAudio: true,
+            initialStatus: {
+              message:
+                'Microphone access is unavailable in this browser. Use demo audio to keep exploring.',
+              variant: 'error',
+            },
+          };
+        }
+
+        if (microphone.state === 'denied') {
+          return {
+            preferDemoAudio: true,
+            initialStatus: {
+              message:
+                'Microphone access is blocked. Update permissions or use demo audio to start the visuals.',
+              variant: 'error',
+            },
+          };
+        }
+
+        return {};
+      };
+
+      const setupAudio = (result) => {
+        if (!controlsContainer) return;
+
+        initAudioControls(controlsContainer, {
+          onRequestMicrophone: async () => {
+            startLoaderIfNeeded();
+            let starter = getStarter();
+            if (!starter) {
+              for (let i = 0; i < 30; i++) {
+                await new Promise((r) => setTimeout(r, 100));
+                starter = getStarter();
+                if (starter) break;
+              }
+            }
+            if (!starter) throw new Error('Microphone starter unavailable.');
+            return starter(false);
+          },
+          onRequestDemoAudio: async () => {
+            startLoaderIfNeeded();
+            let starter = getStarter(true) ?? getStarter();
+            if (!starter) {
+              for (let i = 0; i < 30; i++) {
+                await new Promise((r) => setTimeout(r, 100));
+                starter = getStarter(true) ?? getStarter();
+                if (starter) break;
+              }
+            }
+            if (!starter) throw new Error('Demo audio unavailable.');
+            return starter(true);
+          },
+          onRequestYouTubeAudio: async (stream) => {
+            startLoaderIfNeeded();
+            const starter = getStarter();
+            if (!starter) throw new Error('Audio starter unavailable.');
+            return starter({ stream });
+          },
+          onRequestTabAudio: async (stream) => {
+            startLoaderIfNeeded();
+            const starter = getStarter();
+            if (!starter) throw new Error('Audio starter unavailable.');
+            return starter({ stream });
+          },
+          onSuccess: () => {
+            if (controlsContainer) controlsContainer.hidden = true;
+          },
+          ...buildAudioInitState(result),
+        });
+      };
+
+      const setupSystemControls = () => {
+        if (!settingsContainer || settingsContainer.childElementCount > 0) return;
+        initSystemControls(settingsContainer);
+      };
+
+      attachCapabilityPreflight({
+        heading: 'Capability check',
+        backHref: 'index.html',
+        onComplete: (result) => {
+          if (result.canProceed) {
+            startLoaderIfNeeded();
+            setupAudio(result);
+            setupSystemControls();
+          }
+        },
+        onRetry: (result) => {
+          if (result.canProceed) {
+            startLoaderIfNeeded();
+            setupAudio(result);
+            setupSystemControls();
+          }
+        },
+        host: document.body,
+      });
+
+      window.addEventListener('pagehide', () => {
+        // Cleanup if needed
+      });
+    </script>
+    </script>
+  </body>
+</html>
