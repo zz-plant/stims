@@ -460,6 +460,42 @@ header.hero {
   line-height: 1.4;
 }
 
+.system-check {
+  display: grid;
+  gap: 1.4rem;
+}
+
+.system-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
+.system-controls .control-panel {
+  position: static;
+  width: 100%;
+  left: auto;
+  bottom: auto;
+  z-index: auto;
+  clip-path: none;
+  overflow: visible;
+  border-radius: calc(var(--radius-lg) + 2px);
+}
+
+.system-controls .control-panel__heading {
+  margin-bottom: 0.6rem;
+}
+
+.system-controls .control-panel__description {
+  margin-bottom: 0.75rem;
+  color: var(--text-muted);
+}
+
+.system-actions {
+  margin-top: 0;
+}
+
 .hero-visual {
   position: relative;
   display: grid;

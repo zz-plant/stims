@@ -1591,14 +1591,15 @@ export function createLibraryView({
   };
 
   const handleOpenToy = (toy, event) => {
-    const isModifiedClick =
-      event instanceof MouseEvent
-        ? event.metaKey ||
-          event.ctrlKey ||
-          event.shiftKey ||
-          event.altKey ||
-          event.button === 1
-        : false;
+    const isMouseEvent =
+      typeof MouseEvent !== 'undefined' && event instanceof MouseEvent;
+    const isModifiedClick = isMouseEvent
+      ? event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.button === 1
+      : false;
 
     if (cardElement === 'a' && event) {
       if (isModifiedClick) return;
@@ -1680,7 +1681,7 @@ export function createLibraryView({
       }
     }
 
-    card.onclick = (event) => handleOpenToy(toy, event);
+    card.addEventListener('click', (event) => handleOpenToy(toy, event));
 
     if (enableKeyboardHandlers) {
       card.addEventListener('keydown', (event) => {
@@ -1762,6 +1763,23 @@ export function createLibraryView({
     }
   };
 
+  const initCardClickHandlers = () => {
+    const list = document.getElementById(targetId);
+    if (!list) return;
+    list.addEventListener('click', (event) => {
+      const target =
+        event.target && typeof event.target === 'object' ? event.target : null;
+      const card =
+        target && 'closest' in target ? target.closest?.('.webtoy-card') : null;
+      if (!(card instanceof HTMLElement)) return;
+      const slug = card.dataset.toySlug;
+      if (!slug) return;
+      const toy = allToys.find((entry) => entry.slug === slug);
+      if (!toy) return;
+      handleOpenToy(toy, event);
+    });
+  };
+
   const initSearch = () => {
     if (!searchInputId) return;
     const search = document.getElementById(searchInputId);
@@ -1819,6 +1837,7 @@ export function createLibraryView({
 
     initSearch();
     initFilters();
+    initCardClickHandlers();
     if (typeof initNavigation === 'function') {
       initNavigation();
     }
