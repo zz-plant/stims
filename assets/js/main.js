@@ -2,6 +2,7 @@ import { initNavigation, loadFromQuery, loadToy } from './loader.ts';
 import { initLibraryView } from './utils/init-library.ts';
 import { initNavScrollEffects } from './utils/init-nav-scroll.ts';
 import { initQuickstartCta } from './utils/init-quickstart.ts';
+import { initSystemCheck } from './utils/init-system-check.ts';
 
 const runInit = (label, init) => {
   Promise.resolve()
@@ -19,6 +20,7 @@ const startApp = async () => {
   );
   runInit('quickstart CTA', () => initQuickstartCta({ loadToy }));
   runInit('nav scroll effects', initNavScrollEffects);
+  runInit('system check', initSystemCheck);
 };
 
 if (document.readyState === 'loading') {

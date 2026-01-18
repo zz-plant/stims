@@ -101,6 +101,89 @@
         </p>
       </section>
 
+      <section class="system-check" id="system-check">
+        <div class="section-heading">
+          <p class="eyebrow">System check</p>
+          <h2>Confirm your device is ready</h2>
+          <p class="section-description">
+            Get clear feedback on graphics, microphone access, and performance
+            presets before launching a stim. If mic access is blocked, demo,
+            tab, and YouTube audio are available in the toy controls.
+          </p>
+        </div>
+        <div class="system-grid">
+          <div class="readiness-panel" data-readiness-panel>
+            <div class="readiness-header">
+              <h3 class="readiness-title">Live readiness</h3>
+              <p class="readiness-subtitle">
+                We’ll keep these signals updated so you know what’s available.
+              </p>
+            </div>
+            <ul class="readiness-list">
+              <li class="readiness-item">
+                <div class="readiness-label">
+                  <span
+                    class="readiness-dot"
+                    data-status-dot="render"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="readiness-name">Graphics acceleration</span>
+                </div>
+                <p class="readiness-note" data-status-note="render">
+                  Checking WebGL and WebGPU support…
+                </p>
+              </li>
+              <li class="readiness-item">
+                <div class="readiness-label">
+                  <span
+                    class="readiness-dot"
+                    data-status-dot="mic"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="readiness-name">Microphone</span>
+                </div>
+                <p class="readiness-note" data-status-note="mic">
+                  Checking microphone permissions…
+                </p>
+              </li>
+              <li class="readiness-item">
+                <div class="readiness-label">
+                  <span
+                    class="readiness-dot"
+                    data-status-dot="motion"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="readiness-name">Motion input</span>
+                </div>
+                <p class="readiness-note" data-status-note="motion">
+                  Checking device motion support…
+                </p>
+              </li>
+              <li class="readiness-item">
+                <div class="readiness-label">
+                  <span
+                    class="readiness-dot"
+                    data-status-dot="reduced"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="readiness-name">Motion comfort</span>
+                </div>
+                <p class="readiness-note" data-status-note="reduced">
+                  Reading motion comfort settings…
+                </p>
+              </li>
+            </ul>
+          </div>
+          <div class="system-controls" data-system-controls></div>
+        </div>
+        <div class="cta-row system-actions">
+          <button type="button" class="cta-button primary" data-open-preflight>
+            Run system check
+          </button>
+          <a href="#toy-list" class="cta-button ghost">Browse toys</a>
+        </div>
+      </section>
+
       <section class="library">
         <div class="section-heading">
           <p class="eyebrow">Library</p>

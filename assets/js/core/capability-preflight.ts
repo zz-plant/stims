@@ -360,6 +360,9 @@ export function attachCapabilityPreflight({
   backLabel = 'Back to library',
   onComplete,
   onRetry,
+  openOnAttach = true,
+  allowCloseWhenBlocked = false,
+  showCloseButton = false,
 }: {
   host?: HTMLElement;
   heading?: string;
@@ -367,6 +370,9 @@ export function attachCapabilityPreflight({
   backLabel?: string;
   onComplete?: (result: CapabilityPreflightResult) => void;
   onRetry?: (result: CapabilityPreflightResult) => void;
+  openOnAttach?: boolean;
+  allowCloseWhenBlocked?: boolean;
+  showCloseButton?: boolean;
 } = {}) {
   const panel = document.createElement('dialog');
   panel.className =
@@ -375,11 +381,64 @@ export function attachCapabilityPreflight({
 
   const MODAL_PARAM = 'modal';
   const MODAL_VALUE = 'capability-check';
-  const previousActiveElement =
-    document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+  const FOCUSABLE_SELECTOR =
+    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const getFocusableElements = (container: HTMLElement) =>
+    Array.from(
+      container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ).filter((el) => !el.hasAttribute('aria-hidden'));
+
+  const trapFocus = (container: HTMLElement) => {
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const items = getFocusableElements(container);
+      if (items.length === 0) {
+        event.preventDefault();
+        container.focus();
+        return;
+      }
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = container.ownerDocument.activeElement;
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+        return;
+      }
+
+      if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      if (!(event.target instanceof Node) || container.contains(event.target)) {
+        return;
+      }
+      const items = getFocusableElements(container);
+      if (items.length > 0) {
+        items[0].focus();
+      } else {
+        container.focus();
+      }
+    };
+
+    container.addEventListener('keydown', handleKeydown);
+    container.ownerDocument.addEventListener('focusin', handleFocusIn);
+
+    return () => {
+      container.removeEventListener('keydown', handleKeydown);
+      container.ownerDocument.removeEventListener('focusin', handleFocusIn);
+    };
+  };
+
+  let restoreFocusTarget: HTMLElement | null = null;
+  let focusCleanup: (() => void) | null = null;
   let closingFromHistory = false;
+  let isAttached = false;
 
   const resolvePathname = () => {
     if (window.location?.pathname) return window.location.pathname;
@@ -422,6 +481,14 @@ export function attachCapabilityPreflight({
     } else {
       panel.setAttribute('open', 'true');
     }
+    focusCleanup?.();
+    focusCleanup = trapFocus(panel);
+    const focusables = getFocusableElements(panel);
+    if (focusables.length > 0) {
+      focusables[0].focus();
+    } else {
+      panel.focus();
+    }
   };
   const closePanel = () => {
     if (!isPanelOpen()) return;
@@ -430,6 +497,8 @@ export function attachCapabilityPreflight({
     } else {
       panel.removeAttribute('open');
     }
+    focusCleanup?.();
+    focusCleanup = null;
   };
 
   const title = document.createElement('div');
@@ -452,6 +521,16 @@ export function attachCapabilityPreflight({
 
   const actions = document.createElement('div');
   actions.className = 'control-panel__actions control-panel__actions--inline';
+  if (showCloseButton) {
+    const closeButton = document.createElement('button');
+    closeButton.className = 'cta-button ghost';
+    closeButton.type = 'button';
+    closeButton.textContent = 'Close';
+    closeButton.addEventListener('click', () => {
+      closePanel();
+    });
+    actions.appendChild(closeButton);
+  }
   const performanceButton = document.createElement('button');
   performanceButton.className = 'cta-button ghost';
   performanceButton.type = 'button';
@@ -532,14 +611,17 @@ export function attachCapabilityPreflight({
   });
 
   panel.addEventListener('cancel', (event) => {
-    if (!latestResult?.canProceed) {
+    if (!latestResult?.canProceed && !allowCloseWhenBlocked) {
       event.preventDefault();
     }
   });
 
   panel.addEventListener('close', () => {
-    if (previousActiveElement) {
-      previousActiveElement.focus();
+    if (
+      restoreFocusTarget &&
+      panel.ownerDocument.contains(restoreFocusTarget)
+    ) {
+      restoreFocusTarget.focus();
     }
     if (closingFromHistory) {
       closingFromHistory = false;
@@ -561,12 +643,22 @@ export function attachCapabilityPreflight({
     }
     if (shouldBeOpen && !isPanelOpen()) {
       openPanel();
+      void run();
     }
   };
 
   const attach = () => {
+    if (isAttached) return;
     host.appendChild(panel);
-    openPanel();
+    isAttached = true;
+    if (openOnAttach) {
+      restoreFocusTarget =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      openPanel();
+      void run();
+    }
   };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attach, { once: true });
@@ -574,19 +666,46 @@ export function attachCapabilityPreflight({
     attach();
   }
 
-  const params = new URLSearchParams(window.location.search);
-  if (params.get(MODAL_PARAM) !== MODAL_VALUE) {
-    updateModalParam(MODAL_VALUE, true);
-  } else {
-    updateModalParam(MODAL_VALUE, false);
-  }
+  const syncOpenState = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(MODAL_PARAM) === MODAL_VALUE && !isPanelOpen()) {
+      openPanel();
+      void run();
+    }
+  };
 
   window.addEventListener('popstate', handlePopState);
-
-  void run();
+  if (openOnAttach) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(MODAL_PARAM) !== MODAL_VALUE) {
+      updateModalParam(MODAL_VALUE, true);
+    } else {
+      updateModalParam(MODAL_VALUE, false);
+    }
+  } else {
+    syncOpenState();
+  }
 
   return {
     run,
+    open: (trigger?: HTMLElement | null) => {
+      restoreFocusTarget =
+        trigger ??
+        (document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null);
+      if (!isAttached) {
+        attach();
+      }
+      openPanel();
+      const params = new URLSearchParams(window.location.search);
+      if (params.get(MODAL_PARAM) !== MODAL_VALUE) {
+        updateModalParam(MODAL_VALUE, true);
+      } else {
+        updateModalParam(MODAL_VALUE, false);
+      }
+      void run();
+    },
     destroy: () => {
       window.removeEventListener('popstate', handlePopState);
       closingFromHistory = true;

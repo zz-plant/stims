@@ -21,6 +21,7 @@ type SystemControlOptions = {
   description?: string;
   qualityPresets?: QualityPreset[];
   defaultPresetId?: string;
+  variant?: 'floating' | 'inline';
 };
 
 function createValueLabel(label: string) {
@@ -39,9 +40,14 @@ export function initSystemControls(
     description = 'Adjust visual fidelity, GPU mode, and motion preferences. Changes persist for this device.',
     qualityPresets = DEFAULT_QUALITY_PRESETS,
     defaultPresetId = 'balanced',
+    variant = 'floating',
   } = options;
 
   const panel = new PersistentSettingsPanel(host);
+  const panelElement = panel.getElement();
+  if (variant === 'inline') {
+    panelElement.classList.add('control-panel--inline');
+  }
   panel.configure({ title, description });
 
   panel.setQualityPresets({
