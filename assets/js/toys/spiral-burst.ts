@@ -50,6 +50,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let activeQuality: QualityPreset = getActiveQualityPreset();
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let currentMode: SpiralMode = 'burst';
+  let modeRow: HTMLDivElement | null = null;
 
   const toy = new WebToy({
     cameraOptions: { position: { x: 0, y: 0, z: 120 } },
@@ -283,7 +284,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const buttons = container?.querySelectorAll('[data-spiral-mode]');
     buttons?.forEach((btn) => {
       const mode = btn.getAttribute('data-spiral-mode');
-      btn.classList.toggle('active', mode === currentMode);
+      const isActive = mode === currentMode;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
     });
   }
 
@@ -300,33 +303,26 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
 
     // Add mode buttons
-    const modeRow = document.createElement('div');
-    modeRow.className = 'control-panel__row';
-    modeRow.style.cssText =
-      'display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;';
+    modeRow?.remove();
+    const row = document.createElement('div');
+    row.className = 'control-panel__row control-panel__mode-row';
+    modeRow = row;
 
     const modes: SpiralMode[] = ['burst', 'bloom', 'vortex', 'heartbeat'];
     modes.forEach((mode) => {
       const btn = document.createElement('button');
+      btn.type = 'button';
       btn.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
       btn.setAttribute('data-spiral-mode', mode);
-      btn.className = mode === currentMode ? 'active' : '';
-      btn.style.cssText = `
-        padding: 6px 12px;
-        border: 1px solid currentColor;
-        background: transparent;
-        color: inherit;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-        transition: all 0.2s;
-      `;
+      btn.className = 'control-panel__mode';
+      btn.classList.toggle('is-active', mode === currentMode);
+      btn.setAttribute('aria-pressed', String(mode === currentMode));
       btn.addEventListener('click', () => setMode(mode));
-      modeRow.appendChild(btn);
+      row.appendChild(btn);
     });
 
     const panel = container?.querySelector('.control-panel');
-    panel?.appendChild(modeRow);
+    panel?.appendChild(row);
   }
 
   function setupPerformancePanel() {
@@ -555,6 +551,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         (bloomMesh.geometry as THREE.BufferGeometry).dispose();
         (bloomMesh.material as THREE.Material).dispose();
       }
+      modeRow?.remove();
+      modeRow = null;
       perfUnsub();
       unregisterGlobals();
     },

@@ -836,6 +836,48 @@ body {
   align-items: stretch;
 }
 
+.control-panel__mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.control-panel__mode {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 12px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  touch-action: manipulation;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.control-panel__mode:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.control-panel__mode:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
+.control-panel__mode.is-active {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.55);
+  color: #e9fbff;
+}
+
 .control-panel__row:first-of-type {
   border-top: none;
 }
