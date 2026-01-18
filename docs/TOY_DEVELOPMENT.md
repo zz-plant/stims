@@ -122,6 +122,7 @@ Manual scenarios to verify:
 - Test on touch devices or emulators. Avoid interactions that depend solely on hover.
 - For device motion input, gate logic behind feature detection (`window.DeviceMotionEvent`).
 - Ensure important controls are keyboard-focusable and include visible focus states.
+- For custom control-panel buttons, use `.control-panel__mode` (or the shared control-panel button styles) to guarantee 44x44 touch targets and visible focus treatment.
 - Normalize pointer handling with `assets/js/utils/pointer-input.ts` so toys share the same multi-touch pan/zoom/rotate gestures and hit detection. Prefer passing a canvas or container element so pointer math uses its exact bounds.
 - Apply the `.toy-canvas` class to fullscreen canvases and include `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` in HTML heads to keep sizing consistent on mobile safe areas.
 - Sanity-check layout at common breakpoints (e.g., 320x568, 375x812, 768x1024) to confirm controls remain tappable and canvases stay clipped to the viewport.
