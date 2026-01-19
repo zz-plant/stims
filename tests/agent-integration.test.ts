@@ -1,7 +1,13 @@
 import { expect, test } from 'bun:test';
+import fs from 'node:fs';
+import { chromium } from 'playwright';
 import { playToy } from '../scripts/play-toy.ts';
 
-test(
+const chromiumPath = chromium.executablePath();
+const hasChromium = fs.existsSync(chromiumPath);
+const integrationTest = hasChromium ? test : test.skip;
+
+integrationTest(
   'agents can launch and capture holy toy',
   async () => {
     // Increase timeout for browser launch
@@ -20,7 +26,7 @@ test(
   { timeout: 30000 },
 );
 
-test(
+integrationTest(
   'agents can detect failing toy',
   async () => {
     const result = await playToy({
