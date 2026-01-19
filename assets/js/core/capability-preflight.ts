@@ -1,4 +1,5 @@
 import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
+import { isMobileDevice } from '../utils/device-detect.ts';
 import {
   getActiveRenderPreferences,
   setRenderPreferences,
@@ -91,11 +92,7 @@ function checkWebGLAvailability() {
   return Boolean(hasWebGL);
 }
 
-const isMobileUserAgent =
-  typeof navigator !== 'undefined' &&
-  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent,
-  );
+const isMobileUserAgent = isMobileDevice();
 
 function getPerformanceProfile() {
   const deviceMemory =

@@ -1,5 +1,6 @@
 /* global GPUAdapter, GPUDevice */
 import { ACESFilmicToneMapping, SRGBColorSpace, WebGLRenderer } from 'three';
+import { isMobileDevice } from '../utils/device-detect.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
 import {
   getRendererCapabilities,
@@ -27,11 +28,7 @@ export type RendererInitConfig = {
   renderScale?: number;
 };
 
-const isMobileUserAgent =
-  typeof navigator !== 'undefined' &&
-  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent,
-  );
+const isMobileUserAgent = isMobileDevice();
 
 const XR_SESSION_MODES = ['immersive-vr', 'immersive-ar'] as const;
 
