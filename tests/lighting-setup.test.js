@@ -13,7 +13,16 @@ describe('initLighting', () => {
   test('uses default position values when position is omitted', () => {
     const scene = new Scene();
 
-    initLighting(scene, { type: 'DirectionalLight' }, stubLighting);
+    initLighting(
+      scene,
+      { type: 'DirectionalLight' },
+      {
+        DirectionalLight: stubLighting.DirectionalLight,
+        SpotLight: stubLighting.SpotLight,
+        HemisphereLight: stubLighting.HemisphereLight,
+        PointLight: stubLighting.PointLight,
+      },
+    );
 
     expect(scene.children).toHaveLength(1);
     const light = scene.children[0];
@@ -29,7 +38,12 @@ describe('initLighting', () => {
     initLighting(
       scene,
       { type: 'DirectionalLight', position: { y: 5 } },
-      stubLighting,
+      {
+        DirectionalLight: stubLighting.DirectionalLight,
+        SpotLight: stubLighting.SpotLight,
+        HemisphereLight: stubLighting.HemisphereLight,
+        PointLight: stubLighting.PointLight,
+      },
     );
 
     const light = scene.children[0];
@@ -42,7 +56,16 @@ describe('initLighting', () => {
     const scene = new Scene();
 
     expect(() =>
-      initLighting(scene, { type: 'HemisphereLight' }, stubLighting),
+      initLighting(
+        scene,
+        { type: 'HemisphereLight' },
+        {
+          DirectionalLight: stubLighting.DirectionalLight,
+          SpotLight: stubLighting.SpotLight,
+          HemisphereLight: stubLighting.HemisphereLight,
+          PointLight: stubLighting.PointLight,
+        },
+      ),
     ).not.toThrow();
     expect(scene.children[0]).toBeInstanceOf(stubLighting.HemisphereLight);
   });
