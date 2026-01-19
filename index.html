@@ -79,7 +79,7 @@
             Tap a stim and go. Light, fast, and built for instant immersion.
           </p>
         </div>
-        <div class="cta-row">
+        <div class="cta-row hero-cta-row">
           <a
             href="toy.html?toy=holy"
             class="cta-button primary"
@@ -208,6 +208,8 @@
                 type="button"
                 class="search-clear"
                 data-search-clear
+                aria-hidden="true"
+                tabindex="-1"
                 aria-label="Clear search"
               >
                 Clear
@@ -475,6 +477,12 @@
           if (clearSearchButton instanceof HTMLElement) {
             const hasQuery = cachedQuery.trim().length > 0;
             clearSearchButton.classList.toggle('is-visible', hasQuery);
+            clearSearchButton.setAttribute('aria-hidden', String(!hasQuery));
+            if (hasQuery) {
+              clearSearchButton.removeAttribute('tabindex');
+            } else {
+              clearSearchButton.setAttribute('tabindex', '-1');
+            }
           }
           if (resetFiltersButton instanceof HTMLElement) {
             const hasFilters = activeFilters.size > 0;

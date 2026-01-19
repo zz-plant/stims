@@ -911,9 +911,21 @@ header.hero {
   box-shadow: var(--shadow-soft);
 }
 
+.hero-cta-row .cta-button.primary {
+  padding: 0.85rem 1.6rem;
+  font-size: 1.05rem;
+  box-shadow: var(--shadow-strong);
+}
+
 .cta-button.ghost {
   background: transparent;
   border-color: transparent;
+}
+
+.hero-cta-row .cta-button.ghost {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--surface-border);
+  color: var(--text-muted);
 }
 
 .cta-button:hover {

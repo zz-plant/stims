@@ -12,8 +12,6 @@ body {
   /* Mobile-specific improvements */
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
 }
 canvas {
   display: block;
