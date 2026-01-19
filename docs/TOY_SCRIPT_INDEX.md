@@ -10,19 +10,14 @@ This index maps each toy slug to the module that powers it and how the experienc
 | -------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
 | `3dtoy`                    | `assets/js/toys/three-d-toy.ts`              | Direct module; load with `toy.html?toy=3dtoy`.                    |
 | `aurora-painter`           | `assets/js/toys/aurora-painter.ts`           | Direct module; load with `toy.html?toy=aurora-painter`.           |
-| `brand`                    | `assets/js/toys/brand.ts`                    | Direct module; load with `toy.html?toy=brand`.                    |
 | `clay`                     | `assets/js/toys/clay.ts`                     | Standalone page launcher for `toys/clay.html`.                    |
-| `defrag`                   | `assets/js/toys/defrag.ts`                   | Standalone page launcher for `toys/defrag.html`.                  |
 | `evol`                     | `assets/js/toys/evol.ts`                     | Standalone page launcher for `toys/evol.html`.                    |
 | `geom`                     | `assets/js/toys/geom.ts`                     | Standalone page launcher for `toys/geom.html`.                    |
 | `holy`                     | `assets/js/toys/holy.ts`                     | Standalone page launcher for `toys/holy.html`.                    |
 | `multi`                    | `assets/js/toys/multi.ts`                    | Standalone page launcher for `toys/multi.html`; requires WebGPU.  |
 | `seary`                    | `assets/js/toys/seary.ts`                    | Standalone page launcher for `toys/seary.html`.                   |
-| `sgpat`                    | `assets/js/toys/sgpat.ts`                    | Direct module; load with `toy.html?toy=sgpat`.                    |
 | `legible`                  | `assets/js/toys/legible.ts`                  | Standalone page launcher for `toys/legible.html`.                 |
-| `svgtest`                  | `assets/js/toys/svgtest.ts`                  | Standalone page launcher for `toys/svgtest.html`.                 |
 | `symph`                    | `assets/js/toys/symph.ts`                    | Standalone page launcher for `toys/symph.html`.                   |
-| `words`                    | `assets/js/toys/words.ts`                    | Standalone page launcher for `toys/words.html`.                   |
 | `cube-wave`                | `assets/js/toys/cube-wave.ts`                | Direct module; load with `toy.html?toy=cube-wave`.                |
 | `bubble-harmonics`         | `assets/js/toys/bubble-harmonics.ts`         | Direct module; load with `toy.html?toy=bubble-harmonics`.         |
 | `cosmic-particles`         | `assets/js/toys/cosmic-particles.ts`         | Direct module; load with `toy.html?toy=cosmic-particles`.         |
@@ -36,8 +31,4 @@ This index maps each toy slug to the module that powers it and how the experienc
 
 ## Standalone HTML entry points
 
-Standalone toys can still be visited directly via their HTML pages under `toys/` (for example, `toys/brand.html` or `toys/holy.html`).
-
-## Touch-enabled and gesture-aware toys
-
-- `sgpat`: multi-touch pan/zoom/rotate gestures drive the spectrograph focus and ripple direction via `assets/js/utils/pointer-input.ts`.
+Standalone toys can still be visited directly via their HTML pages under `toys/` (for example, `toys/holy.html` or `toys/lights.html`).

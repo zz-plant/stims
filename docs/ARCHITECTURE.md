@@ -4,7 +4,7 @@ This document summarizes how the Stim Webtoys app is assembled, from the entry H
 
 ## Runtime Layers
 
-- **HTML entry points** (`toy.html`, `brand.html`, etc.) load the bundled shell and pass query params like `?toy=<slug>`.
+- **HTML entry points** (`toy.html`, `holy.html`, etc.) load the bundled shell and pass query params like `?toy=<slug>`.
 - **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, and the active toy lifecycle.
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
 - **Manifest resolution** (`assets/js/utils/manifest-client.ts`) maps logical module paths to the correct dev/build URLs for dynamic `import()`.
@@ -17,7 +17,7 @@ This document summarizes how the Stim Webtoys app is assembled, from the entry H
 ```mermaid
 flowchart TD
   Entry[HTML shell
-  toy.html, brand.html...] --> Loader[loader.ts
+  toy.html, holy.html...] --> Loader[loader.ts
   createLoader()]
   Loader --> Router[router.ts
   query param sync]

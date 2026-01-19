@@ -149,7 +149,7 @@ describe.each(testableToys)('toy lifecycle: $slug', ({ slug, module }) => {
 ```
 
 > [!NOTE]
-> Some toys like `defrag`, `evol`, `geom` use `startPageToy()`. A separate describe block should handle page-based toys by asserting the CTA status element is added and removed.
+> Some toys like `evol` and `geom` use `startPageToy()`. A separate describe block should handle page-based toys by asserting the CTA status element is added and removed.
 
 ---
 
@@ -219,11 +219,11 @@ describe.skip.each(webgpuToys)('WebGPU toy: $slug (skipped in headless)', () => 
 
 ### Page-Based Toys
 
-Toys like `defrag`, `evol`, `geom`, `holy`, `legible`, `lights`, `multi`, `seary`, `svgtest`, `symph`, `words` use `startPageToy()`. Test their wrapper:
+Toys like `evol`, `geom`, `holy`, `legible`, `lights`, `multi`, `seary`, `symph` use `startPageToy()`. Test their wrapper:
 
 ```typescript
 test('page toy creates and disposes CTA status', async () => {
-  const mod = await import('../assets/js/toys/defrag.ts');
+  const mod = await import('../assets/js/toys/evol.ts');
   const container = document.createElement('div');
   document.body.appendChild(container);
   
