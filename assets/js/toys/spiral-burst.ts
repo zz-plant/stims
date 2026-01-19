@@ -25,9 +25,19 @@ import {
   type ToyAudioRequest,
 } from '../utils/audio-start';
 import { applyAudioColor } from '../utils/color-audio';
+import { createPointerInput } from '../utils/pointer-input';
 import { startToyAudio } from '../utils/start-audio';
 
 type SpiralMode = 'burst' | 'bloom' | 'vortex' | 'heartbeat';
+
+type SpiralPalette = {
+  name: string;
+  baseHue: number;
+  background: THREE.ColorRepresentation;
+  fog: THREE.ColorRepresentation;
+  bloom: THREE.ColorRepresentation;
+  particle: THREE.ColorRepresentation;
+};
 
 type SpiralArm = {
   lines: THREE.Line[];
@@ -51,6 +61,50 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let currentMode: SpiralMode = 'burst';
   let modeRow: HTMLDivElement | null = null;
+  let activePaletteIndex = 0;
+
+  const palettes: SpiralPalette[] = [
+    {
+      name: 'Solar Pulse',
+      baseHue: 0.92,
+      background: '#07020b',
+      fog: '#07020b',
+      bloom: '#ff7d9f',
+      particle: '#ffb1cc',
+    },
+    {
+      name: 'Ion Bloom',
+      baseHue: 0.58,
+      background: '#030316',
+      fog: '#030316',
+      bloom: '#7cf7ff',
+      particle: '#a4e6ff',
+    },
+    {
+      name: 'Cinder',
+      baseHue: 0.02,
+      background: '#120406',
+      fog: '#120406',
+      bloom: '#ff8a63',
+      particle: '#ffc5a6',
+    },
+    {
+      name: 'Ultraviolet',
+      baseHue: 0.74,
+      background: '#0a031a',
+      fog: '#0a031a',
+      bloom: '#cfa6ff',
+      particle: '#f0d6ff',
+    },
+  ];
+
+  const controls = {
+    spinBoost: 1,
+    pulseBoost: 1,
+  };
+  let targetSpinBoost = controls.spinBoost;
+  let targetPulseBoost = controls.pulseBoost;
+  let rotationLatch = 0;
 
   const toy = new WebToy({
     cameraOptions: { position: { x: 0, y: 0, z: 120 } },
@@ -103,9 +157,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     const geometry = new THREE.IcosahedronGeometry(8, 2);
+    const palette = palettes[activePaletteIndex];
     const material = new THREE.MeshStandardMaterial({
-      color: 0xff6688,
-      emissive: 0xff2255,
+      color: palette.bloom,
+      emissive: palette.bloom,
       emissiveIntensity: 0.5,
       metalness: 0.3,
       roughness: 0.4,
@@ -124,6 +179,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const positions = new Float32Array(count * 3);
     const velocities = new Float32Array(count);
     const colors = new Float32Array(count * 3);
+    const palette = palettes[activePaletteIndex];
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
@@ -135,8 +191,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       positions[i3 + 2] = radius * Math.cos(phi) - 40;
       velocities[i] = 0.2 + Math.random() * 0.4;
 
-      const hue = Math.random();
-      const color = new THREE.Color().setHSL(hue, 0.8, 0.6);
+      const hue = (palette.baseHue + Math.random() * 0.2) % 1;
+      const color = new THREE.Color().setHSL(hue, 0.85, 0.6);
       colors[i3] = color.r;
       colors[i3 + 1] = color.g;
       colors[i3 + 2] = color.b;
@@ -294,7 +350,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     settingsPanel.configure({
       title: 'Spiral Burst',
       description:
-        'Explosive spirals that pulse with your music. Try different modes!',
+        'Explosive spirals that pulse with your music. Try different modes, pinch to amplify, and rotate to swap moods!',
     });
     settingsPanel.setQualityPresets({
       presets: DEFAULT_QUALITY_PRESETS,
@@ -333,6 +389,37 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     return subscribeToPerformanceSettings(applyPerformanceSettings);
   }
 
+  function applyPalette(index: number) {
+    const palette = palettes[index];
+    toy.scene.fog = new THREE.FogExp2(palette.fog, 0.008);
+    toy.rendererReady.then((result) => {
+      if (result) {
+        result.renderer.setClearColor(palette.background, 1);
+      }
+    });
+
+    spiralArms.forEach((arm) => {
+      arm.lines.forEach((line) => {
+        const lineMaterial = line.material as THREE.LineBasicMaterial;
+        lineMaterial.color.setHSL(
+          (palette.baseHue + Math.random() * 0.2) % 1,
+          0.8,
+          0.6,
+        );
+      });
+    });
+
+    if (particleField) {
+      particleField.material.color = new THREE.Color(palette.particle);
+    }
+
+    if (bloomMesh) {
+      const bloomMaterial = bloomMesh.material as THREE.MeshStandardMaterial;
+      bloomMaterial.color = new THREE.Color(palette.bloom);
+      bloomMaterial.emissive = new THREE.Color(palette.bloom);
+    }
+  }
+
   function animate(ctx: AnimationContext) {
     const data = getContextFrequencyData(ctx);
     const avg = getAverageFrequency(data);
@@ -361,27 +448,41 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     beatIntensity *= 0.92;
 
     // Mode-specific behaviors
-    let baseRotationSpeed = 0.005;
+    controls.spinBoost = THREE.MathUtils.lerp(
+      controls.spinBoost,
+      targetSpinBoost,
+      0.08,
+    );
+    controls.pulseBoost = THREE.MathUtils.lerp(
+      controls.pulseBoost,
+      targetPulseBoost,
+      0.08,
+    );
+
+    let baseRotationSpeed = 0.005 * controls.spinBoost;
     let expansionFactor = 1;
-    let pulseIntensity = smoothedBass;
+    let pulseIntensity = smoothedBass * controls.pulseBoost;
 
     switch (currentMode) {
       case 'bloom':
-        baseRotationSpeed = 0.002;
-        expansionFactor = 1 + smoothedMids * 0.8;
-        pulseIntensity = smoothedHighs;
+        baseRotationSpeed = 0.002 * controls.spinBoost;
+        expansionFactor = 1 + smoothedMids * 0.8 * controls.pulseBoost;
+        pulseIntensity = smoothedHighs * controls.pulseBoost;
         break;
       case 'vortex':
-        baseRotationSpeed = 0.015 + smoothedBass * 0.03;
-        expansionFactor = 1 - smoothedBass * 0.3;
+        baseRotationSpeed = (0.015 + smoothedBass * 0.03) * controls.spinBoost;
+        expansionFactor = 1 - smoothedBass * 0.3 * controls.pulseBoost;
         break;
       case 'heartbeat':
-        baseRotationSpeed = 0.003;
-        expansionFactor = 1 + beatIntensity * 0.5;
-        pulseIntensity = beatIntensity;
+        baseRotationSpeed = 0.003 * controls.spinBoost;
+        expansionFactor = 1 + beatIntensity * 0.5 * controls.pulseBoost;
+        pulseIntensity = beatIntensity * controls.pulseBoost;
         break;
       default: // burst
-        expansionFactor = 1 + smoothedBass * 0.6 + beatIntensity * 0.4;
+        expansionFactor =
+          1 +
+          smoothedBass * 0.6 * controls.pulseBoost +
+          beatIntensity * 0.4 * controls.pulseBoost;
         break;
     }
 
@@ -411,8 +512,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           line.scale.setScalar(lineScale);
 
           // Color shifting
+          const palette = palettes[activePaletteIndex];
           const hue =
-            (arm.baseHue +
+            (palette.baseHue +
+              arm.baseHue +
               (idx / arm.lines.length) * 0.2 +
               time * 0.0001 +
               normalizedValue * 0.15) %
@@ -435,9 +538,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       bloomMesh.scale.setScalar(bloomScale);
 
       const bloomMaterial = bloomMesh.material as THREE.MeshStandardMaterial;
-      bloomMaterial.emissiveIntensity = 0.3 + smoothedBass * 0.7;
+      bloomMaterial.emissiveIntensity =
+        0.3 + smoothedBass * 0.7 * controls.pulseBoost;
       applyAudioColor(bloomMaterial, normalizedAvg, {
-        baseHue: 0.92,
+        baseHue: palettes[activePaletteIndex].baseHue,
         hueRange: 0.2,
         baseSaturation: 0.8,
         baseLuminance: 0.5,
@@ -475,8 +579,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         if (positions[i3 + 2] < -60) positions[i3 + 2] = 60;
 
         // Dynamic colors
+        const palette = palettes[activePaletteIndex];
         const hue =
-          (i / particleField.count + time * 0.00005 + smoothedHighs * 0.2) % 1;
+          (palette.baseHue +
+            i / particleField.count +
+            time * 0.00005 +
+            smoothedHighs * 0.2) %
+          1;
         const color = new THREE.Color().setHSL(
           hue,
           0.9,
@@ -504,7 +613,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     // Background color pulse
     toy.rendererReady.then((result) => {
       if (result) {
-        const bgHue = (0.7 + smoothedMids * 0.1) % 1;
+        const palette = palettes[activePaletteIndex];
+        const bgHue = (palette.baseHue + smoothedMids * 0.1) % 1;
         const bgColor = new THREE.Color().setHSL(
           bgHue,
           0.3,
@@ -530,14 +640,79 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   buildSpiralArms();
   particleField = createParticleField();
   createBloomMesh();
+  applyPalette(activePaletteIndex);
 
   // Set up fog for depth
-  toy.scene.fog = new THREE.FogExp2(0x050510, 0.008);
-  toy.rendererReady.then((result) => {
-    if (result) {
-      result.renderer.setClearColor(0x050510, 1);
-    }
+  if (toy.canvas instanceof HTMLElement) {
+    toy.canvas.style.touchAction = 'manipulation';
+  }
+
+  const pointerInput = createPointerInput({
+    target: window,
+    boundsElement: toy.canvas,
+    onChange: (summary) => {
+      if (!summary.pointers.length) return;
+      const centroid = summary.normalizedCentroid;
+      targetSpinBoost = THREE.MathUtils.clamp(1 + centroid.x * 0.4, 0.6, 1.7);
+      targetPulseBoost = THREE.MathUtils.clamp(1 + centroid.y * 0.45, 0.6, 1.8);
+    },
+    onGesture: (gesture) => {
+      if (gesture.pointerCount < 2) return;
+      targetSpinBoost = THREE.MathUtils.clamp(
+        targetSpinBoost + (gesture.scale - 1) * 0.5,
+        0.6,
+        1.9,
+      );
+      targetPulseBoost = THREE.MathUtils.clamp(
+        targetPulseBoost + Math.abs(gesture.rotation) * 0.6,
+        0.6,
+        2,
+      );
+      if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+        activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+        applyPalette(activePaletteIndex);
+      } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+        activePaletteIndex =
+          (activePaletteIndex - 1 + palettes.length) % palettes.length;
+        applyPalette(activePaletteIndex);
+      }
+      rotationLatch = gesture.rotation;
+    },
+    preventGestures: false,
   });
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowRight') {
+      activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+      applyPalette(activePaletteIndex);
+    } else if (event.key === 'ArrowLeft') {
+      activePaletteIndex =
+        (activePaletteIndex - 1 + palettes.length) % palettes.length;
+      applyPalette(activePaletteIndex);
+    } else if (event.key === 'ArrowUp') {
+      setMode(
+        currentMode === 'burst'
+          ? 'bloom'
+          : currentMode === 'bloom'
+            ? 'vortex'
+            : currentMode === 'vortex'
+              ? 'heartbeat'
+              : 'burst',
+      );
+    } else if (event.key === 'ArrowDown') {
+      setMode(
+        currentMode === 'burst'
+          ? 'heartbeat'
+          : currentMode === 'heartbeat'
+            ? 'vortex'
+            : currentMode === 'vortex'
+              ? 'bloom'
+              : 'burst',
+      );
+    }
+  }
+
+  window.addEventListener('keydown', handleKeydown);
 
   const unregisterGlobals = registerToyGlobals(container, startAudio);
 
@@ -554,6 +729,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       modeRow?.remove();
       modeRow = null;
       perfUnsub();
+      pointerInput.dispose();
+      window.removeEventListener('keydown', handleKeydown);
       unregisterGlobals();
     },
   };
