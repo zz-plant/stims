@@ -29,6 +29,11 @@ textarea,
   touch-action: manipulation;
 }
 
+body.gamepad-active :focus:not(:focus-visible) {
+  outline: 2px solid var(--accent-color, rgba(96, 165, 250, 0.95));
+  outline-offset: 3px;
+}
+
 .toy-canvas {
   width: 100vw;
   height: 100vh;
