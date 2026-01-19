@@ -6,18 +6,6 @@
     "module": "./assets/js/toys/three-d-toy.ts"
   },
   {
-    "slug": "brand",
-    "title": "Star Guitar Visualizer",
-    "description": "Visuals inspired by an iconic music video, synced to your music.",
-    "module": "./toy.html?toy=brand"
-  },
-  {
-    "slug": "defrag",
-    "title": "Defrag Visualizer",
-    "description": "A nostalgic, sound-reactive visualizer evoking old defragmentation screens.",
-    "module": "./toy.html?toy=defrag"
-  },
-  {
     "slug": "evol",
     "title": "Evolutionary Weirdcore",
     "description": "Watch surreal landscapes evolve with fractals and glitches that react to music.",
@@ -36,28 +24,10 @@
     "module": "./toy.html?toy=seary"
   },
   {
-    "slug": "sgpat",
-    "title": "Pattern Recognition Visualizer",
-    "description": "See patterns form dynamically in response to sound.",
-    "module": "./toys/sgpat.html"
-  },
-  {
-    "slug": "svgtest",
-    "title": "SVG + Three.js Visualizer",
-    "description": "A hybrid visualizer blending 2D and 3D elements, reacting in real time.",
-    "module": "./toy.html?toy=svgtest"
-  },
-  {
     "slug": "symph",
     "title": "Spectrograph",
     "description": "A spectrograph that moves gently with your audio.",
     "module": "./toy.html?toy=symph"
-  },
-  {
-    "slug": "words",
-    "title": "Interactive Word Cloud",
-    "description": "Speak and watch the word cloud react and shift with your voice.",
-    "module": "./toy.html?toy=words"
   },
   {
     "slug": "cube-wave",

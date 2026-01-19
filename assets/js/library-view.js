@@ -353,52 +353,6 @@ const iconRenderers = {
     return svg;
   },
 
-  brand: (toy) => {
-    const { svg, createGradient, createNode } = createSvgContext(
-      toy.slug,
-      `${toy.title} icon`,
-    );
-
-    const starGradient = createGradient(
-      'linear',
-      `brand-${toy.slug}`,
-      [
-        { offset: '0%', color: '#fb7185' },
-        { offset: '50%', color: '#f472b6' },
-        { offset: '100%', color: '#60a5fa' },
-      ],
-      { x1: '0%', x2: '100%', y1: '0%', y2: '100%' },
-    );
-
-    svg.appendChild(
-      createNode('circle', {
-        cx: 60,
-        cy: 60,
-        r: 52,
-        fill: '#0b1220',
-        stroke: '#c084fc',
-        'stroke-width': 2,
-        opacity: 0.85,
-      }),
-    );
-
-    const star = createNode('path', {
-      d: 'M 60 18 L 72 48 L 104 52 L 78 72 L 86 102 L 60 86 L 34 102 L 42 72 L 16 52 L 48 48 Z',
-      fill: starGradient,
-      stroke: '#e0f2fe',
-      'stroke-width': 1.8,
-      'stroke-linejoin': 'round',
-    });
-    svg.appendChild(star);
-
-    addRings(svg, createNode, [
-      { r: 40, stroke: '#f472b6', strokeWidth: 2, dash: '5 8', opacity: 0.7 },
-      { r: 28, stroke: '#60a5fa', strokeWidth: 1.8, dash: '3 6', opacity: 0.6 },
-    ]);
-
-    return svg;
-  },
-
   clay: (toy) => {
     const { svg, createGradient, createNode } = createSvgContext(
       toy.slug,
@@ -448,53 +402,6 @@ const iconRenderers = {
       'stroke-width': 2,
     });
     svg.appendChild(tool);
-
-    return svg;
-  },
-
-  defrag: (toy) => {
-    const { svg, createNode } = createSvgContext(toy.slug, `${toy.title} icon`);
-
-    svg.appendChild(
-      createNode('rect', {
-        x: 10,
-        y: 18,
-        width: 100,
-        height: 84,
-        rx: 10,
-        ry: 10,
-        fill: '#0f172a',
-        stroke: '#38bdf8',
-        'stroke-width': 2,
-      }),
-    );
-
-    addGrid(svg, createNode, {
-      cols: 6,
-      rows: 5,
-      size: 12,
-      gap: 4,
-      stroke: '#22d3ee',
-      opacity: 0.55,
-      origin: [18, 26],
-    });
-
-    const activity = createNode('g', { transform: 'translate(20 30)' });
-    const colors = ['#22c55e', '#a78bfa', '#38bdf8'];
-    for (let i = 0; i < 5; i += 1) {
-      activity.appendChild(
-        createNode('rect', {
-          x: 10 + i * 16,
-          y: 12 + (i % 2) * 10,
-          width: 12,
-          height: 24,
-          rx: 2,
-          fill: colors[i % colors.length],
-          opacity: 0.8,
-        }),
-      );
-    }
-    svg.appendChild(activity);
 
     return svg;
   },
@@ -725,38 +632,6 @@ const iconRenderers = {
     return svg;
   },
 
-  sgpat: (toy) => {
-    const { svg, createNode } = createSvgContext(toy.slug, `${toy.title} icon`);
-
-    addGrid(svg, createNode, {
-      cols: 5,
-      rows: 5,
-      size: 14,
-      gap: 6,
-      stroke: '#94a3b8',
-      opacity: 0.45,
-      origin: [16, 16],
-    });
-
-    const diagonals = createNode('g', {});
-    for (let i = 0; i < 5; i += 1) {
-      diagonals.appendChild(
-        createNode('line', {
-          x1: 22 + i * 20,
-          y1: 26,
-          x2: 62,
-          y2: 94 - i * 10,
-          stroke: ['#22d3ee', '#c084fc', '#22c55e', '#f59e0b', '#38bdf8'][i],
-          'stroke-width': 3,
-          'stroke-linecap': 'round',
-          opacity: 0.8,
-        }),
-      );
-    }
-    svg.appendChild(diagonals);
-    return svg;
-  },
-
   legible: (toy) => {
     const { svg, createNode } = createSvgContext(toy.slug, `${toy.title} icon`);
     svg.appendChild(
@@ -801,60 +676,6 @@ const iconRenderers = {
     return svg;
   },
 
-  svgtest: (toy) => {
-    const { svg, createGradient, createNode } = createSvgContext(
-      toy.slug,
-      `${toy.title} icon`,
-    );
-    const mesh = createGradient(
-      'linear',
-      `svgtest-${toy.slug}`,
-      [
-        { offset: '0%', color: '#38bdf8' },
-        { offset: '100%', color: '#9333ea' },
-      ],
-      { x1: '0%', x2: '100%', y1: '0%', y2: '100%' },
-    );
-
-    addGrid(svg, createNode, {
-      cols: 4,
-      rows: 4,
-      size: 18,
-      gap: 8,
-      stroke: mesh,
-      opacity: 0.4,
-      origin: [18, 18],
-    });
-
-    svg.appendChild(
-      createNode('circle', {
-        cx: 60,
-        cy: 60,
-        r: 36,
-        fill: '#0b1220',
-        stroke: mesh,
-        'stroke-width': 3,
-      }),
-    );
-
-    svg.appendChild(
-      createNode('path', {
-        d: 'M 40 72 C 50 42 70 42 80 72',
-        fill: 'none',
-        stroke: '#e0f2fe',
-        'stroke-width': 4,
-        'stroke-linecap': 'round',
-      }),
-    );
-    svg.appendChild(
-      createNode('circle', { cx: 50, cy: 52, r: 6, fill: '#22d3ee' }),
-    );
-    svg.appendChild(
-      createNode('circle', { cx: 70, cy: 52, r: 6, fill: '#c084fc' }),
-    );
-    return svg;
-  },
-
   symph: (toy) => {
     const { svg, createNode } = createSvgContext(toy.slug, `${toy.title} icon`);
     addBars(svg, createNode, {
@@ -877,45 +698,6 @@ const iconRenderers = {
       },
       { r: 28, stroke: '#a855f7', strokeWidth: 2, dash: '2 6', opacity: 0.4 },
     ]);
-    return svg;
-  },
-
-  words: (toy) => {
-    const { svg, createNode } = createSvgContext(toy.slug, `${toy.title} icon`);
-    svg.appendChild(
-      createNode('rect', {
-        x: 12,
-        y: 18,
-        width: 96,
-        height: 64,
-        rx: 12,
-        fill: '#0f172a',
-        stroke: '#38bdf8',
-        'stroke-width': 2,
-      }),
-    );
-    svg.appendChild(
-      createNode('polygon', {
-        points: '46,82 62,82 58,98',
-        fill: '#38bdf8',
-        opacity: 0.85,
-      }),
-    );
-
-    const lines = ['#e2e8f0', '#c084fc', '#22d3ee'];
-    lines.forEach((color, index) => {
-      svg.appendChild(
-        createNode('rect', {
-          x: 22,
-          y: 32 + index * 14,
-          width: 64,
-          height: 6,
-          rx: 3,
-          fill: color,
-          opacity: 0.85,
-        }),
-      );
-    });
     return svg;
   },
 

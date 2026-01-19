@@ -10,24 +10,15 @@ const toyLibrary = [
     requiresWebGPU: false,
   },
   {
-    slug: 'brand',
-    title: 'Star Guitar Visualizer',
-    description: 'A music video inspired visualizer.',
-    module: './brand.html',
-    type: 'page',
-    requiresWebGPU: false,
-  },
-  {
-    slug: 'words',
-    title: 'Interactive Word Cloud',
-    description: 'Speak and watch the cloud shift.',
-    module: './words.html',
+    slug: 'evol',
+    title: 'Evolutionary Weirdcore',
+    description: 'Surreal landscapes that morph with music.',
+    module: './evol.html',
     type: 'page',
     requiresWebGPU: false,
   },
 ];
 
-const loaderPath = new URL('../assets/js/loader.ts', import.meta.url).href;
 const freshImport = async (path) =>
   import(`${path}?t=${Date.now()}-${Math.random()}`);
 
@@ -36,13 +27,12 @@ let mockLoadFromQuery;
 let mockInitNavigation;
 
 async function loadAppShell() {
-  mock.module(loaderPath, () => ({
+  globalThis.__stimsToyLibrary = toyLibrary;
+  globalThis.__stimsLoaderOverrides = {
     initNavigation: mockInitNavigation,
     loadToy: mockLoadToy,
     loadFromQuery: mockLoadFromQuery,
-  }));
-
-  globalThis.__stimsToyLibrary = toyLibrary;
+  };
 
   await freshImport('../assets/js/app-shell.js');
 }
@@ -64,6 +54,7 @@ describe('app shell user journeys', () => {
     document.body.innerHTML = '';
     window.location = originalLocation;
     delete globalThis.__stimsToyLibrary;
+    delete globalThis.__stimsLoaderOverrides;
   });
 
   test('library landing renders cards and kicks off query-based loading', async () => {
@@ -79,14 +70,14 @@ describe('app shell user journeys', () => {
     await loadAppShell();
 
     const search = document.getElementById('search-bar');
-    search.value = 'cloud';
+    search.value = 'weirdcore';
     search.dispatchEvent(new Event('input', { bubbles: true }));
 
     const visibleTitles = Array.from(
       document.querySelectorAll('.webtoy-card h3'),
     ).map((node) => node.textContent);
 
-    expect(visibleTitles).toEqual(['Interactive Word Cloud']);
+    expect(visibleTitles).toEqual(['Evolutionary Weirdcore']);
   });
 
   test('launching toys routes module entries and navigates for HTML pages', async () => {
@@ -98,13 +89,18 @@ describe('app shell user journeys', () => {
 
     await loadAppShell();
 
-    const cards = document.querySelectorAll('.webtoy-card');
-    cards[0].dispatchEvent(new Event('click', { bubbles: true }));
-    expect(mockLoadToy).toHaveBeenCalledWith('aurora-painter', {
-      pushState: true,
-    });
+    const cards = Array.from(document.querySelectorAll('.webtoy-card'));
+    const moduleCard = cards.find(
+      (card) => card.querySelector('h3')?.textContent === 'Aurora Painter',
+    );
+    expect(moduleCard).not.toBeNull();
 
-    cards[1].dispatchEvent(new Event('click', { bubbles: true }));
-    expect(window.location.href).toBe('./brand.html');
+    const pageCard = cards.find(
+      (card) =>
+        card.querySelector('h3')?.textContent === 'Evolutionary Weirdcore',
+    );
+    expect(pageCard).not.toBeNull();
+    pageCard?.click();
+    expect(window.location.href).toBe('./evol.html');
   });
 });

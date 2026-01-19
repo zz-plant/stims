@@ -17,29 +17,11 @@ export default [
     requiresWebGPU: false,
   },
   {
-    slug: 'brand',
-    title: 'Star Guitar Visualizer',
-    description:
-      'Visuals inspired by an iconic music video, synced to your music.',
-    module: 'assets/js/toys/brand.ts',
-    type: 'module',
-    requiresWebGPU: false,
-  },
-  {
     slug: 'clay',
     title: 'Pottery Wheel Sculptor',
     description:
       'Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.',
     module: 'assets/js/toys/clay.ts',
-    type: 'module',
-    requiresWebGPU: false,
-  },
-  {
-    slug: 'defrag',
-    title: 'Defrag Visualizer',
-    description:
-      'A nostalgic, sound-reactive visualizer evoking old defragmentation screens.',
-    module: 'assets/js/toys/defrag.ts',
     type: 'module',
     requiresWebGPU: false,
   },
@@ -88,14 +70,6 @@ export default [
     requiresWebGPU: false,
   },
   {
-    slug: 'sgpat',
-    title: 'Pattern Recognition Visualizer',
-    description: 'See patterns form dynamically in response to sound.',
-    module: 'assets/js/toys/sgpat.ts',
-    type: 'module',
-    requiresWebGPU: false,
-  },
-  {
     slug: 'legible',
     title: 'Terminal Word Grid',
     description:
@@ -105,28 +79,10 @@ export default [
     requiresWebGPU: false,
   },
   {
-    slug: 'svgtest',
-    title: 'SVG + Three.js Visualizer',
-    description:
-      'A hybrid visualizer blending 2D and 3D elements, reacting in real time.',
-    module: 'assets/js/toys/svgtest.ts',
-    type: 'module',
-    requiresWebGPU: false,
-  },
-  {
     slug: 'symph',
     title: 'Spectrograph',
     description: 'A spectrograph that moves gently with your audio.',
     module: 'assets/js/toys/symph.ts',
-    type: 'module',
-    requiresWebGPU: false,
-  },
-  {
-    slug: 'words',
-    title: 'Interactive Word Cloud',
-    description:
-      'Speak and watch the word cloud react and shift with your voice.',
-    module: 'assets/js/toys/words.ts',
     type: 'module',
     requiresWebGPU: false,
   },
