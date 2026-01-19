@@ -103,14 +103,9 @@ export function initAudioControls(
     if (!(button instanceof HTMLElement)) return;
     button.toggleAttribute('data-loading', pending);
     button.setAttribute('aria-busy', pending ? 'true' : 'false');
-  };
-
-  const setButtonsDisabled = (disabled: boolean) => {
-    [micBtn, demoBtn, tabBtn].forEach((button) => {
-      if (button instanceof HTMLButtonElement) {
-        button.disabled = disabled;
-      }
-    });
+    if (button instanceof HTMLButtonElement) {
+      button.disabled = pending;
+    }
   };
 
   const updateStatus = (
@@ -167,11 +162,14 @@ export function initAudioControls(
     action: () => Promise<void>,
     errorMessage: string,
     onError?: (message: string) => void,
+    successMessage?: string,
   ) => {
-    setButtonsDisabled(true);
     setPending(button, true);
     try {
       await action();
+      if (successMessage) {
+        updateStatus(successMessage, 'success');
+      }
       options.onSuccess?.();
     } catch (err) {
       const message = err instanceof Error ? err.message : errorMessage;
@@ -179,7 +177,6 @@ export function initAudioControls(
       onError?.(message);
     } finally {
       setPending(button, false);
-      setButtonsDisabled(false);
     }
   };
 
@@ -192,6 +189,7 @@ export function initAudioControls(
         emphasizeDemoAudio();
         updateStatus(buildMicrophoneErrorMessage(message));
       },
+      'Microphone connected. You can switch sources anytime.',
     );
   });
 
@@ -200,6 +198,8 @@ export function initAudioControls(
       demoBtn,
       options.onRequestDemoAudio,
       'Demo audio failed to load.',
+      undefined,
+      'Demo audio started.',
     );
   });
 
@@ -223,6 +223,8 @@ export function initAudioControls(
         await requestTabAudio(stream);
       },
       'Tab audio capture failed.',
+      undefined,
+      'Tab audio connected.',
     );
   });
 
@@ -233,7 +235,6 @@ export function initAudioControls(
       options.onRequestYouTubeAudio,
       updateStatus,
       options.onSuccess,
-      setButtonsDisabled,
     );
   }
 }
@@ -244,7 +245,6 @@ function setupYouTubeLogic(
   onUse: (stream: MediaStream) => Promise<void>,
   updateStatus: (msg: string, v?: 'success' | 'error') => void,
   onSuccess?: () => void,
-  setButtonsDisabled?: (disabled: boolean) => void,
 ) {
   const input = container.querySelector('#youtube-url') as HTMLInputElement;
   const loadBtn = container.querySelector('#load-youtube');
@@ -353,7 +353,6 @@ function setupYouTubeLogic(
     }
 
     try {
-      setButtonsDisabled?.(true);
       useBtn.disabled = true;
       useBtn.toggleAttribute('data-loading', true);
       useBtn.setAttribute('aria-busy', 'true');
@@ -369,13 +368,13 @@ function setupYouTubeLogic(
       }
       await onUse(stream);
       onSuccess?.();
+      updateStatus('YouTube audio connected.', 'success');
     } catch (_err) {
       updateStatus('YouTube audio capture failed.');
     } finally {
       useBtn.disabled = false;
       useBtn.toggleAttribute('data-loading', false);
       useBtn.setAttribute('aria-busy', 'false');
-      setButtonsDisabled?.(false);
     }
   });
 }
