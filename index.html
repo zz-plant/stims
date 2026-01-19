@@ -106,7 +106,8 @@
           <p class="eyebrow">System check</p>
           <h2>Confirm your device is ready</h2>
           <p class="section-description">
-            Get clear feedback on graphics, microphone access, and performance
+            Live readiness updates automatically. Open the system check for a
+            deeper read on graphics, microphone access, and performance
             presets before launching a stim. If mic access is blocked, demo,
             tab, and YouTube audio are available in the toy controls.
           </p>
@@ -178,7 +179,7 @@
         </div>
         <div class="cta-row system-actions">
           <button type="button" class="cta-button primary" data-open-preflight>
-            Run system check
+            Open system check
           </button>
           <a href="#toy-list" class="cta-button ghost">Browse toys</a>
         </div>
@@ -746,7 +747,7 @@
             });
         };
 
-        const scheduleRender = (query = cachedQuery, delay = 150) => {
+        const scheduleRender = (query = cachedQuery, delay = 50) => {
           if (pendingRender) {
             window.clearTimeout(pendingRender);
           }
