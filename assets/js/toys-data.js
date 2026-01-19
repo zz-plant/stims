@@ -15,6 +15,13 @@ export default [
     module: 'assets/js/toys/aurora-painter.ts',
     type: 'module',
     requiresWebGPU: false,
+    moods: ['dreamy', 'ethereal', 'luminous'],
+    tags: ['aurora', 'ribbons', 'gestural'],
+    controls: [
+      'Ribbon density',
+      'Pinch/rotate gestures',
+      'Arrow-key mood switching',
+    ],
   },
   {
     slug: 'clay',
@@ -129,6 +136,9 @@ export default [
     module: 'assets/js/toys/spiral-burst.ts',
     type: 'module',
     requiresWebGPU: false,
+    moods: ['energetic', 'pulsing', 'cosmic'],
+    tags: ['spirals', 'burst', 'gestural'],
+    controls: ['Mode buttons', 'Pinch/rotate gestures', 'Arrow-key mode swap'],
   },
   {
     slug: 'rainbow-tunnel',
@@ -145,6 +155,9 @@ export default [
     module: 'assets/js/toys/star-field.ts',
     type: 'module',
     requiresWebGPU: false,
+    moods: ['serene', 'drifting', 'celestial'],
+    tags: ['stars', 'nebula', 'gestural'],
+    controls: ['Pinch/rotate gestures', 'Arrow-key mood switching'],
   },
   {
     slug: 'fractal-kite-garden',
@@ -174,7 +187,15 @@ export default [
     module: 'assets/js/toys/bioluminescent-tidepools.ts',
     type: 'module',
     requiresWebGPU: false,
-    controls: ['Trail length', 'Glow strength', 'Current speed'],
+    moods: ['serene', 'ethereal', 'fiery', 'dreamy'],
+    tags: ['ocean', 'bioluminescent', 'caustics', 'gestural'],
+    controls: [
+      'Trail length',
+      'Glow strength',
+      'Current speed',
+      'Pinch/rotate gestures',
+      'Arrow-key mood switching',
+    ],
   },
   {
     slug: 'neon-wave',

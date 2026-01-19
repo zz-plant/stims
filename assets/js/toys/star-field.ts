@@ -24,6 +24,7 @@ import {
   type ToyAudioRequest,
 } from '../utils/audio-start';
 import { applyAudioColor } from '../utils/color-audio';
+import { createPointerInput } from '../utils/pointer-input';
 import { startToyAudio } from '../utils/start-audio';
 
 type StarFieldBuffers = {
@@ -34,10 +35,63 @@ type StarFieldBuffers = {
   count: number;
 };
 
+type StarfieldPalette = {
+  name: string;
+  background: THREE.ColorRepresentation;
+  fog: THREE.ColorRepresentation;
+  starHue: number;
+  nebulaA: THREE.ColorRepresentation;
+  nebulaB: THREE.ColorRepresentation;
+};
+
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const settingsPanel = getSettingsPanel();
   let activeQuality: QualityPreset = getActiveQualityPreset();
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
+  let activePaletteIndex = 0;
+
+  const palettes: StarfieldPalette[] = [
+    {
+      name: 'Midnight',
+      background: '#030712',
+      fog: '#030712',
+      starHue: 0.6,
+      nebulaA: '#1f2a5a',
+      nebulaB: '#0a1233',
+    },
+    {
+      name: 'Celadon',
+      background: '#020f12',
+      fog: '#020f12',
+      starHue: 0.35,
+      nebulaA: '#174b4a',
+      nebulaB: '#082627',
+    },
+    {
+      name: 'Crimson',
+      background: '#120307',
+      fog: '#120307',
+      starHue: 0.98,
+      nebulaA: '#4b1020',
+      nebulaB: '#20050f',
+    },
+    {
+      name: 'Violet',
+      background: '#0b041a',
+      fog: '#0b041a',
+      starHue: 0.76,
+      nebulaA: '#3b1a66',
+      nebulaB: '#160a33',
+    },
+  ];
+
+  const controls = {
+    drift: 1,
+    sparkle: 1,
+  };
+  let targetDrift = controls.drift;
+  let targetSparkle = controls.sparkle;
+  let rotationLatch = 0;
 
   const toy = new WebToy({
     cameraOptions: { position: { x: 0, y: 0, z: 70 } },
@@ -55,6 +109,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   } as ToyConfig);
 
   let starField: StarFieldBuffers | null = null;
+  let nebulaMesh: THREE.Mesh | null = null;
+  const nebulaUniforms = {
+    u_time: { value: 0 },
+    u_intensity: { value: 0 },
+    u_colorA: { value: new THREE.Color() },
+    u_colorB: { value: new THREE.Color() },
+  };
 
   function getShaderSizeMultiplier() {
     if (performanceSettings.shaderQuality === 'high') return 1.2;
@@ -73,6 +134,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     const velocities = new Float32Array(count);
+    const palette = palettes[activePaletteIndex];
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
@@ -86,7 +148,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
     const material = new THREE.PointsMaterial({
-      color: 0xffffff,
+      color: new THREE.Color().setHSL(palette.starHue, 0.4, 0.9),
       size: 1.2 * getShaderSizeMultiplier(),
       sizeAttenuation: performanceSettings.shaderQuality !== 'low',
       transparent: true,
@@ -101,14 +163,89 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const points = new THREE.Points(geometry, material);
     toy.scene.add(points);
 
-    toy.scene.fog = new THREE.FogExp2(0x030712, 0.0008);
+    toy.scene.fog = new THREE.FogExp2(palette.fog, 0.0008);
     toy.rendererReady.then((result) => {
       if (result) {
-        result.renderer.setClearColor(0x030712, 1);
+        result.renderer.setClearColor(palette.background, 1);
       }
     });
 
     return { geometry, material, velocities, points, count };
+  }
+
+  function createNebula() {
+    if (nebulaMesh) {
+      toy.scene.remove(nebulaMesh);
+      (nebulaMesh.material as THREE.Material).dispose();
+      (nebulaMesh.geometry as THREE.BufferGeometry).dispose();
+    }
+
+    const geometry = new THREE.PlaneGeometry(420, 300, 1, 1);
+    const material = new THREE.ShaderMaterial({
+      uniforms: nebulaUniforms,
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec2 vUv;
+        uniform float u_time;
+        uniform float u_intensity;
+        uniform vec3 u_colorA;
+        uniform vec3 u_colorB;
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          float a = hash(i);
+          float b = hash(i + vec2(1.0, 0.0));
+          float c = hash(i + vec2(0.0, 1.0));
+          float d = hash(i + vec2(1.0, 1.0));
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+        }
+
+        float fbm(vec2 p) {
+          float value = 0.0;
+          float amp = 0.55;
+          for (int i = 0; i < 4; i++) {
+            value += amp * noise(p);
+            p *= 2.1;
+            amp *= 0.5;
+          }
+          return value;
+        }
+
+        void main() {
+          vec2 uv = vUv;
+          vec2 warp = vec2(
+            fbm(uv * 3.4 + u_time * 0.04),
+            fbm(uv * 3.1 - u_time * 0.03)
+          );
+          vec2 shifted = uv + (warp - 0.5) * 0.18;
+          float clouds = fbm(shifted * 5.4 + u_time * 0.08);
+          float glow = smoothstep(0.2, 0.85, clouds);
+          vec3 color = mix(u_colorB, u_colorA, glow);
+          color += glow * u_intensity * 0.35;
+          gl_FragColor = vec4(color, 0.85);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+    });
+
+    nebulaMesh = new THREE.Mesh(geometry, material);
+    nebulaMesh.position.z = -260;
+    toy.scene.add(nebulaMesh);
   }
 
   function disposeStarField() {
@@ -149,7 +286,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function setupSettingsPanel() {
     settingsPanel.configure({
       title: 'Star field',
-      description: 'Tune render resolution and particle density for your GPU.',
+      description:
+        'Tune render resolution and particle density for your GPU. Pinch to intensify the drift and rotate to swap nebula moods.',
     });
     settingsPanel.setQualityPresets({
       presets: DEFAULT_QUALITY_PRESETS,
@@ -173,14 +311,26 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const normalizedAvg = avg / 255;
     const time = ctx.time;
 
+    controls.drift = THREE.MathUtils.lerp(controls.drift, targetDrift, 0.08);
+    controls.sparkle = THREE.MathUtils.lerp(
+      controls.sparkle,
+      targetSparkle,
+      0.08,
+    );
+
+    nebulaUniforms.u_time.value = time * 0.0006;
+    nebulaUniforms.u_intensity.value = normalizedAvg * controls.sparkle;
+
     const positions = starField.geometry.attributes.position
       .array as Float32Array;
     for (let i = 0; i < starField.count; i++) {
       const i3 = i * 3;
       const drift = Math.sin(time * 0.001 + i * 0.02) * 0.12;
-      positions[i3] += drift;
-      positions[i3 + 1] += Math.cos(time * 0.0012 + i * 0.015) * 0.09;
-      positions[i3 + 2] += starField.velocities[i] * (1 + normalizedAvg * 3.5);
+      positions[i3] += drift * controls.drift;
+      positions[i3 + 1] +=
+        Math.cos(time * 0.0012 + i * 0.015) * 0.09 * controls.drift;
+      positions[i3 + 2] +=
+        starField.velocities[i] * (1 + normalizedAvg * 3.5 * controls.sparkle);
 
       if (positions[i3 + 2] > 80) {
         resetStar(i, positions);
@@ -189,12 +339,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     starField.geometry.attributes.position.needsUpdate = true;
 
-    const baseSize = 1.2 * getShaderSizeMultiplier() + normalizedAvg * 2.2;
+    const baseSize =
+      1.2 * getShaderSizeMultiplier() + normalizedAvg * 2.2 * controls.sparkle;
     starField.material.size = baseSize;
     starField.material.opacity = 0.65 + normalizedAvg * 0.3;
+    const palette = palettes[activePaletteIndex];
     applyAudioColor(starField.material, normalizedAvg, {
-      baseHue: 0.6,
-      hueRange: 0.35,
+      baseHue: palette.starHue,
+      hueRange: 0.35 * controls.sparkle,
       baseSaturation: 0.3,
       baseLuminance: 0.82,
     });
@@ -217,17 +369,94 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   setupSettingsPanel();
   const perfUnsub = setupPerformancePanel();
   starField = createStarField();
+  createNebula();
+  applyPalette(activePaletteIndex);
+  if (toy.canvas instanceof HTMLElement) {
+    toy.canvas.style.touchAction = 'manipulation';
+  }
+
+  const pointerInput = createPointerInput({
+    target: window,
+    boundsElement: toy.canvas,
+    onChange: (summary) => {
+      if (!summary.pointers.length) return;
+      const centroid = summary.normalizedCentroid;
+      targetDrift = THREE.MathUtils.clamp(1 + centroid.x * 0.4, 0.6, 1.6);
+      targetSparkle = THREE.MathUtils.clamp(1 + centroid.y * 0.5, 0.6, 1.8);
+    },
+    onGesture: (gesture) => {
+      if (gesture.pointerCount < 2) return;
+      targetDrift = THREE.MathUtils.clamp(
+        targetDrift + (gesture.scale - 1) * 0.4,
+        0.6,
+        1.8,
+      );
+      targetSparkle = THREE.MathUtils.clamp(
+        targetSparkle + Math.abs(gesture.rotation) * 0.6,
+        0.6,
+        2,
+      );
+      if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+        activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+        applyPalette(activePaletteIndex);
+      } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+        activePaletteIndex =
+          (activePaletteIndex - 1 + palettes.length) % palettes.length;
+        applyPalette(activePaletteIndex);
+      }
+      rotationLatch = gesture.rotation;
+    },
+    preventGestures: false,
+  });
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowRight') {
+      activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+      applyPalette(activePaletteIndex);
+    } else if (event.key === 'ArrowLeft') {
+      activePaletteIndex =
+        (activePaletteIndex - 1 + palettes.length) % palettes.length;
+      applyPalette(activePaletteIndex);
+    } else if (event.key === 'ArrowUp') {
+      targetDrift = THREE.MathUtils.clamp(targetDrift + 0.1, 0.6, 1.8);
+    } else if (event.key === 'ArrowDown') {
+      targetDrift = THREE.MathUtils.clamp(targetDrift - 0.1, 0.6, 1.8);
+    }
+  }
+
+  window.addEventListener('keydown', handleKeydown);
 
   // Register globals for toy.html buttons
   // Register globals for toy.html buttons
   const unregisterGlobals = registerToyGlobals(container, startAudio);
+
+  function applyPalette(index: number) {
+    const palette = palettes[index];
+    nebulaUniforms.u_colorA.value.set(palette.nebulaA);
+    nebulaUniforms.u_colorB.value.set(palette.nebulaB);
+    toy.scene.fog = new THREE.FogExp2(palette.fog, 0.0008);
+    toy.rendererReady.then((result) => {
+      if (result) {
+        result.renderer.setClearColor(palette.background, 1);
+      }
+    });
+    if (starField) {
+      starField.material.color.setHSL(palette.starHue, 0.4, 0.9);
+    }
+  }
 
   return {
     dispose: () => {
       toy.dispose();
       disposeStarField();
       perfUnsub();
-      perfUnsub();
+      pointerInput.dispose();
+      window.removeEventListener('keydown', handleKeydown);
+      if (nebulaMesh) {
+        toy.scene.remove(nebulaMesh);
+        (nebulaMesh.material as THREE.Material).dispose();
+        (nebulaMesh.geometry as THREE.BufferGeometry).dispose();
+      }
       unregisterGlobals();
     },
   };

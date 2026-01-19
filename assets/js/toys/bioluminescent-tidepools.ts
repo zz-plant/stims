@@ -31,6 +31,16 @@ type TideBlob = {
   strength: number;
 };
 
+type TidePalette = {
+  name: string;
+  deep: THREE.ColorRepresentation;
+  pool: THREE.ColorRepresentation;
+  crest: THREE.ColorRepresentation;
+  bloom: THREE.ColorRepresentation;
+  foam: THREE.ColorRepresentation;
+  spark: THREE.ColorRepresentation;
+};
+
 const MAX_BLOBS = 28;
 const BASE_SPARK_COUNT = 200;
 
@@ -43,6 +53,46 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     glowStrength: 1.2,
     currentSpeed: 1,
   };
+
+  const palettes: TidePalette[] = [
+    {
+      name: 'Nocturne',
+      deep: '#021018',
+      pool: '#073145',
+      crest: '#3ab4c9',
+      bloom: '#94f6ff',
+      foam: '#2e7f88',
+      spark: '#b5f7ff',
+    },
+    {
+      name: 'Lagoon',
+      deep: '#031b1e',
+      pool: '#0e4a4f',
+      crest: '#4fe6c6',
+      bloom: '#d4fff5',
+      foam: '#36b08e',
+      spark: '#bafbee',
+    },
+    {
+      name: 'Ember',
+      deep: '#18070c',
+      pool: '#3a1018',
+      crest: '#ff6b6b',
+      bloom: '#ffd6a5',
+      foam: '#d94c4c',
+      spark: '#ffe0b2',
+    },
+    {
+      name: 'Aurora',
+      deep: '#050b1f',
+      pool: '#122063',
+      crest: '#8a7dff',
+      bloom: '#f2d7ff',
+      foam: '#6d5cff',
+      spark: '#d9d2ff',
+    },
+  ];
+  let activePaletteIndex = 0;
 
   function getSparkCount() {
     const scale = activeQuality.particleScale ?? 1;
@@ -83,6 +133,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     u_currentSpeed: { value: controls.currentSpeed },
     u_audioGlow: { value: 0 },
     u_audioSpark: { value: 0 },
+    u_paletteDeep: { value: new THREE.Color() },
+    u_palettePool: { value: new THREE.Color() },
+    u_paletteCrest: { value: new THREE.Color() },
+    u_paletteBloom: { value: new THREE.Color() },
+    u_paletteFoam: { value: new THREE.Color() },
   };
 
   const vertexShader = `
@@ -109,6 +164,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     uniform float u_currentSpeed;
     uniform float u_audioGlow;
     uniform float u_audioSpark;
+    uniform vec3 u_paletteDeep;
+    uniform vec3 u_palettePool;
+    uniform vec3 u_paletteCrest;
+    uniform vec3 u_paletteBloom;
+    uniform vec3 u_paletteFoam;
 
     float hash(vec2 p) {
       return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -164,17 +224,24 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       float shoreline = smoothstep(u_threshold - 0.25, u_threshold + 0.08, field);
       float shell = smoothstep(u_threshold, u_threshold + 0.25, field);
 
-      vec3 deepSea = vec3(0.02, 0.08, 0.12);
-      vec3 pool = vec3(0.08, 0.28, 0.36);
-      vec3 crest = vec3(0.26, 0.78, 0.92);
-      vec3 bloom = vec3(0.46, 0.96, 1.0);
+      vec3 deepSea = u_paletteDeep;
+      vec3 pool = u_palettePool;
+      vec3 crest = u_paletteCrest;
+      vec3 bloom = u_paletteBloom;
 
-      float foam = fbm(uv * 6.0 + u_time * 0.1) * 0.35;
+      vec2 warp = vec2(
+        fbm(uv * 3.2 + u_time * 0.12),
+        fbm(uv * 3.2 - u_time * 0.18)
+      );
+      vec2 warpedUv = uv + (warp - 0.5) * 0.08;
+      float foam = fbm(warpedUv * 6.2 + u_time * 0.08) * 0.35;
+      float caustics = pow(fbm(warpedUv * 10.0 + u_time * 0.4), 2.4);
       float glowStrength = (u_glowStrength + u_audioGlow * 1.4);
 
       vec3 color = mix(deepSea, pool, shoreline + foam * 0.2);
       color = mix(color, crest, shell);
       color += pow(max(field - u_threshold, 0.0), 1.4) * bloom * glowStrength;
+      color += caustics * u_paletteFoam * (0.18 + u_audioGlow * 0.35);
 
       float spark = hash(uv * vec2(620.0, 420.0) + u_time * 2.5);
       float sparkMask = step(0.985 - u_audioSpark * 0.4, spark);
@@ -210,6 +277,22 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let activeSparkCount = getSparkCount();
   const lastPointerPositions = new Map<number, PointerPosition>();
   const clock = new THREE.Clock();
+  let targetGlowStrength = controls.glowStrength;
+  let targetCurrentSpeed = controls.currentSpeed;
+  let targetTrailLength = controls.trailLength;
+  let targetThreshold = uniforms.u_threshold.value;
+  let gestureRotation = 0;
+  let rotationLatch = 0;
+
+  function applyPalette(index: number) {
+    const palette = palettes[index];
+    uniforms.u_paletteDeep.value.set(palette.deep);
+    uniforms.u_palettePool.value.set(palette.pool);
+    uniforms.u_paletteCrest.value.set(palette.crest);
+    uniforms.u_paletteBloom.value.set(palette.bloom);
+    uniforms.u_paletteFoam.value.set(palette.foam);
+    sparkMaterial.color.set(palette.spark);
+  }
 
   function resetSpark(index: number, anchor?: TideBlob) {
     const uv =
@@ -309,8 +392,22 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function handlePointerUpdate(summary: PointerSummary) {
     if (!summary.pointers.length) {
       lastPointerPositions.clear();
+      gestureRotation = 0;
+      rotationLatch = 0;
       return;
     }
+
+    const centroid = summary.normalizedCentroid;
+    targetGlowStrength = THREE.MathUtils.clamp(
+      1.1 + (centroid.y + 1) * 0.3,
+      0.85,
+      1.9,
+    );
+    targetThreshold = THREE.MathUtils.clamp(
+      0.88 + centroid.x * 0.08,
+      0.78,
+      1.05,
+    );
 
     summary.pointers.forEach((pointer) => {
       spawnBlobFromPointer(pointer, 0.9);
@@ -321,7 +418,42 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     target: window,
     boundsElement: toy.canvas,
     onChange: handlePointerUpdate,
-    onGesture: () => undefined,
+    onGesture: (gesture) => {
+      if (gesture.pointerCount < 2) return;
+
+      targetCurrentSpeed = THREE.MathUtils.clamp(
+        1 + (gesture.scale - 1) * 1.6,
+        0.6,
+        2.6,
+      );
+      targetTrailLength = THREE.MathUtils.clamp(
+        2.4 + (gesture.scale - 1) * 1.4,
+        1.4,
+        3.8,
+      );
+      targetGlowStrength = THREE.MathUtils.clamp(
+        1.15 + Math.abs(gesture.rotation) * 1.3,
+        0.9,
+        2.5,
+      );
+      targetThreshold = THREE.MathUtils.clamp(
+        0.88 + gesture.translation.y * 0.2,
+        0.7,
+        1.05,
+      );
+
+      gestureRotation = gesture.rotation;
+      if (rotationLatch <= 0.45 && gestureRotation > 0.45) {
+        activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+        applyPalette(activePaletteIndex);
+      } else if (rotationLatch >= -0.45 && gestureRotation < -0.45) {
+        activePaletteIndex =
+          (activePaletteIndex - 1 + palettes.length) % palettes.length;
+        applyPalette(activePaletteIndex);
+      }
+      rotationLatch = gestureRotation;
+    },
+    preventGestures: false,
   });
 
   function updateSparks(delta: number, energy: number) {
@@ -404,7 +536,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     settingsPanel.configure({
       title: 'Bioluminescent tidepools',
       description:
-        'Quality presets update DPI caps, blob limits, and spark counts without reloading.',
+        'Quality presets update DPI caps, blob limits, and spark counts without reloading. Pinch to shape the currents, rotate to swap moods, and nudge with arrow keys.',
     });
     settingsPanel.setQualityPresets({
       presets: DEFAULT_QUALITY_PRESETS,
@@ -429,6 +561,29 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const data = getContextFrequencyData(ctx);
     const highBand = computeHighBandEnergy(data);
 
+    controls.glowStrength = THREE.MathUtils.lerp(
+      controls.glowStrength,
+      targetGlowStrength,
+      0.08,
+    );
+    controls.currentSpeed = THREE.MathUtils.lerp(
+      controls.currentSpeed,
+      targetCurrentSpeed,
+      0.06,
+    );
+    controls.trailLength = THREE.MathUtils.lerp(
+      controls.trailLength,
+      targetTrailLength,
+      0.06,
+    );
+    uniforms.u_threshold.value = THREE.MathUtils.lerp(
+      uniforms.u_threshold.value,
+      targetThreshold,
+      0.08,
+    );
+    uniforms.u_glowStrength.value = controls.glowStrength;
+    uniforms.u_currentSpeed.value = controls.currentSpeed;
+
     uniforms.u_time.value += delta;
     uniforms.u_audioGlow.value = THREE.MathUtils.lerp(
       uniforms.u_audioGlow.value,
@@ -448,8 +603,37 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   setupSettingsPanel();
   initializeScene();
+  applyPalette(activePaletteIndex);
+  if (toy.canvas instanceof HTMLElement) {
+    toy.canvas.style.touchAction = 'manipulation';
+  }
   handleResize();
   window.addEventListener('resize', handleResize);
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowRight') {
+      activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+      applyPalette(activePaletteIndex);
+    } else if (event.key === 'ArrowLeft') {
+      activePaletteIndex =
+        (activePaletteIndex - 1 + palettes.length) % palettes.length;
+      applyPalette(activePaletteIndex);
+    } else if (event.key === 'ArrowUp') {
+      targetCurrentSpeed = THREE.MathUtils.clamp(
+        targetCurrentSpeed + 0.15,
+        0.6,
+        2.6,
+      );
+    } else if (event.key === 'ArrowDown') {
+      targetCurrentSpeed = THREE.MathUtils.clamp(
+        targetCurrentSpeed - 0.15,
+        0.6,
+        2.6,
+      );
+    }
+  }
+
+  window.addEventListener('keydown', handleKeydown);
 
   async function startAudio(request: ToyAudioRequest = false) {
     try {
@@ -483,8 +667,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       toy.dispose();
       disposePointer.dispose();
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('keydown', handleKeydown);
       sparkGeometry.dispose();
-      sparkMaterial.dispose();
       sparkMaterial.dispose();
       unregisterGlobals();
     },
