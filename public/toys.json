@@ -17,8 +17,8 @@
     "module": "assets/js/toys/aurora-painter.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["aurora", "painting", "ribbons"],
-    "moods": ["calm", "flow"],
+    "tags": ["aurora", "ribbons", "gestural"],
+    "moods": ["dreamy", "ethereal", "luminous"],
     "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
   },
   {
@@ -161,8 +161,8 @@
     "module": "assets/js/toys/spiral-burst.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["spiral", "burst", "particles", "modes", "beat-detection", "3d"],
-    "moods": ["vivid", "excited", "immersive", "energetic"],
+    "tags": ["spiral", "burst", "gestural", "modes", "beat-detection", "3d"],
+    "moods": ["energetic", "pulsing", "cosmic"],
     "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
   },
   {
@@ -183,8 +183,8 @@
     "module": "assets/js/toys/star-field.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["stars", "space", "shimmer"],
-    "moods": ["calm", "dreamy"],
+    "tags": ["stars", "nebula", "gestural"],
+    "moods": ["serene", "drifting", "celestial"],
     "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
   },
   {
@@ -216,8 +216,8 @@
     "module": "assets/js/toys/bioluminescent-tidepools.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["ocean", "bioluminescent", "currents"],
-    "moods": ["serene", "glowing"],
+    "tags": ["ocean", "bioluminescent", "caustics", "gestural"],
+    "moods": ["serene", "ethereal", "fiery", "dreamy"],
     "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
   }
 ]
