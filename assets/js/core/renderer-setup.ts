@@ -16,6 +16,7 @@ export type RendererInitResult = {
   maxPixelRatio: number;
   renderScale: number;
   exposure: number;
+  xrSupported: boolean;
 };
 
 export type RendererInitConfig = {
@@ -31,6 +32,26 @@ const isMobileUserAgent =
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent,
   );
+
+const XR_SESSION_MODES = ['immersive-vr', 'immersive-ar'] as const;
+
+async function detectXrSupport(): Promise<boolean> {
+  if (typeof navigator === 'undefined') return false;
+  const xr = (
+    navigator as Navigator & {
+      xr?: { isSessionSupported?: (mode: string) => Promise<boolean> };
+    }
+  ).xr;
+  if (!xr?.isSessionSupported) return false;
+
+  const results = await Promise.allSettled(
+    XR_SESSION_MODES.map((mode) => xr.isSessionSupported?.(mode)),
+  );
+
+  return results.some(
+    (result) => result.status === 'fulfilled' && Boolean(result.value),
+  );
+}
 
 const getAdaptiveMaxPixelRatio = (maxPixelRatio: number) => {
   if (typeof navigator === 'undefined' || typeof window === 'undefined') {
@@ -82,6 +103,8 @@ export async function initRenderer(
     renderScale = 1,
   } = config;
 
+  const xrSupported = await detectXrSupport();
+
   const finalize = (
     renderer: WebGLRenderer | WebGPURenderer,
     backend: RendererBackend,
@@ -98,6 +121,12 @@ export async function initRenderer(
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = exposure;
+    if (renderer instanceof WebGLRenderer) {
+      renderer.xr.enabled = xrSupported;
+      if (xrSupported) {
+        renderer.xr.setReferenceSpaceType?.('local-floor');
+      }
+    }
     return {
       renderer,
       backend,
@@ -106,6 +135,7 @@ export async function initRenderer(
       maxPixelRatio,
       renderScale,
       exposure,
+      xrSupported,
     };
   };
 
@@ -136,6 +166,14 @@ export async function initRenderer(
     });
     return finalize(renderer, 'webgl', null, null);
   };
+
+  if (xrSupported) {
+    return fallbackToWebGL(
+      'WebXR session support detected. Using WebGL for XR compatibility.',
+      undefined,
+      { shouldRetryWebGPU: true, triedWebGPU: false },
+    );
+  }
 
   const capabilities = await getRendererCapabilities();
 
