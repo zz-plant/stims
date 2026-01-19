@@ -1216,13 +1216,11 @@ h1 {
     background 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease;
-  opacity: 0;
-  pointer-events: none;
 }
 
-.search-clear.is-visible {
-  opacity: 1;
-  pointer-events: auto;
+.search-clear.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .search-clear:hover {

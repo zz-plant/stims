@@ -208,8 +208,6 @@
                 type="button"
                 class="search-clear"
                 data-search-clear
-                aria-hidden="true"
-                tabindex="-1"
                 aria-label="Clear search"
               >
                 Clear
@@ -365,7 +363,7 @@
         let sortBy = 'featured';
         const activeFilters = new Set();
         let lastCommittedQuery = '';
-        let pendingCommit;
+        let pendingRender;
 
         const shouldDeferToEnhanced = () =>
           document.body.dataset.libraryEnhanced === 'true';
@@ -476,7 +474,7 @@
         const updateControlVisibility = () => {
           if (clearSearchButton instanceof HTMLElement) {
             const hasQuery = cachedQuery.trim().length > 0;
-            clearSearchButton.classList.toggle('is-visible', hasQuery);
+            clearSearchButton.classList.toggle('is-hidden', !hasQuery);
             clearSearchButton.setAttribute('aria-hidden', String(!hasQuery));
             if (hasQuery) {
               clearSearchButton.removeAttribute('tabindex');
@@ -748,6 +746,16 @@
             });
         };
 
+        const scheduleRender = (query = cachedQuery, delay = 150) => {
+          if (pendingRender) {
+            window.clearTimeout(pendingRender);
+          }
+          pendingRender = window.setTimeout(() => {
+            renderCards(applyFilters(query), query);
+            updateControlVisibility();
+          }, delay);
+        };
+
         fetch('./toys.json')
           .then((response) => (response.ok ? response.json() : null))
           .then((toys) => {
@@ -787,17 +795,10 @@
               search.addEventListener('input', () => {
                 cachedQuery = search.value.toLowerCase().trim();
                 commitState({ replace: true });
-                if (pendingCommit) {
-                  window.clearTimeout(pendingCommit);
+                if (searchResults instanceof HTMLElement) {
+                  searchResults.textContent = 'Filtering…';
                 }
-                pendingCommit = window.setTimeout(() => {
-                  if (cachedQuery.trim() !== lastCommittedQuery) {
-                    lastCommittedQuery = cachedQuery.trim();
-                    commitState({ replace: false });
-                  }
-                }, 500);
-                renderCards(applyFilters(cachedQuery), cachedQuery);
-                updateControlVisibility();
+                scheduleRender(cachedQuery);
               });
               search.addEventListener('blur', () => {
                 if (cachedQuery.trim() !== lastCommittedQuery) {
