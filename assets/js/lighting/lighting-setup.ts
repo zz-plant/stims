@@ -27,6 +27,13 @@ type LightingInstance =
   | HemisphereLight
   | PointLight;
 
+type LightingConstructors = {
+  DirectionalLight: typeof DirectionalLight;
+  SpotLight: typeof SpotLight;
+  HemisphereLight: typeof HemisphereLight;
+  PointLight: typeof PointLight;
+};
+
 export function initLighting(
   scene: SceneLike,
   config: LightConfig = {
@@ -35,6 +42,12 @@ export function initLighting(
     intensity: 1,
     position: { x: 10, y: 10, z: 10 },
     castShadow: false,
+  },
+  constructors: LightingConstructors = {
+    DirectionalLight,
+    SpotLight,
+    HemisphereLight,
+    PointLight,
   },
 ): void {
   const {
@@ -46,28 +59,34 @@ export function initLighting(
   } = config ?? {};
 
   const { x, y, z } = { x: 10, y: 10, z: 10, ...(position ?? {}) };
+  const {
+    DirectionalLight: DirectionalLightConstructor,
+    SpotLight: SpotLightConstructor,
+    HemisphereLight: HemisphereLightConstructor,
+    PointLight: PointLightConstructor,
+  } = constructors;
   let light: LightingInstance;
 
   switch (type) {
     case 'DirectionalLight':
-      light = new DirectionalLight(color, intensity);
+      light = new DirectionalLightConstructor(color, intensity);
       light.position.set(x, y, z);
       if (castShadow) {
         light.castShadow = true;
       }
       break;
     case 'SpotLight':
-      light = new SpotLight(color, intensity);
+      light = new SpotLightConstructor(color, intensity);
       light.position.set(x, y, z);
       if (castShadow) {
         light.castShadow = true;
       }
       break;
     case 'HemisphereLight':
-      light = new HemisphereLight(color, 0x444444, intensity);
+      light = new HemisphereLightConstructor(color, 0x444444, intensity);
       break;
     default:
-      light = new PointLight(color, intensity);
+      light = new PointLightConstructor(color, intensity);
       light.position.set(x, y, z);
       if (castShadow) {
         light.castShadow = true;
