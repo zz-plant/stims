@@ -94,7 +94,9 @@ function buildManifestPaths(baseUrl: URL | null) {
   }
 
   if (!candidates.size) {
-    MANIFEST_CANDIDATES.forEach((path) => candidates.add(path));
+    MANIFEST_CANDIDATES.forEach((path) =>
+      candidates.add(resolveFromBase(null, path)),
+    );
   }
 
   return Array.from(candidates);
