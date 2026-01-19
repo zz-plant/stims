@@ -52,6 +52,8 @@ export function createPointerInput({
 }: PointerInputOptions) {
   const activePointers = new Map<number, PointerPosition>();
   const listenerTarget: HTMLElement | Window = target;
+  const supportsPointerEvents =
+    typeof window !== 'undefined' && 'PointerEvent' in window;
   const boundsSource =
     boundsElement ??
     (target instanceof Window
@@ -65,8 +67,8 @@ export function createPointerInput({
     angle: number;
   } | null = null;
 
-  if (preventGestures && boundsSource instanceof HTMLElement) {
-    boundsSource.style.touchAction = 'none';
+  if (boundsSource instanceof HTMLElement) {
+    boundsSource.style.touchAction = preventGestures ? 'none' : 'manipulation';
   }
 
   function getBounds() {
@@ -143,22 +145,26 @@ export function createPointerInput({
     });
   }
 
-  function upsertPointer(event: PointerEvent) {
+  function upsertPointer(pointerId: number, clientX: number, clientY: number) {
     const bounds = getBounds();
-    const normalized = normalizePoint(event.clientX, event.clientY, bounds);
-    activePointers.set(event.pointerId, {
-      id: event.pointerId,
-      clientX: event.clientX,
-      clientY: event.clientY,
+    const normalized = normalizePoint(clientX, clientY, bounds);
+    activePointers.set(pointerId, {
+      id: pointerId,
+      clientX,
+      clientY,
       ...normalized,
     });
   }
 
-  function handlePointerMove(event: PointerEvent) {
-    upsertPointer(event);
+  function updateAndNotify() {
     const summary = summarizePointers();
     onChange?.(summary);
     updateGesture(summary);
+  }
+
+  function handlePointerMove(event: PointerEvent) {
+    upsertPointer(event.pointerId, event.clientX, event.clientY);
+    updateAndNotify();
   }
 
   function handlePointerDown(event: PointerEvent) {
@@ -172,17 +178,13 @@ export function createPointerInput({
         // Some elements cannot capture pointers; fail silently.
       }
     }
-    upsertPointer(event);
-    const summary = summarizePointers();
-    onChange?.(summary);
-    updateGesture(summary);
+    upsertPointer(event.pointerId, event.clientX, event.clientY);
+    updateAndNotify();
   }
 
   function handlePointerEnd(event: PointerEvent) {
     activePointers.delete(event.pointerId);
-    const summary = summarizePointers();
-    onChange?.(summary);
-    updateGesture(summary);
+    updateAndNotify();
   }
 
   const addPointerListener = (
@@ -199,20 +201,118 @@ export function createPointerInput({
     listenerTarget.removeEventListener(type, handler as EventListener);
   };
 
-  addPointerListener('pointermove', handlePointerMove);
-  addPointerListener('pointerdown', handlePointerDown);
-  addPointerListener('pointerup', handlePointerEnd);
-  addPointerListener('pointercancel', handlePointerEnd);
-  addPointerListener('pointerout', handlePointerEnd);
-  addPointerListener('pointerleave', handlePointerEnd);
+  const touchListenerOptions: AddEventListenerOptions = {
+    passive: !preventGestures,
+  };
+
+  const updateFromTouches = (touches: TouchList) => {
+    const nextIds = new Set<number>();
+    for (const touch of Array.from(touches)) {
+      nextIds.add(touch.identifier);
+      upsertPointer(touch.identifier, touch.clientX, touch.clientY);
+    }
+
+    for (const id of activePointers.keys()) {
+      if (!nextIds.has(id)) {
+        activePointers.delete(id);
+      }
+    }
+  };
+
+  const handleTouchEvent = (event: Event) => {
+    const touchEvent = event as TouchEvent;
+    if (preventGestures) {
+      touchEvent.preventDefault();
+    }
+    updateFromTouches(touchEvent.touches);
+    updateAndNotify();
+  };
+
+  const handleMouseMove = (event: Event) => {
+    const mouseEvent = event as MouseEvent;
+    upsertPointer(1, mouseEvent.clientX, mouseEvent.clientY);
+    updateAndNotify();
+  };
+
+  const handleMouseDown = (event: Event) => {
+    const mouseEvent = event as MouseEvent;
+    upsertPointer(1, mouseEvent.clientX, mouseEvent.clientY);
+    updateAndNotify();
+  };
+
+  const handleMouseEnd = () => {
+    activePointers.delete(1);
+    updateAndNotify();
+  };
+
+  if (supportsPointerEvents) {
+    addPointerListener('pointermove', handlePointerMove);
+    addPointerListener('pointerdown', handlePointerDown);
+    addPointerListener('pointerup', handlePointerEnd);
+    addPointerListener('pointercancel', handlePointerEnd);
+    addPointerListener('pointerout', handlePointerEnd);
+    addPointerListener('pointerleave', handlePointerEnd);
+  } else {
+    listenerTarget.addEventListener(
+      'touchstart',
+      handleTouchEvent,
+      touchListenerOptions,
+    );
+    listenerTarget.addEventListener(
+      'touchmove',
+      handleTouchEvent,
+      touchListenerOptions,
+    );
+    listenerTarget.addEventListener(
+      'touchend',
+      handleTouchEvent,
+      touchListenerOptions,
+    );
+    listenerTarget.addEventListener(
+      'touchcancel',
+      handleTouchEvent,
+      touchListenerOptions,
+    );
+    listenerTarget.addEventListener('mousemove', handleMouseMove);
+    listenerTarget.addEventListener('mousedown', handleMouseDown);
+    listenerTarget.addEventListener('mouseup', handleMouseEnd);
+    listenerTarget.addEventListener('mouseleave', handleMouseEnd);
+  }
 
   function dispose() {
-    removePointerListener('pointermove', handlePointerMove);
-    removePointerListener('pointerdown', handlePointerDown);
-    removePointerListener('pointerup', handlePointerEnd);
-    removePointerListener('pointercancel', handlePointerEnd);
-    removePointerListener('pointerout', handlePointerEnd);
-    removePointerListener('pointerleave', handlePointerEnd);
+    if (supportsPointerEvents) {
+      removePointerListener('pointermove', handlePointerMove);
+      removePointerListener('pointerdown', handlePointerDown);
+      removePointerListener('pointerup', handlePointerEnd);
+      removePointerListener('pointercancel', handlePointerEnd);
+      removePointerListener('pointerout', handlePointerEnd);
+      removePointerListener('pointerleave', handlePointerEnd);
+    } else {
+      listenerTarget.removeEventListener(
+        'touchstart',
+        handleTouchEvent,
+        touchListenerOptions,
+      );
+      listenerTarget.removeEventListener(
+        'touchmove',
+        handleTouchEvent,
+        touchListenerOptions,
+      );
+      listenerTarget.removeEventListener(
+        'touchend',
+        handleTouchEvent,
+        touchListenerOptions,
+      );
+      listenerTarget.removeEventListener(
+        'touchcancel',
+        handleTouchEvent,
+        touchListenerOptions,
+      );
+      listenerTarget.removeEventListener('mousemove', handleMouseMove);
+      listenerTarget.removeEventListener('mousedown', handleMouseDown);
+      listenerTarget.removeEventListener('mouseup', handleMouseEnd);
+      listenerTarget.removeEventListener('mouseleave', handleMouseEnd);
+    }
     activePointers.clear();
     gestureAnchor = null;
   }
