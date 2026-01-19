@@ -102,4 +102,32 @@ describe('manifest client', () => {
       'https://cdn.example.com/app/assets/js/toys/example.ts',
     );
   });
+
+  test('uses manifest origin base when manifest is fetched from root', async () => {
+    window.location.href = 'http://example.com/app/';
+
+    const manifest = {
+      [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
+    };
+
+    const responses = [
+      { ok: false },
+      { ok: false },
+      { ok: true, json: () => Promise.resolve(manifest) },
+    ];
+
+    const fetchImpl = mock(() =>
+      Promise.resolve(responses.shift() ?? { ok: false }),
+    );
+
+    const client = createManifestClient({
+      fetchImpl,
+      baseUrl: 'http://example.com/app/',
+    });
+
+    const modulePath = await client.resolveModulePath(moduleEntry);
+
+    expect(fetchImpl).toHaveBeenCalledWith('/manifest.json');
+    expect(modulePath).toBe('/assets/js/toys/example.123.js');
+  });
 });
