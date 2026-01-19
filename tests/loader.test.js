@@ -58,8 +58,8 @@ function createMockHistory(locationObject) {
 
 const defaultToys = [
   {
-    slug: 'brand',
-    title: 'Test Brand Toy',
+    slug: 'aurora-painter',
+    title: 'Test Aurora Painter',
     module: './__mocks__/fake-module.js',
     type: 'module',
     requiresWebGPU: false,
@@ -150,7 +150,7 @@ describe('loadToy', () => {
   test('loads module toy without mutating history when pushState is false', async () => {
     const { loader, manifestClient } = await buildLoader();
 
-    await loader.loadToy('brand');
+    await loader.loadToy('aurora-painter');
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
     expect(manifestClient.resolveModulePath).toHaveBeenCalledWith(
@@ -164,11 +164,11 @@ describe('loadToy', () => {
       locationHref: 'http://example.com/library',
     });
 
-    await loader.loadToy('brand', { pushState: true });
+    await loader.loadToy('aurora-painter', { pushState: true });
 
     const backControl = document.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
-    expect(window.location.search).toBe('?toy=brand');
+    expect(window.location.search).toBe('?toy=aurora-painter');
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -299,13 +299,13 @@ describe('WebGPU requirements', () => {
 describe('loadFromQuery routing', () => {
   test('loads from existing query param', async () => {
     const { loader, location } = await buildLoader({
-      locationHref: 'http://example.com/library?toy=brand',
+      locationHref: 'http://example.com/library?toy=aurora-painter',
     });
 
     await loader.loadFromQuery();
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
-    expect(location.search).toBe('?toy=brand');
+    expect(location.search).toBe('?toy=aurora-painter');
   });
 
   test('returns to library when query param is missing', async () => {
