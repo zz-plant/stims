@@ -36,6 +36,12 @@ let cachedEnvironmentKey: unknown = null;
 let telemetryHandler: RendererTelemetryHandler | null = null;
 let telemetryReportedKey: unknown = null;
 
+const isMobileUserAgent =
+  typeof navigator !== 'undefined' &&
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
+  );
+
 const buildFallback = (
   fallbackReason: string,
   { triedWebGPU = false, shouldRetryWebGPU = false }: FallbackOptions = {},
@@ -92,6 +98,15 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
   if (isCompatibilityModeEnabled()) {
     return cacheResult(
       buildFallback('Compatibility mode is enabled. Using WebGL.', {
+        triedWebGPU: false,
+        shouldRetryWebGPU: false,
+      }),
+    );
+  }
+
+  if (isMobileUserAgent) {
+    return cacheResult(
+      buildFallback('WebGPU is disabled on mobile devices. Using WebGL.', {
         triedWebGPU: false,
         shouldRetryWebGPU: false,
       }),
