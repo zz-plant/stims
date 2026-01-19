@@ -88,9 +88,9 @@ const adjustRangeInput = (
   const currentValue = Number.parseFloat(input.value || '0');
   const nextValue =
     direction === 'increment' ? currentValue + step : currentValue - step;
-  const clampedValue = Math.min(
-    Number.isFinite(max) ? max : nextValue,
-    Math.max(Number.isFinite(min) ? min : nextValue, nextValue),
+  const clampedValue = Math.max(
+    Number.isFinite(min) ? min : -Infinity,
+    Math.min(Number.isFinite(max) ? max : Infinity, nextValue),
   );
   input.value = String(clampedValue);
   input.dispatchEvent(new Event('input', { bubbles: true }));
