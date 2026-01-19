@@ -1,4 +1,5 @@
 import { getSettingsPanel } from '../core/settings-panel';
+import { isMobileDevice } from './device-detect';
 
 export type ControlPanelState = {
   idleEnabled: boolean;
@@ -8,9 +9,7 @@ export type ControlPanelState = {
 
 type ChangeHandler = (state: ControlPanelState) => void;
 
-const isMobile =
-  typeof navigator !== 'undefined' &&
-  /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+const isMobile = isMobileDevice();
 
 export function createControlPanel(initial: Partial<ControlPanelState> = {}) {
   const state: ControlPanelState = {

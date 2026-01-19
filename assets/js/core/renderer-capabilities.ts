@@ -1,5 +1,6 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
+import { isMobileDevice } from '../utils/device-detect.ts';
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 
 export type RendererBackend = 'webgl' | 'webgpu';
@@ -36,11 +37,7 @@ let cachedEnvironmentKey: unknown = null;
 let telemetryHandler: RendererTelemetryHandler | null = null;
 let telemetryReportedKey: unknown = null;
 
-const isMobileUserAgent =
-  typeof navigator !== 'undefined' &&
-  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent,
-  );
+const isMobileUserAgent = isMobileDevice();
 
 const buildFallback = (
   fallbackReason: string,
