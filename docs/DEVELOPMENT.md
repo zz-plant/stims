@@ -89,7 +89,7 @@ bun test tests/filename.test.js
 - `assets/css/`: Shared styles for HTML entry points.
 - `assets/data/`: Static JSON or other payloads consumed by toys.
 - `tests/`: Bun specs covering utilities and shared behaviors.
-- HTML entry points (`toy.html`, `brand.html`, etc.) load specific toys or groups of toys.
+- HTML entry points (`toy.html`, `holy.html`, etc.) load specific toys or groups of toys.
 
 ## Development Workflow
 

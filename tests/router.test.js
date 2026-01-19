@@ -33,8 +33,8 @@ describe('router utilities', () => {
       queryParam: 'toy',
     });
 
-    router.pushToyState('brand');
-    expect(location.search).toBe('?toy=brand');
+    router.pushToyState('aurora-painter');
+    expect(location.search).toBe('?toy=aurora-painter');
 
     router.goToLibrary();
     expect(location.search).toBe('');
@@ -42,7 +42,7 @@ describe('router utilities', () => {
 
   test('notifies listeners on popstate', () => {
     const { windowStub, listeners, location } = createWindowStub(
-      'http://example.com/library?toy=brand',
+      'http://example.com/library?toy=aurora-painter',
     );
     const originalHref = location.href;
     const router = createRouter({
@@ -68,6 +68,6 @@ describe('router utilities', () => {
     windowStub.history.pushState({}, '', originalHref);
     listeners.get('popstate')?.();
 
-    expect(router.getCurrentSlug()).toBe('brand');
+    expect(router.getCurrentSlug()).toBe('aurora-painter');
   });
 });
