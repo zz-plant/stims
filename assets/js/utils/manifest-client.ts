@@ -69,8 +69,35 @@ function resolveFromBase(baseUrl: URL | null, path: string) {
   return path.replace(/^\.\//, '/');
 }
 
+function resolveOriginRoot(baseUrl: URL | null) {
+  const origin = baseUrl?.origin ?? getCurrentOrigin();
+  if (!origin) return null;
+  try {
+    return new URL('/', origin);
+  } catch (error) {
+    console.warn('Unable to resolve manifest origin root', error);
+    return null;
+  }
+}
+
 function buildManifestPaths(baseUrl: URL | null) {
-  return MANIFEST_CANDIDATES.map((path) => resolveFromBase(baseUrl, path));
+  const candidates = new Set<string>();
+  const originRoot = resolveOriginRoot(baseUrl);
+  const bases = [baseUrl, originRoot].filter((entry): entry is URL =>
+    Boolean(entry),
+  );
+
+  for (const base of bases) {
+    for (const path of MANIFEST_CANDIDATES) {
+      candidates.add(resolveFromBase(base, path));
+    }
+  }
+
+  if (!candidates.size) {
+    MANIFEST_CANDIDATES.forEach((path) => candidates.add(path));
+  }
+
+  return Array.from(candidates);
 }
 
 function resolveFallbackPath(entry: string, baseUrl: URL | null) {
