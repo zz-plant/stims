@@ -142,29 +142,41 @@ export function createManifestClient({
   const getBaseUrl = () => resolveBaseUrl(baseUrl);
   let manifestPromise: Promise<Record<string, ManifestEntry> | null> | null =
     null;
+  let manifestBaseUrl: URL | null = null;
 
   const getManifestPaths = () => buildManifestPaths(getBaseUrl());
 
   const fetchManifest = async () => {
-    if (!manifestPromise) {
-      manifestPromise = (async () => {
-        const paths = getManifestPaths();
-
-        for (const path of paths) {
-          try {
-            const response = await fetchImpl?.(path);
-            if (response?.ok) {
-              return response.json();
-            }
-          } catch (error) {
-            console.warn('Error fetching manifest from', path, error);
-          }
-        }
-
-        return null;
-      })();
+    if (manifestPromise) {
+      return manifestPromise;
     }
 
+    const paths = getManifestPaths();
+    for (const path of paths) {
+      try {
+        const response = await fetchImpl?.(path);
+        if (response?.ok) {
+          const data = await response.json();
+          manifestPromise = Promise.resolve(data);
+          const base = getBaseUrl();
+          const origin = getCurrentOrigin();
+          const baseForUrl = base ?? (origin ? new URL(origin) : null);
+          try {
+            const manifestUrl = baseForUrl
+              ? new URL(path, baseForUrl)
+              : new URL(path);
+            manifestBaseUrl = new URL('.', manifestUrl);
+          } catch (error) {
+            console.warn('Unable to resolve manifest base URL', error);
+          }
+          return manifestPromise;
+        }
+      } catch (error) {
+        console.warn('Error fetching manifest from', path, error);
+      }
+    }
+
+    manifestPromise = Promise.resolve(null);
     return manifestPromise;
   };
 
@@ -175,6 +187,15 @@ export function createManifestClient({
     if (manifestEntry) {
       const compiledFile = manifestEntry.file || manifestEntry.url;
       if (compiledFile) {
+        if (manifestBaseUrl) {
+          const resolvedFromManifest = tryResolveUrl(
+            compiledFile,
+            manifestBaseUrl,
+          );
+          if (resolvedFromManifest) {
+            return resolvedFromManifest;
+          }
+        }
         const base = getBaseUrl();
         const resolvedFromBase = tryResolveUrl(compiledFile, base);
         if (resolvedFromBase) {
@@ -200,6 +221,7 @@ export function createManifestClient({
 
   const reset = () => {
     manifestPromise = null;
+    manifestBaseUrl = null;
   };
 
   return {
