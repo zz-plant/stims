@@ -55,6 +55,7 @@
       import { createSearyFunAdapter } from '../assets/seary/fun-adapter.ts';
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
+      import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
 
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
@@ -373,45 +374,29 @@
         { x: 0.0, y: 0.0 },
         { x: 0.0, y: 0.0 },
       ];
-      const activePointers = new Map();
-
-      canvas.addEventListener('pointerdown', (event) => {
-        updatePointer(event);
-        spawnSparkles(18, { x: event.clientX, y: event.clientY });
-        event.preventDefault();
-      });
-
-      canvas.addEventListener('pointermove', (event) => {
-        updatePointer(event);
-        event.preventDefault();
-      });
-
-      canvas.addEventListener('pointerup', (event) => {
-        activePointers.delete(event.pointerId);
-        refreshTouches();
-      });
-
-      function updatePointer(event) {
-        activePointers.set(event.pointerId, {
-          x: event.clientX,
-          y: event.clientY,
-        });
-        refreshTouches();
-      }
-
-      function refreshTouches() {
-        const values = Array.from(activePointers.values());
-        for (let i = 0; i < touches.length; i++) {
-          if (i < values.length) {
-            const p = values[i];
-            touches[i].x = (p.x / window.innerWidth) * 2.0 - 1.0;
-            touches[i].y = 1.0 - (p.y / window.innerHeight) * 2.0;
-          } else {
-            touches[i].x = 0.0;
-            touches[i].y = 0.0;
+      const unifiedInput = createUnifiedInput({
+        target: canvas,
+        boundsElement: canvas,
+        onInput: (state) => {
+          for (let i = 0; i < touches.length; i++) {
+            const pointer = state.pointers[i];
+            if (pointer) {
+              touches[i].x = pointer.normalizedX;
+              touches[i].y = pointer.normalizedY;
+            } else {
+              touches[i].x = 0.0;
+              touches[i].y = 0.0;
+            }
           }
-        }
-      }
+
+          if (state.justPressed && state.primary) {
+            spawnSparkles(18, {
+              x: state.primary.clientX,
+              y: state.primary.clientY,
+            });
+          }
+        },
+      });
 
       function spawnSparkles(count = 26, origin) {
         if (!sparklesEnabled || !sparkleCtx) return;
@@ -690,6 +675,7 @@
 
       window.addEventListener('pagehide', () => {
         disposeResize();
+        unifiedInput.dispose();
         toy.dispose?.();
       });
     </script>
