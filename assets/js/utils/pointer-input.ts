@@ -228,13 +228,7 @@ export function createPointerInput({
     updateAndNotify();
   };
 
-  const handleMouseMove = (event: Event) => {
-    const mouseEvent = event as MouseEvent;
-    upsertPointer(1, mouseEvent.clientX, mouseEvent.clientY);
-    updateAndNotify();
-  };
-
-  const handleMouseDown = (event: Event) => {
+  const handleMouseEvent = (event: Event) => {
     const mouseEvent = event as MouseEvent;
     upsertPointer(1, mouseEvent.clientX, mouseEvent.clientY);
     updateAndNotify();
@@ -273,8 +267,8 @@ export function createPointerInput({
       handleTouchEvent,
       touchListenerOptions,
     );
-    listenerTarget.addEventListener('mousemove', handleMouseMove);
-    listenerTarget.addEventListener('mousedown', handleMouseDown);
+    listenerTarget.addEventListener('mousemove', handleMouseEvent);
+    listenerTarget.addEventListener('mousedown', handleMouseEvent);
     listenerTarget.addEventListener('mouseup', handleMouseEnd);
     listenerTarget.addEventListener('mouseleave', handleMouseEnd);
   }
@@ -308,8 +302,8 @@ export function createPointerInput({
         handleTouchEvent,
         touchListenerOptions,
       );
-      listenerTarget.removeEventListener('mousemove', handleMouseMove);
-      listenerTarget.removeEventListener('mousedown', handleMouseDown);
+      listenerTarget.removeEventListener('mousemove', handleMouseEvent);
+      listenerTarget.removeEventListener('mousedown', handleMouseEvent);
       listenerTarget.removeEventListener('mouseup', handleMouseEnd);
       listenerTarget.removeEventListener('mouseleave', handleMouseEnd);
     }
