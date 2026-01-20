@@ -25,7 +25,7 @@ function injectHintStyles() {
       border-radius: 12px;
       padding: 12px 14px 10px;
       font-family: 'Inter', 'SF Pro Text', system-ui, -apple-system, sans-serif;
-      font-size: 14px;
+      font-size: 0.95rem;
       line-height: 1.4;
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(8px);
@@ -35,10 +35,10 @@ function injectHintStyles() {
 
     .stims-hint__title {
       margin: 0 0 6px 0;
-      font-size: 12px;
+      font-size: 0.85rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #67e8f9;
+      color: #7dd3fc;
     }
 
     .stims-hint__list {
@@ -48,7 +48,7 @@ function injectHintStyles() {
 
     .stims-hint__item {
       margin-bottom: 6px;
-      color: #e2e8f0;
+      color: #f1f5f9;
     }
 
     .stims-hint__actions {
@@ -62,9 +62,11 @@ function injectHintStyles() {
       border: none;
       cursor: pointer;
       border-radius: 8px;
-      font-size: 12px;
+      font-size: 0.9rem;
       font-weight: 600;
-      padding: 8px 10px;
+      padding: 10px 12px;
+      min-height: 44px;
+      touch-action: manipulation;
       transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
     }
 

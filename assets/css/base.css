@@ -287,8 +287,8 @@ body {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  font-size: 0.75rem;
-  color: rgba(233, 251, 255, 0.75);
+  font-size: 0.85rem;
+  color: rgba(233, 251, 255, 0.88);
 }
 
 .active-toy-nav__title {
@@ -301,8 +301,8 @@ body {
 
 .active-toy-nav__hint {
   margin: 0;
-  color: rgba(233, 251, 255, 0.8);
-  font-size: 0.92rem;
+  color: rgba(233, 251, 255, 0.9);
+  font-size: 1rem;
 }
 
 .active-toy-nav__pill {
@@ -946,8 +946,8 @@ body {
 
 .control-panel__note {
   margin: 6px 0 0;
-  font-size: 0.85rem;
-  color: rgba(233, 251, 255, 0.75);
+  font-size: 0.95rem;
+  color: rgba(233, 251, 255, 0.88);
 }
 
 .control-panel__value {
@@ -958,10 +958,10 @@ body {
 }
 
 .control-panel__label.small {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .control-panel__input {
@@ -1000,7 +1000,7 @@ body {
   background: rgba(111, 247, 255, 0.1);
   border: 1px solid rgba(111, 247, 255, 0.3);
   color: #9bf3ff;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s ease;
