@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <circle
+    cx="16"
+    cy="16"
+    r="12"
+    fill="none"
+    stroke="#111827"
+    stroke-linecap="round"
+    stroke-width="3"
+    stroke-dasharray="18 10"
+  >
+    <animateTransform
+      attributeName="transform"
+      type="rotate"
+      from="0 16 16"
+      to="360 16 16"
+      dur="0.9s"
+      repeatCount="indefinite"
+    />
+  </circle>
+</svg>
