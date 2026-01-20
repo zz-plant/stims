@@ -1048,6 +1048,14 @@ h1 {
   transform-style: preserve-3d;
 }
 
+.toy-icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .repo-status {
   margin: 1.25rem 0 0.25rem;
   padding: 1.1rem 1.2rem;

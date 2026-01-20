@@ -16,13 +16,8 @@ import {
   Points,
   PointsMaterial,
   ShaderMaterial,
-  Vector2,
   Vector3,
-  type WebGLRenderer,
 } from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { AnimationContext } from '../core/animation-loop';
 import {
   getActivePerformanceSettings,
@@ -30,6 +25,11 @@ import {
   type PerformanceSettings,
   subscribeToPerformanceSettings,
 } from '../core/performance-panel';
+import {
+  createBloomComposer,
+  isWebGLRenderer,
+  type PostprocessingPipeline,
+} from '../core/postprocessing';
 import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
@@ -106,8 +106,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   } as ToyConfig);
 
   // Post-processing
-  let composer: EffectComposer | null = null;
-  let bloomPass: UnrealBloomPass | null = null;
+  let postprocessing: PostprocessingPipeline | null = null;
 
   // Scene elements
   const waveGroup = new Group();
@@ -388,22 +387,16 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
       const { renderer } = result;
       // Only set up post-processing with WebGLRenderer (not WebGPURenderer)
-      if (!('capabilities' in renderer && 'extensions' in renderer)) return;
+      if (!isWebGLRenderer(renderer)) return;
 
-      const webglRenderer = renderer as WebGLRenderer;
-      composer = new EffectComposer(webglRenderer);
-
-      const renderPass = new RenderPass(toy.scene, toy.camera);
-      composer.addPass(renderPass);
-
-      const size = webglRenderer.getSize(new Vector2());
-      bloomPass = new UnrealBloomPass(
-        new Vector2(size.x, size.y),
-        palette.bloomStrength,
-        0.4,
-        0.85,
-      );
-      composer.addPass(bloomPass);
+      postprocessing = createBloomComposer({
+        renderer,
+        scene: toy.scene,
+        camera: toy.camera,
+        bloomStrength: palette.bloomStrength,
+        bloomRadius: 0.4,
+        bloomThreshold: 0.85,
+      });
     });
   }
 
@@ -431,8 +424,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     // Update bloom
-    if (bloomPass) {
-      bloomPass.strength = palette.bloomStrength;
+    if (postprocessing?.bloomPass) {
+      postprocessing.bloomPass.strength = palette.bloomStrength;
     }
 
     // Update background
@@ -626,8 +619,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     toy.camera.lookAt(0, -10, -40);
 
     // Render with post-processing
-    if (composer) {
-      composer.render();
+    if (postprocessing) {
+      postprocessing.updateSize();
+      postprocessing.render();
     } else {
       ctx.toy.render();
     }
@@ -677,7 +671,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         (horizonMesh.geometry as BufferGeometry).dispose();
         (horizonMesh.material as Material).dispose();
       }
-      composer?.dispose();
+      postprocessing?.dispose();
       perfUnsub();
       unregisterGlobals();
       settingsPanel.getElement().remove();
