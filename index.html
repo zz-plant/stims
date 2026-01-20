@@ -215,7 +215,6 @@
               </button>
               <span
                 id="toy-search-hint"
-                aria-hidden="true"
                 class="search-field__hint"
               >
                 Enter a name, tag, or capability
@@ -587,6 +586,8 @@
                 badge.className = 'capability-badge';
                 badge.type = 'button';
                 badge.textContent = badgeData.label;
+                badge.setAttribute('aria-controls', popoverId);
+                badge.setAttribute('aria-expanded', 'false');
                 badge.setAttribute('popovertarget', popoverId);
                 badge.setAttribute('popovertargetaction', 'toggle');
                 badge.setAttribute('aria-describedby', popoverId);
@@ -594,6 +595,12 @@
                 popover.id = popoverId;
                 popover.setAttribute('popover', 'auto');
                 popover.textContent = badgeData.title;
+                popover.addEventListener('toggle', (event) => {
+                  const isOpen =
+                    event?.newState === 'open' ||
+                    popover.matches(':popover-open');
+                  badge.setAttribute('aria-expanded', String(isOpen));
+                });
                 badgeRow.appendChild(badge);
                 badgeRow.appendChild(popover);
               });
