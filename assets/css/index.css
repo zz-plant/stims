@@ -1418,6 +1418,14 @@ h1 {
   z-index: 1;
 }
 
+.webtoy-card__link:focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 4px;
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.15),
+    0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
 .webtoy-card__content {
   display: flex;
   flex-direction: column;
