@@ -6,6 +6,7 @@ export default [
     module: 'assets/js/toys/three-d-toy.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'aurora-painter',
@@ -15,6 +16,8 @@ export default [
     module: 'assets/js/toys/aurora-painter.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'featured',
+    featuredRank: 1,
     moods: ['dreamy', 'ethereal', 'luminous'],
     tags: ['aurora', 'ribbons', 'gestural'],
     controls: [
@@ -31,6 +34,7 @@ export default [
     module: 'assets/js/toys/clay.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'evol',
@@ -40,6 +44,7 @@ export default [
     module: 'assets/js/toys/evol.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'geom',
@@ -49,6 +54,7 @@ export default [
     module: 'assets/js/toys/geom.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'holy',
@@ -58,6 +64,7 @@ export default [
     module: 'assets/js/toys/holy.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'multi',
@@ -67,6 +74,7 @@ export default [
     type: 'module',
     requiresWebGPU: true,
     allowWebGLFallback: true,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'seary',
@@ -75,6 +83,7 @@ export default [
     module: 'assets/js/toys/seary.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'legible',
@@ -84,6 +93,7 @@ export default [
     module: 'assets/js/toys/legible.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'symph',
@@ -92,6 +102,7 @@ export default [
     module: 'assets/js/toys/symph.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'cube-wave',
@@ -101,6 +112,7 @@ export default [
     module: 'assets/js/toys/cube-wave.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'bubble-harmonics',
@@ -110,6 +122,8 @@ export default [
     module: 'assets/js/toys/bubble-harmonics.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'featured',
+    featuredRank: 7,
   },
   {
     slug: 'cosmic-particles',
@@ -119,6 +133,8 @@ export default [
     module: 'assets/js/toys/cosmic-particles.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'featured',
+    featuredRank: 5,
   },
   {
     slug: 'lights',
@@ -128,6 +144,7 @@ export default [
     module: 'assets/js/toys/lights.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'spiral-burst',
@@ -136,6 +153,8 @@ export default [
     module: 'assets/js/toys/spiral-burst.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'featured',
+    featuredRank: 4,
     moods: ['energetic', 'pulsing', 'cosmic'],
     tags: ['spirals', 'burst', 'gestural'],
     controls: ['Mode buttons', 'Pinch/rotate gestures', 'Arrow-key mode swap'],
@@ -147,6 +166,7 @@ export default [
     module: 'assets/js/toys/rainbow-tunnel.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
   },
   {
     slug: 'star-field',
@@ -155,6 +175,7 @@ export default [
     module: 'assets/js/toys/star-field.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
     moods: ['serene', 'drifting', 'celestial'],
     tags: ['stars', 'nebula', 'gestural'],
     controls: ['Pinch/rotate gestures', 'Arrow-key mood switching'],
@@ -167,6 +188,7 @@ export default [
     module: 'assets/js/toys/fractal-kite-garden.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'archived',
     controls: ['Pattern density slider', 'Palette switches'],
   },
   {
@@ -177,6 +199,8 @@ export default [
     module: 'assets/js/toys/tactile-sand-table.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'featured',
+    featuredRank: 3,
     controls: ['Grain size slider', 'Damping slider', 'Gravity lock toggle'],
   },
   {
@@ -187,6 +211,8 @@ export default [
     module: 'assets/js/toys/bioluminescent-tidepools.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'featured',
+    featuredRank: 2,
     moods: ['serene', 'ethereal', 'fiery', 'dreamy'],
     tags: ['ocean', 'bioluminescent', 'caustics', 'gestural'],
     controls: [
@@ -205,6 +231,8 @@ export default [
     module: 'assets/js/toys/neon-wave.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'featured',
+    featuredRank: 6,
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -221,6 +249,7 @@ export default [
     module: 'assets/js/toys/milkdrop-toy.ts',
     type: 'module',
     requiresWebGPU: false,
+    lifecycleStage: 'prototype',
     capabilities: {
       microphone: true,
       demoAudio: true,

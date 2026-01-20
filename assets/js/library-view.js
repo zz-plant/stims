@@ -1153,6 +1153,10 @@ export function createLibraryView({
   };
 
   const getOriginalIndex = (toy) => originalOrder.get(toy.slug) ?? 0;
+  const getFeaturedRank = (toy) =>
+    Number.isFinite(toy.featuredRank)
+      ? toy.featuredRank
+      : Number.POSITIVE_INFINITY;
 
   const updateResultsMeta = (visibleCount) => {
     const meta = ensureMetaNode();
@@ -1226,7 +1230,11 @@ export function createLibraryView({
             getOriginalIndex(a) - getOriginalIndex(b),
         );
       default:
-        return sorted.sort((a, b) => getOriginalIndex(a) - getOriginalIndex(b));
+        return sorted.sort(
+          (a, b) =>
+            getFeaturedRank(a) - getFeaturedRank(b) ||
+            getOriginalIndex(a) - getOriginalIndex(b),
+        );
     }
   };
 

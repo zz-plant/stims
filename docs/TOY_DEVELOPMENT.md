@@ -12,6 +12,18 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 - Run `bun run check:toys` before committing to confirm every module in `assets/js/toys/` is registered and page-backed toys have matching HTML entry points.
 - Run `bun run check:quick` to validate types and code quality with Biome before opening a PR.
 
+## Toy lifecycle and featured rotation
+
+Treat toys like live game content and keep their status explicit in metadata:
+
+- **Lifecycle stages** live in `assets/js/toys-data.js` as `lifecycleStage`:
+  - `prototype`: new or experimental toys that need fast iteration.
+  - `featured`: curated experiences that get the most attention and polish.
+  - `archived`: stable toys that stay available but are not actively promoted.
+- **Featured curation** uses `featuredRank` (lower = higher priority) to drive the default “Featured” sort in the library. Keep the set intentionally small (roughly 5–8 toys) so the landing grid stays focused.
+- **Rotation cadence**: revisit the featured set on a regular schedule (every 4–6 weeks). When rotating, update `featuredRank` and `lifecycleStage` in `assets/js/toys-data.js` so the UI reflects the new lineup.
+- **Polish passes**: schedule periodic quality passes on `featured` toys (monthly) and `prototype` toys (as needed). Each pass should include performance verification, accessibility checks, and a quick review of controls/labels against the latest UI conventions.
+
 ## Add-and-test checklist (fast path)
 
 Use this sequence when you want to stand up a fresh toy quickly (you can also run `bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test` to automate steps 1–3):
