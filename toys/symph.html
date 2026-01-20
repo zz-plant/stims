@@ -47,6 +47,7 @@
       import { createSymphFunAdapter } from '../assets/symph/fun-adapter.ts';
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
+      import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
 
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
@@ -295,6 +296,7 @@
       let transientSensitivity = defaultSensitivity;
       let sparklesEnabled = true;
       let burstsEnabled = true;
+      let analyserRef = null;
       const rippleBase = 0.15;
       const SPARKLE_POOL_SIZE = 120;
       const sparklePool = Array.from({ length: SPARKLE_POOL_SIZE }, () => ({
@@ -486,7 +488,10 @@
       }
 
       startToyAudio(toy, animate, { fallbackToSynthetic: true })
-        .then(() => clearError('error-message'))
+        .then((ctx) => {
+          analyserRef = ctx.analyser;
+          clearError('error-message');
+        })
         .catch((err) => {
           showError(
             'error-message',
@@ -498,20 +503,28 @@
           toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
         });
 
-      // Handle pointer input
-      canvas.addEventListener('pointerdown', (event) => {
-        const x = (event.clientX / canvas.width) * 2.0 - 1.0;
-        const y = -(event.clientY / canvas.height) * 2.0 + 1.0;
-        touchPoint = [x, y];
-        triggerBurst(0.5);
-      });
-      canvas.addEventListener('pointermove', (event) => {
-        const x = (event.clientX / canvas.clientWidth) * 2.0 - 1.0;
-        const y = -(event.clientY / canvas.clientHeight) * 2.0 + 1.0;
-        touchPoint = [x, y];
+      const unifiedInput = createUnifiedInput({
+        target: canvas,
+        boundsElement: canvas,
+        onInput: (state) => {
+          if (state.primary) {
+            touchPoint = [
+              state.primary.normalizedX,
+              state.primary.normalizedY,
+            ];
+          }
+          if (state.justPressed) {
+            triggerBurst(0.5);
+          }
+        },
+        micProvider: () => ({
+          level: analyserRef?.getRmsLevel?.() ?? 0,
+          available: Boolean(analyserRef),
+        }),
       });
       window.addEventListener('pagehide', () => {
         disposeResize();
+        unifiedInput.dispose();
         toy.dispose?.();
       });
     </script>
