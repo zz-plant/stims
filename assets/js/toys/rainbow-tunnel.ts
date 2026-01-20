@@ -1,23 +1,12 @@
 import * as THREE from 'three';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
-import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
+import { createToyRuntime } from '../core/toy-runtime';
 import { getAverageFrequency } from '../utils/audio-handler';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
-import { startToyAudio } from '../utils/start-audio';
 
 interface RingData {
   outer: THREE.Mesh;
@@ -29,17 +18,7 @@ interface RingData {
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const settingsPanel = getSettingsPanel();
   let activeQuality: QualityPreset = getActiveQualityPreset();
-
-  const toy = new WebToy({
-    cameraOptions: { position: { x: 0, y: 0, z: 100 } },
-    lightingOptions: { type: 'HemisphereLight' },
-    ambientLightOptions: { intensity: 0.4 },
-    rendererOptions: {
-      maxPixelRatio: activeQuality.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
-    },
-    canvas: container?.querySelector('canvas'),
-  } as ToyConfig);
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   const rings: RingData[] = [];
   let particleTrail: THREE.Points | null = null;
@@ -60,22 +39,22 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function disposeRingAssets() {
     rings.splice(0).forEach((ring) => {
-      toy.scene.remove(ring.outer);
+      runtime.toy.scene.remove(ring.outer);
       ring.outer.geometry.dispose();
       (ring.outer.material as THREE.Material).dispose();
       if (ring.inner) {
-        toy.scene.remove(ring.inner);
+        runtime.toy.scene.remove(ring.inner);
         ring.inner.geometry.dispose();
         (ring.inner.material as THREE.Material).dispose();
       }
     });
 
     lightSources.splice(0).forEach((light) => {
-      toy.scene.remove(light);
+      runtime.toy.scene.remove(light);
     });
 
     if (particleTrail) {
-      toy.scene.remove(particleTrail);
+      runtime.toy.scene.remove(particleTrail);
     }
     particleTrail = null;
     particleGeometry?.dispose();
@@ -108,7 +87,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       });
       const outerRing = new THREE.Mesh(outerGeometry, outerMaterial);
       outerRing.position.z = baseZ;
-      toy.scene.add(outerRing);
+      runtime.toy.scene.add(outerRing);
 
       const innerGeometry = new THREE.TorusGeometry(12, 1, 16, torusDetail);
       const innerMaterial = new THREE.MeshStandardMaterial({
@@ -121,7 +100,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       });
       const innerRing = new THREE.Mesh(innerGeometry, innerMaterial);
       innerRing.position.z = baseZ;
-      toy.scene.add(innerRing);
+      runtime.toy.scene.add(innerRing);
 
       rings.push({
         outer: outerRing,
@@ -152,22 +131,20 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       opacity: 0.6,
     });
     particleTrail = new THREE.Points(particleGeometry, particleMaterial);
-    toy.scene.add(particleTrail);
+    runtime.toy.scene.add(particleTrail);
 
     const lightColors = [0xff0066, 0x00ff99, 0x6600ff, 0xffff00];
     lightColors.forEach((color, i) => {
       const light = new THREE.PointLight(color, 1, 100);
       light.position.z = -i * (tunnelLength / 4);
-      toy.scene.add(light);
+      runtime.toy.scene.add(light);
       lightSources.push(light);
     });
   }
 
-  function animate(ctx: AnimationContext) {
-    const data = getContextFrequencyData(ctx);
+  function animate(data: Uint8Array, time: number) {
     const avg = getAverageFrequency(data);
     const normalizedAvg = avg / 255;
-    const time = Date.now() / 1000;
 
     const binsPerRing = Math.max(
       1,
@@ -221,30 +198,30 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     // Smooth camera fly-through
     const flySpeed = 0.8 + normalizedAvg * 2;
-    toy.camera.position.z -= flySpeed;
+    runtime.toy.camera.position.z -= flySpeed;
 
     // Add slight camera wobble
-    toy.camera.position.x = Math.sin(time * 2) * 2;
-    toy.camera.position.y = Math.cos(time * 1.5) * 2;
+    runtime.toy.camera.position.x = Math.sin(time * 2) * 2;
+    runtime.toy.camera.position.y = Math.cos(time * 1.5) * 2;
 
     // Reset camera when it reaches the end
-    if (toy.camera.position.z < -tunnelLength + 50) {
-      toy.camera.position.z = 100;
+    if (runtime.toy.camera.position.z < -tunnelLength + 50) {
+      runtime.toy.camera.position.z = 100;
     }
 
     // Camera look-ahead
-    toy.camera.lookAt(
+    runtime.toy.camera.lookAt(
       Math.sin(time * 0.5) * 3,
       Math.cos(time * 0.5) * 3,
-      toy.camera.position.z - 50,
+      runtime.toy.camera.position.z - 50,
     );
 
-    ctx.toy.render();
+    runtime.toy.render();
   }
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: preset.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -263,27 +240,35 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  async function startAudio(request: ToyAudioRequest = false) {
-    return startToyAudio(
-      toy,
-      animate,
-      resolveToyAudioOptions(request, { fftSize: 256 }),
-    );
-  }
-
-  setupSettingsPanel();
-  rebuildScene();
-
-  // Register globals for toy.html buttons
-  // Register globals for toy.html buttons
-  const unregisterGlobals = registerToyGlobals(container, startAudio);
-
-  return {
-    dispose: () => {
-      toy.dispose();
-      disposeRingAssets();
-      disposeRingAssets();
-      unregisterGlobals();
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 0, z: 100 } },
+      lightingOptions: { type: 'HemisphereLight' },
+      ambientLightOptions: { intensity: 0.4 },
+      rendererOptions: {
+        maxPixelRatio: activeQuality.maxPixelRatio,
+        renderScale: activeQuality.renderScale,
+      },
     },
-  };
+    audio: { fftSize: 256 },
+    plugins: [
+      {
+        name: 'rainbow-tunnel',
+        setup: () => {
+          setupSettingsPanel();
+          rebuildScene();
+        },
+        update: ({ frequencyData, time }) => {
+          animate(frequencyData, time);
+        },
+        dispose: () => {
+          disposeRingAssets();
+        },
+      },
+    ],
+  });
+
+  return runtime;
 }

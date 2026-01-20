@@ -1,13 +1,8 @@
 import * as THREE from 'three';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   getActivePerformanceSettings,
   getPerformancePanel,
   type PerformanceSettings,
-  subscribeToPerformanceSettings,
 } from '../core/performance-panel';
 import {
   DEFAULT_QUALITY_PRESETS,
@@ -15,18 +10,12 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
-import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
+import { createToyRuntime } from '../core/toy-runtime';
+import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
 import { applyAudioColor } from '../utils/color-audio';
-import { startToyAudio } from '../utils/start-audio';
-import { createUnifiedInput } from '../utils/unified-input';
+import type { UnifiedInputState } from '../utils/unified-input';
 
 type SpiralMode = 'burst' | 'bloom' | 'vortex' | 'heartbeat';
 
@@ -62,6 +51,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let currentMode: SpiralMode = 'burst';
   let modeRow: HTMLDivElement | null = null;
   let activePaletteIndex = 0;
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   const palettes: SpiralPalette[] = [
     {
@@ -106,20 +96,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let targetPulseBoost = controls.pulseBoost;
   let rotationLatch = 0;
 
-  const toy = new WebToy({
-    cameraOptions: { position: { x: 0, y: 0, z: 120 } },
-    lightingOptions: { type: 'HemisphereLight', intensity: 0.6 },
-    ambientLightOptions: { intensity: 0.3 },
-    rendererOptions: {
-      maxPixelRatio: performanceSettings.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
-    },
-    canvas: container?.querySelector('canvas'),
-  } as ToyConfig);
-
   const spiralArms: SpiralArm[] = [];
   const spiralContainer = new THREE.Group();
-  toy.scene.add(spiralContainer);
 
   // Particle field for extra magic
   let particleField: ParticleField | null = null;
@@ -151,7 +129,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function createBloomMesh() {
     if (bloomMesh) {
-      toy.scene.remove(bloomMesh);
+      runtime.toy.scene.remove(bloomMesh);
       (bloomMesh.geometry as THREE.BufferGeometry).dispose();
       (bloomMesh.material as THREE.Material).dispose();
     }
@@ -170,7 +148,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
 
     bloomMesh = new THREE.Mesh(geometry, material);
-    toy.scene.add(bloomMesh);
+    runtime.toy.scene.add(bloomMesh);
   }
 
   function createParticleField(): ParticleField {
@@ -212,7 +190,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
 
     const points = new THREE.Points(geometry, material);
-    toy.scene.add(points);
+    runtime.toy.scene.add(points);
 
     return { geometry, material, points, velocities, count };
   }
@@ -231,7 +209,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function disposeParticleField() {
     if (!particleField) return;
-    toy.scene.remove(particleField.points);
+    runtime.toy.scene.remove(particleField.points);
     particleField.geometry.dispose();
     particleField.material.dispose();
     particleField = null;
@@ -310,7 +288,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: performanceSettings.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -322,7 +300,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: settings.maxPixelRatio,
       renderScale: activeQuality.renderScale,
     });
@@ -386,13 +364,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       title: 'Performance',
       description: 'Adjust particle density and render quality.',
     });
-    return subscribeToPerformanceSettings(applyPerformanceSettings);
   }
 
   function applyPalette(index: number) {
     const palette = palettes[index];
-    toy.scene.fog = new THREE.FogExp2(palette.fog, 0.008);
-    toy.rendererReady.then((result) => {
+    runtime.toy.scene.fog = new THREE.FogExp2(palette.fog, 0.008);
+    runtime.toy.rendererReady.then((result) => {
       if (result) {
         result.renderer.setClearColor(palette.background, 1);
       }
@@ -420,15 +397,17 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  function animate(ctx: AnimationContext) {
-    const data = getContextFrequencyData(ctx);
+  function animate(
+    data: Uint8Array,
+    time: number,
+    analyser: FrequencyAnalyser | null,
+  ) {
     const avg = getAverageFrequency(data);
     const normalizedAvg = avg / 255;
-    const time = ctx.time;
 
     // Multi-band frequency analysis using FrequencyAnalyser
-    const energy = ctx.analyser
-      ? ctx.analyser.getMultiBandEnergy()
+    const energy = analyser
+      ? analyser.getMultiBandEnergy()
       : { bass: 0, mid: 0, treble: 0 };
 
     const bass = energy.bass;
@@ -605,13 +584,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     // Camera movement
     const camRadius = 110 + smoothedBass * 20;
     const camAngle = time * 0.0003;
-    toy.camera.position.x = Math.sin(camAngle) * 20;
-    toy.camera.position.y = Math.cos(camAngle * 0.7) * 15;
-    toy.camera.position.z = camRadius;
-    toy.camera.lookAt(0, 0, 0);
+    runtime.toy.camera.position.x = Math.sin(camAngle) * 20;
+    runtime.toy.camera.position.y = Math.cos(camAngle * 0.7) * 15;
+    runtime.toy.camera.position.z = camRadius;
+    runtime.toy.camera.lookAt(0, 0, 0);
 
     // Background color pulse
-    toy.rendererReady.then((result) => {
+    runtime.toy.rendererReady.then((result) => {
       if (result) {
         const palette = palettes[activePaletteIndex];
         const bgHue = (palette.baseHue + smoothedMids * 0.1) % 1;
@@ -624,67 +603,39 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       }
     });
 
-    ctx.toy.render();
+    runtime.toy.render();
   }
 
-  async function startAudio(request: ToyAudioRequest = false) {
-    return startToyAudio(
-      toy,
-      animate,
-      resolveToyAudioOptions(request, { fftSize: 512 }),
+  function handleInput(state: UnifiedInputState | null) {
+    if (!state || state.pointerCount === 0) {
+      rotationLatch = 0;
+      return;
+    }
+    const centroid = state.normalizedCentroid;
+    targetSpinBoost = THREE.MathUtils.clamp(1 + centroid.x * 0.4, 0.6, 1.7);
+    targetPulseBoost = THREE.MathUtils.clamp(1 + centroid.y * 0.45, 0.6, 1.8);
+
+    const gesture = state.gesture;
+    if (!gesture || gesture.pointerCount < 2) return;
+    targetSpinBoost = THREE.MathUtils.clamp(
+      targetSpinBoost + (gesture.scale - 1) * 0.5,
+      0.6,
+      1.9,
     );
-  }
-
-  setupSettingsPanel();
-  const perfUnsub = setupPerformancePanel();
-  buildSpiralArms();
-  particleField = createParticleField();
-  createBloomMesh();
-  applyPalette(activePaletteIndex);
-
-  // Set up fog for depth
-  let unifiedInput: ReturnType<typeof createUnifiedInput> | null = null;
-  if (toy.canvas instanceof HTMLElement) {
-    toy.canvas.style.touchAction = 'manipulation';
-    unifiedInput = createUnifiedInput({
-      target: toy.canvas,
-      boundsElement: toy.canvas,
-      onInput: (state) => {
-        if (state.pointerCount === 0) {
-          rotationLatch = 0;
-          return;
-        }
-        const centroid = state.normalizedCentroid;
-        targetSpinBoost = THREE.MathUtils.clamp(1 + centroid.x * 0.4, 0.6, 1.7);
-        targetPulseBoost = THREE.MathUtils.clamp(
-          1 + centroid.y * 0.45,
-          0.6,
-          1.8,
-        );
-
-        const gesture = state.gesture;
-        if (!gesture || gesture.pointerCount < 2) return;
-        targetSpinBoost = THREE.MathUtils.clamp(
-          targetSpinBoost + (gesture.scale - 1) * 0.5,
-          0.6,
-          1.9,
-        );
-        targetPulseBoost = THREE.MathUtils.clamp(
-          targetPulseBoost + Math.abs(gesture.rotation) * 0.6,
-          0.6,
-          2,
-        );
-        if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
-          activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
-          applyPalette(activePaletteIndex);
-        } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
-          activePaletteIndex =
-            (activePaletteIndex - 1 + palettes.length) % palettes.length;
-          applyPalette(activePaletteIndex);
-        }
-        rotationLatch = gesture.rotation;
-      },
-    });
+    targetPulseBoost = THREE.MathUtils.clamp(
+      targetPulseBoost + Math.abs(gesture.rotation) * 0.6,
+      0.6,
+      2,
+    );
+    if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+      activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+      applyPalette(activePaletteIndex);
+    } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+      activePaletteIndex =
+        (activePaletteIndex - 1 + palettes.length) % palettes.length;
+      applyPalette(activePaletteIndex);
+    }
+    rotationLatch = gesture.rotation;
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -720,24 +671,57 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   window.addEventListener('keydown', handleKeydown);
 
-  const unregisterGlobals = registerToyGlobals(container, startAudio);
-
-  return {
-    dispose: () => {
-      toy.dispose();
-      disposeSpiralArms();
-      disposeParticleField();
-      if (bloomMesh) {
-        toy.scene.remove(bloomMesh);
-        (bloomMesh.geometry as THREE.BufferGeometry).dispose();
-        (bloomMesh.material as THREE.Material).dispose();
-      }
-      modeRow?.remove();
-      modeRow = null;
-      perfUnsub();
-      unifiedInput?.dispose();
-      window.removeEventListener('keydown', handleKeydown);
-      unregisterGlobals();
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 0, z: 120 } },
+      lightingOptions: { type: 'HemisphereLight', intensity: 0.6 },
+      ambientLightOptions: { intensity: 0.3 },
+      rendererOptions: {
+        maxPixelRatio: performanceSettings.maxPixelRatio,
+        renderScale: activeQuality.renderScale,
+      },
     },
-  };
+    audio: { fftSize: 512 },
+    input: {
+      onInput: (state) => handleInput(state),
+      boundsElement: container?.querySelector('canvas') ?? undefined,
+    },
+    plugins: [
+      {
+        name: 'spiral-burst',
+        setup: ({ toy }) => {
+          toy.scene.add(spiralContainer);
+          setupSettingsPanel();
+          setupPerformancePanel();
+          buildSpiralArms();
+          particleField = createParticleField();
+          createBloomMesh();
+          applyPalette(activePaletteIndex);
+          window.addEventListener('keydown', handleKeydown);
+        },
+        update: ({ frequencyData, time, analyser }) => {
+          animate(frequencyData, time, analyser);
+        },
+        onPerformanceChange: (settings) => {
+          applyPerformanceSettings(settings);
+        },
+        dispose: () => {
+          disposeSpiralArms();
+          disposeParticleField();
+          if (bloomMesh) {
+            runtime.toy.scene.remove(bloomMesh);
+            (bloomMesh.geometry as THREE.BufferGeometry).dispose();
+            (bloomMesh.material as THREE.Material).dispose();
+          }
+          modeRow?.remove();
+          modeRow = null;
+          window.removeEventListener('keydown', handleKeydown);
+        },
+      },
+    ],
+  });
+
+  return runtime;
 }

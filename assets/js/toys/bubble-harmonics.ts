@@ -1,24 +1,13 @@
 import * as THREE from 'three';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
-import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
+import { createToyRuntime } from '../core/toy-runtime';
 import { getAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
-import { startToyAudio } from '../utils/start-audio';
 
 type Bubble = {
   mesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
@@ -37,25 +26,7 @@ type HarmonicBubble = {
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const settingsPanel = getSettingsPanel();
   let activeQuality: QualityPreset = getActiveQualityPreset();
-
-  const toy = new WebToy({
-    cameraOptions: { position: { x: 0, y: 0, z: 36 } },
-    sceneOptions: {
-      fog: { color: 0x050914, density: 0.012 },
-      background: '#03060f',
-    },
-    rendererOptions: {
-      maxPixelRatio: activeQuality.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
-    },
-    ambientLightOptions: { color: 0x88aaff, intensity: 0.25 },
-    lightingOptions: {
-      type: 'PointLight',
-      options: { color: 0x66ccff, intensity: 2.2, distance: 140 },
-      position: { x: 0, y: 16, z: 24 },
-    },
-    canvas: container?.querySelector('canvas'),
-  } as ToyConfig);
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   const bubbles: Bubble[] = [];
   const tempScale = new THREE.Vector3();
@@ -213,13 +184,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     harmonicBubbles.length = 0;
   }
 
+  let isReady = false;
   async function init() {
     await loadShaders();
-    toy.scene.add(bubbleGroup);
+    runtime.toy.scene.add(bubbleGroup);
     const rimLight = new THREE.PointLight(0x4ee6ff, 1.4, 120, 1.8);
     rimLight.position.set(-14, -18, 22);
-    toy.scene.add(rimLight);
+    runtime.toy.scene.add(rimLight);
     rebuildBubbles();
+    isReady = true;
   }
 
   function rebuildBubbles() {
@@ -303,20 +276,19 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     );
   }
 
-  function animate(ctx: AnimationContext) {
-    const data = getContextFrequencyData(ctx);
+  function animate(data: Uint8Array, time: number) {
     const avg = getAverageFrequency(data);
-    const time = performance.now() * 0.001;
+    const scaledTime = time;
 
-    animateBubbles(data, avg, time);
-    animateHarmonics(time);
+    animateBubbles(data, avg, scaledTime);
+    animateHarmonics(scaledTime);
 
-    toy.render();
+    runtime.toy.render();
   }
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: preset.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -338,34 +310,48 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  const initPromise = init();
-
-  async function startAudio(request: ToyAudioRequest = false) {
-    await initPromise;
-    return startToyAudio(
-      toy,
-      animate,
-      resolveToyAudioOptions(request, {
-        fftSize: 2048,
-        smoothingTimeConstant: 0.72,
-      }),
-    );
-  }
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 0, z: 36 } },
+      sceneOptions: {
+        fog: { color: 0x050914, density: 0.012 },
+        background: '#03060f',
+      },
+      rendererOptions: {
+        maxPixelRatio: activeQuality.maxPixelRatio,
+        renderScale: activeQuality.renderScale,
+      },
+      ambientLightOptions: { color: 0x88aaff, intensity: 0.25 },
+      lightingOptions: {
+        type: 'PointLight',
+        color: 0x66ccff,
+        intensity: 2.2,
+        position: { x: 0, y: 16, z: 24 },
+      },
+    },
+    audio: { fftSize: 2048, options: { smoothingTimeConstant: 0.72 } },
+    plugins: [
+      {
+        name: 'bubble-harmonics',
+        setup: () => {
+          void init();
+        },
+        update: ({ frequencyData, time }) => {
+          if (!isReady) return;
+          animate(frequencyData, time);
+        },
+        dispose: () => {
+          clearBubbleMeshes();
+          bubbleGeometry?.dispose();
+          harmonicGeometry?.dispose();
+        },
+      },
+    ],
+  });
 
   setupSettingsPanel();
 
-  // Register globals for toy.html buttons
-  // Register globals for toy.html buttons
-  const unregisterGlobals = registerToyGlobals(container, startAudio);
-
-  return {
-    dispose: () => {
-      toy.dispose();
-      clearBubbleMeshes();
-      bubbleGeometry?.dispose();
-      harmonicGeometry?.dispose();
-      harmonicGeometry?.dispose();
-      unregisterGlobals();
-    },
-  };
+  return runtime;
 }

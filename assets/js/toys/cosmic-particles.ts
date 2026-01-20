@@ -1,13 +1,8 @@
 import * as THREE from 'three';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   getActivePerformanceSettings,
   getPerformancePanel,
   type PerformanceSettings,
-  subscribeToPerformanceSettings,
 } from '../core/performance-panel';
 import {
   DEFAULT_QUALITY_PRESETS,
@@ -15,39 +10,24 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
-import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
+import { createToyRuntime } from '../core/toy-runtime';
 import { getAverageFrequency } from '../utils/audio-handler';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
 import { applyAudioColor } from '../utils/color-audio';
-import { startToyAudio } from '../utils/start-audio';
 
 type PresetKey = 'orbit' | 'nebula';
 
 type PresetInstance = {
-  animate: (ctx: AnimationContext) => void;
+  animate: (data: Uint8Array, time: number) => void;
   dispose: () => void;
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const toy = new WebToy({
-    cameraOptions: { position: { x: 0, y: 0, z: 80 } },
-    ambientLightOptions: { intensity: 0.35 },
-    rendererOptions: {
-      maxPixelRatio: getActivePerformanceSettings().maxPixelRatio,
-    },
-    canvas: container?.querySelector('canvas'),
-  } as ToyConfig);
-
   let activeQuality: QualityPreset = getActiveQualityPreset({
     presets: DEFAULT_QUALITY_PRESETS,
     defaultPresetId: 'balanced',
   });
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   let activePreset: PresetInstance | null = null;
   let activePresetKey: PresetKey = 'orbit';
@@ -98,12 +78,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     light.position.set(15, 20, 30);
     group.add(light);
 
-    toy.scene.add(group);
-    toy.camera.position.set(0, 0, 60);
+    runtime.toy.scene.add(group);
+    runtime.toy.camera.position.set(0, 0, 60);
 
     return {
-      animate(ctx) {
-        const data = getContextFrequencyData(ctx);
+      animate(data, _time) {
         const avg = getAverageFrequency(data);
         const rotationSpeed = 0.001 + avg / 100000;
         particles.rotation.y += rotationSpeed;
@@ -113,10 +92,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         const hue = (avg / 256) % 1;
         particlesMaterial.color.setHSL(hue, 0.7, 0.6);
 
-        ctx.toy.render();
+        runtime.toy.render();
       },
       dispose() {
-        toy.scene.remove(group);
+        runtime.toy.scene.remove(group);
         particlesGeometry.dispose();
         particlesMaterial.dispose();
       },
@@ -239,15 +218,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     blueLight.position.set(100, -50, -200);
     group.add(blueLight);
 
-    toy.scene.add(group);
-    toy.camera.position.set(0, 0, 100);
+    runtime.toy.scene.add(group);
+    runtime.toy.camera.position.set(0, 0, 100);
 
     return {
-      animate(ctx) {
-        const data = getContextFrequencyData(ctx);
+      animate(data, time) {
         const avg = getAverageFrequency(data);
         const normalizedAvg = avg / 255;
-        const time = Date.now() / 1000;
 
         const positions = stars.geometry.attributes.position
           .array as Float32Array;
@@ -287,14 +264,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           baseLuminance: 0.9,
         });
 
-        toy.camera.position.x = Math.sin(time * 0.3) * 10;
-        toy.camera.position.y = Math.cos(time * 0.2) * 5;
-        toy.camera.lookAt(0, 0, -100);
+        runtime.toy.camera.position.x = Math.sin(time * 0.3) * 10;
+        runtime.toy.camera.position.y = Math.cos(time * 0.2) * 5;
+        runtime.toy.camera.lookAt(0, 0, -100);
 
-        ctx.toy.render();
+        runtime.toy.render();
       },
       dispose() {
-        toy.scene.remove(group);
+        runtime.toy.scene.remove(group);
         starGeometry.dispose();
         starMaterial.dispose();
         nebulaGeometry.dispose();
@@ -325,7 +302,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: performanceSettings.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -334,7 +311,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: performanceSettings.maxPixelRatio,
       renderScale: activeQuality.renderScale,
     });
@@ -377,37 +354,44 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       description:
         'Cap DPI, trim particle budgets, or lower shader detail for smoother play.',
     });
-
-    return subscribeToPerformanceSettings(applyPerformanceSettings);
   }
 
-  function animate(ctx: AnimationContext) {
-    activePreset?.animate(ctx);
-  }
-
-  async function startAudio(request: ToyAudioRequest = false) {
-    return startToyAudio(
-      toy,
-      animate,
-      resolveToyAudioOptions(request, { fftSize: 256 }),
-    );
+  function animate(data: Uint8Array, time: number) {
+    activePreset?.animate(data, time);
   }
 
   setupSettingsPanel();
-  const perfUnsub = setupPerformancePanel();
-  setActivePreset(activePresetKey);
-
-  // Register globals for toy.html buttons
-  // Register globals for toy.html buttons
-  const unregisterGlobals = registerToyGlobals(container, startAudio);
-
-  return {
-    dispose: () => {
-      toy.dispose();
-      activePreset?.dispose();
-      perfUnsub();
-      perfUnsub();
-      unregisterGlobals();
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 0, z: 80 } },
+      ambientLightOptions: { intensity: 0.35 },
+      rendererOptions: {
+        maxPixelRatio: performanceSettings.maxPixelRatio,
+      },
     },
-  };
+    audio: { fftSize: 256 },
+    plugins: [
+      {
+        name: 'cosmic-particles',
+        setup: () => {
+          setupSettingsPanel();
+          setupPerformancePanel();
+          setActivePreset(activePresetKey);
+        },
+        update: ({ frequencyData, time }) => {
+          animate(frequencyData, time);
+        },
+        onPerformanceChange: (settings) => {
+          applyPerformanceSettings(settings);
+        },
+        dispose: () => {
+          activePreset?.dispose();
+        },
+      },
+    ],
+  });
+
+  return runtime;
 }

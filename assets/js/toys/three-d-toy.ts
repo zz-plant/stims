@@ -1,9 +1,5 @@
 import * as THREE from 'three';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   createBloomComposer,
   isWebGLRenderer,
   type PostprocessingPipeline,
@@ -16,40 +12,20 @@ import {
   type QualityPreset,
 } from '../core/settings-panel';
 import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
+import { createToyRuntime } from '../core/toy-runtime';
 import { getAverageFrequency } from '../utils/audio-handler';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
+import type { ToyAudioRequest } from '../utils/audio-start';
 import {
   type ControlPanelState,
   createControlPanel,
 } from '../utils/control-panel';
 import { createIdleDetector } from '../utils/idle-detector';
-import { startToyAudio } from '../utils/start-audio';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   let errorElement: HTMLElement | null = null;
   const settingsPanel = getSettingsPanel();
   let activeQuality: QualityPreset = getActiveQualityPreset();
-
-  const toy = new WebToy({
-    cameraOptions: { position: { x: 0, y: 0, z: 80 } },
-    lightingOptions: {
-      type: 'PointLight',
-      color: 0xff00ff,
-      intensity: 2,
-      position: { x: 20, y: 30, z: 20 },
-    },
-    ambientLightOptions: { color: 0x404040, intensity: 0.8 },
-    rendererOptions: {
-      maxPixelRatio: activeQuality.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
-    },
-    canvas: container?.querySelector('canvas'),
-  } as ToyConfig);
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   let torusKnot: THREE.Mesh | null = null;
   let particles: THREE.Points | null = null;
@@ -91,7 +67,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function disposeMesh(mesh: THREE.Mesh | null) {
     if (!mesh) return;
-    toy.scene.remove(mesh);
+    runtime.toy.scene.remove(mesh);
     mesh.geometry?.dispose();
     if (Array.isArray(mesh.material)) {
       mesh.material.forEach((material) => material?.dispose());
@@ -102,7 +78,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function disposeInstancedShapes() {
     instancedShapes.splice(0).forEach(({ mesh }) => {
-      toy.scene.remove(mesh);
+      runtime.toy.scene.remove(mesh);
       mesh.geometry?.dispose();
       if (Array.isArray(mesh.material)) {
         mesh.material.forEach((material) => material?.dispose());
@@ -145,7 +121,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       });
       const mesh = new THREE.InstancedMesh(geometry, material, count);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      toy.scene.add(mesh);
+      runtime.toy.scene.add(mesh);
 
       const instances: ShapeInstance[] = [];
 
@@ -232,7 +208,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       new THREE.TorusKnotGeometry(10, 3, torusSegments, torusTubularSegments),
       torusMaterial,
     );
-    toy.scene.add(torusKnot);
+    runtime.toy.scene.add(torusKnot);
 
     const particlesGeometry = new THREE.BufferGeometry();
     const particlesPosition = new Float32Array(particleCount * 3);
@@ -248,21 +224,21 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       size: 1.8,
     });
     particles = new THREE.Points(particlesGeometry, particlesMaterial);
-    toy.scene.add(particles);
+    runtime.toy.scene.add(particles);
 
     createInstancedShapes(shapeCount);
   }
 
   function setupPostProcessing() {
     if (postprocessing) return;
-    toy.rendererReady.then((result) => {
+    runtime.toy.rendererReady.then((result) => {
       if (!result || postprocessing) return;
       if (!isWebGLRenderer(result.renderer)) return;
 
       postprocessing = createBloomComposer({
         renderer: result.renderer,
-        scene: toy.scene,
-        camera: toy.camera,
+        scene: runtime.toy.scene,
+        camera: runtime.toy.camera,
         bloomStrength: 0.65,
         bloomRadius: 0.45,
         bloomThreshold: 0.88,
@@ -294,9 +270,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  function animate(ctx: AnimationContext) {
+  function animate(dataArray: Uint8Array, _time: number) {
     if (!torusKnot || !particles) return;
-    const dataArray = getContextFrequencyData(ctx);
     const avgFrequency = getAverageFrequency(dataArray);
 
     const { idle, idleProgress } = idleDetector.update(dataArray);
@@ -305,7 +280,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const idleStrength = controlState.mobilePreset ? 0.55 : 1;
     const idleOffset = idleBlend * idleStrength;
 
-    const time = clock.getElapsedTime();
+    const elapsed = clock.getElapsedTime();
     const paletteEnabled = controlState.paletteCycle;
     const paletteSpeedBase = controlState.mobilePreset ? 0.003 : 0.006;
     const activityDamp = idle ? 1 : 0.2;
@@ -319,7 +294,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       0.4,
       0.08 + idleBlend * 0.1,
     );
-    toy.scene.background = backgroundColor;
+    runtime.toy.scene.background = backgroundColor;
     const body = (container?.ownerDocument ?? document).body;
     body.style.backgroundImage = `radial-gradient(circle at 20% 20%, hsla(${
       (paletteHue + 0.08) * 360
@@ -330,7 +305,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     torusKnot.rotation.x += avgFrequency / 5000;
     torusKnot.rotation.y += avgFrequency / 7000;
 
-    const wobble = 1 + Math.sin(time * 0.6) * 0.15 * idleOffset;
+    const wobble = 1 + Math.sin(elapsed * 0.6) * 0.15 * idleOffset;
     const wobbleVec = new THREE.Vector3(wobble, wobble, wobble);
     torusKnot.scale.lerp(wobbleVec, 0.08);
 
@@ -353,7 +328,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           colorNeedsUpdate = true;
         }
         const wobbleAmt =
-          1 + Math.sin(time * 0.9 + instance.wobbleSeed) * 0.08 * idleOffset;
+          1 + Math.sin(elapsed * 0.9 + instance.wobbleSeed) * 0.08 * idleOffset;
         const scaled = instance.scale * wobbleAmt;
         instanceTempObject.position.copy(instance.position);
         instanceTempObject.rotation.copy(instance.rotation);
@@ -374,21 +349,21 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     torusKnot.scale.set(randomScale, randomScale, randomScale);
 
     const driftAmount = idleOffset * (controlState.mobilePreset ? 2.5 : 4.2);
-    toy.camera.position.x = Math.sin(time * 0.25) * driftAmount;
-    toy.camera.position.y = Math.cos(time * 0.2) * driftAmount * 0.6;
-    toy.camera.lookAt(0, 0, 0);
+    runtime.toy.camera.position.x = Math.sin(elapsed * 0.25) * driftAmount;
+    runtime.toy.camera.position.y = Math.cos(elapsed * 0.2) * driftAmount * 0.6;
+    runtime.toy.camera.lookAt(0, 0, 0);
 
     if (postprocessing) {
       postprocessing.updateSize();
       postprocessing.render();
     } else {
-      ctx.toy.render();
+      runtime.toy.render();
     }
   }
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: preset.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -410,7 +385,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   async function startAudio(request: ToyAudioRequest = false) {
     try {
-      await startToyAudio(toy, animate, resolveToyAudioOptions(request));
+      await runtime.startAudio(request);
       hideError();
       return true;
     } catch (e) {
@@ -421,31 +396,60 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  setupSettingsPanel();
-  const controlPanel = createControlPanel();
-  controlState = controlPanel.getState();
-  const _controlPanelUnsub = controlPanel.onChange((state) => {
-    controlState = state;
-  });
-  rebuildSceneContents();
-  toy.rendererReady.then((handle) => {
-    if (!handle) return;
-    rendererBackend = handle.backend;
-    rebuildSceneContents();
-    setupPostProcessing();
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 0, z: 80 } },
+      lightingOptions: {
+        type: 'PointLight',
+        color: 0xff00ff,
+        intensity: 2,
+        position: { x: 20, y: 30, z: 20 },
+      },
+      ambientLightOptions: { color: 0x404040, intensity: 0.8 },
+      rendererOptions: {
+        maxPixelRatio: activeQuality.maxPixelRatio,
+        renderScale: activeQuality.renderScale,
+      },
+    },
+    audio: { fftSize: 512 },
+    plugins: [
+      {
+        name: 'three-d-toy',
+        setup: (runtimeInstance) => {
+          setupSettingsPanel();
+          const controlPanel = createControlPanel();
+          controlState = controlPanel.getState();
+          controlPanel.onChange((state) => {
+            controlState = state;
+          });
+          rebuildSceneContents();
+          runtimeInstance.toy.rendererReady.then((handle) => {
+            if (!handle) return;
+            rendererBackend = handle.backend;
+            rebuildSceneContents();
+            setupPostProcessing();
+          });
+        },
+        update: ({ frequencyData, time }) => {
+          animate(frequencyData, time);
+        },
+        dispose: () => {
+          errorElement?.remove();
+          postprocessing?.dispose();
+        },
+      },
+    ],
   });
 
-  // Register globals for toy.html buttons
-  // Register globals for toy.html buttons
   const unregisterGlobals = registerToyGlobals(container, startAudio);
 
   return {
+    ...runtime,
     dispose: () => {
-      toy.dispose();
-      errorElement?.remove();
-      errorElement?.remove();
-      postprocessing?.dispose();
       unregisterGlobals();
+      runtime.dispose();
     },
   };
 }

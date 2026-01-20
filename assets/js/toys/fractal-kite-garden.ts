@@ -1,22 +1,11 @@
 import * as THREE from 'three';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
-import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
-import { startToyAudio } from '../utils/start-audio';
+import { createToyRuntime } from '../core/toy-runtime';
 
 type PaletteKey = 'aurora' | 'sunset' | 'midnight';
 
@@ -33,21 +22,7 @@ type KiteInstance = {
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const settingsPanel = getSettingsPanel();
   let activeQuality: QualityPreset = getActiveQualityPreset();
-
-  const toy = new WebToy({
-    cameraOptions: { position: { x: 0, y: 6, z: 26 } },
-    lightingOptions: {
-      type: 'DirectionalLight',
-      position: { x: -6, y: 12, z: 8 },
-      intensity: 1.15,
-    },
-    ambientLightOptions: { intensity: 0.35 },
-    rendererOptions: {
-      maxPixelRatio: activeQuality.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
-    },
-    canvas: container?.querySelector('canvas'),
-  } as ToyConfig);
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   const palettes: Record<PaletteKey, number[]> = {
     aurora: [0x83e6ff, 0x6ad0f7, 0xd3afff, 0xa8f7dd],
@@ -235,7 +210,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       if (kiteInstances.length >= maxKites) break;
     }
 
-    toy.scene.add(kiteGroup);
+    runtime.toy.scene.add(kiteGroup);
   }
 
   function createControls() {
@@ -292,7 +267,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: preset.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -316,8 +291,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function init() {
-    toy.scene.fog = new THREE.FogExp2(0x030712, 0.028);
-    toy.rendererReady.then((result) => {
+    runtime.toy.scene.fog = new THREE.FogExp2(0x030712, 0.028);
+    runtime.toy.rendererReady.then((result) => {
       if (result) {
         result.renderer.setClearColor(0x030712, 1);
       }
@@ -327,11 +302,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     buildGarden();
   }
 
-  function animate(ctx: AnimationContext) {
-    const data = getContextFrequencyData(ctx);
+  function animate(data: Uint8Array, time: number) {
     const mid = getBandAverage(data, 0.35, 0.65) / 255;
     const high = getBandAverage(data, 0.65, 1) / 255;
-    const time = ctx.time;
 
     kiteInstances.forEach((kite) => {
       const mesh = kite.mesh;
@@ -361,32 +334,45 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       );
     });
 
-    ctx.toy.render();
+    runtime.toy.render();
   }
 
-  async function startAudio(request: ToyAudioRequest = false) {
-    return startToyAudio(
-      toy,
-      animate,
-      resolveToyAudioOptions(request, { fftSize: 512 }),
-    );
-  }
-
-  init();
-
-  // Register globals for toy.html buttons
-  // Register globals for toy.html buttons
-  const unregisterGlobals = registerToyGlobals(container, startAudio);
-
-  return {
-    dispose: () => {
-      toy.dispose();
-      disposeGarden();
-      if (kiteGeometry) {
-        kiteGeometry.dispose();
-        kiteGeometry = null;
-      }
-      unregisterGlobals();
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 6, z: 26 } },
+      lightingOptions: {
+        type: 'DirectionalLight',
+        position: { x: -6, y: 12, z: 8 },
+        intensity: 1.15,
+      },
+      ambientLightOptions: { intensity: 0.35 },
+      rendererOptions: {
+        maxPixelRatio: activeQuality.maxPixelRatio,
+        renderScale: activeQuality.renderScale,
+      },
     },
-  };
+    audio: { fftSize: 512 },
+    plugins: [
+      {
+        name: 'fractal-kite-garden',
+        setup: () => {
+          init();
+        },
+        update: ({ frequencyData, time }) => {
+          animate(frequencyData, time);
+        },
+        dispose: () => {
+          disposeGarden();
+          if (kiteGeometry) {
+            kiteGeometry.dispose();
+            kiteGeometry = null;
+          }
+        },
+      },
+    ],
+  });
+
+  return runtime;
 }

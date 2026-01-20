@@ -1,24 +1,13 @@
 import * as THREE from 'three';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
-import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
+import { createToyRuntime } from '../core/toy-runtime';
 import { getAverageFrequency } from '../utils/audio-handler';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
 import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
-import { startToyAudio } from '../utils/start-audio';
 
 type ShapeMode = 'cubes' | 'spheres';
 
@@ -69,17 +58,6 @@ type GridPreset = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const toy = new WebToy({
-    cameraOptions: { position: { x: 0, y: 30, z: 80 } },
-    lightingOptions: {
-      type: 'DirectionalLight',
-      position: { x: 0, y: 50, z: 50 },
-      intensity: 1.25,
-    },
-    ambientLightOptions: { intensity: 0.6 },
-    canvas: container?.querySelector('canvas'),
-  } as ToyConfig);
-
   const gridGroup = new THREE.Group();
   const gridItems: GridItem[] = [];
 
@@ -87,6 +65,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     presets: DEFAULT_QUALITY_PRESETS,
     defaultPresetId: 'balanced',
   });
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   const presets: Record<ShapeMode, GridPreset> = {
     cubes: {
@@ -228,8 +207,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     currentPreset = presets[mode];
     activeMode = mode;
 
-    toy.camera.position.copy(currentPreset.camera.position);
-    toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
+    runtime.toy.camera.position.copy(currentPreset.camera.position);
+    runtime.toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
 
     const { rows, cols, spacingX, spacingZ } = getGridConfig(currentPreset);
     const startX = -((cols - 1) * spacingX) / 2;
@@ -259,7 +238,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: preset.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -353,10 +332,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  function animate(ctx: AnimationContext) {
-    const dataArray = getContextFrequencyData(ctx);
+  function animate(dataArray: Uint8Array, time: number) {
     const avg = getAverageFrequency(dataArray);
-    const time = Date.now() / 1000;
 
     const binsPerItem = dataArray.length / Math.max(gridItems.length, 1);
 
@@ -369,35 +346,45 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     const sway = currentPreset.camera.sway;
     if (sway) {
-      toy.camera.position.x = Math.sin(time * sway.frequency) * sway.amplitude;
-      toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
+      runtime.toy.camera.position.x =
+        Math.sin(time * sway.frequency) * sway.amplitude;
+      runtime.toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
     }
 
-    ctx.toy.render();
+    runtime.toy.render();
   }
 
-  async function startAudio(request: ToyAudioRequest = false) {
-    return startToyAudio(
-      toy,
-      animate,
-      resolveToyAudioOptions(request, { fftSize: 256 }),
-    );
-  }
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 30, z: 80 } },
+      lightingOptions: {
+        type: 'DirectionalLight',
+        position: { x: 0, y: 50, z: 50 },
+        intensity: 1.25,
+      },
+      ambientLightOptions: { intensity: 0.6 },
+    },
+    audio: { fftSize: 256 },
+    plugins: [
+      {
+        name: 'cube-wave',
+        setup: ({ toy }) => {
+          toy.scene.add(gridGroup);
+        },
+        update: ({ frequencyData, time }) => {
+          animate(frequencyData, time);
+        },
+        dispose: () => {
+          disposeGroup(gridGroup);
+        },
+      },
+    ],
+  });
 
-  toy.scene.add(gridGroup);
   setupSettingsPanel();
   rebuildGrid(activeMode);
 
-  // Register globals for toy.html buttons
-  // Register globals for toy.html buttons
-  const unregisterGlobals = registerToyGlobals(container, startAudio);
-
-  return {
-    dispose: () => {
-      toy.dispose();
-      disposeGroup(gridGroup);
-      disposeGroup(gridGroup);
-      unregisterGlobals();
-    },
-  };
+  return runtime;
 }

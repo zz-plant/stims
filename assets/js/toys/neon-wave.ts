@@ -18,12 +18,10 @@ import {
   ShaderMaterial,
   Vector3,
 } from 'three';
-import type { AnimationContext } from '../core/animation-loop';
 import {
   getActivePerformanceSettings,
   getPerformancePanel,
   type PerformanceSettings,
-  subscribeToPerformanceSettings,
 } from '../core/performance-panel';
 import {
   createBloomComposer,
@@ -36,14 +34,8 @@ import {
   PersistentSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
-import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
-import { startToyAudio } from '../utils/start-audio';
+import { createToyRuntime } from '../core/toy-runtime';
+import type { FrequencyAnalyser } from '../utils/audio-handler';
 
 type NeonTheme = 'synthwave' | 'cyberpunk' | 'arctic' | 'sunset';
 
@@ -92,18 +84,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let currentTheme: NeonTheme = 'synthwave';
   let palette = THEMES[currentTheme];
-
-  const toy = new WebToy({
-    cameraOptions: { position: { x: 0, y: 30, z: 80 } },
-    lightingOptions: { type: 'PointLight', intensity: 0.5 },
-    ambientLightOptions: { intensity: 0.15 },
-    rendererOptions: {
-      maxPixelRatio: performanceSettings.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
-    },
-    canvas: container?.querySelector('canvas'),
-    container,
-  } as ToyConfig);
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   // Post-processing
   let postprocessing: PostprocessingPipeline | null = null;
@@ -114,10 +95,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const particleGroup = new Group();
   const horizonGroup = new Group();
 
-  toy.scene.add(waveGroup);
-  toy.scene.add(gridGroup);
-  toy.scene.add(particleGroup);
-  toy.scene.add(horizonGroup);
+  waveGroup.clear();
+  gridGroup.clear();
+  particleGroup.clear();
+  horizonGroup.clear();
 
   // Audio smoothing
   let smoothedBass = 0;
@@ -382,7 +363,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupPostProcessing() {
-    toy.rendererReady.then((result) => {
+    runtime.toy.rendererReady.then((result) => {
       if (!result) return;
 
       const { renderer } = result;
@@ -391,8 +372,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
       postprocessing = createBloomComposer({
         renderer,
-        scene: toy.scene,
-        camera: toy.camera,
+        scene: runtime.toy.scene,
+        camera: runtime.toy.camera,
         bloomStrength: palette.bloomStrength,
         bloomRadius: 0.4,
         bloomThreshold: 0.85,
@@ -429,7 +410,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     // Update background
-    toy.rendererReady.then((result) => {
+    runtime.toy.rendererReady.then((result) => {
       if (result) {
         result.renderer.setClearColor(palette.background, 1);
       }
@@ -458,7 +439,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: performanceSettings.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -468,7 +449,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: settings.maxPixelRatio,
       renderScale: activeQuality.renderScale,
     });
@@ -522,16 +503,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       title: 'Performance',
       description: 'Balance visual fidelity and frame rate.',
     });
-    return subscribeToPerformanceSettings(applyPerformanceSettings);
   }
 
-  function animate(ctx: AnimationContext) {
+  function animate(analyser: FrequencyAnalyser | null, time: number) {
     // const data = getContextFrequencyData(ctx);
-    const time = ctx.time / 1000;
+    const scaledTime = time / 1000;
 
     // Multi-band frequency analysis using FrequencyAnalyser
-    const energy = ctx.analyser
-      ? ctx.analyser.getMultiBandEnergy()
+    const energy = analyser
+      ? analyser.getMultiBandEnergy()
       : { bass: 0, mid: 0, treble: 0 };
 
     const bass = energy.bass;
@@ -543,14 +523,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     smoothedHighs = smoothedHighs * 0.92 + highs * 0.08;
 
     // Beat detection
-    if (detectBeat(smoothedBass, ctx.time)) {
+    if (detectBeat(smoothedBass, time)) {
       beatIntensity = 1;
     }
     beatIntensity *= 0.92;
 
     // Update wave shader uniforms
     if (waveMaterial) {
-      waveMaterial.uniforms.uTime.value = time;
+      waveMaterial.uniforms.uTime.value = scaledTime;
       waveMaterial.uniforms.uBass.value = smoothedBass;
       waveMaterial.uniforms.uMids.value = smoothedMids;
       waveMaterial.uniforms.uHighs.value = smoothedHighs;
@@ -558,10 +538,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     // Animate grid
-    gridGroup.position.z = (time * 5) % 10;
+    gridGroup.position.z = (scaledTime * 5) % 10;
     gridLines.forEach((line, i) => {
       const mat = line.material as LineBasicMaterial;
-      mat.opacity = 0.3 + smoothedBass * 0.3 + Math.sin(time + i * 0.2) * 0.1;
+      mat.opacity =
+        0.3 + smoothedBass * 0.3 + Math.sin(scaledTime + i * 0.2) * 0.1;
     });
 
     // Animate particles
@@ -583,7 +564,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         positions[i3 + 2] += particleVelocities[i] * (1 + smoothedBass * 3);
 
         // Vertical wobble
-        positions[i3 + 1] += Math.sin(time * 2 + i * 0.1) * 0.05;
+        positions[i3 + 1] += Math.sin(scaledTime * 2 + i * 0.1) * 0.05;
 
         // Wrap around
         if (positions[i3 + 2] > 50) {
@@ -614,67 +595,82 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     // Camera sway
-    toy.camera.position.x = Math.sin(time * 0.3) * 8;
-    toy.camera.position.y = 25 + Math.sin(time * 0.2) * 5 + smoothedBass * 10;
-    toy.camera.lookAt(0, -10, -40);
+    runtime.toy.camera.position.x = Math.sin(scaledTime * 0.3) * 8;
+    runtime.toy.camera.position.y =
+      25 + Math.sin(scaledTime * 0.2) * 5 + smoothedBass * 10;
+    runtime.toy.camera.lookAt(0, -10, -40);
 
     // Render with post-processing
     if (postprocessing) {
       postprocessing.updateSize();
       postprocessing.render();
     } else {
-      ctx.toy.render();
+      runtime.toy.render();
     }
   }
 
-  async function startAudio(request: ToyAudioRequest = false) {
-    return startToyAudio(
-      toy,
-      animate,
-      resolveToyAudioOptions(request, { fftSize: 512 }),
-    );
-  }
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 30, z: 80 } },
+      lightingOptions: { type: 'PointLight', intensity: 0.5 },
+      ambientLightOptions: { intensity: 0.15 },
+      rendererOptions: {
+        maxPixelRatio: performanceSettings.maxPixelRatio,
+        renderScale: activeQuality.renderScale,
+      },
+    },
+    audio: { fftSize: 512 },
+    plugins: [
+      {
+        name: 'neon-wave',
+        setup: ({ toy }) => {
+          toy.scene.add(waveGroup);
+          toy.scene.add(gridGroup);
+          toy.scene.add(particleGroup);
+          toy.scene.add(horizonGroup);
 
-  // Initialize
-  setupSettingsPanel();
-  const perfUnsub = setupPerformancePanel();
-  createWaveMesh();
-  createGrid();
-  createParticles();
-  createHorizon();
-  setupPostProcessing();
+          setupSettingsPanel();
+          setupPerformancePanel();
+          createWaveMesh();
+          createGrid();
+          createParticles();
+          createHorizon();
+          setupPostProcessing();
 
-  // Set initial background
-  toy.rendererReady.then((result) => {
-    if (result) {
-      result.renderer.setClearColor(palette.background, 1);
-    }
+          toy.rendererReady.then((result) => {
+            if (result) {
+              result.renderer.setClearColor(palette.background, 1);
+            }
+          });
+          toy.scene.fog = new FogExp2(palette.background, 0.008);
+        },
+        update: ({ analyser, time }) => {
+          animate(analyser, time);
+        },
+        onPerformanceChange: (settings) => {
+          applyPerformanceSettings(settings);
+        },
+        dispose: () => {
+          waveGeometry?.dispose();
+          waveMaterial?.dispose();
+          particleGeometry?.dispose();
+          particleMaterial?.dispose();
+          gridLines.forEach((line) => {
+            line.geometry.dispose();
+            (line.material as Material).dispose();
+          });
+          if (horizonMesh) {
+            (horizonMesh.geometry as BufferGeometry).dispose();
+            (horizonMesh.material as Material).dispose();
+          }
+          postprocessing?.dispose();
+          settingsPanel.getElement().remove();
+        },
+      },
+    ],
   });
 
-  // Fog for depth
-  toy.scene.fog = new FogExp2(palette.background, 0.008);
-
-  const unregisterGlobals = registerToyGlobals(container, startAudio);
-
-  return {
-    dispose: () => {
-      toy.dispose();
-      waveGeometry?.dispose();
-      waveMaterial?.dispose();
-      particleGeometry?.dispose();
-      particleMaterial?.dispose();
-      gridLines.forEach((line) => {
-        line.geometry.dispose();
-        (line.material as Material).dispose();
-      });
-      if (horizonMesh) {
-        (horizonMesh.geometry as BufferGeometry).dispose();
-        (horizonMesh.material as Material).dispose();
-      }
-      postprocessing?.dispose();
-      perfUnsub();
-      unregisterGlobals();
-      settingsPanel.getElement().remove();
-    },
-  };
+  return runtime;
 }

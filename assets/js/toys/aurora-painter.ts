@@ -1,24 +1,13 @@
 import * as THREE from 'three';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
-import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
+import { createToyRuntime } from '../core/toy-runtime';
 import { getAverageFrequency } from '../utils/audio-handler';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
-import { startToyAudio } from '../utils/start-audio';
-import { createUnifiedInput } from '../utils/unified-input';
+import type { UnifiedInputState } from '../utils/unified-input';
 
 type AuroraPalette = {
   name: string;
@@ -82,30 +71,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let targetGlow = controls.glow;
   let rotationLatch = 0;
 
-  const toy = new WebToy({
-    cameraOptions: { position: { x: 0, y: 0, z: 45 }, fov: 60 },
-    rendererOptions: {
-      alpha: true,
-      maxPixelRatio: activeQuality.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
-    },
-    ambientLightOptions: { intensity: 0.5, color: 0x0c1327 },
-    lightingOptions: {
-      type: 'DirectionalLight',
-      options: {
-        color: 0xaadfff,
-        intensity: 0.75,
-        position: { x: 18, y: 26, z: 18 },
-      },
-    },
-    canvas: container?.querySelector('canvas'),
-  } as ToyConfig);
-
-  toy.scene.background = new THREE.Color(0x03060c);
-  toy.scene.fog = new THREE.FogExp2(0x03060c, 0.025);
-
+  let runtime: ReturnType<typeof createToyRuntime>;
   const ribbonGroup = new THREE.Group();
-  toy.scene.add(ribbonGroup);
 
   const RIBBON_COUNT = 6;
   const RIBBON_POINTS = 70;
@@ -253,19 +220,18 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     material.emissiveIntensity = 0.25 + (avg / 380) * controls.glow;
   }
 
-  function animate(ctx: AnimationContext) {
-    const data = getContextFrequencyData(ctx);
+  function animate(data: Uint8Array, time: number) {
     controls.speed = THREE.MathUtils.lerp(controls.speed, targetSpeed, 0.08);
     controls.glow = THREE.MathUtils.lerp(controls.glow, targetGlow, 0.08);
 
-    const time = performance.now() * 0.0015 * controls.speed;
+    const scaledTime = time * 1.5 * controls.speed;
 
-    ribbons.forEach((ribbon) => updateRibbon(ribbon, data, time));
+    ribbons.forEach((ribbon) => updateRibbon(ribbon, data, scaledTime));
 
-    toy.camera.position.z = 45 + Math.sin(time * 0.35) * 2.2;
-    toy.camera.lookAt(0, 0, -4);
+    runtime.toy.camera.position.z = 45 + Math.sin(scaledTime * 0.35) * 2.2;
+    runtime.toy.camera.lookAt(0, 0, -4);
 
-    toy.render();
+    runtime.toy.render();
   }
 
   function disposeRibbons() {
@@ -287,7 +253,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: preset.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -307,21 +273,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  async function startAudio(request: ToyAudioRequest = false) {
-    return startToyAudio(
-      toy,
-      animate,
-      resolveToyAudioOptions(request, { fftSize: 512 }),
-    );
-  }
-
   function applyPalette(index: number) {
     const palette = palettes[index];
-    toy.scene.background = new THREE.Color(palette.background);
-    if (toy.scene.fog instanceof THREE.FogExp2) {
-      toy.scene.fog.color = new THREE.Color(palette.fog);
+    runtime.toy.scene.background = new THREE.Color(palette.background);
+    if (runtime.toy.scene.fog instanceof THREE.FogExp2) {
+      runtime.toy.scene.fog.color = new THREE.Color(palette.fog);
     }
-    const light = toy.scene.children.find(
+    const light = runtime.toy.scene.children.find(
       (child) => child instanceof THREE.DirectionalLight,
     ) as THREE.DirectionalLight | undefined;
     if (light) {
@@ -333,48 +291,37 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  const unifiedInput =
-    toy.canvas instanceof HTMLElement
-      ? createUnifiedInput({
-          target: toy.canvas,
-          boundsElement: toy.canvas,
-          onInput: (state) => {
-            if (state.pointerCount === 0) {
-              rotationLatch = 0;
-              return;
-            }
-            const centroid = state.normalizedCentroid;
-            targetGlow = THREE.MathUtils.clamp(1 + centroid.y * 0.35, 0.7, 1.6);
-            targetSpeed = THREE.MathUtils.clamp(
-              1 + centroid.x * 0.35,
-              0.7,
-              1.6,
-            );
+  function handleInput(state: UnifiedInputState | null) {
+    if (!state || state.pointerCount === 0) {
+      rotationLatch = 0;
+      return;
+    }
+    const centroid = state.normalizedCentroid;
+    targetGlow = THREE.MathUtils.clamp(1 + centroid.y * 0.35, 0.7, 1.6);
+    targetSpeed = THREE.MathUtils.clamp(1 + centroid.x * 0.35, 0.7, 1.6);
 
-            const gesture = state.gesture;
-            if (!gesture || gesture.pointerCount < 2) return;
-            targetGlow = THREE.MathUtils.clamp(
-              targetGlow + (gesture.scale - 1) * 0.4,
-              0.7,
-              1.7,
-            );
-            targetSpeed = THREE.MathUtils.clamp(
-              targetSpeed + gesture.translation.x * 0.5,
-              0.6,
-              1.8,
-            );
-            if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
-              activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
-              applyPalette(activePaletteIndex);
-            } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
-              activePaletteIndex =
-                (activePaletteIndex - 1 + palettes.length) % palettes.length;
-              applyPalette(activePaletteIndex);
-            }
-            rotationLatch = gesture.rotation;
-          },
-        })
-      : null;
+    const gesture = state.gesture;
+    if (!gesture || gesture.pointerCount < 2) return;
+    targetGlow = THREE.MathUtils.clamp(
+      targetGlow + (gesture.scale - 1) * 0.4,
+      0.7,
+      1.7,
+    );
+    targetSpeed = THREE.MathUtils.clamp(
+      targetSpeed + gesture.translation.x * 0.5,
+      0.6,
+      1.8,
+    );
+    if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+      activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+      applyPalette(activePaletteIndex);
+    } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+      activePaletteIndex =
+        (activePaletteIndex - 1 + palettes.length) % palettes.length;
+      applyPalette(activePaletteIndex);
+    }
+    rotationLatch = gesture.rotation;
+  }
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'ArrowRight') {
@@ -391,27 +338,54 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 0, z: 45 }, fov: 60 },
+      rendererOptions: {
+        alpha: true,
+        maxPixelRatio: activeQuality.maxPixelRatio,
+        renderScale: activeQuality.renderScale,
+      },
+      ambientLightOptions: { intensity: 0.5, color: 0x0c1327 },
+      lightingOptions: {
+        type: 'DirectionalLight',
+        color: 0xaadfff,
+        intensity: 0.75,
+        position: { x: 18, y: 26, z: 18 },
+      },
+    },
+    audio: { fftSize: 512 },
+    input: {
+      onInput: (state) => handleInput(state),
+      boundsElement: container?.querySelector('canvas') ?? undefined,
+    },
+    plugins: [
+      {
+        name: 'aurora-painter',
+        setup: ({ toy }) => {
+          toy.scene.background = new THREE.Color(0x03060c);
+          toy.scene.fog = new THREE.FogExp2(0x03060c, 0.025);
+          toy.scene.add(ribbonGroup);
+        },
+        update: ({ frequencyData, time }) => {
+          animate(frequencyData, time);
+        },
+        dispose: () => {
+          disposeRibbons();
+          window.removeEventListener('keydown', handleKeydown);
+        },
+      },
+    ],
+  });
+
   setupSettingsPanel();
   if (!ribbons.length) {
     rebuildRibbons();
   }
   applyPalette(activePaletteIndex);
-  if (toy.canvas instanceof HTMLElement) {
-    toy.canvas.style.touchAction = 'manipulation';
-  }
   window.addEventListener('keydown', handleKeydown);
 
-  // Register globals for toy.html buttons
-  // Register globals for toy.html buttons
-  const unregisterGlobals = registerToyGlobals(container, startAudio);
-
-  return {
-    dispose: () => {
-      toy.dispose();
-      disposeRibbons();
-      unifiedInput?.dispose();
-      window.removeEventListener('keydown', handleKeydown);
-      unregisterGlobals();
-    },
-  };
+  return runtime;
 }
