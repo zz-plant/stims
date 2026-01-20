@@ -194,34 +194,45 @@
             Tap a card to launch. Everything is accessible and ready to play.
           </p>
           <search class="library-search">
-            <label class="sr-only" for="toy-search">Search the library</label>
-            <form class="search-field" role="search" data-search-form>
-              <input
-                id="toy-search"
-                type="search"
-                name="toy-search"
-                placeholder="Search stims by name, tag, or capability…"
-                autocomplete="off"
-                aria-describedby="toy-search-hint"
-                inputmode="search"
-                list="toy-search-suggestions"
-              />
-              <button
-                type="button"
-                class="search-clear"
-                data-search-clear
-                aria-label="Clear search"
-              >
-                Clear
-              </button>
-              <span
-                id="toy-search-hint"
-                class="search-field__hint"
-              >
-                Enter a name, tag, or capability
-              </span>
-              <datalist id="toy-search-suggestions"></datalist>
-            </form>
+            <div class="search-row">
+              <label class="sr-only" for="toy-search">Search the library</label>
+              <form class="search-field" role="search" data-search-form>
+                <span class="search-field__icon" aria-hidden="true">⌕</span>
+                <input
+                  id="toy-search"
+                  type="search"
+                  name="toy-search"
+                  placeholder="Search stims by name, tag, or capability…"
+                  autocomplete="off"
+                  aria-describedby="toy-search-hint"
+                  inputmode="search"
+                  list="toy-search-suggestions"
+                />
+                <button
+                  type="button"
+                  class="search-clear"
+                  data-search-clear
+                  aria-label="Clear search"
+                >
+                  Clear
+                </button>
+                <span id="toy-search-hint" class="search-field__hint">
+                  Enter a name, tag, or capability
+                </span>
+                <datalist id="toy-search-suggestions"></datalist>
+              </form>
+              <div class="search-meta">
+                <p
+                  class="search-meta__results"
+                  data-search-results
+                  role="status"
+                  aria-live="polite"
+                >
+                  Loading library…
+                </p>
+                <p class="search-meta__note">Results update live as you filter.</p>
+              </div>
+            </div>
             <div class="filter-row" role="group" aria-label="Curated filters">
               <div class="chip-row" data-chip-row>
                 <button
@@ -279,28 +290,20 @@
                   WebGPU
                 </button>
               </div>
-              <button type="button" class="filter-reset" data-filter-reset>
-                Clear filters
-              </button>
-              <label class="sort-control">
-                <span>Sort</span>
-                <select data-sort-control>
-                  <option value="featured">Featured</option>
-                  <option value="newest">Newest</option>
-                  <option value="immersive">Most immersive</option>
-                  <option value="az">A → Z</option>
-                </select>
-              </label>
-            </div>
-            <div class="search-meta">
-              <p
-                class="search-meta__results"
-                data-search-results
-                role="status"
-                aria-live="polite"
-              >
-                Loading library…
-              </p>
+              <div class="filter-actions">
+                <button type="button" class="filter-reset" data-filter-reset>
+                  Clear filters
+                </button>
+                <label class="sort-control">
+                  <span>Sort</span>
+                  <select data-sort-control>
+                    <option value="featured">Featured</option>
+                    <option value="newest">Newest</option>
+                    <option value="immersive">Most immersive</option>
+                    <option value="az">A → Z</option>
+                  </select>
+                </label>
+              </div>
             </div>
           </search>
         </div>
