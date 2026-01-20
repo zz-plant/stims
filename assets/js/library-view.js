@@ -44,7 +44,27 @@ function createSvgContext(_slug, label) {
     return el;
   };
 
-  return { svg, defs, createGradient, createNode };
+  const createPattern = (
+    id,
+    { width, height, units, ...attrs },
+    children = [],
+  ) => {
+    const pattern = document.createElementNS(ns, 'pattern');
+    pattern.setAttribute('id', id);
+    pattern.setAttribute('width', String(width));
+    pattern.setAttribute('height', String(height));
+    pattern.setAttribute('patternUnits', units ?? 'userSpaceOnUse');
+    Object.entries(attrs).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        pattern.setAttribute(key, String(value));
+      }
+    });
+    children.forEach((child) => pattern.appendChild(child));
+    defs.appendChild(pattern);
+    return `url(#${id})`;
+  };
+
+  return { svg, defs, createGradient, createPattern, createNode };
 }
 
 function addRings(svg, createNode, rings = []) {
@@ -96,7 +116,7 @@ function addBurst(svg, createNode, options) {
   return group;
 }
 
-function addGrid(svg, createNode, options) {
+function addGrid(svg, createNode, createPattern, options) {
   const {
     cols = 5,
     rows = 5,
@@ -105,29 +125,39 @@ function addGrid(svg, createNode, options) {
     stroke = '#94a3b8',
     opacity = 0.4,
     origin = [20, 20],
+    patternId = 'grid',
   } = options;
   const group = createNode('g', {
     transform: `translate(${origin[0]} ${origin[1]})`,
   });
-  for (let row = 0; row < rows; row += 1) {
-    for (let col = 0; col < cols; col += 1) {
-      const x = col * (size + gap);
-      const y = row * (size + gap);
-      const rect = createNode('rect', {
-        x,
-        y,
-        width: size,
-        height: size,
-        rx: 3,
-        ry: 3,
-        fill: 'none',
-        stroke,
-        'stroke-width': 1.5,
-        opacity,
-      });
-      group.appendChild(rect);
-    }
-  }
+  const tile = createNode('rect', {
+    x: 0,
+    y: 0,
+    width: size,
+    height: size,
+    rx: 3,
+    ry: 3,
+    fill: 'none',
+    stroke,
+    'stroke-width': 1.5,
+    opacity,
+  });
+  const gridPattern = createPattern(
+    patternId,
+    { width: size + gap, height: size + gap },
+    [tile],
+  );
+  const gridWidth = cols * size + (cols - 1) * gap;
+  const gridHeight = rows * size + (rows - 1) * gap;
+  group.appendChild(
+    createNode('rect', {
+      x: 0,
+      y: 0,
+      width: gridWidth,
+      height: gridHeight,
+      fill: gridPattern,
+    }),
+  );
   svg.appendChild(group);
 }
 
@@ -164,6 +194,8 @@ function createToyIcon(toy) {
 }
 
 const iconTemplateCache = new Map();
+const iconSymbolCache = new Map();
+const iconSpriteId = 'toy-icon-sprite';
 
 function ensureIconTemplate(toy) {
   if (!iconTemplateCache.has(toy.slug)) {
@@ -172,47 +204,41 @@ function ensureIconTemplate(toy) {
   return iconTemplateCache.get(toy.slug);
 }
 
-function cloneSvgWithUniqueIds(template, prefix) {
-  const svgClone = template.cloneNode(true);
-  const idMap = new Map();
-
-  svgClone.querySelectorAll('[id]').forEach((el) => {
-    const originalId = el.getAttribute('id');
-    if (!originalId) return;
-    const newId = `${prefix}-${originalId}`;
-    idMap.set(originalId, newId);
-    el.setAttribute('id', newId);
+function createSymbolFromTemplate(template, symbolId) {
+  const symbol = document.createElementNS(ns, 'symbol');
+  symbol.setAttribute('id', symbolId);
+  symbol.setAttribute(
+    'viewBox',
+    template.getAttribute('viewBox') ?? '0 0 120 120',
+  );
+  template.childNodes.forEach((node) => {
+    if (node.nodeName.toLowerCase() === 'title') return;
+    symbol.appendChild(node.cloneNode(true));
   });
+  return symbol;
+}
 
-  if (idMap.size === 0) return svgClone;
+function ensureIconSprite() {
+  const existing = document.getElementById(iconSpriteId);
+  if (existing instanceof SVGSVGElement) return existing;
+  const sprite = document.createElementNS(ns, 'svg');
+  sprite.setAttribute('id', iconSpriteId);
+  sprite.setAttribute('aria-hidden', 'true');
+  sprite.setAttribute('focusable', 'false');
+  sprite.classList.add('toy-icon-sprite');
+  document.body?.appendChild(sprite);
+  return sprite;
+}
 
-  const rewriteValue = (value) => {
-    let updated = value;
-    idMap.forEach((newId, oldId) => {
-      updated = updated.replace(
-        new RegExp(`url\\(#${oldId}\\)`, 'g'),
-        `url(#${newId})`,
-      );
-      updated = updated.replace(
-        new RegExp(`#${oldId}(?![\\w-])`, 'g'),
-        `#${newId}`,
-      );
-    });
-    return updated;
-  };
-
-  svgClone.querySelectorAll('*').forEach((el) => {
-    Array.from(el.attributes).forEach((attr) => {
-      const { name, value } = attr;
-      if (!value) return;
-      const updated = rewriteValue(value);
-      if (updated !== value) {
-        el.setAttribute(name, updated);
-      }
-    });
-  });
-
-  return svgClone;
+function ensureIconSymbol(toy) {
+  if (!iconSymbolCache.has(toy.slug)) {
+    const symbolId = `toy-icon-${toy.slug}`;
+    const template = ensureIconTemplate(toy);
+    const symbol = createSymbolFromTemplate(template, symbolId);
+    ensureIconSprite().appendChild(symbol);
+    iconSymbolCache.set(toy.slug, symbolId);
+  }
+  return iconSymbolCache.get(toy.slug);
 }
 
 const iconRenderers = {
@@ -461,7 +487,7 @@ const iconRenderers = {
   },
 
   geom: (toy) => {
-    const { svg, createGradient, createNode } = createSvgContext(
+    const { svg, createGradient, createPattern, createNode } = createSvgContext(
       toy.slug,
       `${toy.title} icon`,
     );
@@ -475,7 +501,7 @@ const iconRenderers = {
       { x1: '0%', x2: '100%', y1: '0%', y2: '0%' },
     );
 
-    addGrid(svg, createNode, {
+    addGrid(svg, createNode, createPattern, {
       cols: 4,
       rows: 4,
       size: 18,
@@ -483,6 +509,7 @@ const iconRenderers = {
       stroke: gridStroke,
       opacity: 0.45,
       origin: [18, 18],
+      patternId: `grid-${toy.slug}`,
     });
 
     const polygon = createNode('polygon', {
@@ -702,8 +729,11 @@ const iconRenderers = {
   },
 
   'cube-wave': (toy) => {
-    const { svg, createNode } = createSvgContext(toy.slug, `${toy.title} icon`);
-    addGrid(svg, createNode, {
+    const { svg, createPattern, createNode } = createSvgContext(
+      toy.slug,
+      `${toy.title} icon`,
+    );
+    addGrid(svg, createNode, createPattern, {
       cols: 4,
       rows: 4,
       size: 16,
@@ -711,6 +741,7 @@ const iconRenderers = {
       stroke: '#475569',
       opacity: 0.5,
       origin: [20, 18],
+      patternId: `grid-${toy.slug}`,
     });
 
     for (let i = 0; i < 5; i += 1) {
@@ -1106,7 +1137,6 @@ export function createLibraryView({
   const FILTER_PARAM = 'filters';
   const SORT_PARAM = 'sort';
   let allToys = toys;
-  let iconInstance = 0;
   let originalOrder = new Map();
   let searchQuery = '';
   let sortBy = 'featured';
@@ -1415,13 +1445,23 @@ export function createLibraryView({
     }
 
     if (enableIcons) {
-      const template = ensureIconTemplate(toy);
-      const icon = cloneSvgWithUniqueIds(
-        template,
-        `${toy.slug}-icon-${iconInstance}`,
-      );
-      iconInstance += 1;
-      card.appendChild(icon);
+      const symbolId = ensureIconSymbol(toy);
+      if (symbolId) {
+        const icon = document.createElementNS(ns, 'svg');
+        icon.classList.add('toy-icon');
+        icon.setAttribute('viewBox', '0 0 120 120');
+        icon.setAttribute('role', 'img');
+        icon.setAttribute('aria-label', `${toy.title} icon`);
+
+        const title = document.createElementNS(ns, 'title');
+        title.textContent = `${toy.title} icon`;
+        icon.appendChild(title);
+
+        const use = document.createElementNS(ns, 'use');
+        use.setAttribute('href', `#${symbolId}`);
+        icon.appendChild(use);
+        card.appendChild(icon);
+      }
     }
 
     const title = document.createElement('h3');
@@ -1501,8 +1541,6 @@ export function createLibraryView({
     const list = document.getElementById(targetId);
     if (!list) return;
     list.innerHTML = '';
-    iconInstance = 0;
-
     if (listToRender.length === 0) {
       const emptyState = document.createElement('div');
       emptyState.className = 'library-empty-state';

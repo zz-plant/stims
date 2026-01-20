@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="8" y="4" width="8" height="12" rx="4" ry="4" fill="#57d38c" stroke="#1c7c4b"/>
-  <path d="M12 2v4" stroke="#1c7c4b"/>
-  <path d="M5 11v1a7 7 0 0 0 14 0v-1" stroke="#1c7c4b"/>
-  <path d="M12 18v4" stroke="#1c7c4b"/>
-  <path d="M9 22h6" stroke="#1c7c4b"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--icon-stroke, currentColor)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="8" y="4" width="8" height="12" rx="4" ry="4" fill="var(--icon-fill, currentColor)" stroke="var(--icon-accent, currentColor)"/>
+  <path d="M12 2v4" stroke="var(--icon-accent, currentColor)"/>
+  <path d="M5 11v1a7 7 0 0 0 14 0v-1" stroke="var(--icon-accent, currentColor)"/>
+  <path d="M12 18v4" stroke="var(--icon-accent, currentColor)"/>
+  <path d="M9 22h6" stroke="var(--icon-accent, currentColor)"/>
 </svg>
