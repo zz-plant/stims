@@ -16,12 +16,12 @@ import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import {
-  createPointerInput,
-  type PointerPosition,
-  type PointerSummary,
-} from '../utils/pointer-input';
 import { startToyAudio } from '../utils/start-audio';
+import {
+  createUnifiedInput,
+  type UnifiedInputState,
+  type UnifiedPointer,
+} from '../utils/unified-input';
 
 type TideBlob = {
   position: THREE.Vector2;
@@ -275,7 +275,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const sparks = new THREE.Points(sparkGeometry, sparkMaterial);
 
   let activeSparkCount = getSparkCount();
-  const lastPointerPositions = new Map<number, PointerPosition>();
+  const lastPointerPositions = new Map<number, UnifiedPointer>();
   const clock = new THREE.Clock();
   let targetGlowStrength = controls.glowStrength;
   let targetCurrentSpeed = controls.currentSpeed;
@@ -357,7 +357,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  function spawnBlobFromPointer(pointer: PointerPosition, intensity = 1) {
+  function spawnBlobFromPointer(pointer: UnifiedPointer, intensity = 1) {
     const last = lastPointerPositions.get(pointer.id);
     const current = new THREE.Vector2(
       pointer.normalizedX * 0.5 + 0.5,
@@ -389,15 +389,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     lastPointerPositions.set(pointer.id, pointer);
   }
 
-  function handlePointerUpdate(summary: PointerSummary) {
-    if (!summary.pointers.length) {
+  function handlePointerUpdate(state: UnifiedInputState) {
+    if (!state.pointers.length) {
       lastPointerPositions.clear();
       gestureRotation = 0;
       rotationLatch = 0;
       return;
     }
 
-    const centroid = summary.normalizedCentroid;
+    const centroid = state.normalizedCentroid;
     targetGlowStrength = THREE.MathUtils.clamp(
       1.1 + (centroid.y + 1) * 0.3,
       0.85,
@@ -409,52 +409,54 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       1.05,
     );
 
-    summary.pointers.forEach((pointer) => {
+    state.pointers.forEach((pointer) => {
       spawnBlobFromPointer(pointer, 0.9);
     });
+
+    const gesture = state.gesture;
+    if (!gesture || gesture.pointerCount < 2) return;
+
+    targetCurrentSpeed = THREE.MathUtils.clamp(
+      1 + (gesture.scale - 1) * 1.6,
+      0.6,
+      2.6,
+    );
+    targetTrailLength = THREE.MathUtils.clamp(
+      2.4 + (gesture.scale - 1) * 1.4,
+      1.4,
+      3.8,
+    );
+    targetGlowStrength = THREE.MathUtils.clamp(
+      1.15 + Math.abs(gesture.rotation) * 1.3,
+      0.9,
+      2.5,
+    );
+    targetThreshold = THREE.MathUtils.clamp(
+      0.88 + gesture.translation.y * 0.2,
+      0.7,
+      1.05,
+    );
+
+    gestureRotation = gesture.rotation;
+    if (rotationLatch <= 0.45 && gestureRotation > 0.45) {
+      activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+      applyPalette(activePaletteIndex);
+    } else if (rotationLatch >= -0.45 && gestureRotation < -0.45) {
+      activePaletteIndex =
+        (activePaletteIndex - 1 + palettes.length) % palettes.length;
+      applyPalette(activePaletteIndex);
+    }
+    rotationLatch = gestureRotation;
   }
 
-  const disposePointer = createPointerInput({
-    target: window,
-    boundsElement: toy.canvas,
-    onChange: handlePointerUpdate,
-    onGesture: (gesture) => {
-      if (gesture.pointerCount < 2) return;
-
-      targetCurrentSpeed = THREE.MathUtils.clamp(
-        1 + (gesture.scale - 1) * 1.6,
-        0.6,
-        2.6,
-      );
-      targetTrailLength = THREE.MathUtils.clamp(
-        2.4 + (gesture.scale - 1) * 1.4,
-        1.4,
-        3.8,
-      );
-      targetGlowStrength = THREE.MathUtils.clamp(
-        1.15 + Math.abs(gesture.rotation) * 1.3,
-        0.9,
-        2.5,
-      );
-      targetThreshold = THREE.MathUtils.clamp(
-        0.88 + gesture.translation.y * 0.2,
-        0.7,
-        1.05,
-      );
-
-      gestureRotation = gesture.rotation;
-      if (rotationLatch <= 0.45 && gestureRotation > 0.45) {
-        activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
-        applyPalette(activePaletteIndex);
-      } else if (rotationLatch >= -0.45 && gestureRotation < -0.45) {
-        activePaletteIndex =
-          (activePaletteIndex - 1 + palettes.length) % palettes.length;
-        applyPalette(activePaletteIndex);
-      }
-      rotationLatch = gestureRotation;
-    },
-    preventGestures: false,
-  });
+  const disposePointer =
+    toy.canvas instanceof HTMLElement
+      ? createUnifiedInput({
+          target: toy.canvas,
+          boundsElement: toy.canvas,
+          onInput: handlePointerUpdate,
+        })
+      : null;
 
   function updateSparks(delta: number, energy: number) {
     const positions = sparkGeometry.getAttribute(
@@ -665,7 +667,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   return {
     dispose: () => {
       toy.dispose();
-      disposePointer.dispose();
+      disposePointer?.dispose();
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKeydown);
       sparkGeometry.dispose();

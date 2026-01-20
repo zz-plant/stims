@@ -24,8 +24,8 @@ import {
   type ToyAudioRequest,
 } from '../utils/audio-start';
 import { applyAudioColor } from '../utils/color-audio';
-import { createPointerInput } from '../utils/pointer-input';
 import { startToyAudio } from '../utils/start-audio';
+import { createUnifiedInput } from '../utils/unified-input';
 
 type StarFieldBuffers = {
   geometry: THREE.BufferGeometry;
@@ -375,39 +375,48 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     toy.canvas.style.touchAction = 'manipulation';
   }
 
-  const pointerInput = createPointerInput({
-    target: window,
-    boundsElement: toy.canvas,
-    onChange: (summary) => {
-      if (!summary.pointers.length) return;
-      const centroid = summary.normalizedCentroid;
-      targetDrift = THREE.MathUtils.clamp(1 + centroid.x * 0.4, 0.6, 1.6);
-      targetSparkle = THREE.MathUtils.clamp(1 + centroid.y * 0.5, 0.6, 1.8);
-    },
-    onGesture: (gesture) => {
-      if (gesture.pointerCount < 2) return;
-      targetDrift = THREE.MathUtils.clamp(
-        targetDrift + (gesture.scale - 1) * 0.4,
-        0.6,
-        1.8,
-      );
-      targetSparkle = THREE.MathUtils.clamp(
-        targetSparkle + Math.abs(gesture.rotation) * 0.6,
-        0.6,
-        2,
-      );
-      if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
-        activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
-        applyPalette(activePaletteIndex);
-      } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
-        activePaletteIndex =
-          (activePaletteIndex - 1 + palettes.length) % palettes.length;
-        applyPalette(activePaletteIndex);
-      }
-      rotationLatch = gesture.rotation;
-    },
-    preventGestures: false,
-  });
+  const unifiedInput =
+    toy.canvas instanceof HTMLElement
+      ? createUnifiedInput({
+          target: toy.canvas,
+          boundsElement: toy.canvas,
+          onInput: (state) => {
+            if (state.pointerCount === 0) {
+              rotationLatch = 0;
+              return;
+            }
+            const centroid = state.normalizedCentroid;
+            targetDrift = THREE.MathUtils.clamp(1 + centroid.x * 0.4, 0.6, 1.6);
+            targetSparkle = THREE.MathUtils.clamp(
+              1 + centroid.y * 0.5,
+              0.6,
+              1.8,
+            );
+
+            const gesture = state.gesture;
+            if (!gesture || gesture.pointerCount < 2) return;
+            targetDrift = THREE.MathUtils.clamp(
+              targetDrift + (gesture.scale - 1) * 0.4,
+              0.6,
+              1.8,
+            );
+            targetSparkle = THREE.MathUtils.clamp(
+              targetSparkle + Math.abs(gesture.rotation) * 0.6,
+              0.6,
+              2,
+            );
+            if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+              activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+              applyPalette(activePaletteIndex);
+            } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+              activePaletteIndex =
+                (activePaletteIndex - 1 + palettes.length) % palettes.length;
+              applyPalette(activePaletteIndex);
+            }
+            rotationLatch = gesture.rotation;
+          },
+        })
+      : null;
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'ArrowRight') {
@@ -450,7 +459,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       toy.dispose();
       disposeStarField();
       perfUnsub();
-      pointerInput.dispose();
+      unifiedInput?.dispose();
       window.removeEventListener('keydown', handleKeydown);
       if (nebulaMesh) {
         toy.scene.remove(nebulaMesh);

@@ -1,3 +1,5 @@
+import { createUnifiedInput } from './utils/unified-input';
+
 /**
  * Hero Canvas - Ambient particle animation for the landing page
  * Creates a mesmerizing, audio-reactive-ready particle field with
@@ -306,24 +308,24 @@ export function initHeroCanvas(
     animationId = requestAnimationFrame(animate);
   }
 
-  function onPointerMove(e: PointerEvent) {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
-    mouseY = e.clientY - rect.top;
-  }
-
-  function onPointerLeave() {
-    mouseX = -1000;
-    mouseY = -1000;
-  }
-
   // Initialize
   resize();
 
   // Event listeners
   window.addEventListener('resize', resize);
-  canvas.addEventListener('pointermove', onPointerMove);
-  canvas.addEventListener('pointerleave', onPointerLeave);
+  const unifiedInput = createUnifiedInput({
+    target: canvas,
+    boundsElement: canvas,
+    onInput: (state) => {
+      if (state.primary) {
+        mouseX = ((state.primary.normalizedX + 1) / 2) * width;
+        mouseY = ((1 - state.primary.normalizedY) / 2) * height;
+      } else {
+        mouseX = -1000;
+        mouseY = -1000;
+      }
+    },
+  });
 
   // Start animation
   animate();
@@ -334,8 +336,7 @@ export function initHeroCanvas(
       cancelAnimationFrame(animationId);
     }
     window.removeEventListener('resize', resize);
-    canvas.removeEventListener('pointermove', onPointerMove);
-    canvas.removeEventListener('pointerleave', onPointerLeave);
+    unifiedInput.dispose();
   };
 }
 

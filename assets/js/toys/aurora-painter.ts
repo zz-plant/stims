@@ -17,8 +17,8 @@ import {
   resolveToyAudioOptions,
   type ToyAudioRequest,
 } from '../utils/audio-start';
-import { createPointerInput } from '../utils/pointer-input';
 import { startToyAudio } from '../utils/start-audio';
+import { createUnifiedInput } from '../utils/unified-input';
 
 type AuroraPalette = {
   name: string;
@@ -333,39 +333,48 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  const pointerInput = createPointerInput({
-    target: window,
-    boundsElement: toy.canvas,
-    onChange: (summary) => {
-      if (!summary.pointers.length) return;
-      const centroid = summary.normalizedCentroid;
-      targetGlow = THREE.MathUtils.clamp(1 + centroid.y * 0.35, 0.7, 1.6);
-      targetSpeed = THREE.MathUtils.clamp(1 + centroid.x * 0.35, 0.7, 1.6);
-    },
-    onGesture: (gesture) => {
-      if (gesture.pointerCount < 2) return;
-      targetGlow = THREE.MathUtils.clamp(
-        targetGlow + (gesture.scale - 1) * 0.4,
-        0.7,
-        1.7,
-      );
-      targetSpeed = THREE.MathUtils.clamp(
-        targetSpeed + gesture.translation.x * 0.5,
-        0.6,
-        1.8,
-      );
-      if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
-        activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
-        applyPalette(activePaletteIndex);
-      } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
-        activePaletteIndex =
-          (activePaletteIndex - 1 + palettes.length) % palettes.length;
-        applyPalette(activePaletteIndex);
-      }
-      rotationLatch = gesture.rotation;
-    },
-    preventGestures: false,
-  });
+  const unifiedInput =
+    toy.canvas instanceof HTMLElement
+      ? createUnifiedInput({
+          target: toy.canvas,
+          boundsElement: toy.canvas,
+          onInput: (state) => {
+            if (state.pointerCount === 0) {
+              rotationLatch = 0;
+              return;
+            }
+            const centroid = state.normalizedCentroid;
+            targetGlow = THREE.MathUtils.clamp(1 + centroid.y * 0.35, 0.7, 1.6);
+            targetSpeed = THREE.MathUtils.clamp(
+              1 + centroid.x * 0.35,
+              0.7,
+              1.6,
+            );
+
+            const gesture = state.gesture;
+            if (!gesture || gesture.pointerCount < 2) return;
+            targetGlow = THREE.MathUtils.clamp(
+              targetGlow + (gesture.scale - 1) * 0.4,
+              0.7,
+              1.7,
+            );
+            targetSpeed = THREE.MathUtils.clamp(
+              targetSpeed + gesture.translation.x * 0.5,
+              0.6,
+              1.8,
+            );
+            if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+              activePaletteIndex = (activePaletteIndex + 1) % palettes.length;
+              applyPalette(activePaletteIndex);
+            } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+              activePaletteIndex =
+                (activePaletteIndex - 1 + palettes.length) % palettes.length;
+              applyPalette(activePaletteIndex);
+            }
+            rotationLatch = gesture.rotation;
+          },
+        })
+      : null;
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'ArrowRight') {
@@ -400,7 +409,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     dispose: () => {
       toy.dispose();
       disposeRibbons();
-      pointerInput.dispose();
+      unifiedInput?.dispose();
       window.removeEventListener('keydown', handleKeydown);
       unregisterGlobals();
     },

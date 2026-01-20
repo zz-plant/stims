@@ -13,6 +13,7 @@ import {
   Vector2,
   WebGLRenderer,
 } from 'three';
+import { createUnifiedInput } from '../utils/unified-input';
 import { ensureWebGL } from '../utils/webgl-check';
 
 type ClayStartOptions = {
@@ -116,16 +117,11 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   createClay();
 
   let isInteracting = false;
-  let previousTouches: Array<{ x: number; y: number }> = [];
+  let previousPointer: { clientY: number; normalizedY: number } | null = null;
   let currentTool: 'smooth' | 'carve' | 'pinch' = 'smooth';
 
-  function getTouchPosition(event: PointerEvent) {
-    return { x: event.clientX, y: event.clientY };
-  }
-
-  function deformClay(deltaY: number, pointerY: number) {
-    const rect = renderer.domElement.getBoundingClientRect();
-    const normalizedY = ((pointerY - rect.top) / rect.height) * height;
+  function deformClay(deltaY: number, normalizedY: number) {
+    const pointerHeight = ((1 - normalizedY) / 2) * height;
 
     const influenceRadius = 1.5;
     const deformationStrength = deltaY * 0.05;
@@ -133,7 +129,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
     const positions = potteryMesh.geometry.attributes.position;
     for (let i = 0; i < positions.count; i++) {
       const y = positions.getY(i);
-      const distance = Math.abs(y - normalizedY);
+      const distance = Math.abs(y - pointerHeight);
       if (distance < influenceRadius) {
         const factor = deformationStrength * (1 - distance / influenceRadius);
         let x = positions.getX(i);
@@ -166,48 +162,6 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
     potteryMesh.geometry.computeVertexNormals();
   }
 
-  const handlePointerDown = (event: PointerEvent) => {
-    isInteracting = true;
-    previousTouches = [getTouchPosition(event)];
-    if (event.target instanceof HTMLElement) {
-      event.target.setPointerCapture(event.pointerId);
-    }
-
-    if (navigator.vibrate) {
-      navigator.vibrate(50);
-    }
-  };
-
-  const handlePointerUp = (event: PointerEvent) => {
-    isInteracting = false;
-    previousTouches = [];
-    if (event.target instanceof HTMLElement) {
-      event.target.releasePointerCapture(event.pointerId);
-    }
-  };
-
-  const handlePointerMove = (event: PointerEvent) => {
-    if (isInteracting) {
-      const currentTouches = [getTouchPosition(event)];
-      if (previousTouches.length === currentTouches.length) {
-        if (currentTouches.length === 1) {
-          const deltaY = currentTouches[0].y - previousTouches[0].y;
-          deformClay(deltaY, currentTouches[0].y);
-        }
-
-        if (navigator.vibrate) {
-          const intensity = Math.min(
-            Math.abs(currentTouches[0].y - previousTouches[0].y),
-            100,
-          );
-          navigator.vibrate(intensity);
-        }
-      }
-
-      previousTouches = currentTouches;
-    }
-  };
-
   const handleResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -216,10 +170,47 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
 
   window.addEventListener('resize', handleResize, false);
   const domElement = renderer.domElement;
-  domElement.addEventListener('pointerdown', handlePointerDown, false);
-  domElement.addEventListener('pointerup', handlePointerUp, false);
-  domElement.addEventListener('pointermove', handlePointerMove, false);
   domElement.addEventListener('contextmenu', (event) => event.preventDefault());
+  const unifiedInput = createUnifiedInput({
+    target: domElement,
+    boundsElement: domElement,
+    onInput: (state) => {
+      if (state.justPressed && state.primary) {
+        isInteracting = true;
+        previousPointer = {
+          clientY: state.primary.clientY,
+          normalizedY: state.primary.normalizedY,
+        };
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+      }
+
+      if (state.justReleased) {
+        isInteracting = false;
+        previousPointer = null;
+      }
+
+      if (isInteracting && state.primary && previousPointer) {
+        const deltaY = state.primary.clientY - previousPointer.clientY;
+        deformClay(deltaY, state.primary.normalizedY);
+
+        if (navigator.vibrate) {
+          const intensity = Math.min(Math.abs(deltaY), 100);
+          navigator.vibrate(intensity);
+        }
+
+        previousPointer = {
+          clientY: state.primary.clientY,
+          normalizedY: state.primary.normalizedY,
+        };
+      }
+
+      if (state.pointerCount > 0) {
+        resetUITimeout();
+      }
+    },
+  });
 
   const uiElement = document.getElementById('ui');
   const resetButton = document.getElementById('resetButton');
@@ -248,9 +239,6 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
     }, 3000);
   }
   resetUITimeout();
-  document.addEventListener('pointermove', resetUITimeout);
-  document.addEventListener('pointerdown', resetUITimeout);
-
   const animate = () => {
     const rotationSpeed = 0.02;
     wheelMesh.rotation.y += rotationSpeed;
@@ -265,11 +253,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
     dispose: () => {
       renderer.setAnimationLoop(null);
       window.removeEventListener('resize', handleResize, false);
-      domElement.removeEventListener('pointerdown', handlePointerDown, false);
-      domElement.removeEventListener('pointerup', handlePointerUp, false);
-      domElement.removeEventListener('pointermove', handlePointerMove, false);
-      document.removeEventListener('pointermove', resetUITimeout);
-      document.removeEventListener('pointerdown', resetUITimeout);
+      unifiedInput.dispose();
       resetButton?.removeEventListener('click', createClay);
       renderer.dispose();
       scene.clear();
