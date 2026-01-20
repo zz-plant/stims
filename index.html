@@ -362,6 +362,7 @@
         const SORT_PARAM = 'sort';
         let cachedQuery = '';
         let sortBy = 'featured';
+        const originalOrder = new Map();
         const activeFilters = new Set();
         let lastCommittedQuery = '';
         let pendingRender;
@@ -414,19 +415,33 @@
           Number(toy.capabilities?.motion) +
           Number(toy.capabilities?.demoAudio);
 
+        const getOriginalIndex = (toy) => originalOrder.get(toy.slug) ?? 0;
+        const getFeaturedRank = (toy) =>
+          Number.isFinite(toy.featuredRank)
+            ? toy.featuredRank
+            : Number.POSITIVE_INFINITY;
+
         const sortList = (list) => {
           const sorted = [...list];
           switch (sortBy) {
             case 'newest':
-              return sorted.reverse();
+              return sorted.sort(
+                (a, b) => getOriginalIndex(b) - getOriginalIndex(a)
+              );
             case 'az':
               return sorted.sort((a, b) => a.title.localeCompare(b.title));
             case 'immersive':
               return sorted.sort(
-                (a, b) => capabilityScore(b) - capabilityScore(a)
+                (a, b) =>
+                  capabilityScore(b) - capabilityScore(a) ||
+                  getOriginalIndex(a) - getOriginalIndex(b)
               );
             default:
-              return sorted;
+              return sorted.sort(
+                (a, b) =>
+                  getFeaturedRank(a) - getFeaturedRank(b) ||
+                  getOriginalIndex(a) - getOriginalIndex(b)
+              );
           }
         };
         let allToys = [];
@@ -771,6 +786,9 @@
             if (!toys || list.childElementCount > 0) return;
 
             allToys = toys;
+            allToys.forEach((toy, index) => {
+              originalOrder.set(toy.slug, index);
+            });
             updateSearchSuggestions(allToys);
             const urlState = getStateFromUrl();
             const hasUrlState =
