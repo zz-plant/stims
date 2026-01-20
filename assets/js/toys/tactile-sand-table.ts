@@ -1,10 +1,6 @@
 import * as THREE from 'three';
 import { initHints } from '../../ui/hints.ts';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   getActiveMotionPreference,
   subscribeToMotionPreference,
 } from '../core/motion-preferences';
@@ -14,14 +10,8 @@ import {
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
-import { registerToyGlobals } from '../core/toy-globals';
-import WebToy from '../core/web-toy';
+import { createToyRuntime } from '../core/toy-runtime';
 import { getAverageFrequency } from '../utils/audio-handler';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
-import { startToyAudio } from '../utils/start-audio';
 
 type GravityState = {
   vector: THREE.Vector3;
@@ -89,25 +79,7 @@ function mapOrientationToGravity(
 }
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const toy = new WebToy({
-    cameraOptions: {
-      fov: 55,
-      position: { x: 0, y: 26, z: 38 },
-    },
-    sceneOptions: {
-      background: '#0c0f16',
-      fog: { color: 0x0b0e15, density: 0.022 },
-    },
-    rendererOptions: { maxPixelRatio: 1.8, renderScale: 1 },
-    ambientLightOptions: { color: 0xf4ecdf, intensity: 0.45 },
-    lightingOptions: {
-      type: 'DirectionalLight',
-      position: { x: -18, y: 32, z: 24 },
-      intensity: 1.1,
-      color: 0xffffff,
-    },
-    canvas: container?.querySelector('canvas'),
-  });
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   const gravity: GravityState = {
     vector: DEFAULT_GRAVITY.clone(),
@@ -182,7 +154,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   table.add(rim);
   table.add(glow);
   table.add(dust);
-  toy.scene.add(table);
 
   const clock = new THREE.Clock();
   let damping = 0.984;
@@ -220,7 +191,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     defaultPresetId: activeQuality.id,
     onChange: (preset) => {
       activeQuality = preset;
-      toy.updateRendererSettings({
+      runtime.toy.updateRendererSettings({
         maxPixelRatio: preset.maxPixelRatio,
         renderScale: preset.renderScale,
       });
@@ -501,9 +472,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     heightfield.texture.needsUpdate = true;
   }
 
-  function animate(ctx: AnimationContext) {
+  function animate(data: Uint8Array) {
     const delta = clock.getDelta();
-    const data = getContextFrequencyData(ctx);
     const avg = getAverageFrequency(data);
     const low = bandAverage(data, 0, Math.floor(data.length * 0.16));
     const mids = bandAverage(
@@ -528,36 +498,56 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     sandMaterial.displacementBias = -0.28 + rippleIntensity * 0.08;
 
     updateHeightfield(delta);
-    ctx.toy.render();
+    runtime.toy.render();
   }
 
-  async function startAudio(request: ToyAudioRequest = false) {
-    return startToyAudio(
-      toy,
-      animate,
-      resolveToyAudioOptions(request, { fftSize: 512 }),
-    );
-  }
-
-  // Register globals for toy.html buttons
-  // Register globals for toy.html buttons
-  const unregisterGlobals = registerToyGlobals(container, startAudio);
-
-  return {
-    dispose: () => {
-      cleanupMotion();
-      unsubscribeMotionPreference();
-      toy.dispose();
-      heightfield.texture.dispose();
-      sandGeometry.dispose();
-      sandMaterial.dispose();
-      rim.geometry.dispose();
-      (rim.material as THREE.Material).dispose();
-      dustGeometry.dispose();
-      (dust.material as THREE.Material).dispose();
-      unregisterGlobals();
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: {
+        fov: 55,
+        position: { x: 0, y: 26, z: 38 },
+      },
+      sceneOptions: {
+        background: '#0c0f16',
+        fog: { color: 0x0b0e15, density: 0.022 },
+      },
+      rendererOptions: { maxPixelRatio: 1.8, renderScale: 1 },
+      ambientLightOptions: { color: 0xf4ecdf, intensity: 0.45 },
+      lightingOptions: {
+        type: 'DirectionalLight',
+        position: { x: -18, y: 32, z: 24 },
+        intensity: 1.1,
+        color: 0xffffff,
+      },
     },
-  };
+    audio: { fftSize: 512 },
+    plugins: [
+      {
+        name: 'tactile-sand-table',
+        setup: ({ toy }) => {
+          toy.scene.add(table);
+        },
+        update: ({ frequencyData }) => {
+          animate(frequencyData);
+        },
+        dispose: () => {
+          cleanupMotion();
+          unsubscribeMotionPreference();
+          heightfield.texture.dispose();
+          sandGeometry.dispose();
+          sandMaterial.dispose();
+          rim.geometry.dispose();
+          (rim.material as THREE.Material).dispose();
+          dustGeometry.dispose();
+          (dust.material as THREE.Material).dispose();
+        },
+      },
+    ],
+  });
+
+  return runtime;
 }
 
 export function bootstrapSandPage() {

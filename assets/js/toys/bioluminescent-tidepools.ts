@@ -1,27 +1,14 @@
 import * as THREE from 'three';
 import {
-  type AnimationContext,
-  getContextFrequencyData,
-} from '../core/animation-loop';
-import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   getSettingsPanel,
   type QualityPreset,
 } from '../core/settings-panel';
 import { registerToyGlobals } from '../core/toy-globals';
-import type { ToyConfig } from '../core/types';
-import WebToy from '../core/web-toy';
-import {
-  resolveToyAudioOptions,
-  type ToyAudioRequest,
-} from '../utils/audio-start';
-import { startToyAudio } from '../utils/start-audio';
-import {
-  createUnifiedInput,
-  type UnifiedInputState,
-  type UnifiedPointer,
-} from '../utils/unified-input';
+import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyAudioRequest } from '../utils/audio-start';
+import type { UnifiedInputState, UnifiedPointer } from '../utils/unified-input';
 
 type TideBlob = {
   position: THREE.Vector2;
@@ -47,6 +34,7 @@ const BASE_SPARK_COUNT = 200;
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const settingsPanel = getSettingsPanel();
   let activeQuality: QualityPreset = getActiveQualityPreset();
+  let runtime: ReturnType<typeof createToyRuntime>;
 
   const controls = {
     trailLength: 2.4,
@@ -103,17 +91,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const scale = activeQuality.particleScale ?? 1;
     return Math.max(10, Math.min(MAX_BLOBS, Math.round(MAX_BLOBS * scale)));
   }
-
-  const toy = new WebToy({
-    cameraOptions: { fov: 50, position: { x: 0, y: 0, z: 1.6 } },
-    sceneOptions: { background: '#03121c' },
-    rendererOptions: {
-      exposure: 1.35,
-      maxPixelRatio: activeQuality.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
-    },
-    canvas: container?.querySelector('canvas'),
-  } as ToyConfig);
 
   const blobs: TideBlob[] = [];
   const blobUniforms = Array.from(
@@ -313,8 +290,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function initializeScene() {
-    toy.scene.add(plane);
-    toy.scene.add(sparks);
+    runtime.toy.scene.add(plane);
+    runtime.toy.scene.add(sparks);
 
     sparkGeometry.setAttribute(
       'position',
@@ -449,15 +426,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     rotationLatch = gestureRotation;
   }
 
-  const disposePointer =
-    toy.canvas instanceof HTMLElement
-      ? createUnifiedInput({
-          target: toy.canvas,
-          boundsElement: toy.canvas,
-          onInput: handlePointerUpdate,
-        })
-      : null;
-
   function updateSparks(delta: number, energy: number) {
     const positions = sparkGeometry.getAttribute(
       'position',
@@ -512,7 +480,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyQualityPreset(preset: QualityPreset) {
     activeQuality = preset;
-    toy.updateRendererSettings({
+    runtime.toy.updateRendererSettings({
       maxPixelRatio: preset.maxPixelRatio,
       renderScale: preset.renderScale,
     });
@@ -558,9 +526,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     return average / 255;
   }
 
-  function animate(ctx: AnimationContext) {
+  function animate(data: Uint8Array) {
     const delta = clock.getDelta();
-    const data = getContextFrequencyData(ctx);
     const highBand = computeHighBandEnergy(data);
 
     controls.glowStrength = THREE.MathUtils.lerp(
@@ -600,17 +567,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     updateBlobs(delta);
     updateSparks(delta, highBand);
-    toy.render();
+    runtime.toy.render();
   }
-
-  setupSettingsPanel();
-  initializeScene();
-  applyPalette(activePaletteIndex);
-  if (toy.canvas instanceof HTMLElement) {
-    toy.canvas.style.touchAction = 'manipulation';
-  }
-  handleResize();
-  window.addEventListener('resize', handleResize);
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'ArrowRight') {
@@ -635,44 +593,75 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  window.addEventListener('keydown', handleKeydown);
+  runtime = createToyRuntime({
+    container,
+    canvas: container?.querySelector('canvas'),
+    toyOptions: {
+      cameraOptions: { fov: 50, position: { x: 0, y: 0, z: 1.6 } },
+      sceneOptions: { background: '#03121c' },
+      rendererOptions: {
+        exposure: 1.35,
+        maxPixelRatio: activeQuality.maxPixelRatio,
+        renderScale: activeQuality.renderScale,
+      },
+    },
+    audio: {
+      fftSize: 1024,
+      options: {
+        smoothingTimeConstant: 0.8,
+        fallbackToSynthetic: true,
+      },
+    },
+    input: {
+      onInput: (state) => {
+        if (state) handlePointerUpdate(state);
+      },
+      boundsElement: container?.querySelector('canvas') ?? undefined,
+    },
+    plugins: [
+      {
+        name: 'bioluminescent-tidepools',
+        setup: () => {
+          setupSettingsPanel();
+          initializeScene();
+          applyPalette(activePaletteIndex);
+          handleResize();
+          window.addEventListener('resize', handleResize);
+          window.addEventListener('keydown', handleKeydown);
+        },
+        update: ({ frequencyData }) => {
+          animate(frequencyData);
+        },
+        dispose: () => {
+          window.removeEventListener('resize', handleResize);
+          window.removeEventListener('keydown', handleKeydown);
+          sparkGeometry.dispose();
+          sparkMaterial.dispose();
+        },
+      },
+    ],
+  });
 
   async function startAudio(request: ToyAudioRequest = false) {
     try {
-      return await startToyAudio(
-        toy,
-        animate,
-        resolveToyAudioOptions(request, {
-          fftSize: 1024,
-          smoothingTimeConstant: 0.8,
-          fallbackToSynthetic: true,
-        }),
-      );
+      return await runtime.startAudio(request);
     } catch (error) {
       console.warn('Falling back to silent animation', error);
-      const ctx: AnimationContext = { toy, analyser: null, time: 0 };
-
-      if (toy.rendererReady) {
-        await toy.rendererReady;
+      if (runtime.toy.rendererReady) {
+        await runtime.toy.rendererReady;
       }
-
-      toy.renderer?.setAnimationLoop(() => animate(ctx));
-      return ctx;
+      runtime.toy.renderer?.setAnimationLoop(() => animate(new Uint8Array()));
+      return null;
     }
   }
 
-  // Register globals for toy.html buttons
   const unregisterGlobals = registerToyGlobals(container, startAudio);
 
   return {
+    ...runtime,
     dispose: () => {
-      toy.dispose();
-      disposePointer?.dispose();
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('keydown', handleKeydown);
-      sparkGeometry.dispose();
-      sparkMaterial.dispose();
       unregisterGlobals();
+      runtime.dispose();
     },
   };
 }
