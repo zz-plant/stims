@@ -4,6 +4,12 @@ import {
   getContextFrequencyData,
 } from '../core/animation-loop';
 import {
+  createBloomComposer,
+  isWebGLRenderer,
+  type PostprocessingPipeline,
+} from '../core/postprocessing';
+import type { RendererBackend } from '../core/renderer-capabilities';
+import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   getSettingsPanel,
@@ -47,7 +53,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   let torusKnot: THREE.Mesh | null = null;
   let particles: THREE.Points | null = null;
-  const shapes: THREE.Mesh[] = [];
+  let postprocessing: PostprocessingPipeline | null = null;
+  let rendererBackend: RendererBackend | null = null;
+  const instancedShapes: InstancedShapeSet[] = [];
+  const instanceTempObject = new THREE.Object3D();
+  const instanceScale = new THREE.Vector3();
   let paletteHue = 0.6;
   let idleBlend = 0;
   let controlState: ControlPanelState;
@@ -64,6 +74,21 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     };
   }
 
+  type ShapeInstance = {
+    position: THREE.Vector3;
+    rotation: THREE.Euler;
+    rotationSpeed: THREE.Vector3;
+    scale: number;
+    driftSpeed: number;
+    wobbleSeed: number;
+    color: THREE.Color;
+  };
+
+  type InstancedShapeSet = {
+    mesh: THREE.InstancedMesh;
+    instances: ShapeInstance[];
+  };
+
   function disposeMesh(mesh: THREE.Mesh | null) {
     if (!mesh) return;
     toy.scene.remove(mesh);
@@ -75,55 +100,137 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  function createRandomShape() {
-    const shapeType = Math.floor(Math.random() * 3);
-    let geometry: THREE.BufferGeometry;
-    const material = new THREE.MeshStandardMaterial({
-      color: Math.random() * 0xffffff,
-      emissive: Math.random() * 0x444444,
-      metalness: 0.8,
-      roughness: 0.4,
+  function disposeInstancedShapes() {
+    instancedShapes.splice(0).forEach(({ mesh }) => {
+      toy.scene.remove(mesh);
+      mesh.geometry?.dispose();
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((material) => material?.dispose());
+      } else {
+        mesh.material?.dispose();
+      }
     });
+  }
 
-    switch (shapeType) {
-      case 0:
-        geometry = new THREE.SphereGeometry(5, 32, 32);
-        break;
-      case 1:
-        geometry = new THREE.BoxGeometry(7, 7, 7);
-        break;
-      default:
-        geometry = new THREE.TetrahedronGeometry(6, 0);
-        break;
-    }
-
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(
-      Math.random() * 120 - 60,
-      Math.random() * 120 - 60,
-      Math.random() * -800,
+  function createInstancedShapes(shapeCount: number) {
+    const primaryCount = Math.ceil(shapeCount / 3);
+    const secondaryCount = Math.floor(shapeCount / 3);
+    const remainingCount = Math.max(
+      0,
+      shapeCount - primaryCount - secondaryCount,
     );
-    toy.scene.add(mesh);
-    shapes.push(mesh);
+    const counts = [primaryCount, secondaryCount, remainingCount];
+
+    const configs: Array<{
+      geometry: THREE.BufferGeometry;
+      count: number;
+    }> = [
+      { geometry: new THREE.SphereGeometry(5, 32, 32), count: counts[0] },
+      { geometry: new THREE.BoxGeometry(7, 7, 7), count: counts[1] },
+      { geometry: new THREE.TetrahedronGeometry(6, 0), count: counts[2] },
+    ];
+
+    configs.forEach(({ geometry, count }) => {
+      if (count <= 0) {
+        geometry.dispose();
+        return;
+      }
+
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0x222222,
+        metalness: 0.8,
+        roughness: 0.4,
+        vertexColors: true,
+      });
+      const mesh = new THREE.InstancedMesh(geometry, material, count);
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      toy.scene.add(mesh);
+
+      const instances: ShapeInstance[] = [];
+
+      for (let i = 0; i < count; i++) {
+        const position = new THREE.Vector3(
+          Math.random() * 120 - 60,
+          Math.random() * 120 - 60,
+          Math.random() * -800,
+        );
+        const rotation = new THREE.Euler(
+          Math.random() * Math.PI,
+          Math.random() * Math.PI,
+          Math.random() * Math.PI,
+        );
+        const rotationSpeed = new THREE.Vector3(
+          Math.random() * 0.03,
+          Math.random() * 0.03,
+          Math.random() * 0.03,
+        );
+        const scale = 0.9 + Math.random() * 0.6;
+        const driftSpeed = 1.5 + Math.random() * 0.6;
+        const wobbleSeed = Math.random() * 8;
+        const color = new THREE.Color(Math.random() * 0xffffff);
+
+        instances.push({
+          position,
+          rotation,
+          rotationSpeed,
+          scale,
+          driftSpeed,
+          wobbleSeed,
+          color,
+        });
+
+        instanceTempObject.position.copy(position);
+        instanceTempObject.rotation.copy(rotation);
+        instanceScale.set(scale, scale, scale);
+        instanceTempObject.scale.copy(instanceScale);
+        instanceTempObject.updateMatrix();
+        mesh.setMatrixAt(i, instanceTempObject.matrix);
+        mesh.setColorAt(i, color);
+      }
+
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) {
+        mesh.instanceColor.needsUpdate = true;
+      }
+
+      instancedShapes.push({ mesh, instances });
+    });
   }
 
   function rebuildSceneContents() {
     disposeMesh(torusKnot);
     disposeMesh(particles as unknown as THREE.Mesh);
-    shapes.splice(0).forEach((shape) => disposeMesh(shape));
+    disposeInstancedShapes();
     torusKnot = null;
     particles = null;
 
     const { particleCount, shapeCount, torusSegments, torusTubularSegments } =
       getCounts();
 
+    const torusMaterial =
+      rendererBackend === 'webgpu'
+        ? new THREE.MeshPhysicalMaterial({
+            color: 0x00ffcc,
+            metalness: 0.15,
+            roughness: 0.1,
+            clearcoat: 0.8,
+            clearcoatRoughness: 0.2,
+            iridescence: 0.85,
+            iridescenceIOR: 1.3,
+            iridescenceThicknessRange: [120, 420],
+            transmission: 0.4,
+            thickness: 0.8,
+          })
+        : new THREE.MeshStandardMaterial({
+            color: 0x00ffcc,
+            metalness: 0.7,
+            roughness: 0.4,
+          });
+
     torusKnot = new THREE.Mesh(
       new THREE.TorusKnotGeometry(10, 3, torusSegments, torusTubularSegments),
-      new THREE.MeshStandardMaterial({
-        color: 0x00ffcc,
-        metalness: 0.7,
-        roughness: 0.4,
-      }),
+      torusMaterial,
     );
     toy.scene.add(torusKnot);
 
@@ -143,9 +250,24 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     particles = new THREE.Points(particlesGeometry, particlesMaterial);
     toy.scene.add(particles);
 
-    for (let i = 0; i < shapeCount; i++) {
-      createRandomShape();
-    }
+    createInstancedShapes(shapeCount);
+  }
+
+  function setupPostProcessing() {
+    if (postprocessing) return;
+    toy.rendererReady.then((result) => {
+      if (!result || postprocessing) return;
+      if (!isWebGLRenderer(result.renderer)) return;
+
+      postprocessing = createBloomComposer({
+        renderer: result.renderer,
+        scene: toy.scene,
+        camera: toy.camera,
+        bloomStrength: 0.65,
+        bloomRadius: 0.45,
+        bloomThreshold: 0.88,
+      });
+    });
   }
 
   function showError(message: string) {
@@ -214,21 +336,36 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     particles.rotation.y += 0.001 + avgFrequency / 15000;
 
-    shapes.forEach((shape) => {
-      shape.rotation.x += Math.random() * 0.03;
-      shape.rotation.y += Math.random() * 0.03;
-      shape.position.z += 1.5 + avgFrequency / 50;
-      if (shape.position.z > 20) {
-        shape.position.z = -800;
-        shape.position.x = Math.random() * 120 - 60;
-        shape.position.y = Math.random() * 120 - 60;
-        (shape.material as THREE.MeshStandardMaterial).color.set(
-          Math.random() * 0xffffff,
-        );
+    instancedShapes.forEach(({ mesh, instances }) => {
+      let colorNeedsUpdate = false;
+      instances.forEach((instance, index) => {
+        instance.rotation.x += instance.rotationSpeed.x;
+        instance.rotation.y += instance.rotationSpeed.y;
+        instance.rotation.z += instance.rotationSpeed.z;
+        instance.position.z += instance.driftSpeed + avgFrequency / 50;
+        if (instance.position.z > 20) {
+          instance.position.z = -800;
+          instance.position.x = Math.random() * 120 - 60;
+          instance.position.y = Math.random() * 120 - 60;
+          instance.scale = 0.9 + Math.random() * 0.6;
+          instance.color.setHex(Math.random() * 0xffffff);
+          mesh.setColorAt(index, instance.color);
+          colorNeedsUpdate = true;
+        }
+        const wobbleAmt =
+          1 + Math.sin(time * 0.9 + instance.wobbleSeed) * 0.08 * idleOffset;
+        const scaled = instance.scale * wobbleAmt;
+        instanceTempObject.position.copy(instance.position);
+        instanceTempObject.rotation.copy(instance.rotation);
+        instanceScale.set(scaled, scaled, scaled);
+        instanceTempObject.scale.copy(instanceScale);
+        instanceTempObject.updateMatrix();
+        mesh.setMatrixAt(index, instanceTempObject.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      if (colorNeedsUpdate && mesh.instanceColor) {
+        mesh.instanceColor.needsUpdate = true;
       }
-      const wobbleAmt =
-        1 + Math.sin(time * 0.9 + shape.position.x) * 0.08 * idleOffset;
-      shape.scale.lerp(new THREE.Vector3(wobbleAmt, wobbleAmt, wobbleAmt), 0.1);
     });
 
     const randomScale =
@@ -241,7 +378,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     toy.camera.position.y = Math.cos(time * 0.2) * driftAmount * 0.6;
     toy.camera.lookAt(0, 0, 0);
 
-    ctx.toy.render();
+    if (postprocessing) {
+      postprocessing.updateSize();
+      postprocessing.render();
+    } else {
+      ctx.toy.render();
+    }
   }
 
   function applyQualityPreset(preset: QualityPreset) {
@@ -286,6 +428,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     controlState = state;
   });
   rebuildSceneContents();
+  toy.rendererReady.then((handle) => {
+    if (!handle) return;
+    rendererBackend = handle.backend;
+    rebuildSceneContents();
+    setupPostProcessing();
+  });
 
   // Register globals for toy.html buttons
   // Register globals for toy.html buttons
@@ -296,6 +444,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       toy.dispose();
       errorElement?.remove();
       errorElement?.remove();
+      postprocessing?.dispose();
       unregisterGlobals();
     },
   };
