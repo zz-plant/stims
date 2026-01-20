@@ -100,29 +100,29 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 
 ## What’s in the Pipeline
 
-### **WebGL Compatibility**
+### **Compatibility + onboarding**
 
-- **Issue**: Some users with older or unsupported browsers/devices might run into issues.
-- **Fix**: Add fallback options or messages for users without WebGL support.
+- **Issue**: Some users with older or unsupported browsers/devices run into WebGL or WebGPU gating with unclear recovery steps.
+- **Fix**: Add a richer compatibility preflight with clear next steps, plus a “why this won’t run here” state that links to supported browsers and fallback toys. Include a no-mic path in the primary CTA flow so first-time users always see a successful start option.
 
-### **Performance Tweaks**
+### **Performance + quality controls**
 
-- **Issue**: Some toys are heavy on resources and might lag on lower-end devices.
-- **Fix**: Add settings to adjust visual quality (e.g., reduce particle count or resolution).
+- **Issue**: Heavier toys can stutter on mid-tier devices, which breaks the intended sensory flow.
+- **Fix**: Add a quality control panel (pixel ratio cap, particle density presets, and a “low motion” mode) that persists per device and defaults to a safe mid-tier profile. Provide a short “performance profile” explanation so users understand what each preset changes.
 
 If you want to reduce GPU load on high-DPI screens without degrading visuals too much, pass a `maxPixelRatio` option to
 `initRenderer` (defaults to `2`). This caps the renderer to `Math.min(window.devicePixelRatio, maxPixelRatio)`, so setting
 `maxPixelRatio` to `1.5` or `1` can significantly cut per-frame work while retaining clarity.
 
-### **Audio Permissions**
+### **Audio permission clarity**
 
-- **Issue**: Not much feedback when audio permissions are denied or unavailable.
-- **Fix**: Add error messages or alternative audio input options when microphone access isn’t granted.
+- **Issue**: Users who deny mic access often get stuck or miss the demo audio escape hatch.
+- **Fix**: Expand the status copy and inline guidance so the demo audio path is always visible, clearly recommended when mic access is blocked, and explains how to re-enable permissions.
 
-### **Touch Responsiveness**
+### **Mobile touch + gesture polish**
 
-- **Issue**: Some toys are touch-sensitive, but they don’t always work well on mobile.
-- **Fix**: Improve multi-touch support and make the toys more mobile-friendly.
+- **Issue**: Touch interactions feel inconsistent across devices, especially for multi-touch toys.
+- **Fix**: Improve touch handling, add clearer gesture hints, and confirm touch targets meet the minimum size for reliable taps. Add explicit “tap to start” feedback within 100ms so touch users see immediate response.
 
 ---
 
