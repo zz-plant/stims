@@ -366,17 +366,17 @@ header.hero {
 
 .readiness-panel {
   margin-top: 0.4rem;
-  padding: 1.3rem 1.35rem;
-  border-radius: calc(var(--radius-lg) + 2px);
+  padding: 1.4rem 1.4rem;
+  border-radius: calc(var(--radius-lg) + 6px);
   background:
     linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--accent-purple) 16%, transparent),
-      transparent 60%
+      130deg,
+      color-mix(in srgb, var(--accent-color) 18%, transparent),
+      transparent 62%
     ),
     var(--surface-gradient);
   border: 1px solid
-    color-mix(in srgb, var(--accent-purple) 24%, var(--surface-border));
+    color-mix(in srgb, var(--accent-color) 25%, var(--surface-border));
   box-shadow: var(--shadow-strong);
   backdrop-filter: none;
 }
@@ -405,29 +405,48 @@ header.hero {
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.65rem;
+  gap: 0.75rem;
 }
 
 .readiness-item {
   display: grid;
-  gap: 0.35rem;
-  padding: 0.75rem 0.75rem;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.04);
+  gap: 0.4rem;
+  padding: 0.85rem 0.85rem 0.85rem 1rem;
+  border-radius: calc(var(--radius-md) + 2px);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent-color) 12%, transparent),
+      transparent 60%
+    ),
+    rgba(255, 255, 255, 0.04);
   border: 1px solid
     color-mix(in srgb, var(--accent-color) 12%, var(--surface-border));
+  position: relative;
+}
+
+.readiness-item::before {
+  content: "";
+  position: absolute;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  left: 0.5rem;
+  width: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color) 55%, transparent);
+  opacity: 0.4;
 }
 
 .readiness-label {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.55rem;
   font-weight: 700;
 }
 
 .readiness-dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: rgba(234, 245, 255, 0.7);
   position: relative;
@@ -474,21 +493,38 @@ header.hero {
   padding: clamp(1.2rem, 2vw, 1.8rem);
   border-radius: calc(var(--radius-lg) + 6px);
   border: 1px solid
-    color-mix(in srgb, var(--accent-color) 18%, var(--surface-border));
+    color-mix(in srgb, var(--accent-purple) 24%, var(--surface-border));
   background:
     linear-gradient(
-      135deg,
+      120deg,
+      color-mix(in srgb, var(--accent-purple) 18%, transparent),
+      transparent 65%
+    ),
+    linear-gradient(
+      180deg,
       color-mix(in srgb, var(--accent-color) 12%, transparent),
       transparent 55%
     ),
     var(--surface-gradient);
   box-shadow: var(--shadow-strong);
+  position: relative;
+  overflow: hidden;
+}
+
+.system-check::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--accent-color) 20%, transparent);
+  opacity: 0.25;
+  pointer-events: none;
 }
 
 .system-grid {
   display: grid;
-  gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   align-items: start;
 }
 
@@ -1174,27 +1210,37 @@ h1 {
 .library-search {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 1rem;
   margin-top: 1rem;
-  padding: clamp(1rem, 2vw, 1.35rem);
-  border-radius: calc(var(--radius-lg) + 4px);
+  padding: clamp(1.1rem, 2vw, 1.5rem);
+  border-radius: calc(var(--radius-lg) + 6px);
   border: 1px solid
-    color-mix(in srgb, var(--accent-color) 14%, var(--surface-border));
+    color-mix(in srgb, var(--accent-color) 18%, var(--surface-border));
   background:
     radial-gradient(
       circle at top left,
-      color-mix(in srgb, var(--accent-color) 12%, transparent),
-      transparent 60%
+      color-mix(in srgb, var(--accent-color) 16%, transparent),
+      transparent 65%
     ),
     var(--surface-gradient);
   box-shadow: var(--shadow-strong);
 }
 
+.search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: start;
+}
+
 .search-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-border);
+  background: rgba(15, 23, 42, 0.45);
+  min-width: 220px;
   color: var(--text-muted);
 }
 
@@ -1205,18 +1251,36 @@ h1 {
   font-weight: 600;
 }
 
+.search-meta__note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 .search-field {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
-  background: rgba(10, 18, 32, 0.85);
+  background: rgba(10, 18, 32, 0.92);
   border: 1px solid
-    color-mix(in srgb, var(--accent-color) 18%, var(--surface-border));
+    color-mix(in srgb, var(--accent-color) 22%, var(--surface-border));
   border-radius: var(--radius-pill);
-  padding: 0.45rem 0.9rem;
+  padding: 0.5rem 0.95rem;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   position: relative;
+}
+
+.search-field__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-color);
+  font-size: 1rem;
 }
 
 .search-field:focus-within {
@@ -1232,7 +1296,7 @@ h1 {
   border: none;
   color: var(--text-color);
   font-size: 1rem;
-  padding: 0.55rem 3.5rem 0.55rem 0.35rem;
+  padding: 0.55rem 3.5rem 0.55rem 0.15rem;
   min-height: 44px;
   touch-action: manipulation;
 }
@@ -1289,16 +1353,26 @@ h1 {
 .filter-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.85rem;
+  gap: 0.95rem;
   align-items: center;
   justify-content: flex-start;
-  padding: 0.4rem 0.15rem 0.1rem;
+  padding: 0.5rem 0.15rem 0.2rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--accent-color) 14%, var(--surface-border));
 }
 
 .chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.65rem;
+}
+
+.filter-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-left: auto;
+  flex-wrap: wrap;
 }
 
 .filter-chip {
@@ -1770,6 +1844,10 @@ footer {
 }
 
 @media (max-width: 680px) {
+  .search-row {
+    grid-template-columns: 1fr;
+  }
+
   .search-field {
     flex-wrap: wrap;
     padding: 0.5rem 0.75rem;
@@ -1780,8 +1858,17 @@ footer {
     white-space: normal;
   }
 
+  .search-meta {
+    width: 100%;
+  }
+
   .filter-row {
     align-items: flex-start;
+  }
+
+  .filter-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .sort-control {
