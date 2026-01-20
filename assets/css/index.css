@@ -832,8 +832,8 @@ header.hero {
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.8rem;
-  opacity: 0.7;
+  font-size: 0.95rem;
+  opacity: 0.85;
   margin: 0 0 0.5rem;
 }
 
@@ -855,7 +855,7 @@ header.hero {
 .cta-helper {
   margin: -0.5rem 0 1.5rem;
   max-width: 720px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--text-muted);
   line-height: 1.5;
 }
