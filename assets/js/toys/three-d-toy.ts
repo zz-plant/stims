@@ -417,7 +417,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     plugins: [
       {
         name: 'three-d-toy',
-        setup: () => {
+        setup: (runtimeInstance) => {
           setupSettingsPanel();
           const controlPanel = createControlPanel();
           controlState = controlPanel.getState();
@@ -425,7 +425,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
             controlState = state;
           });
           rebuildSceneContents();
-          runtime.toy.rendererReady.then((handle) => {
+          runtimeInstance.toy.rendererReady.then((handle) => {
             if (!handle) return;
             rendererBackend = handle.backend;
             rebuildSceneContents();
