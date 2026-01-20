@@ -1,3 +1,11 @@
+import {
+  exitToyPictureInPicture,
+  getToyPictureInPictureVideo,
+  isPictureInPictureSupported,
+  isToyPictureInPictureActive,
+  requestToyPictureInPicture,
+} from '../utils/picture-in-picture.ts';
+
 export interface NavOptions {
   mode: 'library' | 'toy';
   title?: string;
@@ -62,6 +70,12 @@ function renderToyNav(
     </div>
     <div class="active-toy-nav__actions">
       <div class="renderer-status-container"></div>
+      <div class="toy-nav__pip-wrapper">
+        <button type="button" class="toy-nav__pip" data-toy-pip="true" aria-pressed="false">
+          Picture in picture
+        </button>
+        <span class="toy-nav__pip-status" role="status" aria-live="polite"></span>
+      </div>
       <div class="toy-nav__share-wrapper">
         <button type="button" class="toy-nav__share" data-share-toy="true">
           Copy share link
@@ -137,6 +151,83 @@ function renderToyNav(
       return;
     }
     void copyShareLink();
+  });
+
+  setupPictureInPictureControls(container, doc);
+}
+
+function setupPictureInPictureControls(container: HTMLElement, doc: Document) {
+  const pipButton = container.querySelector<HTMLButtonElement>(
+    '[data-toy-pip="true"]',
+  );
+  const pipStatus = container.querySelector<HTMLElement>(
+    '.toy-nav__pip-status',
+  );
+
+  if (!pipButton || !pipStatus) return;
+
+  const updateButtonState = () => {
+    const active = isToyPictureInPictureActive(doc);
+    pipButton.setAttribute('aria-pressed', String(active));
+    pipButton.textContent = active
+      ? 'Exit picture in picture'
+      : 'Picture in picture';
+  };
+
+  const showStatus = (message: string) => {
+    pipStatus.textContent = message;
+    if (!message) return;
+    const win = doc.defaultView ?? window;
+    win.setTimeout(() => {
+      if (pipStatus.textContent === message) {
+        pipStatus.textContent = '';
+      }
+    }, 3200);
+  };
+
+  if (!isPictureInPictureSupported(doc)) {
+    pipButton.disabled = true;
+    pipButton.setAttribute('aria-disabled', 'true');
+    pipButton.setAttribute(
+      'title',
+      'Picture-in-picture is not available in this browser.',
+    );
+    return;
+  }
+
+  updateButtonState();
+
+  const video = getToyPictureInPictureVideo(doc);
+  video.onenterpictureinpicture = () => updateButtonState();
+  video.onleavepictureinpicture = () => updateButtonState();
+
+  pipButton.addEventListener('click', async () => {
+    const wasActive = isToyPictureInPictureActive(doc);
+    pipButton.disabled = true;
+    pipButton.setAttribute('aria-busy', 'true');
+    showStatus(
+      wasActive ? 'Closing picture in picture…' : 'Opening picture in picture…',
+    );
+
+    try {
+      if (wasActive) {
+        await exitToyPictureInPicture(doc);
+      } else {
+        await requestToyPictureInPicture(doc);
+      }
+      updateButtonState();
+      showStatus(
+        wasActive
+          ? 'Picture in picture closed.'
+          : 'Picture in picture enabled.',
+      );
+    } catch (_error) {
+      showStatus('Unable to use picture in picture.');
+      updateButtonState();
+    } finally {
+      pipButton.disabled = false;
+      pipButton.removeAttribute('aria-busy');
+    }
   });
 }
 

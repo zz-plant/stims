@@ -17,6 +17,7 @@ import { createRouter } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import toysData from './toys-data.js';
 import { createManifestClient } from './utils/manifest-client.ts';
+import { resetToyPictureInPicture } from './utils/picture-in-picture.ts';
 import { loadToyModuleStarter } from './utils/toy-module-loader.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
 
@@ -114,6 +115,9 @@ export function createLoader({
   };
 
   const disposeActiveToy = () => {
+    if (typeof document !== 'undefined') {
+      resetToyPictureInPicture(document);
+    }
     lifecycle.disposeActiveToy();
     view?.clearActiveToyContainer?.();
     setCurrentToy(null);
