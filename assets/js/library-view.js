@@ -1,5 +1,9 @@
 const ns = 'http://www.w3.org/2000/svg';
 
+const isHtmlButtonElement = (element) =>
+  typeof HTMLButtonElement !== 'undefined' &&
+  element instanceof HTMLButtonElement;
+
 function createSvgContext(_slug, label) {
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', '0 0 120 120');
@@ -1143,6 +1147,8 @@ export function createLibraryView({
   let lastCommittedQuery = '';
   let pendingCommit;
   let resultsMeta;
+  let searchClearButton;
+  let resetFiltersButton;
   const activeFilters = new Set();
 
   const ensureMetaNode = () => {
@@ -1167,13 +1173,33 @@ export function createLibraryView({
     meta.textContent = `${visibleCount} ${descriptor} • ${total} in library`;
   };
 
+  const updateControls = () => {
+    if (searchClearButton instanceof HTMLElement) {
+      const hasQuery = searchQuery.trim().length > 0;
+      searchClearButton.classList.toggle('is-hidden', !hasQuery);
+      searchClearButton.setAttribute('aria-hidden', String(!hasQuery));
+      if (hasQuery) {
+        searchClearButton.removeAttribute('tabindex');
+      } else {
+        searchClearButton.setAttribute('tabindex', '-1');
+      }
+    }
+
+    if (resetFiltersButton instanceof HTMLElement) {
+      resetFiltersButton.classList.toggle('is-active', activeFilters.size > 0);
+    }
+  };
+
   const resetFiltersAndSearch = () => {
     searchQuery = '';
     activeFilters.clear();
     sortBy = 'featured';
 
     const chips = document.querySelectorAll('[data-filter-chip].is-active');
-    chips.forEach((chip) => chip.classList.remove('is-active'));
+    chips.forEach((chip) => {
+      chip.classList.remove('is-active');
+      chip.setAttribute('aria-pressed', 'false');
+    });
 
     if (searchInputId) {
       const search = document.getElementById(searchInputId);
@@ -1182,11 +1208,24 @@ export function createLibraryView({
       }
     }
 
+    updateControls();
     const sortControl = document.querySelector('[data-sort-control]');
     if (sortControl && sortControl.tagName === 'SELECT') {
       sortControl.value = sortBy;
     }
 
+    commitState({ replace: false });
+    renderToys(applyFilters());
+  };
+
+  const resetFilters = () => {
+    activeFilters.clear();
+    const chips = document.querySelectorAll('[data-filter-chip].is-active');
+    chips.forEach((chip) => {
+      chip.classList.remove('is-active');
+      chip.setAttribute('aria-pressed', 'false');
+    });
+    updateControls();
     commitState({ replace: false });
     renderToys(applyFilters());
   };
@@ -1389,7 +1428,9 @@ export function createLibraryView({
       const value = chip.getAttribute('data-filter-value');
       if (!type || !value) return;
       const token = `${type}:${value.toLowerCase()}`;
-      chip.classList.toggle('is-active', activeFilters.has(token));
+      const isActive = activeFilters.has(token);
+      chip.classList.toggle('is-active', isActive);
+      chip.setAttribute('aria-pressed', String(isActive));
     });
 
     const sortControl = document.querySelector('[data-sort-control]');
@@ -1397,6 +1438,7 @@ export function createLibraryView({
       sortControl.value = sortBy;
     }
 
+    updateControls();
     if (render) {
       renderToys(applyFilters());
     }
@@ -1580,11 +1622,16 @@ export function createLibraryView({
   const filterToys = (query) => {
     searchQuery = query;
     renderToys(applyFilters());
+    updateControls();
   };
 
   const initFilters = () => {
     const chips = document.querySelectorAll('[data-filter-chip]');
     chips.forEach((chip) => {
+      chip.setAttribute(
+        'aria-pressed',
+        String(chip.classList.contains('is-active')),
+      );
       chip.addEventListener('click', () => {
         const type = chip.getAttribute('data-filter-type');
         const value = chip.getAttribute('data-filter-value');
@@ -1596,8 +1643,10 @@ export function createLibraryView({
         } else {
           activeFilters.delete(token);
         }
+        chip.setAttribute('aria-pressed', String(isActive));
         commitState({ replace: false });
         renderToys(applyFilters());
+        updateControls();
       });
     });
 
@@ -1608,6 +1657,10 @@ export function createLibraryView({
         commitState({ replace: false });
         renderToys(applyFilters());
       });
+    }
+
+    if (isHtmlButtonElement(resetFiltersButton)) {
+      resetFiltersButton.addEventListener('click', resetFilters);
     }
   };
 
@@ -1636,10 +1689,28 @@ export function createLibraryView({
         }
       });
     }
+
+    if (isHtmlButtonElement(searchClearButton)) {
+      searchClearButton.addEventListener('click', () => {
+        if (search && 'value' in search) {
+          search.value = '';
+        }
+        searchQuery = '';
+        lastCommittedQuery = '';
+        commitState({ replace: false });
+        renderToys(applyFilters());
+        updateControls();
+        if (search instanceof HTMLElement) {
+          search.focus();
+        }
+      });
+    }
   };
 
   const init = async () => {
     setToys(allToys);
+    searchClearButton = document.querySelector('[data-search-clear]');
+    resetFiltersButton = document.querySelector('[data-filter-reset]');
     const urlState = getStateFromUrl();
     const hasUrlState =
       urlState.query || urlState.filters.length || urlState.sort !== 'featured';
@@ -1661,6 +1732,7 @@ export function createLibraryView({
     }
 
     renderToys(applyFilters());
+    updateControls();
 
     if (enableDarkModeToggle) {
       setupDarkModeToggle(themeToggleId);
