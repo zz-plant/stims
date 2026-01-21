@@ -168,10 +168,7 @@ export function createPointerInput({
   }
 
   function handlePointerDown(event: PointerEvent) {
-    if (
-      event.target instanceof Element &&
-      typeof event.target.hasPointerCapture === 'function'
-    ) {
+    if (event.target instanceof Element) {
       try {
         event.target.setPointerCapture(event.pointerId);
       } catch {
@@ -183,6 +180,20 @@ export function createPointerInput({
   }
 
   function handlePointerEnd(event: PointerEvent) {
+    if (event.target instanceof Element) {
+      try {
+        if (event.target.hasPointerCapture(event.pointerId)) {
+          event.target.releasePointerCapture(event.pointerId);
+        }
+      } catch {
+        // Ignore release errors for non-capturing elements.
+      }
+    }
+    activePointers.delete(event.pointerId);
+    updateAndNotify();
+  }
+
+  function handlePointerLost(event: PointerEvent) {
     activePointers.delete(event.pointerId);
     updateAndNotify();
   }
@@ -246,6 +257,7 @@ export function createPointerInput({
     addPointerListener('pointercancel', handlePointerEnd);
     addPointerListener('pointerout', handlePointerEnd);
     addPointerListener('pointerleave', handlePointerEnd);
+    addPointerListener('lostpointercapture', handlePointerLost);
   } else {
     listenerTarget.addEventListener(
       'touchstart',
@@ -281,6 +293,7 @@ export function createPointerInput({
       removePointerListener('pointercancel', handlePointerEnd);
       removePointerListener('pointerout', handlePointerEnd);
       removePointerListener('pointerleave', handlePointerEnd);
+      removePointerListener('lostpointercapture', handlePointerLost);
     } else {
       listenerTarget.removeEventListener(
         'touchstart',

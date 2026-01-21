@@ -190,6 +190,11 @@ export function createUnifiedInput({
     if (focusOnPress) {
       target.focus({ preventScroll: true });
     }
+    try {
+      target.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore capture failures for non-capturing elements.
+    }
     queuePointerEvent(event);
   };
 
@@ -198,10 +203,21 @@ export function createUnifiedInput({
   };
 
   const handlePointerUp = (event: PointerEvent) => {
+    try {
+      if (target.hasPointerCapture(event.pointerId)) {
+        target.releasePointerCapture(event.pointerId);
+      }
+    } catch {
+      // Ignore release failures for non-capturing elements.
+    }
     queuePointerEvent(event);
   };
 
   const handlePointerLeave = (event: PointerEvent) => {
+    queuePointerEvent(event);
+  };
+
+  const handlePointerLost = (event: PointerEvent) => {
     queuePointerEvent(event);
   };
 
@@ -211,6 +227,7 @@ export function createUnifiedInput({
   target.addEventListener('pointercancel', handlePointerUp);
   target.addEventListener('pointerleave', handlePointerLeave);
   target.addEventListener('pointerout', handlePointerLeave);
+  target.addEventListener('lostpointercapture', handlePointerLost);
 
   const handleKeyDown = (event: KeyboardEvent) => {
     if (!keyboardEnabled) return;
@@ -331,6 +348,11 @@ export function createUnifiedInput({
         if (event.pointerType === 'mouse' || event.pointerType === 'pen') {
           hoverPointer = null;
         }
+        continue;
+      }
+
+      if (event.type === 'lostpointercapture') {
+        activePointers.delete(event.pointerId);
         continue;
       }
 
@@ -530,6 +552,7 @@ export function createUnifiedInput({
     target.removeEventListener('pointercancel', handlePointerUp);
     target.removeEventListener('pointerleave', handlePointerLeave);
     target.removeEventListener('pointerout', handlePointerLeave);
+    target.removeEventListener('lostpointercapture', handlePointerLost);
     target.removeEventListener('keydown', handleKeyDown);
     target.removeEventListener('keyup', handleKeyUp);
     subscribers.clear();
