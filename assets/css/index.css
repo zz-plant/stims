@@ -1,18 +1,18 @@
-@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap");
 
 :root {
   --bg-color: #0b0f1a;
   --bg-color-secondary: #111827;
   --text-color: #eaf5ff;
   --text-muted: rgba(234, 245, 255, 0.82);
-  --accent-color: #3b82f6;
-  --accent-purple: #7c3aed;
-  --accent-magenta: #f43f5e;
-  --glow-color: color-mix(in srgb, var(--accent-color) 18%, transparent);
-  --accent-soft: color-mix(in srgb, var(--accent-color) 14%, transparent);
+  --accent-color: #4b6f95;
+  --accent-purple: #6c5a9b;
+  --accent-magenta: #d16474;
+  --glow-color: color-mix(in srgb, var(--accent-color) 10%, transparent);
+  --accent-soft: color-mix(in srgb, var(--accent-color) 8%, transparent);
   --card-bg: #151b2a;
   --hover-bg: color-mix(in srgb, var(--accent-color) 12%, transparent);
-  --highlight-glow: color-mix(in srgb, var(--accent-magenta) 18%, transparent);
+  --highlight-glow: color-mix(in srgb, var(--accent-magenta) 10%, transparent);
   --surface-gradient: var(--card-bg);
   --surface-border: rgba(255, 255, 255, 0.08);
   --shadow-strong: 0 12px 26px rgba(0, 0, 0, 0.25);
@@ -34,14 +34,14 @@ html.light {
   --bg-color-secondary: #e6ecf9;
   --text-color: #0b1030;
   --text-muted: rgba(11, 16, 48, 0.72);
-  --accent-color: #2563eb;
-  --accent-purple: #6d28d9;
-  --accent-magenta: #e11d48;
-  --glow-color: color-mix(in srgb, var(--accent-color) 18%, transparent);
-  --accent-soft: color-mix(in srgb, var(--accent-color) 14%, transparent);
+  --accent-color: #4368b1;
+  --accent-purple: #6050a8;
+  --accent-magenta: #c84c61;
+  --glow-color: color-mix(in srgb, var(--accent-color) 10%, transparent);
+  --accent-soft: color-mix(in srgb, var(--accent-color) 8%, transparent);
   --card-bg: #ffffff;
   --hover-bg: color-mix(in srgb, var(--accent-color) 10%, transparent);
-  --highlight-glow: color-mix(in srgb, var(--accent-magenta) 15%, transparent);
+  --highlight-glow: color-mix(in srgb, var(--accent-magenta) 10%, transparent);
   --surface-gradient: var(--card-bg);
   --surface-border: rgba(11, 16, 48, 0.1);
   color-scheme: light;
@@ -251,7 +251,7 @@ h6 {
   margin: 0;
   font-weight: 700;
   letter-spacing: 0.01em;
-  font-family: "Orbitron", "Space Grotesk", sans-serif;
+  font-family: "Space Grotesk", sans-serif;
 }
 
 .nav-actions {
@@ -317,6 +317,26 @@ section.intro {
   overflow: hidden;
 }
 
+html.light section.intro {
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--accent-purple) 18%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--accent-color) 16%, transparent),
+      transparent 50%
+    ),
+    linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(242, 246, 255, 0.9) 55%,
+      rgba(236, 241, 252, 0.88) 100%
+    );
+}
+
 section.intro::before,
 section.intro::after {
   content: "";
@@ -341,6 +361,22 @@ section.intro::before {
   opacity: 0.5;
 }
 
+html.light section.intro::before {
+  opacity: 0.35;
+  background:
+    radial-gradient(
+      circle at 20% 20%,
+      color-mix(in srgb, var(--accent-magenta) 12%, transparent),
+      transparent 48%
+    ),
+    linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 50%,
+      transparent 100%
+    );
+}
+
 section.intro::after {
   background-image: repeating-linear-gradient(
     90deg,
@@ -350,6 +386,17 @@ section.intro::after {
     transparent 64px
   );
   opacity: 0.25;
+}
+
+html.light section.intro::after {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(11, 16, 48, 0.08) 0,
+    rgba(11, 16, 48, 0.08) 1px,
+    transparent 1px,
+    transparent 72px
+  );
+  opacity: 0.2;
 }
 
 section.intro > * {
@@ -372,6 +419,16 @@ section.intro > * {
   display: grid;
   gap: 0.85rem;
   max-width: 580px;
+}
+
+html.light .launch-panel {
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(236, 242, 252, 0.92) 100%
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--accent-color) 22%, var(--surface-border));
 }
 
 .launch-panel__header {
@@ -1039,9 +1096,10 @@ header.hero {
 }
 
 .pill--accent {
-  border-color: rgba(59, 130, 246, 0.45);
-  background: rgba(59, 130, 246, 0.18);
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.18);
+  border-color: color-mix(in srgb, var(--accent-color) 45%, transparent);
+  background: color-mix(in srgb, var(--accent-color) 18%, transparent);
+  box-shadow: 0 12px 24px
+    color-mix(in srgb, var(--accent-color) 18%, transparent);
 }
 
 .pill--soft {
@@ -1050,15 +1108,16 @@ header.hero {
 }
 
 .pill--contrast {
-  border-color: rgba(244, 63, 94, 0.35);
-  background: rgba(244, 63, 94, 0.16);
-  box-shadow: 0 12px 26px rgba(244, 63, 94, 0.16);
+  border-color: color-mix(in srgb, var(--accent-magenta) 35%, transparent);
+  background: color-mix(in srgb, var(--accent-magenta) 16%, transparent);
+  box-shadow: 0 12px 26px
+    color-mix(in srgb, var(--accent-magenta) 16%, transparent);
 }
 
 .hero-copy h1 {
   font-size: clamp(2.25rem, 1.2rem + 2.5vw, 3.2rem);
   margin-bottom: 0.5rem;
-  font-family: "Orbitron", "Space Grotesk", sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   text-shadow: none;
 }
 
