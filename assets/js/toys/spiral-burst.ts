@@ -669,8 +669,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  window.addEventListener('keydown', handleKeydown);
-
   runtime = createToyRuntime({
     container,
     canvas: container?.querySelector('canvas'),
