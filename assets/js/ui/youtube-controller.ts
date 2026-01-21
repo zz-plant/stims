@@ -43,27 +43,54 @@ declare global {
 export class YouTubeController {
   private static STORAGE_KEY = 'stims_recent_youtube';
   private static MAX_RECENT = 5;
+  private static apiReadyPromise: Promise<void> | null = null;
+  private static apiReadyResolve: (() => void) | null = null;
+  private static apiInitialized = false;
   private player: YouTubePlayer | null = null;
-  private apiReady = false;
 
   constructor() {
     this.initAPI();
   }
 
   private initAPI() {
-    if (window.YT) {
-      this.apiReady = true;
+    if (YouTubeController.apiInitialized) {
       return;
     }
 
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    YouTubeController.apiInitialized = true;
+    if (!YouTubeController.apiReadyPromise) {
+      YouTubeController.apiReadyPromise = new Promise((resolve) => {
+        YouTubeController.apiReadyResolve = resolve;
+      });
+    }
 
+    if (window.YT) {
+      YouTubeController.apiReadyResolve?.();
+      return;
+    }
+
+    const apiUrl = 'https://www.youtube.com/iframe_api';
+    const existingScript = document.querySelector(`script[src="${apiUrl}"]`);
+    if (!existingScript) {
+      const tag = document.createElement('script');
+      tag.src = apiUrl;
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+
+    const previousReady = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
-      this.apiReady = true;
+      previousReady?.();
+      YouTubeController.apiReadyResolve?.();
     };
+  }
+
+  private async waitForAPI() {
+    if (window.YT) {
+      return;
+    }
+    this.initAPI();
+    await YouTubeController.apiReadyPromise;
   }
 
   parseVideoId(url: string): string | null {
@@ -89,16 +116,7 @@ export class YouTubeController {
     videoId: string,
     onStateChange?: (state: number) => void,
   ): Promise<void> {
-    if (!this.apiReady) {
-      await new Promise<void>((resolve) => {
-        const check = setInterval(() => {
-          if (this.apiReady) {
-            clearInterval(check);
-            resolve();
-          }
-        }, 100);
-      });
-    }
+    await this.waitForAPI();
 
     return new Promise((resolve) => {
       if (!window.YT) {
