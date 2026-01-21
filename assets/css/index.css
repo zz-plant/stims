@@ -1802,7 +1802,7 @@ footer {
 
 @media (max-width: 1024px) {
   .content {
-    padding: clamp(1.25rem, 2.5vw, 2.4rem);
+    --content-padding: clamp(1.25rem, 2.5vw, 2.4rem);
   }
 
   .hero-grid {
