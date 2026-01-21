@@ -16,6 +16,21 @@
         justify-content: center;
         align-items: center;
       }
+      .canvas-stack {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .canvas-gl {
+        position: absolute;
+        inset: 0;
+      }
+      .canvas-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
       #error-message {
         position: absolute;
         top: 20px;
@@ -31,7 +46,10 @@
   <body>
     <a href="../index.html" class="home-link">Back to Library</a>
     <div id="error-message" style="display: none"></div>
-    <canvas id="glCanvas" class="toy-canvas"></canvas>
+    <div class="canvas-stack">
+      <canvas id="glCanvas" class="toy-canvas canvas-gl"></canvas>
+      <canvas id="overlayCanvas" class="toy-canvas canvas-overlay"></canvas>
+    </div>
     <script type="module">
       import {
         getAverageFrequency,
@@ -50,8 +68,17 @@
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
 
       const canvas = document.getElementById('glCanvas');
+      const overlayCanvas = document.getElementById('overlayCanvas');
+
+      if (
+        !(canvas instanceof HTMLCanvasElement) ||
+        !(overlayCanvas instanceof HTMLCanvasElement)
+      ) {
+        showError('error-message', 'Canvas element is missing.');
+        throw new Error('Canvas element not found');
+      }
       const gl = canvas.getContext('webgl');
-      const ctx2d = canvas.getContext('2d');
+      const ctx2d = overlayCanvas.getContext('2d');
 
       initHints({
         id: 'symph-visualizer',
@@ -200,8 +227,12 @@
 
       const disposeResize = setupCanvasResize(canvas, gl, {
         maxPixelRatio: 2,
-        onResize: ({ width, height }) => {
+        onResize: ({ width, height, cssWidth, cssHeight }) => {
           gl.uniform2f(resolutionUniformLocation, width, height);
+          overlayCanvas.width = width;
+          overlayCanvas.height = height;
+          overlayCanvas.style.width = `${cssWidth}px`;
+          overlayCanvas.style.height = `${cssHeight}px`;
         },
       });
 
@@ -340,28 +371,31 @@
 
       function updateSpectrograph(dataArray) {
         if (!ctx2d) return;
-        ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+        ctx2d.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
         const gradient = ctx2d.createLinearGradient(
           0,
           0,
-          canvas.width,
-          canvas.height
+          overlayCanvas.width,
+          overlayCanvas.height
         );
         gradient.addColorStop(0, gradientStops[0]);
         gradient.addColorStop(0.5, gradientStops[1]);
         gradient.addColorStop(1, gradientStops[2]);
         ctx2d.fillStyle = gradient;
-        const barWidth = (canvas.width / dataArray.length) * 1.5;
+        const barWidth = (overlayCanvas.width / dataArray.length) * 1.5;
         let barHeight;
         let x = 0;
 
         for (let i = 0; i < dataArray.length; i++) {
           barHeight = dataArray[i] / 2;
-          ctx2d.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+          ctx2d.fillRect(
+            x,
+            overlayCanvas.height - barHeight,
+            barWidth,
+            barHeight
+          );
           x += barWidth + 1;
         }
-
-        updateSparkles();
       }
 
       function hexToRgbTuple(hex) {
@@ -377,9 +411,10 @@
           6 + Math.floor(strength * 12)
         );
         const baseX =
-          ((touchPoint[0] + 1) * 0.5 + Math.random() * 0.05) * canvas.width;
+          ((touchPoint[0] + 1) * 0.5 + Math.random() * 0.05) *
+          overlayCanvas.width;
         const baseY =
-          (1 - (touchPoint[1] + 1) * 0.5) * canvas.height * 0.9 +
+          (1 - (touchPoint[1] + 1) * 0.5) * overlayCanvas.height * 0.9 +
           Math.random() * 30;
 
         for (let i = 0; i < count; i += 1) {
