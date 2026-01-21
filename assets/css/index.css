@@ -144,7 +144,12 @@ h6 {
 .content {
   position: relative;
   z-index: 1;
-  padding: clamp(1.5rem, 2vw + 1rem, 3rem);
+  --content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
+  padding: var(--content-padding);
+  padding-top: max(var(--content-padding), env(safe-area-inset-top));
+  padding-right: max(var(--content-padding), env(safe-area-inset-right));
+  padding-bottom: max(var(--content-padding), env(safe-area-inset-bottom));
+  padding-left: max(var(--content-padding), env(safe-area-inset-left));
   max-width: var(--content-width);
   margin: 0 auto;
   display: flex;
@@ -1900,6 +1905,13 @@ footer {
 
   .nav-actions {
     width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .nav-link {
+    width: 100%;
   }
 
   .theme-toggle {
@@ -1932,7 +1944,8 @@ footer {
   }
 
   .top-nav {
-    position: static;
+    position: sticky;
+    top: calc(env(safe-area-inset-top) + 0.4rem);
     border-radius: 14px;
   }
 
