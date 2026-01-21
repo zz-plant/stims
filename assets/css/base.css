@@ -1283,6 +1283,19 @@ body {
   backdrop-filter: blur(2px);
 }
 
+@media (max-width: 600px) {
+  .preflight-dialog {
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    width: auto;
+    clip-path: none;
+  }
+
+  .preflight-dialog::after {
+    clip-path: none;
+  }
+}
+
 .preflight-panel__statuses {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
