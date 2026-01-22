@@ -133,6 +133,9 @@
       let densityMultiplier = 1;
       let speedMultiplier = 1;
       let trailBlend = 0.25;
+      const particles = [];
+      const baseParticleCount = 800;
+      let particleCount = baseParticleCount;
 
       function applyQualityPreset(preset) {
         activeQuality = preset;
@@ -204,10 +207,6 @@
       }
 
       const toy = new CanvasToy(canvas);
-
-      const particles = [];
-      const baseParticleCount = 800;
-      let particleCount = baseParticleCount;
 
       function createParticle() {
         return {
