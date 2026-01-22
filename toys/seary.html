@@ -91,6 +91,14 @@
       });
 
       const adapter = createSearyFunAdapter();
+      let peakDetector = null;
+      let lastVibrateTime = 0;
+      let currentFreqs = adapter.transformFrequencies({
+        low: 0,
+        mid: 0,
+        high: 0,
+      });
+      const audioSelect = document.getElementById('audioSelect');
       const funControls = initFunControls({
         paletteOptions: adapter.paletteOptions,
         onPaletteChange: (palette, colors) =>
@@ -364,11 +372,6 @@
         'u_burst_intensity'
       );
 
-      currentFreqs = adapter.transformFrequencies({
-        low: 0,
-        mid: 0,
-        high: 0,
-      });
       const orientation = { alpha: 0, beta: 0, gamma: 0 };
       const touches = [
         { x: 0.0, y: 0.0 },
@@ -469,14 +472,6 @@
       }
 
       // Audio setup for beat detection and frequency analysis
-      let peakDetector = null;
-      let lastVibrateTime = 0;
-      let currentFreqs = adapter.transformFrequencies({
-        low: 0,
-        mid: 0,
-        high: 0,
-      });
-      const audioSelect = document.getElementById('audioSelect');
 
       function vibrateBasedOnAudio(lowFreq, midFreq, highFreq) {
         const intensity = Math.max(lowFreq, midFreq, highFreq);
