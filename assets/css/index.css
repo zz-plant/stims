@@ -2101,6 +2101,29 @@ footer {
 }
 
 @media (max-width: 680px) {
+  section.intro {
+    padding: 1.6rem 1.4rem;
+    border-radius: 18px;
+  }
+
+  .launch-panel {
+    max-width: none;
+    padding: 0.95rem 1rem;
+  }
+
+  .launch-panel__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .launch-badge {
+    flex: 1 1 140px;
+  }
+
+  .hero-copy {
+    gap: 0.65rem;
+  }
+
   .search-row {
     grid-template-columns: 1fr;
   }
@@ -2147,9 +2170,54 @@ footer {
     width: 100%;
     justify-content: center;
   }
+
+  .system-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-helper {
+    margin: 0 0 1.2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+
+  .content {
+    gap: 1.8rem;
+  }
+
+  .webtoy-container {
+    grid-template-columns: 1fr;
+  }
+
+  .top-nav {
+    position: sticky;
+    top: calc(env(safe-area-inset-top) + 0.4rem);
+    border-radius: 14px;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-reel {
+    width: 100%;
+  }
+
+  .hero-cta-row .cta-button.primary {
+    letter-spacing: 0.04em;
+  }
 }
 
 @media (max-width: 520px) {
+  .content {
+    --content-padding: clamp(1rem, 4vw, 1.4rem);
+    gap: 1.5rem;
+  }
+
   .brand {
     width: 100%;
     justify-content: flex-start;
@@ -2160,6 +2228,16 @@ footer {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 0.75rem;
+  }
+
+  .top-nav {
+    padding: 0.85rem;
+    border-radius: 16px;
+  }
+
+  .nav-link {
+    justify-content: flex-start;
+    padding: 0.65rem 0.85rem;
   }
 
   .nav-link {
@@ -2179,33 +2257,19 @@ footer {
   .cta-button {
     width: 100%;
     justify-content: center;
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
   }
 
   .signal-grid {
     grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 768px) {
-  h1 {
-    font-size: 2rem;
+  .section-heading h2 {
+    font-size: 1.65rem;
   }
 
-  .webtoy-container {
-    grid-template-columns: 1fr;
-  }
-
-  .top-nav {
-    position: sticky;
-    top: calc(env(safe-area-inset-top) + 0.4rem);
-    border-radius: 14px;
-  }
-
-  .hero-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .preview-reel {
-    width: 100%;
+  .section-description {
+    font-size: 0.98rem;
   }
 }
