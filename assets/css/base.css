@@ -835,9 +835,19 @@ body {
 .control-panel--floating {
   bottom: auto;
   left: auto;
-  top: 12px;
-  right: 12px;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
   width: min(360px, 92vw);
+  max-height: min(
+    calc(
+      100dvh -
+      24px -
+      env(safe-area-inset-top) -
+      env(safe-area-inset-bottom)
+    ),
+    90vh
+  );
+  overflow: auto;
 }
 
 .control-panel::before,
