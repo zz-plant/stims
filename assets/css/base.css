@@ -274,7 +274,6 @@ body {
     0 0 18px rgba(17, 216, 255, 0.32);
   border-radius: 18px;
   z-index: 1200;
-  backdrop-filter: blur(14px) saturate(125%);
   pointer-events: auto;
 }
 
