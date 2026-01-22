@@ -237,6 +237,34 @@
       });
 
       const adapter = createSymphFunAdapter();
+      let gradientStops = adapter.paletteOptions.bright;
+      let colorOffset = [...adapter.paletteAccent];
+      let time = 0.0;
+      let audioData = adapter.transformAudioValue(0);
+      let touchPoint = [0.0, 0.0];
+      let smoothedLevel = 0;
+      let burstEnergy = 0;
+      let lastTransientTime = 0;
+      const defaultSensitivity = 0.7;
+      let transientSensitivity = defaultSensitivity;
+      let sparklesEnabled = true;
+      let burstsEnabled = true;
+      let analyserRef = null;
+      const rippleBase = 0.15;
+      const SPARKLE_POOL_SIZE = 120;
+      const sparklePool = Array.from({ length: SPARKLE_POOL_SIZE }, () => ({
+        active: false,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        life: 0,
+        maxLife: 0,
+        size: 0,
+        alpha: 0,
+        color: [255, 255, 255],
+      }));
+
       const funControls = initFunControls({
         paletteOptions: adapter.paletteOptions,
         onPaletteChange: (palette, colors) => {
@@ -247,8 +275,6 @@
         onMotionChange: (intensity, mode) => adapter.setMotion(intensity, mode),
         onAudioToggle: (enabled) => adapter.setAudioReactive(enabled),
       });
-
-      const defaultSensitivity = 0.7;
       const extraControls = document.createElement('div');
       extraControls.className = 'fun-subsection';
       extraControls.innerHTML = `
@@ -315,33 +341,6 @@
       }
 
       const toy = new CanvasToy(canvas);
-
-      let gradientStops = adapter.paletteOptions.bright;
-      let time = 0.0;
-      let audioData = adapter.transformAudioValue(0);
-      let colorOffset = [...adapter.paletteAccent];
-      let touchPoint = [0.0, 0.0];
-      let smoothedLevel = 0;
-      let burstEnergy = 0;
-      let lastTransientTime = 0;
-      let transientSensitivity = defaultSensitivity;
-      let sparklesEnabled = true;
-      let burstsEnabled = true;
-      let analyserRef = null;
-      const rippleBase = 0.15;
-      const SPARKLE_POOL_SIZE = 120;
-      const sparklePool = Array.from({ length: SPARKLE_POOL_SIZE }, () => ({
-        active: false,
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        life: 0,
-        maxLife: 0,
-        size: 0,
-        alpha: 0,
-        color: [255, 255, 255],
-      }));
 
       const sparkleToggle = extraControls.querySelector('.fun-sparkles');
       sparkleToggle?.addEventListener('change', (event) => {
