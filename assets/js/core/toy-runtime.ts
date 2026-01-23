@@ -54,6 +54,7 @@ export type ToyRuntimeOptions = {
   input?: Partial<Omit<UnifiedInputOptions, 'target'>> & {
     enabled?: boolean;
     target?: HTMLElement | null;
+    touchAction?: 'none' | 'manipulation' | 'auto';
   };
   performance?: {
     enabled?: boolean;
@@ -142,8 +143,14 @@ export function createToyRuntime({
         (toy.canvas instanceof HTMLElement ? toy.canvas : null) ??
         toy.container);
 
-  if (inputTarget instanceof HTMLElement) {
-    inputTarget.style.touchAction = 'manipulation';
+  const resolvedTouchAction =
+    input?.touchAction ??
+    (inputTarget === toy.canvas && inputTarget instanceof HTMLElement
+      ? 'none'
+      : undefined);
+
+  if (inputTarget instanceof HTMLElement && resolvedTouchAction) {
+    inputTarget.style.touchAction = resolvedTouchAction;
   }
 
   const inputAdapter =
