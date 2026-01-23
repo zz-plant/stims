@@ -209,7 +209,11 @@ export function createLoader({
       const { moduleUrl, starter } = moduleResult;
 
       try {
-        const active = await starter({ container, slug: toy.slug });
+        const active = await starter({
+          container,
+          slug: toy.slug,
+          preferDemoAudio,
+        });
         lifecycle.adoptActiveToy(active ?? lifecycle.getActiveToy()?.ref);
       } catch (error) {
         console.error('Error starting toy module:', error);
