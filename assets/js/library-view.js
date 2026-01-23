@@ -1143,6 +1143,10 @@ export function createLibraryView({
   let lastCommittedQuery = '';
   let pendingCommit;
   let resultsMeta;
+  let searchForm;
+  let searchClearButton;
+  let filterResetButton;
+  let searchSuggestions;
   const activeFilters = new Set();
 
   const ensureMetaNode = () => {
@@ -1150,6 +1154,34 @@ export function createLibraryView({
       resultsMeta = document.querySelector('[data-search-results]');
     }
     return resultsMeta;
+  };
+
+  const ensureSearchForm = () => {
+    if (!searchForm) {
+      searchForm = document.querySelector('[data-search-form]');
+    }
+    return searchForm;
+  };
+
+  const ensureSearchClearButton = () => {
+    if (!searchClearButton) {
+      searchClearButton = document.querySelector('[data-search-clear]');
+    }
+    return searchClearButton;
+  };
+
+  const ensureFilterResetButton = () => {
+    if (!filterResetButton) {
+      filterResetButton = document.querySelector('[data-filter-reset]');
+    }
+    return filterResetButton;
+  };
+
+  const ensureSearchSuggestions = () => {
+    if (!searchSuggestions) {
+      searchSuggestions = document.getElementById('toy-search-suggestions');
+    }
+    return searchSuggestions;
   };
 
   const getOriginalIndex = (toy) => originalOrder.get(toy.slug) ?? 0;
@@ -1181,6 +1213,29 @@ export function createLibraryView({
       const label = chip.textContent?.trim();
       return label ? [label] : [];
     });
+
+  const updateSearchClearState = () => {
+    const clearButton = ensureSearchClearButton();
+    if (!(clearButton instanceof HTMLElement)) return;
+    if (clearButton.tagName !== 'BUTTON') return;
+    const hasQuery = searchQuery.trim().length > 0;
+    clearButton.disabled = !hasQuery;
+    clearButton.setAttribute('aria-disabled', String(!hasQuery));
+  };
+
+  const updateFilterResetState = () => {
+    const resetButton = ensureFilterResetButton();
+    if (!(resetButton instanceof HTMLElement)) return;
+    if (resetButton.tagName !== 'BUTTON') return;
+    const hasFilters = activeFilters.size > 0;
+    resetButton.disabled = !hasFilters;
+    resetButton.setAttribute('aria-disabled', String(!hasFilters));
+  };
+
+  const updateFilterChipA11y = (chip, isActive) => {
+    if (!chip || typeof chip.setAttribute !== 'function') return;
+    chip.setAttribute('aria-pressed', String(isActive));
+  };
 
   const updateResultsMeta = (visibleCount) => {
     const meta = ensureMetaNode();
@@ -1222,6 +1277,8 @@ export function createLibraryView({
 
     commitState({ replace: false });
     renderToys(applyFilters());
+    updateSearchClearState();
+    updateFilterResetState();
   };
 
   const getHaystack = (toy) => {
@@ -1319,6 +1376,7 @@ export function createLibraryView({
     originalOrder = new Map(
       nextToys.map((toy, index) => [toy.slug ?? `toy-${index}`, index]),
     );
+    populateSearchSuggestions();
   };
 
   const parseFilters = (value) => {
@@ -1431,7 +1489,9 @@ export function createLibraryView({
       const value = chip.getAttribute('data-filter-value');
       if (!type || !value) return;
       const token = `${type}:${value.toLowerCase()}`;
-      chip.classList.toggle('is-active', activeFilters.has(token));
+      const isActive = activeFilters.has(token);
+      chip.classList.toggle('is-active', isActive);
+      updateFilterChipA11y(chip, isActive);
     });
 
     const sortControl = document.querySelector('[data-sort-control]');
@@ -1442,6 +1502,8 @@ export function createLibraryView({
     if (render) {
       renderToys(applyFilters());
     }
+    updateSearchClearState();
+    updateFilterResetState();
   };
 
   const openToy = (toy) => {
@@ -1669,17 +1731,70 @@ export function createLibraryView({
   const filterToys = (query) => {
     searchQuery = query;
     renderToys(applyFilters());
+    updateSearchClearState();
+  };
+
+  const clearSearch = () => {
+    searchQuery = '';
+    if (searchInputId) {
+      const search = document.getElementById(searchInputId);
+      if (search && 'value' in search) {
+        search.value = '';
+      }
+    }
+    commitState({ replace: false });
+    renderToys(applyFilters());
+    updateSearchClearState();
+  };
+
+  const clearFilters = () => {
+    activeFilters.clear();
+    const chips = document.querySelectorAll('[data-filter-chip].is-active');
+    chips.forEach((chip) => {
+      chip.classList.remove('is-active');
+      updateFilterChipA11y(chip, false);
+    });
+    commitState({ replace: false });
+    renderToys(applyFilters());
+    updateFilterResetState();
+  };
+
+  const populateSearchSuggestions = () => {
+    const datalist = ensureSearchSuggestions();
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    const suggestions = new Set();
+    allToys.forEach((toy) => {
+      if (toy.title) suggestions.add(toy.title);
+      if (toy.slug) suggestions.add(toy.slug);
+      (toy.tags ?? []).forEach((tag) => suggestions.add(tag));
+      (toy.moods ?? []).forEach((mood) => suggestions.add(mood));
+      if (toy.capabilities?.microphone) suggestions.add('microphone');
+      if (toy.capabilities?.demoAudio) suggestions.add('demo audio');
+      if (toy.capabilities?.motion) suggestions.add('motion');
+      if (toy.requiresWebGPU) suggestions.add('webgpu');
+    });
+    Array.from(suggestions)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b))
+      .forEach((suggestion) => {
+        const option = document.createElement('option');
+        option.value = suggestion;
+        datalist.appendChild(option);
+      });
   };
 
   const initFilters = () => {
     const chips = document.querySelectorAll('[data-filter-chip]');
     chips.forEach((chip) => {
+      updateFilterChipA11y(chip, chip.classList.contains('is-active'));
       chip.addEventListener('click', () => {
         const type = chip.getAttribute('data-filter-type');
         const value = chip.getAttribute('data-filter-value');
         if (!type || !value) return;
         const token = `${type}:${value.toLowerCase()}`;
         const isActive = chip.classList.toggle('is-active');
+        updateFilterChipA11y(chip, isActive);
         if (isActive) {
           activeFilters.add(token);
         } else {
@@ -1687,6 +1802,7 @@ export function createLibraryView({
         }
         commitState({ replace: false });
         renderToys(applyFilters());
+        updateFilterResetState();
       });
     });
 
@@ -1697,6 +1813,15 @@ export function createLibraryView({
         commitState({ replace: false });
         renderToys(applyFilters());
       });
+    }
+
+    const resetButton = ensureFilterResetButton();
+    if (
+      resetButton instanceof HTMLElement &&
+      resetButton.tagName === 'BUTTON'
+    ) {
+      resetButton.addEventListener('click', () => clearFilters());
+      updateFilterResetState();
     }
   };
 
@@ -1724,6 +1849,22 @@ export function createLibraryView({
           commitState({ replace: false });
         }
       });
+    }
+
+    const form = ensureSearchForm();
+    if (form) {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+      });
+    }
+
+    const clearButton = ensureSearchClearButton();
+    if (
+      clearButton instanceof HTMLElement &&
+      clearButton.tagName === 'BUTTON'
+    ) {
+      clearButton.addEventListener('click', () => clearSearch());
+      updateSearchClearState();
     }
   };
 
