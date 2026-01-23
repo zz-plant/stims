@@ -19,12 +19,24 @@ export function setupCanvasResize(
   context: CanvasContext,
   { maxPixelRatio, onResize }: CanvasResizeOptions = {},
 ) {
+  const getViewportSize = () => {
+    const visualViewport = window.visualViewport;
+    const documentElement = document.documentElement;
+    const cssWidth =
+      visualViewport?.width ?? documentElement.clientWidth ?? window.innerWidth;
+    const cssHeight =
+      visualViewport?.height ??
+      documentElement.clientHeight ??
+      window.innerHeight;
+
+    return { cssWidth, cssHeight };
+  };
+
   const resize = () => {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const maxSupportedPixelRatio = maxPixelRatio ?? devicePixelRatio;
     const pixelRatio = Math.min(devicePixelRatio, maxSupportedPixelRatio);
-    const cssWidth = window.innerWidth;
-    const cssHeight = window.innerHeight;
+    const { cssWidth, cssHeight } = getViewportSize();
     const width = Math.max(1, Math.floor(cssWidth * pixelRatio));
     const height = Math.max(1, Math.floor(cssHeight * pixelRatio));
 
@@ -60,5 +72,13 @@ export function setupCanvasResize(
   const observer = new ResizeObserver(() => resize());
   observer.observe(canvas.parentElement ?? canvas);
 
-  return () => observer.disconnect();
+  const visualViewport = window.visualViewport;
+  visualViewport?.addEventListener('resize', resize);
+  visualViewport?.addEventListener('scroll', resize);
+
+  return () => {
+    observer.disconnect();
+    visualViewport?.removeEventListener('resize', resize);
+    visualViewport?.removeEventListener('scroll', resize);
+  };
 }
