@@ -103,11 +103,40 @@ const probeMicrophone = async () => {
   };
 };
 
-const probeRendering = () => {
+const getRenderCapabilities = () => {
   const hasWebGPU = Boolean(navigator?.gpu);
   const hasWebGL =
     typeof WebGL !== 'undefined' &&
     (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
+
+  return { hasWebGPU, hasWebGL };
+};
+
+export const getRenderCompatibilitySummary = () => {
+  const { hasWebGPU, hasWebGL } = getRenderCapabilities();
+
+  if (hasWebGPU) {
+    return {
+      state: STATUS.success,
+      label: 'WebGPU ready',
+    };
+  }
+
+  if (hasWebGL) {
+    return {
+      state: STATUS.warn,
+      label: 'WebGL fallback active',
+    };
+  }
+
+  return {
+    state: STATUS.error,
+    label: 'Graphics acceleration unavailable',
+  };
+};
+
+const probeRendering = () => {
+  const { hasWebGPU, hasWebGL } = getRenderCapabilities();
 
   if (hasWebGPU) {
     return {

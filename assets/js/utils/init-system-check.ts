@@ -18,8 +18,10 @@ export const initSystemCheck = () => {
     });
   }
 
-  const trigger = document.querySelector('[data-open-preflight]');
-  if (!(trigger instanceof HTMLElement)) return;
+  const triggers = Array.from(
+    document.querySelectorAll('[data-open-preflight]'),
+  ).filter((element): element is HTMLElement => element instanceof HTMLElement);
+  if (triggers.length === 0) return;
 
   const preflight = attachCapabilityPreflight({
     heading: 'System check',
@@ -29,7 +31,10 @@ export const initSystemCheck = () => {
     showCloseButton: true,
   });
 
-  trigger.addEventListener('click', () => {
-    preflight.open(trigger);
+  triggers.forEach((trigger) => {
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
+      preflight.open(trigger);
+    });
   });
 };
