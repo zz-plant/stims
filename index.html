@@ -888,6 +888,7 @@
               }
             }
             renderCards(applyFilters());
+            updateControlVisibility();
 
             if (searchForm instanceof HTMLFormElement) {
               searchForm.addEventListener('submit', (event) => {

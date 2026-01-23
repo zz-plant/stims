@@ -265,6 +265,10 @@ function setupThemeToggle(container: HTMLElement) {
   const updateUI = (theme: string) => {
     const isDark = theme === 'dark';
     toggle.setAttribute('aria-pressed', String(isDark));
+    toggle.setAttribute(
+      'aria-label',
+      isDark ? 'Switch to light mode' : 'Switch to dark mode',
+    );
     if (label) label.textContent = isDark ? 'Light mode' : 'Dark mode';
     if (icon) icon.textContent = isDark ? '☀️' : '🌙';
   };
@@ -288,7 +292,11 @@ function setupThemeToggle(container: HTMLElement) {
       } else {
         document.documentElement.classList.remove('light');
       }
-      localStorage.setItem('theme', nextTheme);
+      try {
+        localStorage.setItem('theme', nextTheme);
+      } catch (_error) {
+        // Ignore storage errors.
+      }
     }
 
     updateUI(nextTheme);
