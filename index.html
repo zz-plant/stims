@@ -484,13 +484,45 @@
         };
         let allToys = [];
 
-        const updateResultsMeta = (count, total, query = '') => {
+        const getSortLabel = () => {
+          const sortControl = document.querySelector('[data-sort-control]');
+          if (sortControl && sortControl.tagName === 'SELECT') {
+            const selected = sortControl.selectedOptions?.[0];
+            const label = selected?.textContent?.trim();
+            if (label) return label;
+          }
+          const sortLabels = {
+            featured: 'Featured',
+            newest: 'Newest',
+            immersive: 'Most immersive',
+            az: 'A → Z',
+          };
+          return sortLabels[sortBy] ?? sortBy;
+        };
+
+        const getActiveFilterLabels = () =>
+          Array.from(
+            document.querySelectorAll('[data-filter-chip].is-active')
+          ).flatMap((chip) => {
+            const label = chip.textContent?.trim();
+            return label ? [label] : [];
+          });
+
+        const updateResultsMeta = (count, _total, query = '') => {
           if (!(searchResults instanceof HTMLElement)) return;
-          const countLabel = `${count} ${count === 1 ? 'match' : 'matches'}`;
-          const totalLabel = `${total} ${total === 1 ? 'stim' : 'stims'}`;
-          searchResults.textContent = query
-            ? `${countLabel} for “${query}”`
-            : `Showing all ${totalLabel}`;
+          const hasFilters = query.trim() || activeFilters.size > 0;
+          const descriptor = hasFilters ? 'matching stims' : 'total stims';
+          const parts = [`${count} ${descriptor}`];
+          const trimmedQuery = query.trim();
+          if (trimmedQuery) {
+            parts.push(`Search: “${trimmedQuery}”`);
+          }
+          const filterLabels = getActiveFilterLabels();
+          if (filterLabels.length > 0) {
+            parts.push(`Filters: ${filterLabels.join(', ')}`);
+          }
+          parts.push(`Sort: ${getSortLabel()}`);
+          searchResults.textContent = parts.join(' • ');
         };
 
         const renderEmptyState = () => {
