@@ -24,6 +24,33 @@ type SystemControlOptions = {
   variant?: 'floating' | 'inline';
 };
 
+const formatQualityLabel = (label: string) =>
+  label.replace(/\s*\(.*?\)\s*/g, '').trim();
+
+type PerformanceSummaryOptions = {
+  qualityPresets?: QualityPreset[];
+  defaultPresetId?: string;
+};
+
+export const getPerformanceSummaryLabel = (
+  options: PerformanceSummaryOptions = {},
+) => {
+  const { qualityPresets = DEFAULT_QUALITY_PRESETS, defaultPresetId } = options;
+  const preset = getActiveQualityPreset({
+    presets: qualityPresets,
+    defaultPresetId,
+  });
+  return formatQualityLabel(preset.label);
+};
+
+export const subscribeToPerformanceSummary = (
+  subscriber: (label: string) => void,
+) => {
+  return subscribeToQualityPreset((preset) => {
+    subscriber(formatQualityLabel(preset.label));
+  });
+};
+
 function createValueLabel(label: string) {
   const value = document.createElement('span');
   value.className = 'control-panel__value';
