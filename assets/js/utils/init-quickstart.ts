@@ -5,22 +5,31 @@ type InitQuickstartOptions = {
 };
 
 export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
-  const quickstart = document.querySelector(DATA_SELECTORS.quickstart);
-  if (!(quickstart instanceof HTMLElement)) return;
+  const quickstarts = document.querySelectorAll(DATA_SELECTORS.quickstart);
+  if (!quickstarts.length) return;
 
-  const quickstartSlug = quickstart.dataset[DATASET_KEYS.quickstartSlug];
-  if (!quickstartSlug) return;
+  quickstarts.forEach((quickstart) => {
+    if (!(quickstart instanceof HTMLElement)) return;
 
-  quickstart.addEventListener('click', (event) => {
-    const isModifiedClick =
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey ||
-      event.button === 1;
-    if (isModifiedClick) return;
+    const quickstartSlug = quickstart.dataset[DATASET_KEYS.quickstartSlug];
+    if (!quickstartSlug) return;
 
-    event.preventDefault();
-    loadToy(quickstartSlug, { pushState: true });
+    const quickstartMode = quickstart.dataset[DATASET_KEYS.quickstartMode];
+
+    quickstart.addEventListener('click', (event) => {
+      const isModifiedClick =
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.button === 1;
+      if (isModifiedClick) return;
+
+      event.preventDefault();
+      loadToy(quickstartSlug, {
+        pushState: true,
+        preferDemoAudio: quickstartMode === 'demo',
+      });
+    });
   });
 };

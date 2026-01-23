@@ -71,6 +71,7 @@ type AudioPromptCallbacks = {
   onRequestMicrophone: () => Promise<void>;
   onRequestDemoAudio: () => Promise<void>;
   onSuccess?: () => void;
+  preferDemoAudio?: boolean;
 };
 
 type ViewState = {
