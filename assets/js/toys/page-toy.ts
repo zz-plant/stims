@@ -10,6 +10,7 @@ type StartOptions = {
   path: string;
   title?: string;
   description?: string;
+  preferDemoAudio?: boolean;
 };
 
 function resolvePageSrc(path: string) {
@@ -22,6 +23,7 @@ export function startPageToy({
   path,
   title,
   description,
+  preferDemoAudio = false,
 }: StartOptions) {
   const target = container ?? document.getElementById('active-toy-container');
 
@@ -44,7 +46,10 @@ export function startPageToy({
     defaultPresetId: initialQuality.id,
   });
 
-  const pageUrl = resolvePageSrc(path);
+  const pageUrl = new URL(resolvePageSrc(path));
+  if (preferDemoAudio) {
+    pageUrl.searchParams.set('audio', 'demo');
+  }
 
   const statusElement = document.createElement('div');
   statusElement.className = 'active-toy-status is-warning';
@@ -74,15 +79,17 @@ export function startPageToy({
   const openButton = document.createElement('button');
   openButton.type = 'button';
   openButton.className = 'cta-button primary';
-  openButton.textContent = 'Open toy';
+  openButton.textContent = preferDemoAudio
+    ? 'Open toy with demo audio'
+    : 'Open toy';
   openButton.addEventListener('click', () => {
-    window.location.href = pageUrl;
+    window.location.href = pageUrl.toString();
   });
 
   const newTabLink = document.createElement('a');
   newTabLink.className = 'cta-button';
   newTabLink.textContent = 'Open in new tab';
-  newTabLink.href = pageUrl;
+  newTabLink.href = pageUrl.toString();
   newTabLink.target = '_blank';
   newTabLink.rel = 'noopener noreferrer';
 

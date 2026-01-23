@@ -3,6 +3,7 @@ import type { createManifestClient } from './manifest-client.ts';
 export type ToyModuleStarter = (args: {
   container: HTMLElement;
   slug: string;
+  preferDemoAudio?: boolean;
 }) => Promise<unknown> | unknown;
 
 export type ToyModuleLoadFailureType = 'resolve' | 'import' | 'missing_start';

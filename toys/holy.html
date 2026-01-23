@@ -309,6 +309,8 @@
       const particleScaleSlider = document.getElementById('particleScale');
       const particleScaleValue = document.getElementById('particleScaleValue');
       const errorEl = document.getElementById('error-message');
+      const preferDemoAudio =
+        new URLSearchParams(window.location.search).get('audio') === 'demo';
 
       function showError(message) {
         if (errorEl) {
@@ -322,6 +324,10 @@
           errorEl.style.display = 'none';
           errorEl.textContent = '';
         }
+      }
+
+      if (preferDemoAudio && startButton instanceof HTMLButtonElement) {
+        startButton.textContent = 'Start Demo Visualizer';
       }
 
       // Initialize Visualizer
@@ -755,13 +761,16 @@
           await startToyAudio(toy, animate, {
             fftSize: 1024,
             fallbackToSynthetic: true,
+            preferSynthetic: preferDemoAudio,
           });
           hideError();
           loadingOverlay.style.display = 'none';
         } catch (err) {
           console.error('Error accessing microphone:', err);
           showError(
-            'Microphone access is required for the visualizer to work.'
+            preferDemoAudio
+              ? 'Demo audio could not be loaded. Please try again.'
+              : 'Microphone access is required for the visualizer to work.'
           );
           startButton.style.display = 'block';
         }
