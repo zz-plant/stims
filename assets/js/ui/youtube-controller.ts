@@ -163,6 +163,13 @@ export class YouTubeController {
     recent = recent.filter((v) => v.id !== id);
     recent.unshift({ id, title: `Video ${id}`, timestamp: Date.now() });
     recent = recent.slice(0, YouTubeController.MAX_RECENT);
-    localStorage.setItem(YouTubeController.STORAGE_KEY, JSON.stringify(recent));
+    try {
+      localStorage.setItem(
+        YouTubeController.STORAGE_KEY,
+        JSON.stringify(recent),
+      );
+    } catch {
+      // Ignore storage errors.
+    }
   }
 }
