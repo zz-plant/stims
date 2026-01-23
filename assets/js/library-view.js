@@ -1158,13 +1158,46 @@ export function createLibraryView({
       ? toy.featuredRank
       : Number.POSITIVE_INFINITY;
 
+  const getSortLabel = () => {
+    const sortControl = document.querySelector('[data-sort-control]');
+    if (sortControl && sortControl.tagName === 'SELECT') {
+      const selected = sortControl.selectedOptions?.[0];
+      const label = selected?.textContent?.trim();
+      if (label) return label;
+    }
+    const sortLabels = {
+      featured: 'Featured',
+      newest: 'Newest',
+      immersive: 'Most immersive',
+      az: 'A → Z',
+    };
+    return sortLabels[sortBy] ?? sortBy;
+  };
+
+  const getActiveFilterLabels = () =>
+    Array.from(
+      document.querySelectorAll('[data-filter-chip].is-active'),
+    ).flatMap((chip) => {
+      const label = chip.textContent?.trim();
+      return label ? [label] : [];
+    });
+
   const updateResultsMeta = (visibleCount) => {
     const meta = ensureMetaNode();
     if (!meta) return;
-    const total = allToys.length;
     const hasFilters = searchQuery.trim() || activeFilters.size > 0;
     const descriptor = hasFilters ? 'matching stims' : 'total stims';
-    meta.textContent = `${visibleCount} ${descriptor} • ${total} in library`;
+    const parts = [`${visibleCount} ${descriptor}`];
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      parts.push(`Search: “${trimmedQuery}”`);
+    }
+    const filterLabels = getActiveFilterLabels();
+    if (filterLabels.length > 0) {
+      parts.push(`Filters: ${filterLabels.join(', ')}`);
+    }
+    parts.push(`Sort: ${getSortLabel()}`);
+    meta.textContent = parts.join(' • ');
   };
 
   const resetFiltersAndSearch = () => {

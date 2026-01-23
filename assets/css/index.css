@@ -1531,6 +1531,8 @@ h1 {
   font-size: 0.95rem;
   color: var(--text-muted);
   font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .search-meta__note {
