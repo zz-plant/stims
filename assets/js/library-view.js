@@ -1256,11 +1256,20 @@ export function createLibraryView({
     }
   };
 
+  const getQueryTokens = (query) =>
+    query
+      .trim()
+      .toLowerCase()
+      .split(/[\s,]+/)
+      .filter(Boolean);
+
   const applyFilters = () => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const queryTokens = getQueryTokens(searchQuery);
     const filtered = allToys.filter((toy) => {
+      const haystack = getHaystack(toy);
       const matchesQuery =
-        !normalizedQuery || getHaystack(toy).includes(normalizedQuery);
+        queryTokens.length === 0 ||
+        queryTokens.every((token) => haystack.includes(token));
       const matchesChips =
         activeFilters.size === 0 ||
         Array.from(activeFilters).every((token) => matchesFilter(toy, token));
@@ -1479,33 +1488,80 @@ export function createLibraryView({
     card.appendChild(title);
     card.appendChild(desc);
 
-    if (enableCapabilityBadges && toy.requiresWebGPU) {
+    if (enableCapabilityBadges) {
       const metaRow = document.createElement('div');
       metaRow.className = 'webtoy-card-meta';
 
-      const badge = document.createElement('span');
-      badge.className = 'capability-badge';
-      badge.textContent = 'WebGPU';
-      badge.setAttribute('role', 'status');
-      badge.setAttribute('aria-label', 'Requires WebGPU');
+      const createBadge = ({ label, title, ariaLabel, warning = false }) => {
+        const badge = document.createElement('span');
+        badge.className = 'capability-badge';
+        badge.textContent = label;
+        if (title) {
+          badge.title = title;
+        }
+        if (ariaLabel) {
+          badge.setAttribute('aria-label', ariaLabel);
+        }
+        badge.setAttribute('role', 'status');
+        if (warning) {
+          badge.classList.add('capability-badge--warning');
+        }
+        return badge;
+      };
 
-      const hasWebGPU =
-        typeof navigator !== 'undefined' && Boolean(navigator.gpu);
-      if (!hasWebGPU) {
-        badge.classList.add('capability-badge--warning');
-        badge.title =
-          'WebGPU not detected; falling back to WebGL if available.';
+      if (toy.requiresWebGPU) {
+        const hasWebGPU =
+          typeof navigator !== 'undefined' && Boolean(navigator.gpu);
+        metaRow.appendChild(
+          createBadge({
+            label: 'WebGPU',
+            title: hasWebGPU
+              ? 'Requires WebGPU to run.'
+              : 'WebGPU not detected; falling back to WebGL if available.',
+            ariaLabel: 'Requires WebGPU',
+            warning: !hasWebGPU,
+          }),
+        );
 
-        const fallbackNote = document.createElement('span');
-        fallbackNote.className = 'capability-note';
-        fallbackNote.textContent =
-          'No WebGPU detected — will try WebGL fallback.';
-        metaRow.appendChild(fallbackNote);
-      } else {
-        badge.title = 'Requires WebGPU to run.';
+        if (!hasWebGPU) {
+          const fallbackNote = document.createElement('span');
+          fallbackNote.className = 'capability-note';
+          fallbackNote.textContent =
+            'No WebGPU detected — will try WebGL fallback.';
+          metaRow.appendChild(fallbackNote);
+        }
       }
 
-      metaRow.appendChild(badge);
+      if (toy.capabilities?.microphone) {
+        metaRow.appendChild(
+          createBadge({
+            label: 'Mic',
+            title: 'Uses live microphone input.',
+            ariaLabel: 'Requires microphone input',
+          }),
+        );
+      }
+
+      if (toy.capabilities?.demoAudio) {
+        metaRow.appendChild(
+          createBadge({
+            label: 'Demo audio',
+            title: 'Includes a demo track if you skip the mic.',
+            ariaLabel: 'Demo audio available',
+          }),
+        );
+      }
+
+      if (toy.capabilities?.motion) {
+        metaRow.appendChild(
+          createBadge({
+            label: 'Motion',
+            title: 'Responds to device motion or tilt.',
+            ariaLabel: 'Requires device motion',
+          }),
+        );
+      }
+
       if (metaRow.childElementCount > 0) {
         card.appendChild(metaRow);
       }
@@ -1551,19 +1607,19 @@ export function createLibraryView({
     list.innerHTML = '';
     if (listToRender.length === 0) {
       const emptyState = document.createElement('div');
-      emptyState.className = 'library-empty-state';
+      emptyState.className = 'empty-state';
       emptyState.setAttribute('role', 'status');
       emptyState.setAttribute('aria-live', 'polite');
 
       const message = document.createElement('p');
-      message.className = 'library-empty-state__message';
+      message.className = 'empty-state__message';
       message.textContent =
-        'No stims match your search or filters. Try adjusting your query.';
+        'No stims match your search or filters. Try clearing your search or removing filters.';
 
       const resetButton = document.createElement('button');
       resetButton.type = 'button';
       resetButton.className = 'cta-button';
-      resetButton.textContent = 'Clear filters';
+      resetButton.textContent = 'Reset search and filters';
       resetButton.addEventListener('click', () => resetFiltersAndSearch());
 
       emptyState.appendChild(message);

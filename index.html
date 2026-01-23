@@ -478,12 +478,13 @@
           empty.className = 'empty-state';
           const message = document.createElement('p');
           message.className = 'empty-state__message';
-          message.textContent = 'No stims match your search.';
+          message.textContent =
+            'No stims match your search or filters. Try clearing your search or removing filters.';
 
           const reset = document.createElement('button');
           reset.type = 'button';
           reset.className = 'cta-button ghost';
-          reset.textContent = 'Clear search';
+          reset.textContent = 'Reset search and filters';
           reset.addEventListener('click', () => {
             if (search instanceof HTMLInputElement) {
               search.value = '';
@@ -492,7 +493,10 @@
             activeFilters.clear();
             sortBy = 'featured';
             const chips = document.querySelectorAll('[data-filter-chip]');
-            chips.forEach((chip) => chip.classList.remove('is-active'));
+            chips.forEach((chip) => {
+              chip.classList.remove('is-active');
+              chip.setAttribute('aria-pressed', 'false');
+            });
             const sortControl = document.querySelector('[data-sort-control]');
             if (sortControl && sortControl.tagName === 'SELECT') {
               sortControl.value = sortBy;
@@ -522,11 +526,20 @@
           }
         };
 
+        const getQueryTokens = (query) =>
+          (query || '')
+            .trim()
+            .toLowerCase()
+            .split(/[\s,]+/)
+            .filter(Boolean);
+
         const applyFilters = (query = cachedQuery) => {
-          const normalized = (query || '').toLowerCase();
+          const queryTokens = getQueryTokens(query);
           const filtered = allToys.filter((toy) => {
+            const haystack = getHaystack(toy);
             const matchesQuery =
-              !normalized || getHaystack(toy).includes(normalized);
+              queryTokens.length === 0 ||
+              queryTokens.every((token) => haystack.includes(token));
             return matchesQuery && matchesFilters(toy);
           });
 
