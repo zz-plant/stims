@@ -15,6 +15,7 @@
     <script type="module">
       import { attachCapabilityPreflight } from './assets/js/core/capability-preflight.ts';
       import { startToyPage } from './assets/js/toyMain.ts';
+      import toysData from './assets/js/toys-data.js';
       import { initNavigation } from './assets/js/ui/nav.ts';
       import { initAudioControls } from './assets/js/ui/audio-controls.ts';
       import { initSystemControls } from './assets/js/ui/system-controls.ts';
@@ -41,14 +42,27 @@
         return null;
       };
 
+      const humanizeSlug = (slug) => {
+        if (!slug) return 'Web toy';
+        return slug
+          .split('-')
+          .filter(Boolean)
+          .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+          .join(' ');
+      };
+
+      const getToyTitle = (slug) =>
+        toysData.find((toy) => toy.slug === slug)?.title;
+
       // Get toy slug from URL for navigation
-      const toySlug = new URLSearchParams(window.location.search).get('toy') || 'Web toy';
+      const toySlug = new URLSearchParams(window.location.search).get('toy');
+      const toyTitle = getToyTitle(toySlug) ?? humanizeSlug(toySlug);
 
       if (navContainer) {
         initNavigation(navContainer, {
           mode: 'toy',
-          title: toySlug.charAt(0).toUpperCase() + toySlug.slice(1),
-          slug: toySlug,
+          title: toyTitle,
+          slug: toySlug ?? undefined,
           onBack: () => { window.location.href = 'index.html'; }
         });
       }
