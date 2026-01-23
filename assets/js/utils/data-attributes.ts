@@ -1,5 +1,6 @@
 export const DATASET_KEYS = {
   quickstartSlug: 'quickstartSlug',
+  quickstartMode: 'quickstartMode',
 };
 
 export const DATA_SELECTORS = {

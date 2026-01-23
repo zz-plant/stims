@@ -1,5 +1,4 @@
 import { setAudioActive, setCurrentToy } from './core/agent-api.ts';
-import { setupMicrophonePermissionFlow } from './core/microphone-flow.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import {
   prewarmMicrophone,
@@ -142,6 +141,7 @@ export function createLoader({
   const startModuleToy = async (
     toy: Toy,
     pushState: boolean,
+    preferDemoAudio: boolean,
     initialCapabilities?: Awaited<ReturnType<typeof rendererCapabilities>>,
   ) => {
     void prewarmRendererCapabilitiesFn();
@@ -173,7 +173,7 @@ export function createLoader({
             if (capabilities.preferredBackend === 'webgpu') {
               disposeActiveToy();
               view.clearActiveToyContainer?.();
-              await startModuleToy(toy, false, capabilities);
+              await startModuleToy(toy, false, preferDemoAudio, capabilities);
             }
           }
         : undefined,
@@ -228,17 +228,7 @@ export function createLoader({
       // Setup audio prompt if startAudio globals are registered by the toy.
       const win = (container?.ownerDocument.defaultView ??
         window) as unknown as ToyWindow;
-      const startBtn = container?.querySelector(
-        '#start-audio-btn',
-      ) as HTMLButtonElement;
-      const fallbackBtn = container?.querySelector(
-        '#use-demo-audio',
-      ) as HTMLButtonElement;
-      const statusEl = container?.querySelector('#audio-status') as HTMLElement;
-
       const setupAudioPrompt = async () => {
-        if (!startBtn || !fallbackBtn) return;
-
         try {
           await waitForAudioStarter(
             () => win.startAudioFallback ?? win.startAudio,
@@ -248,33 +238,42 @@ export function createLoader({
           return;
         }
 
-        view.showAudioPrompt(true);
-        setupMicrophonePermissionFlow({
-          startButton: startBtn,
-          fallbackButton: fallbackBtn,
-          statusElement: statusEl,
-          requestMicrophone: async () => {
+        let lastAudioSource: 'microphone' | 'demo' = 'microphone';
+
+        view.showAudioPrompt(true, {
+          preferDemoAudio,
+          onRequestMicrophone: async () => {
+            lastAudioSource = 'microphone';
             const starter = await waitForAudioStarter(
               () => win.startAudio,
               'Microphone starter unavailable.',
             );
-            return starter('microphone');
+            await starter('microphone');
           },
-          requestSampleAudio: async () => {
+          onRequestDemoAudio: async () => {
+            lastAudioSource = 'demo';
             const fallbackStarter = await waitForAudioStarter(
               () => win.startAudioFallback ?? win.startAudio,
               'Demo audio unavailable.',
             );
             if (typeof win.startAudioFallback === 'function') {
-              return win.startAudioFallback();
+              await win.startAudioFallback();
+              return;
             }
-            return fallbackStarter('sample');
+            await fallbackStarter('sample');
           },
           onSuccess: () => {
             view.showAudioPrompt(false);
-            setAudioActive(true, 'demo');
+            setAudioActive(true, lastAudioSource);
           },
         });
+
+        if (preferDemoAudio) {
+          const demoButton = container?.querySelector('#use-demo-audio');
+          if (demoButton instanceof HTMLButtonElement) {
+            demoButton.click();
+          }
+        }
       };
 
       void setupAudioPrompt();
@@ -301,7 +300,10 @@ export function createLoader({
 
   const loadToy = async (
     slug: string,
-    { pushState = false }: { pushState?: boolean } = {},
+    {
+      pushState = false,
+      preferDemoAudio = false,
+    }: { pushState?: boolean; preferDemoAudio?: boolean } = {},
   ) => {
     const toy = toys.find((t) => t.slug === slug);
     if (!toy) {
@@ -311,7 +313,7 @@ export function createLoader({
     }
 
     if (toy.type === 'module') {
-      await startModuleToy(toy, pushState);
+      await startModuleToy(toy, pushState, preferDemoAudio);
       return;
     }
 
