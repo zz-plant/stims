@@ -1,5 +1,5 @@
-import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
 import { isMobileDevice } from '../utils/device-detect.ts';
+import { getRenderingSupport } from '../utils/rendering-support.ts';
 import {
   getActiveRenderPreferences,
   setRenderPreferences,
@@ -84,14 +84,6 @@ async function getMicrophonePermissionState() {
   }
 }
 
-function checkWebGLAvailability() {
-  const hasWebGL =
-    typeof WebGL !== 'undefined' &&
-    (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
-
-  return Boolean(hasWebGL);
-}
-
 const isMobileUserAgent = isMobileDevice();
 
 function getPerformanceProfile() {
@@ -137,7 +129,7 @@ export async function runCapabilityPreflight(): Promise<CapabilityPreflightResul
     getMicrophonePermissionState(),
   ]);
 
-  const hasWebGL = checkWebGLAvailability();
+  const { hasWebGL } = getRenderingSupport();
 
   const renderingBackend =
     capabilities?.preferredBackend ?? (hasWebGL ? 'webgl' : null);
