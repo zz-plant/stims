@@ -1,4 +1,4 @@
-import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
+import { getRenderingSupport } from './utils/rendering-support.ts';
 
 const STATUS = {
   success: 'success',
@@ -103,17 +103,8 @@ const probeMicrophone = async () => {
   };
 };
 
-const getRenderCapabilities = () => {
-  const hasWebGPU = Boolean(navigator?.gpu);
-  const hasWebGL =
-    typeof WebGL !== 'undefined' &&
-    (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
-
-  return { hasWebGPU, hasWebGL };
-};
-
 export const getRenderCompatibilitySummary = () => {
-  const { hasWebGPU, hasWebGL } = getRenderCapabilities();
+  const { hasWebGPU, hasWebGL } = getRenderingSupport();
 
   if (hasWebGPU) {
     return {
@@ -136,7 +127,7 @@ export const getRenderCompatibilitySummary = () => {
 };
 
 const probeRendering = () => {
-  const { hasWebGPU, hasWebGL } = getRenderCapabilities();
+  const { hasWebGPU, hasWebGL } = getRenderingSupport();
 
   if (hasWebGPU) {
     return {

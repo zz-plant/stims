@@ -1,4 +1,4 @@
-import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
+import { getRenderingSupport } from './rendering-support.ts';
 
 const OVERLAY_ID = 'rendering-capability-overlay';
 const MODAL_PARAM = 'modal';
@@ -278,10 +278,7 @@ export function ensureWebGL(options: EnsureOptions = {}) {
     return false;
   }
 
-  const hasWebGPU = Boolean(navigator?.gpu);
-  const hasWebGL =
-    typeof WebGL !== 'undefined' &&
-    (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
+  const { hasWebGPU, hasWebGL } = getRenderingSupport();
 
   if (hasWebGPU || hasWebGL) {
     removeExistingOverlay();
