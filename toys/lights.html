@@ -57,7 +57,7 @@
     </style>
   </head>
   <body>
-    <a href="../index.html" class="home-link">Back to Library</a>
+    <div data-toy-nav></div>
     <!-- Controls for light type and starting audio -->
     <div class="control-panel">
       <div class="control-panel__heading">Lighting controls</div>
@@ -105,6 +105,11 @@
     <!-- WebGL Canvas -->
     <canvas id="toy-canvas" class="toy-canvas"></canvas>
 
+    <script type="module">
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
+
+      initToyPageShell();
+    </script>
     <script type="module" src="../assets/js/toys/lights/index.ts"></script>
   </body>
 </html>
