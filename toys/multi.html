@@ -56,7 +56,7 @@
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
 
-      initToyPageShell();
+      const toyNav = initToyPageShell();
 
       const canvas = document.getElementById('webglCanvas');
       const capabilityBanner = document.getElementById('capability-banner');
@@ -74,6 +74,9 @@
         capabilityBanner.style.display = 'block';
       }
 
+      const hintsButtonHost =
+        toyNav?.querySelector('.active-toy-nav__actions') ?? null;
+
       initHints({
         id: 'multi-visualizer',
         tips: [
@@ -81,6 +84,11 @@
           'Switch to Party Mode for bigger motion.',
           'Tilt or move your device to shove the shapes around.',
         ],
+        trigger: 'idle',
+        manualButton: {
+          container: hintsButtonHost,
+          label: 'Need tips?',
+        },
       });
 
       const toy = new WebToy({

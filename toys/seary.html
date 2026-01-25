@@ -65,7 +65,7 @@
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
 
-      initToyPageShell();
+      const toyNav = initToyPageShell();
       const errorDisplayId = 'error-message';
       initErrorDisplay(errorDisplayId);
 
@@ -90,6 +90,9 @@
       let lastRenderTime = 0;
       let renderElapsed = 0;
 
+      const hintsButtonHost =
+        toyNav?.querySelector('.active-toy-nav__actions') ?? null;
+
       initHints({
         id: 'seary-visualizer',
         tips: [
@@ -97,6 +100,11 @@
           'Switch to Party Mode for bigger motion.',
           'Use the audio source menu to swap between mic and device audio.',
         ],
+        trigger: 'idle',
+        manualButton: {
+          container: hintsButtonHost,
+          label: 'Need tips?',
+        },
       });
 
       const adapter = createSearyFunAdapter();
