@@ -54,7 +54,6 @@
       import {
         getWeightedAverageFrequency,
         getFrequencyData,
-        initAudio,
       } from '../assets/js/utils/audio-handler.ts';
       import {
         getBandLevels,
@@ -66,7 +65,7 @@
         clearError,
         showError,
       } from '../assets/js/utils/error-display.ts';
-      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { createSymphFunAdapter } from '../assets/symph/fun-adapter.ts';
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
@@ -332,13 +331,6 @@
           };
         }
 
-        async initAudio(options = {}) {
-          const audio = await initAudio(options);
-          this.analyser = audio.analyser;
-          this.audioCleanup = audio.cleanup;
-          return audio;
-        }
-
         dispose() {
           if (this.loopId) {
             cancelAnimationFrame(this.loopId);
@@ -351,6 +343,7 @@
       }
 
       const toy = new CanvasToy(canvas);
+      const { startAudio } = createToyAudioBootstrap(toy);
 
       const sparkleToggle = extraControls.querySelector('.fun-sparkles');
       sparkleToggle?.addEventListener('change', (event) => {
@@ -559,12 +552,12 @@
         updateSparkles();
       }
 
-      startToyAudio(toy, animate, { fallbackToSynthetic: true })
-        .then((ctx) => {
+      void startAudio(animate, { fallbackToSynthetic: true }, {
+        onSuccess: (ctx) => {
           analyserRef = ctx.analyser;
           clearError('error-message');
-        })
-        .catch((err) => {
+        },
+        onError: (err) => {
           showError(
             'error-message',
             'Microphone access is unavailable. Visuals will run without audio reactivity.'
@@ -573,7 +566,8 @@
           audioData = adapter.transformAudioValue(0);
           console.error('Error capturing audio: ', err);
           toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
-        });
+        },
+      }).catch(() => {});
 
       const unifiedInput = createUnifiedInput({
         target: canvas,

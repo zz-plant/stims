@@ -46,12 +46,11 @@
     <script type="module">
       import {
         getFrequencyData,
-        initAudio,
       } from '../assets/js/utils/audio-handler.ts';
       import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import { showError } from '../assets/js/utils/error-display.ts';
       import { createPeakDetector } from '../assets/js/utils/peak-detector.ts';
-      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { createSearyFunAdapter } from '../assets/seary/fun-adapter.ts';
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
@@ -193,13 +192,6 @@
           };
         }
 
-        async initAudio(options = {}) {
-          const audio = await initAudio(options);
-          this.analyser = audio.analyser;
-          this.audioCleanup = audio.cleanup;
-          return audio;
-        }
-
         dispose() {
           if (this.loopId) {
             cancelAnimationFrame(this.loopId);
@@ -213,6 +205,7 @@
       }
 
       const toy = new CanvasToy(canvas);
+      const { startAudio } = createToyAudioBootstrap(toy);
 
       // Compile shader
       function compileShader(source, type) {
@@ -588,11 +581,14 @@
             : { fftSize: 256, fallbackToSynthetic: true };
 
         try {
-          await startToyAudio(toy, animate, options);
+          await startAudio(animate, options, {
+            onError: (err) => {
+              console.error('Error accessing microphone: ' + err);
+            },
+          });
           funControls.setAudioAvailable(true);
           rebuildPeakDetector(toy);
         } catch (err) {
-          console.error('Error accessing microphone: ' + err);
           funControls.setAudioAvailable(false);
           peakDetector = null;
           currentFreqs = adapter.transformFrequencies({
