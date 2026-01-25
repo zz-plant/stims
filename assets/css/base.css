@@ -1438,6 +1438,33 @@ body {
   margin-top: 4px;
 }
 
+.preflight-panel__details {
+  margin: 6px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.preflight-panel__details-summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(233, 251, 255, 0.72);
+}
+
+.preflight-panel__details-content {
+  margin-top: 6px;
+}
+
+.preflight-panel__details-list {
+  margin: 0;
+  padding-left: 16px;
+  color: rgba(233, 251, 255, 0.78);
+  display: grid;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
 .preflight-panel__eyebrow {
   margin: 0 0 4px;
   text-transform: uppercase;
