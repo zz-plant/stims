@@ -136,6 +136,9 @@
       const particles = [];
       const baseParticleCount = 800;
       let particleCount = baseParticleCount;
+      let peakLevel = 0.12;
+      let bassPulse = 0;
+      let trebleGlow = 0;
 
       function applyQualityPreset(preset) {
         activeQuality = preset;
@@ -235,8 +238,23 @@
         const frequencyData = getContextFrequencyData(ctxAudio);
 
         if (ctxAudio.analyser) {
-          const bass = getBass(frequencyData);
-          const hue = (bass / 255) * 360;
+          const fallbackBands = {
+            bass: getBandAverage(frequencyData, 0, 0.12) / 255,
+            mid: getBandAverage(frequencyData, 0.12, 0.5) / 255,
+            treble: getBandAverage(frequencyData, 0.5, 1) / 255,
+          };
+          const bands = ctxAudio.analyser.getMultiBandEnergy?.() ?? fallbackBands;
+          const weightedEnergy = Math.min(
+            1,
+            (bands.bass * 0.6 + bands.mid * 0.25 + bands.treble * 0.15) * 1.4
+          );
+          peakLevel = Math.max(peakLevel * 0.96, weightedEnergy, 0.05);
+          const normalized = peakLevel ? weightedEnergy / peakLevel : 0;
+          bassPulse = Math.max(bassPulse * 0.85, bands.bass);
+          trebleGlow = Math.max(trebleGlow * 0.8, bands.treble);
+          const hue = ((bassPulse * 0.7 + normalized * 0.3) * 360) % 360;
+          const innerLightness = 25 + bassPulse * 30 + trebleGlow * 12;
+          const outerLightness = 8 + normalized * 12;
           const gradient = ctx.createRadialGradient(
             viewWidth / 2,
             viewHeight / 2,
@@ -245,8 +263,11 @@
             viewHeight / 2,
             viewWidth
           );
-          gradient.addColorStop(0, `hsl(${hue}, 100%, 30%)`);
-          gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 100%, 10%)`);
+          gradient.addColorStop(0, `hsl(${hue}, 100%, ${innerLightness}%)`);
+          gradient.addColorStop(
+            1,
+            `hsl(${(hue + 60) % 360}, 100%, ${outerLightness}%)`
+          );
           ctx.fillStyle = gradient;
         } else {
           ctx.fillStyle = '#000';
@@ -268,10 +289,11 @@
           if (ctxAudio.analyser && frequencyData.length) {
             const freqIndex = Math.floor(index % frequencyData.length);
             const amplitude = frequencyData[freqIndex] / 255;
-            p.size = p.baseSize + amplitude * 15;
-            p.hue = (p.hue + amplitude * 10) % 360;
-            p.lightness = 40 + amplitude * 20;
-            p.alpha = 0.3 + amplitude * 0.7;
+            const energyBoost = 0.7 + peakLevel * 1.1 + bassPulse * 0.8;
+            p.size = p.baseSize + amplitude * 12 * energyBoost;
+            p.hue = (p.hue + amplitude * (6 + trebleGlow * 10)) % 360;
+            p.lightness = 35 + amplitude * 25 + trebleGlow * 15;
+            p.alpha = Math.min(1, 0.25 + amplitude * 0.65 + peakLevel * 0.2);
           }
 
           ctx.save();
@@ -299,7 +321,7 @@
           const barWidth = (viewWidth / frequencyData.length) * 2.5;
           let x = 0;
           for (let i = 0; i < frequencyData.length; i++) {
-            const barHeight = frequencyData[i] * 1.2;
+            const barHeight = frequencyData[i] * (1.1 + peakLevel * 0.6);
             const hue = (i / frequencyData.length) * 360;
             ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.7)`;
             ctx.fillRect(x, viewHeight - barHeight, barWidth, barHeight);
@@ -311,7 +333,7 @@
           const timeData = new Uint8Array(ctxAudio.analyser.fftSize);
           ctxAudio.analyser.getByteTimeDomainData(timeData);
           ctx.lineWidth = 2;
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + peakLevel * 0.6})`;
           ctx.beginPath();
           const sliceWidth = viewWidth / timeData.length;
           let x = 0;
@@ -328,6 +350,24 @@
           ctx.lineTo(viewWidth, viewHeight / 2);
           ctx.stroke();
         }
+
+        bassPulse *= 0.9;
+        trebleGlow *= 0.9;
+      }
+
+      function getBandAverage(dataArray, startRatio, endRatio) {
+        if (!dataArray.length) return 0;
+        const startIndex = Math.floor(dataArray.length * startRatio);
+        const endIndex = Math.max(
+          startIndex + 1,
+          Math.floor(dataArray.length * endRatio)
+        );
+        let sum = 0;
+        const count = endIndex - startIndex;
+        for (let i = startIndex; i < endIndex; i++) {
+          sum += dataArray[i];
+        }
+        return sum / count;
       }
 
       function getBass(dataArray) {

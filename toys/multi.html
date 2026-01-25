@@ -47,7 +47,7 @@
       import * as THREE from 'three';
       import { getContextFrequencyData } from '../assets/js/core/animation-loop.ts';
       import WebToy from '../assets/js/core/web-toy.ts';
-      import { getAverageFrequency } from '../assets/js/utils/audio-handler.ts';
+      import { getWeightedAverageFrequency } from '../assets/js/utils/audio-handler.ts';
       import { showError } from '../assets/js/utils/error-display.ts';
       import createPeakDetector from '../assets/js/utils/peak-detector.ts';
       import { startToyAudio } from '../assets/js/utils/start-audio.ts';
@@ -429,7 +429,7 @@
       function animate(ctx) {
         const delta = clock.getDelta();
         lastFrequencyData = getContextFrequencyData(ctx);
-        const avgFrequency = getAverageFrequency(lastFrequencyData);
+        const avgFrequency = getWeightedAverageFrequency(lastFrequencyData);
 
         peakDetector.update(lastFrequencyData);
         const spin = adapter.computeMotion(avgFrequency);
