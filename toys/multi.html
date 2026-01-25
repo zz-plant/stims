@@ -35,7 +35,7 @@
     </style>
   </head>
   <body>
-    <a href="../index.html" class="home-link">Back to Library</a>
+    <div data-toy-nav></div>
     <canvas id="webglCanvas" class="toy-canvas"></canvas>
     <div
       id="capability-banner"
@@ -44,6 +44,7 @@
     ></div>
     <div id="error-message" style="display: none"></div>
     <script type="module">
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import * as THREE from 'three';
       import { getContextFrequencyData } from '../assets/js/core/animation-loop.ts';
       import WebToy from '../assets/js/core/web-toy.ts';
@@ -54,6 +55,8 @@
       import { createMultiFunAdapter } from '../assets/multi/fun-adapter.ts';
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
+
+      initToyPageShell();
 
       const canvas = document.getElementById('webglCanvas');
       const capabilityBanner = document.getElementById('capability-banner');
