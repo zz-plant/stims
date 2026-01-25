@@ -74,11 +74,12 @@
 
       initToyPageShell();
 
-      const canvas = document.getElementById('glCanvas');
+      const glCanvasElement = document.getElementById('glCanvas');
       const overlayCanvas = document.getElementById('overlayCanvas');
 
       if (
-        !(overlayCanvas instanceof HTMLCanvasElement)
+        !(glCanvasElement instanceof HTMLCanvasElement)
+        || !(overlayCanvas instanceof HTMLCanvasElement)
       ) {
         showError('error-message', 'Canvas element is missing.');
         throw new Error('Canvas element not found');
