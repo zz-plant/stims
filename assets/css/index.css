@@ -1249,6 +1249,40 @@ html.light .hero-metric {
   line-height: 1.5;
 }
 
+.details-panel {
+  display: none;
+}
+
+body[data-details-open] .details-panel {
+  display: block;
+}
+
+.details-toggle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  gap: 0.35rem;
+}
+
+body[data-details-open] [data-details-label="open"] {
+  display: none;
+}
+
+body:not([data-details-open]) [data-details-label="close"] {
+  display: none;
+}
+
+body:not([data-details-open]) .readiness-note {
+  display: none;
+}
+
+body[data-details-open] .readiness-note {
+  display: block;
+}
+
+.intro-details {
+  margin-top: 1rem;
+}
+
 .text-link {
   display: inline-flex;
   align-items: center;

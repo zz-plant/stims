@@ -25,7 +25,7 @@ export const initHeroReadinessSummary = () => {
 
   const updateSummary = (performanceLabel: string) => {
     const compatibilityLabel = buildCompatibilityLabel();
-    text.textContent = `Performance: ${performanceLabel} • ${compatibilityLabel}`;
+    text.textContent = `Ready • ${performanceLabel} • ${compatibilityLabel}`;
   };
 
   updateSummary(getPerformanceSummaryLabel());

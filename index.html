@@ -85,14 +85,23 @@
           </p>
           <h1>Stim library.</h1>
           <p class="section-description">
-            A curated set of responsive visuals built for flow state, clarity, and
-            calm. Audio input options and performance controls live in the toy panel.
+            Feel-first visuals that sync with sound, touch, and motion.
           </p>
+          <a
+            href="#system-check"
+            class="text-link details-toggle"
+            data-details-toggle
+            aria-expanded="false"
+            aria-controls="intro-details system-check-details"
+          >
+            <span data-details-label="open">Learn more</span>
+            <span data-details-label="close">Hide details</span>
+          </a>
         </div>
         <div class="launch-panel" aria-label="Launch sequence status">
           <div class="launch-panel__header">
             <p class="launch-panel__eyebrow">Quick start status</p>
-            <p class="launch-panel__status">Status details below</p>
+            <p class="launch-panel__status">Ready • Live checks running</p>
           </div>
           <div class="launch-meter" role="presentation">
             <span class="launch-meter__bar" aria-hidden="true"></span>
@@ -131,7 +140,7 @@
         </div>
         <div class="hero-readiness" data-hero-readiness-summary>
           <p class="hero-readiness__text" data-hero-readiness-text aria-live="polite">
-            Performance: Balanced • Checking compatibility…
+            Ready • Checking compatibility…
           </p>
           <a
             href="#system-check"
@@ -144,20 +153,26 @@
         <dl class="hero-metrics">
           <div class="hero-metric">
             <dt>Adaptive visuals</dt>
-            <dd>Breathes with live audio, demo tracks, or ambient sound.</dd>
+            <dd>Breathes with live or demo audio.</dd>
           </div>
           <div class="hero-metric">
             <dt>Touch + motion</dt>
-            <dd>Gesture-driven control layers designed for hands-on play.</dd>
+            <dd>Gesture-driven controls for hands-on play.</dd>
           </div>
           <div class="hero-metric">
             <dt>Open-source</dt>
-            <dd>Built in public with gentle defaults and accessibility in mind.</dd>
+            <dd>Built in public with gentle defaults.</dd>
           </div>
         </dl>
-        <p class="cta-helper">
-          No account required. Mic access enables live audio.
-        </p>
+        <div class="intro-details details-panel" data-details-panel id="intro-details">
+          <p class="section-description">
+            A curated set of responsive visuals built for flow state, clarity, and
+            calm. Audio input options and performance controls live in the toy panel.
+          </p>
+          <p class="cta-helper">
+            No account required. Mic access enables live audio.
+          </p>
+        </div>
       </section>
 
       <section class="system-check" id="system-check">
@@ -165,17 +180,34 @@
           <p class="eyebrow">System check</p>
           <h2>Confirm your device is ready</h2>
           <p class="section-description">
+            Ready status updates live. Open details for compatibility notes.
+          </p>
+          <p
+            class="section-description details-panel"
+            data-details-panel
+            id="system-check-details"
+          >
             Live readiness updates automatically. Open the system check for a
             deeper read on graphics, microphone access, and performance
             presets before launching a stim. If mic access is blocked, demo,
             tab, and YouTube audio are available in the toy controls.
           </p>
+          <a
+            href="#system-check"
+            class="text-link details-toggle"
+            data-details-toggle
+            aria-expanded="false"
+            aria-controls="intro-details system-check-details"
+          >
+            <span data-details-label="open">Details</span>
+            <span data-details-label="close">Hide details</span>
+          </a>
         </div>
         <div class="system-grid">
           <div class="readiness-panel" data-readiness-panel>
             <div class="readiness-header">
               <h3 class="readiness-title">Live readiness</h3>
-              <p class="readiness-subtitle">
+              <p class="readiness-subtitle" data-details-panel>
                 We’ll keep these signals updated so you know what’s available.
               </p>
             </div>
