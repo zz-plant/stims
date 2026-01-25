@@ -272,6 +272,10 @@
       import { startToyAudio } from '../assets/js/utils/start-audio.ts';
       import { ensureWebGL } from '../assets/js/utils/webgl-check.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
+      import {
+        initErrorDisplay,
+        setErrorVisible,
+      } from '../assets/js/utils/error-display.ts';
 
       if (!ensureWebGL()) {
         throw new Error('WebGL support is required for the Holy visualizer.');
@@ -316,23 +320,10 @@
       const bloomStrengthValue = document.getElementById('bloomStrengthValue');
       const particleScaleSlider = document.getElementById('particleScale');
       const particleScaleValue = document.getElementById('particleScaleValue');
-      const errorEl = document.getElementById('error-message');
+      const errorDisplayId = 'error-message';
+      initErrorDisplay(errorDisplayId);
       const preferDemoAudio =
         new URLSearchParams(window.location.search).get('audio') === 'demo';
-
-      function showError(message) {
-        if (errorEl) {
-          errorEl.textContent = message;
-          errorEl.style.display = 'block';
-        }
-      }
-
-      function hideError() {
-        if (errorEl) {
-          errorEl.style.display = 'none';
-          errorEl.textContent = '';
-        }
-      }
 
       if (preferDemoAudio && startButton instanceof HTMLButtonElement) {
         startButton.textContent = 'Start Demo Visualizer';
@@ -713,7 +704,8 @@
       function toggleFullscreen() {
         if (!document.fullscreenElement) {
           document.documentElement.requestFullscreen().catch((err) => {
-            showError(
+            setErrorVisible(
+              errorDisplayId,
               `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
             );
           });
@@ -786,11 +778,12 @@
             fallbackToSynthetic: true,
             preferSynthetic: preferDemoAudio,
           });
-          hideError();
+          setErrorVisible(errorDisplayId);
           loadingOverlay.style.display = 'none';
         } catch (err) {
           console.error('Error accessing microphone:', err);
-          showError(
+          setErrorVisible(
+            errorDisplayId,
             preferDemoAudio
               ? 'Demo audio could not be loaded. Please try again.'
               : 'Microphone access is required for the visualizer to work.'

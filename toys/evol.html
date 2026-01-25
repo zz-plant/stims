@@ -11,7 +11,7 @@
   </head>
   <body>
     <a href="../index.html" class="home-link">Back to Library</a>
-    <div id="error-message"></div>
+    <div id="error-message" style="display: none"></div>
     <canvas id="glCanvas" class="toy-canvas"></canvas>
     <div class="control-panel">
       <div class="control-panel__row">
@@ -75,27 +75,19 @@
       } from '../assets/js/utils/audio-handler.ts';
       import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import {
+        initErrorDisplay,
+        setErrorVisible,
+      } from '../assets/js/utils/error-display.ts';
 
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
-      const errorEl = document.getElementById('error-message');
-
-      function displayError(message) {
-        if (errorEl) {
-          errorEl.textContent = message;
-          errorEl.style.display = 'block';
-        }
-      }
-
-      function hideError() {
-        if (errorEl) {
-          errorEl.style.display = 'none';
-          errorEl.textContent = '';
-        }
-      }
+      const errorDisplayId = 'error-message';
+      initErrorDisplay(errorDisplayId);
 
       if (!gl) {
-        displayError(
+        setErrorVisible(
+          errorDisplayId,
           'Unable to initialize WebGL. Your browser may not support it.'
         );
         throw new Error('WebGL not supported');
@@ -373,7 +365,7 @@
           const dataArray = getFrequencyData(ctxAudio.analyser);
           const average = getWeightedAverageFrequency(dataArray);
           audioData = average / 128.0;
-          hideError();
+          setErrorVisible(errorDisplayId);
         } else {
           audioData = 0;
         }
@@ -391,10 +383,11 @@
       }
 
       startToyAudio(toy, render, { fallbackToSynthetic: true })
-        .then(() => hideError())
+        .then(() => setErrorVisible(errorDisplayId))
         .catch((err) => {
           console.error('Error capturing audio: ', err);
-          displayError(
+          setErrorVisible(
+            errorDisplayId,
             'Microphone access is required for the visualization to work. Please allow microphone access.'
           );
           toy.renderer.setAnimationLoop(() => render({ toy, analyser: null }));
