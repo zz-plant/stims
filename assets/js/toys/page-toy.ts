@@ -13,6 +13,13 @@ type StartOptions = {
   preferDemoAudio?: boolean;
 };
 
+type PageToyStartOptions = {
+  container?: HTMLElement | null;
+  preferDemoAudio?: boolean;
+};
+
+type PageToyConfig = Omit<StartOptions, keyof PageToyStartOptions>;
+
 function resolvePageSrc(path: string) {
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   return new URL(path, window.location.origin).toString();
@@ -107,4 +114,17 @@ export function startPageToy({
   target.appendChild(statusElement);
 
   return activeToy;
+}
+
+export function createPageToyStarter(config: PageToyConfig) {
+  return function start({
+    container,
+    preferDemoAudio,
+  }: PageToyStartOptions = {}) {
+    return startPageToy({
+      container,
+      preferDemoAudio,
+      ...config,
+    });
+  };
 }

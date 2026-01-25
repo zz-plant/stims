@@ -1,12 +1,10 @@
 import * as THREE from 'three';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
 type AuroraPalette = {
@@ -20,8 +18,15 @@ type AuroraPalette = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const settingsPanel = getSettingsPanel();
-  let activeQuality: QualityPreset = getActiveQualityPreset();
+  const quality = createQualityPresetManager({
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      rebuildRibbons();
+    },
+  });
   let activePaletteIndex = 0;
 
   const palettes: AuroraPalette[] = [
@@ -92,7 +97,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function getRibbonDetail() {
-    const density = Math.max(0.6, activeQuality.particleScale ?? 1);
+    const density = Math.max(0.6, quality.activeQuality.particleScale ?? 1);
     return {
       count: Math.max(3, Math.round(RIBBON_COUNT * density)),
       points: Math.max(40, Math.round(RIBBON_POINTS * density)),
@@ -251,25 +256,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: preset.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    rebuildRibbons();
-  }
-
   function setupSettingsPanel() {
-    settingsPanel.configure({
+    configureToySettingsPanel({
       title: 'Aurora painter',
       description:
         'Control render scale and ribbon density without restarting audio. Pinch to swell the ribbons and rotate to switch moods.',
-    });
-    settingsPanel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
   }
 
@@ -345,8 +337,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       cameraOptions: { position: { x: 0, y: 0, z: 45 }, fov: 60 },
       rendererOptions: {
         alpha: true,
-        maxPixelRatio: activeQuality.maxPixelRatio,
-        renderScale: activeQuality.renderScale,
+        maxPixelRatio: quality.activeQuality.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
       },
       ambientLightOptions: { intensity: 0.5, color: 0x0c1327 },
       lightingOptions: {

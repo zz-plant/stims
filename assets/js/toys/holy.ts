@@ -1,17 +1,7 @@
-import { startPageToy } from './page-toy';
+import { createPageToyStarter } from './page-toy';
 
-export function start({
-  container,
-  preferDemoAudio,
-}: {
-  container?: HTMLElement | null;
-  preferDemoAudio?: boolean;
-} = {}) {
-  return startPageToy({
-    container,
-    path: './toys/holy.html',
-    preferDemoAudio,
-    title: 'Ultimate Satisfying Visualizer',
-    description: 'Adjust render scale for halo layers and particle bursts.',
-  });
-}
+export const start = createPageToyStarter({
+  path: './toys/holy.html',
+  title: 'Ultimate Satisfying Visualizer',
+  description: 'Adjust render scale for halo layers and particle bursts.',
+});

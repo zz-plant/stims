@@ -4,14 +4,12 @@ import {
   getActiveMotionPreference,
   subscribeToMotionPreference,
 } from '../core/motion-preferences';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 
 type GravityState = {
   vector: THREE.Vector3;
@@ -158,11 +156,17 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const clock = new THREE.Clock();
   let damping = 0.984;
   let grainScale = 1.2;
-  let rippleGain = 1;
-  let activeQuality: QualityPreset = getActiveQualityPreset({
-    presets: DEFAULT_QUALITY_PRESETS,
+  const quality = createQualityPresetManager({
     defaultPresetId: 'balanced',
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      rippleGain = preset.particleScale ?? 1;
+    },
   });
+  let rippleGain = quality.activeQuality.particleScale ?? 1;
 
   type MotionAccessState = 'prompt' | 'granted' | 'denied' | 'unavailable';
   const deviceMotionSupported =
@@ -179,24 +183,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   ) as MotionAccessState;
   gravity.locked = motionAccess !== 'granted';
 
-  const panel = getSettingsPanel();
-  panel.configure({
+  const panel = configureToySettingsPanel({
     title: 'Tactile sand table',
     description:
       'Ripple the grains with bass and mids. Tilt your device to nudge gravity, or lock it when playing on desktop.',
-  });
-
-  panel.setQualityPresets({
-    presets: DEFAULT_QUALITY_PRESETS,
-    defaultPresetId: activeQuality.id,
-    onChange: (preset) => {
-      activeQuality = preset;
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: preset.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
-      rippleGain = preset.particleScale ?? 1;
-    },
+    quality,
   });
 
   const grainRow = panel.addSection(

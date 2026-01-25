@@ -4,15 +4,14 @@ import {
   getPerformancePanel,
   type PerformanceSettings,
 } from '../core/performance-panel';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
+import type { QualityPreset } from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 
 type PresetKey = 'orbit' | 'nebula';
 
@@ -22,9 +21,15 @@ type PresetInstance = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  let activeQuality: QualityPreset = getActiveQualityPreset({
-    presets: DEFAULT_QUALITY_PRESETS,
+  const quality = createQualityPresetManager({
     defaultPresetId: 'balanced',
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: performanceSettings.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      setActivePreset(activePresetKey, { force: true });
+    },
   });
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let runtime: ReturnType<typeof createToyRuntime>;
@@ -286,8 +291,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     activePreset?.dispose();
     activePreset =
       key === 'orbit'
-        ? createOrbitPreset(activeQuality)
-        : createNebulaPreset(activeQuality);
+        ? createOrbitPreset(quality.activeQuality)
+        : createNebulaPreset(quality.activeQuality);
     activePresetKey = key;
     updatePresetButtons();
   }
@@ -300,36 +305,21 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: performanceSettings.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    setActivePreset(activePresetKey, { force: true });
-  }
-
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
     runtime.toy.updateRendererSettings({
       maxPixelRatio: performanceSettings.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
+      renderScale: quality.activeQuality.renderScale,
     });
     setActivePreset(activePresetKey, { force: true });
   }
 
   function setupSettingsPanel() {
-    const panel = getSettingsPanel();
-    panel.configure({
+    const panel = configureToySettingsPanel({
       title: 'Cosmic controls',
       description:
         'Quality changes persist between toys so you can cap DPI or ramp visuals.',
-    });
-
-    panel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
 
     const presetRow = panel.addSection(
