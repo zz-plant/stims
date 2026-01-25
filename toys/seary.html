@@ -60,6 +60,11 @@
       import { initHints } from '../assets/ui/hints.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
       import {
+        requestMotionPermission,
+        requiresMotionPermission,
+        supportsDeviceOrientation,
+      } from '../assets/js/utils/motion-permission.ts';
+      import {
         getBandLevels,
         getWeightedEnergy,
         updateEnergyPeak,
@@ -509,11 +514,36 @@
         });
       }
 
-      window.addEventListener('deviceorientation', (event) => {
+      let motionEnabled = false;
+      const handleDeviceOrientation = (event) => {
         orientation.alpha = event.alpha;
         orientation.beta = event.beta;
         orientation.gamma = event.gamma;
-      });
+      };
+
+      const enableMotion = async () => {
+        if (motionEnabled) return;
+        const permission = await requestMotionPermission();
+        if (permission !== 'granted') return;
+        motionEnabled = true;
+        window.addEventListener('deviceorientation', handleDeviceOrientation);
+      };
+
+      if (supportsDeviceOrientation()) {
+        if (requiresMotionPermission()) {
+          const requestOnFirstInteraction = () => {
+            void enableMotion();
+          };
+          window.addEventListener('pointerdown', requestOnFirstInteraction, {
+            once: true,
+          });
+          window.addEventListener('touchstart', requestOnFirstInteraction, {
+            once: true,
+          });
+        } else {
+          void enableMotion();
+        }
+      }
 
       function processAudio(ctxAudio) {
         if (!ctxAudio.analyser) {
