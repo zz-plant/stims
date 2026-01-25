@@ -1,5 +1,18 @@
+import {
+  createMotionToyCapabilities,
+  createToyCapabilities,
+  withToyCapabilities,
+} from './utils/toy-capabilities.ts';
+
+const audioCapabilities = createToyCapabilities();
+const audioMotionCapabilities = createMotionToyCapabilities();
+
+const withAudio = (entry) => withToyCapabilities(entry, audioCapabilities);
+const withAudioMotion = (entry) =>
+  withToyCapabilities(entry, audioMotionCapabilities);
+
 export default [
-  {
+  withAudio({
     slug: '3dtoy',
     title: '3D Toy',
     description: 'A twisting 3D tunnel that responds to sound.',
@@ -7,8 +20,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'aurora-painter',
     title: 'Aurora Painter',
     description:
@@ -25,8 +38,8 @@ export default [
       'Pinch/rotate gestures',
       'Arrow-key mood switching',
     ],
-  },
-  {
+  }),
+  withAudio({
     slug: 'clay',
     title: 'Pottery Wheel Sculptor',
     description:
@@ -35,8 +48,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'evol',
     title: 'Evolutionary Weirdcore',
     description:
@@ -45,8 +58,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'geom',
     title: 'Microphone Geometry Visualizer',
     description:
@@ -55,8 +68,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'holy',
     title: 'Halo Visualizer',
     description:
@@ -65,8 +78,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudioMotion({
     slug: 'multi',
     title: 'Multi-Capability Visualizer',
     description: 'Shapes and lights move with both sound and device motion.',
@@ -75,8 +88,8 @@ export default [
     requiresWebGPU: true,
     allowWebGLFallback: true,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'seary',
     title: 'Synesthetic Visualizer',
     description: 'Blend audio and visuals into linked patterns.',
@@ -84,8 +97,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'legible',
     title: 'Terminal Word Grid',
     description:
@@ -94,8 +107,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'symph',
     title: 'Spectrograph',
     description: 'A spectrograph that moves gently with your audio.',
@@ -103,8 +116,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'cube-wave',
     title: 'Grid Visualizer',
     description:
@@ -113,8 +126,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'bubble-harmonics',
     title: 'Bubble Harmonics',
     description:
@@ -124,8 +137,8 @@ export default [
     requiresWebGPU: false,
     lifecycleStage: 'featured',
     featuredRank: 7,
-  },
-  {
+  }),
+  withAudio({
     slug: 'cosmic-particles',
     title: 'Cosmic Particles',
     description:
@@ -135,8 +148,8 @@ export default [
     requiresWebGPU: false,
     lifecycleStage: 'featured',
     featuredRank: 5,
-  },
-  {
+  }),
+  withAudio({
     slug: 'lights',
     title: 'Audio Light Show',
     description:
@@ -145,8 +158,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'spiral-burst',
     title: 'Spiral Burst',
     description: 'Colorful spirals rotate and expand with every beat.',
@@ -158,8 +171,8 @@ export default [
     moods: ['energetic', 'pulsing', 'cosmic'],
     tags: ['spirals', 'burst', 'gestural'],
     controls: ['Mode buttons', 'Pinch/rotate gestures', 'Arrow-key mode swap'],
-  },
-  {
+  }),
+  withAudio({
     slug: 'rainbow-tunnel',
     title: 'Rainbow Tunnel',
     description: 'Fly through colorful rings that spin to your music.',
@@ -167,8 +180,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
-  },
-  {
+  }),
+  withAudio({
     slug: 'star-field',
     title: 'Star Field',
     description: 'A field of shimmering stars reacts to the beat.',
@@ -179,8 +192,8 @@ export default [
     moods: ['serene', 'drifting', 'celestial'],
     tags: ['stars', 'nebula', 'gestural'],
     controls: ['Pinch/rotate gestures', 'Arrow-key mood switching'],
-  },
-  {
+  }),
+  withAudio({
     slug: 'fractal-kite-garden',
     title: 'Fractal Kite Garden',
     description:
@@ -190,8 +203,8 @@ export default [
     requiresWebGPU: false,
     lifecycleStage: 'archived',
     controls: ['Pattern density slider', 'Palette switches'],
-  },
-  {
+  }),
+  withAudioMotion({
     slug: 'tactile-sand-table',
     title: 'Tactile Sand Table',
     description:
@@ -202,8 +215,8 @@ export default [
     lifecycleStage: 'featured',
     featuredRank: 3,
     controls: ['Grain size slider', 'Damping slider', 'Gravity lock toggle'],
-  },
-  {
+  }),
+  withAudio({
     slug: 'bioluminescent-tidepools',
     title: 'Bioluminescent Tidepools',
     description:
@@ -222,8 +235,8 @@ export default [
       'Pinch/rotate gestures',
       'Arrow-key mood switching',
     ],
-  },
-  {
+  }),
+  withAudio({
     slug: 'neon-wave',
     title: 'Neon Wave',
     description:
@@ -233,15 +246,11 @@ export default [
     requiresWebGPU: false,
     lifecycleStage: 'featured',
     featuredRank: 6,
-    capabilities: {
-      microphone: true,
-      demoAudio: true,
-    },
     moods: ['energetic', 'immersive'],
     tags: ['synthwave', 'cyberpunk', 'retro', 'visualizer', 'bloom'],
     controls: ['Theme selector', 'Quality presets'],
-  },
-  {
+  }),
+  withAudio({
     slug: 'milkdrop',
     title: 'MilkDrop Proto',
     description:
@@ -250,12 +259,8 @@ export default [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'prototype',
-    capabilities: {
-      microphone: true,
-      demoAudio: true,
-    },
     moods: ['immersive', 'psychedelic'],
     tags: ['feedback', 'warp', 'visualizer', 'retro'],
     controls: ['Quality presets'],
-  },
+  }),
 ];
