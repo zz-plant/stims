@@ -289,6 +289,9 @@
       let particleMaterial;
       let particleGeometry;
       let unifiedInput = null;
+      let energyPeak = 0.12;
+      let bassPulse = 0;
+      let trebleShimmer = 0;
 
       // UI Elements
       const loadingOverlay = document.getElementById('loadingOverlay');
@@ -588,23 +591,34 @@
         const treble = getFrequencyRange(2000, 16000);
 
         // Calculate Average Frequencies
-        const bassAvg = average(bass) / 255;
-        const midAvg = average(mid) / 255;
-        const trebleAvg = average(treble) / 255;
+        const bands = analyser?.getMultiBandEnergy?.();
+        const bassAvg = bands?.bass ?? average(bass) / 255;
+        const midAvg = bands?.mid ?? average(mid) / 255;
+        const trebleAvg = bands?.treble ?? average(treble) / 255;
+        const weightedEnergy = Math.min(
+          1,
+          (bassAvg * 0.6 + midAvg * 0.25 + trebleAvg * 0.15) * 1.35
+        );
+        energyPeak = Math.max(energyPeak * 0.96, weightedEnergy, 0.05);
+        const normalized = weightedEnergy / energyPeak;
+        bassPulse = Math.max(bassPulse * 0.85, bassAvg);
+        trebleShimmer = Math.max(trebleShimmer * 0.8, trebleAvg);
 
         // Scale Shape Smoothly
-        const scale = 1 + bassAvg * 0.5;
+        const scale = 1 + bassAvg * 0.55 + normalized * 0.2;
         visualizerShape.scale.lerp(
           new THREE.Vector3(scale, scale, scale),
           0.05
         );
 
         // Rotate Shape Smoothly
-        visualizerShape.rotation.x += 0.002 + midAvg * 0.001;
-        visualizerShape.rotation.y += 0.003 + trebleAvg * 0.001;
+        visualizerShape.rotation.x += 0.002 + midAvg * 0.002 + normalized * 0.001;
+        visualizerShape.rotation.y += 0.003 + trebleAvg * 0.002 + normalized * 0.0012;
 
         // Update Shape Color
-        const hue = (bassAvg + midAvg + trebleAvg) / 3;
+        const hue =
+          (bassAvg * 0.5 + midAvg * 0.3 + trebleAvg * 0.2 + normalized * 0.1) %
+          1;
         visualizerShape.material.color.setHSL(hue, 1, 0.5);
         visualizerShape.material.emissive.setHSL(hue, 1, 0.2);
 
@@ -613,25 +627,32 @@
         for (let i = 0; i < particleCount; i++) {
           const freqIndex = Math.floor((i / particleCount) * dataArray.length);
           const audioValue = dataArray[freqIndex] / 255;
+          const reactiveValue = Math.min(
+            1,
+            audioValue * (0.75 + normalized * 0.9 + trebleShimmer * 0.4)
+          );
 
           // Position Update with Smooth Movement
           instancedParticles.getMatrixAt(i, dummy.matrix);
           dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
 
-          dummy.position.y += (audioValue - 0.5) * 0.1;
-          dummy.rotation.x += 0.01 * audioValue;
-          dummy.rotation.y += 0.01 * audioValue;
-          dummy.scale.setScalar(particleScale);
+          dummy.position.y += (reactiveValue - 0.5) * 0.12;
+          dummy.rotation.x += 0.012 * reactiveValue;
+          dummy.rotation.y += 0.012 * reactiveValue;
+          dummy.scale.setScalar(particleScale * (1 + bassPulse * 0.2));
           dummy.updateMatrix();
           instancedParticles.setMatrixAt(i, dummy.matrix);
 
           // Color Update based on Audio
           const color = new THREE.Color();
-          color.setHSL(hue, 1, 0.5 + 0.5 * audioValue);
+          color.setHSL(hue, 1, 0.5 + 0.5 * reactiveValue);
           instancedParticles.instanceColor.setXYZ(i, color.r, color.g, color.b);
         }
         instancedParticles.instanceMatrix.needsUpdate = true;
         instancedParticles.instanceColor.needsUpdate = true;
+
+        bassPulse *= 0.9;
+        trebleShimmer *= 0.9;
       }
 
       // Get Frequencies within a Range

@@ -7,6 +7,7 @@ import {
   applyAudioRotation,
   applyAudioScale,
 } from '../../utils/animation-utils.ts';
+import { getWeightedAverageFrequency } from '../../utils/audio-handler.ts';
 import PatternRecognizer from '../../utils/patternRecognition.ts';
 import { startToyAudio } from '../../utils/start-audio.ts';
 
@@ -65,8 +66,10 @@ export const createAudioController = ({
     }
 
     const audioData = getContextFrequencyData(ctx);
-    applyAudioRotation(cube, audioData, 0.05);
-    applyAudioScale(cube, audioData, 50);
+    const avg = getWeightedAverageFrequency(audioData);
+    const intensity = Math.min(1, avg / 180);
+    applyAudioRotation(cube, audioData, 0.05 + intensity * 0.08);
+    applyAudioScale(cube, audioData, 50 - intensity * 20);
 
     patternRecognizer?.updatePatternBuffer();
     const detectedPattern = patternRecognizer?.detectPattern();

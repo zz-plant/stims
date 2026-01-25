@@ -11,7 +11,7 @@ import {
   type QualityPreset,
 } from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
-import { getAverageFrequency } from '../utils/audio-handler';
+import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
 import type { UnifiedInputState } from '../utils/unified-input';
 
@@ -279,7 +279,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function animate(data: Uint8Array, time: number) {
     if (!starField) return;
-    const avg = getAverageFrequency(data);
+    const avg = getWeightedAverageFrequency(data);
     const normalizedAvg = avg / 255;
 
     controls.drift = THREE.MathUtils.lerp(controls.drift, targetDrift, 0.08);

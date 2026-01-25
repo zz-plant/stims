@@ -6,7 +6,7 @@ import {
   type QualityPreset,
 } from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
-import { getAverageFrequency } from '../utils/audio-handler';
+import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
 
 type ShapeMode = 'cubes' | 'spheres';
@@ -333,7 +333,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function animate(dataArray: Uint8Array, time: number) {
-    const avg = getAverageFrequency(dataArray);
+    const avg = getWeightedAverageFrequency(dataArray);
 
     const binsPerItem = dataArray.length / Math.max(gridItems.length, 1);
 
