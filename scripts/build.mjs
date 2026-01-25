@@ -13,7 +13,8 @@ const isCloudflarePages = ['1', 'true'].includes(
 const distDir = join(process.cwd(), 'dist');
 const distIndex = join(distDir, 'index.html');
 const manifest = join(distDir, '.vite', 'manifest.json');
-const hasReusableArtifacts = existsSync(distIndex) && existsSync(manifest);
+const hasReusableArtifacts = () =>
+  existsSync(distIndex) && existsSync(manifest);
 const vitePackagePath = join(
   process.cwd(),
   'node_modules',
@@ -21,7 +22,7 @@ const vitePackagePath = join(
   'package.json',
 );
 
-if (isCloudflarePages && hasReusableArtifacts) {
+if (isCloudflarePages && hasReusableArtifacts()) {
   console.log(
     '[build] CF_PAGES detected and dist/ already populated; skipping Vite rebuild.',
   );
@@ -42,6 +43,13 @@ if (!hasBunRuntime) {
 if (!existsSync(vitePackagePath)) {
   console.log(`[build] Installing dependencies with "${installCommand}"...`);
   execSync(installCommand, { stdio: 'inherit' });
+
+  if (isCloudflarePages && hasReusableArtifacts()) {
+    console.log(
+      '[build] CF_PAGES detected and dist/ already populated after install; skipping Vite rebuild.',
+    );
+    process.exit(0);
+  }
 }
 
 console.log(`[build] Running Vite build with "${viteCommand}"...`);
