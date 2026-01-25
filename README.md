@@ -36,7 +36,7 @@ If you add new scripts, toys, or deployment options, update the relevant doc abo
 2. Choose your runtime (the repo records `bun@1.2.14` in `package.json` via `packageManager`):
    - **Bun 1.2+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle and the supported workflow.
 3. Install dependencies with `bun install`. The repository tracks `bun.lock` for reproducible installs—use `bun install --frozen-lockfile` to respect it.
-4. Start the dev server with `bun run dev`, then open `http://localhost:5173` in your browser. The dev server already binds to all interfaces for easy forwarding and mobile checks; `bun run dev:host` remains available as an explicit alternative.
+4. Start the dev server with `bun run dev`, then open `http://localhost:5173` in your browser. Use `bun run dev:host` when you need the server bound to all interfaces for mobile/LAN testing.
 
 See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static hosting, and Cloudflare Worker instructions. That playbook also covers PR preview validation and multi-entry-point checks before merging.
 
@@ -214,7 +214,7 @@ All JavaScript dependencies are installed via Bun and bundled locally with Vite,
 
 ## Code of Conduct and Contributions
 
-Please review our [Code of Conduct](./CODE_OF_CONDUCT.md) before participating in the project. By contributing, you agree to uphold these community standards. A full contributing guide will live alongside the Code of Conduct so expectations are always clear.
+Please review our [Code of Conduct](./CODE_OF_CONDUCT.md) before participating in the project. By contributing, you agree to uphold these community standards. The contributor expectations and workflow checklist live in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ### Running Tests
 
