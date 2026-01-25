@@ -56,6 +56,11 @@
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
+      import {
+        getBandLevels,
+        getWeightedEnergy,
+        updateEnergyPeak,
+      } from '../assets/js/utils/audio-reactivity.ts';
 
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
@@ -93,6 +98,9 @@
       const adapter = createSearyFunAdapter();
       let peakDetector = null;
       let lastVibrateTime = 0;
+      let energyPeak = 0.12;
+      let bassPulse = 0;
+      let trebleShimmer = 0;
       let currentFreqs = adapter.transformFrequencies({
         low: 0,
         mid: 0,
@@ -530,26 +538,19 @@
         }
 
         const dataArray = getFrequencyData(ctxAudio.analyser);
-        const bufferLength = dataArray.length || 1;
-        const bucketSize = bufferLength / 3;
-        const lowFreq =
-          dataArray
-            .slice(0, bucketSize)
-            .reduce((sum, value) => sum + value, 0) /
-          bucketSize /
-          256.0;
-        const midFreq =
-          dataArray
-            .slice(bucketSize, 2 * bucketSize)
-            .reduce((sum, value) => sum + value, 0) /
-          bucketSize /
-          256.0;
-        const highFreq =
-          dataArray
-            .slice(2 * bucketSize)
-            .reduce((sum, value) => sum + value, 0) /
-          bucketSize /
-          256.0;
+        const bands = getBandLevels({
+          analyser: ctxAudio.analyser,
+          data: dataArray,
+          ratios: { bass: 0.2, mid: 0.55 },
+        });
+        const weightedEnergy = getWeightedEnergy(bands);
+        energyPeak = updateEnergyPeak(energyPeak, weightedEnergy);
+        bassPulse = Math.max(bassPulse * 0.85, bands.bass);
+        trebleShimmer = Math.max(trebleShimmer * 0.8, bands.treble);
+        const boost = 0.75 + weightedEnergy * 0.9 + bassPulse * 0.6;
+        const lowFreq = Math.min(1, bands.bass * boost);
+        const midFreq = Math.min(1, bands.mid * (0.85 + boost * 0.6));
+        const highFreq = Math.min(1, bands.treble * (0.9 + boost * 0.75));
 
         currentFreqs = adapter.transformFrequencies({
           low: lowFreq,
@@ -626,6 +627,9 @@
             canvas.style.transform = 'scale(1)';
           }, 100);
         }
+
+        bassPulse *= 0.9;
+        trebleShimmer *= 0.9;
 
         burstState.scale += (1 - burstState.scale) * Math.min(1, dt * 2.25);
         burstState.rotation *= Math.max(0, 1 - dt * 1.35);
