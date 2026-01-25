@@ -11,7 +11,7 @@
   </head>
   <body>
     <div data-toy-nav></div>
-    <div id="error-message"></div>
+    <div id="error-message" style="display: none"></div>
     <canvas id="glCanvas" class="toy-canvas"></canvas>
     <div class="control-panel">
       <div class="control-panel__row">
@@ -75,14 +75,15 @@
       } from '../assets/js/utils/audio-handler.ts';
       import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
       import {
-        clearError,
-        showError,
+        initErrorDisplay,
+        setErrorVisible,
       } from '../assets/js/utils/error-display.ts';
-      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
       import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
 
       initToyPageShell();
+      const errorDisplayId = 'error-message';
+      initErrorDisplay(errorDisplayId);
 
       let resolutionUniformLocation = null;
       const { canvas, gl, disposeResize } = createToyCanvas('glCanvas', {
@@ -354,7 +355,7 @@
           const dataArray = getFrequencyData(ctxAudio.analyser);
           const average = getWeightedAverageFrequency(dataArray);
           audioData = average / 128.0;
-          clearError('error-message');
+          setErrorVisible(errorDisplayId);
         } else {
           audioData = 0;
         }
@@ -371,20 +372,21 @@
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
 
-      startToyAudio(toy, render, { fallbackToSynthetic: true })
-        .then(() => clearError('error-message'))
-        .catch((err) => {
-      void startAudio(render, { fallbackToSynthetic: true }, {
-        onSuccess: () => hideError(),
-        onError: (err) => {
-          console.error('Error capturing audio: ', err);
-          showError(
-            'error-message',
-            'Microphone access is required for the visualization to work. Please allow microphone access.'
-          );
-          toy.renderer.setAnimationLoop(() => render({ toy, analyser: null }));
-        },
-      }).catch(() => {});
+      void startAudio(
+        render,
+        { fallbackToSynthetic: true },
+        {
+          onSuccess: () => setErrorVisible(errorDisplayId),
+          onError: (err) => {
+            console.error('Error capturing audio: ', err);
+            setErrorVisible(
+              errorDisplayId,
+              'Microphone access is required for the visualization to work. Please allow microphone access.'
+            );
+            toy.renderer.setAnimationLoop(() => render({ toy, analyser: null }));
+          },
+        }
+      ).catch(() => {});
 
       window.addEventListener('pagehide', () => {
         disposeResize();
