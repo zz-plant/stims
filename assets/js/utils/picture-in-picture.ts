@@ -18,7 +18,10 @@ export function isToyPictureInPictureActive(doc: Document) {
 }
 
 export function getActiveToyCanvas(doc: Document) {
-  return doc.querySelector<HTMLCanvasElement>('#active-toy-container canvas');
+  return (
+    doc.querySelector<HTMLCanvasElement>('#active-toy-container canvas') ??
+    doc.querySelector<HTMLCanvasElement>('.toy-canvas')
+  );
 }
 
 function ensureVideoElement(doc: Document) {
