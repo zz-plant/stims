@@ -61,7 +61,7 @@
         getWeightedEnergy,
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
-      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
+      import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
       import {
         clearError,
         showError,
@@ -72,17 +72,14 @@
       import { initHints } from '../assets/ui/hints.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
 
-      const canvas = document.getElementById('glCanvas');
       const overlayCanvas = document.getElementById('overlayCanvas');
 
       if (
-        !(canvas instanceof HTMLCanvasElement) ||
         !(overlayCanvas instanceof HTMLCanvasElement)
       ) {
         showError('error-message', 'Canvas element is missing.');
         throw new Error('Canvas element not found');
       }
-      const gl = canvas.getContext('webgl');
       const ctx2d = overlayCanvas.getContext('2d');
 
       initHints({
@@ -94,13 +91,20 @@
         ],
       });
 
-      if (!gl) {
-        showError(
-          'error-message',
-          'Unable to initialize WebGL. Your browser may not support it.'
-        );
-        throw new Error('WebGL not supported');
-      }
+      let resolutionUniformLocation = null;
+      const { canvas, gl, disposeResize } = createToyCanvas('glCanvas', {
+        errorElementId: 'error-message',
+        maxPixelRatio: 2,
+        onResize: ({ width, height, cssWidth, cssHeight }) => {
+          if (resolutionUniformLocation) {
+            gl.uniform2f(resolutionUniformLocation, width, height);
+          }
+          overlayCanvas.width = width;
+          overlayCanvas.height = height;
+          overlayCanvas.style.width = `${cssWidth}px`;
+          overlayCanvas.style.height = `${cssHeight}px`;
+        },
+      });
 
       const vertexShaderSource = `
             attribute vec4 a_position;
@@ -207,7 +211,7 @@
         0
       );
 
-      const resolutionUniformLocation = gl.getUniformLocation(
+      resolutionUniformLocation = gl.getUniformLocation(
         program,
         'u_resolution'
       );
@@ -229,17 +233,6 @@
         program,
         'u_rippleAmp'
       );
-
-      const disposeResize = setupCanvasResize(canvas, gl, {
-        maxPixelRatio: 2,
-        onResize: ({ width, height, cssWidth, cssHeight }) => {
-          gl.uniform2f(resolutionUniformLocation, width, height);
-          overlayCanvas.width = width;
-          overlayCanvas.height = height;
-          overlayCanvas.style.width = `${cssWidth}px`;
-          overlayCanvas.style.height = `${cssHeight}px`;
-        },
-      });
 
       const adapter = createSymphFunAdapter();
       let gradientStops = adapter.paletteOptions.bright;
