@@ -30,8 +30,11 @@ if (isCloudflarePages && hasReusableArtifacts()) {
 }
 
 const hasBunRuntime = typeof process.versions?.bun === 'string';
-const installCommand =
-  'STIMS_SKIP_POSTINSTALL_BUILD=1 bun install --frozen-lockfile';
+const installCommand = 'bun install --frozen-lockfile';
+const installEnv = {
+  ...process.env,
+  STIMS_SKIP_POSTINSTALL_BUILD: '1',
+};
 const viteCommand = 'bunx vite build';
 
 if (!hasBunRuntime) {
@@ -43,7 +46,7 @@ if (!hasBunRuntime) {
 
 if (!existsSync(vitePackagePath)) {
   console.log(`[build] Installing dependencies with "${installCommand}"...`);
-  execSync(installCommand, { stdio: 'inherit' });
+  execSync(installCommand, { env: installEnv, stdio: 'inherit' });
 
   if (isCloudflarePages && hasReusableArtifacts()) {
     console.log(
