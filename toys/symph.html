@@ -72,7 +72,7 @@
       import { initHints } from '../assets/ui/hints.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
 
-      initToyPageShell();
+      const toyNav = initToyPageShell();
 
       const glCanvasElement = document.getElementById('glCanvas');
       const overlayCanvas = document.getElementById('overlayCanvas');
@@ -86,6 +86,9 @@
       }
       const ctx2d = overlayCanvas.getContext('2d');
 
+      const hintsButtonHost =
+        toyNav?.querySelector('.active-toy-nav__actions') ?? null;
+
       initHints({
         id: 'symph-visualizer',
         tips: [
@@ -93,6 +96,11 @@
           'Switch to Party Mode for bigger motion.',
           'Drag across the canvas to nudge the spectrograph ripples.',
         ],
+        trigger: 'idle',
+        manualButton: {
+          container: hintsButtonHost,
+          label: 'Need tips?',
+        },
       });
 
       let resolutionUniformLocation = null;

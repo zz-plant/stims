@@ -226,6 +226,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   });
   dampingRow.appendChild(dampingSlider);
 
+  const hintsRow = panel.addSection(
+    'Tips',
+    'Bring back the quick guide whenever you need it.',
+  );
+
   const gravityRow = panel.addSection(
     'Gravity',
     'Lock to the default downward pull on desktop, or let device tilt steer the sand.',
@@ -393,6 +398,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       'Tilt your phone or tablet to steer the gravity vector.',
       'Lock gravity on desktop to keep the table steady, or unlock when using a motion-capable device.',
     ],
+    trigger: 'idle',
+    manualButton: {
+      container: hintsRow,
+      label: 'Need tips?',
+      className: 'control-panel__chip',
+    },
   });
 
   function addRipple(strength: number) {

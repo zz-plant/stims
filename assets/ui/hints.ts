@@ -4,10 +4,18 @@ export interface HintOptions {
   title?: string;
   ctaLabel?: string;
   container?: HTMLElement;
+  trigger?: 'idle' | 'interaction' | 'manual';
+  idleDelayMs?: number;
+  manualButton?: {
+    container?: HTMLElement | null;
+    label?: string;
+    className?: string;
+  };
 }
 
 const STYLE_ID = 'stims-hints-style';
 const STORAGE_PREFIX = 'stims.hints.dismissed.';
+const DEFAULT_IDLE_DELAY_MS = 1200;
 
 function injectHintStyles() {
   if (document.getElementById(STYLE_ID)) return;
@@ -91,6 +99,25 @@ function injectHintStyles() {
       transform: translateY(-1px);
     }
 
+    .stims-hint__trigger {
+      border: 1px solid rgba(125, 211, 252, 0.6);
+      background: rgba(15, 23, 42, 0.7);
+      color: #e2e8f0;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      min-height: 40px;
+      touch-action: manipulation;
+    }
+
+    .stims-hint__trigger:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(14, 165, 233, 0.3);
+    }
+
     @media (max-width: 600px) {
       .stims-hint {
         left: 12px;
@@ -129,54 +156,117 @@ export function initHints({
   title = 'Quick tips',
   ctaLabel = 'Got it',
   container = document.body,
+  trigger = 'interaction',
+  idleDelayMs = DEFAULT_IDLE_DELAY_MS,
+  manualButton,
 }: HintOptions): void {
   if (!tips?.length || hasDismissed(id)) return;
   injectHintStyles();
 
-  const wrapper = document.createElement('section');
-  wrapper.className = 'stims-hint';
-  wrapper.role = 'status';
-  wrapper.setAttribute('aria-live', 'polite');
+  const doc = container.ownerDocument ?? document;
+  const win = doc.defaultView ?? window;
+  const hintId = `stims-hint-${id}`;
+  let hintElement: HTMLElement | null = null;
+  let idleTimeout: number | null = null;
+  let manualButtonElement: HTMLButtonElement | null = null;
 
-  const heading = document.createElement('h2');
-  heading.className = 'stims-hint__title';
-  heading.textContent = title;
-  wrapper.appendChild(heading);
+  const cleanupManualButton = () => {
+    manualButtonElement?.remove();
+    manualButtonElement = null;
+  };
 
-  const list = document.createElement('ul');
-  list.className = 'stims-hint__list';
-  tips.forEach((tip) => {
-    const item = document.createElement('li');
-    item.className = 'stims-hint__item';
-    item.textContent = tip;
-    list.appendChild(item);
-  });
-  wrapper.appendChild(list);
+  const renderHint = () => {
+    if (hintElement || hasDismissed(id)) return;
 
-  const actions = document.createElement('div');
-  actions.className = 'stims-hint__actions';
+    const wrapper = doc.createElement('section');
+    wrapper.className = 'stims-hint';
+    wrapper.id = hintId;
+    wrapper.role = 'status';
+    wrapper.setAttribute('aria-live', 'polite');
 
-  const confirm = document.createElement('button');
-  confirm.className = 'stims-hint__button';
-  confirm.type = 'button';
-  confirm.textContent = ctaLabel;
-  confirm.addEventListener('click', () => {
-    setDismissed(id);
-    wrapper.remove();
-  });
+    const heading = doc.createElement('h2');
+    heading.className = 'stims-hint__title';
+    heading.textContent = title;
+    wrapper.appendChild(heading);
 
-  const dismiss = document.createElement('button');
-  dismiss.className = 'stims-hint__dismiss';
-  dismiss.type = 'button';
-  dismiss.textContent = "Don't show again";
-  dismiss.addEventListener('click', () => {
-    setDismissed(id);
-    wrapper.remove();
-  });
+    const list = doc.createElement('ul');
+    list.className = 'stims-hint__list';
+    tips.forEach((tip) => {
+      const item = doc.createElement('li');
+      item.className = 'stims-hint__item';
+      item.textContent = tip;
+      list.appendChild(item);
+    });
+    wrapper.appendChild(list);
 
-  actions.appendChild(confirm);
-  actions.appendChild(dismiss);
-  wrapper.appendChild(actions);
+    const actions = doc.createElement('div');
+    actions.className = 'stims-hint__actions';
 
-  container.appendChild(wrapper);
+    const confirm = doc.createElement('button');
+    confirm.className = 'stims-hint__button';
+    confirm.type = 'button';
+    confirm.textContent = ctaLabel;
+    confirm.addEventListener('click', () => {
+      wrapper.remove();
+      hintElement = null;
+    });
+
+    const dismiss = doc.createElement('button');
+    dismiss.className = 'stims-hint__dismiss';
+    dismiss.type = 'button';
+    dismiss.textContent = "Don't show again";
+    dismiss.addEventListener('click', () => {
+      setDismissed(id);
+      wrapper.remove();
+      hintElement = null;
+      cleanupManualButton();
+    });
+
+    actions.appendChild(confirm);
+    actions.appendChild(dismiss);
+    wrapper.appendChild(actions);
+
+    container.appendChild(wrapper);
+    hintElement = wrapper;
+  };
+
+  if (manualButton?.container) {
+    manualButtonElement = doc.createElement('button');
+    manualButtonElement.type = 'button';
+    manualButtonElement.textContent = manualButton.label ?? 'Need tips?';
+    manualButtonElement.className =
+      manualButton.className ?? 'stims-hint__trigger';
+    manualButtonElement.setAttribute('aria-controls', hintId);
+    manualButtonElement.addEventListener('click', () => {
+      renderHint();
+    });
+    manualButton.container.appendChild(manualButtonElement);
+  }
+
+  const removeInteractionListeners = (handler: () => void) => {
+    doc.removeEventListener('pointerdown', handler);
+    doc.removeEventListener('keydown', handler);
+  };
+
+  const handleFirstInteraction = () => {
+    removeInteractionListeners(handleFirstInteraction);
+    if (trigger === 'interaction') {
+      renderHint();
+      return;
+    }
+    if (trigger === 'idle') {
+      if (idleTimeout !== null) return;
+      idleTimeout = win.setTimeout(() => {
+        idleTimeout = null;
+        renderHint();
+      }, idleDelayMs);
+    }
+  };
+
+  if (trigger === 'interaction' || trigger === 'idle') {
+    doc.addEventListener('pointerdown', handleFirstInteraction, {
+      passive: true,
+    });
+    doc.addEventListener('keydown', handleFirstInteraction);
+  }
 }
