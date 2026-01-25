@@ -125,7 +125,7 @@
     </style>
   </head>
   <body>
-    <a href="../index.html" class="home-link">Back to Library</a>
+    <div data-toy-nav></div>
     <div id="error-message" style="display: none"></div>
     <div class="controls">
       <button id="start-button">Start Microphone</button>
@@ -159,16 +159,18 @@
     <div class="grid" id="grid"></div>
 
     <script type="module">
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import {
         getFrequencyData,
-        initAudio,
       } from '../assets/js/utils/audio-handler.ts';
-      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import {
         getBandLevels,
         getWeightedEnergy,
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
+
+      initToyPageShell();
 
       let analyser,
         dataArray = new Uint8Array(0),
@@ -372,14 +374,6 @@
           };
         }
 
-        async initAudio(options = {}) {
-          const audio = await initAudio(options);
-          this.analyser = audio.analyser;
-          this.audioCleanup = audio.cleanup;
-          analyser = this.analyser;
-          return audio;
-        }
-
         dispose() {
           if (this.loopId) {
             cancelAnimationFrame(this.loopId);
@@ -390,22 +384,33 @@
       }
 
       const toy = new GridToy();
+      const { startAudio } = createToyAudioBootstrap(toy, {
+        onAudioInit: (audio) => {
+          analyser = audio.analyser;
+        },
+      });
 
       function startMicAudio() {
         startButton.disabled = true;
-        startToyAudio(toy, render, { fftSize: 512, fallbackToSynthetic: true })
-          .then(() => {
-            isMicrophoneEnabled = true;
-            startButton.textContent = 'Microphone Active';
-            hideError();
-          })
-          .catch(() => {
-            showError(
-              'Microphone access denied. Please allow microphone access to enable the visualizer.'
-            );
-            startButton.disabled = false;
-            startButton.textContent = 'Enable Microphone';
-          });
+        void startAudio(
+          render,
+          { fftSize: 512, fallbackToSynthetic: true },
+          {
+            onSuccess: () => {
+              isMicrophoneEnabled = true;
+              startButton.textContent = 'Microphone Active';
+              hideError();
+            },
+            onError: () => {
+              showError(
+                'Microphone access denied. Please allow microphone access to enable the visualizer.'
+              );
+            },
+          }
+        ).catch(() => {
+          startButton.disabled = false;
+          startButton.textContent = 'Enable Microphone';
+        });
       }
 
       function getBeat() {

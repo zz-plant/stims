@@ -153,7 +153,7 @@
     </style>
   </head>
   <body>
-    <a href="../index.html" class="home-link">Back to Library</a>
+    <div data-toy-nav></div>
     <div id="error-message" style="display: none"></div>
     <!-- Loading Overlay -->
     <div id="loadingOverlay">
@@ -254,6 +254,7 @@
 
     <!-- Main Visualizer Script -->
     <script type="module">
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import * as THREE from 'three';
       import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
       import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -262,16 +263,17 @@
       import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
       import {
         getFrequencyData,
-        initAudio,
       } from '../assets/js/utils/audio-handler.ts';
       import {
         getBandLevels,
         getWeightedEnergy,
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
-      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { ensureWebGL } from '../assets/js/utils/webgl-check.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
+
+      initToyPageShell();
 
       if (!ensureWebGL()) {
         throw new Error('WebGL support is required for the Holy visualizer.');
@@ -769,27 +771,29 @@
           renderer,
           analyser: null,
           audioCleanup: null,
-          async initAudio(options = {}) {
-            const audio = await initAudio(options);
-            this.analyser = audio.analyser;
-            this.audioCleanup = audio.cleanup;
-            return audio;
-          },
           dispose() {
             this.audioCleanup?.();
           },
         };
+        const { startAudio } = createToyAudioBootstrap(toy);
 
         try {
-          await startToyAudio(toy, animate, {
-            fftSize: 1024,
-            fallbackToSynthetic: true,
-            preferSynthetic: preferDemoAudio,
-          });
+          await startAudio(
+            animate,
+            {
+              fftSize: 1024,
+              fallbackToSynthetic: true,
+              preferSynthetic: preferDemoAudio,
+            },
+            {
+              onError: (err) => {
+                console.error('Error accessing microphone:', err);
+              },
+            }
+          );
           hideError();
           loadingOverlay.style.display = 'none';
         } catch (err) {
-          console.error('Error accessing microphone:', err);
           showError(
             preferDemoAudio
               ? 'Demo audio could not be loaded. Please try again.'
