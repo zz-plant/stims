@@ -15,6 +15,14 @@
   --highlight-glow: color-mix(in srgb, var(--accent-magenta) 10%, transparent);
   --surface-gradient: var(--card-bg);
   --surface-border: rgba(255, 255, 255, 0.08);
+  --surface-sheen: none;
+  --surface-texture: none;
+  --surface-highlight: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    transparent 70%
+  );
+  --surface-emboss: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
   --shadow-strong: 0 12px 26px rgba(0, 0, 0, 0.25);
   --shadow-soft: 0 6px 16px rgba(0, 0, 0, 0.18);
   --shadow-surface: 0 10px 22px rgba(0, 0, 0, 0.28);
@@ -44,6 +52,14 @@ html.light {
   --highlight-glow: color-mix(in srgb, var(--accent-magenta) 10%, transparent);
   --surface-gradient: var(--card-bg);
   --surface-border: rgba(11, 16, 48, 0.1);
+  --surface-sheen: none;
+  --surface-texture: none;
+  --surface-highlight: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    transparent 70%
+  );
+  --surface-emboss: 0 1px 0 rgba(255, 255, 255, 0.2) inset;
   color-scheme: light;
 }
 
@@ -169,10 +185,10 @@ h6 {
   top: clamp(0.5rem, 1vw, 1rem);
   z-index: 10;
   border-radius: var(--radius-pill);
-  background: var(--card-bg);
+  background: var(--surface-highlight), var(--surface-texture), var(--card-bg);
   border: 1px solid var(--surface-border);
   backdrop-filter: none;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-soft), var(--surface-emboss);
   transition:
     box-shadow 0.3s ease,
     transform 0.3s ease,
@@ -184,8 +200,8 @@ h6 {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: none;
-  opacity: 0;
+  background: var(--surface-sheen);
+  opacity: 0.2;
   pointer-events: none;
 }
 
@@ -410,11 +426,13 @@ section.intro > * {
   margin: 1.35rem 0 0.85rem;
   padding: 1rem 1.15rem;
   border-radius: var(--radius-lg);
-  background: linear-gradient(
-    140deg,
-    rgba(12, 18, 32, 0.92) 0%,
-    rgba(18, 24, 40, 0.92) 100%
-  );
+  background:
+    var(--surface-highlight), var(--surface-texture),
+    linear-gradient(
+      140deg,
+      rgba(12, 18, 32, 0.92) 0%,
+      rgba(18, 24, 40, 0.92) 100%
+    );
   border: 1px solid
     color-mix(in srgb, var(--accent-color) 18%, var(--surface-border));
   box-shadow: var(--shadow-soft);
@@ -424,11 +442,13 @@ section.intro > * {
 }
 
 html.light .launch-panel {
-  background: linear-gradient(
-    140deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(236, 242, 252, 0.92) 100%
-  );
+  background:
+    var(--surface-highlight), var(--surface-texture),
+    linear-gradient(
+      140deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(236, 242, 252, 0.92) 100%
+    );
   border: 1px solid
     color-mix(in srgb, var(--accent-color) 22%, var(--surface-border));
 }
@@ -825,7 +845,8 @@ header.hero {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: rgba(255, 255, 255, 0.04);
+  background:
+    var(--surface-texture), color-mix(in srgb, var(--card-bg) 75%, transparent);
   border: 1px solid var(--surface-border);
   border-radius: 999px;
   padding: 0.35rem;
@@ -875,10 +896,10 @@ header.hero {
   display: grid;
   gap: 0.8rem;
   align-content: space-between;
-  background: var(--card-bg);
+  background: var(--surface-highlight), var(--surface-texture), var(--card-bg);
   border-radius: 20px;
   border: 1px solid var(--surface-border);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-soft), var(--surface-emboss);
   pointer-events: none;
 }
 
@@ -892,7 +913,8 @@ header.hero {
   position: relative;
   padding: 1rem;
   border-radius: 16px;
-  background: var(--preview-image, none), var(--surface-gradient);
+  background:
+    var(--surface-sheen), var(--preview-image, none), var(--surface-gradient);
   border: 1px solid var(--surface-border);
   overflow: hidden;
   min-height: 180px;
@@ -969,7 +991,8 @@ header.hero {
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  background: var(--surface-gradient);
+  background:
+    var(--surface-highlight), var(--surface-texture), var(--surface-gradient);
   border: 1px solid var(--surface-border);
   border-radius: 16px;
   padding: 0.95rem 1rem;
@@ -1233,7 +1256,7 @@ html.light .hero-metric {
 .cta-button {
   padding: 0.7rem 1.25rem;
   border-radius: var(--radius-pill);
-  background: var(--card-bg);
+  background: var(--surface-highlight), var(--surface-texture), var(--card-bg);
   color: var(--text-color);
   text-decoration: none;
   font-weight: 600;
@@ -1243,7 +1266,7 @@ html.light .hero-metric {
   border: 1px solid var(--surface-border);
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-soft), var(--surface-emboss);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -1260,9 +1283,20 @@ html.light .hero-metric {
 }
 
 .cta-button.primary {
-  background: var(--accent-color);
+  background:
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, #ffffff 18%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(
+      135deg,
+      var(--accent-color) 0%,
+      color-mix(in srgb, var(--accent-magenta) 75%, var(--accent-color) 25%)
+        100%
+    );
   color: #0b0f1a;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-soft), var(--surface-emboss);
 }
 
 .hero-cta-row .cta-button.primary {
@@ -1282,13 +1316,15 @@ html.light .hero-metric {
 }
 
 .cta-button.ghost {
-  background: rgba(255, 255, 255, 0.05);
+  background:
+    var(--surface-texture), color-mix(in srgb, var(--card-bg) 75%, transparent);
   border-color: var(--surface-border);
   color: var(--text-color);
 }
 
 .hero-cta-row .cta-button.ghost {
-  background: rgba(255, 255, 255, 0.08);
+  background:
+    var(--surface-texture), color-mix(in srgb, var(--card-bg) 85%, transparent);
   border-color: rgba(255, 255, 255, 0.16);
   color: var(--text-color);
 }
@@ -1584,7 +1620,8 @@ html.light .experience {
 .experience-card {
   padding: 1.1rem 1.2rem;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.52);
+  background:
+    var(--surface-highlight), var(--surface-texture), rgba(15, 23, 42, 0.52);
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
   transition:
@@ -1594,7 +1631,8 @@ html.light .experience {
 }
 
 html.light .experience-card {
-  background: rgba(255, 255, 255, 0.75);
+  background:
+    var(--surface-highlight), var(--surface-texture), rgba(255, 255, 255, 0.8);
 }
 
 .experience-card:hover {
@@ -1633,6 +1671,7 @@ html.light .experience-card {
   border: 1px solid
     color-mix(in srgb, var(--accent-color) 18%, var(--surface-border));
   background:
+    var(--surface-highlight), var(--surface-texture),
     radial-gradient(
       circle at top left,
       color-mix(in srgb, var(--accent-color) 16%, transparent),
@@ -1655,7 +1694,8 @@ html.light .experience-card {
   padding: 0.75rem 0.95rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--surface-border);
-  background: rgba(15, 23, 42, 0.45);
+  background:
+    var(--surface-highlight), var(--surface-texture), rgba(15, 23, 42, 0.45);
   min-width: 220px;
   color: var(--text-muted);
 }
@@ -1928,7 +1968,8 @@ html.light .experience-card {
 }
 
 .webtoy-card {
-  background: var(--surface-gradient);
+  background:
+    var(--surface-highlight), var(--surface-texture), var(--surface-gradient);
   border-radius: var(--radius-lg);
   padding: 1.35rem 1.25rem;
   transition:
@@ -1938,7 +1979,7 @@ html.light .experience-card {
     background 0.3s ease;
   text-align: left;
   cursor: pointer;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-soft), var(--surface-emboss);
   backdrop-filter: none;
   border: 1px solid var(--surface-border);
   color: inherit;
@@ -1989,7 +2030,8 @@ html.light .experience-card {
 }
 
 .webtoy-card:hover {
-  background: var(--surface-gradient);
+  background:
+    var(--surface-highlight), var(--surface-texture), var(--surface-gradient);
   transform: translateY(-2px);
   box-shadow: var(--shadow-strong);
   border-color: rgba(59, 130, 246, 0.35);
