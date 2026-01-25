@@ -169,6 +169,10 @@
         getWeightedEnergy,
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
+      import {
+        initErrorDisplay,
+        setErrorVisible,
+      } from '../assets/js/utils/error-display.ts';
 
       let analyser,
         dataArray = new Uint8Array(0),
@@ -183,21 +187,8 @@
       let beatPeak = 0.12;
       let trebleGlow = 0;
 
-      const errorEl = document.getElementById('error-message');
-
-      function showError(message) {
-        if (errorEl) {
-          errorEl.textContent = message;
-          errorEl.style.display = 'block';
-        }
-      }
-
-      function hideError() {
-        if (errorEl) {
-          errorEl.style.display = 'none';
-          errorEl.textContent = '';
-        }
-      }
+      const errorDisplayId = 'error-message';
+      initErrorDisplay(errorDisplayId);
 
       const gridElement = document.getElementById('grid');
       let words = [];
@@ -397,10 +388,11 @@
           .then(() => {
             isMicrophoneEnabled = true;
             startButton.textContent = 'Microphone Active';
-            hideError();
+            setErrorVisible(errorDisplayId);
           })
           .catch(() => {
-            showError(
+            setErrorVisible(
+              errorDisplayId,
               'Microphone access denied. Please allow microphone access to enable the visualizer.'
             );
             startButton.disabled = false;
