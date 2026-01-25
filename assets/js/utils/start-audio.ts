@@ -3,7 +3,7 @@ import type WebToy from '../core/web-toy';
 import type { AudioInitOptions } from './audio-handler';
 import { AudioAccessError, getCachedDemoAudioStream } from './audio-handler';
 
-type StartAudioOptions =
+export type StartAudioOptions =
   | (AudioInitOptions & {
       fallbackToSynthetic?: boolean;
       preferSynthetic?: boolean;

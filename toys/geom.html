@@ -107,7 +107,6 @@
       import { setupIframeQualitySync } from '../assets/js/core/iframe-quality-sync.ts';
       import {
         AudioAccessError,
-        initAudio,
       } from '../assets/js/utils/audio-handler.ts';
       import {
         getBandLevels,
@@ -119,6 +118,7 @@
         clearError,
         showError,
       } from '../assets/js/utils/error-display.ts';
+      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
 
       initToyPageShell();
       import { startToyAudio } from '../assets/js/utils/start-audio.ts';
@@ -199,13 +199,6 @@
           };
         }
 
-        async initAudio(options = {}) {
-          const audio = await initAudio(options);
-          this.analyser = audio.analyser;
-          this.audioCleanup = audio.cleanup;
-          return audio;
-        }
-
         dispose() {
           if (this.loopId) {
             cancelAnimationFrame(this.loopId);
@@ -218,6 +211,7 @@
       }
 
       const toy = new CanvasToy(canvas);
+      const { startAudio } = createToyAudioBootstrap(toy);
 
       function createParticle() {
         return {
@@ -364,10 +358,18 @@
         clearError('error-message');
 
         try {
-          await startToyAudio(toy, animate, {
-            fftSize: 1024,
-            fallbackToSynthetic: true,
-          });
+          await startAudio(
+            animate,
+            {
+              fftSize: 1024,
+              fallbackToSynthetic: true,
+            },
+            {
+              onError: (error) => {
+                console.error('Error starting audio:', error);
+              },
+            }
+          );
         } catch (error) {
           startButton.disabled = false;
           startButton.style.display = 'inline-block';
@@ -380,7 +382,6 @@
               'Error accessing microphone. Please check your settings and try again.'
             );
           }
-          console.error('Error starting audio:', error);
         }
       });
 

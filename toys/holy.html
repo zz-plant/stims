@@ -263,14 +263,13 @@
       import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
       import {
         getFrequencyData,
-        initAudio,
       } from '../assets/js/utils/audio-handler.ts';
       import {
         getBandLevels,
         getWeightedEnergy,
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
-      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { ensureWebGL } from '../assets/js/utils/webgl-check.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
 
@@ -772,27 +771,29 @@
           renderer,
           analyser: null,
           audioCleanup: null,
-          async initAudio(options = {}) {
-            const audio = await initAudio(options);
-            this.analyser = audio.analyser;
-            this.audioCleanup = audio.cleanup;
-            return audio;
-          },
           dispose() {
             this.audioCleanup?.();
           },
         };
+        const { startAudio } = createToyAudioBootstrap(toy);
 
         try {
-          await startToyAudio(toy, animate, {
-            fftSize: 1024,
-            fallbackToSynthetic: true,
-            preferSynthetic: preferDemoAudio,
-          });
+          await startAudio(
+            animate,
+            {
+              fftSize: 1024,
+              fallbackToSynthetic: true,
+              preferSynthetic: preferDemoAudio,
+            },
+            {
+              onError: (err) => {
+                console.error('Error accessing microphone:', err);
+              },
+            }
+          );
           hideError();
           loadingOverlay.style.display = 'none';
         } catch (err) {
-          console.error('Error accessing microphone:', err);
           showError(
             preferDemoAudio
               ? 'Demo audio could not be loaded. Please try again.'
