@@ -1169,6 +1169,43 @@ header.hero {
   padding: 0.55rem 1.1rem;
 }
 
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+  margin: 0.65rem 0 1.35rem;
+  padding: 0;
+}
+
+.hero-metric {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-soft);
+}
+
+html.light .hero-metric {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.hero-metric dt {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.hero-metric dd {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--text-color);
+}
+
 .cta-helper {
   margin: -0.5rem 0 1.5rem;
   max-width: 720px;
@@ -1487,6 +1524,103 @@ h1 {
   max-width: 760px;
   color: var(--text-muted);
   line-height: 1.6;
+}
+
+.experience {
+  position: relative;
+  padding: clamp(1.6rem, 2vw + 1rem, 2.6rem);
+  border-radius: 18px;
+  border: 1px solid
+    color-mix(in srgb, var(--accent-magenta) 18%, var(--surface-border));
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--accent-magenta) 18%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at bottom left,
+      color-mix(in srgb, var(--accent-color) 14%, transparent),
+      transparent 60%
+    ),
+    var(--surface-gradient);
+  box-shadow: var(--shadow-strong);
+  overflow: hidden;
+}
+
+.experience::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 45%,
+    transparent 100%
+  );
+  opacity: 0.4;
+}
+
+html.light .experience {
+  border-color: color-mix(
+    in srgb,
+    var(--accent-magenta) 24%,
+    var(--surface-border)
+  );
+}
+
+.experience > * {
+  position: relative;
+  z-index: 1;
+}
+
+.experience-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.experience-card {
+  padding: 1.1rem 1.2rem;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.52);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+html.light .experience-card {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.experience-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent-color) 28%, transparent);
+  box-shadow: var(--shadow-strong);
+}
+
+.experience-card__eyebrow {
+  margin: 0 0 0.45rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.experience-card h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1.2rem;
+}
+
+.experience-card p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
 }
 
 .library-search {
