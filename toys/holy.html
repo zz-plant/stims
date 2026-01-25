@@ -264,6 +264,11 @@
         getFrequencyData,
         initAudio,
       } from '../assets/js/utils/audio-handler.ts';
+      import {
+        getBandLevels,
+        getWeightedEnergy,
+        updateEnergyPeak,
+      } from '../assets/js/utils/audio-reactivity.ts';
       import { startToyAudio } from '../assets/js/utils/start-audio.ts';
       import { ensureWebGL } from '../assets/js/utils/webgl-check.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
@@ -591,15 +596,12 @@
         const treble = getFrequencyRange(2000, 16000);
 
         // Calculate Average Frequencies
-        const bands = analyser?.getMultiBandEnergy?.();
-        const bassAvg = bands?.bass ?? average(bass) / 255;
-        const midAvg = bands?.mid ?? average(mid) / 255;
-        const trebleAvg = bands?.treble ?? average(treble) / 255;
-        const weightedEnergy = Math.min(
-          1,
-          (bassAvg * 0.6 + midAvg * 0.25 + trebleAvg * 0.15) * 1.35
-        );
-        energyPeak = Math.max(energyPeak * 0.96, weightedEnergy, 0.05);
+        const bands = getBandLevels({ analyser, data: dataArray });
+        const bassAvg = bands.bass ?? average(bass) / 255;
+        const midAvg = bands.mid ?? average(mid) / 255;
+        const trebleAvg = bands.treble ?? average(treble) / 255;
+        const weightedEnergy = getWeightedEnergy(bands);
+        energyPeak = updateEnergyPeak(energyPeak, weightedEnergy);
         const normalized = weightedEnergy / energyPeak;
         bassPulse = Math.max(bassPulse * 0.85, bassAvg);
         trebleShimmer = Math.max(trebleShimmer * 0.8, trebleAvg);

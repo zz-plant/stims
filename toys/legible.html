@@ -164,6 +164,11 @@
         initAudio,
       } from '../assets/js/utils/audio-handler.ts';
       import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import {
+        getBandLevels,
+        getWeightedEnergy,
+        updateEnergyPeak,
+      } from '../assets/js/utils/audio-reactivity.ts';
 
       let analyser,
         dataArray = new Uint8Array(0),
@@ -405,24 +410,14 @@
 
       function getBeat() {
         if (!dataArray.length) return 0;
-        const low = getBandAverage(dataArray, 0, 0.2) / 255;
-        beatPeak = Math.max(beatPeak * 0.96, low, 0.05);
-        return low / beatPeak;
-      }
-
-      function getBandAverage(dataArray, startRatio, endRatio) {
-        if (!dataArray.length) return 0;
-        const startIndex = Math.floor(dataArray.length * startRatio);
-        const endIndex = Math.max(
-          startIndex + 1,
-          Math.floor(dataArray.length * endRatio)
-        );
-        let sum = 0;
-        const count = endIndex - startIndex;
-        for (let i = startIndex; i < endIndex; i++) {
-          sum += dataArray[i];
-        }
-        return sum / count;
+        const bands = getBandLevels({
+          analyser,
+          data: dataArray,
+          ratios: { bass: 0.2, mid: 0.55 },
+        });
+        const weightedEnergy = getWeightedEnergy(bands, { boost: 1.4 });
+        beatPeak = updateEnergyPeak(beatPeak, weightedEnergy);
+        return bands.bass / beatPeak;
       }
 
       function revealWordAtRandomLocation() {
@@ -497,19 +492,21 @@
           analyser = ctx.analyser;
           dataArray = getFrequencyData(ctx.analyser);
           isMicrophoneEnabled = true;
-          const bands = ctx.analyser.getMultiBandEnergy?.();
+          const bands = getBandLevels({
+            analyser: ctx.analyser,
+            data: dataArray,
+            ratios: { bass: 0.2, mid: 0.55 },
+          });
+          const weightedEnergy = getWeightedEnergy(bands, { boost: 1.4 });
           if (bands) {
-            const weightedEnergy = Math.min(
-              1,
-              (bands.bass * 0.65 + bands.mid * 0.25 + bands.treble * 0.1) * 1.4
-            );
-            beatPeak = Math.max(beatPeak * 0.96, weightedEnergy, 0.05);
+            beatPeak = updateEnergyPeak(beatPeak, weightedEnergy);
             trebleGlow = Math.max(trebleGlow * 0.88, bands.treble);
             gridElement.style.filter = `brightness(${1 + trebleGlow * 0.4})`;
           }
-          const beatStrength = bands
-            ? Math.min(1, (bands.bass + bands.mid * 0.3) / beatPeak)
-            : getBeat();
+          const beatStrength = Math.min(
+            1,
+            (bands.bass + bands.mid * 0.3) / beatPeak
+          );
 
           if (beatStrength > sensitivity) {
             revealWordAtRandomLocation();

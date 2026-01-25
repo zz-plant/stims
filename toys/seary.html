@@ -56,6 +56,11 @@
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
+      import {
+        getBandLevels,
+        getWeightedEnergy,
+        updateEnergyPeak,
+      } from '../assets/js/utils/audio-reactivity.ts';
 
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
@@ -521,21 +526,6 @@
         orientation.gamma = event.gamma;
       });
 
-      function averageRange(dataArray, startRatio, endRatio) {
-        if (!dataArray.length) return 0;
-        const startIndex = Math.floor(dataArray.length * startRatio);
-        const endIndex = Math.max(
-          startIndex + 1,
-          Math.floor(dataArray.length * endRatio)
-        );
-        let sum = 0;
-        const count = endIndex - startIndex;
-        for (let i = startIndex; i < endIndex; i++) {
-          sum += dataArray[i];
-        }
-        return sum / count;
-      }
-
       function processAudio(ctxAudio) {
         if (!ctxAudio.analyser) {
           peakDetector = null;
@@ -548,17 +538,13 @@
         }
 
         const dataArray = getFrequencyData(ctxAudio.analyser);
-        const fallbackBands = {
-          bass: averageRange(dataArray, 0, 0.2) / 255,
-          mid: averageRange(dataArray, 0.2, 0.55) / 255,
-          treble: averageRange(dataArray, 0.55, 1) / 255,
-        };
-        const bands = ctxAudio.analyser.getMultiBandEnergy?.() ?? fallbackBands;
-        const weightedEnergy = Math.min(
-          1,
-          (bands.bass * 0.6 + bands.mid * 0.25 + bands.treble * 0.15) * 1.35
-        );
-        energyPeak = Math.max(energyPeak * 0.96, weightedEnergy, 0.05);
+        const bands = getBandLevels({
+          analyser: ctxAudio.analyser,
+          data: dataArray,
+          ratios: { bass: 0.2, mid: 0.55 },
+        });
+        const weightedEnergy = getWeightedEnergy(bands);
+        energyPeak = updateEnergyPeak(energyPeak, weightedEnergy);
         bassPulse = Math.max(bassPulse * 0.85, bands.bass);
         trebleShimmer = Math.max(trebleShimmer * 0.8, bands.treble);
         const boost = 0.75 + weightedEnergy * 0.9 + bassPulse * 0.6;
