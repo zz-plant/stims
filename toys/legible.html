@@ -161,6 +161,10 @@
     <script type="module">
       import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import {
+        initErrorDisplay,
+        setErrorVisible,
+      } from '../assets/js/utils/error-display.ts';
+      import {
         getFrequencyData,
       } from '../assets/js/utils/audio-handler.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
@@ -184,22 +188,9 @@
       const cyclingActive = true;
       let beatPeak = 0.12;
       let trebleGlow = 0;
+      const errorDisplayId = 'error-message';
 
-      const errorEl = document.getElementById('error-message');
-
-      function showError(message) {
-        if (errorEl) {
-          errorEl.textContent = message;
-          errorEl.style.display = 'block';
-        }
-      }
-
-      function hideError() {
-        if (errorEl) {
-          errorEl.style.display = 'none';
-          errorEl.textContent = '';
-        }
-      }
+      initErrorDisplay(errorDisplayId);
 
       const gridElement = document.getElementById('grid');
       let words = [];
@@ -399,10 +390,11 @@
             onSuccess: () => {
               isMicrophoneEnabled = true;
               startButton.textContent = 'Microphone Active';
-              hideError();
+              setErrorVisible(errorDisplayId);
             },
             onError: () => {
-              showError(
+              setErrorVisible(
+                errorDisplayId,
                 'Microphone access denied. Please allow microphone access to enable the visualizer.'
               );
             },
