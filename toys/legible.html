@@ -164,6 +164,11 @@
         initAudio,
       } from '../assets/js/utils/audio-handler.ts';
       import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import {
+        getBandLevels,
+        getWeightedEnergy,
+        updateEnergyPeak,
+      } from '../assets/js/utils/audio-reactivity.ts';
 
       let analyser,
         dataArray = new Uint8Array(0),
@@ -175,6 +180,8 @@
       let sensitivity = parseFloat(sensitivitySlider.value);
       let wordIndex = 0;
       const cyclingActive = true;
+      let beatPeak = 0.12;
+      let trebleGlow = 0;
 
       const errorEl = document.getElementById('error-message');
 
@@ -403,13 +410,14 @@
 
       function getBeat() {
         if (!dataArray.length) return 0;
-        let sumLow = 0;
-        const lowEnd = Math.floor(dataArray.length * 0.2);
-
-        for (let i = 0; i < lowEnd; i++) {
-          sumLow += dataArray[i];
-        }
-        return sumLow / lowEnd / 255; // Return normalized beat strength for the low range
+        const bands = getBandLevels({
+          analyser,
+          data: dataArray,
+          ratios: { bass: 0.2, mid: 0.55 },
+        });
+        const weightedEnergy = getWeightedEnergy(bands, { boost: 1.4 });
+        beatPeak = updateEnergyPeak(beatPeak, weightedEnergy);
+        return bands.bass / beatPeak;
       }
 
       function revealWordAtRandomLocation() {
@@ -484,7 +492,21 @@
           analyser = ctx.analyser;
           dataArray = getFrequencyData(ctx.analyser);
           isMicrophoneEnabled = true;
-          const beatStrength = getBeat();
+          const bands = getBandLevels({
+            analyser: ctx.analyser,
+            data: dataArray,
+            ratios: { bass: 0.2, mid: 0.55 },
+          });
+          const weightedEnergy = getWeightedEnergy(bands, { boost: 1.4 });
+          if (bands) {
+            beatPeak = updateEnergyPeak(beatPeak, weightedEnergy);
+            trebleGlow = Math.max(trebleGlow * 0.88, bands.treble);
+            gridElement.style.filter = `brightness(${1 + trebleGlow * 0.4})`;
+          }
+          const beatStrength = Math.min(
+            1,
+            (bands.bass + bands.mid * 0.3) / beatPeak
+          );
 
           if (beatStrength > sensitivity) {
             revealWordAtRandomLocation();
@@ -494,6 +516,7 @@
           }
         } else {
           isMicrophoneEnabled = false;
+          gridElement.style.filter = '';
         }
       }
 

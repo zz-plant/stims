@@ -579,3 +579,39 @@ export function getAverageFrequency(data: Uint8Array): number {
 
   return sum / data.length;
 }
+
+/**
+ * Compute a weighted, slightly boosted average that leans into bass/mid energy.
+ * Useful for more expressive audio-driven motion.
+ */
+export function getWeightedAverageFrequency(data: Uint8Array): number {
+  const len = data.length;
+  if (len === 0) return 0;
+
+  const bassEnd = Math.max(1, Math.floor(len * 0.12));
+  const midEnd = Math.max(bassEnd + 1, Math.floor(len * 0.5));
+
+  let bassSum = 0;
+  for (let i = 0; i < bassEnd; i += 1) {
+    bassSum += data[i];
+  }
+
+  let midSum = 0;
+  for (let i = bassEnd; i < midEnd; i += 1) {
+    midSum += data[i];
+  }
+
+  let trebleSum = 0;
+  for (let i = midEnd; i < len; i += 1) {
+    trebleSum += data[i];
+  }
+
+  const bassAvg = bassSum / bassEnd / 255;
+  const midAvg = midSum / Math.max(1, midEnd - bassEnd) / 255;
+  const trebleAvg = trebleSum / Math.max(1, len - midEnd) / 255;
+
+  const weighted = bassAvg * 0.6 + midAvg * 0.25 + trebleAvg * 0.15;
+  const boosted = Math.min(1, weighted ** 0.78 * 1.05);
+
+  return boosted * 255;
+}

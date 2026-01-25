@@ -52,10 +52,15 @@
     </div>
     <script type="module">
       import {
-        getAverageFrequency,
+        getWeightedAverageFrequency,
         getFrequencyData,
         initAudio,
       } from '../assets/js/utils/audio-handler.ts';
+      import {
+        getBandLevels,
+        getWeightedEnergy,
+        updateEnergyPeak,
+      } from '../assets/js/utils/audio-reactivity.ts';
       import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import {
         clearError,
@@ -238,13 +243,17 @@
 
       const adapter = createSymphFunAdapter();
       let gradientStops = adapter.paletteOptions.bright;
-      let colorOffset = [...adapter.paletteAccent];
+      let baseColorOffset = [...adapter.paletteAccent];
+      let reactiveColorOffset = [...baseColorOffset];
       let time = 0.0;
       let audioData = adapter.transformAudioValue(0);
       let touchPoint = [0.0, 0.0];
       let smoothedLevel = 0;
       let burstEnergy = 0;
       let lastTransientTime = 0;
+      let peakLevel = 0.12;
+      let bassPulse = 0;
+      let trebleShimmer = 0;
       const defaultSensitivity = 0.7;
       let transientSensitivity = defaultSensitivity;
       let sparklesEnabled = true;
@@ -269,7 +278,8 @@
         paletteOptions: adapter.paletteOptions,
         onPaletteChange: (palette, colors) => {
           adapter.setPalette(palette, colors);
-          colorOffset = [...adapter.paletteAccent];
+          baseColorOffset = [...adapter.paletteAccent];
+          reactiveColorOffset = [...baseColorOffset];
           gradientStops = colors;
         },
         onMotionChange: (intensity, mode) => adapter.setMotion(intensity, mode),
@@ -467,18 +477,27 @@
       function animate(ctxAudio) {
         if (ctxAudio.analyser) {
           const dataArray = getFrequencyData(ctxAudio.analyser);
-          const average = getAverageFrequency(dataArray);
-          const normalized = average / 255;
+          const average = getWeightedAverageFrequency(dataArray);
+          const bands = getBandLevels({
+            analyser: ctxAudio.analyser,
+            data: dataArray,
+          });
+          const weightedEnergy = getWeightedEnergy(bands, {
+            weights: { bass: 0.65, mid: 0.25, treble: 0.1 },
+            boost: 1.4,
+          });
+          peakLevel = updateEnergyPeak(peakLevel, weightedEnergy);
+          const normalized = peakLevel ? weightedEnergy / peakLevel : 0;
           smoothedLevel = smoothedLevel
-            ? smoothedLevel * 0.9 + normalized * 0.1
+            ? smoothedLevel * 0.82 + normalized * 0.18
             : normalized;
-          const threshold = 0.08 + (1 - transientSensitivity) * 0.25;
+          const threshold = 0.06 + (1 - transientSensitivity) * 0.22;
           const transientDelta = normalized - smoothedLevel;
           const now = performance.now();
           if (
             transientDelta > threshold &&
             now - lastTransientTime > 110 &&
-            normalized > 0.05
+            normalized > 0.04
           ) {
             const strength = Math.min(
               1,
@@ -488,32 +507,51 @@
             triggerBurst(strength);
           }
 
-          audioData = adapter.transformAudioValue(average);
+          bassPulse = Math.max(bassPulse * 0.84, bands.bass);
+          trebleShimmer = Math.max(trebleShimmer * 0.78, bands.treble);
+          const audioDrive = Math.min(
+            255,
+            average * (0.7 + normalized * 1.1 + bassPulse * 0.8)
+          );
+          audioData = adapter.transformAudioValue(audioDrive);
+          const colorBoost = 1 + trebleShimmer * 0.75 + bassPulse * 0.35;
+          reactiveColorOffset = baseColorOffset.map((value) =>
+            Math.min(1, value * colorBoost + trebleShimmer * 0.08)
+          );
+          if (sparklesEnabled && trebleShimmer > 0.6 && Math.random() < 0.08) {
+            spawnSparkles(Math.min(1, trebleShimmer));
+          }
           updateSpectrograph(dataArray);
           funControls.setAudioAvailable(true);
         } else {
           audioData = adapter.transformAudioValue(0);
+          reactiveColorOffset = [...baseColorOffset];
           funControls.setAudioAvailable(false);
         }
 
         time += 0.02;
         gl.uniform1f(timeUniformLocation, time);
         gl.uniform1f(audioDataUniformLocation, audioData);
-        gl.uniform3fv(colorOffsetUniformLocation, colorOffset);
+        gl.uniform3fv(colorOffsetUniformLocation, reactiveColorOffset);
         gl.uniform2fv(touchUniformLocation, touchPoint);
         const burstTint = burstsEnabled
           ? [
-              colorOffset[0] * burstEnergy * 1.2,
-              colorOffset[1] * burstEnergy * 1.2,
-              colorOffset[2] * burstEnergy * 1.2,
+              baseColorOffset[0] * burstEnergy * 1.2,
+              baseColorOffset[1] * burstEnergy * 1.2,
+              baseColorOffset[2] * burstEnergy * 1.2,
             ]
           : [0, 0, 0];
         const rippleAmp =
-          rippleBase * (1.0 + (burstsEnabled ? burstEnergy * 0.8 : 0));
+          rippleBase *
+          (1.0 +
+            (burstsEnabled ? burstEnergy * 0.8 : 0) +
+            bassPulse * 0.6);
         gl.uniform3fv(burstTintUniformLocation, burstTint);
         gl.uniform1f(rippleUniformLocation, rippleAmp);
 
         burstEnergy = Math.max(0, burstEnergy - 0.015);
+        bassPulse *= 0.92;
+        trebleShimmer *= 0.9;
 
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 6);

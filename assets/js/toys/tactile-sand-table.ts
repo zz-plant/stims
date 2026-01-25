@@ -11,7 +11,7 @@ import {
   type QualityPreset,
 } from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
-import { getAverageFrequency } from '../utils/audio-handler';
+import { getWeightedAverageFrequency } from '../utils/audio-handler';
 
 type GravityState = {
   vector: THREE.Vector3;
@@ -474,7 +474,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function animate(data: Uint8Array) {
     const delta = clock.getDelta();
-    const avg = getAverageFrequency(data);
+    const avg = getWeightedAverageFrequency(data);
     const low = bandAverage(data, 0, Math.floor(data.length * 0.16));
     const mids = bandAverage(
       data,

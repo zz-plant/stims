@@ -11,7 +11,7 @@ import {
   type QualityPreset,
 } from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
-import { getAverageFrequency } from '../utils/audio-handler';
+import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
 
 type PresetKey = 'orbit' | 'nebula';
@@ -83,7 +83,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     return {
       animate(data, _time) {
-        const avg = getAverageFrequency(data);
+        const avg = getWeightedAverageFrequency(data);
         const rotationSpeed = 0.001 + avg / 100000;
         particles.rotation.y += rotationSpeed;
         particles.rotation.x += rotationSpeed / 2;
@@ -223,7 +223,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     return {
       animate(data, time) {
-        const avg = getAverageFrequency(data);
+        const avg = getWeightedAverageFrequency(data);
         const normalizedAvg = avg / 255;
 
         const positions = stars.geometry.attributes.position

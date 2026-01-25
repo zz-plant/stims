@@ -12,7 +12,7 @@ import {
 } from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
-import { getAverageFrequency } from '../utils/audio-handler';
+import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
 import { applyAudioColor } from '../utils/color-audio';
 import type { UnifiedInputState } from '../utils/unified-input';
@@ -402,7 +402,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     time: number,
     analyser: FrequencyAnalyser | null,
   ) {
-    const avg = getAverageFrequency(data);
+    const avg = getWeightedAverageFrequency(data);
     const normalizedAvg = avg / 255;
 
     // Multi-band frequency analysis using FrequencyAnalyser

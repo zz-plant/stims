@@ -13,7 +13,7 @@ import {
 } from '../core/settings-panel';
 import { registerToyGlobals } from '../core/toy-globals';
 import { createToyRuntime } from '../core/toy-runtime';
-import { getAverageFrequency } from '../utils/audio-handler';
+import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import type { ToyAudioRequest } from '../utils/audio-start';
 import {
   type ControlPanelState,
@@ -272,7 +272,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function animate(dataArray: Uint8Array, _time: number) {
     if (!torusKnot || !particles) return;
-    const avgFrequency = getAverageFrequency(dataArray);
+    const avgFrequency = getWeightedAverageFrequency(dataArray);
 
     const { idle, idleProgress } = idleDetector.update(dataArray);
     const idleTarget = controlState.idleEnabled ? idleProgress : 0;
