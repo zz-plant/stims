@@ -48,7 +48,7 @@
       import {
         getFrequencyData,
       } from '../assets/js/utils/audio-handler.ts';
-      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
+      import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
       import { showError } from '../assets/js/utils/error-display.ts';
       import { createPeakDetector } from '../assets/js/utils/peak-detector.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
@@ -65,9 +65,14 @@
       initToyPageShell();
 
       // Fallback to WebGL
-      const canvas = document.getElementById('gpuCanvas');
       const sparkleCanvas = document.getElementById('sparkleCanvas');
-      const sparkleCtx = sparkleCanvas?.getContext('2d');
+
+      if (!(sparkleCanvas instanceof HTMLCanvasElement)) {
+        showError('error-message', 'Canvas element is missing.');
+        throw new Error('Canvas element not found');
+      }
+
+      const sparkleCtx = sparkleCanvas.getContext('2d');
 
       const sparkles = [];
       const maxSparkles = 160;
@@ -79,14 +84,6 @@
       let peakSensitivity = 0.35;
       let lastRenderTime = 0;
       let renderElapsed = 0;
-
-      function displayError(message) {
-        const el = document.getElementById('error-message');
-        if (el) {
-          el.innerText = message;
-          el.style.display = 'block';
-        }
-      }
 
       initHints({
         id: 'seary-visualizer',
@@ -135,38 +132,21 @@
         initialPeakSensitivity: peakSensitivity,
       });
 
-      const gl =
-        canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-
-      if (!gl) {
-        console.error('WebGL not supported');
-        throw new Error('WebGL not supported');
-      }
-
-      // Resize canvas
-      function resizeCanvas() {
-        const dpr = window.devicePixelRatio || 1;
-        viewWidth = window.innerWidth;
-        viewHeight = window.innerHeight;
-
-        canvas.width = viewWidth * dpr;
-        canvas.height = viewHeight * dpr;
-        canvas.style.width = '100vw';
-        canvas.style.height = '100vh';
-        gl.viewport(0, 0, canvas.width, canvas.height);
-
-        if (sparkleCanvas && sparkleCtx) {
-          sparkleCanvas.width = viewWidth * dpr;
-          sparkleCanvas.height = viewHeight * dpr;
-          sparkleCanvas.style.width = '100vw';
-          sparkleCanvas.style.height = '100vh';
-          sparkleCtx.setTransform(1, 0, 0, 1, 0, 0);
-          sparkleCtx.scale(dpr, dpr);
-        }
-      }
-      window.addEventListener('resize', resizeCanvas);
-      resizeCanvas();
-      const disposeResize = setupCanvasResize(canvas, gl, { maxPixelRatio: 2 });
+      const { canvas, gl, disposeResize } = createToyCanvas('gpuCanvas', {
+        contextTypes: ['webgl', 'experimental-webgl'],
+        errorElementId: 'error-message',
+        maxPixelRatio: 2,
+        onResize: ({ width, height, cssWidth, cssHeight, pixelRatio }) => {
+          viewWidth = cssWidth;
+          viewHeight = cssHeight;
+          sparkleCanvas.width = width;
+          sparkleCanvas.height = height;
+          sparkleCanvas.style.width = `${cssWidth}px`;
+          sparkleCanvas.style.height = `${cssHeight}px`;
+          sparkleCtx?.setTransform(1, 0, 0, 1, 0, 0);
+          sparkleCtx?.scale(pixelRatio, pixelRatio);
+        },
+      });
 
       class CanvasToy {
         constructor(canvasEl) {
