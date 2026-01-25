@@ -72,6 +72,29 @@ export type ToyRuntimeInstance = ToyInstance & {
   getPerformanceSettings: () => PerformanceSettings;
 };
 
+type ToyRuntimePluginManager = {
+  add: (plugin: ToyRuntimePlugin) => void;
+  setupAll: (runtime: ToyRuntimeInstance) => void;
+  update: (frame: ToyRuntimeFrame) => void;
+  onInput: (state: UnifiedInputState, frame: ToyRuntimeFrame) => void;
+  onPerformanceChange: (
+    settings: PerformanceSettings,
+    runtime: ToyRuntimeInstance,
+  ) => void;
+  dispose: () => void;
+};
+
+type PerformanceController = {
+  getSettings: () => PerformanceSettings;
+  applySettings: (settings: PerformanceSettings) => void;
+  dispose: () => void;
+};
+
+type InputController = {
+  getState: () => UnifiedInputState | null;
+  dispose: () => void;
+};
+
 const defaultInputOptions = (
   target: HTMLElement,
   overrides?: ToyRuntimeOptions['input'],
@@ -89,6 +112,126 @@ const defaultInputOptions = (
   micProvider: overrides?.micProvider,
 });
 
+const createPluginManager = (
+  initialPlugins: ToyRuntimePlugin[],
+): ToyRuntimePluginManager => {
+  const plugins = [...initialPlugins];
+
+  return {
+    add: (plugin) => {
+      plugins.push(plugin);
+    },
+    setupAll: (runtime) => {
+      plugins.forEach((plugin) => plugin.setup?.(runtime));
+    },
+    update: (frame) => {
+      plugins.forEach((plugin) => plugin.update?.(frame));
+    },
+    onInput: (state, frame) => {
+      plugins.forEach((plugin) => plugin.onInput?.(state, frame));
+    },
+    onPerformanceChange: (settings, runtime) => {
+      plugins.forEach((plugin) =>
+        plugin.onPerformanceChange?.(settings, runtime),
+      );
+    },
+    dispose: () => {
+      plugins.forEach((plugin) => plugin.dispose?.());
+    },
+  };
+};
+
+const createPerformanceController = ({
+  toy,
+  options,
+  onChange,
+}: {
+  toy: WebToy;
+  options?: ToyRuntimeOptions['performance'];
+  onChange?: (settings: PerformanceSettings) => void;
+}): PerformanceController => {
+  const applyRendererSettings = options?.applyRendererSettings !== false;
+  let settings = getActivePerformanceSettings({
+    storageKey: options?.storageKey,
+  });
+
+  if (applyRendererSettings) {
+    toy.updateRendererSettings({ maxPixelRatio: settings.maxPixelRatio });
+  }
+
+  const applySettings = (nextSettings: PerformanceSettings) => {
+    settings = nextSettings;
+    if (applyRendererSettings) {
+      toy.updateRendererSettings({ maxPixelRatio: nextSettings.maxPixelRatio });
+    }
+    onChange?.(nextSettings);
+  };
+
+  const unsubscribe =
+    options?.enabled === false
+      ? null
+      : subscribeToPerformanceSettings(applySettings);
+
+  return {
+    getSettings: () => settings,
+    applySettings,
+    dispose: () => {
+      unsubscribe?.();
+    },
+  };
+};
+
+const createInputController = ({
+  toy,
+  options,
+  onInput,
+  getMicLevel,
+}: {
+  toy: WebToy;
+  options?: ToyRuntimeOptions['input'];
+  onInput: (state: UnifiedInputState) => void;
+  getMicLevel: () => { level: number; available: boolean };
+}): InputController => {
+  let inputState: UnifiedInputState | null = null;
+
+  const inputTarget =
+    options?.enabled === false
+      ? null
+      : (options?.target ??
+        (toy.canvas instanceof HTMLElement ? toy.canvas : null) ??
+        toy.container);
+
+  const resolvedTouchAction =
+    options?.touchAction ??
+    (inputTarget === toy.canvas && inputTarget instanceof HTMLElement
+      ? 'none'
+      : undefined);
+
+  if (inputTarget instanceof HTMLElement && resolvedTouchAction) {
+    inputTarget.style.touchAction = resolvedTouchAction;
+  }
+
+  const inputAdapter =
+    inputTarget && inputTarget instanceof HTMLElement
+      ? createUnifiedInput({
+          ...defaultInputOptions(inputTarget, options),
+          onInput: (state) => {
+            inputState = state;
+            onInput(state);
+            options?.onInput?.(state);
+          },
+          micProvider: getMicLevel,
+        })
+      : null;
+
+  return {
+    getState: () => inputState,
+    dispose: () => {
+      inputAdapter?.dispose();
+    },
+  };
+};
+
 export function createToyRuntime({
   container = null,
   canvas = null,
@@ -103,73 +246,23 @@ export function createToyRuntime({
     container,
     canvas,
   });
-  const runtimePlugins = [...plugins];
-  let inputState: UnifiedInputState | null = null;
   let analyser: FrequencyAnalyser | null = null;
   let lastFrameTime = 0;
-  let performanceSettings = getActivePerformanceSettings({
-    storageKey: performance?.storageKey,
-  });
-
-  if (performance?.applyRendererSettings !== false) {
-    toy.updateRendererSettings({
-      maxPixelRatio: performanceSettings.maxPixelRatio,
-    });
-  }
-
+  const pluginManager = createPluginManager(plugins);
   let runtime: ToyRuntimeInstance | null = null;
 
-  const applyPerformanceSettings = (settings: PerformanceSettings) => {
-    performanceSettings = settings;
-    if (performance?.applyRendererSettings !== false) {
-      toy.updateRendererSettings({ maxPixelRatio: settings.maxPixelRatio });
-    }
-    if (runtime) {
-      runtimePlugins.forEach((plugin) =>
-        plugin.onPerformanceChange?.(settings, runtime as ToyRuntimeInstance),
-      );
-    }
-  };
-
-  const performanceUnsubscribe =
-    performance?.enabled === false
-      ? null
-      : subscribeToPerformanceSettings(applyPerformanceSettings);
-
-  const inputTarget =
-    input?.enabled === false
-      ? null
-      : (input?.target ??
-        (toy.canvas instanceof HTMLElement ? toy.canvas : null) ??
-        toy.container);
-
-  const resolvedTouchAction =
-    input?.touchAction ??
-    (inputTarget === toy.canvas && inputTarget instanceof HTMLElement
-      ? 'none'
-      : undefined);
-
-  if (inputTarget instanceof HTMLElement && resolvedTouchAction) {
-    inputTarget.style.touchAction = resolvedTouchAction;
-  }
-
-  const inputAdapter =
-    inputTarget && inputTarget instanceof HTMLElement
-      ? createUnifiedInput({
-          ...defaultInputOptions(inputTarget, input),
-          onInput: (state) => {
-            inputState = state;
-            runtimePlugins.forEach((plugin) =>
-              plugin.onInput?.(state, frameState),
-            );
-            input?.onInput?.(state);
-          },
-          micProvider: () => ({
-            level: analyser?.getRmsLevel() ?? 0,
-            available: Boolean(analyser),
-          }),
-        })
-      : null;
+  const performanceController = createPerformanceController({
+    toy,
+    options: performance,
+    onChange: (settings) => {
+      if (runtime) {
+        pluginManager.onPerformanceChange(
+          settings,
+          runtime as ToyRuntimeInstance,
+        );
+      }
+    },
+  });
 
   const frameState: ToyRuntimeFrame = {
     toy,
@@ -178,8 +271,20 @@ export function createToyRuntime({
     analyser: null,
     frequencyData: new Uint8Array(0),
     input: null,
-    performance: performanceSettings,
+    performance: performanceController.getSettings(),
   };
+
+  const inputController = createInputController({
+    toy,
+    options: input,
+    onInput: (state) => {
+      pluginManager.onInput(state, frameState);
+    },
+    getMicLevel: () => ({
+      level: analyser?.getRmsLevel() ?? 0,
+      available: Boolean(analyser),
+    }),
+  });
 
   const startAudio = async (request?: ToyAudioRequest) => {
     return startToyAudio(
@@ -192,9 +297,9 @@ export function createToyRuntime({
         frameState.time = now;
         frameState.analyser = analyser;
         frameState.frequencyData = getContextFrequencyData(ctx);
-        frameState.input = inputState;
-        frameState.performance = performanceSettings;
-        runtimePlugins.forEach((plugin) => plugin.update?.(frameState));
+        frameState.input = inputController.getState();
+        frameState.performance = performanceController.getSettings();
+        pluginManager.update(frameState);
       },
       resolveToyAudioOptions(request, {
         fftSize: audio?.fftSize,
@@ -209,23 +314,21 @@ export function createToyRuntime({
     toy,
     startAudio,
     addPlugin: (plugin) => {
-      runtimePlugins.push(plugin);
+      pluginManager.add(plugin);
       plugin.setup?.(runtime as ToyRuntimeInstance);
     },
-    getInputState: () => inputState,
-    getPerformanceSettings: () => performanceSettings,
+    getInputState: () => inputController.getState(),
+    getPerformanceSettings: () => performanceController.getSettings(),
     dispose: () => {
-      runtimePlugins.forEach((plugin) => plugin.dispose?.());
-      inputAdapter?.dispose();
-      performanceUnsubscribe?.();
+      pluginManager.dispose();
+      inputController.dispose();
+      performanceController.dispose();
       unregisterGlobals();
       toy.dispose();
     },
   };
 
-  runtimePlugins.forEach((plugin) =>
-    plugin.setup?.(runtime as ToyRuntimeInstance),
-  );
+  pluginManager.setupAll(runtime as ToyRuntimeInstance);
 
   return runtime as ToyRuntimeInstance;
 }
