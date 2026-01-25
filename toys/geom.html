@@ -53,7 +53,7 @@
     </style>
   </head>
   <body>
-    <a href="../index.html" class="home-link">Back to Library</a>
+    <div data-toy-nav></div>
     <div id="controls">
       <button id="startButton">Start Microphone Visualizer</button>
       <div class="control-group">
@@ -102,6 +102,7 @@
     <div id="error-message" style="display: none"></div>
     <canvas id="gameCanvas" class="toy-canvas"></canvas>
     <script type="module">
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import { getContextFrequencyData } from '../assets/js/core/animation-loop.ts';
       import { setupIframeQualitySync } from '../assets/js/core/iframe-quality-sync.ts';
       import {
@@ -118,6 +119,8 @@
         clearError,
         showError,
       } from '../assets/js/utils/error-display.ts';
+
+      initToyPageShell();
       import { startToyAudio } from '../assets/js/utils/start-audio.ts';
 
       const canvas = document.getElementById('gameCanvas');

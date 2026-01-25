@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="../assets/css/base.css" />
   </head>
   <body>
-    <a href="../index.html" class="home-link">Back to Library</a>
+    <div data-toy-nav></div>
     <div id="error-message"></div>
     <canvas id="glCanvas" class="toy-canvas"></canvas>
     <div class="control-panel">
@@ -68,6 +68,7 @@
       </div>
     </div>
     <script type="module">
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import {
         getFrequencyData,
         getWeightedAverageFrequency,
@@ -75,6 +76,8 @@
       } from '../assets/js/utils/audio-handler.ts';
       import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+
+      initToyPageShell();
 
       const canvas = document.getElementById('glCanvas');
       const gl = canvas.getContext('webgl');
