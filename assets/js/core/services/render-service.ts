@@ -11,6 +11,10 @@ import {
   rememberRendererFallback,
 } from '../renderer-capabilities.ts';
 import {
+  applyRendererSettings,
+  resolveRendererSettings,
+} from '../renderer-settings.ts';
+import {
   initRenderer,
   type RendererInitConfig,
   type RendererInitResult,
@@ -61,42 +65,25 @@ function buildSettings(
   options: Partial<RendererInitConfig> = {},
   info?: RendererInitResult | null,
 ): RendererInitConfig {
-  return {
+  return resolveRendererSettings(options, info, {
     maxPixelRatio:
-      options.maxPixelRatio ??
-      info?.maxPixelRatio ??
-      activeRenderPreferences.maxPixelRatio ??
-      activeQuality.maxPixelRatio,
+      activeRenderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
     renderScale:
-      options.renderScale ??
-      info?.renderScale ??
-      activeRenderPreferences.renderScale ??
-      activeQuality.renderScale ??
-      1,
-    exposure: options.exposure ?? info?.exposure ?? 1,
-    antialias: options.antialias ?? true,
-    alpha: options.alpha ?? false,
-  };
+      activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1,
+  });
 }
 
-function applyRendererSettings(
+function applyPoolSettings(
   renderer: THREE.WebGLRenderer | WebGPURenderer,
   info: RendererInitResult,
   options: Partial<RendererInitConfig> = {},
 ) {
-  const merged = buildSettings(options, info);
-  const effectivePixelRatio = Math.min(
-    (window.devicePixelRatio || 1) * (merged.renderScale ?? 1),
-    merged.maxPixelRatio ?? 2,
-  );
-
-  renderer.setPixelRatio(effectivePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.toneMappingExposure = merged.exposure ?? 1;
-
-  info.maxPixelRatio = merged.maxPixelRatio ?? info.maxPixelRatio;
-  info.renderScale = merged.renderScale ?? info.renderScale;
-  info.exposure = merged.exposure ?? info.exposure;
+  applyRendererSettings(renderer, info, options, {
+    maxPixelRatio:
+      activeRenderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
+    renderScale:
+      activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1,
+  });
 }
 
 async function createRendererHandle(
@@ -116,7 +103,7 @@ async function createRendererHandle(
     info: initResult,
     canvas,
     applySettings: (nextOptions) =>
-      applyRendererSettings(initResult.renderer, initResult, nextOptions),
+      applyPoolSettings(initResult.renderer, initResult, nextOptions),
     release: () => {},
   };
 
