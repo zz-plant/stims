@@ -5,6 +5,19 @@
 - **Commit messages:** concise, descriptive titles in sentence case (no trailing period), e.g., `Add docs on data flow`.
 - **PR summaries:** include a short summary plus explicit lists of tests run and any docs touched or added so reviewers can verify coverage.
 
+### Suggested PR summary format
+
+```
+Summary:
+- <short summary>
+
+Tests:
+- <test command or "Not run (reason)">
+
+Docs:
+- <doc path(s) touched, or "None">
+```
+
 ## Documentation expectations
 
 - Refer to `docs/README.md` for the documentation map when adding or updating docs.
