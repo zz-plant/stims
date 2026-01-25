@@ -152,18 +152,24 @@ export default class WebToy {
 
   handleResize() {
     const visualViewport = window.visualViewport;
-    let width = visualViewport?.width ?? window.innerWidth;
-    let height = visualViewport?.height ?? window.innerHeight;
+    const viewportWidth = visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = visualViewport?.height ?? window.innerHeight;
+    let width = viewportWidth;
+    let height = viewportHeight;
 
     if (this.container && this.container !== document.body) {
       width = this.container.clientWidth;
       height = this.container.clientHeight;
     }
 
-    if (!this.container || this.container === document.body) {
-      document.documentElement.style.setProperty('--app-height', `${height}px`);
-      document.documentElement.style.setProperty('--app-width', `${width}px`);
-    }
+    document.documentElement.style.setProperty(
+      '--app-height',
+      `${viewportHeight}px`,
+    );
+    document.documentElement.style.setProperty(
+      '--app-width',
+      `${viewportWidth}px`,
+    );
 
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
