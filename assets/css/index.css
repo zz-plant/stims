@@ -13,7 +13,12 @@
   --highlight-glow: color-mix(in srgb, var(--accent-magenta) 10%, transparent);
   --surface-gradient: var(--card-bg);
   --surface-border: rgba(255, 255, 255, 0.08);
-  --surface-sheen: none;
+  --surface-sheen: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    transparent 55%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
   --surface-texture: none;
   --surface-highlight: linear-gradient(
     180deg,
@@ -50,7 +55,12 @@ html.light {
   --highlight-glow: color-mix(in srgb, var(--accent-magenta) 10%, transparent);
   --surface-gradient: var(--card-bg);
   --surface-border: rgba(11, 16, 48, 0.1);
-  --surface-sheen: none;
+  --surface-sheen: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
   --surface-texture: none;
   --surface-highlight: linear-gradient(
     180deg,
@@ -437,6 +447,7 @@ section.intro > * {
   display: grid;
   gap: 0.85rem;
   max-width: 580px;
+  backdrop-filter: blur(10px) saturate(1.1);
 }
 
 html.light .launch-panel {
@@ -1216,7 +1227,11 @@ header.hero {
   margin: 0;
   padding: 0.85rem 1rem;
   border-radius: 10px;
-  background: rgba(15, 23, 42, 0.45);
+  background: linear-gradient(
+    140deg,
+    rgba(59, 130, 246, 0.08) 0%,
+    rgba(15, 23, 42, 0.4) 70%
+  );
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
 }
@@ -1247,6 +1262,14 @@ html.light .hero-metric {
   font-size: 1rem;
   color: var(--text-muted);
   line-height: 1.5;
+}
+
+.intro-tagline {
+  margin: 0 0 1.25rem;
+  color: var(--text-muted);
+  max-width: 640px;
+  font-size: 1.05rem;
+  line-height: 1.6;
 }
 
 .details-panel {
@@ -2040,6 +2063,7 @@ html.light .experience-card {
   overflow: hidden;
   touch-action: manipulation;
   min-height: clamp(220px, 24vw, 260px);
+  isolation: isolate;
 }
 
 .webtoy-card__link {
@@ -2066,12 +2090,32 @@ html.light .experience-card {
   gap: 0.6rem;
   width: 100%;
   position: relative;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
 }
 
 /* Gradient shimmer overlay */
-.webtoy-card::before,
+.webtoy-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--accent-color) 18%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      color-mix(in srgb, var(--accent-magenta) 14%, transparent),
+      transparent 60%
+    );
+  opacity: 0.14;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .webtoy-card::after {
   content: none;
 }
@@ -2082,6 +2126,10 @@ html.light .experience-card {
   transform: translateY(-2px);
   box-shadow: var(--shadow-strong);
   border-color: rgba(59, 130, 246, 0.35);
+}
+
+.webtoy-card:hover::before {
+  opacity: 0.25;
 }
 
 .webtoy-card:focus-visible {
