@@ -30,7 +30,8 @@ if (isCloudflarePages && hasReusableArtifacts()) {
 }
 
 const hasBunRuntime = typeof process.versions?.bun === 'string';
-const installCommand = 'bun install --frozen-lockfile';
+const installCommand =
+  'STIMS_SKIP_POSTINSTALL_BUILD=1 bun install --frozen-lockfile';
 const viteCommand = 'bunx vite build';
 
 if (!hasBunRuntime) {
