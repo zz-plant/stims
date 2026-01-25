@@ -242,10 +242,10 @@ function updateStatusList(
   rendererNote.className = 'preflight-status__note';
   rendererNote.textContent =
     result.rendering.rendererBackend === 'webgpu'
-      ? 'Enabled.'
+      ? 'WebGPU enabled.'
       : result.rendering.rendererBackend === 'webgl'
-        ? (result.rendering.webgpuFallbackReason ?? 'Using WebGL.')
-        : 'GPU acceleration not detected.';
+        ? 'WebGL in use.'
+        : 'No GPU acceleration.';
   rendererStatus.appendChild(rendererNote);
 
   const microphoneStatus = buildStatusBadge(
@@ -267,10 +267,13 @@ function updateStatusList(
   const microphoneNote = document.createElement('p');
   microphoneNote.className = 'preflight-status__note';
   microphoneNote.textContent =
-    result.microphone.reason ??
-    (result.microphone.state === 'granted'
-      ? 'Ready.'
-      : 'The browser will prompt for access.');
+    result.microphone.state === 'granted'
+      ? 'Permission granted.'
+      : result.microphone.state === 'denied'
+        ? 'Permission denied.'
+        : !result.microphone.supported
+          ? 'API unavailable.'
+          : 'Awaiting permission.';
   microphoneStatus.appendChild(microphoneNote);
 
   const environmentStatus = buildStatusBadge(
@@ -283,7 +286,7 @@ function updateStatusList(
   environmentNote.className = 'preflight-status__note';
   environmentNote.textContent = result.environment.reducedMotion
     ? 'Reduced motion active.'
-    : 'Full effects enabled.';
+    : 'Full motion active.';
   environmentStatus.appendChild(environmentNote);
 
   const performanceStatus = buildStatusBadge(
@@ -295,8 +298,8 @@ function updateStatusList(
   const performanceNote = document.createElement('p');
   performanceNote.className = 'preflight-status__note';
   performanceNote.textContent = result.performance.lowPower
-    ? `Detected ${result.performance.reason ?? 'lower-power hardware'}.`
-    : 'Device is ready for full-quality rendering.';
+    ? 'Performance mode suggested.'
+    : 'Full quality available.';
   performanceStatus.appendChild(performanceNote);
 
   [
@@ -307,6 +310,76 @@ function updateStatusList(
   ].forEach((status) => {
     container.appendChild(status);
   });
+}
+
+function updateWhyDetails(
+  container: HTMLElement,
+  result: CapabilityPreflightResult,
+) {
+  container.innerHTML = '';
+
+  const items: string[] = [];
+
+  if (result.rendering.rendererBackend === 'webgpu') {
+    items.push('WebGPU is available for the highest fidelity visuals.');
+  } else if (result.rendering.rendererBackend === 'webgl') {
+    items.push(
+      result.rendering.webgpuFallbackReason
+        ? `WebGPU fallback reason: ${result.rendering.webgpuFallbackReason}`
+        : 'WebGPU is unavailable, so WebGL is used for compatibility.',
+    );
+  } else {
+    items.push('No GPU acceleration detected; try another browser or device.');
+  }
+
+  if (!result.microphone.supported) {
+    items.push(
+      'Microphone capture is unavailable; use demo, tab, or YouTube audio.',
+    );
+  } else if (result.microphone.state === 'denied') {
+    items.push(
+      'Microphone access is blocked; update permissions or use demo audio.',
+    );
+  } else if (result.microphone.state === 'error') {
+    items.push(
+      'Permission state could not be read; the browser will still prompt when needed.',
+    );
+  } else if (result.microphone.state === 'prompt') {
+    items.push('You will be prompted for microphone access when starting.');
+  } else {
+    items.push('Microphone permission is granted for live audio.');
+  }
+
+  if (!result.environment.secureContext) {
+    items.push(
+      'This page is not in a secure context, so some APIs may be limited.',
+    );
+  } else {
+    items.push('Secure context enables modern browser APIs.');
+  }
+
+  items.push(
+    result.environment.reducedMotion
+      ? 'Reduced motion preference is enabled; effects will soften.'
+      : 'No reduced-motion preference detected in system settings.',
+  );
+
+  if (result.performance.lowPower) {
+    items.push(
+      `Performance mode is recommended due to ${result.performance.reason ?? 'lower-power hardware'}.`,
+    );
+  } else {
+    items.push('Device should handle full-quality rendering.');
+  }
+
+  const list = document.createElement('ul');
+  list.className = 'preflight-panel__details-list';
+  items.forEach((item) => {
+    const li = document.createElement('li');
+    li.textContent = item;
+    list.appendChild(li);
+  });
+  container.appendChild(list);
 }
 
 function renderIssueList(
@@ -508,6 +581,17 @@ export function attachCapabilityPreflight({
   issueContainer.className = 'preflight-panel__issues-container';
   panel.appendChild(issueContainer);
 
+  const details = document.createElement('details');
+  details.className = 'preflight-panel__details';
+  const summary = document.createElement('summary');
+  summary.className = 'preflight-panel__details-summary';
+  summary.textContent = 'Why?';
+  details.appendChild(summary);
+  const detailsContent = document.createElement('div');
+  detailsContent.className = 'preflight-panel__details-content';
+  details.appendChild(detailsContent);
+  panel.appendChild(details);
+
   const actions = document.createElement('div');
   actions.className = 'control-panel__actions control-panel__actions--inline';
   if (showCloseButton) {
@@ -586,6 +670,7 @@ export function attachCapabilityPreflight({
     retryButton.disabled = false;
     updateStatusList(statusContainer, result);
     renderIssueList(issueContainer, result);
+    updateWhyDetails(detailsContent, result);
     updatePerformanceButton(result);
     if (isRetry) {
       onRetry?.(result);

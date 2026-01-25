@@ -8,6 +8,11 @@ const STATUS = {
 
 type StatusKey = 'render' | 'mic' | 'motion' | 'reduced';
 type StatusState = (typeof STATUS)[keyof typeof STATUS];
+type StatusResult = {
+  state: StatusState;
+  message: string;
+  detail?: string;
+};
 
 const STATUS_LABELS = {
   render: 'Graphics acceleration',
@@ -31,21 +36,39 @@ const selectStatusNodes = () => ({
   },
 });
 
-const applyStatus = (key: StatusKey, state: StatusState, message: string) => {
+const applyStatus = (
+  key: StatusKey,
+  state: StatusState,
+  message: string,
+  detail?: string,
+) => {
   const { dots, notes } = selectStatusNodes();
   const dot = dots[key];
   const note = notes[key];
   const label = STATUS_LABELS[key];
   const HTMLElementCtor = globalThis.HTMLElement;
+  const ariaMessage = detail
+    ? `${label}: ${message}. ${detail}`
+    : `${label}: ${message}`;
 
   if (HTMLElementCtor && dot instanceof HTMLElementCtor) {
     dot.dataset.status = state;
-    dot.setAttribute('aria-label', `${label}: ${message}`);
+    dot.setAttribute('aria-label', ariaMessage);
+    if (detail) {
+      dot.setAttribute('title', detail);
+    } else {
+      dot.removeAttribute('title');
+    }
   }
 
   if (HTMLElementCtor && note instanceof HTMLElementCtor) {
     note.textContent = message;
-    note.setAttribute('aria-label', `${label}: ${message}`);
+    note.setAttribute('aria-label', ariaMessage);
+    if (detail) {
+      note.setAttribute('title', detail);
+    } else {
+      note.removeAttribute('title');
+    }
   }
 };
 
@@ -57,16 +80,17 @@ const probeMicrophone = async () => {
   if (!hasMediaDevices) {
     return {
       state: STATUS.error,
-      message:
-        'No microphone detected. Use demo audio, tab audio, or YouTube audio before starting.',
+      message: 'Microphone not detected for live audio.',
+      detail: 'Use demo audio, tab audio, or YouTube audio before starting.',
     };
   }
 
   if (typeof navigator.permissions?.query !== 'function') {
     return {
       state: STATUS.success,
-      message:
-        'Live audio available — grant mic access when a toy asks, or use demo/tab/YouTube audio.',
+      message: 'Microphone ready; permission requested later.',
+      detail:
+        'Grant microphone access when a toy asks, or use demo/tab/YouTube audio.',
     };
   }
 
@@ -76,30 +100,33 @@ const probeMicrophone = async () => {
     if (status.state === 'denied') {
       return {
         state: STATUS.error,
-        message:
-          'Microphone is blocked. Update permissions or use demo/tab/YouTube audio.',
+        message: 'Microphone blocked; use alternate audio.',
+        detail:
+          'Update permissions or use demo, tab, or YouTube audio instead.',
       };
     }
 
     if (status.state === 'granted') {
       return {
         state: STATUS.success,
-        message: 'Mic ready — audio-reactive toys can start immediately.',
+        message: 'Microphone ready for live audio.',
+        detail: 'Audio-reactive toys can start immediately.',
       };
     }
   } catch (error) {
     console.warn('Microphone permission probe failed', error);
     return {
       state: STATUS.warn,
-      message:
-        'Mic support detected, but permission status is unclear. Allow access if prompted, or use demo/tab/YouTube audio.',
+      message: 'Microphone status unclear; allow access.',
+      detail: 'Allow access if prompted, or use demo, tab, or YouTube audio.',
     };
   }
 
   return {
     state: STATUS.success,
-    message:
-      'Live audio available — grant mic access when a toy asks, or use demo/tab/YouTube audio.',
+    message: 'Microphone ready; permission requested later.',
+    detail:
+      'Grant microphone access when a toy asks, or use demo/tab/YouTube audio.',
   };
 };
 
@@ -132,22 +159,24 @@ const probeRendering = () => {
   if (hasWebGPU) {
     return {
       state: STATUS.success,
-      message: 'WebGPU ready — you get the highest fidelity visuals.',
+      message: 'WebGPU ready for best visuals.',
+      detail: 'WebGPU provides the highest fidelity visuals.',
     };
   }
 
   if (hasWebGL) {
     return {
       state: STATUS.warn,
-      message:
+      message: 'WebGL fallback for compatible visuals.',
+      detail:
         'WebGPU not detected. Toys will use the WebGL fallback for compatibility.',
     };
   }
 
   return {
     state: STATUS.error,
-    message:
-      'Graphics acceleration is unavailable. Try another browser or device.',
+    message: 'Graphics acceleration unavailable on this device.',
+    detail: 'Try another browser or device.',
   };
 };
 
@@ -159,8 +188,8 @@ const probeMotion = () => {
   if (!supportsMotion) {
     return {
       state: STATUS.error,
-      message:
-        'Motion controls unavailable or locked down. Try on mobile or enable motion access.',
+      message: 'Motion sensors unavailable on this device.',
+      detail: 'Try on mobile or enable motion access.',
     };
   }
 
@@ -177,26 +206,24 @@ const probeMotion = () => {
   if (requiresPermission) {
     return {
       state: STATUS.warn,
-      message:
-        'Motion available, but you’ll need to allow access after a prompt when starting.',
+      message: 'Motion access needs permission after prompt.',
+      detail: 'Allow access after the prompt when starting.',
     };
   }
 
   return {
     state: STATUS.success,
-    message:
-      'Motion/tilt supported — effects will adapt when you move your device.',
+    message: 'Motion controls available on this device.',
+    detail: 'Effects adapt when you move or tilt.',
   };
 };
 
-const initReducedMotionStatus = (
-  update: (result: { state: StatusState; message: string }) => void,
-) => {
+const initReducedMotionStatus = (update: (result: StatusResult) => void) => {
   if (typeof window.matchMedia !== 'function') {
     update({
       state: STATUS.warn,
-      message:
-        'Unable to detect motion comfort settings. Full motion will be used by default.',
+      message: 'Motion preference unavailable on this device.',
+      detail: 'Full motion will be used by default.',
     });
     return;
   }
@@ -207,15 +234,16 @@ const initReducedMotionStatus = (
     if (event.matches) {
       update({
         state: STATUS.success,
-        message: 'Animations will soften because you prefer reduced motion.',
+        message: 'Reduced motion preference is active.',
+        detail: 'Animations will soften to match your preference.',
       });
       return;
     }
 
     update({
       state: STATUS.success,
-      message:
-        'Full motion is enabled. Toggle reduced motion in your OS to soften effects.',
+      message: 'Full motion effects are enabled.',
+      detail: 'Toggle reduced motion in your OS to soften effects.',
     });
   };
 
@@ -226,22 +254,22 @@ const initReducedMotionStatus = (
 export const initReadinessProbe = () => {
   const applyRenderStatus = () => {
     const result = probeRendering();
-    applyStatus('render', result.state, result.message);
+    applyStatus('render', result.state, result.message, result.detail);
   };
 
   const applyMicStatus = async () => {
     const result = await probeMicrophone();
-    applyStatus('mic', result.state, result.message);
+    applyStatus('mic', result.state, result.message, result.detail);
   };
 
   const applyMotionStatus = () => {
     const result = probeMotion();
-    applyStatus('motion', result.state, result.message);
+    applyStatus('motion', result.state, result.message, result.detail);
   };
 
   const applyReducedMotionStatus = () => {
     initReducedMotionStatus((result) => {
-      applyStatus('reduced', result.state, result.message);
+      applyStatus('reduced', result.state, result.message, result.detail);
     });
   };
 
