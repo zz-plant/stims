@@ -44,13 +44,14 @@
     </style>
   </head>
   <body>
-    <a href="../index.html" class="home-link">Back to Library</a>
+    <div data-toy-nav></div>
     <div id="error-message" style="display: none"></div>
     <div class="canvas-stack">
       <canvas id="glCanvas" class="toy-canvas canvas-gl"></canvas>
       <canvas id="overlayCanvas" class="toy-canvas canvas-overlay"></canvas>
     </div>
     <script type="module">
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import {
         getWeightedAverageFrequency,
         getFrequencyData,
@@ -70,6 +71,8 @@
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
+
+      initToyPageShell();
 
       const canvas = document.getElementById('glCanvas');
       const overlayCanvas = document.getElementById('overlayCanvas');

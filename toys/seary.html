@@ -29,7 +29,7 @@
     </style>
   </head>
   <body>
-    <a href="../index.html" class="home-link">Back to Library</a>
+    <div data-toy-nav></div>
     <canvas id="gpuCanvas" class="toy-canvas"></canvas>
     <canvas id="sparkleCanvas" class="toy-canvas"></canvas>
     <div id="error-message" style="display: none"></div>
@@ -44,6 +44,7 @@
       </div>
     </div>
     <script type="module">
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import {
         getFrequencyData,
       } from '../assets/js/utils/audio-handler.ts';
@@ -60,6 +61,8 @@
         getWeightedEnergy,
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
+
+      initToyPageShell();
 
       // Fallback to WebGL
       const canvas = document.getElementById('gpuCanvas');
