@@ -1,13 +1,11 @@
 import * as THREE from 'three';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { registerToyGlobals } from '../core/toy-globals';
 import { createToyRuntime } from '../core/toy-runtime';
 import type { ToyAudioRequest } from '../utils/audio-start';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 import type { UnifiedInputState, UnifiedPointer } from '../utils/unified-input';
 
 type TideBlob = {
@@ -32,8 +30,29 @@ const MAX_BLOBS = 28;
 const BASE_SPARK_COUNT = 200;
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const settingsPanel = getSettingsPanel();
-  let activeQuality: QualityPreset = getActiveQualityPreset();
+  const quality = createQualityPresetManager({
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      activeSparkCount = getSparkCount();
+      sparkGeometry.setDrawRange(0, activeSparkCount);
+      for (let i = 0; i < BASE_SPARK_COUNT; i += 1) {
+        sparkLife[i] = 0;
+        sparkPositions[i * 3 + 2] = -10;
+      }
+      for (let i = 0; i < activeSparkCount; i += 1) {
+        resetSpark(i);
+      }
+
+      if (blobs.length > getBlobCap()) {
+        blobs.length = getBlobCap();
+      }
+
+      handleResize();
+    },
+  });
   let runtime: ReturnType<typeof createToyRuntime>;
 
   const controls = {
@@ -83,12 +102,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let activePaletteIndex = 0;
 
   function getSparkCount() {
-    const scale = activeQuality.particleScale ?? 1;
+    const scale = quality.activeQuality.particleScale ?? 1;
     return Math.max(80, Math.floor(BASE_SPARK_COUNT * scale));
   }
 
   function getBlobCap() {
-    const scale = activeQuality.particleScale ?? 1;
+    const scale = quality.activeQuality.particleScale ?? 1;
     return Math.max(10, Math.min(MAX_BLOBS, Math.round(MAX_BLOBS * scale)));
   }
 
@@ -478,40 +497,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: preset.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-
-    activeSparkCount = getSparkCount();
-    sparkGeometry.setDrawRange(0, activeSparkCount);
-    for (let i = 0; i < BASE_SPARK_COUNT; i += 1) {
-      sparkLife[i] = 0;
-      sparkPositions[i * 3 + 2] = -10;
-    }
-    for (let i = 0; i < activeSparkCount; i += 1) {
-      resetSpark(i);
-    }
-
-    if (blobs.length > getBlobCap()) {
-      blobs.length = getBlobCap();
-    }
-
-    handleResize();
-  }
-
   function setupSettingsPanel() {
-    settingsPanel.configure({
+    configureToySettingsPanel({
       title: 'Bioluminescent tidepools',
       description:
         'Quality presets update DPI caps, blob limits, and spark counts without reloading. Pinch to shape the currents, rotate to swap moods, and nudge with arrow keys.',
-    });
-    settingsPanel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
   }
 
@@ -601,8 +592,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       sceneOptions: { background: '#03121c' },
       rendererOptions: {
         exposure: 1.35,
-        maxPixelRatio: activeQuality.maxPixelRatio,
-        renderScale: activeQuality.renderScale,
+        maxPixelRatio: quality.activeQuality.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
       },
     },
     audio: {

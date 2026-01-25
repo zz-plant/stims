@@ -5,12 +5,6 @@ import {
   type PostprocessingPipeline,
 } from '../core/postprocessing';
 import type { RendererBackend } from '../core/renderer-capabilities';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { registerToyGlobals } from '../core/toy-globals';
 import { createToyRuntime } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
@@ -20,11 +14,22 @@ import {
   createControlPanel,
 } from '../utils/control-panel';
 import { createIdleDetector } from '../utils/idle-detector';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   let errorElement: HTMLElement | null = null;
-  const settingsPanel = getSettingsPanel();
-  let activeQuality: QualityPreset = getActiveQualityPreset();
+  const quality = createQualityPresetManager({
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      rebuildSceneContents();
+    },
+  });
   let runtime: ReturnType<typeof createToyRuntime>;
 
   let torusKnot: THREE.Mesh | null = null;
@@ -41,7 +46,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const clock = new THREE.Clock();
 
   function getCounts() {
-    const scale = activeQuality.particleScale ?? 1;
+    const scale = quality.activeQuality.particleScale ?? 1;
     return {
       particleCount: Math.max(600, Math.floor(1500 * scale)),
       shapeCount: Math.max(3, Math.round(7 * scale)),
@@ -361,25 +366,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: preset.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    rebuildSceneContents();
-  }
-
   function setupSettingsPanel() {
-    settingsPanel.configure({
+    configureToySettingsPanel({
       title: '3D soundscape',
       description:
         'Resolution and particle density follow the preset you pick.',
-    });
-    settingsPanel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
   }
 
@@ -409,8 +401,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
       ambientLightOptions: { color: 0x404040, intensity: 0.8 },
       rendererOptions: {
-        maxPixelRatio: activeQuality.maxPixelRatio,
-        renderScale: activeQuality.renderScale,
+        maxPixelRatio: quality.activeQuality.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
       },
     },
     audio: { fftSize: 512 },

@@ -1,12 +1,10 @@
 import * as THREE from 'three';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 
 interface RingData {
   outer: THREE.Mesh;
@@ -16,8 +14,15 @@ interface RingData {
 }
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const settingsPanel = getSettingsPanel();
-  let activeQuality: QualityPreset = getActiveQualityPreset();
+  const quality = createQualityPresetManager({
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      rebuildScene();
+    },
+  });
   let runtime: ReturnType<typeof createToyRuntime>;
 
   const rings: RingData[] = [];
@@ -28,7 +33,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let tunnelLength = 0;
 
   function getTunnelConfig() {
-    const scale = activeQuality.particleScale ?? 1;
+    const scale = quality.activeQuality.particleScale ?? 1;
     const ringCount = Math.max(8, Math.round(20 * scale));
     const ringSpacing = 30;
     const tunnelLength = ringCount * ringSpacing;
@@ -219,24 +224,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     runtime.toy.render();
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: preset.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    rebuildScene();
-  }
-
   function setupSettingsPanel() {
-    settingsPanel.configure({
+    configureToySettingsPanel({
       title: 'Rainbow tunnel',
       description: 'Preset tweaks update DPI and ring density together.',
-    });
-    settingsPanel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
   }
 
@@ -248,8 +240,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       lightingOptions: { type: 'HemisphereLight' },
       ambientLightOptions: { intensity: 0.4 },
       rendererOptions: {
-        maxPixelRatio: activeQuality.maxPixelRatio,
-        renderScale: activeQuality.renderScale,
+        maxPixelRatio: quality.activeQuality.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
       },
     },
     audio: { fftSize: 256 },

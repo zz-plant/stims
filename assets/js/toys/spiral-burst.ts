@@ -4,17 +4,15 @@ import {
   getPerformancePanel,
   type PerformanceSettings,
 } from '../core/performance-panel';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
 import { applyAudioColor } from '../utils/color-audio';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
 type SpiralMode = 'burst' | 'bloom' | 'vortex' | 'heartbeat';
@@ -45,8 +43,18 @@ type ParticleField = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const settingsPanel = getSettingsPanel();
-  let activeQuality: QualityPreset = getActiveQualityPreset();
+  const quality = createQualityPresetManager({
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: performanceSettings.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      buildSpiralArms();
+      disposeParticleField();
+      particleField = createParticleField();
+      createBloomMesh();
+    },
+  });
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let currentMode: SpiralMode = 'burst';
   let modeRow: HTMLDivElement | null = null;
@@ -114,7 +122,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function getArmConfig() {
     const scale =
-      (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
+      (quality.activeQuality.particleScale ?? 1) *
+      performanceSettings.particleBudget;
     const armCount = Math.max(3, Math.round(6 * scale));
     const linesPerArm = Math.max(8, Math.round(16 * scale));
     const pointsPerLine = Math.max(20, Math.round(40 * Math.sqrt(scale)));
@@ -123,7 +132,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function getParticleCount() {
     const scale =
-      (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
+      (quality.activeQuality.particleScale ?? 1) *
+      performanceSettings.particleBudget;
     return Math.max(400, Math.round(1200 * scale));
   }
 
@@ -286,23 +296,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     return false;
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: performanceSettings.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    buildSpiralArms();
-    disposeParticleField();
-    particleField = createParticleField();
-    createBloomMesh();
-  }
-
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
     runtime.toy.updateRendererSettings({
       maxPixelRatio: settings.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
+      renderScale: quality.activeQuality.renderScale,
     });
     buildSpiralArms();
     disposeParticleField();
@@ -325,15 +323,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    settingsPanel.configure({
+    configureToySettingsPanel({
       title: 'Spiral Burst',
       description:
         'Explosive spirals that pulse with your music. Try different modes, pinch to amplify, and rotate to swap moods!',
-    });
-    settingsPanel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
 
     // Add mode buttons
@@ -355,8 +349,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       row.appendChild(btn);
     });
 
-    const panel = container?.querySelector('.control-panel');
-    panel?.appendChild(row);
+    const panelElement = container?.querySelector('.control-panel');
+    panelElement?.appendChild(row);
   }
 
   function setupPerformancePanel() {
@@ -678,7 +672,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       ambientLightOptions: { intensity: 0.3 },
       rendererOptions: {
         maxPixelRatio: performanceSettings.maxPixelRatio,
-        renderScale: activeQuality.renderScale,
+        renderScale: quality.activeQuality.renderScale,
       },
     },
     audio: { fftSize: 512 },

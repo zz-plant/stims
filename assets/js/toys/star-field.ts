@@ -4,15 +4,13 @@ import {
   getPerformancePanel,
   type PerformanceSettings,
 } from '../core/performance-panel';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
 type StarFieldBuffers = {
@@ -33,8 +31,16 @@ type StarfieldPalette = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const settingsPanel = getSettingsPanel();
-  let activeQuality: QualityPreset = getActiveQualityPreset();
+  const quality = createQualityPresetManager({
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: performanceSettings.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      disposeStarField();
+      starField = createStarField();
+    },
+  });
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let activePaletteIndex = 0;
   let runtime: ReturnType<typeof createToyRuntime>;
@@ -99,7 +105,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function getStarCount() {
     const scale =
-      (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
+      (quality.activeQuality.particleScale ?? 1) *
+      performanceSettings.particleBudget;
     return Math.max(900, Math.floor(2400 * scale));
   }
 
@@ -237,36 +244,22 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     positions[i3 + 2] = -600;
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: performanceSettings.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    disposeStarField();
-    starField = createStarField();
-  }
-
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
     runtime.toy.updateRendererSettings({
       maxPixelRatio: performanceSettings.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
+      renderScale: quality.activeQuality.renderScale,
     });
     disposeStarField();
     starField = createStarField();
   }
 
   function setupSettingsPanel() {
-    settingsPanel.configure({
+    configureToySettingsPanel({
       title: 'Star field',
       description:
         'Tune render resolution and particle density for your GPU. Pinch to intensify the drift and rotate to swap nebula moods.',
-    });
-    settingsPanel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
   }
 
@@ -404,7 +397,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
       rendererOptions: {
         maxPixelRatio: performanceSettings.maxPixelRatio,
-        renderScale: activeQuality.renderScale,
+        renderScale: quality.activeQuality.renderScale,
       },
     },
     audio: { fftSize: 256 },

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getSettingsPanel,
-} from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import FeedbackManager from '../utils/feedback-manager';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 import WarpShader from '../utils/warp-shader';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
@@ -142,17 +142,16 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     ],
   });
 
-  const settingsPanel = getSettingsPanel();
-  settingsPanel.configure({
-    title: 'MilkDrop Proto',
-    description: 'A prototype of MilkDrop-style feedback engine.',
-  });
-  settingsPanel.setQualityPresets({
-    presets: DEFAULT_QUALITY_PRESETS,
+  const quality = createQualityPresetManager({
     defaultPresetId: 'medium',
     onChange: (preset) => {
       runtime.toy.updateRendererSettings({ renderScale: preset.renderScale });
     },
+  });
+  configureToySettingsPanel({
+    title: 'MilkDrop Proto',
+    description: 'A prototype of MilkDrop-style feedback engine.',
+    quality,
   });
 
   return runtime;

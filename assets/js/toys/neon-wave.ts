@@ -28,14 +28,13 @@ import {
   isWebGLRenderer,
   type PostprocessingPipeline,
 } from '../core/postprocessing';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  PersistentSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
+import { PersistentSettingsPanel } from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 
 type NeonTheme = 'synthwave' | 'cyberpunk' | 'arctic' | 'sunset';
 
@@ -80,7 +79,17 @@ const THEMES: Record<NeonTheme, ThemePalette> = {
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const settingsPanel = new PersistentSettingsPanel(container || undefined);
-  let activeQuality: QualityPreset = getActiveQualityPreset();
+  const quality = createQualityPresetManager({
+    panel: settingsPanel,
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: performanceSettings.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      createWaveMesh();
+      createParticles();
+    },
+  });
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let currentTheme: NeonTheme = 'synthwave';
   let palette = THEMES[currentTheme];
@@ -126,7 +135,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function getWaveSegments() {
     const scale =
-      (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
+      (quality.activeQuality.particleScale ?? 1) *
+      performanceSettings.particleBudget;
     return {
       widthSegments: Math.max(32, Math.round(96 * scale)),
       heightSegments: Math.max(32, Math.round(96 * scale)),
@@ -135,7 +145,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function getParticleCount() {
     const scale =
-      (activeQuality.particleScale ?? 1) * performanceSettings.particleBudget;
+      (quality.activeQuality.particleScale ?? 1) *
+      performanceSettings.particleBudget;
     return Math.max(800, Math.round(2500 * scale));
   }
 
@@ -437,35 +448,22 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     return false;
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: performanceSettings.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    createWaveMesh();
-    createParticles();
-  }
-
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
     runtime.toy.updateRendererSettings({
       maxPixelRatio: settings.maxPixelRatio,
-      renderScale: activeQuality.renderScale,
+      renderScale: quality.activeQuality.renderScale,
     });
     createWaveMesh();
     createParticles();
   }
 
   function setupSettingsPanel() {
-    settingsPanel.configure({
+    configureToySettingsPanel({
       title: 'Neon Wave',
       description: 'Retro-wave visualizer with bloom effects. Pick a theme!',
-    });
-    settingsPanel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      panel: settingsPanel,
+      quality,
     });
 
     // Add theme buttons
@@ -618,7 +616,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       ambientLightOptions: { intensity: 0.15 },
       rendererOptions: {
         maxPixelRatio: performanceSettings.maxPixelRatio,
-        renderScale: activeQuality.renderScale,
+        renderScale: quality.activeQuality.renderScale,
       },
     },
     audio: { fftSize: 512 },

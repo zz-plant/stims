@@ -1,13 +1,11 @@
 import * as THREE from 'three';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 
 type Bubble = {
   mesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
@@ -24,8 +22,18 @@ type HarmonicBubble = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const settingsPanel = getSettingsPanel();
-  let activeQuality: QualityPreset = getActiveQualityPreset();
+  const quality = createQualityPresetManager({
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      bubbleDetail = getBubbleDetail();
+      refreshGeometries();
+      if (!shaderSources) return;
+      rebuildBubbles();
+    },
+  });
   let runtime: ReturnType<typeof createToyRuntime>;
 
   const bubbles: Bubble[] = [];
@@ -38,7 +46,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let shaderSources: { vertex: string; fragment: string } | null = null;
 
   function getBubbleDetail() {
-    const scale = activeQuality.particleScale ?? 1;
+    const scale = quality.activeQuality.particleScale ?? 1;
     return {
       bubbleCount: Math.max(12, Math.round(26 * scale)),
       harmonicLimit: Math.max(40, Math.round(120 * scale)),
@@ -286,27 +294,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     runtime.toy.render();
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: preset.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    bubbleDetail = getBubbleDetail();
-    refreshGeometries();
-    if (!shaderSources) return;
-    rebuildBubbles();
-  }
-
   function setupSettingsPanel() {
-    settingsPanel.configure({
+    configureToySettingsPanel({
       title: 'Bubble harmonics',
       description: 'Presets adjust DPI caps plus bubble and harmonic counts.',
-    });
-    settingsPanel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
   }
 
@@ -320,8 +312,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         background: '#03060f',
       },
       rendererOptions: {
-        maxPixelRatio: activeQuality.maxPixelRatio,
-        renderScale: activeQuality.renderScale,
+        maxPixelRatio: quality.activeQuality.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
       },
       ambientLightOptions: { color: 0x88aaff, intensity: 0.25 },
       lightingOptions: {

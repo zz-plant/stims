@@ -1,11 +1,9 @@
 import * as THREE from 'three';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 
 type PaletteKey = 'aurora' | 'sunset' | 'midnight';
 
@@ -20,9 +18,20 @@ type KiteInstance = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const settingsPanel = getSettingsPanel();
-  let activeQuality: QualityPreset = getActiveQualityPreset();
+  const quality = createQualityPresetManager({
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      buildGarden();
+      if (panelDensityInput) {
+        panelDensityInput.value = settings.density.toString();
+      }
+    },
+  });
   let runtime: ReturnType<typeof createToyRuntime>;
+  let settingsPanel: ReturnType<typeof configureToySettingsPanel>;
 
   const palettes: Record<PaletteKey, number[]> = {
     aurora: [0x83e6ff, 0x6ad0f7, 0xd3afff, 0xa8f7dd],
@@ -41,7 +50,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let panelDensityInput: HTMLInputElement | null = null;
 
   function getDensity() {
-    const scale = activeQuality.particleScale ?? 1;
+    const scale = quality.activeQuality.particleScale ?? 1;
     return THREE.MathUtils.clamp(settings.density * scale, 0.25, 1.6);
   }
 
@@ -265,28 +274,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: preset.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    buildGarden();
-    if (panelDensityInput) {
-      panelDensityInput.value = settings.density.toString();
-    }
-  }
-
   function setupSettingsPanel() {
-    settingsPanel.configure({
+    settingsPanel = configureToySettingsPanel({
       title: 'Fractal Kite Garden',
       description:
         'Quality presets persist across toys so you can balance DPI and branching density.',
-    });
-    settingsPanel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
   }
 
@@ -349,8 +342,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
       ambientLightOptions: { intensity: 0.35 },
       rendererOptions: {
-        maxPixelRatio: activeQuality.maxPixelRatio,
-        renderScale: activeQuality.renderScale,
+        maxPixelRatio: quality.activeQuality.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
       },
     },
     audio: { fftSize: 512 },

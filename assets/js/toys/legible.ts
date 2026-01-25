@@ -1,16 +1,6 @@
-import { startPageToy } from './page-toy';
+import { createPageToyStarter } from './page-toy';
 
-export function start({
-  container,
-  preferDemoAudio,
-}: {
-  container?: HTMLElement | null;
-  preferDemoAudio?: boolean;
-} = {}) {
-  return startPageToy({
-    container,
-    path: './toys/legible.html',
-    preferDemoAudio,
-    title: 'Terminal Word Grid',
-  });
-}
+export const start = createPageToyStarter({
+  path: './toys/legible.html',
+  title: 'Terminal Word Grid',
+});

@@ -1,13 +1,11 @@
 import * as THREE from 'three';
-import {
-  DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
-  getSettingsPanel,
-  type QualityPreset,
-} from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
+import {
+  configureToySettingsPanel,
+  createQualityPresetManager,
+} from '../utils/toy-settings';
 
 type ShapeMode = 'cubes' | 'spheres';
 
@@ -61,9 +59,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const gridGroup = new THREE.Group();
   const gridItems: GridItem[] = [];
 
-  let activeQuality: QualityPreset = getActiveQualityPreset({
-    presets: DEFAULT_QUALITY_PRESETS,
+  const quality = createQualityPresetManager({
     defaultPresetId: 'balanced',
+    onChange: (preset) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      });
+      rebuildGrid(activeMode);
+    },
   });
   let runtime: ReturnType<typeof createToyRuntime>;
 
@@ -173,7 +177,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let activeMode: ShapeMode = 'cubes';
 
   function getGridConfig(preset: GridPreset) {
-    const particleScale = activeQuality.particleScale ?? 1;
+    const particleScale = quality.activeQuality.particleScale ?? 1;
     const scale = Math.max(0.6, particleScale);
     const rows = Math.max(2, Math.round(preset.grid.rows * scale));
     const cols = Math.max(2, Math.round(preset.grid.cols * scale));
@@ -236,27 +240,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  function applyQualityPreset(preset: QualityPreset) {
-    activeQuality = preset;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: preset.maxPixelRatio,
-      renderScale: preset.renderScale,
-    });
-    rebuildGrid(activeMode);
-  }
-
   function setupSettingsPanel() {
-    const panel = getSettingsPanel();
-    panel.configure({
+    const panel = configureToySettingsPanel({
       title: 'Grid visualizer',
       description:
         'Adjust render resolution caps and switch primitives without restarting audio.',
-    });
-
-    panel.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      defaultPresetId: activeQuality.id,
-      onChange: applyQualityPreset,
+      quality,
     });
 
     const shapeRow = panel.addSection(
