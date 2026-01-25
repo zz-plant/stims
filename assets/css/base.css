@@ -1353,6 +1353,8 @@ body {
 
 .preflight-dialog {
   margin: 0;
+  clip-path: none;
+  border-radius: 18px;
 }
 
 .preflight-dialog::backdrop {
@@ -1376,7 +1378,7 @@ body {
 .preflight-panel__statuses {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 8px;
+  gap: 10px;
   margin: 8px 0;
 }
 
@@ -1390,6 +1392,13 @@ body {
     rgba(255, 255, 255, 0.01)
   );
   box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.25);
+}
+
+.preflight-dialog .control-panel__actions {
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 .preflight-status__label {

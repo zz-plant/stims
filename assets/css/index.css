@@ -1167,6 +1167,20 @@ header.hero {
   margin: 1.1rem 0;
 }
 
+.hero-cta-row {
+  gap: 0.9rem 0.85rem;
+  align-items: center;
+}
+
+.hero-cta-row .cta-button.primary {
+  flex: 1 1 240px;
+  justify-content: center;
+}
+
+.hero-cta-row .cta-button.ghost {
+  flex: 0 1 auto;
+}
+
 .hero-readiness {
   display: flex;
   flex-wrap: wrap;
@@ -1991,6 +2005,7 @@ html.light .experience-card {
   position: relative;
   overflow: hidden;
   touch-action: manipulation;
+  min-height: clamp(220px, 24vw, 260px);
 }
 
 .webtoy-card__link {
@@ -2069,7 +2084,8 @@ html.light .experience-card {
   align-items: center;
   justify-content: flex-start;
   gap: 0.5rem;
-  margin-top: 0.9rem;
+  margin-top: auto;
+  padding-top: 0.9rem;
   position: relative;
   z-index: 2;
 }
