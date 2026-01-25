@@ -1036,6 +1036,49 @@ body {
   font-size: 0.95rem;
 }
 
+.control-panel__info-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.control-panel__info {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: rgba(155, 243, 255, 0.85);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.control-panel__info:focus-visible {
+  outline: 2px solid rgba(111, 247, 255, 0.85);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.control-panel__info-text {
+  font-size: 0.85rem;
+  color: rgba(233, 251, 255, 0.75);
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition:
+    opacity 0.2s ease,
+    max-height 0.2s ease;
+}
+
+.control-panel__info-wrap:hover .control-panel__info-text,
+.control-panel__info-wrap:focus-within .control-panel__info-text {
+  opacity: 1;
+  max-height: 80px;
+}
+
 .control-panel__note {
   margin: 6px 0 0;
   font-size: 0.95rem;

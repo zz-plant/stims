@@ -44,7 +44,19 @@ export function initAudioControls(
     <div class="control-panel__row">
       <div class="control-panel__text">
         <span class="control-panel__label">Tab audio</span>
-        <small>Capture audio from the current browser tab.</small>
+        <span class="control-panel__info-wrap">
+          <button
+            class="control-panel__info"
+            type="button"
+            aria-describedby="tab-audio-info"
+          >
+            More info
+          </button>
+          <span id="tab-audio-info" class="control-panel__info-text">
+            Capture audio from the current browser tab. In the picker, choose “This tab” and
+            enable Share audio.
+          </span>
+        </span>
       </div>
       <button id="use-tab-audio" class="cta-button" type="button">Capture tab audio</button>
     </div>
@@ -58,7 +70,19 @@ export function initAudioControls(
     <div class="control-panel__row control-panel__row--stacked">
       <div class="control-panel__text">
         <span class="control-panel__label">YouTube audio</span>
-        <small>Paste a link and enable audio sharing during capture.</small>
+        <span class="control-panel__info-wrap">
+          <button
+            class="control-panel__info"
+            type="button"
+            aria-describedby="youtube-audio-info"
+          >
+            More info
+          </button>
+          <span id="youtube-audio-info" class="control-panel__info-text">
+            Paste a link, load the video, then start capture. In the picker, choose “This tab” and
+            enable Share audio.
+          </span>
+        </span>
       </div>
       <div class="control-panel__field">
         <label class="sr-only" for="youtube-url">YouTube URL</label>
@@ -189,7 +213,7 @@ export function initAudioControls(
         emphasizeDemoAudio();
         updateStatus(buildMicrophoneErrorMessage(message));
       },
-      'Microphone connected. You can switch sources anytime.',
+      'Mic connected.',
     );
   });
 
@@ -211,14 +235,14 @@ export function initAudioControls(
         if (!navigator.mediaDevices?.getDisplayMedia) {
           throw new Error('Tab audio capture unavailable.');
         }
-        updateStatus('Choose “This tab” and enable audio sharing.', 'success');
+        updateStatus('Select tab to capture audio.', 'success');
         const stream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: true,
         });
         if (!stream.getAudioTracks().length) {
           stream.getTracks().forEach((track) => track.stop());
-          throw new Error('No audio track detected. Enable “Share audio”.');
+          throw new Error('No audio track detected.');
         }
         await requestTabAudio(stream);
       },
@@ -343,7 +367,7 @@ function setupYouTubeLogic(
 
   useBtn?.addEventListener('click', async () => {
     if (!youtubeReady) {
-      updateStatus('Load a YouTube video before capturing audio.');
+      updateStatus('Load a YouTube video first.');
       input.focus();
       return;
     }
@@ -356,14 +380,14 @@ function setupYouTubeLogic(
       useBtn.disabled = true;
       useBtn.toggleAttribute('data-loading', true);
       useBtn.setAttribute('aria-busy', 'true');
-      updateStatus('Choose “This tab” and enable audio sharing.', 'success');
+      updateStatus('Select tab to capture audio.', 'success');
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true,
       });
       if (!stream.getAudioTracks().length) {
         stream.getTracks().forEach((t) => t.stop());
-        updateStatus('No audio track detected. Enable “Share audio”.');
+        updateStatus('No audio track detected.');
         return;
       }
       await onUse(stream);
