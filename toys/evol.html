@@ -73,35 +73,27 @@
         getFrequencyData,
         getWeightedAverageFrequency,
       } from '../assets/js/utils/audio-handler.ts';
+      import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
+      import {
+        clearError,
+        showError,
+      } from '../assets/js/utils/error-display.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
       import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
 
       initToyPageShell();
 
-      const canvas = document.getElementById('glCanvas');
-      const gl = canvas.getContext('webgl');
-      const errorEl = document.getElementById('error-message');
-
-      function displayError(message) {
-        if (errorEl) {
-          errorEl.textContent = message;
-          errorEl.style.display = 'block';
-        }
-      }
-
-      function hideError() {
-        if (errorEl) {
-          errorEl.style.display = 'none';
-          errorEl.textContent = '';
-        }
-      }
-
-      if (!gl) {
-        displayError(
-          'Unable to initialize WebGL. Your browser may not support it.'
-        );
-        throw new Error('WebGL not supported');
-      }
+      let resolutionUniformLocation = null;
+      const { canvas, gl, disposeResize } = createToyCanvas('glCanvas', {
+        errorElementId: 'error-message',
+        maxPixelRatio: 2,
+        onResize: ({ width, height }) => {
+          if (resolutionUniformLocation) {
+            gl.uniform2f(resolutionUniformLocation, width, height);
+          }
+        },
+      });
 
       const vertexShaderSource = `
             attribute vec4 a_position;
@@ -262,7 +254,7 @@
         0
       );
 
-      const resolutionUniformLocation = gl.getUniformLocation(
+      resolutionUniformLocation = gl.getUniformLocation(
         program,
         'u_resolution'
       );
@@ -287,13 +279,6 @@
         program,
         'u_glitchStrength'
       );
-
-      const disposeResize = setupCanvasResize(canvas, gl, {
-        maxPixelRatio: 2,
-        onResize: ({ width, height }) => {
-          gl.uniform2f(resolutionUniformLocation, width, height);
-        },
-      });
 
       class CanvasToy {
         constructor(canvasEl) {
@@ -369,7 +354,7 @@
           const dataArray = getFrequencyData(ctxAudio.analyser);
           const average = getWeightedAverageFrequency(dataArray);
           audioData = average / 128.0;
-          hideError();
+          clearError('error-message');
         } else {
           audioData = 0;
         }
@@ -386,11 +371,15 @@
         gl.drawArrays(gl.TRIANGLES, 0, 6);
       }
 
+      startToyAudio(toy, render, { fallbackToSynthetic: true })
+        .then(() => clearError('error-message'))
+        .catch((err) => {
       void startAudio(render, { fallbackToSynthetic: true }, {
         onSuccess: () => hideError(),
         onError: (err) => {
           console.error('Error capturing audio: ', err);
-          displayError(
+          showError(
+            'error-message',
             'Microphone access is required for the visualization to work. Please allow microphone access.'
           );
           toy.renderer.setAnimationLoop(() => render({ toy, analyser: null }));
