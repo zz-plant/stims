@@ -10,6 +10,7 @@ const isCloudflarePages = (() => {
   const value = process.env.CF_PAGES?.toLowerCase?.();
   return value === '1' || value === 'true';
 })();
+const skipCloudflareBuild = process.env.STIMS_SKIP_POSTINSTALL_BUILD === '1';
 
 const run = (command) => {
   execSync(command, { stdio: 'inherit' });
@@ -26,16 +27,22 @@ const hasBun = (() => {
 })();
 
 if (isCloudflarePages) {
-  if (!hasBun) {
-    console.error(
-      '[postinstall] Bun is required to build dist/ on Cloudflare Pages.',
+  if (skipCloudflareBuild) {
+    console.log(
+      '[postinstall] Skipping Cloudflare Pages build (postinstall build disabled).',
     );
-    process.exit(1);
+  } else {
+    if (!hasBun) {
+      console.error(
+        '[postinstall] Bun is required to build dist/ on Cloudflare Pages.',
+      );
+      process.exit(1);
+    }
+    console.log(
+      '[postinstall] Cloudflare Pages detected; running "bun run build" to produce dist/.',
+    );
+    run('bun run build');
   }
-  console.log(
-    '[postinstall] Cloudflare Pages detected; running "bun run build" to produce dist/.',
-  );
-  run('bun run build');
 } else {
   console.log('[postinstall] CF_PAGES not set; skipping build.');
 }
