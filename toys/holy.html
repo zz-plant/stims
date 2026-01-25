@@ -80,6 +80,24 @@
         max-height: 80vh;
         overflow-y: auto;
       }
+      #microHint {
+        position: absolute;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.75);
+        color: white;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-size: 14px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 12;
+      }
+      #microHint.is-visible {
+        opacity: 1;
+      }
       .panel-header {
         display: flex;
         justify-content: space-between;
@@ -163,7 +181,7 @@
 
     <!-- Control Buttons -->
     <button id="startButton">Start Visualizer</button>
-    <button id="infoButton">i</button>
+    <button id="infoButton">?</button>
     <button id="settingsButton">⚙️</button>
     <button id="fullscreenButton">⛶</button>
 
@@ -173,11 +191,13 @@
         <h2>How to Use</h2>
         <button class="closeButton" onclick="toggleInfoPanel()">×</button>
       </div>
-      <p><strong>Touch and Drag:</strong> Rotate the visualizer.</p>
-      <p><strong>Pinch:</strong> Zoom in and out.</p>
-      <p><strong>Double Tap:</strong> Change shape.</p>
-      <p><strong>Fullscreen:</strong> Toggle fullscreen mode.</p>
-      <p><strong>Settings:</strong> Customize visualizer preferences.</p>
+      <p>Short on time? Try the basics below.</p>
+      <details>
+        <summary>Quick controls</summary>
+        <p><strong>Drag:</strong> Rotate the visualizer.</p>
+        <p><strong>Pinch:</strong> Zoom in and out.</p>
+        <p><strong>Double Tap:</strong> Change shape.</p>
+      </details>
     </div>
 
     <!-- Settings Panel -->
@@ -251,6 +271,7 @@
         />
       </div>
     </div>
+    <div id="microHint" role="status" aria-live="polite"></div>
 
     <!-- Main Visualizer Script -->
     <script type="module">
@@ -303,6 +324,10 @@
       let energyPeak = 0.12;
       let bassPulse = 0;
       let trebleShimmer = 0;
+      let hintTimeout = null;
+      let hasDragged = false;
+      let hasPinched = false;
+      let hasDoubleTapped = false;
 
       // UI Elements
       const loadingOverlay = document.getElementById('loadingOverlay');
@@ -323,6 +348,7 @@
       const particleScaleSlider = document.getElementById('particleScale');
       const particleScaleValue = document.getElementById('particleScaleValue');
       const errorDisplayId = 'error-message';
+      const microHint = document.getElementById('microHint');
       const preferDemoAudio =
         new URLSearchParams(window.location.search).get('audio') === 'demo';
 
@@ -330,6 +356,18 @@
 
       if (preferDemoAudio && startButton instanceof HTMLButtonElement) {
         startButton.textContent = 'Start Demo Visualizer';
+      }
+
+      function showMicroHint(message) {
+        if (!(microHint instanceof HTMLElement)) return;
+        microHint.textContent = message;
+        microHint.classList.add('is-visible');
+        if (hintTimeout) {
+          window.clearTimeout(hintTimeout);
+        }
+        hintTimeout = window.setTimeout(() => {
+          microHint.classList.remove('is-visible');
+        }, 3000);
       }
 
       // Initialize Visualizer
@@ -398,6 +436,10 @@
               const tapLength = state.time - lastTap;
               if (tapLength < 300 && tapLength > 0) {
                 changeShape();
+                if (!hasDoubleTapped) {
+                  hasDoubleTapped = true;
+                  showMicroHint('Use ⚙️ for settings and ⛶ for fullscreen.');
+                }
               }
               lastTap = state.time;
             }
@@ -405,12 +447,20 @@
             const points = state.pointers;
             if (points.length === 1 && state.isPressed) {
               const p = points[0];
+              if (!hasDragged) {
+                hasDragged = true;
+                showMicroHint('Nice! Try pinch to zoom.');
+              }
               visualizerShape.rotation.y =
                 ((p.normalizedX + 1) / 2) * Math.PI * 2;
               visualizerShape.rotation.x =
                 ((1 - p.normalizedY) / 2) * Math.PI;
             } else if (points.length >= 2 && state.isPressed) {
               const [p1, p2] = points;
+              if (!hasPinched) {
+                hasPinched = true;
+                showMicroHint('Pinch zoom feels great. Double tap to swap shapes.');
+              }
               const distance = Math.hypot(
                 p1.clientX - p2.clientX,
                 p1.clientY - p2.clientY
