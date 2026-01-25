@@ -49,7 +49,10 @@
         getFrequencyData,
       } from '../assets/js/utils/audio-handler.ts';
       import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
-      import { showError } from '../assets/js/utils/error-display.ts';
+      import {
+        initErrorDisplay,
+        setErrorVisible,
+      } from '../assets/js/utils/error-display.ts';
       import { createPeakDetector } from '../assets/js/utils/peak-detector.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { createSearyFunAdapter } from '../assets/seary/fun-adapter.ts';
@@ -63,12 +66,14 @@
       } from '../assets/js/utils/audio-reactivity.ts';
 
       initToyPageShell();
+      const errorDisplayId = 'error-message';
+      initErrorDisplay(errorDisplayId);
 
       // Fallback to WebGL
       const sparkleCanvas = document.getElementById('sparkleCanvas');
 
       if (!(sparkleCanvas instanceof HTMLCanvasElement)) {
-        showError('error-message', 'Canvas element is missing.');
+        setErrorVisible(errorDisplayId, 'Canvas element is missing.');
         throw new Error('Canvas element not found');
       }
 
@@ -571,6 +576,7 @@
           });
           funControls.setAudioAvailable(true);
           rebuildPeakDetector(toy);
+          setErrorVisible(errorDisplayId);
         } catch (err) {
           funControls.setAudioAvailable(false);
           peakDetector = null;
@@ -579,8 +585,8 @@
             mid: 0,
             high: 0,
           });
-          showError(
-            'error-message',
+          setErrorVisible(
+            errorDisplayId,
             'Microphone access is required for the visualization to work. Please allow microphone access.'
           );
           toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
