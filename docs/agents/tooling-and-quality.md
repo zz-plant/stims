@@ -13,10 +13,10 @@
 ## Required checks
 
 - For JavaScript/TypeScript changes, run the relevant quality checks before committing:
-  - `bun run check` (Biome + tests)
-  - `bun run typecheck`
+  - `bun run check` (Biome + typecheck + tests)
+  - Optional quick pass: `bun run check:quick` (Biome + typecheck, skips tests)
 
 ## Documentation-only changes
 
 - For Markdown/prose-only changes, you can skip `bun run typecheck` and `bun run test`.
-- Still run `bun run format` on touched docs.
+- Formatting docs is optional; there is no dedicated script for docs, but you can run `bunx biome format --write docs` if you want to normalize Markdown formatting.
