@@ -59,6 +59,7 @@ export default class WebToy {
   resizeObserver: ResizeObserver | null;
   resizeHandler: (() => void) | null;
   rendererHandle: RendererHandle | null;
+  viewportResizeHandler: (() => void) | null;
 
   constructor({
     cameraOptions = {},
@@ -122,6 +123,7 @@ export default class WebToy {
     this.audioCleanup = null;
     this.resizeObserver = null;
     this.resizeHandler = null;
+    this.viewportResizeHandler = null;
 
     if (typeof ResizeObserver !== 'undefined' && this.container) {
       this.resizeObserver = new ResizeObserver(() => {
@@ -133,16 +135,34 @@ export default class WebToy {
       window.addEventListener('resize', this.resizeHandler);
     }
 
+    if (window.visualViewport) {
+      this.viewportResizeHandler = () => this.handleResize();
+      window.visualViewport.addEventListener(
+        'resize',
+        this.viewportResizeHandler,
+      );
+      window.visualViewport.addEventListener(
+        'scroll',
+        this.viewportResizeHandler,
+      );
+    }
+
     defaultToyLifecycle.adoptActiveToy(this);
   }
 
   handleResize() {
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    const visualViewport = window.visualViewport;
+    let width = visualViewport?.width ?? window.innerWidth;
+    let height = visualViewport?.height ?? window.innerHeight;
 
     if (this.container && this.container !== document.body) {
       width = this.container.clientWidth;
       height = this.container.clientHeight;
+    }
+
+    if (!this.container || this.container === document.body) {
+      document.documentElement.style.setProperty('--app-height', `${height}px`);
+      document.documentElement.style.setProperty('--app-width', `${width}px`);
     }
 
     this.camera.aspect = width / height;
@@ -191,6 +211,18 @@ export default class WebToy {
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
       this.resizeHandler = null;
+    }
+
+    if (this.viewportResizeHandler && window.visualViewport) {
+      window.visualViewport.removeEventListener(
+        'resize',
+        this.viewportResizeHandler,
+      );
+      window.visualViewport.removeEventListener(
+        'scroll',
+        this.viewportResizeHandler,
+      );
+      this.viewportResizeHandler = null;
     }
 
     this.renderer?.setAnimationLoop?.(null);
