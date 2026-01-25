@@ -56,6 +56,11 @@
         getFrequencyData,
         initAudio,
       } from '../assets/js/utils/audio-handler.ts';
+      import {
+        getBandLevels,
+        getWeightedEnergy,
+        updateEnergyPeak,
+      } from '../assets/js/utils/audio-reactivity.ts';
       import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import {
         clearError,
@@ -473,16 +478,15 @@
         if (ctxAudio.analyser) {
           const dataArray = getFrequencyData(ctxAudio.analyser);
           const average = getWeightedAverageFrequency(dataArray);
-          const bands = ctxAudio.analyser.getMultiBandEnergy?.() ?? {
-            bass: 0,
-            mid: 0,
-            treble: 0,
-          };
-          const weightedEnergy = Math.min(
-            1,
-            (bands.bass * 0.65 + bands.mid * 0.25 + bands.treble * 0.1) * 1.4
-          );
-          peakLevel = Math.max(peakLevel * 0.96, weightedEnergy, 0.05);
+          const bands = getBandLevels({
+            analyser: ctxAudio.analyser,
+            data: dataArray,
+          });
+          const weightedEnergy = getWeightedEnergy(bands, {
+            weights: { bass: 0.65, mid: 0.25, treble: 0.1 },
+            boost: 1.4,
+          });
+          peakLevel = updateEnergyPeak(peakLevel, weightedEnergy);
           const normalized = peakLevel ? weightedEnergy / peakLevel : 0;
           smoothedLevel = smoothedLevel
             ? smoothedLevel * 0.82 + normalized * 0.18

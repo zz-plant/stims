@@ -108,6 +108,11 @@
         AudioAccessError,
         initAudio,
       } from '../assets/js/utils/audio-handler.ts';
+      import {
+        getBandLevels,
+        getWeightedEnergy,
+        updateEnergyPeak,
+      } from '../assets/js/utils/audio-reactivity.ts';
       import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import {
         clearError,
@@ -238,17 +243,12 @@
         const frequencyData = getContextFrequencyData(ctxAudio);
 
         if (ctxAudio.analyser) {
-          const fallbackBands = {
-            bass: getBandAverage(frequencyData, 0, 0.12) / 255,
-            mid: getBandAverage(frequencyData, 0.12, 0.5) / 255,
-            treble: getBandAverage(frequencyData, 0.5, 1) / 255,
-          };
-          const bands = ctxAudio.analyser.getMultiBandEnergy?.() ?? fallbackBands;
-          const weightedEnergy = Math.min(
-            1,
-            (bands.bass * 0.6 + bands.mid * 0.25 + bands.treble * 0.15) * 1.4
-          );
-          peakLevel = Math.max(peakLevel * 0.96, weightedEnergy, 0.05);
+          const bands = getBandLevels({
+            analyser: ctxAudio.analyser,
+            data: frequencyData,
+          });
+          const weightedEnergy = getWeightedEnergy(bands, { boost: 1.4 });
+          peakLevel = updateEnergyPeak(peakLevel, weightedEnergy);
           const normalized = peakLevel ? weightedEnergy / peakLevel : 0;
           bassPulse = Math.max(bassPulse * 0.85, bands.bass);
           trebleGlow = Math.max(trebleGlow * 0.8, bands.treble);
@@ -353,31 +353,6 @@
 
         bassPulse *= 0.9;
         trebleGlow *= 0.9;
-      }
-
-      function getBandAverage(dataArray, startRatio, endRatio) {
-        if (!dataArray.length) return 0;
-        const startIndex = Math.floor(dataArray.length * startRatio);
-        const endIndex = Math.max(
-          startIndex + 1,
-          Math.floor(dataArray.length * endRatio)
-        );
-        let sum = 0;
-        const count = endIndex - startIndex;
-        for (let i = startIndex; i < endIndex; i++) {
-          sum += dataArray[i];
-        }
-        return sum / count;
-      }
-
-      function getBass(dataArray) {
-        if (!dataArray.length) return 0;
-        let sum = 0;
-        const bassCount = dataArray.length / 8;
-        for (let i = 0; i < bassCount; i++) {
-          sum += dataArray[i];
-        }
-        return sum / bassCount;
       }
 
       startButton.addEventListener('click', async () => {
