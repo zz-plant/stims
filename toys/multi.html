@@ -55,6 +55,11 @@
       import { createMultiFunAdapter } from '../assets/multi/fun-adapter.ts';
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
+      import {
+        requestMotionPermission,
+        requiresMotionPermission,
+        supportsDeviceOrientation,
+      } from '../assets/js/utils/motion-permission.ts';
 
       const toyNav = initToyPageShell();
 
@@ -245,10 +250,35 @@
 
       funControls.container.appendChild(extras);
 
-      window.addEventListener('deviceorientation', (event) => {
+      let motionEnabled = false;
+      const handleDeviceOrientation = (event) => {
         toy.camera.rotation.x = (event.beta / 180) * Math.PI;
         toy.camera.rotation.y = (event.gamma / 90) * Math.PI;
-      });
+      };
+
+      const enableMotion = async () => {
+        if (motionEnabled) return;
+        const permission = await requestMotionPermission();
+        if (permission !== 'granted') return;
+        motionEnabled = true;
+        window.addEventListener('deviceorientation', handleDeviceOrientation);
+      };
+
+      if (supportsDeviceOrientation()) {
+        if (requiresMotionPermission()) {
+          const requestOnFirstInteraction = () => {
+            void enableMotion();
+          };
+          window.addEventListener('pointerdown', requestOnFirstInteraction, {
+            once: true,
+          });
+          window.addEventListener('touchstart', requestOnFirstInteraction, {
+            once: true,
+          });
+        } else {
+          void enableMotion();
+        }
+      }
 
       const clock = new THREE.Clock();
       const sparkleGroup = new THREE.Group();
