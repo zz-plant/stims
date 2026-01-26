@@ -230,11 +230,11 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
       window.clearTimeout(uiTimeout);
     }
     if (uiElement) {
-      uiElement.style.opacity = '1';
+      uiElement.style.opacity = '0.95';
     }
     uiTimeout = window.setTimeout(() => {
       if (uiElement) {
-        uiElement.style.opacity = '0';
+        uiElement.style.opacity = '0.2';
       }
     }, 3000);
   }

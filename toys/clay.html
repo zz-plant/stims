@@ -21,11 +21,13 @@
         left: 10px;
         color: #fff;
         z-index: 1;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.65);
         padding: 10px;
-        border-radius: 5px;
-        opacity: 0; /* Start hidden */
-        transition: opacity 0.5s;
+        border-radius: 8px;
+        opacity: 0.2; /* Start subtle but visible */
+        transition: opacity 0.4s ease;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
       }
       #ui button {
         margin-top: 5px;
