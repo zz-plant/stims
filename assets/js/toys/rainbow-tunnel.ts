@@ -1,9 +1,15 @@
 import * as THREE from 'three';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import {
+  disposeGeometry,
+  disposeMaterial,
+  disposeMesh,
+} from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
+import {
   configureToySettingsPanel,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 
 interface RingData {
@@ -14,16 +20,13 @@ interface RingData {
 }
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createQualityPresetManager({
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: preset.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+  const quality = createRendererQualityManager({
+    getRuntime: () => runtime,
+    onChange: () => {
       rebuildScene();
     },
   });
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   const rings: RingData[] = [];
   let particleTrail: THREE.Points | null = null;
@@ -44,13 +47,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function disposeRingAssets() {
     rings.splice(0).forEach((ring) => {
-      runtime.toy.scene.remove(ring.outer);
-      ring.outer.geometry.dispose();
-      (ring.outer.material as THREE.Material).dispose();
+      disposeMesh(ring.outer);
       if (ring.inner) {
-        runtime.toy.scene.remove(ring.inner);
-        ring.inner.geometry.dispose();
-        (ring.inner.material as THREE.Material).dispose();
+        disposeMesh(ring.inner);
       }
     });
 
@@ -62,8 +61,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       runtime.toy.scene.remove(particleTrail);
     }
     particleTrail = null;
-    particleGeometry?.dispose();
-    particleMaterial?.dispose();
+    disposeGeometry(particleGeometry ?? undefined);
+    disposeMaterial(particleMaterial);
     particleGeometry = null;
     particleMaterial = null;
   }
@@ -232,9 +231,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 100 } },
       lightingOptions: { type: 'HemisphereLight' },
@@ -261,6 +258,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   return runtime;
 }

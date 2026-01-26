@@ -4,16 +4,18 @@ import {
   getPerformancePanel,
   type PerformanceSettings,
 } from '../core/performance-panel';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createBeatTracker } from '../utils/audio-beat';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
 import { applyAudioColor } from '../utils/color-audio';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
   createControlPanelButtonGroup,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
@@ -45,12 +47,13 @@ type ParticleField = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createQualityPresetManager({
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: performanceSettings.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+  const quality = createRendererQualityManager({
+    getRuntime: () => runtime,
+    getRendererSettings: (preset) => ({
+      maxPixelRatio: performanceSettings.maxPixelRatio,
+      renderScale: preset.renderScale,
+    }),
+    onChange: () => {
       buildSpiralArms();
       disposeParticleField();
       particleField = createParticleField();
@@ -63,7 +66,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let modeButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
     null;
   let activePaletteIndex = 0;
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   const palettes: SpiralPalette[] = [
     {
@@ -149,8 +152,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function createBloomMesh() {
     if (bloomMesh) {
       runtime.toy.scene.remove(bloomMesh);
-      (bloomMesh.geometry as THREE.BufferGeometry).dispose();
-      (bloomMesh.material as THREE.Material).dispose();
+      disposeGeometry(bloomMesh.geometry as THREE.BufferGeometry);
+      disposeMaterial(bloomMesh.material as THREE.Material);
     }
 
     const geometry = new THREE.IcosahedronGeometry(8, 2);
@@ -218,8 +221,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     spiralArms.forEach((arm) => {
       arm.lines.forEach((line) => {
         arm.group.remove(line);
-        line.geometry.dispose();
-        (line.material as THREE.Material).dispose();
+        disposeGeometry(line.geometry);
+        disposeMaterial(line.material as THREE.Material);
       });
       spiralContainer.remove(arm.group);
     });
@@ -229,8 +232,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function disposeParticleField() {
     if (!particleField) return;
     runtime.toy.scene.remove(particleField.points);
-    particleField.geometry.dispose();
-    particleField.material.dispose();
+    disposeGeometry(particleField.geometry);
+    disposeMaterial(particleField.material);
     particleField = null;
   }
 
@@ -653,9 +656,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 120 } },
       lightingOptions: { type: 'HemisphereLight', intensity: 0.6 },
@@ -668,7 +669,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     audio: { fftSize: 512 },
     input: {
       onInput: (state) => handleInput(state),
-      boundsElement: container?.querySelector('canvas') ?? undefined,
     },
     plugins: [
       {
@@ -694,8 +694,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           disposeParticleField();
           if (bloomMesh) {
             runtime.toy.scene.remove(bloomMesh);
-            (bloomMesh.geometry as THREE.BufferGeometry).dispose();
-            (bloomMesh.material as THREE.Material).dispose();
+            disposeGeometry(bloomMesh.geometry as THREE.BufferGeometry);
+            disposeMaterial(bloomMesh.material as THREE.Material);
           }
           modeRow?.remove();
           modeRow = null;
@@ -704,6 +704,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   return runtime;
 }

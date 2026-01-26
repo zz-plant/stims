@@ -4,11 +4,13 @@ import {
   getActiveMotionPreference,
   subscribeToMotionPreference,
 } from '../core/motion-preferences';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 
 type GravityState = {
@@ -77,7 +79,7 @@ function mapOrientationToGravity(
 }
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   const gravity: GravityState = {
     vector: DEFAULT_GRAVITY.clone(),
@@ -156,13 +158,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const clock = new THREE.Clock();
   let damping = 0.984;
   let grainScale = 1.2;
-  const quality = createQualityPresetManager({
+  const quality = createRendererQualityManager({
     defaultPresetId: 'balanced',
+    getRuntime: () => runtime,
     onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: preset.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
       rippleGain = preset.particleScale ?? 1;
     },
   });
@@ -503,9 +502,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     runtime.toy.render();
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: {
         fov: 55,
@@ -538,16 +535,18 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           cleanupMotion();
           unsubscribeMotionPreference();
           heightfield.texture.dispose();
-          sandGeometry.dispose();
-          sandMaterial.dispose();
-          rim.geometry.dispose();
-          (rim.material as THREE.Material).dispose();
-          dustGeometry.dispose();
-          (dust.material as THREE.Material).dispose();
+          disposeGeometry(sandGeometry);
+          disposeMaterial(sandMaterial);
+          disposeGeometry(rim.geometry);
+          disposeMaterial(rim.material as THREE.Material);
+          disposeGeometry(dustGeometry);
+          disposeMaterial(dust.material as THREE.Material);
         },
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   return runtime;
 }

@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { createToyRuntime } from '../core/toy-runtime';
 import FeedbackManager from '../utils/feedback-manager';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 import WarpShader from '../utils/warp-shader';
 
@@ -20,9 +21,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   const particles = new THREE.Group();
 
-  const runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 5 } },
       rendererOptions: { antialias: true },
@@ -133,20 +132,21 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         },
         dispose: () => {
           feedback?.dispose();
-          particleGeometry.dispose();
-          particleMaterials.forEach((m) => m.dispose());
-          warpMaterial?.dispose();
-          warpMesh?.geometry.dispose();
+          disposeGeometry(particleGeometry);
+          particleMaterials.forEach((material) => disposeMaterial(material));
+          disposeMaterial(warpMaterial);
+          disposeGeometry(warpMesh?.geometry ?? undefined);
         },
       },
     ],
   });
 
-  const quality = createQualityPresetManager({
+  const runtime = startRuntime({ container });
+
+  const quality = createRendererQualityManager({
     defaultPresetId: 'medium',
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({ renderScale: preset.renderScale });
-    },
+    getRuntime: () => runtime,
+    getRendererSettings: (preset) => ({ renderScale: preset.renderScale }),
   });
   configureToySettingsPanel({
     title: 'MilkDrop Proto',

@@ -1,10 +1,12 @@
 import * as THREE from 'three';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
+import { disposeObject3D } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 
 type ShapeMode = 'cubes' | 'spheres';
@@ -59,17 +61,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const gridGroup = new THREE.Group();
   const gridItems: GridItem[] = [];
 
-  const quality = createQualityPresetManager({
+  const quality = createRendererQualityManager({
     defaultPresetId: 'balanced',
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: preset.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+    getRuntime: () => runtime,
+    onChange: () => {
       rebuildGrid(activeMode);
     },
   });
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   const presets: Record<ShapeMode, GridPreset> = {
     cubes: {
@@ -192,18 +191,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function disposeGroup(group: THREE.Group) {
-    group.traverse((child) => {
-      const mesh = child as THREE.Mesh;
-      if ((mesh as unknown as { isMesh?: boolean }).isMesh) {
-        mesh.geometry?.dispose();
-        if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((material) => material.dispose());
-        } else {
-          mesh.material?.dispose();
-        }
-      }
-    });
-    group.clear();
+    disposeObject3D(group, { removeFromParent: false, clearChildren: true });
   }
 
   function rebuildGrid(mode: ShapeMode) {
@@ -343,9 +331,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     runtime.toy.render();
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 30, z: 80 } },
       lightingOptions: {
@@ -371,6 +357,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   setupSettingsPanel();
   rebuildGrid(activeMode);
