@@ -30,9 +30,11 @@ import {
 } from '../core/postprocessing';
 import { PersistentSettingsPanel } from '../core/settings-panel';
 import { createToyRuntime } from '../core/toy-runtime';
+import { createBeatTracker } from '../utils/audio-beat';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
 import {
   configureToySettingsPanel,
+  createControlPanelButtonGroup,
   createQualityPresetManager,
 } from '../utils/toy-settings';
 
@@ -114,7 +116,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let smoothedMids = 0;
   let smoothedHighs = 0;
   let beatIntensity = 0;
-  let lastBeatTime = 0;
+  let themeButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
+    null;
+  const beatTracker = createBeatTracker({
+    threshold: 0.55,
+    minIntervalMs: 150,
+    smoothing: { bass: 0.85, mid: 0.9, treble: 0.92 },
+    beatDecay: 0.92,
+  });
 
   // Wave mesh
   let waveMesh: Mesh | null = null;
@@ -431,21 +440,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function updateThemeButtons() {
-    const buttons = container?.querySelectorAll('[data-neon-theme]');
-    buttons?.forEach((btn) => {
-      const theme = btn.getAttribute('data-neon-theme');
-      btn.classList.toggle('active', theme === currentTheme);
-    });
-  }
-
-  function detectBeat(bass: number, time: number): boolean {
-    const threshold = 0.55;
-    const minInterval = 150;
-    if (bass > threshold && time - lastBeatTime > minInterval) {
-      lastBeatTime = time;
-      return true;
-    }
-    return false;
+    themeButtons?.setActive(currentTheme);
   }
 
   function applyPerformanceSettings(settings: PerformanceSettings) {
@@ -466,34 +461,33 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       quality,
     });
 
-    // Add theme buttons
-    const themeRow = document.createElement('div');
-    themeRow.className = 'control-panel__row';
-    themeRow.style.cssText =
-      'display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;';
+    const panel = container?.querySelector('.control-panel');
+    if (!(panel instanceof HTMLElement)) return;
 
     const themes: NeonTheme[] = ['synthwave', 'cyberpunk', 'arctic', 'sunset'];
-    themes.forEach((theme) => {
-      const btn = document.createElement('button');
-      btn.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
-      btn.setAttribute('data-neon-theme', theme);
-      btn.className = theme === currentTheme ? 'active' : '';
-      btn.style.cssText = `
-        padding: 6px 12px;
-        border: 1px solid currentColor;
-        background: transparent;
-        color: inherit;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-        transition: all 0.2s;
-      `;
-      btn.addEventListener('click', () => applyTheme(theme));
-      themeRow.appendChild(btn);
+    themeButtons = createControlPanelButtonGroup({
+      panel,
+      options: themes.map((theme) => ({
+        id: theme,
+        label: theme.charAt(0).toUpperCase() + theme.slice(1),
+      })),
+      getActiveId: () => currentTheme,
+      onSelect: (theme) => applyTheme(theme as NeonTheme),
+      rowStyle: 'display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;',
+      buttonStyle: [
+        'padding: 6px 12px',
+        'border: 1px solid currentColor',
+        'background: transparent',
+        'color: inherit',
+        'border-radius: 4px',
+        'cursor: pointer',
+        'font-size: 12px',
+        'transition: all 0.2s',
+      ].join('; '),
+      activeClassName: 'active',
+      setAriaPressed: false,
+      dataAttribute: 'data-neon-theme',
     });
-
-    const panel = container?.querySelector('.control-panel');
-    panel?.appendChild(themeRow);
   }
 
   function setupPerformancePanel() {
@@ -516,15 +510,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const mids = energy.mid;
     const highs = energy.treble;
 
-    smoothedBass = smoothedBass * 0.85 + bass * 0.15;
-    smoothedMids = smoothedMids * 0.9 + mids * 0.1;
-    smoothedHighs = smoothedHighs * 0.92 + highs * 0.08;
-
-    // Beat detection
-    if (detectBeat(smoothedBass, time)) {
-      beatIntensity = 1;
-    }
-    beatIntensity *= 0.92;
+    const beatState = beatTracker.update(
+      { bass, mid: mids, treble: highs },
+      time,
+    );
+    smoothedBass = beatState.smoothedBands.bass;
+    smoothedMids = beatState.smoothedBands.mid;
+    smoothedHighs = beatState.smoothedBands.treble;
+    beatIntensity = beatState.beatIntensity;
 
     // Update wave shader uniforms
     if (waveMaterial) {

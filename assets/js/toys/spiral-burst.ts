@@ -5,12 +5,14 @@ import {
   type PerformanceSettings,
 } from '../core/performance-panel';
 import { createToyRuntime } from '../core/toy-runtime';
+import { createBeatTracker } from '../utils/audio-beat';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
 import { applyAudioColor } from '../utils/color-audio';
 import {
   configureToySettingsPanel,
+  createControlPanelButtonGroup,
   createQualityPresetManager,
 } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
@@ -58,6 +60,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let currentMode: SpiralMode = 'burst';
   let modeRow: HTMLDivElement | null = null;
+  let modeButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
+    null;
   let activePaletteIndex = 0;
   let runtime: ReturnType<typeof createToyRuntime>;
 
@@ -111,11 +115,16 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let particleField: ParticleField | null = null;
 
   // Beat detection
-  let lastBeatTime = 0;
   let beatIntensity = 0;
   let smoothedBass = 0;
   let smoothedMids = 0;
   let smoothedHighs = 0;
+  const beatTracker = createBeatTracker({
+    threshold: 0.55,
+    minIntervalMs: 120,
+    smoothing: { bass: 0.85, mid: 0.9, treble: 0.92 },
+    beatDecay: 0.92,
+  });
 
   // Central bloom mesh
   let bloomMesh: THREE.Mesh | null = null;
@@ -286,16 +295,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  function detectBeat(bass: number, time: number): boolean {
-    const threshold = 0.55;
-    const minInterval = 120; // ms
-    if (bass > threshold && time - lastBeatTime > minInterval) {
-      lastBeatTime = time;
-      return true;
-    }
-    return false;
-  }
-
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
     runtime.toy.updateRendererSettings({
@@ -313,13 +312,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function updateModeButtons() {
-    const buttons = container?.querySelectorAll('[data-spiral-mode]');
-    buttons?.forEach((btn) => {
-      const mode = btn.getAttribute('data-spiral-mode');
-      const isActive = mode === currentMode;
-      btn.classList.toggle('is-active', isActive);
-      btn.setAttribute('aria-pressed', String(isActive));
-    });
+    modeButtons?.setActive(currentMode);
   }
 
   function setupSettingsPanel() {
@@ -331,26 +324,26 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
 
     // Add mode buttons
-    modeRow?.remove();
-    const row = document.createElement('div');
-    row.className = 'control-panel__row control-panel__mode-row';
-    modeRow = row;
-
-    const modes: SpiralMode[] = ['burst', 'bloom', 'vortex', 'heartbeat'];
-    modes.forEach((mode) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
-      btn.setAttribute('data-spiral-mode', mode);
-      btn.className = 'control-panel__mode';
-      btn.classList.toggle('is-active', mode === currentMode);
-      btn.setAttribute('aria-pressed', String(mode === currentMode));
-      btn.addEventListener('click', () => setMode(mode));
-      row.appendChild(btn);
-    });
-
     const panelElement = container?.querySelector('.control-panel');
-    panelElement?.appendChild(row);
+    if (!(panelElement instanceof HTMLElement)) return;
+
+    modeRow?.remove();
+    const modes: SpiralMode[] = ['burst', 'bloom', 'vortex', 'heartbeat'];
+    modeButtons = createControlPanelButtonGroup({
+      panel: panelElement,
+      options: modes.map((mode) => ({
+        id: mode,
+        label: mode.charAt(0).toUpperCase() + mode.slice(1),
+      })),
+      getActiveId: () => currentMode,
+      onSelect: (mode) => setMode(mode as SpiralMode),
+      rowClassName: 'control-panel__row control-panel__mode-row',
+      buttonClassName: 'control-panel__mode',
+      activeClassName: 'is-active',
+      dataAttribute: 'data-spiral-mode',
+      setAriaPressed: true,
+    });
+    modeRow = modeButtons.row;
   }
 
   function setupPerformancePanel() {
@@ -408,17 +401,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const mids = energy.mid;
     const highs = energy.treble;
 
-    // Smooth values
-    smoothedBass = smoothedBass * 0.85 + bass * 0.15;
-    smoothedMids = smoothedMids * 0.9 + mids * 0.1;
-    smoothedHighs = smoothedHighs * 0.92 + highs * 0.08;
-
-    // Beat detection
-    const isBeat = detectBeat(smoothedBass, time);
-    if (isBeat) {
-      beatIntensity = 1;
-    }
-    beatIntensity *= 0.92;
+    const beatState = beatTracker.update(
+      { bass, mid: mids, treble: highs },
+      time,
+    );
+    smoothedBass = beatState.smoothedBands.bass;
+    smoothedMids = beatState.smoothedBands.mid;
+    smoothedHighs = beatState.smoothedBands.treble;
+    beatIntensity = beatState.beatIntensity;
 
     // Mode-specific behaviors
     controls.spinBoost = THREE.MathUtils.lerp(

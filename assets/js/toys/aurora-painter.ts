@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createToyRuntime } from '../core/toy-runtime';
+import { getBandAverage } from '../utils/audio-bands';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import {
   configureToySettingsPanel,
@@ -159,31 +160,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  function averageRange(
-    data: Uint8Array,
-    startRatio: number,
-    endRatio: number,
-  ) {
-    if (data.length === 0) return 0;
-    const start = Math.max(0, Math.floor(data.length * startRatio));
-    const end = Math.min(data.length, Math.ceil(data.length * endRatio));
-    if (end <= start) return 0;
-
-    let sum = 0;
-    for (let i = start; i < end; i += 1) {
-      sum += data[i];
-    }
-    return sum / (end - start);
-  }
-
   function updateRibbon(
     ribbon: (typeof ribbons)[number],
     data: Uint8Array,
     time: number,
   ) {
     const avg = getWeightedAverageFrequency(data);
-    const bass = averageRange(data, 0, 0.32);
-    const treble = averageRange(data, 0.65, 1);
+    const bass = getBandAverage(data, 0, 0.32);
+    const treble = getBandAverage(data, 0.65, 1);
 
     for (let i = ribbon.points.length - 1; i > 0; i -= 1) {
       ribbon.points[i].copy(ribbon.points[i - 1]);

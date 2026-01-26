@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { createToyRuntime } from '../core/toy-runtime';
+import { getBandAverage } from '../utils/audio-bands';
 import {
   configureToySettingsPanel,
+  createControlPanelButtonGroup,
   createQualityPresetManager,
 } from '../utils/toy-settings';
 
@@ -32,6 +34,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   });
   let runtime: ReturnType<typeof createToyRuntime>;
   let settingsPanel: ReturnType<typeof configureToySettingsPanel>;
+  let paletteButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
+    null;
 
   const palettes: Record<PaletteKey, number[]> = {
     aurora: [0x83e6ff, 0x6ad0f7, 0xd3afff, 0xa8f7dd],
@@ -52,18 +56,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function getDensity() {
     const scale = quality.activeQuality.particleScale ?? 1;
     return THREE.MathUtils.clamp(settings.density * scale, 0.25, 1.6);
-  }
-
-  function getBandAverage(data: Uint8Array, start: number, end: number) {
-    const startIndex = Math.max(0, Math.floor(data.length * start));
-    const endIndex = Math.min(data.length, Math.ceil(data.length * end));
-    if (endIndex <= startIndex) return 0;
-
-    let sum = 0;
-    for (let i = startIndex; i < endIndex; i++) {
-      sum += data[i];
-    }
-    return sum / (endIndex - startIndex);
   }
 
   function createKiteGeometry() {
@@ -247,30 +239,22 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       'Switch gradients without resetting audio.',
     );
 
-    (Object.keys(palettes) as PaletteKey[]).forEach((paletteKey) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent =
-        paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1);
-      button.className = 'cta-button';
-      button.disabled = paletteKey === settings.palette;
-      button.addEventListener('click', () => {
-        settings.palette = paletteKey;
-        (paletteRow.childNodes as NodeListOf<HTMLButtonElement>).forEach(
-          (child) => {
-            child.classList.toggle(
-              'active',
-              child.textContent?.toLowerCase() === paletteKey,
-            );
-            child.toggleAttribute(
-              'disabled',
-              child.textContent?.toLowerCase() === paletteKey,
-            );
-          },
-        );
+    paletteButtons = createControlPanelButtonGroup({
+      panel: paletteRow,
+      options: (Object.keys(palettes) as PaletteKey[]).map((paletteKey) => ({
+        id: paletteKey,
+        label: paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1),
+      })),
+      getActiveId: () => settings.palette,
+      onSelect: (paletteKey) => {
+        settings.palette = paletteKey as PaletteKey;
+        paletteButtons?.setActive(settings.palette);
         buildGarden();
-      });
-      paletteRow.appendChild(button);
+      },
+      buttonClassName: 'cta-button',
+      activeClassName: 'active',
+      setDisabledOnActive: true,
+      setAriaPressed: false,
     });
   }
 
