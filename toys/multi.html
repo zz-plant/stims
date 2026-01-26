@@ -124,12 +124,14 @@
         : THREE.MeshStandardMaterial;
 
       const torusKnot = new THREE.Mesh(
-        new THREE.TorusKnotGeometry(10, 3, 100, 16),
+        new THREE.TorusKnotGeometry(12, 4, 120, 16),
         new baseMaterial({
-          color: 0x00ff00,
+          color: 0x00f5ff,
           ...(useWebGLFallback
             ? {}
             : {
+                emissive: 0x003344,
+                emissiveIntensity: 0.7,
                 metalness: 0.5,
                 roughness: 0.2,
               }),
@@ -145,6 +147,14 @@
       pointLight.position.set(10, 20, 20);
       toy.scene.add(pointLight);
 
+      const keyLight = new THREE.PointLight(
+        0x00f5ff,
+        useWebGLFallback ? 0.8 : 1.3,
+        140
+      );
+      keyLight.position.set(0, 0, 35);
+      toy.scene.add(keyLight);
+
       const particlesGeometry = new THREE.BufferGeometry();
       const particlesCount = useWebGLFallback ? 320 : 1200;
       const particlesPosition = new Float32Array(particlesCount * 3);
@@ -156,8 +166,10 @@
         new THREE.BufferAttribute(particlesPosition, 3)
       );
       const particlesMaterial = new THREE.PointsMaterial({
-        color: 0x00ff00,
+        color: 0x00ff99,
         size: useWebGLFallback ? 0.6 : 0.5,
+        transparent: true,
+        opacity: useWebGLFallback ? 0.45 : 0.35,
       });
       const particles = new THREE.Points(particlesGeometry, particlesMaterial);
       toy.scene.add(particles);
@@ -172,6 +184,8 @@
         let shape;
         const shapeMaterial = new baseMaterial({
           color: Math.random() * 0xffffff,
+          transparent: true,
+          opacity: useWebGLFallback ? 0.6 : 0.7,
           ...(useWebGLFallback
             ? {}
             : {

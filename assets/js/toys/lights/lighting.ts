@@ -103,6 +103,20 @@ export const createLightsScene = async ({
   );
   toy.scene.add(cube);
 
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(60, 60),
+    new THREE.MeshStandardMaterial({
+      color: 0x0b0b0b,
+      metalness: 0.1,
+      roughness: 0.9,
+      transparent: true,
+      opacity: 0.85,
+    }),
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -2;
+  toy.scene.add(floor);
+
   await toy.rendererReady;
 
   return { toy, lightingGroup, cube };

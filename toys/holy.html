@@ -14,17 +14,20 @@
       #settingsButton,
       #fullscreenButton {
         position: absolute;
-        padding: 12px 20px;
-        font-size: 16px;
-        background-color: rgba(76, 175, 80, 0.8);
+        padding: 10px 18px;
+        font-size: 15px;
+        background-color: rgba(76, 175, 80, 0.7);
         color: white;
         border: none;
-        border-radius: 4px;
+        border-radius: 10px;
         cursor: pointer;
         transition:
           background-color 0.3s,
-          transform 0.2s;
+          transform 0.2s,
+          box-shadow 0.3s;
         z-index: 10;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(6px);
       }
       #startButton:hover,
       #infoButton:hover,
@@ -41,28 +44,28 @@
       #infoButton {
         top: 15px;
         right: 15px;
-        width: 40px;
-        height: 40px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
-        font-size: 20px;
+        font-size: 18px;
         padding: 0;
       }
       #settingsButton {
         top: 15px;
         left: 15px;
-        width: 40px;
-        height: 40px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
-        font-size: 20px;
+        font-size: 18px;
         padding: 0;
       }
       #fullscreenButton {
         top: 15px;
         right: 65px;
-        width: 40px;
-        height: 40px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
-        font-size: 18px;
+        font-size: 16px;
         padding: 0;
       }
       #infoPanel,
@@ -71,7 +74,7 @@
         top: 70px;
         right: 15px;
         left: 15px;
-        background-color: rgba(0, 0, 0, 0.85);
+        background-color: rgba(0, 0, 0, 0.78);
         color: white;
         padding: 20px;
         border-radius: 8px;
