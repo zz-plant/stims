@@ -8,7 +8,17 @@ _Current release status: actively developed. The latest tagged release is **1.0.
 
 ### Added
 
-- Track upcoming tweaks to audio, WebGL, and touch experiences across the library of toys.
+- Capability preflight panel with compatibility checks, retry guidance, and clear fallback messaging.
+- Preflight support links that explain why rendering is blocked and point to supported browsers and demo-audio toys.
+- Performance controls with persistent pixel ratio, particle budget, and shader-quality presets.
+- Low-motion quality preset and inline preset descriptions to clarify performance tradeoffs.
+- Audio source controls that surface demo audio alongside the microphone option with clearer status copy.
+- Immediate “starting” status feedback when launching microphone, demo, or tab audio.
+- Shared touch/gesture handling that normalizes multi-touch input and touch-action defaults across toys.
+
+### Changed
+
+- Clarified the roadmap to distinguish delivered foundations from upcoming priorities.
 
 ## [1.0.0] - 2025-02-04
 
