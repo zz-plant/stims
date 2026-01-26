@@ -214,13 +214,17 @@
       const { startAudio } = createToyAudioBootstrap(toy);
 
       function createParticle() {
+        const depth = Math.random();
+        const size = Math.random() * 3 + 1;
         return {
           x: Math.random() * viewWidth,
           y: Math.random() * viewHeight,
-          size: Math.random() * 3 + 1,
-          baseSize: Math.random() * 3 + 1,
-          velocityX: (Math.random() - 0.5) * 2,
-          velocityY: (Math.random() - 0.5) * 2,
+          depth,
+          size,
+          baseSize: size,
+          baseAlpha: 0.3 + depth * 0.4,
+          velocityX: (Math.random() - 0.5) * 2 * (0.4 + depth),
+          velocityY: (Math.random() - 0.5) * 2 * (0.4 + depth),
           hue: Math.random() * 360,
           lightness: 50,
           alpha: 0.5,
@@ -274,8 +278,9 @@
         ctx.globalAlpha = 1;
 
         particles.forEach((p, index) => {
-          p.x += p.velocityX * speedMultiplier;
-          p.y += p.velocityY * speedMultiplier;
+          const depthFactor = 0.6 + p.depth * 0.9;
+          p.x += p.velocityX * speedMultiplier * depthFactor;
+          p.y += p.velocityY * speedMultiplier * depthFactor;
           p.rotation += p.angularVelocity;
 
           if (p.x < -p.size) p.x = viewWidth + p.size;
@@ -287,10 +292,15 @@
             const freqIndex = Math.floor(index % frequencyData.length);
             const amplitude = frequencyData[freqIndex] / 255;
             const energyBoost = 0.7 + peakLevel * 1.1 + bassPulse * 0.8;
-            p.size = p.baseSize + amplitude * 12 * energyBoost;
+            p.size =
+              p.baseSize * (0.8 + p.depth) + amplitude * 12 * energyBoost;
             p.hue = (p.hue + amplitude * (6 + trebleGlow * 10)) % 360;
-            p.lightness = 35 + amplitude * 25 + trebleGlow * 15;
-            p.alpha = Math.min(1, 0.25 + amplitude * 0.65 + peakLevel * 0.2);
+            p.lightness = 30 + amplitude * 25 + trebleGlow * 15 + p.depth * 10;
+            p.alpha = Math.min(
+              1,
+              (p.baseAlpha + amplitude * 0.55 + peakLevel * 0.2) *
+                (0.7 + p.depth * 0.6)
+            );
           }
 
           ctx.save();
