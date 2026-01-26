@@ -1,3 +1,5 @@
+import { getBandAverage } from './audio-bands';
+
 export type BandLevels = {
   bass: number;
   mid: number;
@@ -30,9 +32,9 @@ export function getBandLevels({
   const fromAnalyser = analyser?.getMultiBandEnergy?.();
   if (fromAnalyser) return fromAnalyser;
 
-  const bass = averageRange(data, 0, ratios.bass) / 255;
-  const mid = averageRange(data, ratios.bass, ratios.mid) / 255;
-  const treble = averageRange(data, ratios.mid, 1) / 255;
+  const bass = getBandAverage(data, 0, ratios.bass) / 255;
+  const mid = getBandAverage(data, ratios.bass, ratios.mid) / 255;
+  const treble = getBandAverage(data, ratios.mid, 1) / 255;
 
   return { bass, mid, treble };
 }
@@ -58,23 +60,4 @@ export function updateEnergyPeak(
   { decay = 0.96, floor = 0.05 }: { decay?: number; floor?: number } = {},
 ): number {
   return Math.max(currentPeak * decay, weightedEnergy, floor);
-}
-
-function averageRange(
-  dataArray: Uint8Array,
-  startRatio: number,
-  endRatio: number,
-) {
-  if (!dataArray.length) return 0;
-  const startIndex = Math.floor(dataArray.length * startRatio);
-  const endIndex = Math.max(
-    startIndex + 1,
-    Math.floor(dataArray.length * endRatio),
-  );
-  let sum = 0;
-  const count = endIndex - startIndex;
-  for (let i = startIndex; i < endIndex; i += 1) {
-    sum += dataArray[i];
-  }
-  return sum / count;
 }

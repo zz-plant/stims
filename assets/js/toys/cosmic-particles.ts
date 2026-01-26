@@ -10,6 +10,7 @@ import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
 import {
   configureToySettingsPanel,
+  createControlPanelButtonGroup,
   createQualityPresetManager,
 } from '../utils/toy-settings';
 
@@ -36,11 +37,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   let activePreset: PresetInstance | null = null;
   let activePresetKey: PresetKey = 'orbit';
-
-  const presetButtons: Record<PresetKey, HTMLButtonElement> = {
-    orbit: document.createElement('button'),
-    nebula: document.createElement('button'),
-  };
+  let presetButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
+    null;
 
   function getParticleScale(quality: QualityPreset) {
     return (quality.particleScale ?? 1) * performanceSettings.particleBudget;
@@ -294,15 +292,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         ? createOrbitPreset(quality.activeQuality)
         : createNebulaPreset(quality.activeQuality);
     activePresetKey = key;
-    updatePresetButtons();
-  }
-
-  function updatePresetButtons() {
-    (Object.keys(presetButtons) as PresetKey[]).forEach((key) => {
-      const button = presetButtons[key];
-      button.disabled = key === activePresetKey;
-      button.classList.toggle('active', key === activePresetKey);
-    });
+    presetButtons?.setActive(activePresetKey);
   }
 
   function applyPerformanceSettings(settings: PerformanceSettings) {
@@ -327,14 +317,18 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       'Switch between swirling orbits and deep nebula fly-throughs.',
     );
 
-    presetButtons.orbit.textContent = 'Orbit';
-    presetButtons.nebula.textContent = 'Nebula';
-
-    (Object.keys(presetButtons) as PresetKey[]).forEach((key) => {
-      const button = presetButtons[key];
-      button.className = 'cta-button';
-      button.addEventListener('click', () => setActivePreset(key));
-      presetRow.appendChild(button);
+    presetButtons = createControlPanelButtonGroup({
+      panel: presetRow,
+      options: [
+        { id: 'orbit', label: 'Orbit' },
+        { id: 'nebula', label: 'Nebula' },
+      ],
+      getActiveId: () => activePresetKey,
+      onSelect: (key) => setActivePreset(key as PresetKey),
+      buttonClassName: 'cta-button',
+      activeClassName: 'active',
+      setDisabledOnActive: true,
+      setAriaPressed: false,
     });
   }
 
