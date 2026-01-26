@@ -443,7 +443,7 @@ function renderIssueList(
 
     const fallbackItem = document.createElement('li');
     const fallbackLink = document.createElement('a');
-    fallbackLink.href = 'index.html?filters=capability:demoaudio';
+    fallbackLink.href = 'index.html?filters=capability:demoAudio';
     fallbackLink.textContent = 'Browse demo-audio toys';
     fallbackItem.appendChild(fallbackLink);
     linkList.appendChild(fallbackItem);
