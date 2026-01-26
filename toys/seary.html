@@ -308,9 +308,17 @@
                 float glow = exp(-10.0 * dist) * (u_low_freq + u_mid_freq + u_high_freq);
                 color += vec3(glow * 0.4, glow * 0.6, glow * 0.8);
 
+                // Accent ring to add sharper contrast
+                float accentRing = smoothstep(0.38, 0.33, dist) - smoothstep(0.5, 0.45, dist);
+                color += u_palette_accent * accentRing * (0.45 + u_high_freq);
+
                 color = mix(color, color * u_palette_accent, 0.35);
                 color *= 1.0 + u_burst_intensity * 0.6;
                 color += u_palette_accent * (u_burst_intensity * 0.25);
+
+                float vignette = smoothstep(1.15, 0.35, dist);
+                color *= vignette;
+                color = mix(color, pow(color, vec3(1.08)), 0.35);
 
                 gl_FragColor = vec4(color, 1.0);
             }

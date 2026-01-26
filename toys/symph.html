@@ -377,9 +377,10 @@
         }
       });
 
-      function updateSpectrograph(dataArray) {
+      function updateSpectrograph(dataArray, energy = 0) {
         if (!ctx2d) return;
-        ctx2d.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        ctx2d.fillStyle = 'rgba(0, 0, 0, 0.18)';
+        ctx2d.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
         const gradient = ctx2d.createLinearGradient(
           0,
           0,
@@ -390,12 +391,14 @@
         gradient.addColorStop(0.5, gradientStops[1]);
         gradient.addColorStop(1, gradientStops[2]);
         ctx2d.fillStyle = gradient;
+        ctx2d.shadowColor = gradientStops[1];
+        ctx2d.shadowBlur = 12 + energy * 14;
         const barWidth = (overlayCanvas.width / dataArray.length) * 1.5;
         let barHeight;
         let x = 0;
 
         for (let i = 0; i < dataArray.length; i++) {
-          barHeight = dataArray[i] / 2;
+          barHeight = (dataArray[i] / 2) * (0.8 + energy * 0.8);
           ctx2d.fillRect(
             x,
             overlayCanvas.height - barHeight,
@@ -404,6 +407,7 @@
           );
           x += barWidth + 1;
         }
+        ctx2d.shadowBlur = 0;
       }
 
       function hexToRgbTuple(hex) {
@@ -520,7 +524,7 @@
           if (sparklesEnabled && trebleShimmer > 0.6 && Math.random() < 0.08) {
             spawnSparkles(Math.min(1, trebleShimmer));
           }
-          updateSpectrograph(dataArray);
+          updateSpectrograph(dataArray, normalized);
           funControls.setAudioAvailable(true);
         } else {
           audioData = adapter.transformAudioValue(0);

@@ -187,8 +187,13 @@
                 color += scanline;
                 color += vhsNoise;
                 
+                // Focal glow to anchor the composition
+                float focal = exp(-dot(pos, pos) * 1.4);
+                vec3 focalTint = vec3(0.35, 0.18, 0.5) * (0.6 + u_audioData * 0.8);
+                color += focalTint * focal;
+
                 // Vignette
-                float vignette = 1.0 - length(pos) * 0.4;
+                float vignette = 1.0 - length(pos) * 0.45;
                 color *= vignette;
                 
                 gl_FragColor = vec4(color, 1.0);
