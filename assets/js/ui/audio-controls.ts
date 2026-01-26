@@ -17,6 +17,21 @@ export function initAudioControls(
 ) {
   const _doc = container.ownerDocument;
   const youtubeController = new YouTubeController();
+  const STORAGE_KEY = 'stims-audio-source';
+  const readStoredSource = () => {
+    try {
+      return window.sessionStorage.getItem(STORAGE_KEY);
+    } catch (_error) {
+      return null;
+    }
+  };
+  const writeStoredSource = (source: 'microphone' | 'demo') => {
+    try {
+      window.sessionStorage.setItem(STORAGE_KEY, source);
+    } catch (_error) {
+      // Ignore storage errors.
+    }
+  };
 
   container.className = 'control-panel';
   container.innerHTML = `
@@ -167,7 +182,10 @@ export function initAudioControls(
     return `${message} Use demo audio to keep exploring.`;
   };
 
-  if (options.preferDemoAudio && demoBtn instanceof HTMLButtonElement) {
+  const preferDemoAudio =
+    options.preferDemoAudio ?? readStoredSource() === 'demo';
+
+  if (preferDemoAudio && demoBtn instanceof HTMLButtonElement) {
     demoBtn.classList.add('primary');
     if (micBtn instanceof HTMLButtonElement) {
       micBtn.classList.remove('primary');
@@ -207,7 +225,10 @@ export function initAudioControls(
   micBtn?.addEventListener('click', () => {
     void handleRequest(
       micBtn,
-      options.onRequestMicrophone,
+      async () => {
+        await options.onRequestMicrophone();
+        writeStoredSource('microphone');
+      },
       'Microphone access failed.',
       (message) => {
         emphasizeDemoAudio();
@@ -220,7 +241,10 @@ export function initAudioControls(
   demoBtn?.addEventListener('click', () => {
     void handleRequest(
       demoBtn,
-      options.onRequestDemoAudio,
+      async () => {
+        await options.onRequestDemoAudio();
+        writeStoredSource('demo');
+      },
       'Demo audio failed to load.',
       undefined,
       'Demo audio started.',

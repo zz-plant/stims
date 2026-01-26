@@ -51,6 +51,10 @@ export type ToyRuntimeOptions = {
     fftSize?: number;
     options?: AudioInitOptions;
   };
+  preview?: {
+    enabled?: boolean;
+    fftBins?: number;
+  };
   input?: Partial<Omit<UnifiedInputOptions, 'target'>> & {
     enabled?: boolean;
     target?: HTMLElement | null;
@@ -237,6 +241,7 @@ export function createToyRuntime({
   canvas = null,
   toyOptions,
   audio,
+  preview,
   input,
   performance,
   plugins = [],
@@ -286,7 +291,73 @@ export function createToyRuntime({
     }),
   });
 
+  const previewOptions = {
+    enabled: true,
+    fftBins: 128,
+    ...preview,
+  };
+  const previewFrequencyData = new Uint8Array(previewOptions.fftBins);
+  let previewAnimationId: number | null = null;
+  let previewActive = false;
+  let previewStart = 0;
+  let previewLastFrame = 0;
+
+  const updatePreviewFrequencyData = (time: number) => {
+    for (let i = 0; i < previewFrequencyData.length; i += 1) {
+      const normalized = i / previewFrequencyData.length;
+      const wave =
+        (Math.sin(time * (0.9 + normalized) + normalized * 6.2) +
+          Math.sin(time * 1.7 + normalized * 10.5) * 0.4 +
+          Math.cos(time * 0.6 + normalized * 3.1) * 0.3) /
+        1.7;
+      const envelope = 0.4 + Math.sin(time * 0.45 + normalized * 4) * 0.35;
+      const shimmer = Math.sin(time * 3.5 + normalized * 40) * 0.12;
+      const value = Math.max(
+        0,
+        Math.min(1, (wave * 0.5 + 0.5) * (0.6 + envelope) + shimmer),
+      );
+      previewFrequencyData[i] = Math.round(value * 220 + 12);
+    }
+  };
+
+  const stopPreviewLoop = () => {
+    if (!previewActive) return;
+    previewActive = false;
+    if (previewAnimationId !== null) {
+      cancelAnimationFrame(previewAnimationId);
+      previewAnimationId = null;
+    }
+  };
+
+  const startPreviewLoop = () => {
+    if (!previewOptions.enabled || previewActive) return;
+    previewActive = true;
+    const timeSource = globalThis.performance ?? {
+      now: () => Date.now(),
+    };
+    previewStart = timeSource.now();
+    previewLastFrame = previewStart;
+
+    const tick = (now: number) => {
+      if (!previewActive) return;
+      const time = (now - previewStart) / 1000;
+      frameState.deltaMs = now - previewLastFrame;
+      previewLastFrame = now;
+      frameState.time = time;
+      frameState.analyser = null;
+      updatePreviewFrequencyData(time);
+      frameState.frequencyData = previewFrequencyData;
+      frameState.input = inputController.getState();
+      frameState.performance = performanceController.getSettings();
+      pluginManager.update(frameState);
+      previewAnimationId = requestAnimationFrame(tick);
+    };
+
+    previewAnimationId = requestAnimationFrame(tick);
+  };
+
   const startAudio = async (request?: ToyAudioRequest) => {
+    stopPreviewLoop();
     return startToyAudio(
       toy,
       (ctx) => {
@@ -320,6 +391,7 @@ export function createToyRuntime({
     getInputState: () => inputController.getState(),
     getPerformanceSettings: () => performanceController.getSettings(),
     dispose: () => {
+      stopPreviewLoop();
       pluginManager.dispose();
       inputController.dispose();
       performanceController.dispose();
@@ -329,6 +401,7 @@ export function createToyRuntime({
   };
 
   pluginManager.setupAll(runtime as ToyRuntimeInstance);
+  startPreviewLoop();
 
   return runtime as ToyRuntimeInstance;
 }
