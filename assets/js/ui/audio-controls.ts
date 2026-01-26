@@ -205,7 +205,11 @@ export function initAudioControls(
     errorMessage: string,
     onError?: (message: string) => void,
     successMessage?: string,
+    pendingMessage?: string,
   ) => {
+    if (pendingMessage) {
+      updateStatus(pendingMessage, 'success');
+    }
     setPending(button, true);
     try {
       await action();
@@ -235,6 +239,7 @@ export function initAudioControls(
         updateStatus(buildMicrophoneErrorMessage(message));
       },
       'Mic connected.',
+      'Starting microphone…',
     );
   });
 
@@ -248,6 +253,7 @@ export function initAudioControls(
       'Demo audio failed to load.',
       undefined,
       'Demo audio started.',
+      'Starting demo audio…',
     );
   });
 
@@ -273,6 +279,7 @@ export function initAudioControls(
       'Tab audio capture failed.',
       undefined,
       'Tab audio connected.',
+      'Starting tab audio…',
     );
   });
 

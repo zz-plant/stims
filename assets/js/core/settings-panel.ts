@@ -19,6 +19,14 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     particleScale: 0.65,
   },
   {
+    id: 'low-motion',
+    label: 'Low motion',
+    description: 'Reduce particle density and shimmer for calmer motion.',
+    maxPixelRatio: 1.5,
+    renderScale: 0.95,
+    particleScale: 0.5,
+  },
+  {
     id: 'balanced',
     label: 'Balanced (default)',
     description: 'Native look with capped DPI for most laptops and desktops.',
@@ -125,6 +133,7 @@ export class PersistentSettingsPanel {
   private description?: HTMLParagraphElement;
   private qualityRow?: HTMLDivElement;
   private qualitySelect?: HTMLSelectElement;
+  private qualityHint?: HTMLElement;
   private qualityPresets: QualityPreset[] = [];
   private qualityChangeHandler?: (preset: QualityPreset) => void;
   private sectionHost: HTMLDivElement;
@@ -198,6 +207,7 @@ export class PersistentSettingsPanel {
 
       const hint = document.createElement('small');
       hint.textContent = 'Adjust resolution and particle density.';
+      this.qualityHint = hint;
 
       text.append(label, hint);
 
@@ -225,6 +235,7 @@ export class PersistentSettingsPanel {
 
     const initialPreset = this.getInitialPreset(defaultPresetId);
     this.qualitySelect.value = initialPreset.id;
+    this.updateQualityHint(initialPreset);
 
     if (!hadActivePreset) {
       this.handleQualityChange(initialPreset.id);
@@ -318,7 +329,14 @@ export class PersistentSettingsPanel {
     activeQualityPreset = preset;
     activeQualityPresetStorageKey = this.qualityStorageKey;
     qualitySubscribers.forEach((subscriber) => subscriber(preset));
+    this.updateQualityHint(preset);
     this.qualityChangeHandler?.(preset);
+  }
+
+  private updateQualityHint(preset: QualityPreset) {
+    if (!this.qualityHint) return;
+    this.qualityHint.textContent =
+      preset.description ?? 'Adjust resolution and particle density.';
   }
 }
 

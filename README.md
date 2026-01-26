@@ -98,31 +98,20 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 
 ---
 
-## What’s in the Pipeline
+## Roadmap
 
-### **Compatibility + onboarding**
+### Delivered foundations
 
-- **Issue**: Some users with older or unsupported browsers/devices run into WebGL or WebGPU gating with unclear recovery steps.
-- **Fix**: Add a richer compatibility preflight with clear next steps, plus a “why this won’t run here” state that links to supported browsers and fallback toys. Include a no-mic path in the primary CTA flow so first-time users always see a successful start option.
+- **Compatibility + onboarding**: Capability preflight with status details, retry actions, fallback guidance, and a “why this won’t run here” section that links to supported browsers and fallback toys.
+- **Performance + quality controls**: Performance panel with persistent pixel ratio caps, quality presets (including low-motion), and inline explanations so mid-tier devices can stay smooth.
+- **Audio permission clarity**: Audio controls surface demo audio alongside the microphone CTA by default, plus immediate “starting” feedback and fallback guidance when mic access fails.
+- **Touch + gesture consistency**: Shared input helpers normalize multi-touch gestures and enforce touch-action defaults while keeping control targets sized for reliable taps.
+- **Library discovery**: Search supports tags/capabilities, empty-state guidance, and capability badges (mic/motion/demo audio) on toy cards.
 
-### **Performance + quality controls**
+### Next priorities
 
-- **Issue**: Heavier toys can stutter on mid-tier devices, which breaks the intended sensory flow.
-- **Fix**: Add a quality control panel (pixel ratio cap, particle density presets, and a “low motion” mode) that persists per device and defaults to a safe mid-tier profile. Provide a short “performance profile” explanation so users understand what each preset changes.
-
-If you want to reduce GPU load on high-DPI screens without degrading visuals too much, pass a `maxPixelRatio` option to
-`initRenderer` (defaults to `2`). This caps the renderer to `Math.min(window.devicePixelRatio, maxPixelRatio)`, so setting
-`maxPixelRatio` to `1.5` or `1` can significantly cut per-frame work while retaining clarity.
-
-### **Audio permission clarity**
-
-- **Issue**: Users who deny mic access often get stuck or miss the demo audio escape hatch.
-- **Fix**: Expand the status copy and inline guidance so the demo audio path is always visible, clearly recommended when mic access is blocked, and explains how to re-enable permissions.
-
-### **Mobile touch + gesture polish**
-
-- **Issue**: Touch interactions feel inconsistent across devices, especially for multi-touch toys.
-- **Fix**: Improve touch handling, add clearer gesture hints, and confirm touch targets meet the minimum size for reliable taps. Add explicit “tap to start” feedback within 100ms so touch users see immediate response.
+- **Toy onboarding quick wins**: Add lightweight presets or first-time hints for toys with multiple controls so the “wow” moment is immediate.
+- **Touch polish**: Add clearer gesture hints and input affordances on the toy page.
 
 ---
 
