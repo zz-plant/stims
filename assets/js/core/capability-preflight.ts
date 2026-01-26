@@ -413,6 +413,44 @@ function renderIssueList(
     list.appendChild(item);
   });
   container.appendChild(list);
+
+  if (result.blockingIssues.length) {
+    const support = document.createElement('div');
+    support.className = 'preflight-panel__support';
+
+    const supportTitle = document.createElement('p');
+    supportTitle.className = 'preflight-panel__support-title';
+    supportTitle.textContent = 'Why this won’t run here';
+    support.appendChild(supportTitle);
+
+    const supportText = document.createElement('p');
+    supportText.className = 'preflight-panel__support-text';
+    supportText.textContent =
+      'This device cannot access WebGL/WebGPU, so 3D visuals cannot render. Try a supported browser or jump back to toys that can run with demo audio.';
+    support.appendChild(supportText);
+
+    const linkList = document.createElement('ul');
+    linkList.className = 'preflight-panel__support-links';
+
+    const browserItem = document.createElement('li');
+    const browserLink = document.createElement('a');
+    browserLink.href = 'https://webglreport.com/';
+    browserLink.target = '_blank';
+    browserLink.rel = 'noreferrer';
+    browserLink.textContent = 'Check supported browsers (WebGL report)';
+    browserItem.appendChild(browserLink);
+    linkList.appendChild(browserItem);
+
+    const fallbackItem = document.createElement('li');
+    const fallbackLink = document.createElement('a');
+    fallbackLink.href = 'index.html?filters=capability:demoAudio';
+    fallbackLink.textContent = 'Browse demo-audio toys';
+    fallbackItem.appendChild(fallbackLink);
+    linkList.appendChild(fallbackItem);
+
+    support.appendChild(linkList);
+    container.appendChild(support);
+  }
 }
 
 export function attachCapabilityPreflight({
