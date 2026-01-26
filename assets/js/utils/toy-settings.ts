@@ -22,6 +22,29 @@ export type QualityPresetManager = {
   ) => PersistentSettingsPanel;
 };
 
+type RendererQualityManagerOptions = QualityPresetManagerOptions & {
+  getRuntime?: () =>
+    | {
+        toy: {
+          updateRendererSettings: (
+            settings: Partial<{
+              maxPixelRatio: number;
+              renderScale: number;
+            }>,
+          ) => void;
+        };
+      }
+    | null
+    | undefined;
+  getRendererSettings?: (preset: QualityPreset) =>
+    | Partial<{
+        maxPixelRatio: number;
+        renderScale: number;
+      }>
+    | undefined;
+  onChange?: (preset: QualityPreset) => void;
+};
+
 export function createQualityPresetManager(
   options: QualityPresetManagerOptions = {},
 ): QualityPresetManager {
@@ -63,6 +86,27 @@ export function createQualityPresetManager(
     applyQualityPreset,
     configureQualityPresets,
   };
+}
+
+export function createRendererQualityManager(
+  options: RendererQualityManagerOptions = {},
+): QualityPresetManager {
+  const { getRuntime, getRendererSettings, onChange, ...rest } = options;
+  return createQualityPresetManager({
+    ...rest,
+    onChange: (preset) => {
+      const runtime = getRuntime?.();
+      const rendererSettings = getRendererSettings?.(preset) ?? {
+        maxPixelRatio: preset.maxPixelRatio,
+        renderScale: preset.renderScale,
+      };
+
+      if (runtime && rendererSettings) {
+        runtime.toy.updateRendererSettings(rendererSettings);
+      }
+      onChange?.(preset);
+    },
+  });
 }
 
 type ToySettingsPanelOptions = {

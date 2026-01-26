@@ -1,10 +1,12 @@
 import * as THREE from 'three';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getBandAverage } from '../utils/audio-bands';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
   createControlPanelButtonGroup,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 
 type PaletteKey = 'aurora' | 'sunset' | 'midnight';
@@ -20,19 +22,16 @@ type KiteInstance = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createQualityPresetManager({
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: preset.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+  const quality = createRendererQualityManager({
+    getRuntime: () => runtime,
+    onChange: () => {
       buildGarden();
       if (panelDensityInput) {
         panelDensityInput.value = settings.density.toString();
       }
     },
   });
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
   let settingsPanel: ReturnType<typeof configureToySettingsPanel>;
   let paletteButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
     null;
@@ -85,12 +84,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       const mesh = child as THREE.Mesh;
       if ((mesh as unknown as { isMesh?: boolean }).isMesh) {
         if (mesh.geometry && mesh.geometry !== kiteGeometry) {
-          mesh.geometry.dispose();
+          disposeGeometry(mesh.geometry);
         }
         if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((material) => material.dispose());
+          mesh.material.forEach((material) => disposeMaterial(material));
         } else {
-          (mesh.material as THREE.Material).dispose();
+          disposeMaterial(mesh.material as THREE.Material);
         }
       }
     });
@@ -314,9 +313,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     runtime.toy.render();
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 6, z: 26 } },
       lightingOptions: {
@@ -350,6 +347,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   return runtime;
 }

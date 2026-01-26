@@ -1,10 +1,16 @@
 import * as THREE from 'three';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
 import {
+  disposeGeometry,
+  disposeMaterial,
+  disposeMesh,
+} from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
+import {
   configureToySettingsPanel,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 
 type Bubble = {
@@ -22,19 +28,16 @@ type HarmonicBubble = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createQualityPresetManager({
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: preset.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+  const quality = createRendererQualityManager({
+    getRuntime: () => runtime,
+    onChange: () => {
       bubbleDetail = getBubbleDetail();
       refreshGeometries();
       if (!shaderSources) return;
       rebuildBubbles();
     },
   });
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   const bubbles: Bubble[] = [];
   const tempScale = new THREE.Vector3();
@@ -95,8 +98,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function refreshGeometries() {
-    bubbleGeometry?.dispose();
-    harmonicGeometry?.dispose();
+    disposeGeometry(bubbleGeometry ?? undefined);
+    disposeGeometry(harmonicGeometry ?? undefined);
     bubbleGeometry = new THREE.SphereGeometry(
       1,
       bubbleDetail.segments,
@@ -181,12 +184,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function clearBubbleMeshes() {
     bubbleGroup.children.slice().forEach((child) => {
       const mesh = child as THREE.Mesh;
-      bubbleGroup.remove(mesh);
-      if (Array.isArray(mesh.material)) {
-        mesh.material.forEach((material) => material.dispose());
-      } else {
-        (mesh.material as THREE.Material).dispose();
-      }
+      disposeMesh(mesh);
     });
     bubbles.length = 0;
     harmonicBubbles.length = 0;
@@ -230,7 +228,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
       if (harmonic.life <= 0) {
         bubbleGroup.remove(harmonic.mesh);
-        harmonic.mesh.material.dispose();
+        disposeMaterial(harmonic.mesh.material);
         harmonicBubbles.splice(i, 1);
       }
     }
@@ -302,9 +300,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 36 } },
       sceneOptions: {
@@ -336,12 +332,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         },
         dispose: () => {
           clearBubbleMeshes();
-          bubbleGeometry?.dispose();
-          harmonicGeometry?.dispose();
+          disposeGeometry(bubbleGeometry ?? undefined);
+          disposeGeometry(harmonicGeometry ?? undefined);
         },
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   setupSettingsPanel();
 

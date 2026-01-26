@@ -4,12 +4,14 @@ import {
   getPerformancePanel,
   type PerformanceSettings,
 } from '../core/performance-panel';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
@@ -31,19 +33,20 @@ type StarfieldPalette = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createQualityPresetManager({
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: performanceSettings.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+  const quality = createRendererQualityManager({
+    getRuntime: () => runtime,
+    getRendererSettings: (preset) => ({
+      maxPixelRatio: performanceSettings.maxPixelRatio,
+      renderScale: preset.renderScale,
+    }),
+    onChange: () => {
       disposeStarField();
       starField = createStarField();
     },
   });
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let activePaletteIndex = 0;
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   const palettes: StarfieldPalette[] = [
     {
@@ -157,8 +160,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function createNebula() {
     if (nebulaMesh) {
       runtime.toy.scene.remove(nebulaMesh);
-      (nebulaMesh.material as THREE.Material).dispose();
-      (nebulaMesh.geometry as THREE.BufferGeometry).dispose();
+      disposeMaterial(nebulaMesh.material as THREE.Material);
+      disposeGeometry(nebulaMesh.geometry as THREE.BufferGeometry);
     }
 
     const geometry = new THREE.PlaneGeometry(420, 300, 1, 1);
@@ -232,8 +235,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function disposeStarField() {
     if (!starField) return;
     runtime.toy.scene.remove(starField.points);
-    starField.geometry.dispose();
-    starField.material.dispose();
+    disposeGeometry(starField.geometry);
+    disposeMaterial(starField.material);
     starField = null;
   }
 
@@ -384,9 +387,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 70 } },
       ambientLightOptions: { intensity: 0.25 },
@@ -403,7 +404,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     audio: { fftSize: 256 },
     input: {
       onInput: (state) => handleInput(state),
-      boundsElement: container?.querySelector('canvas') ?? undefined,
     },
     plugins: [
       {
@@ -427,13 +427,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           window.removeEventListener('keydown', handleKeydown);
           if (nebulaMesh) {
             runtime.toy.scene.remove(nebulaMesh);
-            (nebulaMesh.material as THREE.Material).dispose();
-            (nebulaMesh.geometry as THREE.BufferGeometry).dispose();
+            disposeMaterial(nebulaMesh.material as THREE.Material);
+            disposeGeometry(nebulaMesh.geometry as THREE.BufferGeometry);
           }
         },
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   return runtime;
 }

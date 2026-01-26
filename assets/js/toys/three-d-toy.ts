@@ -6,7 +6,7 @@ import {
 } from '../core/postprocessing';
 import type { RendererBackend } from '../core/renderer-capabilities';
 import { registerToyGlobals } from '../core/toy-globals';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import type { ToyAudioRequest } from '../utils/audio-start';
 import {
@@ -14,23 +14,22 @@ import {
   createControlPanel,
 } from '../utils/control-panel';
 import { createIdleDetector } from '../utils/idle-detector';
+import { disposeGeometry, disposeMesh } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   let errorElement: HTMLElement | null = null;
-  const quality = createQualityPresetManager({
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: preset.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+  const quality = createRendererQualityManager({
+    getRuntime: () => runtime,
+    onChange: () => {
       rebuildSceneContents();
     },
   });
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   let torusKnot: THREE.Mesh | null = null;
   let particles: THREE.Points | null = null;
@@ -70,26 +69,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     instances: ShapeInstance[];
   };
 
-  function disposeMesh(mesh: THREE.Mesh | null) {
-    if (!mesh) return;
-    runtime.toy.scene.remove(mesh);
-    mesh.geometry?.dispose();
-    if (Array.isArray(mesh.material)) {
-      mesh.material.forEach((material) => material?.dispose());
-    } else {
-      mesh.material?.dispose();
-    }
-  }
-
   function disposeInstancedShapes() {
     instancedShapes.splice(0).forEach(({ mesh }) => {
-      runtime.toy.scene.remove(mesh);
-      mesh.geometry?.dispose();
-      if (Array.isArray(mesh.material)) {
-        mesh.material.forEach((material) => material?.dispose());
-      } else {
-        mesh.material?.dispose();
-      }
+      disposeMesh(mesh);
     });
   }
 
@@ -113,7 +95,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
     configs.forEach(({ geometry, count }) => {
       if (count <= 0) {
-        geometry.dispose();
+        disposeGeometry(geometry);
         return;
       }
 
@@ -388,9 +370,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 80 } },
       lightingOptions: {
@@ -434,6 +414,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   const unregisterGlobals = registerToyGlobals(container, startAudio);
 

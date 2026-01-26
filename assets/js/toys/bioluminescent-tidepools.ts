@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import { registerToyGlobals } from '../core/toy-globals';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import type { ToyAudioRequest } from '../utils/audio-start';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 import type { UnifiedInputState, UnifiedPointer } from '../utils/unified-input';
 
@@ -30,12 +32,9 @@ const MAX_BLOBS = 28;
 const BASE_SPARK_COUNT = 200;
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createQualityPresetManager({
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: preset.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+  const quality = createRendererQualityManager({
+    getRuntime: () => runtime,
+    onChange: () => {
       activeSparkCount = getSparkCount();
       sparkGeometry.setDrawRange(0, activeSparkCount);
       for (let i = 0; i < BASE_SPARK_COUNT; i += 1) {
@@ -53,7 +52,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       handleResize();
     },
   });
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   const controls = {
     trailLength: 2.4,
@@ -584,9 +583,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { fov: 50, position: { x: 0, y: 0, z: 1.6 } },
       sceneOptions: { background: '#03121c' },
@@ -607,7 +604,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       onInput: (state) => {
         if (state) handlePointerUpdate(state);
       },
-      boundsElement: container?.querySelector('canvas') ?? undefined,
     },
     plugins: [
       {
@@ -626,12 +622,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         dispose: () => {
           window.removeEventListener('resize', handleResize);
           window.removeEventListener('keydown', handleKeydown);
-          sparkGeometry.dispose();
-          sparkMaterial.dispose();
+          disposeGeometry(sparkGeometry);
+          disposeMaterial(sparkMaterial);
         },
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   async function startAudio(request: ToyAudioRequest = false) {
     try {

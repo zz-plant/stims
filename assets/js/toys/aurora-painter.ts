@@ -1,10 +1,12 @@
 import * as THREE from 'three';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getBandAverage } from '../utils/audio-bands';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import { disposeGeometry, disposeMesh } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
@@ -19,12 +21,9 @@ type AuroraPalette = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createQualityPresetManager({
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: preset.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+  const quality = createRendererQualityManager({
+    getRuntime: () => runtime,
+    onChange: () => {
       rebuildRibbons();
     },
   });
@@ -77,7 +76,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let targetGlow = controls.glow;
   let rotationLatch = 0;
 
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
   const ribbonGroup = new THREE.Group();
 
   const RIBBON_COUNT = 6;
@@ -190,7 +189,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     );
 
     ribbon.curve.points = ribbon.points;
-    ribbon.mesh.geometry.dispose();
+    disposeGeometry(ribbon.mesh.geometry);
     const radius = ribbonDetail.radiusBase + bass / 240;
     ribbon.mesh.geometry = new THREE.TubeGeometry(
       ribbon.curve,
@@ -225,9 +224,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function disposeRibbons() {
     ribbons.forEach((ribbon) => {
-      ribbonGroup.remove(ribbon.mesh);
-      ribbon.mesh.geometry.dispose();
-      (ribbon.mesh.material as THREE.Material).dispose();
+      disposeMesh(ribbon.mesh);
     });
     ribbons.length = 0;
   }
@@ -314,9 +311,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 45 }, fov: 60 },
       rendererOptions: {
@@ -335,7 +330,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     audio: { fftSize: 512 },
     input: {
       onInput: (state) => handleInput(state),
-      boundsElement: container?.querySelector('canvas') ?? undefined,
     },
     plugins: [
       {
@@ -355,6 +349,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   setupSettingsPanel();
   if (!ribbons.length) {

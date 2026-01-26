@@ -5,13 +5,15 @@ import {
   type PerformanceSettings,
 } from '../core/performance-panel';
 import type { QualityPreset } from '../core/settings-panel';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
   createControlPanelButtonGroup,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 
 type PresetKey = 'orbit' | 'nebula';
@@ -22,18 +24,19 @@ type PresetInstance = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createQualityPresetManager({
+  const quality = createRendererQualityManager({
     defaultPresetId: 'balanced',
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: performanceSettings.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+    getRuntime: () => runtime,
+    getRendererSettings: (preset) => ({
+      maxPixelRatio: performanceSettings.maxPixelRatio,
+      renderScale: preset.renderScale,
+    }),
+    onChange: () => {
       setActivePreset(activePresetKey, { force: true });
     },
   });
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   let activePreset: PresetInstance | null = null;
   let activePresetKey: PresetKey = 'orbit';
@@ -99,8 +102,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
       dispose() {
         runtime.toy.scene.remove(group);
-        particlesGeometry.dispose();
-        particlesMaterial.dispose();
+        disposeGeometry(particlesGeometry);
+        disposeMaterial(particlesMaterial);
       },
     };
   }
@@ -275,10 +278,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
       dispose() {
         runtime.toy.scene.remove(group);
-        starGeometry.dispose();
-        starMaterial.dispose();
-        nebulaGeometry.dispose();
-        nebulaMaterial.dispose();
+        disposeGeometry(starGeometry);
+        disposeMaterial(starMaterial);
+        disposeGeometry(nebulaGeometry);
+        disposeMaterial(nebulaMaterial);
       },
     };
   }
@@ -345,9 +348,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   setupSettingsPanel();
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 80 } },
       ambientLightOptions: { intensity: 0.35 },
@@ -376,6 +377,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   return runtime;
 }

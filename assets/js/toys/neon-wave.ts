@@ -29,13 +29,15 @@ import {
   type PostprocessingPipeline,
 } from '../core/postprocessing';
 import { PersistentSettingsPanel } from '../core/settings-panel';
-import { createToyRuntime } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createBeatTracker } from '../utils/audio-beat';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   configureToySettingsPanel,
   createControlPanelButtonGroup,
-  createQualityPresetManager,
+  createRendererQualityManager,
 } from '../utils/toy-settings';
 
 type NeonTheme = 'synthwave' | 'cyberpunk' | 'arctic' | 'sunset';
@@ -81,13 +83,14 @@ const THEMES: Record<NeonTheme, ThemePalette> = {
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const settingsPanel = new PersistentSettingsPanel(container || undefined);
-  const quality = createQualityPresetManager({
+  const quality = createRendererQualityManager({
     panel: settingsPanel,
-    onChange: (preset) => {
-      runtime.toy.updateRendererSettings({
-        maxPixelRatio: performanceSettings.maxPixelRatio,
-        renderScale: preset.renderScale,
-      });
+    getRuntime: () => runtime,
+    getRendererSettings: (preset) => ({
+      maxPixelRatio: performanceSettings.maxPixelRatio,
+      renderScale: preset.renderScale,
+    }),
+    onChange: () => {
       createWaveMesh();
       createParticles();
     },
@@ -95,7 +98,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
   let currentTheme: NeonTheme = 'synthwave';
   let palette = THEMES[currentTheme];
-  let runtime: ReturnType<typeof createToyRuntime>;
+  let runtime: ToyRuntimeInstance;
 
   // Post-processing
   let postprocessing: PostprocessingPipeline | null = null;
@@ -234,8 +237,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function createWaveMesh() {
     if (waveMesh) {
       waveGroup.remove(waveMesh);
-      waveGeometry?.dispose();
-      waveMaterial?.dispose();
+      disposeGeometry(waveGeometry ?? undefined);
+      disposeMaterial(waveMaterial);
     }
 
     const { widthSegments, heightSegments } = getWaveSegments();
@@ -273,8 +276,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     // Clear existing
     gridLines.forEach((line) => {
       gridGroup.remove(line);
-      line.geometry.dispose();
-      (line.material as Material).dispose();
+      disposeGeometry(line.geometry);
+      disposeMaterial(line.material as Material);
     });
     gridLines.length = 0;
 
@@ -313,8 +316,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function createParticles() {
     if (particles) {
       particleGroup.remove(particles);
-      particleGeometry?.dispose();
-      particleMaterial?.dispose();
+      disposeGeometry(particleGeometry ?? undefined);
+      disposeMaterial(particleMaterial);
     }
 
     const count = getParticleCount();
@@ -366,8 +369,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function createHorizon() {
     if (horizonMesh) {
       horizonGroup.remove(horizonMesh);
-      (horizonMesh.geometry as BufferGeometry).dispose();
-      (horizonMesh.material as Material).dispose();
+      disposeGeometry(horizonMesh.geometry as BufferGeometry);
+      disposeMaterial(horizonMesh.material as Material);
     }
 
     const geometry = new CircleGeometry(25, 64);
@@ -600,9 +603,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  runtime = createToyRuntime({
-    container,
-    canvas: container?.querySelector('canvas'),
+  const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 30, z: 80 } },
       lightingOptions: { type: 'PointLight', intensity: 0.5 },
@@ -644,17 +645,17 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           applyPerformanceSettings(settings);
         },
         dispose: () => {
-          waveGeometry?.dispose();
-          waveMaterial?.dispose();
-          particleGeometry?.dispose();
-          particleMaterial?.dispose();
+          disposeGeometry(waveGeometry ?? undefined);
+          disposeMaterial(waveMaterial);
+          disposeGeometry(particleGeometry ?? undefined);
+          disposeMaterial(particleMaterial);
           gridLines.forEach((line) => {
-            line.geometry.dispose();
-            (line.material as Material).dispose();
+            disposeGeometry(line.geometry);
+            disposeMaterial(line.material as Material);
           });
           if (horizonMesh) {
-            (horizonMesh.geometry as BufferGeometry).dispose();
-            (horizonMesh.material as Material).dispose();
+            disposeGeometry(horizonMesh.geometry as BufferGeometry);
+            disposeMaterial(horizonMesh.material as Material);
           }
           postprocessing?.dispose();
           settingsPanel.getElement().remove();
@@ -662,6 +663,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       },
     ],
   });
+
+  runtime = startRuntime({ container });
 
   return runtime;
 }
