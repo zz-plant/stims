@@ -152,6 +152,19 @@ export default [
     controls: ['Quality presets', 'Touch drift'],
   }),
   withAudio({
+    slug: 'mobile-ripples',
+    title: 'Mobile Ripples',
+    description:
+      'Low-power neon ripples tuned for touch-first screens and pocket GPUs.',
+    module: 'assets/js/toys/mobile-ripples.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    lifecycleStage: 'prototype',
+    moods: ['calming', 'focus', 'glow'],
+    tags: ['mobile', 'ripples', 'touch'],
+    controls: ['Quality presets', 'Touch drift'],
+  }),
+  withAudio({
     slug: 'cosmic-particles',
     title: 'Cosmic Particles',
     description:
