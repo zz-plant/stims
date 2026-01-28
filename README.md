@@ -1,8 +1,8 @@
 # Stim Webtoys Library
 
-Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). This is a collection of interactive web-based toys designed to provide some fun sensory stimulation. They’re built with **Three.js**, **WebGL**, and live **audio interaction** for anyone who enjoys engaging, responsive visuals. These are great for casual play, or as a form of sensory exploration, especially for neurodiverse folks.
+Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). This is a collection of interactive web-based toys designed to deliver playful sensory stimulation. They’re built with **Three.js**, **WebGL**, and live **audio interaction** for anyone who enjoys engaging, responsive visuals. These are great for casual play or sensory exploration, especially for neurodiverse folks.
 
-For setup, testing, and contribution guidelines, see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're building or updating toys, the developer docs in [`docs/`](./docs) cover common workflows and patterns. If you’re using the Model Context Protocol server in [`scripts/mcp-server.ts`](./scripts/mcp-server.ts), see the dedicated guide in [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md).
+For setup, testing, and contribution details, see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're building or updating toys, the developer docs in [`docs/`](./docs) cover common workflows and patterns. If you’re using the Model Context Protocol server in [`scripts/mcp-server.ts`](./scripts/mcp-server.ts), see the dedicated guide in [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md).
 
 Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what’s new, what changed, and what’s coming next.
 
@@ -10,7 +10,7 @@ Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what
 
 Use these entry points to find the right docs quickly:
 
-- [`docs/README.md`](./docs/README.md): overview of all project docs plus onboarding highlights.
+- [`docs/README.md`](./docs/README.md): overview of project docs plus onboarding highlights.
 - [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md): day-to-day setup, tooling, scripts, and workflow expectations.
 - [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), [`docs/TOY_SCRIPT_INDEX.md`](./docs/TOY_SCRIPT_INDEX.md), and [`docs/toys.md`](./docs/toys.md): how to build or modify toys, toy script index, and per-toy notes.
 - [`docs/QA_PLAN.md`](./docs/QA_PLAN.md): QA coverage for high-impact flows and how to run the automation that protects them.
@@ -33,7 +33,7 @@ If you add new scripts, toys, or deployment options, update the relevant doc abo
 ## Quick Start
 
 1. Clone the repo and `cd` into it.
-2. Choose your runtime (the repo records `bun@1.2.14` in `package.json` via `packageManager`):
+2. Confirm your runtime (the repo records `bun@1.2.14` in `package.json` via `packageManager`):
    - **Bun 1.2+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle and the supported workflow.
 3. Install dependencies with `bun install`. The repository tracks `bun.lock` for reproducible installs—use `bun install --frozen-lockfile` to respect it.
 4. Start the dev server with `bun run dev`, then open `http://localhost:5173` in your browser. Use `bun run dev:host` when you need the server bound to all interfaces for mobile/LAN testing.
@@ -44,7 +44,7 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 
 ### What You’ll Need
 
-- **A Modern Web Browser**: Anything that supports WebGL should work (think Chrome, Firefox, Edge).
+- **A Modern Web Browser**: Any browser with WebGL should work (think Chrome, Firefox, Edge).
 - **Microphone Access**: A lot of these toys respond to sound, so you’ll want to enable that.
 - **Touch Devices**: Some toys are enhanced by touch, but that’s optional.
 
@@ -76,10 +76,10 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 | [Pottery Wheel Sculptor](./toy.html?toy=clay)             | Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.          |
 | [Defrag Visualizer](./toy.html?toy=defrag)                | A nostalgic, sound-reactive visualizer evoking old defragmentation screens.           |
 | [Evolutionary Weirdcore](./toy.html?toy=evol)             | Watch surreal landscapes evolve with fractals and glitches that react to music.       |
-| [Geometry Visualizer](./toy.html?toy=geom)                | Push shifting geometric forms directly from live mic input with responsive controls.   |
-| [Halo Visualizer](./toy.html?toy=holy)                   | Layered halos, particles, and shapes that respond to your music.                      |
+| [Geometry Visualizer](./toy.html?toy=geom)                | Push shifting geometric forms directly from live mic input with responsive controls.  |
+| [Halo Visualizer](./toy.html?toy=holy)                    | Layered halos, particles, and shapes that respond to your music.                      |
 | [Multi-Capability Visualizer](./toy.html?toy=multi)       | Shapes and lights move with both sound and device motion. (Requires WebGPU.)          |
-| [Synesthetic Visualizer](./toy.html?toy=seary)           | Blend audio and visuals into linked patterns.                                         |
+| [Synesthetic Visualizer](./toy.html?toy=seary)            | Blend audio and visuals into linked patterns.                                         |
 | [Pattern Recognition Visualizer](./toy.html?toy=sgpat)    | See patterns form dynamically in response to sound.                                   |
 | [Terminal Word Grid](./toy.html?toy=legible)              | A retro green text grid that pulses to audio and surfaces fresh words as you play.    |
 | [SVG + Three.js Visualizer](./toy.html?toy=svgtest)       | A hybrid visualizer blending 2D and 3D elements, reacting in real time.               |
@@ -117,7 +117,7 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 
 ## Local Setup
 
-To play with the toys locally you’ll need to run them from a local web server. Opening the HTML files directly won’t work because the TypeScript modules and JSON fetches can’t load over `file://`. Here’s the quick setup:
+To play locally, you’ll need to run the toys from a web server. Opening the HTML files directly won’t work because the TypeScript modules and JSON fetches can’t load over `file://`. Here’s the quick setup:
 
 1. Clone the repository:
 
@@ -159,7 +159,7 @@ python3 -m http.server dist
 
 The preview server hosts the contents of `dist/` on port `4173` using Vite's `--host` flag, so you can load the build from other devices on your LAN if needed.
 
-All JavaScript dependencies are installed via Bun and bundled locally with Vite, so everything works offline without hitting a CDN.
+All JavaScript dependencies are installed via Bun and bundled locally with Vite, so everything can work offline without hitting a CDN.
 
 ### Troubleshooting
 
