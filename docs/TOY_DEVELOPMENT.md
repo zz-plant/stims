@@ -24,6 +24,25 @@ Treat toys like live game content and keep their status explicit in metadata:
 - **Rotation cadence**: revisit the featured set on a regular schedule (every 4–6 weeks). When rotating, update `featuredRank` and `lifecycleStage` in `assets/js/toys-data.js` so the UI reflects the new lineup.
 - **Polish passes**: schedule periodic quality passes on `featured` toys (monthly) and `prototype` toys (as needed). Each pass should include performance verification, accessibility checks, and a quick review of controls/labels against the latest UI conventions.
 
+## Quality preset mapping (toy author guidance)
+
+Quality presets are global and persist across toys, so toys should respond consistently when the user changes them:
+
+- **Honor the shared settings**: call `toy.updateRendererSettings()` (or `handle.applySettings()` if you are managing a pooled renderer handle directly) when the settings panel broadcasts a change.
+- **Avoid hard-coded pixel ratios**: use the preset-provided `maxPixelRatio` and `renderScale` as the baseline; override only if a toy has a documented performance need.
+- **Scale expensive effects**: map presets to particle counts, post-processing strength, or shader iterations. Keep the “Battery saver” preset under ~65% of default costs, and let “Hi-fi visuals” increase costs modestly (around 135%) without exceeding target frame times.
+- **Persist in the session**: rely on the shared settings panel to persist choices so users do not have to reconfigure on every toy switch.
+- **Match default preset intent**: align with the baseline values documented in `docs/DEVELOPMENT.md` so renderer settings stay consistent across toys.
+
+## Settings panel checklist (toy-facing controls)
+
+When exposing toy-specific controls, align them with the shared panel patterns so the UI stays predictable:
+
+- **Quality controls**: ensure the toy responds to the shared presets and exposes any additional performance toggles only when necessary.
+- **Audio controls**: surface mic/demo audio status and avoid conflicting with the shell-level controls; if you add per-toy audio toggles, keep labels concise and defer to the shared audio UI when possible.
+- **Performance cues**: note performance-impacting toggles with short helper text (e.g., “Lower GPU load”).
+- **Accessibility**: keep controls keyboard-focusable, label every toggle, and maintain visible focus styles to match the shared panel conventions.
+
 ## Add-and-test checklist (fast path)
 
 Use this sequence when you want to stand up a fresh toy quickly (you can also run `bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test` to automate the setup steps).
