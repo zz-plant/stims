@@ -66,7 +66,7 @@ describe('audio-service pooling', () => {
     await resetAudioPool({ stopStreams: true });
   });
 
-  test('shares pooled microphone while active and tears down when idle', async () => {
+  test('shares pooled microphone while active and keeps it warm between toys', async () => {
     const fakeStream = {
       getTracks: () => [{ stop: trackStop }],
     } as unknown as MediaStream;
@@ -97,10 +97,10 @@ describe('audio-service pooling', () => {
     expect(trackStop).not.toHaveBeenCalled();
 
     first.release();
-    expect(trackStop).toHaveBeenCalledTimes(1);
+    expect(trackStop).not.toHaveBeenCalled();
 
     const third = await acquireAudioHandle({ initAudioImpl });
-    expect(mediaDevices.getUserMedia).toHaveBeenCalledTimes(2);
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledTimes(1);
     third.release();
   });
 
