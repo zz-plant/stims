@@ -1,264 +1,101 @@
 # Toy Testing Specification
 
-This specification provides step-by-step instructions for implementing automated tests for each stim toy. It is designed for handoff to another agent or developer.
+Guidance for writing automated tests for stim toys. This spec focuses on **repeatable lifecycle checks** and **shared test helpers** so new toy tests follow consistent patterns.
 
-## Overview
+## Goals
 
-The goal is to validate every toy's **lifecycle contract**: that each module can be loaded, started with stub dependencies, and cleaned up without leaving orphaned DOM nodes or audio resources.
+- Validate toy lifecycle behavior (start, render/update, cleanup).
+- Keep tests headless (Bun + happy-dom) and deterministic.
+- Favor fast, isolated tests for pure helpers and rendering utilities.
 
-### Toy Types
+## What already exists
 
-| Type | Pattern | Test Strategy |
-|------|---------|---------------|
-| `module` | Exports `start({ container, canvas?, audioContext? })` returning cleanup function | Import and invoke with stubs |
-| `page` | Exports `start({ container })` using `startPageToy()` wrapper | Verify CTA status element creation and disposal |
+The repo already ships with shared helpers in `tests/toy-test-helpers.ts` and a working example spec in `tests/sample-toy.test.ts`.
 
----
+### Shared helpers
 
-## Implementation Steps
+- `createToyContainer(id?)`: Creates and appends a container to `document.body` and returns `{ container, dispose }`.
+- `FakeAudioContext`: Lightweight fake with `createAnalyser()` and `close()` tracking for cleanup assertions.
+- `createMockRenderer()`: Provides a stub renderer with `renderFrame()` and a `dispose()` spy.
 
-### Step 1: Extend Test Helpers
+Use these helpers as the starting point for new toy tests instead of creating ad-hoc stubs.
 
-**File**: `tests/toy-test-helpers.ts`
+### Example harness
 
-Add these exports to the existing file:
+`tests/sample-toy.test.ts` demonstrates the expected flow for a module toy:
 
-```typescript
-export function createFakeCanvas(id = 'test-canvas') {
-  const canvas = document.createElement('canvas');
-  canvas.id = id;
-  canvas.width = 800;
-  canvas.height = 600;
-  canvas.getContext = () => ({
-    getParameter: () => 0,
-    getExtension: () => null,
-    drawArrays: () => {},
-    clear: () => {},
-  });
-  return canvas;
-}
+1. Create a container + audio context.
+2. Call `start()` with the stubbed dependencies.
+3. Assert DOM mounts or other side effects.
+4. Call the cleanup function and assert cleanup behavior.
 
-export function createMockScene() {
-  return {
-    add: () => {},
-    remove: () => {},
-    children: [],
-    dispose: () => {},
-  };
-}
-```
+## Recommended test patterns
 
----
+### 1) Module toys (default pattern)
 
-### Step 2: Create Lifecycle Harness
+Use this pattern for toys that export `start({ container, canvas?, audioContext? })` and return a cleanup function (or a disposable object).
 
-**File**: `tests/toy-lifecycle-harness.ts`
-
-```typescript
-import { afterEach, beforeEach } from 'bun:test';
-import { createFakeCanvas, createToyContainer, FakeAudioContext } from './toy-test-helpers';
-
-export type ToyTestContext = {
-  container: HTMLElement;
-  canvas: HTMLCanvasElement;
-  audioContext: FakeAudioContext;
-  cleanup: (() => void | Promise<void>) | null;
-};
-
-export function setupToyTest(): ToyTestContext {
-  const { container, dispose } = createToyContainer('toy-test-container');
-  const canvas = createFakeCanvas();
-  container.appendChild(canvas);
-  const audioContext = new FakeAudioContext();
-
-  return {
-    container,
-    canvas,
-    audioContext,
-    cleanup: dispose,
-  };
-}
-
-export async function runToyStart(
-  startFn: (opts: { container: HTMLElement; canvas?: HTMLCanvasElement; audioContext?: unknown }) => unknown,
-  ctx: ToyTestContext
-) {
-  const result = startFn({
-    container: ctx.container,
-    canvas: ctx.canvas,
-    audioContext: ctx.audioContext,
-  });
-  
-  // Handle both sync and async cleanup functions
-  if (typeof result === 'function') return result;
-  if (result && typeof (result as { dispose?: () => void }).dispose === 'function') {
-    return () => (result as { dispose: () => void }).dispose();
-  }
-  return () => {};
-}
-```
-
----
-
-### Step 3: Parameterized Toy Tests
-
-**File**: `tests/toys.test.ts`
-
-```typescript
-import { afterEach, describe, expect, test } from 'bun:test';
-import toys from '../assets/js/toys-data.js';
-import { setupToyTest, runToyStart, type ToyTestContext } from './toy-lifecycle-harness';
-
-const testableToys = toys.filter(t => t.type === 'module');
-
-describe.each(testableToys)('toy lifecycle: $slug', ({ slug, module }) => {
-  let ctx: ToyTestContext;
-  let toyCleanup: (() => void | Promise<void>) | null = null;
-
-  afterEach(async () => {
-    if (toyCleanup) await toyCleanup();
-    ctx.cleanup?.();
-    document.body.innerHTML = '';
-  });
-
-  test('module exports start function', async () => {
-    const mod = await import(`../${module}`);
-    expect(typeof mod.start).toBe('function');
-  });
-
-  test('start returns cleanup function', async () => {
-    ctx = setupToyTest();
-    const mod = await import(`../${module}`);
-    toyCleanup = await runToyStart(mod.start, ctx);
-    expect(typeof toyCleanup).toBe('function');
-  });
-
-  test('cleanup removes container children', async () => {
-    ctx = setupToyTest();
-    const mod = await import(`../${module}`);
-    toyCleanup = await runToyStart(mod.start, ctx);
-    
-    const childCountBefore = ctx.container.childElementCount;
-    await toyCleanup?.();
-    toyCleanup = null;
-    
-    // Canvas may remain; toy-added nodes should be gone
-    expect(ctx.container.childElementCount).toBeLessThanOrEqual(childCountBefore);
-  });
-});
-```
-
-> [!NOTE]
-> Some toys like `evol` and `geom` use `startPageToy()`. A separate describe block should handle page-based toys by asserting the CTA status element is added and removed.
-
----
-
-### Step 4: Smoke Tests for Metadata
-
-**File**: `tests/toy-smoke.test.ts`
-
-```typescript
+```ts
 import { describe, expect, test } from 'bun:test';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import toys from '../assets/js/toys-data.js';
+import { start } from '../assets/js/toys/my-toy.ts';
+import { createToyContainer, FakeAudioContext } from './toy-test-helpers.ts';
 
-describe('toy metadata smoke tests', () => {
-  test.each(toys)('$slug entry exists', async ({ slug, module, type }) => {
-    const modulePath = path.resolve(process.cwd(), module);
-    const exists = await fs.access(modulePath).then(() => true).catch(() => false);
-    expect(exists).toBe(true);
-  });
+describe('my-toy', () => {
+  test('starts and cleans up', async () => {
+    const { container, dispose } = createToyContainer('my-toy-root');
+    const audioContext = new FakeAudioContext();
 
-  test.each(toys.filter((toy) => toy.type === 'module'))('$slug exports start function', async ({ module }) => {
-    const mod = await import(`../${module}`);
-    expect(typeof mod.start).toBe('function');
+    const cleanup = start({ container, audioContext });
+
+    expect(typeof cleanup).toBe('function');
+    expect(container.childElementCount).toBeGreaterThan(0);
+
+    await cleanup();
+
+    expect(container.childElementCount).toBe(0);
+    expect(audioContext.closed).toBe(true);
+
+    dispose();
   });
 });
 ```
 
----
+Notes:
+- If a toy returns `{ dispose() }`, wrap it into a `cleanup` function inside the test.
+- Always reset `document.body` in `afterEach` when you add additional nodes.
 
-### Step 5: Update QA_PLAN.md
+### 2) Page toys (`startPageToy` wrappers)
 
-Add this section after "How to run the QA automation":
+For toys that export `start({ container })` and use the page wrapper, assert that the **active toy status UI** mounts and unmounts cleanly.
 
-```markdown
-## Toy lifecycle tests
+```ts
+import { expect, test } from 'bun:test';
+import { start } from '../assets/js/toys/holy.ts';
 
-Each toy module is validated for lifecycle correctness:
-
-- **Module export**: Every registered toy exports a `start` function
-- **Cleanup contract**: `start()` returns a cleanup function or disposable object
-- **DOM isolation**: Cleanup removes toy-injected DOM nodes
-
-Run the toy test suite:
-
-```bash
-bun test tests/toys.test.ts tests/toy-smoke.test.ts
-```
-
-When adding new toys via `scripts/scaffold-toy.ts --with-test`, a starter spec is generated automatically.
-```
-
----
-
-## Edge Cases to Handle
-
-### WebGPU-Only Toys
-
-Toys with `requiresWebGPU: true` may fail if renderer stubs are insufficient. Handle with:
-
-```typescript
-const webgpuToys = toys.filter(t => t.requiresWebGPU);
-
-describe.skip.each(webgpuToys)('WebGPU toy: $slug (skipped in headless)', () => {
-  // These require browser-level WebGPU; document as manual test
-});
-```
-
-### Page-Based Toys
-
-Toys like `evol`, `geom`, `holy`, `legible`, `lights`, `multi`, `seary`, `symph` use `startPageToy()`. Test their wrapper:
-
-```typescript
-test('page toy creates and disposes CTA status', async () => {
-  const mod = await import('../assets/js/toys/evol.ts');
+test('page toy mounts and disposes status UI', () => {
   const container = document.createElement('div');
   document.body.appendChild(container);
-  
-  const activeToy = mod.start({ container });
+
+  const activeToy = start({ container });
   expect(container.querySelector('.active-toy-status')).not.toBeNull();
-  
+
   activeToy.dispose();
   expect(container.querySelector('.active-toy-status')).toBeNull();
 });
 ```
 
----
+### 3) Helper utilities
 
-## Verification Checklist
+When adding new helpers (color math, easing, or audio utilities), write small unit tests under `tests/` and use `createMockRenderer()` or `FakeAudioContext` as needed.
 
-Before marking complete:
+## Smoke checks for toy metadata
 
-- [ ] `bun test tests/toys.test.ts` passes for all module toys
-- [ ] `bun test tests/toy-smoke.test.ts` validates all 25 toy slugs
-- [ ] `bun run check` passes (lint, typecheck, full suite)
-- [ ] `QA_PLAN.md` updated with toy testing section
-- [ ] No orphan DOM nodes after test completion (document.body is clean)
+If you change the toy registry (`assets/js/toys-data.js`) or entry points, consider updating or extending `scripts/check-toys.ts` tests so metadata stays consistent. The `tests/check-toys.test.ts` file covers this workflow with a temporary repo fixture.
 
----
+## Verification checklist
 
-## Adding Tests for New Toys
+Before marking a toy test complete:
 
-When scaffolding a new toy with `--with-test`:
-
-```bash
-bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test
-```
-
-The generated test file follows the pattern in this spec. Ensure:
-
-1. Test imports from `toy-test-helpers.ts`
-2. Uses `setupToyTest()` for consistent environment
-3. Verifies both start and cleanup paths
+- [ ] The new spec reuses helpers from `tests/toy-test-helpers.ts`.
+- [ ] Cleanup removes toy-added DOM nodes and closes the fake audio context when applicable.
+- [ ] `bun run check` passes (lint, typecheck, and tests).
