@@ -8,6 +8,8 @@
 
 Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). This is a collection of interactive web-based toys designed to deliver playful sensory stimulation. They’re built with **Three.js**, **WebGL**, and live **audio interaction** for anyone who enjoys engaging, responsive visuals. These are great for casual play or sensory exploration, especially for neurodiverse folks.
 
+**Keywords for discovery:** interactive web toys, audio-reactive visuals, Three.js/WebGL experiments, sensory-friendly play, generative art playground, calming visualizers.
+
 **If this project sparks joy, please ⭐ star the repo and share the live site.** It helps more people find the toys and keeps new experiments flowing.
 
 **Quick links**
@@ -15,6 +17,17 @@ Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil
 - 🧠 **Toy index**: https://no.toil.fyi/toy.html
 - 📘 **Docs hub**: [`docs/README.md`](./docs/README.md)
 - 🧰 **Contribute**: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+
+**Discover by theme**
+- 🌈 **Moods**: https://no.toil.fyi/moods/
+- 🏷️ **Tags**: https://no.toil.fyi/tags/
+- 🧭 **Capabilities** (mic, motion, demo audio, WebGPU): https://no.toil.fyi/capabilities/
+
+**Shareable links**
+- **All toys**: https://no.toil.fyi/toys/
+- **Microphone-ready toys**: https://no.toil.fyi/capabilities/microphone/
+- **Demo-audio friendly toys**: https://no.toil.fyi/capabilities/demo-audio/
+- **Responsive experiences**: https://no.toil.fyi/tags/responsive/
 
 For setup, testing, and contribution details, see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're building or updating toys, the developer docs in [`docs/`](./docs) cover common workflows and patterns. If you’re using the Model Context Protocol server in [`scripts/mcp-server.ts`](./scripts/mcp-server.ts), see the dedicated guide in [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md).
 
