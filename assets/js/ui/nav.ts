@@ -21,6 +21,25 @@ export interface NavOptions {
   } | null;
 }
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (match) => {
+    switch (match) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case "'":
+        return '&#39;';
+      default:
+        return match;
+    }
+  });
+}
+
 export function initNavigation(container: HTMLElement, options: NavOptions) {
   const doc = container.ownerDocument;
 
@@ -60,13 +79,15 @@ function renderToyNav(
   doc: Document,
   options: NavOptions,
 ) {
+  const safeTitle = escapeHtml(options.title ?? 'Web toy');
+  const safeSlug = options.slug ? escapeHtml(options.slug) : '';
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
       <p class="active-toy-nav__eyebrow">Now playing</p>
-      <p class="active-toy-nav__title">${options.title ?? 'Web toy'}</p>
+      <p class="active-toy-nav__title">${safeTitle}</p>
       <p class="active-toy-nav__hint">Press Esc or use Back to return to the library.</p>
-      ${options.slug ? `<span class="active-toy-nav__pill">${options.slug}</span>` : ''}
+      ${safeSlug ? `<span class="active-toy-nav__pill">${safeSlug}</span>` : ''}
     </div>
     <div class="active-toy-nav__actions">
       <div class="renderer-status-container"></div>
@@ -240,13 +261,22 @@ function renderRendererStatus(
   const pillClass = fallback
     ? 'renderer-pill--fallback'
     : 'renderer-pill--success';
+  const fallbackReason = status.fallbackReason
+    ? escapeHtml(status.fallbackReason)
+    : null;
+  const titleText = escapeHtml(
+    status.fallbackReason ??
+      (fallback
+        ? 'WebGPU unavailable, using WebGL.'
+        : 'WebGPU renderer active.'),
+  );
 
   container.innerHTML = `
     <div class="renderer-status">
-      <span class="renderer-pill ${pillClass}" title="${status.fallbackReason ?? (fallback ? 'WebGPU unavailable, using WebGL.' : 'WebGPU renderer active.')}">
+      <span class="renderer-pill ${pillClass}" title="${titleText}">
         ${fallback ? 'WebGL fallback' : 'WebGPU'}
       </span>
-      ${status.fallbackReason ? `<small class="renderer-pill__detail">${status.fallbackReason}</small>` : ''}
+      ${fallbackReason ? `<small class="renderer-pill__detail">${fallbackReason}</small>` : ''}
       ${status.shouldRetryWebGPU ? `<button type="button" class="renderer-pill__retry">${status.triedWebGPU ? 'Retry WebGPU' : 'Try WebGPU'}</button>` : ''}
     </div>
   `;

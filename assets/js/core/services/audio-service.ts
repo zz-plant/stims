@@ -71,19 +71,32 @@ export async function acquireAudioHandle(
   } = options;
 
   let stream: MediaStream | null = audioOptions.stream ?? null;
+  let pooledEntry: AudioPoolEntry | null = null;
 
   if (reuseMicrophone && !stream) {
     stream = await getOrCreateStream(audioOptions.constraints);
     if (stream && pooledStream) {
       pooledStream.users += 1;
+      pooledEntry = pooledStream;
     }
   }
 
-  const audio = await initAudioImpl({
-    ...audioOptions,
-    stream: stream ?? audioOptions.stream,
-    stopStreamOnCleanup: !reuseMicrophone,
-  });
+  let audio: Awaited<ReturnType<typeof initAudioImpl>>;
+  try {
+    audio = await initAudioImpl({
+      ...audioOptions,
+      stream: stream ?? audioOptions.stream,
+      stopStreamOnCleanup: !reuseMicrophone,
+    });
+  } catch (error) {
+    if (pooledEntry) {
+      pooledEntry.users = Math.max(0, pooledEntry.users - 1);
+      if (pooledEntry.users === 0) {
+        stopPooledStream();
+      }
+    }
+    throw error;
+  }
 
   const release = () => {
     audio.cleanup?.();
@@ -91,7 +104,7 @@ export async function acquireAudioHandle(
     if (reuseMicrophone && pooledStream && stream === pooledStream.stream) {
       pooledStream.users = Math.max(0, pooledStream.users - 1);
 
-      if (pooledStream.users === 0 && (teardownOnRelease || reuseMicrophone)) {
+      if (pooledStream.users === 0 && teardownOnRelease) {
         stopPooledStream();
       }
     }
