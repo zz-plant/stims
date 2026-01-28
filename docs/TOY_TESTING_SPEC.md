@@ -38,7 +38,7 @@ Use this pattern for toys that export `start({ container, canvas?, audioContext?
 ```ts
 import { describe, expect, test } from 'bun:test';
 import { start } from '../assets/js/toys/my-toy.ts';
-import { createToyContainer, FakeAudioContext } from '../tests/toy-test-helpers.ts';
+import { createToyContainer, FakeAudioContext } from './toy-test-helpers.ts';
 
 describe('my-toy', () => {
   test('starts and cleans up', async () => {
