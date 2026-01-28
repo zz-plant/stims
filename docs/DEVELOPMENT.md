@@ -97,7 +97,7 @@ bun test tests/filename.test.js
 1. **Create a branch** from `main` for each change.
 2. **Run linters and tests** before committing.
 3. **Keep changes scoped**: small, reviewable pull requests are easier to land.
-4. **Document additions**: update `assets/js/toys-data.js` when adding toys, and note any new scripts or setup steps in the docs.
+4. **Document additions**: update `assets/js/toys-data.js` when adding toys, note any new scripts or setup steps in the docs, and review `docs/FEATURE_AUDIT.md` to keep feature coverage aligned.
 5. **Commit style**: prefer descriptive commit messages summarizing intent and outcome.
 
 ## Working With Audio and Input
