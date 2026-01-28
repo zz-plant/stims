@@ -1587,7 +1587,13 @@ export function createLibraryView({
       const metaRow = document.createElement('div');
       metaRow.className = 'webtoy-card-meta';
 
-      const createBadge = ({ label, title, ariaLabel, warning = false }) => {
+      const createBadge = ({
+        label,
+        title,
+        ariaLabel,
+        warning = false,
+        role = null,
+      }) => {
         const badge = document.createElement('span');
         badge.className = 'capability-badge';
         badge.textContent = label;
@@ -1597,7 +1603,9 @@ export function createLibraryView({
         if (ariaLabel) {
           badge.setAttribute('aria-label', ariaLabel);
         }
-        badge.setAttribute('role', 'status');
+        if (role) {
+          badge.setAttribute('role', role);
+        }
         if (warning) {
           badge.classList.add('capability-badge--warning');
         }
@@ -1614,6 +1622,7 @@ export function createLibraryView({
               ? 'Requires WebGPU to run.'
               : 'WebGPU not detected; falling back to WebGL if available.',
             ariaLabel: 'Requires WebGPU',
+            role: 'status',
             warning: !hasWebGPU,
           }),
         );
