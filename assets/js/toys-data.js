@@ -139,6 +139,19 @@ export default [
     featuredRank: 7,
   }),
   withAudio({
+    slug: 'pocket-pulse',
+    title: 'Pocket Pulse',
+    description:
+      'A mobile-optimized pulse field that responds to audio and touch gestures.',
+    module: 'assets/js/toys/pocket-pulse.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    lifecycleStage: 'prototype',
+    moods: ['uplifting', 'focus', 'minimal'],
+    tags: ['mobile', 'pulses', 'touch'],
+    controls: ['Quality presets', 'Touch drift'],
+  }),
+  withAudio({
     slug: 'cosmic-particles',
     title: 'Cosmic Particles',
     description:
