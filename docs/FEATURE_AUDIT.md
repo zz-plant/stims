@@ -28,14 +28,14 @@ This audit maps product features to their current documentation so we can spot g
 
 ## Gaps & follow-ups
 
-1. **Library badges for mic/motion requirements** — The no-JS fallback spec covers capability badges, but the primary JS grid doesn’t have a dedicated doc section describing how to expose those requirements. Consider documenting the badge plan in `PAGE_SPECIFICATIONS.md` or `ARCHITECTURE.md`.
-2. **Quality preset semantics** — The spec describes the UI, but we do not yet document recommended presets or mappings for toy authors. Consider adding a short section to `TOY_DEVELOPMENT.md` or `ARCHITECTURE.md`.
+1. **Library badges for mic/motion requirements** — Documented for the primary JS grid in `PAGE_SPECIFICATIONS.md`. ✅
+2. **Quality preset semantics** — Documented in `TOY_DEVELOPMENT.md` with preset mapping guidance for toy authors. ✅
 3. **Feature discovery copy** — The usability audit flags search and discovery mismatch with actual filtering. If copy or metadata changes are made, update `PAGE_SPECIFICATIONS.md` and the audit notes.
-4. **Settings panel extension points** — The architecture doc mentions the settings panel, but there is no quick reference for which knobs toys should expose. Consider adding a short checklist to `TOY_DEVELOPMENT.md`.
+4. **Settings panel extension points** — Documented in `TOY_DEVELOPMENT.md` with a toy-facing checklist. ✅
 
 ## Prioritized to-do list
 
-1. **Document library capability badges in the primary JS grid** — Add a section in `PAGE_SPECIFICATIONS.md` describing how mic/motion/demo-audio badges should render for the JS-driven library, including copy and accessibility expectations.
-2. **Define quality preset guidance for toy authors** — Add a short “preset mapping” section in `TOY_DEVELOPMENT.md` that explains how toys should respond to global preset changes.
-3. **Add a settings panel checklist for toys** — Extend `TOY_DEVELOPMENT.md` with a quick list of recommended knobs (quality, audio, performance) so new toys align with shared UI conventions.
+1. **Document library capability badges in the primary JS grid** — Completed in `PAGE_SPECIFICATIONS.md`. ✅
+2. **Define quality preset guidance for toy authors** — Completed in `TOY_DEVELOPMENT.md`. ✅
+3. **Add a settings panel checklist for toys** — Completed in `TOY_DEVELOPMENT.md`. ✅
 4. **Reconcile search copy with filtering behavior** — Update `PAGE_SPECIFICATIONS.md` (and `USABILITY_AUDIT.md` if needed) once search metadata is expanded or placeholder copy changes.
