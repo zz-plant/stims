@@ -16,6 +16,11 @@ Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil
 - 📘 **Docs hub**: [`docs/README.md`](./docs/README.md)
 - 🧰 **Contribute**: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 
+**Discover & share**
+- ⭐ **Star the repo** if the toys help you focus, unwind, or explore sound-reactive visuals.
+- 🔗 **Share the live site** in newsletters, playlists, or “cool web experiments” lists: https://no.toil.fyi
+- 🏷️ **Suggested topics/keywords** for GitHub lists and search: `threejs`, `webgl`, `audio-reactive`, `web-audio`, `creative-coding`, `interactive-art`, `visualizer`, `browser-toys`, `neurodiversity`, `accessibility`.
+
 For setup, testing, and contribution details, see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're building or updating toys, the developer docs in [`docs/`](./docs) cover common workflows and patterns. If you’re using the Model Context Protocol server in [`scripts/mcp-server.ts`](./scripts/mcp-server.ts), see the dedicated guide in [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md).
 
 Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what’s new, what changed, and what’s coming next.
