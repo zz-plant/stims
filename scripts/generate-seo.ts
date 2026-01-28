@@ -225,6 +225,28 @@ const renderToyMetaList = (label: string, items: string[], basePath: string) =>
     `
     : '';
 
+const renderCapabilityMetaList = (
+  label: string,
+  items: { label: string; slug: string }[],
+) =>
+  items.length
+    ? `
+      <div class="feature-card">
+        <h3>${escapeHtml(label)}</h3>
+        <ul>
+          ${items
+            .map(
+              (item) =>
+                `<li><a class="text-link" href="/capabilities/${item.slug}/">${escapeHtml(
+                  item.label,
+                )}</a></li>`,
+            )
+            .join('')}
+        </ul>
+      </div>
+    `
+    : '';
+
 const generateSeo = async () => {
   const toysRaw = await readFile(path.join(publicDir, 'toys.json'), 'utf8');
   const toys: ToyEntry[] = JSON.parse(toysRaw);
@@ -275,6 +297,9 @@ const generateSeo = async () => {
 
   for (const toy of toys) {
     const canonical = `${baseUrl}/toys/${toy.slug}/`;
+    const capabilityMeta = capabilityEntries
+      .filter((entry) => entry.match(toy))
+      .map((entry) => ({ label: entry.label, slug: entry.slug }));
     const jsonLd = {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
@@ -304,16 +329,7 @@ const generateSeo = async () => {
         <div class="feature-card-grid">
           ${renderToyMetaList('Tags', toy.tags ?? [], 'tags')}
           ${renderToyMetaList('Moods', toy.moods ?? [], 'moods')}
-          ${renderToyMetaList(
-            'Capabilities',
-            [
-              toy.capabilities?.microphone ? 'Microphone' : null,
-              toy.capabilities?.demoAudio ? 'Demo audio' : null,
-              toy.capabilities?.motion ? 'Device motion' : null,
-              toy.requiresWebGPU ? 'WebGPU' : null,
-            ].filter(Boolean) as string[],
-            'capabilities',
-          )}
+          ${renderCapabilityMetaList('Capabilities', capabilityMeta)}
         </div>
       </section>
     `;
