@@ -1,6 +1,20 @@
 # Stim Webtoys Library
 
+[![Live site](https://img.shields.io/badge/live-no.toil.fyi-5a67d8?style=flat-square&logo=cloudflare)](https://no.toil.fyi)
+[![GitHub stars](https://img.shields.io/github/stars/zz-plant/stims?style=flat-square)](https://github.com/zz-plant/stims/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/zz-plant/stims?style=flat-square)](https://github.com/zz-plant/stims/issues)
+[![License](https://img.shields.io/github/license/zz-plant/stims?style=flat-square)](./LICENSE)
+[![Built with Bun](https://img.shields.io/badge/bun-1.2+-14151a?style=flat-square&logo=bun)](https://bun.sh)
+
 Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). This is a collection of interactive web-based toys designed to deliver playful sensory stimulation. They’re built with **Three.js**, **WebGL**, and live **audio interaction** for anyone who enjoys engaging, responsive visuals. These are great for casual play or sensory exploration, especially for neurodiverse folks.
+
+**If this project sparks joy, please ⭐ star the repo and share the live site.** It helps more people find the toys and keeps new experiments flowing.
+
+**Quick links**
+- 🎮 **Play now**: https://no.toil.fyi
+- 🧠 **Toy index**: https://no.toil.fyi/toy.html
+- 📘 **Docs hub**: [`docs/README.md`](./docs/README.md)
+- 🧰 **Contribute**: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 
 For setup, testing, and contribution details, see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're building or updating toys, the developer docs in [`docs/`](./docs) cover common workflows and patterns. If you’re using the Model Context Protocol server in [`scripts/mcp-server.ts`](./scripts/mcp-server.ts), see the dedicated guide in [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md).
 
@@ -103,30 +117,30 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 
 | Toy                                                       | Description                                                                           |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [3D Toy](./toy.html?toy=3dtoy)                            | A twisting 3D tunnel that responds to sound.                                          |
-| [Aurora Painter](./toy.html?toy=aurora-painter)           | Paint flowing aurora ribbons that react to your microphone in layered waves.          |
-| [Pottery Wheel Sculptor](./toy.html?toy=clay)             | Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.          |
-| [Evolutionary Weirdcore](./toy.html?toy=evol)             | Watch surreal landscapes evolve with fractals and glitches that react to music.       |
-| [Microphone Geometry Visualizer](./toy.html?toy=geom)     | Push shifting geometric forms directly from live mic input with responsive controls.  |
-| [Halo Visualizer](./toy.html?toy=holy)                    | Layered halos, particles, and shapes that respond to your music.                      |
-| [Multi-Capability Visualizer](./toy.html?toy=multi)       | Shapes and lights move with both sound and device motion. (Requires WebGPU.)          |
-| [Synesthetic Visualizer](./toy.html?toy=seary)            | Blend audio and visuals into linked patterns.                                         |
-| [Terminal Word Grid](./toy.html?toy=legible)              | A retro green text grid that pulses to audio and surfaces fresh words as you play.    |
-| [Spectrograph](./toy.html?toy=symph)                     | A spectrograph that moves gently with your audio.                                     |
-| [Grid Visualizer](./toy.html?toy=cube-wave)               | Swap between cube waves and bouncing spheres without stopping the music.              |
-| [Bubble Harmonics](./toy.html?toy=bubble-harmonics)       | Translucent, audio-inflated bubbles that split into harmonics on high frequencies.    |
-| [Pocket Pulse](./toy.html?toy=pocket-pulse)               | A mobile-optimized pulse field that responds to audio and touch gestures.             |
-| [Mobile Ripples](./toy.html?toy=mobile-ripples)           | Low-power neon ripples tuned for touch-first screens and pocket GPUs.                 |
-| [Cosmic Particles](./toy.html?toy=cosmic-particles)       | Jump between orbiting swirls and nebula fly-throughs with a single toggle.            |
-| [Audio Light Show](./toy.html?toy=lights)                 | Swap shader styles and color palettes while lights ripple with your microphone input. |
-| [Spiral Burst](./toy.html?toy=spiral-burst)               | Colorful spirals rotate and expand with every beat.                                   |
-| [Rainbow Tunnel](./toy.html?toy=rainbow-tunnel)           | Fly through colorful rings that spin to your music.                                   |
-| [Star Field](./toy.html?toy=star-field)                   | A field of shimmering stars reacts to the beat.                                       |
-| [Fractal Kite Garden](./toy.html?toy=fractal-kite-garden) | Grow branching kite fractals that sway with mids and shimmer with crisp highs.        |
-| [Tactile Sand Table](./toy.html?toy=tactile-sand-table)   | Heightfield sand ripples that respond to bass, mids, and device tilt.                 |
-| [Bioluminescent Tidepools](./toy.html?toy=bioluminescent-tidepools) | Sketch glowing currents that bloom with high-frequency sparkle from your music. |
-| [Neon Wave](./toy.html?toy=neon-wave)                     | Retro-wave visualizer with bloom effects, custom shaders, and four color themes.      |
-| [MilkDrop Proto](./toy.html?toy=milkdrop)                 | A hardware-accelerated feedback engine inspired by the MilkDrop visualizer system.   |
+| [3D Toy](https://no.toil.fyi/toy.html?toy=3dtoy)                            | A twisting 3D tunnel that responds to sound.                                          |
+| [Aurora Painter](https://no.toil.fyi/toy.html?toy=aurora-painter)           | Paint flowing aurora ribbons that react to your microphone in layered waves.          |
+| [Pottery Wheel Sculptor](https://no.toil.fyi/toy.html?toy=clay)             | Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.          |
+| [Evolutionary Weirdcore](https://no.toil.fyi/toy.html?toy=evol)             | Watch surreal landscapes evolve with fractals and glitches that react to music.       |
+| [Microphone Geometry Visualizer](https://no.toil.fyi/toy.html?toy=geom)     | Push shifting geometric forms directly from live mic input with responsive controls.  |
+| [Halo Visualizer](https://no.toil.fyi/toy.html?toy=holy)                    | Layered halos, particles, and shapes that respond to your music.                      |
+| [Multi-Capability Visualizer](https://no.toil.fyi/toy.html?toy=multi)       | Shapes and lights move with both sound and device motion. (Requires WebGPU.)          |
+| [Synesthetic Visualizer](https://no.toil.fyi/toy.html?toy=seary)            | Blend audio and visuals into linked patterns.                                         |
+| [Terminal Word Grid](https://no.toil.fyi/toy.html?toy=legible)              | A retro green text grid that pulses to audio and surfaces fresh words as you play.    |
+| [Spectrograph](https://no.toil.fyi/toy.html?toy=symph)                     | A spectrograph that moves gently with your audio.                                     |
+| [Grid Visualizer](https://no.toil.fyi/toy.html?toy=cube-wave)               | Swap between cube waves and bouncing spheres without stopping the music.              |
+| [Bubble Harmonics](https://no.toil.fyi/toy.html?toy=bubble-harmonics)       | Translucent, audio-inflated bubbles that split into harmonics on high frequencies.    |
+| [Pocket Pulse](https://no.toil.fyi/toy.html?toy=pocket-pulse)               | A mobile-optimized pulse field that responds to audio and touch gestures.             |
+| [Mobile Ripples](https://no.toil.fyi/toy.html?toy=mobile-ripples)           | Low-power neon ripples tuned for touch-first screens and pocket GPUs.                 |
+| [Cosmic Particles](https://no.toil.fyi/toy.html?toy=cosmic-particles)       | Jump between orbiting swirls and nebula fly-throughs with a single toggle.            |
+| [Audio Light Show](https://no.toil.fyi/toy.html?toy=lights)                 | Swap shader styles and color palettes while lights ripple with your microphone input. |
+| [Spiral Burst](https://no.toil.fyi/toy.html?toy=spiral-burst)               | Colorful spirals rotate and expand with every beat.                                   |
+| [Rainbow Tunnel](https://no.toil.fyi/toy.html?toy=rainbow-tunnel)           | Fly through colorful rings that spin to your music.                                   |
+| [Star Field](https://no.toil.fyi/toy.html?toy=star-field)                   | A field of shimmering stars reacts to the beat.                                       |
+| [Fractal Kite Garden](https://no.toil.fyi/toy.html?toy=fractal-kite-garden) | Grow branching kite fractals that sway with mids and shimmer with crisp highs.        |
+| [Tactile Sand Table](https://no.toil.fyi/toy.html?toy=tactile-sand-table)   | Heightfield sand ripples that respond to bass, mids, and device tilt.                 |
+| [Bioluminescent Tidepools](https://no.toil.fyi/toy.html?toy=bioluminescent-tidepools) | Sketch glowing currents that bloom with high-frequency sparkle from your music. |
+| [Neon Wave](https://no.toil.fyi/toy.html?toy=neon-wave)                     | Retro-wave visualizer with bloom effects, custom shaders, and four color themes.      |
+| [MilkDrop Proto](https://no.toil.fyi/toy.html?toy=milkdrop)                 | A hardware-accelerated feedback engine inspired by the MilkDrop visualizer system.   |
 
 ---
 
