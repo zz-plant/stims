@@ -1282,9 +1282,19 @@ export function createLibraryView({
   };
 
   const getHaystack = (toy) => {
+    const capabilityLabels = {
+      microphone: ['mic', 'microphone'],
+      demoAudio: ['demo audio', 'demo', 'audio'],
+      motion: ['motion', 'tilt', 'gyro', 'gyroscope'],
+    };
+
     const capabilityTerms = Object.entries(toy.capabilities || {})
       .filter(([, enabled]) => Boolean(enabled))
-      .map(([key]) => key.toLowerCase());
+      .flatMap(([key]) => {
+        const labels = capabilityLabels[key];
+        return labels ? [key, ...labels] : [key];
+      })
+      .map((term) => term.toLowerCase());
 
     return [
       toy.title,
