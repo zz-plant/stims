@@ -20,6 +20,7 @@ This index maps each toy slug to the module that powers it and how the experienc
 | `symph`                    | `assets/js/toys/symph.ts`                    | Standalone page launcher for `toys/symph.html`.                   |
 | `cube-wave`                | `assets/js/toys/cube-wave.ts`                | Direct module; load with `toy.html?toy=cube-wave`.                |
 | `bubble-harmonics`         | `assets/js/toys/bubble-harmonics.ts`         | Direct module; load with `toy.html?toy=bubble-harmonics`.         |
+| `pocket-pulse`             | `assets/js/toys/pocket-pulse.ts`             | Direct module; load with `toy.html?toy=pocket-pulse`.             |
 | `cosmic-particles`         | `assets/js/toys/cosmic-particles.ts`         | Direct module; load with `toy.html?toy=cosmic-particles`.         |
 | `lights`                   | `assets/js/toys/lights.ts`                   | Standalone page launcher for `toys/lights.html`.                  |
 | `spiral-burst`             | `assets/js/toys/spiral-burst.ts`             | Direct module; load with `toy.html?toy=spiral-burst`.             |
