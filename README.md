@@ -67,6 +67,14 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 
 ## Getting Started
 
+### Why people use Stim Webtoys
+
+- **Self-regulation moments**: settle into a repeatable rhythm of sound + visuals without claiming a specific outcome.
+- **Instant sensory input**: open a toy and play—no gear or setup required beyond a browser.
+- **Clear control surfaces**: adjust intensity with the shared settings panel and its [performance/quality presets](./docs/DEVELOPMENT.md#performance-tips).
+- **Fallback audio**: switch to demo audio when mic access is hard or you just want to listen.
+- **Short, contained sessions**: jump in for a few minutes and return whenever you want.
+
 ### What You’ll Need
 
 - **A Modern Web Browser**: Any browser with WebGL should work (think Chrome, Firefox, Edge).
