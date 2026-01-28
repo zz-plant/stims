@@ -63,8 +63,8 @@ export function initSystemControls(
   options: SystemControlOptions = {},
 ) {
   const {
-    title = 'Performance & compatibility',
-    description = 'Adjust visual fidelity, GPU mode, and motion preferences. Changes persist for this device.',
+    title = 'Performance controls',
+    description = 'Tune visuals, renderer mode, and motion settings for this device.',
     qualityPresets = DEFAULT_QUALITY_PRESETS,
     defaultPresetId = 'balanced',
     variant = 'floating',
@@ -89,9 +89,8 @@ export function initSystemControls(
   });
 
   panel.addToggle({
-    label: 'Compatibility mode (force WebGL)',
-    description:
-      'Disable WebGPU and favor the most compatible renderer for older hardware.',
+    label: 'Compatibility mode (WebGL)',
+    description: 'Favor the most compatible renderer for older hardware.',
     defaultValue: renderPreferences.compatibilityMode,
     onChange: (value) => {
       setCompatibilityMode(value);
@@ -99,8 +98,8 @@ export function initSystemControls(
   });
 
   panel.addToggle({
-    label: 'Allow motion input',
-    description: 'Enable device tilt controls for toys that support motion.',
+    label: 'Enable motion input',
+    description: 'Allow device tilt controls on toys that support motion.',
     defaultValue: getActiveMotionPreference().enabled,
     onChange: (value) => {
       setMotionPreference({ enabled: value });
@@ -109,7 +108,7 @@ export function initSystemControls(
 
   const resolutionRow = panel.addSection(
     'Resolution scale',
-    'Lower values reduce GPU load; higher values sharpen details.',
+    'Lower values ease GPU load; higher values sharpen detail.',
   );
   const resolutionValue = createValueLabel('');
   const resolutionSlider = document.createElement('input');
@@ -134,8 +133,8 @@ export function initSystemControls(
   resolutionRow.append(resolutionSlider, resolutionValue);
 
   const pixelRatioRow = panel.addSection(
-    'Max pixel ratio',
-    'Caps the effective DPI to balance clarity and thermal load.',
+    'Pixel ratio cap',
+    'Caps effective DPI to balance clarity and thermal load.',
   );
   const pixelRatioValue = createValueLabel('');
   const pixelRatioSlider = document.createElement('input');
@@ -163,7 +162,7 @@ export function initSystemControls(
   const resetButton = document.createElement('button');
   resetButton.type = 'button';
   resetButton.className = 'cta-button ghost';
-  resetButton.textContent = 'Reset overrides to preset';
+  resetButton.textContent = 'Reset to preset';
   resetButton.addEventListener('click', () => {
     clearRenderOverrides();
     const preset = getActiveQualityPreset({
