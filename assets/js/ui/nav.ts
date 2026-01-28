@@ -35,7 +35,7 @@ export function initNavigation(container: HTMLElement, options: NavOptions) {
 
 function renderLibraryNav(container: HTMLElement, _doc: Document) {
   container.innerHTML = `
-    <nav class="top-nav" data-top-nav>
+    <nav class="top-nav" data-top-nav aria-label="Primary">
       <div class="brand">
         <span class="brand-mark"></span>
         <div class="brand-copy">
@@ -46,7 +46,7 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
       <div class="nav-actions">
         <a class="nav-link" href="#toy-list">Library</a>
         <a class="nav-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <button id="theme-toggle" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark mode">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
           <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
           <span class="theme-toggle__label" data-theme-label>Dark mode</span>
         </button>
@@ -256,6 +256,7 @@ function renderRendererStatus(
 }
 
 function setupThemeToggle(container: HTMLElement) {
+  const doc = container.ownerDocument;
   const toggle = container.querySelector('#theme-toggle');
   if (!toggle) return;
 
@@ -274,26 +275,26 @@ function setupThemeToggle(container: HTMLElement) {
   };
 
   // Initial state
-  const currentTheme = document.documentElement.classList.contains('light')
-    ? 'light'
-    : 'dark';
+  const root = doc.documentElement;
+  const currentTheme = root.classList.contains('light') ? 'light' : 'dark';
   updateUI(currentTheme);
 
   toggle.addEventListener('click', () => {
-    const isLight = document.documentElement.classList.contains('light');
+    const isLight = root.classList.contains('light');
     const nextTheme = isLight ? 'dark' : 'light';
+    const win = doc.defaultView ?? window;
 
     // Use the global helper if available
-    if (window.__stimsTheme) {
-      window.__stimsTheme.applyTheme(nextTheme, true);
+    if (win.__stimsTheme) {
+      win.__stimsTheme.applyTheme(nextTheme, true);
     } else {
       if (nextTheme === 'light') {
-        document.documentElement.classList.add('light');
+        root.classList.add('light');
       } else {
-        document.documentElement.classList.remove('light');
+        root.classList.remove('light');
       }
       try {
-        localStorage.setItem('theme', nextTheme);
+        win.localStorage.setItem('theme', nextTheme);
       } catch (_error) {
         // Ignore storage errors.
       }

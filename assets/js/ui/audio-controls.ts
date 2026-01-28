@@ -15,7 +15,6 @@ export function initAudioControls(
   container: HTMLElement,
   options: AudioControlsOptions,
 ) {
-  const _doc = container.ownerDocument;
   const youtubeController = new YouTubeController();
   const STORAGE_KEY = 'stims-audio-source';
   const readStoredSource = () => {
@@ -142,6 +141,7 @@ export function initAudioControls(
     if (!(button instanceof HTMLElement)) return;
     button.toggleAttribute('data-loading', pending);
     button.setAttribute('aria-busy', pending ? 'true' : 'false');
+    button.setAttribute('aria-disabled', pending ? 'true' : 'false');
     if (button instanceof HTMLButtonElement) {
       button.disabled = pending;
     }
@@ -167,8 +167,9 @@ export function initAudioControls(
   };
 
   const buildMicrophoneErrorMessage = (message: string) => {
+    const helperText = 'Use demo audio to keep exploring.';
     if (!message) {
-      return 'Microphone access failed. Use demo audio to keep exploring.';
+      return `Microphone access failed. ${helperText}`;
     }
 
     if (/demo audio/i.test(message)) {
@@ -176,10 +177,10 @@ export function initAudioControls(
     }
 
     if (/microphone|audio/i.test(message)) {
-      return `${message} Use demo audio to keep exploring.`;
+      return `${message} ${helperText}`;
     }
 
-    return `${message} Use demo audio to keep exploring.`;
+    return `${message} ${helperText}`;
   };
 
   const preferDemoAudio =
@@ -301,6 +302,7 @@ function setupYouTubeLogic(
   updateStatus: (msg: string, v?: 'success' | 'error') => void,
   onSuccess?: () => void,
 ) {
+  const doc = container.ownerDocument;
   const input = container.querySelector('#youtube-url') as HTMLInputElement;
   const loadBtn = container.querySelector('#load-youtube');
   const useBtn = container.querySelector(
@@ -339,10 +341,12 @@ function setupYouTubeLogic(
     recentContainer.hidden = false;
     recentList.innerHTML = '';
     recent.forEach((v) => {
-      const chip = document.createElement('button');
+      const chip = doc.createElement('button');
       chip.className = 'control-panel__chip';
       chip.textContent = v.id;
       chip.title = `Load video ${v.id}`;
+      chip.type = 'button';
+      chip.setAttribute('aria-label', `Load video ${v.id}`);
       chip.addEventListener('click', () => {
         input.value = `https://www.youtube.com/watch?v=${v.id}`;
         loadVideo(v.id);
@@ -355,7 +359,7 @@ function setupYouTubeLogic(
     try {
       playerContainer.hidden = false;
       youtubeReady = false;
-      updateStatus('Loading player...', 'success');
+      updateStatus('Loading player…', 'success');
       await controller.loadVideo('youtube-player', id, (state) => {
         if (state === 1) {
           // Playing
