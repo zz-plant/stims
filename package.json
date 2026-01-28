@@ -3,6 +3,19 @@
   "version": "1.0.0",
   "type": "module",
   "packageManager": "bun@1.2.14",
+  "keywords": [
+    "threejs",
+    "webgl",
+    "audio-reactive",
+    "web-audio",
+    "creative-coding",
+    "interactive-art",
+    "visualizer",
+    "browser-toys",
+    "generative",
+    "accessibility",
+    "neurodiversity"
+  ],
   "scripts": {
     "test": "bun test --preload=./tests/setup.ts --importmap=./tests/importmap.json",
     "test:watch": "bun test --watch --preload=./tests/setup.ts --importmap=./tests/importmap.json",
