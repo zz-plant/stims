@@ -56,6 +56,7 @@ If you’re spinning up the project for the first time, confirm the basics befor
 | Type check (watch)                 | `bun run typecheck:watch` |
 | Dev server smoke test (no browser) | `bun run dev:check`       |
 | Validate toy registry and docs     | `bun run check:toys`      |
+| Generate SEO pages + sitemap       | `bun run generate:seo`    |
 | Quality gate (lint/typecheck/test) | `bun run check`           |
 | Quality gate (lint/typecheck)      | `bun run check:quick`     |
 | Serve built assets from `dist/`    | `bun run serve:dist`      |

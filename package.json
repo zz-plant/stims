@@ -18,6 +18,7 @@
     "check": "biome check assets scripts tests && bun run typecheck && bun run test",
     "check:quick": "biome check assets scripts tests && bun run typecheck",
     "check:toys": "bun run scripts/check-toys.ts",
+    "generate:seo": "bun run scripts/generate-seo.ts",
     "build": "bun scripts/build.mjs || node scripts/build.mjs",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "vite preview --host",
