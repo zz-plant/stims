@@ -35,21 +35,21 @@ export function initAudioControls(
   container.className = 'control-panel';
   container.innerHTML = `
     <p class="control-panel__description">
-      Choose an audio source to drive the visuals.
+      Choose how this toy listens.
     </p>
     <div class="control-panel__row">
       <div class="control-panel__text">
-        <span class="control-panel__label">Microphone</span>
+        <span class="control-panel__label">Live mic</span>
       </div>
       <button id="start-audio-btn" class="cta-button primary" type="button">
-        Use microphone
+        Start mic
       </button>
     </div>
     <div class="control-panel__row">
       <div class="control-panel__text">
-        <span class="control-panel__label">Demo audio</span>
+        <span class="control-panel__label">Curated demo</span>
       </div>
-      <button id="use-demo-audio" class="cta-button" type="button">Use demo audio</button>
+      <button id="use-demo-audio" class="cta-button" type="button">Play demo</button>
     </div>
 
     ${
@@ -57,7 +57,7 @@ export function initAudioControls(
         ? `
     <div class="control-panel__row">
       <div class="control-panel__text">
-        <span class="control-panel__label">Tab audio</span>
+        <span class="control-panel__label">Tab capture</span>
         <span class="control-panel__info-wrap">
           <button
             class="control-panel__info"
@@ -67,12 +67,12 @@ export function initAudioControls(
             More info
           </button>
           <span id="tab-audio-info" class="control-panel__info-text">
-            Capture audio from the current browser tab. In the picker, choose “This tab” and
-            enable Share audio.
+            Capture sound from the current tab. In the picker, choose “This tab” and enable
+            Share audio.
           </span>
         </span>
       </div>
-      <button id="use-tab-audio" class="cta-button" type="button">Capture tab audio</button>
+      <button id="use-tab-audio" class="cta-button" type="button">Capture tab</button>
     </div>
     `
         : ''
@@ -83,7 +83,7 @@ export function initAudioControls(
         ? `
     <div class="control-panel__row control-panel__row--stacked">
       <div class="control-panel__text">
-        <span class="control-panel__label">YouTube audio</span>
+        <span class="control-panel__label">YouTube capture</span>
         <span class="control-panel__info-wrap">
           <button
             class="control-panel__info"
@@ -93,8 +93,8 @@ export function initAudioControls(
             More info
           </button>
           <span id="youtube-audio-info" class="control-panel__info-text">
-            Paste a link, load the video, then start capture. In the picker, choose “This tab” and
-            enable Share audio.
+            Paste a link, load it, then capture. In the picker, choose “This tab” and enable
+            Share audio.
           </span>
         </span>
       </div>
@@ -104,11 +104,11 @@ export function initAudioControls(
           id="youtube-url"
           class="control-panel__input"
           type="url"
-          placeholder="https://www.youtube.com/watch?v=..."
+          placeholder="https://youtube.com/watch?v=..."
           autocomplete="off"
           inputmode="url"
         />
-        <button id="load-youtube" class="cta-button" type="button">Load video</button>
+        <button id="load-youtube" class="cta-button" type="button">Load</button>
       </div>
       <div id="recent-youtube" class="control-panel__recent" hidden>
         <span class="control-panel__label small">Recent</span>
@@ -116,7 +116,7 @@ export function initAudioControls(
       </div>
       <div class="control-panel__actions control-panel__actions--inline">
         <button id="use-youtube-audio" class="cta-button" type="button">
-          Use YouTube audio
+          Capture YouTube
         </button>
       </div>
       <div id="youtube-player-container" class="control-panel__embed" hidden>
@@ -167,7 +167,7 @@ export function initAudioControls(
   };
 
   const buildMicrophoneErrorMessage = (message: string) => {
-    const helperText = 'Use demo audio to keep exploring.';
+    const helperText = 'Use the demo track to keep moving.';
     if (!message) {
       return `Microphone access failed. ${helperText}`;
     }
