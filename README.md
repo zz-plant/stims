@@ -21,6 +21,31 @@ Use these entry points to find the right docs quickly:
 
 If you add new scripts, toys, or deployment options, update the relevant doc above so the workflows stay discoverable.
 
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+  Entry[HTML shells<br/>toy.html, brand.html...] --> Loader[loader.ts]
+  Loader --> Router[router.ts]
+  Loader --> Views[toy-view.ts<br/>library-view.js]
+  Loader --> Manifest[manifest-client.ts]
+  Manifest --> ToyModule[assets/js/toys/<slug>.ts]
+  ToyModule --> WebToy[core/web-toy.ts]
+  WebToy --> Renderer[render-service.ts]
+  WebToy --> Audio[audio-service.ts]
+```
+
+```mermaid
+flowchart TD
+  Settings[settings-panel.ts<br/>iframe-quality-sync.ts] --> WebToy[core/web-toy.ts]
+  WebToy --> Loop[animation-loop.ts]
+  WebToy --> Scene[scene-setup.ts]
+  WebToy --> Camera[camera-setup.ts]
+  WebToy --> Lighting[lighting-setup.ts]
+  WebToy --> Renderer[render-service.ts<br/>pooled renderer]
+  WebToy --> Audio[audio-service.ts<br/>pooled microphone]
+```
+
 ### When to update docs
 
 | Change type                   | Docs to touch                                                                 |

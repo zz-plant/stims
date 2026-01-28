@@ -17,6 +17,27 @@ This folder contains resources for contributors who are building or maintaining 
 
 If you add new tooling or patterns, update these docs so the next contributor has a reliable starting point.
 
+## Architecture quick diagrams
+
+```mermaid
+flowchart LR
+  Entry[HTML entry points] --> Loader[loader + router]
+  Loader --> Views[UI views]
+  Loader --> Manifest[manifest client]
+  Manifest --> Toys[Toy modules]
+  Toys --> Core[core/web-toy.ts]
+  Core --> Services[render + audio pools]
+```
+
+```mermaid
+flowchart TD
+  Prewarm[prewarmMicrophone + renderer probe] --> Loader[loader.ts]
+  Loader --> ViewState[toy-view.ts]
+  Loader --> Import[dynamic import]
+  Import --> Start[start()/default export]
+  Start --> Cleanup[dispose + release pools]
+```
+
 ## How to add a new guide
 
 1. Create the Markdown file under `docs/` with a clear title and a short purpose statement in the first paragraph.
