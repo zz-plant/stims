@@ -1,7 +1,28 @@
 {
   "name": "stims",
+  "description": "Interactive audio-reactive web toys built with Three.js/WebGL for sensory-friendly play.",
   "version": "1.0.0",
   "type": "module",
+  "homepage": "https://no.toil.fyi",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zz-plant/stims.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zz-plant/stims/issues"
+  },
+  "keywords": [
+    "threejs",
+    "webgl",
+    "generative-art",
+    "audio-reactive",
+    "visualizer",
+    "sensory",
+    "interactive",
+    "web-toys",
+    "webgpu",
+    "creative-coding"
+  ],
   "packageManager": "bun@1.2.14",
   "scripts": {
     "test": "bun test --preload=./tests/setup.ts --importmap=./tests/importmap.json",
