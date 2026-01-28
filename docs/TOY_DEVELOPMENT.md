@@ -28,6 +28,23 @@ Treat toys like live game content and keep their status explicit in metadata:
 
 Use this sequence when you want to stand up a fresh toy quickly (you can also run `bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test` to automate steps 1–3):
 
+### Add a new stim (step-by-step)
+
+Use the scaffold script whenever possible; it wires up metadata, docs, and optional tests for you. If you prefer manual edits, follow the checklist below and keep the file paths aligned.
+
+1. **Pick a slug**: choose a short, kebab-case slug (for example `pocket-pulse`) that will become the `toy.html?toy=<slug>` route.
+2. **Scaffold the module** (recommended):
+   ```bash
+   bun run scripts/scaffold-toy.ts --slug pocket-pulse --title "Pocket Pulse" --type module --with-test
+   ```
+   The script creates `assets/js/toys/<slug>.ts`, appends the metadata entry in `assets/js/toys-data.js`, updates `docs/TOY_SCRIPT_INDEX.md`, and generates a minimal test in `tests/`.
+3. **Manual alternative** (if you skipped the scaffold):
+   - Create `assets/js/toys/<slug>.ts` and export `start({ container, canvas?, audioContext? })`.
+   - Add the entry to `assets/js/toys-data.js` (include `title`, `description`, `module`, `type`, and any `lifecycleStage` metadata).
+   - Add the slug row to `docs/TOY_SCRIPT_INDEX.md` so the loader docs stay in sync.
+   - Create `toys/<slug>.html` only if the toy uses a standalone page.
+4. **Verify locally**: run `bun run dev` and load `http://localhost:5173/toy.html?toy=<slug>` to confirm the new card loads, starts audio, and cleans up on exit.
+
 1. **Create a module** in `assets/js/toys/<slug>.ts` using the starter template below. Export `start({ container, canvas?, audioContext? })`. Use `container` to scope your DOM operations (settings panels, etc.) and `WebToy` to handle the canvas and resize logic within that container.
 2. **Register the slug** in `assets/js/toys-data.js` with a short title/description. Set `requiresWebGPU` or `allowWebGLFallback` if you depend on WebGPU features. The scaffold script validates that metadata entries live under `assets/js/toys/` and that slugs remain unique.
 3. **Create entry points**: module-based toys use `toy.html?toy=<slug>`; page-backed toys also need an HTML page (`toys/<slug>.html`). The scaffold script writes a starter page if one does not already exist.
