@@ -1,0 +1,56 @@
+[
+  {
+    "slug": "3dtoy",
+    "title": "3D Toy",
+    "description": "A twisting 3D tunnel that responds to sound.",
+    "module": "./assets/js/toys/three-d-toy.ts"
+  },
+  {
+    "slug": "evol",
+    "title": "Evolutionary Weirdcore",
+    "description": "Watch surreal landscapes evolve with fractals and glitches that react to music.",
+    "module": "./toy.html?toy=evol"
+  },
+  {
+    "slug": "multi",
+    "title": "Multi-Capability Visualizer",
+    "description": "Shapes and lights move with both sound and device motion.",
+    "module": "./toy.html?toy=multi"
+  },
+  {
+    "slug": "seary",
+    "title": "Synesthetic Visualizer",
+    "description": "Blend audio and visuals into linked patterns.",
+    "module": "./toy.html?toy=seary"
+  },
+  {
+    "slug": "symph",
+    "title": "Spectrograph",
+    "description": "A spectrograph that moves gently with your audio.",
+    "module": "./toy.html?toy=symph"
+  },
+  {
+    "slug": "cube-wave",
+    "title": "Grid Visualizer",
+    "description": "Swap between cube waves and bouncing spheres without stopping the music.",
+    "module": "./assets/js/toys/cube-wave.ts"
+  },
+  {
+    "slug": "cosmic-particles",
+    "title": "Cosmic Particles",
+    "description": "Jump between orbiting swirls and nebula fly-throughs with a single toggle.",
+    "module": "./assets/js/toys/cosmic-particles.ts"
+  },
+  {
+    "slug": "spiral-burst",
+    "title": "Spiral Burst",
+    "description": "Colorful spirals rotate and expand with every beat.",
+    "module": "./assets/js/toys/spiral-burst.ts"
+  },
+  {
+    "slug": "rainbow-tunnel",
+    "title": "Rainbow Tunnel",
+    "description": "Fly through colorful rings that spin to your music.",
+    "module": "./assets/js/toys/rainbow-tunnel.ts"
+  }
+]
