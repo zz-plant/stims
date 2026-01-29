@@ -63,12 +63,22 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
         </div>
       </div>
       <div class="nav-actions">
-        <a class="nav-link" href="#toy-list">Library</a>
-        <a class="nav-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
-          <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
-          <span class="theme-toggle__label" data-theme-label>Dark mode</span>
-        </button>
+        <div class="nav-section nav-section--jump" aria-label="Jump to">
+          <span class="nav-section__label">Jump</span>
+          <a class="nav-link nav-link--section" data-section-link href="#intro">Intro</a>
+          <a class="nav-link nav-link--section" data-section-link href="#system-check">System check</a>
+          <a class="nav-link nav-link--section" data-section-link href="#library">Library</a>
+          <a class="nav-link nav-link--section" data-section-link href="#site-footer">Connect</a>
+        </div>
+        <div class="nav-section nav-section--utilities" aria-label="Utilities">
+          <span class="nav-section__label">Utilities</span>
+          <a class="nav-link" href="#toy-list">Browse</a>
+          <a class="nav-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
+            <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
+            <span class="theme-toggle__label" data-theme-label>Dark mode</span>
+          </button>
+        </div>
       </div>
     </nav>
   `;
