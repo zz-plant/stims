@@ -2131,17 +2131,34 @@ footer {
   margin-top: 1rem;
 }
 
+.feature-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
 .feature-card {
   background: var(--surface-gradient);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-lg);
   padding: 1rem;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.85rem;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: flex-start;
   box-shadow: var(--shadow-soft);
   backdrop-filter: none;
+}
+
+.feature-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
 }
 
 .feature-icon {
@@ -2232,10 +2249,6 @@ footer {
 
   .preview-track {
     min-height: 320px;
-  }
-
-  .feature-card {
-    grid-template-columns: 1fr;
   }
 }
 
