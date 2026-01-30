@@ -783,6 +783,7 @@ header.hero {
   clip-path: none;
   overflow: visible;
   border-radius: calc(var(--radius-lg) + 2px);
+  padding: 1.15rem 1.35rem;
 }
 
 .system-controls .control-panel__heading {
@@ -1190,13 +1191,24 @@ header.hero {
   color: var(--text-muted);
   padding: 0.35rem 0.75rem;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--surface-border);
-  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid
+    color-mix(in srgb, var(--accent-color) 30%, var(--surface-border));
+  background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+  box-shadow: var(--shadow-soft);
 }
 
 .hero-readiness__action {
   font-size: 0.95rem;
   padding: 0.55rem 1.1rem;
+}
+
+html.light .hero-readiness__text {
+  background: color-mix(in srgb, #ffffff 92%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--accent-color) 25%,
+    var(--surface-border)
+  );
 }
 
 .editorial-notes {
@@ -1336,6 +1348,22 @@ body[data-details-open] .readiness-note {
   box-shadow: var(--shadow-soft), var(--surface-emboss);
 }
 
+.cta-button--accent {
+  border-color: color-mix(
+    in srgb,
+    var(--accent-color) 45%,
+    var(--surface-border)
+  );
+  background: color-mix(in srgb, var(--accent-color) 14%, var(--card-bg));
+  color: var(--text-color);
+}
+
+.cta-button--muted {
+  border-color: color-mix(in srgb, var(--surface-border) 75%, transparent);
+  background: color-mix(in srgb, var(--card-bg) 75%, transparent);
+  color: color-mix(in srgb, var(--text-muted) 90%, var(--text-color));
+}
+
 .hero-cta-row .cta-button.primary {
   padding: 0.85rem 1.6rem;
   font-size: 1.05rem;
@@ -1368,8 +1396,23 @@ body[data-details-open] .readiness-note {
 
 .cta-button:hover {
   filter: none;
-  box-shadow: var(--shadow-strong);
+  transform: translateY(-2px);
+  box-shadow:
+    var(--shadow-strong),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
   color: var(--text-color);
+}
+
+.cta-button.primary:hover {
+  color: #0b0f1a;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 18px 32px rgba(15, 23, 42, 0.55),
+    0 0 26px var(--glow-color);
+}
+
+.hero-cta-row .cta-button.primary:hover {
+  transform: translateY(-2px) scale(1.01);
 }
 
 .cta-button:focus-visible {
@@ -1996,6 +2039,14 @@ html.light .experience-card {
   isolation: isolate;
 }
 
+html:not(.light) .webtoy-card {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    var(--shadow-soft),
+    var(--surface-emboss);
+}
+
 .webtoy-card__link {
   color: inherit;
   text-decoration: none;
@@ -2178,6 +2229,22 @@ footer {
 .footer-cta-row {
   margin: 0.5rem 0 0;
   justify-content: center;
+}
+
+.footer-cta-row .cta-button {
+  box-shadow:
+    var(--shadow-soft),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.footer-cta-row .cta-button.ghost {
+  background:
+    var(--surface-texture), color-mix(in srgb, var(--card-bg) 88%, transparent);
+  border-color: color-mix(
+    in srgb,
+    var(--accent-color) 25%,
+    var(--surface-border)
+  );
 }
 
 .footer-helper {
