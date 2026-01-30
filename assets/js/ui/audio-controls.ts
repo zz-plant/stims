@@ -33,109 +33,145 @@ export function initAudioControls(
   };
 
   container.className = 'control-panel';
+  const hasAdvancedOptions =
+    Boolean(options.onRequestTabAudio) ||
+    Boolean(options.onRequestYouTubeAudio);
   container.innerHTML = `
     <p class="control-panel__description">
       Choose how this toy listens.
     </p>
-    <div class="control-panel__row">
+    <div class="control-panel__row" data-audio-row="mic">
       <div class="control-panel__text">
         <span class="control-panel__label">Live mic</span>
+        <span class="control-panel__subtext">Best for real-time sound.</span>
       </div>
       <button id="start-audio-btn" class="cta-button primary" type="button">
         Start mic
       </button>
     </div>
-    <div class="control-panel__row">
+    <div class="control-panel__row" data-audio-row="demo">
       <div class="control-panel__text">
         <span class="control-panel__label">Curated demo</span>
+        <span class="control-panel__subtext">Instant start with built-in audio.</span>
       </div>
       <button id="use-demo-audio" class="cta-button" type="button">Play demo</button>
     </div>
 
     ${
-      options.onRequestTabAudio
+      hasAdvancedOptions
         ? `
-    <div class="control-panel__row">
-      <div class="control-panel__text">
-        <span class="control-panel__label">Tab capture</span>
-        <span class="control-panel__info-wrap">
-          <button
-            class="control-panel__info"
-            type="button"
-            aria-describedby="tab-audio-info"
-          >
-            More info
-          </button>
-          <span id="tab-audio-info" class="control-panel__info-text">
-            Capture sound from the current tab. In the picker, choose “This tab” and enable
-            Share audio.
+    <div class="control-panel__row control-panel__row--advanced-toggle">
+      <button
+        type="button"
+        class="control-panel__advanced-toggle"
+        aria-expanded="false"
+        data-advanced-toggle
+      >
+        <span class="control-panel__advanced-title">Advanced audio options</span>
+        <span class="control-panel__advanced-hint">Tab or YouTube capture</span>
+      </button>
+    </div>
+    <div class="control-panel__advanced" data-advanced-panel hidden>
+      ${
+        options.onRequestTabAudio
+          ? `
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Tab capture</span>
+          <span class="control-panel__info-wrap">
+            <button
+              class="control-panel__info"
+              type="button"
+              aria-describedby="tab-audio-info"
+            >
+              More info
+            </button>
+            <span id="tab-audio-info" class="control-panel__info-text">
+              Capture sound from the current tab. In the picker, choose “This tab” and enable
+              Share audio.
+            </span>
           </span>
-        </span>
+        </div>
+        <button id="use-tab-audio" class="cta-button" type="button">Capture tab</button>
       </div>
-      <button id="use-tab-audio" class="cta-button" type="button">Capture tab</button>
+      `
+          : ''
+      }
+      ${
+        options.onRequestYouTubeAudio
+          ? `
+      <div class="control-panel__row control-panel__row--stacked">
+        <div class="control-panel__text">
+          <span class="control-panel__label">YouTube capture</span>
+          <span class="control-panel__info-wrap">
+            <button
+              class="control-panel__info"
+              type="button"
+              aria-describedby="youtube-audio-info"
+            >
+              More info
+            </button>
+            <span id="youtube-audio-info" class="control-panel__info-text">
+              Paste a link, load it, then capture. In the picker, choose “This tab” and enable
+              Share audio.
+            </span>
+          </span>
+        </div>
+        <div class="control-panel__field">
+          <label class="sr-only" for="youtube-url">YouTube URL</label>
+          <input
+            id="youtube-url"
+            class="control-panel__input"
+            type="url"
+            placeholder="https://youtube.com/watch?v=..."
+            autocomplete="off"
+            inputmode="url"
+          />
+          <button id="load-youtube" class="cta-button" type="button">Load</button>
+        </div>
+        <div id="recent-youtube" class="control-panel__recent" hidden>
+          <span class="control-panel__label small">Recent</span>
+          <div id="recent-list" class="control-panel__chip-list"></div>
+        </div>
+        <div class="control-panel__actions control-panel__actions--inline">
+          <button id="use-youtube-audio" class="cta-button" type="button">
+            Capture YouTube
+          </button>
+        </div>
+        <div id="youtube-player-container" class="control-panel__embed" hidden>
+          <div id="youtube-player"></div>
+        </div>
+      </div>
+      `
+          : ''
+      }
     </div>
     `
         : ''
     }
-    
-    ${
-      options.onRequestYouTubeAudio
-        ? `
-    <div class="control-panel__row control-panel__row--stacked">
-      <div class="control-panel__text">
-        <span class="control-panel__label">YouTube capture</span>
-        <span class="control-panel__info-wrap">
-          <button
-            class="control-panel__info"
-            type="button"
-            aria-describedby="youtube-audio-info"
-          >
-            More info
-          </button>
-          <span id="youtube-audio-info" class="control-panel__info-text">
-            Paste a link, load it, then capture. In the picker, choose “This tab” and enable
-            Share audio.
-          </span>
-        </span>
-      </div>
-      <div class="control-panel__field">
-        <label class="sr-only" for="youtube-url">YouTube URL</label>
-        <input
-          id="youtube-url"
-          class="control-panel__input"
-          type="url"
-          placeholder="https://youtube.com/watch?v=..."
-          autocomplete="off"
-          inputmode="url"
-        />
-        <button id="load-youtube" class="cta-button" type="button">Load</button>
-      </div>
-      <div id="recent-youtube" class="control-panel__recent" hidden>
-        <span class="control-panel__label small">Recent</span>
-        <div id="recent-list" class="control-panel__chip-list"></div>
-      </div>
-      <div class="control-panel__actions control-panel__actions--inline">
-        <button id="use-youtube-audio" class="cta-button" type="button">
-          Capture YouTube
-        </button>
-      </div>
-      <div id="youtube-player-container" class="control-panel__embed" hidden>
-        <div id="youtube-player"></div>
-      </div>
-    </div>
-    `
-        : ''
-    }
-    
+
     <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
   `;
 
   const micBtn = container.querySelector('#start-audio-btn');
   const demoBtn = container.querySelector('#use-demo-audio');
   const tabBtn = container.querySelector('#use-tab-audio');
+  const micRow = container.querySelector('[data-audio-row="mic"]');
+  const demoRow = container.querySelector('[data-audio-row="demo"]');
   const statusEl = (options.statusElement ||
     container.querySelector('#audio-status')) as HTMLElement;
   const requestTabAudio = options.onRequestTabAudio;
+  const advancedToggle = container.querySelector(
+    '[data-advanced-toggle]',
+  ) as HTMLButtonElement | null;
+  const advancedPanel = container.querySelector(
+    '[data-advanced-panel]',
+  ) as HTMLElement | null;
+  const ADVANCED_KEY = 'stims-audio-advanced-open';
+
+  const setPrimaryRow = (row: Element | null, isPrimary: boolean): void => {
+    row?.classList.toggle('control-panel__row--primary', isPrimary);
+  };
 
   const setPending = (button: Element | null, pending: boolean) => {
     if (!(button instanceof HTMLElement)) return;
@@ -164,6 +200,8 @@ export function initAudioControls(
     if (micBtn instanceof HTMLButtonElement) {
       micBtn.classList.remove('primary');
     }
+    setPrimaryRow(demoRow, true);
+    setPrimaryRow(micRow, false);
   };
 
   const buildMicrophoneErrorMessage = (message: string) => {
@@ -191,6 +229,11 @@ export function initAudioControls(
     if (micBtn instanceof HTMLButtonElement) {
       micBtn.classList.remove('primary');
     }
+    setPrimaryRow(demoRow, true);
+    setPrimaryRow(micRow, false);
+  } else {
+    setPrimaryRow(micRow, true);
+    setPrimaryRow(demoRow, false);
   }
 
   if (options.initialStatus) {
@@ -198,6 +241,27 @@ export function initAudioControls(
       options.initialStatus.message,
       options.initialStatus.variant ?? 'error',
     );
+  }
+
+  if (advancedToggle && advancedPanel) {
+    let isOpen = false;
+    try {
+      isOpen = window.sessionStorage.getItem(ADVANCED_KEY) === 'true';
+    } catch (_error) {
+      isOpen = false;
+    }
+    advancedPanel.hidden = !isOpen;
+    advancedToggle.setAttribute('aria-expanded', String(isOpen));
+    advancedToggle.addEventListener('click', () => {
+      const nextState = advancedPanel.hidden;
+      advancedPanel.hidden = !nextState;
+      advancedToggle.setAttribute('aria-expanded', String(nextState));
+      try {
+        window.sessionStorage.setItem(ADVANCED_KEY, String(nextState));
+      } catch (_error) {
+        // Ignore storage errors.
+      }
+    });
   }
 
   const handleRequest = async (
