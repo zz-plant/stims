@@ -69,15 +69,26 @@ export function setupCanvasResize(
   };
 
   resize();
-  const observer = new ResizeObserver(() => resize());
-  observer.observe(canvas.parentElement ?? canvas);
+  let resizeObserver: ResizeObserver | null = null;
+  const handleWindowResize = () => resize();
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => resize());
+    resizeObserver.observe(canvas.parentElement ?? canvas);
+  } else {
+    window.addEventListener('resize', handleWindowResize);
+    window.addEventListener('orientationchange', handleWindowResize);
+  }
 
   const visualViewport = window.visualViewport;
   visualViewport?.addEventListener('resize', resize);
   visualViewport?.addEventListener('scroll', resize);
 
   return () => {
-    observer.disconnect();
+    resizeObserver?.disconnect();
+    if (!resizeObserver) {
+      window.removeEventListener('resize', handleWindowResize);
+      window.removeEventListener('orientationchange', handleWindowResize);
+    }
     visualViewport?.removeEventListener('resize', resize);
     visualViewport?.removeEventListener('scroll', resize);
   };
