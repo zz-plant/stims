@@ -42,6 +42,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    target: 'es2020',
     // Emit the standard .vite/manifest.json so docs and tooling resolve assets
     // without custom paths.
     manifest: true,
