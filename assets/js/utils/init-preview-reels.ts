@@ -112,7 +112,7 @@ export const initPreviewReels = () => {
     setActive(activeIndex);
     updateToggleState();
 
-    prefersReducedMotion.addEventListener('change', () => {
+    const handleReducedMotionChange = () => {
       stopTimer();
       if (prefersReducedMotion.matches) {
         isAutoPlay = false;
@@ -120,7 +120,18 @@ export const initPreviewReels = () => {
         return;
       }
       if (isAutoPlay) startTimer();
-    });
+    };
+    const legacyMediaQueryList = prefersReducedMotion as MediaQueryList & {
+      addListener?: (listener: (event: MediaQueryListEvent) => void) => void;
+    };
+    if ('addEventListener' in prefersReducedMotion) {
+      prefersReducedMotion.addEventListener(
+        'change',
+        handleReducedMotionChange,
+      );
+    } else if (legacyMediaQueryList.addListener) {
+      legacyMediaQueryList.addListener(handleReducedMotionChange);
+    }
 
     if (prevButton) {
       prevButton.addEventListener('click', () => {

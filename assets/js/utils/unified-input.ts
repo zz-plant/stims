@@ -151,10 +151,17 @@ export function createUnifiedInput({
     bounds = boundsSource.getBoundingClientRect();
   };
 
-  const resizeObserver = new ResizeObserver(() => {
-    updateBounds();
-  });
-  resizeObserver.observe(boundsSource);
+  let resizeObserver: ResizeObserver | null = null;
+  const handleWindowResize = () => updateBounds();
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      updateBounds();
+    });
+    resizeObserver.observe(boundsSource);
+  } else {
+    window.addEventListener('resize', handleWindowResize);
+    window.addEventListener('orientationchange', handleWindowResize);
+  }
 
   const updatePointerFromEvent = (event: PointerEvent) => {
     const normalized = normalizePoint(event.clientX, event.clientY, bounds);
@@ -545,7 +552,11 @@ export function createUnifiedInput({
     if (gamepadFrameId != null) {
       cancelAnimationFrame(gamepadFrameId);
     }
-    resizeObserver.disconnect();
+    resizeObserver?.disconnect();
+    if (!resizeObserver) {
+      window.removeEventListener('resize', handleWindowResize);
+      window.removeEventListener('orientationchange', handleWindowResize);
+    }
     target.removeEventListener('pointerdown', handlePointerDown);
     target.removeEventListener('pointermove', handlePointerMove);
     target.removeEventListener('pointerup', handlePointerUp);
