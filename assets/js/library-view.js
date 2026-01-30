@@ -1603,6 +1603,7 @@ export function createLibraryView({
         ariaLabel,
         warning = false,
         role = null,
+        tone = null,
       }) => {
         const badge = document.createElement('span');
         badge.className = 'capability-badge';
@@ -1615,6 +1616,9 @@ export function createLibraryView({
         }
         if (role) {
           badge.setAttribute('role', role);
+        }
+        if (tone) {
+          badge.classList.add(`capability-badge--${tone}`);
         }
         if (warning) {
           badge.classList.add('capability-badge--warning');
@@ -1634,6 +1638,7 @@ export function createLibraryView({
             ariaLabel: 'Requires WebGPU',
             role: 'status',
             warning: !hasWebGPU,
+            tone: 'webgpu',
           }),
         );
 
@@ -1652,6 +1657,7 @@ export function createLibraryView({
             label: 'Mic',
             title: 'Uses live microphone input.',
             ariaLabel: 'Requires microphone input',
+            tone: 'primary',
           }),
         );
       }
@@ -1662,6 +1668,7 @@ export function createLibraryView({
             label: 'Demo audio',
             title: 'Includes a demo track if you skip the mic.',
             ariaLabel: 'Demo audio available',
+            tone: 'soft',
           }),
         );
       }
@@ -1672,6 +1679,7 @@ export function createLibraryView({
             label: 'Motion',
             title: 'Responds to device motion or tilt.',
             ariaLabel: 'Requires device motion',
+            tone: 'motion',
           }),
         );
       }
