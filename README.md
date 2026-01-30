@@ -112,6 +112,12 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 
 Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond to sound, touch, and other inputs to create a chill or stimulating experience. If you’d rather play locally, follow the steps in **Local Setup** to run the dev server and open the toys at `http://localhost:5173`.
 
+### What the library experience includes
+
+- **Searchable discovery**: the landing page ships a searchable toy grid that matches against titles, tags, moods, and capability terms, plus badges for microphone, motion, demo audio, and WebGPU requirements. A no-JS fallback renders the same data from `toys.json` when needed.
+- **Guided toy start**: the shared toy shell runs a capability preflight before loading a toy, then offers microphone, demo audio, and YouTube tab-capture audio flows with status messaging.
+- **Consistent performance controls**: quality presets and pixel-ratio caps persist between toys, while pooled renderer/audio services keep toy switching fast without re-prompting for microphone access.
+
 ## Repository Layout
 
 This project is organized so you can find the visuals, core utilities, and shared assets quickly:
