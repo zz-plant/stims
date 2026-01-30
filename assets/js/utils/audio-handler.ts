@@ -254,6 +254,12 @@ export function createSyntheticAudioStream({
 } = {}) {
   const context = new AudioContext();
 
+  if (context.state === 'suspended') {
+    void context.resume().catch((error) => {
+      console.warn('Unable to resume synthetic audio context', error);
+    });
+  }
+
   const oscillator = context.createOscillator();
   oscillator.frequency.value = frequency;
   oscillator.type = type;
@@ -291,6 +297,12 @@ let cachedDemoUsers = 0;
 
 function createProceduralDemoAudio() {
   const context = new AudioContext();
+
+  if (context.state === 'suspended') {
+    void context.resume().catch((error) => {
+      console.warn('Unable to resume demo audio context', error);
+    });
+  }
 
   const carrier = context.createOscillator();
   carrier.type = 'triangle';
