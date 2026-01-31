@@ -25,6 +25,11 @@
   --radius-pill: 999px;
   --content-width: 1200px;
   --section-gap: clamp(1.75rem, 3vw, 2.6rem);
+  --accent-gradient: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--accent-color) 80%, transparent),
+    color-mix(in srgb, var(--accent-magenta) 75%, transparent)
+  );
 }
 
 html {
@@ -50,6 +55,11 @@ html.light {
   --surface-texture: none;
   --surface-highlight: none;
   --surface-emboss: none;
+  --accent-gradient: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--accent-color) 80%, transparent),
+    color-mix(in srgb, var(--accent-magenta) 75%, transparent)
+  );
   color-scheme: light;
 }
 
@@ -364,6 +374,40 @@ section.intro {
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
+}
+
+section.intro::before,
+section.intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.6;
+  z-index: 0;
+}
+
+section.intro::before {
+  background:
+    radial-gradient(
+      circle at 20% 15%,
+      color-mix(in srgb, var(--accent-color) 35%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 80% 0%,
+      color-mix(in srgb, var(--accent-magenta) 25%, transparent),
+      transparent 45%
+    );
+}
+
+section.intro::after {
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    transparent 100%
+  );
+  opacity: 0.35;
 }
 
 html.light section.intro {
@@ -1040,6 +1084,18 @@ header.hero {
   border-radius: var(--radius-pill);
   border: 1px solid var(--surface-border);
   background: var(--card-bg);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.hero-readiness__text::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-gradient);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-color) 45%, transparent);
 }
 
 .hero-readiness__action {
@@ -1090,6 +1146,7 @@ html.light .hero-readiness__text {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-color);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
 }
 
 .details-panel {
@@ -1386,6 +1443,22 @@ h1 {
   margin-top: 1rem;
 }
 
+.section-heading {
+  display: grid;
+  gap: 0.35rem;
+  padding-bottom: 0.75rem;
+  position: relative;
+}
+
+.section-heading::after {
+  content: "";
+  width: 72px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent-gradient);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent-color) 30%, transparent);
+}
+
 .section-heading h2 {
   margin: 0.25rem 0;
   font-size: 2rem;
@@ -1551,6 +1624,7 @@ html.light .experience-card {
     var(--surface-highlight), var(--surface-texture), rgba(15, 23, 42, 0.45);
   min-width: 220px;
   color: var(--text-muted);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .search-meta__results {
@@ -1909,7 +1983,19 @@ html:not(.light) .webtoy-card {
 }
 
 .webtoy-card::after {
-  content: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05),
+    transparent 40%,
+    rgba(255, 255, 255, 0.02) 70%,
+    transparent
+  );
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .webtoy-card:hover {
@@ -1962,6 +2048,17 @@ html:not(.light) .webtoy-card {
   padding-top: 0.9rem;
   position: relative;
   z-index: 2;
+}
+
+.webtoy-card-meta::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--surface-border) 70%, transparent);
+  opacity: 0.7;
 }
 
 .capability-badge {
