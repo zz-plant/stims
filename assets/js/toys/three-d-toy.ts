@@ -16,14 +16,13 @@ import {
 import { createIdleDetector } from '../utils/idle-detector';
 import { disposeGeometry, disposeMesh } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   let errorElement: HTMLElement | null = null;
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: '3D soundscape',
+    description: 'Resolution and particle density follow the preset you pick.',
     getRuntime: () => runtime,
     onChange: () => {
       rebuildSceneContents();
@@ -349,12 +348,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    configureToySettingsPanel({
-      title: '3D soundscape',
-      description:
-        'Resolution and particle density follow the preset you pick.',
-      quality,
-    });
+    configurePanel();
   }
 
   async function startAudio(request: ToyAudioRequest = false) {

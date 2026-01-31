@@ -11,9 +11,8 @@ import { applyAudioColor } from '../utils/color-audio';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  configureToySettingsPanel,
   createControlPanelButtonGroup,
-  createRendererQualityManager,
+  createToyQualityControls,
 } from '../utils/toy-settings';
 
 type PresetKey = 'orbit' | 'nebula';
@@ -24,7 +23,10 @@ type PresetInstance = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Cosmic controls',
+    description:
+      'Quality changes persist between toys so you can cap DPI or ramp visuals.',
     defaultPresetId: 'balanced',
     getRuntime: () => runtime,
     getRendererSettings: (preset) => ({
@@ -308,12 +310,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    const panel = configureToySettingsPanel({
-      title: 'Cosmic controls',
-      description:
-        'Quality changes persist between toys so you can cap DPI or ramp visuals.',
-      quality,
-    });
+    const panel = configurePanel();
 
     const presetRow = panel.addSection(
       'Cosmic preset',

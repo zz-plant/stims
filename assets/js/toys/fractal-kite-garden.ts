@@ -4,9 +4,8 @@ import { getBandAverage } from '../utils/audio-bands';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  configureToySettingsPanel,
   createControlPanelButtonGroup,
-  createRendererQualityManager,
+  createToyQualityControls,
 } from '../utils/toy-settings';
 
 type PaletteKey = 'aurora' | 'sunset' | 'midnight';
@@ -22,7 +21,10 @@ type KiteInstance = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Fractal Kite Garden',
+    description:
+      'Quality presets persist across toys so you can balance DPI and branching density.',
     getRuntime: () => runtime,
     onChange: () => {
       buildGarden();
@@ -32,7 +34,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     },
   });
   let runtime: ToyRuntimeInstance;
-  let settingsPanel: ReturnType<typeof configureToySettingsPanel>;
+  let settingsPanel: ReturnType<typeof configurePanel>;
   let paletteButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
     null;
 
@@ -258,12 +260,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    settingsPanel = configureToySettingsPanel({
-      title: 'Fractal Kite Garden',
-      description:
-        'Quality presets persist across toys so you can balance DPI and branching density.',
-      quality,
-    });
+    settingsPanel = configurePanel();
   }
 
   function init() {

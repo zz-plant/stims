@@ -2,10 +2,7 @@ import * as THREE from 'three';
 import FeedbackManager from '../utils/feedback-manager';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 import WarpShader from '../utils/warp-shader';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
@@ -143,16 +140,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   const runtime = startRuntime({ container });
 
-  const quality = createRendererQualityManager({
+  const { configurePanel } = createToyQualityControls({
+    title: 'MilkDrop Proto',
+    description: 'A prototype of MilkDrop-style feedback engine.',
     defaultPresetId: 'medium',
     getRuntime: () => runtime,
     getRendererSettings: (preset) => ({ renderScale: preset.renderScale }),
   });
-  configureToySettingsPanel({
-    title: 'MilkDrop Proto',
-    description: 'A prototype of MilkDrop-style feedback engine.',
-    quality,
-  });
+  configurePanel();
 
   return runtime;
 }

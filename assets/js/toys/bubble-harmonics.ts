@@ -8,10 +8,7 @@ import {
   disposeMesh,
 } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 
 type Bubble = {
   mesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
@@ -28,7 +25,9 @@ type HarmonicBubble = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Bubble harmonics',
+    description: 'Presets adjust DPI caps plus bubble and harmonic counts.',
     getRuntime: () => runtime,
     onChange: () => {
       bubbleDetail = getBubbleDetail();
@@ -293,11 +292,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    configureToySettingsPanel({
-      title: 'Bubble harmonics',
-      description: 'Presets adjust DPI caps plus bubble and harmonic counts.',
-      quality,
-    });
+    configurePanel();
   }
 
   const startRuntime = createToyRuntimeStarter({

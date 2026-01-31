@@ -13,9 +13,8 @@ import { applyAudioColor } from '../utils/color-audio';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  configureToySettingsPanel,
   createControlPanelButtonGroup,
-  createRendererQualityManager,
+  createToyQualityControls,
 } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
@@ -47,7 +46,10 @@ type ParticleField = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Spiral Burst',
+    description:
+      'Explosive spirals that pulse with your music. Try different modes, pinch to amplify, and rotate to swap moods!',
     getRuntime: () => runtime,
     getRendererSettings: (preset) => ({
       maxPixelRatio: performanceSettings.maxPixelRatio,
@@ -319,16 +321,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    configureToySettingsPanel({
-      title: 'Spiral Burst',
-      description:
-        'Explosive spirals that pulse with your music. Try different modes, pinch to amplify, and rotate to swap moods!',
-      quality,
-    });
-
-    // Add mode buttons
-    const panelElement = container?.querySelector('.control-panel');
-    if (!(panelElement instanceof HTMLElement)) return;
+    const panel = configurePanel();
+    const panelElement = panel.getElement();
 
     modeRow?.remove();
     const modes: SpiralMode[] = ['burst', 'bloom', 'vortex', 'heartbeat'];

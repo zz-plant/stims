@@ -4,10 +4,7 @@ import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import type { ToyAudioRequest } from '../utils/audio-start';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 import type { UnifiedInputState, UnifiedPointer } from '../utils/unified-input';
 
 type TideBlob = {
@@ -32,7 +29,10 @@ const MAX_BLOBS = 28;
 const BASE_SPARK_COUNT = 200;
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Bioluminescent tidepools',
+    description:
+      'Quality presets update DPI caps, blob limits, and spark counts without reloading. Pinch to shape the currents, rotate to swap moods, and nudge with arrow keys.',
     getRuntime: () => runtime,
     onChange: () => {
       activeSparkCount = getSparkCount();
@@ -497,12 +497,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    configureToySettingsPanel({
-      title: 'Bioluminescent tidepools',
-      description:
-        'Quality presets update DPI caps, blob limits, and spark counts without reloading. Pinch to shape the currents, rotate to swap moods, and nudge with arrow keys.',
-      quality,
-    });
+    configurePanel();
   }
 
   function computeHighBandEnergy(data: Uint8Array) {

@@ -4,10 +4,7 @@ import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
 import { disposeObject3D } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 
 type ShapeMode = 'cubes' | 'spheres';
 
@@ -61,7 +58,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const gridGroup = new THREE.Group();
   const gridItems: GridItem[] = [];
 
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Grid visualizer',
+    description:
+      'Adjust render resolution caps and switch primitives without restarting audio.',
     defaultPresetId: 'balanced',
     getRuntime: () => runtime,
     onChange: () => {
@@ -229,12 +229,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    const panel = configureToySettingsPanel({
-      title: 'Grid visualizer',
-      description:
-        'Adjust render resolution caps and switch primitives without restarting audio.',
-      quality,
-    });
+    const panel = configurePanel();
 
     const shapeRow = panel.addSection(
       'Shape',
