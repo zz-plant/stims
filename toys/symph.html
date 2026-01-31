@@ -135,29 +135,45 @@
             uniform vec2 u_touch;
             uniform float u_rippleAmp;
             
-            vec3 dreamyGradient(vec2 uv, float timeOffset) {
-                vec3 color = vec3(0.4 + 0.4 * sin(uv.x * 10.0 + u_audioData * 6.0 + timeOffset),
-                                  0.4 + 0.4 * cos(uv.y * 10.0 + u_audioData * 6.0 + timeOffset),
-                                  0.5 + 0.4 * sin((uv.x + uv.y) * 8.0 + u_audioData * 6.0 + timeOffset));
-                return color + u_colorOffset * 0.7;
+            vec2 rotate2d(vec2 v, float a) {
+                float c = cos(a);
+                float s = sin(a);
+                return vec2(v.x * c - v.y * s, v.x * s + v.y * c);
+            }
+
+            vec3 dreamyGradient(vec2 uv, float timeOffset, float drive) {
+                vec3 color = vec3(0.35 + 0.45 * sin(uv.x * 12.0 + drive + timeOffset),
+                                  0.35 + 0.45 * cos(uv.y * 12.0 + drive + timeOffset),
+                                  0.5 + 0.45 * sin((uv.x + uv.y) * 10.0 + drive + timeOffset));
+                return color + u_colorOffset * 0.85;
             }
             
             void main() {
                 vec2 uv = gl_FragCoord.xy / u_resolution.xy;
                 uv -= 0.5;
                 uv *= 2.0;
+                float drive = u_audioData * 6.0 + u_time * 0.6;
+                float swirl = sin((uv.x + uv.y) * 3.0 + u_time * 0.35) * 0.35;
+                uv = rotate2d(uv, swirl + u_audioData * 0.4);
+                uv *= 1.0 + 0.08 * sin(u_time * 0.8 + length(uv) * 4.0);
                 
                 float dist = distance(uv, u_touch);
-                float ripple = sin(dist * 15.0 - u_time * 3.0) * u_rippleAmp;
-                float bloom = 0.3 / (dist * dist + 0.25);
+                float ripple = sin(dist * 18.0 - u_time * 3.4 + drive) * u_rippleAmp;
+                float bloom = 0.45 / (dist * dist + 0.25);
                 uv += ripple;
 
-                vec3 color = dreamyGradient(uv, u_time * 0.6) * u_audioData;
-                color += vec3(0.4 + 0.4 * sin(u_time * 0.4 + u_audioData * 2.0),
-                              0.4 + 0.4 * cos(u_time * 0.5 + u_audioData * 3.0),
-                              0.5 + 0.4 * sin(u_time * 0.6 + u_audioData * 1.5));
-                color += bloom * 0.6;
-                color += u_burstTint;
+                vec3 color = dreamyGradient(uv, u_time * 0.6, drive) * (0.5 + u_audioData * 0.9);
+                color += vec3(0.45 + 0.45 * sin(u_time * 0.5 + drive),
+                              0.35 + 0.5 * cos(u_time * 0.55 + drive * 0.6),
+                              0.45 + 0.45 * sin(u_time * 0.75 + drive * 0.8));
+                float beam = pow(1.0 - abs(uv.y), 3.0) * (0.6 + u_audioData);
+                color += beam * vec3(0.2, 0.35, 0.5);
+                color += bloom * 0.7;
+                color += u_burstTint * 1.1;
+
+                float vignette = smoothstep(1.2, 0.2, length(uv));
+                color = mix(color * 0.65, color, vignette);
+                color = pow(color, vec3(0.9));
 
                 gl_FragColor = vec4(color, 1.0);
             }
@@ -379,7 +395,7 @@
 
       function updateSpectrograph(dataArray, energy = 0) {
         if (!ctx2d) return;
-        ctx2d.fillStyle = 'rgba(0, 0, 0, 0.18)';
+        ctx2d.fillStyle = 'rgba(0, 0, 0, 0.12)';
         ctx2d.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
         const gradient = ctx2d.createLinearGradient(
           0,
@@ -392,7 +408,7 @@
         gradient.addColorStop(1, gradientStops[2]);
         ctx2d.fillStyle = gradient;
         ctx2d.shadowColor = gradientStops[1];
-        ctx2d.shadowBlur = 12 + energy * 14;
+        ctx2d.shadowBlur = 18 + energy * 18;
         const barWidth = (overlayCanvas.width / dataArray.length) * 1.5;
         let barHeight;
         let x = 0;
