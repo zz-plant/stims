@@ -83,11 +83,14 @@
           <p class="eyebrow">Audio-reactive visuals • No setup</p>
           <h1>Stim library</h1>
           <p class="section-description">
-            A minimal library of light and motion, tuned for sound, touch, and
-            calm focus.
+            Light and motion tuned for sound, touch, and calm focus.
           </p>
-          <p class="intro-focus">Featured: Halo Flow.</p>
-          <p class="intro-meta">Mic optional • Demo audio in every toy.</p>
+          <div class="intro-pills" aria-label="Quick highlights">
+            <span class="intro-pill">✨ Featured: Halo Flow</span>
+            <span class="intro-pill">🎧 Mic optional</span>
+            <span class="intro-pill">🔊 Demo audio</span>
+            <span class="intro-pill">🖐️ Touch ready</span>
+          </div>
         </div>
         <div class="cta-row hero-cta-row">
           <a
@@ -118,15 +121,14 @@
           <p class="eyebrow">System check</p>
           <h2>Confirm your device</h2>
           <p class="section-description">
-            Live readiness stays in sync with your device.
+            Live readiness stays in sync.
           </p>
           <p
             class="section-description details-panel"
             data-details-panel
             id="system-check-details"
           >
-            Open the system check for graphics, microphone, and performance
-            presets before launching a stim.
+            Graphics, mic, motion, and comfort at a glance.
           </p>
           <a
             href="#system-check"
@@ -139,6 +141,12 @@
             <span data-details-label="close">Hide details</span>
           </a>
         </div>
+        <ul class="system-legend" aria-label="System signals">
+          <li class="system-legend__item">🖥️ Graphics</li>
+          <li class="system-legend__item">🎙️ Mic</li>
+          <li class="system-legend__item">🧭 Motion</li>
+          <li class="system-legend__item">🫧 Comfort</li>
+        </ul>
         <div class="system-grid">
           <div class="readiness-panel" data-readiness-panel>
             <div class="readiness-header">
@@ -158,7 +166,7 @@
                   <span class="readiness-name">Graphics acceleration</span>
                 </div>
                 <p class="readiness-note" data-status-note="render">
-                  Checking WebGL and WebGPU support…
+                  Checking graphics…
                 </p>
               </li>
               <li class="readiness-item">
@@ -171,7 +179,7 @@
                   <span class="readiness-name">Microphone</span>
                 </div>
                 <p class="readiness-note" data-status-note="mic">
-                  Checking microphone permissions…
+                  Checking mic…
                 </p>
               </li>
               <li class="readiness-item">
@@ -184,7 +192,7 @@
                   <span class="readiness-name">Motion input</span>
                 </div>
                 <p class="readiness-note" data-status-note="motion">
-                  Checking device motion support…
+                  Checking motion…
                 </p>
               </li>
               <li class="readiness-item">
@@ -197,7 +205,7 @@
                   <span class="readiness-name">Motion comfort</span>
                 </div>
                 <p class="readiness-note" data-status-note="reduced">
-                  Reading motion comfort settings…
+                  Reading comfort…
                 </p>
               </li>
             </ul>
