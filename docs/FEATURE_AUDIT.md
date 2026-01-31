@@ -13,6 +13,7 @@ This audit maps product features to their current documentation so we can spot g
 
 | Feature area | Primary docs | Notes |
 | --- | --- | --- |
+| Feature specifications (current build baseline) | [`FEATURE_SPECIFICATIONS.md`](./FEATURE_SPECIFICATIONS.md) | Snapshot of the shipped experience and current feature behavior. |
 | Library landing page layout, hero, and feature bands | [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md) | Page-level expectations live here, including accessibility notes. |
 | Library discovery, search, and empty states | [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md), [`USABILITY_AUDIT.md`](./USABILITY_AUDIT.md) | The audit captures UX issues that are still open. |
 | Toy catalog metadata and registry | [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md), [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md), [`DEVELOPMENT.md`](./DEVELOPMENT.md) | Registry guidance and required fields are documented. |

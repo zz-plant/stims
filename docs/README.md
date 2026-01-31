@@ -8,6 +8,7 @@ This folder contains resources for contributors who are building or maintaining 
 - [`stim-assessment.md`](./stim-assessment.md): Assessment findings and remediation plans.
 - [`stim-user-critiques.md`](./stim-user-critiques.md): user-standpoint critiques for each toy to guide UX polish and onboarding.
 - [`FEATURE_AUDIT.md`](./FEATURE_AUDIT.md): feature coverage mapped to current documentation, plus open gaps to address.
+- [`FEATURE_SPECIFICATIONS.md`](./FEATURE_SPECIFICATIONS.md): current feature specifications for the shipped library experience.
 - [`LITERATURE.md`](./LITERATURE.md): published scientific literature that can ground audio-visual and sensory experience claims.
 - [`QA_PLAN.md`](./QA_PLAN.md): coverage for the highest-impact flows and the automation that protects them.
 - [`toys.md`](./toys.md): per-toy notes, presets, and other focused references.
