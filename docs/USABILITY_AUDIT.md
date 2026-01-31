@@ -7,15 +7,15 @@
 
 ## Findings and recommendations
 
-1. **Library search promises more breadth than it delivers**  
-   The search hint invites vibe-based queries (e.g., "aurora," "fractal," "WebGPU"), but the filter only matches toy titles and descriptions, so many mood keywords or capability terms return no results. This can make the search feel broken and forces users to guess exact phrasing.  
-   **Recommendation:** add structured metadata (tags, capabilities, moods) to `toys.json` and include those fields in the filter, then surface match highlights or a results count so users know the query worked.  
-   **Evidence:** search input copy and placeholder; filtering logic limited to `title` and `description`.【F:index.html†L231-L350】
+1. **Library search scope vs. copy alignment**  
+   The search haystack now matches titles, slugs, descriptions, tags, moods, capability terms, and the WebGPU marker, which supports the broader discovery copy. The UX risk now is stale placeholder/hint copy if the indexed terms change.  
+   **Recommendation:** keep the search hint/placeholder aligned with the `library-view` haystack fields whenever metadata or filter logic changes, and consider adding match highlighting to reinforce the coverage.  
+   **Status:** resolved; haystack includes tags, moods, and capability terms in the live filter logic.【F:assets/js/library-view.js†L1284-L1312】
 
-2. **No empty-state guidance after filtering**  
-   When a search returns zero matches, the grid simply disappears with no feedback or way to reset, which feels like a broken page.  
-   **Recommendation:** render a friendly "No matches" state with a clear reset control and maybe a couple of suggested queries to keep users moving.  
-   **Evidence:** the filter repaints the list but does not handle empty results or render a reset affordance.【F:index.html†L339-L351】
+2. **Empty-state guidance after filtering**  
+   The library now renders a “No stims match your search or filters” empty state with a reset control, which solves the “blank grid” failure mode.  
+   **Recommendation:** keep the empty-state copy short and ensure the reset button remains visible and focusable when filters or query strings are active.  
+   **Status:** resolved; empty state and reset UI are rendered in the library view.【F:assets/js/library-view.js†L1739-L1755】
 
 3. **Capability and input requirements are hidden until after click-through**  
    Library cards only show a WebGPU badge; they omit microphone or device-motion expectations even though toys require audio to start, so users only learn about the permission prompt after landing on the toy page.  
