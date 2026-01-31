@@ -19,7 +19,7 @@ This audit maps product features to their current documentation so we can spot g
 | Toy loader flow + runtime composition | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Includes loader steps, services, and lifecycle cleanup. |
 | Audio input flows (mic, demo, YouTube) | [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md), [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md), [`QA_PLAN.md`](./QA_PLAN.md) | UI spec + implementation guidance + QA coverage. |
 | Renderer and WebGPU fallback | [`ARCHITECTURE.md`](./ARCHITECTURE.md), [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md) | Rendering capabilities and preflight are documented. |
-| Quality controls and presets | [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md), [`DEVELOPMENT.md`](./DEVELOPMENT.md) | UI specs and default preset values are documented, but guidance for authoring custom presets is still light. |
+| Quality controls and presets | [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md), [`DEVELOPMENT.md`](./DEVELOPMENT.md), [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md) | UI specs, default preset values, and custom preset authoring guidance are documented. |
 | Settings panel behavior | [`ARCHITECTURE.md`](./ARCHITECTURE.md), [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md) | Runtime wiring and UI expectations are covered. |
 | Testing & QA expectations | [`QA_PLAN.md`](./QA_PLAN.md), [`TOY_TESTING_SPEC.md`](./TOY_TESTING_SPEC.md) | Includes automation and toy-specific testing patterns. |
 | User critiques and assessment findings | [`stim-user-critiques.md`](./stim-user-critiques.md), [`stim-assessment.md`](./stim-assessment.md) | Use these to validate UX intent against feedback. |
@@ -30,7 +30,7 @@ This audit maps product features to their current documentation so we can spot g
 
 1. **Library badges for mic/motion requirements** — Documented for the primary JS grid in `PAGE_SPECIFICATIONS.md`. ✅
 2. **Quality preset semantics** — Documented in `TOY_DEVELOPMENT.md` with preset mapping guidance for toy authors. ✅
-3. **Feature discovery copy** — The usability audit flags search and discovery mismatch with actual filtering. If copy or metadata changes are made, update `PAGE_SPECIFICATIONS.md` and the audit notes.
+3. **Feature discovery copy** — Search copy and filter behavior are now documented together in `PAGE_SPECIFICATIONS.md`, and the usability audit reflects the current haystack behavior. Keep them in sync when the filter logic changes. ✅
 4. **Settings panel extension points** — Documented in `TOY_DEVELOPMENT.md` with a toy-facing checklist. ✅
 
 ## Prioritized to-do list
@@ -38,4 +38,4 @@ This audit maps product features to their current documentation so we can spot g
 1. **Document library capability badges in the primary JS grid** — Completed in `PAGE_SPECIFICATIONS.md`. ✅
 2. **Define quality preset guidance for toy authors** — Completed in `TOY_DEVELOPMENT.md`. ✅
 3. **Add a settings panel checklist for toys** — Completed in `TOY_DEVELOPMENT.md`. ✅
-4. **Reconcile search copy with filtering behavior** — Update `PAGE_SPECIFICATIONS.md` (and `USABILITY_AUDIT.md` if needed) once search metadata is expanded or placeholder copy changes.
+4. **Reconcile search copy with filtering behavior** — Documented in `PAGE_SPECIFICATIONS.md` and reflected in `USABILITY_AUDIT.md`. ✅

@@ -34,6 +34,16 @@ Quality presets are global and persist across toys, so toys should respond consi
 - **Persist in the session**: rely on the shared settings panel to persist choices so users do not have to reconfigure on every toy switch.
 - **Match default preset intent**: align with the baseline values documented in `docs/DEVELOPMENT.md` so renderer settings stay consistent across toys.
 
+## Authoring custom quality presets
+
+Use custom quality presets only when a toy needs additional fidelity tiers or different particle scaling than the shared defaults.
+
+- **Define the preset list explicitly** using the `QualityPreset` shape (`id`, `label`, `description`, `maxPixelRatio`, `renderScale`, optional `particleScale`). Keep `id` values stable so stored selections remain valid.
+- **Wire presets into the settings panel** by passing them to `createToyQualityControls({ presets, defaultPresetId })` or `createRendererQualityManager({ presets })` so the shared panel renders the correct options and persists the active preset.
+- **Map presets to toy-specific knobs** with `getRendererSettings` or an `onChange` callback if you need to scale shader iterations, particle counts, or effect intensity beyond `maxPixelRatio` and `renderScale`.
+- **Avoid clobbering global state**: if a toy truly requires its own preset list, set a `storageKey` to keep it separate from the shared `stims:quality-preset` setting, and explain the divergence in the toy’s inline description.
+- **Keep copy concise**: use the `description` field to explain the trade-off (performance vs. fidelity) so the control panel stays scannable.
+
 ## Settings panel checklist (toy-facing controls)
 
 When exposing toy-specific controls, align them with the shared panel patterns so the UI stays predictable:
