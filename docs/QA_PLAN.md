@@ -15,6 +15,15 @@ This guide captures the highest-impact flows to validate and how we keep them co
   - What to verify: microphone setup resolves permissions, falls back to demo audio when blocked, and emits state changes that toys can react to.
   - Automation: `tests/microphone-flow.test.ts` validates the state machine around permission requests, error handling, and fallback triggers.
 
+## Quick manual checklist (UI smoke pass)
+
+When you touch the landing page or toy shell UI, run this short manual pass:
+
+1. **Landing page**: Starter packs render, and their links open the expected toys.
+2. **Library search**: Search input filters cards and clearing filters restores all results.
+3. **Toy launch**: Open a toy from the library, start demo audio, and confirm visuals respond.
+4. **Performance panel**: Open system check, toggle a quality preset, and verify the selection persists when switching toys.
+
 ## How to run the QA automation
 
 Use Bun to match the repository tooling:
