@@ -583,6 +583,27 @@ header.hero {
   content: none;
 }
 
+.system-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.system-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--surface-border) 70%, transparent);
+}
+
 .system-grid {
   display: grid;
   gap: 1.4rem;
@@ -1049,6 +1070,26 @@ html.light .hero-readiness__text {
   margin: 0.35rem 0 0;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+.intro-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.intro-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--surface-border) 70%, transparent);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color);
 }
 
 .details-panel {
