@@ -4,7 +4,10 @@ import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
 import { disposeObject3D } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControls } from '../utils/toy-settings';
+import {
+  buildToySettingsPanel,
+  createToyQualityControls,
+} from '../utils/toy-settings';
 
 type ShapeMode = 'cubes' | 'spheres';
 
@@ -58,7 +61,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const gridGroup = new THREE.Group();
   const gridItems: GridItem[] = [];
 
-  const { quality, configurePanel } = createToyQualityControls({
+  const { quality } = createToyQualityControls({
     title: 'Grid visualizer',
     description:
       'Adjust render resolution caps and switch primitives without restarting audio.',
@@ -229,29 +232,29 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    const panel = configurePanel();
-
-    const shapeRow = panel.addSection(
-      'Shape',
-      'Change the primitive without restarting audio.',
-    );
-
-    const select = document.createElement('select');
-    select.className = 'control-panel__select';
-    Object.entries(presets).forEach(([key, preset]) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = preset.label;
-      select.appendChild(option);
+    buildToySettingsPanel({
+      title: 'Grid visualizer',
+      description:
+        'Adjust render resolution caps and switch primitives without restarting audio.',
+      quality,
+      sections: [
+        {
+          title: 'Shape',
+          description: 'Change the primitive without restarting audio.',
+          controls: [
+            {
+              type: 'select',
+              options: Object.entries(presets).map(([key, preset]) => ({
+                value: key,
+                label: preset.label,
+              })),
+              getValue: () => activeMode,
+              onChange: (value) => rebuildGrid(value as ShapeMode),
+            },
+          ],
+        },
+      ],
     });
-
-    select.value = activeMode;
-    select.addEventListener('change', () => {
-      const nextMode = select.value as ShapeMode;
-      rebuildGrid(nextMode);
-    });
-
-    shapeRow.appendChild(select);
   }
 
   function updateTransforms(

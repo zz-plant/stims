@@ -8,10 +8,11 @@ import type { QualityPreset } from '../core/settings-panel';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
+import { createPerformanceSettingsHandler } from '../utils/performance-settings';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  createControlPanelButtonGroup,
+  buildToySettingsPanel,
   createToyQualityControls,
 } from '../utils/toy-settings';
 
@@ -23,7 +24,7 @@ type PresetInstance = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const { quality, configurePanel } = createToyQualityControls({
+  const { quality } = createToyQualityControls({
     title: 'Cosmic controls',
     description:
       'Quality changes persist between toys so you can cap DPI or ramp visuals.',
@@ -37,13 +38,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       setActivePreset(activePresetKey, { force: true });
     },
   });
-  let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
+  let performanceSettings = getActivePerformanceSettings();
+  let performanceSettingsHandler: ReturnType<
+    typeof createPerformanceSettingsHandler
+  > | null = null;
   let runtime: ToyRuntimeInstance;
 
   let activePreset: PresetInstance | null = null;
   let activePresetKey: PresetKey = 'orbit';
-  let presetButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
-    null;
 
   function getParticleScale(quality: QualityPreset) {
     return (quality.particleScale ?? 1) * performanceSettings.particleBudget;
@@ -297,38 +299,41 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         ? createOrbitPreset(quality.activeQuality)
         : createNebulaPreset(quality.activeQuality);
     activePresetKey = key;
-    presetButtons?.setActive(activePresetKey);
   }
 
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: performanceSettings.maxPixelRatio,
-      renderScale: quality.activeQuality.renderScale,
-    });
     setActivePreset(activePresetKey, { force: true });
   }
 
   function setupSettingsPanel() {
-    const panel = configurePanel();
-
-    const presetRow = panel.addSection(
-      'Cosmic preset',
-      'Switch between swirling orbits and deep nebula fly-throughs.',
-    );
-
-    presetButtons = createControlPanelButtonGroup({
-      panel: presetRow,
-      options: [
-        { id: 'orbit', label: 'Orbit' },
-        { id: 'nebula', label: 'Nebula' },
+    buildToySettingsPanel({
+      title: 'Cosmic controls',
+      description:
+        'Quality changes persist between toys so you can cap DPI or ramp visuals.',
+      quality,
+      sections: [
+        {
+          title: 'Cosmic preset',
+          description:
+            'Switch between swirling orbits and deep nebula fly-throughs.',
+          controls: [
+            {
+              type: 'button-group',
+              options: [
+                { id: 'orbit', label: 'Orbit' },
+                { id: 'nebula', label: 'Nebula' },
+              ],
+              getActiveId: () => activePresetKey,
+              onChange: (key) => setActivePreset(key as PresetKey),
+              buttonClassName: 'cta-button',
+              activeClassName: 'active',
+              setDisabledOnActive: true,
+              setAriaPressed: false,
+            },
+          ],
+        },
       ],
-      getActiveId: () => activePresetKey,
-      onSelect: (key) => setActivePreset(key as PresetKey),
-      buttonClassName: 'cta-button',
-      activeClassName: 'active',
-      setDisabledOnActive: true,
-      setAriaPressed: false,
     });
   }
 
@@ -365,9 +370,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         update: ({ frequencyData, time }) => {
           animate(frequencyData, time);
         },
-        onPerformanceChange: (settings) => {
-          applyPerformanceSettings(settings);
-        },
         dispose: () => {
           activePreset?.dispose();
         },
@@ -376,6 +378,22 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   });
 
   runtime = startRuntime({ container });
+  performanceSettingsHandler = createPerformanceSettingsHandler({
+    applyRendererSettings: (settings) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: settings.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
+      });
+    },
+    onChange: applyPerformanceSettings,
+  });
+  performanceSettings = performanceSettingsHandler.getSettings();
 
-  return runtime;
+  return {
+    ...runtime,
+    dispose: () => {
+      performanceSettingsHandler?.dispose();
+      runtime.dispose();
+    },
+  };
 }

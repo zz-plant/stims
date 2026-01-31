@@ -216,6 +216,34 @@ export function createControlPanelButtonGroup({
   return { row, buttons, setActive };
 }
 
+type StatefulControlPanelButtonGroupOptions = Omit<
+  ControlPanelButtonGroupOptions,
+  'onSelect'
+> & {
+  onChange: (id: string) => void;
+  syncOnChange?: boolean;
+};
+
+export function createStatefulControlPanelButtonGroup({
+  onChange,
+  syncOnChange = true,
+  ...options
+}: StatefulControlPanelButtonGroupOptions) {
+  const group = createControlPanelButtonGroup({
+    ...options,
+    onSelect: (id) => {
+      onChange(id);
+      if (syncOnChange) {
+        group.setActive(options.getActiveId());
+      }
+    },
+  });
+
+  const sync = () => group.setActive(options.getActiveId());
+
+  return { ...group, sync };
+}
+
 export function configureToySettingsPanel({
   title,
   description,
@@ -224,5 +252,77 @@ export function configureToySettingsPanel({
 }: ToySettingsPanelOptions): PersistentSettingsPanel {
   panel.configure({ title, description });
   quality?.configureQualityPresets(panel);
+  return panel;
+}
+
+export type PanelSelectOption = {
+  value: string;
+  label: string;
+};
+
+type ButtonGroupControl = Omit<
+  StatefulControlPanelButtonGroupOptions,
+  'panel'
+> & {
+  type: 'button-group';
+};
+
+type SelectControl = {
+  type: 'select';
+  options: PanelSelectOption[];
+  getValue: () => string;
+  onChange: (value: string) => void;
+  selectClassName?: string;
+};
+
+export type ToySettingsSection = {
+  title: string;
+  description?: string;
+  controls: Array<ButtonGroupControl | SelectControl>;
+};
+
+type BuildToySettingsPanelOptions = ToySettingsPanelOptions & {
+  sections: ToySettingsSection[];
+};
+
+export function buildToySettingsPanel({
+  sections,
+  ...panelOptions
+}: BuildToySettingsPanelOptions): PersistentSettingsPanel {
+  const panel = configureToySettingsPanel(panelOptions);
+
+  sections.forEach((section, sectionIndex) => {
+    const sectionPanel = panel.addSection(section.title, section.description);
+
+    section.controls.forEach((control, controlIndex) => {
+      if (control.type === 'button-group') {
+        createStatefulControlPanelButtonGroup({
+          ...control,
+          panel: sectionPanel,
+        });
+        return;
+      }
+
+      if (control.type === 'select') {
+        const select = document.createElement('select');
+        select.className = control.selectClassName ?? 'control-panel__select';
+        const selectId = `control-select-${sectionIndex}-${controlIndex}`;
+        select.id = selectId;
+
+        control.options.forEach((option) => {
+          const optionElement = document.createElement('option');
+          optionElement.value = option.value;
+          optionElement.textContent = option.label;
+          select.appendChild(optionElement);
+        });
+
+        select.value = control.getValue();
+        select.addEventListener('change', () => control.onChange(select.value));
+
+        sectionPanel.appendChild(select);
+      }
+    });
+  });
+
   return panel;
 }
