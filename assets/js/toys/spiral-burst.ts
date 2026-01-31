@@ -10,10 +10,11 @@ import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
 import { applyAudioColor } from '../utils/color-audio';
+import { createPerformanceSettingsHandler } from '../utils/performance-settings';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  createControlPanelButtonGroup,
+  buildToySettingsPanel,
   createToyQualityControls,
 } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
@@ -46,7 +47,7 @@ type ParticleField = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const { quality, configurePanel } = createToyQualityControls({
+  const { quality } = createToyQualityControls({
     title: 'Spiral Burst',
     description:
       'Explosive spirals that pulse with your music. Try different modes, pinch to amplify, and rotate to swap moods!',
@@ -62,11 +63,11 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       createBloomMesh();
     },
   });
-  let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
+  let performanceSettings = getActivePerformanceSettings();
+  let performanceSettingsHandler: ReturnType<
+    typeof createPerformanceSettingsHandler
+  > | null = null;
   let currentMode: SpiralMode = 'burst';
-  let modeRow: HTMLDivElement | null = null;
-  let modeButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
-    null;
   let activePaletteIndex = 0;
   let runtime: ToyRuntimeInstance;
 
@@ -302,10 +303,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: settings.maxPixelRatio,
-      renderScale: quality.activeQuality.renderScale,
-    });
     buildSpiralArms();
     disposeParticleField();
     particleField = createParticleField();
@@ -313,34 +310,38 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function setMode(mode: SpiralMode) {
     currentMode = mode;
-    updateModeButtons();
-  }
-
-  function updateModeButtons() {
-    modeButtons?.setActive(currentMode);
   }
 
   function setupSettingsPanel() {
-    const panel = configurePanel();
-    const panelElement = panel.getElement();
-
-    modeRow?.remove();
     const modes: SpiralMode[] = ['burst', 'bloom', 'vortex', 'heartbeat'];
-    modeButtons = createControlPanelButtonGroup({
-      panel: panelElement,
-      options: modes.map((mode) => ({
-        id: mode,
-        label: mode.charAt(0).toUpperCase() + mode.slice(1),
-      })),
-      getActiveId: () => currentMode,
-      onSelect: (mode) => setMode(mode as SpiralMode),
-      rowClassName: 'control-panel__row control-panel__mode-row',
-      buttonClassName: 'control-panel__mode',
-      activeClassName: 'is-active',
-      dataAttribute: 'data-spiral-mode',
-      setAriaPressed: true,
+    buildToySettingsPanel({
+      title: 'Spiral Burst',
+      description:
+        'Explosive spirals that pulse with your music. Try different modes, pinch to amplify, and rotate to swap moods!',
+      quality,
+      sections: [
+        {
+          title: 'Mode',
+          description: 'Pick a spiral behavior.',
+          controls: [
+            {
+              type: 'button-group',
+              options: modes.map((mode) => ({
+                id: mode,
+                label: mode.charAt(0).toUpperCase() + mode.slice(1),
+              })),
+              getActiveId: () => currentMode,
+              onChange: (mode) => setMode(mode as SpiralMode),
+              rowClassName: 'control-panel__row control-panel__mode-row',
+              buttonClassName: 'control-panel__mode',
+              activeClassName: 'is-active',
+              dataAttribute: 'data-spiral-mode',
+              setAriaPressed: true,
+            },
+          ],
+        },
+      ],
     });
-    modeRow = modeButtons.row;
   }
 
   function setupPerformancePanel() {
@@ -680,9 +681,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         update: ({ frequencyData, time, analyser }) => {
           animate(frequencyData, time, analyser);
         },
-        onPerformanceChange: (settings) => {
-          applyPerformanceSettings(settings);
-        },
         dispose: () => {
           disposeSpiralArms();
           disposeParticleField();
@@ -691,8 +689,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
             disposeGeometry(bloomMesh.geometry as THREE.BufferGeometry);
             disposeMaterial(bloomMesh.material as THREE.Material);
           }
-          modeRow?.remove();
-          modeRow = null;
           window.removeEventListener('keydown', handleKeydown);
         },
       },
@@ -700,6 +696,22 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   });
 
   runtime = startRuntime({ container });
+  performanceSettingsHandler = createPerformanceSettingsHandler({
+    applyRendererSettings: (settings) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: settings.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
+      });
+    },
+    onChange: applyPerformanceSettings,
+  });
+  performanceSettings = performanceSettingsHandler.getSettings();
 
-  return runtime;
+  return {
+    ...runtime,
+    dispose: () => {
+      performanceSettingsHandler?.dispose();
+      runtime.dispose();
+    },
+  };
 }

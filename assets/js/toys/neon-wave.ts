@@ -32,10 +32,11 @@ import { PersistentSettingsPanel } from '../core/settings-panel';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createBeatTracker } from '../utils/audio-beat';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
+import { createPerformanceSettingsHandler } from '../utils/performance-settings';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  createControlPanelButtonGroup,
+  buildToySettingsPanel,
   createToyQualityControls,
 } from '../utils/toy-settings';
 
@@ -82,7 +83,7 @@ const THEMES: Record<NeonTheme, ThemePalette> = {
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const settingsPanel = new PersistentSettingsPanel(container || undefined);
-  const { quality, configurePanel } = createToyQualityControls({
+  const { quality } = createToyQualityControls({
     title: 'Neon Wave',
     description: 'Retro-wave visualizer with bloom effects. Pick a theme!',
     panel: settingsPanel,
@@ -96,7 +97,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       createParticles();
     },
   });
-  let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
+  let performanceSettings = getActivePerformanceSettings();
+  let performanceSettingsHandler: ReturnType<
+    typeof createPerformanceSettingsHandler
+  > | null = null;
   let currentTheme: NeonTheme = 'synthwave';
   let palette = THEMES[currentTheme];
   let runtime: ToyRuntimeInstance;
@@ -120,8 +124,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let smoothedMids = 0;
   let smoothedHighs = 0;
   let beatIntensity = 0;
-  let themeButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
-    null;
   const beatTracker = createBeatTracker({
     threshold: 0.55,
     minIntervalMs: 150,
@@ -439,51 +441,53 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         result.renderer.setClearColor(palette.background, 1);
       }
     });
-
-    updateThemeButtons();
-  }
-
-  function updateThemeButtons() {
-    themeButtons?.setActive(currentTheme);
   }
 
   function applyPerformanceSettings(settings: PerformanceSettings) {
     performanceSettings = settings;
-    runtime.toy.updateRendererSettings({
-      maxPixelRatio: settings.maxPixelRatio,
-      renderScale: quality.activeQuality.renderScale,
-    });
     createWaveMesh();
     createParticles();
   }
 
   function setupSettingsPanel() {
-    const panel = configurePanel();
-    const panelElement = panel.getElement();
-
     const themes: NeonTheme[] = ['synthwave', 'cyberpunk', 'arctic', 'sunset'];
-    themeButtons = createControlPanelButtonGroup({
-      panel: panelElement,
-      options: themes.map((theme) => ({
-        id: theme,
-        label: theme.charAt(0).toUpperCase() + theme.slice(1),
-      })),
-      getActiveId: () => currentTheme,
-      onSelect: (theme) => applyTheme(theme as NeonTheme),
-      rowStyle: 'display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;',
-      buttonStyle: [
-        'padding: 6px 12px',
-        'border: 1px solid currentColor',
-        'background: transparent',
-        'color: inherit',
-        'border-radius: 4px',
-        'cursor: pointer',
-        'font-size: 12px',
-        'transition: all 0.2s',
-      ].join('; '),
-      activeClassName: 'active',
-      setAriaPressed: false,
-      dataAttribute: 'data-neon-theme',
+    buildToySettingsPanel({
+      title: 'Neon Wave',
+      description: 'Retro-wave visualizer with bloom effects. Pick a theme!',
+      panel: settingsPanel,
+      quality,
+      sections: [
+        {
+          title: 'Theme',
+          description: 'Pick a colorway for the glow.',
+          controls: [
+            {
+              type: 'button-group',
+              options: themes.map((theme) => ({
+                id: theme,
+                label: theme.charAt(0).toUpperCase() + theme.slice(1),
+              })),
+              getActiveId: () => currentTheme,
+              onChange: (theme) => applyTheme(theme as NeonTheme),
+              rowStyle:
+                'display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;',
+              buttonStyle: [
+                'padding: 6px 12px',
+                'border: 1px solid currentColor',
+                'background: transparent',
+                'color: inherit',
+                'border-radius: 4px',
+                'cursor: pointer',
+                'font-size: 12px',
+                'transition: all 0.2s',
+              ].join('; '),
+              activeClassName: 'active',
+              setAriaPressed: false,
+              dataAttribute: 'data-neon-theme',
+            },
+          ],
+        },
+      ],
     });
   }
 
@@ -635,9 +639,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         update: ({ analyser, time }) => {
           animate(analyser, time);
         },
-        onPerformanceChange: (settings) => {
-          applyPerformanceSettings(settings);
-        },
         dispose: () => {
           disposeGeometry(waveGeometry ?? undefined);
           disposeMaterial(waveMaterial);
@@ -659,6 +660,22 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   });
 
   runtime = startRuntime({ container });
+  performanceSettingsHandler = createPerformanceSettingsHandler({
+    applyRendererSettings: (settings) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: settings.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
+      });
+    },
+    onChange: applyPerformanceSettings,
+  });
+  performanceSettings = performanceSettingsHandler.getSettings();
 
-  return runtime;
+  return {
+    ...runtime,
+    dispose: () => {
+      performanceSettingsHandler?.dispose();
+      runtime.dispose();
+    },
+  };
 }

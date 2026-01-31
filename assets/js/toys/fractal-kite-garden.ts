@@ -4,7 +4,7 @@ import { getBandAverage } from '../utils/audio-bands';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  createControlPanelButtonGroup,
+  buildToySettingsPanel,
   createToyQualityControls,
 } from '../utils/toy-settings';
 
@@ -21,7 +21,7 @@ type KiteInstance = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const { quality, configurePanel } = createToyQualityControls({
+  const { quality } = createToyQualityControls({
     title: 'Fractal Kite Garden',
     description:
       'Quality presets persist across toys so you can balance DPI and branching density.',
@@ -34,9 +34,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     },
   });
   let runtime: ToyRuntimeInstance;
-  let settingsPanel: ReturnType<typeof configurePanel>;
-  let paletteButtons: ReturnType<typeof createControlPanelButtonGroup> | null =
-    null;
+  let settingsPanel: ReturnType<typeof buildToySettingsPanel>;
 
   const palettes: Record<PaletteKey, number[]> = {
     aurora: [0x83e6ff, 0x6ad0f7, 0xd3afff, 0xa8f7dd],
@@ -234,33 +232,42 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
     panelDensityInput = densityInput;
     densityRow.appendChild(densityInput);
-
-    const paletteRow = settingsPanel.addSection(
-      'Color palette',
-      'Switch gradients without resetting audio.',
-    );
-
-    paletteButtons = createControlPanelButtonGroup({
-      panel: paletteRow,
-      options: (Object.keys(palettes) as PaletteKey[]).map((paletteKey) => ({
-        id: paletteKey,
-        label: paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1),
-      })),
-      getActiveId: () => settings.palette,
-      onSelect: (paletteKey) => {
-        settings.palette = paletteKey as PaletteKey;
-        paletteButtons?.setActive(settings.palette);
-        buildGarden();
-      },
-      buttonClassName: 'cta-button',
-      activeClassName: 'active',
-      setDisabledOnActive: true,
-      setAriaPressed: false,
-    });
   }
 
   function setupSettingsPanel() {
-    settingsPanel = configurePanel();
+    settingsPanel = buildToySettingsPanel({
+      title: 'Fractal Kite Garden',
+      description:
+        'Quality presets persist across toys so you can balance DPI and branching density.',
+      quality,
+      sections: [
+        {
+          title: 'Color palette',
+          description: 'Switch gradients without resetting audio.',
+          controls: [
+            {
+              type: 'button-group',
+              options: (Object.keys(palettes) as PaletteKey[]).map(
+                (paletteKey) => ({
+                  id: paletteKey,
+                  label:
+                    paletteKey.charAt(0).toUpperCase() + paletteKey.slice(1),
+                }),
+              ),
+              getActiveId: () => settings.palette,
+              onChange: (paletteKey) => {
+                settings.palette = paletteKey as PaletteKey;
+                buildGarden();
+              },
+              buttonClassName: 'cta-button',
+              activeClassName: 'active',
+              setDisabledOnActive: true,
+              setAriaPressed: false,
+            },
+          ],
+        },
+      ],
+    });
   }
 
   function init() {
