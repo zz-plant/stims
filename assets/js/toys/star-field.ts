@@ -9,10 +9,7 @@ import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
 type StarFieldBuffers = {
@@ -33,7 +30,10 @@ type StarfieldPalette = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Star field',
+    description:
+      'Tune render resolution and particle density for your GPU. Pinch to intensify the drift and rotate to swap nebula moods.',
     getRuntime: () => runtime,
     getRendererSettings: (preset) => ({
       maxPixelRatio: performanceSettings.maxPixelRatio,
@@ -258,12 +258,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    configureToySettingsPanel({
-      title: 'Star field',
-      description:
-        'Tune render resolution and particle density for your GPU. Pinch to intensify the drift and rotate to swap nebula moods.',
-      quality,
-    });
+    configurePanel();
   }
 
   function setupPerformancePanel() {

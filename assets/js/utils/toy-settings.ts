@@ -45,6 +45,12 @@ type RendererQualityManagerOptions = QualityPresetManagerOptions & {
   onChange?: (preset: QualityPreset) => void;
 };
 
+export type ToyQualityControlsOptions = RendererQualityManagerOptions & {
+  title: string;
+  description?: string;
+  panel?: PersistentSettingsPanel;
+};
+
 export function createQualityPresetManager(
   options: QualityPresetManagerOptions = {},
 ): QualityPresetManager {
@@ -107,6 +113,25 @@ export function createRendererQualityManager(
       onChange?.(preset);
     },
   });
+}
+
+export function createToyQualityControls({
+  title,
+  description,
+  panel,
+  ...qualityOptions
+}: ToyQualityControlsOptions) {
+  const quality = createRendererQualityManager(qualityOptions);
+
+  const configurePanel = () =>
+    configureToySettingsPanel({
+      title,
+      description,
+      panel,
+      quality,
+    });
+
+  return { quality, configurePanel };
 }
 
 type ToySettingsPanelOptions = {

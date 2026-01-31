@@ -8,10 +8,7 @@ import { getBandAverage } from '../utils/audio-bands';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 
 const MOBILE_QUALITY_PRESET: QualityPreset = {
   id: 'mobile',
@@ -42,7 +39,9 @@ type RingState = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Mobile Ripples',
+    description: 'Low-power neon ripples tuned for touch-first screens.',
     presets: QUALITY_PRESETS,
     defaultPresetId: isCompactDevice() ? 'mobile' : 'balanced',
     storageKey: 'stims:mobile-ripples:quality',
@@ -151,11 +150,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    configureToySettingsPanel({
-      title: 'Mobile Ripples',
-      description: 'Low-power neon ripples tuned for touch-first screens.',
-      quality,
-    });
+    configurePanel();
   }
 
   const startRuntime = createToyRuntimeStarter({

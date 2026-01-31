@@ -7,10 +7,7 @@ import {
   disposeMesh,
 } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 
 interface RingData {
   outer: THREE.Mesh;
@@ -20,7 +17,9 @@ interface RingData {
 }
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Rainbow tunnel',
+    description: 'Preset tweaks update DPI and ring density together.',
     getRuntime: () => runtime,
     onChange: () => {
       rebuildScene();
@@ -224,11 +223,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    configureToySettingsPanel({
-      title: 'Rainbow tunnel',
-      description: 'Preset tweaks update DPI and ring density together.',
-      quality,
-    });
+    configurePanel();
   }
 
   const startRuntime = createToyRuntimeStarter({

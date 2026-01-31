@@ -35,9 +35,8 @@ import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  configureToySettingsPanel,
   createControlPanelButtonGroup,
-  createRendererQualityManager,
+  createToyQualityControls,
 } from '../utils/toy-settings';
 
 type NeonTheme = 'synthwave' | 'cyberpunk' | 'arctic' | 'sunset';
@@ -83,7 +82,9 @@ const THEMES: Record<NeonTheme, ThemePalette> = {
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const settingsPanel = new PersistentSettingsPanel(container || undefined);
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Neon Wave',
+    description: 'Retro-wave visualizer with bloom effects. Pick a theme!',
     panel: settingsPanel,
     getRuntime: () => runtime,
     getRendererSettings: (preset) => ({
@@ -457,19 +458,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    configureToySettingsPanel({
-      title: 'Neon Wave',
-      description: 'Retro-wave visualizer with bloom effects. Pick a theme!',
-      panel: settingsPanel,
-      quality,
-    });
-
-    const panel = container?.querySelector('.control-panel');
-    if (!(panel instanceof HTMLElement)) return;
+    const panel = configurePanel();
+    const panelElement = panel.getElement();
 
     const themes: NeonTheme[] = ['synthwave', 'cyberpunk', 'arctic', 'sunset'];
     themeButtons = createControlPanelButtonGroup({
-      panel,
+      panel: panelElement,
       options: themes.map((theme) => ({
         id: theme,
         label: theme.charAt(0).toUpperCase() + theme.slice(1),

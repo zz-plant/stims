@@ -8,10 +8,7 @@ import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 
 type GravityState = {
   vector: THREE.Vector3;
@@ -158,7 +155,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   const clock = new THREE.Clock();
   let damping = 0.984;
   let grainScale = 1.2;
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Tactile sand table',
+    description:
+      'Ripple the grains with bass and mids. Tilt your device to nudge gravity, or lock it when playing on desktop.',
     defaultPresetId: 'balanced',
     getRuntime: () => runtime,
     onChange: (preset) => {
@@ -182,12 +182,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   ) as MotionAccessState;
   gravity.locked = motionAccess !== 'granted';
 
-  const panel = configureToySettingsPanel({
-    title: 'Tactile sand table',
-    description:
-      'Ripple the grains with bass and mids. Tilt your device to nudge gravity, or lock it when playing on desktop.',
-    quality,
-  });
+  const panel = configurePanel();
 
   const grainRow = panel.addSection(
     'Grain size',

@@ -4,10 +4,7 @@ import { getBandAverage } from '../utils/audio-bands';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { disposeGeometry, disposeMesh } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import {
-  configureToySettingsPanel,
-  createRendererQualityManager,
-} from '../utils/toy-settings';
+import { createToyQualityControls } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
 type AuroraPalette = {
@@ -21,7 +18,10 @@ type AuroraPalette = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const quality = createRendererQualityManager({
+  const { quality, configurePanel } = createToyQualityControls({
+    title: 'Aurora painter',
+    description:
+      'Control render scale and ribbon density without restarting audio. Pinch to swell the ribbons and rotate to switch moods.',
     getRuntime: () => runtime,
     onChange: () => {
       rebuildRibbons();
@@ -238,12 +238,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    configureToySettingsPanel({
-      title: 'Aurora painter',
-      description:
-        'Control render scale and ribbon density without restarting audio. Pinch to swell the ribbons and rotate to switch moods.',
-      quality,
-    });
+    configurePanel();
   }
 
   function applyPalette(index: number) {
