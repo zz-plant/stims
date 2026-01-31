@@ -767,6 +767,86 @@ header.hero {
   pointer-events: none;
 }
 
+.starter-packs {
+  position: relative;
+  padding: clamp(2.5rem, 6vw, 5rem) 0;
+  margin-top: clamp(2rem, 5vw, 4rem);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-color) 12%, transparent),
+    transparent 65%
+  );
+}
+
+.starter-packs .section-heading {
+  margin-bottom: 2.5rem;
+}
+
+.pack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.pack-card {
+  padding: 1.75rem;
+  border-radius: calc(var(--radius-lg) + 4px);
+  background: color-mix(in srgb, var(--surface-card) 94%, transparent);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pack-card h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.pack-card p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.pack-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.pack-card ul a {
+  color: inherit;
+}
+
+.pack-card .text-link {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.library-first-run {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-card) 85%, transparent);
+  border: 1px solid var(--surface-border);
+  color: var(--text-default);
+}
+
+.library-first-run__title {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+.library-first-run ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
 .system-grid {
   display: grid;
   gap: 1.4rem;
