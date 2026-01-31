@@ -1,5 +1,13 @@
 const ns = 'http://www.w3.org/2000/svg';
 
+function applyAttributes(element, attributes = {}) {
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      element.setAttribute(key, String(value));
+    }
+  });
+}
+
 function createSvgContext(_slug, label) {
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', '0 0 120 120');
@@ -16,16 +24,15 @@ function createSvgContext(_slug, label) {
 
   const createGradient = (type, id, stops, attrs = {}) => {
     const gradient = document.createElementNS(ns, `${type}Gradient`);
-    gradient.setAttribute('id', id);
-    Object.entries(attrs).forEach(([key, value]) => {
-      gradient.setAttribute(key, value);
-    });
+    applyAttributes(gradient, { id, ...attrs });
 
     stops.forEach(({ offset, color, opacity }) => {
       const stop = document.createElementNS(ns, 'stop');
-      stop.setAttribute('offset', offset);
-      stop.setAttribute('stop-color', color);
-      if (opacity !== undefined) stop.setAttribute('stop-opacity', opacity);
+      applyAttributes(stop, {
+        offset,
+        'stop-color': color,
+        'stop-opacity': opacity,
+      });
       gradient.appendChild(stop);
     });
 
@@ -35,11 +42,7 @@ function createSvgContext(_slug, label) {
 
   const createNode = (tag, attributes = {}, children = []) => {
     const el = document.createElementNS(ns, tag);
-    Object.entries(attributes).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        el.setAttribute(key, String(value));
-      }
-    });
+    applyAttributes(el, attributes);
     children.forEach((child) => el.appendChild(child));
     return el;
   };
@@ -50,14 +53,12 @@ function createSvgContext(_slug, label) {
     children = [],
   ) => {
     const pattern = document.createElementNS(ns, 'pattern');
-    pattern.setAttribute('id', id);
-    pattern.setAttribute('width', String(width));
-    pattern.setAttribute('height', String(height));
-    pattern.setAttribute('patternUnits', units ?? 'userSpaceOnUse');
-    Object.entries(attrs).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        pattern.setAttribute(key, String(value));
-      }
+    applyAttributes(pattern, {
+      id,
+      width,
+      height,
+      patternUnits: units ?? 'userSpaceOnUse',
+      ...attrs,
     });
     children.forEach((child) => pattern.appendChild(child));
     defs.appendChild(pattern);
