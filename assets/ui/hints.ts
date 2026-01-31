@@ -16,6 +16,7 @@ export interface HintOptions {
 const STYLE_ID = 'stims-hints-style';
 const STORAGE_PREFIX = 'stims.hints.dismissed.';
 const DEFAULT_IDLE_DELAY_MS = 1200;
+const DISMISS_LABEL = "Don't show again";
 
 function injectHintStyles() {
   if (document.getElementById(STYLE_ID)) return;
@@ -175,6 +176,31 @@ export function initHints({
     manualButtonElement = null;
   };
 
+  const createButton = (
+    className: string,
+    label: string,
+    onClick: () => void,
+  ) => {
+    const button = doc.createElement('button');
+    button.className = className;
+    button.type = 'button';
+    button.textContent = label;
+    button.addEventListener('click', onClick);
+    return button;
+  };
+
+  const createTipsList = () => {
+    const list = doc.createElement('ul');
+    list.className = 'stims-hint__list';
+    tips.forEach((tip) => {
+      const item = doc.createElement('li');
+      item.className = 'stims-hint__item';
+      item.textContent = tip;
+      list.appendChild(item);
+    });
+    return list;
+  };
+
   const renderHint = () => {
     if (hintElement || hasDismissed(id)) return;
 
@@ -189,33 +215,17 @@ export function initHints({
     heading.textContent = title;
     wrapper.appendChild(heading);
 
-    const list = doc.createElement('ul');
-    list.className = 'stims-hint__list';
-    tips.forEach((tip) => {
-      const item = doc.createElement('li');
-      item.className = 'stims-hint__item';
-      item.textContent = tip;
-      list.appendChild(item);
-    });
-    wrapper.appendChild(list);
+    wrapper.appendChild(createTipsList());
 
     const actions = doc.createElement('div');
     actions.className = 'stims-hint__actions';
 
-    const confirm = doc.createElement('button');
-    confirm.className = 'stims-hint__button';
-    confirm.type = 'button';
-    confirm.textContent = ctaLabel;
-    confirm.addEventListener('click', () => {
+    const confirm = createButton('stims-hint__button', ctaLabel, () => {
       wrapper.remove();
       hintElement = null;
     });
 
-    const dismiss = doc.createElement('button');
-    dismiss.className = 'stims-hint__dismiss';
-    dismiss.type = 'button';
-    dismiss.textContent = "Don't show again";
-    dismiss.addEventListener('click', () => {
+    const dismiss = createButton('stims-hint__dismiss', DISMISS_LABEL, () => {
       setDismissed(id);
       wrapper.remove();
       hintElement = null;
