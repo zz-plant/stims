@@ -6,6 +6,11 @@ import {
 } from '../core/motion-preferences';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import {
+  createControlPanelCheckbox,
+  createControlPanelNote,
+  createControlPanelSlider,
+} from '../utils/control-panel-elements';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createToyQualityControls } from '../utils/toy-settings';
@@ -188,18 +193,16 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     'Grain size',
     'Scale the displacement height for taller or flatter dunes.',
   );
-  const grainSlider = document.createElement('input');
-  grainSlider.type = 'range';
-  grainSlider.min = '0.6';
-  grainSlider.max = '2.4';
-  grainSlider.step = '0.02';
-  grainSlider.value = grainScale.toString();
-  grainSlider.setAttribute('aria-label', 'Grain size');
-  grainSlider.className = 'control-panel__slider';
-  grainSlider.addEventListener('input', (event) => {
-    const value = Number((event.target as HTMLInputElement).value);
-    grainScale = value;
-    sandMaterial.displacementScale = value;
+  const grainSlider = createControlPanelSlider({
+    min: 0.6,
+    max: 2.4,
+    step: 0.02,
+    value: grainScale,
+    ariaLabel: 'Grain size',
+    onInput: (value) => {
+      grainScale = value;
+      sandMaterial.displacementScale = value;
+    },
   });
   grainRow.appendChild(grainSlider);
 
@@ -207,16 +210,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     'Damping',
     'Higher damping calms ripples faster; lower values keep waves lively.',
   );
-  const dampingSlider = document.createElement('input');
-  dampingSlider.type = 'range';
-  dampingSlider.min = '0.94';
-  dampingSlider.max = '0.995';
-  dampingSlider.step = '0.001';
-  dampingSlider.value = damping.toFixed(3);
-  dampingSlider.setAttribute('aria-label', 'Ripple damping');
-  dampingSlider.className = 'control-panel__slider';
-  dampingSlider.addEventListener('input', (event) => {
-    damping = Number((event.target as HTMLInputElement).value);
+  const dampingSlider = createControlPanelSlider({
+    min: 0.94,
+    max: 0.995,
+    step: 0.001,
+    value: Number(damping.toFixed(3)),
+    ariaLabel: 'Ripple damping',
+    onInput: (value) => {
+      damping = value;
+    },
   });
   dampingRow.appendChild(dampingSlider);
 
@@ -229,22 +231,18 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     'Gravity',
     'Lock to the default downward pull on desktop, or let device tilt steer the sand.',
   );
-  const gravityLock = document.createElement('input');
-  gravityLock.type = 'checkbox';
-  gravityLock.id = 'tactile-gravity-lock';
-  const gravityToggle = document.createElement('label');
-  gravityToggle.className = 'control-panel__checkbox-inline';
-  gravityToggle.htmlFor = gravityLock.id;
-  gravityToggle.textContent = 'Lock gravity';
-
-  gravityLock.checked = gravity.locked;
-
-  gravityLock.addEventListener('change', () => {
-    gravity.locked = gravityLock.checked;
-    if (gravity.locked) {
-      gravity.target.copy(DEFAULT_GRAVITY);
-    }
-  });
+  const { input: gravityLock, toggle: gravityToggle } =
+    createControlPanelCheckbox({
+      id: 'tactile-gravity-lock',
+      label: 'Lock gravity',
+      checked: gravity.locked,
+      onChange: (checked) => {
+        gravity.locked = checked;
+        if (gravity.locked) {
+          gravity.target.copy(DEFAULT_GRAVITY);
+        }
+      },
+    });
 
   const recenter = document.createElement('button');
   recenter.type = 'button';
@@ -257,16 +255,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     gravity.locked = true;
   });
 
-  gravityToggle.prepend(gravityLock);
   gravityRow.append(gravityToggle, recenter);
 
-  const motionStatus = document.createElement('p');
-  motionStatus.className = 'control-panel__note';
-  motionStatus.textContent = motionSupported
-    ? 'Enable device motion to steer the sand with tilt.'
-    : deviceMotionSupported
-      ? 'Motion input is off. Enable it in the global settings to steer the sand.'
-      : 'Device motion is unavailable; gravity will stay locked.';
+  const motionStatus = createControlPanelNote({
+    text: motionSupported
+      ? 'Enable device motion to steer the sand with tilt.'
+      : deviceMotionSupported
+        ? 'Motion input is off. Enable it in the global settings to steer the sand.'
+        : 'Device motion is unavailable; gravity will stay locked.',
+  });
 
   const motionButton = document.createElement('button');
   motionButton.type = 'button';

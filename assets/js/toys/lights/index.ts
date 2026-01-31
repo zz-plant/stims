@@ -19,10 +19,6 @@ export const startLightsExperience = ({
   let audioController: ReturnType<typeof createAudioController> | null = null;
   let microphoneFlow: { dispose?: () => void } | null = null;
   let removeLightChangeListener: (() => void) | undefined;
-  let handleReducedMotionChange: ((event: MediaQueryListEvent) => void) | null =
-    null;
-  let handleVisibilityChange: (() => void) | null = null;
-  let handlePageHide: (() => void) | null = null;
 
   const renderOnce = () => {
     scene?.toy.render();
@@ -77,37 +73,14 @@ export const startLightsExperience = ({
       applyLighting(scene.lightingGroup, lightType);
       renderOnce();
     });
-
-    handleReducedMotionChange = audioController.handleReducedMotionChange;
-    handleVisibilityChange = audioController.handleVisibilityChange;
-    handlePageHide = audioController.handlePageHide;
-
-    prefersReducedMotion?.addEventListener('change', handleReducedMotionChange);
-    doc.addEventListener('visibilitychange', handleVisibilityChange);
-    win.addEventListener('pagehide', handlePageHide);
   };
 
   const dispose = () => {
     microphoneFlow?.dispose?.();
     microphoneFlow = null;
-    audioController?.cleanupAudio();
+    audioController?.cleanup();
     removeLightChangeListener?.();
     removeLightChangeListener = undefined;
-    if (handleReducedMotionChange) {
-      prefersReducedMotion?.removeEventListener(
-        'change',
-        handleReducedMotionChange,
-      );
-    }
-    if (handleVisibilityChange) {
-      doc?.removeEventListener('visibilitychange', handleVisibilityChange);
-    }
-    if (handlePageHide) {
-      win?.removeEventListener('pagehide', handlePageHide);
-    }
-    handleReducedMotionChange = null;
-    handleVisibilityChange = null;
-    handlePageHide = null;
     scene?.toy.dispose();
     scene = null;
     audioController = null;

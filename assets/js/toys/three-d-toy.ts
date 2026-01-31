@@ -8,7 +8,7 @@ import type { RendererBackend } from '../core/renderer-capabilities';
 import { registerToyGlobals } from '../core/toy-globals';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
-import type { ToyAudioRequest } from '../utils/audio-start';
+import { createRuntimeAudioStarter } from '../utils/audio-start-helpers';
 import {
   type ControlPanelState,
   createControlPanel,
@@ -351,19 +351,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     configurePanel();
   }
 
-  async function startAudio(request: ToyAudioRequest = false) {
-    try {
-      await runtime.startAudio(request);
-      hideError();
-      return true;
-    } catch (e) {
-      showError(
-        'Microphone access was denied. Please allow access and reload.',
-      );
-      throw e;
-    }
-  }
-
   const startRuntime = createToyRuntimeStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 80 } },
@@ -410,6 +397,18 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   });
 
   runtime = startRuntime({ container });
+
+  const startAudio = createRuntimeAudioStarter({
+    runtime,
+    onSuccess: () => {
+      hideError();
+    },
+    onError: () => {
+      showError(
+        'Microphone access was denied. Please allow access and reload.',
+      );
+    },
+  });
 
   const unregisterGlobals = registerToyGlobals(container, startAudio);
 

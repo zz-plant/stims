@@ -1,4 +1,12 @@
-import { createToyRuntime, type ToyRuntimeOptions } from '../core/toy-runtime';
+import {
+  getPerformancePanel,
+  type PerformancePanelOptions,
+} from '../core/performance-panel';
+import {
+  createToyRuntime,
+  type ToyRuntimeOptions,
+  type ToyRuntimePlugin,
+} from '../core/toy-runtime';
 import {
   configureToySettingsPanel,
   type QualityPresetManager,
@@ -17,6 +25,14 @@ export type ToyRuntimeStarterOptions = Omit<
   canvasSelector?: string;
   boundsSelector?: string;
   settingsPanel?: ToyRuntimeStarterSettings;
+};
+
+export type AudioToyStarterOptions = Omit<
+  ToyRuntimeStarterOptions,
+  'plugins'
+> & {
+  plugins?: ToyRuntimePlugin[];
+  performancePanel?: PerformancePanelOptions;
 };
 
 export function createToyRuntimeStarter({
@@ -55,5 +71,28 @@ export function createToyRuntimeStarter({
     }
 
     return runtime;
+  };
+}
+
+export function createAudioToyStarter({
+  plugins = [],
+  performancePanel,
+  ...options
+}: AudioToyStarterOptions) {
+  const startRuntime = createToyRuntimeStarter({
+    ...options,
+    plugins,
+  });
+
+  return function start({
+    container,
+  }: {
+    container?: HTMLElement | null;
+  } = {}) {
+    if (performancePanel) {
+      getPerformancePanel(performancePanel);
+    }
+
+    return startRuntime({ container });
   };
 }

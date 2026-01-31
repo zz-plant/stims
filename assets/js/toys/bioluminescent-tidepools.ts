@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { registerToyGlobals } from '../core/toy-globals';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import type { ToyAudioRequest } from '../utils/audio-start';
+import { createRuntimeAudioStarter } from '../utils/audio-start-helpers';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createToyQualityControls } from '../utils/toy-settings';
@@ -626,18 +626,17 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   runtime = startRuntime({ container });
 
-  async function startAudio(request: ToyAudioRequest = false) {
-    try {
-      return await runtime.startAudio(request);
-    } catch (error) {
+  const startAudio = createRuntimeAudioStarter({
+    runtime,
+    onFallback: async (error) => {
       console.warn('Falling back to silent animation', error);
       if (runtime.toy.rendererReady) {
         await runtime.toy.rendererReady;
       }
       runtime.toy.renderer?.setAnimationLoop(() => animate(new Uint8Array()));
       return null;
-    }
-  }
+    },
+  });
 
   const unregisterGlobals = registerToyGlobals(container, startAudio);
 

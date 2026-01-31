@@ -6,8 +6,8 @@ import {
   applyAudioRotation,
   applyAudioScale,
 } from '../../utils/animation-utils.ts';
-import { createAudioFlowController } from '../../utils/audio-flow-controller';
 import { getWeightedAverageFrequency } from '../../utils/audio-handler.ts';
+import { createManagedAudioFlow } from '../../utils/audio-ui-flow';
 import PatternRecognizer from '../../utils/patternRecognition.ts';
 
 type AudioControllerOptions = {
@@ -26,12 +26,9 @@ type AudioControllerOptions = {
 
 export type AudioController = {
   setupMicrophoneFlow: ReturnType<
-    typeof createAudioFlowController
+    typeof createManagedAudioFlow
   >['setupMicrophoneFlow'];
-  handleVisibilityChange: () => Promise<void>;
-  handleReducedMotionChange: (event: MediaQueryListEvent) => void;
-  handlePageHide: () => void;
-  cleanupAudio: () => void;
+  cleanup: () => void;
 };
 
 export const createAudioController = ({
@@ -76,7 +73,7 @@ export const createAudioController = ({
     renderOnce();
   };
 
-  const audioFlow = createAudioFlowController({
+  const audioFlow = createManagedAudioFlow({
     doc,
     toy,
     prefersReducedMotion,
@@ -94,9 +91,9 @@ export const createAudioController = ({
   });
 
   return {
-    ...audioFlow,
-    cleanupAudio: () => {
-      audioFlow.cleanupAudio();
+    setupMicrophoneFlow: audioFlow.setupMicrophoneFlow,
+    cleanup: () => {
+      audioFlow.cleanup();
       patternRecognizer = null;
     },
   };
