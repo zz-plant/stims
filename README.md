@@ -118,6 +118,12 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
 - **Guided toy start**: the shared toy shell runs a capability preflight before loading a toy, then offers microphone, demo audio, and YouTube tab-capture audio flows with status messaging.
 - **Consistent performance controls**: quality presets and pixel-ratio caps persist between toys, while pooled renderer/audio services keep toy switching fast without re-prompting for microphone access.
 
+### Accessibility & comfort notes
+
+- **Motion comfort**: the system check and performance panel surface reduced-motion guidance and quality presets so you can dial in lower-intensity visuals.
+- **Input flexibility**: toys support microphone, demo audio, and tab/YouTube audio to reduce friction when permissions are blocked.
+- **Touch-first affordances**: shared input helpers and touch-action defaults keep gestures predictable across devices.
+
 ## Repository Layout
 
 This project is organized so you can find the visuals, core utilities, and shared assets quickly:
