@@ -1,4 +1,8 @@
 import {
+  getPerformancePanel,
+  type PerformancePanelOptions,
+} from '../core/performance-panel';
+import {
   DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   getSettingsPanel,
@@ -285,6 +289,27 @@ type BuildToySettingsPanelOptions = ToySettingsPanelOptions & {
   sections: ToySettingsSection[];
 };
 
+export type SingleSelectPanelOptions = ToySettingsPanelOptions & {
+  section: {
+    title: string;
+    description?: string;
+  };
+  select: SelectControl;
+};
+
+export type SingleButtonGroupPanelOptions = ToySettingsPanelOptions & {
+  section: {
+    title: string;
+    description?: string;
+  };
+  buttonGroup: ButtonGroupControl;
+};
+
+type BuildToySettingsPanelWithPerformanceOptions =
+  BuildToySettingsPanelOptions & {
+    performance?: PerformancePanelOptions;
+  };
+
 export function buildToySettingsPanel({
   sections,
   ...panelOptions
@@ -325,4 +350,72 @@ export function buildToySettingsPanel({
   });
 
   return panel;
+}
+
+export function buildToySettingsPanelWithPerformance({
+  performance,
+  ...options
+}: BuildToySettingsPanelWithPerformanceOptions): PersistentSettingsPanel {
+  const panel = buildToySettingsPanel(options);
+  if (performance) {
+    getPerformancePanel(performance);
+  }
+  return panel;
+}
+
+export function buildSingleSelectPanel({
+  section,
+  select,
+  ...panelOptions
+}: SingleSelectPanelOptions): PersistentSettingsPanel {
+  return buildToySettingsPanel({
+    ...panelOptions,
+    sections: [
+      {
+        title: section.title,
+        description: section.description,
+        controls: [
+          {
+            type: 'select',
+            options: select.options,
+            getValue: select.getValue,
+            onChange: select.onChange,
+            selectClassName: select.selectClassName,
+          },
+        ],
+      },
+    ],
+  });
+}
+
+export function buildSingleButtonGroupPanel({
+  section,
+  buttonGroup,
+  ...panelOptions
+}: SingleButtonGroupPanelOptions): PersistentSettingsPanel {
+  return buildToySettingsPanel({
+    ...panelOptions,
+    sections: [
+      {
+        title: section.title,
+        description: section.description,
+        controls: [
+          {
+            type: 'button-group',
+            options: buttonGroup.options,
+            getActiveId: buttonGroup.getActiveId,
+            onChange: buttonGroup.onChange,
+            rowClassName: buttonGroup.rowClassName,
+            rowStyle: buttonGroup.rowStyle,
+            buttonClassName: buttonGroup.buttonClassName,
+            buttonStyle: buttonGroup.buttonStyle,
+            activeClassName: buttonGroup.activeClassName,
+            setDisabledOnActive: buttonGroup.setDisabledOnActive,
+            setAriaPressed: buttonGroup.setAriaPressed,
+            dataAttribute: buttonGroup.dataAttribute,
+          },
+        ],
+      },
+    ],
+  });
 }

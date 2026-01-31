@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import {
   getActivePerformanceSettings,
-  getPerformancePanel,
   type PerformanceSettings,
 } from '../core/performance-panel';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
@@ -12,9 +11,9 @@ import { mapFrequencyToItems } from '../utils/audio-mapper';
 import { applyAudioColor } from '../utils/color-audio';
 import { createPerformanceSettingsHandler } from '../utils/performance-settings';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
-import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
+import { createAudioToyStarter } from '../utils/toy-runtime-starter';
 import {
-  buildToySettingsPanel,
+  buildToySettingsPanelWithPerformance,
   createToyQualityControls,
 } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
@@ -314,11 +313,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function setupSettingsPanel() {
     const modes: SpiralMode[] = ['burst', 'bloom', 'vortex', 'heartbeat'];
-    buildToySettingsPanel({
+    buildToySettingsPanelWithPerformance({
       title: 'Spiral Burst',
       description:
         'Explosive spirals that pulse with your music. Try different modes, pinch to amplify, and rotate to swap moods!',
       quality,
+      performance: {
+        title: 'Performance',
+        description: 'Adjust particle density and render quality.',
+      },
       sections: [
         {
           title: 'Mode',
@@ -341,13 +344,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           ],
         },
       ],
-    });
-  }
-
-  function setupPerformancePanel() {
-    getPerformancePanel({
-      title: 'Performance',
-      description: 'Adjust particle density and render quality.',
     });
   }
 
@@ -651,7 +647,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
   }
 
-  const startRuntime = createToyRuntimeStarter({
+  const startRuntime = createAudioToyStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 120 } },
       lightingOptions: { type: 'HemisphereLight', intensity: 0.6 },
@@ -671,7 +667,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         setup: ({ toy }) => {
           toy.scene.add(spiralContainer);
           setupSettingsPanel();
-          setupPerformancePanel();
           buildSpiralArms();
           particleField = createParticleField();
           createBloomMesh();

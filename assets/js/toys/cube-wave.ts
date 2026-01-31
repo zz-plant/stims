@@ -5,7 +5,7 @@ import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
 import { disposeObject3D } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  buildToySettingsPanel,
+  buildSingleSelectPanel,
   createToyQualityControls,
 } from '../utils/toy-settings';
 
@@ -232,28 +232,24 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    buildToySettingsPanel({
+    buildSingleSelectPanel({
       title: 'Grid visualizer',
       description:
         'Adjust render resolution caps and switch primitives without restarting audio.',
       quality,
-      sections: [
-        {
-          title: 'Shape',
-          description: 'Change the primitive without restarting audio.',
-          controls: [
-            {
-              type: 'select',
-              options: Object.entries(presets).map(([key, preset]) => ({
-                value: key,
-                label: preset.label,
-              })),
-              getValue: () => activeMode,
-              onChange: (value) => rebuildGrid(value as ShapeMode),
-            },
-          ],
-        },
-      ],
+      section: {
+        title: 'Shape',
+        description: 'Change the primitive without restarting audio.',
+      },
+      select: {
+        type: 'select',
+        options: Object.entries(presets).map(([key, preset]) => ({
+          value: key,
+          label: preset.label,
+        })),
+        getValue: () => activeMode,
+        onChange: (value) => rebuildGrid(value as ShapeMode),
+      },
     });
   }
 

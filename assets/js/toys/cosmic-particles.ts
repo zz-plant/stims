@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import {
   getActivePerformanceSettings,
-  getPerformancePanel,
   type PerformanceSettings,
 } from '../core/performance-panel';
 import type { QualityPreset } from '../core/settings-panel';
@@ -10,9 +9,9 @@ import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
 import { createPerformanceSettingsHandler } from '../utils/performance-settings';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
-import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
+import { createAudioToyStarter } from '../utils/toy-runtime-starter';
 import {
-  buildToySettingsPanel,
+  buildToySettingsPanelWithPerformance,
   createToyQualityControls,
 } from '../utils/toy-settings';
 
@@ -307,11 +306,16 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   }
 
   function setupSettingsPanel() {
-    buildToySettingsPanel({
+    buildToySettingsPanelWithPerformance({
       title: 'Cosmic controls',
       description:
         'Quality changes persist between toys so you can cap DPI or ramp visuals.',
       quality,
+      performance: {
+        title: 'Performance',
+        description:
+          'Cap DPI, trim particle budgets, or lower shader detail for smoother play.',
+      },
       sections: [
         {
           title: 'Cosmic preset',
@@ -337,20 +341,12 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     });
   }
 
-  function setupPerformancePanel() {
-    getPerformancePanel({
-      title: 'Performance',
-      description:
-        'Cap DPI, trim particle budgets, or lower shader detail for smoother play.',
-    });
-  }
-
   function animate(data: Uint8Array, time: number) {
     activePreset?.animate(data, time);
   }
 
   setupSettingsPanel();
-  const startRuntime = createToyRuntimeStarter({
+  const startRuntime = createAudioToyStarter({
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 80 } },
       ambientLightOptions: { intensity: 0.35 },
@@ -364,7 +360,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         name: 'cosmic-particles',
         setup: () => {
           setupSettingsPanel();
-          setupPerformancePanel();
           setActivePreset(activePresetKey);
         },
         update: ({ frequencyData, time }) => {
