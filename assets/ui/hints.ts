@@ -16,7 +16,7 @@ export interface HintOptions {
 const STYLE_ID = 'stims-hints-style';
 const STORAGE_PREFIX = 'stims.hints.dismissed.';
 const DEFAULT_IDLE_DELAY_MS = 1200;
-const DISMISS_LABEL = "Don't show again";
+const DISMISS_LABEL = 'Hide tips';
 
 function injectHintStyles() {
   if (document.getElementById(STYLE_ID)) return;
@@ -154,8 +154,8 @@ function setDismissed(id: string) {
 export function initHints({
   id,
   tips,
-  title = 'Quick tips',
-  ctaLabel = 'Got it',
+  title = 'Tips',
+  ctaLabel = 'Done',
   container = document.body,
   trigger = 'interaction',
   idleDelayMs = DEFAULT_IDLE_DELAY_MS,
@@ -243,7 +243,7 @@ export function initHints({
   if (manualButton?.container) {
     manualButtonElement = doc.createElement('button');
     manualButtonElement.type = 'button';
-    manualButtonElement.textContent = manualButton.label ?? 'Need tips?';
+    manualButtonElement.textContent = manualButton.label ?? 'Tips';
     manualButtonElement.className =
       manualButton.className ?? 'stims-hint__trigger';
     manualButtonElement.setAttribute('aria-controls', hintId);
