@@ -247,30 +247,30 @@ export function initFunControls(options: FunControlsInit = {}) {
 
   const container = document.createElement('section');
   container.className = 'fun-controls';
-  container.setAttribute('aria-label', 'Visualizer controls');
+  container.setAttribute('aria-label', 'Play controls');
   container.innerHTML = `
       <div class="fun-header">
         <div class="fun-labels">
-          <p class="fun-eyebrow">Visualizer HUD</p>
-          <p class="fun-title">Live controls</p>
+          <p class="fun-eyebrow">Controls</p>
+          <p class="fun-title">Live mix</p>
         </div>
         <div class="fun-badges">
           <span class="fun-pill" data-mode-indicator data-state="${mode}">
-            ${mode === 'party' ? 'Party mode' : 'Calm mode'}
+            ${mode === 'party' ? 'Energy: party' : 'Energy: calm'}
           </span>
           <span
             class="fun-pill"
             data-audio-indicator
             data-audio="${audioEnabled && audioAvailable ? 'on' : 'off'}"
           >
-            ${audioEnabled && audioAvailable ? 'Audio reactive' : 'Manual control'}
+            ${audioEnabled && audioAvailable ? 'Sound sync' : 'Manual only'}
           </span>
         </div>
       </div>
-      <p class="fun-caption">Tweak the mood live—nothing here pauses the show.</p>
+      <p class="fun-caption">Adjust the feel live—play never stops.</p>
       <div class="fun-grid">
         <fieldset>
-          <legend>Palette</legend>
+          <legend>Colors</legend>
           ${(['bright', 'pastel', 'neon'] as PaletteOption[])
             .map(
               (key) => `
@@ -282,19 +282,19 @@ export function initFunControls(options: FunControlsInit = {}) {
             .join('')}
         </fieldset>
         <label>
-          Motion
-          <input class="fun-slider" type="range" min="0" max="1" step="0.01" value="${motion}" aria-valuemin="0" aria-valuemax="1" aria-valuenow="${motion}" aria-label="Motion intensity" />
+          Motion level
+          <input class="fun-slider" type="range" min="0" max="1" step="0.01" value="${motion}" aria-valuemin="0" aria-valuemax="1" aria-valuenow="${motion}" aria-label="Motion level" />
         </label>
         <button class="fun-chip" data-mode="toggle" aria-pressed="${
           mode === 'party'
-        }">${mode === 'party' ? 'Party' : 'Calm'} mode</button>
+        }">${mode === 'party' ? 'Party' : 'Calm'} vibe</button>
         <label class="fun-toggle">
           <input type="checkbox" class="fun-audio" ${
             audioEnabled ? 'checked' : ''
-          } ${audioAvailable ? '' : 'disabled'} aria-label="Audio reactive" />
-          Audio reactive
+          } ${audioAvailable ? '' : 'disabled'} aria-label="Sound sync" />
+          Sound sync
         </label>
-        <div class="fun-subsection" aria-label="Peak fun">
+        <div class="fun-subsection" aria-label="Peaks">
           <div class="fun-row">
             <label class="fun-toggle">
               <input type="checkbox" class="fun-sparkles" ${
@@ -310,7 +310,7 @@ export function initFunControls(options: FunControlsInit = {}) {
             </label>
           </div>
           <label>
-            Peak sensitivity
+            Peak trigger
             <input
               class="fun-slider fun-peak-sensitivity"
               type="range"
@@ -321,7 +321,7 @@ export function initFunControls(options: FunControlsInit = {}) {
               aria-valuemin="0.05"
               aria-valuemax="1"
               aria-valuenow="${peakSensitivity}"
-              aria-label="Peak sensitivity"
+              aria-label="Peak trigger"
             />
           </label>
         </div>
@@ -339,14 +339,15 @@ export function initFunControls(options: FunControlsInit = {}) {
 
   function updateModeIndicator() {
     if (!modeIndicator) return;
-    modeIndicator.textContent = mode === 'party' ? 'Party mode' : 'Calm mode';
+    modeIndicator.textContent =
+      mode === 'party' ? 'Energy: party' : 'Energy: calm';
     modeIndicator.dataset.state = mode;
   }
 
   function updateAudioIndicator() {
     if (!audioIndicator) return;
     const audioOn = audioEnabled && audioAvailable;
-    audioIndicator.textContent = audioOn ? 'Audio reactive' : 'Manual control';
+    audioIndicator.textContent = audioOn ? 'Sound sync' : 'Manual only';
     audioIndicator.dataset.audio = audioOn ? 'on' : 'off';
   }
 
@@ -401,7 +402,7 @@ export function initFunControls(options: FunControlsInit = {}) {
   );
   modeButton?.addEventListener('click', () => {
     mode = mode === 'party' ? 'calm' : 'party';
-    modeButton.textContent = `${mode === 'party' ? 'Party' : 'Calm'} mode`;
+    modeButton.textContent = `${mode === 'party' ? 'Party' : 'Calm'} vibe`;
     modeButton.setAttribute('aria-pressed', String(mode === 'party'));
     notifyMotion();
   });
