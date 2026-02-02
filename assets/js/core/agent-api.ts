@@ -33,6 +33,12 @@ export type StimAPI = {
   waitForAudioActive: () => Promise<'microphone' | 'demo'>;
 };
 
+type StimEventMap = {
+  'toy:load': { slug: string };
+  'audio:start': { source: 'microphone' | 'demo' };
+  'audio:stop': undefined;
+};
+
 declare global {
   interface Window {
     stimState?: StimAPI;
@@ -52,6 +58,26 @@ const eventTarget =
   typeof window !== 'undefined' && window.EventTarget
     ? new window.EventTarget()
     : new EventTarget();
+
+const addStimEventListener = <K extends keyof StimEventMap>(
+  eventName: K,
+  callback: (detail: StimEventMap[K]) => void,
+) => {
+  const handler = ((event: CustomEvent) => {
+    callback(event.detail as StimEventMap[K]);
+  }) as EventListener;
+
+  eventTarget.addEventListener(eventName, handler);
+  return () => eventTarget.removeEventListener(eventName, handler);
+};
+
+const waitForStimEvent = <K extends keyof StimEventMap>(eventName: K) =>
+  new Promise<StimEventMap[K]>((resolve) => {
+    const removeListener = addStimEventListener(eventName, (detail) => {
+      removeListener();
+      resolve(detail);
+    });
+  });
 
 // Check for agent mode from URL
 if (typeof window !== 'undefined') {
@@ -103,23 +129,19 @@ export function initAgentAPI(): StimAPI {
     },
 
     onToyLoad: (callback) => {
-      const handler = ((e: CustomEvent) =>
-        callback(e.detail.slug)) as EventListener;
-      eventTarget.addEventListener('toy:load', handler);
-      return () => eventTarget.removeEventListener('toy:load', handler);
+      return addStimEventListener('toy:load', (detail) =>
+        callback(detail.slug),
+      );
     },
 
     onAudioStart: (callback) => {
-      const handler = ((e: CustomEvent) =>
-        callback(e.detail.source)) as EventListener;
-      eventTarget.addEventListener('audio:start', handler);
-      return () => eventTarget.removeEventListener('audio:start', handler);
+      return addStimEventListener('audio:start', (detail) =>
+        callback(detail.source),
+      );
     },
 
     onAudioStop: (callback) => {
-      const handler = callback as EventListener;
-      eventTarget.addEventListener('audio:stop', handler);
-      return () => eventTarget.removeEventListener('audio:stop', handler);
+      return addStimEventListener('audio:stop', () => callback());
     },
 
     waitForToyLoad: () => waitForToyLoad(),
@@ -139,14 +161,7 @@ function waitForToyLoad(): Promise<string> {
     return Promise.resolve(state.currentToy);
   }
 
-  return new Promise((resolve) => {
-    const handler = ((e: CustomEvent) => {
-      eventTarget.removeEventListener('toy:load', handler as EventListener);
-      resolve(e.detail.slug);
-    }) as EventListener;
-
-    eventTarget.addEventListener('toy:load', handler);
-  });
+  return waitForStimEvent('toy:load').then((detail) => detail.slug);
 }
 
 function waitForAudioActive(): Promise<'microphone' | 'demo'> {
@@ -154,14 +169,7 @@ function waitForAudioActive(): Promise<'microphone' | 'demo'> {
     return Promise.resolve(state.audioSource);
   }
 
-  return new Promise((resolve) => {
-    const handler = ((e: CustomEvent) => {
-      eventTarget.removeEventListener('audio:start', handler as EventListener);
-      resolve(e.detail.source);
-    }) as EventListener;
-
-    eventTarget.addEventListener('audio:start', handler);
-  });
+  return waitForStimEvent('audio:start').then((detail) => detail.source);
 }
 
 // Public methods for other modules to update state
