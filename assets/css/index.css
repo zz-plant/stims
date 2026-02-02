@@ -17,6 +17,11 @@
   --surface-texture: none;
   --surface-highlight: none;
   --surface-emboss: none;
+  --panel-gradient: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--card-bg) 96%, transparent),
+    var(--card-bg)
+  );
   --shadow-strong: 0 8px 18px rgba(0, 0, 0, 0.2);
   --shadow-soft: 0 4px 10px rgba(0, 0, 0, 0.16);
   --shadow-surface: 0 6px 16px rgba(0, 0, 0, 0.2);
@@ -366,11 +371,7 @@ section.intro {
   position: relative;
   padding: clamp(2.4rem, 2.8vw + 1.6rem, 3.6rem);
   border-radius: calc(var(--radius-lg) + 6px);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--card-bg) 96%, transparent),
-    var(--card-bg)
-  );
+  background: var(--panel-gradient);
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
@@ -408,14 +409,6 @@ section.intro::after {
     transparent 100%
   );
   opacity: 0.35;
-}
-
-html.light section.intro {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--card-bg) 96%, transparent),
-    var(--card-bg)
-  );
 }
 
 section.intro > * {
@@ -483,9 +476,6 @@ header.hero {
   padding: 0.85rem 1rem;
   border-radius: var(--radius-lg);
   background: var(--surface-gradient);
-  border: 1px solid var(--surface-border);
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: none;
 }
 
 .signal-label {
@@ -506,14 +496,7 @@ header.hero {
   margin-top: 0.4rem;
   padding: 1.4rem 1.4rem;
   border-radius: calc(var(--radius-lg) + 6px);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--card-bg) 96%, transparent),
-    var(--card-bg)
-  );
-  border: 1px solid var(--surface-border);
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: none;
+  background: var(--panel-gradient);
 }
 
 .readiness-header {
@@ -612,13 +595,7 @@ header.hero {
   gap: 1.4rem;
   padding: clamp(1.2rem, 2vw, 1.8rem);
   border-radius: calc(var(--radius-lg) + 6px);
-  border: 1px solid var(--surface-border);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--card-bg) 96%, transparent),
-    var(--card-bg)
-  );
-  box-shadow: var(--shadow-soft);
+  background: var(--panel-gradient);
   position: relative;
   overflow: hidden;
 }
@@ -695,11 +672,17 @@ header.hero {
   width: min(520px, 90vw);
   border-radius: 24px;
   background: var(--surface-gradient);
+  overflow: hidden;
+  position: relative;
+}
+
+.signal-card,
+.readiness-panel,
+.system-check,
+.preview-reel {
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
   backdrop-filter: none;
-  overflow: hidden;
-  position: relative;
 }
 
 .preview-track {
