@@ -138,6 +138,27 @@ export function createToyQualityControls({
   return { quality, configurePanel };
 }
 
+type ToyQualityControlsWithPerformanceOptions = ToyQualityControlsOptions & {
+  performance?: PerformancePanelOptions;
+};
+
+export function createToyQualityControlsWithPerformance({
+  performance,
+  ...options
+}: ToyQualityControlsWithPerformanceOptions) {
+  const { quality, configurePanel } = createToyQualityControls(options);
+
+  const configurePanelWithPerformance = () => {
+    const panel = configurePanel();
+    if (performance) {
+      getPerformancePanel(performance);
+    }
+    return panel;
+  };
+
+  return { quality, configurePanel: configurePanelWithPerformance };
+}
+
 type ToySettingsPanelOptions = {
   title: string;
   description?: string;
