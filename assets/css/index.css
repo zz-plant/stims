@@ -2603,15 +2603,19 @@ footer {
     justify-content: flex-start;
   }
 
+  .nav-section--jump,
   .nav-section--utilities {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+    padding: 0.45rem;
+    border-radius: var(--radius-md);
   }
 
   .nav-section__label {
     width: 100%;
-    padding: 0 0.5rem;
+    padding: 0 0.35rem;
   }
 
   .top-nav {
@@ -2634,7 +2638,7 @@ footer {
 
   .theme-toggle {
     width: 100%;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .cta-row {
