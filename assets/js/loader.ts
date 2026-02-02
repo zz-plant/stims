@@ -405,8 +405,17 @@ export function createLoader({
     {
       pushState = false,
       preferDemoAudio = false,
-    }: { pushState?: boolean; preferDemoAudio?: boolean } = {},
+      startFlow,
+    }: {
+      pushState?: boolean;
+      preferDemoAudio?: boolean;
+      startFlow?: boolean;
+    } = {},
   ) => {
+    if (typeof startFlow === 'boolean') {
+      setFlowActive(startFlow);
+    }
+
     const toy = toys.find((t) => t.slug === slug);
     if (!toy) {
       console.error(`Toy not found: ${slug}`);

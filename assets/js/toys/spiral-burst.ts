@@ -124,6 +124,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let smoothedBass = 0;
   let smoothedMids = 0;
   let smoothedHighs = 0;
+  let beatFlash = 0;
+  let beatStreak = 0;
   const beatTracker = createBeatTracker({
     threshold: 0.55,
     minIntervalMs: 120,
@@ -403,6 +405,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     smoothedMids = beatState.smoothedBands.mid;
     smoothedHighs = beatState.smoothedBands.treble;
     beatIntensity = beatState.beatIntensity;
+    if (beatState.isBeat) {
+      beatFlash = 1;
+      beatStreak = Math.min(1, beatStreak + 0.25 + smoothedHighs * 0.15);
+    } else {
+      beatFlash = Math.max(0, beatFlash - 0.08);
+      beatStreak = Math.max(0, beatStreak * 0.985);
+    }
 
     // Mode-specific behaviors
     controls.spinBoost = THREE.MathUtils.lerp(
@@ -416,30 +425,37 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       0.08,
     );
 
-    let baseRotationSpeed = 0.005 * controls.spinBoost;
-    let expansionFactor = 1;
-    let pulseIntensity = smoothedBass * controls.pulseBoost;
+    let baseRotationSpeed = 0.005 * controls.spinBoost * (1 + beatStreak * 0.6);
+    let expansionFactor = 1 + beatStreak * 0.15;
+    let pulseIntensity = smoothedBass * controls.pulseBoost + beatFlash * 0.4;
 
     switch (currentMode) {
       case 'bloom':
-        baseRotationSpeed = 0.002 * controls.spinBoost;
-        expansionFactor = 1 + smoothedMids * 0.8 * controls.pulseBoost;
-        pulseIntensity = smoothedHighs * controls.pulseBoost;
+        baseRotationSpeed = 0.002 * controls.spinBoost * (1 + beatStreak * 0.4);
+        expansionFactor =
+          1 + smoothedMids * 0.8 * controls.pulseBoost + beatStreak * 0.2;
+        pulseIntensity = smoothedHighs * controls.pulseBoost + beatFlash * 0.35;
         break;
       case 'vortex':
-        baseRotationSpeed = (0.015 + smoothedBass * 0.03) * controls.spinBoost;
-        expansionFactor = 1 - smoothedBass * 0.3 * controls.pulseBoost;
+        baseRotationSpeed =
+          (0.015 + smoothedBass * 0.03) *
+          controls.spinBoost *
+          (1 + beatStreak * 0.5);
+        expansionFactor =
+          1 - smoothedBass * 0.3 * controls.pulseBoost + beatStreak * 0.1;
         break;
       case 'heartbeat':
-        baseRotationSpeed = 0.003 * controls.spinBoost;
-        expansionFactor = 1 + beatIntensity * 0.5 * controls.pulseBoost;
-        pulseIntensity = beatIntensity * controls.pulseBoost;
+        baseRotationSpeed = 0.003 * controls.spinBoost * (1 + beatStreak * 0.3);
+        expansionFactor =
+          1 + beatIntensity * 0.5 * controls.pulseBoost + beatStreak * 0.25;
+        pulseIntensity = beatIntensity * controls.pulseBoost + beatFlash * 0.5;
         break;
       default: // burst
         expansionFactor =
           1 +
           smoothedBass * 0.6 * controls.pulseBoost +
-          beatIntensity * 0.4 * controls.pulseBoost;
+          beatIntensity * 0.4 * controls.pulseBoost +
+          beatStreak * 0.25;
         break;
     }
 
@@ -465,7 +481,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           line.rotation.z += (0.001 + normalizedValue * 0.01) * arm.direction;
 
           // Pulsing scale
-          const lineScale = 1 + normalizedValue * pulseIntensity * 0.5;
+          const lineScale =
+            1 + normalizedValue * pulseIntensity * 0.5 + beatFlash * 0.2;
           line.scale.setScalar(lineScale);
 
           // Color shifting
@@ -477,10 +494,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
               time * 0.0001 +
               normalizedValue * 0.15) %
             1;
-          const saturation = 0.7 + normalizedValue * 0.3;
-          const lightness = 0.4 + normalizedValue * 0.3;
+          const saturation = 0.7 + normalizedValue * 0.3 + beatStreak * 0.2;
+          const lightness = 0.4 + normalizedValue * 0.3 + beatFlash * 0.1;
           lineMaterial.color.setHSL(hue, saturation, lightness);
-          lineMaterial.opacity = 0.5 + normalizedValue * 0.5;
+          lineMaterial.opacity = 0.5 + normalizedValue * 0.5 + beatFlash * 0.2;
         },
         { fallbackValue: avg },
       );
@@ -491,12 +508,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
       bloomMesh.rotation.x += 0.008 + smoothedMids * 0.02;
       bloomMesh.rotation.y += 0.012 + smoothedHighs * 0.015;
 
-      const bloomScale = 1 + smoothedBass * 0.8 + beatIntensity * 0.5;
+      const bloomScale =
+        1 + smoothedBass * 0.8 + beatIntensity * 0.5 + beatFlash * 0.2;
       bloomMesh.scale.setScalar(bloomScale);
 
       const bloomMaterial = bloomMesh.material as THREE.MeshStandardMaterial;
       bloomMaterial.emissiveIntensity =
-        0.3 + smoothedBass * 0.7 * controls.pulseBoost;
+        0.3 + smoothedBass * 0.7 * controls.pulseBoost + beatFlash * 0.5;
       applyAudioColor(bloomMaterial, normalizedAvg, {
         baseHue: palettes[activePaletteIndex].baseHue,
         hueRange: 0.2,
@@ -521,15 +539,19 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         const angle = Math.atan2(y, x);
         const radius = Math.sqrt(x * x + y * y);
         const orbitSpeed =
-          particleField.velocities[i] * 0.02 * (1 + smoothedMids * 2);
+          particleField.velocities[i] *
+          0.02 *
+          (1 + smoothedMids * 2 + beatStreak * 0.6);
 
         const newAngle = angle + orbitSpeed;
-        const radialPush = currentMode === 'burst' ? beatIntensity * 2 : 0;
+        const radialPush =
+          currentMode === 'burst' ? beatIntensity * 2 + beatFlash * 1.2 : 0;
 
         positions[i3] = Math.cos(newAngle) * (radius + radialPush);
         positions[i3 + 1] = Math.sin(newAngle) * (radius + radialPush);
         positions[i3 + 2] +=
-          (smoothedBass * 3 - 0.5) * particleField.velocities[i];
+          (smoothedBass * 3 - 0.5 + beatStreak * 0.8) *
+          particleField.velocities[i];
 
         // Wrap around
         if (positions[i3 + 2] > 60) positions[i3 + 2] = -60;
@@ -545,8 +567,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           1;
         const color = new THREE.Color().setHSL(
           hue,
-          0.9,
-          0.5 + smoothedHighs * 0.3,
+          0.9 + beatStreak * 0.05,
+          0.5 + smoothedHighs * 0.3 + beatFlash * 0.1,
         );
         colors[i3] = color.r;
         colors[i3 + 1] = color.g;
@@ -555,15 +577,18 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
       particleField.geometry.attributes.position.needsUpdate = true;
       particleField.geometry.attributes.color.needsUpdate = true;
-      particleField.material.size = 1.2 + smoothedBass * 2;
-      particleField.material.opacity = 0.5 + smoothedHighs * 0.4;
+      particleField.material.size = 1.2 + smoothedBass * 2 + beatFlash * 0.8;
+      particleField.material.opacity =
+        0.5 + smoothedHighs * 0.4 + beatFlash * 0.2;
     }
 
     // Camera movement
-    const camRadius = 110 + smoothedBass * 20;
+    const camRadius = 110 + smoothedBass * 20 - beatFlash * 6;
     const camAngle = time * 0.0003;
-    runtime.toy.camera.position.x = Math.sin(camAngle) * 20;
-    runtime.toy.camera.position.y = Math.cos(camAngle * 0.7) * 15;
+    runtime.toy.camera.position.x =
+      Math.sin(camAngle) * 20 + Math.sin(time * 0.01) * beatFlash * 0.8;
+    runtime.toy.camera.position.y =
+      Math.cos(camAngle * 0.7) * 15 + Math.cos(time * 0.012) * beatFlash * 0.6;
     runtime.toy.camera.position.z = camRadius;
     runtime.toy.camera.lookAt(0, 0, 0);
 
