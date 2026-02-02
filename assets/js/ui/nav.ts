@@ -314,13 +314,19 @@ function setupPictureInPictureControls(container: HTMLElement, doc: Document) {
     }, 3200);
   };
 
-  if (!isPictureInPictureSupported(doc)) {
+  let pipPermanentlyDisabled = false;
+
+  const disablePip = (message: string) => {
     pipButton.disabled = true;
     pipButton.setAttribute('aria-disabled', 'true');
-    pipButton.setAttribute(
-      'title',
-      'Picture-in-picture is not available in this browser.',
-    );
+    pipButton.setAttribute('title', message);
+    pipButton.removeAttribute('aria-busy');
+    showStatus(message);
+    pipPermanentlyDisabled = true;
+  };
+
+  if (!isPictureInPictureSupported(doc)) {
+    disablePip('Picture-in-picture is not available in this browser.');
     return;
   }
 
@@ -351,11 +357,19 @@ function setupPictureInPictureControls(container: HTMLElement, doc: Document) {
           : 'Picture in picture enabled.',
       );
     } catch (_error) {
-      showStatus('Unable to use picture in picture.');
+      const error = _error as Error | DOMException;
+      const errorName = 'name' in error ? error.name : '';
+      if (errorName === 'NotSupportedError') {
+        disablePip('Picture-in-picture is not available in this browser.');
+      } else {
+        showStatus('Unable to use picture in picture.');
+      }
       updateButtonState();
     } finally {
-      pipButton.disabled = false;
-      pipButton.removeAttribute('aria-busy');
+      if (!pipPermanentlyDisabled) {
+        pipButton.disabled = false;
+        pipButton.removeAttribute('aria-busy');
+      }
     }
   });
 }
