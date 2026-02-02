@@ -1148,6 +1148,9 @@ export function createLibraryView({
   let searchClearButton;
   let filterResetButton;
   let searchSuggestions;
+  let activeFiltersSummary;
+  let activeFiltersChips;
+  let activeFiltersClear;
   const activeFilters = new Set();
 
   const ensureMetaNode = () => {
@@ -1185,6 +1188,31 @@ export function createLibraryView({
     return searchSuggestions;
   };
 
+  const ensureActiveFiltersSummary = () => {
+    if (!activeFiltersSummary) {
+      activeFiltersSummary = document.querySelector('[data-active-filters]');
+    }
+    return activeFiltersSummary;
+  };
+
+  const ensureActiveFiltersChips = () => {
+    if (!activeFiltersChips) {
+      activeFiltersChips = document.querySelector(
+        '[data-active-filters-chips]',
+      );
+    }
+    return activeFiltersChips;
+  };
+
+  const ensureActiveFiltersClear = () => {
+    if (!activeFiltersClear) {
+      activeFiltersClear = document.querySelector(
+        '[data-active-filters-clear]',
+      );
+    }
+    return activeFiltersClear;
+  };
+
   const getOriginalIndex = (toy) => originalOrder.get(toy.slug) ?? 0;
   const getFeaturedRank = (toy) =>
     Number.isFinite(toy.featuredRank)
@@ -1214,6 +1242,89 @@ export function createLibraryView({
       const label = chip.textContent?.trim();
       return label ? [label] : [];
     });
+
+  const normalizeCapabilityToken = (value) => {
+    const normalized = value.toLowerCase();
+    if (normalized === 'demoaudio' || normalized === 'demo-audio') {
+      return 'demoAudio';
+    }
+    return normalized;
+  };
+
+  const formatTokenLabel = (token) => {
+    const [type, value = ''] = token.split(':');
+    if (!type) return token;
+    const normalizedValue = value.toLowerCase();
+    const chipMatch = Array.from(
+      document.querySelectorAll('[data-filter-chip]'),
+    ).find((chip) => {
+      const chipType = chip.getAttribute('data-filter-type');
+      const chipValue = chip.getAttribute('data-filter-value');
+      return chipType === type && chipValue?.toLowerCase() === normalizedValue;
+    });
+    const chipLabel = chipMatch?.textContent?.trim();
+    if (chipLabel) return chipLabel;
+    const fallbackLabel = normalizedValue.replace(/[-_]/g, ' ');
+    return fallbackLabel
+      ? `${fallbackLabel[0].toUpperCase()}${fallbackLabel.slice(1)}`
+      : token;
+  };
+
+  const updateActiveFiltersSummary = () => {
+    const summary = ensureActiveFiltersSummary();
+    const chipsContainer = ensureActiveFiltersChips();
+    if (
+      !(summary instanceof HTMLElement) ||
+      !(chipsContainer instanceof HTMLElement)
+    ) {
+      return;
+    }
+
+    const trimmedQuery = searchQuery.trim();
+    const tokens = Array.from(activeFilters);
+    const hasTokens = Boolean(trimmedQuery) || tokens.length > 0;
+    summary.hidden = !hasTokens;
+    summary.setAttribute('aria-hidden', String(!hasTokens));
+    chipsContainer.innerHTML = '';
+
+    const appendChip = ({ label, onClick, ariaLabel }) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'active-filter-chip';
+      chip.textContent = label;
+      if (ariaLabel) {
+        chip.setAttribute('aria-label', ariaLabel);
+      }
+      chip.addEventListener('click', onClick);
+      chipsContainer.appendChild(chip);
+    };
+
+    if (trimmedQuery) {
+      appendChip({
+        label: `Search: “${trimmedQuery}”`,
+        ariaLabel: `Clear search query ${trimmedQuery}`,
+        onClick: () => clearSearch(),
+      });
+    }
+
+    tokens.forEach((token) => {
+      const label = formatTokenLabel(token);
+      appendChip({
+        label,
+        ariaLabel: `Remove filter ${label}`,
+        onClick: () => removeFilterToken(token),
+      });
+    });
+
+    const clearButton = ensureActiveFiltersClear();
+    if (
+      clearButton instanceof HTMLElement &&
+      clearButton.tagName === 'BUTTON'
+    ) {
+      clearButton.disabled = !hasTokens;
+      clearButton.setAttribute('aria-disabled', String(!hasTokens));
+    }
+  };
 
   const updateSearchClearState = () => {
     const clearButton = ensureSearchClearButton();
@@ -1349,7 +1460,7 @@ export function createLibraryView({
           (mood) => mood.toLowerCase() === value.toLowerCase(),
         );
       case 'capability':
-        return Boolean(toy.capabilities?.[value]);
+        return Boolean(toy.capabilities?.[normalizeCapabilityToken(value)]);
       case 'feature':
         return value === 'webgpu' ? Boolean(toy.requiresWebGPU) : true;
       default:
@@ -1515,6 +1626,7 @@ export function createLibraryView({
     }
     updateSearchClearState();
     updateFilterResetState();
+    updateActiveFiltersSummary();
   };
 
   const openToy = (toy) => {
@@ -1749,17 +1861,20 @@ export function createLibraryView({
       emptyState.appendChild(resetButton);
       list.appendChild(emptyState);
       updateResultsMeta(0);
+      updateActiveFiltersSummary();
       return;
     }
 
     listToRender.forEach((toy) => list.appendChild(createCard(toy)));
     updateResultsMeta(listToRender.length);
+    updateActiveFiltersSummary();
   };
 
   const filterToys = (query) => {
     searchQuery = query;
     renderToys(applyFilters());
     updateSearchClearState();
+    updateActiveFiltersSummary();
   };
 
   const clearSearch = () => {
@@ -1773,6 +1888,7 @@ export function createLibraryView({
     commitState({ replace: false });
     renderToys(applyFilters());
     updateSearchClearState();
+    updateActiveFiltersSummary();
   };
 
   const clearFilters = () => {
@@ -1785,6 +1901,52 @@ export function createLibraryView({
     commitState({ replace: false });
     renderToys(applyFilters());
     updateFilterResetState();
+    updateActiveFiltersSummary();
+  };
+
+  const clearAllFilters = () => {
+    searchQuery = '';
+    activeFilters.clear();
+    const chips = document.querySelectorAll('[data-filter-chip].is-active');
+    chips.forEach((chip) => {
+      chip.classList.remove('is-active');
+      updateFilterChipA11y(chip, false);
+    });
+
+    if (searchInputId) {
+      const search = document.getElementById(searchInputId);
+      if (search && 'value' in search) {
+        search.value = '';
+      }
+    }
+
+    commitState({ replace: false });
+    renderToys(applyFilters());
+    updateSearchClearState();
+    updateFilterResetState();
+    updateActiveFiltersSummary();
+  };
+
+  const removeFilterToken = (token) => {
+    const [type, value] = token.split(':');
+    if (!type || !value) return;
+    activeFilters.delete(token);
+    const chips = document.querySelectorAll('[data-filter-chip]');
+    chips.forEach((chip) => {
+      const chipType = chip.getAttribute('data-filter-type');
+      const chipValue = chip.getAttribute('data-filter-value');
+      if (
+        chipType === type &&
+        chipValue?.toLowerCase() === value.toLowerCase()
+      ) {
+        chip.classList.remove('is-active');
+        updateFilterChipA11y(chip, false);
+      }
+    });
+    commitState({ replace: false });
+    renderToys(applyFilters());
+    updateFilterResetState();
+    updateActiveFiltersSummary();
   };
 
   const populateSearchSuggestions = () => {
@@ -1831,6 +1993,7 @@ export function createLibraryView({
         commitState({ replace: false });
         renderToys(applyFilters());
         updateFilterResetState();
+        updateActiveFiltersSummary();
       });
     });
 
@@ -1850,6 +2013,14 @@ export function createLibraryView({
     ) {
       resetButton.addEventListener('click', () => clearFilters());
       updateFilterResetState();
+    }
+
+    const clearButton = ensureActiveFiltersClear();
+    if (
+      clearButton instanceof HTMLElement &&
+      clearButton.tagName === 'BUTTON'
+    ) {
+      clearButton.addEventListener('click', () => clearAllFilters());
     }
   };
 
