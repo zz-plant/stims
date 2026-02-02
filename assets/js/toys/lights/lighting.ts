@@ -31,13 +31,14 @@ export type LightType = keyof typeof LIGHT_CONFIGS;
 export type LightsScene = {
   toy: WebToy;
   lightingGroup: THREE.Group;
+  light: THREE.Light;
   cube: THREE.Mesh;
 };
 
 export const applyLighting = (
   lightingGroup: THREE.Group,
   lightType: LightType,
-) => {
+): THREE.Light => {
   while (lightingGroup.children.length > 0) {
     lightingGroup.remove(lightingGroup.children[0]);
   }
@@ -63,6 +64,7 @@ export const applyLighting = (
 
   light.position.set(position.x, position.y, position.z);
   lightingGroup.add(light);
+  return light;
 };
 
 export const createLightsScene = async ({
@@ -91,12 +93,14 @@ export const createLightsScene = async ({
 
   const lightingGroup = new THREE.Group();
   toy.scene.add(lightingGroup);
-  applyLighting(lightingGroup, lightType);
+  const light = applyLighting(lightingGroup, lightType);
 
   const cube = new THREE.Mesh(
     new THREE.BoxGeometry(),
     new THREE.MeshStandardMaterial({
       color: 0x00ff00,
+      emissive: 0x002222,
+      emissiveIntensity: 0.35,
       metalness: 0.3,
       roughness: 0.4,
     }),
@@ -119,5 +123,5 @@ export const createLightsScene = async ({
 
   await toy.rendererReady;
 
-  return { toy, lightingGroup, cube };
+  return { toy, lightingGroup, light, cube };
 };
