@@ -23,6 +23,14 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
     const quickstartMode = quickstart.dataset[DATASET_KEYS.quickstartMode];
     const quickstartPool = quickstart.dataset[DATASET_KEYS.quickstartPool];
     const quickstartAudio = quickstart.dataset[DATASET_KEYS.quickstartAudio];
+    const quickstartFlow = quickstart.dataset[DATASET_KEYS.quickstartFlow];
+
+    const resolveFlowState = () => {
+      if (quickstartFlow === undefined) return undefined;
+      if (quickstartFlow === '' || quickstartFlow === 'true') return true;
+      if (quickstartFlow === 'false') return false;
+      return quickstartFlow === '1';
+    };
 
     const resolveRandomSlug = () => {
       const normalizedPool = quickstartPool?.toLowerCase();
@@ -59,6 +67,7 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
         pushState: true,
         preferDemoAudio:
           quickstartMode === 'demo' || quickstartAudio === 'demo',
+        startFlow: resolveFlowState(),
       });
     });
   });
