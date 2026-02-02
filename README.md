@@ -178,16 +178,12 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 - **Audio permission clarity**: Audio controls surface demo audio alongside the microphone CTA by default, plus immediate “starting” feedback and fallback guidance when mic access fails.
 - **Touch + gesture consistency**: Shared input helpers normalize multi-touch gestures and enforce touch-action defaults while keeping control targets sized for reliable taps.
 - **Library discovery**: Search supports tags/capabilities, empty-state guidance, and capability badges (mic/motion/demo audio) on toy cards.
+- **Shared runtime helpers**: Unified audio start wrappers, audio-permission flow helpers, control panel recipes, and toy runtime scaffolding reduce per-toy wiring.
 
 ### Next priorities
 
 - **Toy onboarding quick wins**: Add lightweight presets or first-time hints for toys with multiple controls so the “wow” moment is immediate.
 - **Touch polish**: Add clearer gesture hints and input affordances on the toy page.
-- **Control panel recipes**: Extract shared settings-panel patterns (button-group/select recipes, slider/toggle builders) so toys can declare controls instead of hand-wiring DOM elements.
-- **Unified audio start wrappers**: Standardize the common `runtime.startAudio` wrapper used for mic errors and silent fallbacks into a reusable helper.
-- **Audio permission UI flow helper**: Wrap `createAudioFlowController` + visibility/reduced-motion handling into a higher-level utility to reduce per-toy wiring.
-- **Quality + performance panel helper**: Provide a single setup API for toys that opt into both quality presets and the performance panel.
-- **Toy runtime scaffolding**: Create a higher-level audio-toy bootstrap that composes runtime creation, plugin lifecycle, and optional settings/performance panels.
 
 ---
 

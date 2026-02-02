@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import {
   getActivePerformanceSettings,
-  getPerformancePanel,
   type PerformanceSettings,
 } from '../core/performance-panel';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
@@ -9,7 +8,7 @@ import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControls } from '../utils/toy-settings';
+import { createToyQualityControlsWithPerformance } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
 type StarFieldBuffers = {
@@ -30,7 +29,7 @@ type StarfieldPalette = {
 };
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
-  const { quality, configurePanel } = createToyQualityControls({
+  const { quality, configurePanel } = createToyQualityControlsWithPerformance({
     title: 'Star field',
     description:
       'Tune render resolution and particle density for your GPU. Pinch to intensify the drift and rotate to swap nebula moods.',
@@ -42,6 +41,10 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     onChange: () => {
       disposeStarField();
       starField = createStarField();
+    },
+    performance: {
+      title: 'Performance',
+      description: 'Cap DPI or scale particle budgets to match your device.',
     },
   });
   let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
@@ -261,13 +264,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     configurePanel();
   }
 
-  function setupPerformancePanel() {
-    getPerformancePanel({
-      title: 'Performance',
-      description: 'Cap DPI or scale particle budgets to match your device.',
-    });
-  }
-
   function animate(data: Uint8Array, time: number) {
     if (!starField) return;
     const avg = getWeightedAverageFrequency(data);
@@ -405,7 +401,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         name: 'star-field',
         setup: () => {
           setupSettingsPanel();
-          setupPerformancePanel();
           starField = createStarField();
           createNebula();
           applyPalette(activePaletteIndex);

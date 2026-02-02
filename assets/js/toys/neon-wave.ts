@@ -20,7 +20,6 @@ import {
 } from 'three';
 import {
   getActivePerformanceSettings,
-  getPerformancePanel,
   type PerformanceSettings,
 } from '../core/performance-panel';
 import {
@@ -36,7 +35,7 @@ import { createPerformanceSettingsHandler } from '../utils/performance-settings'
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  buildToySettingsPanel,
+  buildToySettingsPanelWithPerformance,
   createToyQualityControls,
 } from '../utils/toy-settings';
 
@@ -451,11 +450,15 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
   function setupSettingsPanel() {
     const themes: NeonTheme[] = ['synthwave', 'cyberpunk', 'arctic', 'sunset'];
-    buildToySettingsPanel({
+    buildToySettingsPanelWithPerformance({
       title: 'Neon Wave',
       description: 'Retro-wave visualizer with bloom effects. Pick a theme!',
       panel: settingsPanel,
       quality,
+      performance: {
+        title: 'Performance',
+        description: 'Balance visual fidelity and frame rate.',
+      },
       sections: [
         {
           title: 'Theme',
@@ -488,13 +491,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           ],
         },
       ],
-    });
-  }
-
-  function setupPerformancePanel() {
-    getPerformancePanel({
-      title: 'Performance',
-      description: 'Balance visual fidelity and frame rate.',
     });
   }
 
@@ -622,7 +618,6 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           toy.scene.add(horizonGroup);
 
           setupSettingsPanel();
-          setupPerformancePanel();
           createWaveMesh();
           createGrid();
           createParticles();
