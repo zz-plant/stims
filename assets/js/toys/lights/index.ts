@@ -55,6 +55,7 @@ export const startLightsExperience = ({
       doc,
       toy: scene.toy,
       cube: scene.cube,
+      getLight: () => scene?.light ?? null,
       prefersReducedMotion,
       setStatus: ui.setStatus,
       renderOnce,
@@ -70,7 +71,7 @@ export const startLightsExperience = ({
 
     removeLightChangeListener = ui.bindLightTypeChange((lightType) => {
       if (!scene) return;
-      applyLighting(scene.lightingGroup, lightType);
+      scene.light = applyLighting(scene.lightingGroup, lightType);
       renderOnce();
     });
   };
