@@ -56,6 +56,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let interactionEnergy = 0;
   let touchPulse = 0;
   let lastCentroid = { x: 0, y: 0 };
+  let lastInputTime = 0;
 
   const palette = {
     background: new THREE.Color('#050611'),
@@ -125,6 +126,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     input: {
       normalizedCentroid: { x: number; y: number };
       deltaMs: number;
+      time: number;
       isPressed: boolean;
       justPressed: boolean;
       justReleased: boolean;
@@ -146,11 +148,17 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     );
     lastCentroid = { ...normalizedCentroid };
 
-    if (input?.justPressed) {
-      touchPulse = Math.max(touchPulse, 1.4);
-    }
-    if (input?.justReleased) {
-      touchPulse = Math.max(touchPulse, 0.9);
+    const inputTime = input?.time ?? 0;
+    const hasNewInput = inputTime !== 0 && inputTime !== lastInputTime;
+
+    if (hasNewInput) {
+      if (input?.justPressed) {
+        touchPulse = Math.max(touchPulse, 1.4);
+      }
+      if (input?.justReleased) {
+        touchPulse = Math.max(touchPulse, 0.9);
+      }
+      lastInputTime = inputTime;
     }
     touchPulse = Math.max(0, touchPulse - deltaSeconds * 1.4);
 
