@@ -68,9 +68,7 @@ export async function requestToyPictureInPicture(doc: Document) {
   const stream = updateStream(canvas);
   video.srcObject = stream;
 
-  if (video.readyState < 2) {
-    await video.play();
-  }
+  await video.play();
 
   return video.requestPictureInPicture();
 }
