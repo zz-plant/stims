@@ -77,6 +77,7 @@ type AudioPromptCallbacks = {
 type ViewState = {
   mode: 'library' | 'toy';
   backHandler?: () => void;
+  onNextToy?: () => void;
   rendererStatus: RendererStatusState | null;
   activeToyMeta?: Toy;
   status: StatusConfig | null;
@@ -213,11 +214,13 @@ function buildToyNav({
   toy,
   onBack,
   rendererStatus,
+  onNextToy,
 }: {
   container: HTMLElement | null;
   toy?: Toy;
   onBack?: () => void;
   rendererStatus: RendererStatusState | null;
+  onNextToy?: () => void;
 }) {
   if (!container) return null;
   let navContainer = container.querySelector<HTMLElement>('[data-toy-nav]');
@@ -233,6 +236,7 @@ function buildToyNav({
     title: toy?.title,
     slug: toy?.slug,
     onBack,
+    onNextToy,
     rendererStatus,
   });
   return container;
@@ -351,6 +355,7 @@ export function createToyView({
       container,
       toy: state.activeToyMeta,
       onBack: state.backHandler,
+      onNextToy: state.onNextToy,
       rendererStatus: state.rendererStatus,
     });
 
@@ -370,6 +375,7 @@ export function createToyView({
   const showLibraryView = () => {
     state.mode = 'library';
     state.backHandler = undefined;
+    state.onNextToy = undefined;
     state.rendererStatus = null;
     state.activeToyMeta = undefined;
     state.status = null;
@@ -377,9 +383,14 @@ export function createToyView({
     runViewTransition(() => render({ clearContainer: true }));
   };
 
-  const showActiveToyView = (onBack?: () => void, toy?: Toy) => {
+  const showActiveToyView = (
+    onBack?: () => void,
+    toy?: Toy,
+    { onNextToy }: { onNextToy?: () => void } = {},
+  ) => {
     state.mode = 'toy';
     state.backHandler = onBack ?? state.backHandler;
+    state.onNextToy = onNextToy ?? state.onNextToy;
     state.activeToyMeta = toy ?? state.activeToyMeta;
     const { container } = runViewTransition(() => render());
     return container;

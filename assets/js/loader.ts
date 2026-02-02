@@ -85,6 +85,37 @@ export function createLoader({
   let navigationInitialized = false;
   const lifecycle = toyLifecycle ?? defaultToyLifecycle;
   lifecycle.reset();
+  const recentToySlugs: string[] = [];
+
+  const rememberToy = (slug: string) => {
+    if (!slug) return;
+    const existingIndex = recentToySlugs.indexOf(slug);
+    if (existingIndex === 0) return;
+    if (existingIndex > -1) {
+      recentToySlugs.splice(existingIndex, 1);
+    }
+    recentToySlugs.unshift(slug);
+    if (recentToySlugs.length > 4) {
+      recentToySlugs.pop();
+    }
+  };
+
+  const pickNextToySlug = (currentSlug?: string | null) => {
+    const available = toys.filter((toy) => toy.type === 'module');
+    if (!available.length) return null;
+
+    const avoid = new Set(recentToySlugs);
+    if (currentSlug) {
+      avoid.add(currentSlug);
+    }
+    const fresh = available.filter((toy) => !avoid.has(toy.slug));
+    const fallback = available.filter((toy) => toy.slug !== currentSlug);
+    const pool = fresh.length ? fresh : fallback.length ? fallback : available;
+    if (!pool.length) return null;
+
+    const choice = pool[Math.floor(Math.random() * pool.length)];
+    return choice?.slug ?? null;
+  };
   const updateRendererStatus = (
     capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
     onRetry?: () => void,
@@ -162,7 +193,15 @@ export function createLoader({
     disposeActiveToy();
     removeEscapeHandler();
 
-    const container = view.showActiveToyView(backToLibrary, toy);
+    const handleNextToy = () => {
+      const nextSlug = pickNextToySlug(toy.slug);
+      if (!nextSlug) return;
+      void loadToy(nextSlug, { pushState: true, preferDemoAudio });
+    };
+
+    const container = view.showActiveToyView(backToLibrary, toy, {
+      onNextToy: handleNextToy,
+    });
     if (!container) return;
     updateRendererStatus(
       capabilities,
@@ -228,6 +267,7 @@ export function createLoader({
 
       // Track toy load for agents
       setCurrentToy(toy.slug);
+      rememberToy(toy.slug);
 
       // Setup audio prompt if startAudio globals are registered by the toy.
       const win = (container?.ownerDocument.defaultView ??

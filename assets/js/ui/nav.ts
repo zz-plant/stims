@@ -12,6 +12,7 @@ export interface NavOptions {
   slug?: string;
   onBack?: () => void;
   onShare?: () => void;
+  onNextToy?: () => void | Promise<void>;
   rendererStatus?: {
     backend: 'webgl' | 'webgpu';
     fallbackReason?: string | null;
@@ -101,6 +102,16 @@ function renderToyNav(
     </div>
     <div class="active-toy-nav__actions">
       <div class="renderer-status-container"></div>
+      ${
+        options.onNextToy
+          ? `<div class="toy-nav__next-wrapper">
+              <button type="button" class="toy-nav__next" data-next-toy="true">
+                Next stim
+              </button>
+              <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
+            </div>`
+          : ''
+      }
       <div class="toy-nav__pip-wrapper">
         <button type="button" class="toy-nav__pip" data-toy-pip="true" aria-pressed="false">
           Picture in picture
@@ -139,6 +150,12 @@ function renderToyNav(
   const shareStatus = container.querySelector(
     '.toy-nav__share-status',
   ) as HTMLElement | null;
+  const nextBtn = container.querySelector(
+    '.toy-nav__next',
+  ) as HTMLButtonElement | null;
+  const nextStatus = container.querySelector(
+    '.toy-nav__next-status',
+  ) as HTMLElement | null;
 
   const showShareStatus = (message: string) => {
     if (!shareStatus) return;
@@ -151,6 +168,37 @@ function renderToyNav(
       }
     }, 3200);
   };
+
+  const showNextStatus = (message: string) => {
+    if (!nextStatus) return;
+    nextStatus.textContent = message;
+    if (!message) return;
+    const win = doc.defaultView ?? window;
+    win.setTimeout(() => {
+      if (nextStatus.textContent === message) {
+        nextStatus.textContent = '';
+      }
+    }, 3200);
+  };
+
+  const handleNextToy = async () => {
+    if (!options.onNextToy || !nextBtn) return;
+    nextBtn.disabled = true;
+    nextBtn.setAttribute('aria-busy', 'true');
+    showNextStatus('Loading next stim…');
+    try {
+      await options.onNextToy();
+    } catch (_error) {
+      showNextStatus('Unable to load next stim.');
+    } finally {
+      nextBtn.disabled = false;
+      nextBtn.removeAttribute('aria-busy');
+    }
+  };
+
+  nextBtn?.addEventListener('click', () => {
+    void handleNextToy();
+  });
 
   const copyShareLink = async () => {
     const win = doc.defaultView ?? window;
