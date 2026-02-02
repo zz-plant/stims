@@ -13,6 +13,8 @@ export interface NavOptions {
   onBack?: () => void;
   onShare?: () => void;
   onNextToy?: () => void | Promise<void>;
+  onToggleFlow?: (active: boolean) => void;
+  flowActive?: boolean;
   rendererStatus?: {
     backend: 'webgl' | 'webgpu';
     fallbackReason?: string | null;
@@ -112,6 +114,16 @@ function renderToyNav(
             </div>`
           : ''
       }
+      ${
+        options.onToggleFlow
+          ? `<div class="toy-nav__flow-wrapper">
+              <button type="button" class="toy-nav__flow" data-flow-toggle="true" aria-pressed="${options.flowActive ? 'true' : 'false'}">
+                ${options.flowActive ? 'Flow mode on' : 'Flow mode'}
+              </button>
+              <span class="toy-nav__flow-status" role="status" aria-live="polite"></span>
+            </div>`
+          : ''
+      }
       <div class="toy-nav__pip-wrapper">
         <button type="button" class="toy-nav__pip" data-toy-pip="true" aria-pressed="false">
           Picture in picture
@@ -156,6 +168,13 @@ function renderToyNav(
   const nextStatus = container.querySelector(
     '.toy-nav__next-status',
   ) as HTMLElement | null;
+  const flowBtn = container.querySelector(
+    '.toy-nav__flow',
+  ) as HTMLButtonElement | null;
+  const flowStatus = container.querySelector(
+    '.toy-nav__flow-status',
+  ) as HTMLElement | null;
+  let flowActive = Boolean(options.flowActive);
 
   const showShareStatus = (message: string) => {
     if (!shareStatus) return;
@@ -181,6 +200,24 @@ function renderToyNav(
     }, 3200);
   };
 
+  const showFlowStatus = (message: string) => {
+    if (!flowStatus) return;
+    flowStatus.textContent = message;
+    if (!message) return;
+    const win = doc.defaultView ?? window;
+    win.setTimeout(() => {
+      if (flowStatus.textContent === message) {
+        flowStatus.textContent = '';
+      }
+    }, 3200);
+  };
+
+  const updateFlowUI = () => {
+    if (!flowBtn) return;
+    flowBtn.setAttribute('aria-pressed', String(flowActive));
+    flowBtn.textContent = flowActive ? 'Flow mode on' : 'Flow mode';
+  };
+
   const handleNextToy = async () => {
     if (!options.onNextToy || !nextBtn) return;
     nextBtn.disabled = true;
@@ -198,6 +235,19 @@ function renderToyNav(
 
   nextBtn?.addEventListener('click', () => {
     void handleNextToy();
+  });
+
+  updateFlowUI();
+
+  flowBtn?.addEventListener('click', () => {
+    flowActive = !flowActive;
+    updateFlowUI();
+    options.onToggleFlow?.(flowActive);
+    showFlowStatus(
+      flowActive
+        ? 'Flow mode enabled. We will keep switching stims.'
+        : 'Flow mode paused.',
+    );
   });
 
   const copyShareLink = async () => {

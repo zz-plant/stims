@@ -78,6 +78,8 @@ type ViewState = {
   mode: 'library' | 'toy';
   backHandler?: () => void;
   onNextToy?: () => void;
+  onToggleFlow?: (active: boolean) => void;
+  flowActive?: boolean;
   rendererStatus: RendererStatusState | null;
   activeToyMeta?: Toy;
   status: StatusConfig | null;
@@ -215,12 +217,16 @@ function buildToyNav({
   onBack,
   rendererStatus,
   onNextToy,
+  onToggleFlow,
+  flowActive,
 }: {
   container: HTMLElement | null;
   toy?: Toy;
   onBack?: () => void;
   rendererStatus: RendererStatusState | null;
   onNextToy?: () => void;
+  onToggleFlow?: (active: boolean) => void;
+  flowActive?: boolean;
 }) {
   if (!container) return null;
   let navContainer = container.querySelector<HTMLElement>('[data-toy-nav]');
@@ -237,6 +243,8 @@ function buildToyNav({
     slug: toy?.slug,
     onBack,
     onNextToy,
+    onToggleFlow,
+    flowActive,
     rendererStatus,
   });
   return container;
@@ -356,6 +364,8 @@ export function createToyView({
       toy: state.activeToyMeta,
       onBack: state.backHandler,
       onNextToy: state.onNextToy,
+      onToggleFlow: state.onToggleFlow,
+      flowActive: state.flowActive,
       rendererStatus: state.rendererStatus,
     });
 
@@ -376,6 +386,8 @@ export function createToyView({
     state.mode = 'library';
     state.backHandler = undefined;
     state.onNextToy = undefined;
+    state.onToggleFlow = undefined;
+    state.flowActive = false;
     state.rendererStatus = null;
     state.activeToyMeta = undefined;
     state.status = null;
@@ -386,11 +398,21 @@ export function createToyView({
   const showActiveToyView = (
     onBack?: () => void,
     toy?: Toy,
-    { onNextToy }: { onNextToy?: () => void } = {},
+    {
+      onNextToy,
+      onToggleFlow,
+      flowActive,
+    }: {
+      onNextToy?: () => void;
+      onToggleFlow?: (active: boolean) => void;
+      flowActive?: boolean;
+    } = {},
   ) => {
     state.mode = 'toy';
     state.backHandler = onBack ?? state.backHandler;
     state.onNextToy = onNextToy ?? state.onNextToy;
+    state.onToggleFlow = onToggleFlow ?? state.onToggleFlow;
+    state.flowActive = flowActive ?? state.flowActive;
     state.activeToyMeta = toy ?? state.activeToyMeta;
     const { container } = runViewTransition(() => render());
     return container;
@@ -521,6 +543,11 @@ export function createToyView({
     render();
   };
 
+  const setFlowState = (active: boolean) => {
+    state.flowActive = active;
+    render();
+  };
+
   return {
     showLibraryView,
     showActiveToyView,
@@ -532,6 +559,7 @@ export function createToyView({
       clearContainerContent(findActiveToyContainer()),
     ensureActiveToyContainer,
     setRendererStatus,
+    setFlowState,
     showUnavailableToy,
     showAudioPrompt: (
       active: boolean = true,
