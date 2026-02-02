@@ -2481,11 +2481,16 @@ footer {
   }
 
   .filter-row {
+    flex-direction: column;
     align-items: flex-start;
   }
 
+  .chip-row,
   .filter-actions {
     width: 100%;
+  }
+
+  .filter-actions {
     justify-content: space-between;
   }
 
@@ -2502,6 +2507,11 @@ footer {
   .preview-control-buttons {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .preview-control {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 
   .preview-dots {
@@ -2631,6 +2641,14 @@ footer {
     flex-direction: column;
     align-items: stretch;
     gap: 0.6rem;
+  }
+
+  .hero-cta-row .cta-button {
+    flex: 0 0 auto;
+  }
+
+  .hero-cta-row .cta-button.primary {
+    flex: 0 0 auto;
   }
 
   .cta-button {
