@@ -214,8 +214,8 @@ body {
 
 .home-link {
   position: fixed;
-  top: 12px;
-  left: 12px;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
   padding: 10px 14px;
   min-height: 44px;
   min-width: 44px;
@@ -1415,6 +1415,14 @@ body {
     padding: 12px;
     clip-path: none;
     border-radius: 18px;
+    max-height: calc(
+      100dvh -
+      24px -
+      env(safe-area-inset-top) -
+      env(safe-area-inset-bottom)
+    );
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .control-panel::after {
