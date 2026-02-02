@@ -35,7 +35,8 @@ const isCompactDevice = () => {
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   const { quality, configurePanel } = createToyQualityControls({
     title: 'Pocket Pulse',
-    description: 'Mobile-tuned pulses that drift with touch and audio.',
+    description:
+      'Mobile-tuned pulses that reward touch with extra glow and motion.',
     presets: QUALITY_PRESETS,
     defaultPresetId: isCompactDevice() ? 'mobile' : 'balanced',
     storageKey: 'stims:pocket-pulse:quality',
@@ -52,6 +53,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let basePositions: Float32Array | null = null;
   let activeSize = 0.65;
   let beatEnergy = 0;
+  let interactionEnergy = 0;
+  let touchPulse = 0;
+  let lastCentroid = { x: 0, y: 0 };
 
   const palette = {
     background: new THREE.Color('#050611'),
@@ -118,7 +122,13 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   function animate(
     data: Uint8Array,
     time: number,
-    input: { normalizedCentroid: { x: number; y: number } } | null,
+    input: {
+      normalizedCentroid: { x: number; y: number };
+      deltaMs: number;
+      isPressed: boolean;
+      justPressed: boolean;
+      justReleased: boolean;
+    } | null,
   ) {
     if (!geometry || !basePositions || !material || !points) return;
 
@@ -128,12 +138,37 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     const treble = getBandAverage(data, 0.7, 1) / 255;
     const kick = Math.max(0, bass - 0.18);
     beatEnergy = Math.max(kick * 1.4, beatEnergy * 0.88);
-    const pulse = 0.75 + bass * 1.2 + beatEnergy * 0.6;
-    const swirl = time * (0.35 + mids * 0.4);
+    const deltaSeconds = Math.max(0.001, (input?.deltaMs ?? 16) / 1000);
+    const normalizedCentroid = input?.normalizedCentroid ?? { x: 0, y: 0 };
+    const centroidDelta = Math.hypot(
+      normalizedCentroid.x - lastCentroid.x,
+      normalizedCentroid.y - lastCentroid.y,
+    );
+    lastCentroid = { ...normalizedCentroid };
 
-    const offsetX = (input?.normalizedCentroid.x ?? 0) * 5.5;
-    const offsetY = (input?.normalizedCentroid.y ?? 0) * 4.2;
-    const kickLift = beatEnergy * 3.2;
+    if (input?.justPressed) {
+      touchPulse = Math.max(touchPulse, 1.4);
+    }
+    if (input?.justReleased) {
+      touchPulse = Math.max(touchPulse, 0.9);
+    }
+    touchPulse = Math.max(0, touchPulse - deltaSeconds * 1.4);
+
+    const motionBoost = Math.min(1.2, centroidDelta * 9);
+    const interactionTarget =
+      (input?.isPressed ? 0.6 : 0) + motionBoost + bass * 0.35;
+    interactionEnergy = Math.min(
+      1.6,
+      Math.max(interactionTarget, interactionEnergy - deltaSeconds * 0.6),
+    );
+
+    const pulse =
+      0.75 + bass * 1.2 + beatEnergy * 0.6 + interactionEnergy * 0.45;
+    const swirl = time * (0.35 + mids * 0.4 + interactionEnergy * 0.3);
+
+    const offsetX = normalizedCentroid.x * (5.5 + interactionEnergy * 2.6);
+    const offsetY = normalizedCentroid.y * (4.2 + interactionEnergy * 2.1);
+    const kickLift = beatEnergy * 3.2 + touchPulse * 2.6;
 
     const positionAttribute = geometry.getAttribute(
       'position',
@@ -148,19 +183,34 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
         Math.sin(swirl + baseZ * 0.08 + baseX * 0.04) * (0.6 + treble);
       const lift = Math.cos(swirl * 0.7 + baseY * 0.05) * (0.4 + mids);
       const ripple = Math.sin(time * 3.4 + baseZ * 0.24) * kickLift;
+      const shimmer =
+        Math.sin(time * 1.8 + baseX * 0.12 + baseY * 0.08) *
+        (0.4 + interactionEnergy);
 
       positions[i] = baseX * pulse + offsetX + wobble + ripple * 0.2;
       positions[i + 1] = baseY * pulse + offsetY + lift + ripple * 0.2;
       positions[i + 2] =
-        baseZ + Math.sin(time * 0.6 + baseX * 0.06) * 1.6 + ripple * 0.4;
+        baseZ +
+        Math.sin(time * 0.6 + baseX * 0.06) * 1.6 +
+        ripple * 0.4 +
+        shimmer * 0.6;
     }
 
     positionAttribute.needsUpdate = true;
 
-    const hue = (palette.baseHue + avg * 0.2 + time * 0.02) % 1;
+    const hue =
+      (palette.baseHue + avg * 0.2 + interactionEnergy * 0.12 + time * 0.02) %
+      1;
     material.color.setHSL(hue, palette.saturation, 0.55 + avg * 0.25);
-    material.opacity = 0.55 + avg * 0.3 + beatEnergy * 0.25;
-    material.size = activeSize * (0.68 + treble * 0.9 + beatEnergy * 0.35);
+    material.opacity =
+      0.55 + avg * 0.3 + beatEnergy * 0.25 + interactionEnergy * 0.18;
+    material.size =
+      activeSize *
+      (0.68 +
+        treble * 0.9 +
+        beatEnergy * 0.35 +
+        interactionEnergy * 0.35 +
+        touchPulse * 0.2);
 
     points.rotation.z = time * 0.12;
   }
