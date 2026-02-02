@@ -1,20 +1,46 @@
+import toysData from '../toys-data.js';
 import { DATA_SELECTORS, DATASET_KEYS } from './data-attributes.ts';
 
 type InitQuickstartOptions = {
   loadToy: typeof import('../loader.ts').loadToy;
 };
 
+type QuickstartToy = {
+  slug: string;
+  lifecycleStage?: string | null;
+};
+
 export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
   const quickstarts = document.querySelectorAll(DATA_SELECTORS.quickstart);
   if (!quickstarts.length) return;
+
+  const quickstartToys = toysData as QuickstartToy[];
 
   quickstarts.forEach((quickstart) => {
     if (!(quickstart instanceof HTMLElement)) return;
 
     const quickstartSlug = quickstart.dataset[DATASET_KEYS.quickstartSlug];
-    if (!quickstartSlug) return;
-
     const quickstartMode = quickstart.dataset[DATASET_KEYS.quickstartMode];
+    const quickstartPool = quickstart.dataset[DATASET_KEYS.quickstartPool];
+    const quickstartAudio = quickstart.dataset[DATASET_KEYS.quickstartAudio];
+
+    const resolveRandomSlug = () => {
+      const normalizedPool = quickstartPool?.toLowerCase();
+      const pool =
+        normalizedPool === 'featured'
+          ? quickstartToys.filter((toy) => toy.lifecycleStage === 'featured')
+          : quickstartToys;
+      const fallbackPool = pool.length ? pool : quickstartToys;
+      if (!fallbackPool.length) return null;
+      const index = Math.floor(Math.random() * fallbackPool.length);
+      return fallbackPool[index]?.slug ?? null;
+    };
+
+    const resolveSlug = () => {
+      if (quickstartSlug) return quickstartSlug;
+      if (quickstartMode !== 'random') return null;
+      return resolveRandomSlug();
+    };
 
     quickstart.addEventListener('click', (event) => {
       const isModifiedClick =
@@ -25,10 +51,14 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
         event.button === 1;
       if (isModifiedClick) return;
 
+      const resolvedSlug = resolveSlug();
+      if (!resolvedSlug) return;
+
       event.preventDefault();
-      loadToy(quickstartSlug, {
+      loadToy(resolvedSlug, {
         pushState: true,
-        preferDemoAudio: quickstartMode === 'demo',
+        preferDemoAudio:
+          quickstartMode === 'demo' || quickstartAudio === 'demo',
       });
     });
   });

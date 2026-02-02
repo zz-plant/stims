@@ -1,10 +1,12 @@
 export const DATASET_KEYS = {
   quickstartSlug: 'quickstartSlug',
   quickstartMode: 'quickstartMode',
+  quickstartPool: 'quickstartPool',
+  quickstartAudio: 'quickstartAudio',
 };
 
 export const DATA_SELECTORS = {
-  quickstart: '[data-quickstart-slug]',
+  quickstart: '[data-quickstart-slug], [data-quickstart-mode]',
   topNav: '[data-top-nav]',
   previewReel: '[data-preview-reel]',
   previewCard: '[data-preview-card]',
