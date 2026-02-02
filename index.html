@@ -283,6 +283,17 @@
                 </p>
               </div>
             </div>
+            <div class="active-filters" data-active-filters hidden>
+              <span class="active-filters__label">Active</span>
+              <div class="active-filters__chips" data-active-filters-chips></div>
+              <button
+                type="button"
+                class="active-filters__clear"
+                data-active-filters-clear
+              >
+                Clear all
+              </button>
+            </div>
             <div class="filter-row" role="group" aria-label="Curated filters">
               <div class="chip-row" data-chip-row>
                 <button
@@ -416,6 +427,15 @@
         const searchResults = document.querySelector('[data-search-results]');
         const clearSearchButton = document.querySelector('[data-search-clear]');
         const resetFiltersButton = document.querySelector('[data-filter-reset]');
+        const activeFiltersSummary = document.querySelector(
+          '[data-active-filters]'
+        );
+        const activeFiltersChips = document.querySelector(
+          '[data-active-filters-chips]'
+        );
+        const activeFiltersClear = document.querySelector(
+          '[data-active-filters-clear]'
+        );
         const STORAGE_KEY = 'stims-library-state';
         const QUERY_PARAM = 'q';
         const FILTER_PARAM = 'filters';
@@ -460,7 +480,9 @@
               );
             }
             if (type === 'capability') {
-              return Boolean(toy.capabilities?.[value]);
+              return Boolean(
+                toy.capabilities?.[normalizeCapabilityToken(value)]
+              );
             }
             if (type === 'feature') {
               return value === 'webgpu' ? Boolean(toy.requiresWebGPU) : true;
@@ -529,6 +551,113 @@
             const label = chip.textContent?.trim();
             return label ? [label] : [];
           });
+
+        const normalizeCapabilityToken = (value) => {
+          const normalized = value.toLowerCase();
+          if (normalized === 'demoaudio' || normalized === 'demo-audio') {
+            return 'demoAudio';
+          }
+          return normalized;
+        };
+
+        const formatTokenLabel = (token) => {
+          const [type, value = ''] = token.split(':');
+          if (!type) return token;
+          const normalizedValue = value.toLowerCase();
+          const chipMatch = Array.from(
+            document.querySelectorAll('[data-filter-chip]')
+          ).find((chip) => {
+            const chipType = chip.getAttribute('data-filter-type');
+            const chipValue = chip.getAttribute('data-filter-value');
+            return (
+              chipType === type &&
+              chipValue?.toLowerCase() === normalizedValue
+            );
+          });
+          const chipLabel = chipMatch?.textContent?.trim();
+          if (chipLabel) return chipLabel;
+          const fallbackLabel = normalizedValue.replace(/[-_]/g, ' ');
+          return fallbackLabel
+            ? `${fallbackLabel[0].toUpperCase()}${fallbackLabel.slice(1)}`
+            : token;
+        };
+
+        const updateActiveFiltersSummary = (query = cachedQuery) => {
+          if (
+            !(activeFiltersSummary instanceof HTMLElement) ||
+            !(activeFiltersChips instanceof HTMLElement)
+          ) {
+            return;
+          }
+          const trimmedQuery = query.trim();
+          const tokens = Array.from(activeFilters);
+          const hasTokens = Boolean(trimmedQuery) || tokens.length > 0;
+          activeFiltersSummary.hidden = !hasTokens;
+          activeFiltersSummary.setAttribute('aria-hidden', String(!hasTokens));
+          activeFiltersChips.innerHTML = '';
+
+          const appendChip = ({ label, onClick, ariaLabel }) => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'active-filter-chip';
+            chip.textContent = label;
+            if (ariaLabel) {
+              chip.setAttribute('aria-label', ariaLabel);
+            }
+            chip.addEventListener('click', onClick);
+            activeFiltersChips.appendChild(chip);
+          };
+
+          if (trimmedQuery) {
+            appendChip({
+              label: `Search: “${trimmedQuery}”`,
+              ariaLabel: `Clear search query ${trimmedQuery}`,
+              onClick: () => {
+                if (search instanceof HTMLInputElement) {
+                  search.value = '';
+                }
+                cachedQuery = '';
+                commitState({ replace: false });
+                renderCards(applyFilters(''), '');
+              },
+            });
+          }
+
+          tokens.forEach((token) => {
+            const label = formatTokenLabel(token);
+            appendChip({
+              label,
+              ariaLabel: `Remove filter ${label}`,
+              onClick: () => {
+                const [type, value] = token.split(':');
+                if (!type || !value) return;
+                activeFilters.delete(token);
+                const chips = document.querySelectorAll('[data-filter-chip]');
+                chips.forEach((chip) => {
+                  const chipType = chip.getAttribute('data-filter-type');
+                  const chipValue = chip.getAttribute('data-filter-value');
+                  if (
+                    chipType === type &&
+                    chipValue?.toLowerCase() === value.toLowerCase()
+                  ) {
+                    chip.classList.remove('is-active');
+                    chip.setAttribute('aria-pressed', 'false');
+                  }
+                });
+                commitState({ replace: false });
+                renderCards(applyFilters(), cachedQuery);
+              },
+            });
+          });
+
+          if (activeFiltersClear instanceof HTMLButtonElement) {
+            activeFiltersClear.disabled = !hasTokens;
+            activeFiltersClear.setAttribute(
+              'aria-disabled',
+              String(!hasTokens)
+            );
+          }
+        };
 
         const updateResultsMeta = (count, _total, query = '') => {
           if (!(searchResults instanceof HTMLElement)) return;
@@ -625,6 +754,7 @@
 
           list.innerHTML = '';
           updateResultsMeta(toys.length, allToys.length, query || cachedQuery);
+          updateActiveFiltersSummary(query || cachedQuery);
 
           if (toys.length === 0) {
             renderEmptyState();
@@ -999,6 +1129,25 @@
                 });
                 commitState({ replace: false });
                 renderCards(applyFilters(), cachedQuery);
+                updateControlVisibility();
+              });
+            }
+
+            if (
+              activeFiltersClear instanceof HTMLButtonElement &&
+              search instanceof HTMLInputElement
+            ) {
+              activeFiltersClear.addEventListener('click', () => {
+                search.value = '';
+                cachedQuery = '';
+                activeFilters.clear();
+                const chips = document.querySelectorAll('[data-filter-chip]');
+                chips.forEach((chip) => {
+                  chip.classList.remove('is-active');
+                  chip.setAttribute('aria-pressed', 'false');
+                });
+                commitState({ replace: false });
+                renderCards(applyFilters(''), '');
                 updateControlVisibility();
               });
             }
