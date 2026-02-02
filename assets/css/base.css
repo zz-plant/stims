@@ -361,7 +361,8 @@ body {
 
 .toy-nav__share-wrapper,
 .toy-nav__pip-wrapper,
-.toy-nav__next-wrapper {
+.toy-nav__next-wrapper,
+.toy-nav__flow-wrapper {
   display: grid;
   gap: 4px;
   justify-items: flex-end;
@@ -369,7 +370,8 @@ body {
 
 .toy-nav__share,
 .toy-nav__pip,
-.toy-nav__next {
+.toy-nav__next,
+.toy-nav__flow {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -397,7 +399,8 @@ body {
 
 .toy-nav__share:hover,
 .toy-nav__pip:hover,
-.toy-nav__next:hover {
+.toy-nav__next:hover,
+.toy-nav__flow:hover {
   transform: translateY(-1px);
   border-color: rgba(255, 0, 153, 0.8);
   box-shadow:
@@ -412,7 +415,8 @@ body {
 
 .toy-nav__share:focus-visible,
 .toy-nav__pip:focus-visible,
-.toy-nav__next:focus-visible {
+.toy-nav__next:focus-visible,
+.toy-nav__flow:focus-visible {
   outline: 2px solid rgba(111, 247, 255, 0.9);
   outline-offset: 3px;
   box-shadow:
@@ -422,13 +426,15 @@ body {
 
 .toy-nav__share:active,
 .toy-nav__pip:active,
-.toy-nav__next:active {
+.toy-nav__next:active,
+.toy-nav__flow:active {
   transform: translateY(0);
 }
 
 .toy-nav__share-status,
 .toy-nav__pip-status,
-.toy-nav__next-status {
+.toy-nav__next-status,
+.toy-nav__flow-status {
   min-height: 16px;
   font-size: 0.75rem;
   color: rgba(233, 251, 255, 0.75);
@@ -1384,14 +1390,16 @@ body {
 
   .toy-nav__share-wrapper,
   .toy-nav__pip-wrapper,
-  .toy-nav__next-wrapper {
+  .toy-nav__next-wrapper,
+  .toy-nav__flow-wrapper {
     width: 100%;
     justify-items: stretch;
   }
 
   .toy-nav__share,
   .toy-nav__pip,
-  .toy-nav__next {
+  .toy-nav__next,
+  .toy-nav__flow {
     width: 100%;
   }
 

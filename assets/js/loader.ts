@@ -32,6 +32,7 @@ type Toy = {
 const TOY_QUERY_PARAM = 'toy';
 const STARTER_POLL_DELAY_MS = 100;
 const STARTER_POLL_ATTEMPTS = 30;
+const FLOW_INTERVAL_MS = 45000;
 
 const waitForAudioStarter = async (
   getStarter: () => ToyWindow['startAudio'] | ToyWindow['startAudioFallback'],
@@ -86,6 +87,20 @@ export function createLoader({
   const lifecycle = toyLifecycle ?? defaultToyLifecycle;
   lifecycle.reset();
   const recentToySlugs: string[] = [];
+  let flowActive = false;
+  let flowTimer: number | null = null;
+  let activeToySlug: string | null = null;
+  let nextToyInFlight = false;
+  let handleNextToy: ((fromFlow?: boolean) => Promise<void>) | null = null;
+
+  const clearFlowTimer = () => {
+    if (flowTimer === null) return;
+    const win = typeof window !== 'undefined' ? window : null;
+    if (win) {
+      win.clearInterval(flowTimer);
+    }
+    flowTimer = null;
+  };
 
   const rememberToy = (slug: string) => {
     if (!slug) return;
@@ -115,6 +130,28 @@ export function createLoader({
 
     const choice = pool[Math.floor(Math.random() * pool.length)];
     return choice?.slug ?? null;
+  };
+
+  const scheduleFlow = () => {
+    clearFlowTimer();
+    if (!flowActive) return;
+    const win = typeof window !== 'undefined' ? window : null;
+    if (!win) return;
+    flowTimer = win.setInterval(() => {
+      if (handleNextToy) {
+        void handleNextToy(true);
+      }
+    }, FLOW_INTERVAL_MS);
+  };
+
+  const setFlowActive = (active: boolean) => {
+    flowActive = active;
+    view?.setFlowState?.(flowActive);
+    if (!flowActive) {
+      clearFlowTimer();
+      return;
+    }
+    scheduleFlow();
   };
   const updateRendererStatus = (
     capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
@@ -163,6 +200,8 @@ export function createLoader({
     router.goToLibrary();
     updateRendererStatus(null);
     void resetAudioPoolFn({ stopStreams: true });
+    activeToySlug = null;
+    setFlowActive(false);
   };
 
   const registerEscapeHandler = () => {
@@ -193,14 +232,32 @@ export function createLoader({
     disposeActiveToy();
     removeEscapeHandler();
 
-    const handleNextToy = () => {
-      const nextSlug = pickNextToySlug(toy.slug);
-      if (!nextSlug) return;
-      void loadToy(nextSlug, { pushState: true, preferDemoAudio });
+    handleNextToy = async (fromFlow = false) => {
+      if (nextToyInFlight) return;
+      const currentSlug = activeToySlug ?? toy.slug;
+      const nextSlug = pickNextToySlug(currentSlug);
+      if (!nextSlug) {
+        if (fromFlow) {
+          setFlowActive(false);
+        }
+        return;
+      }
+      nextToyInFlight = true;
+      clearFlowTimer();
+      try {
+        await loadToy(nextSlug, { pushState: true, preferDemoAudio });
+      } finally {
+        nextToyInFlight = false;
+        if (flowActive) {
+          scheduleFlow();
+        }
+      }
     };
 
     const container = view.showActiveToyView(backToLibrary, toy, {
       onNextToy: handleNextToy,
+      onToggleFlow: (active) => setFlowActive(active),
+      flowActive,
     });
     if (!container) return;
     updateRendererStatus(
@@ -267,6 +324,7 @@ export function createLoader({
 
       // Track toy load for agents
       setCurrentToy(toy.slug);
+      activeToySlug = toy.slug;
       rememberToy(toy.slug);
 
       // Setup audio prompt if startAudio globals are registered by the toy.
