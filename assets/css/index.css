@@ -1115,7 +1115,9 @@ html.light .hero-readiness__text {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
 }
 
 .intro-pill {
@@ -1170,6 +1172,14 @@ body[data-details-open] .readiness-note {
   margin: -0.25rem 0;
   border-radius: 8px;
   touch-action: manipulation;
+}
+
+button.text-link {
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
 
 .text-link:focus-visible {
