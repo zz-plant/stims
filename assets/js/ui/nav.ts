@@ -57,7 +57,7 @@ export function initNavigation(container: HTMLElement, options: NavOptions) {
 
 function renderLibraryNav(container: HTMLElement, _doc: Document) {
   container.innerHTML = `
-    <nav class="top-nav" data-top-nav aria-label="Primary">
+    <nav class="top-nav" data-top-nav aria-label="Primary" data-nav-expanded="true">
       <div class="brand">
         <span class="brand-mark"></span>
         <div class="brand-copy">
@@ -65,7 +65,11 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
           <p class="brand-title">Webtoy Library ✦</p>
         </div>
       </div>
-      <div class="nav-actions">
+      <button class="nav-toggle" type="button" aria-expanded="true" aria-controls="nav-actions">
+        <span data-nav-toggle-label>Menu</span>
+        <span class="nav-toggle__icon" data-nav-toggle-icon aria-hidden="true">☰</span>
+      </button>
+      <div class="nav-actions" id="nav-actions">
         <div class="nav-section nav-section--jump" aria-label="Jump to">
           <span class="nav-section__label">Jump</span>
           <a class="nav-link nav-link--section" data-section-link href="#intro">Intro</a>
@@ -85,6 +89,59 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
       </div>
     </nav>
   `;
+
+  const nav = container.querySelector('.top-nav') as HTMLElement | null;
+  const toggle = container.querySelector(
+    '.nav-toggle',
+  ) as HTMLButtonElement | null;
+  const label = container.querySelector(
+    '[data-nav-toggle-label]',
+  ) as HTMLSpanElement | null;
+  const icon = container.querySelector(
+    '[data-nav-toggle-icon]',
+  ) as HTMLSpanElement | null;
+  const mediaQuery = window.matchMedia('(max-width: 520px)');
+  let isExpanded = !mediaQuery.matches;
+
+  const applyState = (expanded: boolean) => {
+    if (!nav || !toggle) return;
+    nav.dataset.navExpanded = expanded ? 'true' : 'false';
+    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    if (label) {
+      label.textContent = expanded ? 'Close menu' : 'Menu';
+    }
+    if (icon) {
+      icon.textContent = expanded ? '✕' : '☰';
+    }
+  };
+
+  const syncWithViewport = () => {
+    if (mediaQuery.matches) {
+      isExpanded = false;
+    } else {
+      isExpanded = true;
+    }
+    applyState(isExpanded);
+  };
+
+  syncWithViewport();
+
+  toggle?.addEventListener('click', () => {
+    isExpanded = !isExpanded;
+    applyState(isExpanded);
+  });
+
+  mediaQuery.addEventListener('change', syncWithViewport);
+
+  container
+    .querySelectorAll('.nav-link, .nav-link--section, .theme-toggle')
+    .forEach((link) => {
+      link.addEventListener('click', () => {
+        if (!mediaQuery.matches) return;
+        isExpanded = false;
+        applyState(isExpanded);
+      });
+    });
 }
 
 function renderToyNav(
