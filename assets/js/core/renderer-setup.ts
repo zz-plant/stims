@@ -2,6 +2,7 @@
 import { ACESFilmicToneMapping, SRGBColorSpace, WebGLRenderer } from 'three';
 import { isMobileDevice } from '../utils/device-detect.ts';
 import { ensureWebGL } from '../utils/webgl-check.ts';
+import { createWebGLRenderer } from '../utils/webgl-renderer.ts';
 import {
   getRendererCapabilities,
   type RendererBackend,
@@ -148,7 +149,7 @@ export async function initRenderer(
     rememberRendererFallback(reason, { shouldRetryWebGPU, triedWebGPU });
 
     // Mobile-optimized WebGL context attributes
-    const renderer = new WebGLRenderer({
+    const renderer = createWebGLRenderer({
       canvas,
       antialias,
       alpha,
