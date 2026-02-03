@@ -1,3 +1,4 @@
+import { isMobileDevice } from '../utils/device-detect.ts';
 import {
   exitToyPictureInPicture,
   getToyPictureInPictureVideo,
@@ -151,12 +152,15 @@ function renderToyNav(
 ) {
   const safeTitle = escapeHtml(options.title ?? 'Web toy');
   const safeSlug = options.slug ? escapeHtml(options.slug) : '';
+  const hintText = isMobileDevice()
+    ? 'Tap Flow mode to auto-switch every 45s. Use Back to return to the library.'
+    : 'Press Esc or use Back to return to the library.';
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
       <p class="active-toy-nav__eyebrow">Now playing</p>
       <p class="active-toy-nav__title">${safeTitle}</p>
-      <p class="active-toy-nav__hint">Press Esc or use Back to return to the library.</p>
+      <p class="active-toy-nav__hint">${hintText}</p>
       ${safeSlug ? `<span class="active-toy-nav__pill">${safeSlug}</span>` : ''}
     </div>
     <div class="active-toy-nav__actions">
