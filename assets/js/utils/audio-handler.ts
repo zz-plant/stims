@@ -611,7 +611,7 @@ export function getWeightedAverageFrequency(data: Uint8Array): number {
   const trebleAvg = trebleSum / Math.max(1, len - midEnd) / 255;
 
   const weighted = bassAvg * 0.6 + midAvg * 0.25 + trebleAvg * 0.15;
-  const boosted = Math.min(1, weighted ** 0.78 * 1.05);
+  const boosted = Math.min(1, weighted ** 0.65 * 1.2);
 
   return boosted * 255;
 }
