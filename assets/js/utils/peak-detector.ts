@@ -51,7 +51,7 @@ function resolveDataSource({
   return null;
 }
 
-const DEFAULT_SENSITIVITY = 0.35;
+const DEFAULT_SENSITIVITY = 0.25;
 const DEFAULT_DECAY = 0.9;
 const DEFAULT_COOLDOWN_MS = 150;
 

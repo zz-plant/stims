@@ -127,7 +127,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let beatFlash = 0;
   let beatStreak = 0;
   const beatTracker = createBeatTracker({
-    threshold: 0.55,
+    threshold: 0.45,
     minIntervalMs: 120,
     smoothing: { bass: 0.85, mid: 0.9, treble: 0.92 },
     beatDecay: 0.92,

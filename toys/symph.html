@@ -275,7 +275,7 @@
       let peakLevel = 0.12;
       let bassPulse = 0;
       let trebleShimmer = 0;
-      const defaultSensitivity = 0.7;
+      const defaultSensitivity = 0.85;
       let transientSensitivity = defaultSensitivity;
       let sparklesEnabled = true;
       let burstsEnabled = true;
@@ -321,7 +321,7 @@
         </div>
         <label class="fun-row">
           <span>Sensitivity</span>
-          <input class="fun-slider fun-sensitivity" type="range" min="0.3" max="1" step="0.01" value="${defaultSensitivity}" aria-valuemin="0.3" aria-valuemax="1" aria-valuenow="${defaultSensitivity}" aria-label="Transient sensitivity" />
+          <input class="fun-slider fun-sensitivity" type="range" min="0.4" max="1" step="0.01" value="${defaultSensitivity}" aria-valuemin="0.4" aria-valuemax="1" aria-valuenow="${defaultSensitivity}" aria-label="Transient sensitivity" />
         </label>
       `;
       funControls.appendControl(extraControls);

@@ -29,7 +29,7 @@ const DEFAULT_SMOOTHING = {
 
 export function createBeatTracker(options: BeatTrackerOptions = {}) {
   const {
-    threshold = 0.55,
+    threshold = 0.45,
     minIntervalMs = 150,
     smoothing = DEFAULT_SMOOTHING,
     beatDecay = 0.92,

@@ -57,7 +57,7 @@ export function getWeightedEnergy(
 export function updateEnergyPeak(
   currentPeak: number,
   weightedEnergy: number,
-  { decay = 0.96, floor = 0.05 }: { decay?: number; floor?: number } = {},
+  { decay = 0.96, floor = 0.02 }: { decay?: number; floor?: number } = {},
 ): number {
   return Math.max(currentPeak * decay, weightedEnergy, floor);
 }
