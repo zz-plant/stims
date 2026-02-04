@@ -3,7 +3,7 @@
 ## Project structure
 
 - Toy modules: `assets/js/toys/` (TypeScript modules exporting `start()`).
-- Toy registry: `assets/js/toys-data.js` (slugs, metadata, capabilities).
+- Toy registry: `assets/data/toys.json` (slugs, metadata, capabilities).
 - Standalone HTML toys: `toys/` directory (standalone pages launched from the library UI).
 - Loader logic: `toy.html` + `assets/js/loader.ts`.
 - Audio/runtime helpers: `assets/js/core/toy-runtime.ts` and `assets/js/utils/start-audio.ts`.

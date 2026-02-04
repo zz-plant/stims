@@ -12,22 +12,16 @@ import {
   defaultToyLifecycle,
   type ToyLifecycle,
 } from './core/toy-lifecycle.ts';
+import toyManifest from './data/toy-manifest.ts';
+import type { ToyEntry } from './data/toy-schema.ts';
 import { createRouter, type Route } from './router.ts';
 import { createToyView } from './toy-view.ts';
-import toysData from './toys-data.js';
 import { createManifestClient } from './utils/manifest-client.ts';
 import { resetToyPictureInPicture } from './utils/picture-in-picture.ts';
 import { loadToyModuleStarter } from './utils/toy-module-loader.ts';
 import { ensureWebGL } from './utils/webgl-check.ts';
 
-type Toy = {
-  slug: string;
-  title?: string;
-  module: string;
-  type: 'module' | 'page';
-  requiresWebGPU?: boolean;
-  allowWebGLFallback?: boolean;
-};
+type Toy = ToyEntry;
 
 const TOY_QUERY_PARAM = 'toy';
 const STARTER_POLL_DELAY_MS = 100;
@@ -66,7 +60,7 @@ export function createLoader({
   view = createToyView(),
   ensureWebGLCheck = ensureWebGL,
   rendererCapabilities = getRendererCapabilities,
-  toys = toysData as Toy[],
+  toys = toyManifest,
   prewarmRendererCapabilitiesFn = prewarmRendererCapabilities,
   prewarmMicrophoneFn = prewarmMicrophone,
   resetAudioPoolFn = resetAudioPool,

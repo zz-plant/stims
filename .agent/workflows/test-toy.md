@@ -46,7 +46,7 @@ bun test tests/sample-toy.test.ts
 bun run dev
 ```
 
-2. Use the browser tools to navigate to `http://localhost:5173/toy.html?toy=<slug>` where `<slug>` is the toy's slug from `assets/js/toys-data.js`.
+2. Use the browser tools to navigate to `http://localhost:5173/toy.html?toy=<slug>` where `<slug>` is the toy's slug from `assets/data/toys.json`.
 
 3. Verify:
    - The toy loads without console errors
@@ -70,6 +70,6 @@ expect(typeof start).toBe('function');
 
 ## Common Issues
 
-- **Toy not found**: Ensure the slug is registered in `assets/js/toys-data.js`
+- **Toy not found**: Ensure the slug is registered in `assets/data/toys.json`
 - **Audio not working**: Check that `startAudio` and `startAudioFallback` are registered via `registerToyGlobals`
 - **Blank canvas**: Verify the renderer is sizing correctly to `clientWidth`/`clientHeight`

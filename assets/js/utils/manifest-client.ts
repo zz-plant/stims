@@ -1,3 +1,5 @@
+import { type ToyManifest, toyManifestSchema } from '../data/toy-schema.ts';
+
 type FetchImpl = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
 type BaseUrlInput =
@@ -130,6 +132,40 @@ function tryResolveUrl(target: string, base: string | URL | null) {
   } catch {
     return null;
   }
+}
+
+function formatZodIssues(error: {
+  issues: { path: PropertyKey[]; message: string }[];
+}) {
+  return error.issues
+    .map((issue) => {
+      const pathLabel = issue.path.length
+        ? issue.path
+            .map((segment) =>
+              typeof segment === 'symbol'
+                ? segment.toString()
+                : String(segment),
+            )
+            .join('.')
+        : 'manifest';
+      return `- ${pathLabel}: ${issue.message}`;
+    })
+    .join('\n');
+}
+
+export function parseToyManifest(
+  data: unknown,
+  { source = 'toy manifest' }: { source?: string } = {},
+): { ok: true; data: ToyManifest } | { ok: false; error: Error } {
+  const parsed = toyManifestSchema.safeParse(data);
+  if (!parsed.success) {
+    const message = [
+      `Toy manifest validation failed for ${source}:`,
+      formatZodIssues(parsed.error),
+    ].join('\n');
+    return { ok: false, error: new Error(message) };
+  }
+  return { ok: true, data: parsed.data };
 }
 
 export function createManifestClient({

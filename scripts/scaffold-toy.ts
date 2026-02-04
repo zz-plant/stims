@@ -1,10 +1,12 @@
 import fs from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { z } from 'zod';
+import {
+  type ToyManifest,
+  toyManifestSchema,
+} from '../assets/js/data/toy-schema.ts';
 
 type ToyType = 'module' | 'page';
 
@@ -78,7 +80,7 @@ async function main() {
         path.relative(parsed.root ?? repoRoot, toyHtmlPath(slug, parsed.root)),
       );
     }
-    console.log('- Metadata: assets/js/toys-data.js');
+    console.log('- Metadata: assets/data/toys.json');
     console.log('- Index: docs/TOY_SCRIPT_INDEX.md');
     if (shouldCreateTest && type === 'module') {
       console.log(`- Test: tests/${testFileName(slug)}`);
@@ -182,34 +184,9 @@ function parseArgs(args: string[]): ScaffoldOptions {
   return options;
 }
 
-const toyEntrySchema = z
-  .object({
-    slug: z.string().min(1),
-    title: z.string().min(1),
-    description: z.string().min(1),
-    module: z.string().min(1),
-    type: z.enum(['module', 'page']),
-    requiresWebGPU: z.boolean().optional(),
-    allowWebGLFallback: z.boolean().optional(),
-  })
-  .passthrough();
-
-const toysDataSchema = z.array(toyEntrySchema);
-
 async function ensureToysDataValid(root = repoRoot) {
   const entries = await loadToysData(root);
-  const parsed = toysDataSchema.parse(entries);
-  const seen = new Set<string>();
-
-  for (const entry of parsed) {
-    if (seen.has(entry.slug)) {
-      throw new Error(
-        `Duplicate slug detected in assets/js/toys-data.js: ${entry.slug}`,
-      );
-    }
-    seen.add(entry.slug);
-  }
-
+  const parsed = toyManifestSchema.parse(entries);
   return parsed;
 }
 
@@ -242,10 +219,9 @@ async function promptSlug(
     throw new Error(`A toy module already exists for slug "${slug}".`);
   }
 
-  const toysDataPath = path.join(root, 'assets/js/toys-data.js');
-  const toysData = await fs.readFile(toysDataPath, 'utf8');
-  if (toysData.includes(`slug: '${slug}'`)) {
-    throw new Error(`Slug "${slug}" already exists in assets/js/toys-data.js.`);
+  const toysData = await loadToysData(root);
+  if (toysData.some((entry) => entry.slug === slug)) {
+    throw new Error(`Slug "${slug}" already exists in assets/data/toys.json.`);
   }
 
   return slug;
@@ -295,22 +271,15 @@ async function promptBoolean(
 }
 
 async function loadToysData(root = repoRoot) {
-  const dataPath = path.join(root, 'assets/js/toys-data.js');
+  const dataPath = path.join(root, 'assets/data/toys.json');
   const source = await fs.readFile(dataPath, 'utf8');
-  const tempPath = path.join(
-    tmpdir(),
-    `toys-data-${Date.now()}-${Math.random().toString(16).slice(2)}.mjs`,
-  );
-  await fs.writeFile(tempPath, source, 'utf8');
-  const module = await import(pathToFileURL(tempPath).href);
-  await fs.unlink(tempPath).catch(() => {});
-  const entries = module.default;
+  const entries = JSON.parse(source);
 
   if (!Array.isArray(entries)) {
-    throw new Error('Expected assets/js/toys-data.js to export an array.');
+    throw new Error('Expected assets/data/toys.json to export an array.');
   }
 
-  return entries;
+  return entries as ToyManifest;
 }
 
 async function ensureEntryPoint(
@@ -364,42 +333,29 @@ async function appendToyMetadata(
   type: ToyType,
   root = repoRoot,
 ) {
-  const dataPath = path.join(root, 'assets/js/toys-data.js');
-  const current = await fs.readFile(dataPath, 'utf8');
+  const dataPath = path.join(root, 'assets/data/toys.json');
+  const current = await loadToysData(root);
 
-  if (current.includes(`slug: '${slug}'`)) {
-    throw new Error(`Slug "${slug}" already exists in assets/js/toys-data.js.`);
+  if (current.some((entry) => entry.slug === slug)) {
+    throw new Error(`Slug "${slug}" already exists in assets/data/toys.json.`);
   }
 
-  const newEntry = [
-    '  {',
-    `    slug: '${slug}',`,
-    `    title: '${title.replace(/'/g, "\\'")}',`,
-    '    description:',
-    `      '${description.replace(/'/g, "\\'")}',`,
-    type === 'page'
-      ? `    module: 'toys/${slug}.html',`
-      : `    module: 'assets/js/toys/${slug}.ts',`,
-    `    type: '${type}',`,
-    '    requiresWebGPU: false,',
-    '  },',
-  ].join('\n');
+  const newEntry = {
+    slug,
+    title,
+    description,
+    module: type === 'page' ? `toys/${slug}.html` : `assets/js/toys/${slug}.ts`,
+    type,
+    requiresWebGPU: false,
+    capabilities: {
+      microphone: true,
+      demoAudio: true,
+      motion: false,
+    },
+  };
 
-  if (!current.includes('];')) {
-    throw new Error(
-      'Could not find toys array terminator in assets/js/toys-data.js.',
-    );
-  }
-
-  const updated = current.replace(/\n\];\s*$/, `\n${newEntry}\n];\n`);
-
-  if (updated === current) {
-    throw new Error(
-      'Failed to update assets/js/toys-data.js with new metadata.',
-    );
-  }
-
-  await fs.writeFile(dataPath, updated, 'utf8');
+  const updated = [...current, newEntry];
+  await fs.writeFile(dataPath, `${JSON.stringify(updated, null, 2)}\n`, 'utf8');
 }
 
 async function validateMetadataEntry(
@@ -413,7 +369,7 @@ async function validateMetadataEntry(
   const entry = entries.find((item) => item.slug === slug);
 
   if (!entry) {
-    throw new Error(`Failed to register ${slug} in assets/js/toys-data.js.`);
+    throw new Error(`Failed to register ${slug} in assets/data/toys.json.`);
   }
 
   const expectedModule =

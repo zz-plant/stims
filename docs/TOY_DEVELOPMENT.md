@@ -6,8 +6,8 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 
 - Place new toy modules under `assets/js/toys/` and export a `start(options)` entry point.
 - Export `start({ container, canvas?, audioContext? })`. `container` is the preferred target for rendering.
-- Register the toy in `assets/js/toys-data.js` with a unique slug, label, and any default parameters. Keep the module path under `assets/js/toys/`.
-- Load toys through `toy.html?toy=<slug>` or a dedicated HTML entry point. Keep query string slugs in sync with `toys-data.js`.
+- Register the toy in `assets/data/toys.json` with a unique slug, label, and any default parameters. Keep the module path under `assets/js/toys/`.
+- Load toys through `toy.html?toy=<slug>` or a dedicated HTML entry point. Keep query string slugs in sync with `assets/data/toys.json`.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
 - Run `bun run check:toys` before committing to confirm every module in `assets/js/toys/` is registered and page-backed toys have matching HTML entry points.
 - Run `bun run check:quick` to validate types and code quality with Biome before opening a PR.
@@ -16,12 +16,12 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 
 Treat toys like live game content and keep their status explicit in metadata:
 
-- **Lifecycle stages** live in `assets/js/toys-data.js` as `lifecycleStage`:
+- **Lifecycle stages** live in `assets/data/toys.json` as `lifecycleStage`:
   - `prototype`: new or experimental toys that need fast iteration.
   - `featured`: curated experiences that get the most attention and polish.
   - `archived`: stable toys that stay available but are not actively promoted.
 - **Featured curation** uses `featuredRank` (lower = higher priority) to drive the default “Featured” sort in the library. Keep the set intentionally small (roughly 5–8 toys) so the landing grid stays focused.
-- **Rotation cadence**: revisit the featured set on a regular schedule (every 4–6 weeks). When rotating, update `featuredRank` and `lifecycleStage` in `assets/js/toys-data.js` so the UI reflects the new lineup.
+- **Rotation cadence**: revisit the featured set on a regular schedule (every 4–6 weeks). When rotating, update `featuredRank` and `lifecycleStage` in `assets/data/toys.json` so the UI reflects the new lineup.
 - **Polish passes**: schedule periodic quality passes on `featured` toys (monthly) and `prototype` toys (as needed). Each pass should include performance verification, accessibility checks, and a quick review of controls/labels against the latest UI conventions.
 
 ## Quality preset mapping (toy author guidance)
@@ -66,10 +66,10 @@ Use the scaffold script whenever possible; it wires up metadata, docs, and optio
    ```bash
    bun run scripts/scaffold-toy.ts --slug pocket-pulse --title "Pocket Pulse" --type module --with-test
    ```
-   The script creates `assets/js/toys/<slug>.ts`, appends the metadata entry in `assets/js/toys-data.js`, updates `docs/TOY_SCRIPT_INDEX.md`, and generates a minimal test in `tests/`.
+   The script creates `assets/js/toys/<slug>.ts`, appends the metadata entry in `assets/data/toys.json`, updates `docs/TOY_SCRIPT_INDEX.md`, and generates a minimal test in `tests/`.
 3. **Manual alternative** (if you skipped the scaffold):
    - Create `assets/js/toys/<slug>.ts` and export `start({ container, canvas?, audioContext? })`.
-   - Add the entry to `assets/js/toys-data.js` (include `title`, `description`, `module`, `type`, and any `lifecycleStage` metadata).
+   - Add the entry to `assets/data/toys.json` (include `title`, `description`, `module`, `type`, and any `lifecycleStage` metadata).
    - Add the slug row to `docs/TOY_SCRIPT_INDEX.md` so the loader docs stay in sync.
    - Create `toys/<slug>.html` only if the toy uses a standalone page.
 4. **Wire the runtime**: use `createToyRuntimeStarter` or `createToyRuntime` so audio, renderer, input, and settings panel behavior matches the rest of the library. Keep all DOM work scoped to the provided `container`.
@@ -182,7 +182,7 @@ Manual scenarios to verify:
 
 - If visuals are blank, confirm the canvas is attached and the renderer size matches `clientWidth`/`clientHeight`.
 - When audio-driven behavior seems off, log the analyzer samples to verify data ranges and check microphone permissions in the browser.
-- Validate new entries in `toys-data.js` by visiting `toy.html?toy=<slug>` and verifying the selection UI lists the new toy.
+- Validate new entries in `assets/data/toys.json` by visiting `toy.html?toy=<slug>` and verifying the selection UI lists the new toy.
 
 ## Testing Guidance
 
@@ -196,4 +196,4 @@ Manual scenarios to verify:
 - Update `README.md` and `CONTRIBUTING.md` if you introduce new scripts or global expectations.
 - Describe user-facing controls or setup steps in the associated HTML entry point if they deviate from existing patterns.
 - Include inline comments for novel shader parameters, math tricks, or input handling quirks.
-- When you wrap an existing HTML page for use in `toy.html`, expose it through `startPageToy` (see `assets/js/toys/*`) and add the slug to `assets/js/toys-data.js` so the loader can surface it in the library view.
+- When you wrap an existing HTML page for use in `toy.html`, expose it through `startPageToy` (see `assets/js/toys/*`) and add the slug to `assets/data/toys.json` so the loader can surface it in the library view.

@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/types.js';
 import { z } from 'zod';
-import toysData from '../assets/js/toys-data.js';
+import toyManifest from '../assets/js/data/toy-manifest.ts';
 import docsDevelopment from '../docs/DEVELOPMENT.md?raw';
 import docsMcpServer from '../docs/MCP_SERVER.md?raw';
 import docsReadme from '../docs/README.md?raw';
@@ -82,7 +82,7 @@ function registerTools(server: McpServer) {
     'get_toys',
     {
       description:
-        'Return structured toy metadata (including controls and module info) from assets/js/toys-data.js with optional slug or WebGPU filters.',
+        'Return structured toy metadata (including controls and module info) from assets/data/toys.json with optional slug or WebGPU filters.',
       inputSchema: z
         .object({
           slug: z
@@ -100,7 +100,7 @@ function registerTools(server: McpServer) {
         .strict(),
     },
     async ({ slug, requiresWebGPU }) => {
-      const toys = normalizeToys(toysData);
+      const toys = normalizeToys(toyManifest);
 
       const filtered = toys.filter((toy) => {
         if (slug && toy.slug !== slug) return false;
@@ -246,7 +246,7 @@ function registerTools(server: McpServer) {
         .strict(),
     },
     async ({ slug, port = 5173 }) => {
-      const toy = normalizeToys(toysData).find((t) => t.slug === slug);
+      const toy = normalizeToys(toyManifest).find((t) => t.slug === slug);
 
       if (!toy) {
         return asTextResponse(
@@ -345,7 +345,7 @@ function registerTools(server: McpServer) {
       ];
 
       if (slug) {
-        const toy = normalizeToys(toysData).find((t) => t.slug === slug);
+        const toy = normalizeToys(toyManifest).find((t) => t.slug === slug);
         if (toy) {
           guide.push('', `## Specific to "${toy.title}"`, '');
           guide.push(`**Description:** ${toy.description}`);

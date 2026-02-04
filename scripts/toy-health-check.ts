@@ -1,4 +1,4 @@
-import toysData from '../assets/js/toys-data.js';
+import toyManifest from '../assets/js/data/toy-manifest.ts';
 import type { PlayToyResult } from './play-toy.ts';
 import { playToy } from './play-toy.ts';
 
@@ -15,7 +15,7 @@ async function checkToys() {
   const failures: ToyHealthFailure[] = [];
 
   // Normalize toys data
-  const toys = (Array.isArray(toysData) ? toysData : []) as {
+  const toys = (Array.isArray(toyManifest) ? toyManifest : []) as {
     slug: string;
     title: string;
   }[];

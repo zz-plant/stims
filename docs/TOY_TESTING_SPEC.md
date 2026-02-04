@@ -90,7 +90,7 @@ When adding new helpers (color math, easing, or audio utilities), write small un
 
 ## Smoke checks for toy metadata
 
-If you change the toy registry (`assets/js/toys-data.js`) or entry points, consider updating or extending `scripts/check-toys.ts` tests so metadata stays consistent. The `tests/check-toys.test.ts` file covers this workflow with a temporary repo fixture.
+If you change the toy registry (`assets/data/toys.json`) or entry points, consider updating or extending `scripts/check-toys.ts` tests so metadata stays consistent. The `tests/check-toys.test.ts` file covers this workflow with a temporary repo fixture.
 
 ## Verification checklist
 

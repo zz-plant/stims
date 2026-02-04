@@ -1,17 +1,21 @@
+import toyManifest from '../data/toy-manifest.ts';
+import type { ToyManifest } from '../data/toy-schema.ts';
 import { createLibraryView } from '../library-view.js';
-import toysData from '../toys-data.js';
+import { parseToyManifest } from './manifest-client.ts';
 
 const resolveToys = async () => {
   try {
     const response = await fetch('./toys.json', { cache: 'no-store' });
     if (response.ok) {
       const data = await response.json();
-      if (Array.isArray(data)) return data;
+      const parsed = parseToyManifest(data, { source: 'toys.json' });
+      if (parsed.ok) return parsed.data;
+      console.warn(parsed.error.message);
     }
   } catch (error) {
     console.warn('Falling back to bundled toy data', error);
   }
-  return toysData;
+  return toyManifest as ToyManifest;
 };
 
 type InitLibraryViewOptions = {

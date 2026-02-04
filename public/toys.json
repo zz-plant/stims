@@ -2,13 +2,16 @@
   {
     "slug": "3dtoy",
     "title": "3D Toy",
-    "description": "Dive into a twisting 3D tunnel that responds to sound.",
+    "description": "A twisting 3D tunnel that responds to sound.",
     "module": "assets/js/toys/three-d-toy.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["3d", "tunnel", "pulse"],
-    "moods": ["trippy", "energetic"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "aurora-painter",
@@ -17,9 +20,28 @@
     "module": "assets/js/toys/aurora-painter.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["aurora", "ribbons", "gestural"],
-    "moods": ["dreamy", "ethereal", "luminous"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "featured",
+    "featuredRank": 1,
+    "moods": [
+      "dreamy",
+      "ethereal",
+      "luminous"
+    ],
+    "tags": [
+      "aurora",
+      "ribbons",
+      "gestural"
+    ],
+    "controls": [
+      "Ribbon density",
+      "Pinch/rotate gestures",
+      "Arrow-key mood switching"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "clay",
@@ -28,9 +50,12 @@
     "module": "assets/js/toys/clay.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["sculpt", "clay", "tactile"],
-    "moods": ["focused", "soothing"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "evol",
@@ -39,9 +64,12 @@
     "module": "assets/js/toys/evol.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["fractal", "glitch", "surreal"],
-    "moods": ["dreamy", "experimental"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "geom",
@@ -50,20 +78,26 @@
     "module": "assets/js/toys/geom.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["geometry", "lines", "responsive"],
-    "moods": ["focused", "technical"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "holy",
-    "title": "Ultimate Satisfying Visualizer",
-    "description": "Layered halos, particles, and morphing shapes that respond to your music.",
+    "title": "Halo Visualizer",
+    "description": "Layered halos, particles, and shapes that respond to your music.",
     "module": "assets/js/toys/holy.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["halo", "particles", "soft"],
-    "moods": ["soothing", "uplifting"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "multi",
@@ -73,20 +107,26 @@
     "type": "module",
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
-    "tags": ["motion", "lights", "reactive"],
-    "moods": ["energetic", "immersive"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": true }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": true
+    }
   },
   {
     "slug": "seary",
-    "title": "Trippy Synesthetic Visualizer",
-    "description": "Blend audio and visuals in a rich synesthetic experience.",
+    "title": "Synesthetic Visualizer",
+    "description": "Blend audio and visuals into linked patterns.",
     "module": "assets/js/toys/seary.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["synesthetic", "gradient", "pulse"],
-    "moods": ["trippy", "immersive"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "legible",
@@ -95,20 +135,26 @@
     "module": "assets/js/toys/legible.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["text", "grid", "terminal"],
-    "moods": ["nostalgic", "steady"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "symph",
-    "title": "Dreamy Spectrograph",
-    "description": "A relaxing spectrograph that moves gently with your audio.",
+    "title": "Spectrograph",
+    "description": "A spectrograph that moves gently with your audio.",
     "module": "assets/js/toys/symph.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["spectrograph", "soft", "color"],
-    "moods": ["dreamy", "gentle"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "cube-wave",
@@ -117,9 +163,12 @@
     "module": "assets/js/toys/cube-wave.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["grid", "cubes", "waves"],
-    "moods": ["rhythmic", "energetic"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "bubble-harmonics",
@@ -128,9 +177,69 @@
     "module": "assets/js/toys/bubble-harmonics.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["bubbles", "harmonics", "liquid"],
-    "moods": ["playful", "glossy"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "featured",
+    "featuredRank": 7,
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
+  },
+  {
+    "slug": "pocket-pulse",
+    "title": "Pocket Pulse",
+    "description": "A mobile-optimized pulse field that responds to audio and touch gestures.",
+    "module": "assets/js/toys/pocket-pulse.ts",
+    "type": "module",
+    "requiresWebGPU": false,
+    "lifecycleStage": "prototype",
+    "moods": [
+      "uplifting",
+      "focus",
+      "minimal"
+    ],
+    "tags": [
+      "mobile",
+      "pulses",
+      "touch"
+    ],
+    "controls": [
+      "Quality presets",
+      "Touch drift"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
+  },
+  {
+    "slug": "mobile-ripples",
+    "title": "Mobile Ripples",
+    "description": "Low-power neon ripples tuned for touch-first screens and pocket GPUs.",
+    "module": "assets/js/toys/mobile-ripples.ts",
+    "type": "module",
+    "requiresWebGPU": false,
+    "lifecycleStage": "prototype",
+    "moods": [
+      "calming",
+      "focus",
+      "glow"
+    ],
+    "tags": [
+      "mobile",
+      "ripples",
+      "touch"
+    ],
+    "controls": [
+      "Quality presets",
+      "Touch drift"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "cosmic-particles",
@@ -139,9 +248,13 @@
     "module": "assets/js/toys/cosmic-particles.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["cosmic", "particles", "nebula"],
-    "moods": ["vast", "cinematic"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "featured",
+    "featuredRank": 5,
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "lights",
@@ -150,20 +263,42 @@
     "module": "assets/js/toys/lights.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["lights", "shaders", "palette"],
-    "moods": ["vivid", "energetic"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "spiral-burst",
     "title": "Spiral Burst",
-    "description": "Explosive multi-arm spirals with 4 modes (Burst, Bloom, Vortex, Heartbeat), particle clouds, central bloom mesh, and beat-reactive camera movement.",
+    "description": "Colorful spirals rotate and expand with every beat.",
     "module": "assets/js/toys/spiral-burst.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["spiral", "burst", "gestural", "modes", "beat-detection", "3d"],
-    "moods": ["energetic", "pulsing", "cosmic"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "featured",
+    "featuredRank": 4,
+    "moods": [
+      "energetic",
+      "pulsing",
+      "cosmic"
+    ],
+    "tags": [
+      "spirals",
+      "burst",
+      "gestural"
+    ],
+    "controls": [
+      "Mode buttons",
+      "Pinch/rotate gestures",
+      "Arrow-key mode swap"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "rainbow-tunnel",
@@ -172,9 +307,12 @@
     "module": "assets/js/toys/rainbow-tunnel.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["tunnel", "rainbow", "rings"],
-    "moods": ["uplifting", "bright"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "star-field",
@@ -183,9 +321,26 @@
     "module": "assets/js/toys/star-field.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["stars", "nebula", "gestural"],
-    "moods": ["serene", "drifting", "celestial"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "moods": [
+      "serene",
+      "drifting",
+      "celestial"
+    ],
+    "tags": [
+      "stars",
+      "nebula",
+      "gestural"
+    ],
+    "controls": [
+      "Pinch/rotate gestures",
+      "Arrow-key mood switching"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "fractal-kite-garden",
@@ -194,9 +349,16 @@
     "module": "assets/js/toys/fractal-kite-garden.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["fractal", "kite", "garden"],
-    "moods": ["organic", "delicate"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "archived",
+    "controls": [
+      "Pattern density slider",
+      "Palette switches"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   },
   {
     "slug": "tactile-sand-table",
@@ -205,9 +367,18 @@
     "module": "assets/js/toys/tactile-sand-table.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["sand", "ripples", "tilt"],
-    "moods": ["tactile", "meditative"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": true }
+    "lifecycleStage": "featured",
+    "featuredRank": 3,
+    "controls": [
+      "Grain size slider",
+      "Damping slider",
+      "Gravity lock toggle"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": true
+    }
   },
   {
     "slug": "bioluminescent-tidepools",
@@ -216,8 +387,88 @@
     "module": "assets/js/toys/bioluminescent-tidepools.ts",
     "type": "module",
     "requiresWebGPU": false,
-    "tags": ["ocean", "bioluminescent", "caustics", "gestural"],
-    "moods": ["serene", "ethereal", "fiery", "dreamy"],
-    "capabilities": { "microphone": true, "demoAudio": true, "motion": false }
+    "lifecycleStage": "featured",
+    "featuredRank": 2,
+    "moods": [
+      "serene",
+      "ethereal",
+      "fiery",
+      "dreamy"
+    ],
+    "tags": [
+      "ocean",
+      "bioluminescent",
+      "caustics",
+      "gestural"
+    ],
+    "controls": [
+      "Trail length",
+      "Glow strength",
+      "Current speed",
+      "Pinch/rotate gestures",
+      "Arrow-key mood switching"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
+  },
+  {
+    "slug": "neon-wave",
+    "title": "Neon Wave",
+    "description": "Retro-wave visualizer with bloom effects, custom shaders, and four color themes.",
+    "module": "assets/js/toys/neon-wave.ts",
+    "type": "module",
+    "requiresWebGPU": false,
+    "lifecycleStage": "featured",
+    "featuredRank": 6,
+    "moods": [
+      "energetic",
+      "immersive"
+    ],
+    "tags": [
+      "synthwave",
+      "cyberpunk",
+      "retro",
+      "visualizer",
+      "bloom"
+    ],
+    "controls": [
+      "Theme selector",
+      "Quality presets"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
+  },
+  {
+    "slug": "milkdrop",
+    "title": "MilkDrop Proto",
+    "description": "A hardware-accelerated feedback engine inspired by the MilkDrop visualizer system.",
+    "module": "assets/js/toys/milkdrop-toy.ts",
+    "type": "module",
+    "requiresWebGPU": false,
+    "lifecycleStage": "prototype",
+    "moods": [
+      "immersive",
+      "psychedelic"
+    ],
+    "tags": [
+      "feedback",
+      "warp",
+      "visualizer",
+      "retro"
+    ],
+    "controls": [
+      "Quality presets"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
   }
 ]

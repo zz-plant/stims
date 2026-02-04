@@ -9,7 +9,7 @@
 ## High-signal code locations
 
 - `assets/js/toys/` - TypeScript toy modules (library-loaded toys).
-- `assets/js/toys-data.js` - Toy registry metadata (slugs, labels, caps).
+- `assets/data/toys.json` - Toy registry metadata (slugs, labels, caps).
 - `assets/js/loader.ts` - Toy loader for `toy.html` (routes, query params).
 - `assets/js/core/toy-runtime.ts` - Runtime scaffolding (audio + render loop).
 - `assets/js/utils/start-audio.ts` - Audio unlock + demo audio controls.
@@ -24,7 +24,7 @@
 
 ## Fast triage checklist
 
-1. **Toy missing from UI?** Confirm it exists in `assets/js/toys-data.js`.
+1. **Toy missing from UI?** Confirm it exists in `assets/data/toys.json`.
 2. **Toy fails to load?** Check query params handling in `assets/js/loader.ts`.
 3. **Audio not reactive?** Validate `startAudio` usage and runtime setup in
    `assets/js/core/toy-runtime.ts` and `assets/js/utils/start-audio.ts`.
