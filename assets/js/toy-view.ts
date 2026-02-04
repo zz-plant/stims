@@ -302,11 +302,28 @@ export function createToyView({
       return action();
     }
 
-    let result: T;
-    doc.startViewTransition(() => {
+    let result: T | undefined;
+    let ran = false;
+    const runOnce = () => {
+      if (ran) return result;
+      ran = true;
       result = action();
-    });
-    // biome-ignore lint/style/noNonNullAssertion: callback runs synchronously
+      return result;
+    };
+
+    try {
+      doc.startViewTransition(() => {
+        runOnce();
+      });
+    } catch (_error) {
+      return action();
+    }
+
+    if (!ran) {
+      runOnce();
+    }
+
+    // biome-ignore lint/style/noNonNullAssertion: action always runs
     return result!;
   };
 
