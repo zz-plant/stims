@@ -4,9 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Audio-reactive visual toys for sensory stimulation and creative play. Open-source, no accounts required." />
+    <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#0b0f1a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="canonical" href="https://no.toil.fyi/" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
@@ -15,6 +17,19 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>Stim Webtoys Library</title>
+    <meta property="og:title" content="Stim Webtoys Library" />
+    <meta property="og:description" content="Audio-reactive visual toys for sensory stimulation and creative play. Open-source, no accounts required." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://no.toil.fyi/" />
+    <meta property="og:image" content="https://no.toil.fyi/icons/icon-512.png" />
+    <meta property="og:image:alt" content="Stim Webtoys Library icon" />
+    <meta property="og:site_name" content="Stim Webtoys Library" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Stim Webtoys Library" />
+    <meta name="twitter:description" content="Audio-reactive visual toys for sensory stimulation and creative play. Open-source, no accounts required." />
+    <meta name="twitter:image" content="https://no.toil.fyi/icons/icon-512.png" />
+    <meta name="twitter:image:alt" content="Stim Webtoys Library icon" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
@@ -44,10 +59,17 @@
             "url": "https://no.toil.fyi/",
             "name": "Stim Webtoys Library",
             "publisher": { "@id": "https://no.toil.fyi/#organization" },
-            "inLanguage": "en"
+            "inLanguage": "en",
+            "description": "Audio-reactive visual toys for sensory stimulation and creative play.",
+            "image": {
+              "@type": "ImageObject",
+              "url": "https://no.toil.fyi/icons/icon-512.png",
+              "width": 512,
+              "height": 512
+            }
           },
           {
-            "@type": "WebPage",
+            "@type": ["WebPage", "CollectionPage"],
             "@id": "https://no.toil.fyi/#webpage",
             "url": "https://no.toil.fyi/",
             "name": "Stim Webtoys Library",
@@ -55,7 +77,13 @@
             "description": "Explore audio, color, and motion without setup. Every stim opens fast, responds to mic and touch, and comes with sensible defaults that keep you in flow.",
             "isPartOf": { "@id": "https://no.toil.fyi/#website" },
             "publisher": { "@id": "https://no.toil.fyi/#organization" },
-            "inLanguage": "en"
+            "inLanguage": "en",
+            "primaryImageOfPage": {
+              "@type": "ImageObject",
+              "url": "https://no.toil.fyi/icons/icon-512.png",
+              "width": 512,
+              "height": 512
+            }
           }
         ]
       }
