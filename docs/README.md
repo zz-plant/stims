@@ -53,7 +53,7 @@ flowchart TD
 - Use **Bun 1.2+** for installs and scripts. Run `bun install` in a fresh clone to populate `bun.lock`-aligned dependencies.
 - Run a **dev server smoke test** without opening a browser via `bun run dev:check` to confirm Vite wiring before you start coding.
 - Use `bun run check:quick` as a fast local gate to run **Biome** and TypeScript checks.
-- When adding or renaming toys, run `bun run check:toys` to ensure `assets/js/toys-data.js` entries, TypeScript modules, standalone HTML files, and `docs/TOY_SCRIPT_INDEX.md` stay in sync.
+- When adding or renaming toys, run `bun run check:toys` to ensure `assets/data/toys.json` entries, TypeScript modules, standalone HTML files, and `docs/TOY_SCRIPT_INDEX.md` stay in sync.
 
 ## Navigation tips
 

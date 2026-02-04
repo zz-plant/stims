@@ -136,7 +136,7 @@ This project is organized so you can find the visuals, core utilities, and share
 - `tests/`: Bun specs that validate core behaviors.
 - `toy.html`, `brand.html`, `seary.html`, and other HTML files: Entry points that load specific toys or collections of toys.
 
-If you add a new toy, place the implementation in `assets/js/toys/`, register it in `assets/js/toys-data.js`, and make sure there’s an entry point (often `toy.html?toy=<slug>`) that can load it.
+If you add a new toy, place the implementation in `assets/js/toys/`, register it in `assets/data/toys.json`, and make sure there’s an entry point (often `toy.html?toy=<slug>`) that can load it.
 
 ## Toys in the Collection
 
@@ -270,7 +270,7 @@ All JavaScript dependencies are installed via Bun and bundled locally with Vite,
 - `bun run typecheck:watch`: Keep TypeScript checking in watch mode without emitting files.
 - `bun run check`: Run lint, typecheck, and tests in one go (handy before opening a PR).
 - `bun run check:quick`: Run lint and typecheck only (fast guardrail during iteration).
-- `bun run scripts/scaffold-toy.ts`: Interactive (or flag-driven) scaffolder that prompts for a slug/title/type, creates a starter module from [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), appends metadata to `assets/js/toys-data.js`, updates `docs/TOY_SCRIPT_INDEX.md`, and can optionally drop a minimal Bun spec. Pass flags such as `--slug ripple-orb --title "Ripple Orb" --type module --with-test` for non-interactive runs.
+- `bun run scripts/scaffold-toy.ts`: Interactive (or flag-driven) scaffolder that prompts for a slug/title/type, creates a starter module from [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), appends metadata to `assets/data/toys.json`, updates `docs/TOY_SCRIPT_INDEX.md`, and can optionally drop a minimal Bun spec. Pass flags such as `--slug ripple-orb --title "Ripple Orb" --type module --with-test` for non-interactive runs.
 - `bun run serve:dist`: Serve the `dist/` build with Bun (preferred for local production previews).
 
 ## Code of Conduct and Contributions
