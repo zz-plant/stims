@@ -8,7 +8,7 @@ export class FakeAnalyserNode {
     this.frequencyBinCount = frequencyBinCount;
   }
 
-  connect() {
+  connect(_destination?: unknown) {
     this.connected = true;
   }
 
@@ -24,10 +24,16 @@ export class FakeAnalyserNode {
 export class FakeAudioContext {
   closed = false;
   analyzersCreated = 0;
+  private readonly buildAnalyser: () => FakeAnalyserNode;
+
+  constructor(options: { analyserFactory?: () => FakeAnalyserNode } = {}) {
+    this.buildAnalyser =
+      options.analyserFactory ?? (() => new FakeAnalyserNode());
+  }
 
   createAnalyser() {
     this.analyzersCreated += 1;
-    return new FakeAnalyserNode();
+    return this.buildAnalyser();
   }
 
   async close() {
@@ -42,7 +48,6 @@ export function createToyContainer(id = 'toy-container') {
 
   const dispose = () => {
     container.remove();
-    document.body.innerHTML = '';
   };
 
   return { container, dispose };
