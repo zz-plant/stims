@@ -7,16 +7,14 @@ import { runToyChecks } from '../scripts/check-toys.ts';
 async function createTempRepo() {
   const root = await fs.mkdtemp(path.join(tmpdir(), 'toy-checks-'));
   await fs.mkdir(path.join(root, 'assets/js/toys'), { recursive: true });
+  await fs.mkdir(path.join(root, 'assets/data'), { recursive: true });
   await fs.mkdir(path.join(root, 'docs'), { recursive: true });
   await fs.mkdir(path.join(root, 'toys'), { recursive: true });
 
   const index = `# Toy and Visualizer Script Index\n\n| Slug | Entry module | How it loads |\n| --- | --- | --- |\n`;
   await fs.writeFile(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'), index);
 
-  await fs.writeFile(
-    path.join(root, 'assets/js/toys-data.js'),
-    'export default []\n',
-  );
+  await fs.writeFile(path.join(root, 'assets/data/toys.json'), '[]\n');
   return root;
 }
 
@@ -37,11 +35,39 @@ describe('check-toys script', () => {
       '<!doctype html>',
     );
     await fs.writeFile(
-      path.join(root, 'assets/js/toys-data.js'),
-      `export default [
-  { slug: '${slug}', title: 'Aligned', description: 'ok', module: 'assets/js/toys/${slug}.ts', type: 'module' },
-  { slug: '${pageSlug}', title: 'Standalone', description: 'ok', module: 'toys/${pageSlug}.html', type: 'page' },
-];\n`,
+      path.join(root, 'assets/data/toys.json'),
+      JSON.stringify(
+        [
+          {
+            slug,
+            title: 'Aligned',
+            description: 'ok',
+            module: `assets/js/toys/${slug}.ts`,
+            type: 'module',
+            requiresWebGPU: false,
+            capabilities: {
+              microphone: true,
+              demoAudio: true,
+              motion: false,
+            },
+          },
+          {
+            slug: pageSlug,
+            title: 'Standalone',
+            description: 'ok',
+            module: `toys/${pageSlug}.html`,
+            type: 'page',
+            requiresWebGPU: false,
+            capabilities: {
+              microphone: true,
+              demoAudio: true,
+              motion: false,
+            },
+          },
+        ],
+        null,
+        2,
+      ),
     );
     await fs.appendFile(
       path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
@@ -57,8 +83,26 @@ describe('check-toys script', () => {
     const slug = 'missing-entry';
 
     await fs.writeFile(
-      path.join(root, 'assets/js/toys-data.js'),
-      `export default [{ slug: '${slug}', title: 'Missing Entry', description: 'oops', module: 'toys/${slug}.html', type: 'page' }];\n`,
+      path.join(root, 'assets/data/toys.json'),
+      JSON.stringify(
+        [
+          {
+            slug,
+            title: 'Missing Entry',
+            description: 'oops',
+            module: `toys/${slug}.html`,
+            type: 'page',
+            requiresWebGPU: false,
+            capabilities: {
+              microphone: true,
+              demoAudio: true,
+              motion: false,
+            },
+          },
+        ],
+        null,
+        2,
+      ),
     );
 
     const result = await runToyChecks(root);

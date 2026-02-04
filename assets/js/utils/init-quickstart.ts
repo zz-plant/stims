@@ -1,4 +1,5 @@
-import toysData from '../toys-data.js';
+import toyManifest from '../data/toy-manifest.ts';
+import type { ToyEntry } from '../data/toy-schema.ts';
 import { DATA_SELECTORS, DATASET_KEYS } from './data-attributes.ts';
 import { isMobileDevice } from './device-detect.ts';
 
@@ -6,16 +7,13 @@ type InitQuickstartOptions = {
   loadToy: typeof import('../loader.ts').loadToy;
 };
 
-type QuickstartToy = {
-  slug: string;
-  lifecycleStage?: string | null;
-};
+type QuickstartToy = Pick<ToyEntry, 'slug' | 'lifecycleStage'>;
 
 export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
   const quickstarts = document.querySelectorAll(DATA_SELECTORS.quickstart);
   if (!quickstarts.length) return;
 
-  const quickstartToys = toysData as QuickstartToy[];
+  const quickstartToys = toyManifest as QuickstartToy[];
   const isMobile = isMobileDevice();
 
   quickstarts.forEach((quickstart) => {

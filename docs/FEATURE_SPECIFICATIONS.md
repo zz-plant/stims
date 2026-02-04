@@ -13,7 +13,7 @@ This document captures the **current, shipped feature set** of the Stim Webtoys 
 | Renderer fallback | WebGPU preferred with WebGL fallback + compatibility mode. | `assets/js/core/renderer-capabilities.ts`, `assets/js/core/render-preferences.ts` |
 | Personalization & persistence | Theme, quality presets, render/motion preferences, and search state persist. | `assets/js/library-view.js`, `assets/js/core/settings-panel.ts` |
 | Gamepad navigation | Focus + input support is enabled on library and toy pages. | `assets/js/utils/gamepad-navigation.ts`, `assets/js/app.ts` |
-| Toy catalog metadata | Registry includes titles, tags, moods, controls, and lifecycle stage. | `assets/js/toys-data.js` |
+| Toy catalog metadata | Registry includes titles, tags, moods, controls, and lifecycle stage. | `assets/data/toys.json` |
 
 ## Library landing page & discovery
 
@@ -94,7 +94,7 @@ This document captures the **current, shipped feature set** of the Stim Webtoys 
 
 ## Toy catalog metadata
 
-The toy registry is sourced from `assets/js/toys-data.js` (with an optional JSON override loaded from `./toys.json` on the landing page). Each entry includes:
+The toy registry is sourced from `assets/data/toys.json` (with an optional JSON override loaded from `./toys.json` on the landing page). Each entry includes:
 
 - **Identity**: `slug`, `title`, `description`.
 - **Runtime**: `module` path and `type` (`module` or `page`).

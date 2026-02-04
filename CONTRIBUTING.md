@@ -63,10 +63,10 @@ bun run dev
 ## Adding or Updating Webtoys
 
 - Core toy implementations live in `assets/js/toys/` (e.g., `assets/js/toys/cube-wave.ts`). Add new toy modules there and reuse helpers from `assets/js/core/` or `assets/js/utils/` when possible.
-- Register toy metadata (labels, slugs, and settings) in `assets/js/toys-data.js` so the loader can find your new toy.
+- Register toy metadata (labels, slugs, and settings) in `assets/data/toys.json` so the loader can find your new toy.
 - Toy entry points are served through `toy.html` using a `?toy=` query string (for example, `toy.html?toy=cube-wave`). Ensure your toy slug matches the metadata entry.
 - Shared styling and assets live under `assets/css/` and `assets/data/`. Add new static assets there when needed.
 - Update or add tests under `tests/` to cover new behaviors. You can run targeted checks by passing the spec path to `bun test`.
-- Use `bun run scripts/scaffold-toy.ts` to scaffold a new toy: it prompts for slug/title/type, writes a starter module using the playbook template, updates `assets/js/toys-data.js` and `docs/TOY_SCRIPT_INDEX.md`, and can generate a minimal Bun spec that asserts `start` is exported.
+- Use `bun run scripts/scaffold-toy.ts` to scaffold a new toy: it prompts for slug/title/type, writes a starter module using the playbook template, updates `assets/data/toys.json` and `docs/TOY_SCRIPT_INDEX.md`, and can generate a minimal Bun spec that asserts `start` is exported.
 
 Happy building!

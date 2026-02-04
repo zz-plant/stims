@@ -1,27 +1,16 @@
 import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { z } from 'zod';
+import {
+  type ToyManifest,
+  toyManifestSchema,
+} from '../assets/js/data/toy-schema.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
-const toyEntrySchema = z
-  .object({
-    slug: z.string().min(1),
-    title: z.string().min(1),
-    description: z.string().min(1),
-    module: z.string().min(1),
-    type: z.enum(['module', 'page']),
-    requiresWebGPU: z.boolean().optional(),
-    allowWebGLFallback: z.boolean().optional(),
-  })
-  .passthrough();
-
-const toysDataSchema = z.array(toyEntrySchema);
 const IGNORED_TOY_FILES = new Set(['page-toy.ts']);
 
 async function main() {
@@ -67,32 +56,14 @@ export async function runToyChecks(root = repoRoot) {
 }
 
 async function loadToyData(root = repoRoot) {
-  const dataPath = path.join(root, 'assets/js/toys-data.js');
+  const dataPath = path.join(root, 'assets/data/toys.json');
   const source = await fs.readFile(dataPath, 'utf8');
-  const tempPath = path.join(
-    tmpdir(),
-    `toys-data-${Date.now()}-${Math.random().toString(16).slice(2)}.mjs`,
-  );
-  await fs.writeFile(tempPath, source, 'utf8');
-  const module = await import(pathToFileURL(tempPath).href);
-  await fs.unlink(tempPath).catch(() => {});
-  const parsed = toysDataSchema.parse(module.default);
-
-  const seen = new Set<string>();
-  for (const entry of parsed) {
-    if (seen.has(entry.slug)) {
-      throw new Error(
-        `Duplicate slug detected in assets/js/toys-data.js: ${entry.slug}`,
-      );
-    }
-    seen.add(entry.slug);
-  }
-
+  const parsed = toyManifestSchema.parse(JSON.parse(source));
   return parsed;
 }
 
 function validateEntries(
-  entries: z.infer<typeof toysDataSchema>,
+  entries: ToyManifest,
   issues: string[],
   warnings: string[],
   indexContents: string,
@@ -136,7 +107,7 @@ function validateEntries(
 }
 
 function missingFiles(
-  entry: z.infer<typeof toyEntrySchema>,
+  entry: ToyManifest[number],
   targetPath: string,
   root = repoRoot,
 ) {
@@ -151,7 +122,7 @@ function missingFiles(
 }
 
 async function detectUnregisteredToyFiles(
-  entries: z.infer<typeof toysDataSchema>,
+  entries: ToyManifest,
   issues: string[],
   root = repoRoot,
 ) {

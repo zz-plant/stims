@@ -3,10 +3,11 @@ import {
   attachCapabilityPreflight,
   type CapabilityPreflightResult,
 } from './core/capability-preflight.ts';
+import toyManifest from './data/toy-manifest.ts';
+import type { ToyEntry } from './data/toy-schema.ts';
 import { createLibraryView } from './library-view.js';
 import { createLoader } from './loader.ts';
 import { createRouter } from './router.ts';
-import toysData from './toys-data.js';
 import { initAudioControls } from './ui/audio-controls.ts';
 import { initNavigation as initTopNav } from './ui/nav.ts';
 import { initSystemControls } from './ui/system-controls.ts';
@@ -23,10 +24,7 @@ type LoaderOverrides = {
   initNavigation?: typeof import('./loader.ts').initNavigation;
 };
 
-type Toy = {
-  slug: string;
-  title?: string;
-};
+type Toy = Pick<ToyEntry, 'slug' | 'title'>;
 
 const runInit = (label: string, init: () => void | Promise<void>) => {
   Promise.resolve()
@@ -217,7 +215,7 @@ const startApp = async () => {
     };
 
     const toySlug = new URLSearchParams(window.location.search).get('toy');
-    const toyTitle = resolveToyTitle(toySlug, toysData as Toy[]);
+    const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
     document.title = toySlug ? `${toyTitle} · Stim Webtoy` : document.title;
 
     attachCapabilityPreflight({
