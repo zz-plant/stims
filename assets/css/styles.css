@@ -1,8 +1,8 @@
 /* General Styles */
 body {
   font-family: "Arial", sans-serif;
-  background-color: #121212;
-  color: #ffffff;
+  background-color: #1c2026;
+  color: #f2f4f7;
   margin: 0;
   padding: 0;
   display: flex;
@@ -14,8 +14,8 @@ body {
 
 header {
   padding: 20px;
-  background-color: #1f1f1f;
-  color: #ffffff;
+  background-color: #262c34;
+  color: #f2f4f7;
   width: 100%;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -28,10 +28,10 @@ header {
   padding: 10px;
   width: 80%;
   max-width: 500px;
-  border: 1px solid #444;
+  border: 1px solid #3a424d;
   border-radius: 4px;
-  background-color: #1f1f1f;
-  color: #ffffff;
+  background-color: #262c34;
+  color: #f2f4f7;
   transition: all 0.3s;
   font-size: 1rem;
   min-height: 44px;
@@ -39,10 +39,10 @@ header {
 
 #search-bar:focus,
 #search-bar:focus-visible {
-  border-color: #1e90ff;
-  outline: 2px solid rgba(30, 144, 255, 0.9);
+  border-color: #7a8fa5;
+  outline: 2px solid rgba(122, 143, 165, 0.9);
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.35);
+  box-shadow: 0 0 0 3px rgba(122, 143, 165, 0.35);
 }
 
 /* Webtoy Cards */
@@ -57,7 +57,7 @@ header {
 }
 
 .webtoy-card {
-  background-color: #222;
+  background-color: #242a33;
   margin: 10px;
   padding: 20px;
   border-radius: 8px;
@@ -76,7 +76,7 @@ header {
 
 .webtoy-card:hover {
   transform: scale(1.05);
-  background-color: #333;
+  background-color: #2c3340;
 }
 
 .webtoy-card h3 {
@@ -85,21 +85,21 @@ header {
 }
 
 .webtoy-card a {
-  color: #1e90ff;
+  color: #9ab0c6;
   text-decoration: none;
   transition: color 0.3s;
 }
 
 .webtoy-card a:hover {
-  color: #ff6347;
+  color: #c1cfdf;
   text-decoration: underline;
 }
 
 /* Footer */
 footer {
   padding: 10px;
-  background-color: #1f1f1f;
-  color: #888;
+  background-color: #262c34;
+  color: #9aa3ad;
   width: 100%;
   position: fixed;
   bottom: 0;
@@ -108,19 +108,19 @@ footer {
 }
 
 footer a {
-  color: #1e90ff;
+  color: #9ab0c6;
   text-decoration: none;
   transition: color 0.3s;
 }
 
 footer a:hover {
-  color: #ff6347;
+  color: #c1cfdf;
 }
 
 /* Button Styling */
 button {
-  background-color: #1e90ff;
-  color: #ffffff;
+  background-color: #6f8195;
+  color: #fdfdfd;
   border: none;
   padding: 10px 20px;
   margin-top: 10px;
@@ -133,7 +133,7 @@ button {
 }
 
 button:hover {
-  background-color: #ff6347;
+  background-color: #7f8f9f;
 }
 
 button:focus,
