@@ -1,3 +1,9 @@
+import {
+  BREAKPOINTS,
+  getMediaQueryList,
+  isBelowBreakpoint,
+  maxWidthQuery,
+} from '../utils/breakpoints.ts';
 import { isMobileDevice } from '../utils/device-detect.ts';
 import {
   exitToyPictureInPicture,
@@ -101,8 +107,8 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
   const icon = container.querySelector(
     '[data-nav-toggle-icon]',
   ) as HTMLSpanElement | null;
-  const mediaQuery = window.matchMedia('(max-width: 520px)');
-  let isExpanded = !mediaQuery.matches;
+  const mediaQuery = getMediaQueryList(maxWidthQuery(BREAKPOINTS.xs));
+  let isExpanded = !isBelowBreakpoint(BREAKPOINTS.xs);
 
   const applyState = (expanded: boolean) => {
     if (!nav || !toggle) return;
@@ -117,7 +123,7 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
   };
 
   const syncWithViewport = () => {
-    if (mediaQuery.matches) {
+    if (isBelowBreakpoint(BREAKPOINTS.xs)) {
       isExpanded = false;
     } else {
       isExpanded = true;
@@ -132,13 +138,17 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
     applyState(isExpanded);
   });
 
-  mediaQuery.addEventListener('change', syncWithViewport);
+  if (mediaQuery) {
+    mediaQuery.addEventListener('change', syncWithViewport);
+  } else {
+    window.addEventListener('resize', syncWithViewport);
+  }
 
   container
     .querySelectorAll('.nav-link, .nav-link--section, .theme-toggle')
     .forEach((link) => {
       link.addEventListener('click', () => {
-        if (!mediaQuery.matches) return;
+        if (!isBelowBreakpoint(BREAKPOINTS.xs)) return;
         isExpanded = false;
         applyState(isExpanded);
       });

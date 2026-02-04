@@ -6,6 +6,12 @@ import {
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getBandAverage } from '../utils/audio-bands';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import {
+  BREAKPOINTS,
+  MEDIA_QUERIES,
+  matchesMediaQuery,
+  maxWidthQuery,
+} from '../utils/breakpoints.ts';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createToyQualityControls } from '../utils/toy-settings';
@@ -25,10 +31,9 @@ const QUALITY_PRESETS: QualityPreset[] = [
 ];
 
 const isCompactDevice = () => {
-  if (typeof window === 'undefined' || !window.matchMedia) return false;
   return (
-    window.matchMedia('(max-width: 720px)').matches ||
-    window.matchMedia('(pointer: coarse)').matches
+    matchesMediaQuery(maxWidthQuery(BREAKPOINTS.md)) ||
+    matchesMediaQuery(MEDIA_QUERIES.coarsePointer)
   );
 };
 

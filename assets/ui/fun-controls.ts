@@ -1,3 +1,5 @@
+import { BREAKPOINTS, maxWidthQuery } from '../js/utils/breakpoints.ts';
+
 export type PaletteOption = 'bright' | 'pastel' | 'neon';
 
 export interface FunControlsCallbacks {
@@ -211,7 +213,7 @@ function ensureStyles() {
         opacity: 0.7;
         margin: 0;
       }
-      @media (max-width: 640px) {
+      @media ${maxWidthQuery(BREAKPOINTS.sm)} {
         .fun-controls {
           left: 0.5rem;
           right: 0.5rem;
