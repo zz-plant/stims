@@ -5,15 +5,34 @@ type RuntimeAudioHandlerOptions = {
   runtime: ToyRuntimeInstance;
   onSuccess?: () => void;
   onError?: (error: unknown) => void;
-  onFallback?: (error: unknown) => Promise<unknown> | unknown;
+  onFallback?: (
+    error: unknown,
+  ) =>
+    | Promise<RuntimeAudioStartFallbackResult>
+    | RuntimeAudioStartFallbackResult;
 };
+
+type RuntimeAudioStartResult = Awaited<
+  ReturnType<ToyRuntimeInstance['startAudio']>
+>;
+type RuntimeAudioStartFallbackResult = RuntimeAudioStartResult | null;
+type RuntimeAudioStarter = (
+  request?: ToyAudioRequest,
+) => Promise<RuntimeAudioStartFallbackResult>;
 
 export function createRuntimeAudioStarter({
   runtime,
   onSuccess,
   onError,
   onFallback,
-}: RuntimeAudioHandlerOptions) {
+}: RuntimeAudioHandlerOptions): RuntimeAudioStarter {
+  const runFallback = async (error: unknown) => {
+    if (onFallback) {
+      return await onFallback(error);
+    }
+    throw error;
+  };
+
   return async (request: ToyAudioRequest = false) => {
     try {
       const result = await runtime.startAudio(request);
@@ -21,10 +40,7 @@ export function createRuntimeAudioStarter({
       return result;
     } catch (error) {
       onError?.(error);
-      if (onFallback) {
-        return await onFallback(error);
-      }
-      throw error;
+      return await runFallback(error);
     }
   };
 }
