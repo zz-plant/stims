@@ -50,9 +50,9 @@ describe('router utilities', () => {
       queryParam: 'toy',
     });
 
-    let observedSlug = null;
-    router.listen((slug) => {
-      observedSlug = slug;
+    let observedRoute = null;
+    router.listen((route) => {
+      observedRoute = route;
     });
 
     windowStub.history.pushState(
@@ -62,7 +62,7 @@ describe('router utilities', () => {
     );
     listeners.get('popstate')?.();
 
-    expect(observedSlug).toBe('aurora');
+    expect(observedRoute).toEqual({ view: 'toy', slug: 'aurora' });
     expect(router.getCurrentSlug()).toBe('aurora');
 
     windowStub.history.pushState({}, '', originalHref);

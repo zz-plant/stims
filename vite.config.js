@@ -17,7 +17,8 @@ const getHtmlInputs = (dir) => {
 };
 
 const htmlInputs = {
-  ...getHtmlInputs(rootDir),
+  index: path.resolve(rootDir, 'index.html'),
+  toy: path.resolve(rootDir, 'toy.html'),
   ...getHtmlInputs(path.resolve(rootDir, 'toys')),
 };
 const moduleInputs = Object.fromEntries(

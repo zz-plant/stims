@@ -12,7 +12,7 @@ import {
   defaultToyLifecycle,
   type ToyLifecycle,
 } from './core/toy-lifecycle.ts';
-import { createRouter } from './router.ts';
+import { createRouter, type Route } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import toysData from './toys-data.js';
 import { createManifestClient } from './utils/manifest-client.ts';
@@ -193,11 +193,13 @@ export function createLoader({
 
   const removeEscapeHandler = () => lifecycle.removeEscapeHandler();
 
-  const backToLibrary = () => {
+  const backToLibrary = ({ updateRoute = true } = {}) => {
     removeEscapeHandler();
     disposeActiveToy();
     view.showLibraryView();
-    router.goToLibrary();
+    if (updateRoute) {
+      router.goToLibrary();
+    }
     updateRendererStatus(null);
     void resetAudioPoolFn({ stopStreams: true });
     activeToySlug = null;
@@ -436,25 +438,30 @@ export function createLoader({
     }
   };
 
-  const loadFromQuery = async () => {
-    const slug = router.getCurrentSlug();
-    if (slug) {
-      await loadToy(slug);
-    } else {
-      backToLibrary();
+  const handleRoute = async (route: Route, { updateRoute = false } = {}) => {
+    if (route.view === 'toy') {
+      if (route.slug) {
+        await loadToy(route.slug);
+        return;
+      }
+      backToLibrary({ updateRoute: true });
+      return;
     }
+
+    backToLibrary({ updateRoute });
+  };
+
+  const loadFromQuery = async () => {
+    const route = router.getCurrentRoute();
+    await handleRoute(route, { updateRoute: false });
   };
 
   const initNavigation = () => {
     if (navigationInitialized) return;
 
     navigationInitialized = true;
-    router.listen((slug) => {
-      if (slug) {
-        void loadToy(slug);
-      } else {
-        backToLibrary();
-      }
+    router.listen((route) => {
+      void handleRoute(route, { updateRoute: false });
     });
   };
 
