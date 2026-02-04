@@ -15,15 +15,6 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>Stim Webtoys Library</title>
-    <script type="module">
-      import { initNavigation } from './assets/js/ui/nav.ts';
-      window.addEventListener('DOMContentLoaded', () => {
-        const navContainer = document.querySelector('[data-top-nav-container]');
-        if (navContainer) {
-          initNavigation(navContainer, { mode: 'library' });
-        }
-      });
-    </script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
@@ -70,10 +61,16 @@
       }
     </script>
   </head>
-  <body>
+  <body data-page="library">
     <a class="skip-link" href="#toy-list">Skip to library</a>
     <div class="content">
-      <div data-top-nav-container></div>
+      <header class="shell-header">
+        <div data-top-nav-container></div>
+        <div class="shell-panels">
+          <div class="shell-panel" data-audio-controls hidden></div>
+          <div class="shell-panel" data-settings-panel hidden></div>
+        </div>
+      </header>
 
       <section class="intro" id="intro">
         <div class="section-heading">
@@ -1164,6 +1161,6 @@
       });
     </script>
     <script type="module" src="assets/js/hero-canvas.ts"></script>
-    <script type="module" src="assets/js/main.js"></script>
+    <script type="module" src="assets/js/app.ts"></script>
   </body>
 </html>
