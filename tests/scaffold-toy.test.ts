@@ -2,17 +2,13 @@ import { describe, expect, mock, test } from 'bun:test';
 import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { scaffoldToy } from '../scripts/scaffold-toy.ts';
 
 async function createTempRepo() {
   const root = await fs.mkdtemp(path.join(tmpdir(), 'toy-scaffold-'));
 
-  await fs.mkdir(path.join(root, 'assets/js'), { recursive: true });
-  await fs.writeFile(
-    path.join(root, 'assets/js/toys-data.js'),
-    'export default [\n];\n',
-  );
+  await fs.mkdir(path.join(root, 'assets/data'), { recursive: true });
+  await fs.writeFile(path.join(root, 'assets/data/toys.json'), '[]\n');
 
   await fs.mkdir(path.join(root, 'docs'), { recursive: true });
   await fs.writeFile(
@@ -62,12 +58,13 @@ describe('scaffold-toy CLI helpers', () => {
     expect(moduleContents).toContain('export async function start');
 
     const data = await fs.readFile(
-      path.join(root, 'assets/js/toys-data.js'),
+      path.join(root, 'assets/data/toys.json'),
       'utf8',
     );
-    expect(data).toContain(`slug: '${slug}'`);
-    expect(data).toContain(`title: '${title}'`);
-    expect(data).toContain(description);
+    const entries = JSON.parse(data) as Array<{ slug: string; title: string }>;
+    const entry = entries.find((item) => item.slug === slug);
+    expect(entry?.title).toBe(title);
+    expect(entry).toBeTruthy();
 
     const index = await fs.readFile(
       path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
@@ -90,8 +87,26 @@ describe('scaffold-toy CLI helpers', () => {
   test('throws when a duplicate slug exists in metadata', async () => {
     const root = await createTempRepo();
     await fs.writeFile(
-      path.join(root, 'assets/js/toys-data.js'),
-      "export default [\n  { slug: 'dupe', title: 'Existing', description: 'Dupe', module: 'assets/js/toys/dupe.ts', type: 'module' },\n];\n",
+      path.join(root, 'assets/data/toys.json'),
+      JSON.stringify(
+        [
+          {
+            slug: 'dupe',
+            title: 'Existing',
+            description: 'Dupe',
+            module: 'assets/js/toys/dupe.ts',
+            type: 'module',
+            requiresWebGPU: false,
+            capabilities: {
+              microphone: true,
+              demoAudio: true,
+              motion: false,
+            },
+          },
+        ],
+        null,
+        2,
+      ),
     );
 
     await expect(
@@ -126,13 +141,20 @@ describe('scaffold-toy CLI helpers', () => {
     expect(html).toContain('<title>Portal Frame</title>');
     expect(html).toContain('standalone toy page');
 
-    const data = await import(
-      pathToFileURL(path.join(root, 'assets/js/toys-data.js')).href
+    const raw = await fs.readFile(
+      path.join(root, 'assets/data/toys.json'),
+      'utf8',
     );
-    const entry = data.default.find(
-      (item: { slug: string }) => item.slug === slug,
-    );
-    expect(entry).toBeDefined();
+    const data = JSON.parse(raw) as Array<{
+      slug: string;
+      type: string;
+      module: string;
+    }>;
+    const entry = data.find((item) => item.slug === slug) ?? null;
+    expect(entry).toBeTruthy();
+    if (!entry) {
+      throw new Error('Scaffolded entry was not added to metadata.');
+    }
     expect(entry.type).toBe('page');
     expect(entry.module).toBe(`toys/${slug}.html`);
   });

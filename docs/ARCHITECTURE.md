@@ -31,7 +31,7 @@ Use this section as a quick compass: if you need to change how a toy starts or s
 | Views | `assets/js/toy-view.ts`, `assets/js/library-view.js` | UI for the library grid, toy container, loading, and error states. |
 | Core runtime | `assets/js/core/web-toy.ts` + `assets/js/core/*` | Rendering, audio, settings, and the animation loop. |
 | Pools/services | `assets/js/core/services/*` | Renderer and microphone pooling. |
-| Toy registry | `assets/js/toys-data.js` | Toy metadata and slug registration. |
+| Toy registry | `assets/data/toys.json` | Toy metadata and slug registration. |
 | Toy implementations | `assets/js/toys/*.ts` | Per-toy scenes, materials, and audio mappings. |
 
 ## App Shell and Loader Flow
@@ -61,7 +61,7 @@ flowchart TD
 
 ### Loader lifecycle
 
-1. **Resolve toy**: look up the slug in `assets/js/toys-data.js` and ensure rendering support (`ensureWebGL`). Renderer capabilities and microphone permission checks are prewarmed so subsequent toy loads skip redundant probes/prompts.
+1. **Resolve toy**: look up the slug in `assets/data/toys.json` and ensure rendering support (`ensureWebGL`). Renderer capabilities and microphone permission checks are prewarmed so subsequent toy loads skip redundant probes/prompts.
 2. **Navigate**: push state with the router when requested, set up Escape-to-library, and clear any previous toy.
 3. **Render shell**: ask `toy-view` to show the active toy container and loading indicator; bubble capability status to the UI.
 4. **Import module**: resolve a Vite-friendly URL via the manifest client and `import()` it.
@@ -142,7 +142,7 @@ graph LR
 
 ## Adding or Debugging Toys
 
-- **Start from a slug**: register the module in `assets/js/toys-data.js` and ensure there is an HTML entry point (often `toy.html?toy=<slug>`).
+- **Start from a slug**: register the module in `assets/data/toys.json` and ensure there is an HTML entry point (often `toy.html?toy=<slug>`).
 - **Use the core**: instantiate `WebToy` (or its helpers) to get camera/scene/renderer/audio defaults and return a `dispose` function for safe teardown.
 - **Respect presets**: honor `updateRendererSettings` for max pixel ratio and render scale; avoid hard-coding devicePixelRatio.
 - **Surface errors**: throw or log during init so the loader’s import error UI can respond; avoid swallowing dynamic import failures silently.
@@ -156,6 +156,6 @@ graph LR
 
 ## Common Extension Points
 
-- **New toy modules**: register the slug in `assets/js/toys-data.js`, create the module in `assets/js/toys/*.ts`, and return a `dispose` to clean up.
+- **New toy modules**: register the slug in `assets/data/toys.json`, create the module in `assets/js/toys/*.ts`, and return a `dispose` to clean up.
 - **New runtime services**: add to `assets/js/core/services/*` and thread through `web-toy.ts` so toys can request handles consistently.
 - **New settings controls**: extend `settings-panel.ts` and `renderer-settings.ts`, then ensure `iframe-quality-sync.ts` forwards updates to running toys.

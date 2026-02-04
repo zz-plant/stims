@@ -63,9 +63,9 @@ export async function start({ container }: { container: HTMLElement }) {
 }
 ```
 
-### Step 2: Register in toys-data.js
+### Step 2: Register in assets/data/toys.json
 
-Add your toy to `assets/js/toys-data.js`:
+Add your toy to `assets/data/toys.json`:
 
 ```javascript
 {
@@ -145,7 +145,7 @@ function animate() {
 ## Common File Locations
 
 - **Toy modules**: `assets/js/toys/`
-- **Toy registry**: `assets/js/toys-data.js`
+- **Toy registry**: `assets/data/toys.json`
 - **Audio utilities**: `assets/js/core/audio-handler.ts`
 - **Renderer setup**: `assets/js/core/renderer-setup.ts`
 - **Test helpers**: `tests/toy-test-helpers.ts`

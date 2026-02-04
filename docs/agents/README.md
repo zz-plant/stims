@@ -13,7 +13,7 @@ Start with the root [AGENTS.md](../../AGENTS.md) for the essentials, then use th
 
 - `assets/js/` - Core runtime, toy modules, and UI logic.
 - `assets/js/toys/` - Toy implementations (TypeScript).
-- `assets/js/toys-data.js` - Toy registry metadata.
+- `assets/data/toys.json` - Toy registry metadata.
 - `toys/` - Standalone HTML toy pages.
 - `tests/` - Automated tests.
 - `docs/` - Documentation and architecture references.

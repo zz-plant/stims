@@ -2,9 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
-import toysData from './assets/js/toys-data.js';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
+const toysDataPath = path.resolve(rootDir, 'assets/data/toys.json');
+const toysData = fs.existsSync(toysDataPath)
+  ? JSON.parse(fs.readFileSync(toysDataPath, 'utf8'))
+  : [];
+const toyEntries = Array.isArray(toysData) ? toysData : [];
 const getHtmlInputs = (dir) => {
   if (!fs.existsSync(dir)) return {};
   return Object.fromEntries(
@@ -22,7 +26,7 @@ const htmlInputs = {
   ...getHtmlInputs(path.resolve(rootDir, 'toys')),
 };
 const moduleInputs = Object.fromEntries(
-  toysData
+  toyEntries
     .filter((toy) => toy.type === 'module')
     .map((toy) => [toy.module, path.resolve(rootDir, toy.module)]),
 );
