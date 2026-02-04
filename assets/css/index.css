@@ -2,7 +2,10 @@
   --bg-color: #0b0f1a;
   --bg-color-secondary: #111827;
   --text-color: #eaf5ff;
-  --text-muted: rgba(234, 245, 255, 0.82);
+  --text-muted: rgba(234, 245, 255, 0.88);
+  --accent-contrast: #f8fbff;
+  --link-color: #8db8ff;
+  --link-hover: #b6d4ff;
   --accent-color: #4b6f95;
   --accent-purple: #6c5a9b;
   --accent-magenta: #d16474;
@@ -45,7 +48,10 @@ html.light {
   --bg-color: #f5f7ff;
   --bg-color-secondary: #e6ecf9;
   --text-color: #0b1030;
-  --text-muted: rgba(11, 16, 48, 0.72);
+  --text-muted: rgba(11, 16, 48, 0.8);
+  --accent-contrast: #f8fbff;
+  --link-color: #27407a;
+  --link-hover: #1f3264;
   --accent-color: #4368b1;
   --accent-purple: #6050a8;
   --accent-magenta: #c84c61;
@@ -1281,6 +1287,10 @@ body[data-details-open] .readiness-note {
   margin: -0.25rem 0;
   border-radius: 8px;
   touch-action: manipulation;
+  color: var(--link-color);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 button.text-link {
@@ -1289,6 +1299,10 @@ button.text-link {
   color: inherit;
   font: inherit;
   cursor: pointer;
+}
+
+.text-link:hover {
+  color: var(--link-hover);
 }
 
 .text-link:focus-visible {
@@ -1328,7 +1342,7 @@ button.text-link {
 
 .cta-button.primary {
   background: var(--accent-color);
-  color: #0b0f1a;
+  color: var(--accent-contrast);
   box-shadow: none;
 }
 
@@ -1364,7 +1378,7 @@ button.text-link {
 }
 
 .cta-button.primary:hover {
-  color: #0b0f1a;
+  color: var(--accent-contrast);
   box-shadow: var(--shadow-soft);
 }
 
@@ -1515,6 +1529,16 @@ h1 {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--surface-border);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+}
+
+html.light .repo-status__metric {
+  background: color-mix(in srgb, var(--card-bg) 88%, var(--accent-color));
+  border-color: color-mix(
+    in srgb,
+    var(--accent-color) 18%,
+    var(--surface-border)
+  );
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .repo-status__metric dt {
@@ -1729,6 +1753,25 @@ html.light .experience-card {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
+html.light .search-meta {
+  background:
+    var(--surface-highlight), var(--surface-texture),
+    color-mix(in srgb, var(--card-bg) 90%, var(--accent-color));
+  border-color: color-mix(
+    in srgb,
+    var(--accent-color) 18%,
+    var(--surface-border)
+  );
+  color: var(--text-color);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--accent-color) 12%, transparent);
+}
+
+html.light .search-meta__results,
+html.light .search-meta__note {
+  color: var(--text-color);
+}
+
 .search-meta__results {
   margin: 0;
   font-size: 0.95rem;
@@ -1755,6 +1798,23 @@ html.light .experience-card {
   background:
     var(--surface-highlight), var(--surface-texture), rgba(15, 23, 42, 0.4);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+html.light .active-filters {
+  background:
+    var(--surface-highlight), var(--surface-texture),
+    color-mix(in srgb, var(--card-bg) 90%, var(--accent-color));
+  border-color: color-mix(
+    in srgb,
+    var(--accent-color) 18%,
+    var(--surface-border)
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--accent-color) 12%, transparent);
+}
+
+html.light .active-filters__label {
+  color: var(--text-color);
 }
 
 .active-filters[hidden] {
@@ -2501,7 +2561,8 @@ footer {
   width: 2rem;
   height: 2rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.85);
+  background: color-mix(in srgb, var(--accent-color) 16%, var(--card-bg));
+  color: var(--text-color);
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.12);
 }
 
