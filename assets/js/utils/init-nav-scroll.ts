@@ -1,3 +1,4 @@
+import { BREAKPOINTS, isBelowBreakpoint } from './breakpoints.ts';
 import { DATA_SELECTORS } from './data-attributes.ts';
 
 export const initNavScrollEffects = () => {
@@ -28,7 +29,8 @@ export const initNavScrollEffects = () => {
   const updateActiveSection = () => {
     if (sectionLinks.length === 0) return;
     const offset =
-      nav.getBoundingClientRect().height + (window.innerWidth <= 768 ? 40 : 56);
+      nav.getBoundingClientRect().height +
+      (isBelowBreakpoint(BREAKPOINTS.lg) ? 40 : 56);
     const scrollPosition = window.scrollY + offset;
     let activeId = sectionLinks[0].id;
     sectionLinks.forEach(({ section, id }) => {
