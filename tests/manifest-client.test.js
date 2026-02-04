@@ -27,7 +27,7 @@ describe('manifest client', () => {
     });
     const modulePath = await client.resolveModulePath(moduleEntry);
 
-    expect(fetchImpl).toHaveBeenCalledWith('/app/manifest.json');
+    expect(fetchImpl).toHaveBeenCalledWith('/app/.vite/manifest.json');
     expect(modulePath).toBe('/app/assets/js/toys/example.123.js');
   });
 
@@ -79,7 +79,7 @@ describe('manifest client', () => {
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      'https://cdn.example.com/app/manifest.json',
+      'https://cdn.example.com/app/.vite/manifest.json',
     );
     expect(modulePath).toBe(
       'https://cdn.example.com/app/assets/js/toys/example.123.js',
@@ -127,7 +127,7 @@ describe('manifest client', () => {
 
     const modulePath = await client.resolveModulePath(moduleEntry);
 
-    expect(fetchImpl).toHaveBeenCalledWith('/manifest.json');
+    expect(fetchImpl).toHaveBeenCalledWith('/.vite/manifest.json');
     expect(modulePath).toBe('/assets/js/toys/example.123.js');
   });
 });
