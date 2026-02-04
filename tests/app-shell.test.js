@@ -34,7 +34,7 @@ async function loadAppShell() {
     loadFromQuery: mockLoadFromQuery,
   };
 
-  await freshImport('../assets/js/app-shell.js');
+  await freshImport('../assets/js/app.ts');
 }
 
 describe('app shell user journeys', () => {
@@ -43,7 +43,8 @@ describe('app shell user journeys', () => {
   beforeEach(() => {
     mock.restore();
     document.body.innerHTML =
-      '<input id="search-bar" /><div id="toy-list"></div>';
+      '<input id="toy-search" /><div id="toy-list"></div>';
+    document.body.dataset.page = 'library';
     mockLoadToy = mock();
     mockLoadFromQuery = mock();
     mockInitNavigation = mock();
@@ -52,6 +53,7 @@ describe('app shell user journeys', () => {
   afterEach(() => {
     mock.restore();
     document.body.innerHTML = '';
+    document.body.removeAttribute('data-page');
     window.location = originalLocation;
     delete globalThis.__stimsToyLibrary;
     delete globalThis.__stimsLoaderOverrides;
@@ -69,7 +71,7 @@ describe('app shell user journeys', () => {
   test('searching filters the visible toys by title or description', async () => {
     await loadAppShell();
 
-    const search = document.getElementById('search-bar');
+    const search = document.getElementById('toy-search');
     search.value = 'weirdcore';
     search.dispatchEvent(new Event('input', { bubbles: true }));
 
