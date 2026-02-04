@@ -11,10 +11,10 @@ import {
   Scene,
   SpotLight,
   Vector2,
-  WebGLRenderer,
 } from 'three';
 import { createUnifiedInput } from '../utils/unified-input';
 import { ensureWebGL } from '../utils/webgl-check';
+import { createWebGLRenderer } from '../utils/webgl-renderer';
 
 type ClayStartOptions = {
   container?: HTMLElement | null;
@@ -37,7 +37,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   camera.position.set(0, 8, 10);
   camera.lookAt(0, 5, 0);
 
-  const renderer = new WebGLRenderer({
+  const renderer = createWebGLRenderer({
     antialias: true,
     powerPreference: 'default', // Better battery life on mobile
     failIfMajorPerformanceCaveat: false, // Don't fail on mobile GPU limitations
