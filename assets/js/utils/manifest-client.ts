@@ -14,8 +14,8 @@ type ManifestEntry = {
   url?: string;
 };
 
-// Prefer the public manifest first; fall back to the hidden Vite output when present.
-const MANIFEST_CANDIDATES = ['./manifest.json', './.vite/manifest.json'];
+// Prefer the Vite output manifest first; fall back to the public web manifest.
+const MANIFEST_CANDIDATES = ['./.vite/manifest.json', './manifest.json'];
 
 function getCurrentOrigin() {
   const origin = typeof window !== 'undefined' ? window.location?.origin : null;
@@ -153,6 +153,12 @@ function formatZodIssues(error: {
     .join('\n');
 }
 
+function isViteManifest(data: unknown) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+  const values = Object.values(data as Record<string, ManifestEntry>);
+  return values.some((entry) => Boolean(entry?.file || entry?.url));
+}
+
 export function parseToyManifest(
   data: unknown,
   { source = 'toy manifest' }: { source?: string } = {},
@@ -193,6 +199,9 @@ export function createManifestClient({
         const response = await fetchImpl?.(path);
         if (response?.ok) {
           const data = await response.json();
+          if (!isViteManifest(data)) {
+            continue;
+          }
           manifestPromise = Promise.resolve(data);
           const base = getBaseUrl();
           const origin = getCurrentOrigin();
@@ -201,7 +210,9 @@ export function createManifestClient({
             const manifestUrl = baseForUrl
               ? new URL(path, baseForUrl)
               : new URL(path);
-            manifestBaseUrl = new URL('.', manifestUrl);
+            manifestBaseUrl = manifestUrl.pathname.includes('/.vite/')
+              ? new URL('../', manifestUrl)
+              : new URL('.', manifestUrl);
           } catch (error) {
             console.warn('Unable to resolve manifest base URL', error);
           }
