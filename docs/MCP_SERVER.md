@@ -24,6 +24,9 @@ All tools are registered on the `stim-webtoys-mcp` server name and use zod-based
 - **`read_doc_section`**
   - **Input:** required `file` enum (e.g., `README.md`, `docs/MCP_SERVER.md`) and optional `heading` string.
   - **Output:** `text` response containing the full markdown file when no heading is provided, or the matching section beginning at the requested heading. Returns a friendly error when the file or heading cannot be found.
+- **`search_docs`**
+  - **Input:** required `query` string plus optional `file` enum to limit search scope and optional `limit` (1-20) for result count.
+  - **Output:** `text` response with each matching section’s file, heading, line range, and a short excerpt containing the query. Returns a friendly message when no matches are found.
 - **`describe_loader`**
   - **Input:** none.
   - **Output:** `text` summary of how the toy loader resolves entries and errors, including manifest resolution (`/.vite/manifest.json`), URL/history handling, WebGPU gating, and the recovery states shown when imports fail.
