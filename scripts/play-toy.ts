@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { type ConsoleMessage, chromium } from 'playwright';
+import { type Browser, type ConsoleMessage, chromium } from 'playwright';
 
 export type PlayToyResult = {
   slug: string;
@@ -12,7 +12,7 @@ export type PlayToyResult = {
   audioActive?: boolean;
 };
 
-export async function playToy(options: {
+type PlayToyOptions = {
   slug: string;
   port?: number;
   duration?: number;
@@ -20,39 +20,75 @@ export async function playToy(options: {
   video?: boolean;
   outputDir?: string;
   headless?: boolean;
-}): Promise<PlayToyResult> {
-  const port = options.port || 5173;
-  const duration = options.duration || 5000;
-  const outputDir = options.outputDir || './screenshots';
-  const headless = options.headless !== false; // Default to true
+};
+
+type NormalizedPlayToyOptions = PlayToyOptions & {
+  port: number;
+  duration: number;
+  outputDir: string;
+  headless: boolean;
+};
+
+const DEFAULT_OPTIONS = {
+  port: 5173,
+  duration: 5000,
+  outputDir: './screenshots',
+};
+
+function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
+  return {
+    ...options,
+    port: options.port ?? DEFAULT_OPTIONS.port,
+    duration: options.duration ?? DEFAULT_OPTIONS.duration,
+    outputDir: options.outputDir ?? DEFAULT_OPTIONS.outputDir,
+    headless: options.headless !== false,
+  };
+}
+
+function ensureOutputDir(dir: string) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+async function closeBrowser(browser?: Browser) {
+  if (browser) {
+    await browser.close();
+  }
+}
+
+export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
+  const normalizedOptions = normalizeOptions(options);
 
   // Ensure output directory exists
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
+  ensureOutputDir(normalizedOptions.outputDir);
 
-  const browser = await chromium.launch({ headless });
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 720 }, // Standard 720p
-    recordVideo: options.video ? { dir: outputDir } : undefined,
-    permissions: ['microphone'], // Auto-grant microphone if needed
-  });
-
-  const page = await context.newPage();
+  let browser: Browser | undefined;
   const consoleErrors: string[] = [];
 
-  page.on('console', (msg: ConsoleMessage) => {
-    if (msg.type() === 'error') {
-      consoleErrors.push(msg.text());
-    }
-  });
-
-  page.on('pageerror', (err: Error) => {
-    consoleErrors.push(err.message);
-  });
-
   try {
-    const url = `http://localhost:${port}/toy.html?toy=${encodeURIComponent(options.slug)}&agent=true`;
+    browser = await chromium.launch({ headless: normalizedOptions.headless });
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 720 }, // Standard 720p
+      recordVideo: options.video
+        ? { dir: normalizedOptions.outputDir }
+        : undefined,
+      permissions: ['microphone'], // Auto-grant microphone if needed
+    });
+
+    const page = await context.newPage();
+
+    page.on('console', (msg: ConsoleMessage) => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    page.on('pageerror', (err: Error) => {
+      consoleErrors.push(err.message);
+    });
+
+    const url = `http://localhost:${normalizedOptions.port}/toy.html?toy=${encodeURIComponent(options.slug)}&agent=true`;
     console.log(`Navigating to ${url}...`);
 
     await page.goto(url);
@@ -88,8 +124,8 @@ export async function playToy(options: {
     }
 
     // Wait for visualization to run
-    console.log(`Watching for ${duration}ms...`);
-    await page.waitForTimeout(duration);
+    console.log(`Watching for ${normalizedOptions.duration}ms...`);
+    await page.waitForTimeout(normalizedOptions.duration);
 
     const result: PlayToyResult = {
       slug: options.slug,
@@ -105,7 +141,10 @@ export async function playToy(options: {
 
     if (options.screenshot) {
       const screenshotName = `${options.slug}-${Date.now()}.png`;
-      const screenshotPath = path.join(outputDir, screenshotName);
+      const screenshotPath = path.join(
+        normalizedOptions.outputDir,
+        screenshotName,
+      );
       await page.screenshot({ path: screenshotPath });
       result.screenshot = screenshotPath;
       console.log(`Screenshot saved to ${screenshotPath}`);
@@ -113,12 +152,12 @@ export async function playToy(options: {
 
     await page.close();
     await context.close(); // Saves video if enabled
-    await browser.close();
+    await closeBrowser(browser);
 
     return result;
   } catch (error) {
     console.error(`Error playing toy ${options.slug}:`, error);
-    await browser.close();
+    await closeBrowser(browser);
     return {
       slug: options.slug,
       success: false,
