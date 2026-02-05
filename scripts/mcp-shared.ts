@@ -29,6 +29,14 @@ type DocSectionResult =
   | { ok: true; content: string }
   | { ok: false; message: string };
 
+type DocSearchResult = {
+  file: MarkdownSourceKey;
+  heading: string;
+  startLine: number;
+  endLine: number;
+  excerpt: string;
+};
+
 type CreateServerOptions = {
   instructions?: string;
   jsonSchemaValidator?: jsonSchemaValidator;
@@ -151,6 +159,59 @@ function registerTools(server: McpServer) {
       const result = await getDocSectionContent(file, heading);
 
       return asTextResponse(result.ok ? result.content : result.message);
+    },
+  );
+
+  server.registerTool(
+    'search_docs',
+    {
+      description:
+        'Search for a keyword across README.md and docs/*.md, returning matching sections with line ranges.',
+      inputSchema: z
+        .object({
+          query: z.string().trim().min(1).describe('Search keyword or phrase.'),
+          file: z
+            .enum(
+              Object.keys(markdownSources) as [
+                MarkdownSourceKey,
+                ...MarkdownSourceKey[],
+              ],
+            )
+            .optional()
+            .describe('Optional markdown file to limit the search.'),
+          limit: z
+            .number()
+            .int()
+            .min(1)
+            .max(20)
+            .optional()
+            .describe('Maximum number of matches to return (default: 10).'),
+        })
+        .strict(),
+    },
+    async ({ query, file, limit }) => {
+      const matches = await searchMarkdownSources(query, {
+        file,
+        limit,
+      });
+
+      if (!matches.length) {
+        return asTextResponse(`No matches found for "${query}".`);
+      }
+
+      const response = matches
+        .map((match) =>
+          [
+            `File: ${match.file}`,
+            `Heading: ${match.heading}`,
+            `Lines: L${match.startLine}-L${match.endLine}`,
+            'Excerpt:',
+            match.excerpt,
+          ].join('\n'),
+        )
+        .join('\n\n');
+
+      return asTextResponse(response);
     },
   );
 
@@ -559,6 +620,40 @@ function extractMarkdownSection(markdown: string, heading: string) {
   };
 }
 
+function getMarkdownSections(lines: string[], fallbackHeading: string) {
+  const headingLines = lines
+    .map((line, index) => ({
+      line,
+      index,
+    }))
+    .filter(({ line }) => /^#{1,6}\s+/.test(line.trim()));
+
+  if (headingLines.length === 0) {
+    return [
+      {
+        heading: fallbackHeading,
+        startLine: 1,
+        endLine: lines.length,
+        content: lines,
+      },
+    ];
+  }
+
+  return headingLines.map((headingEntry, idx) => {
+    const next = headingLines[idx + 1];
+    const start = headingEntry.index;
+    const end = next ? next.index - 1 : lines.length - 1;
+    const heading = headingEntry.line.replace(/^#{1,6}\s+/, '').trim();
+
+    return {
+      heading: heading || fallbackHeading,
+      startLine: start + 1,
+      endLine: end + 1,
+      content: lines.slice(start, end + 1),
+    };
+  });
+}
+
 async function loadMarkdownFile(file: MarkdownSourceKey) {
   const resolved = markdownSources[file];
 
@@ -604,6 +699,57 @@ async function getDocSectionContent(
   }
 }
 
+async function searchMarkdownSources(
+  query: string,
+  options: { file?: MarkdownSourceKey; limit?: number } = {},
+): Promise<DocSearchResult[]> {
+  const normalizedQuery = query.toLowerCase();
+  const files = options.file ? [options.file] : Object.keys(markdownSources);
+  const results: DocSearchResult[] = [];
+  const maxResults = options.limit ?? 10;
+
+  for (const file of files) {
+    if (!markdownSources[file as MarkdownSourceKey]) continue;
+
+    const markdown = await loadMarkdownFile(file as MarkdownSourceKey);
+    const lines = markdown.split(/\r?\n/);
+    const sections = getMarkdownSections(lines, file as string);
+
+    for (const section of sections) {
+      if (results.length >= maxResults) break;
+
+      const normalizedHeading = section.heading.toLowerCase();
+      const contentText = section.content.join('\n').toLowerCase();
+      const isMatch =
+        normalizedHeading.includes(normalizedQuery) ||
+        contentText.includes(normalizedQuery);
+
+      if (!isMatch) continue;
+
+      const matchIndex = section.content.findIndex((line) =>
+        line.toLowerCase().includes(normalizedQuery),
+      );
+      const excerptStart = Math.max(0, matchIndex === -1 ? 0 : matchIndex - 1);
+      const excerptEnd = Math.min(
+        section.content.length,
+        matchIndex === -1 ? 3 : matchIndex + 2,
+      );
+
+      results.push({
+        file: file as MarkdownSourceKey,
+        heading: section.heading,
+        startLine: section.startLine,
+        endLine: section.endLine,
+        excerpt: section.content.slice(excerptStart, excerptEnd).join('\n'),
+      });
+    }
+
+    if (results.length >= maxResults) break;
+  }
+
+  return results;
+}
+
 export type { DocSectionResult, MarkdownSourceKey, ToyMetadata };
 export {
   asTextResponse,
@@ -614,9 +760,11 @@ export {
   extractSection,
   extractSectionWithRange,
   getDocSectionContent,
+  getMarkdownSections,
   loadReadme,
   loadReadmeLines,
   markdownSources,
   normalizeToys,
   registerTools,
+  searchMarkdownSources,
 };
