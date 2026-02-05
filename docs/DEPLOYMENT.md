@@ -12,6 +12,12 @@ bun run build
 
 The Vite build outputs to `dist/` and also writes a `.vite/manifest.json` file. Keep the manifest alongside the hashed assets—it powers any server-side integrations or debug tooling that map back to the compiled files.
 
+If you already have a valid `dist/` folder and want to skip the rebuild (for example, when deploying prebuilt artifacts), use the reuse flag:
+
+```bash
+bun run build -- --reuse
+```
+
 ### Artifact Layout
 
 After `bun run build`, expect the following structure:
@@ -68,6 +74,12 @@ bun run pages:dev
 
 # Build and deploy static assets to Cloudflare Pages
 bun run pages:deploy
+```
+
+If you are deploying an existing build output (for example, after a CI build artifact is restored), use the reuse variant to skip rebuilding:
+
+```bash
+bun run pages:deploy:reuse
 ```
 
 Expected artifacts for both commands:

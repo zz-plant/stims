@@ -7,6 +7,9 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const normalizeBoolean = (value) => value?.toLowerCase?.() ?? '';
+const reuseDist =
+  process.argv.includes('--reuse') ||
+  ['1', 'true'].includes(normalizeBoolean(process.env.STIMS_REUSE_DIST));
 const isCloudflarePages = ['1', 'true'].includes(
   normalizeBoolean(process.env.CF_PAGES),
 );
@@ -22,9 +25,11 @@ const vitePackagePath = join(
   'package.json',
 );
 
-if (isCloudflarePages && hasReusableArtifacts()) {
+if (hasReusableArtifacts() && (isCloudflarePages || reuseDist)) {
   console.log(
-    '[build] CF_PAGES detected and dist/ already populated; skipping Vite rebuild.',
+    reuseDist
+      ? '[build] dist/ already populated; skipping Vite rebuild (--reuse enabled).'
+      : '[build] CF_PAGES detected and dist/ already populated; skipping Vite rebuild.',
   );
   process.exit(0);
 }
@@ -48,9 +53,11 @@ if (!existsSync(vitePackagePath)) {
   console.log(`[build] Installing dependencies with "${installCommand}"...`);
   execSync(installCommand, { env: installEnv, stdio: 'inherit' });
 
-  if (isCloudflarePages && hasReusableArtifacts()) {
+  if (hasReusableArtifacts() && (isCloudflarePages || reuseDist)) {
     console.log(
-      '[build] CF_PAGES detected and dist/ already populated after install; skipping Vite rebuild.',
+      reuseDist
+        ? '[build] dist/ already populated after install; skipping Vite rebuild (--reuse enabled).'
+        : '[build] CF_PAGES detected and dist/ already populated after install; skipping Vite rebuild.',
     );
     process.exit(0);
   }
