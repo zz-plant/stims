@@ -7,22 +7,7 @@ export function applyAudioRotation(
   rotationSpeed: number,
   band: 'low' | 'mid' | 'high' | 'average' = 'average',
 ) {
-  let avgFrequency = 0;
-
-  switch (band) {
-    case 'low':
-      avgFrequency = getLowFrequency(audioData);
-      break;
-    case 'mid':
-      avgFrequency = getMidFrequency(audioData);
-      break;
-    case 'high':
-      avgFrequency = getHighFrequency(audioData);
-      break;
-    default:
-      avgFrequency = getAverageFrequency(audioData);
-      break;
-  }
+  const avgFrequency = getFrequencyForBand(audioData, band);
 
   object.rotation.x += rotationSpeed * (avgFrequency / 255);
   object.rotation.y += rotationSpeed * (avgFrequency / 255);
@@ -35,28 +20,29 @@ export function applyAudioScale(
   scaleFactor: number,
   band: 'low' | 'mid' | 'high' | 'average' = 'average',
 ) {
-  let avgFrequency = 0;
-
-  switch (band) {
-    case 'low':
-      avgFrequency = getLowFrequency(audioData);
-      break;
-    case 'mid':
-      avgFrequency = getMidFrequency(audioData);
-      break;
-    case 'high':
-      avgFrequency = getHighFrequency(audioData);
-      break;
-    default:
-      avgFrequency = getAverageFrequency(audioData);
-      break;
-  }
+  const avgFrequency = getFrequencyForBand(audioData, band);
 
   const scale = 1 + avgFrequency / scaleFactor;
   object.scale.set(scale, scale, scale);
 }
 
 // Helper functions to extract different frequency ranges
+function getFrequencyForBand(
+  audioData: Uint8Array,
+  band: 'low' | 'mid' | 'high' | 'average',
+) {
+  switch (band) {
+    case 'low':
+      return getLowFrequency(audioData);
+    case 'mid':
+      return getMidFrequency(audioData);
+    case 'high':
+      return getHighFrequency(audioData);
+    default:
+      return getAverageFrequency(audioData);
+  }
+}
+
 function averageFrequencyRange(
   audioData: Uint8Array,
   startRatio: number,
