@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { getDocSectionContent, normalizeToys } from '../scripts/mcp-server.ts';
+import {
+  getDocSectionContent,
+  normalizeToys,
+  searchMarkdownSources,
+} from '../scripts/mcp-server.ts';
 
 describe('normalizeToys', () => {
   test('preserves optional metadata fields when provided', () => {
@@ -61,5 +65,24 @@ describe('getDocSectionContent', () => {
     if (!result.ok) {
       expect(result.message).toContain('was not found');
     }
+  });
+});
+
+describe('searchMarkdownSources', () => {
+  test('finds matches across markdown files', async () => {
+    const results = await searchMarkdownSources('Registered tools', {
+      file: 'docs/MCP_SERVER.md',
+      limit: 5,
+    });
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0]?.file).toBe('docs/MCP_SERVER.md');
+    expect(results[0]?.heading).toContain('Registered tools');
+  });
+
+  test('returns empty results when no matches exist', async () => {
+    const results = await searchMarkdownSources('this should not match');
+
+    expect(results).toHaveLength(0);
   });
 });
