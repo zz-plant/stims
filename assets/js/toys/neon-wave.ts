@@ -86,7 +86,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     title: 'Neon Wave',
     description: 'Retro-wave visualizer with bloom effects. Pick a theme!',
     panel: settingsPanel,
-    getRuntime: () => runtime,
+    getRuntime: () => runtimeRef,
     getRendererSettings: (preset) => ({
       maxPixelRatio: performanceSettings.maxPixelRatio,
       renderScale: preset.renderScale,
@@ -103,6 +103,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   let currentTheme: NeonTheme = 'synthwave';
   let palette = THEMES[currentTheme];
   let runtime: ToyRuntimeInstance;
+  let runtimeRef: ToyRuntimeInstance | null = null;
 
   // Post-processing
   let postprocessing: PostprocessingPipeline | null = null;
@@ -387,8 +388,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     horizonGroup.add(horizonMesh);
   }
 
-  function setupPostProcessing() {
-    runtime.toy.rendererReady.then((result) => {
+  function setupPostProcessing(toy: ToyRuntimeInstance['toy']) {
+    toy.rendererReady.then((result) => {
       if (!result) return;
 
       const { renderer } = result;
@@ -397,8 +398,8 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
 
       postprocessing = createBloomComposer({
         renderer,
-        scene: runtime.toy.scene,
-        camera: runtime.toy.camera,
+        scene: toy.scene,
+        camera: toy.camera,
         bloomStrength: palette.bloomStrength,
         bloomRadius: 0.4,
         bloomThreshold: 0.85,
@@ -435,11 +436,14 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     // Update background
-    runtime.toy.rendererReady.then((result) => {
-      if (result) {
-        result.renderer.setClearColor(palette.background, 1);
-      }
-    });
+    const toy = runtimeRef?.toy;
+    if (toy) {
+      toy.rendererReady.then((result) => {
+        if (result) {
+          result.renderer.setClearColor(palette.background, 1);
+        }
+      });
+    }
   }
 
   function applyPerformanceSettings(settings: PerformanceSettings) {
@@ -583,17 +587,19 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     }
 
     // Camera sway
-    runtime.toy.camera.position.x = Math.sin(scaledTime * 0.3) * 8;
-    runtime.toy.camera.position.y =
+    const toy = runtimeRef?.toy;
+    if (!toy) return;
+    toy.camera.position.x = Math.sin(scaledTime * 0.3) * 8;
+    toy.camera.position.y =
       25 + Math.sin(scaledTime * 0.2) * 5 + smoothedBass * 10;
-    runtime.toy.camera.lookAt(0, -10, -40);
+    toy.camera.lookAt(0, -10, -40);
 
     // Render with post-processing
     if (postprocessing) {
       postprocessing.updateSize();
       postprocessing.render();
     } else {
-      runtime.toy.render();
+      toy.render();
     }
   }
 
@@ -611,7 +617,9 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
     plugins: [
       {
         name: 'neon-wave',
-        setup: ({ toy }) => {
+        setup: (runtime) => {
+          runtimeRef = runtime;
+          const { toy } = runtime;
           toy.scene.add(waveGroup);
           toy.scene.add(gridGroup);
           toy.scene.add(particleGroup);
@@ -622,7 +630,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
           createGrid();
           createParticles();
           createHorizon();
-          setupPostProcessing();
+          setupPostProcessing(toy);
 
           toy.rendererReady.then((result) => {
             if (result) {
@@ -655,6 +663,7 @@ export function start({ container }: { container?: HTMLElement | null } = {}) {
   });
 
   runtime = startRuntime({ container });
+  runtimeRef = runtime;
   performanceSettingsHandler = createPerformanceSettingsHandler({
     applyRendererSettings: (settings) => {
       runtime.toy.updateRendererSettings({

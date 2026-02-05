@@ -125,7 +125,7 @@
         width: 100%;
         height: 100%;
         background-color: rgba(0, 0, 0, 0.9);
-        display: flex;
+        display: none;
         justify-content: center;
         align-items: center;
         z-index: 20;
@@ -850,6 +850,7 @@
       // Start Button Click Handler
       startButton.addEventListener('click', async () => {
         startButton.style.display = 'none';
+        loadingOverlay.style.display = 'flex';
         init();
 
         const toy = {
@@ -885,6 +886,7 @@
               ? 'Demo audio could not be loaded. Please try again.'
               : 'Microphone access is required for the visualizer to work.'
           );
+          loadingOverlay.style.display = 'none';
           startButton.style.display = 'block';
         }
       });
