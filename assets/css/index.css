@@ -2638,6 +2638,58 @@ footer {
     gap: 0.5rem;
   }
 
+  .intro-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0 0.5rem 0.25rem;
+    margin: 0.75rem -0.5rem 0;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .intro-pill {
+    white-space: nowrap;
+    scroll-snap-align: start;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.85rem;
+  }
+
+  .intro-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .quick-start-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-card {
+    padding: 1.1rem;
+  }
+
+  .quick-card__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .quick-card__actions .cta-button,
+  .quick-card__actions .text-link {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .system-legend {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .system-legend__item {
+    white-space: nowrap;
+  }
+
   .search-row {
     grid-template-columns: 1fr;
   }
