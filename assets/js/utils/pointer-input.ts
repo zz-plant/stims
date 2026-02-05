@@ -250,75 +250,61 @@ export function createPointerInput({
     updateAndNotify();
   };
 
+  const pointerEvents: Array<
+    [keyof GlobalEventHandlersEventMap, (event: PointerEvent) => void]
+  > = [
+    ['pointermove', handlePointerMove],
+    ['pointerdown', handlePointerDown],
+    ['pointerup', handlePointerEnd],
+    ['pointercancel', handlePointerEnd],
+    ['pointerout', handlePointerEnd],
+    ['pointerleave', handlePointerEnd],
+    ['lostpointercapture', handlePointerLost],
+  ];
+
+  const touchEvents: Array<
+    [keyof GlobalEventHandlersEventMap, (event: Event) => void]
+  > = [
+    ['touchstart', handleTouchEvent],
+    ['touchmove', handleTouchEvent],
+    ['touchend', handleTouchEvent],
+    ['touchcancel', handleTouchEvent],
+  ];
+
+  const mouseEvents: Array<
+    [keyof GlobalEventHandlersEventMap, (event: Event) => void]
+  > = [
+    ['mousemove', handleMouseEvent],
+    ['mousedown', handleMouseEvent],
+    ['mouseup', handleMouseEnd],
+    ['mouseleave', handleMouseEnd],
+  ];
+
   if (supportsPointerEvents) {
-    addPointerListener('pointermove', handlePointerMove);
-    addPointerListener('pointerdown', handlePointerDown);
-    addPointerListener('pointerup', handlePointerEnd);
-    addPointerListener('pointercancel', handlePointerEnd);
-    addPointerListener('pointerout', handlePointerEnd);
-    addPointerListener('pointerleave', handlePointerEnd);
-    addPointerListener('lostpointercapture', handlePointerLost);
+    pointerEvents.forEach(([type, handler]) => {
+      addPointerListener(type, handler);
+    });
   } else {
-    listenerTarget.addEventListener(
-      'touchstart',
-      handleTouchEvent,
-      touchListenerOptions,
-    );
-    listenerTarget.addEventListener(
-      'touchmove',
-      handleTouchEvent,
-      touchListenerOptions,
-    );
-    listenerTarget.addEventListener(
-      'touchend',
-      handleTouchEvent,
-      touchListenerOptions,
-    );
-    listenerTarget.addEventListener(
-      'touchcancel',
-      handleTouchEvent,
-      touchListenerOptions,
-    );
-    listenerTarget.addEventListener('mousemove', handleMouseEvent);
-    listenerTarget.addEventListener('mousedown', handleMouseEvent);
-    listenerTarget.addEventListener('mouseup', handleMouseEnd);
-    listenerTarget.addEventListener('mouseleave', handleMouseEnd);
+    touchEvents.forEach(([type, handler]) => {
+      listenerTarget.addEventListener(type, handler, touchListenerOptions);
+    });
+    mouseEvents.forEach(([type, handler]) => {
+      listenerTarget.addEventListener(type, handler);
+    });
   }
 
   function dispose() {
     if (supportsPointerEvents) {
-      removePointerListener('pointermove', handlePointerMove);
-      removePointerListener('pointerdown', handlePointerDown);
-      removePointerListener('pointerup', handlePointerEnd);
-      removePointerListener('pointercancel', handlePointerEnd);
-      removePointerListener('pointerout', handlePointerEnd);
-      removePointerListener('pointerleave', handlePointerEnd);
-      removePointerListener('lostpointercapture', handlePointerLost);
+      pointerEvents.forEach(([type, handler]) => {
+        removePointerListener(type, handler);
+      });
     } else {
-      listenerTarget.removeEventListener(
-        'touchstart',
-        handleTouchEvent,
-        touchListenerOptions,
-      );
-      listenerTarget.removeEventListener(
-        'touchmove',
-        handleTouchEvent,
-        touchListenerOptions,
-      );
-      listenerTarget.removeEventListener(
-        'touchend',
-        handleTouchEvent,
-        touchListenerOptions,
-      );
-      listenerTarget.removeEventListener(
-        'touchcancel',
-        handleTouchEvent,
-        touchListenerOptions,
-      );
-      listenerTarget.removeEventListener('mousemove', handleMouseEvent);
-      listenerTarget.removeEventListener('mousedown', handleMouseEvent);
-      listenerTarget.removeEventListener('mouseup', handleMouseEnd);
-      listenerTarget.removeEventListener('mouseleave', handleMouseEnd);
+      touchEvents.forEach(([type, handler]) => {
+        listenerTarget.removeEventListener(type, handler, touchListenerOptions);
+      });
+      mouseEvents.forEach(([type, handler]) => {
+        listenerTarget.removeEventListener(type, handler);
+      });
     }
     activePointers.clear();
     gestureAnchor = null;
