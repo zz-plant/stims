@@ -12,7 +12,6 @@ import { initAudioControls } from './ui/audio-controls.ts';
 import { initNavigation as initTopNav } from './ui/nav.ts';
 import { initSystemControls } from './ui/system-controls.ts';
 import { initGamepadNavigation } from './utils/gamepad-navigation.ts';
-import { initHeroReadinessSummary } from './utils/init-hero-readiness.ts';
 import { initLibraryView } from './utils/init-library.ts';
 import { initNavScrollEffects } from './utils/init-nav-scroll.ts';
 import { initQuickstartCta } from './utils/init-quickstart.ts';
@@ -101,7 +100,6 @@ const startApp = async () => {
     });
 
     runInit('quickstart CTA', () => initQuickstartCta({ loadToy }));
-    runInit('hero readiness summary', initHeroReadinessSummary);
     runInit('nav scroll effects', initNavScrollEffects);
     runInit('system check', initSystemCheck);
   }
