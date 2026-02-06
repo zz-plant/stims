@@ -30,7 +30,7 @@ bun run dev
   Always invoke the script so the pinned `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags apply, loading happy-dom globals and a Three.js stub needed for headless specs.
 - Run the Bun test runner with filters (for example, targeting specific files):
   ```bash
-  bun test tests/path/to/spec.test.js
+  bun run test tests/path/to/spec.test.js
   ```
 - Lint the project:
   ```bash
@@ -66,7 +66,7 @@ bun run dev
 - Register toy metadata (labels, slugs, and settings) in `assets/data/toys.json` so the loader can find your new toy.
 - Toy entry points are served through `toy.html` using a `?toy=` query string (for example, `toy.html?toy=cube-wave`). Ensure your toy slug matches the metadata entry.
 - Shared styling and assets live under `assets/css/` and `assets/data/`. Add new static assets there when needed.
-- Update or add tests under `tests/` to cover new behaviors. You can run targeted checks by passing the spec path to `bun test`.
+- Update or add tests under `tests/` to cover new behaviors. You can run targeted checks by passing the spec path to `bun run test`.
 - Use `bun run scripts/scaffold-toy.ts` to scaffold a new toy: it prompts for slug/title/type, writes a starter module using the playbook template, updates `assets/data/toys.json` and `docs/TOY_SCRIPT_INDEX.md`, and can generate a minimal Bun spec that asserts `start` is exported.
 
 Happy building!

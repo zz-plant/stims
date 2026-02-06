@@ -29,7 +29,7 @@ If you’re spinning up the project for the first time, confirm the basics befor
 
   If you install with Bun and rely on Git hooks, the `postinstall` script will invoke `husky install` when `npm_config_user_agent` starts with `bun`. If hooks still don’t appear, run `bun x husky install`.
   - Keep `bun.lock` authoritative. Use `bun install --frozen-lockfile` in CI and prefer Bun locally to keep dependency resolution consistent.
-- The project uses **TypeScript**, **Vite**, **Three.js**, **Biome**, and the Bun test runner. No extra ESM flags are required when running `bun test`.
+- The project uses **TypeScript**, **Vite**, **Three.js**, **Biome**, and the Bun test runner. Use `bun run test` so the repo’s preload/import map flags are always applied.
 - Run the dev server locally with Bun:
 
   ```bash
@@ -72,7 +72,7 @@ Notes:
 When debugging a single test file, run:
 
 ```bash
-bun test tests/filename.test.js
+bun run test tests/filename.test.js
 ```
 
 ### Editor Tooling
