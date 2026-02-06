@@ -10,6 +10,7 @@ export type PlayToyResult = {
   error?: string;
   consoleErrors?: string[];
   audioActive?: boolean;
+  vibeModeActivated?: boolean;
 };
 
 type PlayToyOptions = {
@@ -123,6 +124,25 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       console.log('No demo audio button found. Checking if auto-started...');
     }
 
+    // Trigger a temporary vibe mode in agent sessions when available
+    const vibeModeActivated = await page
+      .evaluate(async () => {
+        const stimState = (
+          window as typeof window & {
+            stimState?: {
+              activateVibeMode?: (durationMs?: number) => Promise<void>;
+            };
+          }
+        ).stimState;
+        if (!stimState || typeof stimState.activateVibeMode !== 'function') {
+          return false;
+        }
+
+        await stimState.activateVibeMode(1800);
+        return true;
+      })
+      .catch(() => false);
+
     // Wait for visualization to run
     console.log(`Watching for ${normalizedOptions.duration}ms...`);
     await page.waitForTimeout(normalizedOptions.duration);
@@ -138,6 +158,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       () => document.body.dataset.audioActive === 'true',
     );
     result.audioActive = audioState;
+    result.vibeModeActivated = vibeModeActivated;
 
     if (options.screenshot) {
       const screenshotName = `${options.slug}-${Date.now()}.png`;
