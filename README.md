@@ -85,8 +85,8 @@ flowchart TD
 ## Quick Start
 
 1. Clone the repo and `cd` into it.
-2. Confirm your runtime (the repo records `bun@1.2.14` in `package.json` via `packageManager`):
-   - **Bun 1.2+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle and the supported workflow.
+2. Confirm your runtime (the repo records `bun@1.3.8` in `package.json` via `packageManager`):
+   - **Bun 1.3+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle and the supported workflow.
 3. Install dependencies with `bun install`. The repository tracks `bun.lock` for reproducible installs—use `bun install --frozen-lockfile` to respect it.
 4. Start the dev server with `bun run dev`, then open `http://localhost:5173` in your browser. Use `bun run dev:host` when you need the server bound to all interfaces for mobile/LAN testing.
 
@@ -198,7 +198,7 @@ To play locally, you’ll need to run the toys from a web server. Opening the HT
    cd stims
    ```
 
-2. Use Bun 1.2+ (recorded in `package.json`).
+2. Use Bun 1.3+ (recorded in `package.json`).
 
 3. Install dependencies (Bun is required and the only locked flow):
 
@@ -313,7 +313,7 @@ Cloudflare Pages can build this project with Bun using the `wrangler.toml` in th
 - Project name: `stims` (top-level `name` in `wrangler.toml`)
 - Build output directory: `dist/` (set via `pages_build_output_dir` in `wrangler.toml`)
 - Build command: `bun run build` (set in the Pages UI under **Settings → Builds & deployments → Build command**; Pages rejects a `[build]` table in `wrangler.toml`)
-- Cloudflare Pages automatically detects the Bun version from the repo’s `.bun-version` file. As a fallback, you can set the `BUN_VERSION` environment variable (for example, `BUN_VERSION=1.2.14`) in your Pages project to ensure the hosted runtime matches local installs.
+- Cloudflare Pages automatically detects the Bun version from the repo’s `.bun-version` file. As a fallback, you can set the `BUN_VERSION` environment variable (for example, `BUN_VERSION=1.3.8`) in your Pages project to ensure the hosted runtime matches local installs.
 - Enable Pages’ **Bun runtime** so the build runs under Bun instead of Node.
 - The `compatibility_date` in `wrangler.toml` keeps Pages aligned with the Cloudflare Workers API version.
 - Do not add a `[pages]` table in `wrangler.toml`; Cloudflare Pages expects project linkage to be configured in the dashboard.

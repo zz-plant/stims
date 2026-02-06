@@ -12,9 +12,9 @@ describe('toy harness example', () => {
   });
 
   test('runs demo toy with shared stubs and cleans up DOM', async () => {
+    const baselineBodyChildren = document.body.childElementCount;
     const { container, dispose } = createToyContainer('demo-toy-root');
     const audioContext = new FakeAudioContext();
-    const initialBodyChildren = document.body.childElementCount;
 
     const cleanup = startDemoToy({ container, audioContext });
 
@@ -27,11 +27,11 @@ describe('toy harness example', () => {
 
     expect(container.childElementCount).toBe(0);
     expect(document.querySelector('[data-toy-mount="demo-toy"]')).toBeNull();
-    expect(document.body.childElementCount).toBe(initialBodyChildren);
+    expect(document.body.childElementCount).toBe(baselineBodyChildren + 1);
     expect(audioContext.closed).toBe(true);
 
     dispose();
-    expect(document.body.childElementCount).toBe(0);
+    expect(document.body.childElementCount).toBe(baselineBodyChildren);
   });
 
   test('exposes reusable helpers for analyzers and renderers', () => {
