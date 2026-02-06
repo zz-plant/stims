@@ -16,6 +16,7 @@ This folder contains resources for contributors who are building or maintaining 
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md): end-to-end app architecture, loader flow, and core runtime composition with diagrams.
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md): build, preview, static hosting layout, and Cloudflare Worker deployment steps.
 - [`MCP_SERVER.md`](./MCP_SERVER.md): how to launch and use the MCP stdio server (`scripts/mcp-server.ts`) and its registered tools.
+- [`TECH_STACK_CAPABILITY_RESEARCH_2026-02.md`](./TECH_STACK_CAPABILITY_RESEARCH_2026-02.md): version/capability research snapshot for Bun, Vite, TypeScript, Biome, and related tooling.
 - [`agents/README.md`](./agents/README.md): agent-specific guidance split into progressive disclosure files.
 
 If you add new tooling or patterns, update these docs so the next contributor has a reliable starting point.
@@ -50,7 +51,7 @@ flowchart TD
 
 ## Onboarding highlights
 
-- Use **Bun 1.2+** for installs and scripts. Run `bun install` in a fresh clone to populate `bun.lock`-aligned dependencies.
+- Use **Bun 1.3+** for installs and scripts. Run `bun install` in a fresh clone to populate `bun.lock`-aligned dependencies.
 - Run a **dev server smoke test** without opening a browser via `bun run dev:check` to confirm Vite wiring before you start coding.
 - Use `bun run check:quick` as a fast local gate to run **Biome** and TypeScript checks.
 - When adding or renaming toys, run `bun run check:toys` to ensure `assets/data/toys.json` entries, TypeScript modules, standalone HTML files, and `docs/TOY_SCRIPT_INDEX.md` stay in sync.

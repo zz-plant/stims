@@ -4,7 +4,7 @@ This guide focuses on day-to-day development tasks for the Stim Webtoys Library.
 
 If you’re spinning up the project for the first time, confirm the basics before diving into code:
 
-1. Install **Bun 1.2+** (required). Run `bun --version` to confirm the runtime matches the repo’s `packageManager` entry.
+1. Install **Bun 1.3+** (required). Run `bun --version` to confirm the runtime matches the repo’s `packageManager` entry.
 
 2. Install dependencies with **Bun**: `bun install`. The repo tracks `bun.lock`, so keep installs aligned with `bun install --frozen-lockfile` when you need reproducibility.
 
@@ -20,7 +20,7 @@ If you’re spinning up the project for the first time, confirm the basics befor
 
 ## Tooling and Environment
 
-- **Bun 1.2+** is the default for installs, scripts, and testing. Keep your local runtime aligned with `packageManager` to avoid lockfile drift.
+- **Bun 1.3+** is the default for installs, scripts, and testing. Keep your local runtime aligned with `packageManager` to avoid lockfile drift.
 - Install dependencies once per clone with Bun:
 
   ```bash
