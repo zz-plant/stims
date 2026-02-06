@@ -17,6 +17,7 @@ Start with the root [AGENTS.md](../../AGENTS.md) for the essentials, then use th
 - `toys/` - Standalone HTML toy pages.
 - `tests/` - Automated tests.
 - `docs/` - Documentation and architecture references.
+- `.agent/skills/` - Agent skill definitions for common workflows.
 
 - [Tooling & quality checks](./tooling-and-quality.md)
 - [Metadata & documentation expectations](./metadata-and-docs.md)
