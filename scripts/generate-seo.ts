@@ -27,12 +27,14 @@ const renderPage = ({
   description,
   canonical,
   body,
+  keywords,
   extraHead = '',
 }: {
   title: string;
   description: string;
   canonical: string;
   body: string;
+  keywords?: string[];
   extraHead?: string;
 }) => `<!doctype html>
 <html lang="en">
@@ -40,15 +42,20 @@ const renderPage = ({
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="${escapeHtml(description)}" />
+    <meta name="robots" content="index,follow" />
+    ${keywords?.length ? `<meta name="keywords" content="${escapeHtml(keywords.join(', '))}" />` : ''}
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="${canonical}" />
     <meta property="og:image" content="${iconUrl}" />
+    <meta property="og:site_name" content="Stim Webtoys Library" />
+    <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     <meta name="twitter:image" content="${iconUrl}" />
+    <meta name="twitter:image:alt" content="Stim Webtoys Library icon" />
     <link rel="canonical" href="${canonical}" />
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
@@ -247,6 +254,38 @@ const renderCapabilityMetaList = (
     `
     : '';
 
+const buildCollectionJsonLd = ({
+  canonical,
+  title,
+  description,
+  toys,
+}: {
+  canonical: string;
+  title: string;
+  description: string;
+  toys: ToyEntry[];
+}) => ({
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: title,
+  description,
+  url: canonical,
+  isPartOf: {
+    '@type': 'WebSite',
+    name: 'Stim Webtoys Library',
+    url: baseUrl,
+  },
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: toys.map((toy, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: toy.title,
+      url: `${baseUrl}/toys/${toy.slug}/`,
+    })),
+  },
+});
+
 const generateSeo = async () => {
   const toysRaw = await readFile(path.join(publicDir, 'toys.json'), 'utf8');
   const toys: ToyEntry[] = JSON.parse(toysRaw);
@@ -289,9 +328,26 @@ const generateSeo = async () => {
     renderPage({
       title: 'All toys | Stim Webtoys Library',
       description:
-        'Browse every audio-reactive toy in the Stim Webtoys Library.',
+        'Browse every audio-reactive visual toy for sensory play, calming exploration, and responsive creative visuals.',
       canonical: `${baseUrl}/toys/`,
       body: toyIndexBody,
+      keywords: [
+        'audio-reactive visual toys',
+        'sensory play',
+        'interactive web toys',
+        'three.js webgl toys',
+      ],
+      extraHead: `
+    <script type="application/ld+json">${JSON.stringify(
+      buildCollectionJsonLd({
+        canonical: `${baseUrl}/toys/`,
+        title: 'All toys | Stim Webtoys Library',
+        description:
+          'Browse every audio-reactive visual toy for sensory play, calming exploration, and responsive creative visuals.',
+        toys,
+      }),
+    )}</script>
+`,
     }),
   );
 
@@ -309,6 +365,15 @@ const generateSeo = async () => {
       operatingSystem: 'Web',
       url: canonical,
       image: iconUrl,
+      isAccessibleForFree: true,
+      audience: {
+        '@type': 'Audience',
+        audienceType:
+          'People seeking interactive audio-reactive visuals for sensory-friendly creative play',
+      },
+      keywords: Array.from(
+        new Set([...(toy.tags ?? []), ...(toy.moods ?? []), 'audio-reactive']),
+      ),
     };
     const extraHead = `    <script type="application/ld+json">${JSON.stringify(
       jsonLd,
@@ -343,6 +408,16 @@ const generateSeo = async () => {
         description: toy.description,
         canonical,
         body,
+        keywords: Array.from(
+          new Set([
+            toy.slug,
+            toy.title,
+            ...(toy.tags ?? []),
+            ...(toy.moods ?? []),
+            'audio-reactive toy',
+            'sensory visualizer',
+          ]),
+        ),
         extraHead: `
 ${extraHead}
 `,
@@ -368,9 +443,14 @@ ${extraHead}
     renderPage({
       title: 'Tags | Stim Webtoys Library',
       description:
-        'Browse Stim Webtoys by theme, visuals, and interaction style.',
+        'Browse audio-reactive toys by visual theme, interaction style, and sensory-friendly tags.',
       canonical: `${baseUrl}/tags/`,
       body: tagsIndexBody,
+      keywords: [
+        'visual toy tags',
+        'audio reactive themes',
+        'sensory friendly toys',
+      ],
     }),
   );
 
@@ -398,6 +478,21 @@ ${extraHead}
         description: `Explore ${entry.toys.length} Stim Webtoys tagged ${entry.label}.`,
         canonical,
         body,
+        keywords: [
+          `${entry.label} toys`,
+          `${entry.label} visualizers`,
+          'audio-reactive web toys',
+        ],
+        extraHead: `
+    <script type="application/ld+json">${JSON.stringify(
+      buildCollectionJsonLd({
+        canonical,
+        title: `${entry.label} toys | Stim Webtoys`,
+        description: `Explore ${entry.toys.length} Stim Webtoys tagged ${entry.label}.`,
+        toys: entry.toys,
+      }),
+    )}</script>
+`,
       }),
     );
   }
@@ -419,9 +514,11 @@ ${extraHead}
     path.join(moodsDir, 'index.html'),
     renderPage({
       title: 'Moods | Stim Webtoys Library',
-      description: 'Browse toys by mood and sensory vibe.',
+      description:
+        'Browse toys by mood and sensory vibe, from calming visuals to playful, energetic stims.',
       canonical: `${baseUrl}/moods/`,
       body: moodsIndexBody,
+      keywords: ['mood visualizer', 'calming visuals', 'sensory vibe toys'],
     }),
   );
 
@@ -449,6 +546,21 @@ ${extraHead}
         description: `Explore ${entry.toys.length} toys with a ${entry.label} vibe.`,
         canonical,
         body,
+        keywords: [
+          `${entry.label} mood toys`,
+          `${entry.label} sensory visuals`,
+          'audio-reactive web toys',
+        ],
+        extraHead: `
+    <script type="application/ld+json">${JSON.stringify(
+      buildCollectionJsonLd({
+        canonical,
+        title: `${entry.label} mood toys | Stim Webtoys`,
+        description: `Explore ${entry.toys.length} toys with a ${entry.label} vibe.`,
+        toys: entry.toys,
+      }),
+    )}</script>
+`,
       }),
     );
   }
@@ -471,9 +583,14 @@ ${extraHead}
     renderPage({
       title: 'Capabilities | Stim Webtoys Library',
       description:
-        'Filter toys by microphone support, demo audio, motion input, and WebGPU.',
+        'Find toys by microphone support, demo audio, device motion, and WebGPU so you can play with the setup you have.',
       canonical: `${baseUrl}/capabilities/`,
       body: capabilitiesIndexBody,
+      keywords: [
+        'microphone visualizer',
+        'demo audio toys',
+        'webgpu visual toys',
+      ],
     }),
   );
 
@@ -501,6 +618,21 @@ ${extraHead}
         description: `Explore ${entry.toys.length} toys with ${entry.label.toLowerCase()} support.`,
         canonical,
         body,
+        keywords: [
+          `${entry.label} toys`,
+          `${entry.label} support`,
+          'audio-reactive web toys',
+        ],
+        extraHead: `
+    <script type="application/ld+json">${JSON.stringify(
+      buildCollectionJsonLd({
+        canonical,
+        title: `${entry.label} toys | Stim Webtoys`,
+        description: `Explore ${entry.toys.length} toys with ${entry.label.toLowerCase()} support.`,
+        toys: entry.toys,
+      }),
+    )}</script>
+`,
       }),
     );
   }
