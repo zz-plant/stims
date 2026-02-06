@@ -287,7 +287,7 @@
           <p class="eyebrow">Library</p>
           <h2>Browse all stims</h2>
           <p class="section-description">
-            Tap a card to launch or open details.
+            Tap a card to launch.
           </p>
           <search class="library-search">
             <div class="search-heading">
@@ -317,7 +317,7 @@
                   Clear
                 </button>
                 <span id="toy-search-hint" class="search-field__hint">
-                  Enter a name, tag, or capability
+                  Name, tag, or capability
                 </span>
                 <datalist id="toy-search-suggestions"></datalist>
               </form>
@@ -949,13 +949,13 @@
           const parts = [`${count} ${descriptor}`];
           const trimmedQuery = query.trim();
           if (trimmedQuery) {
-            parts.push(`Search: “${trimmedQuery}”`);
+            parts.push(`“${trimmedQuery}”`);
           }
           const filterLabels = getActiveFilterLabels();
           if (filterLabels.length > 0) {
-            parts.push(`Filters: ${filterLabels.join(', ')}`);
+            parts.push(filterLabels.join(', '));
           }
-          parts.push(`Sort: ${getSortLabel()}`);
+          parts.push(getSortLabel());
           searchResults.textContent = parts.join(' • ');
         };
 
@@ -964,13 +964,12 @@
           empty.className = 'empty-state';
           const message = document.createElement('p');
           message.className = 'empty-state__message';
-          message.textContent =
-            'No stims match your search or filters. Try clearing your search or removing filters.';
+          message.textContent = 'No matching stims.';
 
           const reset = document.createElement('button');
           reset.type = 'button';
           reset.className = 'cta-button ghost';
-          reset.textContent = 'Reset search and filters';
+          reset.textContent = 'Reset';
           reset.addEventListener('click', () => {
             if (search instanceof HTMLInputElement) {
               search.value = '';
