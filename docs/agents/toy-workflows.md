@@ -20,7 +20,7 @@ bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --w
 bun run check:toys
 
 # Run all tests
-bun test
+bun run test
 
 # Start dev server for interactive testing
 bun run dev
