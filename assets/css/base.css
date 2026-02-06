@@ -1785,3 +1785,26 @@ body {
   color: rgba(148, 165, 180, 0.96);
   font-weight: 700;
 }
+
+:root[data-agent-vibe-mode="true"] {
+  --agent-vibe-intensity: 1;
+}
+
+:root[data-agent-vibe-mode="true"] .active-toy-container {
+  animation: agentVibePulse 620ms ease-in-out infinite;
+}
+
+:root[data-agent-vibe-mode="true"] .toy-canvas {
+  filter: saturate(calc(1 + (0.2 * var(--agent-vibe-intensity, 1))))
+    contrast(calc(1 + (0.08 * var(--agent-vibe-intensity, 1))));
+}
+
+@keyframes agentVibePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(calc(1 + (0.004 * var(--agent-vibe-intensity, 1))));
+  }
+}

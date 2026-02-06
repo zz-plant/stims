@@ -9,6 +9,7 @@ export type StimState = {
   audioSource: 'microphone' | 'demo' | null;
   toyLoaded: boolean;
   isAgentMode: boolean;
+  vibeMode: boolean;
   version: string;
 };
 
@@ -31,6 +32,7 @@ export type StimAPI = {
   // Utility
   waitForToyLoad: () => Promise<string>;
   waitForAudioActive: () => Promise<'microphone' | 'demo'>;
+  activateVibeMode: (durationMs?: number) => Promise<void>;
 };
 
 type StimEventMap = {
@@ -51,8 +53,11 @@ const state: StimState = {
   audioSource: null,
   toyLoaded: false,
   isAgentMode: false,
+  vibeMode: false,
   version: '1.0.0',
 };
+
+const DEFAULT_VIBE_MODE_DURATION = 3500;
 
 const eventTarget =
   typeof window !== 'undefined' && window.EventTarget
@@ -146,6 +151,34 @@ export function initAgentAPI(): StimAPI {
 
     waitForToyLoad: () => waitForToyLoad(),
     waitForAudioActive: () => waitForAudioActive(),
+    activateVibeMode: async (durationMs = DEFAULT_VIBE_MODE_DURATION) => {
+      if (typeof document === 'undefined') {
+        return;
+      }
+
+      const root = document.documentElement;
+      const clampedDuration = Math.max(500, durationMs);
+      const clampedIntensity = Math.max(
+        0.8,
+        Math.min(2.2, clampedDuration / 1800),
+      );
+
+      state.vibeMode = true;
+      root.dataset.agentVibeMode = 'true';
+      root.style.setProperty(
+        '--agent-vibe-intensity',
+        clampedIntensity.toFixed(2),
+      );
+
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          state.vibeMode = false;
+          delete root.dataset.agentVibeMode;
+          root.style.removeProperty('--agent-vibe-intensity');
+          resolve();
+        }, clampedDuration);
+      });
+    },
   };
 
   // Expose globally for agents
