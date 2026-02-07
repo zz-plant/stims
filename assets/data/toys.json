@@ -11,7 +11,14 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "moods": ["energetic", "immersive"],
+    "tags": ["tunnel", "3d", "legacy"],
+    "controls": [
+      "Tunnel twist amount",
+      "Color pulse intensity",
+      "Reactivity sensitivity"
+    ]
   },
   {
     "slug": "aurora-painter",
@@ -47,7 +54,10 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "moods": ["focus", "tactile"],
+    "tags": ["sculpting", "pottery", "3d"],
+    "controls": ["Smoothing tool", "Carving tool", "Pinching tool"]
   },
   {
     "slug": "evol",
@@ -61,7 +71,10 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "moods": ["psychedelic", "cosmic"],
+    "tags": ["fractal", "glitch", "evolutionary"],
+    "controls": ["Reactivity boost", "Mutation speed", "Palette shift"]
   },
   {
     "slug": "geom",
@@ -75,7 +88,14 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "controls": [
+      "Frequency band modes",
+      "Geometry complexity slider",
+      "Sensitivity boost toggle"
+    ],
+    "tags": ["geometry", "microphone", "reactive"],
+    "moods": ["energetic", "immersive"]
   },
   {
     "slug": "holy",
@@ -89,7 +109,10 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "moods": ["serene", "ethereal"],
+    "tags": ["halos", "particles", "ambient"],
+    "controls": ["Halo intensity", "Particle density", "Palette cycle"]
   },
   {
     "slug": "multi",
@@ -104,7 +127,14 @@
       "microphone": true,
       "demoAudio": true,
       "motion": true
-    }
+    },
+    "controls": [
+      "Motion input toggle",
+      "Audio gain slider",
+      "WebGL fallback notice"
+    ],
+    "tags": ["motion", "hybrid", "immersive"],
+    "moods": ["energetic", "cosmic"]
   },
   {
     "slug": "seary",
@@ -118,7 +148,14 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "controls": [
+      "Frequency mapping overlay",
+      "Palette mode switch",
+      "Pattern speed slider"
+    ],
+    "tags": ["synesthetic", "patterns", "audio-mapped"],
+    "moods": ["dreamy", "immersive"]
   },
   {
     "slug": "legible",
@@ -132,7 +169,14 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "controls": [
+      "Word cadence slider",
+      "Character glow level",
+      "Vocabulary refresh"
+    ],
+    "tags": ["text", "retro", "grid"],
+    "moods": ["focus", "minimal"]
   },
   {
     "slug": "symph",
@@ -146,7 +190,10 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "controls": ["Sensitivity slider", "Smoothing toggle", "Color intensity"],
+    "tags": ["spectrograph", "ambient", "calming"],
+    "moods": ["calming", "serene"]
   },
   {
     "slug": "cube-wave",
@@ -160,7 +207,14 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "controls": [
+      "Wave/sphere mode toggle",
+      "Beat response amount",
+      "Camera drift speed"
+    ],
+    "tags": ["grid", "waves", "mode-switch"],
+    "moods": ["pulsing", "energetic"]
   },
   {
     "slug": "bubble-harmonics",
@@ -175,7 +229,10 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "moods": ["playful", "uplifting"],
+    "tags": ["bubbles", "harmonics", "reactive"],
+    "controls": ["Split sensitivity", "Bubble growth rate", "Trail persistence"]
   },
   {
     "slug": "pocket-pulse",
@@ -224,7 +281,10 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "moods": ["cosmic", "immersive"],
+    "tags": ["particles", "nebula", "swirl"],
+    "controls": ["Mode toggle", "Orbit speed", "Particle density"]
   },
   {
     "slug": "lights",
@@ -238,7 +298,10 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "controls": ["Shader style switch", "Palette shuffle", "Bloom intensity"],
+    "tags": ["lights", "shader", "palette"],
+    "moods": ["energetic", "luminous"]
   },
   {
     "slug": "spiral-burst",
@@ -274,7 +337,14 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "controls": [
+      "Tunnel speed slider",
+      "Camera drift toggle",
+      "Color pulse depth"
+    ],
+    "tags": ["tunnel", "rainbow", "immersive"],
+    "moods": ["cosmic", "drifting"]
   },
   {
     "slug": "star-field",
@@ -306,7 +376,9 @@
       "microphone": true,
       "demoAudio": true,
       "motion": false
-    }
+    },
+    "moods": ["dreamy", "serene"],
+    "tags": ["fractal", "kite", "generative"]
   },
   {
     "slug": "tactile-sand-table",
@@ -322,7 +394,9 @@
       "microphone": true,
       "demoAudio": true,
       "motion": true
-    }
+    },
+    "moods": ["calming", "grounded"],
+    "tags": ["sand", "tilt", "haptics"]
   },
   {
     "slug": "bioluminescent-tidepools",

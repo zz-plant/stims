@@ -10,6 +10,13 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['energetic', 'immersive'],
+    tags: ['tunnel', '3d', 'legacy'],
+    controls: [
+      'Tunnel twist amount',
+      'Color pulse intensity',
+      'Reactivity sensitivity',
+    ],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -48,6 +55,9 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['focus', 'tactile'],
+    tags: ['sculpting', 'pottery', '3d'],
+    controls: ['Smoothing tool', 'Carving tool', 'Pinching tool'],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -63,6 +73,9 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['psychedelic', 'cosmic'],
+    tags: ['fractal', 'glitch', 'evolutionary'],
+    controls: ['Reactivity boost', 'Mutation speed', 'Palette shift'],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -78,6 +91,13 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['energetic', 'immersive'],
+    tags: ['geometry', 'microphone', 'reactive'],
+    controls: [
+      'Frequency band modes',
+      'Geometry complexity slider',
+      'Sensitivity boost toggle',
+    ],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -93,6 +113,9 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['serene', 'ethereal'],
+    tags: ['halos', 'particles', 'ambient'],
+    controls: ['Halo intensity', 'Particle density', 'Palette cycle'],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -108,6 +131,13 @@ export const toyManifest: ToyManifest = [
     requiresWebGPU: true,
     allowWebGLFallback: true,
     lifecycleStage: 'archived',
+    moods: ['energetic', 'cosmic'],
+    tags: ['motion', 'hybrid', 'immersive'],
+    controls: [
+      'Motion input toggle',
+      'Audio gain slider',
+      'WebGL fallback notice',
+    ],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -122,6 +152,13 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['dreamy', 'immersive'],
+    tags: ['synesthetic', 'patterns', 'audio-mapped'],
+    controls: [
+      'Frequency mapping overlay',
+      'Palette mode switch',
+      'Pattern speed slider',
+    ],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -137,6 +174,13 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['focus', 'minimal'],
+    tags: ['text', 'retro', 'grid'],
+    controls: [
+      'Word cadence slider',
+      'Character glow level',
+      'Vocabulary refresh',
+    ],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -151,6 +195,9 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['calming', 'serene'],
+    tags: ['spectrograph', 'ambient', 'calming'],
+    controls: ['Sensitivity slider', 'Smoothing toggle', 'Color intensity'],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -166,6 +213,13 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['pulsing', 'energetic'],
+    tags: ['grid', 'waves', 'mode-switch'],
+    controls: [
+      'Wave/sphere mode toggle',
+      'Beat response amount',
+      'Camera drift speed',
+    ],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -182,6 +236,9 @@ export const toyManifest: ToyManifest = [
     requiresWebGPU: false,
     lifecycleStage: 'featured',
     featuredRank: 7,
+    moods: ['playful', 'uplifting'],
+    tags: ['bubbles', 'harmonics', 'reactive'],
+    controls: ['Split sensitivity', 'Bubble growth rate', 'Trail persistence'],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -234,6 +291,9 @@ export const toyManifest: ToyManifest = [
     requiresWebGPU: false,
     lifecycleStage: 'featured',
     featuredRank: 5,
+    moods: ['cosmic', 'immersive'],
+    tags: ['particles', 'nebula', 'swirl'],
+    controls: ['Mode toggle', 'Orbit speed', 'Particle density'],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -249,6 +309,9 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['energetic', 'luminous'],
+    tags: ['lights', 'shader', 'palette'],
+    controls: ['Shader style switch', 'Palette shuffle', 'Bloom intensity'],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -281,6 +344,13 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['cosmic', 'drifting'],
+    tags: ['tunnel', 'rainbow', 'immersive'],
+    controls: [
+      'Tunnel speed slider',
+      'Camera drift toggle',
+      'Color pulse depth',
+    ],
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -313,6 +383,8 @@ export const toyManifest: ToyManifest = [
     type: 'module',
     requiresWebGPU: false,
     lifecycleStage: 'archived',
+    moods: ['dreamy', 'serene'],
+    tags: ['fractal', 'kite', 'generative'],
     controls: ['Pattern density slider', 'Palette switches'],
     capabilities: {
       microphone: true,
@@ -330,6 +402,8 @@ export const toyManifest: ToyManifest = [
     requiresWebGPU: false,
     lifecycleStage: 'featured',
     featuredRank: 3,
+    moods: ['calming', 'grounded'],
+    tags: ['sand', 'tilt', 'haptics'],
     controls: ['Grain size slider', 'Damping slider', 'Gravity lock toggle'],
     capabilities: {
       microphone: true,
