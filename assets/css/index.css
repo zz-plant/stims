@@ -1481,6 +1481,15 @@ button.text-link {
     transition: none;
     transform: none;
   }
+
+  .signal-card:hover,
+  .quick-card:hover,
+  .callout-card:hover,
+  .repo-status__metric:hover,
+  .preview-meta:hover,
+  .cta-button:hover {
+    transform: none;
+  }
 }
 
 .cta-button:focus-visible {
