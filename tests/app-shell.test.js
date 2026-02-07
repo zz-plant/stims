@@ -45,6 +45,11 @@ describe('app shell user journeys', () => {
     document.body.innerHTML =
       '<input id="toy-search" /><div id="toy-list"></div>';
     document.body.dataset.page = 'library';
+    try {
+      window.sessionStorage.clear();
+    } catch (_error) {
+      // Ignore storage errors in tests.
+    }
     mockLoadToy = mock();
     mockLoadFromQuery = mock();
     mockInitNavigation = mock();
@@ -80,6 +85,42 @@ describe('app shell user journeys', () => {
     ).map((node) => node.textContent);
 
     expect(visibleTitles).toEqual(['Evolutionary Weirdcore']);
+  });
+
+  test('escape clears active library search query', async () => {
+    await loadAppShell();
+
+    const search = document.getElementById('toy-search');
+    expect(search?.tagName).toBe('INPUT');
+
+    search.value = 'aurora';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+
+    search.dispatchEvent(
+      new window.KeyboardEvent('keydown', { key: 'Escape' }),
+    );
+
+    expect(search.value).toBe('');
+    expect(document.querySelectorAll('.webtoy-card')).toHaveLength(
+      toyLibrary.length,
+    );
+  });
+
+  test('enter launches the best search match', async () => {
+    await loadAppShell();
+
+    const search = document.getElementById('toy-search');
+    search.value = 'aurora painter';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+
+    search.dispatchEvent(
+      new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    );
+
+    expect(mockLoadToy).toHaveBeenCalledTimes(1);
+    expect(mockLoadToy).toHaveBeenCalledWith('aurora-painter', {
+      pushState: true,
+    });
   });
 
   test('launching toys routes module entries and navigates for HTML pages', async () => {
