@@ -892,6 +892,23 @@ body {
   color: rgba(245, 245, 245, 0.88);
 }
 
+.control-panel__quickstart {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 165, 180, 0.22);
+  background: rgba(148, 165, 180, 0.08);
+}
+
+.control-panel__tips {
+  margin: 6px 0 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: rgba(233, 251, 255, 0.9);
+}
+
 .control-panel__row {
   display: flex;
   align-items: center;
