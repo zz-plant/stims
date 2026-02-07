@@ -289,134 +289,134 @@
           <p class="section-description">
             Tap a card to launch.
           </p>
-          <search class="library-search">
-            <div class="search-heading">
-              <h3>Find a stim</h3>
-              <p>Search by name, mood, or capability.</p>
-            </div>
-            <div class="search-row">
-              <label class="sr-only" for="toy-search">Search the library</label>
-              <form class="search-field" role="search" data-search-form>
-                <span class="search-field__icon" aria-hidden="true">⌕</span>
-                <input
-                  id="toy-search"
-                  type="search"
-                  name="toy-search"
-                  placeholder="Search stims by name, tag, or capability…"
-                  autocomplete="off"
-                  aria-describedby="toy-search-hint"
-                  inputmode="search"
-                  list="toy-search-suggestions"
-                />
-                <button
-                  type="button"
-                  class="search-clear"
-                  data-search-clear
-                  aria-label="Clear search"
-                >
-                  Clear
-                </button>
-                <span id="toy-search-hint" class="search-field__hint">
-                  / focus • ↵ open match
-                </span>
-                <datalist id="toy-search-suggestions"></datalist>
-              </form>
-              <div class="search-meta">
-                <p
-                  class="search-meta__results"
-                  data-search-results
-                  role="status"
-                  aria-live="polite"
-                >
-                  Loading library…
-                </p>
-              </div>
-            </div>
-            <div class="active-filters" data-active-filters hidden>
-              <span class="active-filters__label">Active</span>
-              <div class="active-filters__chips" data-active-filters-chips></div>
+        </div>
+        <search class="library-search">
+          <div class="search-heading">
+            <h3>Find a stim</h3>
+            <p>Search by name, mood, or capability.</p>
+          </div>
+          <div class="search-row">
+            <label class="sr-only" for="toy-search">Search the library</label>
+            <form class="search-field" role="search" data-search-form>
+              <span class="search-field__icon" aria-hidden="true">⌕</span>
+              <input
+                id="toy-search"
+                type="search"
+                name="toy-search"
+                placeholder="Search stims by name, tag, or capability…"
+                autocomplete="off"
+                aria-describedby="toy-search-hint"
+                inputmode="search"
+                list="toy-search-suggestions"
+              />
               <button
                 type="button"
-                class="active-filters__clear"
-                data-active-filters-clear
+                class="search-clear"
+                data-search-clear
+                aria-label="Clear search"
               >
-                Clear all
+                Clear
+              </button>
+              <span id="toy-search-hint" class="search-field__hint">
+                / focus • ↵ open match
+              </span>
+              <datalist id="toy-search-suggestions"></datalist>
+            </form>
+            <div class="search-meta">
+              <p
+                class="search-meta__results"
+                data-search-results
+                role="status"
+                aria-live="polite"
+              >
+                Loading library…
+              </p>
+            </div>
+          </div>
+          <div class="active-filters" data-active-filters hidden>
+            <span class="active-filters__label">Active</span>
+            <div class="active-filters__chips" data-active-filters-chips></div>
+            <button
+              type="button"
+              class="active-filters__clear"
+              data-active-filters-clear
+            >
+              Clear all
+            </button>
+          </div>
+          <div class="filter-row" role="group" aria-label="Curated filters">
+            <div class="chip-row" data-chip-row>
+              <button
+                type="button"
+                class="filter-chip"
+                data-filter-chip
+                data-filter-type="mood"
+                data-filter-value="calm"
+              >
+                Calm
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                data-filter-chip
+                data-filter-type="mood"
+                data-filter-value="energetic"
+              >
+                Energetic
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                data-filter-chip
+                data-filter-type="capability"
+                data-filter-value="microphone"
+              >
+                Microphone
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                data-filter-chip
+                data-filter-type="capability"
+                data-filter-value="motion"
+              >
+                Motion
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                data-filter-chip
+                data-filter-type="capability"
+                data-filter-value="demoAudio"
+              >
+                Demo audio
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                data-filter-chip
+                data-filter-type="feature"
+                data-filter-value="webgpu"
+              >
+                WebGPU
               </button>
             </div>
-            <div class="filter-row" role="group" aria-label="Curated filters">
-              <div class="chip-row" data-chip-row>
-                <button
-                  type="button"
-                  class="filter-chip"
-                  data-filter-chip
-                  data-filter-type="mood"
-                  data-filter-value="calm"
-                >
-                  Calm
-                </button>
-                <button
-                  type="button"
-                  class="filter-chip"
-                  data-filter-chip
-                  data-filter-type="mood"
-                  data-filter-value="energetic"
-                >
-                  Energetic
-                </button>
-                <button
-                  type="button"
-                  class="filter-chip"
-                  data-filter-chip
-                  data-filter-type="capability"
-                  data-filter-value="microphone"
-                >
-                  Microphone
-                </button>
-                <button
-                  type="button"
-                  class="filter-chip"
-                  data-filter-chip
-                  data-filter-type="capability"
-                  data-filter-value="motion"
-                >
-                  Motion
-                </button>
-                <button
-                  type="button"
-                  class="filter-chip"
-                  data-filter-chip
-                  data-filter-type="capability"
-                  data-filter-value="demoAudio"
-                >
-                  Demo audio
-                </button>
-                <button
-                  type="button"
-                  class="filter-chip"
-                  data-filter-chip
-                  data-filter-type="feature"
-                  data-filter-value="webgpu"
-                >
-                  WebGPU
-                </button>
-              </div>
-              <div class="filter-actions">
-                <button type="button" class="filter-reset" data-filter-reset>
-                  Clear filters
-                </button>
-                <label class="sort-control">
-                  <span>Sort</span>
-                  <select data-sort-control>
-                    <option value="featured">Featured</option>
-                    <option value="newest">Newest</option>
-                    <option value="immersive">Most immersive</option>
-                    <option value="az">A → Z</option>
-                  </select>
-                </label>
-              </div>
+            <div class="filter-actions">
+              <button type="button" class="filter-reset" data-filter-reset>
+                Clear filters
+              </button>
+              <label class="sort-control">
+                <span>Sort</span>
+                <select data-sort-control>
+                  <option value="featured">Featured</option>
+                  <option value="newest">Newest</option>
+                  <option value="immersive">Most immersive</option>
+                  <option value="az">A → Z</option>
+                </select>
+              </label>
             </div>
-          </search>
-        </div>
+          </div>
+        </search>
         <main id="toy-list" class="webtoy-container"></main>
       </section>
 
