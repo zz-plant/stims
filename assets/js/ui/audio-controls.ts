@@ -211,7 +211,7 @@ export function initAudioControls(
 
   const emphasizeDemoAudio = () => {
     setPrimaryRow(demoRow, true);
-    setPrimaryRow(micRow, true);
+    setPrimaryRow(micRow, false);
   };
 
   const buildMicrophoneErrorMessage = (message: string) => {
@@ -236,10 +236,10 @@ export function initAudioControls(
 
   if (preferDemoAudio && demoBtn instanceof HTMLButtonElement) {
     setPrimaryRow(demoRow, true);
-    setPrimaryRow(micRow, true);
+    setPrimaryRow(micRow, false);
   } else {
     setPrimaryRow(micRow, true);
-    setPrimaryRow(demoRow, true);
+    setPrimaryRow(demoRow, false);
   }
 
   if (options.initialStatus) {
