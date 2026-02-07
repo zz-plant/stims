@@ -1149,6 +1149,7 @@ export function createLibraryView({
   let filterResetButton;
   let searchSuggestions;
   let activeFiltersSummary;
+  let lastFilteredToys = [];
   let activeFiltersChips;
   let activeFiltersClear;
   const activeFilters = new Set();
@@ -1234,15 +1235,6 @@ export function createLibraryView({
     };
     return sortLabels[sortBy] ?? sortBy;
   };
-
-  const getActiveFilterLabels = () =>
-    Array.from(
-      document.querySelectorAll('[data-filter-chip].is-active'),
-    ).flatMap((chip) => {
-      const label = chip.textContent?.trim();
-      return label ? [label] : [];
-    });
-
   const normalizeCapabilityToken = (value) => {
     const normalized = value.toLowerCase();
     if (normalized === 'demoaudio' || normalized === 'demo-audio') {
@@ -1349,21 +1341,50 @@ export function createLibraryView({
     chip.setAttribute('aria-pressed', String(isActive));
   };
 
+  const resolveQuickLaunchToy = (list, query) => {
+    const trimmedQuery = query.trim().toLowerCase();
+    if (!trimmedQuery || list.length === 0) return null;
+
+    const exactMatch = list.find((toy) => {
+      const slug = toy.slug?.toLowerCase() ?? '';
+      const title = toy.title?.toLowerCase() ?? '';
+      return slug === trimmedQuery || title === trimmedQuery;
+    });
+
+    if (exactMatch) return exactMatch;
+    if (list.length === 1) return list[0];
+    return null;
+  };
+
   const updateResultsMeta = (visibleCount) => {
     const meta = ensureMetaNode();
     if (!meta) return;
-    const hasFilters = searchQuery.trim() || activeFilters.size > 0;
-    const descriptor = hasFilters ? 'matching stims' : 'total stims';
-    const parts = [`${visibleCount} ${descriptor}`];
+
     const trimmedQuery = searchQuery.trim();
+    const parts = [`${visibleCount} results`];
+
     if (trimmedQuery) {
-      parts.push(`Search: “${trimmedQuery}”`);
+      parts.push(`q: “${trimmedQuery}”`);
     }
-    const filterLabels = getActiveFilterLabels();
-    if (filterLabels.length > 0) {
-      parts.push(`Filters: ${filterLabels.join(', ')}`);
+
+    if (activeFilters.size > 0) {
+      parts.push(
+        `${activeFilters.size} filter${activeFilters.size === 1 ? '' : 's'}`,
+      );
     }
-    parts.push(`Sort: ${getSortLabel()}`);
+
+    if (sortBy !== 'featured') {
+      parts.push(getSortLabel());
+    }
+
+    const quickLaunchToy = resolveQuickLaunchToy(
+      lastFilteredToys,
+      trimmedQuery,
+    );
+    if (quickLaunchToy) {
+      parts.push(`↵ ${quickLaunchToy.title}`);
+    }
+
     meta.textContent = parts.join(' • ');
   };
 
@@ -1489,6 +1510,7 @@ export function createLibraryView({
     });
 
     const sorted = sortList(filtered);
+    lastFilteredToys = sorted;
     updateResultsMeta(sorted.length);
     return sorted;
   };
@@ -2065,6 +2087,74 @@ export function createLibraryView({
       clearButton.addEventListener('click', () => clearSearch());
       updateSearchClearState();
     }
+
+    const isEditableTarget = (target) => {
+      if (!(target instanceof HTMLElement)) return false;
+      if (target instanceof HTMLInputElement) return true;
+      if (target instanceof HTMLTextAreaElement) return true;
+      return target.isContentEditable;
+    };
+
+    const focusSearch = () => {
+      if (!(search instanceof HTMLInputElement)) return;
+      search.focus();
+      search.select();
+    };
+
+    search?.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        if (searchQuery.trim().length > 0) {
+          event.preventDefault();
+          clearSearch();
+        }
+        return;
+      }
+
+      const isPlainEnter =
+        event.key === 'Enter' &&
+        !event.shiftKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        !event.ctrlKey;
+      if (!isPlainEnter) return;
+
+      const quickLaunchToy = resolveQuickLaunchToy(
+        lastFilteredToys,
+        searchQuery,
+      );
+      if (!quickLaunchToy) return;
+
+      event.preventDefault();
+      openToy(quickLaunchToy);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      const target = event.target;
+      const isMetaShortcut =
+        event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey);
+      const isSlashShortcut =
+        event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey;
+      const isEscapeShortcut = event.key === 'Escape';
+
+      if (isMetaShortcut) {
+        event.preventDefault();
+        focusSearch();
+        return;
+      }
+
+      if (isSlashShortcut && !isEditableTarget(target)) {
+        event.preventDefault();
+        focusSearch();
+        return;
+      }
+
+      if (isEscapeShortcut && !isEditableTarget(target)) {
+        if (searchQuery.trim().length > 0 || activeFilters.size > 0) {
+          event.preventDefault();
+          clearAllFilters();
+        }
+      }
+    });
   };
 
   const init = async () => {
