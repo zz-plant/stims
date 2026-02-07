@@ -1498,26 +1498,37 @@ export function createLibraryView({
 
   const getMatchedFields = (toy, queryTokens) => {
     if (!queryTokens.length) return [];
-    const candidates = [
-      ['title', toy.title],
-      ['slug', toy.slug],
-      ['description', toy.description],
-      ...(toy.tags ?? []).map((tag) => ['tag', tag]),
-      ...(toy.moods ?? []).map((mood) => ['mood', mood]),
-      ...(toy.requiresWebGPU ? [['feature', 'WebGPU']] : []),
-    ];
 
-    const labels = [];
-    candidates.forEach(([type, value]) => {
-      const normalized = String(value).toLowerCase();
-      if (queryTokens.some((token) => normalized.includes(token))) {
-        if (type === 'tag') labels.push(`Tag: ${value}`);
-        else if (type === 'mood') labels.push(`Mood: ${value}`);
-        else labels.push(String(value));
+    const matchedSources = new Set();
+    queryTokens.forEach((token) => {
+      if (toy.title?.toLowerCase().includes(token)) matchedSources.add('Title');
+      if (toy.slug?.toLowerCase().includes(token)) matchedSources.add('Slug');
+      if (toy.description?.toLowerCase().includes(token)) {
+        matchedSources.add('Description');
+      }
+      if ((toy.tags ?? []).some((tag) => tag.toLowerCase().includes(token))) {
+        matchedSources.add('Tags');
+      }
+      if (
+        (toy.moods ?? []).some((mood) => mood.toLowerCase().includes(token))
+      ) {
+        matchedSources.add('Moods');
+      }
+      if (toy.requiresWebGPU && 'webgpu'.includes(token)) {
+        matchedSources.add('WebGPU');
+      }
+      if (toy.capabilities?.microphone && 'microphone mic'.includes(token)) {
+        matchedSources.add('Mic');
+      }
+      if (toy.capabilities?.demoAudio && 'demo audio'.includes(token)) {
+        matchedSources.add('Demo audio');
+      }
+      if (toy.capabilities?.motion && 'motion tilt gyro'.includes(token)) {
+        matchedSources.add('Motion');
       }
     });
 
-    return Array.from(new Set(labels)).slice(0, 3);
+    return Array.from(matchedSources).slice(0, 3);
   };
 
   const applyFilters = () => {
@@ -1758,17 +1769,13 @@ export function createLibraryView({
       matches.className = 'webtoy-card-match';
 
       const label = document.createElement('strong');
-      label.textContent = 'Matches:';
+      label.textContent = 'Matched in';
       matches.appendChild(label);
-      matches.appendChild(document.createTextNode(' '));
 
-      matchedFields.forEach((field, index) => {
+      matchedFields.forEach((field) => {
         const matchToken = document.createElement('mark');
         matchToken.textContent = field;
         matches.appendChild(matchToken);
-        if (index < matchedFields.length - 1) {
-          matches.appendChild(document.createTextNode(' '));
-        }
       });
 
       card.appendChild(matches);

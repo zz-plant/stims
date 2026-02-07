@@ -2344,16 +2344,23 @@ html:not(.light) .webtoy-card {
 .webtoy-card-match {
   margin-top: -2px;
   margin-bottom: 2px;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.webtoy-card-match strong {
+  font-weight: 600;
 }
 
 .webtoy-card-match mark {
-  background: rgba(99, 102, 241, 0.18);
+  background: rgba(99, 102, 241, 0.14);
   color: var(--text-color);
-  padding: 0.1rem 0.35rem;
+  padding: 0.08rem 0.4rem;
   border-radius: 999px;
-  margin-right: 0.25rem;
 }
 
 .webtoy-card-meta {
