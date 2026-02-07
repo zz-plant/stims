@@ -2136,7 +2136,7 @@ export function createLibraryView({
         event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey;
       const isEscapeShortcut = event.key === 'Escape';
 
-      if (isMetaShortcut) {
+      if (isMetaShortcut && !isEditableTarget(target)) {
         event.preventDefault();
         focusSearch();
         return;
