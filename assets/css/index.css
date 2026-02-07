@@ -38,12 +38,19 @@
   --radius-lg: 20px;
   --radius-md: 14px;
   --radius-pill: 999px;
-  --content-width: 1200px;
-  --section-gap: clamp(1.75rem, 3vw, 2.6rem);
+  --content-width: 1320px;
+  --section-gap: clamp(1.9rem, 2.8vw, 3rem);
   --accent-gradient: linear-gradient(
     120deg,
     rgba(106, 124, 143, 0.7),
     rgba(122, 125, 138, 0.55)
+  );
+  --panel-glass: color-mix(in srgb, var(--card-bg) 86%, transparent);
+  --panel-highlight: rgba(255, 255, 255, 0.08);
+  --aurora-soft: radial-gradient(
+    circle at 20% 10%,
+    color-mix(in srgb, var(--accent-color) 30%, transparent),
+    transparent 48%
   );
 }
 
@@ -77,6 +84,13 @@ html.light {
     120deg,
     rgba(91, 110, 130, 0.65),
     rgba(111, 115, 128, 0.5)
+  );
+  --panel-glass: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  --panel-highlight: rgba(255, 255, 255, 0.45);
+  --aurora-soft: radial-gradient(
+    circle at 20% 10%,
+    color-mix(in srgb, var(--accent-color) 18%, transparent),
+    transparent 52%
   );
   --shadow-strong:
     0 12px 28px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(91, 110, 130, 0.2);
@@ -199,6 +213,7 @@ footer {
   padding-left: max(var(--content-padding), env(safe-area-inset-left));
   max-width: var(--content-width);
   margin: 0 auto;
+  width: min(var(--content-width), 100%);
   display: flex;
   flex-direction: column;
   gap: var(--section-gap);
@@ -214,10 +229,16 @@ footer {
   top: clamp(0.5rem, 1vw, 1rem);
   z-index: 10;
   border-radius: var(--radius-pill);
-  background: var(--card-bg);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--panel-highlight) 70%, transparent),
+      transparent 55%
+    ),
+    var(--panel-glass);
   border: 1px solid var(--surface-border);
-  backdrop-filter: none;
-  box-shadow: none;
+  backdrop-filter: blur(8px) saturate(110%);
+  box-shadow: var(--shadow-soft);
   transition:
     box-shadow 0.3s ease,
     transform 0.3s ease,
@@ -229,9 +250,9 @@ footer {
 }
 
 .top-nav--scrolled {
-  box-shadow: none;
+  box-shadow: var(--shadow-surface);
   border-color: var(--surface-border);
-  transform: none;
+  transform: translateY(-1px);
 }
 
 @supports selector(:has(*)) {
@@ -420,7 +441,7 @@ header {
 
 section.intro {
   position: relative;
-  padding: clamp(2.4rem, 2.8vw + 1.6rem, 3.6rem);
+  padding: clamp(2.6rem, 3vw + 1.5rem, 3.9rem);
   border-radius: calc(var(--radius-lg) + 6px);
   background: var(--panel-gradient);
   border: 1px solid var(--surface-border);
@@ -469,9 +490,13 @@ section.intro > * {
 
 .intro-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 1rem;
   margin-top: 1.4rem;
+}
+
+.intro-grid > * {
+  min-height: 100%;
 }
 
 .intro-card {
@@ -499,10 +524,16 @@ header.hero {
   padding: clamp(2.4rem, 2vw + 1.4rem, 3.2rem);
   overflow: hidden;
   border-radius: 24px;
-  background: var(--card-bg);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--panel-highlight) 80%, transparent),
+      transparent 45%
+    ),
+    var(--aurora-soft), var(--card-bg);
   box-shadow: var(--shadow-surface);
   border: 1px solid var(--surface-border);
-  backdrop-filter: none;
+  backdrop-filter: blur(12px) saturate(120%);
 }
 
 .hero::before,
@@ -516,9 +547,18 @@ header.hero {
 }
 
 .hero::before {
-  background: none;
-  filter: none;
-  animation: none;
+  background:
+    radial-gradient(
+      circle at 80% 18%,
+      color-mix(in srgb, var(--accent-magenta) 22%, transparent),
+      transparent 48%
+    ),
+    radial-gradient(
+      circle at 18% 78%,
+      color-mix(in srgb, var(--accent-purple) 18%, transparent),
+      transparent 52%
+    );
+  filter: blur(2px);
 }
 
 .hero::after {
@@ -680,12 +720,12 @@ header.hero {
 
 .quick-start-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.1rem;
 }
 
 .quick-card {
-  padding: 1.2rem 1.3rem;
+  padding: 1.25rem 1.3rem;
   border-radius: var(--radius-lg);
   background: var(--surface-gradient);
   border: 1px solid var(--surface-border);
@@ -810,7 +850,33 @@ header.hero {
 .preview-reel {
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
-  backdrop-filter: none;
+  backdrop-filter: blur(6px) saturate(110%);
+}
+
+.signal-card,
+.quick-card,
+.callout-card,
+.repo-status__metric,
+.preview-meta {
+  transition:
+    transform 0.24s ease,
+    box-shadow 0.24s ease,
+    border-color 0.24s ease,
+    background-color 0.24s ease;
+}
+
+.signal-card:hover,
+.quick-card:hover,
+.callout-card:hover,
+.repo-status__metric:hover,
+.preview-meta:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(
+    in srgb,
+    var(--accent-color) 34%,
+    var(--surface-border)
+  );
+  box-shadow: var(--shadow-surface);
 }
 
 .preview-track {
@@ -1354,9 +1420,14 @@ button.text-link {
 }
 
 .cta-button.primary {
-  background: var(--accent-color);
+  background: linear-gradient(
+    130deg,
+    color-mix(in srgb, var(--accent-color) 88%, white),
+    color-mix(in srgb, var(--accent-purple) 70%, var(--accent-color))
+  );
   color: var(--accent-contrast);
-  box-shadow: none;
+  box-shadow: 0 14px 32px
+    color-mix(in srgb, var(--accent-color) 34%, transparent);
 }
 
 .cta-button--accent {
@@ -1392,7 +1463,24 @@ button.text-link {
 
 .cta-button.primary:hover {
   color: var(--accent-contrast);
-  box-shadow: var(--shadow-soft);
+  box-shadow:
+    0 18px 34px color-mix(in srgb, var(--accent-color) 42%, transparent),
+    var(--shadow-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-nav,
+  header.hero,
+  .signal-card,
+  .quick-card,
+  .callout-card,
+  .repo-status__metric,
+  .preview-meta,
+  .cta-button {
+    backdrop-filter: none;
+    transition: none;
+    transform: none;
+  }
 }
 
 .cta-button:focus-visible {
@@ -1637,6 +1725,16 @@ html.light .repo-status__metric {
   line-height: 1.6;
 }
 
+@media (min-width: 1180px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  }
+
+  .quick-start-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .experience {
   position: relative;
   padding: clamp(1.6rem, 2vw + 1rem, 2.6rem);
@@ -1739,9 +1837,9 @@ html.light .experience-card {
 .library-search {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
   margin-top: 1.2rem;
-  padding: clamp(1.2rem, 2.2vw, 1.7rem);
+  padding: clamp(1.25rem, 2.3vw, 1.8rem);
   border-radius: calc(var(--radius-lg) + 6px);
   border: 1px solid
     color-mix(in srgb, var(--accent-color) 18%, var(--surface-border));
@@ -1754,6 +1852,9 @@ html.light .experience-card {
     ),
     var(--surface-gradient);
   box-shadow: var(--shadow-strong);
+  position: sticky;
+  top: clamp(4.6rem, 9vh, 6rem);
+  z-index: 6;
 }
 
 .search-heading {
@@ -1777,12 +1878,13 @@ html.light .experience-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.85rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .search-meta {
   display: grid;
   gap: 0.25rem;
+  align-content: center;
   padding: 0.75rem 0.95rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--surface-border);
@@ -2173,8 +2275,8 @@ html.light .active-filters__label {
 
 .webtoy-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: calc(var(--section-gap) * 0.7);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: calc(var(--section-gap) * 0.62);
   margin: 0 auto;
 }
 
@@ -2201,7 +2303,7 @@ html.light .active-filters__label {
   background:
     var(--surface-highlight), var(--surface-texture), var(--surface-gradient);
   border-radius: var(--radius-lg);
-  padding: 1.35rem 1.25rem;
+  padding: 1.15rem 1.1rem;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -2223,7 +2325,7 @@ html.light .active-filters__label {
   position: relative;
   overflow: hidden;
   touch-action: manipulation;
-  min-height: clamp(220px, 24vw, 260px);
+  min-height: clamp(198px, 20vw, 238px);
   isolation: isolate;
 }
 
@@ -2330,13 +2432,13 @@ html:not(.light) .webtoy-card {
 }
 
 .webtoy-card h3 {
-  font-size: 1.35rem;
+  font-size: 1.08rem;
   margin: 0;
   color: var(--text-color);
 }
 
 .webtoy-card p {
-  font-size: 0.95rem;
+  font-size: 0.86rem;
   color: var(--text-muted);
   line-height: 1.5;
 }
@@ -2765,6 +2867,10 @@ footer {
 
   .search-row {
     grid-template-columns: 1fr;
+  }
+
+  .library-search {
+    position: static;
   }
 
   .search-row > * {
