@@ -1496,6 +1496,30 @@ export function createLibraryView({
       .split(/[\s,]+/)
       .filter(Boolean);
 
+  const getMatchedFields = (toy, queryTokens) => {
+    if (!queryTokens.length) return [];
+    const candidates = [
+      ['title', toy.title],
+      ['slug', toy.slug],
+      ['description', toy.description],
+      ...(toy.tags ?? []).map((tag) => ['tag', tag]),
+      ...(toy.moods ?? []).map((mood) => ['mood', mood]),
+      ...(toy.requiresWebGPU ? [['feature', 'WebGPU']] : []),
+    ];
+
+    const labels = [];
+    candidates.forEach(([type, value]) => {
+      const normalized = String(value).toLowerCase();
+      if (queryTokens.some((token) => normalized.includes(token))) {
+        if (type === 'tag') labels.push(`Tag: ${value}`);
+        else if (type === 'mood') labels.push(`Mood: ${value}`);
+        else labels.push(String(value));
+      }
+    });
+
+    return Array.from(new Set(labels)).slice(0, 3);
+  };
+
   const applyFilters = () => {
     const queryTokens = getQueryTokens(searchQuery);
     const filtered = allToys.filter((toy) => {
@@ -1727,6 +1751,28 @@ export function createLibraryView({
     desc.textContent = toy.description;
     card.appendChild(title);
     card.appendChild(desc);
+
+    const matchedFields = getMatchedFields(toy, getQueryTokens(searchQuery));
+    if (matchedFields.length > 0) {
+      const matches = document.createElement('p');
+      matches.className = 'webtoy-card-match';
+
+      const label = document.createElement('strong');
+      label.textContent = 'Matches:';
+      matches.appendChild(label);
+      matches.appendChild(document.createTextNode(' '));
+
+      matchedFields.forEach((field, index) => {
+        const matchToken = document.createElement('mark');
+        matchToken.textContent = field;
+        matches.appendChild(matchToken);
+        if (index < matchedFields.length - 1) {
+          matches.appendChild(document.createTextNode(' '));
+        }
+      });
+
+      card.appendChild(matches);
+    }
 
     if (enableCapabilityBadges) {
       const metaRow = document.createElement('div');

@@ -3,6 +3,7 @@ import {
   attachCapabilityPreflight,
   type CapabilityPreflightResult,
 } from './core/capability-preflight.ts';
+import { setRendererTelemetryHandler } from './core/renderer-capabilities.ts';
 import toyManifest from './data/toy-manifest.ts';
 import type { ToyEntry } from './data/toy-schema.ts';
 import { createLibraryView } from './library-view.js';
@@ -24,6 +25,7 @@ type LoaderOverrides = {
 };
 
 type Toy = Pick<ToyEntry, 'slug' | 'title'>;
+type ToyWithControls = Pick<ToyEntry, 'slug' | 'controls'>;
 
 const runInit = (label: string, init: () => void | Promise<void>) => {
   Promise.resolve()
@@ -38,7 +40,31 @@ const resolveToyTitle = (slug: string | null, toys: Toy[]) => {
   return toys.find((toy) => toy.slug === slug)?.title ?? slug;
 };
 
+const recordRendererTelemetry = () => {
+  setRendererTelemetryHandler((_event, detail) => {
+    try {
+      const key = 'stims:renderer-support-stats';
+      const raw = window.localStorage.getItem(key);
+      const existing = raw ? JSON.parse(raw) : {};
+      const stats = {
+        samples: Number(existing.samples ?? 0) + 1,
+        webgpu: Number(existing.webgpu ?? 0) + Number(detail.isWebGPUSupported),
+        webglFallback:
+          Number(existing.webglFallback ?? 0) +
+          Number(!detail.isWebGPUSupported),
+        lastFallbackReason: detail.fallbackReason,
+        lastUpdatedAt: new Date().toISOString(),
+      };
+      window.localStorage.setItem(key, JSON.stringify(stats));
+    } catch (_error) {
+      // Ignore telemetry persistence failures.
+    }
+  });
+};
+
 const startApp = async () => {
+  recordRendererTelemetry();
+
   const router = createRouter();
   const defaultLoader = createLoader({ router });
   const loaderOverrides =
@@ -86,7 +112,7 @@ const startApp = async () => {
           searchInputId: 'toy-search',
           cardElement: 'a',
           enableIcons: false,
-          enableCapabilityBadges: false,
+          enableCapabilityBadges: true,
           enableKeyboardHandlers: true,
           enableDarkModeToggle: true,
           themeToggleId: 'theme-toggle',
@@ -164,6 +190,14 @@ const startApp = async () => {
     const setupAudio = (result: CapabilityPreflightResult | null) => {
       if (!audioControlsContainer) return;
 
+      const starterTips = (() => {
+        if (!toySlug) return [];
+        const toyWithControls = (toyManifest as ToyWithControls[]).find(
+          (entry) => entry.slug === toySlug,
+        );
+        return toyWithControls?.controls ?? [];
+      })();
+
       initAudioControls(audioControlsContainer, {
         onRequestMicrophone: async () => {
           startLoaderIfNeeded();
@@ -203,6 +237,7 @@ const startApp = async () => {
           if (!starter) throw new Error('Audio starter unavailable.');
           await starter({ stream });
         },
+        starterTips,
         ...buildAudioInitState(result),
       });
     };

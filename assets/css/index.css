@@ -2341,6 +2341,21 @@ html:not(.light) .webtoy-card {
   line-height: 1.5;
 }
 
+.webtoy-card-match {
+  margin-top: -2px;
+  margin-bottom: 2px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.webtoy-card-match mark {
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--text-color);
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  margin-right: 0.25rem;
+}
+
 .webtoy-card-meta {
   display: flex;
   flex-wrap: wrap;

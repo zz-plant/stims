@@ -9,6 +9,7 @@ export interface AudioControlsOptions {
   statusElement?: HTMLElement;
   initialStatus?: { message: string; variant?: 'success' | 'error' };
   preferDemoAudio?: boolean;
+  starterTips?: string[];
 }
 
 export function initAudioControls(
@@ -40,21 +41,36 @@ export function initAudioControls(
     <p class="control-panel__description">
       Choose how this toy listens.
     </p>
+    ${
+      options.starterTips && options.starterTips.length > 0
+        ? `
+    <div class="control-panel__quickstart" data-quickstart-panel>
+      <span class="control-panel__label">Quick start tips</span>
+      <ul class="control-panel__tips">
+        ${options.starterTips
+          .slice(0, 3)
+          .map((tip) => `<li>${tip}</li>`)
+          .join('')}
+      </ul>
+    </div>
+    `
+        : ''
+    }
     <div class="control-panel__row" data-audio-row="mic">
       <div class="control-panel__text">
         <span class="control-panel__label">Live mic</span>
-        <span class="control-panel__subtext">Best for real-time sound.</span>
+        <span class="control-panel__subtext">Best for live instruments, voice, and ambient sound.</span>
       </div>
       <button id="start-audio-btn" class="cta-button primary" type="button">
-        Start mic
+        Use microphone
       </button>
     </div>
     <div class="control-panel__row" data-audio-row="demo">
       <div class="control-panel__text">
         <span class="control-panel__label">Curated demo</span>
-        <span class="control-panel__subtext">Instant start with built-in audio.</span>
+        <span class="control-panel__subtext">Fastest way to preview visuals without permissions.</span>
       </div>
-      <button id="use-demo-audio" class="cta-button" type="button">Play demo</button>
+      <button id="use-demo-audio" class="cta-button primary" type="button">Use demo audio</button>
     </div>
 
     ${
@@ -194,14 +210,8 @@ export function initAudioControls(
   };
 
   const emphasizeDemoAudio = () => {
-    if (demoBtn instanceof HTMLButtonElement) {
-      demoBtn.classList.add('primary');
-    }
-    if (micBtn instanceof HTMLButtonElement) {
-      micBtn.classList.remove('primary');
-    }
     setPrimaryRow(demoRow, true);
-    setPrimaryRow(micRow, false);
+    setPrimaryRow(micRow, true);
   };
 
   const buildMicrophoneErrorMessage = (message: string) => {
@@ -225,15 +235,11 @@ export function initAudioControls(
     options.preferDemoAudio ?? readStoredSource() === 'demo';
 
   if (preferDemoAudio && demoBtn instanceof HTMLButtonElement) {
-    demoBtn.classList.add('primary');
-    if (micBtn instanceof HTMLButtonElement) {
-      micBtn.classList.remove('primary');
-    }
     setPrimaryRow(demoRow, true);
-    setPrimaryRow(micRow, false);
+    setPrimaryRow(micRow, true);
   } else {
     setPrimaryRow(micRow, true);
-    setPrimaryRow(demoRow, false);
+    setPrimaryRow(demoRow, true);
   }
 
   if (options.initialStatus) {
