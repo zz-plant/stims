@@ -11,7 +11,7 @@ import {
   MEDIA_QUERIES,
   matchesMediaQuery,
   maxWidthQuery,
-} from '../utils/breakpoints.ts';
+} from '../utils/breakpoints';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createToyQualityControls } from '../utils/toy-settings';

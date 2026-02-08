@@ -1,15 +1,22 @@
-import type { HemisphereLight, Light, Mesh } from 'three';
-import { Color, MathUtils } from 'three';
-import type { AnimationContext } from '../../core/animation-loop';
-import { getContextFrequencyData } from '../../core/animation-loop';
+import {
+  Color,
+  type HemisphereLight,
+  type Light,
+  MathUtils,
+  type Mesh,
+} from 'three';
+import {
+  type AnimationContext,
+  getContextFrequencyData,
+} from '../../core/animation-loop';
 import type WebToy from '../../core/web-toy';
 import {
   applyAudioRotation,
   applyAudioScale,
-} from '../../utils/animation-utils.ts';
-import { getWeightedAverageFrequency } from '../../utils/audio-handler.ts';
+} from '../../utils/animation-utils';
+import { getWeightedAverageFrequency } from '../../utils/audio-handler';
 import { createManagedAudioFlow } from '../../utils/audio-ui-flow';
-import PatternRecognizer from '../../utils/patternRecognition.ts';
+import PatternRecognizer from '../../utils/patternRecognition';
 
 type AudioControllerOptions = {
   doc: Document;

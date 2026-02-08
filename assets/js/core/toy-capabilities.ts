@@ -1,4 +1,4 @@
-import type { ensureWebGL } from '../utils/webgl-check.ts';
+import type { ensureWebGL } from '../utils/webgl-check';
 import type { RendererCapabilities } from './renderer-capabilities.ts';
 
 type ToyCapabilityOptions = {

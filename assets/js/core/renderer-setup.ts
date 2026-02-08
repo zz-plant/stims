@@ -1,8 +1,8 @@
 /* global GPUAdapter, GPUDevice */
 import { ACESFilmicToneMapping, SRGBColorSpace, WebGLRenderer } from 'three';
-import { isMobileDevice } from '../utils/device-detect.ts';
-import { ensureWebGL } from '../utils/webgl-check.ts';
-import { createWebGLRenderer } from '../utils/webgl-renderer.ts';
+import { isMobileDevice } from '../utils/device-detect';
+import { ensureWebGL } from '../utils/webgl-check';
+import { createWebGLRenderer } from '../utils/webgl-renderer';
 import {
   getRendererCapabilities,
   type RendererBackend,

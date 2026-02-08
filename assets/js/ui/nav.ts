@@ -3,15 +3,15 @@ import {
   getMediaQueryList,
   isBelowBreakpoint,
   maxWidthQuery,
-} from '../utils/breakpoints.ts';
-import { isMobileDevice } from '../utils/device-detect.ts';
+} from '../utils/breakpoints';
+import { isMobileDevice } from '../utils/device-detect';
 import {
   exitToyPictureInPicture,
   getToyPictureInPictureVideo,
   isPictureInPictureSupported,
   isToyPictureInPictureActive,
   requestToyPictureInPicture,
-} from '../utils/picture-in-picture.ts';
+} from '../utils/picture-in-picture';
 
 export interface NavOptions {
   mode: 'library' | 'toy';

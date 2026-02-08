@@ -1,5 +1,5 @@
-import { isMobileDevice } from '../utils/device-detect.ts';
-import { getRenderingSupport } from '../utils/rendering-support.ts';
+import { isMobileDevice } from '../utils/device-detect';
+import { getRenderingSupport } from '../utils/rendering-support';
 import {
   getActiveRenderPreferences,
   setRenderPreferences,

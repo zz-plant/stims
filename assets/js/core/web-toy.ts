@@ -12,8 +12,8 @@ import type {
   LightConfig,
 } from '../lighting/lighting-setup';
 import { initAmbientLight, initLighting } from '../lighting/lighting-setup';
-import type { FrequencyAnalyser } from '../utils/audio-handler.ts';
-import { ensureWebGL } from '../utils/webgl-check.ts';
+import type { FrequencyAnalyser } from '../utils/audio-handler';
+import { ensureWebGL } from '../utils/webgl-check';
 import { initCamera } from './camera-setup.ts';
 import type { RendererInitConfig } from './renderer-setup.ts';
 import { initScene, type SceneConfig } from './scene-setup.ts';
