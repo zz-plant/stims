@@ -1,4 +1,5 @@
-import { getRenderingSupport, isMobileDevice } from '../utils';
+import { isMobileDevice } from '../utils/device-detect';
+import { getRenderingSupport } from '../utils/rendering-support';
 import {
   getActiveRenderPreferences,
   setRenderPreferences,

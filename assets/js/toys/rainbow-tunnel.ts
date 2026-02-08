@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
+import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import {
-  createToyQualityControls,
-  createToyRuntimeStarter,
   disposeGeometry,
   disposeMaterial,
   disposeMesh,
-  getWeightedAverageFrequency,
-} from '../utils';
+} from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
+import { createToyQualityControls } from '../utils/toy-settings';
 
 interface RingData {
   outer: THREE.Mesh;

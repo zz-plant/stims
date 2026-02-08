@@ -1,5 +1,5 @@
 import type * as THREE from 'three';
-import { createSharedInitializer } from '../../utils';
+import { createSharedInitializer } from '../../utils/shared-initializer';
 import {
   getActiveRenderPreferences,
   subscribeToRenderPreferences,

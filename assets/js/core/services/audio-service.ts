@@ -4,7 +4,7 @@ import {
   type FrequencyAnalyser,
   getMicrophonePermissionState,
   initAudio,
-} from '../../utils';
+} from '../../utils/audio-handler';
 
 export type AudioHandle = {
   analyser: FrequencyAnalyser;

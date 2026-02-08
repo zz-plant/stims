@@ -1,14 +1,11 @@
 import * as THREE from 'three';
 import { registerToyGlobals } from '../core/toy-globals';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import type { UnifiedInputState, UnifiedPointer } from '../utils';
-import {
-  createRuntimeAudioStarter,
-  createToyQualityControls,
-  createToyRuntimeStarter,
-  disposeGeometry,
-  disposeMaterial,
-} from '../utils';
+import { createRuntimeAudioStarter } from '../utils/audio-start-helpers';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
+import { createToyQualityControls } from '../utils/toy-settings';
+import type { UnifiedInputState, UnifiedPointer } from '../utils/unified-input';
 
 type TideBlob = {
   position: THREE.Vector2;

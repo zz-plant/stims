@@ -1,6 +1,6 @@
 import { initAudioControls } from './ui/audio-controls.ts';
 import { initNavigation as renderNav } from './ui/nav.ts';
-import type { ToyAudioRequest } from './utils';
+import type { ToyAudioRequest } from './utils/audio-start';
 
 type DocumentGetter = () => Document | null;
 

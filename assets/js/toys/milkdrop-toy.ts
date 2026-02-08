@@ -1,12 +1,9 @@
 import * as THREE from 'three';
-import {
-  createToyQualityControls,
-  createToyRuntimeStarter,
-  disposeGeometry,
-  disposeMaterial,
-  FeedbackManager,
-  WarpShader,
-} from '../utils';
+import FeedbackManager from '../utils/feedback-manager';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
+import { createToyQualityControls } from '../utils/toy-settings';
+import WarpShader from '../utils/warp-shader';
 
 export function start({ container }: { container?: HTMLElement | null } = {}) {
   let feedback: FeedbackManager | null = null;

@@ -1,14 +1,13 @@
 import * as THREE from 'three';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
+import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
+import { disposeObject3D } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  type AudioColorParams,
-  applyAudioColor,
   buildSingleSelectPanel,
   createToyQualityControls,
-  createToyRuntimeStarter,
-  disposeObject3D,
-  getWeightedAverageFrequency,
-} from '../utils';
+} from '../utils/toy-settings';
 
 type ShapeMode = 'cubes' | 'spheres';
 

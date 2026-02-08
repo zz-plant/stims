@@ -1,4 +1,4 @@
-import { getRenderingSupport } from './utils';
+import { getRenderingSupport } from './utils/rendering-support';
 
 const STATUS = {
   success: 'success',

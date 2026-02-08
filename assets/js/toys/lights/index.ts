@@ -1,4 +1,4 @@
-import { ensureWebGL } from '../../utils';
+import { ensureWebGL } from '../../utils/webgl-check';
 import { createAudioController } from './audio';
 import { applyLighting, createLightsScene } from './lighting';
 import { createLightsUI } from './ui';

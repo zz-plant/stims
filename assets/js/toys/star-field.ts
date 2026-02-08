@@ -4,15 +4,12 @@ import {
   type PerformanceSettings,
 } from '../core/performance-panel';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import type { UnifiedInputState } from '../utils';
-import {
-  applyAudioColor,
-  createToyQualityControlsWithPerformance,
-  createToyRuntimeStarter,
-  disposeGeometry,
-  disposeMaterial,
-  getWeightedAverageFrequency,
-} from '../utils';
+import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import { applyAudioColor } from '../utils/color-audio';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
+import { createToyQualityControlsWithPerformance } from '../utils/toy-settings';
+import type { UnifiedInputState } from '../utils/unified-input';
 
 type StarFieldBuffers = {
   geometry: THREE.BufferGeometry;

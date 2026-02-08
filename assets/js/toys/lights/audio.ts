@@ -6,10 +6,10 @@ import type WebToy from '../../core/web-toy';
 import {
   applyAudioRotation,
   applyAudioScale,
-  createManagedAudioFlow,
-  getWeightedAverageFrequency,
-  PatternRecognizer,
-} from '../../utils';
+} from '../../utils/animation-utils';
+import { getWeightedAverageFrequency } from '../../utils/audio-handler';
+import { createManagedAudioFlow } from '../../utils/audio-ui-flow';
+import PatternRecognizer from '../../utils/patternRecognition';
 
 type AudioControllerOptions = {
   doc: Document;
