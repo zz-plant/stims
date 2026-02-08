@@ -1,0 +1,144 @@
+/* General Styles */
+body {
+  font-family: "Arial", sans-serif;
+  background-color: #1c2026;
+  color: #f2f4f7;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: background-color 0.5s ease;
+}
+
+header {
+  padding: 20px;
+  background-color: #262c34;
+  color: #f2f4f7;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#search-container {
+  margin: 20px 0;
+}
+
+#search-bar {
+  padding: 10px;
+  width: 80%;
+  max-width: 500px;
+  border: 1px solid #3a424d;
+  border-radius: 4px;
+  background-color: #262c34;
+  color: #f2f4f7;
+  transition: all 0.3s;
+  font-size: 1rem;
+  min-height: 44px;
+}
+
+#search-bar:focus,
+#search-bar:focus-visible {
+  border-color: #7a8fa5;
+  outline: 2px solid rgba(122, 143, 165, 0.9);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(122, 143, 165, 0.35);
+}
+
+/* Webtoy Cards */
+#webtoy-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 1200px;
+  gap: 20px;
+  container-type: inline-size;
+  container-name: webtoy-grid;
+}
+
+.webtoy-card {
+  background-color: #242a33;
+  margin: 10px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: clamp(220px, 30cqi, 280px);
+  transition:
+    transform 0.3s,
+    background-color 0.3s;
+}
+
+@container webtoy-grid (max-width: 560px) {
+  .webtoy-card {
+    width: min(100%, 320px);
+  }
+}
+
+.webtoy-card:hover {
+  transform: scale(1.05);
+  background-color: #2c3340;
+}
+
+.webtoy-card h3 {
+  margin-top: 0;
+  font-size: 1.4em;
+}
+
+.webtoy-card a {
+  color: #9ab0c6;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.webtoy-card a:hover {
+  color: #c1cfdf;
+  text-decoration: underline;
+}
+
+/* Footer */
+footer {
+  padding: 10px;
+  background-color: #262c34;
+  color: #9aa3ad;
+  width: 100%;
+  position: fixed;
+  bottom: 0;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+footer a {
+  color: #9ab0c6;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+footer a:hover {
+  color: #c1cfdf;
+}
+
+/* Button Styling */
+button {
+  background-color: #6f8195;
+  color: #fdfdfd;
+  border: none;
+  padding: 10px 20px;
+  margin-top: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+}
+
+button:hover {
+  background-color: #7f8f9f;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
