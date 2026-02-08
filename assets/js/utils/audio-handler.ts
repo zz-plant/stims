@@ -118,8 +118,9 @@ export class FrequencyAnalyser {
 
   getFrequencyData() {
     if (this.analyserNode) {
-      // biome-ignore lint/suspicious/noExplicitAny: ArrayBuffer mismatch
-      this.analyserNode.getByteFrequencyData(this.frequencyData as any);
+      this.analyserNode.getByteFrequencyData(
+        this.frequencyData as Uint8Array<ArrayBuffer>,
+      );
     }
 
     return this.frequencyData;

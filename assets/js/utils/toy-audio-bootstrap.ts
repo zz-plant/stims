@@ -15,8 +15,15 @@ interface ToyAudioStartHandlers {
   onError?: ToyAudioErrorHandler;
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: flexible toy instances in HTML modules
-type ToyWithAudio = any;
+type ToyWithAudio = {
+  rendererReady?: Promise<unknown>;
+  renderer: {
+    setAnimationLoop: ((callback: () => void) => void) | null;
+  } | null;
+  analyser: Awaited<ReturnType<typeof initAudio>>['analyser'] | null;
+  audioCleanup: Awaited<ReturnType<typeof initAudio>>['cleanup'] | null;
+  initAudio: (audioOptions?: AudioInitOptions) => Promise<unknown>;
+};
 
 export function createToyAudioBootstrap(
   toy: ToyWithAudio,
