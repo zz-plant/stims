@@ -5,15 +5,16 @@ import {
 } from '../core/performance-panel';
 import type { QualityPreset } from '../core/settings-panel';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { getWeightedAverageFrequency } from '../utils/audio-handler';
-import { applyAudioColor } from '../utils/color-audio';
-import { createPerformanceSettingsHandler } from '../utils/performance-settings';
-import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
-import { createAudioToyStarter } from '../utils/toy-runtime-starter';
 import {
+  applyAudioColor,
   buildToySettingsPanelWithPerformance,
+  createAudioToyStarter,
+  createPerformanceSettingsHandler,
   createToyQualityControls,
-} from '../utils/toy-settings';
+  disposeGeometry,
+  disposeMaterial,
+  getWeightedAverageFrequency,
+} from '../utils';
 
 type PresetKey = 'orbit' | 'nebula';
 

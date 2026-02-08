@@ -1,15 +1,15 @@
 import type {
   AudioInitOptions,
   FrequencyAnalyser,
-} from '../utils/audio-handler';
-import type { ToyAudioRequest } from '../utils/audio-start';
-import { resolveToyAudioOptions } from '../utils/audio-start';
-import { startToyAudio } from '../utils/start-audio';
+  ToyAudioRequest,
+} from '../utils';
 import {
   createUnifiedInput,
+  resolveToyAudioOptions,
+  startToyAudio,
   type UnifiedInputOptions,
   type UnifiedInputState,
-} from '../utils/unified-input';
+} from '../utils';
 import type { AnimationContext } from './animation-loop';
 import { getContextFrequencyData } from './animation-loop';
 import {

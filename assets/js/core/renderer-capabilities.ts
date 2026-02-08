@@ -1,6 +1,6 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
-import { isMobileDevice } from '../utils/device-detect.ts';
+import { isMobileDevice } from '../utils';
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 
 export type RendererBackend = 'webgl' | 'webgpu';

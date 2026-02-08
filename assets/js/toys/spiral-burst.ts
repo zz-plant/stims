@@ -4,19 +4,19 @@ import {
   type PerformanceSettings,
 } from '../core/performance-panel';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { createBeatTracker } from '../utils/audio-beat';
-import type { FrequencyAnalyser } from '../utils/audio-handler';
-import { getWeightedAverageFrequency } from '../utils/audio-handler';
-import { mapFrequencyToItems } from '../utils/audio-mapper';
-import { applyAudioColor } from '../utils/color-audio';
-import { createPerformanceSettingsHandler } from '../utils/performance-settings';
-import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
-import { createAudioToyStarter } from '../utils/toy-runtime-starter';
+import type { FrequencyAnalyser, UnifiedInputState } from '../utils';
 import {
+  applyAudioColor,
   buildToySettingsPanelWithPerformance,
+  createAudioToyStarter,
+  createBeatTracker,
+  createPerformanceSettingsHandler,
   createToyQualityControls,
-} from '../utils/toy-settings';
-import type { UnifiedInputState } from '../utils/unified-input';
+  disposeGeometry,
+  disposeMaterial,
+  getWeightedAverageFrequency,
+  mapFrequencyToItems,
+} from '../utils';
 
 type SpiralMode = 'burst' | 'bloom' | 'vortex' | 'heartbeat';
 

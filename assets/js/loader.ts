@@ -16,10 +16,12 @@ import toyManifest from './data/toy-manifest.ts';
 import type { ToyEntry } from './data/toy-schema.ts';
 import { createRouter, type Route } from './router.ts';
 import { createToyView } from './toy-view.ts';
-import { createManifestClient } from './utils/manifest-client.ts';
-import { resetToyPictureInPicture } from './utils/picture-in-picture.ts';
-import { loadToyModuleStarter } from './utils/toy-module-loader.ts';
-import { ensureWebGL } from './utils/webgl-check.ts';
+import {
+  createManifestClient,
+  ensureWebGL,
+  loadToyModuleStarter,
+  resetToyPictureInPicture,
+} from './utils';
 
 type Toy = ToyEntry;
 

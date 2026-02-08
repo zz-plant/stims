@@ -1,5 +1,5 @@
 import type * as THREE from 'three';
-import { createSharedInitializer } from '../../utils/shared-initializer.ts';
+import { createSharedInitializer } from '../../utils';
 import {
   getActiveRenderPreferences,
   subscribeToRenderPreferences,

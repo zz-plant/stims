@@ -12,9 +12,7 @@ import {
   SpotLight,
   Vector2,
 } from 'three';
-import { createUnifiedInput } from '../utils/unified-input';
-import { ensureWebGL } from '../utils/webgl-check';
-import { createWebGLRenderer } from '../utils/webgl-renderer';
+import { createUnifiedInput, createWebGLRenderer, ensureWebGL } from '../utils';
 
 type ClayStartOptions = {
   container?: HTMLElement | null;

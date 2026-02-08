@@ -29,15 +29,16 @@ import {
 } from '../core/postprocessing';
 import { PersistentSettingsPanel } from '../core/settings-panel';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { createBeatTracker } from '../utils/audio-beat';
-import type { FrequencyAnalyser } from '../utils/audio-handler';
-import { createPerformanceSettingsHandler } from '../utils/performance-settings';
-import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
-import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
+import type { FrequencyAnalyser } from '../utils';
 import {
   buildToySettingsPanelWithPerformance,
+  createBeatTracker,
+  createPerformanceSettingsHandler,
   createToyQualityControls,
-} from '../utils/toy-settings';
+  createToyRuntimeStarter,
+  disposeGeometry,
+  disposeMaterial,
+} from '../utils';
 
 type NeonTheme = 'synthwave' | 'cyberpunk' | 'arctic' | 'sunset';
 

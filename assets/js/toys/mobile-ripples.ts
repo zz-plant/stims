@@ -4,17 +4,18 @@ import {
   type QualityPreset,
 } from '../core/settings-panel';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { getBandAverage } from '../utils/audio-bands';
-import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import {
   BREAKPOINTS,
+  createToyQualityControls,
+  createToyRuntimeStarter,
+  disposeGeometry,
+  disposeMaterial,
+  getBandAverage,
+  getWeightedAverageFrequency,
   MEDIA_QUERIES,
   matchesMediaQuery,
   maxWidthQuery,
-} from '../utils/breakpoints.ts';
-import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
-import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControls } from '../utils/toy-settings';
+} from '../utils';
 
 const MOBILE_QUALITY_PRESET: QualityPreset = {
   id: 'mobile',

@@ -1,4 +1,4 @@
-import { createUnifiedInput } from './utils/unified-input';
+import { createUnifiedInput } from './utils';
 
 /**
  * Hero Canvas - Ambient particle animation for the landing page

@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { getBandAverage } from '../utils/audio-bands';
-import { getWeightedAverageFrequency } from '../utils/audio-handler';
-import { disposeGeometry, disposeMesh } from '../utils/three-dispose';
-import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControls } from '../utils/toy-settings';
-import type { UnifiedInputState } from '../utils/unified-input';
+import type { UnifiedInputState } from '../utils';
+import {
+  createToyQualityControls,
+  createToyRuntimeStarter,
+  disposeGeometry,
+  disposeMesh,
+  getBandAverage,
+  getWeightedAverageFrequency,
+} from '../utils';
 
 type AuroraPalette = {
   name: string;

@@ -1,4 +1,4 @@
-import type { ToyAudioRequest } from '../utils/audio-start';
+import type { ToyAudioRequest } from '../utils';
 
 export interface ToyWindow extends Window {
   startAudio?: (request?: ToyAudioRequest) => Promise<unknown>;

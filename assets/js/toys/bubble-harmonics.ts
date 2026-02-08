@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { getWeightedAverageFrequency } from '../utils/audio-handler';
-import { mapFrequencyToItems } from '../utils/audio-mapper';
 import {
+  createToyQualityControls,
+  createToyRuntimeStarter,
   disposeGeometry,
   disposeMaterial,
   disposeMesh,
-} from '../utils/three-dispose';
-import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControls } from '../utils/toy-settings';
+  getWeightedAverageFrequency,
+  mapFrequencyToItems,
+} from '../utils';
 
 type Bubble = {
   mesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;

@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { getBandAverage } from '../utils/audio-bands';
-import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
-import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
   buildToySettingsPanel,
   createToyQualityControls,
-} from '../utils/toy-settings';
+  createToyRuntimeStarter,
+  disposeGeometry,
+  disposeMaterial,
+  getBandAverage,
+} from '../utils';
 
 type PaletteKey = 'aurora' | 'sunset' | 'midnight';
 

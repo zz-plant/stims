@@ -1,8 +1,5 @@
-import type {
-  AudioInitOptions,
-  FrequencyAnalyser,
-} from '../utils/audio-handler';
-import { getAverageFrequency, getFrequencyData } from '../utils/audio-handler';
+import type { AudioInitOptions, FrequencyAnalyser } from '../utils';
+import { getAverageFrequency, getFrequencyData } from '../utils';
 
 export interface AudioLoopToy {
   rendererReady?: Promise<unknown>;

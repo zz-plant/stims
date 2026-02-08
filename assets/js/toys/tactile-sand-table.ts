@@ -5,15 +5,16 @@ import {
   subscribeToMotionPreference,
 } from '../core/motion-preferences';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import {
   createControlPanelCheckbox,
   createControlPanelNote,
   createControlPanelSlider,
-} from '../utils/control-panel-elements';
-import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
-import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControls } from '../utils/toy-settings';
+  createToyQualityControls,
+  createToyRuntimeStarter,
+  disposeGeometry,
+  disposeMaterial,
+  getWeightedAverageFrequency,
+} from '../utils';
 
 type GravityState = {
   vector: THREE.Vector3;
