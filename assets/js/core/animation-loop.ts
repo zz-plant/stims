@@ -4,14 +4,20 @@ import type {
 } from '../utils/audio-handler';
 import { getAverageFrequency, getFrequencyData } from '../utils/audio-handler';
 
-// biome-ignore lint/suspicious/noExplicitAny: generic toy instance
-type WebToyInstance = any;
+export interface AudioLoopToy {
+  rendererReady?: Promise<unknown>;
+  initAudio: (options?: AudioInitOptions) => Promise<unknown>;
+  analyser: FrequencyAnalyser | null;
+  renderer: {
+    setAnimationLoop: ((callback: () => void) => void) | null;
+  } | null;
+}
 
 /**
  * Context passed to animation callbacks.
  */
 export interface AnimationContext {
-  toy: WebToyInstance;
+  toy: AudioLoopToy;
   analyser: FrequencyAnalyser | null;
   time: number;
 }
@@ -60,7 +66,7 @@ function fillSyntheticFrequencyData(
  * @returns The animation context
  */
 export async function startAudioLoop(
-  toy: WebToyInstance,
+  toy: AudioLoopToy,
   animate: (ctx: AnimationContext) => void,
   audioOptions: AudioInitOptions = {},
 ): Promise<AnimationContext> {

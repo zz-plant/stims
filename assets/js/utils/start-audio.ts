@@ -1,5 +1,8 @@
-import { type AnimationContext, startAudioLoop } from '../core/animation-loop';
-import type WebToy from '../core/web-toy';
+import {
+  type AnimationContext,
+  type AudioLoopToy,
+  startAudioLoop,
+} from '../core/animation-loop';
 import type { AudioInitOptions } from './audio-handler';
 import { AudioAccessError, getCachedDemoAudioStream } from './audio-handler';
 
@@ -23,7 +26,7 @@ function normalizeOptions(options: StartAudioOptions): AudioInitOptions & {
 }
 
 export async function startToyAudio(
-  toy: WebToy,
+  toy: AudioLoopToy,
   animate: (ctx: AnimationContext) => void,
   options?: StartAudioOptions,
 ): Promise<AnimationContext> {
