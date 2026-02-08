@@ -193,7 +193,7 @@
         <search class="library-search">
           <div class="search-heading">
             <h3>Find a stim</h3>
-            <p>Search by name, mood, or capability.</p>
+            <p>Search by name, mood, tags, and capabilities.</p>
           </div>
           <div class="search-row">
             <label class="sr-only" for="toy-search">Search the library</label>
@@ -203,7 +203,7 @@
                 id="toy-search"
                 type="search"
                 name="toy-search"
-                placeholder="Search stims by name, tag, or capability…"
+                placeholder="Try calm, spiral, microphone, or webgpu"
                 autocomplete="off"
                 aria-describedby="toy-search-hint"
                 inputmode="search"
@@ -218,7 +218,7 @@
                 Clear
               </button>
               <span id="toy-search-hint" class="search-field__hint">
-                / focus • ↵ open match
+                / focus • esc clear • ↵ open top match
               </span>
               <datalist id="toy-search-suggestions"></datalist>
             </form>
@@ -231,6 +231,13 @@
               >
                 Loading library…
               </p>
+              <p class="search-meta__note">Search scope</p>
+              <ul class="search-meta__tokens" aria-hidden="true">
+                <li>Name</li>
+                <li>Mood</li>
+                <li>Tags</li>
+                <li>Capabilities</li>
+              </ul>
             </div>
           </div>
           <div class="active-filters" data-active-filters hidden>
