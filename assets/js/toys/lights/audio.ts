@@ -1,7 +1,14 @@
-import type { HemisphereLight, Light, Mesh } from 'three';
-import { Color, MathUtils } from 'three';
-import type { AnimationContext } from '../../core/animation-loop';
-import { getContextFrequencyData } from '../../core/animation-loop';
+import {
+  Color,
+  type HemisphereLight,
+  type Light,
+  MathUtils,
+  type Mesh,
+} from 'three';
+import {
+  type AnimationContext,
+  getContextFrequencyData,
+} from '../../core/animation-loop';
 import type WebToy from '../../core/web-toy';
 import {
   applyAudioRotation,
