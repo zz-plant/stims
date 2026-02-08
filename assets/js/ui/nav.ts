@@ -31,6 +31,10 @@ export interface NavOptions {
   } | null;
 }
 
+type ToyNavContainer = HTMLElement & {
+  __toyNavOffsetCleanup?: () => void;
+};
+
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (match) => {
     switch (match) {
@@ -63,6 +67,13 @@ export function initNavigation(container: HTMLElement, options: NavOptions) {
 }
 
 function renderLibraryNav(container: HTMLElement, _doc: Document) {
+  const toyContainer = container as ToyNavContainer;
+  toyContainer.__toyNavOffsetCleanup?.();
+  toyContainer.__toyNavOffsetCleanup = undefined;
+  container.ownerDocument.documentElement.style.removeProperty(
+    '--toy-nav-floating-offset',
+  );
+
   container.innerHTML = `
     <nav class="top-nav" data-top-nav aria-label="Primary" data-nav-expanded="true">
       <div class="brand">
@@ -217,6 +228,8 @@ function renderToyNav(
     </div>
   `;
 
+  setupToyNavFloatingOffset(container as ToyNavContainer, doc);
+
   if (options.rendererStatus) {
     const statusContainer = container.querySelector(
       '.renderer-status-container',
@@ -358,6 +371,57 @@ function renderToyNav(
   });
 
   setupPictureInPictureControls(container, doc);
+}
+
+function setupToyNavFloatingOffset(container: ToyNavContainer, doc: Document) {
+  container.__toyNavOffsetCleanup?.();
+
+  const root = doc.documentElement;
+  const updateOffset = () => {
+    const navBottom = Math.ceil(container.getBoundingClientRect().bottom);
+    root.style.setProperty('--toy-nav-floating-offset', `${navBottom + 10}px`);
+  };
+
+  updateOffset();
+
+  const win = doc.defaultView;
+  const rafHandle = win?.requestAnimationFrame(() => {
+    updateOffset();
+  });
+  const delayedUpdateHandle = win?.setTimeout(updateOffset, 120);
+
+  const ResizeObserverCtor = win?.ResizeObserver;
+  const resizeObserver = ResizeObserverCtor
+    ? new ResizeObserverCtor(updateOffset)
+    : null;
+  resizeObserver?.observe(container);
+
+  const MutationObserverCtor = win?.MutationObserver;
+  const mutationObserver = MutationObserverCtor
+    ? new MutationObserverCtor(updateOffset)
+    : null;
+  mutationObserver?.observe(container, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+  });
+
+  win?.addEventListener('resize', updateOffset);
+  win?.visualViewport?.addEventListener('resize', updateOffset);
+
+  container.__toyNavOffsetCleanup = () => {
+    if (typeof rafHandle === 'number') {
+      win?.cancelAnimationFrame(rafHandle);
+    }
+    if (typeof delayedUpdateHandle === 'number') {
+      win?.clearTimeout(delayedUpdateHandle);
+    }
+    resizeObserver?.disconnect();
+    mutationObserver?.disconnect();
+    win?.removeEventListener('resize', updateOffset);
+    win?.visualViewport?.removeEventListener('resize', updateOffset);
+  };
 }
 
 function setupPictureInPictureControls(container: HTMLElement, doc: Document) {
