@@ -831,7 +831,10 @@ body {
 .control-panel--floating {
   bottom: auto;
   left: auto;
-  top: max(102px, calc(env(safe-area-inset-top) + 96px));
+  top: max(
+    var(--toy-nav-floating-offset, 102px),
+    calc(env(safe-area-inset-top) + 96px)
+  );
   right: max(10px, env(safe-area-inset-right));
   width: min(360px, 90vw);
   max-height: min(
@@ -1415,14 +1418,29 @@ body {
     align-items: stretch;
     gap: 8px;
     padding: 8px;
-    max-height: min(52svh, calc(100dvh - env(safe-area-inset-top) - 10px));
+    max-height: min(48svh, calc(100dvh - env(safe-area-inset-top) - 10px));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   .active-toy-nav__actions {
     width: 100%;
-    justify-content: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    align-items: start;
+  }
+
+  .renderer-status-container,
+  .renderer-status,
+  .renderer-pill,
+  .renderer-pill__detail {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .renderer-status-container {
+    grid-column: 1 / -1;
   }
 
   .toy-nav__share-wrapper,
@@ -1438,11 +1456,33 @@ body {
   .toy-nav__next,
   .toy-nav__flow {
     width: 100%;
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 0.92rem;
   }
 
   .toy-nav__back {
+    grid-column: 1 / -1;
     width: 100%;
+    min-height: 40px;
+    padding: 8px 10px;
     justify-content: center;
+  }
+
+  .control-panel--floating {
+    top: max(
+      var(--toy-nav-floating-offset, 102px),
+      calc(env(safe-area-inset-top) + 88px)
+    );
+    max-height: min(
+      44svh,
+      calc(
+        100dvh -
+        var(--toy-nav-floating-offset, 102px) -
+        env(safe-area-inset-bottom) -
+        12px
+      )
+    );
   }
 
   .control-panel {
@@ -1495,8 +1535,7 @@ body {
 
 @media (max-width: 520px) {
   .active-toy-nav__actions {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
     gap: 6px;
   }
 
@@ -1527,15 +1566,31 @@ body {
     max-width: 100%;
   }
 
+  .control-panel--floating {
+    top: max(
+      var(--toy-nav-floating-offset, 102px),
+      calc(env(safe-area-inset-top) + 76px)
+    );
+    max-height: min(
+      40svh,
+      calc(
+        100dvh -
+        var(--toy-nav-floating-offset, 102px) -
+        env(safe-area-inset-bottom) -
+        10px
+      )
+    );
+  }
+
   .control-panel {
     padding: 6px;
     max-height: min(
-      36svh,
+      40svh,
       calc(
         100dvh -
-        12px -
-        env(safe-area-inset-top) -
-        env(safe-area-inset-bottom)
+        var(--toy-nav-floating-offset, 102px) -
+        env(safe-area-inset-bottom) -
+        10px
       )
     );
   }
