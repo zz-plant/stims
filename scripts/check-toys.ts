@@ -1,4 +1,3 @@
-import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -40,13 +39,12 @@ export async function runToyChecks(root = repoRoot) {
   const warnings: string[] = [];
 
   try {
-    const entries = await loadToyData(root);
-    const indexContents = await fs.readFile(
-      path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
-      'utf8',
-    );
+    const [entries, indexContents] = await Promise.all([
+      loadToyData(root),
+      fs.readFile(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'), 'utf8'),
+    ]);
 
-    validateEntries(entries, issues, warnings, indexContents, root);
+    await validateEntries(entries, issues, warnings, indexContents, root);
     await detectUnregisteredToyFiles(entries, issues, root);
   } catch (error) {
     issues.push(error instanceof Error ? error.message : String(error));
@@ -58,11 +56,10 @@ export async function runToyChecks(root = repoRoot) {
 async function loadToyData(root = repoRoot) {
   const dataPath = path.join(root, 'assets/data/toys.json');
   const source = await fs.readFile(dataPath, 'utf8');
-  const parsed = toyManifestSchema.parse(JSON.parse(source));
-  return parsed;
+  return toyManifestSchema.parse(JSON.parse(source));
 }
 
-function validateEntries(
+async function validateEntries(
   entries: ToyManifest,
   issues: string[],
   warnings: string[],
@@ -70,7 +67,6 @@ function validateEntries(
   root = repoRoot,
 ) {
   for (const entry of entries) {
-    const modulePath = path.join(root, entry.module);
     if (
       entry.type === 'module' &&
       !entry.module.startsWith('assets/js/toys/')
@@ -79,6 +75,7 @@ function validateEntries(
         `Module path for ${entry.slug} should live under assets/js/toys/.`,
       );
     }
+
     if (entry.type === 'page' && !entry.module.endsWith('.html')) {
       issues.push(`Page entry for ${entry.slug} should point to an HTML file.`);
     }
@@ -87,14 +84,11 @@ function validateEntries(
       warnings.push(`Description missing or empty for ${entry.slug}.`);
     }
 
-    if (entry.type === 'module') {
-      issues.push(...missingFiles(entry, modulePath, root));
-    }
-
-    if (entry.type === 'page') {
-      const htmlPath = path.join(root, entry.module);
-      missingFiles(entry, htmlPath, root).forEach((missing) =>
-        issues.push(missing),
+    const targetPath = path.join(root, entry.module);
+    const exists = await fileExists(targetPath);
+    if (!exists) {
+      issues.push(
+        `Missing file for ${entry.slug}: ${path.relative(root, targetPath).replace(/\\/g, '/')}`,
       );
     }
 
@@ -104,21 +98,6 @@ function validateEntries(
       );
     }
   }
-}
-
-function missingFiles(
-  entry: ToyManifest[number],
-  targetPath: string,
-  root = repoRoot,
-) {
-  return [targetPath]
-    .filter((filePath) => filePath)
-    .map((filePath) => ({ filePath, exists: fileExistsSync(filePath) }))
-    .filter(({ exists }) => !exists)
-    .map(
-      ({ filePath }) =>
-        `Missing file for ${entry.slug}: ${path.relative(root, filePath).replace(/\\/g, '/')}`,
-    );
 }
 
 async function detectUnregisteredToyFiles(
@@ -143,9 +122,9 @@ async function detectUnregisteredToyFiles(
   }
 }
 
-function fileExistsSync(targetPath: string) {
+async function fileExists(targetPath: string) {
   try {
-    fsSync.accessSync(targetPath, fsSync.constants.F_OK);
+    await fs.access(targetPath);
     return true;
   } catch {
     return false;
