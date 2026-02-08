@@ -283,24 +283,24 @@ body {
 
 .active-toy-nav {
   position: fixed;
-  top: 8px;
+  top: max(8px, env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
-  width: min(980px, calc(100% - 20px));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 12px;
+  width: min(1100px, calc(100% - 18px));
+  display: grid;
+  grid-template-columns: minmax(220px, 0.95fr) minmax(0, 1.45fr);
+  align-items: start;
+  gap: 12px;
+  padding: 10px 12px;
   background: linear-gradient(
-    135deg,
-    rgba(7, 11, 22, 0.92),
-    rgba(12, 18, 35, 0.94)
+    130deg,
+    rgba(7, 11, 22, 0.94),
+    rgba(11, 17, 34, 0.95)
   );
-  border: 1px solid rgba(148, 165, 180, 0.4);
+  border: 1px solid rgba(148, 165, 180, 0.44);
   box-shadow:
-    0 14px 32px rgba(0, 0, 0, 0.45),
-    0 0 18px rgba(148, 165, 180, 0.32),
+    0 16px 36px rgba(0, 0, 0, 0.46),
+    0 0 18px rgba(148, 165, 180, 0.3),
     inset 0 1px 0 rgba(233, 251, 255, 0.08);
   border-radius: 20px;
   z-index: 1200;
@@ -310,7 +310,8 @@ body {
 
 .active-toy-nav__content {
   display: grid;
-  gap: 2px;
+  gap: 4px;
+  align-content: start;
 }
 
 .active-toy-nav__eyebrow {
@@ -358,7 +359,7 @@ body {
 
 .active-toy-nav__actions {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -449,6 +450,8 @@ body {
   display: grid;
   gap: 6px;
   align-items: flex-start;
+  justify-items: flex-end;
+  margin-inline-end: 2px;
 }
 
 .renderer-pill {
@@ -828,9 +831,9 @@ body {
 .control-panel--floating {
   bottom: auto;
   left: auto;
-  top: max(10px, env(safe-area-inset-top));
+  top: max(102px, calc(env(safe-area-inset-top) + 96px));
   right: max(10px, env(safe-area-inset-right));
-  width: min(320px, 90vw);
+  width: min(360px, 90vw);
   max-height: min(
     calc(
       100dvh -
@@ -1408,14 +1411,18 @@ body {
 
 @media (max-width: 720px) {
   .active-toy-nav {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    padding: 6px 8px;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px;
+    max-height: min(52svh, calc(100dvh - env(safe-area-inset-top) - 10px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .active-toy-nav__actions {
     width: 100%;
+    justify-content: stretch;
   }
 
   .toy-nav__share-wrapper,
@@ -1490,12 +1497,13 @@ body {
   .active-toy-nav__actions {
     flex-direction: column;
     align-items: stretch;
+    gap: 6px;
   }
 
   .active-toy-nav {
     top: calc(env(safe-area-inset-top) + 4px);
-    width: calc(100% - 12px);
-    padding: 4px 6px;
+    width: calc(100% - 10px);
+    padding: 6px;
     border-radius: 14px;
   }
 
@@ -1522,10 +1530,10 @@ body {
   .control-panel {
     padding: 6px;
     max-height: min(
-      40svh,
+      36svh,
       calc(
         100dvh -
-        10px -
+        12px -
         env(safe-area-inset-top) -
         env(safe-area-inset-bottom)
       )

@@ -167,7 +167,7 @@ function renderToyNav(
   const safeTitle = escapeHtml(options.title ?? 'Web toy');
   const safeSlug = options.slug ? escapeHtml(options.slug) : '';
   const hintText = isMobileDevice()
-    ? 'Tap Flow mode to auto-switch every 45s. Use Back to return to the library.'
+    ? 'Tap Flow mode to auto-switch every 45s. Use Back to return.'
     : 'Press Esc or use Back to return to the library.';
   container.className = 'active-toy-nav';
   container.innerHTML = `
