@@ -1,23 +1,46 @@
-# Developer Docs
+# Developer and Contributor Docs
 
-This folder contains resources for contributors who are building or maintaining the Stim Webtoys Library:
+This folder is organized by **audience + workflow** so humans and coding agents can quickly find the right guidance.
 
-- [`DEVELOPMENT.md`](./DEVELOPMENT.md): day-to-day setup, scripts, workflow (leveraging **Biome**), and performance/testing expectations.
-- [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md): playbook for creating or updating toy experiences, including audio, rendering, and debugging tips.
-- [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md): map from each toy/visualizer to the JS/TS entry points it uses.
-- [`stim-assessment.md`](./stim-assessment.md): Assessment findings and remediation plans.
-- [`stim-user-critiques.md`](./stim-user-critiques.md): user-standpoint critiques for each toy to guide UX polish and onboarding.
-- [`FEATURE_AUDIT.md`](./FEATURE_AUDIT.md): feature coverage mapped to current documentation, plus open gaps to address.
-- [`FEATURE_SPECIFICATIONS.md`](./FEATURE_SPECIFICATIONS.md): current feature specifications for the shipped library experience.
-- [`LITERATURE.md`](./LITERATURE.md): published scientific literature that can ground audio-visual and sensory experience claims.
-- [`QA_PLAN.md`](./QA_PLAN.md): coverage for the highest-impact flows and the automation that protects them.
-- [`toys.md`](./toys.md): per-toy notes, presets, and other focused references.
-- [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md): page-level specifications for the library landing and toy shell, including data, layout, and accessibility expectations.
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md): end-to-end app architecture, loader flow, and core runtime composition with diagrams.
-- [`DEPLOYMENT.md`](./DEPLOYMENT.md): build, preview, static hosting layout, and Cloudflare Worker deployment steps.
-- [`MCP_SERVER.md`](./MCP_SERVER.md): how to launch and use the MCP stdio server (`scripts/mcp-server.ts`) and its registered tools.
-- [`TECH_STACK_CAPABILITY_RESEARCH_2026-02.md`](./TECH_STACK_CAPABILITY_RESEARCH_2026-02.md): version/capability research snapshot for Bun, Vite, TypeScript, Biome, and related tooling.
-- [`agents/README.md`](./agents/README.md): agent-specific guidance split into progressive disclosure files.
+## Start here by audience
+
+- **Human contributors:** [`../CONTRIBUTING.md`](../CONTRIBUTING.md) for setup + contribution flow, then [`DEVELOPMENT.md`](./DEVELOPMENT.md) for day-to-day commands.
+- **Toy builders:** [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md), [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md), and [`toys.md`](./toys.md).
+- **Agents / automation contributors:** root [`../AGENTS.md`](../AGENTS.md) first, then [`agents/README.md`](./agents/README.md).
+
+## Docs map by purpose
+
+### Build, test, and ship
+
+- [`DEVELOPMENT.md`](./DEVELOPMENT.md): setup, scripts, workflow, performance/testing expectations.
+- [`QA_PLAN.md`](./QA_PLAN.md): highest-impact QA flows and automated coverage.
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md): build, preview, static hosting, and Cloudflare deployment.
+
+### Runtime and implementation reference
+
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md): runtime composition, loader flow, and diagrams.
+- [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md): implementation playbook for toy work.
+- [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md): toy slug to JS/TS entry-point map.
+- [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md): page-level data/layout/accessibility expectations.
+- [`MCP_SERVER.md`](./MCP_SERVER.md): MCP stdio server usage (`scripts/mcp-server.ts`).
+
+### Product, research, and assessment docs
+
+- [`FEATURE_SPECIFICATIONS.md`](./FEATURE_SPECIFICATIONS.md): current shipped behavior specs.
+- [`FEATURE_AUDIT.md`](./FEATURE_AUDIT.md): coverage matrix + open documentation gaps.
+- [`stim-assessment.md`](./stim-assessment.md): assessment findings + remediation directions.
+- [`stim-user-critiques.md`](./stim-user-critiques.md): toy-by-toy UX critique notes.
+- [`LITERATURE.md`](./LITERATURE.md): scientific references informing design.
+- [`TECH_STACK_CAPABILITY_RESEARCH_2026-02.md`](./TECH_STACK_CAPABILITY_RESEARCH_2026-02.md): capability snapshot for core tooling.
+
+### Agent-oriented overlays
+
+- [`agents/README.md`](./agents/README.md): progressive-disclosure map for agent workflows.
+- [`agents/tooling-and-quality.md`](./agents/tooling-and-quality.md): required checks and Bun-first commands.
+- [`agents/metadata-and-docs.md`](./agents/metadata-and-docs.md): commit/PR/doc hygiene conventions.
+- [`agents/toy-development.md`](./agents/toy-development.md): code locations and toy patterns.
+- [`agents/toy-workflows.md`](./agents/toy-workflows.md): common toy-task runbooks.
+- [`agents/reference-docs.md`](./agents/reference-docs.md): fast links into core docs + code hotspots.
 
 If you add new tooling or patterns, update these docs so the next contributor has a reliable starting point.
 
@@ -42,12 +65,12 @@ flowchart TD
   Start --> Cleanup[dispose + release pools]
 ```
 
-## How to add a new guide
+## How to add or move a guide
 
 1. Create the Markdown file under `docs/` with a clear title and a short purpose statement in the first paragraph.
-2. Add a bullet link in this README under the list above so others can find it.
-3. Cross-link the guide from the relevant primary doc (for example, reference new build steps from `DEVELOPMENT.md`).
-4. If the guide introduces new scripts, toy entry points, or deployment steps, update the checklists and indexes they depend on.
+2. Add or update links in this README under the **purpose category** where it best fits.
+3. Cross-link from the most relevant audience entry point (`CONTRIBUTING.md`, `AGENTS.md`, or a primary workflow doc).
+4. If the guide introduces scripts, toy entry points, or deployment steps, update the checklists and indexes they depend on.
 
 ## Onboarding highlights
 
@@ -65,6 +88,7 @@ flowchart TD
 
 ## Doc maintenance checklist
 
+- Keep this file audience-oriented: if docs move, preserve a clear path for contributors, toy builders, and agents.
 - Add or update a link here whenever you create a new guide under `docs/` so contributors can discover it.
 - Cross-link new scripts or workflows from the relevant guide (for example, record new Bun scripts in `DEVELOPMENT.md` and toy-scaffolding changes in `TOY_DEVELOPMENT.md`).
 - Keep toy-related documentation synchronized: update `TOY_DEVELOPMENT.md`, `TOY_SCRIPT_INDEX.md`, and `toys.md` when adding, renaming, or removing a toy entry point.

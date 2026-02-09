@@ -8,6 +8,12 @@ Stim Webtoys Library is a collection of interactive, audio-reactive web toys bui
 - **Non-standard quality gates for JS/TS changes:** run `bun run check` (Biome + typecheck + tests) before committing.
 - **Metadata:** commit messages use sentence case with no trailing period; PR summaries include a short summary plus explicit lists of tests run and docs touched/added.
 
+## Doc structure (agent + contributor facing)
+
+- Start from [`docs/README.md`](./docs/README.md), which now groups docs by audience and workflow.
+- Use [`docs/agents/README.md`](./docs/agents/README.md) as the progressive-disclosure entrypoint for task-focused agent guidance.
+- Keep links between `AGENTS.md`, `CONTRIBUTING.md`, and `docs/README.md` aligned when restructuring docs.
+
 ## More detailed guidance
 
 - [Tooling & quality checks](./docs/agents/tooling-and-quality.md)
