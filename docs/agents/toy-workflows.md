@@ -1,48 +1,37 @@
-# Toy Workflows & Commands
+# Toy Workflows and Commands
 
-## Agent workflows
+## Reusable agent workflows
 
-Use these workflows (in `.agent/workflows/`) to interact with toys:
+The repository includes markdown workflows under `.agent/workflows/`:
 
-| Workflow | Command | Purpose |
-| --- | --- | --- |
-| `/create-toy` | Create new toy module | Scaffold a new toy with the standard template |
-| `/play-toy` | Launch toy in browser | Start dev server and interact with toys |
-| `/test-toy` | Run toy tests | Execute automated tests for toys |
+- `/create-toy` — scaffold a new toy.
+- `/play-toy` — run and manually verify a toy.
+- `/test-toy` — execute toy-focused tests.
 
-## Quick commands
+## Common commands
 
 ```bash
-# Create a new toy
+# Scaffold a toy module and metadata/docs wiring
 bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test
 
-# Check all toys are registered correctly
+# Validate toy registration, entry points, and docs index
 bun run check:toys
 
-# Run all tests
-bun run test
-
-# Start dev server for interactive testing
+# Local development server
 bun run dev
 
-# Type check
-bun run typecheck
+# Targeted and full test passes
+bun run test tests/path/to/spec.test.ts
+bun run test
 
-# Full quality check (lint + tests)
+# Type safety and full repo gate
+bun run typecheck
 bun run check
 ```
 
-## Testing a specific toy
+## Manual verification flow
 
-1. Start dev server: `bun run dev`
-2. Navigate to: `http://localhost:5173/toy.html?toy=<slug>`
-3. Click "Use demo audio" to bypass microphone permissions
-4. Verify visuals render and respond to audio
-
-## Common toy slugs
-
-- `holy` - Ultimate Satisfying Visualizer
-- `geom` - Geometry Visualizer
-- `spiral-burst` - Spiral Burst
-- `neon-wave` - Neon Wave
-- `milkdrop` - MilkDrop Proto
+1. Run `bun run dev`.
+2. Open `http://localhost:5173/toy.html?toy=<slug>`.
+3. Use demo audio if microphone access is unavailable.
+4. Confirm render loop, controls, and cleanup behavior work as expected.

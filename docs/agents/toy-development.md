@@ -1,21 +1,24 @@
-# Toy Development
+# Toy Development (Agent Quick Reference)
 
-## Project structure
+## Core locations
 
-- Toy modules: `assets/js/toys/` (TypeScript modules exporting `start()`).
-- Toy registry: `assets/data/toys.json` (slugs, metadata, capabilities).
-- Standalone HTML toys: `toys/` directory (standalone pages launched from the library UI).
-- Loader logic: `toy.html` + `assets/js/loader.ts`.
-- Audio/runtime helpers: `assets/js/core/toy-runtime.ts` and `assets/js/utils/start-audio.ts`.
+- Toy modules: `assets/js/toys/`.
+- Toy registry metadata: `assets/data/toys.json`.
+- Page-backed toy entry points: `toys/`.
+- Loader shell: `toy.html` + `assets/js/loader.ts`.
+- Runtime/audio helpers: `assets/js/core/toy-runtime.ts`, `assets/js/utils/start-audio.ts`.
 
-## Key patterns
+## Expected patterns
 
-- Every toy module exports `start({ container?, preferDemoAudio? })` for library cards or
-  `start({ container? })` when embedding a Three.js scene directly.
-- Page-based toys should call `startPageToy({ container, path, title, description, preferDemoAudio })`
-  to render the launch panel that opens the standalone HTML file.
-- Canvas-based toys should use `createToyRuntime(...)` to wire up WebGL, audio, input, and performance
-  settings in one place.
-- `start()` returns a disposable object (from `createToyRuntime` or `startPageToy`) that handles cleanup.
-- Audio reactivity uses `registerToyGlobals` to expose `startAudio` to the standalone toy pages.
-- Toys support microphone input or demo audio fallback by passing `preferDemoAudio` or `audio=demo`.
+- Toy modules export `start(...)` and return a disposable cleanup handle.
+- Canvas-heavy toys should prefer shared runtime scaffolding (`createToyRuntime(...)`) over bespoke setup.
+- Page-backed toys should use `startPageToy(...)` so launch panel behavior remains consistent.
+- Audio-reactive toys should integrate with shared audio helpers and support demo-audio fallback when applicable.
+
+## Change checklist for toy edits
+
+1. Update module in `assets/js/toys/`.
+2. Ensure `assets/data/toys.json` metadata matches slug/capabilities.
+3. Add/update standalone page in `toys/` if page-backed.
+4. Update tests for new behavior.
+5. Run `bun run check:toys` when slugs/entries changed.

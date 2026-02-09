@@ -1,22 +1,55 @@
-# Tooling & Quality Checks
+# Tooling and Quality Checks
 
-## Package manager
+## Package manager and script execution
 
-- Prefer **Bun** tooling to match the repo `packageManager`.
-- For dependency changes, install with `bun install --frozen-lockfile`.
-- Run scripts with `bun run ...`.
+- Use **Bun** for installs and scripts.
+- When dependency manifests or lockfiles change, run:
 
-## Linting & formatting
+  ```bash
+  bun install --frozen-lockfile
+  ```
 
-- Use **Biome** for linting and formatting. Do not use ESLint or Prettier.
+- Run project scripts with:
 
-## Required checks
+  ```bash
+  bun run <script>
+  ```
 
-- For JavaScript/TypeScript changes, run the relevant quality checks before committing:
-  - `bun run check` (Biome + typecheck + tests)
-  - Optional quick pass: `bun run check:quick` (Biome + typecheck, skips tests)
+## Linting and formatting
 
-## Documentation-only changes
+- Biome is the formatter/linter of record.
+- Use the package scripts rather than ad-hoc commands where possible.
 
-- For Markdown/prose-only changes, you can skip `bun run typecheck` and `bun run test`.
-- Formatting docs is optional; there is no dedicated script for docs, but you can run `bunx biome format --write docs` if you want to normalize Markdown formatting.
+## Required gates for JS/TS changes
+
+Run before commit:
+
+```bash
+bun run check
+```
+
+This runs Biome checks, TypeScript typechecking, and tests.
+
+Useful fast path while iterating:
+
+```bash
+bun run check:quick
+```
+
+## Task-specific checks
+
+- Toy registration/docs consistency:
+
+  ```bash
+  bun run check:toys
+  ```
+
+- Targeted test execution:
+
+  ```bash
+  bun run test tests/path/to/spec.test.ts
+  ```
+
+## Docs-only updates
+
+For Markdown-only edits, you can skip typecheck/tests unless the change modifies commands, paths, or workflow-critical instructions that should be validated.

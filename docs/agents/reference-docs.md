@@ -1,30 +1,31 @@
-# Reference Documentation
+# Reference Docs and Code Hotspots
 
-## Core reference docs
+## Primary docs
 
-- `docs/TOY_DEVELOPMENT.md` - Full toy development playbook.
-- `docs/TOY_TESTING_SPEC.md` - Automated testing specification.
-- `docs/ARCHITECTURE.md` - System architecture overview.
+- `docs/DEVELOPMENT.md` — scripts and contributor workflow baseline.
+- `docs/TOY_DEVELOPMENT.md` — full toy implementation guide.
+- `docs/TOY_TESTING_SPEC.md` — toy testing strategy.
+- `docs/ARCHITECTURE.md` — runtime architecture and flow.
+- `docs/DEPLOYMENT.md` — shipping and hosting guidance.
 
 ## High-signal code locations
 
-- `assets/js/toys/` - TypeScript toy modules (library-loaded toys).
-- `assets/data/toys.json` - Toy registry metadata (slugs, labels, caps).
-- `assets/js/loader.ts` - Toy loader for `toy.html` (routes, query params).
-- `assets/js/core/toy-runtime.ts` - Runtime scaffolding (audio + render loop).
-- `assets/js/utils/start-audio.ts` - Audio unlock + demo audio controls.
-- `toys/` - Standalone HTML toys (page-based).
-- `public/` - Static assets served as-is.
+- `assets/js/toys/` — toy modules.
+- `assets/data/toys.json` — toy metadata source of truth.
+- `assets/js/loader.ts` — loader/query param routing.
+- `assets/js/core/toy-runtime.ts` — shared toy runtime plumbing.
+- `assets/js/utils/start-audio.ts` — mic/demo audio unlock path.
+- `toys/` — standalone page-backed toy entry points.
 
-## Config + project entry points
+## Config and entry points
 
-- `vite.config.js` - Build + dev server config.
-- `package.json` - Scripts and Bun package manager config.
-- `index.html` / `toy.html` - Entry points for the library and toy runner.
+- `package.json` — scripts, package manager, tool versions.
+- `vite.config.js` — bundling and dev-server behavior.
+- `index.html` and `toy.html` — app and toy shell entry points.
 
-## Fast triage checklist
+## Fast triage
 
-1. **Toy missing from UI?** Confirm it exists in `assets/data/toys.json`.
-2. **Toy fails to load?** Check query params handling in `assets/js/loader.ts`.
-3. **Audio not reactive?** Validate `startAudio` usage and runtime setup in
-   `assets/js/core/toy-runtime.ts` and `assets/js/utils/start-audio.ts`.
+1. Toy missing in UI → verify `assets/data/toys.json` entry.
+2. Toy not loading → inspect loader behavior in `assets/js/loader.ts`.
+3. No audio response → inspect `start-audio.ts` and runtime wiring.
+4. Docs mismatch → refresh `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md`.
