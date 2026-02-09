@@ -1458,7 +1458,7 @@ body {
     border-color: rgba(148, 165, 180, 0.3);
     background: rgba(6, 11, 22, 0.92);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
-    max-height: min(48svh, calc(100dvh - env(safe-area-inset-top) - 10px));
+    max-height: min(44svh, calc(100dvh - env(safe-area-inset-top) - 10px));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -1534,16 +1534,28 @@ body {
 
   .control-panel--floating {
     top: max(
-      var(--toy-nav-floating-offset, 102px),
-      calc(env(safe-area-inset-top) + 88px)
+      var(--toy-nav-floating-offset, 108px),
+      calc(env(safe-area-inset-top) + 92px)
     );
     max-height: min(
-      44svh,
+      38svh,
       calc(
         100dvh -
-        var(--toy-nav-floating-offset, 102px) -
+        var(--toy-nav-floating-offset, 108px) -
         env(safe-area-inset-bottom) -
         12px
+      )
+    );
+  }
+
+  :root[data-toy-controls-expanded="true"] .control-panel--floating {
+    max-height: min(
+      30svh,
+      calc(
+        100dvh -
+        var(--toy-nav-floating-offset, 108px) -
+        env(safe-area-inset-bottom) -
+        16px
       )
     );
   }
@@ -1635,16 +1647,28 @@ body {
 
   .control-panel--floating {
     top: max(
-      var(--toy-nav-floating-offset, 102px),
-      calc(env(safe-area-inset-top) + 76px)
+      var(--toy-nav-floating-offset, 108px),
+      calc(env(safe-area-inset-top) + 78px)
     );
     max-height: min(
-      40svh,
+      34svh,
       calc(
         100dvh -
-        var(--toy-nav-floating-offset, 102px) -
+        var(--toy-nav-floating-offset, 108px) -
         env(safe-area-inset-bottom) -
         10px
+      )
+    );
+  }
+
+  :root[data-toy-controls-expanded="true"] .control-panel--floating {
+    max-height: min(
+      26svh,
+      calc(
+        100dvh -
+        var(--toy-nav-floating-offset, 108px) -
+        env(safe-area-inset-bottom) -
+        14px
       )
     );
   }

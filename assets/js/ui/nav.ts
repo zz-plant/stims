@@ -73,6 +73,9 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
   container.ownerDocument.documentElement.style.removeProperty(
     '--toy-nav-floating-offset',
   );
+  container.ownerDocument.documentElement.removeAttribute(
+    'data-toy-controls-expanded',
+  );
 
   container.innerHTML = `
     <nav class="top-nav" data-top-nav aria-label="Primary" data-nav-expanded="true">
@@ -271,6 +274,10 @@ function renderToyNav(
       'data-toy-actions-expanded',
       expanded ? 'true' : 'false',
     );
+    doc.documentElement.setAttribute(
+      'data-toy-controls-expanded',
+      expanded ? 'true' : 'false',
+    );
     actionsToggleBtn?.setAttribute(
       'aria-expanded',
       expanded ? 'true' : 'false',
@@ -431,7 +438,7 @@ function setupToyNavFloatingOffset(container: ToyNavContainer, doc: Document) {
   const root = doc.documentElement;
   const updateOffset = () => {
     const navBottom = Math.ceil(container.getBoundingClientRect().bottom);
-    root.style.setProperty('--toy-nav-floating-offset', `${navBottom + 10}px`);
+    root.style.setProperty('--toy-nav-floating-offset', `${navBottom + 14}px`);
   };
 
   updateOffset();
