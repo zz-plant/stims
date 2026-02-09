@@ -8,7 +8,7 @@ import {
   type RendererBackend,
   rememberRendererFallback,
 } from './renderer-capabilities.ts';
-import { WebGPURenderer } from './webgpu-renderer.ts';
+import type { WebGPURenderer } from './webgpu-renderer.ts';
 
 export type RendererInitResult = {
   renderer: WebGLRenderer | WebGPURenderer;
@@ -28,6 +28,11 @@ export type RendererInitConfig = {
   alpha?: boolean;
   renderScale?: number;
 };
+
+async function loadWebGPURenderer() {
+  const module = await import('./webgpu-renderer.ts');
+  return module.WebGPURenderer;
+}
 
 const isMobileUserAgent = isMobileDevice();
 
@@ -192,7 +197,8 @@ export async function initRenderer(
     }
 
     try {
-      const renderer = new WebGPURenderer({
+      const WebGPURendererConstructor = await loadWebGPURenderer();
+      const renderer = new WebGPURendererConstructor({
         canvas,
         antialias,
         alpha,
