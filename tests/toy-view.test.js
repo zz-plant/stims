@@ -37,21 +37,24 @@ describe('toy view helpers', () => {
     const view = createToyView();
     const onBack = mock();
     const onContinue = mock();
+    const onBrowseCompatible = mock();
 
     const status = view.showCapabilityError(
       { slug: 'webgpu-toy', title: 'Fancy WebGPU' },
-      { allowFallback: true, onBack, onContinue },
+      { allowFallback: true, onBack, onContinue, onBrowseCompatible },
     );
 
     expect(status?.classList.contains('is-warning')).toBe(true);
 
     const buttons = status?.querySelectorAll('button');
-    expect(buttons?.length).toBe(2);
+    expect(buttons?.length).toBe(3);
 
     buttons?.[0].dispatchEvent(new Event('click', { bubbles: true }));
     buttons?.[1].dispatchEvent(new Event('click', { bubbles: true }));
+    buttons?.[2].dispatchEvent(new Event('click', { bubbles: true }));
 
     expect(onBack).toHaveBeenCalledTimes(1);
+    expect(onBrowseCompatible).toHaveBeenCalledTimes(1);
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 

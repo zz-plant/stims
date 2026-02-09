@@ -30,6 +30,7 @@ This directory is organized by **audience + workflow** so contributors and agent
 - [`FEATURE_AUDIT.md`](./FEATURE_AUDIT.md)
 - [`stim-assessment.md`](./stim-assessment.md)
 - [`stim-user-critiques.md`](./stim-user-critiques.md)
+- [`USER_JOURNEY_CRITIQUE.md`](./USER_JOURNEY_CRITIQUE.md)
 - [`LITERATURE.md`](./LITERATURE.md)
 - [`TECH_STACK_CAPABILITY_RESEARCH_2026-02.md`](./TECH_STACK_CAPABILITY_RESEARCH_2026-02.md)
 
