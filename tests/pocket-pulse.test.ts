@@ -1,9 +1,14 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 
 describe('pocket-pulse toy module', () => {
-  test('exports a start function', () => {
-    const source = readFileSync('assets/js/toys/pocket-pulse.ts', 'utf8');
-    expect(source).toContain('export function start');
+  test('exports a callable start function', async () => {
+    const moduleExports = await import('../assets/js/toys/pocket-pulse.ts');
+    const moduleRecord = moduleExports as {
+      start?: unknown;
+      default?: { start?: unknown };
+    };
+    const startCandidate = moduleRecord.start ?? moduleRecord.default?.start;
+
+    expect(typeof startCandidate).toBe('function');
   });
 });
