@@ -12,7 +12,6 @@ import {
 let originalNavigatorDesc;
 let initAudio;
 let getFrequencyData;
-let AudioAccessError;
 let originalAudioContext;
 let originalAudioWorkletNode;
 
@@ -103,7 +102,7 @@ beforeAll(async () => {
     };
   });
 
-  ({ initAudio, getFrequencyData, AudioAccessError } = await import(
+  ({ initAudio, getFrequencyData } = await import(
     '../assets/js/utils/audio-handler.ts'
   ));
 });
@@ -181,14 +180,25 @@ describe('audio-handler utilities', () => {
   });
 
   test('initAudio rejects with denied error when permission is blocked', async () => {
+    const consoleErrorSpy = mock(() => {});
+    const originalConsoleError = console.error;
+    console.error = consoleErrorSpy;
+
     global.navigator.mediaDevices.getUserMedia = mock().mockRejectedValue(
       new DOMException('denied', 'NotAllowedError'),
     );
 
-    await expect(initAudio()).rejects.toBeInstanceOf(AudioAccessError);
-    await expect(initAudio()).rejects.toEqual(
-      expect.objectContaining({ reason: 'denied' }),
-    );
+    try {
+      await expect(initAudio()).rejects.toEqual(
+        expect.objectContaining({
+          reason: 'denied',
+          name: 'AudioAccessError',
+        }),
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      console.error = originalConsoleError;
+    }
   });
 
   test('getFrequencyData returns array of the expected length', () => {
