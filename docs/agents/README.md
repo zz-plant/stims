@@ -1,33 +1,33 @@
 # Agent Guidance Index
 
-Use this folder as the **agent-facing overlay** for repo docs.
+Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 
-## Navigation order (agent workflow)
+## Read order
 
-1. Read root [`AGENTS.md`](../../AGENTS.md) for mandatory defaults.
-2. Open [`../README.md`](../README.md) when you need the full contributor docs map.
-3. Use the focused files below only for the task at hand (progressive disclosure).
+1. Root [`AGENTS.md`](../../AGENTS.md) for non-negotiable defaults.
+2. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
+3. [`metadata-and-docs.md`](./metadata-and-docs.md) before commit/PR finalization.
+4. [`reference-docs.md`](./reference-docs.md) when triaging unfamiliar areas.
 
-## Guidance by task
+## Task routing
 
-### If you are changing code
+### Code changes
 
-- [`tooling-and-quality.md`](./tooling-and-quality.md): Bun-first commands and required quality gates.
-- [`toy-development.md`](./toy-development.md): runtime structure and toy implementation patterns.
-- [`toy-workflows.md`](./toy-workflows.md): common toy workflows and command recipes.
-- [`reference-docs.md`](./reference-docs.md): high-signal code/document locations for fast triage.
+- [`tooling-and-quality.md`](./tooling-and-quality.md)
+- [`toy-development.md`](./toy-development.md)
+- [`toy-workflows.md`](./toy-workflows.md)
+- [`reference-docs.md`](./reference-docs.md)
 
-### If you are changing docs or metadata
+### Documentation or metadata changes
 
-- [`metadata-and-docs.md`](./metadata-and-docs.md): commit/PR conventions and documentation upkeep expectations.
-- [`../README.md`](../README.md): canonical docs map by audience and purpose.
+- [`metadata-and-docs.md`](./metadata-and-docs.md)
+- [`../README.md`](../README.md)
 
 ## Fast repo map
 
-- `assets/js/` - Core runtime, toy modules, and UI logic.
-- `assets/js/toys/` - Toy implementations (TypeScript).
-- `assets/data/toys.json` - Toy registry metadata.
-- `toys/` - Standalone HTML toy pages.
-- `tests/` - Automated tests.
-- `docs/` - Contributor and architecture references.
-- `.agent/skills/` - Agent skill definitions for reusable workflows.
+- `assets/js/toys/` — toy implementations.
+- `assets/data/toys.json` — toy metadata source of truth.
+- `toys/` — standalone toy pages.
+- `tests/` — automated test suite.
+- `docs/` — contributor and architecture docs.
+- `.agent/workflows/` + `.agent/skills/` — reusable automation workflows.

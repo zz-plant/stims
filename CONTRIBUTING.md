@@ -1,81 +1,104 @@
 # Contributing to Stim Webtoys Library
 
-Thanks for helping build and refine the Stim Webtoys Library! This guide covers the basics for setting up your environment, running the project, and adding or updating toys.
+Thanks for contributing. This guide covers the current Bun-first workflow for humans and automation contributors.
 
-## Environment Setup
+## Quick start
 
-- Use **Bun 1.2+** for installs and test runs (the repo records this in `package.json`).
-- Install dependencies (Bun is the only lockfile tracked in git):
-  ```bash
-  bun install
-  ```
+1. Install **Bun 1.3+** (the repo declares `bun@1.3.8` in `package.json`).
+2. Install dependencies:
 
-  The repository pins installs via `bun.lock`, so use `bun install --frozen-lockfile` to honor it.
-  Bun does not automatically run `prepare` scripts, so a `postinstall` script installs Husky when your user agent starts with `bun`. If that misses your setup, run `bun x husky install` after installing dependencies.
+   ```bash
+   bun install
+   ```
 
-## Running the Dev Server
+   If you are updating dependencies, run:
 
-Start the local development server and open the site at `http://localhost:5173`:
+   ```bash
+   bun install
+   ```
 
-```bash
-bun run dev
-```
+   Use `bun install --frozen-lockfile` in CI or other reproducible-install contexts where lockfile changes must be disallowed.
 
-## Testing, Linting, and Formatting
+3. Start the dev server:
 
-- Run all tests:
-  ```bash
-  bun run test
-  ```
-  Always invoke the script so the pinned `--preload=./tests/setup.ts` and `--importmap=./tests/importmap.json` flags apply, loading happy-dom globals and a Three.js stub needed for headless specs.
-- Run the Bun test runner with filters (for example, targeting specific files):
-  ```bash
-  bun run test tests/path/to/spec.test.js
-  ```
-- Lint the project:
-  ```bash
-  bun run lint
-  ```
-- Apply lint auto-fixes and formatting:
-  ```bash
-  bun run lint:fix
-  ```
-- Format the codebase:
-  ```bash
-  bun run format
-  ```
-- Check formatting without writing:
-  ```bash
-  bun run format:check
-  ```
-- Run lint, typecheck, and tests together:
+   ```bash
+   bun run dev
+   ```
+
+4. Open `http://localhost:5173`.
+
+## Quality checks
+
+Use these commands before opening a PR:
+
+- Full gate for JS/TS changes:
+
   ```bash
   bun run check
   ```
 
-## Branching and Pull Requests
+- Faster iteration gate (no tests):
 
-- Start from the latest `main` branch and create a feature branch for your work.
-- Keep changes focused and prefer smaller, reviewable pull requests.
-- Run tests and linting before opening a PR.
-- Provide a clear description of what changed and any testing performed.
-- If you touch documentation structure or contributor workflows, update the docs map in [`docs/README.md`](./docs/README.md) so the new structure remains discoverable.
+  ```bash
+  bun run check:quick
+  ```
 
-## Documentation entry points
+- Toy registry/docs consistency check when adding or renaming toys:
 
-Use the docs set by audience so guidance stays easy to find:
+  ```bash
+  bun run check:toys
+  ```
 
-- **Contributors (human):** this file + [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md).
-- **Toy-focused implementation work:** [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), [`docs/TOY_SCRIPT_INDEX.md`](./docs/TOY_SCRIPT_INDEX.md), [`docs/toys.md`](./docs/toys.md).
-- **Agent/automation contributors:** root [`AGENTS.md`](./AGENTS.md) + [`docs/agents/README.md`](./docs/agents/README.md).
+- Run targeted tests:
 
-## Adding or Updating Webtoys
+  ```bash
+  bun run test tests/path/to/spec.test.ts
+  ```
 
-- Core toy implementations live in `assets/js/toys/` (e.g., `assets/js/toys/cube-wave.ts`). Add new toy modules there and reuse helpers from `assets/js/core/` or `assets/js/utils/` when possible.
-- Register toy metadata (labels, slugs, and settings) in `assets/data/toys.json` so the loader can find your new toy.
-- Toy entry points are served through `toy.html` using a `?toy=` query string (for example, `toy.html?toy=cube-wave`). Ensure your toy slug matches the metadata entry.
-- Shared styling and assets live under `assets/css/` and `assets/data/`. Add new static assets there when needed.
-- Update or add tests under `tests/` to cover new behaviors. You can run targeted checks by passing the spec path to `bun run test`.
-- Use `bun run scripts/scaffold-toy.ts` to scaffold a new toy: it prompts for slug/title/type, writes a starter module using the playbook template, updates `assets/data/toys.json` and `docs/TOY_SCRIPT_INDEX.md`, and can generate a minimal Bun spec that asserts `start` is exported.
+> Use `bun run test` (not raw `bun test`) so preload/importmap flags from `package.json` are always applied.
 
-Happy building!
+## Common dev commands
+
+- `bun run dev` — start local Vite server.
+- `bun run dev:host` — start Vite on LAN.
+- `bun run build` — production build.
+- `bun run preview` — preview built output.
+- `bun run lint` / `bun run lint:fix` — Biome linting.
+- `bun run format` / `bun run format:check` — Biome formatting.
+- `bun run typecheck` — TypeScript no-emit checks.
+
+## Branches, commits, and pull requests
+
+- Branch from `main` and keep PRs focused.
+- Commit messages should be sentence case with no trailing period.
+- PR descriptions should include:
+  - short summary,
+  - explicit test command list,
+  - explicit list of docs touched (or `None`).
+
+## Documentation expectations
+
+When workflows or structure change, update docs in the same PR:
+
+- Start from [`docs/README.md`](./docs/README.md) (docs map by audience + purpose).
+- Keep contributor and agent entry points aligned:
+  - [`README.md`](./README.md)
+  - [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+  - [`AGENTS.md`](./AGENTS.md)
+  - [`docs/agents/README.md`](./docs/agents/README.md)
+
+## Toy-specific changes
+
+For new or renamed toys, update all of the following together:
+
+- Toy implementation in `assets/js/toys/`.
+- Toy metadata in `assets/data/toys.json`.
+- Standalone page in `toys/` for page-backed toys.
+- `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md`.
+- Tests in `tests/` where behavior changed.
+
+Scaffold helper:
+
+```bash
+bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test
+```

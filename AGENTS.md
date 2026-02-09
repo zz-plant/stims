@@ -4,20 +4,20 @@ Stim Webtoys Library is a collection of interactive, audio-reactive web toys bui
 
 ## Essentials
 
-- **Package manager:** Bun (use `bun install --frozen-lockfile` when dependencies change; run scripts with `bun run ...`).
-- **Non-standard quality gates for JS/TS changes:** run `bun run check` (Biome + typecheck + tests) before committing.
-- **Metadata:** commit messages use sentence case with no trailing period; PR summaries include a short summary plus explicit lists of tests run and docs touched/added.
+- **Package manager:** Bun (use `bun install` for dependency updates, reserve `bun install --frozen-lockfile` for reproducible/CI installs, and run scripts with `bun run ...`).
+- **Quality gate for JS/TS edits:** run `bun run check` (Biome check + typecheck + tests) before committing.
+- **Commit metadata:** use sentence case commit titles with no trailing period.
+- **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.
 
-## Doc structure (agent + contributor facing)
+## Recommended execution order
 
-- Start from [`docs/README.md`](./docs/README.md), which now groups docs by audience and workflow.
-- Use [`docs/agents/README.md`](./docs/agents/README.md) as the progressive-disclosure entrypoint for task-focused agent guidance.
-- Keep links between `AGENTS.md`, `CONTRIBUTING.md`, and `docs/README.md` aligned when restructuring docs.
+1. Open [`docs/agents/README.md`](./docs/agents/README.md) for progressive-disclosure guidance.
+2. Use [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md) before editing code.
+3. Use [`docs/agents/metadata-and-docs.md`](./docs/agents/metadata-and-docs.md) before finalizing commit/PR text.
+4. Use [`docs/README.md`](./docs/README.md) to keep contributor-facing links aligned if docs move.
 
-## More detailed guidance
+## Alignment requirements
 
-- [Tooling & quality checks](./docs/agents/tooling-and-quality.md)
-- [Metadata & documentation expectations](./docs/agents/metadata-and-docs.md)
-- [Toy development structure & patterns](./docs/agents/toy-development.md)
-- [Toy workflows & common commands](./docs/agents/toy-workflows.md)
-- [Reference documentation pointers](./docs/agents/reference-docs.md)
+- Keep links between `AGENTS.md`, `CONTRIBUTING.md`, and `docs/README.md` in sync when restructuring docs.
+- If you add or rename scripts, update both `docs/DEVELOPMENT.md` and agent overlays that mention those scripts.
+- If you add or rename toys, update `docs/TOY_DEVELOPMENT.md`, `docs/TOY_SCRIPT_INDEX.md`, and `docs/toys.md` in the same change.
