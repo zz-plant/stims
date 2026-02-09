@@ -437,6 +437,36 @@ body {
   transform: translateY(0);
 }
 
+.toy-nav__mobile-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  margin-top: 6px;
+  padding: 6px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 165, 180, 0.35);
+  background: rgba(148, 165, 180, 0.08);
+  color: rgba(233, 251, 255, 0.94);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.toy-nav__mobile-toggle[aria-expanded="true"] {
+  background: rgba(148, 165, 180, 0.14);
+  border-color: rgba(148, 165, 180, 0.48);
+}
+
+.toy-nav__mobile-toggle:focus-visible {
+  outline: 2px solid rgba(148, 165, 180, 0.6);
+  outline-offset: 2px;
+}
+
 .toy-nav__share-status,
 .toy-nav__pip-status,
 .toy-nav__next-status,
@@ -1423,10 +1453,28 @@ body {
     grid-template-columns: 1fr;
     align-items: stretch;
     gap: 8px;
-    padding: 8px;
-    max-height: min(48svh, calc(100dvh - env(safe-area-inset-top) - 10px));
+    padding: 10px;
+    border-radius: 16px;
+    border-color: rgba(148, 165, 180, 0.3);
+    background: rgba(6, 11, 22, 0.92);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+    max-height: min(44svh, calc(100dvh - env(safe-area-inset-top) - 10px));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .active-toy-nav__pill {
+    padding: 4px 9px;
+    border-color: rgba(148, 165, 180, 0.35);
+    background: rgba(148, 165, 180, 0.11);
+    box-shadow: none;
+    font-size: 0.88rem;
+  }
+
+  .toy-nav__mobile-toggle {
+    display: inline-flex;
+    width: auto;
+    justify-self: start;
   }
 
   .active-toy-nav__actions {
@@ -1464,7 +1512,12 @@ body {
     width: 100%;
     min-height: 40px;
     padding: 8px 10px;
-    font-size: 0.92rem;
+    border-radius: 10px;
+    border-color: rgba(148, 165, 180, 0.35);
+    background: rgba(148, 165, 180, 0.08);
+    box-shadow: none;
+    font-size: 0.9rem;
+    font-weight: 600;
   }
 
   .toy-nav__back {
@@ -1475,18 +1528,34 @@ body {
     justify-content: center;
   }
 
+  .active-toy-nav__actions[data-toy-actions-expanded="false"] {
+    display: none;
+  }
+
   .control-panel--floating {
     top: max(
-      var(--toy-nav-floating-offset, 102px),
-      calc(env(safe-area-inset-top) + 88px)
+      var(--toy-nav-floating-offset, 108px),
+      calc(env(safe-area-inset-top) + 92px)
     );
     max-height: min(
-      44svh,
+      38svh,
       calc(
         100dvh -
-        var(--toy-nav-floating-offset, 102px) -
+        var(--toy-nav-floating-offset, 108px) -
         env(safe-area-inset-bottom) -
         12px
+      )
+    );
+  }
+
+  :root[data-toy-controls-expanded="true"] .control-panel--floating {
+    max-height: min(
+      30svh,
+      calc(
+        100dvh -
+        var(--toy-nav-floating-offset, 108px) -
+        env(safe-area-inset-bottom) -
+        16px
       )
     );
   }
@@ -1541,14 +1610,18 @@ body {
 
 @media (max-width: 520px) {
   .active-toy-nav__actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
   }
 
   .active-toy-nav {
-    top: calc(env(safe-area-inset-top) + 4px);
-    width: calc(100% - 10px);
-    padding: 6px;
+    top: max(4px, env(safe-area-inset-top));
+    width: calc(
+      100% -
+      max(8px, env(safe-area-inset-left)) -
+      max(8px, env(safe-area-inset-right))
+    );
+    padding: 8px;
     border-radius: 14px;
   }
 
@@ -1574,16 +1647,28 @@ body {
 
   .control-panel--floating {
     top: max(
-      var(--toy-nav-floating-offset, 102px),
-      calc(env(safe-area-inset-top) + 76px)
+      var(--toy-nav-floating-offset, 108px),
+      calc(env(safe-area-inset-top) + 78px)
     );
     max-height: min(
-      40svh,
+      34svh,
       calc(
         100dvh -
-        var(--toy-nav-floating-offset, 102px) -
+        var(--toy-nav-floating-offset, 108px) -
         env(safe-area-inset-bottom) -
         10px
+      )
+    );
+  }
+
+  :root[data-toy-controls-expanded="true"] .control-panel--floating {
+    max-height: min(
+      26svh,
+      calc(
+        100dvh -
+        var(--toy-nav-floating-offset, 108px) -
+        env(safe-area-inset-bottom) -
+        14px
       )
     );
   }
@@ -1610,6 +1695,12 @@ body {
     flex: 1 1 auto;
     padding: 6px 10px;
     font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .active-toy-nav__actions {
+    grid-template-columns: 1fr;
   }
 }
 
