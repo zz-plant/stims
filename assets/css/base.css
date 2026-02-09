@@ -1598,14 +1598,18 @@ body {
 
 @media (max-width: 520px) {
   .active-toy-nav__actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
   }
 
   .active-toy-nav {
-    top: calc(env(safe-area-inset-top) + 4px);
-    width: calc(100% - 10px);
-    padding: 6px;
+    top: max(4px, env(safe-area-inset-top));
+    width: calc(
+      100% -
+      max(8px, env(safe-area-inset-left)) -
+      max(8px, env(safe-area-inset-right))
+    );
+    padding: 8px;
     border-radius: 14px;
   }
 
@@ -1667,6 +1671,12 @@ body {
     flex: 1 1 auto;
     padding: 6px 10px;
     font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .active-toy-nav__actions {
+    grid-template-columns: 1fr;
   }
 }
 

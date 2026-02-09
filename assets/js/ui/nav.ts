@@ -191,12 +191,13 @@ function renderToyNav(
         type="button"
         class="toy-nav__mobile-toggle"
         data-toy-actions-toggle="true"
+        aria-controls="toy-nav-actions"
         aria-expanded="false"
       >
         Controls
       </button>
     </div>
-    <div class="active-toy-nav__actions" data-toy-actions-expanded="true">
+    <div class="active-toy-nav__actions" id="toy-nav-actions" data-toy-actions-expanded="true">
       <div class="renderer-status-container"></div>
       ${
         options.onNextToy
@@ -460,6 +461,7 @@ function setupToyNavFloatingOffset(container: ToyNavContainer, doc: Document) {
 
   win?.addEventListener('resize', updateOffset);
   win?.visualViewport?.addEventListener('resize', updateOffset);
+  win?.visualViewport?.addEventListener('scroll', updateOffset);
 
   container.__toyNavOffsetCleanup = () => {
     if (typeof rafHandle === 'number') {
@@ -472,6 +474,7 @@ function setupToyNavFloatingOffset(container: ToyNavContainer, doc: Document) {
     mutationObserver?.disconnect();
     win?.removeEventListener('resize', updateOffset);
     win?.visualViewport?.removeEventListener('resize', updateOffset);
+    win?.visualViewport?.removeEventListener('scroll', updateOffset);
   };
 }
 
