@@ -8,6 +8,9 @@ const toyLibrary = [
     module: 'assets/js/toys/aurora-painter.ts',
     type: 'module',
     requiresWebGPU: false,
+    capabilities: {
+      demoAudio: true,
+    },
   },
   {
     slug: 'evol',
@@ -121,6 +124,24 @@ describe('app shell user journeys', () => {
     expect(mockLoadToy).toHaveBeenCalledWith('aurora-painter', {
       pushState: true,
       preferDemoAudio: false,
+    });
+  });
+
+  test('demo button keyboard activation keeps demo-audio launch path', async () => {
+    await loadAppShell();
+
+    const playDemo = document.querySelector('.webtoy-card-actions button');
+    expect(playDemo).not.toBeNull();
+
+    playDemo?.dispatchEvent(
+      new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    );
+    playDemo?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(mockLoadToy).toHaveBeenCalledTimes(1);
+    expect(mockLoadToy).toHaveBeenCalledWith('aurora-painter', {
+      pushState: true,
+      preferDemoAudio: true,
     });
   });
 
