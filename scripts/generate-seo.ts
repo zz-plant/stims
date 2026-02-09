@@ -6,6 +6,7 @@ const iconUrl = `${baseUrl}/icons/icon-512.png`;
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'public');
 const generatedDirs = ['toys', 'tags', 'moods', 'capabilities'];
+const sitemapChunkSize = 5000;
 
 const slugify = (value: string) =>
   value
@@ -22,6 +23,45 @@ const escapeHtml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
+const escapeXml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+
+const buildOgSvg = ({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle: string;
+}) => `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${escapeHtml(title)}">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1024" />
+      <stop offset="100%" stop-color="#26377f" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1035" cy="540" r="160" fill="rgba(255,255,255,0.12)" />
+  <circle cx="160" cy="100" r="120" fill="rgba(255,255,255,0.1)" />
+  <text x="90" y="220" font-size="42" fill="#dbe4ff" font-family="Inter, Arial, sans-serif">Stim Webtoys Library</text>
+  <text x="90" y="320" font-size="72" font-weight="700" fill="#ffffff" font-family="Inter, Arial, sans-serif">${escapeHtml(title)}</text>
+  <text x="90" y="390" font-size="32" fill="#e2e8ff" font-family="Inter, Arial, sans-serif">${escapeHtml(subtitle)}</text>
+</svg>`;
+
+const getSitemapMeta = (url: string) => {
+  if (url.endsWith('/')) {
+    return { changefreq: 'weekly', priority: '0.9' };
+  }
+  if (url.includes('/toys/')) {
+    return { changefreq: 'monthly', priority: '0.8' };
+  }
+  return { changefreq: 'monthly', priority: '0.7' };
+};
+
 const renderPage = ({
   title,
   description,
@@ -29,6 +69,8 @@ const renderPage = ({
   body,
   keywords,
   extraHead = '',
+  socialImage = iconUrl,
+  socialImageAlt = 'Stim Webtoys Library icon',
 }: {
   title: string;
   description: string;
@@ -36,6 +78,8 @@ const renderPage = ({
   body: string;
   keywords?: string[];
   extraHead?: string;
+  socialImage?: string;
+  socialImageAlt?: string;
 }) => `<!doctype html>
 <html lang="en">
   <head>
@@ -48,14 +92,15 @@ const renderPage = ({
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="${canonical}" />
-    <meta property="og:image" content="${iconUrl}" />
+    <meta property="og:image" content="${socialImage}" />
+    <meta property="og:image:alt" content="${escapeHtml(socialImageAlt)}" />
     <meta property="og:site_name" content="Stim Webtoys Library" />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${iconUrl}" />
-    <meta name="twitter:image:alt" content="Stim Webtoys Library icon" />
+    <meta name="twitter:image" content="${socialImage}" />
+    <meta name="twitter:image:alt" content="${escapeHtml(socialImageAlt)}" />
     <link rel="canonical" href="${canonical}" />
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
@@ -85,6 +130,11 @@ type ToyEntry = {
     motion?: boolean;
   };
   requiresWebGPU?: boolean;
+};
+
+type BreadcrumbEntry = {
+  label: string;
+  href: string;
 };
 
 const buildTagIndex = (toys: ToyEntry[]) => {
@@ -254,6 +304,136 @@ const renderCapabilityMetaList = (
     `
     : '';
 
+const renderBreadcrumbs = (entries: BreadcrumbEntry[]) =>
+  `<nav aria-label="Breadcrumb" class="breadcrumb-nav">
+    <ol>
+      ${entries
+        .map(
+          (entry, index) =>
+            `<li>${
+              index === entries.length - 1
+                ? `<span aria-current="page">${escapeHtml(entry.label)}</span>`
+                : `<a class="text-link" href="${entry.href}">${escapeHtml(entry.label)}</a>`
+            }</li>`,
+        )
+        .join('')}
+    </ol>
+  </nav>`;
+
+const buildBreadcrumbJsonLd = (entries: BreadcrumbEntry[]) => ({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: entries.map((entry, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: entry.label,
+    item: `${baseUrl}${entry.href}`,
+  })),
+});
+
+const buildFaqItems = (toy: ToyEntry) => {
+  const capabilityLines = [
+    toy.capabilities?.microphone
+      ? 'Supports live microphone input.'
+      : 'No live microphone required.',
+    toy.capabilities?.demoAudio
+      ? 'Includes demo audio mode.'
+      : 'No built-in demo audio mode.',
+    toy.capabilities?.motion
+      ? 'Supports device motion interactions.'
+      : 'No device motion input required.',
+    toy.requiresWebGPU
+      ? 'Uses WebGPU for enhanced effects and needs a compatible browser/device.'
+      : 'Runs without WebGPU requirements.',
+  ];
+  return [
+    {
+      question: `What is ${toy.title}?`,
+      answer: toy.description,
+    },
+    {
+      question: `How do I start ${toy.title}?`,
+      answer: `Open the toy and press Launch. Then enable microphone or demo audio options if prompted for the most reactive visuals.`,
+    },
+    {
+      question: `What capabilities does ${toy.title} support?`,
+      answer: capabilityLines.join(' '),
+    },
+  ];
+};
+
+const buildFaqJsonLd = (
+  items: {
+    question: string;
+    answer: string;
+  }[],
+) => ({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: items.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.answer,
+    },
+  })),
+});
+
+const renderFaqSection = (
+  items: {
+    question: string;
+    answer: string;
+  }[],
+) => `
+  <section>
+    <div class="section-heading">
+      <p class="eyebrow">FAQ</p>
+      <h2>About this toy</h2>
+    </div>
+    <dl class="feature-card-grid">
+      ${items
+        .map(
+          (item) => `
+        <div class="feature-card">
+          <dt><strong>${escapeHtml(item.question)}</strong></dt>
+          <dd>${escapeHtml(item.answer)}</dd>
+        </div>
+      `,
+        )
+        .join('')}
+    </dl>
+  </section>
+`;
+
+const buildRelatedToys = (toy: ToyEntry, toys: ToyEntry[]) => {
+  const currentTags = new Set(toy.tags ?? []);
+  const currentMoods = new Set(toy.moods ?? []);
+  return toys
+    .filter((candidate) => candidate.slug !== toy.slug)
+    .map((candidate) => {
+      let score = 0;
+      for (const tag of candidate.tags ?? []) {
+        if (currentTags.has(tag)) score += 2;
+      }
+      for (const mood of candidate.moods ?? []) {
+        if (currentMoods.has(mood)) score += 2;
+      }
+      if (toy.capabilities?.microphone === candidate.capabilities?.microphone)
+        score += 1;
+      if (toy.capabilities?.demoAudio === candidate.capabilities?.demoAudio)
+        score += 1;
+      if (toy.capabilities?.motion === candidate.capabilities?.motion)
+        score += 1;
+      if (toy.requiresWebGPU === candidate.requiresWebGPU) score += 1;
+      return { candidate, score };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map((entry) => entry.candidate);
+};
+
 const buildCollectionJsonLd = ({
   canonical,
   title,
@@ -298,10 +478,18 @@ const generateSeo = async () => {
   const tagsDir = path.join(publicDir, 'tags');
   const moodsDir = path.join(publicDir, 'moods');
   const capabilitiesDir = path.join(publicDir, 'capabilities');
+  const ogDir = path.join(publicDir, 'og');
   await mkdir(toyDir, { recursive: true });
   await mkdir(tagsDir, { recursive: true });
   await mkdir(moodsDir, { recursive: true });
   await mkdir(capabilitiesDir, { recursive: true });
+  await mkdir(ogDir, { recursive: true });
+
+  const defaultOgSvg = buildOgSvg({
+    title: 'Stim Webtoys',
+    subtitle: 'Audio-reactive sensory visual play',
+  });
+  await writeFile(path.join(ogDir, 'default.svg'), defaultOgSvg);
 
   const tagEntries = buildTagIndex(toys);
   const moodEntries = buildMoodIndex(toys);
@@ -348,6 +536,8 @@ const generateSeo = async () => {
       }),
     )}</script>
 `,
+      socialImage: `${baseUrl}/og/default.svg`,
+      socialImageAlt: 'Stim Webtoys collection preview image',
     }),
   );
 
@@ -356,6 +546,19 @@ const generateSeo = async () => {
     const capabilityMeta = capabilityEntries
       .filter((entry) => entry.match(toy))
       .map((entry) => ({ label: entry.label, slug: entry.slug }));
+    const breadcrumbs = [
+      { label: 'Home', href: '/' },
+      { label: 'All toys', href: '/toys/' },
+      { label: toy.title, href: `/toys/${toy.slug}/` },
+    ];
+    const faqItems = buildFaqItems(toy);
+    const relatedToys = buildRelatedToys(toy, toys);
+    const ogSvg = buildOgSvg({
+      title: toy.title,
+      subtitle: 'Interactive audio-reactive web toy',
+    });
+    await writeFile(path.join(ogDir, `${toy.slug}.svg`), ogSvg);
+
     const jsonLd = {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
@@ -375,10 +578,13 @@ const generateSeo = async () => {
         new Set([...(toy.tags ?? []), ...(toy.moods ?? []), 'audio-reactive']),
       ),
     };
-    const extraHead = `    <script type="application/ld+json">${JSON.stringify(
-      jsonLd,
-    )}</script>`;
+    const extraHead = `
+    <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+    <script type="application/ld+json">${JSON.stringify(buildBreadcrumbJsonLd(breadcrumbs))}</script>
+    <script type="application/ld+json">${JSON.stringify(buildFaqJsonLd(faqItems))}</script>
+`;
     const body = `
+      ${renderBreadcrumbs(breadcrumbs)}
       <section class="intro">
         <div class="section-heading">
           <p class="eyebrow">Stim Webtoys</p>
@@ -397,6 +603,14 @@ const generateSeo = async () => {
           ${renderCapabilityMetaList('Capabilities', capabilityMeta)}
         </div>
       </section>
+      <section>
+        <div class="section-heading">
+          <p class="eyebrow">Related</p>
+          <h2>More toys you might like</h2>
+        </div>
+        ${renderToyList(relatedToys)}
+      </section>
+      ${renderFaqSection(faqItems)}
     `;
 
     const toyPath = path.join(toyDir, toy.slug);
@@ -421,6 +635,8 @@ const generateSeo = async () => {
         extraHead: `
 ${extraHead}
 `,
+        socialImage: `${baseUrl}/og/${toy.slug}.svg`,
+        socialImageAlt: `${toy.title} preview image`,
       }),
     );
   }
@@ -457,6 +673,11 @@ ${extraHead}
   for (const entry of tagEntries) {
     const canonical = `${baseUrl}/tags/${entry.slug}/`;
     const body = `
+      ${renderBreadcrumbs([
+        { label: 'Home', href: '/' },
+        { label: 'Tags', href: '/tags/' },
+        { label: entry.label, href: `/tags/${entry.slug}/` },
+      ])}
       <section class="intro">
         <div class="section-heading">
           <p class="eyebrow">Tag</p>
@@ -484,6 +705,13 @@ ${extraHead}
           'audio-reactive web toys',
         ],
         extraHead: `
+    <script type="application/ld+json">${JSON.stringify(
+      buildBreadcrumbJsonLd([
+        { label: 'Home', href: '/' },
+        { label: 'Tags', href: '/tags/' },
+        { label: entry.label, href: `/tags/${entry.slug}/` },
+      ]),
+    )}</script>
     <script type="application/ld+json">${JSON.stringify(
       buildCollectionJsonLd({
         canonical,
@@ -525,6 +753,11 @@ ${extraHead}
   for (const entry of moodEntries) {
     const canonical = `${baseUrl}/moods/${entry.slug}/`;
     const body = `
+      ${renderBreadcrumbs([
+        { label: 'Home', href: '/' },
+        { label: 'Moods', href: '/moods/' },
+        { label: entry.label, href: `/moods/${entry.slug}/` },
+      ])}
       <section class="intro">
         <div class="section-heading">
           <p class="eyebrow">Mood</p>
@@ -552,6 +785,13 @@ ${extraHead}
           'audio-reactive web toys',
         ],
         extraHead: `
+    <script type="application/ld+json">${JSON.stringify(
+      buildBreadcrumbJsonLd([
+        { label: 'Home', href: '/' },
+        { label: 'Moods', href: '/moods/' },
+        { label: entry.label, href: `/moods/${entry.slug}/` },
+      ]),
+    )}</script>
     <script type="application/ld+json">${JSON.stringify(
       buildCollectionJsonLd({
         canonical,
@@ -597,6 +837,11 @@ ${extraHead}
   for (const entry of capabilityEntries) {
     const canonical = `${baseUrl}/capabilities/${entry.slug}/`;
     const body = `
+      ${renderBreadcrumbs([
+        { label: 'Home', href: '/' },
+        { label: 'Capabilities', href: '/capabilities/' },
+        { label: entry.label, href: `/capabilities/${entry.slug}/` },
+      ])}
       <section class="intro">
         <div class="section-heading">
           <p class="eyebrow">Capability</p>
@@ -624,6 +869,13 @@ ${extraHead}
           'audio-reactive web toys',
         ],
         extraHead: `
+    <script type="application/ld+json">${JSON.stringify(
+      buildBreadcrumbJsonLd([
+        { label: 'Home', href: '/' },
+        { label: 'Capabilities', href: '/capabilities/' },
+        { label: entry.label, href: `/capabilities/${entry.slug}/` },
+      ]),
+    )}</script>
     <script type="application/ld+json">${JSON.stringify(
       buildCollectionJsonLd({
         canonical,
@@ -653,19 +905,41 @@ ${extraHead}
     ),
   ];
 
-  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+  const sitemapChunks: string[] = [];
+  for (let index = 0; index < urls.length; index += sitemapChunkSize) {
+    const chunk = urls.slice(index, index + sitemapChunkSize);
+    const sitemapName = `sitemap-${Math.floor(index / sitemapChunkSize) + 1}.xml`;
+    const sitemapBody = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls
-  .map(
-    (url) => `  <url>
-    <loc>${url}</loc>
+${chunk
+  .map((url) => {
+    const { changefreq, priority } = getSitemapMeta(url);
+    return `  <url>
+    <loc>${escapeXml(url)}</loc>
     <lastmod>${today}</lastmod>
-  </url>`,
-  )
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>
+  </url>`;
+  })
   .join('\n')}
 </urlset>
 `;
-  await writeFile(path.join(publicDir, 'sitemap.xml'), sitemap);
+    await writeFile(path.join(publicDir, sitemapName), sitemapBody);
+    sitemapChunks.push(sitemapName);
+  }
+  const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${sitemapChunks
+  .map(
+    (sitemapName) => `  <sitemap>
+    <loc>${baseUrl}/${sitemapName}</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>`,
+  )
+  .join('\n')}
+</sitemapindex>
+`;
+  await writeFile(path.join(publicDir, 'sitemap.xml'), sitemapIndex);
   await writeFile(
     path.join(publicDir, 'robots.txt'),
     `User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`,
