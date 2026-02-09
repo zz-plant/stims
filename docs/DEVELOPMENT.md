@@ -16,7 +16,13 @@ This is the day-to-day developer workflow reference for Stim Webtoys Library.
 bun install
 ```
 
-When dependency manifests or lockfiles change:
+When dependency manifests change and you need to update the lockfile, run:
+
+```bash
+bun install
+```
+
+For reproducible CI-style installs that must not modify `bun.lock`, run:
 
 ```bash
 bun install --frozen-lockfile

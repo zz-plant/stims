@@ -4,7 +4,7 @@ Stim Webtoys Library is a collection of interactive, audio-reactive web toys bui
 
 ## Essentials
 
-- **Package manager:** Bun (run `bun install --frozen-lockfile` when dependencies change; run scripts with `bun run ...`).
+- **Package manager:** Bun (use `bun install` for dependency updates, reserve `bun install --frozen-lockfile` for reproducible/CI installs, and run scripts with `bun run ...`).
 - **Quality gate for JS/TS edits:** run `bun run check` (Biome check + typecheck + tests) before committing.
 - **Commit metadata:** use sentence case commit titles with no trailing period.
 - **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.

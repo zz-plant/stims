@@ -3,7 +3,13 @@
 ## Package manager and script execution
 
 - Use **Bun** for installs and scripts.
-- When dependency manifests or lockfiles change, run:
+- When dependency manifests change and lockfile updates are expected, run:
+
+  ```bash
+  bun install
+  ```
+
+- For reproducible installs that must not modify the lockfile (for example CI), run:
 
   ```bash
   bun install --frozen-lockfile
