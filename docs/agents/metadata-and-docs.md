@@ -1,24 +1,42 @@
-# Metadata & Documentation Expectations
+# Metadata and Docs Expectations
 
-## Metadata conventions
+## Commit and PR metadata
 
-- **Commit messages:** concise, descriptive titles in sentence case (no trailing period), e.g., `Add docs on data flow`.
-- **PR summaries:** include a short summary plus explicit lists of tests run and any docs touched or added so reviewers can verify coverage.
+- Commit titles: sentence case, no trailing period.
+- PR summaries must include:
+  - short summary,
+  - explicit list of tests run,
+  - explicit list of docs touched/added.
 
-### Suggested PR summary format
+Suggested PR body template:
 
-```
-Summary:
+```md
+Summary
 - <short summary>
 
-Tests:
-- <test command or "Not run (reason)">
+Tests
+- <command>
 
-Docs:
-- <doc path(s) touched, or "None">
+Docs
+- <path or None>
 ```
 
-## Documentation expectations
+## Documentation upkeep rules
 
-- Refer to `docs/README.md` for the documentation map when adding or updating docs.
-- Keep the docs in `docs/` and the root `README.md` in sync with workflow or toy changes so contributors can find updated guidance.
+When behavior, scripts, or structure changes:
+
+1. Update the source-of-truth workflow docs under `docs/`.
+2. Update the docs map in `docs/README.md` if files moved or were added.
+3. Keep cross-links aligned across:
+   - `README.md`
+   - `CONTRIBUTING.md`
+   - `AGENTS.md`
+   - `docs/agents/README.md`
+
+## Toy docs synchronization
+
+When adding/removing/renaming toy slugs, update all related docs in the same change:
+
+- `docs/TOY_DEVELOPMENT.md`
+- `docs/TOY_SCRIPT_INDEX.md`
+- `docs/toys.md`
