@@ -59,6 +59,15 @@ bun run dev
 - Keep changes focused and prefer smaller, reviewable pull requests.
 - Run tests and linting before opening a PR.
 - Provide a clear description of what changed and any testing performed.
+- If you touch documentation structure or contributor workflows, update the docs map in [`docs/README.md`](./docs/README.md) so the new structure remains discoverable.
+
+## Documentation entry points
+
+Use the docs set by audience so guidance stays easy to find:
+
+- **Contributors (human):** this file + [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md).
+- **Toy-focused implementation work:** [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), [`docs/TOY_SCRIPT_INDEX.md`](./docs/TOY_SCRIPT_INDEX.md), [`docs/toys.md`](./docs/toys.md).
+- **Agent/automation contributors:** root [`AGENTS.md`](./AGENTS.md) + [`docs/agents/README.md`](./docs/agents/README.md).
 
 ## Adding or Updating Webtoys
 

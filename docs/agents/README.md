@@ -1,26 +1,33 @@
 # Agent Guidance Index
 
-Start with the root [AGENTS.md](../../AGENTS.md) for the essentials, then use these deeper references as needed.
+Use this folder as the **agent-facing overlay** for repo docs.
 
-## Quickstart (agent-facing)
+## Navigation order (agent workflow)
 
-- Check for additional `AGENTS.md` files when you move into a new subdirectory.
-- Prefer Bun for installs and scripts (`bun install --frozen-lockfile`, `bun run ...`).
-- If you touch JS/TS, run `bun run check` before committing.
-- If you only edit docs, you can skip typechecking/tests.
+1. Read root [`AGENTS.md`](../../AGENTS.md) for mandatory defaults.
+2. Open [`../README.md`](../README.md) when you need the full contributor docs map.
+3. Use the focused files below only for the task at hand (progressive disclosure).
 
-## Fast navigation map
+## Guidance by task
+
+### If you are changing code
+
+- [`tooling-and-quality.md`](./tooling-and-quality.md): Bun-first commands and required quality gates.
+- [`toy-development.md`](./toy-development.md): runtime structure and toy implementation patterns.
+- [`toy-workflows.md`](./toy-workflows.md): common toy workflows and command recipes.
+- [`reference-docs.md`](./reference-docs.md): high-signal code/document locations for fast triage.
+
+### If you are changing docs or metadata
+
+- [`metadata-and-docs.md`](./metadata-and-docs.md): commit/PR conventions and documentation upkeep expectations.
+- [`../README.md`](../README.md): canonical docs map by audience and purpose.
+
+## Fast repo map
 
 - `assets/js/` - Core runtime, toy modules, and UI logic.
 - `assets/js/toys/` - Toy implementations (TypeScript).
 - `assets/data/toys.json` - Toy registry metadata.
 - `toys/` - Standalone HTML toy pages.
 - `tests/` - Automated tests.
-- `docs/` - Documentation and architecture references.
-- `.agent/skills/` - Agent skill definitions for common workflows.
-
-- [Tooling & quality checks](./tooling-and-quality.md)
-- [Metadata & documentation expectations](./metadata-and-docs.md)
-- [Toy development structure & patterns](./toy-development.md)
-- [Toy workflows & common commands](./toy-workflows.md)
-- [Reference documentation pointers](./reference-docs.md)
+- `docs/` - Contributor and architecture references.
+- `.agent/skills/` - Agent skill definitions for reusable workflows.
