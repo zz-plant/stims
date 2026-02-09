@@ -1910,6 +1910,11 @@ export function createLibraryView({
         event.stopPropagation();
         openToy(toy, { preferDemoAudio: true });
       });
+      playDemo.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.stopPropagation();
+        }
+      });
 
       actions.appendChild(playDemo);
       card.appendChild(actions);
