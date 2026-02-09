@@ -11,11 +11,13 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
    bun install
    ```
 
-   If dependencies changed, prefer:
+   If you are updating dependencies, run:
 
    ```bash
-   bun install --frozen-lockfile
+   bun install
    ```
+
+   Use `bun install --frozen-lockfile` in CI or other reproducible-install contexts where lockfile changes must be disallowed.
 
 3. Start the dev server:
 
