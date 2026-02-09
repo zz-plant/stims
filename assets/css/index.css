@@ -3196,4 +3196,17 @@ footer {
   .search-clear {
     right: 0.35rem;
   }
+  .hero-cta-row .cta-button.cta-button--muted,
+  .hero-cta-row .cta-button.cta-button--accent {
+    display: none;
+  }
+
+  .hero-cta-row .cta-button.primary,
+  .hero-cta-row .cta-button.ghost {
+    min-height: 52px;
+  }
+
+  .search-meta__tokens {
+    display: none;
+  }
 }
