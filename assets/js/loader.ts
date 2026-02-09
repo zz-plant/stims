@@ -24,6 +24,8 @@ import { ensureWebGL } from './utils/webgl-check';
 type Toy = ToyEntry;
 
 const TOY_QUERY_PARAM = 'toy';
+const LIBRARY_FILTER_PARAM = 'filters';
+const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
 const STARTER_POLL_DELAY_MS = 100;
 const STARTER_POLL_ATTEMPTS = 30;
 const FLOW_INTERVAL_MS = 45000;
@@ -198,6 +200,30 @@ export function createLoader({
     void resetAudioPoolFn({ stopStreams: true });
     activeToySlug = null;
     setFlowActive(false);
+  };
+
+  const browseCompatibleToys = () => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const currentFilters = (url.searchParams.get(LIBRARY_FILTER_PARAM) ?? '')
+      .split(',')
+      .map((token) => token.trim())
+      .filter(Boolean)
+      .filter((token) => token.toLowerCase() !== 'feature:webgpu');
+    url.searchParams.set(
+      LIBRARY_FILTER_PARAM,
+      Array.from(new Set([...currentFilters, 'feature:compatible'])).join(','),
+    );
+    url.searchParams.delete(TOY_QUERY_PARAM);
+    url.pathname = url.pathname.endsWith('/toy.html')
+      ? url.pathname.replace(/\/toy\.html$/, '/index.html')
+      : url.pathname;
+    try {
+      window.sessionStorage.setItem(COMPATIBILITY_MODE_KEY, 'true');
+    } catch (_error) {
+      // Ignore storage access issues.
+    }
+    window.location.href = url.toString();
   };
 
   const registerEscapeHandler = () => {
@@ -381,6 +407,7 @@ export function createLoader({
       view.showCapabilityError(toy, {
         allowFallback: capabilityDecision.allowWebGLFallback,
         onBack: backToLibrary,
+        onBrowseCompatible: browseCompatibleToys,
         details: capabilities.fallbackReason,
         onContinue: capabilityDecision.allowWebGLFallback
           ? () => {

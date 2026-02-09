@@ -1134,6 +1134,7 @@ export function createLibraryView({
   themeToggleId = 'theme-toggle',
 } = {}) {
   const STORAGE_KEY = 'stims-library-state';
+  const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
   const QUERY_PARAM = 'q';
   const FILTER_PARAM = 'filters';
   const SORT_PARAM = 'sort';
@@ -1483,7 +1484,11 @@ export function createLibraryView({
       case 'capability':
         return Boolean(toy.capabilities?.[normalizeCapabilityToken(value)]);
       case 'feature':
-        return value === 'webgpu' ? Boolean(toy.requiresWebGPU) : true;
+        if (value === 'webgpu') return Boolean(toy.requiresWebGPU);
+        if (value === 'compatible') {
+          return !toy.requiresWebGPU || Boolean(toy.allowWebGLFallback);
+        }
+        return true;
       default:
         return true;
     }
@@ -1686,9 +1691,9 @@ export function createLibraryView({
     updateActiveFiltersSummary();
   };
 
-  const openToy = (toy) => {
+  const openToy = (toy, { preferDemoAudio = false } = {}) => {
     if (toy.type === 'module' && typeof loadToy === 'function') {
-      loadToy(toy.slug, { pushState: true });
+      loadToy(toy.slug, { pushState: true, preferDemoAudio });
     } else if (toy.module) {
       window.location.href = toy.module;
     }
@@ -1711,6 +1716,16 @@ export function createLibraryView({
     }
 
     openToy(toy);
+  };
+
+  const getBestForLabel = (toy) => {
+    if (toy.capabilities?.motion) return 'Best for mobile tilt';
+    if (toy.capabilities?.demoAudio && toy.capabilities?.microphone) {
+      return 'Best for quick starts or live rooms';
+    }
+    if (toy.capabilities?.demoAudio) return 'Best for no-permission preview';
+    if (toy.capabilities?.microphone) return 'Best for live room audio';
+    return 'Best for visual exploration';
   };
 
   const createCard = (toy) => {
@@ -1762,6 +1777,11 @@ export function createLibraryView({
     desc.textContent = toy.description;
     card.appendChild(title);
     card.appendChild(desc);
+
+    const bestFor = document.createElement('p');
+    bestFor.className = 'webtoy-card-bestfor';
+    bestFor.textContent = getBestForLabel(toy);
+    card.appendChild(bestFor);
 
     const matchedFields = getMatchedFields(toy, getQueryTokens(searchQuery));
     if (matchedFields.length > 0) {
@@ -1875,6 +1895,24 @@ export function createLibraryView({
       if (metaRow.childElementCount > 0) {
         card.appendChild(metaRow);
       }
+    }
+
+    if (toy.capabilities?.demoAudio && toy.type === 'module') {
+      const actions = document.createElement('div');
+      actions.className = 'webtoy-card-actions';
+
+      const playDemo = document.createElement('button');
+      playDemo.type = 'button';
+      playDemo.className = 'cta-button cta-button--muted';
+      playDemo.textContent = 'Play demo now';
+      playDemo.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openToy(toy, { preferDemoAudio: true });
+      });
+
+      actions.appendChild(playDemo);
+      card.appendChild(actions);
     }
 
     card.addEventListener('click', (event) => {
@@ -2229,6 +2267,24 @@ export function createLibraryView({
           { render: false },
         );
         commitState({ replace: true });
+      } else {
+        try {
+          if (
+            window.sessionStorage.getItem(COMPATIBILITY_MODE_KEY) === 'true'
+          ) {
+            applyState(
+              {
+                query: '',
+                filters: ['feature:compatible'],
+                sort: 'featured',
+              },
+              { render: false },
+            );
+            commitState({ replace: true });
+          }
+        } catch (_error) {
+          // Ignore storage access issues.
+        }
       }
     }
 

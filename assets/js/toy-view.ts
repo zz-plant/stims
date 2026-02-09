@@ -50,6 +50,7 @@ type CapabilityOptions = {
   allowFallback?: boolean;
   onBack?: () => void;
   onContinue?: () => void;
+  onBrowseCompatible?: () => void;
   details?: string | null;
 };
 
@@ -536,6 +537,10 @@ export function createToyView({
         {
           label: 'Back to Library',
           onClick: options.onBack,
+        },
+        {
+          label: 'Browse compatible toys',
+          onClick: options.onBrowseCompatible,
         },
         ...(options.allowFallback && options.onContinue
           ? [

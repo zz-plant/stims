@@ -2483,6 +2483,14 @@ html:not(.light) .webtoy-card {
   line-height: 1.5;
 }
 
+.webtoy-card-bestfor {
+  margin-top: -0.15rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--accent-color) 62%, var(--text-color) 38%);
+}
+
 .webtoy-card-match {
   margin-top: -2px;
   margin-bottom: 2px;
@@ -2515,6 +2523,20 @@ html:not(.light) .webtoy-card {
   padding-top: 0.9rem;
   position: relative;
   z-index: 2;
+}
+
+.webtoy-card-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.3rem;
+  position: relative;
+  z-index: 2;
+}
+
+.webtoy-card-actions .cta-button {
+  min-height: 36px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.78rem;
 }
 
 .webtoy-card-meta::before {
