@@ -1006,6 +1006,12 @@ body {
   color: rgba(233, 251, 255, 0.82);
 }
 
+.control-panel__microcopy {
+  font-size: 0.76rem;
+  color: rgba(233, 251, 255, 0.68);
+  line-height: 1.35;
+}
+
 .control-panel__advanced {
   display: grid;
   gap: 8px;

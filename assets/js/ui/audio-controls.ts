@@ -60,6 +60,7 @@ export function initAudioControls(
       <div class="control-panel__text">
         <span class="control-panel__label">Live mic</span>
         <span class="control-panel__subtext">Best for live instruments, voice, and ambient sound.</span>
+        <span class="control-panel__microcopy">Reacts to your room in real time. Requires microphone permission.</span>
       </div>
       <button id="start-audio-btn" class="cta-button primary" type="button">
         Use microphone
@@ -69,6 +70,7 @@ export function initAudioControls(
       <div class="control-panel__text">
         <span class="control-panel__label">Curated demo</span>
         <span class="control-panel__subtext">Fastest way to preview visuals without permissions.</span>
+        <span class="control-panel__microcopy">Starts instantly with built-in audio. Great first try when privacy-sensitive.</span>
       </div>
       <button id="use-demo-audio" class="cta-button primary" type="button">Use demo audio</button>
     </div>

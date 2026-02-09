@@ -120,6 +120,7 @@ describe('app shell user journeys', () => {
     expect(mockLoadToy).toHaveBeenCalledTimes(1);
     expect(mockLoadToy).toHaveBeenCalledWith('aurora-painter', {
       pushState: true,
+      preferDemoAudio: false,
     });
   });
 
