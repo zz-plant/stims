@@ -190,15 +190,24 @@ function renderToyNav(
       <p class="active-toy-nav__title">${safeTitle}</p>
       <p class="active-toy-nav__hint">${hintText}</p>
       ${safeSlug ? `<span class="active-toy-nav__pill">${safeSlug}</span>` : ''}
-      <button
-        type="button"
-        class="toy-nav__mobile-toggle"
-        data-toy-actions-toggle="true"
-        aria-controls="toy-nav-actions"
-        aria-expanded="false"
-      >
-        Controls
-      </button>
+      <div class="active-toy-nav__mobile-actions">
+        <button
+          type="button"
+          class="toy-nav__back-quick"
+          data-back-to-library-quick="true"
+        >
+          <span aria-hidden="true">←</span><span>Back</span>
+        </button>
+        <button
+          type="button"
+          class="toy-nav__mobile-toggle"
+          data-toy-actions-toggle="true"
+          aria-controls="toy-nav-actions"
+          aria-expanded="false"
+        >
+          Controls
+        </button>
+      </div>
     </div>
     <div class="active-toy-nav__actions" id="toy-nav-actions" data-toy-actions-expanded="true">
       <div class="renderer-status-container"></div>
@@ -257,6 +266,9 @@ function renderToyNav(
 
   const backBtn = container.querySelector('.toy-nav__back');
   backBtn?.addEventListener('click', () => options.onBack?.());
+
+  const quickBackBtn = container.querySelector('.toy-nav__back-quick');
+  quickBackBtn?.addEventListener('click', () => options.onBack?.());
 
   const actionsContainer = container.querySelector(
     '.active-toy-nav__actions',
