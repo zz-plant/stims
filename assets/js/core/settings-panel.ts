@@ -134,6 +134,8 @@ export class PersistentSettingsPanel {
   private qualityRow?: HTMLDivElement;
   private qualitySelect?: HTMLSelectElement;
   private qualityHint?: HTMLElement;
+  private qualityScopeHint?: HTMLElement;
+  private qualityChangeSummary?: HTMLElement;
   private qualityPresets: QualityPreset[] = [];
   private qualityChangeHandler?: (preset: QualityPreset) => void;
   private sectionHost: HTMLDivElement;
@@ -209,7 +211,15 @@ export class PersistentSettingsPanel {
       hint.textContent = 'Adjust resolution and particle density.';
       this.qualityHint = hint;
 
-      text.append(label, hint);
+      const scopeHint = document.createElement('small');
+      scopeHint.textContent = 'Applies to all toys in this session.';
+      this.qualityScopeHint = scopeHint;
+
+      const changeSummary = document.createElement('small');
+      changeSummary.className = 'control-panel__microcopy';
+      this.qualityChangeSummary = changeSummary;
+
+      text.append(label, hint, scopeHint, changeSummary);
 
       const select = document.createElement('select');
       select.id = selectId;
@@ -321,6 +331,12 @@ export class PersistentSettingsPanel {
     });
   }
 
+  private describePresetImpact(preset: QualityPreset): string {
+    const render = preset.renderScale ?? 1;
+    const particles = preset.particleScale ?? 1;
+    return `What changes: pixel ratio up to ${preset.maxPixelRatio.toFixed(2)}x, render scale ${render.toFixed(2)}x, particle density ${particles.toFixed(2)}x.`;
+  }
+
   private handleQualityChange(presetId: string) {
     const preset = this.qualityPresets.find((entry) => entry.id === presetId);
     if (!preset) return;
@@ -334,9 +350,17 @@ export class PersistentSettingsPanel {
   }
 
   private updateQualityHint(preset: QualityPreset) {
-    if (!this.qualityHint) return;
-    this.qualityHint.textContent =
-      preset.description ?? 'Adjust resolution and particle density.';
+    if (this.qualityHint) {
+      this.qualityHint.textContent =
+        preset.description ?? 'Adjust resolution and particle density.';
+    }
+    if (this.qualityScopeHint) {
+      this.qualityScopeHint.textContent =
+        'Applies to all toys in this session.';
+    }
+    if (this.qualityChangeSummary) {
+      this.qualityChangeSummary.textContent = this.describePresetImpact(preset);
+    }
   }
 }
 

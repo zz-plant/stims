@@ -928,6 +928,32 @@ body {
   color: rgba(245, 245, 245, 0.88);
 }
 
+.control-panel__comparison {
+  margin: -2px 0 10px;
+  font-size: 0.78rem;
+  color: rgba(233, 251, 255, 0.75);
+}
+
+.control-panel__pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 165, 180, 0.35);
+  font-size: 0.68rem;
+  letter-spacing: 0.01em;
+  color: rgba(233, 251, 255, 0.9);
+  background: rgba(148, 165, 180, 0.14);
+}
+
+.control-panel__advanced-helper {
+  margin: -2px 0 8px;
+  font-size: 0.76rem;
+  color: rgba(233, 251, 255, 0.65);
+}
+
 .control-panel__quickstart {
   margin: 0 0 10px;
   padding: 10px 12px;

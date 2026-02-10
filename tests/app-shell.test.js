@@ -19,6 +19,24 @@ const toyLibrary = [
     module: './evol.html',
     type: 'page',
     requiresWebGPU: false,
+    capabilities: {
+      microphone: true,
+      demoAudio: false,
+      motion: false,
+    },
+  },
+  {
+    slug: 'visual-breeze',
+    title: 'Visual Breeze',
+    description: 'Calm visuals for ambient focus.',
+    module: 'assets/js/toys/visual-breeze.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    capabilities: {
+      microphone: false,
+      demoAudio: true,
+      motion: false,
+    },
   },
 ];
 
@@ -125,6 +143,20 @@ describe('app shell user journeys', () => {
       pushState: true,
       preferDemoAudio: false,
     });
+  });
+
+  test('ambiguous searches boost lower-setup toys first', async () => {
+    await loadAppShell();
+
+    const search = document.getElementById('toy-search');
+    search.value = 'visual';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const visibleTitles = Array.from(
+      document.querySelectorAll('.webtoy-card h3'),
+    ).map((node) => node.textContent);
+
+    expect(visibleTitles[0]).toBe('Visual Breeze');
   });
 
   test('demo button keyboard activation keeps demo-audio launch path', async () => {

@@ -31,6 +31,20 @@ describe('audio controls primary emphasis', () => {
     expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
       true,
     );
+    expect(
+      (
+        container.querySelector(
+          '[data-recommended-for="demo"]',
+        ) as HTMLElement | null
+      )?.hidden,
+    ).toBe(false);
+    expect(
+      (
+        container.querySelector(
+          '[data-recommended-for="mic"]',
+        ) as HTMLElement | null
+      )?.hidden,
+    ).toBe(true);
   });
 
   test('keeps microphone row primary by default', () => {
@@ -50,6 +64,25 @@ describe('audio controls primary emphasis', () => {
     expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
       false,
     );
+  });
+
+  test('shows comparison guidance and recommended source badge', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+    });
+
+    expect(container.textContent).toContain(
+      'Mic reacts to your space right now. Demo starts instantly with no permissions.',
+    );
+
+    const micBadge = container.querySelector('[data-recommended-for="mic"]');
+    const demoBadge = container.querySelector('[data-recommended-for="demo"]');
+
+    expect((micBadge as HTMLElement | null)?.hidden).toBe(false);
+    expect((demoBadge as HTMLElement | null)?.hidden).toBe(true);
   });
 
   test('switches emphasis to demo row after microphone failure', async () => {
@@ -77,5 +110,19 @@ describe('audio controls primary emphasis', () => {
     expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
       true,
     );
+    expect(
+      (
+        container.querySelector(
+          '[data-recommended-for="demo"]',
+        ) as HTMLElement | null
+      )?.hidden,
+    ).toBe(false);
+    expect(
+      (
+        container.querySelector(
+          '[data-recommended-for="mic"]',
+        ) as HTMLElement | null
+      )?.hidden,
+    ).toBe(true);
   });
 });
