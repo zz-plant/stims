@@ -45,6 +45,36 @@ Use the same scripts defined in `package.json` to validate the production output
 
 Both commands expect a fresh `bun run build` and read from `dist/`.
 
+## Prime-time preflight checks
+
+Run this sequence before shipping to production so the release candidate is validated the same way CI and reviewers expect:
+
+1. Run the full quality gate:
+
+   ```bash
+   bun run check
+   ```
+
+2. Confirm toy metadata and file registrations stay in sync:
+
+   ```bash
+   bun run check:toys
+   ```
+
+3. Build production assets:
+
+   ```bash
+   bun run build
+   ```
+
+4. Sanity-check the generated bundle locally:
+
+   ```bash
+   bun run preview
+   ```
+
+If any step fails, fix the issue and restart from step 1 so downstream checks reflect the final state.
+
 ## Static Hosting Expectations
 
 Any static host should point its document root to the `dist/` directory and preserve the following:
