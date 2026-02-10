@@ -29,6 +29,9 @@ This index maps each toy slug to the module that powers it and how the experienc
 | `fractal-kite-garden`      | `assets/js/toys/fractal-kite-garden.ts`      | Direct module; load with `toy.html?toy=fractal-kite-garden`.      |
 | `tactile-sand-table`       | `assets/js/toys/tactile-sand-table.ts`       | Direct module; load with `toy.html?toy=tactile-sand-table`.       |
 | `bioluminescent-tidepools` | `assets/js/toys/bioluminescent-tidepools.ts` | Direct module; load with `toy.html?toy=bioluminescent-tidepools`. |
+| `mobile-ripples`          | `assets/js/toys/mobile-ripples.ts`          | Direct module; load with `toy.html?toy=mobile-ripples`.          |
+| `neon-wave`               | `assets/js/toys/neon-wave.ts`               | Direct module; load with `toy.html?toy=neon-wave`.               |
+| `milkdrop`                | `assets/js/toys/milkdrop-toy.ts`            | Direct module; load with `toy.html?toy=milkdrop`.                |
 
 ## Standalone HTML entry points
 
