@@ -1,73 +1,84 @@
 # Three typical user journeys: constructive critique
 
-This note walks through three high-frequency journeys in Stim and calls out what is already working plus practical improvements.
+This pass traverses three common journeys reflected in the current QA plan and app-shell behavior, then critiques each journey with practical, incremental improvements.
 
-## Journey 1: First-time visitor trying to find a fitting toy quickly
+## 1) Discover a toy quickly from the library
 
-### Typical path
-1. Land on the library page and scan hero CTAs.
-2. Use search (for terms like “calm”, “microphone”, or “webgpu”) and curated filter chips.
-3. Open a card from the resulting list.
+### Journey traversal
+1. Open the library landing experience.
+2. Use search to narrow the toy list.
+3. Launch the top match with keyboard or click.
 
-### What works well
-- The hero section gives immediate “start now” options and an explicit path to the full library.
-- Search guidance is specific (“name, mood, tags, capabilities”), and search has focused affordances (keyboard hint, clear button, result status).
-- The search haystack includes title, slug, description, tags, moods, capabilities, and WebGPU markers, so user wording is likely to match.
+### What is already strong
+- Discovery starts quickly: toy cards render immediately, and the same page supports direct launch without extra routing steps.
+- Search behavior is forgiving and keyboard-friendly (Escape clears, Enter launches top result).
+- Demo-audio launch is available from library cards, lowering the barrier for users who are not ready to grant microphone access.
 
-### Friction observed
-- The search hint promises broad discovery, but users still need to infer *which* capability matters for their context (mic required vs demo audio available vs motion).
-- If users are undecided, the current card experience can still feel metadata-heavy before they experience visual “wow”.
+### Constructive critique
+- **Information scent is still metadata-first.** New users can read titles/descriptions, but they still infer setup friction themselves.
+- **Search relevance is functional, not intent-aware.** A user typing “calm” versus “party” may want mood-weighted sorting, not just text match.
+- **Demo mode is present but understated.** It exists as an action, but not always framed as the easiest first step.
 
-### Constructive improvements
-- Add a compact “best for” line on cards (e.g., “quiet room”, “headphones”, “mobile tilt”) to reduce cognitive load before click-through.
-- Add one-click “Play in demo mode” secondary actions on cards where demo audio is available, so users can skip permission anxiety at discovery time.
-- Consider a tiny “new user route” toggle near search (e.g., “show me easiest starts first”) that boosts toys with low setup friction.
+### Recommended improvements
+- Add a compact “Best for” label on each card (for example: _quiet solo_, _showcase visuals_, _mobile tilt_).
+- Prioritize beginner-friendly toys in ambiguous searches by introducing a “low-setup first” boost.
+- Elevate demo audio as a first-run recommendation on eligible cards (copy + subtle badge).
 
-## Journey 2: Permission-cautious user launching a toy
+---
 
-### Typical path
-1. Open `toy.html?toy=<slug>` from library or direct link.
-2. Encounter capability preflight and audio source controls.
-3. Choose between microphone, demo audio, or advanced capture options.
+## 2) Start audio-reactive play when permissions are uncertain
 
-### What works well
-- Audio controls now present microphone and demo audio as parallel first-class choices instead of hiding demo behind failure states.
-- Preflight logic explicitly prefers demo audio when microphone is unsupported/denied and communicates fallback guidance.
-- Starter tips and status messaging reduce ambiguity during first interaction.
+### Journey traversal
+1. Open a toy and choose an audio source.
+2. Attempt microphone access.
+3. Recover gracefully via retry or demo fallback when permission is denied/blocked/timed out.
 
-### Friction observed
-- “Choose how this toy listens” is clear, but users who are privacy-sensitive may still hesitate because tradeoffs are not summarized inline at decision moment.
-- Advanced options (tab/YouTube) are useful, but users may not know when to use them versus demo audio.
+### What is already strong
+- The microphone flow communicates success/error state clearly and exposes fallback actions instead of dead ends.
+- Retry behavior is considerate: labels and accessibility text recover to their original state after a successful retry.
+- Demo fallback is treated as a real path, not a hidden failure mode.
 
-### Constructive improvements
-- Add one sentence under the row labels comparing outcomes (“Mic reacts to your room now; demo starts instantly with no permissions”).
-- Add a subtle default badge (e.g., “Recommended first try”) that follows preflight outcomes (demo when mic denied; mic otherwise).
-- For advanced options, include trigger copy such as “Use these when you want to react to media already playing.”
+### Constructive critique
+- **Decision-time guidance is still light.** Users can choose mic or demo, but tradeoffs (privacy vs immediacy) are not always explicit at the decision point.
+- **Advanced sources can feel “expert only.”** Users may not know when tab/YouTube-like capture options are better than demo.
+- **Emotional framing can improve.** Permission failure copy is correct but could do more to reassure and keep momentum.
 
-## Journey 3: User on unsupported hardware/browser opening a WebGPU-first toy
+### Recommended improvements
+- Add one-line comparative copy near source controls: “Mic reacts to your space; Demo starts instantly with no permissions.”
+- Introduce contextual defaults (for example: if denied once, preselect demo next time in-session).
+- Add brief “When to use this” helper text for advanced audio capture modes.
 
-### Typical path
-1. Open a WebGPU-first toy (for example `multi`).
-2. Hit capability handling in the toy shell.
-3. Either continue with WebGL fallback (when allowed) or return to library.
+---
 
-### What works well
-- The capability error copy is concrete: it distinguishes “works best with WebGPU” from “requires WebGPU”.
-- The fallback path is action-oriented (“Continue with WebGL”) and not just a dead-end warning.
-- Messaging points users to browser alternatives for best quality.
+## 3) Switch toys while preserving performance comfort
 
-### Friction observed
-- The decision still happens after context switch into the toy page; for many users this feels like a false start.
-- If a user sees repeated WebGPU limitations across toys, there is no immediate “show me compatible toys only” escape hatch in-place.
+### Journey traversal
+1. Open settings/system panel and choose a quality preset.
+2. Switch to another toy.
+3. Confirm quality preference persists and visuals remain consistent with user intent.
 
-### Constructive improvements
-- In the capability warning action area, add a direct “Browse compatible toys” action that pre-applies filters in library view.
-- Surface compatibility confidence earlier in card previews (e.g., “Runs best in WebGPU, fallback available”).
-- Persist a short-lived “compatibility mode” preference after fallback so subsequent opens bias toward smoother defaults.
+### What is already strong
+- Quality selection persists across panel reuse, reducing repetitive tuning.
+- Preset subscriptions are predictable, with clean initial and change notifications.
+- Stored presets improve continuity for users on constrained devices who need stable performance.
 
-## Suggested prioritization
+### Constructive critique
+- **Preset intent is technical, not experiential.** Labels like “hi-fi” or “balanced” are useful but may not map directly to user goals.
+- **Preset side effects are not always transparent.** Users may not understand what changed (pixel ratio, effects, responsiveness).
+- **Cross-toy expectation setting could be clearer.** Persistence works, but users may not realize it is global by design.
 
-1. **Fast win (copy/UI only):** clarify mic vs demo tradeoffs inline in audio rows.
-2. **Fast win (routing):** add “Browse compatible toys” from capability warnings.
-3. **Medium effort:** card-level “Play demo now” quick action and “best for” labels.
-4. **Higher leverage:** compatibility-mode preference that adapts future launches.
+### Recommended improvements
+- Add short experiential subtitles to presets (for example: “Hi-fi: best visuals, higher battery use”).
+- Show a tiny “what changed” summary after preset updates.
+- Add “applies to all toys” helper text next to the preset control to reinforce consistency.
+
+---
+
+## Prioritization (impact vs effort)
+
+1. **High impact / low effort:** clarify mic-vs-demo tradeoffs with concise inline copy.
+2. **High impact / medium effort:** add card-level “Best for” labels and low-setup sorting bias.
+3. **Medium impact / low effort:** annotate presets with experiential descriptions and scope.
+4. **Medium impact / medium effort:** add contextual defaults after permission-denied outcomes.
+
+These changes preserve the project’s playful feel while reducing cognitive friction for first-time and privacy-sensitive users.
