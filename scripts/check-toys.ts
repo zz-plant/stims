@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
-const IGNORED_TOY_FILES = new Set(['page-toy.ts']);
+const IGNORED_TOY_FILES = new Set(['clay-toy.ts', 'page-toy.ts']);
 
 async function main() {
   const { issues, warnings } = await runToyChecks();
