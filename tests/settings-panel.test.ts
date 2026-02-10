@@ -73,6 +73,36 @@ describe('quality preset subscriptions', () => {
     expect(resolved.id).toBe('low');
   });
 
+  test('quality presets include global scope hint and impact summary', () => {
+    const panel = getSettingsPanel();
+
+    panel.setQualityPresets({
+      presets: DEFAULT_QUALITY_PRESETS,
+      defaultPresetId: 'balanced',
+    });
+
+    expect(panel.getElement().textContent).toContain(
+      'Saved on this device and shared across toys.',
+    );
+    expect(panel.getElement().textContent).toContain(
+      'What changes: pixel ratio',
+    );
+  });
+
+  test('quality presets show profile-specific scope for custom storage keys', () => {
+    const panel = getSettingsPanel();
+
+    panel.setQualityPresets({
+      presets: DEFAULT_QUALITY_PRESETS,
+      defaultPresetId: 'balanced',
+      storageKey: 'stims:quality-preset:demo-toy',
+    });
+
+    expect(panel.getElement().textContent).toContain(
+      'Saved on this device for this toy profile.',
+    );
+  });
+
   test('quality selection persists across panel reuse for different toys', () => {
     const panel = getSettingsPanel();
     const calls: string[] = [];
