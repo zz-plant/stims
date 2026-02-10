@@ -608,8 +608,15 @@ export function attachCapabilityPreflight({
 
   const description = document.createElement('p');
   description.className = 'control-panel__description';
-  description.textContent = 'Quick check for graphics and microphone support.';
+  description.textContent =
+    'Step 1 of 2: quick check for graphics and microphone support.';
   panel.appendChild(description);
+
+  const sequenceHint = document.createElement('p');
+  sequenceHint.className = 'control-panel__microcopy';
+  sequenceHint.textContent =
+    'After this check, continue to audio setup to choose microphone or demo audio.';
+  panel.appendChild(sequenceHint);
 
   const statusContainer = document.createElement('div');
   statusContainer.className = 'preflight-panel__statuses';
@@ -655,6 +662,16 @@ export function attachCapabilityPreflight({
     backLink.textContent = backLabel;
     actions.appendChild(backLink);
   }
+  const continueButton = document.createElement('button');
+  continueButton.className = 'cta-button primary';
+  continueButton.type = 'button';
+  continueButton.textContent = 'Continue to audio setup';
+  continueButton.hidden = true;
+  continueButton.addEventListener('click', () => {
+    closePanel();
+  });
+  actions.appendChild(continueButton);
+
   const retryButton = document.createElement('button');
   retryButton.className = 'cta-button';
   retryButton.type = 'button';
@@ -706,6 +723,7 @@ export function attachCapabilityPreflight({
     const result = await runCapabilityPreflight();
     panel.dataset.state = result.canProceed ? 'ready' : 'blocked';
     retryButton.disabled = false;
+    continueButton.hidden = !result.canProceed;
     updateStatusList(statusContainer, result);
     renderIssueList(issueContainer, result);
     updateWhyDetails(detailsContent, result);

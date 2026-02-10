@@ -1,84 +1,82 @@
-# Three typical user journeys: constructive critique
+# Three typical user journeys: constructive critique (traversed pass)
 
-This pass traverses three common journeys reflected in the current QA plan and app-shell behavior, then critiques each journey with practical, incremental improvements.
+This pass walks through three user journeys on the local app (`bun run dev` + Playwright) and critiques each flow with practical, incremental improvements.
 
-## 1) Discover a toy quickly from the library
+## Journey 1: Launch from the hero quick-start CTA
 
-### Journey traversal
-1. Open the library landing experience.
-2. Use search to narrow the toy list.
-3. Launch the top match with keyboard or click.
+### Traversal
+1. Open `index.html` (`/`).
+2. Click the first hero CTA (`Open Halo Flow`).
+3. Observe route/state after launch.
 
-### What is already strong
-- Discovery starts quickly: toy cards render immediately, and the same page supports direct launch without extra routing steps.
-- Search behavior is forgiving and keyboard-friendly (Escape clears, Enter launches top result).
-- Demo-audio launch is available from library cards, lowering the barrier for users who are not ready to grant microphone access.
+### What worked well
+- Hero intent is clear: users immediately see a fast-path CTA cluster with explicit choices (`Open Halo Flow`, `Start flow mode`, `Surprise me`).
+- The transition keeps momentum: click-through lands directly in toy mode (`/?toy=holy`) without a full hard-navigation detour.
+- Capability preflight appears promptly, giving users a compatibility snapshot before interaction.
 
 ### Constructive critique
-- **Information scent is still metadata-first.** New users can read titles/descriptions, but they still infer setup friction themselves.
-- **Search relevance is functional, not intent-aware.** A user typing “calm” versus “party” may want mood-weighted sorting, not just text match.
-- **Demo mode is present but understated.** It exists as an action, but not always framed as the easiest first step.
+- **Route semantics may be surprising for non-technical users.** The hero link advertises `toy.html?toy=holy`, but runtime navigation resolves to `/?toy=holy`. This is functionally fine, but can create mild trust friction when users watch the URL bar change to an unexpected form.
+- **The preflight dialog can feel like a speed bump on “quick start.”** It is informative, but it visually interrupts the “instant play” promise before the user can choose an audio source.
+- **Too many first-step choices at once.** Four hero CTAs can increase decision friction for first-time users who only want one obvious “just start” path.
 
-### Recommended improvements
-- Add a compact “Best for” label on each card (for example: _quiet solo_, _showcase visuals_, _mobile tilt_).
-- Prioritize beginner-friendly toys in ambiguous searches by introducing a “low-setup first” boost.
-- Elevate demo audio as a first-run recommendation on eligible cards (copy + subtle badge).
+### Improvements to consider
+- Add a short helper line under hero CTAs: “You may see a quick compatibility check before play.”
+- Keep one dominant default CTA and visually demote the others for first-time sessions.
+- Mirror the final route format in CTA hover/status copy to reduce URL mismatch surprise.
 
 ---
 
-## 2) Start audio-reactive play when permissions are uncertain
+## Journey 2: Search and narrow the library
 
-### Journey traversal
-1. Open a toy and choose an audio source.
-2. Attempt microphone access.
-3. Recover gracefully via retry or demo fallback when permission is denied/blocked/timed out.
+### Traversal
+1. Load `/` and wait for library cards.
+2. Search for `webgpu`, `mobile`, and a nonsense query.
+3. Clear search and verify recovery.
 
-### What is already strong
-- The microphone flow communicates success/error state clearly and exposes fallback actions instead of dead ends.
-- Retry behavior is considerate: labels and accessibility text recover to their original state after a successful retry.
-- Demo fallback is treated as a real path, not a hidden failure mode.
+### What worked well
+- Search is responsive and understandable: result messaging updates with query context (`1 results • q: “webgpu”`, `0 results • q: “nonexistent-zzzz”`).
+- Filtering behavior appears reliable across intent types (capability keyword, form-factor keyword, no-match query).
+- Reset path is obvious: Clear restores full library state quickly (`24 results`).
 
 ### Constructive critique
-- **Decision-time guidance is still light.** Users can choose mic or demo, but tradeoffs (privacy vs immediacy) are not always explicit at the decision point.
-- **Advanced sources can feel “expert only.”** Users may not know when tab/YouTube-like capture options are better than demo.
-- **Emotional framing can improve.** Permission failure copy is correct but could do more to reassure and keep momentum.
+- **No visible “why this matched” cues in condensed scanning.** Result counts are clear, but first-time users still need to open/scan cards to understand why `webgpu` or `mobile` matched.
+- **Zero-results recovery could be more assistive.** The `0 results` message is accurate, but it does not immediately suggest alternatives (remove filters, try capability tags, open starter packs).
+- **Power users may want faceted narrowing after search.** Free-text works, but common follow-ups (“only demo-audio toys”, “touch-first only”) still require manual refinement.
 
-### Recommended improvements
-- Add one-line comparative copy near source controls: “Mic reacts to your space; Demo starts instantly with no permissions.”
-- Introduce contextual defaults (for example: if denied once, preselect demo next time in-session).
-- Add brief “When to use this” helper text for advanced audio capture modes.
+### Improvements to consider
+- Add inline “matched on: capability/tag/mood” chips to surfaced cards.
+- Expand empty-state text with one-click suggestions (e.g., “Show all”, “Try demo-audio”, “Try mobile”).
+- Add lightweight post-search filters (capabilities, mood, setup difficulty) to complement text query.
 
 ---
 
-## 3) Switch toys while preserving performance comfort
+## Journey 3: Start audio on toy page with capability preflight in front
 
-### Journey traversal
-1. Open settings/system panel and choose a quality preset.
-2. Switch to another toy.
-3. Confirm quality preference persists and visuals remain consistent with user intent.
+### Traversal
+1. Open `toy.html?toy=geom`.
+2. Observe preflight dialog and status copy.
+3. Confirm mic/demo controls availability behind/after preflight.
 
-### What is already strong
-- Quality selection persists across panel reuse, reducing repetitive tuning.
-- Preset subscriptions are predictable, with clean initial and change notifications.
-- Stored presets improve continuity for users on constrained devices who need stable performance.
+### What worked well
+- Preflight messaging is explicit and confidence-building: users get immediate status for rendering, microphone readiness, environment, and performance.
+- Audio choices are clear when controls are available (`Use microphone` and `Use demo audio` both present).
+- The guidance language is practical and non-alarmist, which helps reduce setup anxiety.
 
 ### Constructive critique
-- **Preset intent is technical, not experiential.** Labels like “hi-fi” or “balanced” are useful but may not map directly to user goals.
-- **Preset side effects are not always transparent.** Users may not understand what changed (pixel ratio, effects, responsiveness).
-- **Cross-toy expectation setting could be clearer.** Persistence works, but users may not realize it is global by design.
+- **Modal interception can block expected first click behavior.** The preflight dialog can intercept pointer events for audio controls, which may feel like a broken button to impatient users.
+- **Sequence clarity can improve.** Users may not understand whether they should finish/dismiss preflight before choosing mic/demo.
+- **Status hierarchy is dense for first-run users.** Four capability sections in one block are useful for diagnostics, but heavy for someone who only wants to begin quickly.
 
-### Recommended improvements
-- Add short experiential subtitles to presets (for example: “Hi-fi: best visuals, higher battery use”).
-- Show a tiny “what changed” summary after preset updates.
-- Add “applies to all toys” helper text next to the preset control to reinforce consistency.
+### Improvements to consider
+- Add a single prominent preflight action (“Continue to audio setup”) so next-step intent is explicit.
+- Include one-line sequencing copy: “Step 1 of 2: quick compatibility check.”
+- Offer a compact/default preflight summary with expandable technical detail.
 
 ---
 
-## Prioritization (impact vs effort)
+## Priority recommendations (impact × effort)
 
-1. **High impact / low effort:** clarify mic-vs-demo tradeoffs with concise inline copy.
-2. **High impact / medium effort:** add card-level “Best for” labels and low-setup sorting bias.
-3. **Medium impact / low effort:** annotate presets with experiential descriptions and scope.
-4. **Medium impact / medium effort:** add contextual defaults after permission-denied outcomes.
-
-These changes preserve the project’s playful feel while reducing cognitive friction for first-time and privacy-sensitive users.
+1. **High impact / low effort:** Clarify flow sequencing between preflight and audio-start actions.
+2. **High impact / low effort:** Improve zero-results recovery with actionable shortcuts.
+3. **Medium impact / low effort:** Reduce hero CTA choice pressure by emphasizing one canonical “start now” action.
+4. **Medium impact / medium effort:** Add “why matched” and facet filters to tighten discovery confidence.
