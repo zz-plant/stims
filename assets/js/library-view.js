@@ -1450,6 +1450,43 @@ export function createLibraryView({
     Number(toy.capabilities?.demoAudio) +
     Number(toy.capabilities?.motion);
 
+  const lowSetupScore = (toy) => {
+    const hasMic = Boolean(toy.capabilities?.microphone);
+    const hasDemo = Boolean(toy.capabilities?.demoAudio);
+    const requiresWebGPU = Boolean(toy.requiresWebGPU);
+    const hasMotion = Boolean(toy.capabilities?.motion);
+
+    return (
+      Number(hasDemo) * 3 +
+      Number(!hasMic) * 2 +
+      Number(!requiresWebGPU) * 2 +
+      Number(!hasMotion)
+    );
+  };
+
+  const hasSetupIntentToken = (query) => {
+    const setupTokens = new Set([
+      'mic',
+      'microphone',
+      'demo',
+      'audio',
+      'motion',
+      'tilt',
+      'gyro',
+      'webgpu',
+      'webgl',
+    ]);
+    return getQueryTokens(query).some((token) => setupTokens.has(token));
+  };
+
+  const shouldApplyLowSetupBoost = () => {
+    if (sortBy !== 'featured') return false;
+    if (activeFilters.size > 0) return false;
+    if (!searchQuery.trim()) return false;
+    if (hasSetupIntentToken(searchQuery)) return false;
+    return true;
+  };
+
   const sortList = (list) => {
     const sorted = [...list];
     switch (sortBy) {
@@ -1464,6 +1501,14 @@ export function createLibraryView({
             getOriginalIndex(a) - getOriginalIndex(b),
         );
       default:
+        if (shouldApplyLowSetupBoost()) {
+          return sorted.sort(
+            (a, b) =>
+              lowSetupScore(b) - lowSetupScore(a) ||
+              getFeaturedRank(a) - getFeaturedRank(b) ||
+              getOriginalIndex(a) - getOriginalIndex(b),
+          );
+        }
         return sorted.sort(
           (a, b) =>
             getFeaturedRank(a) - getFeaturedRank(b) ||

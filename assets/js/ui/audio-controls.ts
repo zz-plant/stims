@@ -41,6 +41,9 @@ export function initAudioControls(
     <p class="control-panel__description">
       Choose how this toy listens.
     </p>
+    <p class="control-panel__comparison" data-audio-comparison>
+      Mic reacts to your space right now. Demo starts instantly with no permissions.
+    </p>
     ${
       options.starterTips && options.starterTips.length > 0
         ? `
@@ -59,6 +62,7 @@ export function initAudioControls(
     <div class="control-panel__row" data-audio-row="mic">
       <div class="control-panel__text">
         <span class="control-panel__label">Live mic</span>
+        <span class="control-panel__pill" data-recommended-for="mic" hidden>Recommended first try</span>
         <span class="control-panel__subtext">Best for live instruments, voice, and ambient sound.</span>
         <span class="control-panel__microcopy">Reacts to your room in real time. Requires microphone permission.</span>
       </div>
@@ -69,6 +73,7 @@ export function initAudioControls(
     <div class="control-panel__row" data-audio-row="demo">
       <div class="control-panel__text">
         <span class="control-panel__label">Curated demo</span>
+        <span class="control-panel__pill" data-recommended-for="demo" hidden>Recommended first try</span>
         <span class="control-panel__subtext">Fastest way to preview visuals without permissions.</span>
         <span class="control-panel__microcopy">Starts instantly with built-in audio. Great first try when privacy-sensitive.</span>
       </div>
@@ -86,9 +91,10 @@ export function initAudioControls(
         data-advanced-toggle
       >
         <span class="control-panel__advanced-title">Advanced audio options</span>
-        <span class="control-panel__advanced-hint">Tab or YouTube capture</span>
+        <span class="control-panel__advanced-hint">Tab or YouTube capture for media already playing</span>
       </button>
     </div>
+    <p class="control-panel__advanced-helper">Use these when you want visuals to react to music or videos already playing in your browser.</p>
     <div class="control-panel__advanced" data-advanced-panel hidden>
       ${
         options.onRequestTabAudio
@@ -191,6 +197,24 @@ export function initAudioControls(
     row?.classList.toggle('control-panel__row--primary', isPrimary);
   };
 
+  const setRecommendedBadge = (
+    source: 'microphone' | 'demo',
+    isVisible: boolean,
+  ): void => {
+    const badge = container.querySelector(
+      `[data-recommended-for="${source === 'microphone' ? 'mic' : 'demo'}"]`,
+    );
+    if (!(badge instanceof HTMLElement)) return;
+    badge.hidden = !isVisible;
+  };
+
+  const setPreferredSource = (source: 'microphone' | 'demo'): void => {
+    setPrimaryRow(micRow, source === 'microphone');
+    setPrimaryRow(demoRow, source === 'demo');
+    setRecommendedBadge('microphone', source === 'microphone');
+    setRecommendedBadge('demo', source === 'demo');
+  };
+
   const setPending = (button: Element | null, pending: boolean) => {
     if (!(button instanceof HTMLElement)) return;
     button.toggleAttribute('data-loading', pending);
@@ -212,8 +236,7 @@ export function initAudioControls(
   };
 
   const emphasizeDemoAudio = () => {
-    setPrimaryRow(demoRow, true);
-    setPrimaryRow(micRow, false);
+    setPreferredSource('demo');
   };
 
   const buildMicrophoneErrorMessage = (message: string) => {
@@ -237,11 +260,9 @@ export function initAudioControls(
     options.preferDemoAudio ?? readStoredSource() === 'demo';
 
   if (preferDemoAudio && demoBtn instanceof HTMLButtonElement) {
-    setPrimaryRow(demoRow, true);
-    setPrimaryRow(micRow, false);
+    setPreferredSource('demo');
   } else {
-    setPrimaryRow(micRow, true);
-    setPrimaryRow(demoRow, false);
+    setPreferredSource('microphone');
   }
 
   if (options.initialStatus) {
