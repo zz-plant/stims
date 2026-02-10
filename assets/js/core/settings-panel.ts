@@ -212,7 +212,7 @@ export class PersistentSettingsPanel {
       this.qualityHint = hint;
 
       const scopeHint = document.createElement('small');
-      scopeHint.textContent = 'Applies to all toys in this session.';
+      scopeHint.textContent = this.getScopeHint(storageKey);
       this.qualityScopeHint = scopeHint;
 
       const changeSummary = document.createElement('small');
@@ -245,7 +245,7 @@ export class PersistentSettingsPanel {
 
     const initialPreset = this.getInitialPreset(defaultPresetId);
     this.qualitySelect.value = initialPreset.id;
-    this.updateQualityHint(initialPreset);
+    this.updateQualityHint(initialPreset, this.qualityStorageKey);
 
     if (!hadActivePreset) {
       this.handleQualityChange(initialPreset.id);
@@ -331,6 +331,13 @@ export class PersistentSettingsPanel {
     });
   }
 
+  private getScopeHint(storageKey: string): string {
+    if (storageKey === QUALITY_STORAGE_KEY) {
+      return 'Saved on this device and shared across toys.';
+    }
+    return 'Saved on this device for this toy profile.';
+  }
+
   private describePresetImpact(preset: QualityPreset): string {
     const render = preset.renderScale ?? 1;
     const particles = preset.particleScale ?? 1;
@@ -345,18 +352,17 @@ export class PersistentSettingsPanel {
     activeQualityPreset = preset;
     activeQualityPresetStorageKey = this.qualityStorageKey;
     qualitySubscribers.forEach((subscriber) => subscriber(preset));
-    this.updateQualityHint(preset);
+    this.updateQualityHint(preset, this.qualityStorageKey);
     this.qualityChangeHandler?.(preset);
   }
 
-  private updateQualityHint(preset: QualityPreset) {
+  private updateQualityHint(preset: QualityPreset, storageKey: string) {
     if (this.qualityHint) {
       this.qualityHint.textContent =
         preset.description ?? 'Adjust resolution and particle density.';
     }
     if (this.qualityScopeHint) {
-      this.qualityScopeHint.textContent =
-        'Applies to all toys in this session.';
+      this.qualityScopeHint.textContent = this.getScopeHint(storageKey);
     }
     if (this.qualityChangeSummary) {
       this.qualityChangeSummary.textContent = this.describePresetImpact(preset);

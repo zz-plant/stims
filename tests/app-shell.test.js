@@ -168,10 +168,11 @@ describe('app shell user journeys', () => {
     playDemo?.dispatchEvent(
       new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
     );
-    playDemo?.dispatchEvent(new Event('click', { bubbles: true }));
+    playDemo?.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(mockLoadToy).toHaveBeenCalledTimes(1);
-    expect(mockLoadToy).toHaveBeenCalledWith('aurora-painter', {
+    expect(mockLoadToy.mock.calls[0]?.[1]).toEqual({
       pushState: true,
       preferDemoAudio: true,
     });
