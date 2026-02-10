@@ -2050,9 +2050,28 @@ export function createLibraryView({
         quickActions.appendChild(button);
       });
 
+      const collapseSuggestions =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(max-width: 600px)').matches;
+
       emptyState.appendChild(message);
       emptyState.appendChild(resetButton);
-      emptyState.appendChild(quickActions);
+
+      if (collapseSuggestions) {
+        const suggestionsDisclosure = document.createElement('details');
+        suggestionsDisclosure.className = 'empty-state__suggestions';
+
+        const summary = document.createElement('summary');
+        summary.textContent = 'Try suggestions';
+
+        suggestionsDisclosure.appendChild(summary);
+        suggestionsDisclosure.appendChild(quickActions);
+        emptyState.appendChild(suggestionsDisclosure);
+      } else {
+        emptyState.appendChild(quickActions);
+      }
+
       list.appendChild(emptyState);
       updateResultsMeta(0);
       updateActiveFiltersSummary();

@@ -2345,6 +2345,47 @@ html.light .active-filters__label {
   color: var(--text-muted);
 }
 
+.empty-state__suggestions {
+  width: 100%;
+  max-width: 420px;
+  text-align: left;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-border);
+  background: color-mix(in srgb, var(--surface-strong) 78%, transparent);
+  padding: 0.35rem 0.55rem 0.6rem;
+}
+
+.empty-state__suggestions summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-color);
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.empty-state__suggestions summary::-webkit-details-marker {
+  display: none;
+}
+
+.empty-state__suggestions summary::after {
+  content: "▾";
+  margin-left: auto;
+  color: var(--text-muted);
+  transition: transform 180ms ease;
+}
+
+.empty-state__suggestions[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.empty-state__suggestions .webtoy-card-actions {
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
 .webtoy-card {
   background:
     var(--surface-highlight), var(--surface-texture), var(--surface-gradient);
@@ -3035,6 +3076,36 @@ footer {
 
   .preview-card {
     padding: 1rem;
+  }
+}
+
+@media (max-width: 920px) and (max-height: 520px) and (orientation: landscape) {
+  .content {
+    gap: 1rem;
+  }
+
+  .top-nav {
+    padding: 0.4rem 0.55rem;
+  }
+
+  .hero {
+    padding-block: 0.8rem 0.6rem;
+  }
+
+  .hero-grid {
+    gap: 0.75rem;
+  }
+
+  .hero-copy {
+    gap: 0.6rem;
+  }
+
+  .hero-cta-row {
+    gap: 0.5rem;
+  }
+
+  header.hero {
+    min-height: auto;
   }
 }
 
