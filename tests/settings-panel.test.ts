@@ -82,10 +82,24 @@ describe('quality preset subscriptions', () => {
     });
 
     expect(panel.getElement().textContent).toContain(
-      'Applies to all toys in this session.',
+      'Saved on this device and shared across toys.',
     );
     expect(panel.getElement().textContent).toContain(
       'What changes: pixel ratio',
+    );
+  });
+
+  test('quality presets show profile-specific scope for custom storage keys', () => {
+    const panel = getSettingsPanel();
+
+    panel.setQualityPresets({
+      presets: DEFAULT_QUALITY_PRESETS,
+      defaultPresetId: 'balanced',
+      storageKey: 'stims:quality-preset:demo-toy',
+    });
+
+    expect(panel.getElement().textContent).toContain(
+      'Saved on this device for this toy profile.',
     );
   });
 
