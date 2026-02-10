@@ -2020,8 +2020,39 @@ export function createLibraryView({
       resetButton.textContent = 'Reset search and filters';
       resetButton.addEventListener('click', () => resetFiltersAndSearch());
 
+      const quickActions = document.createElement('div');
+      quickActions.className = 'webtoy-card-actions';
+
+      const applySuggestedSearch = (query) => {
+        searchQuery = query;
+        if (searchInputId) {
+          const search = document.getElementById(searchInputId);
+          if (search && 'value' in search) {
+            search.value = query;
+          }
+        }
+        commitState({ replace: false });
+        renderToys(applyFilters());
+        updateSearchClearState();
+        updateActiveFiltersSummary();
+      };
+
+      [
+        { label: 'Try demo audio', query: 'demo audio' },
+        { label: 'Try mobile', query: 'mobile' },
+        { label: 'Try webgpu', query: 'webgpu' },
+      ].forEach(({ label, query }) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'cta-button cta-button--muted';
+        button.textContent = label;
+        button.addEventListener('click', () => applySuggestedSearch(query));
+        quickActions.appendChild(button);
+      });
+
       emptyState.appendChild(message);
       emptyState.appendChild(resetButton);
+      emptyState.appendChild(quickActions);
       list.appendChild(emptyState);
       updateResultsMeta(0);
       updateActiveFiltersSummary();

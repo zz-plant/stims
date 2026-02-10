@@ -1247,6 +1247,12 @@ header.hero {
   grid-column: 1 / -1;
 }
 
+.section-helper {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
 .hero-readiness {
   display: flex;
   flex-wrap: wrap;
