@@ -1372,6 +1372,11 @@ export function createLibraryView({
     chip.setAttribute('aria-pressed', String(isActive));
   };
 
+  const emitFilterStateChange = () => {
+    if (typeof document === 'undefined') return;
+    document.dispatchEvent(new Event('library:filters-changed'));
+  };
+
   const resolveQuickLaunchToy = (list, query) => {
     const trimmedQuery = query.trim().toLowerCase();
     if (!trimmedQuery || list.length === 0) return null;
@@ -1425,7 +1430,11 @@ export function createLibraryView({
     sortBy = 'featured';
 
     const chips = document.querySelectorAll('[data-filter-chip].is-active');
-    chips.forEach((chip) => chip.classList.remove('is-active'));
+    chips.forEach((chip) => {
+      chip.classList.remove('is-active');
+      updateFilterChipA11y(chip, false);
+    });
+    emitFilterStateChange();
 
     if (searchInputId) {
       const search = document.getElementById(searchInputId);
@@ -1753,6 +1762,7 @@ export function createLibraryView({
       chip.classList.toggle('is-active', isActive);
       updateFilterChipA11y(chip, isActive);
     });
+    emitFilterStateChange();
 
     const sortControl = document.querySelector('[data-sort-control]');
     if (sortControl && sortControl.tagName === 'SELECT') {
@@ -2143,6 +2153,7 @@ export function createLibraryView({
       chip.classList.remove('is-active');
       updateFilterChipA11y(chip, false);
     });
+    emitFilterStateChange();
     commitState({ replace: false });
     renderToys(applyFilters());
     updateFilterResetState();
@@ -2157,6 +2168,7 @@ export function createLibraryView({
       chip.classList.remove('is-active');
       updateFilterChipA11y(chip, false);
     });
+    emitFilterStateChange();
 
     if (searchInputId) {
       const search = document.getElementById(searchInputId);
@@ -2188,6 +2200,7 @@ export function createLibraryView({
         updateFilterChipA11y(chip, false);
       }
     });
+    emitFilterStateChange();
     commitState({ replace: false });
     renderToys(applyFilters());
     updateFilterResetState();
@@ -2230,6 +2243,7 @@ export function createLibraryView({
         const token = `${type}:${value.toLowerCase()}`;
         const isActive = chip.classList.toggle('is-active');
         updateFilterChipA11y(chip, isActive);
+        emitFilterStateChange();
         if (isActive) {
           activeFilters.add(token);
         } else {

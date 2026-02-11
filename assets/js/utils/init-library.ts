@@ -81,25 +81,12 @@ export const initLibraryView = async ({
       window.requestAnimationFrame(refreshVisibility);
     };
 
-    const observer = new MutationObserver((mutations) => {
-      const hasClassChange = mutations.some(
-        (mutation) =>
-          mutation.type === 'attributes' && mutation.attributeName === 'class',
-      );
-      if (hasClassChange) {
-        scheduleRefresh();
-      }
-    });
-
     advancedChips.forEach((chip) => {
-      observer.observe(chip, {
-        attributes: true,
-        attributeFilter: ['class'],
-      });
       chip.addEventListener('click', scheduleRefresh);
     });
 
     window.addEventListener('popstate', scheduleRefresh);
+    document.addEventListener('library:filters-changed', scheduleRefresh);
 
     document
       .querySelector('[data-filter-reset]')
