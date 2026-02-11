@@ -147,6 +147,44 @@ afterEach(() => {
   });
 });
 
+describe('flow cadence helper', () => {
+  test('uses the warmup interval for the first flow cycle', async () => {
+    const { getFlowIntervalMs } = await import('../assets/js/loader.ts');
+
+    const interval = getFlowIntervalMs({
+      cycleCount: 0,
+      lastInteractionAt: 1_000,
+      now: 10_000,
+    });
+
+    expect(interval).toBe(25_000);
+  });
+
+  test('uses the engaged interval when recent interaction is detected', async () => {
+    const { getFlowIntervalMs } = await import('../assets/js/loader.ts');
+
+    const interval = getFlowIntervalMs({
+      cycleCount: 2,
+      lastInteractionAt: 100_000,
+      now: 180_000,
+    });
+
+    expect(interval).toBe(35_000);
+  });
+
+  test('uses the idle interval when interaction is stale', async () => {
+    const { getFlowIntervalMs } = await import('../assets/js/loader.ts');
+
+    const interval = getFlowIntervalMs({
+      cycleCount: 2,
+      lastInteractionAt: 100_000,
+      now: 240_001,
+    });
+
+    expect(interval).toBe(50_000);
+  });
+});
+
 describe('loadToy', () => {
   test('loads module toy without mutating history when pushState is false', async () => {
     const { loader, manifestClient } = await buildLoader();

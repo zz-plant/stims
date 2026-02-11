@@ -28,7 +28,30 @@ const LIBRARY_FILTER_PARAM = 'filters';
 const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
 const STARTER_POLL_DELAY_MS = 100;
 const STARTER_POLL_ATTEMPTS = 30;
-const FLOW_INTERVAL_MS = 45000;
+const FLOW_WARMUP_INTERVAL_MS = 25000;
+const FLOW_ENGAGED_INTERVAL_MS = 35000;
+const FLOW_IDLE_INTERVAL_MS = 50000;
+const FLOW_ENGAGEMENT_WINDOW_MS = 2 * 60 * 1000;
+
+export function getFlowIntervalMs({
+  cycleCount,
+  lastInteractionAt,
+  now = Date.now(),
+}: {
+  cycleCount: number;
+  lastInteractionAt: number;
+  now?: number;
+}) {
+  if (cycleCount < 1) {
+    return FLOW_WARMUP_INTERVAL_MS;
+  }
+
+  if (now - lastInteractionAt <= FLOW_ENGAGEMENT_WINDOW_MS) {
+    return FLOW_ENGAGED_INTERVAL_MS;
+  }
+
+  return FLOW_IDLE_INTERVAL_MS;
+}
 
 const waitForAudioStarter = async (
   getStarter: () => ToyWindow['startAudio'] | ToyWindow['startAudioFallback'],
@@ -85,6 +108,9 @@ export function createLoader({
   const recentToySlugs: string[] = [];
   let flowActive = false;
   let flowTimer: number | null = null;
+  let flowCycleCount = 0;
+  let lastInteractionAt = Date.now();
+  let interactionTrackingInitialized = false;
   let activeToySlug: string | null = null;
   let nextToyInFlight = false;
   let handleNextToy: ((fromFlow?: boolean) => Promise<void>) | null = null;
@@ -93,9 +119,26 @@ export function createLoader({
     if (flowTimer === null) return;
     const win = typeof window !== 'undefined' ? window : null;
     if (win) {
-      win.clearInterval(flowTimer);
+      win.clearTimeout(flowTimer);
     }
     flowTimer = null;
+  };
+
+  const markInteraction = () => {
+    lastInteractionAt = Date.now();
+  };
+
+  const initInteractionTracking = () => {
+    if (interactionTrackingInitialized || typeof window === 'undefined') return;
+    interactionTrackingInitialized = true;
+    const interactionEvents: (keyof WindowEventMap)[] = [
+      'pointerdown',
+      'keydown',
+      'touchstart',
+    ];
+    interactionEvents.forEach((eventName) => {
+      window.addEventListener(eventName, markInteraction, { passive: true });
+    });
   };
 
   const rememberToy = (slug: string) => {
@@ -133,20 +176,27 @@ export function createLoader({
     if (!flowActive) return;
     const win = typeof window !== 'undefined' ? window : null;
     if (!win) return;
-    flowTimer = win.setInterval(() => {
+    const delay = getFlowIntervalMs({
+      cycleCount: flowCycleCount,
+      lastInteractionAt,
+    });
+    flowTimer = win.setTimeout(() => {
       if (handleNextToy) {
         void handleNextToy(true);
       }
-    }, FLOW_INTERVAL_MS);
+    }, delay);
   };
 
   const setFlowActive = (active: boolean) => {
     flowActive = active;
     view?.setFlowState?.(flowActive);
     if (!flowActive) {
+      flowCycleCount = 0;
       clearFlowTimer();
       return;
     }
+    markInteraction();
+    flowCycleCount = 0;
     scheduleFlow();
   };
   const updateRendererStatus = (
@@ -268,6 +318,7 @@ export function createLoader({
       nextToyInFlight = true;
       clearFlowTimer();
       try {
+        flowCycleCount += fromFlow ? 1 : 0;
         await loadToy(nextSlug, { pushState: true, preferDemoAudio });
       } finally {
         nextToyInFlight = false;
@@ -436,6 +487,8 @@ export function createLoader({
       startFlow?: boolean;
     } = {},
   ) => {
+    initInteractionTracking();
+
     if (typeof startFlow === 'boolean') {
       setFlowActive(startFlow);
     }
@@ -479,6 +532,7 @@ export function createLoader({
   };
 
   const initNavigation = () => {
+    initInteractionTracking();
     if (navigationInitialized) return;
 
     navigationInitialized = true;
