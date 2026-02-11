@@ -51,6 +51,7 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
         'dance',
         'neon',
         'pulse',
+        'pulsing',
       ]);
 
       const isEnergeticToy = (toy: QuickstartToy) => {
@@ -60,7 +61,7 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
         const hasEnergeticTag = metadata.some((value) =>
           energeticTags.has(value),
         );
-        return hasEnergeticTag || Boolean(toy.capabilities?.demoAudio);
+        return hasEnergeticTag;
       };
 
       let pool: QuickstartToy[];
