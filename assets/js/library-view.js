@@ -1274,6 +1274,9 @@ export function createLibraryView({
     return `${type}:${value.toLowerCase()}`;
   };
 
+  const createFilterToken = (type, value) =>
+    normalizeFilterToken(`${type}:${value}`);
+
   const formatTokenLabel = (token) => {
     const [type, value = ''] = token.split(':');
     if (!type) return token;
@@ -1757,7 +1760,8 @@ export function createLibraryView({
       const type = chip.getAttribute('data-filter-type');
       const value = chip.getAttribute('data-filter-value');
       if (!type || !value) return;
-      const token = `${type}:${value.toLowerCase()}`;
+      const token = createFilterToken(type, value);
+      if (!token) return;
       const isActive = activeFilters.has(token);
       chip.classList.toggle('is-active', isActive);
       updateFilterChipA11y(chip, isActive);
@@ -2192,10 +2196,9 @@ export function createLibraryView({
     chips.forEach((chip) => {
       const chipType = chip.getAttribute('data-filter-type');
       const chipValue = chip.getAttribute('data-filter-value');
-      if (
-        chipType === type &&
-        chipValue?.toLowerCase() === value.toLowerCase()
-      ) {
+      const chipToken =
+        chipType && chipValue ? createFilterToken(chipType, chipValue) : null;
+      if (chipToken === token) {
         chip.classList.remove('is-active');
         updateFilterChipA11y(chip, false);
       }
@@ -2240,7 +2243,8 @@ export function createLibraryView({
         const type = chip.getAttribute('data-filter-type');
         const value = chip.getAttribute('data-filter-value');
         if (!type || !value) return;
-        const token = `${type}:${value.toLowerCase()}`;
+        const token = createFilterToken(type, value);
+        if (!token) return;
         const isActive = chip.classList.toggle('is-active');
         updateFilterChipA11y(chip, isActive);
         emitFilterStateChange();

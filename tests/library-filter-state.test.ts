@@ -21,6 +21,9 @@ const toys = [
 
 describe('library filter state normalization', () => {
   beforeEach(() => {
+    window.history.replaceState({}, '', '/');
+    window.sessionStorage.clear();
+
     document.body.innerHTML = `
       <input id="toy-search" />
       <form data-search-form></form>
