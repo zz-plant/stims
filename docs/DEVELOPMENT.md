@@ -49,6 +49,7 @@ bun install --frozen-lockfile
 | Quick quality gate | `bun run check:quick` |
 | Toy consistency check | `bun run check:toys` |
 | Generate SEO artifacts | `bun run generate:seo` |
+| Validate generated SEO artifacts | `bun run check:seo` |
 | Serve `dist/` | `bun run serve:dist` |
 | Cloudflare Pages local | `bun run pages:dev` |
 | Cloudflare Pages deploy | `bun run pages:deploy` |
