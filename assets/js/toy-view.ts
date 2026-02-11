@@ -58,6 +58,7 @@ type ImportErrorOptions = {
   moduleUrl?: string;
   importError?: Error;
   onBack?: () => void;
+  onBrowseCompatible?: () => void;
 };
 
 type RendererStatusState = {
@@ -200,7 +201,7 @@ function buildImportErrorMessage(
 
   const message = importError?.message ?? '';
   if (typeof moduleUrl === 'string' && moduleUrl.endsWith('.ts')) {
-    return `${toy?.title ?? 'This toy'} could not be compiled. Make sure you are running through the dev server or a production build so the TypeScript bundle is available.`;
+    return `${toy?.title ?? 'This toy'} could not start on this setup yet. Try another toy, or run through the dev server / production bundle so the TypeScript output is available.`;
   }
 
   if (message.toLowerCase().includes('mime')) {
@@ -463,14 +464,18 @@ export function createToyView({
     state.activeToyMeta = toy ?? state.activeToyMeta;
     state.status = {
       variant: 'error',
-      title: 'Unable to load this toy',
+      title: "This toy couldn't start here yet",
       message: buildImportErrorMessage(toy, options),
       actionsClassName: 'active-toy-status__actions',
       actions: [
         {
-          label: 'Back to library',
+          label: 'Try another toy',
           onClick: options.onBack,
           primary: true,
+        },
+        {
+          label: 'Browse compatible toys',
+          onClick: options.onBrowseCompatible,
         },
       ],
     };

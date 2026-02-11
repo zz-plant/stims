@@ -29,6 +29,91 @@ export const initLibraryView = async ({
   initNavigation,
   loadFromQuery,
 }: InitLibraryViewOptions) => {
+  const bindAdvancedFiltersToggle = () => {
+    if (typeof document === 'undefined') return;
+    const toggle = document.querySelector<HTMLElement>(
+      '[data-advanced-filters-toggle]',
+    );
+    const advancedFilters = document.querySelector<HTMLElement>(
+      '[data-advanced-filters]',
+    );
+
+    if (!toggle || !advancedFilters) return;
+
+    const advancedChips = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-filter-advanced]'),
+    );
+
+    const hasAdvancedFiltersInUrl = () => {
+      if (typeof window === 'undefined') return false;
+      const params = new URLSearchParams(window.location.search);
+      const filters = (params.get('filters') ?? '').toLowerCase();
+      return (
+        filters.includes('capability:motion') ||
+        filters.includes('capability:demoaudio') ||
+        filters.includes('feature:webgpu')
+      );
+    };
+
+    const syncChipVisibility = (expanded: boolean) => {
+      advancedChips.forEach((chip) => {
+        const isActive = chip.classList.contains('is-active');
+        chip.hidden = !(expanded || isActive);
+      });
+    };
+
+    const setExpanded = (expanded: boolean) => {
+      toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      toggle.textContent = expanded ? 'Hide refinements' : 'Refine results';
+      advancedFilters.hidden = !expanded;
+      syncChipVisibility(expanded);
+    };
+
+    const shouldStartExpanded = hasAdvancedFiltersInUrl();
+    setExpanded(shouldStartExpanded);
+
+    const refreshVisibility = () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      syncChipVisibility(expanded);
+    };
+
+    const scheduleRefresh = () => {
+      window.requestAnimationFrame(refreshVisibility);
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      const hasClassChange = mutations.some(
+        (mutation) =>
+          mutation.type === 'attributes' && mutation.attributeName === 'class',
+      );
+      if (hasClassChange) {
+        scheduleRefresh();
+      }
+    });
+
+    advancedChips.forEach((chip) => {
+      observer.observe(chip, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+      chip.addEventListener('click', scheduleRefresh);
+    });
+
+    window.addEventListener('popstate', scheduleRefresh);
+
+    document
+      .querySelector('[data-filter-reset]')
+      ?.addEventListener('click', scheduleRefresh);
+    document
+      .querySelector('[data-active-filters-clear]')
+      ?.addEventListener('click', scheduleRefresh);
+
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      setExpanded(!expanded);
+    });
+  };
+
   const libraryView = createLibraryView({
     toys: [],
     loadToy,
@@ -47,6 +132,7 @@ export const initLibraryView = async ({
   const resolvedToys = await resolveToys();
   libraryView.setToys(resolvedToys);
   libraryView.init();
+  bindAdvancedFiltersToggle();
   document.body.dataset.libraryEnhanced = 'true';
 
   return libraryView;
