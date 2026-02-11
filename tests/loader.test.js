@@ -113,6 +113,7 @@ async function buildLoader({
 }
 
 beforeEach(() => {
+  window.history.replaceState({}, '', '/');
   document.body.innerHTML = '<div id="toy-list"></div>';
   capabilitiesMock = {
     getRendererCapabilities: mock(async () => defaultCapabilities),
