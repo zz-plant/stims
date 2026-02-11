@@ -174,6 +174,7 @@ export function createLoader({
       moduleUrl,
       importError,
       onBack: backToLibrary,
+      onBrowseCompatible: browseCompatibleToys,
     });
   };
 

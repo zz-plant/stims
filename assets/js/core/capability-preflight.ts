@@ -609,13 +609,13 @@ export function attachCapabilityPreflight({
   const description = document.createElement('p');
   description.className = 'control-panel__description';
   description.textContent =
-    'Step 1 of 2: quick check for graphics and microphone support.';
+    'Step 1 of 2: check what is ready now on this device.';
   panel.appendChild(description);
 
   const sequenceHint = document.createElement('p');
   sequenceHint.className = 'control-panel__microcopy';
   sequenceHint.textContent =
-    'After this check, continue to audio setup to choose microphone or demo audio.';
+    'Next: choose microphone or demo audio and start playing.';
   panel.appendChild(sequenceHint);
 
   const statusContainer = document.createElement('div');
@@ -630,7 +630,7 @@ export function attachCapabilityPreflight({
   details.className = 'preflight-panel__details';
   const summary = document.createElement('summary');
   summary.className = 'preflight-panel__details-summary';
-  summary.textContent = 'Why?';
+  summary.textContent = 'Details';
   details.appendChild(summary);
   const detailsContent = document.createElement('div');
   detailsContent.className = 'preflight-panel__details-content';
@@ -652,7 +652,7 @@ export function attachCapabilityPreflight({
   const performanceButton = document.createElement('button');
   performanceButton.className = 'cta-button ghost';
   performanceButton.type = 'button';
-  performanceButton.textContent = 'Enable performance mode';
+  performanceButton.textContent = 'Improve performance';
   performanceButton.hidden = true;
   actions.appendChild(performanceButton);
   if (backHref) {
@@ -673,9 +673,9 @@ export function attachCapabilityPreflight({
   actions.appendChild(continueButton);
 
   const retryButton = document.createElement('button');
-  retryButton.className = 'cta-button';
+  retryButton.className = 'text-link preflight-retry-link';
   retryButton.type = 'button';
-  retryButton.textContent = 'Retry checks';
+  retryButton.textContent = 'Run checks again';
   actions.appendChild(retryButton);
   panel.appendChild(actions);
 
@@ -686,7 +686,7 @@ export function attachCapabilityPreflight({
     if (!result.performance.lowPower) {
       performanceButton.hidden = true;
       performanceButton.disabled = false;
-      performanceButton.textContent = 'Enable performance mode';
+      performanceButton.textContent = 'Improve performance';
       return;
     }
 
@@ -703,7 +703,7 @@ export function attachCapabilityPreflight({
       performanceButton.textContent = 'Performance mode enabled';
       performanceButton.disabled = true;
     } else {
-      performanceButton.textContent = 'Enable performance mode';
+      performanceButton.textContent = 'Improve performance';
       performanceButton.disabled = false;
     }
   };

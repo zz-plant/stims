@@ -32,6 +32,9 @@ This directory is organized by **audience + workflow** so contributors and agent
 - [`stim-assessment.md`](./stim-assessment.md)
 - [`stim-user-critiques.md`](./stim-user-critiques.md)
 - [`USER_JOURNEY_CRITIQUE.md`](./USER_JOURNEY_CRITIQUE.md)
+- [`UX_AUDIT_2026-02.md`](./UX_AUDIT_2026-02.md)
+- [`UX_AUDIT_2026-02_FOLLOWUP.md`](./UX_AUDIT_2026-02_FOLLOWUP.md)
+- [`UX_AUDIT_2026-02_ITERATION_2.md`](./UX_AUDIT_2026-02_ITERATION_2.md)
 - [`LITERATURE.md`](./LITERATURE.md)
 - [`TECH_STACK_CAPABILITY_RESEARCH_2026-02.md`](./TECH_STACK_CAPABILITY_RESEARCH_2026-02.md)
 
