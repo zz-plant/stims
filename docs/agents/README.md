@@ -15,7 +15,7 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 
 - [`tooling-and-quality.md`](./tooling-and-quality.md)
 - [`toy-development.md`](./toy-development.md)
-- [`toy-workflows.md`](./toy-workflows.md)
+- [`toy-workflows.md`](./toy-workflows.md) (includes `/ship-toy-change` for end-to-end toy updates)
 - [`reference-docs.md`](./reference-docs.md)
 
 ### Documentation or metadata changes
