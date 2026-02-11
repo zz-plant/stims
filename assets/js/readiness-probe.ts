@@ -15,10 +15,10 @@ type StatusResult = {
 };
 
 const STATUS_LABELS = {
-  render: 'Graphics acceleration',
+  render: 'Visual performance',
   mic: 'Microphone input',
-  motion: 'Motion controls',
-  reduced: 'Reduced motion preference',
+  motion: 'Tilt controls',
+  reduced: 'Low-motion mode',
 };
 
 const selectStatusNodes = () => ({
@@ -149,7 +149,7 @@ export const getRenderCompatibilitySummary = () => {
 
   return {
     state: STATUS.error,
-    label: 'Graphics acceleration unavailable',
+    label: 'Visual performance unavailable',
   };
 };
 
@@ -175,7 +175,7 @@ const probeRendering = () => {
 
   return {
     state: STATUS.error,
-    message: 'Graphics acceleration unavailable on this device.',
+    message: 'Visual performance unavailable on this device.',
     detail: 'Try another browser or device.',
   };
 };
