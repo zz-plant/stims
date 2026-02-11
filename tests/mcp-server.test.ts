@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  defaultQualityGateTimeoutMs,
   getDocSectionContent,
   normalizeToys,
+  resolveQualityGateCommand,
+  runCommand,
   searchMarkdownSources,
 } from '../scripts/mcp-server.ts';
 
@@ -84,5 +87,50 @@ describe('searchMarkdownSources', () => {
     const results = await searchMarkdownSources('this should not match');
 
     expect(results).toHaveLength(0);
+  });
+});
+
+describe('resolveQualityGateCommand', () => {
+  test('defaults to the full quality gate command', () => {
+    const command = resolveQualityGateCommand();
+
+    expect(command.scope).toBe('full');
+    expect(command.command).toBe('bun');
+    expect(command.args).toEqual(['run', 'check']);
+    expect(command.printableCommand).toBe('bun run check');
+  });
+
+  test('resolves quick scope command', () => {
+    const command = resolveQualityGateCommand('quick');
+
+    expect(command.scope).toBe('quick');
+    expect(command.args).toEqual(['run', 'check:quick']);
+    expect(command.printableCommand).toBe('bun run check:quick');
+  });
+});
+
+describe('runCommand', () => {
+  test('returns stderr when command is missing', async () => {
+    const result = await runCommand('this-command-does-not-exist-stim', []);
+
+    expect(result.exitCode).toBeNull();
+    expect(result.timedOut).toBe(false);
+    expect(result.stderr.length).toBeGreaterThan(0);
+  });
+
+  test('times out long-running commands', async () => {
+    const result = await runCommand(
+      'bun',
+      ['-e', 'setTimeout(() => {}, 2000)'],
+      50,
+    );
+
+    expect(result.exitCode).toBeNull();
+    expect(result.timedOut).toBe(true);
+    expect(result.stderr).toContain('timed out');
+  });
+
+  test('exposes the default timeout constant', () => {
+    expect(defaultQualityGateTimeoutMs).toBe(600000);
   });
 });
