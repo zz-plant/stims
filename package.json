@@ -52,7 +52,8 @@
     "health:toys": "bun run scripts/toy-health-check.ts",
     "test:agent": "bun test tests/agent-integration.test.ts",
     "prepare": "husky install",
-    "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs"
+    "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",
+    "check:seo": "bun run scripts/check-seo.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",
