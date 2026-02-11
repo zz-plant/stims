@@ -40,6 +40,23 @@ All tools are registered on the `stim-webtoys-mcp` server name and use zod-based
   - **Input:** optional `slug` (string) to get toy-specific guidance.
   - **Output:** `text` response explaining how toys respond to different audio frequencies (bass, mids, highs), what visual effects to expect, and slug-specific behavioral hints for known toys like "holy", "spiral-burst", "neon-wave", and "geom".
 
+## Stdio-only automation tools
+
+The following tools are only available from the Bun/Node stdio server (`bun run mcp`) and are not exposed by the Cloudflare Worker transport:
+
+- **`run_quality_gate`**
+  - **Input:** optional `scope` enum (`full`, `quick`, `toys`, `typecheck`, `test`) and optional `timeoutMs` (1000-1800000, defaults to 600000).
+  - **Output:** `text` response containing command, scope, status, exit code, timeout status, and captured stdout/stderr.
+- **`capture_toy_screenshot`**
+  - **Input:** required `slug` and optional `duration` milliseconds.
+  - **Output:** screenshot path plus audio/error summary from headless browser automation.
+- **`test_toy_interactivity`**
+  - **Input:** required `slug`.
+  - **Output:** pass/fail status with audio activation and console error context.
+- **`get_toy_health`**
+  - **Input:** required `slug`.
+  - **Output:** `HEALTHY`/`UNHEALTHY` result with relevant error details.
+
 ## Inputs, outputs, and client expectations
 
 - All tool calls follow MCP stdio conventions. Successful calls return a `content` array with either `text` or `json` entries.
