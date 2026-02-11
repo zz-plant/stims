@@ -65,7 +65,7 @@ describe('toy view helpers', () => {
       { moduleUrl: 'assets/js/toys/broken.ts' },
     );
 
-    expect(status?.textContent).toContain('could not be compiled');
+    expect(status?.textContent).toContain('could not start on this setup yet');
     expect(
       status?.querySelector('.active-toy-status__actions button'),
     ).not.toBeNull();
