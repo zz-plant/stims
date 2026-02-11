@@ -368,7 +368,8 @@ body {
 .toy-nav__share-wrapper,
 .toy-nav__pip-wrapper,
 .toy-nav__next-wrapper,
-.toy-nav__flow-wrapper {
+.toy-nav__flow-wrapper,
+.toy-nav__challenge-wrapper {
   display: grid;
   gap: 4px;
   justify-items: flex-end;
@@ -377,7 +378,8 @@ body {
 .toy-nav__share,
 .toy-nav__pip,
 .toy-nav__next,
-.toy-nav__flow {
+.toy-nav__flow,
+.toy-nav__challenge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -406,7 +408,8 @@ body {
 .toy-nav__share:hover,
 .toy-nav__pip:hover,
 .toy-nav__next:hover,
-.toy-nav__flow:hover {
+.toy-nav__flow:hover,
+.toy-nav__challenge:hover {
   transform: translateY(-1px);
   border-color: rgba(161, 124, 106, 0.8);
   box-shadow:
@@ -422,7 +425,8 @@ body {
 .toy-nav__share:focus-visible,
 .toy-nav__pip:focus-visible,
 .toy-nav__next:focus-visible,
-.toy-nav__flow:focus-visible {
+.toy-nav__flow:focus-visible,
+.toy-nav__challenge:focus-visible {
   outline: 2px solid rgba(148, 165, 180, 0.9);
   outline-offset: 3px;
   box-shadow:
@@ -433,7 +437,8 @@ body {
 .toy-nav__share:active,
 .toy-nav__pip:active,
 .toy-nav__next:active,
-.toy-nav__flow:active {
+.toy-nav__flow:active,
+.toy-nav__challenge:active {
   transform: translateY(0);
 }
 
@@ -505,10 +510,16 @@ body {
 .toy-nav__share-status,
 .toy-nav__pip-status,
 .toy-nav__next-status,
-.toy-nav__flow-status {
+.toy-nav__flow-status,
+.toy-nav__challenge-status {
   min-height: 16px;
   font-size: 0.75rem;
   color: rgba(233, 251, 255, 0.75);
+}
+
+.toy-nav__challenge-status {
+  max-width: 220px;
+  text-wrap: pretty;
 }
 
 .renderer-status {
@@ -1567,7 +1578,8 @@ body {
   .toy-nav__share-wrapper,
   .toy-nav__pip-wrapper,
   .toy-nav__next-wrapper,
-  .toy-nav__flow-wrapper {
+  .toy-nav__flow-wrapper,
+  .toy-nav__challenge-wrapper {
     width: 100%;
     justify-items: stretch;
   }
@@ -1575,7 +1587,8 @@ body {
   .toy-nav__share,
   .toy-nav__pip,
   .toy-nav__next,
-  .toy-nav__flow {
+  .toy-nav__flow,
+  .toy-nav__challenge {
     width: 100%;
     min-height: 40px;
     padding: 8px 10px;
