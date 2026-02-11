@@ -1249,7 +1249,7 @@ export function createLibraryView({
       streakCopy.textContent =
         streak > 0
           ? 'Keep the momentum by opening one stim today.'
-          : 'Open one stim each day to build a relaxing routine.';
+          : 'Open one stim each day.';
     }
 
     const dailyToy = resolveDailyToy();
@@ -1264,7 +1264,7 @@ export function createLibraryView({
     if (dailyLabel) {
       dailyLabel.textContent = dailyToy
         ? `Today's focus toy: ${dailyToy.title}.`
-        : "We'll choose a fresh toy every day.";
+        : 'Daily pick updates each day.';
     }
 
     const recentToy = allToys.find((toy) => toy.slug === state?.lastPlayedSlug);
