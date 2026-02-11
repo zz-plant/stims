@@ -64,6 +64,8 @@ type ToggleOptions = {
 };
 
 export const QUALITY_STORAGE_KEY = 'stims:quality-preset';
+const DEFAULT_PRESET_ID = 'balanced';
+const DEFAULT_QUALITY_HINT = 'Adjust resolution and particle density.';
 
 const qualitySubscribers = new Set<QualitySubscriber>();
 let activeQualityPreset: QualityPreset | null = null;
@@ -86,7 +88,7 @@ type StoredPresetOptions = {
 
 export function getStoredQualityPreset({
   presets = DEFAULT_QUALITY_PRESETS,
-  defaultPresetId = 'balanced',
+  defaultPresetId = DEFAULT_PRESET_ID,
   storageKey = QUALITY_STORAGE_KEY,
 }: StoredPresetOptions = {}): QualityPreset {
   const storedId = getStorage()?.getItem(storageKey);
@@ -98,7 +100,7 @@ export function getStoredQualityPreset({
 
 export function getActiveQualityPreset({
   presets = DEFAULT_QUALITY_PRESETS,
-  defaultPresetId = 'balanced',
+  defaultPresetId = DEFAULT_PRESET_ID,
   storageKey = QUALITY_STORAGE_KEY,
 }: StoredPresetOptions = {}): QualityPreset {
   if (activeQualityPreset && activeQualityPresetStorageKey === storageKey) {
@@ -182,7 +184,7 @@ export class PersistentSettingsPanel {
   setQualityPresets(options: QualityOptions = {}) {
     const {
       presets = DEFAULT_QUALITY_PRESETS,
-      defaultPresetId = 'balanced',
+      defaultPresetId = DEFAULT_PRESET_ID,
       onChange,
       storageKey = QUALITY_STORAGE_KEY,
     } = options;
@@ -208,7 +210,7 @@ export class PersistentSettingsPanel {
       label.htmlFor = selectId;
 
       const hint = document.createElement('small');
-      hint.textContent = 'Adjust resolution and particle density.';
+      hint.textContent = DEFAULT_QUALITY_HINT;
       this.qualityHint = hint;
 
       const scopeHint = document.createElement('small');
@@ -235,12 +237,13 @@ export class PersistentSettingsPanel {
 
     if (!this.qualitySelect) return;
 
-    this.qualitySelect.replaceChildren();
+    const qualitySelect = this.qualitySelect;
+    qualitySelect.replaceChildren();
     presets.forEach((preset) => {
       const option = document.createElement('option');
       option.value = preset.id;
       option.textContent = preset.label;
-      this.qualitySelect?.appendChild(option);
+      qualitySelect.appendChild(option);
     });
 
     const initialPreset = this.getInitialPreset(defaultPresetId);
@@ -272,9 +275,7 @@ export class PersistentSettingsPanel {
     text.appendChild(label);
 
     if (description) {
-      const hint = document.createElement('small');
-      hint.textContent = description;
-      text.appendChild(hint);
+      text.appendChild(this.createHint(description));
     }
 
     const actions = document.createElement('div');
@@ -307,9 +308,7 @@ export class PersistentSettingsPanel {
     text.appendChild(labelText);
 
     if (description) {
-      const hint = document.createElement('small');
-      hint.textContent = description;
-      text.appendChild(hint);
+      text.appendChild(this.createHint(description));
     }
 
     const actions = document.createElement('div');
@@ -338,6 +337,12 @@ export class PersistentSettingsPanel {
     return 'Saved on this device for this toy profile.';
   }
 
+  private createHint(content: string): HTMLElement {
+    const hint = document.createElement('small');
+    hint.textContent = content;
+    return hint;
+  }
+
   private describePresetImpact(preset: QualityPreset): string {
     const render = preset.renderScale ?? 1;
     const particles = preset.particleScale ?? 1;
@@ -358,8 +363,7 @@ export class PersistentSettingsPanel {
 
   private updateQualityHint(preset: QualityPreset, storageKey: string) {
     if (this.qualityHint) {
-      this.qualityHint.textContent =
-        preset.description ?? 'Adjust resolution and particle density.';
+      this.qualityHint.textContent = preset.description ?? DEFAULT_QUALITY_HINT;
     }
     if (this.qualityScopeHint) {
       this.qualityScopeHint.textContent = this.getScopeHint(storageKey);
