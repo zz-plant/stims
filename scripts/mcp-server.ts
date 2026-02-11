@@ -34,6 +34,8 @@ async function runCommand(
   command: string,
   args: readonly string[],
   timeoutMs = defaultQualityGateTimeoutMs,
+  killGraceMs = 1000,
+  spawnProcess: typeof spawn = spawn,
 ) {
   return await new Promise<{
     exitCode: number | null;
@@ -41,7 +43,7 @@ async function runCommand(
     stderr: string;
     timedOut: boolean;
   }>((resolve) => {
-    const child = spawn(command, [...args], {
+    const child = spawnProcess(command, [...args], {
       cwd: process.cwd(),
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -50,6 +52,9 @@ async function runCommand(
     const stdoutChunks: string[] = [];
     const stderrChunks: string[] = [];
     let settled = false;
+    let timedOut = false;
+    let timeoutMessage: string | null = null;
+    let killTimer: ReturnType<typeof setTimeout> | null = null;
 
     const finalize = (result: {
       exitCode: number | null;
@@ -60,23 +65,33 @@ async function runCommand(
       if (settled) return;
       settled = true;
       clearTimeout(timeout);
+      if (killTimer) {
+        clearTimeout(killTimer);
+      }
+
+      const normalizedStderr = result.stderr ?? stderrChunks.join('').trim();
+      const stderr = timeoutMessage
+        ? [normalizedStderr, timeoutMessage].filter(Boolean).join('\n\n')
+        : normalizedStderr;
+
       resolve({
         exitCode: result.exitCode,
         stdout: result.stdout ?? stdoutChunks.join('').trim(),
-        stderr: result.stderr ?? stderrChunks.join('').trim(),
-        timedOut: result.timedOut,
+        stderr,
+        timedOut,
       });
     };
 
     const timeout = setTimeout(() => {
+      timedOut = true;
+      timeoutMessage = `Command timed out after ${timeoutMs}ms; sent SIGTERM.`;
+
       child.kill('SIGTERM');
-      finalize({
-        exitCode: null,
-        stderr:
-          stderrChunks.join('').trim() ||
-          `Command timed out after ${timeoutMs}ms.`,
-        timedOut: true,
-      });
+
+      killTimer = setTimeout(() => {
+        timeoutMessage = `${timeoutMessage} Escalated to SIGKILL after ${killGraceMs}ms.`;
+        child.kill('SIGKILL');
+      }, killGraceMs);
     }, timeoutMs);
 
     child.stdout.on('data', (chunk) => {
@@ -91,14 +106,14 @@ async function runCommand(
       finalize({
         exitCode: null,
         stderr: `${stderrChunks.join('').trim()}\n${error}`.trim(),
-        timedOut: false,
+        timedOut,
       });
     });
 
     child.on('close', (exitCode) => {
       finalize({
         exitCode,
-        timedOut: false,
+        timedOut,
       });
     });
   });

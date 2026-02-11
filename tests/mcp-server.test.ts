@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
 import {
   defaultQualityGateTimeoutMs,
   getDocSectionContent,
@@ -123,11 +125,43 @@ describe('runCommand', () => {
       'bun',
       ['-e', 'setTimeout(() => {}, 2000)'],
       50,
+      25,
     );
 
     expect(result.exitCode).toBeNull();
     expect(result.timedOut).toBe(true);
     expect(result.stderr).toContain('timed out');
+  });
+
+  test('escalates to SIGKILL when SIGTERM does not close the child', async () => {
+    const signals: string[] = [];
+
+    class FakeChildProcess extends EventEmitter {
+      stdout = new PassThrough();
+      stderr = new PassThrough();
+
+      kill(signal: string) {
+        signals.push(signal);
+        if (signal === 'SIGKILL') {
+          this.emit('close', null);
+        }
+        return true;
+      }
+    }
+
+    const fakeSpawn = () => new FakeChildProcess();
+
+    const result = await runCommand(
+      'bun',
+      ['run', 'check'],
+      50,
+      25,
+      fakeSpawn as unknown as typeof import('node:child_process').spawn,
+    );
+
+    expect(result.timedOut).toBe(true);
+    expect(result.stderr).toContain('Escalated to SIGKILL');
+    expect(signals).toEqual(['SIGTERM', 'SIGKILL']);
   });
 
   test('exposes the default timeout constant', () => {
