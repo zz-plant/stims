@@ -7,6 +7,8 @@ const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'public');
 const generatedDirs = ['toys', 'tags', 'moods', 'capabilities'];
 const sitemapChunkSize = 5000;
+const ogWidth = 1200;
+const ogHeight = 630;
 
 const slugify = (value: string) =>
   value
@@ -37,14 +39,14 @@ const buildOgSvg = ({
 }: {
   title: string;
   subtitle: string;
-}) => `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${escapeHtml(title)}">
+}) => `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(title)}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0b1024" />
       <stop offset="100%" stop-color="#26377f" />
     </linearGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#bg)" />
   <circle cx="1035" cy="540" r="160" fill="rgba(255,255,255,0.12)" />
   <circle cx="160" cy="100" r="120" fill="rgba(255,255,255,0.1)" />
   <text x="90" y="220" font-size="42" fill="#dbe4ff" font-family="Inter, Arial, sans-serif">Stim Webtoys Library</text>
@@ -71,6 +73,9 @@ const renderPage = ({
   extraHead = '',
   socialImage = iconUrl,
   socialImageAlt = 'Stim Webtoys Library icon',
+  socialImageType = 'image/svg+xml',
+  socialImageWidth = 512,
+  socialImageHeight = 512,
 }: {
   title: string;
   description: string;
@@ -80,6 +85,9 @@ const renderPage = ({
   extraHead?: string;
   socialImage?: string;
   socialImageAlt?: string;
+  socialImageType?: string;
+  socialImageWidth?: number;
+  socialImageHeight?: number;
 }) => `<!doctype html>
 <html lang="en">
   <head>
@@ -93,6 +101,9 @@ const renderPage = ({
     <meta property="og:type" content="website" />
     <meta property="og:url" content="${canonical}" />
     <meta property="og:image" content="${socialImage}" />
+    <meta property="og:image:type" content="${socialImageType}" />
+    <meta property="og:image:width" content="${socialImageWidth}" />
+    <meta property="og:image:height" content="${socialImageHeight}" />
     <meta property="og:image:alt" content="${escapeHtml(socialImageAlt)}" />
     <meta property="og:site_name" content="Stim Webtoys Library" />
     <meta property="og:locale" content="en_US" />
@@ -537,6 +548,9 @@ const generateSeo = async () => {
     )}</script>
 `,
       socialImage: `${baseUrl}/og/default.svg`,
+      socialImageType: 'image/svg+xml',
+      socialImageWidth: ogWidth,
+      socialImageHeight: ogHeight,
       socialImageAlt: 'Stim Webtoys collection preview image',
     }),
   );
@@ -636,6 +650,9 @@ const generateSeo = async () => {
 ${extraHead}
 `,
         socialImage: `${baseUrl}/og/${toy.slug}.svg`,
+        socialImageType: 'image/svg+xml',
+        socialImageWidth: ogWidth,
+        socialImageHeight: ogHeight,
         socialImageAlt: `${toy.title} preview image`,
       }),
     );
