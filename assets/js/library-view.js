@@ -1263,6 +1263,17 @@ export function createLibraryView({
     return (toyMoods ?? []).some((mood) => accepted.has(mood.toLowerCase()));
   };
 
+  const normalizeFilterToken = (token) => {
+    if (typeof token !== 'string') return null;
+    const [type, ...valueParts] = token.split(':');
+    const value = valueParts.join(':').trim();
+    if (!type || !value) return null;
+    if (type === 'mood') {
+      return `mood:${normalizeMoodToken(value)}`;
+    }
+    return `${type}:${value.toLowerCase()}`;
+  };
+
   const formatTokenLabel = (token) => {
     const [type, value = ''] = token.split(':');
     if (!type) return token;
@@ -1719,7 +1730,10 @@ export function createLibraryView({
     searchQuery = state.query ?? '';
     sortBy = state.sort ?? 'featured';
     activeFilters.clear();
-    (state.filters ?? []).forEach((token) => activeFilters.add(token));
+    (state.filters ?? [])
+      .map((token) => normalizeFilterToken(token))
+      .filter(Boolean)
+      .forEach((token) => activeFilters.add(token));
     lastCommittedQuery = searchQuery.trim();
 
     if (searchInputId) {
@@ -2292,7 +2306,11 @@ export function createLibraryView({
       '[data-search-shortcuts-toggle]',
     );
     const shortcutsHint = document.getElementById('toy-search-hint');
-    if (shortcutsToggle instanceof HTMLButtonElement && shortcutsHint) {
+    if (
+      shortcutsToggle instanceof HTMLElement &&
+      shortcutsToggle.tagName === 'BUTTON' &&
+      shortcutsHint
+    ) {
       shortcutsToggle.addEventListener('click', () => {
         const expanded =
           shortcutsToggle.getAttribute('aria-expanded') === 'true';
