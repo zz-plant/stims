@@ -1244,6 +1244,25 @@ export function createLibraryView({
     return normalized;
   };
 
+  const normalizeMoodToken = (value) => {
+    const normalized = value.toLowerCase();
+    if (normalized === 'calm') return 'calming';
+    return normalized;
+  };
+
+  const matchesMoodToken = (toyMoods, value) => {
+    const normalizedValue = normalizeMoodToken(value);
+    const aliases = {
+      calm: ['calming', 'serene', 'minimal'],
+      calming: ['calm', 'serene', 'minimal'],
+    };
+    const accepted = new Set([
+      normalizedValue,
+      ...(aliases[normalizedValue] ?? []),
+    ]);
+    return (toyMoods ?? []).some((mood) => accepted.has(mood.toLowerCase()));
+  };
+
   const formatTokenLabel = (token) => {
     const [type, value = ''] = token.split(':');
     if (!type) return token;
@@ -1523,9 +1542,7 @@ export function createLibraryView({
 
     switch (type) {
       case 'mood':
-        return (toy.moods ?? []).some(
-          (mood) => mood.toLowerCase() === value.toLowerCase(),
-        );
+        return matchesMoodToken(toy.moods, value);
       case 'capability':
         return Boolean(toy.capabilities?.[normalizeCapabilityToken(value)]);
       case 'feature':
@@ -1819,6 +1836,7 @@ export function createLibraryView({
     const title = document.createElement('h3');
     title.textContent = toy.title;
     const desc = document.createElement('p');
+    desc.className = 'webtoy-card-description';
     desc.textContent = toy.description;
     card.appendChild(title);
     card.appendChild(desc);
@@ -1942,26 +1960,26 @@ export function createLibraryView({
       }
     }
 
-    if (toy.capabilities?.demoAudio && toy.type === 'module') {
+    if (toy.type === 'module') {
       const actions = document.createElement('div');
       actions.className = 'webtoy-card-actions';
 
-      const playDemo = document.createElement('button');
-      playDemo.type = 'button';
-      playDemo.className = 'cta-button cta-button--muted';
-      playDemo.textContent = 'Play demo now';
-      playDemo.addEventListener('click', (event) => {
+      const play = document.createElement('button');
+      play.type = 'button';
+      play.className = 'cta-button cta-button--muted';
+      play.textContent = toy.capabilities?.demoAudio ? 'Play demo' : 'Play';
+      play.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        openToy(toy, { preferDemoAudio: true });
+        openToy(toy, { preferDemoAudio: Boolean(toy.capabilities?.demoAudio) });
       });
-      playDemo.addEventListener('keydown', (event) => {
+      play.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.stopPropagation();
         }
       });
 
-      actions.appendChild(playDemo);
+      actions.appendChild(play);
       card.appendChild(actions);
     }
 
@@ -2267,6 +2285,22 @@ export function createLibraryView({
     if (form) {
       form.addEventListener('submit', (event) => {
         event.preventDefault();
+      });
+    }
+
+    const shortcutsToggle = document.querySelector(
+      '[data-search-shortcuts-toggle]',
+    );
+    const shortcutsHint = document.getElementById('toy-search-hint');
+    if (shortcutsToggle instanceof HTMLButtonElement && shortcutsHint) {
+      shortcutsToggle.addEventListener('click', () => {
+        const expanded =
+          shortcutsToggle.getAttribute('aria-expanded') === 'true';
+        shortcutsToggle.setAttribute(
+          'aria-expanded',
+          expanded ? 'false' : 'true',
+        );
+        shortcutsHint.hidden = expanded;
       });
     }
 
