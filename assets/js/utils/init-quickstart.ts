@@ -7,7 +7,10 @@ type InitQuickstartOptions = {
   loadToy: typeof import('../loader.ts').loadToy;
 };
 
-type QuickstartToy = Pick<ToyEntry, 'slug' | 'lifecycleStage'>;
+type QuickstartToy = Pick<
+  ToyEntry,
+  'slug' | 'lifecycleStage' | 'moods' | 'tags' | 'capabilities'
+>;
 
 export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
   const quickstarts = document.querySelectorAll(DATA_SELECTORS.quickstart);
@@ -40,10 +43,37 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
 
     const resolveRandomSlug = () => {
       const normalizedPool = quickstartPool?.toLowerCase();
-      const pool =
-        normalizedPool === 'featured'
-          ? quickstartToys.filter((toy) => toy.lifecycleStage === 'featured')
-          : quickstartToys;
+      const energeticTags = new Set([
+        'energetic',
+        'high-energy',
+        'party',
+        'hype',
+        'dance',
+        'neon',
+        'pulse',
+      ]);
+
+      const isEnergeticToy = (toy: QuickstartToy) => {
+        const metadata = [...(toy.moods ?? []), ...(toy.tags ?? [])].map(
+          (value) => value.toLowerCase(),
+        );
+        const hasEnergeticTag = metadata.some((value) =>
+          energeticTags.has(value),
+        );
+        return hasEnergeticTag || Boolean(toy.capabilities?.demoAudio);
+      };
+
+      let pool: QuickstartToy[];
+      if (normalizedPool === 'featured') {
+        pool = quickstartToys.filter(
+          (toy) => toy.lifecycleStage === 'featured',
+        );
+      } else if (normalizedPool === 'energetic') {
+        pool = quickstartToys.filter((toy) => isEnergeticToy(toy));
+      } else {
+        pool = quickstartToys;
+      }
+
       const fallbackPool = pool.length ? pool : quickstartToys;
       if (!fallbackPool.length) return null;
       const index = Math.floor(Math.random() * fallbackPool.length);
