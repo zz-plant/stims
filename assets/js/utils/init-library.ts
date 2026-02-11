@@ -77,11 +77,36 @@ export const initLibraryView = async ({
       syncChipVisibility(expanded);
     };
 
-    advancedChips.forEach((chip) => {
-      chip.addEventListener('click', () => {
-        window.requestAnimationFrame(refreshVisibility);
-      });
+    const scheduleRefresh = () => {
+      window.requestAnimationFrame(refreshVisibility);
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      const hasClassChange = mutations.some(
+        (mutation) =>
+          mutation.type === 'attributes' && mutation.attributeName === 'class',
+      );
+      if (hasClassChange) {
+        scheduleRefresh();
+      }
     });
+
+    advancedChips.forEach((chip) => {
+      observer.observe(chip, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+      chip.addEventListener('click', scheduleRefresh);
+    });
+
+    window.addEventListener('popstate', scheduleRefresh);
+
+    document
+      .querySelector('[data-filter-reset]')
+      ?.addEventListener('click', scheduleRefresh);
+    document
+      .querySelector('[data-active-filters-clear]')
+      ?.addEventListener('click', scheduleRefresh);
 
     toggle.addEventListener('click', () => {
       const expanded = toggle.getAttribute('aria-expanded') === 'true';
