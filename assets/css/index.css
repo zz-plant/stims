@@ -818,6 +818,63 @@ header.hero {
   box-shadow: var(--shadow-soft);
 }
 
+.daily-streak {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent-color) 20%, transparent),
+      transparent 60%
+    ),
+    color-mix(in srgb, var(--surface-strong) 86%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--accent-color) 30%, var(--surface-border));
+}
+
+.daily-streak__header {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.daily-streak__eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.daily-streak__title {
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.daily-streak__title strong {
+  font-size: 1.04rem;
+}
+
+.daily-streak__title span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.daily-streak__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.daily-streak__note {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
 .system-check {
   display: grid;
   gap: 1.4rem;
