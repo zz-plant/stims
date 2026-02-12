@@ -1986,6 +1986,22 @@ html.light .experience-card {
   position: sticky;
   top: clamp(4.6rem, 9vh, 6rem);
   z-index: 6;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.library-search:focus-within {
+  border-color: color-mix(
+    in srgb,
+    var(--accent-color) 38%,
+    var(--surface-border)
+  );
+  box-shadow:
+    var(--shadow-strong),
+    0 0 0 1px color-mix(in srgb, var(--accent-color) 24%, transparent);
+  transform: translateY(-1px);
 }
 
 .search-heading {
@@ -2333,6 +2349,8 @@ html.light .active-filters__label {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
+  position: relative;
+  scroll-padding-inline: 0.25rem;
 }
 
 .filter-actions {
@@ -3192,8 +3210,29 @@ footer {
 
   .chip-row {
     overflow-x: auto;
+    flex-wrap: nowrap;
     padding-bottom: 0.2rem;
     scrollbar-width: thin;
+    scroll-snap-type: x proximity;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 1rem,
+      #000 calc(100% - 1rem),
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 1rem,
+      #000 calc(100% - 1rem),
+      transparent
+    );
+  }
+
+  .chip-row > * {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
   }
 
   .preview-controls {
@@ -3458,5 +3497,15 @@ footer {
 
   .search-meta__tokens {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library-search {
+    transition: none;
+  }
+
+  .library-search:focus-within {
+    transform: none;
   }
 }
