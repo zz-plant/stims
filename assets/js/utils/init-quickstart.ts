@@ -53,16 +53,27 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
         'pulse',
         'pulsing',
       ]);
+      const calmingTags = new Set([
+        'calming',
+        'calm',
+        'serene',
+        'ambient',
+        'focus',
+        'grounded',
+      ]);
 
-      const isEnergeticToy = (toy: QuickstartToy) => {
+      const hasMatchingMetadata = (toy: QuickstartToy, values: Set<string>) => {
         const metadata = [...(toy.moods ?? []), ...(toy.tags ?? [])].map(
           (value) => value.toLowerCase(),
         );
-        const hasEnergeticTag = metadata.some((value) =>
-          energeticTags.has(value),
-        );
-        return hasEnergeticTag;
+        return metadata.some((value) => values.has(value));
       };
+
+      const isEnergeticToy = (toy: QuickstartToy) =>
+        hasMatchingMetadata(toy, energeticTags);
+
+      const isCalmingToy = (toy: QuickstartToy) =>
+        hasMatchingMetadata(toy, calmingTags);
 
       let pool: QuickstartToy[];
       if (normalizedPool === 'featured') {
@@ -71,6 +82,8 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
         );
       } else if (normalizedPool === 'energetic') {
         pool = quickstartToys.filter((toy) => isEnergeticToy(toy));
+      } else if (normalizedPool === 'calming') {
+        pool = quickstartToys.filter((toy) => isCalmingToy(toy));
       } else {
         pool = quickstartToys;
       }
