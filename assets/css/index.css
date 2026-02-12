@@ -38,7 +38,7 @@
   --radius-lg: 20px;
   --radius-md: 14px;
   --radius-pill: 999px;
-  --content-width: 1320px;
+  --content-width: 1220px;
   --section-gap: clamp(1.9rem, 2.8vw, 3rem);
   --accent-gradient: linear-gradient(
     120deg,
@@ -60,7 +60,7 @@ html {
 
 html.light {
   --bg-color: #f5f6f7;
-  --bg-color-secondary: #e6e9ee;
+  --bg-color-secondary: #e2e6ed;
   --text-color: #1f2630;
   --text-muted: rgba(31, 38, 48, 0.7);
   --accent-contrast: #ffffff;
@@ -71,7 +71,7 @@ html.light {
   --accent-magenta: #a36d59;
   --glow-color: rgba(91, 110, 130, 0.08);
   --accent-soft: rgba(91, 110, 130, 0.08);
-  --card-bg: #ffffff;
+  --card-bg: #fcfdff;
   --hover-bg: rgba(91, 110, 130, 0.12);
   --highlight-glow: rgba(163, 109, 89, 0.12);
   --surface-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0.02), transparent);
@@ -93,11 +93,11 @@ html.light {
     transparent 52%
   );
   --shadow-strong:
-    0 12px 28px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(91, 110, 130, 0.2);
+    0 16px 30px rgba(15, 23, 42, 0.15), 0 3px 9px rgba(91, 110, 130, 0.16);
   --shadow-soft:
-    0 6px 14px rgba(15, 23, 42, 0.12), 0 1px 4px rgba(91, 110, 130, 0.18);
+    0 8px 18px rgba(15, 23, 42, 0.1), 0 1px 5px rgba(91, 110, 130, 0.14);
   --shadow-surface:
-    0 10px 22px rgba(15, 23, 42, 0.16), 0 1px 6px rgba(91, 110, 130, 0.16);
+    0 12px 24px rgba(15, 23, 42, 0.12), 0 1px 6px rgba(91, 110, 130, 0.14);
   color-scheme: light;
 }
 
@@ -445,7 +445,7 @@ section.intro {
   border-radius: calc(var(--radius-lg) + 6px);
   background: var(--panel-gradient);
   border: 1px solid var(--surface-border);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-surface);
   overflow: hidden;
 }
 
@@ -713,7 +713,13 @@ header.hero {
   gap: 1.5rem;
   padding: clamp(1.4rem, 2vw, 2rem);
   border-radius: calc(var(--radius-lg) + 6px);
-  background: var(--panel-gradient);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--panel-highlight) 78%, transparent),
+      transparent
+    ),
+    var(--panel-gradient);
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
 }
@@ -727,7 +733,9 @@ header.hero {
 .quick-card {
   padding: 1.25rem 1.3rem;
   border-radius: var(--radius-lg);
-  background: var(--surface-gradient);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.2), transparent 50%),
+    var(--surface-gradient);
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
   display: grid;
@@ -1982,7 +1990,7 @@ html.light .experience-card {
       transparent 65%
     ),
     var(--surface-gradient);
-  box-shadow: var(--shadow-strong);
+  box-shadow: var(--shadow-surface);
   position: sticky;
   top: clamp(4.6rem, 9vh, 6rem);
   z-index: 6;
@@ -2232,11 +2240,15 @@ html.light .active-filters__label {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.55rem;
-  background: rgba(10, 18, 32, 0.92);
+  background: linear-gradient(
+    155deg,
+    rgba(9, 20, 38, 0.97),
+    rgba(12, 24, 44, 0.95)
+  );
   border: 1px solid
     color-mix(in srgb, var(--accent-color) 22%, var(--surface-border));
   border-radius: var(--radius-pill);
-  padding: 0.5rem 0.95rem;
+  padding: 0.52rem 0.95rem;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   position: relative;
 }
@@ -2248,7 +2260,7 @@ html.light .active-filters__label {
   width: 2.2rem;
   height: 2.2rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.09);
   color: var(--text-color);
   font-size: 1rem;
 }
@@ -2302,7 +2314,7 @@ html.light .active-filters__label {
 
 .search-clear {
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.11);
   color: var(--text-color);
   border-radius: var(--radius-pill);
   padding: 0.45rem 0.9rem;
@@ -2393,7 +2405,7 @@ html.light .active-filters__label {
 .filter-chip {
   border: 1px solid
     color-mix(in srgb, var(--accent-color) 18%, var(--surface-border));
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
   color: var(--text-color);
   border-radius: var(--radius-pill);
   padding: 0.5rem 0.95rem;
@@ -2417,7 +2429,7 @@ html.light .active-filters__label {
 }
 
 .filter-chip.is-active {
-  background: rgba(59, 130, 246, 0.24);
+  background: color-mix(in srgb, var(--accent-color) 24%, var(--card-bg));
   border-color: rgba(59, 130, 246, 0.6);
   box-shadow: var(--shadow-soft);
 }
@@ -2474,7 +2486,7 @@ html.light .active-filters__label {
   border-radius: var(--radius-pill);
   border: 1px solid
     color-mix(in srgb, var(--accent-color) 18%, var(--surface-border));
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--card-bg) 90%, transparent);
   color: var(--text-color);
   box-shadow: var(--shadow-soft);
   min-height: 44px;
@@ -2591,7 +2603,7 @@ html.light .active-filters__label {
   position: relative;
   overflow: hidden;
   touch-action: manipulation;
-  min-height: clamp(198px, 20vw, 238px);
+  min-height: clamp(214px, 20vw, 250px);
   isolation: isolate;
 }
 
@@ -2699,8 +2711,34 @@ html:not(.light) .webtoy-card {
 
 .webtoy-card h3 {
   font-size: 1.08rem;
-  margin: 0;
+  margin: 0.25rem 0 0;
   color: var(--text-color);
+}
+
+html.light .top-nav,
+html.light section.intro,
+html.light .quick-starts,
+html.light .library-search,
+html.light .webtoy-card {
+  border-color: rgba(43, 56, 77, 0.16);
+}
+
+html.light .intro-pill {
+  background: color-mix(in srgb, var(--card-bg) 94%, var(--accent-color));
+  border-color: rgba(43, 56, 77, 0.14);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+html.light .cta-button.ghost,
+html.light .filter-chip,
+html.light .sort-control,
+html.light .filter-toggle {
+  border-color: rgba(43, 56, 77, 0.2);
+  background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+}
+
+html.light .cta-button.primary {
+  background: linear-gradient(130deg, #6f8096, #5d6f86);
 }
 
 .webtoy-card p {
