@@ -196,10 +196,6 @@
         </div>
         <search class="library-search">
           <section class="starter-picks" aria-label="Recommended starter picks">
-            <div class="starter-picks__header">
-              <h3>Starter picks</h3>
-              <p>Easy first picks.</p>
-            </div>
             <div class="starter-picks__grid">
               <a href="toy.html?toy=holy" class="starter-pick" data-quickstart-slug="holy">
                 <strong>Halo Flow</strong>
@@ -906,10 +902,6 @@
           const trimmedQuery = query.trim();
           if (trimmedQuery) {
             parts.push(`“${trimmedQuery}”`);
-          }
-          const filterLabels = getActiveFilterLabels();
-          if (filterLabels.length > 0) {
-            parts.push(filterLabels.join(', '));
           }
           parts.push(getSortLabel());
           searchResults.textContent = parts.join(' • ');

@@ -227,10 +227,10 @@ function updateStatusList(
   const rendererStatus = buildStatusBadge(
     'Rendering',
     result.rendering.rendererBackend === 'webgpu'
-      ? 'Ready (WebGPU)'
+      ? 'Best visual mode ready'
       : result.rendering.rendererBackend === 'webgl'
-        ? 'WebGL fallback'
-        : 'Unavailable',
+        ? 'Runs in compatible mode'
+        : 'Needs a different browser or device',
     result.rendering.rendererBackend
       ? result.rendering.rendererBackend === 'webgpu'
         ? 'ok'
@@ -242,10 +242,10 @@ function updateStatusList(
   rendererNote.className = 'preflight-status__note';
   rendererNote.textContent =
     result.rendering.rendererBackend === 'webgpu'
-      ? 'WebGPU enabled.'
+      ? 'You can continue with full visuals.'
       : result.rendering.rendererBackend === 'webgl'
-        ? 'WebGL in use.'
-        : 'No GPU acceleration.';
+        ? 'You can continue with compatible visuals.'
+        : 'Try another browser or device for visuals.';
   rendererStatus.appendChild(rendererNote);
 
   const microphoneStatus = buildStatusBadge(
@@ -278,7 +278,9 @@ function updateStatusList(
 
   const environmentStatus = buildStatusBadge(
     'Environment',
-    result.environment.secureContext ? 'Secure context' : 'Insecure context',
+    result.environment.secureContext
+      ? 'Ready for modern browser features'
+      : 'Some features may be limited',
     result.environment.secureContext ? 'ok' : 'warn',
   );
 
@@ -355,7 +357,7 @@ function updateWhyDetails(
       'This page is not in a secure context, so some APIs may be limited.',
     );
   } else {
-    items.push('Secure context enables modern browser APIs.');
+    items.push('Secure browsing mode is active, so modern features can run.');
   }
 
   items.push(
@@ -457,7 +459,6 @@ export function attachCapabilityPreflight({
   host = document.body,
   heading = 'Quick system check',
   backHref,
-  backLabel = 'Back to library',
   onComplete,
   onRetry,
   openOnAttach = true,
@@ -467,7 +468,6 @@ export function attachCapabilityPreflight({
   host?: HTMLElement;
   heading?: string;
   backHref?: string;
-  backLabel?: string;
   onComplete?: (result: CapabilityPreflightResult) => void;
   onRetry?: (result: CapabilityPreflightResult) => void;
   openOnAttach?: boolean;
@@ -655,11 +655,13 @@ export function attachCapabilityPreflight({
   performanceButton.textContent = 'Improve performance';
   performanceButton.hidden = true;
   actions.appendChild(performanceButton);
+  let backLink: HTMLAnchorElement | null = null;
   if (backHref) {
-    const backLink = document.createElement('a');
+    backLink = document.createElement('a');
     backLink.className = 'cta-button ghost';
     backLink.href = backHref;
-    backLink.textContent = backLabel;
+    backLink.textContent = 'Browse compatible toys';
+    backLink.hidden = true;
     actions.appendChild(backLink);
   }
   const continueButton = document.createElement('button');
@@ -672,12 +674,13 @@ export function attachCapabilityPreflight({
   });
   actions.appendChild(continueButton);
 
+  panel.appendChild(actions);
+
   const retryButton = document.createElement('button');
   retryButton.className = 'text-link preflight-retry-link';
   retryButton.type = 'button';
   retryButton.textContent = 'Run checks again';
-  actions.appendChild(retryButton);
-  panel.appendChild(actions);
+  panel.appendChild(retryButton);
 
   let latestResult: CapabilityPreflightResult | null = null;
 
@@ -724,6 +727,9 @@ export function attachCapabilityPreflight({
     panel.dataset.state = result.canProceed ? 'ready' : 'blocked';
     retryButton.disabled = false;
     continueButton.hidden = !result.canProceed;
+    if (backLink) {
+      backLink.hidden = result.canProceed;
+    }
     updateStatusList(statusContainer, result);
     renderIssueList(issueContainer, result);
     updateWhyDetails(detailsContent, result);
