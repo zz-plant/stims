@@ -22,6 +22,11 @@ export interface NavOptions {
   onNextToy?: () => void | Promise<void>;
   onToggleFlow?: (active: boolean) => void;
   flowActive?: boolean;
+  onTogglePartyMode?: (active: boolean) => void;
+  partyModeActive?: boolean;
+  onToggleHaptics?: (active: boolean) => void;
+  hapticsActive?: boolean;
+  hapticsSupported?: boolean;
   rendererStatus?: {
     backend: 'webgl' | 'webgpu';
     fallbackReason?: string | null;
@@ -189,7 +194,7 @@ function renderToyNav(
   const safeTitle = escapeHtml(options.title ?? 'Web toy');
   const safeSlug = options.slug ? escapeHtml(options.slug) : '';
   const hintText = isMobileDevice()
-    ? 'Tap Flow mode to auto-switch every 25–50s. Use Back to return.'
+    ? 'Tap Flow mode for session playlist rotation every 60–120s. Use Back to return.'
     : 'Press Esc or use Back to return to the library.';
   const randomChallenge =
     TOY_MICRO_CHALLENGES[
@@ -234,12 +239,32 @@ function renderToyNav(
           : ''
       }
       ${
+        options.onTogglePartyMode
+          ? `<div class="toy-nav__flow-wrapper">
+              <button type="button" class="toy-nav__flow" data-party-toggle="true" aria-pressed="${options.partyModeActive ? 'true' : 'false'}">
+                ${options.partyModeActive ? 'Party mode on' : 'Party mode'}
+              </button>
+              <span class="toy-nav__flow-status" data-party-status role="status" aria-live="polite"></span>
+            </div>`
+          : ''
+      }
+      ${
         options.onToggleFlow
           ? `<div class="toy-nav__flow-wrapper">
               <button type="button" class="toy-nav__flow" data-flow-toggle="true" aria-pressed="${options.flowActive ? 'true' : 'false'}">
                 ${options.flowActive ? 'Flow mode on' : 'Flow mode'}
               </button>
-              <span class="toy-nav__flow-status" role="status" aria-live="polite"></span>
+              <span class="toy-nav__flow-status" data-flow-status role="status" aria-live="polite"></span>
+            </div>`
+          : ''
+      }
+      ${
+        options.onToggleHaptics && options.hapticsSupported
+          ? `<div class="toy-nav__flow-wrapper">
+              <button type="button" class="toy-nav__flow" data-haptics-toggle="true" aria-pressed="${options.hapticsActive ? 'true' : 'false'}">
+                ${options.hapticsActive ? 'Beat haptics on' : 'Beat haptics'}
+              </button>
+              <span class="toy-nav__flow-status" data-haptics-status role="status" aria-live="polite"></span>
             </div>`
           : ''
       }
@@ -346,10 +371,16 @@ function renderToyNav(
     '.toy-nav__next-status',
   ) as HTMLElement | null;
   const flowBtn = container.querySelector(
-    '.toy-nav__flow',
+    '[data-flow-toggle="true"]',
   ) as HTMLButtonElement | null;
   const flowStatus = container.querySelector(
-    '.toy-nav__flow-status',
+    '[data-flow-status]',
+  ) as HTMLElement | null;
+  const partyBtn = container.querySelector(
+    '[data-party-toggle="true"]',
+  ) as HTMLButtonElement | null;
+  const partyStatus = container.querySelector(
+    '[data-party-status]',
   ) as HTMLElement | null;
   const challengeBtn = container.querySelector(
     '.toy-nav__challenge',
@@ -358,6 +389,14 @@ function renderToyNav(
     '.toy-nav__challenge-status',
   ) as HTMLElement | null;
   let flowActive = Boolean(options.flowActive);
+  let partyModeActive = Boolean(options.partyModeActive);
+  let hapticsActive = Boolean(options.hapticsActive);
+  const hapticsBtn = container.querySelector(
+    '[data-haptics-toggle="true"]',
+  ) as HTMLButtonElement | null;
+  const hapticsStatus = container.querySelector(
+    '[data-haptics-status]',
+  ) as HTMLElement | null;
 
   challengeBtn?.addEventListener('click', () => {
     const nextChallenge =
@@ -405,10 +444,46 @@ function renderToyNav(
     }, 3200);
   };
 
+  const showPartyStatus = (message: string) => {
+    if (!partyStatus) return;
+    partyStatus.textContent = message;
+    if (!message) return;
+    const win = doc.defaultView ?? window;
+    win.setTimeout(() => {
+      if (partyStatus.textContent === message) {
+        partyStatus.textContent = '';
+      }
+    }, 3200);
+  };
+
   const updateFlowUI = () => {
     if (!flowBtn) return;
     flowBtn.setAttribute('aria-pressed', String(flowActive));
     flowBtn.textContent = flowActive ? 'Flow mode on' : 'Flow mode';
+  };
+
+  const updatePartyUI = () => {
+    if (!partyBtn) return;
+    partyBtn.setAttribute('aria-pressed', String(partyModeActive));
+    partyBtn.textContent = partyModeActive ? 'Party mode on' : 'Party mode';
+  };
+
+  const showHapticsStatus = (message: string) => {
+    if (!hapticsStatus) return;
+    hapticsStatus.textContent = message;
+    if (!message) return;
+    const win = doc.defaultView ?? window;
+    win.setTimeout(() => {
+      if (hapticsStatus.textContent === message) {
+        hapticsStatus.textContent = '';
+      }
+    }, 3200);
+  };
+
+  const updateHapticsUI = () => {
+    if (!hapticsBtn) return;
+    hapticsBtn.setAttribute('aria-pressed', String(hapticsActive));
+    hapticsBtn.textContent = hapticsActive ? 'Beat haptics on' : 'Beat haptics';
   };
 
   const handleNextToy = async () => {
@@ -431,6 +506,8 @@ function renderToyNav(
   });
 
   updateFlowUI();
+  updatePartyUI();
+  updateHapticsUI();
 
   flowBtn?.addEventListener('click', () => {
     flowActive = !flowActive;
@@ -440,6 +517,24 @@ function renderToyNav(
       flowActive
         ? 'Flow mode enabled. We will keep switching stims.'
         : 'Flow mode paused.',
+    );
+  });
+
+  partyBtn?.addEventListener('click', () => {
+    partyModeActive = !partyModeActive;
+    updatePartyUI();
+    options.onTogglePartyMode?.(partyModeActive);
+    showPartyStatus(
+      partyModeActive ? 'Party mode boosted.' : 'Party mode reset.',
+    );
+  });
+
+  hapticsBtn?.addEventListener('click', () => {
+    hapticsActive = !hapticsActive;
+    updateHapticsUI();
+    options.onToggleHaptics?.(hapticsActive);
+    showHapticsStatus(
+      hapticsActive ? 'Beat haptics enabled.' : 'Beat haptics disabled.',
     );
   });
 

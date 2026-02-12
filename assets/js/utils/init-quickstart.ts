@@ -2,6 +2,7 @@ import toyManifest from '../data/toy-manifest.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
 import { DATA_SELECTORS, DATASET_KEYS } from './data-attributes.ts';
 import { isMobileDevice } from './device-detect.ts';
+import { applyPartyMode } from './party-mode';
 
 type InitQuickstartOptions = {
   loadToy: typeof import('../loader.ts').loadToy;
@@ -9,7 +10,12 @@ type InitQuickstartOptions = {
 
 type QuickstartToy = Pick<
   ToyEntry,
-  'slug' | 'lifecycleStage' | 'moods' | 'tags' | 'capabilities'
+  | 'slug'
+  | 'lifecycleStage'
+  | 'moods'
+  | 'tags'
+  | 'capabilities'
+  | 'requiresWebGPU'
 >;
 
 export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
@@ -27,6 +33,7 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
     const quickstartPool = quickstart.dataset[DATASET_KEYS.quickstartPool];
     const quickstartAudio = quickstart.dataset[DATASET_KEYS.quickstartAudio];
     const quickstartFlow = quickstart.dataset[DATASET_KEYS.quickstartFlow];
+    const quickstartParty = quickstart.dataset[DATASET_KEYS.quickstartParty];
 
     const resolveFlowState = () => {
       if (quickstartFlow === undefined) return undefined;
@@ -43,6 +50,9 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
 
     const resolveRandomSlug = () => {
       const normalizedPool = quickstartPool?.toLowerCase();
+      const supportsWebGPU =
+        typeof navigator !== 'undefined' &&
+        Boolean((navigator as Navigator & { gpu?: GPU }).gpu);
       const energeticTags = new Set([
         'energetic',
         'high-energy',
@@ -75,7 +85,14 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
         pool = quickstartToys;
       }
 
-      const fallbackPool = pool.length ? pool : quickstartToys;
+      const compatiblePool = pool.filter(
+        (toy) => !toy.requiresWebGPU || supportsWebGPU,
+      );
+      const fallbackPool = compatiblePool.length
+        ? compatiblePool
+        : pool.length
+          ? pool
+          : quickstartToys;
       if (!fallbackPool.length) return null;
       const index = Math.floor(Math.random() * fallbackPool.length);
       return fallbackPool[index]?.slug ?? null;
@@ -99,12 +116,19 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
       const resolvedSlug = resolveSlug();
       if (!resolvedSlug) return;
 
+      const enablePartyMode =
+        quickstartParty === '' ||
+        quickstartParty === 'true' ||
+        quickstartParty === '1';
+      applyPartyMode({ enabled: enablePartyMode });
+
       event.preventDefault();
       loadToy(resolvedSlug, {
         pushState: true,
         preferDemoAudio:
           quickstartMode === 'demo' || quickstartAudio === 'demo',
         startFlow: resolveMobileFlowFallback(),
+        startPartyMode: enablePartyMode,
       });
     });
   });

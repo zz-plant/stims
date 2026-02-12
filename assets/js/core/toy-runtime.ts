@@ -252,6 +252,8 @@ export function createToyRuntime({
     canvas,
   });
   let analyser: FrequencyAnalyser | null = null;
+  let smoothedBassLevel = 0;
+  let lastBeatEventAtMs = 0;
   let lastFrameTime = 0;
   const pluginManager = createPluginManager(plugins);
   let runtime: ToyRuntimeInstance | null = null;
@@ -363,6 +365,7 @@ export function createToyRuntime({
       (ctx) => {
         analyser = ctx.analyser;
         const now = ctx.time;
+        const nowMs = now * 1000;
         frameState.deltaMs = lastFrameTime ? (now - lastFrameTime) * 1000 : 0;
         lastFrameTime = now;
         frameState.time = now;
@@ -371,6 +374,32 @@ export function createToyRuntime({
         frameState.input = inputController.getState();
         frameState.performance = performanceController.getSettings();
         pluginManager.update(frameState);
+
+        if (typeof window !== 'undefined' && analyser) {
+          const energy = analyser.getMultiBandEnergy();
+          const rms = analyser.getRmsLevel();
+          smoothedBassLevel = smoothedBassLevel * 0.84 + energy.bass * 0.16;
+          const beatThreshold = Math.max(0.16, smoothedBassLevel + 0.09);
+          const isBeat =
+            energy.bass > beatThreshold && nowMs - lastBeatEventAtMs > 140;
+
+          if (isBeat) {
+            lastBeatEventAtMs = nowMs;
+            const intensity = Math.min(
+              1,
+              Math.max(0, (energy.bass - beatThreshold) * 5),
+            );
+            window.dispatchEvent(
+              new CustomEvent('stims:audio-beat', {
+                detail: {
+                  bass: energy.bass,
+                  rms,
+                  intensity,
+                },
+              }),
+            );
+          }
+        }
       },
       resolveToyAudioOptions(request, {
         fftSize: audio?.fftSize,

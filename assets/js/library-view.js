@@ -1253,7 +1253,7 @@ export function createLibraryView({
     }
 
     const dailyToy = resolveDailyToy();
-    if (dailyAction instanceof HTMLButtonElement && dailyToy) {
+    if (dailyAction && dailyToy) {
       dailyAction.textContent = `Play today’s pick: ${dailyToy.title}`;
       dailyAction.onclick = () =>
         openToy(dailyToy, {
@@ -1268,7 +1268,7 @@ export function createLibraryView({
     }
 
     const recentToy = allToys.find((toy) => toy.slug === state?.lastPlayedSlug);
-    if (recentAction instanceof HTMLButtonElement) {
+    if (recentAction) {
       if (recentToy) {
         recentAction.hidden = false;
         recentAction.textContent = `Continue: ${recentToy.title}`;

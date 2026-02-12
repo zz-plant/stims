@@ -4,6 +4,7 @@ export const DATASET_KEYS = {
   quickstartPool: 'quickstartPool',
   quickstartAudio: 'quickstartAudio',
   quickstartFlow: 'quickstartFlow',
+  quickstartParty: 'quickstartParty',
 };
 
 export const DATA_SELECTORS = {
