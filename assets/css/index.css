@@ -3211,21 +3211,23 @@ footer {
   .chip-row {
     overflow-x: auto;
     flex-wrap: nowrap;
+    --chip-row-edge-fade: 0.4rem;
     padding-bottom: 0.2rem;
     scrollbar-width: thin;
+    scroll-padding-inline: var(--chip-row-edge-fade);
     scroll-snap-type: x proximity;
     mask-image: linear-gradient(
       to right,
       transparent,
-      #000 1rem,
-      #000 calc(100% - 1rem),
+      #000 var(--chip-row-edge-fade),
+      #000 calc(100% - var(--chip-row-edge-fade)),
       transparent
     );
     -webkit-mask-image: linear-gradient(
       to right,
       transparent,
-      #000 1rem,
-      #000 calc(100% - 1rem),
+      #000 var(--chip-row-edge-fade),
+      #000 calc(100% - var(--chip-row-edge-fade)),
       transparent
     );
   }
