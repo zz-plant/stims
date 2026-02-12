@@ -157,7 +157,7 @@ describe('flow cadence helper', () => {
       now: 10_000,
     });
 
-    expect(interval).toBe(25_000);
+    expect(interval).toBe(60_000);
   });
 
   test('uses the engaged interval when recent interaction is detected', async () => {
@@ -169,7 +169,7 @@ describe('flow cadence helper', () => {
       now: 180_000,
     });
 
-    expect(interval).toBe(35_000);
+    expect(interval).toBe(90_000);
   });
 
   test('uses the idle interval when interaction is stale', async () => {
@@ -181,7 +181,7 @@ describe('flow cadence helper', () => {
       now: 240_001,
     });
 
-    expect(interval).toBe(50_000);
+    expect(interval).toBe(120_000);
   });
 });
 
@@ -217,6 +217,36 @@ describe('loadToy', () => {
     ).toBe(false);
     expect(window.location.search).toBe('');
     expect(servicesMock.resetAudioPool).toHaveBeenCalled();
+  });
+
+  test('enables beat haptics on supported devices and responds to beat events', async () => {
+    const vibrate = mock(() => true);
+    Object.defineProperty(global, 'navigator', {
+      writable: true,
+      configurable: true,
+      value: {
+        ...originalNavigator,
+        userAgent: 'iPhone',
+        vibrate,
+      },
+    });
+
+    const { loader } = await buildLoader();
+    await loader.loadToy('aurora-painter', { pushState: true });
+
+    const hapticsBtn = document.querySelector('[data-haptics-toggle="true"]');
+    expect(hapticsBtn).not.toBeNull();
+
+    document.body.dataset.audioActive = 'true';
+    hapticsBtn?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    window.dispatchEvent(
+      new CustomEvent('stims:audio-beat', {
+        detail: { intensity: 0.8 },
+      }),
+    );
+
+    expect(vibrate).toHaveBeenCalled();
   });
 });
 

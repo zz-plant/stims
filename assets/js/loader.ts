@@ -17,6 +17,7 @@ import type { ToyEntry } from './data/toy-schema.ts';
 import { createRouter, type Route } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import { createManifestClient } from './utils/manifest-client';
+import { applyPartyMode } from './utils/party-mode';
 import { resetToyPictureInPicture } from './utils/picture-in-picture';
 import { loadToyModuleStarter } from './utils/toy-module-loader';
 import { ensureWebGL } from './utils/webgl-check';
@@ -28,10 +29,20 @@ const LIBRARY_FILTER_PARAM = 'filters';
 const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
 const STARTER_POLL_DELAY_MS = 100;
 const STARTER_POLL_ATTEMPTS = 30;
-const FLOW_WARMUP_INTERVAL_MS = 25000;
-const FLOW_ENGAGED_INTERVAL_MS = 35000;
-const FLOW_IDLE_INTERVAL_MS = 50000;
+const FLOW_WARMUP_INTERVAL_MS = 60000;
+const FLOW_ENGAGED_INTERVAL_MS = 90000;
+const FLOW_IDLE_INTERVAL_MS = 120000;
 const FLOW_ENGAGEMENT_WINDOW_MS = 2 * 60 * 1000;
+const HAPTICS_STORAGE_KEY = 'stims:haptics-enabled';
+const TOY_MICRO_GOALS: Record<string, string[]> = {
+  holy: ['Boost intensity, then settle into a calmer palette.'],
+  'bubble-harmonics': [
+    'Find a high-frequency moment and trigger a bubble split.',
+  ],
+  'spiral-burst': ['Make the pulse feel synced to your beat for 10 seconds.'],
+  'aurora-painter': ['Draw one smooth ribbon, then thicken it with density.'],
+  geom: ['Test quiet vs loud input and watch the shape response.'],
+};
 
 export function getFlowIntervalMs({
   cycleCount,
@@ -107,6 +118,9 @@ export function createLoader({
   lifecycle.reset();
   const recentToySlugs: string[] = [];
   let flowActive = false;
+  let partyModeActive = false;
+  let hapticsEnabled = false;
+  let beatHapticsCleanup: (() => void) | null = null;
   let flowTimer: number | null = null;
   let flowCycleCount = 0;
   let lastInteractionAt = Date.now();
@@ -122,6 +136,72 @@ export function createLoader({
       win.clearTimeout(flowTimer);
     }
     flowTimer = null;
+  };
+
+  const clearBeatHapticsListener = () => {
+    beatHapticsCleanup?.();
+    beatHapticsCleanup = null;
+  };
+
+  const canUseHaptics = () => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return false;
+    }
+    const supportsVibration = typeof navigator.vibrate === 'function';
+    return (
+      supportsVibration && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
+    );
+  };
+
+  const pulseHaptics = (intensity: number = 0.4) => {
+    if (!hapticsEnabled || !canUseHaptics() || !navigator.vibrate) {
+      return;
+    }
+    if (typeof document !== 'undefined') {
+      const audioActive = document.body.dataset.audioActive === 'true';
+      if (!audioActive) return;
+    }
+    const clampedIntensity = Math.max(0, Math.min(1, intensity));
+    const duration = Math.round(10 + clampedIntensity * 18);
+    navigator.vibrate(partyModeActive ? [duration, 28, duration] : [duration]);
+  };
+
+  const syncBeatHapticsListener = () => {
+    clearBeatHapticsListener();
+    if (!hapticsEnabled || !canUseHaptics() || typeof window === 'undefined') {
+      return;
+    }
+
+    const onBeat = (event: Event) => {
+      const detail = (event as CustomEvent<{ intensity?: number }>).detail;
+      pulseHaptics(detail?.intensity ?? 0.4);
+    };
+
+    window.addEventListener('stims:audio-beat', onBeat as EventListener);
+    beatHapticsCleanup = () => {
+      window.removeEventListener('stims:audio-beat', onBeat as EventListener);
+    };
+  };
+
+  const persistHaptics = (enabled: boolean) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        HAPTICS_STORAGE_KEY,
+        enabled ? 'true' : 'false',
+      );
+    } catch (_error) {
+      // Ignore storage access issues.
+    }
+  };
+
+  const readPersistedHaptics = () => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem(HAPTICS_STORAGE_KEY) === 'true';
+    } catch (_error) {
+      return false;
+    }
   };
 
   const markInteraction = () => {
@@ -199,6 +279,23 @@ export function createLoader({
     flowCycleCount = 0;
     scheduleFlow();
   };
+
+  const setPartyModeActive = (active: boolean) => {
+    partyModeActive = active;
+    applyPartyMode({ enabled: active });
+    view?.setPartyModeState?.(active);
+  };
+
+  const setHapticsEnabled = (enabled: boolean) => {
+    const nextEnabled = enabled && canUseHaptics();
+    hapticsEnabled = nextEnabled;
+    view?.setHapticsState?.(nextEnabled);
+    persistHaptics(nextEnabled);
+    if (!nextEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(0);
+    }
+    syncBeatHapticsListener();
+  };
   const updateRendererStatus = (
     capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
     onRetry?: () => void,
@@ -251,6 +348,8 @@ export function createLoader({
     void resetAudioPoolFn({ stopStreams: true });
     activeToySlug = null;
     setFlowActive(false);
+    setPartyModeActive(false);
+    clearBeatHapticsListener();
   };
 
   const browseCompatibleToys = () => {
@@ -332,6 +431,11 @@ export function createLoader({
       onNextToy: handleNextToy,
       onToggleFlow: (active) => setFlowActive(active),
       flowActive,
+      onTogglePartyMode: (active) => setPartyModeActive(active),
+      partyModeActive,
+      onToggleHaptics: (active) => setHapticsEnabled(active),
+      hapticsActive: hapticsEnabled,
+      hapticsSupported: canUseHaptics(),
     });
     if (!container) return;
     updateRendererStatus(
@@ -418,6 +522,9 @@ export function createLoader({
 
         view.showAudioPrompt(true, {
           preferDemoAudio,
+          starterTips: TOY_MICRO_GOALS[toy.slug] ?? [
+            'Try mic, then demo audio, and keep whichever feels better.',
+          ],
           onRequestMicrophone: async () => {
             lastAudioSource = 'microphone';
             const starter = await waitForAudioStarter(
@@ -481,17 +588,29 @@ export function createLoader({
       pushState = false,
       preferDemoAudio = false,
       startFlow,
+      startPartyMode,
     }: {
       pushState?: boolean;
       preferDemoAudio?: boolean;
       startFlow?: boolean;
+      startPartyMode?: boolean;
     } = {},
   ) => {
     initInteractionTracking();
 
+    if (canUseHaptics() && !hapticsEnabled) {
+      hapticsEnabled = readPersistedHaptics();
+    }
+
     if (typeof startFlow === 'boolean') {
       setFlowActive(startFlow);
     }
+
+    if (typeof startPartyMode === 'boolean') {
+      setPartyModeActive(startPartyMode);
+    }
+
+    syncBeatHapticsListener();
 
     const toy = toys.find((t) => t.slug === slug);
     if (!toy) {
