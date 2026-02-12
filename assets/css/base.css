@@ -1919,6 +1919,11 @@ body {
   margin-top: 12px;
 }
 
+.preflight-retry-link {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+
 .preflight-status__label {
   font-size: 0.8rem;
   text-transform: uppercase;

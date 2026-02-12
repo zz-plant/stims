@@ -768,20 +768,6 @@ header.hero {
   border: 1px solid var(--surface-border);
 }
 
-.starter-picks__header {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.starter-picks__header h3,
-.starter-picks__header p {
-  margin: 0;
-}
-
-.starter-picks__header p {
-  color: var(--text-muted);
-}
-
 .starter-picks__grid {
   display: grid;
   gap: 0.6rem;
@@ -3247,6 +3233,10 @@ footer {
   .hero-readiness__action {
     width: 100%;
     justify-content: center;
+  }
+
+  .section-helper[data-hero-flow-note] {
+    display: none;
   }
 
   header.hero {
