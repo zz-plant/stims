@@ -60,15 +60,24 @@ class PatternRecognizer {
     pattern2: Uint8Array,
     tolerance = 0.85,
   ): boolean {
-    // Higher tolerance for stricter matching
-    // Calculate similarity score between two patterns
+    if (pattern1.length === 0 || pattern1.length !== pattern2.length) {
+      return false;
+    }
+
+    // Higher tolerance means stricter matching.
+    const normalizedTolerance = Number.isFinite(tolerance)
+      ? Math.min(1, Math.max(0, tolerance))
+      : 0.85;
+    const maxDifference = 255 * (1 - normalizedTolerance);
+
+    // Calculate similarity score between two patterns.
     let matchCount = 0;
     for (let i = 0; i < pattern1.length; i++) {
-      if (Math.abs(pattern1[i] - pattern2[i]) < 255 * (1 - tolerance)) {
+      if (Math.abs(pattern1[i] - pattern2[i]) < maxDifference) {
         matchCount++;
       }
     }
-    return matchCount / pattern1.length >= tolerance;
+    return matchCount / pattern1.length >= normalizedTolerance;
   }
 }
 

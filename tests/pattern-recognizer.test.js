@@ -82,4 +82,43 @@ describe('PatternRecognizer', () => {
     const result = recognizer.detectPattern();
     expect(result).toBeNull();
   });
+
+  test('comparePatterns returns false for empty or uneven patterns', () => {
+    const analyser = createAnalyser([new Uint8Array([1])]);
+    const recognizer = new PatternRecognizer(analyser, 2);
+
+    expect(
+      recognizer.comparePatterns(new Uint8Array([]), new Uint8Array([])),
+    ).toBe(false);
+    expect(
+      recognizer.comparePatterns(new Uint8Array([1, 2]), new Uint8Array([1])),
+    ).toBe(false);
+  });
+
+  test('comparePatterns clamps invalid tolerance values', () => {
+    const analyser = createAnalyser([new Uint8Array([1])]);
+    const recognizer = new PatternRecognizer(analyser, 2);
+
+    expect(
+      recognizer.comparePatterns(
+        new Uint8Array([10, 10]),
+        new Uint8Array([10, 10]),
+        Number.NaN,
+      ),
+    ).toBe(true);
+    expect(
+      recognizer.comparePatterns(
+        new Uint8Array([10, 10]),
+        new Uint8Array([15, 15]),
+        -1,
+      ),
+    ).toBe(true);
+    expect(
+      recognizer.comparePatterns(
+        new Uint8Array([10, 10]),
+        new Uint8Array([10, 11]),
+        2,
+      ),
+    ).toBe(false);
+  });
 });
