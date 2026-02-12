@@ -114,6 +114,8 @@ async function buildLoader({
 
 beforeEach(() => {
   window.history.replaceState({}, '', '/');
+  window.localStorage.clear();
+  window.sessionStorage.clear();
   document.body.innerHTML = '<div id="toy-list"></div>';
   capabilitiesMock = {
     getRendererCapabilities: mock(async () => defaultCapabilities),
@@ -217,6 +219,23 @@ describe('loadToy', () => {
     ).toBe(false);
     expect(window.location.search).toBe('');
     expect(servicesMock.resetAudioPool).toHaveBeenCalled();
+  });
+
+  test('keeps render overrides when returning to library outside party mode', async () => {
+    window.localStorage.setItem('stims:max-pixel-ratio', '1.3');
+    window.localStorage.setItem('stims:render-scale', '0.9');
+
+    const { loader } = await buildLoader({
+      locationHref: 'http://example.com/library',
+    });
+
+    await loader.loadToy('aurora-painter', { pushState: true });
+
+    const backControl = document.querySelector('[data-back-to-library]');
+    backControl?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(window.localStorage.getItem('stims:max-pixel-ratio')).toBe('1.3');
+    expect(window.localStorage.getItem('stims:render-scale')).toBe('0.9');
   });
 
   test('enables beat haptics on supported devices and responds to beat events', async () => {
