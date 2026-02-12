@@ -348,7 +348,9 @@ export function createLoader({
     void resetAudioPoolFn({ stopStreams: true });
     activeToySlug = null;
     setFlowActive(false);
-    setPartyModeActive(false);
+    if (partyModeActive) {
+      setPartyModeActive(false);
+    }
     clearBeatHapticsListener();
   };
 
