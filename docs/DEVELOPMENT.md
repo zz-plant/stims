@@ -1,6 +1,6 @@
 # Development Guide
 
-This is the day-to-day workflow reference for contributing to Stim Webtoys Library.
+This is the operational handbook for day-to-day contribution to Stim Webtoys Library. Use it to choose the right command quickly, run the right quality gates, and ship changes with predictable metadata/docs hygiene.
 
 ## Toolchain baseline
 
@@ -31,6 +31,18 @@ For reproducible CI-style installs that must not modify `bun.lock`, run:
 ```bash
 bun install --frozen-lockfile
 ```
+
+## Choose your workflow lane
+
+Use this to decide the minimum workflow before you start running commands.
+
+| Change type | Minimum checks before commit | Usually add |
+| --- | --- | --- |
+| Docs-only wording/link updates | Proofread + command/path validation in edited docs | `bun run check:quick` when commands/instructions changed significantly |
+| JS/TS behavior changes | `bun run check` | Targeted test run while iterating |
+| Toy addition/rename/registration edits | `bun run check` + `bun run check:toys` | `bun run health:toys` and toy docs updates |
+| SEO generation/check logic changes | `bun run check` + `bun run check:seo` | `bun run generate:seo` to refresh artifacts |
+| Deploy pipeline/workflow changes | `bun run check` + local smoke (`bun run dev:check`) | `bun run pages:dev` before deploy |
 
 ## Command reference
 
@@ -68,7 +80,7 @@ bun install --frozen-lockfile
 | --- | --- | --- |
 | Toy consistency check | `bun run check:toys` | Validates toy registration/docs consistency. |
 | Toy health check | `bun run health:toys` | Runs toy runtime/metadata health diagnostics. |
-| Play specific toy | `bun run play:toy -- <slug>` | Scripted toy run helper. |
+| Play a specific toy | `bun run play:toy <slug>` | Scripted toy-run helper against local dev server. |
 | Generate SEO artifacts | `bun run generate:seo` | Regenerates SEO-derived assets. |
 | Validate SEO artifacts | `bun run check:seo` | Ensures generated SEO artifacts are valid. |
 
@@ -85,6 +97,54 @@ bun install --frozen-lockfile
 | Task | Command | Notes |
 | --- | --- | --- |
 | Start MCP server | `bun run mcp` | Starts project MCP server script. |
+
+## Golden-path recipes
+
+### 1) Implement a normal JS/TS feature
+
+```bash
+bun run dev
+# implement change
+bun run check
+```
+
+If `bun run check` is too slow during iteration, use `bun run check:quick` until final validation.
+
+### 2) Add or rename a toy
+
+```bash
+bun run dev
+# implement toy + metadata + docs updates
+bun run check
+bun run check:toys
+```
+
+Also keep toy docs synchronized in the same change:
+
+- `docs/TOY_DEVELOPMENT.md`
+- `docs/TOY_SCRIPT_INDEX.md`
+- `docs/toys.md`
+
+### 3) Refresh SEO-derived content
+
+```bash
+bun run generate:seo
+bun run check:seo
+```
+
+Run `bun run check` as well if supporting JS/TS logic changed.
+
+### 4) Prepare a Pages deployment
+
+```bash
+bun run check
+bun run build
+bun run pages:dev
+# final verification
+bun run pages:deploy
+```
+
+Use `bun run pages:deploy:reuse` when deploying a build you already verified.
 
 ## Quality gate expectations
 
@@ -108,21 +168,33 @@ bun run test -- --filter "toy"
 
 Always prefer `bun run test` over `bun test` directly so preload/importmap flags in `package.json` are retained.
 
-## Suggested contribution workflow
-
-1. Create a branch from `main`.
-2. Implement the change.
-3. Run the relevant validation commands (minimum: `bun run check` for JS/TS changes).
-4. Update docs when behavior, scripts, or workflow expectations change.
-5. Commit using sentence case with no trailing period.
-6. In PR metadata, include a short summary, explicit tests run, and docs touched.
-
 ## Troubleshooting quick hits
 
 - **`bun run test` behaves differently from direct `bun test`:** ensure you are invoking through package scripts so preload/importmap flags apply.
 - **Formatting/lint drift:** run `bun run lint:fix` followed by `bun run format`.
 - **Typecheck errors after dependency changes:** rerun `bun install` and then `bun run typecheck`.
+- **`check:toys` failures after renaming a slug:** verify toy docs and metadata updates landed together.
 - **Pages command failures locally:** verify Wrangler auth/context and rerun `bun run pages:dev`.
+
+## Commit and PR metadata checklist
+
+Before opening a PR:
+
+1. Commit title is sentence case with no trailing period.
+2. PR description includes:
+   - a short summary,
+   - explicit list of tests run,
+   - explicit list of docs touched/added.
+3. If scripts/workflows changed, linked docs are updated (`docs/README.md`, contributor/agent overlays as needed).
+
+## Suggested contribution workflow
+
+1. Create a branch from `main`.
+2. Implement the change.
+3. Run relevant validation commands for your workflow lane.
+4. Update docs when behavior, scripts, or workflow expectations change.
+5. Commit using sentence case with no trailing period.
+6. Open PR with explicit tests/docs metadata.
 
 ## Related docs
 
