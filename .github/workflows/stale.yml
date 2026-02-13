@@ -1,0 +1,29 @@
+name: Stale triage
+
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Mark stale issues and pull requests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark stale
+        uses: actions/stale@v9
+        with:
+          stale-issue-message: 'This issue has been inactive for 45 days and has been marked stale. It will close in 14 days unless there is new activity.'
+          stale-pr-message: 'This pull request has been inactive for 30 days and has been marked stale. It will close in 7 days unless there is new activity.'
+          stale-issue-label: stale
+          stale-pr-label: stale
+          days-before-issue-stale: 45
+          days-before-pr-stale: 30
+          days-before-issue-close: 14
+          days-before-pr-close: 7
+          exempt-issue-labels: pinned,security
+          exempt-pr-labels: pinned,security
