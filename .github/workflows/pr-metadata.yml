@@ -33,11 +33,27 @@ jobs:
               return match ? match[1].trim() : "";
             };
 
+            const stripHtmlComments = (text) => text.replace(/<!--([\s\S]*?)-->/g, "");
+
+            const parseMeaningfulLines = (text) =>
+              stripHtmlComments(text)
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean)
+                .map((line) => line.replace(/^[-*+]\s*/, "").trim())
+                .filter((line) => line && !/^\[[ xX]?\]$/.test(line));
+
             const sectionContentIssues = [];
             for (const section of requiredSections) {
-              const content = extractSection(section);
               const isDocsSection = section === "Docs touched";
-              const invalidPlaceholder = !content || content === "-" || (!isDocsSection && content === "None");
+              const contentLines = parseMeaningfulLines(extractSection(section));
+              const hasContent = contentLines.length > 0;
+              const hasOnlyNone =
+                hasContent && contentLines.every((line) => line.toLowerCase() === "none");
+
+              const invalidPlaceholder =
+                !hasContent || (!isDocsSection && hasOnlyNone);
+
               if (invalidPlaceholder) {
                 sectionContentIssues.push(section);
               }
