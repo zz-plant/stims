@@ -10,6 +10,8 @@ export interface AudioControlsOptions {
   initialStatus?: { message: string; variant?: 'success' | 'error' };
   preferDemoAudio?: boolean;
   starterTips?: string[];
+  firstRunHint?: string;
+  gestureHints?: string[];
 }
 
 export function initAudioControls(
@@ -37,13 +39,43 @@ export function initAudioControls(
   const hasAdvancedOptions =
     Boolean(options.onRequestTabAudio) ||
     Boolean(options.onRequestYouTubeAudio);
+  const firstRunHint = options.firstRunHint?.trim();
+  const gestureHints = (options.gestureHints ?? options.starterTips ?? [])
+    .filter((tip) => /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip))
+    .slice(0, 2);
+
   container.innerHTML = `
     <p class="control-panel__description">
       Choose how this toy listens.
     </p>
+    <p class="control-panel__stage-label">Step 1 · Start audio</p>
+    <section class="control-panel__first-steps" data-first-steps role="note" aria-label="First steps">
+      <div class="control-panel__first-steps-header">
+        <span class="control-panel__label">First 10 seconds</span>
+        <button type="button" class="control-panel__dismiss" data-dismiss-first-steps>Dismiss</button>
+      </div>
+      <ul class="control-panel__tips control-panel__tips--compact">
+        <li data-first-step-source>Start with mic for live input, or demo for instant audio.</li>
+        <li>Then open quality controls and pick <strong>Low motion</strong> if you want a calmer feel.</li>
+        <li>${firstRunHint ?? 'Tap or drag in the canvas once audio starts to quickly feel the response.'}</li>
+      </ul>
+    </section>
     <p class="control-panel__comparison" data-audio-comparison>
       Mic reacts to your space right now. Demo starts instantly with no permissions.
     </p>
+    ${
+      gestureHints.length > 0
+        ? `
+    <section class="control-panel__gesture-hints" data-gesture-hints hidden aria-live="polite">
+      <span class="control-panel__label">Touch gestures</span>
+      <p class="control-panel__microcopy">Once audio starts, try these quick moves:</p>
+      <ul class="control-panel__tips control-panel__tips--compact">
+        ${gestureHints.map((tip) => `<li>${tip}</li>`).join('')}
+      </ul>
+    </section>
+    `
+        : ''
+    }
     ${
       options.starterTips && options.starterTips.length > 0
         ? `
@@ -83,6 +115,7 @@ export function initAudioControls(
     ${
       hasAdvancedOptions
         ? `
+    <p class="control-panel__stage-label">Step 2 · Advanced capture (optional)</p>
     <div class="control-panel__row control-panel__row--advanced-toggle">
       <button
         type="button"
@@ -192,6 +225,8 @@ export function initAudioControls(
     '[data-advanced-panel]',
   ) as HTMLElement | null;
   const ADVANCED_KEY = 'stims-audio-advanced-open';
+  const FIRST_STEPS_KEY = 'stims-first-steps-dismissed';
+  const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
 
   const setPrimaryRow = (row: Element | null, isPrimary: boolean): void => {
     row?.classList.toggle('control-panel__row--primary', isPrimary);
@@ -213,6 +248,12 @@ export function initAudioControls(
     setPrimaryRow(demoRow, source === 'demo');
     setRecommendedBadge('microphone', source === 'microphone');
     setRecommendedBadge('demo', source === 'demo');
+    const firstStepSource = container.querySelector('[data-first-step-source]');
+    if (!(firstStepSource instanceof HTMLElement)) return;
+    firstStepSource.textContent =
+      source === 'microphone'
+        ? 'Start with mic for live response from your room in real time.'
+        : 'Start with demo for instant sound with no permission prompts.';
   };
 
   const setPending = (button: Element | null, pending: boolean) => {
@@ -265,6 +306,91 @@ export function initAudioControls(
     setPreferredSource('microphone');
   }
 
+  const firstStepsPanel = container.querySelector(
+    '[data-first-steps]',
+  ) as HTMLElement | null;
+  const dismissFirstSteps = container.querySelector(
+    '[data-dismiss-first-steps]',
+  ) as HTMLButtonElement | null;
+
+  if (firstStepsPanel) {
+    let isDismissed = false;
+    try {
+      isDismissed = window.sessionStorage.getItem(FIRST_STEPS_KEY) === 'true';
+    } catch (_error) {
+      isDismissed = false;
+    }
+
+    const hideFirstSteps = () => {
+      firstStepsPanel.hidden = true;
+      try {
+        window.sessionStorage.setItem(FIRST_STEPS_KEY, 'true');
+      } catch (_error) {
+        // Ignore storage errors.
+      }
+    };
+
+    if (isDismissed) {
+      firstStepsPanel.hidden = true;
+    } else {
+      window.setTimeout(() => {
+        if (!firstStepsPanel.hidden) {
+          hideFirstSteps();
+        }
+      }, 10000);
+    }
+
+    dismissFirstSteps?.addEventListener('click', hideFirstSteps);
+  }
+
+  const gestureHintsPanel = container.querySelector(
+    '[data-gesture-hints]',
+  ) as HTMLElement | null;
+  const supportsTouchLikeInput =
+    (typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches) ||
+    navigator.maxTouchPoints > 0;
+
+  const showGestureHints = () => {
+    if (!gestureHintsPanel || !supportsTouchLikeInput) return;
+
+    let isDismissed = false;
+    try {
+      isDismissed = window.sessionStorage.getItem(GESTURE_HINT_KEY) === 'true';
+    } catch (_error) {
+      isDismissed = false;
+    }
+
+    if (isDismissed) {
+      gestureHintsPanel.hidden = true;
+      return;
+    }
+
+    gestureHintsPanel.hidden = false;
+
+    let interactionCount = 0;
+    const hideAfterInteractions = () => {
+      interactionCount += 1;
+      if (interactionCount < 2) return;
+      gestureHintsPanel.hidden = true;
+      window.removeEventListener('pointerdown', hideAfterInteractions);
+      try {
+        window.sessionStorage.setItem(GESTURE_HINT_KEY, 'true');
+      } catch (_error) {
+        // Ignore storage errors.
+      }
+    };
+
+    window.addEventListener('pointerdown', hideAfterInteractions, {
+      passive: true,
+    });
+  };
+
+  const handleSuccess = () => {
+    options.onSuccess?.();
+    showGestureHints();
+  };
+
   if (options.initialStatus) {
     updateStatus(
       options.initialStatus.message,
@@ -310,7 +436,7 @@ export function initAudioControls(
       if (successMessage) {
         updateStatus(successMessage, 'success');
       }
-      options.onSuccess?.();
+      handleSuccess();
     } catch (err) {
       const message = err instanceof Error ? err.message : errorMessage;
       updateStatus(message);
@@ -383,7 +509,7 @@ export function initAudioControls(
       youtubeController,
       options.onRequestYouTubeAudio,
       updateStatus,
-      options.onSuccess,
+      handleSuccess,
     );
   }
 }

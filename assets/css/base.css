@@ -974,6 +974,69 @@ body {
   color: rgba(245, 245, 245, 0.88);
 }
 
+.control-panel__stage-label {
+  margin: 6px 0 8px;
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(233, 251, 255, 0.72);
+}
+
+.control-panel__gesture-hints {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  background: linear-gradient(
+    120deg,
+    rgba(14, 116, 144, 0.2),
+    rgba(15, 23, 42, 0.32)
+  );
+}
+
+.control-panel__first-steps {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 165, 180, 0.28);
+  background: linear-gradient(
+    120deg,
+    rgba(59, 130, 246, 0.12),
+    rgba(148, 165, 180, 0.08)
+  );
+}
+
+.control-panel__first-steps-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.control-panel__dismiss {
+  min-height: 32px;
+  min-width: 32px;
+  border: 1px solid rgba(148, 165, 180, 0.35);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.45);
+  color: rgba(233, 251, 255, 0.86);
+  font-size: 0.74rem;
+  font-family: inherit;
+  line-height: 1;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.control-panel__dismiss:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline-offset: 2px;
+}
+
+.control-panel__tips--compact {
+  margin-top: 8px;
+  gap: 6px;
+}
+
 .control-panel__comparison {
   margin: -2px 0 10px;
   font-size: 0.78rem;
