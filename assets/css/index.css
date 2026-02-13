@@ -1435,6 +1435,47 @@ html.light .hero-readiness__text {
   font-size: 0.9rem;
 }
 
+.intro-highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 0.35rem;
+}
+
+.intro-highlight-card {
+  border: 1px solid
+    color-mix(in srgb, var(--accent-color) 32%, var(--surface-border));
+  border-radius: calc(var(--radius-md) + 2px);
+  padding: 0.85rem 1rem;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--accent-color) 14%, transparent),
+    color-mix(in srgb, var(--card-bg) 84%, transparent)
+  );
+  box-shadow: var(--shadow-soft);
+}
+
+.intro-highlight-card__label {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.intro-highlight-card__value {
+  margin: 0.3rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.intro-highlight-card__copy {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
 .intro-pills {
   display: flex;
   flex-wrap: wrap;
