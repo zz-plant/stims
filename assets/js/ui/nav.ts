@@ -38,6 +38,7 @@ export interface NavOptions {
 
 type ToyNavContainer = HTMLElement & {
   __toyNavOffsetCleanup?: () => void;
+  __libraryNavCleanup?: () => void;
 };
 
 const TOY_MICRO_CHALLENGES = [
@@ -69,6 +70,7 @@ function escapeHtml(value: string) {
 
 export function initNavigation(container: HTMLElement, options: NavOptions) {
   const doc = container.ownerDocument;
+  resetNavigationState(container as ToyNavContainer);
 
   if (options.mode === 'library') {
     renderLibraryNav(container, doc);
@@ -79,16 +81,21 @@ export function initNavigation(container: HTMLElement, options: NavOptions) {
   setupThemeToggle(container);
 }
 
-function renderLibraryNav(container: HTMLElement, _doc: Document) {
-  const toyContainer = container as ToyNavContainer;
-  toyContainer.__toyNavOffsetCleanup?.();
-  toyContainer.__toyNavOffsetCleanup = undefined;
+function resetNavigationState(container: ToyNavContainer) {
+  container.__toyNavOffsetCleanup?.();
+  container.__toyNavOffsetCleanup = undefined;
+  container.__libraryNavCleanup?.();
+  container.__libraryNavCleanup = undefined;
   container.ownerDocument.documentElement.style.removeProperty(
     '--toy-nav-floating-offset',
   );
   container.ownerDocument.documentElement.removeAttribute(
     'data-toy-controls-expanded',
   );
+}
+
+function renderLibraryNav(container: HTMLElement, _doc: Document) {
+  const toyContainer = container as ToyNavContainer;
 
   container.innerHTML = `
     <nav class="top-nav" data-top-nav aria-label="Primary" data-nav-expanded="true">
@@ -138,18 +145,32 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
   const icon = container.querySelector(
     '[data-nav-toggle-icon]',
   ) as HTMLSpanElement | null;
+  const actions = container.querySelector('#nav-actions') as HTMLElement | null;
   const mediaQuery = getMediaQueryList(maxWidthQuery(BREAKPOINTS.xs));
+  const onResize = () => syncWithViewport();
   let isExpanded = !isBelowBreakpoint(BREAKPOINTS.xs);
 
   const applyState = (expanded: boolean) => {
     if (!nav || !toggle) return;
     nav.dataset.navExpanded = expanded ? 'true' : 'false';
     toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    toggle.setAttribute(
+      'aria-label',
+      expanded ? 'Close navigation menu' : 'Open navigation menu',
+    );
     if (label) {
       label.textContent = expanded ? 'Close menu' : 'Menu';
     }
     if (icon) {
       icon.textContent = expanded ? '✕' : '☰';
+    }
+    if (actions) {
+      actions.setAttribute('aria-hidden', expanded ? 'false' : 'true');
+      if (expanded) {
+        actions.removeAttribute('inert');
+      } else {
+        actions.setAttribute('inert', '');
+      }
     }
   };
 
@@ -169,11 +190,39 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
     applyState(isExpanded);
   });
 
+  const onEscape = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    if (!isBelowBreakpoint(BREAKPOINTS.xs) || !isExpanded) return;
+    isExpanded = false;
+    applyState(isExpanded);
+    toggle?.focus();
+  };
+
+  const onDocumentClick = (event: Event) => {
+    if (!isBelowBreakpoint(BREAKPOINTS.xs) || !isExpanded || !nav) return;
+    const target = event.target;
+    if (target instanceof Node && nav.contains(target)) return;
+    isExpanded = false;
+    applyState(isExpanded);
+  };
+
+  const onDocumentFocusIn = (event: Event) => {
+    if (!isBelowBreakpoint(BREAKPOINTS.xs) || !isExpanded || !nav) return;
+    const target = event.target;
+    if (target instanceof Node && nav.contains(target)) return;
+    isExpanded = false;
+    applyState(isExpanded);
+  };
+
   if (mediaQuery) {
     mediaQuery.addEventListener('change', syncWithViewport);
   } else {
-    window.addEventListener('resize', syncWithViewport);
+    window.addEventListener('resize', onResize);
   }
+
+  container.ownerDocument.addEventListener('keydown', onEscape);
+  container.ownerDocument.addEventListener('click', onDocumentClick);
+  container.ownerDocument.addEventListener('focusin', onDocumentFocusIn);
 
   container
     .querySelectorAll('.nav-link, .nav-link--section, .theme-toggle')
@@ -184,6 +233,17 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
         applyState(isExpanded);
       });
     });
+
+  toyContainer.__libraryNavCleanup = () => {
+    if (mediaQuery) {
+      mediaQuery.removeEventListener('change', syncWithViewport);
+    } else {
+      window.removeEventListener('resize', onResize);
+    }
+    container.ownerDocument.removeEventListener('keydown', onEscape);
+    container.ownerDocument.removeEventListener('click', onDocumentClick);
+    container.ownerDocument.removeEventListener('focusin', onDocumentFocusIn);
+  };
 }
 
 function renderToyNav(
