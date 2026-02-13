@@ -197,6 +197,10 @@ const startApp = async () => {
         );
         return toyWithControls?.controls ?? [];
       })();
+      const firstRunHint = starterTips[0];
+      const gestureHints = starterTips.filter((tip) =>
+        /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip),
+      );
 
       initAudioControls(audioControlsContainer, {
         onRequestMicrophone: async () => {
@@ -238,6 +242,8 @@ const startApp = async () => {
           await starter({ stream });
         },
         starterTips,
+        firstRunHint,
+        gestureHints,
         ...buildAudioInitState(result),
       });
     };
