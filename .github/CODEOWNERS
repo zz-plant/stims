@@ -1,0 +1,13 @@
+# Default reviewers
+* @zz-plant
+
+# Workflow and automation changes
+/.github/ @zz-plant
+
+# Toy implementation and metadata
+/assets/js/toys/ @zz-plant
+/assets/data/toys.json @zz-plant
+/toys/ @zz-plant
+
+# Tests
+/tests/ @zz-plant

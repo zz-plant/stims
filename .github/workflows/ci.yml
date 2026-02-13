@@ -4,19 +4,39 @@ on:
   pull_request:
   push:
     branches: [main]
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
-    name: quality checks
+    name: Quality checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: .bun-version
+
+      - name: Restore Bun cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -24,11 +44,8 @@ jobs:
       - name: Dev server check
         run: bun run dev:check
 
-      - name: Biome Check
-        run: bun run check:quick
+      - name: Full quality gate
+        run: bun run check
 
       - name: Build
         run: bun run build
-
-      - name: Test
-        run: bun run test
