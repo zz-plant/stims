@@ -1,0 +1,29 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '*.md'
+
+github:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+toys:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'assets/js/toys/**'
+          - 'assets/data/toys.json'
+          - 'toys/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+
+scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scripts/**'
+          - 'package.json'
+          - 'bun.lock'

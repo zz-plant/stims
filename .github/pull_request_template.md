@@ -8,9 +8,15 @@
 
 -
 
+## Docs touched
+
+<!-- List docs updated/added, or write "None". -->
+
+-
+
 ## Checklist
 
 - [ ] Linting (`bun run lint`) if applicable
-- [ ] Tests (`bun test`) if applicable
+- [ ] Tests (`bun run test`) if applicable
 - [ ] Build (`bun run build`) if applicable
 - [ ] Type checking (`bun run typecheck`) if applicable
