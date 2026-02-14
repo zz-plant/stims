@@ -182,59 +182,6 @@
         </div>
       </section>
 
-      <section class="quick-starts" id="quick-starts" aria-label="Quick start suggestions">
-        <div class="section-heading">
-          <p class="eyebrow">Quick start</p>
-          <h2>Quick picks</h2>
-          <p class="section-description">Choose a vibe and jump in.</p>
-        </div>
-        <div class="quick-start-grid">
-          <article class="quick-card">
-            <p class="quick-card__eyebrow">Featured</p>
-            <h3>Halo Flow</h3>
-            <p>Soft visuals that react to audio and touch.</p>
-            <div class="quick-card__actions">
-              <a href="toy.html?toy=holy" class="cta-button primary" data-quickstart-slug="holy">Open Halo Flow</a>
-              <a href="#library" class="text-link">See similar stims</a>
-            </div>
-          </article>
-          <article class="quick-card">
-            <p class="quick-card__eyebrow">Live mode</p>
-            <h3>Auto-switch playlist</h3>
-            <p>Let the library cycle through tactile tags.</p>
-            <div class="quick-card__actions">
-              <a
-                href="toy.html?toy=aurora-painter"
-                class="cta-button ghost"
-                data-quickstart-mode="random"
-                data-quickstart-pool="calming"
-                data-quickstart-flow="true"
-              >
-                Start flow mode
-              </a>
-              <a href="#library" class="text-link">Choose a pool</a>
-            </div>
-          </article>
-          <article class="quick-card">
-            <p class="quick-card__eyebrow">Surprise me</p>
-            <h3>Shuffle a fresh stim</h3>
-            <p>Jump into a featured toy when you want something new.</p>
-            <div class="quick-card__actions">
-              <a
-                href="toy.html?toy=spiral-burst"
-                class="cta-button cta-button--accent"
-                data-quickstart-mode="random"
-                data-quickstart-pool="featured"
-              >
-                Surprise me
-              </a>
-              <a href="#library" class="text-link">Browse all</a>
-            </div>
-          </article>
-        </div>
-      </section>
-
-
       <section class="library" id="library">
         <div class="section-heading">
           <p class="eyebrow">Library</p>
@@ -433,7 +380,60 @@
         <main id="toy-list" class="webtoy-container"></main>
       </section>
 
-      <section class="system-check" id="system-check">
+      <div class="home-support-grid">
+        <section class="quick-starts" id="quick-starts" aria-label="Quick start suggestions">
+          <div class="section-heading">
+            <p class="eyebrow">Quick start</p>
+            <h2>Quick picks</h2>
+            <p class="section-description">Choose a vibe and jump in.</p>
+          </div>
+          <div class="quick-start-grid">
+            <article class="quick-card">
+              <p class="quick-card__eyebrow">Featured</p>
+              <h3>Halo Flow</h3>
+              <p>Soft visuals that react to audio and touch.</p>
+              <div class="quick-card__actions">
+                <a href="toy.html?toy=holy" class="cta-button primary" data-quickstart-slug="holy">Open Halo Flow</a>
+                <a href="#library" class="text-link">See similar stims</a>
+              </div>
+            </article>
+            <article class="quick-card">
+              <p class="quick-card__eyebrow">Live mode</p>
+              <h3>Auto-switch playlist</h3>
+              <p>Let the library cycle through tactile tags.</p>
+              <div class="quick-card__actions">
+                <a
+                  href="toy.html?toy=aurora-painter"
+                  class="cta-button ghost"
+                  data-quickstart-mode="random"
+                  data-quickstart-pool="calming"
+                  data-quickstart-flow="true"
+                >
+                  Start flow mode
+                </a>
+                <a href="#library" class="text-link">Choose a pool</a>
+              </div>
+            </article>
+            <article class="quick-card">
+              <p class="quick-card__eyebrow">Surprise me</p>
+              <h3>Shuffle a fresh stim</h3>
+              <p>Jump into a featured toy when you want something new.</p>
+              <div class="quick-card__actions">
+                <a
+                  href="toy.html?toy=spiral-burst"
+                  class="cta-button cta-button--accent"
+                  data-quickstart-mode="random"
+                  data-quickstart-pool="featured"
+                >
+                  Surprise me
+                </a>
+                <a href="#library" class="text-link">Browse all</a>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="system-check" id="system-check">
         <div class="section-heading">
           <p class="eyebrow">System check</p>
           <h2>Check your device</h2>
@@ -523,7 +523,8 @@
           </button>
           <a href="#toy-list" class="text-link">Back to library</a>
         </div>
-      </section>
+        </section>
+      </div>
 
       <section class="github" id="github">
         <div class="section-heading">
