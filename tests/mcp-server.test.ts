@@ -4,6 +4,7 @@ import { PassThrough } from 'node:stream';
 import {
   defaultQualityGateTimeoutMs,
   getDocSectionContent,
+  markdownSources,
   normalizeToys,
   resolveQualityGateCommand,
   runCommand,
@@ -89,6 +90,27 @@ describe('searchMarkdownSources', () => {
     const results = await searchMarkdownSources('this should not match');
 
     expect(results).toHaveLength(0);
+  });
+});
+
+describe('agent capability markdown availability', () => {
+  test('exposes skill and workflow markdown files for MCP reads', () => {
+    expect(
+      markdownSources['.agent/skills/play-toy/SKILL.md'].length,
+    ).toBeGreaterThan(0);
+    expect(
+      markdownSources['.agent/workflows/play-toy.md'].length,
+    ).toBeGreaterThan(0);
+  });
+
+  test('searches agent docs content through shared markdown index', async () => {
+    const results = await searchMarkdownSources('progressive-disclosure', {
+      file: 'docs/agents/README.md',
+      limit: 3,
+    });
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0]?.file).toBe('docs/agents/README.md');
   });
 });
 

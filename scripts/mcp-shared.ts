@@ -1,7 +1,16 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/types.js';
 import { z } from 'zod';
+import agentCreateToySkill from '../.agent/skills/create-toy/SKILL.md?raw';
+import agentPlayToySkill from '../.agent/skills/play-toy/SKILL.md?raw';
+import agentShipToyChangeSkill from '../.agent/skills/ship-toy-change/SKILL.md?raw';
+import agentTestToySkill from '../.agent/skills/test-toy/SKILL.md?raw';
+import agentCreateToyWorkflow from '../.agent/workflows/create-toy.md?raw';
+import agentPlayToyWorkflow from '../.agent/workflows/play-toy.md?raw';
+import agentShipToyChangeWorkflow from '../.agent/workflows/ship-toy-change.md?raw';
+import agentTestToyWorkflow from '../.agent/workflows/test-toy.md?raw';
 import toyManifest from '../assets/js/data/toy-manifest.ts';
+import docsAgentsReadme from '../docs/agents/README.md?raw';
 import docsDevelopment from '../docs/DEVELOPMENT.md?raw';
 import docsMcpServer from '../docs/MCP_SERVER.md?raw';
 import docsReadme from '../docs/README.md?raw';
@@ -21,6 +30,15 @@ const markdownSources = {
   'docs/TOY_DEVELOPMENT.md': docsToyDevelopment,
   'docs/TOY_SCRIPT_INDEX.md': docsToyScriptIndex,
   'docs/toys.md': docsToys,
+  'docs/agents/README.md': docsAgentsReadme,
+  '.agent/skills/create-toy/SKILL.md': agentCreateToySkill,
+  '.agent/skills/play-toy/SKILL.md': agentPlayToySkill,
+  '.agent/skills/ship-toy-change/SKILL.md': agentShipToyChangeSkill,
+  '.agent/skills/test-toy/SKILL.md': agentTestToySkill,
+  '.agent/workflows/create-toy.md': agentCreateToyWorkflow,
+  '.agent/workflows/play-toy.md': agentPlayToyWorkflow,
+  '.agent/workflows/ship-toy-change.md': agentShipToyChangeWorkflow,
+  '.agent/workflows/test-toy.md': agentTestToyWorkflow,
 } as const;
 
 type MarkdownSourceKey = keyof typeof markdownSources;
@@ -53,6 +71,77 @@ type ToyMetadata = {
   allowWebGLFallback: boolean;
   url: string;
 };
+
+type AgentCapability = {
+  name: string;
+  kind: 'skill' | 'workflow';
+  path: MarkdownSourceKey;
+  description: string;
+  command: string;
+};
+
+const agentCapabilities: AgentCapability[] = [
+  {
+    name: 'create-toy',
+    kind: 'skill',
+    path: '.agent/skills/create-toy/SKILL.md',
+    description:
+      'Scaffold a new toy and wire metadata/docs updates with guardrails.',
+    command: '/create-toy',
+  },
+  {
+    name: 'play-toy',
+    kind: 'skill',
+    path: '.agent/skills/play-toy/SKILL.md',
+    description: 'Launch a toy locally and perform manual interaction checks.',
+    command: '/play-toy',
+  },
+  {
+    name: 'ship-toy-change',
+    kind: 'skill',
+    path: '.agent/skills/ship-toy-change/SKILL.md',
+    description:
+      'Run end-to-end toy change workflow including checks and metadata.',
+    command: '/ship-toy-change',
+  },
+  {
+    name: 'test-toy',
+    kind: 'skill',
+    path: '.agent/skills/test-toy/SKILL.md',
+    description: 'Execute toy-focused test passes and report failures quickly.',
+    command: '/test-toy',
+  },
+  {
+    name: 'create-toy',
+    kind: 'workflow',
+    path: '.agent/workflows/create-toy.md',
+    description: 'Workflow checklist for introducing a brand new toy slug.',
+    command: '/create-toy',
+  },
+  {
+    name: 'play-toy',
+    kind: 'workflow',
+    path: '.agent/workflows/play-toy.md',
+    description:
+      'Workflow checklist for launching and manually validating toys.',
+    command: '/play-toy',
+  },
+  {
+    name: 'ship-toy-change',
+    kind: 'workflow',
+    path: '.agent/workflows/ship-toy-change.md',
+    description:
+      'Workflow checklist for implementation, quality gate, and metadata sync.',
+    command: '/ship-toy-change',
+  },
+  {
+    name: 'test-toy',
+    kind: 'workflow',
+    path: '.agent/workflows/test-toy.md',
+    description: 'Workflow checklist for toy-specific automated checks.',
+    command: '/test-toy',
+  },
+];
 
 const serverInfo = { name: 'stim-webtoys-mcp', version: '1.0.0' } as const;
 
@@ -233,6 +322,84 @@ function registerTools(server: McpServer) {
       ];
 
       return asTextResponse(loaderDetails.join('\n'));
+    },
+  );
+
+  server.registerTool(
+    'list_agent_capabilities',
+    {
+      description:
+        'List reusable agent skills/workflows that can be invoked to support human users, including path and command references.',
+      inputSchema: z
+        .object({
+          kind: z
+            .enum(['skill', 'workflow'])
+            .optional()
+            .describe('Optionally filter to only skills or only workflows.'),
+        })
+        .strict(),
+    },
+    async ({ kind }) => {
+      const capabilities = agentCapabilities.filter((capability) =>
+        kind ? capability.kind === kind : true,
+      );
+
+      if (!capabilities.length) {
+        return asTextResponse(
+          'No agent capabilities matched the requested filter.',
+        );
+      }
+
+      return asTextResponse(JSON.stringify(capabilities, null, 2));
+    },
+  );
+
+  server.registerTool(
+    'read_agent_capability',
+    {
+      description:
+        'Read a specific agent skill/workflow markdown file so MCP clients can execute the same playbook steps.',
+      inputSchema: z
+        .object({
+          kind: z
+            .enum(['skill', 'workflow'])
+            .describe('Capability type to read.'),
+          name: z
+            .string()
+            .trim()
+            .min(1)
+            .describe(
+              'Capability name such as create-toy, play-toy, test-toy.',
+            ),
+        })
+        .strict(),
+    },
+    async ({ kind, name }) => {
+      const capability = agentCapabilities.find(
+        (entry) => entry.kind === kind && entry.name === name,
+      );
+
+      if (!capability) {
+        return asTextResponse(
+          `No ${kind} named "${name}" was found. Use list_agent_capabilities first.`,
+        );
+      }
+
+      const result = await getDocSectionContent(capability.path);
+      if (!result.ok) {
+        return asTextResponse(result.message);
+      }
+
+      const response = [
+        `# ${capability.kind}: ${capability.name}`,
+        '',
+        `Path: ${capability.path}`,
+        `Command: ${capability.command}`,
+        '',
+        result.content,
+      ].join('\n');
+
+      return asTextResponse(response);
     },
   );
 
@@ -750,7 +917,12 @@ async function searchMarkdownSources(
   return results;
 }
 
-export type { DocSectionResult, MarkdownSourceKey, ToyMetadata };
+export type {
+  AgentCapability,
+  DocSectionResult,
+  MarkdownSourceKey,
+  ToyMetadata,
+};
 export {
   asTextResponse,
   buildDocPointers,
