@@ -63,6 +63,7 @@ Use these commands before opening a PR:
 - `bun run dev:host` — start Vite on LAN.
 - `bun run build` — production build.
 - `bun run preview` — preview built output.
+- `bun run pages:deploy` — default production deploy for the static site (Track A).
 - `bun run lint` / `bun run lint:fix` — Biome linting.
 - `bun run format` / `bun run format:check` — Biome formatting.
 - `bun run typecheck` — TypeScript no-emit checks.
@@ -78,7 +79,7 @@ Use these commands before opening a PR:
 
 ## Documentation expectations
 
-When workflows or structure change, update docs in the same PR:
+When workflows or structure change, update docs in the same PR (including deployment-track guidance in `docs/DEPLOYMENT.md` when release flow changes):
 
 - Start from [`docs/README.md`](./docs/README.md) (docs map by audience + purpose).
 - Keep contributor and agent entry points aligned:
