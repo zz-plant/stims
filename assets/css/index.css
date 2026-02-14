@@ -779,24 +779,6 @@ header.hero {
   align-items: center;
 }
 
-.quick-card__meta {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.quick-card__meta li {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  border: 1px solid color-mix(in srgb, var(--surface-border) 76%, transparent);
-  border-radius: 999px;
-  padding: 0.24rem 0.55rem;
-  background: color-mix(in srgb, var(--surface-strong) 82%, transparent);
-}
-
 .starter-picks {
   display: grid;
   gap: 0.9rem;
@@ -853,9 +835,9 @@ header.hero {
 
 .daily-streak {
   display: grid;
-  gap: 0.9rem;
+  gap: 0.75rem;
   margin-bottom: 1.1rem;
-  padding: 1.05rem;
+  padding: 1rem;
   border-radius: var(--radius-lg);
   background:
     linear-gradient(
@@ -902,28 +884,10 @@ header.hero {
   gap: 0.55rem;
 }
 
-.daily-streak__today {
-  display: grid;
-  gap: 0.35rem;
-  border-radius: var(--radius-md);
-  border: 1px solid
-    color-mix(in srgb, var(--accent-color) 32%, var(--surface-border));
-  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
-  padding: 0.65rem 0.75rem;
-}
-
-.daily-streak__today-label {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.11em;
-  font-size: 0.69rem;
-  color: var(--text-muted);
-}
-
 .daily-streak__note {
   margin: 0;
   font-size: 0.88rem;
-  color: color-mix(in srgb, var(--text-color) 82%, var(--text-muted));
+  color: var(--text-muted);
 }
 
 .system-check {
