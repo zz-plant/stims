@@ -52,6 +52,18 @@
     color-mix(in srgb, var(--accent-color) 30%, transparent),
     transparent 48%
   );
+  --interactive-border: color-mix(
+    in srgb,
+    var(--accent-color) 28%,
+    var(--surface-border)
+  );
+  --interactive-bg: color-mix(in srgb, var(--card-bg) 85%, transparent);
+  --interactive-bg-hover: color-mix(
+    in srgb,
+    var(--accent-color) 14%,
+    var(--card-bg)
+  );
+  --interactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
 }
 
 html {
@@ -92,6 +104,7 @@ html.light {
     color-mix(in srgb, var(--accent-color) 18%, transparent),
     transparent 52%
   );
+  --interactive-shadow: 0 2px 7px rgba(15, 23, 42, 0.1);
   --shadow-strong:
     0 16px 30px rgba(15, 23, 42, 0.15), 0 3px 9px rgba(91, 110, 130, 0.16);
   --shadow-soft:
@@ -786,11 +799,17 @@ header.hero {
   display: grid;
   gap: 0.2rem;
   text-decoration: none;
-  border: 1px solid var(--surface-border);
+  border: 1px solid var(--interactive-border);
   border-radius: var(--radius-md);
   padding: 0.75rem 0.85rem;
   min-height: 44px;
-  background: var(--surface-gradient);
+  background: var(--surface-gradient), var(--interactive-bg);
+  box-shadow: none;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
 }
 
 .starter-pick strong {
@@ -806,10 +825,12 @@ header.hero {
 .starter-pick:hover {
   border-color: color-mix(
     in srgb,
-    var(--accent-color) 60%,
-    var(--surface-border)
+    var(--accent-color) 54%,
+    var(--interactive-border)
   );
-  box-shadow: var(--shadow-soft);
+  background: var(--surface-gradient), var(--interactive-bg-hover);
+  box-shadow: none;
+  transform: translateY(-1px);
 }
 
 .daily-streak {
@@ -1010,7 +1031,7 @@ header.hero {
   gap: 0.35rem;
   background:
     var(--surface-texture), color-mix(in srgb, var(--card-bg) 75%, transparent);
-  border: 1px solid var(--surface-border);
+  border: 1px solid var(--interactive-border);
   border-radius: 999px;
   padding: 0.35rem;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
@@ -1040,11 +1061,11 @@ header.hero {
 
 .preview-control:hover,
 .preview-control:focus-visible {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--interactive-bg-hover);
   color: var(--text-primary);
-  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline: 2px solid color-mix(in srgb, var(--accent-color) 80%, white);
   outline-offset: 2px;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 24%, transparent);
 }
 
 .preview-card {
@@ -1491,12 +1512,12 @@ html.light .hero-readiness__text {
   gap: 0.35rem;
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--card-bg) 88%, transparent);
-  border: 1px solid color-mix(in srgb, var(--surface-border) 70%, transparent);
+  background: var(--interactive-bg);
+  border: 1px solid var(--interactive-border);
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-color);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  box-shadow: none;
 }
 
 .details-panel {
@@ -1564,14 +1585,14 @@ button.text-link {
 .cta-button {
   padding: 0.7rem 1.25rem;
   border-radius: var(--radius-pill);
-  background: var(--card-bg);
+  background: var(--interactive-bg);
   color: var(--text-color);
   text-decoration: none;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  border: 1px solid var(--surface-border);
+  border: 1px solid var(--interactive-border);
   position: relative;
   overflow: hidden;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
@@ -1597,8 +1618,8 @@ button.text-link {
     color-mix(in srgb, var(--accent-purple) 70%, var(--accent-color))
   );
   color: var(--accent-contrast);
-  box-shadow: 0 14px 32px
-    color-mix(in srgb, var(--accent-color) 34%, transparent);
+  box-shadow: 0 6px 16px
+    color-mix(in srgb, var(--accent-color) 24%, transparent);
 }
 
 .cta-button--accent {
@@ -1612,14 +1633,14 @@ button.text-link {
 }
 
 .cta-button--muted {
-  border-color: color-mix(in srgb, var(--surface-border) 75%, transparent);
-  background: color-mix(in srgb, var(--card-bg) 75%, transparent);
+  border-color: var(--interactive-border);
+  background: color-mix(in srgb, var(--interactive-bg) 86%, transparent);
   color: color-mix(in srgb, var(--text-muted) 90%, var(--text-color));
 }
 
 .cta-button.ghost {
-  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
-  border-color: color-mix(in srgb, var(--surface-border) 85%, transparent);
+  background: color-mix(in srgb, var(--interactive-bg) 92%, transparent);
+  border-color: var(--interactive-border);
   color: var(--text-color);
 }
 
@@ -1627,16 +1648,15 @@ button.text-link {
   filter: none;
   transform: translateY(-1px);
   box-shadow:
-    var(--shadow-soft),
-    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    var(--interactive-shadow);
   color: var(--text-color);
 }
 
 .cta-button.primary:hover {
   color: var(--accent-contrast);
-  box-shadow:
-    0 18px 34px color-mix(in srgb, var(--accent-color) 42%, transparent),
-    var(--shadow-soft);
+  box-shadow: 0 10px 22px
+    color-mix(in srgb, var(--accent-color) 28%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
