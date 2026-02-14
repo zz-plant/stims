@@ -245,6 +245,14 @@ export type AudioInitOptions = {
   monitorInput?: boolean;
 };
 
+export const DEFAULT_MICROPHONE_CONSTRAINTS: MediaStreamConstraints = {
+  audio: {
+    echoCancellation: { ideal: false },
+    noiseSuppression: { ideal: false },
+    autoGainControl: { ideal: false },
+  },
+};
+
 export function createSyntheticAudioStream({
   frequency = 220,
   type = 'sawtooth',
@@ -436,7 +444,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
       }
 
       resolvedStream = await navigator.mediaDevices.getUserMedia(
-        constraints ?? { audio: { echoCancellation: true } },
+        constraints ?? DEFAULT_MICROPHONE_CONSTRAINTS,
       );
       ownsStream = true;
       permissionState = permissionState ?? 'granted';

@@ -1,6 +1,7 @@
 import type * as THREE from 'three';
 import {
   type AudioInitOptions,
+  DEFAULT_MICROPHONE_CONSTRAINTS,
   type FrequencyAnalyser,
   getMicrophonePermissionState,
   initAudio,
@@ -43,7 +44,7 @@ async function getOrCreateStream(constraints?: MediaStreamConstraints) {
   if (streamPromise) return streamPromise;
 
   streamPromise = navigator.mediaDevices
-    ?.getUserMedia(constraints ?? { audio: { echoCancellation: true } })
+    ?.getUserMedia(constraints ?? DEFAULT_MICROPHONE_CONSTRAINTS)
     .catch((error) => {
       streamPromise = null;
       throw error;
