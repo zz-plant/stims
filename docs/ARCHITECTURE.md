@@ -12,6 +12,13 @@ This document summarizes how the Stim Webtoys app is assembled, from the entry H
 
 Use this section as a quick compass: if you need to change how a toy starts or stops, look at the loader and core runtime; if you need to change UI state or status messaging, look at the views; if you need to change toy behavior, look at the toy modules and `WebToy` helpers.
 
+## Architecture tiers (what is required vs optional)
+
+- **Tier 0: Site runtime (required).** HTML entry points, loader/router, views, runtime core, and toy modules. This tier is enough to run and deploy the web toy experience.
+- **Tier 1: Automation and external transports (optional).** MCP stdio/Worker transports and agent-oriented automation workflows. This tier is only needed when integrating MCP clients or agent tooling.
+
+Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tier 1 as an add-on surface that can evolve independently.
+
 ## Runtime Layers
 
 - **HTML entry points** (`toy.html`, `holy.html`, etc.) load the bundled shell and pass query params like `?toy=<slug>`.

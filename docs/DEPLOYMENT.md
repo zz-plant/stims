@@ -1,6 +1,51 @@
 # Deployment Guide
 
-This guide covers how to build the Stim Webtoys Library, validate the production bundle locally, and ship the site and MCP Worker to production targets. Commands reference the scripts in `package.json` so you can copy/paste without drift.
+This guide covers how to build the Stim Webtoys Library, validate the production bundle locally, and ship it to production. Commands reference the scripts in `package.json` so you can copy/paste without drift.
+
+## Choose your deployment track
+
+| Track | Use when | Required commands |
+| --- | --- | --- |
+| **Track A (default): Static site on Cloudflare Pages** | Nearly all toy/site releases. | `bun run check`, `bun run build`, `bun run preview`, `bun run pages:deploy` |
+| **Track B (optional): MCP Worker transport** | You changed MCP HTTP/WebSocket transport behavior or Worker-only MCP deployment settings. | Track A commands + Worker deploy command(s) in the Track B section |
+
+If you only need to deploy the toy site, follow Track A and skip the Worker sections.
+
+## Track A quick path (minimum production flow)
+
+Use this baseline sequence when shipping the site:
+
+1. Run the quality gate:
+
+   ```bash
+   bun run check
+   ```
+
+2. Confirm toy metadata and docs registration remain aligned:
+
+   ```bash
+   bun run check:toys
+   ```
+
+3. Build production assets:
+
+   ```bash
+   bun run build
+   ```
+
+4. Sanity-check locally:
+
+   ```bash
+   bun run preview
+   ```
+
+5. Deploy Pages assets:
+
+   ```bash
+   bun run pages:deploy
+   ```
+
+Advanced variants such as `--reuse` are documented later for prebuilt artifacts and CI restores.
 
 ## Build the Site
 
@@ -47,31 +92,12 @@ Both commands expect a fresh `bun run build` and read from `dist/`.
 
 ## Prime-time preflight checks
 
-Run this sequence before shipping to production so the release candidate is validated the same way CI and reviewers expect:
+Track A quick path above is the default release preflight. Use this section as the same checklist reference before production deploys:
 
-1. Run the full quality gate:
-
-   ```bash
-   bun run check
-   ```
-
-2. Confirm toy metadata and file registrations stay in sync:
-
-   ```bash
-   bun run check:toys
-   ```
-
-3. Build production assets:
-
-   ```bash
-   bun run build
-   ```
-
-4. Sanity-check the generated bundle locally:
-
-   ```bash
-   bun run preview
-   ```
+1. `bun run check`
+2. `bun run check:toys`
+3. `bun run build`
+4. `bun run preview`
 
 If any step fails, fix the issue and restart from step 1 so downstream checks reflect the final state.
 
@@ -118,7 +144,7 @@ Expected artifacts for both commands:
 - `dist/.vite/manifest.json` co-located with the assets (required for debugging and any server-side asset lookups).
 - A Wrangler-generated preview URL during `pages:dev` and a production deployment URL during `pages:deploy` (visible in the command output and the Cloudflare dashboard).
 
-## Cloudflare Worker (MCP) Deployment
+## Track B (optional): Cloudflare Worker (MCP) deployment
 
 The MCP HTTP/WebSocket endpoint lives in [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). Deploy it with Wrangler using the existing [`wrangler.toml`](../wrangler.toml) (name, compatibility date, and Pages output dir are already defined).
 

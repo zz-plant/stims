@@ -1,6 +1,6 @@
 # MCP stdio server guide
 
-The repository includes a Model Context Protocol (MCP) stdio server at [`scripts/mcp-server.ts`](../scripts/mcp-server.ts) and a Cloudflare Worker transport at [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). Both expose documentation, toy metadata, loader behavior, and development command references so MCP-compatible clients can retrieve structured information without scraping markdown.
+The repository includes a Model Context Protocol (MCP) stdio server at [`scripts/mcp-server.ts`](../scripts/mcp-server.ts) and a Cloudflare Worker transport at [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). Both expose documentation, toy metadata, loader behavior, and development command references so MCP-compatible clients can retrieve structured information without scraping markdown. The stdio server is the baseline path for local/tooling use; the Worker transport is an optional deployment target when remote MCP access is needed.
 
 ## Starting the server
 
@@ -13,7 +13,7 @@ The repository includes a Model Context Protocol (MCP) stdio server at [`scripts
 
 ## Registered tools
 
-All tools are registered on the `stim-webtoys-mcp` server name and use zod-based schemas for validation.
+All tools are registered on the logical MCP server name `stim-webtoys-mcp` and use zod-based schemas for validation. The Cloudflare Worker deploy name (`stims` in this repository) can differ from the logical MCP server name without changing tool behavior.
 
 - **`list_docs`**
   - **Input:** none.
@@ -75,7 +75,7 @@ The following tools are only available from the Bun/Node stdio server (`bun run 
 - **Slug filters:** If `get_toys` returns “No toys matched the requested filters,” double-check the slug in `assets/data/toys.json` or omit filters to retrieve the full catalog.
 - **Client invocation:** MCP clients must launch `bun run mcp` in the repository root; running elsewhere can block access to `README.md`, the toy data file, or the Vite manifest.
 
-## Cloudflare Worker deployment
+## Cloudflare Worker deployment (optional transport)
 
 [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts) serves the same tools over Streamable HTTP (POST requests for JSON-RPC, GET + `text/event-stream` for streaming responses) and WebSocket upgrades on the `/mcp` route. The worker bundles markdown and toy metadata at build time via `?raw` imports, so it does not rely on file system access in production.
 
@@ -87,7 +87,7 @@ The following tools are only available from the Bun/Node stdio server (`bun run 
 The Worker uses the repository’s pinned compatibility date (`2024-10-20`) to keep WebSocket support consistent with `wrangler.toml` and the deployment snippets in `docs/DEPLOYMENT.md`.
 
 ```toml
-name = "stim-webtoys-mcp"
+name = "stims"
 main = "scripts/mcp-worker.ts"
 compatibility_date = "2024-10-20"
 workers_dev = true
@@ -97,11 +97,12 @@ compatibility_flags = ["nodejs_compat"]
 ### Deploying
 
 1. Install dependencies (`bun install`), ensuring `@cfworker/json-schema` is available for the Worker build.
-2. Deploy with Wrangler:
+2. Keep Worker naming aligned with `wrangler.toml` unless you intentionally override `--name` for a separate environment.
+3. Deploy with Wrangler:
    ```bash
    bunx wrangler deploy scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
    ```
-3. Local preview (Worker fetch + WebSocket support):
+4. Local preview (Worker fetch + WebSocket support):
    ```bash
    bunx wrangler dev scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
    ```

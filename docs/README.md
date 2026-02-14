@@ -14,7 +14,7 @@ This directory is organized by **audience + workflow** so contributors and agent
 
 - [`DEVELOPMENT.md`](./DEVELOPMENT.md) — setup, scripts, and local workflows.
 - [`QA_PLAN.md`](./QA_PLAN.md) — high-impact QA paths and automated coverage.
-- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — build/preview/deploy guidance.
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Track A static-site deploy path plus optional Track B MCP Worker deploy guidance.
 
 ### Implementation references
 
