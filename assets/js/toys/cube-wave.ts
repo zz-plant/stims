@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
@@ -57,7 +58,7 @@ type GridPreset = {
   extras?: (group: THREE.Group) => void;
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const gridGroup = new THREE.Group();
   const gridItems: GridItem[] = [];
 

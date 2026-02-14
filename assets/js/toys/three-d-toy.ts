@@ -6,6 +6,7 @@ import {
 } from '../core/postprocessing';
 import type { RendererBackend } from '../core/renderer-capabilities';
 import { registerToyGlobals } from '../core/toy-globals';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { createRuntimeAudioStarter } from '../utils/audio-start-helpers';
@@ -18,7 +19,7 @@ import { disposeGeometry, disposeMesh } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createToyQualityControls } from '../utils/toy-settings';
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   let errorElement: HTMLElement | null = null;
   const { quality, configurePanel } = createToyQualityControls({
     title: '3D soundscape',

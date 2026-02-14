@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getBandAverage } from '../utils/audio-bands';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
@@ -17,7 +18,7 @@ type AuroraPalette = {
   saturation: number;
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality, configurePanel } = createToyQualityControls({
     title: 'Aurora painter',
     description:

@@ -3,6 +3,7 @@ import {
   DEFAULT_QUALITY_PRESETS,
   type QualityPreset,
 } from '../core/settings-panel';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getBandAverage } from '../utils/audio-bands';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
@@ -43,7 +44,7 @@ type RingState = {
   pulseOffset: number;
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality, configurePanel } = createToyQualityControls({
     title: 'Mobile Ripples',
     description: 'Low-power neon ripples tuned for touch-first screens.',

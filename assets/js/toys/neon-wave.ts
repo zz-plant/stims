@@ -28,6 +28,7 @@ import {
   type PostprocessingPipeline,
 } from '../core/postprocessing';
 import { PersistentSettingsPanel } from '../core/settings-panel';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createBeatTracker } from '../utils/audio-beat';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
@@ -80,7 +81,7 @@ const THEMES: Record<NeonTheme, ThemePalette> = {
   },
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const settingsPanel = new PersistentSettingsPanel(container || undefined);
   const { quality } = createToyQualityControls({
     title: 'Neon Wave',

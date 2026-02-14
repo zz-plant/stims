@@ -4,6 +4,7 @@ import {
   getActiveMotionPreference,
   subscribeToMotionPreference,
 } from '../core/motion-preferences';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import {
@@ -80,7 +81,7 @@ function mapOrientationToGravity(
   state.target.set(gamma / 70, -1, -0.2 + beta / 90).normalize();
 }
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   let runtime: ToyRuntimeInstance;
 
   const gravity: GravityState = {

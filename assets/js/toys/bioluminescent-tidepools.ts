@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { registerToyGlobals } from '../core/toy-globals';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createRuntimeAudioStarter } from '../utils/audio-start-helpers';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
@@ -28,7 +29,7 @@ type TidePalette = {
 const MAX_BLOBS = 28;
 const BASE_SPARK_COUNT = 200;
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality, configurePanel } = createToyQualityControls({
     title: 'Bioluminescent tidepools',
     description:
