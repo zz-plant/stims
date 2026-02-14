@@ -19,6 +19,7 @@ This directory is organized by **audience + workflow** so contributors and agent
 ### Implementation references
 
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — runtime composition and data flow.
+- [`FULL_REFACTOR_PLAN.md`](./FULL_REFACTOR_PLAN.md) — staged roadmap for full-codebase refactor.
 - [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md) — implementation patterns for toys.
 - [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md) — slug-to-entry-point map.
 - [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md) — page-level specs.
