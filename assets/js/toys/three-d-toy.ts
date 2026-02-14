@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import {
   createBloomComposer,
-  isWebGLRenderer,
   type PostprocessingPipeline,
+  resolveWebGLRenderer,
 } from '../core/postprocessing';
 import type { RendererBackend } from '../core/renderer-capabilities';
 import { registerToyGlobals } from '../core/toy-globals';
@@ -220,10 +220,14 @@ export function start({ container }: ToyStartOptions = {}) {
     if (postprocessing) return;
     runtime.toy.rendererReady.then((result) => {
       if (!result || postprocessing) return;
-      if (!isWebGLRenderer(result.renderer)) return;
+      const webglRenderer = resolveWebGLRenderer(
+        result.backend,
+        result.renderer,
+      );
+      if (!webglRenderer) return;
 
       postprocessing = createBloomComposer({
-        renderer: result.renderer,
+        renderer: webglRenderer,
         scene: runtime.toy.scene,
         camera: runtime.toy.camera,
         bloomStrength: 0.65,

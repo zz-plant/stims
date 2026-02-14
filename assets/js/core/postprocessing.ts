@@ -3,6 +3,7 @@ import { Vector2 } from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import type { RendererBackend } from './renderer-capabilities';
 
 export type PostprocessingPipeline = {
   composer: EffectComposer;
@@ -19,6 +20,22 @@ export function isWebGLRenderer(renderer: unknown): renderer is WebGLRenderer {
     'capabilities' in renderer &&
     'extensions' in renderer
   );
+}
+
+export function supportsWebGLPostprocessing(
+  backend: RendererBackend | null | undefined,
+): boolean {
+  return backend === 'webgl';
+}
+
+export function resolveWebGLRenderer(
+  backend: RendererBackend | null | undefined,
+  renderer: unknown,
+): WebGLRenderer | null {
+  if (!supportsWebGLPostprocessing(backend)) {
+    return null;
+  }
+  return isWebGLRenderer(renderer) ? renderer : null;
 }
 
 export function createBloomComposer({
