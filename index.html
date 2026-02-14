@@ -138,38 +138,14 @@
         </div>
       </header>
 
-      <section class="intro" id="intro">
-        <div class="section-heading">
-          <p class="eyebrow">Audio-reactive visuals • Instant play</p>
-          <h1>Stim library</h1>
-          <p class="section-description">
-            Open a visual in seconds—no signups, just sound, touch, and flow.
-          </p>
-          <div class="intro-highlights" aria-label="Library highlights">
-            <article class="intro-highlight-card">
-              <p class="intro-highlight-card__label">Built for low friction</p>
-              <p class="intro-highlight-card__value">Open, react, repeat</p>
-              <p class="intro-highlight-card__copy">Everything launches in-browser with no account wall.</p>
-            </article>
-            <article class="intro-highlight-card">
-              <p class="intro-highlight-card__label">Best session flow</p>
-              <p class="intro-highlight-card__value">Touch + audio + motion</p>
-              <p class="intro-highlight-card__copy">Mix interactions to find the right intensity for your moment.</p>
-            </article>
-          </div>
-          <ul class="intro-pills" aria-label="Quick highlights">
-            <li class="intro-pill">✨ Featured: Halo Flow</li>
-            <li class="intro-pill">🎧 Mic or demo audio</li>
-            <li class="intro-pill">🖐️ Touch-friendly on all screens</li>
-          </ul>
-        </div>
-        <div class="cta-row hero-cta-row">
+      <section class="intro" id="intro" aria-label="Primary quick actions">
+        <div class="intro-actions" role="group" aria-label="Start options">
           <a
             href="toy.html?toy=holy"
             class="cta-button primary"
             data-quickstart-slug="holy"
           >
-            Start now on this device
+            Start now
           </a>
           <a
             href="toy.html?toy=spiral-burst"
@@ -178,14 +154,18 @@
             data-quickstart-pool="energetic"
             data-quickstart-audio="demo"
           >
-            Surprise me
+            Surprise
+          </a>
+          <a
+            href="toy.html?toy=aurora-painter"
+            class="cta-button ghost"
+            data-quickstart-mode="random"
+            data-quickstart-pool="calming"
+            data-quickstart-flow="true"
+          >
+            Flow mode
           </a>
         </div>
-        <ul class="intro-pills" aria-label="Best with">
-          <li class="intro-pill">Best with 🎤 Mic</li>
-          <li class="intro-pill">Best with 🎧 Demo audio</li>
-          <li class="intro-pill">Best with 🧭 Motion</li>
-        </ul>
         <div class="intro-secondary-links">
           <a href="#toy-list" class="text-link intro-secondary-link">Browse all stims</a>
           <a
@@ -200,14 +180,13 @@
             Party mode
           </a>
         </div>
-        <p class="section-helper" data-hero-flow-note>Ready for this device.</p>
       </section>
 
       <section class="quick-starts" id="quick-starts" aria-label="Quick start suggestions">
         <div class="section-heading">
           <p class="eyebrow">Quick start</p>
-          <h2>Start playing fast</h2>
-          <p class="section-description">Pick a path: featured, flow mode, or surprise me.</p>
+          <h2>Quick picks</h2>
+          <p class="section-description">Choose a vibe and jump in.</p>
         </div>
         <div class="quick-start-grid">
           <article class="quick-card">
@@ -250,15 +229,6 @@
                 Surprise me
               </a>
               <a href="#library" class="text-link">Browse all</a>
-            </div>
-          </article>
-          <article class="quick-card">
-            <p class="quick-card__eyebrow">For parties</p>
-            <h3>Built with the community</h3>
-            <p>Share feedback, pick the next toy, or help ship a release.</p>
-            <div class="quick-card__actions">
-              <a href="https://github.com/zz-plant/stims" class="cta-button ghost" target="_blank" rel="noopener noreferrer">Open GitHub</a>
-              <a href="https://github.com/zz-plant/stims/issues/new/choose" class="text-link" target="_blank" rel="noopener noreferrer">Suggest a toy</a>
             </div>
           </article>
         </div>
