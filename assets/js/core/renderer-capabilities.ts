@@ -1,6 +1,5 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
-import { isMobileDevice } from '../utils/device-detect';
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 
 export type RendererBackend = 'webgl' | 'webgpu';
@@ -36,8 +35,6 @@ let cachedCapabilities: RendererCapabilities | null = null;
 let cachedEnvironmentKey: unknown = null;
 let telemetryHandler: RendererTelemetryHandler | null = null;
 let telemetryReportedKey: unknown = null;
-
-const isMobileUserAgent = isMobileDevice();
 
 const buildFallback = (
   fallbackReason: string,
@@ -100,16 +97,6 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
       }),
     );
   }
-
-  if (isMobileUserAgent) {
-    return cacheResult(
-      buildFallback('WebGPU is disabled on mobile devices. Using WebGL.', {
-        triedWebGPU: false,
-        shouldRetryWebGPU: false,
-      }),
-    );
-  }
-
   const { gpu } = navigator as Navigator & { gpu?: GPU };
   if (!gpu?.requestAdapter) {
     return cacheResult(

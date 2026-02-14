@@ -359,7 +359,8 @@ export function start({ container }: ToyStartOptions = {}) {
     plugins: [
       {
         name: 'cosmic-particles',
-        setup: () => {
+        setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
           setupSettingsPanel();
           setActivePreset(activePresetKey);
         },

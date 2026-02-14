@@ -690,7 +690,9 @@ export function start({ container }: ToyStartOptions = {}) {
     plugins: [
       {
         name: 'spiral-burst',
-        setup: ({ toy }) => {
+        setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
+          const { toy } = runtimeInstance;
           toy.scene.add(spiralContainer);
           setupSettingsPanel();
           buildSpiralArms();

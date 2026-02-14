@@ -336,7 +336,8 @@ export function start({ container }: ToyStartOptions = {}) {
     plugins: [
       {
         name: 'fractal-kite-garden',
-        setup: () => {
+        setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
           init();
         },
         update: ({ frequencyData, time }) => {

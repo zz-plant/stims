@@ -247,7 +247,8 @@ export function start({ container }: ToyStartOptions = {}) {
     plugins: [
       {
         name: 'pocket-pulse',
-        setup: () => {
+        setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
           setupSettingsPanel();
           rebuildField();
         },

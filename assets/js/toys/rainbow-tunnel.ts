@@ -241,7 +241,8 @@ export function start({ container }: ToyStartOptions = {}) {
     plugins: [
       {
         name: 'rainbow-tunnel',
-        setup: () => {
+        setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
           setupSettingsPanel();
           rebuildScene();
         },
