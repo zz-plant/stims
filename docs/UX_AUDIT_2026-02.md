@@ -1,115 +1,91 @@
-# UX audit (Constructive + Kondo-style)
+# UX audit 2026-02 (Consolidated)
 
 Date: 2026-02-11  
-Scope: Library home and toy shell (`/`, `/toy.html?toy=...`) in local dev.
+Scope: Library home and toy shell (`/`, `/toy.html?toy=...`) across desktop and mobile.
+
+This file consolidates the baseline audit plus two same-day follow-up iterations. It supersedes the previous split docs and keeps only the most current recommendations.
 
 ## Method
 
-- Reviewed desktop and mobile renders in local dev server.
-- Focused on first-run clarity, interaction confidence, visual hierarchy, and friction.
-- Framed recommendations using a **Kondo lens**:
-  - **Remove**: delete low-value clutter.
-  - **Move**: relocate useful elements to where users need them.
-  - **Modify**: keep the intent but improve wording/behavior/priority.
+- Reviewed local dev renders for first-run clarity, interaction confidence, hierarchy, and recovery from failure states.
+- Used a Kondo lens for recommendations:
+  - **Remove** low-value decision noise.
+  - **Move** useful actions closer to user intent.
+  - **Modify** wording and interaction priority for clearer outcomes.
 
-## What currently sparks joy
+## What improved over the iterations
 
-1. **Fast orientation at the top of the library.** The page gives immediate context (“Stim library”), tags, and a primary CTA without hiding the experience behind marketing copy.
-2. **Strong capability framing.** “Pick your starting mode” + “Check your device” reduce anxiety for users who are unsure whether their browser/device can run graphics/audio features.
-3. **Toy shell safety rails are thoughtful.** The quick-check panel and direct fallback actions (“Back to library”, “Retry checks”) reduce dead ends when permissions or graphics fail.
-4. **Visual language is cohesive.** Soft glow cards, rounded containers, and gentle gradients align with the sensory-play goal.
+1. Hero intent is clearer with one dominant launch action.
+2. Discovery has better priority than diagnostics on first view.
+3. Filter complexity is better staged via progressive disclosure.
+4. Toy failure states now have more supportive recovery language.
 
-## Friction points (with Kondo actions)
+## Current friction and consolidated actions
 
-### 1) Header and hero controls feel dense on first glance
+### 1) Hero and quick-start still partially duplicate first-step intent
 
-- **Symptoms:** Many pills/toggles/actions compete in the same viewport band. On first load, users must parse navigation, filters, and onboarding cues at once.
-- **Remove:**
-  - Defer secondary chips in the top hero row that are not essential for first action.
-  - Collapse low-frequency controls behind a “More filters” disclosure.
-- **Move:**
-  - Keep one dominant primary action in the hero (“Start browsing” or “Start with recommendations”) and move secondary utilities to below-the-fold anchor sections.
-- **Modify:**
-  - Convert parallel CTAs into a progressive sequence: primary CTA → optional refinement.
+- **Remove:** Extra first-fold quick-start options that recreate the same decision.
+- **Move:** Secondary launch modes into optional “Explore modes” content.
+- **Modify:** If quick-start remains, label as optional (for example “Or try”).
 
-### 2) “Check your device” card competes with “Browse all stims” card
+### 2) Search/filter controls are still dense before visual payoff
 
-- **Symptoms:** Device diagnostics and discovery grid both look like primary content blocks. Users may pause before understanding where to click first.
-- **Remove:**
-  - Trim explanatory text in diagnostics to the shortest actionable sentence.
-- **Move:**
-  - Demote full diagnostics below the first set of toy cards, keeping only a compact status summary near the top.
-- **Modify:**
-  - Use explicit state labels: “Ready now”, “Works with fallback”, “Needs browser change”.
+- **Remove:** Low-value default controls and verbose helper tokens.
+- **Move:** Place “Refine results” after users see initial cards (especially on first session/mobile).
+- **Modify:** Keep default controls to search + high-impact filters with outcome-first microcopy.
 
-### 3) Search/filter area has high control count for first-time users
+### 3) Advanced filters can still hide why results changed
 
-- **Symptoms:** Search input + multiple chips + selects + sorting controls appear together, increasing cognitive load.
-- **Remove:**
-  - Hide advanced filtering (multi-tag logic, rare capabilities) until user opts in.
-- **Move:**
-  - Keep only search + one high-impact filter row in the default view.
-- **Modify:**
-  - Add plain-language helper text under search, e.g., “Try ‘microphone’ or ‘calming’.”
+- **Remove:** Duplicate state communication between hidden controls and active rows.
+- **Move:** Show active advanced filters in one canonical “Applied filters” row, even when controls are collapsed.
+- **Modify:** Auto-expand advanced controls when deep-linked advanced filters are present.
 
-### 4) Toy shell quick-check panel is useful but visually heavy
+### 4) Diagnostics and system-check language remains too implementation flavored
 
-- **Symptoms:** On failure states, the right-side panel draws more attention than the central toy status message and can feel intimidating for non-technical users.
-- **Remove:**
-  - Remove deeply technical labels from default view (e.g., adapter details) unless user expands “Details”.
-- **Move:**
-  - Move contextual explanation right next to the primary action button users need now.
-- **Modify:**
-  - Reword from diagnostic-first to action-first copy: “You can continue with demo audio” / “Try browser X for full mode.”
+- **Remove:** Technical terms from default, high-salience summaries.
+- **Move:** Runtime-specific details under expandable “Details”.
+- **Modify:** Use user-outcome labels first (for example “Runs in compatible mode”, “Microphone permission needed on start”).
 
-### 5) Error state messaging can be gentler and more outcome-driven
+### 5) Preflight/error action stacks still have competing priorities
 
-- **Symptoms:** “Unable to load this toy” is clear but emotionally harsh, and the fix path can feel uncertain.
-- **Remove:**
-  - Remove stack-like implementation hints from primary copy in user-facing mode.
-- **Move:**
-  - Put “Try another toy” and “Open compatibility-friendly picks” at the same visual priority as “Back to library”.
-- **Modify:**
-  - Rewrite headings to “This toy couldn’t start here yet” with one-sentence next step.
+- **Remove:** Equal visual weight for multiple CTAs in each state.
+- **Move:** Keep one context-aware primary action per state and demote alternates.
+- **Modify:** Match CTA text to best next step (for example “Browse compatible toys” when blocked).
 
-### 6) Mobile top section still feels utility-first vs delight-first
+### 6) Mobile first viewport is still utility-first instead of delight-first
 
-- **Symptoms:** Small viewport shows compact controls quickly, but joy signal (visual preview / featured toy momentum) arrives late.
-- **Remove:**
-  - Reduce top-level button count on mobile by default.
-- **Move:**
-  - Move one featured playable card above deeper filter tooling.
-- **Modify:**
-  - Use a larger “Start now” touch target and one-line promise (“Best on your device right now”).
+- **Remove:** Extra helper copy lines in the first mobile viewport.
+- **Move:** One featured playable card above heavier control rails.
+- **Modify:** Keep one large “start now” touch target with reassurance copy.
 
-## Prioritized action plan
+## Priority roadmap
 
-## Now (1–2 sprints)
+### Now (1 sprint)
 
-1. **Simplify first screen hierarchy**: one primary CTA + condensed secondary options.
-2. **Reduce default filter surface area** to search + essential chips.
-3. **Refactor toy error copy** to action-oriented guidance with 2–3 obvious exits.
+1. De-duplicate first-step prompts (hero vs quick-start).
+2. Reduce initial control density and keep active filters always visible.
+3. Simplify preflight/error actions to one clear primary CTA per state.
 
-## Next (2–4 sprints)
+### Next (1–2 sprints)
 
-1. **Progressive diagnostics**: compact summary by default, expandable technical details.
-2. **Mobile-first onboarding strip** featuring one recommended toy with immediate launch.
-3. **Consistent status taxonomy** across home and toy shell (Ready/Fallback/Unsupported).
+1. Move diagnostics and technical language behind progressive disclosure.
+2. Reorder mobile layout so delight/launch appears before dense controls.
+3. Normalize status taxonomy across home and toy shell (Ready/Fallback/Unsupported).
 
-## Later
+### Later
 
-1. Personalization memory (remember preferred mode and capabilities).
-2. A/B test concise vs descriptive hero copy for first-run conversion.
-3. Add lightweight “Why this recommendation?” transparency near suggested picks.
+1. Personalize launch defaults using prior successful sessions.
+2. Add lightweight, dismissible onboarding hints.
+3. A/B test minimal hero-only launch vs hero + quick-start variants.
 
-## Suggested UX success metrics
+## Suggested success metrics
 
-- Time to first toy launch (new visitors).
-- First-session completion rate (toy successfully started).
-- Filter interaction depth before launch (lower can mean clearer defaults).
-- Bounce rate from toy error state.
-- Mobile launch success vs desktop launch success.
+- First-action latency (landing → first click).
+- Time to first successful toy launch.
+- Control/filter interactions before first launch.
+- Toy error recovery completion vs abandonment.
+- Mobile first-session launch success.
 
-## One-line Kondo north star
+## Kondo north star
 
-> Keep only the controls that help someone start delightfully in under 10 seconds; hide or defer everything else.
+> Keep one obvious next action in every viewport, and reveal everything else only when intent is explicit.
