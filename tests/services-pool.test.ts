@@ -14,6 +14,7 @@ import {
   resetRendererPool,
 } from '../assets/js/core/services/render-service.ts';
 import type { FrequencyAnalyser } from '../assets/js/utils/audio-handler.ts';
+import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../assets/js/utils/audio-handler.ts';
 
 describe('render-service pooling', () => {
   const fakeRenderer = {
@@ -91,6 +92,9 @@ describe('audio-service pooling', () => {
     const second = await acquireAudioHandle({ initAudioImpl });
 
     expect(mediaDevices.getUserMedia).toHaveBeenCalledTimes(1);
+    expect(mediaDevices.getUserMedia).toHaveBeenCalledWith(
+      DEFAULT_MICROPHONE_CONSTRAINTS,
+    );
     expect(first.stream).toBe(second.stream);
 
     second.release();

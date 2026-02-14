@@ -11,6 +11,7 @@ import {
 
 let originalNavigatorDesc;
 let initAudio;
+let DEFAULT_MICROPHONE_CONSTRAINTS;
 let getFrequencyData;
 let originalAudioContext;
 let originalAudioWorkletNode;
@@ -106,9 +107,8 @@ beforeAll(async () => {
     };
   });
 
-  ({ initAudio, getFrequencyData } = await import(
-    '../assets/js/utils/audio-handler.ts'
-  ));
+  ({ DEFAULT_MICROPHONE_CONSTRAINTS, initAudio, getFrequencyData } =
+    await import('../assets/js/utils/audio-handler.ts'));
 });
 
 describe('audio-handler utilities', () => {
@@ -158,6 +158,14 @@ describe('audio-handler utilities', () => {
     expect(listener).toBeDefined();
     expect(audio).toBeDefined();
     expect(stream).toBeDefined();
+  });
+
+  test('initAudio requests microphone with non-call defaults', async () => {
+    await initAudio();
+
+    expect(global.navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith(
+      DEFAULT_MICROPHONE_CONSTRAINTS,
+    );
   });
 
   test('initAudio disables monitoring by default to prevent microphone echo', async () => {
