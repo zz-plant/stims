@@ -14,6 +14,8 @@ let initAudio;
 let getFrequencyData;
 let originalAudioContext;
 let originalAudioWorkletNode;
+let AudioCtor;
+let PositionalAudioCtor;
 
 class FakeAudioWorklet {
   addModule = mock().mockResolvedValue(undefined);
@@ -61,13 +63,15 @@ beforeAll(async () => {
       remove: mock(),
       context: new FakeAudioContext(),
     }));
-    const Audio = mock(() => ({
+    AudioCtor = mock(() => ({
       setMediaStreamSource: mock(),
+      setVolume: mock(),
       stop: mock(),
       disconnect: mock(),
     }));
-    const PositionalAudio = mock(() => ({
+    PositionalAudioCtor = mock(() => ({
       setMediaStreamSource: mock(),
+      setVolume: mock(),
       stop: mock(),
       disconnect: mock(),
     }));
@@ -93,12 +97,12 @@ beforeAll(async () => {
     return {
       __esModule: true,
       ...baseThree,
-      Audio,
+      Audio: AudioCtor,
       AudioAnalyser,
       AudioListener,
       Camera,
       Object3D,
-      PositionalAudio,
+      PositionalAudio: PositionalAudioCtor,
     };
   });
 
@@ -154,6 +158,20 @@ describe('audio-handler utilities', () => {
     expect(listener).toBeDefined();
     expect(audio).toBeDefined();
     expect(stream).toBeDefined();
+  });
+
+  test('initAudio disables monitoring by default to prevent microphone echo', async () => {
+    await initAudio();
+
+    const audioInstance = AudioCtor.mock.results[0]?.value;
+    expect(audioInstance?.setVolume).toHaveBeenCalledWith(0);
+  });
+
+  test('initAudio can keep monitoring enabled when requested', async () => {
+    await initAudio({ monitorInput: true });
+
+    const audioInstance = AudioCtor.mock.results.at(-1)?.value;
+    expect(audioInstance?.setVolume).not.toHaveBeenCalled();
   });
 
   test('initAudio can create positional audio', async () => {
