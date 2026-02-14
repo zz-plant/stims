@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { resolveWebGLRenderer } from '../core/postprocessing';
 import type { ToyStartOptions } from '../core/toy-interface';
 import FeedbackManager from '../utils/feedback-manager';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
@@ -8,6 +9,7 @@ import WarpShader from '../utils/warp-shader';
 
 export function start({ container }: ToyStartOptions = {}) {
   let feedback: FeedbackManager | null = null;
+  let webglRenderer: THREE.WebGLRenderer | null = null;
   let warpMaterial: THREE.ShaderMaterial | null = null;
   let warpMesh: THREE.Mesh | null = null;
   const overlayScene = new THREE.Scene();
@@ -44,8 +46,15 @@ export function start({ container }: ToyStartOptions = {}) {
 
           toy.rendererReady.then((handle) => {
             if (!handle) return;
-            const renderer = handle.renderer as THREE.WebGLRenderer;
-            feedback = new FeedbackManager({ renderer });
+            webglRenderer = resolveWebGLRenderer(
+              handle.backend,
+              handle.renderer,
+            );
+            if (!webglRenderer) {
+              return;
+            }
+
+            feedback = new FeedbackManager({ renderer: webglRenderer });
 
             warpMaterial = new THREE.ShaderMaterial({
               ...WarpShader,
@@ -89,8 +98,8 @@ export function start({ container }: ToyStartOptions = {}) {
           });
 
           // Feedback and Warp
-          if (feedback && warpMaterial && toy.renderer) {
-            const renderer = toy.renderer as THREE.WebGLRenderer;
+          if (feedback && warpMaterial && webglRenderer) {
+            const renderer = webglRenderer;
 
             // 1. Update warp uniforms
             warpMaterial.uniforms.uTime.value = time;

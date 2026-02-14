@@ -24,8 +24,8 @@ import {
 } from '../core/performance-panel';
 import {
   createBloomComposer,
-  isWebGLRenderer,
   type PostprocessingPipeline,
+  resolveWebGLRenderer,
 } from '../core/postprocessing';
 import { PersistentSettingsPanel } from '../core/settings-panel';
 import type { ToyStartOptions } from '../core/toy-interface';
@@ -393,12 +393,14 @@ export function start({ container }: ToyStartOptions = {}) {
     toy.rendererReady.then((result) => {
       if (!result) return;
 
-      const { renderer } = result;
-      // Only set up post-processing with WebGLRenderer (not WebGPURenderer)
-      if (!isWebGLRenderer(renderer)) return;
+      const webglRenderer = resolveWebGLRenderer(
+        result.backend,
+        result.renderer,
+      );
+      if (!webglRenderer) return;
 
       postprocessing = createBloomComposer({
-        renderer,
+        renderer: webglRenderer,
         scene: toy.scene,
         camera: toy.camera,
         bloomStrength: palette.bloomStrength,
