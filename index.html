@@ -216,13 +216,18 @@
             </div>
           </article>
           <article class="quick-card">
-            <p class="quick-card__eyebrow">Surprise</p>
-            <h3>Random featured toy</h3>
-            <p>Jump into a featured toy, tuned for fast starts.</p>
+            <p class="quick-card__eyebrow">Surprise me</p>
+            <h3>Shuffle a fresh stim</h3>
+            <p>Roll into a featured toy when you want novelty without decision fatigue.</p>
+            <ul class="quick-card__meta" aria-label="Surprise mode highlights">
+              <li>Featured favorites</li>
+              <li>One-tap launch</li>
+              <li>Great for resets</li>
+            </ul>
             <div class="quick-card__actions">
               <a
                 href="toy.html?toy=spiral-burst"
-                class="cta-button ghost"
+                class="cta-button cta-button--accent"
                 data-quickstart-mode="random"
                 data-quickstart-pool="featured"
               >
@@ -262,10 +267,16 @@
           </section>
           <section class="daily-streak" aria-label="Daily return recommendations" data-daily-engagement>
             <div class="daily-streak__header">
-              <p class="daily-streak__eyebrow">Daily momentum</p>
+              <p class="daily-streak__eyebrow">Streaks</p>
               <p class="daily-streak__title">
                 <strong data-daily-streak-count>Start your streak</strong>
                 <span data-daily-streak-copy>Open one stim each day.</span>
+              </p>
+            </div>
+            <div class="daily-streak__today">
+              <p class="daily-streak__today-label">Today's pick</p>
+              <p class="daily-streak__note" data-daily-pick-label>
+                Daily pick updates each day.
               </p>
             </div>
             <div class="daily-streak__actions">
@@ -276,9 +287,6 @@
                 Continue previous stim
               </button>
             </div>
-            <p class="daily-streak__note" data-daily-pick-label>
-              Daily pick updates each day.
-            </p>
           </section>
           <div class="search-heading">
             <h3>Find a stim</h3>
