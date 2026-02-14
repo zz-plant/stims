@@ -1,11 +1,26 @@
 type NavigatorWithUserAgentData = Navigator & {
   userAgentData?: {
     mobile?: boolean;
+    platform?: string;
   };
   platform?: string;
   maxTouchPoints?: number;
   userAgent?: string;
 };
+
+function hasCoarsePrimaryPointer() {
+  if (
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+  ) {
+    return false;
+  }
+
+  return (
+    window.matchMedia('(pointer: coarse)').matches &&
+    !window.matchMedia('(hover: hover)').matches
+  );
+}
 
 export function isMobileDevice() {
   if (typeof navigator === 'undefined') return false;
@@ -25,6 +40,18 @@ export function isMobileDevice() {
   const platform = nav.platform ?? '';
   const maxTouchPoints = nav.maxTouchPoints ?? 0;
   if (platform === 'MacIntel' && maxTouchPoints > 1) {
+    return true;
+  }
+
+  const userAgentPlatform = nav.userAgentData?.platform ?? '';
+  if (
+    maxTouchPoints > 0 &&
+    /android|ios|iphone|ipad|ipod/i.test(userAgentPlatform)
+  ) {
+    return true;
+  }
+
+  if (maxTouchPoints > 0 && hasCoarsePrimaryPointer()) {
     return true;
   }
 
