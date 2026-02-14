@@ -60,7 +60,8 @@ class PatternRecognizer {
     pattern2: Uint8Array,
     tolerance = 0.85,
   ): boolean {
-    if (pattern1.length === 0 || pattern1.length !== pattern2.length) {
+    const length = pattern1.length;
+    if (length === 0 || length !== pattern2.length) {
       return false;
     }
 
@@ -68,16 +69,42 @@ class PatternRecognizer {
     const normalizedTolerance = Number.isFinite(tolerance)
       ? Math.min(1, Math.max(0, tolerance))
       : 0.85;
-    const maxDifference = 255 * (1 - normalizedTolerance);
 
-    // Calculate similarity score between two patterns.
+    // Fast paths keep the hot loop predictable for common thresholds.
+    if (normalizedTolerance <= 0) {
+      return true;
+    }
+
+    if (normalizedTolerance >= 1) {
+      for (let i = 0; i < length; i++) {
+        if (pattern1[i] !== pattern2[i]) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    const maxDifference = 255 * (1 - normalizedTolerance);
+    const requiredMatches = Math.ceil(length * normalizedTolerance);
     let matchCount = 0;
-    for (let i = 0; i < pattern1.length; i++) {
-      if (Math.abs(pattern1[i] - pattern2[i]) < maxDifference) {
+
+    for (let i = 0; i < length; i++) {
+      const delta = pattern1[i] - pattern2[i];
+      const difference = delta >= 0 ? delta : -delta;
+      if (difference < maxDifference) {
         matchCount++;
+        if (matchCount >= requiredMatches) {
+          return true;
+        }
+        continue;
+      }
+
+      if (matchCount + (length - i - 1) < requiredMatches) {
+        return false;
       }
     }
-    return matchCount / pattern1.length >= normalizedTolerance;
+
+    return false;
   }
 }
 
