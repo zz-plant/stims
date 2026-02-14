@@ -242,6 +242,7 @@ export type AudioInitOptions = {
   }) => void;
   stopStreamOnCleanup?: boolean;
   closeContextOnCleanup?: boolean;
+  monitorInput?: boolean;
 };
 
 export function createSyntheticAudioStream({
@@ -393,6 +394,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
     onCleanup,
     stopStreamOnCleanup = true,
     closeContextOnCleanup = true,
+    monitorInput = false,
   } = options;
 
   let listener: THREE.AudioListener | null = null;
@@ -452,6 +454,9 @@ export async function initAudio(options: AudioInitOptions = {}) {
       ? new THREE.PositionalAudio(activeListener)
       : new THREE.Audio(activeListener);
     audio.setMediaStreamSource(streamSource);
+    if (!monitorInput && 'setVolume' in audio) {
+      (audio as THREE.Audio).setVolume(0);
+    }
     if (positional && object) {
       object.add(audio);
     }
