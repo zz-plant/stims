@@ -56,6 +56,25 @@ describe('renderer capabilities', () => {
     expect(second.preferredBackend).toBe('webgpu');
   });
 
+  test('probes WebGPU on mobile user agents when GPU APIs are present', async () => {
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'mobile-device' },
+    });
+
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(1);
+    expect(requestDevice).toHaveBeenCalledTimes(1);
+    expect(result.preferredBackend).toBe('webgpu');
+    expect(result.fallbackReason).toBeNull();
+  });
+
   test('falls back to WebGL when WebGPU is missing', async () => {
     Object.defineProperty(global, 'navigator', {
       writable: true,
