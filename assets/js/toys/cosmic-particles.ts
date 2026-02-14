@@ -4,6 +4,7 @@ import {
   type PerformanceSettings,
 } from '../core/performance-panel';
 import type { QualityPreset } from '../core/settings-panel';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
@@ -22,7 +23,7 @@ type PresetInstance = {
   dispose: () => void;
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality } = createToyQualityControls({
     title: 'Cosmic controls',
     description:

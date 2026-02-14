@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import {
@@ -16,7 +17,7 @@ interface RingData {
   hue: number;
 }
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality, configurePanel } = createToyQualityControls({
     title: 'Rainbow tunnel',
     description: 'Preset tweaks update DPI and ring density together.',

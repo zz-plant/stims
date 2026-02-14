@@ -3,6 +3,7 @@ import {
   getActivePerformanceSettings,
   type PerformanceSettings,
 } from '../core/performance-panel';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { applyAudioColor } from '../utils/color-audio';
@@ -28,7 +29,7 @@ type StarfieldPalette = {
   nebulaB: THREE.ColorRepresentation;
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality, configurePanel } = createToyQualityControlsWithPerformance({
     title: 'Star field',
     description:

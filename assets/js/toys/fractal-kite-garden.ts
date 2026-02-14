@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getBandAverage } from '../utils/audio-bands';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
@@ -20,7 +21,7 @@ type KiteInstance = {
   twist: number;
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality } = createToyQualityControls({
     title: 'Fractal Kite Garden',
     description:

@@ -3,6 +3,7 @@ import {
   DEFAULT_QUALITY_PRESETS,
   type QualityPreset,
 } from '../core/settings-panel';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getBandAverage } from '../utils/audio-bands';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
@@ -37,7 +38,7 @@ const isCompactDevice = () => {
   );
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality, configurePanel } = createToyQualityControls({
     title: 'Pocket Pulse',
     description:

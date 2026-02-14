@@ -3,6 +3,7 @@ import {
   getActivePerformanceSettings,
   type PerformanceSettings,
 } from '../core/performance-panel';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createBeatTracker } from '../utils/audio-beat';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
@@ -45,7 +46,7 @@ type ParticleField = {
   count: number;
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality } = createToyQualityControls({
     title: 'Spiral Burst',
     description:

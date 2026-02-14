@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { mapFrequencyToItems } from '../utils/audio-mapper';
@@ -24,7 +25,7 @@ type HarmonicBubble = {
   life: number;
 };
 
-export function start({ container }: { container?: HTMLElement | null } = {}) {
+export function start({ container }: ToyStartOptions = {}) {
   const { quality, configurePanel } = createToyQualityControls({
     title: 'Bubble harmonics',
     description: 'Presets adjust DPI caps plus bubble and harmonic counts.',

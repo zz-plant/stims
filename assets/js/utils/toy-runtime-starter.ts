@@ -2,6 +2,7 @@ import {
   getPerformancePanel,
   type PerformancePanelOptions,
 } from '../core/performance-panel';
+import type { ToyStartOptions } from '../core/toy-interface';
 import {
   createToyRuntime,
   type ToyRuntimeOptions,
@@ -42,11 +43,7 @@ export function createToyRuntimeStarter({
   input,
   ...runtimeOptions
 }: ToyRuntimeStarterOptions) {
-  return function start({
-    container,
-  }: {
-    container?: HTMLElement | null;
-  } = {}) {
+  return function start({ container }: ToyStartOptions = {}) {
     const canvas =
       container?.querySelector<HTMLCanvasElement>(canvasSelector) ?? undefined;
     const boundsElement =
@@ -84,11 +81,7 @@ export function createAudioToyStarter({
     plugins,
   });
 
-  return function start({
-    container,
-  }: {
-    container?: HTMLElement | null;
-  } = {}) {
+  return function start({ container }: ToyStartOptions = {}) {
     if (performancePanel) {
       getPerformancePanel(performancePanel);
     }

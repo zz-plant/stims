@@ -3,22 +3,20 @@ import {
   getActiveQualityPreset,
   getSettingsPanel,
 } from '../core/settings-panel';
+import type { ToyStartOptions } from '../core/toy-interface';
 import { defaultToyLifecycle } from '../core/toy-lifecycle.ts';
 
-type StartOptions = {
-  container?: HTMLElement | null;
+type PageToyStartOptions = ToyStartOptions & {
+  preferDemoAudio?: boolean;
+};
+
+type StartPageToyOptions = PageToyStartOptions & {
   path: string;
   title?: string;
   description?: string;
-  preferDemoAudio?: boolean;
 };
 
-type PageToyStartOptions = {
-  container?: HTMLElement | null;
-  preferDemoAudio?: boolean;
-};
-
-type PageToyConfig = Omit<StartOptions, keyof PageToyStartOptions>;
+type PageToyConfig = Omit<StartPageToyOptions, keyof PageToyStartOptions>;
 
 function resolvePageSrc(path: string) {
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
@@ -31,7 +29,7 @@ export function startPageToy({
   title,
   description,
   preferDemoAudio = false,
-}: StartOptions) {
+}: StartPageToyOptions) {
   const target = container ?? document.getElementById('active-toy-container');
 
   if (!target) {
