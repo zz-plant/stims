@@ -95,6 +95,25 @@ describe('PatternRecognizer', () => {
     ).toBe(false);
   });
 
+  test('comparePatterns uses exact matching when tolerance clamps to 1', () => {
+    const analyser = createAnalyser([new Uint8Array([1])]);
+    const recognizer = new PatternRecognizer(analyser, 2);
+
+    expect(
+      recognizer.comparePatterns(
+        new Uint8Array([10, 11, 12]),
+        new Uint8Array([10, 11, 12]),
+        1,
+      ),
+    ).toBe(true);
+    expect(
+      recognizer.comparePatterns(
+        new Uint8Array([10, 11, 12]),
+        new Uint8Array([10, 11, 13]),
+        1,
+      ),
+    ).toBe(false);
+  });
   test('comparePatterns clamps invalid tolerance values', () => {
     const analyser = createAnalyser([new Uint8Array([1])]);
     const recognizer = new PatternRecognizer(analyser, 2);
