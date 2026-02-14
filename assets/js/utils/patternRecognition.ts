@@ -69,15 +69,32 @@ class PatternRecognizer {
       ? Math.min(1, Math.max(0, tolerance))
       : 0.85;
     const maxDifference = 255 * (1 - normalizedTolerance);
+    const requiredMatches = Math.ceil(pattern1.length * normalizedTolerance);
+
+    if (requiredMatches <= 0) {
+      return true;
+    }
 
     // Calculate similarity score between two patterns.
     let matchCount = 0;
+    let remaining = pattern1.length;
     for (let i = 0; i < pattern1.length; i++) {
-      if (Math.abs(pattern1[i] - pattern2[i]) < maxDifference) {
+      const delta = pattern1[i] - pattern2[i];
+      const difference = delta >= 0 ? delta : -delta;
+      if (difference < maxDifference) {
         matchCount++;
+        if (matchCount >= requiredMatches) {
+          return true;
+        }
+      }
+
+      remaining--;
+      if (matchCount + remaining < requiredMatches) {
+        return false;
       }
     }
-    return matchCount / pattern1.length >= normalizedTolerance;
+
+    return false;
   }
 }
 
