@@ -13,7 +13,7 @@ The repository includes a Model Context Protocol (MCP) stdio server at [`scripts
 
 ## Registered tools
 
-All tools are registered on the logical MCP server name `stim-webtoys-mcp` and use zod-based schemas for validation. Deployment targets can still use the Cloudflare Worker name `stims` (from `wrangler.toml`) without changing tool behavior.
+All tools are registered on the logical MCP server name `stim-webtoys-mcp` and use zod-based schemas for validation. The Cloudflare Worker deploy name (`stims` in this repository) can differ from the logical MCP server name without changing tool behavior.
 
 - **`list_docs`**
   - **Input:** none.
@@ -87,7 +87,7 @@ The following tools are only available from the Bun/Node stdio server (`bun run 
 The Worker uses the repository’s pinned compatibility date (`2024-10-20`) to keep WebSocket support consistent with `wrangler.toml` and the deployment snippets in `docs/DEPLOYMENT.md`.
 
 ```toml
-name = "stim-webtoys-mcp"
+name = "stims"
 main = "scripts/mcp-worker.ts"
 compatibility_date = "2024-10-20"
 workers_dev = true
@@ -97,11 +97,12 @@ compatibility_flags = ["nodejs_compat"]
 ### Deploying
 
 1. Install dependencies (`bun install`), ensuring `@cfworker/json-schema` is available for the Worker build.
-2. Deploy with Wrangler:
+2. Keep Worker naming aligned with `wrangler.toml` unless you intentionally override `--name` for a separate environment.
+3. Deploy with Wrangler:
    ```bash
    bunx wrangler deploy scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
    ```
-3. Local preview (Worker fetch + WebSocket support):
+4. Local preview (Worker fetch + WebSocket support):
    ```bash
    bunx wrangler dev scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
    ```
