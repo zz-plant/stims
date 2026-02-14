@@ -604,7 +604,8 @@ export function start({ container }: ToyStartOptions = {}) {
     plugins: [
       {
         name: 'bioluminescent-tidepools',
-        setup: () => {
+        setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
           setupSettingsPanel();
           initializeScene();
           applyPalette(activePaletteIndex);

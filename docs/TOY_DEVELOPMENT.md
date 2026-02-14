@@ -83,7 +83,7 @@ Use the scaffold script whenever possible; it wires up metadata, docs, and optio
 7. **Manual spot-checks**:
    - Confirm the Back to Library control returns to the grid and removes your DOM nodes (cleanup).
    - Verify microphone permission flows (granted, denied, and sample-audio fallback) if you request audio.
-   - For WebGPU toys, confirm the fallback/warning screen appears on non-WebGPU browsers.
+   - For WebGPU toys, test both a WebGPU-capable browser (desktop or mobile) and a non-WebGPU browser. The runtime now probes `navigator.gpu` directly instead of blocking WebGPU by user-agent, so capable mobile devices should use WebGPU.
 
 8. **Document any special controls** inside your module (inline comments) or in a short note in `README.md` if they differ from other toys.
 

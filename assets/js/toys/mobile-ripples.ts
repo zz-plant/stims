@@ -173,7 +173,8 @@ export function start({ container }: ToyStartOptions = {}) {
     plugins: [
       {
         name: 'mobile-ripples',
-        setup: () => {
+        setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
           setupSettingsPanel();
           rebuildRings();
         },

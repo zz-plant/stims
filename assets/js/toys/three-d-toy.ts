@@ -376,6 +376,7 @@ export function start({ container }: ToyStartOptions = {}) {
       {
         name: 'three-d-toy',
         setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
           setupSettingsPanel();
           const controlPanel = createControlPanel();
           controlState = controlPanel.getState();

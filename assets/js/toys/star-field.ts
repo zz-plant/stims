@@ -400,7 +400,8 @@ export function start({ container }: ToyStartOptions = {}) {
     plugins: [
       {
         name: 'star-field',
-        setup: () => {
+        setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
           setupSettingsPanel();
           starField = createStarField();
           createNebula();
