@@ -446,7 +446,40 @@ async function fileExists(targetPath: string) {
 }
 
 function moduleTemplate() {
-  return `import { initRenderer } from '../core/renderer';\nimport { createAnalyzer } from '../core/audio';\n\nexport async function start({ canvas, audioContext }) {\n  const { renderer, scene, camera, resize } = initRenderer({ canvas, maxPixelRatio: 2 });\n  const analyzer = await createAnalyzer(audioContext);\n\n  function tick(time) {\n    const { frequency, waveform } = analyzer.sample();\n    void frequency;\n    void waveform;\n    void time;\n\n    renderer.render(scene, camera);\n    requestAnimationFrame(tick);\n  }\n\n  resize();\n  requestAnimationFrame(tick);\n\n  return () => {\n    analyzer.dispose?.();\n    renderer.dispose?.();\n  };\n}\n`;
+  return `import type { ToyStartFunction } from '../core/toy-interface';
+import WebToy from '../core/web-toy';
+
+export const start: ToyStartFunction = async ({ container, canvas } = {}) => {
+  const toy = new WebToy({
+    container,
+    canvas,
+    cameraOptions: { position: { x: 0, y: 0, z: 40 } },
+  });
+
+  let frameId = 0;
+  let disposed = false;
+
+  const animate = (time: number) => {
+    if (disposed || !toy.renderer) {
+      return;
+    }
+
+    void time;
+    toy.render();
+    frameId = requestAnimationFrame(animate);
+  };
+
+  frameId = requestAnimationFrame(animate);
+
+  return {
+    dispose: () => {
+      disposed = true;
+      cancelAnimationFrame(frameId);
+      toy.dispose();
+    },
+  };
+};
+`;
 }
 
 const argvPath = process.argv[1] ? path.resolve(process.argv[1]) : '';
