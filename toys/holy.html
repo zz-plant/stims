@@ -192,7 +192,7 @@
     <div id="infoPanel">
       <div class="panel-header">
         <h2>How to Use</h2>
-        <button class="closeButton" onclick="toggleInfoPanel()">×</button>
+        <button id="closeInfoButton" class="closeButton">×</button>
       </div>
       <p>Short on time? Try the basics below.</p>
       <details>
@@ -207,7 +207,7 @@
     <div id="settingsPanel">
       <div class="panel-header">
         <h2>Settings</h2>
-        <button class="closeButton" onclick="toggleSettingsPanel()">×</button>
+        <button id="closeSettingsButton" class="closeButton">×</button>
       </div>
       <div class="slider-container">
         <label for="particleCount"
@@ -343,6 +343,8 @@
       const fullscreenButton = document.getElementById('fullscreenButton');
       const infoPanel = document.getElementById('infoPanel');
       const settingsPanel = document.getElementById('settingsPanel');
+      const closeInfoButton = document.getElementById('closeInfoButton');
+      const closeSettingsButton = document.getElementById('closeSettingsButton');
       const particleCountSlider = document.getElementById('particleCount');
       const particleCountValue = document.getElementById('particleCountValue');
       const shapeDetailSlider = document.getElementById('shapeDetail');
@@ -481,6 +483,8 @@
         infoButton.addEventListener('click', toggleInfoPanel);
         settingsButton.addEventListener('click', toggleSettingsPanel);
         fullscreenButton.addEventListener('click', toggleFullscreen);
+        closeInfoButton?.addEventListener('click', toggleInfoPanel);
+        closeSettingsButton?.addEventListener('click', toggleSettingsPanel);
       }
 
       // Add Lighting to the Scene
