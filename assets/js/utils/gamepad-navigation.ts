@@ -238,6 +238,9 @@ const dispatchEscape = (doc: Document) => {
   doc.dispatchEvent(event);
 };
 
+export const shouldDispatchEscapeFallback = (originKey: string) =>
+  originKey !== 'Escape';
+
 const DIRECTIONAL_KEYS = {
   ArrowUp: 'up',
   ArrowDown: 'down',
@@ -278,6 +281,12 @@ export const initGamepadNavigation = (
   const setActive = () => {
     if (!body.classList.contains(resolved.activeClass)) {
       body.classList.add(resolved.activeClass);
+    }
+  };
+
+  const triggerBackOrEscape = (originKey: string = 'Escape') => {
+    if (!triggerBackAction(doc) && shouldDispatchEscapeFallback(originKey)) {
+      dispatchEscape(doc);
     }
   };
 
@@ -358,9 +367,7 @@ export const initGamepadNavigation = (
 
     if (bPressed) {
       setActive();
-      if (!triggerBackAction(doc)) {
-        dispatchEscape(doc);
-      }
+      triggerBackOrEscape('GamepadB');
     }
 
     if (leftBumper) {
@@ -417,9 +424,7 @@ export const initGamepadNavigation = (
 
     if (BACK_KEYS.has(event.key)) {
       setActive();
-      if (!triggerBackAction(doc)) {
-        dispatchEscape(doc);
-      }
+      triggerBackOrEscape(event.key);
       event.preventDefault();
     }
   };
