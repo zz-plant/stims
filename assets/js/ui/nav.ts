@@ -37,14 +37,6 @@ type ToyNavContainer = HTMLElement & {
   __libraryNavCleanup?: () => void;
 };
 
-const TOY_MICRO_CHALLENGES = [
-  'Tap around the scene and find your favorite rhythm pocket.',
-  'Try both microphone and demo audio, then compare the mood shift.',
-  'Hit Next stim and see which toy surprises you most.',
-  'Push intensity up, then dial it back to find your sweet spot.',
-  'Switch to picture-in-picture and keep the visuals ambient while multitasking.',
-];
-
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (match) => {
     switch (match) {
@@ -246,10 +238,6 @@ function renderToyNav(
   const hintText = isMobileDevice()
     ? 'Swipe or tap Back to return to the library.'
     : 'Press Esc or use Back to return to the library.';
-  const randomChallenge =
-    TOY_MICRO_CHALLENGES[
-      Math.floor(Math.random() * TOY_MICRO_CHALLENGES.length)
-    ] ?? TOY_MICRO_CHALLENGES[0];
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
@@ -298,12 +286,6 @@ function renderToyNav(
             </div>`
           : ''
       }
-      <div class="toy-nav__challenge-wrapper">
-        <button type="button" class="toy-nav__challenge" data-challenge-refresh="true">
-          New mini challenge
-        </button>
-        <span class="toy-nav__challenge-status" role="status" aria-live="polite">${escapeHtml(randomChallenge)}</span>
-      </div>
       <div class="toy-nav__pip-wrapper">
         <button type="button" class="toy-nav__pip" data-toy-pip="true" aria-pressed="false">
           Picture in picture
@@ -400,12 +382,6 @@ function renderToyNav(
   const nextStatus = container.querySelector(
     '.toy-nav__next-status',
   ) as HTMLElement | null;
-  const challengeBtn = container.querySelector(
-    '.toy-nav__challenge',
-  ) as HTMLButtonElement | null;
-  const challengeStatus = container.querySelector(
-    '.toy-nav__challenge-status',
-  ) as HTMLElement | null;
   let hapticsActive = Boolean(options.hapticsActive);
   const hapticsBtn = container.querySelector(
     '[data-haptics-toggle="true"]',
@@ -413,16 +389,6 @@ function renderToyNav(
   const hapticsStatus = container.querySelector(
     '[data-haptics-status]',
   ) as HTMLElement | null;
-
-  challengeBtn?.addEventListener('click', () => {
-    const nextChallenge =
-      TOY_MICRO_CHALLENGES[
-        Math.floor(Math.random() * TOY_MICRO_CHALLENGES.length)
-      ] ?? TOY_MICRO_CHALLENGES[0];
-    if (challengeStatus) {
-      challengeStatus.textContent = nextChallenge;
-    }
-  });
 
   const showShareStatus = (message: string) => {
     if (!shareStatus) return;

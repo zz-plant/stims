@@ -1134,7 +1134,6 @@ export function createLibraryView({
   themeToggleId = 'theme-toggle',
 } = {}) {
   const STORAGE_KEY = 'stims-library-state';
-  const ENGAGEMENT_KEY = 'stims-engagement-state';
   const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
   const QUERY_PARAM = 'q';
   const FILTER_PARAM = 'filters';
@@ -1155,133 +1154,6 @@ export function createLibraryView({
   let activeFiltersChips;
   let activeFiltersClear;
   const activeFilters = new Set();
-
-  const toDateKey = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const shiftDateKey = (dateKey, amount) => {
-    const [year, month, day] = dateKey.split('-').map(Number);
-    if (![year, month, day].every(Number.isFinite)) return null;
-    const shifted = new Date(year, month - 1, day);
-    shifted.setDate(shifted.getDate() + amount);
-    return toDateKey(shifted);
-  };
-
-  const getTodayKey = () => toDateKey(new Date());
-
-  const readEngagementState = () => {
-    try {
-      const raw = window.localStorage.getItem(ENGAGEMENT_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== 'object') return null;
-      return parsed;
-    } catch (_error) {
-      return null;
-    }
-  };
-
-  const saveEngagementState = (state) => {
-    try {
-      window.localStorage.setItem(ENGAGEMENT_KEY, JSON.stringify(state));
-    } catch (_error) {
-      // Ignore storage access issues.
-    }
-  };
-
-  const recordToyLaunch = (toy) => {
-    const current = readEngagementState() ?? {
-      streak: 0,
-    };
-    const today = getTodayKey();
-    const yesterday = shiftDateKey(today, -1);
-
-    let streak = Number.isFinite(current.streak) ? current.streak : 0;
-    if (current.lastActiveDay !== today) {
-      if (current.lastActiveDay && current.lastActiveDay === yesterday) {
-        streak += 1;
-      } else {
-        streak = 1;
-      }
-    }
-
-    const nextState = {
-      ...current,
-      streak,
-      lastActiveDay: today,
-      lastPlayedSlug: toy.slug,
-      lastPlayedTitle: toy.title,
-      lastPlayedAt: new Date().toISOString(),
-    };
-    saveEngagementState(nextState);
-  };
-
-  const resolveDailyToy = () => {
-    if (!allToys.length) return null;
-    const dayIndex = Math.floor(Date.now() / 86400000);
-    const safeIndex =
-      ((dayIndex % allToys.length) + allToys.length) % allToys.length;
-    return allToys[safeIndex] ?? null;
-  };
-
-  const updateDailyEngagement = () => {
-    const container = document.querySelector('[data-daily-engagement]');
-    if (!(container instanceof HTMLElement)) return;
-
-    const streakCount = container.querySelector('[data-daily-streak-count]');
-    const streakCopy = container.querySelector('[data-daily-streak-copy]');
-    const dailyAction = container.querySelector('[data-daily-pick-action]');
-    const recentAction = container.querySelector('[data-recent-pick-action]');
-    const dailyLabel = container.querySelector('[data-daily-pick-label]');
-
-    const state = readEngagementState();
-    const streak = Number.isFinite(state?.streak) ? Number(state.streak) : 0;
-
-    if (streakCount) {
-      streakCount.textContent =
-        streak > 0 ? `${streak}-day streak` : 'Start your streak';
-    }
-    if (streakCopy) {
-      streakCopy.textContent =
-        streak > 0
-          ? 'Keep the momentum by opening one stim today.'
-          : 'Open one stim each day.';
-    }
-
-    const dailyToy = resolveDailyToy();
-    if (dailyAction && dailyToy) {
-      dailyAction.textContent = `Play today’s pick: ${dailyToy.title}`;
-      dailyAction.onclick = () =>
-        openToy(dailyToy, {
-          preferDemoAudio: Boolean(dailyToy.capabilities?.demoAudio),
-        });
-    }
-
-    if (dailyLabel) {
-      dailyLabel.textContent = dailyToy
-        ? `Today's focus toy: ${dailyToy.title}.`
-        : 'Daily pick updates each day.';
-    }
-
-    const recentToy = allToys.find((toy) => toy.slug === state?.lastPlayedSlug);
-    if (recentAction) {
-      if (recentToy) {
-        recentAction.hidden = false;
-        recentAction.textContent = `Continue: ${recentToy.title}`;
-        recentAction.onclick = () =>
-          openToy(recentToy, {
-            preferDemoAudio: Boolean(recentToy.capabilities?.demoAudio),
-          });
-      } else {
-        recentAction.hidden = true;
-        recentAction.onclick = null;
-      }
-    }
-  };
 
   const ensureMetaNode = () => {
     if (!resultsMeta) {
@@ -1910,8 +1782,6 @@ export function createLibraryView({
   };
 
   const openToy = (toy, { preferDemoAudio = false } = {}) => {
-    recordToyLaunch(toy);
-    updateDailyEngagement();
     if (toy.type === 'module' && typeof loadToy === 'function') {
       loadToy(toy.slug, { pushState: true, preferDemoAudio });
     } else if (toy.module) {
@@ -2589,7 +2459,6 @@ export function createLibraryView({
     }
 
     renderToys(applyFilters());
-    updateDailyEngagement();
 
     if (enableDarkModeToggle) {
       setupDarkModeToggle(themeToggleId);
