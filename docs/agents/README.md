@@ -21,7 +21,8 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 ### Documentation or metadata changes
 
 - [`metadata-and-docs.md`](./metadata-and-docs.md)
-- [`../README.md`](../README.md)
+- [`../README.md`](../README.md) (canonical docs index)
+- [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) (docs synchronization contract for add/move/rename/delete changes)
 
 ## Fast repo map
 

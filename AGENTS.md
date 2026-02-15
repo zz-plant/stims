@@ -14,10 +14,9 @@ Stim Webtoys Library is a collection of interactive, audio-reactive web toys bui
 1. Open [`docs/agents/README.md`](./docs/agents/README.md) for progressive-disclosure guidance.
 2. Use [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md) before editing code.
 3. Use [`docs/agents/metadata-and-docs.md`](./docs/agents/metadata-and-docs.md) before finalizing commit/PR text.
-4. Use [`docs/README.md`](./docs/README.md) to keep contributor-facing links aligned if docs move.
+4. Use [`docs/README.md`](./docs/README.md) as the canonical docs index when restructuring or relocating docs.
+5. Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) for cross-link and workflow-doc synchronization requirements.
 
 ## Alignment requirements
 
-- Keep links between `AGENTS.md`, `CONTRIBUTING.md`, and `docs/README.md` in sync when restructuring docs.
-- If you add or rename scripts, update both `docs/DEVELOPMENT.md` and agent overlays that mention those scripts.
-- If you add or rename toys, update `docs/TOY_DEVELOPMENT.md`, `docs/TOY_SCRIPT_INDEX.md`, and `docs/toys.md` in the same change.
+- Keep links and workflow docs aligned according to [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md).

@@ -79,14 +79,10 @@ Use these commands before opening a PR:
 
 ## Documentation expectations
 
-When workflows or structure change, update docs in the same PR (including deployment-track guidance in `docs/DEPLOYMENT.md` when release flow changes):
+When workflows or structure change, update docs in the same PR (including deployment-track guidance in `docs/DEPLOYMENT.md` when release flow changes).
 
-- Start from [`docs/README.md`](./docs/README.md) (docs map by audience + purpose).
-- Keep contributor and agent entry points aligned:
-  - [`README.md`](./README.md)
-  - [`CONTRIBUTING.md`](./CONTRIBUTING.md)
-  - [`AGENTS.md`](./AGENTS.md)
-  - [`docs/agents/README.md`](./docs/agents/README.md)
+- Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) as the canonical docs synchronization contract.
+- Treat [`docs/README.md`](./docs/README.md) as the canonical docs index and update it whenever docs are added, renamed, moved, or deleted.
 
 ## Toy-specific changes
 
