@@ -26,10 +26,6 @@ describe('library filter state normalization', () => {
     window.localStorage.clear();
 
     document.body.innerHTML = `
-      <input id="toy-search" />
-      <form data-search-form></form>
-      <button data-search-clear type="button">Clear</button>
-      <datalist id="toy-search-suggestions"></datalist>
       <p data-search-results></p>
       <div data-active-filters hidden>
         <div data-active-filters-chips></div>
@@ -52,7 +48,6 @@ describe('library filter state normalization', () => {
 
     const view = createLibraryView({
       toys,
-      searchInputId: 'toy-search',
     });
 
     await view.init();
