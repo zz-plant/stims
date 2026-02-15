@@ -66,11 +66,12 @@ Use the scaffold script whenever possible; it wires up metadata, docs, and optio
    ```bash
    bun run scripts/scaffold-toy.ts --slug pocket-pulse --title "Pocket Pulse" --type module --with-test
    ```
-   The script creates `assets/js/toys/<slug>.ts`, appends the metadata entry in `assets/data/toys.json`, updates `docs/TOY_SCRIPT_INDEX.md`, and generates a minimal test in `tests/`.
+   The script creates `assets/js/toys/<slug>.ts` with a typed `ToyStartFunction` + `WebToy` cleanup starter, appends the metadata entry in `assets/data/toys.json`, updates `docs/TOY_SCRIPT_INDEX.md`, and generates a minimal test in `tests/`. After scaffolding, add a short entry to `docs/toys.md` so contributor notes cover the new stim.
 3. **Manual alternative** (if you skipped the scaffold):
    - Create `assets/js/toys/<slug>.ts` and export `start({ container, canvas?, audioContext? })`.
    - Add the entry to `assets/data/toys.json` (include `title`, `description`, `module`, `type`, and any `lifecycleStage` metadata).
    - Add the slug row to `docs/TOY_SCRIPT_INDEX.md` so the loader docs stay in sync.
+   - Add a short section to `docs/toys.md` with any controls/preset notes worth preserving for future contributors.
    - Create `toys/<slug>.html` only if the toy uses a standalone page.
 4. **Wire the runtime**: use `createToyRuntimeStarter` or `createToyRuntime` so audio, renderer, input, and settings panel behavior matches the rest of the library. Keep all DOM work scoped to the provided `container`.
 5. **Verify locally**: run `bun run dev` and load `http://localhost:5173/toy.html?toy=<slug>` to confirm the new card loads, starts audio, and cleans up on exit.
