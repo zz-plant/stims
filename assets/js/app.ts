@@ -2,6 +2,7 @@ import { initAgentAPI } from './core/agent-api.ts';
 import {
   attachCapabilityPreflight,
   type CapabilityPreflightResult,
+  PREFLIGHT_SESSION_DISMISS_KEY,
 } from './core/capability-preflight.ts';
 import { setRendererTelemetryHandler } from './core/renderer-capabilities.ts';
 import { startToyAudioFromSource } from './core/toy-audio-startup.ts';
@@ -231,25 +232,35 @@ const startApp = async () => {
     const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
     document.title = toySlug ? `${toyTitle} · Stim Webtoy` : document.title;
 
-    attachCapabilityPreflight({
+    const shouldSkipPreflightForSession = (() => {
+      try {
+        return (
+          window.sessionStorage.getItem(PREFLIGHT_SESSION_DISMISS_KEY) === '1'
+        );
+      } catch (_error) {
+        return false;
+      }
+    })();
+
+    const handlePreflightReady = (result: CapabilityPreflightResult) => {
+      if (!result.canProceed) return;
+      startLoaderIfNeeded();
+      setupAudio(result);
+      setupSystemControls();
+    };
+
+    const preflight = attachCapabilityPreflight({
       heading: 'Quick check',
       backHref: router.getLibraryHref(),
-      onComplete: (result) => {
-        if (result.canProceed) {
-          startLoaderIfNeeded();
-          setupAudio(result);
-          setupSystemControls();
-        }
-      },
-      onRetry: (result) => {
-        if (result.canProceed) {
-          startLoaderIfNeeded();
-          setupAudio(result);
-          setupSystemControls();
-        }
-      },
+      openOnAttach: !shouldSkipPreflightForSession,
+      onComplete: handlePreflightReady,
+      onRetry: handlePreflightReady,
       host: document.body,
     });
+
+    if (shouldSkipPreflightForSession) {
+      void preflight.run().then(handlePreflightReady);
+    }
 
     window.addEventListener('pagehide', () => {
       // Cleanup if needed
