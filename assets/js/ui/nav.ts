@@ -20,10 +20,6 @@ export interface NavOptions {
   onBack?: () => void;
   onShare?: () => void;
   onNextToy?: () => void | Promise<void>;
-  onToggleFlow?: (active: boolean) => void;
-  flowActive?: boolean;
-  onTogglePartyMode?: (active: boolean) => void;
-  partyModeActive?: boolean;
   onToggleHaptics?: (active: boolean) => void;
   hapticsActive?: boolean;
   hapticsSupported?: boolean;

@@ -269,7 +269,6 @@ export function createLoader({
 
   const setFlowActive = (active: boolean) => {
     flowActive = active;
-    view?.setFlowState?.(flowActive);
     if (!flowActive) {
       flowCycleCount = 0;
       clearFlowTimer();
@@ -283,7 +282,6 @@ export function createLoader({
   const setPartyModeActive = (active: boolean) => {
     partyModeActive = active;
     applyPartyMode({ enabled: active });
-    view?.setPartyModeState?.(active);
   };
 
   const setHapticsEnabled = (enabled: boolean) => {
@@ -431,10 +429,6 @@ export function createLoader({
 
     const container = view.showActiveToyView(backToLibrary, toy, {
       onNextToy: handleNextToy,
-      onToggleFlow: (active) => setFlowActive(active),
-      flowActive,
-      onTogglePartyMode: (active) => setPartyModeActive(active),
-      partyModeActive,
       onToggleHaptics: (active) => setHapticsEnabled(active),
       hapticsActive: hapticsEnabled,
       hapticsSupported: canUseHaptics(),
