@@ -61,6 +61,9 @@ export function start({ container }: ToyStartOptions = {}) {
   let beatEnergy = 0;
   let interactionEnergy = 0;
   let touchPulse = 0;
+  let spectralFlux = 0;
+  let previousBass = 0;
+  let previousTreble = 0;
   let lastCentroid = { x: 0, y: 0 };
   let lastInputTime = 0;
 
@@ -144,8 +147,21 @@ export function start({ container }: ToyStartOptions = {}) {
     const bass = getBandAverage(data, 0, 0.28) / 255;
     const mids = getBandAverage(data, 0.28, 0.7) / 255;
     const treble = getBandAverage(data, 0.7, 1) / 255;
+    const bassRise = Math.max(0, bass - previousBass);
+    const trebleRise = Math.max(0, treble - previousTreble);
+    previousBass = bass;
+    previousTreble = treble;
+
+    spectralFlux = Math.max(
+      0,
+      spectralFlux * 0.78 + bassRise * 2.3 + trebleRise * 1.9,
+    );
+
     const kick = Math.max(0, bass - 0.18);
-    beatEnergy = Math.max(kick * 1.4, beatEnergy * 0.88);
+    beatEnergy = Math.max(
+      kick * 1.4 + spectralFlux * 0.6,
+      beatEnergy * (0.82 - Math.min(0.12, bassRise * 0.9)),
+    );
     const deltaSeconds = Math.max(0.001, (input?.deltaMs ?? 16) / 1000);
     const normalizedCentroid = input?.normalizedCentroid ?? { x: 0, y: 0 };
     const centroidDelta = Math.hypot(
@@ -168,21 +184,31 @@ export function start({ container }: ToyStartOptions = {}) {
     }
     touchPulse = Math.max(0, touchPulse - deltaSeconds * 1.4);
 
-    const motionBoost = Math.min(1.2, centroidDelta * 9);
+    const motionBoost = Math.min(1.5, centroidDelta * (8.5 + treble * 3));
     const interactionTarget =
-      (input?.isPressed ? 0.6 : 0) + motionBoost + bass * 0.35;
+      (input?.isPressed ? 0.7 : 0) +
+      motionBoost +
+      bass * 0.3 +
+      trebleRise * 1.5 +
+      spectralFlux * 0.3;
     interactionEnergy = Math.min(
       1.6,
       Math.max(interactionTarget, interactionEnergy - deltaSeconds * 0.6),
     );
 
     const pulse =
-      0.75 + bass * 1.2 + beatEnergy * 0.6 + interactionEnergy * 0.45;
-    const swirl = time * (0.35 + mids * 0.4 + interactionEnergy * 0.3);
+      0.74 +
+      bass * 1.15 +
+      beatEnergy * 0.62 +
+      interactionEnergy * 0.45 +
+      spectralFlux * 0.35;
+    const swirl =
+      time *
+      (0.35 + mids * 0.45 + interactionEnergy * 0.3 + spectralFlux * 0.18);
 
     const offsetX = normalizedCentroid.x * (5.5 + interactionEnergy * 2.6);
     const offsetY = normalizedCentroid.y * (4.2 + interactionEnergy * 2.1);
-    const kickLift = beatEnergy * 3.2 + touchPulse * 2.6;
+    const kickLift = beatEnergy * 3.3 + touchPulse * 2.6 + spectralFlux * 1.8;
 
     const positionAttribute = geometry.getAttribute(
       'position',
@@ -194,12 +220,13 @@ export function start({ container }: ToyStartOptions = {}) {
       const baseY = basePositions[i + 1];
       const baseZ = basePositions[i + 2];
       const wobble =
-        Math.sin(swirl + baseZ * 0.08 + baseX * 0.04) * (0.6 + treble);
+        Math.sin(swirl + baseZ * 0.08 + baseX * 0.04) *
+        (0.6 + treble + spectralFlux * 0.35);
       const lift = Math.cos(swirl * 0.7 + baseY * 0.05) * (0.4 + mids);
       const ripple = Math.sin(time * 3.4 + baseZ * 0.24) * kickLift;
       const shimmer =
-        Math.sin(time * 1.8 + baseX * 0.12 + baseY * 0.08) *
-        (0.4 + interactionEnergy);
+        Math.sin(time * (1.8 + trebleRise * 7) + baseX * 0.12 + baseY * 0.08) *
+        (0.4 + interactionEnergy + spectralFlux * 0.2);
 
       positions[i] = baseX * pulse + offsetX + wobble + ripple * 0.2;
       positions[i + 1] = baseY * pulse + offsetY + lift + ripple * 0.2;
@@ -217,13 +244,18 @@ export function start({ container }: ToyStartOptions = {}) {
       1;
     material.color.setHSL(hue, palette.saturation, 0.55 + avg * 0.25);
     material.opacity =
-      0.55 + avg * 0.3 + beatEnergy * 0.25 + interactionEnergy * 0.18;
+      0.52 +
+      avg * 0.3 +
+      beatEnergy * 0.24 +
+      interactionEnergy * 0.18 +
+      spectralFlux * 0.15;
     material.size =
       activeSize *
       (0.68 +
         treble * 0.9 +
         beatEnergy * 0.35 +
         interactionEnergy * 0.35 +
+        spectralFlux * 0.22 +
         touchPulse * 0.2);
 
     points.rotation.z = time * 0.12;
