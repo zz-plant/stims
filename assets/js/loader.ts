@@ -5,7 +5,10 @@ import {
   resetAudioPool,
 } from './core/services/audio-service.ts';
 import { prewarmRendererCapabilities } from './core/services/render-service.ts';
-
+import {
+  ensureToyAudioStarter,
+  startToyAudioFromSource,
+} from './core/toy-audio-startup.ts';
 import { assessToyCapabilities } from './core/toy-capabilities.ts';
 import type { ToyWindow } from './core/toy-globals';
 import {
@@ -27,8 +30,6 @@ type Toy = ToyEntry;
 const TOY_QUERY_PARAM = 'toy';
 const LIBRARY_FILTER_PARAM = 'filters';
 const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
-const STARTER_POLL_DELAY_MS = 100;
-const STARTER_POLL_ATTEMPTS = 30;
 const FLOW_WARMUP_INTERVAL_MS = 60000;
 const FLOW_ENGAGED_INTERVAL_MS = 90000;
 const FLOW_IDLE_INTERVAL_MS = 120000;
@@ -63,30 +64,6 @@ export function getFlowIntervalMs({
 
   return FLOW_IDLE_INTERVAL_MS;
 }
-
-const waitForAudioStarter = async (
-  getStarter: () => ToyWindow['startAudio'] | ToyWindow['startAudioFallback'],
-  errorMessage: string,
-) => {
-  let starter = getStarter();
-  if (typeof starter !== 'function') {
-    for (let i = 0; i < STARTER_POLL_ATTEMPTS; i++) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, STARTER_POLL_DELAY_MS),
-      );
-      starter = getStarter();
-      if (typeof starter === 'function') {
-        break;
-      }
-    }
-  }
-
-  if (typeof starter !== 'function') {
-    throw new Error(errorMessage);
-  }
-
-  return starter;
-};
 
 // createLoader orchestrates routing/navigation, renderer capability checks,
 // module resolution/import, view updates, and lifecycle management.
@@ -506,10 +483,7 @@ export function createLoader({
         window) as unknown as ToyWindow;
       const setupAudioPrompt = async () => {
         try {
-          await waitForAudioStarter(
-            () => win.startAudioFallback ?? win.startAudio,
-            'Audio starter unavailable.',
-          );
+          await ensureToyAudioStarter(win);
         } catch (_error) {
           return;
         }
@@ -523,23 +497,11 @@ export function createLoader({
           ],
           onRequestMicrophone: async () => {
             lastAudioSource = 'microphone';
-            const starter = await waitForAudioStarter(
-              () => win.startAudio,
-              'Microphone starter unavailable.',
-            );
-            await starter('microphone');
+            await startToyAudioFromSource(win, { source: 'microphone' });
           },
           onRequestDemoAudio: async () => {
             lastAudioSource = 'demo';
-            const fallbackStarter = await waitForAudioStarter(
-              () => win.startAudioFallback ?? win.startAudio,
-              'Demo audio unavailable.',
-            );
-            if (typeof win.startAudioFallback === 'function') {
-              await win.startAudioFallback();
-              return;
-            }
-            await fallbackStarter('sample');
+            await startToyAudioFromSource(win, { source: 'demo' });
           },
           onSuccess: () => {
             view.showAudioPrompt(false);

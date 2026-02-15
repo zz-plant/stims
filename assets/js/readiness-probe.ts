@@ -1,4 +1,4 @@
-import { getRenderingSupport } from './utils/rendering-support';
+import { getRenderingSupport } from './core/renderer-capabilities';
 
 const STATUS = {
   success: 'success',

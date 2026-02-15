@@ -4,8 +4,8 @@ This document summarizes how the Stim Webtoys app is assembled, from the entry H
 
 ## Architecture at a Glance
 
-- **Entry shells** (`toy.html`, `holy.html`) are thin HTML pages that bootstrap the runtime and pass a `toy=<slug>` query param.
-- **Loader orchestration** (`assets/js/loader.ts`, `assets/js/router.ts`) owns navigation, lifecycle boundaries, and loader state.
+- **Entry shells** (`toy.html`, `toys/*.html`) are thin HTML pages that bootstrap `assets/js/app.ts`; toy shells pass a `toy=<slug>` query param, while `index.html` boots the library shell.
+- **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
 - **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
 - **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.
 - **Toy modules** (`assets/js/toys/*.ts`) provide toy-specific scenes and a cleanup hook (`dispose`) that the loader can call safely.
@@ -21,11 +21,13 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 ## Runtime Layers
 
-- **HTML entry points** (`toy.html`, `holy.html`, etc.) load the bundled shell and pass query params like `?toy=<slug>`.
-- **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, and the active toy lifecycle.
+- **HTML entry points** (`index.html`, `toy.html`, `toys/*.html`) load `assets/js/app.ts`; toy pages provide `?toy=<slug>` query params.
+- **App bootstrap** (`assets/js/app.ts`) detects library vs toy pages, wires controls, runs capability preflight, and starts loader flows.
+- **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, active toy lifecycle, and dynamic module loading.
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
 - **Manifest resolution** (`assets/js/utils/manifest-client.ts`) maps logical module paths to the correct dev/build URLs for dynamic `import()`.
 - **Core runtime** (`assets/js/core/*`) initializes the scene, camera, renderer (WebGPU or WebGL), audio pipeline, quality controls, and handles linting/formatting via **Biome**. Helpers such as `animation-loop.ts`, `settings-panel.ts`, and `iframe-quality-sync.ts` manage per-frame work and preset propagation.
+- **Capability + startup contracts** (`assets/js/core/renderer-capabilities.ts`, `assets/js/core/capability-preflight.ts`, `assets/js/core/toy-audio-startup.ts`) provide the unified rendering-support probe and typed toy-audio start flow used by both `app.ts` and `loader.ts`.
 - **Shared services** (`assets/js/core/services/*`) pool renderers and microphone streams so toys can hand off resources without re-allocating (and re-prompting for mic access).
 - **Toys** (`assets/js/toys/*.ts`) compose the core primitives, export a `start` entry, and provide a cleanup hook (commonly via `dispose`).
 
@@ -33,7 +35,8 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 | Concern | Primary files | Notes |
 | --- | --- | --- |
-| Entry points | `toy.html`, `holy.html`, `index.html` | HTML shells are intentionally slim; logic starts in loader/router. |
+| Entry points | `index.html`, `toy.html`, `toys/*.html` | HTML shells are intentionally slim; runtime logic starts in `app.ts`. |
+| App bootstrap | `assets/js/app.ts` | Chooses library vs toy boot flow, connects controls, and runs capability preflight before toy start. |
 | Loader + routing | `assets/js/loader.ts`, `assets/js/router.ts` | Navigation, lifecycle, and dynamic imports live here. |
 | Views | `assets/js/toy-view.ts`, `assets/js/library-view.js` | UI for the library grid, toy container, loading, and error states. |
 | Core runtime | `assets/js/core/web-toy.ts` + `assets/js/core/*` | Rendering, audio, settings, and the animation loop. |
@@ -46,10 +49,16 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 ```mermaid
 flowchart TD
   Entry[HTML shell
-  toy.html, holy.html...] --> Loader[loader.ts
+  index.html, toy.html, toys/*.html] --> App[app.ts
+  startApp()]
+  App --> Loader[loader.ts
   createLoader()]
   Loader --> Router[router.ts
   query param sync]
+  App --> Preflight[capability-preflight.ts
+  gate/start hints]
+  App --> Controls[ui/audio-controls.ts
+  ui/system-controls.ts]
   Loader --> Views[toy-view.ts /
   library-view.js]
   Loader --> Manifest[manifest-client.ts
@@ -64,7 +73,51 @@ flowchart TD
   WebToy --> Settings[settings-panel.ts
   iframe-quality-sync.ts]
   Views -->|back/escape| Loader
+  Preflight --> Loader
+  Controls --> Loader
 ```
+
+## Documentation verification status
+
+Last verified against the current runtime structure: **2026-02-15**.
+
+Verification checks performed:
+
+- Confirmed active entry pages are `index.html`, `toy.html`, and `toys/*.html` and that they bootstrap `assets/js/app.ts`.
+- Confirmed runtime boot orchestration now starts in `assets/js/app.ts`, which then initializes loader/router plus capability and control wiring.
+- Confirmed architecture-critical modules documented here still exist (`loader.ts`, `router.ts`, `toy-view.ts`, `core/*`, and `core/services/*`).
+
+## Priority architecture changes (proposal)
+
+These are the highest-value architecture changes to reduce drift, lower onboarding cost, and improve runtime predictability.
+
+### P0 — Consolidate startup and capability surfaces
+
+Status: ✅ Implemented in code (`renderer-capabilities` now owns rendering support detection, and `toy-audio-startup` centralizes toy audio start orchestration).
+
+- **Unify rendering/capability entry points** by converging `utils/rendering-support.ts`, `utils/webgl-check.ts`, and capability preflight usage into a single core-facing API (owned by `core/capability-preflight.ts` + `core/renderer-capabilities.ts`).
+- **Define one startup contract** from `app.ts` → `loader.ts` → toy module start/dispose so all toy flows (mic/demo/tab/YouTube) follow the same typed path.
+- **Why first:** startup paths are currently split across `app.ts`, loader helpers, and utility wrappers, which increases regression risk whenever permission or renderer logic changes.
+
+### P1 — Clarify core vs utils boundaries
+
+Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option resolution, and `startToyAudio` now live in `assets/js/core/toy-audio.ts`; `utils/audio-start.ts` and `utils/start-audio.ts` remain compatibility re-exports).
+
+- **Promote runtime-critical utilities into `core/`** (or create a documented `runtime/` namespace) so ownership is obvious for long-lived services.
+- **Keep `utils/` for leaf helpers only** (pure helpers/UI convenience code) and avoid placing lifecycle-critical modules there.
+- **Why next:** current cross-import patterns (`core/*` depending on `utils/*` for startup/audio/types) make architecture intent harder to reason about for contributors.
+
+### P2 — Shrink shell and toy entry fragmentation
+
+- **Standardize shell responsibilities** across `index.html`, `toy.html`, and `toys/*.html` with a single documented shell contract and minimal per-page variation.
+- **Document generated/static page boundaries** (`public/toys/*` and capability/tag/mood pages) so contributors know which entry points are authoritative vs generated artifacts.
+- **Why this matters:** reducing entry ambiguity helps avoid accidental fixes in generated or non-authoritative pages.
+
+### Cross-cutting implementation guardrails
+
+- Add an explicit “runtime ownership map” in this doc (`app`, `loader`, `core`, `utils`, `ui`) with allowed dependency directions.
+- Introduce architecture lint checks (import-boundary rules) to enforce the intended layering over time.
+- Track migration progress with a small checklist in `docs/FULL_REFACTOR_PLAN.md` so architecture updates stay visible across PRs.
 
 ### Loader lifecycle
 

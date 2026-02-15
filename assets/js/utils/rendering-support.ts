@@ -1,15 +1,9 @@
-import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
+import {
+  getRenderingSupport as getCoreRenderingSupport,
+  type RenderingSupport,
+} from '../core/renderer-capabilities.ts';
 
-export type RenderingSupport = {
-  hasWebGPU: boolean;
-  hasWebGL: boolean;
-};
+export type { RenderingSupport };
 
-export const getRenderingSupport = (): RenderingSupport => {
-  const hasWebGPU = typeof navigator !== 'undefined' && Boolean(navigator.gpu);
-  const hasWebGL =
-    typeof WebGL !== 'undefined' &&
-    (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
-
-  return { hasWebGPU, hasWebGL: Boolean(hasWebGL) };
-};
+export const getRenderingSupport = (): RenderingSupport =>
+  getCoreRenderingSupport();

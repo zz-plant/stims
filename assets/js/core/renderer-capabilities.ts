@@ -1,5 +1,7 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
+import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
+
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 
 export type RendererBackend = 'webgl' | 'webgpu';
@@ -24,6 +26,11 @@ export type RendererTelemetryHandler = (
   event: 'renderer_capabilities',
   detail: RendererTelemetryEvent,
 ) => void;
+
+export type RenderingSupport = {
+  hasWebGPU: boolean;
+  hasWebGL: boolean;
+};
 
 type FallbackOptions = {
   triedWebGPU?: boolean;
@@ -82,6 +89,20 @@ function resetCache() {
   capabilitiesPromise = null;
   cachedCapabilities = null;
   telemetryReportedKey = null;
+}
+
+export function getRenderingSupport(): RenderingSupport {
+  const hasWebGPU =
+    typeof navigator !== 'undefined' &&
+    Boolean((navigator as Navigator & { gpu?: GPU }).gpu);
+  const hasWebGL =
+    typeof WebGL !== 'undefined' &&
+    (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
+
+  return {
+    hasWebGPU,
+    hasWebGL: Boolean(hasWebGL),
+  };
 }
 
 async function probeRendererCapabilities(): Promise<RendererCapabilities> {

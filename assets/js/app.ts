@@ -4,6 +4,8 @@ import {
   type CapabilityPreflightResult,
 } from './core/capability-preflight.ts';
 import { setRendererTelemetryHandler } from './core/renderer-capabilities.ts';
+import { startToyAudioFromSource } from './core/toy-audio-startup.ts';
+import type { ToyWindow } from './core/toy-globals';
 import toyManifest from './data/toy-manifest.ts';
 import type { ToyEntry } from './data/toy-schema.ts';
 import { createLibraryView } from './library-view.js';
@@ -144,18 +146,7 @@ const startApp = async () => {
       void loadFromQuery();
     };
 
-    const getStarter = (fallback = false) => {
-      const globalStart = window.startAudio;
-      if (fallback && typeof window.startAudioFallback === 'function') {
-        return window.startAudioFallback;
-      }
-      if (typeof globalStart === 'function') {
-        return async (request: Parameters<typeof globalStart>[0]) => {
-          await globalStart(request);
-        };
-      }
-      return null;
-    };
+    const toyWindow = window as unknown as ToyWindow;
 
     const buildAudioInitState = (result: CapabilityPreflightResult | null) => {
       if (!result) return {};
@@ -204,41 +195,25 @@ const startApp = async () => {
       initAudioControls(audioControlsContainer, {
         onRequestMicrophone: async () => {
           startLoaderIfNeeded();
-          let starter = getStarter();
-          if (!starter) {
-            for (let i = 0; i < 30; i += 1) {
-              await new Promise((resolve) => setTimeout(resolve, 100));
-              starter = getStarter();
-              if (starter) break;
-            }
-          }
-          if (!starter) throw new Error('Microphone starter unavailable.');
-          await starter(false);
+          await startToyAudioFromSource(toyWindow, { source: 'microphone' });
         },
         onRequestDemoAudio: async () => {
           startLoaderIfNeeded();
-          let starter = getStarter(true) ?? getStarter();
-          if (!starter) {
-            for (let i = 0; i < 30; i += 1) {
-              await new Promise((resolve) => setTimeout(resolve, 100));
-              starter = getStarter(true) ?? getStarter();
-              if (starter) break;
-            }
-          }
-          if (!starter) throw new Error('Demo audio unavailable.');
-          await starter(true);
+          await startToyAudioFromSource(toyWindow, { source: 'demo' });
         },
         onRequestYouTubeAudio: async (stream) => {
           startLoaderIfNeeded();
-          const starter = getStarter();
-          if (!starter) throw new Error('Audio starter unavailable.');
-          await starter({ stream });
+          await startToyAudioFromSource(toyWindow, {
+            source: 'youtube',
+            stream,
+          });
         },
         onRequestTabAudio: async (stream) => {
           startLoaderIfNeeded();
-          const starter = getStarter();
-          if (!starter) throw new Error('Audio starter unavailable.');
-          await starter({ stream });
+          await startToyAudioFromSource(toyWindow, {
+            source: 'tab',
+            stream,
+          });
         },
         starterTips,
         firstRunHint,
