@@ -12,7 +12,7 @@ This document captures the **current, shipped feature set** of the Stim Webtoys 
 | Audio input options | Mic, demo audio, tab capture, and YouTube capture are available. | `assets/js/ui/audio-controls.ts`, `assets/js/ui/youtube-controller.ts` |
 | Renderer fallback | WebGPU preferred with WebGL fallback + compatibility mode. | `assets/js/core/renderer-capabilities.ts`, `assets/js/core/render-preferences.ts` |
 | Personalization & persistence | Theme, quality presets, render/motion preferences, and search state persist. | `assets/js/library-view.js`, `assets/js/core/settings-panel.ts` |
-| Gamepad navigation | Focus + input support is enabled on library and toy pages. | `assets/js/utils/gamepad-navigation.ts`, `assets/js/app.ts` |
+| Gamepad + remote navigation | Focus + input support is enabled on library and toy pages for gamepads and keyboard-style TV remotes. | `assets/js/utils/gamepad-navigation.ts`, `assets/js/app.ts` |
 | Toy catalog metadata | Registry includes titles, tags, moods, controls, and lifecycle stage. | `assets/data/toys.json` |
 
 ## Library landing page & discovery
@@ -87,10 +87,17 @@ This document captures the **current, shipped feature set** of the Stim Webtoys 
 - **Resolution + pixel ratio controls**: Range sliders with live value labels.
 - **Reset**: Clears custom overrides to match the active preset.
 
-### Gamepad navigation
-- **Focus movement**: D-pad/axes move focus through focusable elements.
-- **Range input support**: Left/right updates sliders in the settings panel.
-- **Back handling**: Gamepad “back” dispatches Escape or triggers back-to-library when available.
+### Gamepad and remote navigation
+- **Focus movement**: D-pad/axes and Arrow keys move focus with spatial direction matching before fallback cycling.
+- **Range input support**: Left/right updates sliders in the settings panel when a range control is focused.
+- **Activation + back handling**: Gamepad A/Enter activate the focused control; gamepad back, Escape, or Backspace dispatch back-to-library/Escape behavior.
+
+
+### TV mode defaults
+- **Quality preset**: Adds a “TV balanced” preset tuned for lower DPI and steadier frame pacing.
+- **Smart TV auto-default**: On Smart TV-class user agents, system controls default to the TV preset.
+- **Conservative renderer defaults**: On first run in TV mode, compatibility mode is enabled and render scale / max pixel ratio are lowered unless user overrides already exist.
+- **Audio startup bias**: TV mode prefers demo audio by default while keeping microphone/tab capture options available.
 
 ## Toy catalog metadata
 

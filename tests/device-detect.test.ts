@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { isMobileDevice } from '../assets/js/utils/device-detect';
+import {
+  isMobileDevice,
+  isSmartTvDevice,
+} from '../assets/js/utils/device-detect';
 
 type NavigatorWithUserAgentData = Navigator & {
   userAgentData?: unknown;
@@ -105,5 +108,37 @@ describe('isMobileDevice', () => {
 
   test('keeps desktop devices classified as non-mobile', () => {
     expect(isMobileDevice()).toBe(false);
+  });
+});
+
+describe('isSmartTvDevice', () => {
+  beforeEach(() => {
+    snapshot = {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      maxTouchPoints: navigator.maxTouchPoints,
+      userAgentData: (navigator as NavigatorWithUserAgentData).userAgentData,
+    };
+    setNavigatorField('userAgent', DESKTOP_UA);
+  });
+
+  afterEach(() => {
+    setNavigatorField('userAgent', snapshot.userAgent);
+    setNavigatorField('platform', snapshot.platform);
+    setNavigatorField('maxTouchPoints', snapshot.maxTouchPoints);
+    setNavigatorField('userAgentData', snapshot.userAgentData);
+  });
+
+  test('detects smart tv user agents', () => {
+    setNavigatorField(
+      'userAgent',
+      'Mozilla/5.0 (SMART-TV; Linux; Tizen 7.0) AppleWebKit/537.36',
+    );
+
+    expect(isSmartTvDevice()).toBe(true);
+  });
+
+  test('keeps desktop user agents out of tv mode', () => {
+    expect(isSmartTvDevice()).toBe(false);
   });
 });
