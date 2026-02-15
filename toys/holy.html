@@ -278,7 +278,6 @@
 
     <!-- Main Visualizer Script -->
     <script type="module">
-      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import * as THREE from 'three';
       import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
       import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -298,8 +297,9 @@
         setErrorVisible,
       } from '../assets/js/utils/error-display.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
-      import { ensureWebGL } from '../assets/js/utils/webgl-check.ts';
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
+      import { ensureWebGL } from '../assets/js/utils/webgl-check.ts';
 
       initToyPageShell();
 
