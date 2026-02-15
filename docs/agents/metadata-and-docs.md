@@ -1,4 +1,4 @@
-# Metadata and Docs Expectations
+# Metadata and docs expectations
 
 ## Commit and PR metadata
 
@@ -23,20 +23,9 @@ Docs
 
 ## Documentation upkeep rules
 
-When behavior, scripts, or structure changes:
+Use [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) as the canonical checklist for:
 
-1. Update the source-of-truth workflow docs under `docs/`.
-2. Update the docs map in `docs/README.md` if files moved or were added.
-3. Keep cross-links aligned across:
-   - `README.md`
-   - `CONTRIBUTING.md`
-   - `AGENTS.md`
-   - `docs/agents/README.md`
-
-## Toy docs synchronization
-
-When adding/removing/renaming toy slugs, update all related docs in the same change:
-
-- `docs/TOY_DEVELOPMENT.md`
-- `docs/TOY_SCRIPT_INDEX.md`
-- `docs/toys.md`
+- cross-link alignment between root and agent entry points,
+- docs index synchronization in `docs/README.md`,
+- per-change documentation update requirements,
+- toy docs synchronization requirements.
