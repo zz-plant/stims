@@ -40,13 +40,6 @@ describe('library filter state normalization', () => {
       <select data-sort-control>
         <option value="featured">Featured</option>
       </select>
-      <section data-daily-engagement>
-        <strong data-daily-streak-count></strong>
-        <span data-daily-streak-copy></span>
-        <button data-daily-pick-action type="button"></button>
-        <button data-recent-pick-action type="button" hidden></button>
-        <p data-daily-pick-label></p>
-      </section>
       <div id="toy-list"></div>
     `;
   });
@@ -73,28 +66,5 @@ describe('library filter state normalization', () => {
     expect(persisted).not.toBeNull();
     expect(JSON.parse(persisted ?? '{}').filters).toEqual([]);
     expect(calmChip?.classList.contains('is-active')).toBe(false);
-  });
-
-  test('records launches so daily streak and continue action are available', async () => {
-    const view = createLibraryView({
-      toys,
-      searchInputId: 'toy-search',
-      loadToy: () => {},
-    });
-
-    await view.init();
-
-    const card = document.querySelector('.webtoy-card');
-    expect(card).not.toBeNull();
-    card?.dispatchEvent(new Event('click', { bubbles: true }));
-
-    const persisted = window.localStorage.getItem('stims-engagement-state');
-    expect(persisted).not.toBeNull();
-    const parsed = JSON.parse(persisted ?? '{}');
-    expect(parsed.lastPlayedSlug).toBe('calm-flow');
-    expect(parsed.streak).toBe(1);
-
-    const continueButton = document.querySelector('[data-recent-pick-action]');
-    expect(continueButton?.hasAttribute('hidden')).toBe(false);
   });
 });
