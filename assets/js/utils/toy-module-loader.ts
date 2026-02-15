@@ -25,7 +25,8 @@ export type ToyModuleLoadResult = ToyModuleLoadSuccess | ToyModuleLoadFailure;
 
 function resolveModuleImportUrl(moduleUrl: string) {
   if (moduleUrl.startsWith('./') || moduleUrl.startsWith('../')) {
-    return new URL(moduleUrl, new URL('../', import.meta.url)).toString();
+    const moduleRootUrl = new URL(/* @vite-ignore */ '../', import.meta.url);
+    return new URL(moduleUrl, moduleRootUrl).toString();
   }
 
   return moduleUrl;
