@@ -48,7 +48,8 @@ globalThis.GPUTextureUsage = {
   STORAGE_BINDING: 8,
   RENDER_ATTACHMENT: 16,
   TRANSIENT_ATTACHMENT: 32,
-};
+  // Some WebGPU type versions include TRANSIENT_ATTACHMENT while others do not.
+} as unknown as GPUTextureUsage;
 globalThis.GPUMapMode = {
   READ: 1,
   WRITE: 2,
