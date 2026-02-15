@@ -3831,6 +3831,14 @@ section.intro {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  section.intro::before,
+  .intro-actions .cta-button.primary,
+  .daily-streak::after {
+    animation: none;
+  }
+}
+
 @keyframes introAuroraFloat {
   from {
     transform: translate3d(-2%, -1%, 0);
