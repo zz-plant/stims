@@ -18,6 +18,21 @@ export const COMPATIBILITY_MODE_KEY = 'stims:compatibility-mode';
 export const MAX_PIXEL_RATIO_KEY = 'stims:max-pixel-ratio';
 export const RENDER_SCALE_KEY = 'stims:render-scale';
 
+const NUMERIC_PREFERENCE_SETTINGS = {
+  maxPixelRatio: {
+    max: 3,
+    min: 0.75,
+    storageKey: MAX_PIXEL_RATIO_KEY,
+  },
+  renderScale: {
+    max: 1.4,
+    min: 0.6,
+    storageKey: RENDER_SCALE_KEY,
+  },
+} as const;
+
+type NumericPreferenceKey = keyof typeof NUMERIC_PREFERENCE_SETTINGS;
+
 const subscribers = new Set<RenderPreferenceSubscriber>();
 let activePreferences: RenderPreferences | null = null;
 
@@ -40,16 +55,54 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function normalizeNumericPreference(
+  value: number | null,
+  key: NumericPreferenceKey,
+  clampValues: boolean,
+) {
+  if (typeof value !== 'number') {
+    return null;
+  }
+
+  if (!clampValues) {
+    return value;
+  }
+
+  const { min, max } = NUMERIC_PREFERENCE_SETTINGS[key];
+  return clamp(value, min, max);
+}
+
+function setNullableStorageValue(
+  storage: Storage,
+  key: string,
+  value: string | null,
+) {
+  if (value === null) {
+    storage.removeItem(key);
+    return;
+  }
+
+  storage.setItem(key, value);
+}
+
 function readFromStorage(): RenderPreferences {
   const storage = getStorage();
   const compatibilityMode = storage?.getItem(COMPATIBILITY_MODE_KEY) === 'true';
-  const maxPixelRatio = readNumber(storage?.getItem(MAX_PIXEL_RATIO_KEY));
-  const renderScale = readNumber(storage?.getItem(RENDER_SCALE_KEY));
+
+  const numericPreferences = {} as Record<NumericPreferenceKey, number | null>;
+
+  for (const [preferenceName, settings] of Object.entries(
+    NUMERIC_PREFERENCE_SETTINGS,
+  )) {
+    numericPreferences[preferenceName as NumericPreferenceKey] = readNumber(
+      storage?.getItem(settings.storageKey),
+    );
+  }
 
   return {
     compatibilityMode,
-    maxPixelRatio,
-    renderScale,
+    maxPixelRatio: numericPreferences.maxPixelRatio,
+    renderScale: numericPreferences.renderScale,
   };
 }
 
@@ -71,19 +124,16 @@ function persistToStorage(preferences: RenderPreferences) {
 
   storage.setItem(COMPATIBILITY_MODE_KEY, entries.compatibilityMode ?? 'false');
 
-  const maxPixelRatioValue = entries.maxPixelRatio ?? null;
-  if (maxPixelRatioValue === null) {
-    storage.removeItem(MAX_PIXEL_RATIO_KEY);
-  } else {
-    storage.setItem(MAX_PIXEL_RATIO_KEY, maxPixelRatioValue);
-  }
-
-  const renderScaleValue = entries.renderScale ?? null;
-  if (renderScaleValue === null) {
-    storage.removeItem(RENDER_SCALE_KEY);
-  } else {
-    storage.setItem(RENDER_SCALE_KEY, renderScaleValue);
-  }
+  setNullableStorageValue(
+    storage,
+    MAX_PIXEL_RATIO_KEY,
+    entries.maxPixelRatio ?? null,
+  );
+  setNullableStorageValue(
+    storage,
+    RENDER_SCALE_KEY,
+    entries.renderScale ?? null,
+  );
 }
 
 function normalizePreferences(
@@ -91,18 +141,16 @@ function normalizePreferences(
   options: { clampValues?: boolean } = {},
 ): RenderPreferences {
   const { clampValues = true } = options;
-  const maxPixelRatio =
-    typeof input.maxPixelRatio === 'number'
-      ? clampValues
-        ? clamp(input.maxPixelRatio, 0.75, 3)
-        : input.maxPixelRatio
-      : null;
-  const renderScale =
-    typeof input.renderScale === 'number'
-      ? clampValues
-        ? clamp(input.renderScale, 0.6, 1.4)
-        : input.renderScale
-      : null;
+  const maxPixelRatio = normalizeNumericPreference(
+    input.maxPixelRatio,
+    'maxPixelRatio',
+    clampValues,
+  );
+  const renderScale = normalizeNumericPreference(
+    input.renderScale,
+    'renderScale',
+    clampValues,
+  );
 
   return {
     compatibilityMode: Boolean(input.compatibilityMode),
