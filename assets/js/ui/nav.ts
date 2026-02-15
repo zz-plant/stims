@@ -20,10 +20,6 @@ export interface NavOptions {
   onBack?: () => void;
   onShare?: () => void;
   onNextToy?: () => void | Promise<void>;
-  onToggleFlow?: (active: boolean) => void;
-  flowActive?: boolean;
-  onTogglePartyMode?: (active: boolean) => void;
-  partyModeActive?: boolean;
   onToggleHaptics?: (active: boolean) => void;
   hapticsActive?: boolean;
   hapticsSupported?: boolean;
@@ -44,7 +40,7 @@ type ToyNavContainer = HTMLElement & {
 const TOY_MICRO_CHALLENGES = [
   'Tap around the scene and find your favorite rhythm pocket.',
   'Try both microphone and demo audio, then compare the mood shift.',
-  'Use Flow mode for one cycle and see which toy surprises you most.',
+  'Hit Next stim and see which toy surprises you most.',
   'Push intensity up, then dial it back to find your sweet spot.',
   'Switch to picture-in-picture and keep the visuals ambient while multitasking.',
 ];
@@ -254,7 +250,7 @@ function renderToyNav(
   const safeTitle = escapeHtml(options.title ?? 'Web toy');
   const safeSlug = options.slug ? escapeHtml(options.slug) : '';
   const hintText = isMobileDevice()
-    ? 'Tap Flow mode for session playlist rotation every 60–120s. Use Back to return.'
+    ? 'Swipe or tap Back to return to the library.'
     : 'Press Esc or use Back to return to the library.';
   const randomChallenge =
     TOY_MICRO_CHALLENGES[
@@ -295,26 +291,6 @@ function renderToyNav(
                 Next stim
               </button>
               <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
-            </div>`
-          : ''
-      }
-      ${
-        options.onTogglePartyMode
-          ? `<div class="toy-nav__flow-wrapper">
-              <button type="button" class="toy-nav__flow" data-party-toggle="true" aria-pressed="${options.partyModeActive ? 'true' : 'false'}">
-                ${options.partyModeActive ? 'Party mode on' : 'Party mode'}
-              </button>
-              <span class="toy-nav__flow-status" data-party-status role="status" aria-live="polite"></span>
-            </div>`
-          : ''
-      }
-      ${
-        options.onToggleFlow
-          ? `<div class="toy-nav__flow-wrapper">
-              <button type="button" class="toy-nav__flow" data-flow-toggle="true" aria-pressed="${options.flowActive ? 'true' : 'false'}">
-                ${options.flowActive ? 'Flow mode on' : 'Flow mode'}
-              </button>
-              <span class="toy-nav__flow-status" data-flow-status role="status" aria-live="polite"></span>
             </div>`
           : ''
       }
@@ -430,26 +406,12 @@ function renderToyNav(
   const nextStatus = container.querySelector(
     '.toy-nav__next-status',
   ) as HTMLElement | null;
-  const flowBtn = container.querySelector(
-    '[data-flow-toggle="true"]',
-  ) as HTMLButtonElement | null;
-  const flowStatus = container.querySelector(
-    '[data-flow-status]',
-  ) as HTMLElement | null;
-  const partyBtn = container.querySelector(
-    '[data-party-toggle="true"]',
-  ) as HTMLButtonElement | null;
-  const partyStatus = container.querySelector(
-    '[data-party-status]',
-  ) as HTMLElement | null;
   const challengeBtn = container.querySelector(
     '.toy-nav__challenge',
   ) as HTMLButtonElement | null;
   const challengeStatus = container.querySelector(
     '.toy-nav__challenge-status',
   ) as HTMLElement | null;
-  let flowActive = Boolean(options.flowActive);
-  let partyModeActive = Boolean(options.partyModeActive);
   let hapticsActive = Boolean(options.hapticsActive);
   const hapticsBtn = container.querySelector(
     '[data-haptics-toggle="true"]',
@@ -491,43 +453,6 @@ function renderToyNav(
       }
     }, 3200);
   };
-
-  const showFlowStatus = (message: string) => {
-    if (!flowStatus) return;
-    flowStatus.textContent = message;
-    if (!message) return;
-    const win = doc.defaultView ?? window;
-    win.setTimeout(() => {
-      if (flowStatus.textContent === message) {
-        flowStatus.textContent = '';
-      }
-    }, 3200);
-  };
-
-  const showPartyStatus = (message: string) => {
-    if (!partyStatus) return;
-    partyStatus.textContent = message;
-    if (!message) return;
-    const win = doc.defaultView ?? window;
-    win.setTimeout(() => {
-      if (partyStatus.textContent === message) {
-        partyStatus.textContent = '';
-      }
-    }, 3200);
-  };
-
-  const updateFlowUI = () => {
-    if (!flowBtn) return;
-    flowBtn.setAttribute('aria-pressed', String(flowActive));
-    flowBtn.textContent = flowActive ? 'Flow mode on' : 'Flow mode';
-  };
-
-  const updatePartyUI = () => {
-    if (!partyBtn) return;
-    partyBtn.setAttribute('aria-pressed', String(partyModeActive));
-    partyBtn.textContent = partyModeActive ? 'Party mode on' : 'Party mode';
-  };
-
   const showHapticsStatus = (message: string) => {
     if (!hapticsStatus) return;
     hapticsStatus.textContent = message;
@@ -564,31 +489,6 @@ function renderToyNav(
   nextBtn?.addEventListener('click', () => {
     void handleNextToy();
   });
-
-  updateFlowUI();
-  updatePartyUI();
-  updateHapticsUI();
-
-  flowBtn?.addEventListener('click', () => {
-    flowActive = !flowActive;
-    updateFlowUI();
-    options.onToggleFlow?.(flowActive);
-    showFlowStatus(
-      flowActive
-        ? 'Flow mode enabled. We will keep switching stims.'
-        : 'Flow mode paused.',
-    );
-  });
-
-  partyBtn?.addEventListener('click', () => {
-    partyModeActive = !partyModeActive;
-    updatePartyUI();
-    options.onTogglePartyMode?.(partyModeActive);
-    showPartyStatus(
-      partyModeActive ? 'Party mode boosted.' : 'Party mode reset.',
-    );
-  });
-
   hapticsBtn?.addEventListener('click', () => {
     hapticsActive = !hapticsActive;
     updateHapticsUI();

@@ -81,10 +81,6 @@ type ViewState = {
   mode: 'library' | 'toy';
   backHandler?: () => void;
   onNextToy?: () => void;
-  onToggleFlow?: (active: boolean) => void;
-  flowActive?: boolean;
-  onTogglePartyMode?: (active: boolean) => void;
-  partyModeActive?: boolean;
   onToggleHaptics?: (active: boolean) => void;
   hapticsActive?: boolean;
   hapticsSupported?: boolean;
@@ -225,10 +221,6 @@ function buildToyNav({
   onBack,
   rendererStatus,
   onNextToy,
-  onToggleFlow,
-  flowActive,
-  onTogglePartyMode,
-  partyModeActive,
   onToggleHaptics,
   hapticsActive,
   hapticsSupported,
@@ -238,10 +230,6 @@ function buildToyNav({
   onBack?: () => void;
   rendererStatus: RendererStatusState | null;
   onNextToy?: () => void;
-  onToggleFlow?: (active: boolean) => void;
-  flowActive?: boolean;
-  onTogglePartyMode?: (active: boolean) => void;
-  partyModeActive?: boolean;
   onToggleHaptics?: (active: boolean) => void;
   hapticsActive?: boolean;
   hapticsSupported?: boolean;
@@ -261,10 +249,6 @@ function buildToyNav({
     slug: toy?.slug,
     onBack,
     onNextToy,
-    onToggleFlow,
-    flowActive,
-    onTogglePartyMode,
-    partyModeActive,
     onToggleHaptics,
     hapticsActive,
     hapticsSupported,
@@ -404,10 +388,6 @@ export function createToyView({
       toy: state.activeToyMeta,
       onBack: state.backHandler,
       onNextToy: state.onNextToy,
-      onToggleFlow: state.onToggleFlow,
-      flowActive: state.flowActive,
-      onTogglePartyMode: state.onTogglePartyMode,
-      partyModeActive: state.partyModeActive,
       onToggleHaptics: state.onToggleHaptics,
       hapticsActive: state.hapticsActive,
       hapticsSupported: state.hapticsSupported,
@@ -431,10 +411,6 @@ export function createToyView({
     state.mode = 'library';
     state.backHandler = undefined;
     state.onNextToy = undefined;
-    state.onToggleFlow = undefined;
-    state.flowActive = false;
-    state.onTogglePartyMode = undefined;
-    state.partyModeActive = false;
     state.onToggleHaptics = undefined;
     state.hapticsActive = false;
     state.hapticsSupported = false;
@@ -450,19 +426,11 @@ export function createToyView({
     toy?: Toy,
     {
       onNextToy,
-      onToggleFlow,
-      flowActive,
-      onTogglePartyMode,
-      partyModeActive,
       onToggleHaptics,
       hapticsActive,
       hapticsSupported,
     }: {
       onNextToy?: () => void;
-      onToggleFlow?: (active: boolean) => void;
-      flowActive?: boolean;
-      onTogglePartyMode?: (active: boolean) => void;
-      partyModeActive?: boolean;
       onToggleHaptics?: (active: boolean) => void;
       hapticsActive?: boolean;
       hapticsSupported?: boolean;
@@ -471,10 +439,6 @@ export function createToyView({
     state.mode = 'toy';
     state.backHandler = onBack ?? state.backHandler;
     state.onNextToy = onNextToy ?? state.onNextToy;
-    state.onToggleFlow = onToggleFlow ?? state.onToggleFlow;
-    state.flowActive = flowActive ?? state.flowActive;
-    state.onTogglePartyMode = onTogglePartyMode ?? state.onTogglePartyMode;
-    state.partyModeActive = partyModeActive ?? state.partyModeActive;
     state.onToggleHaptics = onToggleHaptics ?? state.onToggleHaptics;
     state.hapticsActive = hapticsActive ?? state.hapticsActive;
     state.hapticsSupported = hapticsSupported ?? state.hapticsSupported;
@@ -616,16 +580,6 @@ export function createToyView({
     render();
   };
 
-  const setFlowState = (active: boolean) => {
-    state.flowActive = active;
-    render();
-  };
-
-  const setPartyModeState = (active: boolean) => {
-    state.partyModeActive = active;
-    render();
-  };
-
   const setHapticsState = (active: boolean) => {
     state.hapticsActive = active;
     render();
@@ -642,8 +596,6 @@ export function createToyView({
       clearContainerContent(findActiveToyContainer()),
     ensureActiveToyContainer,
     setRendererStatus,
-    setFlowState,
-    setPartyModeState,
     setHapticsState,
     showUnavailableToy,
     showAudioPrompt: (
