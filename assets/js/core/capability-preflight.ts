@@ -8,6 +8,8 @@ import {
   getRenderingSupport,
 } from './renderer-capabilities.ts';
 
+export const PREFLIGHT_SESSION_DISMISS_KEY = 'stims:preflight-dismissed';
+
 export type CapabilityPreflightResult = {
   rendering: {
     hasWebGL: boolean;
@@ -578,6 +580,7 @@ export function attachCapabilityPreflight({
   const isPanelOpen = () => panel.open || panel.hasAttribute('open');
   const openPanel = () => {
     if (isPanelOpen()) return;
+    rememberToggle.checked = readRememberPreference();
     if (typeof panel.showModal === 'function') {
       panel.showModal();
     } else {
@@ -639,6 +642,39 @@ export function attachCapabilityPreflight({
   details.appendChild(detailsContent);
   panel.appendChild(details);
 
+  const rememberWrap = document.createElement('label');
+  rememberWrap.className = 'preflight-panel__remember';
+  const rememberToggle = document.createElement('input');
+  rememberToggle.type = 'checkbox';
+  rememberToggle.name = 'preflight-remember';
+  rememberToggle.className = 'preflight-panel__remember-toggle';
+  const rememberLabel = document.createElement('span');
+  rememberLabel.textContent = 'Skip this check for this session';
+  rememberWrap.append(rememberToggle, rememberLabel);
+  panel.appendChild(rememberWrap);
+
+  const setRememberPreference = (enabled: boolean) => {
+    try {
+      if (enabled) {
+        window.sessionStorage.setItem(PREFLIGHT_SESSION_DISMISS_KEY, '1');
+      } else {
+        window.sessionStorage.removeItem(PREFLIGHT_SESSION_DISMISS_KEY);
+      }
+    } catch (_error) {
+      // Ignore session storage errors.
+    }
+  };
+
+  const readRememberPreference = () => {
+    try {
+      return (
+        window.sessionStorage.getItem(PREFLIGHT_SESSION_DISMISS_KEY) === '1'
+      );
+    } catch (_error) {
+      return false;
+    }
+  };
+
   const actions = document.createElement('div');
   actions.className = 'control-panel__actions control-panel__actions--inline';
   if (showCloseButton) {
@@ -647,6 +683,7 @@ export function attachCapabilityPreflight({
     closeButton.type = 'button';
     closeButton.textContent = 'Close';
     closeButton.addEventListener('click', () => {
+      setRememberPreference(rememberToggle.checked);
       closePanel();
     });
     actions.appendChild(closeButton);
@@ -672,6 +709,7 @@ export function attachCapabilityPreflight({
   continueButton.textContent = 'Continue to audio setup';
   continueButton.hidden = true;
   continueButton.addEventListener('click', () => {
+    setRememberPreference(rememberToggle.checked);
     closePanel();
   });
   actions.appendChild(continueButton);

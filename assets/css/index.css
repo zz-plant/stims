@@ -2132,10 +2132,10 @@ html.light .search-meta__tokens li {
 
 .search-meta__note {
   margin: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-muted);
 }
 
@@ -2199,6 +2199,24 @@ html.light .active-filters__label {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+.active-filters__status {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  border: 1px dashed
+    color-mix(in srgb, var(--accent-color) 22%, var(--surface-border));
+  border-radius: var(--radius-pill);
+  padding: 0.2rem 0.55rem;
+}
+
+.active-filters.is-empty {
+  padding: 0.45rem 0.65rem;
+}
+
+.active-filters.is-empty .active-filters__chips,
+.active-filters.is-empty .active-filters__clear {
+  display: none;
 }
 
 .active-filters__chips {
@@ -2471,9 +2489,11 @@ html.light .active-filters__label {
 }
 
 .filter-chip.is-active {
-  background: color-mix(in srgb, var(--accent-color) 24%, var(--card-bg));
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: var(--shadow-soft);
+  background: color-mix(in srgb, var(--accent-color) 30%, var(--card-bg));
+  border-color: rgba(96, 165, 250, 0.9);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent-color) 26%, transparent),
+    var(--shadow-soft);
 }
 
 .filter-chip:focus-visible {

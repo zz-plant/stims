@@ -98,7 +98,7 @@ export function initAudioControls(
         <span class="control-panel__subtext">Best for live instruments, voice, and ambient sound.</span>
         <span class="control-panel__microcopy">Reacts to your room in real time. Requires microphone permission.</span>
       </div>
-      <button id="start-audio-btn" class="cta-button primary" type="button">
+      <button id="start-audio-btn" class="cta-button ghost" type="button">
         Use microphone
       </button>
     </div>

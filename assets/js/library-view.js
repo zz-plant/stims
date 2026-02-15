@@ -1152,6 +1152,8 @@ export function createLibraryView({
   let lastFilteredToys = [];
   let activeFiltersChips;
   let activeFiltersClear;
+  let activeFiltersStatus;
+  let searchMetaNote;
   const activeFilters = new Set();
 
   const ensureMetaNode = () => {
@@ -1212,6 +1214,22 @@ export function createLibraryView({
       );
     }
     return activeFiltersClear;
+  };
+
+  const ensureActiveFiltersStatus = () => {
+    if (!activeFiltersStatus) {
+      activeFiltersStatus = document.querySelector(
+        '[data-active-filters-status]',
+      );
+    }
+    return activeFiltersStatus;
+  };
+
+  const ensureSearchMetaNote = () => {
+    if (!searchMetaNote) {
+      searchMetaNote = document.querySelector('[data-search-note]');
+    }
+    return searchMetaNote;
   };
 
   const getOriginalIndex = (toy) => originalOrder.get(toy.slug) ?? 0;
@@ -1295,6 +1313,22 @@ export function createLibraryView({
       : token;
   };
 
+  const updateSearchMetaNote = () => {
+    const note = ensureSearchMetaNote();
+    if (!(note instanceof HTMLElement)) return;
+
+    const activeLabels = Array.from(activeFilters)
+      .map((token) => formatTokenLabel(token))
+      .slice(0, 2);
+
+    if (activeLabels.length === 0) {
+      note.textContent = 'Use filters to refine.';
+      return;
+    }
+
+    note.textContent = `Matched: ${activeLabels.join(' + ')}`;
+  };
+
   const updateActiveFiltersSummary = () => {
     const summary = ensureActiveFiltersSummary();
     const chipsContainer = ensureActiveFiltersChips();
@@ -1307,8 +1341,9 @@ export function createLibraryView({
 
     const tokens = Array.from(activeFilters);
     const hasTokens = tokens.length > 0;
-    summary.hidden = !hasTokens;
-    summary.setAttribute('aria-hidden', String(!hasTokens));
+    summary.hidden = false;
+    summary.setAttribute('aria-hidden', 'false');
+    summary.classList.toggle('is-empty', !hasTokens);
     chipsContainer.innerHTML = '';
 
     const appendChip = ({ label, onClick, ariaLabel }) => {
@@ -1332,6 +1367,13 @@ export function createLibraryView({
       });
     });
 
+    const status = ensureActiveFiltersStatus();
+    if (status instanceof HTMLElement) {
+      status.textContent = hasTokens
+        ? `${tokens.length} active`
+        : 'No filters selected';
+    }
+
     const clearButton = ensureActiveFiltersClear();
     if (
       clearButton instanceof HTMLElement &&
@@ -1340,6 +1382,8 @@ export function createLibraryView({
       clearButton.disabled = !hasTokens;
       clearButton.setAttribute('aria-disabled', String(!hasTokens));
     }
+
+    updateSearchMetaNote();
   };
 
   const updateSearchClearState = () => {
