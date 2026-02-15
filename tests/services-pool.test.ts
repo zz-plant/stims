@@ -17,8 +17,9 @@ import type { FrequencyAnalyser } from '../assets/js/utils/audio-handler.ts';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../assets/js/utils/audio-handler.ts';
 
 describe('render-service pooling', () => {
+  const setPixelRatioMock = mock();
   const fakeRenderer = {
-    setPixelRatio: mock(),
+    setPixelRatio: setPixelRatioMock,
     setSize: mock(),
     setAnimationLoop: mock(),
     dispose: mock(),
@@ -28,6 +29,7 @@ describe('render-service pooling', () => {
   afterEach(() => {
     document.body.innerHTML = '';
     resetRendererPool({ dispose: true });
+    window.localStorage.clear();
   });
 
   test('reuses renderer handle between toys', async () => {
