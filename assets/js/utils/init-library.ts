@@ -68,7 +68,7 @@ const bindAdvancedFiltersToggle = () => {
 
   const setExpandedState = (expanded: boolean) => {
     writeExpanded(toggle, expanded);
-    toggle.textContent = expanded ? 'Hide refinements' : 'Refine results';
+    toggle.textContent = expanded ? 'Hide filters' : 'More filters';
     advancedFilters.hidden = !expanded;
     syncChipVisibility(expanded);
   };
@@ -90,9 +90,6 @@ const bindAdvancedFiltersToggle = () => {
   window.addEventListener('popstate', scheduleRefresh);
   document.addEventListener('library:filters-changed', scheduleRefresh);
 
-  document
-    .querySelector('[data-filter-reset]')
-    ?.addEventListener('click', scheduleRefresh);
   document
     .querySelector('[data-active-filters-clear]')
     ?.addEventListener('click', scheduleRefresh);
