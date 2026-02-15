@@ -38,7 +38,6 @@ export type RendererHandle = {
 type RendererPoolEntry = {
   handle: RendererHandle;
   inUse: boolean;
-  preferredOptions: Partial<RendererInitConfig>;
 };
 
 const rendererPool: RendererPoolEntry[] = [];
@@ -47,30 +46,39 @@ let activeRenderPreferences = getActiveRenderPreferences();
 const rendererCapabilitiesInitializer =
   createSharedInitializer<RendererCapabilities>(getRendererCapabilities);
 
+function getRenderDefaults(): Partial<RendererInitConfig> {
+  return {
+    maxPixelRatio:
+      activeRenderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
+    renderScale:
+      activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1,
+  };
+}
+
+function forEachActiveRenderer(update: (entry: RendererPoolEntry) => void) {
+  for (const entry of rendererPool) {
+    if (!entry.inUse) {
+      continue;
+    }
+    update(entry);
+  }
+}
+
 subscribeToQualityPreset((preset) => {
   activeQuality = preset;
-  rendererPool
-    .filter((entry) => entry.inUse)
-    .forEach((entry) => entry.handle.applySettings());
+  forEachActiveRenderer((entry) => entry.handle.applySettings());
 });
 
 subscribeToRenderPreferences((preferences) => {
   activeRenderPreferences = preferences;
-  rendererPool
-    .filter((entry) => entry.inUse)
-    .forEach((entry) => entry.handle.applySettings());
+  forEachActiveRenderer((entry) => entry.handle.applySettings());
 });
 
 function buildSettings(
   options: Partial<RendererInitConfig> = {},
   info?: RendererInitResult | null,
 ): RendererInitConfig {
-  return resolveRendererSettings(options, info, {
-    maxPixelRatio:
-      activeRenderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
-    renderScale:
-      activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1,
-  });
+  return resolveRendererSettings(options, info, getRenderDefaults());
 }
 
 function applyPoolSettings(
@@ -78,12 +86,7 @@ function applyPoolSettings(
   info: RendererInitResult,
   options: Partial<RendererInitConfig> = {},
 ) {
-  applyRendererSettings(renderer, info, options, {
-    maxPixelRatio:
-      activeRenderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
-    renderScale:
-      activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1,
-  });
+  applyRendererSettings(renderer, info, options, getRenderDefaults());
 }
 
 async function createRendererHandle(
@@ -120,6 +123,12 @@ function attachCanvas(canvas: HTMLCanvasElement, host?: HTMLElement) {
   }
 }
 
+function detachCanvas(canvas: HTMLCanvasElement) {
+  if (canvas.parentElement) {
+    canvas.parentElement.removeChild(canvas);
+  }
+}
+
 export async function requestRenderer({
   host,
   options = {},
@@ -137,7 +146,6 @@ export async function requestRenderer({
     entry.inUse = true;
     attachCanvas(entry.handle.canvas, host ?? undefined);
     entry.handle.applySettings(options);
-    entry.preferredOptions = options;
     return entry.handle;
   }
 
@@ -149,15 +157,12 @@ export async function requestRenderer({
   const poolEntry: RendererPoolEntry = {
     handle,
     inUse: true,
-    preferredOptions: options,
   };
 
   handle.release = () => {
     handle.renderer.setAnimationLoop?.(null);
     poolEntry.inUse = false;
-    if (handle.canvas.parentElement) {
-      handle.canvas.parentElement.removeChild(handle.canvas);
-    }
+    detachCanvas(handle.canvas);
   };
 
   rendererPool.push(poolEntry);
@@ -178,9 +183,7 @@ export function resetRendererPool({
     if (dispose) {
       entry.handle.renderer.setAnimationLoop?.(null);
       entry.handle.renderer.dispose?.();
-      if (entry.handle.canvas.parentElement) {
-        entry.handle.canvas.parentElement.removeChild(entry.handle.canvas);
-      }
+      detachCanvas(entry.handle.canvas);
     }
   });
   if (dispose) {
