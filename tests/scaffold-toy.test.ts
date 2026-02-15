@@ -55,7 +55,9 @@ describe('scaffold-toy CLI helpers', () => {
 
     const modulePath = path.join(root, 'assets/js/toys', `${slug}.ts`);
     const moduleContents = await fs.readFile(modulePath, 'utf8');
-    expect(moduleContents).toContain('export async function start');
+    expect(moduleContents).toContain('export const start: ToyStartFunction');
+    expect(moduleContents).toContain('import WebToy');
+    expect(moduleContents).toContain('toy.dispose()');
 
     const data = await fs.readFile(
       path.join(root, 'assets/data/toys.json'),
