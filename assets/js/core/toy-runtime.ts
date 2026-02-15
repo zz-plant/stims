@@ -2,9 +2,6 @@ import type {
   AudioInitOptions,
   FrequencyAnalyser,
 } from '../utils/audio-handler';
-import type { ToyAudioRequest } from '../utils/audio-start';
-import { resolveToyAudioOptions } from '../utils/audio-start';
-import { startToyAudio } from '../utils/start-audio';
 import {
   createUnifiedInput,
   type UnifiedInputOptions,
@@ -17,6 +14,11 @@ import {
   type PerformanceSettings,
   subscribeToPerformanceSettings,
 } from './performance-panel';
+import {
+  resolveToyAudioOptions,
+  startToyAudio,
+  type ToyAudioRequest,
+} from './toy-audio';
 import { registerToyGlobals } from './toy-globals';
 import type { ToyInstance } from './toy-interface';
 import WebToy, { type WebToyOptions } from './web-toy';

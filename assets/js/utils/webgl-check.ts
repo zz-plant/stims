@@ -1,4 +1,4 @@
-import { getRenderingSupport } from './rendering-support.ts';
+import { getRenderingSupport } from '../core/renderer-capabilities.ts';
 
 const OVERLAY_ID = 'rendering-capability-overlay';
 const MODAL_PARAM = 'modal';

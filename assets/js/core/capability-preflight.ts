@@ -1,10 +1,12 @@
 import { isMobileDevice } from '../utils/device-detect';
-import { getRenderingSupport } from '../utils/rendering-support';
 import {
   getActiveRenderPreferences,
   setRenderPreferences,
 } from './render-preferences.ts';
-import { getRendererCapabilities } from './renderer-capabilities.ts';
+import {
+  getRendererCapabilities,
+  getRenderingSupport,
+} from './renderer-capabilities.ts';
 
 export type CapabilityPreflightResult = {
   rendering: {
