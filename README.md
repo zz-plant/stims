@@ -35,18 +35,17 @@ Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what
 
 ## Documentation map
 
-Use these entry points to find the right docs quickly:
+Documentation is consolidated in [`docs/README.md`](./docs/README.md), which is the canonical docs index (with quick task routing plus the full categorized map).
 
-- [`docs/README.md`](./docs/README.md): overview of project docs plus onboarding highlights.
-- [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md): day-to-day setup, tooling, scripts, and workflow expectations.
-- [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), [`docs/TOY_SCRIPT_INDEX.md`](./docs/TOY_SCRIPT_INDEX.md), and [`docs/toys.md`](./docs/toys.md): how to build or modify toys, toy script index, and per-toy notes.
-- [`docs/QA_PLAN.md`](./docs/QA_PLAN.md): QA coverage for high-impact flows and how to run the automation that protects them.
-- [`docs/PAGE_SPECIFICATIONS.md`](./docs/PAGE_SPECIFICATIONS.md): page-level specs for the library landing and toy shell, covering data, layout, and accessibility expectations.
-- [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md): production build/preview steps, Cloudflare Pages/Workers notes, and static hosting tips.
-- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md): runtime composition, loaders, and diagrams for the core systems.
-- [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md): Model Context Protocol stdio server usage and available tools.
+Use these quick entry points:
 
-If you add new scripts, toys, or deployment options, update the relevant doc above so the workflows stay discoverable.
+- [`docs/README.md`](./docs/README.md): canonical docs index and routing.
+- [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md): setup, scripts, and day-to-day implementation.
+- [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md): toy implementation patterns and checklists.
+- [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md): deployment and release guidance.
+- [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md): synchronization checklist for doc restructures and workflow changes.
+
+When docs are added, renamed, moved, or deleted, update `docs/README.md` in the same change.
 
 ## Architecture at a glance
 
