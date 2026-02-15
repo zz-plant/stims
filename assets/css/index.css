@@ -332,7 +332,7 @@ footer {
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.55rem;
   flex-wrap: wrap;
 }
 
@@ -371,36 +371,17 @@ footer {
 .nav-section {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
-}
-
-.nav-section__label {
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--text-muted);
-  padding: 0 0.35rem;
 }
 
 .nav-section--jump {
-  padding: 0.2rem 0.35rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--surface-border);
-  background: transparent;
-  box-shadow: none;
+  padding-right: 0.15rem;
+  border-right: 1px solid var(--surface-border);
 }
 
 .nav-section--utilities {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex-wrap: wrap;
-  padding: 0.2rem 0.35rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--surface-border);
-  background: transparent;
+  padding-left: 0.2rem;
 }
 
 .nav-link--section {
@@ -3499,13 +3480,8 @@ footer {
     flex-direction: column;
     align-items: stretch;
     gap: 0.45rem;
-    padding: 0.45rem;
-    border-radius: var(--radius-md);
-  }
-
-  .nav-section__label {
-    width: 100%;
-    padding: 0 0.35rem;
+    padding: 0;
+    border: 0;
   }
 
   .top-nav {
