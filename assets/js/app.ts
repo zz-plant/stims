@@ -15,6 +15,7 @@ import { createRouter } from './router.ts';
 import { initAudioControls } from './ui/audio-controls.ts';
 import { initNavigation as initTopNav } from './ui/nav.ts';
 import { initSystemControls } from './ui/system-controls.ts';
+import { isSmartTvDevice } from './utils/device-detect.ts';
 import { initGamepadNavigation } from './utils/gamepad-navigation.ts';
 import { initLibraryView } from './utils/init-library.ts';
 import { initNavScrollEffects } from './utils/init-nav-scroll.ts';
@@ -150,6 +151,17 @@ const startApp = async () => {
     const toyWindow = window as unknown as ToyWindow;
 
     const buildAudioInitState = (result: CapabilityPreflightResult | null) => {
+      if (isSmartTvDevice()) {
+        return {
+          preferDemoAudio: true,
+          initialStatus: {
+            message:
+              'TV mode enabled. Demo audio is selected first for easier remote setup, but microphone and tab audio are still available.',
+            variant: 'success' as const,
+          },
+        };
+      }
+
       if (!result) return {};
 
       const microphone = result.microphone;

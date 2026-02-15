@@ -6,6 +6,8 @@ type GamepadNavigationOptions = {
   repeatIntervalMs?: number;
 };
 
+type FocusDirection = 'next' | 'prev' | 'up' | 'down' | 'left' | 'right';
+
 const DEFAULT_FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -57,8 +59,74 @@ const getFocusableElements = (
   return elements;
 };
 
+const getElementCenter = (element: HTMLElement) => {
+  const rect = element.getBoundingClientRect();
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+};
+
+const findDirectionalFocusTarget = (
+  active: HTMLElement,
+  elements: HTMLElement[],
+  direction: Exclude<FocusDirection, 'next' | 'prev'>,
+) => {
+  const origin = getElementCenter(active);
+  const candidates = elements.filter((element) => element !== active);
+
+  type ScoredElement = {
+    element: HTMLElement;
+    score: number;
+  };
+
+  const scored = candidates
+    .map((element) => {
+      const center = getElementCenter(element);
+      const dx = center.x - origin.x;
+      const dy = center.y - origin.y;
+
+      if (direction === 'up' && dy >= 0) return null;
+      if (direction === 'down' && dy <= 0) return null;
+      if (direction === 'left' && dx >= 0) return null;
+      if (direction === 'right' && dx <= 0) return null;
+
+      if (
+        (direction === 'up' || direction === 'down') &&
+        Math.abs(dy) < Math.abs(dx)
+      ) {
+        return null;
+      }
+
+      if (
+        (direction === 'left' || direction === 'right') &&
+        Math.abs(dx) < Math.abs(dy)
+      ) {
+        return null;
+      }
+
+      const primaryDistance =
+        direction === 'up' || direction === 'down'
+          ? Math.abs(dy)
+          : Math.abs(dx);
+      const secondaryDistance =
+        direction === 'up' || direction === 'down'
+          ? Math.abs(dx)
+          : Math.abs(dy);
+
+      return {
+        element,
+        score: primaryDistance + secondaryDistance * 0.35,
+      } satisfies ScoredElement;
+    })
+    .filter((entry): entry is ScoredElement => entry !== null)
+    .sort((a, b) => a.score - b.score);
+
+  return scored[0]?.element ?? null;
+};
+
 const moveFocus = (
-  direction: 'next' | 'prev',
+  direction: FocusDirection,
   selector: string,
   doc: Document,
 ) => {
@@ -70,8 +138,29 @@ const moveFocus = (
   }
 
   const active = doc.activeElement as HTMLElement | null;
+
+  if (
+    active &&
+    ['up', 'down', 'left', 'right'].includes(direction) &&
+    elements.includes(active)
+  ) {
+    const directionalTarget = findDirectionalFocusTarget(
+      active,
+      elements,
+      direction as Exclude<FocusDirection, 'next' | 'prev'>,
+    );
+    if (directionalTarget) {
+      directionalTarget.focus();
+      return;
+    }
+  }
+
   const currentIndex = active ? elements.indexOf(active) : -1;
-  const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+  const delta =
+    direction === 'next' || direction === 'right' || direction === 'down'
+      ? 1
+      : -1;
+  const nextIndex = currentIndex + delta;
   const wrappedIndex =
     ((nextIndex % elements.length) + elements.length) % elements.length;
   elements[wrappedIndex]?.focus();
@@ -149,6 +238,30 @@ const dispatchEscape = (doc: Document) => {
   doc.dispatchEvent(event);
 };
 
+const DIRECTIONAL_KEYS = {
+  ArrowUp: 'up',
+  ArrowDown: 'down',
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
+  Up: 'up',
+  Down: 'down',
+  Left: 'left',
+  Right: 'right',
+} as const satisfies Record<string, Exclude<FocusDirection, 'next' | 'prev'>>;
+
+const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack']);
+const ENTER_KEYS = new Set(['Enter', 'NumpadEnter', 'OK', 'Select']);
+
+const isDirectionalKey = (
+  key: string,
+): key is keyof typeof DIRECTIONAL_KEYS => {
+  return key in DIRECTIONAL_KEYS;
+};
+
+const getDirectionFromKey = (
+  key: keyof typeof DIRECTIONAL_KEYS,
+): Exclude<FocusDirection, 'next' | 'prev'> => DIRECTIONAL_KEYS[key];
+
 export const initGamepadNavigation = (
   options: GamepadNavigationOptions = {},
 ) => {
@@ -158,7 +271,7 @@ export const initGamepadNavigation = (
   if (!body) return () => {};
 
   let lastButtons: boolean[] = [];
-  let lastDirection: 'next' | 'prev' | null = null;
+  let lastDirection: FocusDirection | null = null;
   let nextMoveTime = 0;
   let rafId: number | null = null;
 
@@ -168,12 +281,12 @@ export const initGamepadNavigation = (
     }
   };
 
-  const getDirection = (pad: Gamepad): 'next' | 'prev' | null => {
+  const getDirection = (pad: Gamepad): FocusDirection | null => {
     const buttons = pad.buttons;
-    if (buttons[12]?.pressed) return 'prev';
-    if (buttons[13]?.pressed) return 'next';
-    if (buttons[14]?.pressed) return 'prev';
-    if (buttons[15]?.pressed) return 'next';
+    if (buttons[12]?.pressed) return 'up';
+    if (buttons[13]?.pressed) return 'down';
+    if (buttons[14]?.pressed) return 'left';
+    if (buttons[15]?.pressed) return 'right';
 
     const axisX = pad.axes[0] ?? 0;
     const axisY = pad.axes[1] ?? 0;
@@ -183,9 +296,9 @@ export const initGamepadNavigation = (
       return null;
     }
     if (absX >= absY) {
-      return axisX > 0 ? 'next' : 'prev';
+      return axisX > 0 ? 'right' : 'left';
     }
-    return axisY > 0 ? 'next' : 'prev';
+    return axisY > 0 ? 'down' : 'up';
   };
 
   const handleDirectional = (now: number, pad: Gamepad) => {
@@ -202,12 +315,12 @@ export const initGamepadNavigation = (
     if (
       active instanceof HTMLInputElement &&
       active.type === 'range' &&
-      (direction === 'next' || direction === 'prev')
+      (direction === 'left' || direction === 'right')
     ) {
       if (now < nextMoveTime) return;
       adjustRangeInput(
         active,
-        direction === 'next' ? 'increment' : 'decrement',
+        direction === 'right' ? 'increment' : 'decrement',
       );
       lastDirection = direction;
       nextMoveTime =
@@ -221,11 +334,7 @@ export const initGamepadNavigation = (
     }
 
     if (now < nextMoveTime) return;
-    moveFocus(
-      direction === 'next' ? 'next' : 'prev',
-      resolved.focusableSelector,
-      doc,
-    );
+    moveFocus(direction, resolved.focusableSelector, doc);
     lastDirection = direction;
     nextMoveTime =
       now +
@@ -282,6 +391,39 @@ export const initGamepadNavigation = (
     }
   };
 
+  const handleKeydown = (event: KeyboardEvent) => {
+    const active = doc.activeElement as HTMLElement | null;
+    if (active && isTextInput(active)) {
+      if (event.key !== 'Escape') return;
+    }
+
+    if (isDirectionalKey(event.key)) {
+      setActive();
+      moveFocus(
+        getDirectionFromKey(event.key),
+        resolved.focusableSelector,
+        doc,
+      );
+      event.preventDefault();
+      return;
+    }
+
+    if (ENTER_KEYS.has(event.key)) {
+      setActive();
+      activateElement(active);
+      event.preventDefault();
+      return;
+    }
+
+    if (BACK_KEYS.has(event.key)) {
+      setActive();
+      if (!triggerBackAction(doc)) {
+        dispatchEscape(doc);
+      }
+      event.preventDefault();
+    }
+  };
+
   const handleDisconnect = () => {
     if (!getPrimaryGamepad()) {
       body.classList.remove(resolved.activeClass);
@@ -294,6 +436,7 @@ export const initGamepadNavigation = (
 
   window.addEventListener('gamepadconnected', handleConnect);
   window.addEventListener('gamepaddisconnected', handleDisconnect);
+  window.addEventListener('keydown', handleKeydown);
 
   if (getPrimaryGamepad()) {
     handleConnect();
@@ -302,6 +445,7 @@ export const initGamepadNavigation = (
   return () => {
     window.removeEventListener('gamepadconnected', handleConnect);
     window.removeEventListener('gamepaddisconnected', handleDisconnect);
+    window.removeEventListener('keydown', handleKeydown);
     if (rafId !== null) {
       window.cancelAnimationFrame(rafId);
     }
