@@ -143,28 +143,11 @@
           <a
             href="toy.html?toy=holy"
             class="cta-button primary"
-            data-quickstart-slug="holy"
           >
             Start now
           </a>
-          <a
-            href="toy.html?toy=spiral-burst"
-            class="cta-button ghost"
-            data-quickstart-mode="random"
-            data-quickstart-pool="energetic"
-            data-quickstart-audio="demo"
-          >
-            Surprise
-          </a>
-          <a
-            href="toy.html?toy=aurora-painter"
-            class="cta-button ghost"
-            data-quickstart-mode="random"
-            data-quickstart-pool="calming"
-          >
-            Calm pick
-          </a>
         </div>
+        <p class="cta-helper intro-helper">Quick system check opens first.</p>
         <div class="intro-secondary-links">
           <a href="#toy-list" class="text-link intro-secondary-link">Browse all stims</a>
           <a
@@ -174,7 +157,7 @@
             data-quickstart-pool="energetic"
             data-quickstart-audio="demo"
           >
-            High energy pick
+            Surprise me
           </a>
         </div>
       </section>
@@ -213,10 +196,13 @@
             >
               Loading library…
             </p>
-            <p class="search-meta__note">Use filters to refine.</p>
+            <p class="search-meta__note" data-search-note>Use filters to refine.</p>
           </div>
-          <div class="active-filters" data-active-filters hidden>
+          <div class="active-filters" data-active-filters>
             <span class="active-filters__label">Applied filters</span>
+            <span class="active-filters__status" data-active-filters-status>
+              No filters selected
+            </span>
             <div class="active-filters__chips" data-active-filters-chips></div>
             <button
               type="button"

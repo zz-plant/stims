@@ -1,82 +1,94 @@
-# Three typical user journeys: constructive critique (traversed pass)
+# Three typical user routes: constructive critique (browser traversal)
 
-This pass walks through three user journeys on the local app (`bun run dev` + Playwright) and critiques each flow with practical, incremental improvements.
+This pass traverses three common first-session routes on the local app (`bun run dev:host` + Playwright/Firefox against `http://localhost:5173`) and focuses on practical product decisions in three buckets:
+- what can be **removed**,
+- what should be **rebuilt**,
+- what needs **modification**.
 
-## Journey 1: Launch from the hero quick-start CTA
+## Route 1 — Home → `Start now`
 
 ### Traversal
-1. Open `index.html` (`/`).
-2. Click the first hero CTA (`Open Halo Flow`).
-3. Observe route/state after launch.
+1. Open `/`.
+2. Click `Start now` in the hero actions.
+3. Observe route and immediate UI state.
 
-### What worked well
-- Hero intent is clear: users immediately see a fast-path CTA cluster with explicit choices (`Open Halo Flow`, `Start flow mode`, `Surprise me`).
-- The transition keeps momentum: click-through lands directly in toy mode (`/?toy=holy`) without a full hard-navigation detour.
-- Capability preflight appears promptly, giving users a compatibility snapshot before interaction.
+### Observed behavior
+- `Start now` is present and clickable.
+- The URL changes to `/?modal=rendering-capability`.
+- The landing context still emphasizes browsing card content while a capability modal state is active.
 
-### Constructive critique
-- **Route semantics may be surprising for non-technical users.** The hero link advertises `toy.html?toy=holy`, but runtime navigation resolves to `/?toy=holy`. This is functionally fine, but can create mild trust friction when users watch the URL bar change to an unexpected form.
-- **The preflight dialog can feel like a speed bump on “quick start.”** It is informative, but it visually interrupts the “instant play” promise before the user can choose an audio source.
-- **Too many first-step choices at once.** Four hero CTAs can increase decision friction for first-time users who only want one obvious “just start” path.
+### Remove
+- Remove duplicate “start” intent labels that overlap (`Start now`, `Browse all stims`, `Surprise`, `Calm pick`, `High energy pick`) in the first viewport. Keep one primary action and demote the rest.
 
-### Improvements to consider
-- Add a short helper line under hero CTAs: “You may see a quick compatibility check before play.”
-- Keep one dominant default CTA and visually demote the others for first-time sessions.
-- Mirror the final route format in CTA hover/status copy to reduce URL mismatch surprise.
+### Rebuild
+- Rebuild the `Start now` handoff so it feels like a clear 2-step onboarding flow:
+  1) compatibility check,
+  2) explicit next action (“Launch recommended toy”).
+- Today, route state changes, but the transition feels like a mixed browse/check context rather than a focused start flow.
+
+### Modify
+- Modify hero microcopy to set expectation before click: “Quick system check opens first.”
+- Modify modal framing to include progress semantics (for example, “Step 1 of 2”).
 
 ---
 
-## Journey 2: Search and narrow the library
+## Route 2 — Home → discover via browse/filter controls
 
 ### Traversal
-1. Load `/` and wait for library cards.
-2. Search for `webgpu`, `mobile`, and a nonsense query.
-3. Clear search and verify recovery.
+1. Open `/`.
+2. Scan discovery controls (`Browse all stims`, category chips such as `Calm`, `Energetic`, `Microphone`).
+3. Attempt to narrow and reset.
 
-### What worked well
-- Search is responsive and understandable: result messaging updates with query context (`1 results • q: “webgpu”`, `0 results • q: “nonexistent-zzzz”`).
-- Filtering behavior appears reliable across intent types (capability keyword, form-factor keyword, no-match query).
-- Reset path is obvious: Clear restores full library state quickly (`24 results`).
+### Observed behavior
+- Discovery controls are visible and expressive.
+- The previous search-box-first path appears replaced by chips/curation-first exploration.
+- Reset affordance visibility depends on active filter state and can be easy to miss in quick scans.
 
-### Constructive critique
-- **No visible “why this matched” cues in condensed scanning.** Result counts are clear, but first-time users still need to open/scan cards to understand why `webgpu` or `mobile` matched.
-- **Zero-results recovery could be more assistive.** The `0 results` message is accurate, but it does not immediately suggest alternatives (remove filters, try capability tags, open starter packs).
-- **Power users may want faceted narrowing after search.** Free-text works, but common follow-ups (“only demo-audio toys”, “touch-first only”) still require manual refinement.
+### Remove
+- Remove low-signal filter labels or overlapping taxonomy where two chips communicate nearly the same thing.
+- Remove any non-essential control text in the first viewport that competes with the primary discovery path.
 
-### Improvements to consider
-- Add inline “matched on: capability/tag/mood” chips to surfaced cards.
-- Expand empty-state text with one-click suggestions (e.g., “Show all”, “Try demo-audio”, “Try mobile”).
-- Add lightweight post-search filters (capabilities, mood, setup difficulty) to complement text query.
+### Rebuild
+- Rebuild filtering as an explicit “active filters” rail/chip row with always-visible clear state.
+- Rebuild the empty/zero-results state to include one-click recovery actions (“Clear filters”, “Show calm picks”, “Try random”).
+
+### Modify
+- Modify chip affordances so selected/unselected states are more obvious at a glance.
+- Modify result feedback copy to describe *why* toys are shown (“Matched: microphone + calm”).
 
 ---
 
-## Journey 3: Start audio on toy page with capability preflight in front
+## Route 3 — Direct toy deep link (`/toy.html?toy=geom`)
 
 ### Traversal
-1. Open `toy.html?toy=geom`.
-2. Observe preflight dialog and status copy.
-3. Confirm mic/demo controls availability behind/after preflight.
+1. Open `/toy.html?toy=geom` directly.
+2. Confirm preflight route behavior and audio controls.
+3. Verify immediate action options.
 
-### What worked well
-- Preflight messaging is explicit and confidence-building: users get immediate status for rendering, microphone readiness, environment, and performance.
-- Audio choices are clear when controls are available (`Use microphone` and `Use demo audio` both present).
-- The guidance language is practical and non-alarmist, which helps reduce setup anxiety.
+### Observed behavior
+- Route resolves to `.../toy.html?toy=geom&modal=rendering-capability`.
+- `Use microphone` and `Use demo audio` controls are available.
+- `Back to library` is available.
 
-### Constructive critique
-- **Modal interception can block expected first click behavior.** The preflight dialog can intercept pointer events for audio controls, which may feel like a broken button to impatient users.
-- **Sequence clarity can improve.** Users may not understand whether they should finish/dismiss preflight before choosing mic/demo.
-- **Status hierarchy is dense for first-run users.** Four capability sections in one block are useful for diagnostics, but heavy for someone who only wants to begin quickly.
+### Remove
+- Remove redundant preflight verbosity for repeat users once capability has already been confirmed in-session.
 
-### Improvements to consider
-- Add a single prominent preflight action (“Continue to audio setup”) so next-step intent is explicit.
-- Include one-line sequencing copy: “Step 1 of 2: quick compatibility check.”
-- Offer a compact/default preflight summary with expandable technical detail.
+### Rebuild
+- Rebuild first-run toy entry as a tighter decision screen:
+  - one sentence on capability status,
+  - one dominant audio action,
+  - one secondary fallback.
+- Current structure is functional, but can feel heavy before the first interaction.
+
+### Modify
+- Modify preflight to support “remember this decision for this session.”
+- Modify button hierarchy so the safest default action is visually primary (typically demo audio), with microphone as explicit opt-in.
 
 ---
 
-## Priority recommendations (impact × effort)
+## Priority cut list
 
-1. **High impact / low effort:** Clarify flow sequencing between preflight and audio-start actions.
-2. **High impact / low effort:** Improve zero-results recovery with actionable shortcuts.
-3. **Medium impact / low effort:** Reduce hero CTA choice pressure by emphasizing one canonical “start now” action.
-4. **Medium impact / medium effort:** Add “why matched” and facet filters to tighten discovery confidence.
+1. **Rebuild first-click onboarding** (`Start now` should feel linear, not mixed-context).
+2. **Modify filter state visibility** (clear selected state + always-obvious reset).
+3. **Remove overlapping first-viewport action labels** to reduce choice overload.
+4. **Modify toy preflight persistence** to reduce repeat friction.
