@@ -92,3 +92,70 @@ This pass traverses three common first-session routes on the local app (`bun run
 2. **Modify filter state visibility** (clear selected state + always-obvious reset).
 3. **Remove overlapping first-viewport action labels** to reduce choice overload.
 4. **Modify toy preflight persistence** to reduce repeat friction.
+
+---
+
+## Follow-up pass (2026-02): two typical first-session routes
+
+This pass re-ran live traversal using `bun run dev:host --port 4173` with Playwright/Chromium against `http://127.0.0.1:4173` and focuses on concrete UI decisions that can be turned into scoped tickets.
+
+### Route A — Home hero CTA → `Start now` preflight
+
+#### Traversal
+1. Open `/`.
+2. Click `Start now`.
+3. Evaluate first actionable decision point before visualizer launch.
+
+#### Observed behavior (evidence)
+- The preflight panel correctly reports readiness in four status blocks (`Rendering`, `Microphone`, `Environment`, `Performance`).
+- First-run actions are split across multiple competing controls (`Use microphone`, `Use demo audio`, `Continue to audio setup`, `Start visualizer`).
+- Secondary affordances (`More info`) repeat inside the same step, increasing scan cost before first play.
+
+#### What can be removed
+- Remove duplicated progression controls in step 1. Keep a single forward action for each state.
+- Remove repeated inline `More info` triggers unless they expose materially different content.
+
+#### What needs to be rebuilt
+- Rebuild onboarding as a strict linear flow:
+  - **Step 1:** choose audio source,
+  - **Step 2:** launch visualizer.
+- Rebuild CTA hierarchy so each step has exactly one primary CTA and one optional secondary action.
+
+#### What needs modification
+- Modify status copy to explain impact, not just state (example: “Compatible mode reduces visual fidelity but keeps interactions responsive”).
+- Modify panel density with collapsed advanced details by default, expandable on demand.
+
+#### Suggested acceptance checks
+- New users can reach first visual response in ≤2 explicit clicks after `Start now`.
+- Only one primary CTA is visible at any preflight step.
+
+### Route B — Home browse flow → filter refinement (`Calm` + `Demo audio`)
+
+#### Traversal
+1. Open `/`.
+2. Jump to `Browse` / toy list controls.
+3. Apply `Calm`, then open refinement controls and apply `Demo audio`.
+
+#### Observed behavior (evidence)
+- Filter feedback is strong once applied (result-count summary plus a `Matched:` explanation for active filters).
+- Advanced chips are hidden behind `Refine results`, so key constraints can feel “missing” until discovered.
+- Reset behavior is duplicated (`Clear all` in applied rail vs `Clear filters` in control row).
+
+#### What can be removed
+- Remove one reset label and keep one canonical clear action.
+- Remove semantic overlap between quick-filter and advanced-filter naming where possible.
+
+#### What needs to be rebuilt
+- Rebuild filters into a single system with:
+  - persistent quick chips,
+  - explicit advanced drawer,
+  - one shared reset action.
+- Rebuild result context so active filters remain visible while scrolling the toy grid.
+
+#### What needs modification
+- Modify `Refine results` into a clearer stateful toggle (`More filters` / `Hide filters`).
+- Modify selected-chip contrast in light mode for faster peripheral recognition.
+
+#### Suggested acceptance checks
+- Users can identify active filters without scrolling back to the control bar.
+- Clearing filters is discoverable via one consistently named action.
