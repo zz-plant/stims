@@ -51,26 +51,26 @@
       <canvas id="overlayCanvas" class="toy-canvas canvas-overlay"></canvas>
     </div>
     <script type="module">
-      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import {
-        getWeightedAverageFrequency,
         getFrequencyData,
+        getWeightedAverageFrequency,
       } from '../assets/js/utils/audio-handler.ts';
       import {
         getBandLevels,
         getWeightedEnergy,
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
-      import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
       import {
         clearError,
         showError,
       } from '../assets/js/utils/error-display.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
+      import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
+      import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
       import { createSymphFunAdapter } from '../assets/symph/fun-adapter.ts';
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
-      import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
 
       const toyNav = initToyPageShell();
 

@@ -166,20 +166,20 @@
     <div class="grid" id="grid"></div>
 
     <script type="module">
-      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
-      import {
-        initErrorDisplay,
-        setErrorVisible,
-      } from '../assets/js/utils/error-display.ts';
       import {
         getFrequencyData,
       } from '../assets/js/utils/audio-handler.ts';
-      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import {
         getBandLevels,
         getWeightedEnergy,
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
+      import {
+        initErrorDisplay,
+        setErrorVisible,
+      } from '../assets/js/utils/error-display.ts';
+      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
 
       initToyPageShell();
 

@@ -44,22 +44,22 @@
     ></div>
     <div id="error-message" style="display: none"></div>
     <script type="module">
-      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import * as THREE from 'three';
       import { getContextFrequencyData } from '../assets/js/core/animation-loop.ts';
       import WebToy from '../assets/js/core/web-toy.ts';
       import { getWeightedAverageFrequency } from '../assets/js/utils/audio-handler.ts';
       import { showError } from '../assets/js/utils/error-display.ts';
-      import createPeakDetector from '../assets/js/utils/peak-detector.ts';
-      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
-      import { createMultiFunAdapter } from '../assets/multi/fun-adapter.ts';
-      import { initFunControls } from '../assets/ui/fun-controls.ts';
-      import { initHints } from '../assets/ui/hints.ts';
       import {
         requestMotionPermission,
         requiresMotionPermission,
         supportsDeviceOrientation,
       } from '../assets/js/utils/motion-permission.ts';
+      import createPeakDetector from '../assets/js/utils/peak-detector.ts';
+      import { startToyAudio } from '../assets/js/utils/start-audio.ts';
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
+      import { createMultiFunAdapter } from '../assets/multi/fun-adapter.ts';
+      import { initFunControls } from '../assets/ui/fun-controls.ts';
+      import { initHints } from '../assets/ui/hints.ts';
 
       const toyNav = initToyPageShell();
 

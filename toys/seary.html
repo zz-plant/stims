@@ -44,31 +44,31 @@
       </div>
     </div>
     <script type="module">
-      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import {
         getFrequencyData,
       } from '../assets/js/utils/audio-handler.ts';
-      import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
-      import {
-        initErrorDisplay,
-        setErrorVisible,
-      } from '../assets/js/utils/error-display.ts';
-      import { createPeakDetector } from '../assets/js/utils/peak-detector.ts';
-      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
-      import { createSearyFunAdapter } from '../assets/seary/fun-adapter.ts';
-      import { initFunControls } from '../assets/ui/fun-controls.ts';
-      import { initHints } from '../assets/ui/hints.ts';
-      import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
-      import {
-        requestMotionPermission,
-        requiresMotionPermission,
-        supportsDeviceOrientation,
-      } from '../assets/js/utils/motion-permission.ts';
       import {
         getBandLevels,
         getWeightedEnergy,
         updateEnergyPeak,
       } from '../assets/js/utils/audio-reactivity.ts';
+      import {
+        initErrorDisplay,
+        setErrorVisible,
+      } from '../assets/js/utils/error-display.ts';
+      import {
+        requestMotionPermission,
+        requiresMotionPermission,
+        supportsDeviceOrientation,
+      } from '../assets/js/utils/motion-permission.ts';
+      import { createPeakDetector } from '../assets/js/utils/peak-detector.ts';
+      import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
+      import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
+      import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
+      import { createSearyFunAdapter } from '../assets/seary/fun-adapter.ts';
+      import { initFunControls } from '../assets/ui/fun-controls.ts';
+      import { initHints } from '../assets/ui/hints.ts';
 
       const toyNav = initToyPageShell();
       const errorDisplayId = 'error-message';

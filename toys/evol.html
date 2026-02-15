@@ -68,18 +68,18 @@
       </div>
     </div>
     <script type="module">
-      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import {
         getFrequencyData,
         getWeightedAverageFrequency,
       } from '../assets/js/utils/audio-handler.ts';
-      import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
+      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import {
         initErrorDisplay,
         setErrorVisible,
       } from '../assets/js/utils/error-display.ts';
-      import { setupCanvasResize } from '../assets/js/utils/canvas-resize.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
+      import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
+      import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
 
       initToyPageShell();
       const errorDisplayId = 'error-message';
