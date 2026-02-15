@@ -3,8 +3,11 @@ import {
   setMotionPreference,
 } from '../core/motion-preferences.ts';
 import {
+  COMPATIBILITY_MODE_KEY,
   clearRenderOverrides,
   getActiveRenderPreferences,
+  MAX_PIXEL_RATIO_KEY,
+  RENDER_SCALE_KEY,
   setCompatibilityMode,
   setRenderPreferences,
 } from '../core/render-preferences.ts';
@@ -15,6 +18,7 @@ import {
   type QualityPreset,
   subscribeToQualityPreset,
 } from '../core/settings-panel.ts';
+import { isSmartTvDevice } from '../utils/device-detect.ts';
 
 type SystemControlOptions = {
   title?: string;
@@ -38,7 +42,7 @@ export const getPerformanceSummaryLabel = (
   const { qualityPresets = DEFAULT_QUALITY_PRESETS, defaultPresetId } = options;
   const preset = getActiveQualityPreset({
     presets: qualityPresets,
-    defaultPresetId,
+    defaultPresetId: resolveDefaultPresetId(defaultPresetId),
   });
   return formatQualityLabel(preset.label);
 };
@@ -58,6 +62,38 @@ function createValueLabel(label: string) {
   return value;
 }
 
+function resolveDefaultPresetId(defaultPresetId?: string) {
+  if (defaultPresetId) return defaultPresetId;
+  return isSmartTvDevice() ? 'tv' : 'balanced';
+}
+
+function applySmartTvDefaults() {
+  if (!isSmartTvDevice()) return;
+
+  try {
+    const hasCompatibilityPreference =
+      window.localStorage.getItem(COMPATIBILITY_MODE_KEY) !== null;
+    const hasPixelRatioPreference =
+      window.localStorage.getItem(MAX_PIXEL_RATIO_KEY) !== null;
+    const hasRenderScalePreference =
+      window.localStorage.getItem(RENDER_SCALE_KEY) !== null;
+
+    if (!hasCompatibilityPreference) {
+      setCompatibilityMode(true);
+    }
+
+    if (!hasPixelRatioPreference) {
+      setRenderPreferences({ maxPixelRatio: 1.25 });
+    }
+
+    if (!hasRenderScalePreference) {
+      setRenderPreferences({ renderScale: 0.9 });
+    }
+  } catch (_error) {
+    // Ignore unavailable storage environments.
+  }
+}
+
 export function initSystemControls(
   host: HTMLElement,
   options: SystemControlOptions = {},
@@ -66,9 +102,12 @@ export function initSystemControls(
     title = 'Performance controls',
     description = 'Tune visuals, renderer mode, and motion settings for this device.',
     qualityPresets = DEFAULT_QUALITY_PRESETS,
-    defaultPresetId = 'balanced',
+    defaultPresetId,
     variant = 'floating',
   } = options;
+
+  const resolvedDefaultPresetId = resolveDefaultPresetId(defaultPresetId);
+  applySmartTvDefaults();
 
   const panel = new PersistentSettingsPanel(host);
   const panelElement = panel.getElement();
@@ -79,13 +118,13 @@ export function initSystemControls(
 
   panel.setQualityPresets({
     presets: qualityPresets,
-    defaultPresetId,
+    defaultPresetId: resolvedDefaultPresetId,
   });
 
   const renderPreferences = getActiveRenderPreferences();
   const activeQuality = getActiveQualityPreset({
     presets: qualityPresets,
-    defaultPresetId,
+    defaultPresetId: resolvedDefaultPresetId,
   });
 
   panel.addToggle({
@@ -167,7 +206,7 @@ export function initSystemControls(
     clearRenderOverrides();
     const preset = getActiveQualityPreset({
       presets: qualityPresets,
-      defaultPresetId,
+      defaultPresetId: resolvedDefaultPresetId,
     });
     resolutionSlider.value = String(preset.renderScale ?? 1);
     pixelRatioSlider.value = String(preset.maxPixelRatio);

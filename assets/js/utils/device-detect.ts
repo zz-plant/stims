@@ -57,3 +57,14 @@ export function isMobileDevice() {
 
   return false;
 }
+
+export function isSmartTvDevice() {
+  if (typeof navigator === 'undefined') return false;
+
+  const nav = navigator as NavigatorWithUserAgentData;
+  const userAgent = (nav.userAgent ?? '').toLowerCase();
+
+  return /(smart-tv|smarttv|hbbtv|appletv|googletv|android tv|aftb|aftt|aftm|tizen|web0s|webos|viera|netcast|roku|bravia|xbox|playstation)/i.test(
+    userAgent,
+  );
+}

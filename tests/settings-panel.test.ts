@@ -89,6 +89,12 @@ describe('quality preset subscriptions', () => {
     );
   });
 
+  test('includes a tv-friendly quality preset', () => {
+    const preset = DEFAULT_QUALITY_PRESETS.find((entry) => entry.id === 'tv');
+    expect(preset).toBeDefined();
+    expect(preset?.label).toBe('TV balanced');
+  });
+
   test('quality presets show profile-specific scope for custom storage keys', () => {
     const panel = getSettingsPanel();
 

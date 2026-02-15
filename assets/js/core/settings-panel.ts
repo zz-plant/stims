@@ -27,6 +27,15 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     particleScale: 0.5,
   },
   {
+    id: 'tv',
+    label: 'TV balanced',
+    description:
+      'Comfortable 10-foot visuals with lower DPI for steady frame pacing.',
+    maxPixelRatio: 1.25,
+    renderScale: 0.9,
+    particleScale: 0.75,
+  },
+  {
     id: 'balanced',
     label: 'Balanced (default)',
     description: 'Native look with capped DPI for most laptops and desktops.',
