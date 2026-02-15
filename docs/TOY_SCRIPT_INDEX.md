@@ -10,7 +10,7 @@ This index maps each toy slug to the module that powers it and how the experienc
 | -------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
 | `3dtoy`                    | `assets/js/toys/three-d-toy.ts`              | Direct module; load with `toy.html?toy=3dtoy`.                    |
 | `aurora-painter`           | `assets/js/toys/aurora-painter.ts`           | Direct module; load with `toy.html?toy=aurora-painter`.           |
-| `clay`                     | `assets/js/toys/clay.ts`                     | Standalone page launcher for `toys/clay.html`.                    |
+| `clay`                     | `assets/js/toys/clay.ts`                     | Direct module; load with `toy.html?toy=clay`.                     |
 | `evol`                     | `assets/js/toys/evol.ts`                     | Standalone page launcher for `toys/evol.html`.                    |
 | `geom`                     | `assets/js/toys/geom.ts`                     | Standalone page launcher for `toys/geom.html`.                    |
 | `holy`                     | `assets/js/toys/holy.ts`                     | Standalone page launcher for `toys/holy.html`.                    |
@@ -22,7 +22,7 @@ This index maps each toy slug to the module that powers it and how the experienc
 | `bubble-harmonics`         | `assets/js/toys/bubble-harmonics.ts`         | Direct module; load with `toy.html?toy=bubble-harmonics`.         |
 | `pocket-pulse`             | `assets/js/toys/pocket-pulse.ts`             | Direct module; load with `toy.html?toy=pocket-pulse`.             |
 | `cosmic-particles`         | `assets/js/toys/cosmic-particles.ts`         | Direct module; load with `toy.html?toy=cosmic-particles`.         |
-| `lights`                   | `assets/js/toys/lights.ts`                   | Standalone page launcher for `toys/lights.html`.                  |
+| `lights`                   | `assets/js/toys/lights.ts`                   | Direct module; load with `toy.html?toy=lights`.                   |
 | `spiral-burst`             | `assets/js/toys/spiral-burst.ts`             | Direct module; load with `toy.html?toy=spiral-burst`.             |
 | `rainbow-tunnel`           | `assets/js/toys/rainbow-tunnel.ts`           | Direct module; load with `toy.html?toy=rainbow-tunnel`.           |
 | `star-field`               | `assets/js/toys/star-field.ts`               | Direct module; load with `toy.html?toy=star-field`.               |
@@ -36,3 +36,17 @@ This index maps each toy slug to the module that powers it and how the experienc
 ## Standalone HTML entry points
 
 Standalone toys can still be visited directly via their HTML pages under `toys/` (for example, `toys/holy.html` or `toys/lights.html`).
+
+## Page-backed toy migration status
+
+The following toy slugs still rely on `startPageToy` and open `toys/<slug>.html` through an embedded iframe bridge:
+
+- `evol`
+- `geom`
+- `holy`
+- `legible`
+- `multi`
+- `seary`
+- `symph`
+
+This removes the manual “Open standalone page” launcher, but these toys are still page-backed internally. To fully complete migration, convert each toy to direct module rendering in `assets/js/toys/<slug>.ts` and retire the iframe bridge.
