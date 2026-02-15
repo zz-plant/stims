@@ -18,16 +18,16 @@ export type LightsUI = {
   ) => (() => void) | undefined;
 };
 
-export const createLightsUI = (doc: Document | null): LightsUI => {
+export const createLightsUI = (root: ParentNode | null): LightsUI => {
   const elements: LightsUIElements = {
-    startButton: doc?.getElementById(
-      'start-audio-btn',
+    startButton: root?.querySelector(
+      '#start-audio-btn',
     ) as HTMLButtonElement | null,
-    fallbackButton: doc?.getElementById(
-      'use-demo-audio',
+    fallbackButton: root?.querySelector(
+      '#use-demo-audio',
     ) as HTMLButtonElement | null,
-    statusElement: doc?.getElementById('audio-status') as HTMLElement | null,
-    lightSelect: doc?.getElementById('light-type') as HTMLSelectElement | null,
+    statusElement: root?.querySelector('#audio-status') as HTMLElement | null,
+    lightSelect: root?.querySelector('#light-type') as HTMLSelectElement | null,
   };
 
   const setStatus = (message: string, variant: StatusVariant = 'info') => {

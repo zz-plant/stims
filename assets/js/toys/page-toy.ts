@@ -43,7 +43,7 @@ export function startPageToy({
     title: title ?? 'Toy settings',
     description:
       description ??
-      'Choose a quality preset before opening the standalone toy page.',
+      'This toy currently runs through a dedicated page shell while module migration is in progress.',
   });
 
   settingsPanel.setQualityPresets({
@@ -56,40 +56,21 @@ export function startPageToy({
     pageUrl.searchParams.set('audio', 'demo');
   }
 
-  const statusElement = document.createElement('div');
-  statusElement.className = 'active-toy-status is-warning';
-  statusElement.setAttribute('role', 'status');
-  statusElement.setAttribute('aria-live', 'polite');
-
-  const glow = document.createElement('div');
-  glow.className = 'active-toy-status__glow';
-  statusElement.appendChild(glow);
-
-  const content = document.createElement('div');
-  content.className = 'active-toy-status__content';
-  statusElement.appendChild(content);
-
-  const heading = document.createElement('h2');
-  heading.textContent = 'Open the standalone toy page';
-  content.appendChild(heading);
-
-  const body = document.createElement('p');
-  body.textContent =
-    'This toy runs on its own page to avoid embedded frames. Use the buttons below to launch it.';
-  content.appendChild(body);
+  const frame = document.createElement('iframe');
+  frame.className = 'toy-frame';
+  frame.title = title ?? 'Toy';
+  frame.src = pageUrl.toString();
+  frame.setAttribute('allow', 'autoplay; microphone; accelerometer; gyroscope');
+  frame.setAttribute('loading', 'eager');
+  frame.style.width = '100%';
+  frame.style.minHeight = '70vh';
+  frame.style.border = '0';
+  frame.style.borderRadius = '20px';
+  frame.style.background = 'rgba(5, 7, 24, 0.85)';
 
   const actions = document.createElement('div');
   actions.className = 'active-toy-status__actions';
-
-  const openButton = document.createElement('button');
-  openButton.type = 'button';
-  openButton.className = 'cta-button primary';
-  openButton.textContent = preferDemoAudio
-    ? 'Open toy with demo audio'
-    : 'Open toy';
-  openButton.addEventListener('click', () => {
-    window.location.href = pageUrl.toString();
-  });
+  actions.style.marginTop = '1rem';
 
   const newTabLink = document.createElement('a');
   newTabLink.className = 'cta-button';
@@ -98,18 +79,21 @@ export function startPageToy({
   newTabLink.target = '_blank';
   newTabLink.rel = 'noopener noreferrer';
 
-  actions.append(openButton, newTabLink);
-  content.appendChild(actions);
+  actions.appendChild(newTabLink);
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'active-toy-status';
+  wrapper.append(frame, actions);
 
   const activeToy = {
     dispose() {
-      statusElement.remove();
+      wrapper.remove();
       defaultToyLifecycle.unregisterActiveToy(activeToy);
     },
   };
 
   defaultToyLifecycle.adoptActiveToy(activeToy);
-  target.appendChild(statusElement);
+  target.appendChild(wrapper);
 
   return activeToy;
 }
