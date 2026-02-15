@@ -109,7 +109,6 @@ const startApp = async () => {
           initNavigation,
           loadFromQuery,
           targetId: 'toy-list',
-          searchInputId: 'toy-search',
           cardElement: 'a',
           enableIcons: false,
           enableCapabilityBadges: true,

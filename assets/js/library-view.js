@@ -1135,7 +1135,6 @@ export function createLibraryView({
 } = {}) {
   const STORAGE_KEY = 'stims-library-state';
   const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
-  const QUERY_PARAM = 'q';
   const FILTER_PARAM = 'filters';
   const SORT_PARAM = 'sort';
   let allToys = toys;
@@ -1306,9 +1305,8 @@ export function createLibraryView({
       return;
     }
 
-    const trimmedQuery = searchQuery.trim();
     const tokens = Array.from(activeFilters);
-    const hasTokens = Boolean(trimmedQuery) || tokens.length > 0;
+    const hasTokens = tokens.length > 0;
     summary.hidden = !hasTokens;
     summary.setAttribute('aria-hidden', String(!hasTokens));
     chipsContainer.innerHTML = '';
@@ -1324,14 +1322,6 @@ export function createLibraryView({
       chip.addEventListener('click', onClick);
       chipsContainer.appendChild(chip);
     };
-
-    if (trimmedQuery) {
-      appendChip({
-        label: `Search: “${trimmedQuery}”`,
-        ariaLabel: `Clear search query ${trimmedQuery}`,
-        onClick: () => clearSearch(),
-      });
-    }
 
     tokens.forEach((token) => {
       const label = formatTokenLabel(token);
@@ -1399,12 +1389,7 @@ export function createLibraryView({
     const meta = ensureMetaNode();
     if (!meta) return;
 
-    const trimmedQuery = searchQuery.trim();
     const parts = [`${visibleCount} results`];
-
-    if (trimmedQuery) {
-      parts.push(`q: “${trimmedQuery}”`);
-    }
 
     if (activeFilters.size > 0) {
       parts.push(
@@ -1416,10 +1401,7 @@ export function createLibraryView({
       parts.push(getSortLabel());
     }
 
-    const quickLaunchToy = resolveQuickLaunchToy(
-      lastFilteredToys,
-      trimmedQuery,
-    );
+    const quickLaunchToy = resolveQuickLaunchToy(lastFilteredToys, '');
     if (quickLaunchToy) {
       parts.push(`↵ ${quickLaunchToy.title}`);
     }
@@ -1455,35 +1437,6 @@ export function createLibraryView({
     renderToys(applyFilters());
     updateSearchClearState();
     updateFilterResetState();
-  };
-
-  const getHaystack = (toy) => {
-    const capabilityLabels = {
-      microphone: ['mic', 'microphone'],
-      demoAudio: ['demo audio', 'demo', 'audio'],
-      motion: ['motion', 'tilt', 'gyro', 'gyroscope'],
-    };
-
-    const capabilityTerms = Object.entries(toy.capabilities || {})
-      .filter(([, enabled]) => Boolean(enabled))
-      .flatMap(([key]) => {
-        const labels = capabilityLabels[key];
-        return labels ? [key, ...labels] : [key];
-      })
-      .map((term) => term.toLowerCase());
-
-    return [
-      toy.title,
-      toy.slug,
-      toy.description,
-      ...(toy.tags ?? []),
-      ...(toy.moods ?? []),
-      ...capabilityTerms,
-      toy.requiresWebGPU ? 'webgpu' : '',
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
   };
 
   const capabilityScore = (toy) =>
@@ -1622,16 +1575,11 @@ export function createLibraryView({
   };
 
   const applyFilters = () => {
-    const queryTokens = getQueryTokens(searchQuery);
     const filtered = allToys.filter((toy) => {
-      const haystack = getHaystack(toy);
-      const matchesQuery =
-        queryTokens.length === 0 ||
-        queryTokens.every((token) => haystack.includes(token));
       const matchesChips =
         activeFilters.size === 0 ||
         Array.from(activeFilters).every((token) => matchesFilter(toy, token));
-      return matchesQuery && matchesChips;
+      return matchesChips;
     });
 
     const sorted = sortList(filtered);
@@ -1658,10 +1606,9 @@ export function createLibraryView({
 
   const getStateFromUrl = () => {
     const params = new URLSearchParams(window.location.search);
-    const query = params.get(QUERY_PARAM) ?? '';
     const filters = parseFilters(params.get(FILTER_PARAM));
     const sort = params.get(SORT_PARAM) ?? 'featured';
-    return { query, filters, sort };
+    return { query: '', filters, sort };
   };
 
   const saveStateToStorage = (state) => {
@@ -1686,11 +1633,6 @@ export function createLibraryView({
 
   const stateToParams = (state) => {
     const params = new URLSearchParams(window.location.search);
-    if (state.query) {
-      params.set(QUERY_PARAM, state.query);
-    } else {
-      params.delete(QUERY_PARAM);
-    }
     if (state.filters?.length) {
       params.set(FILTER_PARAM, state.filters.join(','));
     } else {
@@ -1718,7 +1660,7 @@ export function createLibraryView({
 
   const commitState = ({ replace }) => {
     const state = {
-      query: searchQuery.trim(),
+      query: '',
       filters: Array.from(activeFilters),
       sort: sortBy,
     };
@@ -1739,7 +1681,7 @@ export function createLibraryView({
   };
 
   const applyState = (state, { render = true } = {}) => {
-    searchQuery = state.query ?? '';
+    searchQuery = '';
     sortBy = state.sort ?? 'featured';
     activeFilters.clear();
     (state.filters ?? [])
@@ -2421,8 +2363,7 @@ export function createLibraryView({
   const init = async () => {
     setToys(allToys);
     const urlState = getStateFromUrl();
-    const hasUrlState =
-      urlState.query || urlState.filters.length || urlState.sort !== 'featured';
+    const hasUrlState = urlState.filters.length || urlState.sort !== 'featured';
     if (hasUrlState) {
       applyState(urlState, { render: false });
     } else {
