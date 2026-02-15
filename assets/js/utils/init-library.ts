@@ -113,7 +113,6 @@ export const initLibraryView = async ({
     initNavigation,
     loadFromQuery,
     targetId: 'toy-list',
-    searchInputId: 'toy-search',
     cardElement: 'a',
     enableIcons: true,
     enableCapabilityBadges: true,

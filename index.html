@@ -204,57 +204,16 @@
               </a>
             </div>
           </section>
-          <div class="search-heading">
-            <h3>Find a stim</h3>
-            <p>Search by name or mood.</p>
-          </div>
-          <div class="search-row">
-            <label class="sr-only" for="toy-search">Search the library</label>
-            <form class="search-field" role="search" data-search-form>
-              <span class="search-field__icon" aria-hidden="true">⌕</span>
-              <input
-                id="toy-search"
-                type="search"
-                name="toy-search"
-                placeholder="Search stims"
-                autocomplete="off"
-                aria-describedby="toy-search-hint"
-                inputmode="search"
-                list="toy-search-suggestions"
-              />
-              <button
-                type="button"
-                class="search-clear"
-                data-search-clear
-                aria-label="Clear search"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                class="search-shortcuts-toggle"
-                data-search-shortcuts-toggle
-                aria-expanded="false"
-                aria-controls="toy-search-hint"
-              >
-                Keyboard shortcuts
-              </button>
-              <span id="toy-search-hint" class="search-field__hint" hidden>
-                / focus • esc clear • ↵ open top match
-              </span>
-              <datalist id="toy-search-suggestions"></datalist>
-            </form>
-            <div class="search-meta">
-              <p
-                class="search-meta__results"
-                data-search-results
-                role="status"
-                aria-live="polite"
-              >
-                Loading library…
-              </p>
-              <p class="search-meta__note">Use filters to refine.</p>
-            </div>
+          <div class="search-meta">
+            <p
+              class="search-meta__results"
+              data-search-results
+              role="status"
+              aria-live="polite"
+            >
+              Loading library…
+            </p>
+            <p class="search-meta__note">Use filters to refine.</p>
           </div>
           <div class="active-filters" data-active-filters hidden>
             <span class="active-filters__label">Applied filters</span>

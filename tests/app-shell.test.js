@@ -63,8 +63,7 @@ describe('app shell user journeys', () => {
 
   beforeEach(() => {
     mock.restore();
-    document.body.innerHTML =
-      '<input id="toy-search" /><div id="toy-list"></div>';
+    document.body.innerHTML = '<div id="toy-list"></div>';
     document.body.dataset.page = 'library';
     try {
       window.sessionStorage.clear();
@@ -92,71 +91,6 @@ describe('app shell user journeys', () => {
     expect(cards).toHaveLength(toyLibrary.length);
     expect(mockInitNavigation).toHaveBeenCalledTimes(1);
     expect(mockLoadFromQuery).toHaveBeenCalledTimes(1);
-  });
-
-  test('searching filters the visible toys by title or description', async () => {
-    await loadAppShell();
-
-    const search = document.getElementById('toy-search');
-    search.value = 'weirdcore';
-    search.dispatchEvent(new Event('input', { bubbles: true }));
-
-    const visibleTitles = Array.from(
-      document.querySelectorAll('.webtoy-card h3'),
-    ).map((node) => node.textContent);
-
-    expect(visibleTitles).toEqual(['Evolutionary Weirdcore']);
-  });
-
-  test('escape clears active library search query', async () => {
-    await loadAppShell();
-
-    const search = document.getElementById('toy-search');
-    expect(search?.tagName).toBe('INPUT');
-
-    search.value = 'aurora';
-    search.dispatchEvent(new Event('input', { bubbles: true }));
-
-    search.dispatchEvent(
-      new window.KeyboardEvent('keydown', { key: 'Escape' }),
-    );
-
-    expect(search.value).toBe('');
-    expect(document.querySelectorAll('.webtoy-card')).toHaveLength(
-      toyLibrary.length,
-    );
-  });
-
-  test('enter launches the best search match', async () => {
-    await loadAppShell();
-
-    const search = document.getElementById('toy-search');
-    search.value = 'aurora painter';
-    search.dispatchEvent(new Event('input', { bubbles: true }));
-
-    search.dispatchEvent(
-      new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-    );
-
-    expect(mockLoadToy).toHaveBeenCalledTimes(1);
-    expect(mockLoadToy).toHaveBeenCalledWith('aurora-painter', {
-      pushState: true,
-      preferDemoAudio: false,
-    });
-  });
-
-  test('ambiguous searches boost lower-setup toys first', async () => {
-    await loadAppShell();
-
-    const search = document.getElementById('toy-search');
-    search.value = 'visual';
-    search.dispatchEvent(new Event('input', { bubbles: true }));
-
-    const visibleTitles = Array.from(
-      document.querySelectorAll('.webtoy-card h3'),
-    ).map((node) => node.textContent);
-
-    expect(visibleTitles[0]).toBe('Visual Breeze');
   });
 
   test('demo button keyboard activation keeps demo-audio launch path', async () => {
