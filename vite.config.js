@@ -48,6 +48,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     target: 'es2020',
+    // The WebGPU renderer bundle is intentionally large and loaded on demand.
+    // Keep CI builds focused on regressions instead of expected size warnings.
+    chunkSizeWarningLimit: 550,
     // Emit the standard .vite/manifest.json so docs and tooling resolve assets
     // without custom paths.
     manifest: true,
