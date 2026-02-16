@@ -67,12 +67,12 @@ The following tools are only available from the Bun/Node stdio server (`bun run 
 
 - All tool calls follow MCP stdio conventions. Successful calls return a `content` array with either `text` or `json` entries.
 - Validation errors surface when inputs don’t satisfy the schemas above (for example, passing a number for `slug`).
-- `get_toys` reads from `assets/data/toys.json`; keep that file up to date so MCP clients surface accurate metadata.
+- `get_toys` reads from the generated toy manifest (which is built from `assets/data/toys.json`, `assets/data/toys.yaml`, or `assets/data/toys.yml`); keep that file up to date so MCP clients surface accurate metadata.
 
 ## Troubleshooting tips
 
 - **Manifest resolution:** The loader summary references `/.vite/manifest.json`; when discussing loader behavior with `describe_loader`, ensure a Vite dev server or build has produced the manifest so paths resolve correctly.
-- **Slug filters:** If `get_toys` returns “No toys matched the requested filters,” double-check the slug in `assets/data/toys.json` or omit filters to retrieve the full catalog.
+- **Slug filters:** If `get_toys` returns “No toys matched the requested filters,” double-check the slug in your toy metadata registry file (`assets/data/toys.json`, `assets/data/toys.yaml`, or `assets/data/toys.yml`) or omit filters to retrieve the full catalog.
 - **Client invocation:** MCP clients must launch `bun run mcp` in the repository root; running elsewhere can block access to `README.md`, the toy data file, or the Vite manifest.
 
 ## Cloudflare Worker deployment (optional transport)
