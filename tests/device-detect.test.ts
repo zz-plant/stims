@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
+  getSmartTvModeOverride,
   isMobileDevice,
   isSmartTvDevice,
 } from '../assets/js/utils/device-detect';
@@ -13,6 +14,9 @@ type NavSnapshot = {
   platform: string;
   maxTouchPoints: number;
   userAgentData: unknown;
+  deviceMemory: number;
+  innerWidth: number;
+  innerHeight: number;
 };
 
 const DESKTOP_UA =
@@ -21,7 +25,7 @@ const DESKTOP_UA =
 const mobileMatchMedia = ((query: string) =>
   ({
     media: query,
-    matches: query === '(pointer: coarse)',
+    matches: query === '(pointer: coarse)' || query === '(hover: none)',
     onchange: null,
     addListener: () => {},
     removeListener: () => {},
@@ -34,6 +38,21 @@ const desktopMatchMedia = ((query: string) =>
   ({
     media: query,
     matches: query === '(hover: hover)',
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }) as MediaQueryList) as typeof window.matchMedia;
+
+const tvMatchMedia = ((query: string) =>
+  ({
+    media: query,
+    matches:
+      query === '(hover: none)' ||
+      query === '(pointer: coarse)' ||
+      query === '(any-pointer: coarse)',
     onchange: null,
     addListener: () => {},
     removeListener: () => {},
@@ -62,14 +81,20 @@ describe('isMobileDevice', () => {
       platform: navigator.platform,
       maxTouchPoints: navigator.maxTouchPoints,
       userAgentData: (navigator as NavigatorWithUserAgentData).userAgentData,
+      deviceMemory:
+        (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8,
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
     };
     originalMatchMedia = window.matchMedia;
 
     setNavigatorField('userAgent', DESKTOP_UA);
     setNavigatorField('platform', 'Linux x86_64');
     setNavigatorField('maxTouchPoints', 0);
+    setNavigatorField('deviceMemory', 8);
     setNavigatorField('userAgentData', undefined);
     window.matchMedia = desktopMatchMedia;
+    window.localStorage.removeItem('stims:tv-mode');
   });
 
   afterEach(() => {
@@ -77,7 +102,17 @@ describe('isMobileDevice', () => {
     setNavigatorField('platform', snapshot.platform);
     setNavigatorField('maxTouchPoints', snapshot.maxTouchPoints);
     setNavigatorField('userAgentData', snapshot.userAgentData);
+    setNavigatorField('deviceMemory', snapshot.deviceMemory);
     window.matchMedia = originalMatchMedia;
+    window.localStorage.removeItem('stims:tv-mode');
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: snapshot.innerWidth,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: snapshot.innerHeight,
+    });
   });
 
   test('detects mobile from user agent data mobile hint', () => {
@@ -118,8 +153,18 @@ describe('isSmartTvDevice', () => {
       platform: navigator.platform,
       maxTouchPoints: navigator.maxTouchPoints,
       userAgentData: (navigator as NavigatorWithUserAgentData).userAgentData,
+      deviceMemory:
+        (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8,
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
     };
+    originalMatchMedia = window.matchMedia;
     setNavigatorField('userAgent', DESKTOP_UA);
+    setNavigatorField('platform', 'Linux x86_64');
+    setNavigatorField('maxTouchPoints', 0);
+    setNavigatorField('deviceMemory', 8);
+    window.matchMedia = desktopMatchMedia;
+    window.localStorage.removeItem('stims:tv-mode');
   });
 
   afterEach(() => {
@@ -127,6 +172,17 @@ describe('isSmartTvDevice', () => {
     setNavigatorField('platform', snapshot.platform);
     setNavigatorField('maxTouchPoints', snapshot.maxTouchPoints);
     setNavigatorField('userAgentData', snapshot.userAgentData);
+    setNavigatorField('deviceMemory', snapshot.deviceMemory);
+    window.matchMedia = originalMatchMedia;
+    window.localStorage.removeItem('stims:tv-mode');
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: snapshot.innerWidth,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: snapshot.innerHeight,
+    });
   });
 
   test('detects smart tv user agents', () => {
@@ -138,7 +194,37 @@ describe('isSmartTvDevice', () => {
     expect(isSmartTvDevice()).toBe(true);
   });
 
-  test('keeps desktop user agents out of tv mode', () => {
+  test('detects likely leanback devices using input + power heuristics', () => {
+    window.matchMedia = tvMatchMedia;
+    setNavigatorField('deviceMemory', 2);
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 1920,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 1080,
+    });
+
+    expect(isSmartTvDevice()).toBe(true);
+  });
+
+  test('supports query override for tv mode and persists it', () => {
+    window.localStorage.setItem('stims:tv-mode', 'on');
+
+    expect(getSmartTvModeOverride()).toBe('on');
+    expect(window.localStorage.getItem('stims:tv-mode')).toBe('on');
+    expect(isSmartTvDevice()).toBe(true);
+  });
+
+  test('supports query override to disable tv mode', () => {
+    window.localStorage.setItem('stims:tv-mode', 'off');
+
+    expect(getSmartTvModeOverride()).toBe('off');
+    expect(isSmartTvDevice()).toBe(false);
+  });
+
+  test('keeps desktop user agents out of tv mode by default', () => {
     expect(isSmartTvDevice()).toBe(false);
   });
 });

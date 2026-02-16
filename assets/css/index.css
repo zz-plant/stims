@@ -64,10 +64,23 @@
     var(--card-bg)
   );
   --interactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  --tv-scale-multiplier: 1;
+  --tv-focus-outline-width: 2px;
+  --tv-focus-outline-offset: 3px;
+  --tv-content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
+  --tv-safe-padding: 0px;
 }
 
 html {
   color-scheme: dark;
+}
+
+body.tv-mode {
+  --tv-scale-multiplier: 1.16;
+  --tv-focus-outline-width: 4px;
+  --tv-focus-outline-offset: 5px;
+  --tv-content-padding: clamp(2.2rem, 2.4vw + 1.6rem, 4.4rem);
+  --tv-safe-padding: 32px;
 }
 
 html.light {
@@ -180,8 +193,8 @@ html.light .hero-background-canvas {
 .skip-link:focus-visible {
   top: max(1.25rem, env(safe-area-inset-top));
   opacity: 1;
-  outline: 2px solid var(--accent-color);
-  outline-offset: 3px;
+  outline: var(--tv-focus-outline-width) solid var(--accent-color);
+  outline-offset: var(--tv-focus-outline-offset);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
 
@@ -189,6 +202,7 @@ body,
 html {
   padding: 0;
   font-family: "Space Grotesk", sans-serif;
+  font-size: calc(16px * var(--tv-scale-multiplier));
   background: linear-gradient(
     180deg,
     var(--bg-color) 0%,
@@ -218,7 +232,7 @@ footer {
 .content {
   position: relative;
   z-index: 1;
-  --content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
+  --content-padding: var(--tv-content-padding);
   padding: var(--content-padding);
   padding-top: max(var(--content-padding), env(safe-area-inset-top));
   padding-right: max(var(--content-padding), env(safe-area-inset-right));
@@ -360,8 +374,8 @@ footer {
 }
 
 .nav-toggle:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 3px;
+  outline: var(--tv-focus-outline-width) solid var(--accent-color);
+  outline-offset: var(--tv-focus-outline-offset);
 }
 
 .nav-toggle__icon {
@@ -423,8 +437,8 @@ footer {
 }
 
 .nav-link:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 3px;
+  outline: var(--tv-focus-outline-width) solid var(--accent-color);
+  outline-offset: var(--tv-focus-outline-offset);
   box-shadow: 0 0 20px var(--glow-color);
 }
 
@@ -1669,8 +1683,8 @@ button.text-link {
 }
 
 .cta-button:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 3px;
+  outline: var(--tv-focus-outline-width) solid var(--accent-color);
+  outline-offset: var(--tv-focus-outline-offset);
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35);
 }
 
@@ -3142,8 +3156,8 @@ footer {
 }
 
 .theme-toggle:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 3px;
+  outline: var(--tv-focus-outline-width) solid var(--accent-color);
+  outline-offset: var(--tv-focus-outline-offset);
   background: var(--hover-bg);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
 }
@@ -3843,4 +3857,29 @@ section.intro {
   .quick-start-grid {
     grid-template-columns: 1fr;
   }
+}
+
+body.tv-mode .top-nav {
+  top: max(1.2rem, env(safe-area-inset-top));
+  padding: 1rem 1.25rem;
+}
+
+body.tv-mode .nav-link,
+body.tv-mode .cta-button,
+body.tv-mode .filter-chip,
+body.tv-mode .webtoy-card__link,
+body.tv-mode .theme-toggle,
+body.tv-mode .search-shortcuts-toggle {
+  min-height: 56px;
+  padding-block: 0.8rem;
+  padding-inline: 1rem;
+  font-size: 1.02rem;
+}
+
+body.tv-mode .webtoy-card {
+  width: clamp(300px, 34cqi, 420px);
+}
+
+body.tv-mode .content {
+  max-width: min(1380px, calc(100vw - 2 * var(--tv-safe-padding, 0px)));
 }

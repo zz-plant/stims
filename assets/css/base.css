@@ -3,6 +3,7 @@ body {
   margin: 0;
   overflow: hidden;
   height: 100%;
+  font-size: calc(16px * var(--tv-scale-multiplier));
   font-family:
     "Space Grotesk", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   color: #f5f5f5;
@@ -15,6 +16,17 @@ body {
 :root {
   --app-height: 100vh;
   --app-width: 100vw;
+  --tv-scale-multiplier: 1;
+  --tv-focus-outline-width: 2px;
+  --tv-focus-outline-offset: 3px;
+  --tv-safe-padding: 0px;
+}
+
+body.tv-mode {
+  --tv-scale-multiplier: 1.12;
+  --tv-focus-outline-width: 4px;
+  --tv-focus-outline-offset: 5px;
+  --tv-safe-padding: 28px;
 }
 canvas {
   display: block;
@@ -33,8 +45,9 @@ textarea,
 }
 
 body.gamepad-active :focus:not(:focus-visible) {
-  outline: 2px solid var(--accent-color, rgba(96, 165, 250, 0.95));
-  outline-offset: 3px;
+  outline: var(--tv-focus-outline-width) solid
+    var(--accent-color, rgba(96, 165, 250, 0.95));
+  outline-offset: var(--tv-focus-outline-offset);
 }
 
 .toy-canvas {
@@ -2168,4 +2181,29 @@ body {
   50% {
     transform: scale(calc(1 + (0.004 * var(--agent-vibe-intensity, 1))));
   }
+}
+
+body.tv-mode .active-toy-nav {
+  top: max(calc(env(safe-area-inset-top) + var(--tv-safe-padding)), 24px);
+  left: max(calc(env(safe-area-inset-left) + var(--tv-safe-padding)), 24px);
+  right: max(calc(env(safe-area-inset-right) + var(--tv-safe-padding)), 24px);
+}
+
+body.tv-mode .control-panel {
+  right: max(calc(env(safe-area-inset-right) + var(--tv-safe-padding)), 24px);
+  bottom: max(calc(env(safe-area-inset-bottom) + var(--tv-safe-padding)), 24px);
+}
+
+body.tv-mode .toy-nav__share,
+body.tv-mode .toy-nav__pip,
+body.tv-mode .toy-nav__next,
+body.tv-mode .toy-nav__flow,
+body.tv-mode .toy-nav__challenge,
+body.tv-mode .toy-nav__back,
+body.tv-mode .control-panel button,
+body.tv-mode .control-panel select,
+body.tv-mode .control-panel input {
+  min-height: 56px;
+  min-width: 56px;
+  font-size: 1rem;
 }
