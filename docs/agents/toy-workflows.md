@@ -5,6 +5,7 @@
 The repository includes markdown workflows under `.agent/workflows/`:
 
 - `/create-toy` — scaffold a new toy.
+- `/modify-toy` — update an existing toy safely.
 - `/play-toy` — run and manually verify a toy.
 - `/test-toy` — execute toy-focused tests.
 - `/ship-toy-change` — orchestrate implementation, checks, and metadata for toy updates.

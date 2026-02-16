@@ -101,6 +101,12 @@ describe('agent capability markdown availability', () => {
     expect(
       markdownSources['.agent/workflows/play-toy.md'].length,
     ).toBeGreaterThan(0);
+    expect(
+      markdownSources['.agent/skills/modify-toy/SKILL.md'].length,
+    ).toBeGreaterThan(0);
+    expect(
+      markdownSources['.agent/workflows/modify-toy.md'].length,
+    ).toBeGreaterThan(0);
   });
 
   test('searches agent docs content through shared markdown index', async () => {
