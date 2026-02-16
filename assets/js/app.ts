@@ -69,6 +69,10 @@ const recordRendererTelemetry = () => {
 const startApp = async () => {
   recordRendererTelemetry();
 
+  if (document.body) {
+    document.body.classList.toggle('tv-mode', isSmartTvDevice());
+  }
+
   const router = createRouter();
   const defaultLoader = createLoader({ router });
   const loaderOverrides =

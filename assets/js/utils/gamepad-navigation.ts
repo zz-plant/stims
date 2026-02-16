@@ -4,9 +4,16 @@ type GamepadNavigationOptions = {
   axisThreshold?: number;
   initialRepeatDelayMs?: number;
   repeatIntervalMs?: number;
+  restoreFocus?: boolean;
+  focusStorageKey?: string;
 };
 
 type FocusDirection = 'next' | 'prev' | 'up' | 'down' | 'left' | 'right';
+
+type StoredFocusState = {
+  selector: string | null;
+  index: number;
+};
 
 const DEFAULT_FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -17,6 +24,8 @@ const DEFAULT_OPTIONS: Required<GamepadNavigationOptions> = {
   axisThreshold: 0.55,
   initialRepeatDelayMs: 220,
   repeatIntervalMs: 120,
+  restoreFocus: true,
+  focusStorageKey: 'stims:last-focus',
 };
 
 const getGamepads = () => navigator.getGamepads?.() ?? [];
@@ -26,12 +35,28 @@ const getPrimaryGamepad = () => {
   return pads.find((pad) => pad?.connected) ?? null;
 };
 
+const getWindowCtor = <T>(
+  name: string,
+): (new (...args: never[]) => T) | null => {
+  const ctor = (globalThis as Record<string, unknown>)[name];
+  return typeof ctor === 'function'
+    ? (ctor as new (
+        ...args: never[]
+      ) => T)
+    : null;
+};
+
+const isInstanceOf = <T>(value: unknown, ctorName: string): value is T => {
+  const ctor = getWindowCtor<T>(ctorName);
+  return Boolean(ctor && value instanceof ctor);
+};
+
 const isFocusable = (element: HTMLElement) => {
   if (element.hasAttribute('disabled')) return false;
   if (element.getAttribute('aria-hidden') === 'true') return false;
   if (element.hasAttribute('hidden')) return false;
   if (
-    element instanceof HTMLInputElement &&
+    isInstanceOf<HTMLInputElement>(element, 'HTMLInputElement') &&
     element.type &&
     element.type.toLowerCase() === 'hidden'
   ) {
@@ -186,27 +211,27 @@ const adjustRangeInput = (
 };
 
 const isTextInput = (element: HTMLElement) =>
-  element instanceof HTMLInputElement &&
+  isInstanceOf<HTMLInputElement>(element, 'HTMLInputElement') &&
   ['text', 'search', 'email', 'url', 'tel', 'password'].includes(element.type);
 
 const activateElement = (element: HTMLElement | null) => {
   if (!element) return;
   if (
-    element instanceof HTMLInputElement &&
+    isInstanceOf<HTMLInputElement>(element, 'HTMLInputElement') &&
     ['checkbox', 'radio', 'button', 'submit', 'reset'].includes(element.type)
   ) {
     element.click();
     return;
   }
 
-  if (element instanceof HTMLSelectElement) {
+  if (isInstanceOf<HTMLSelectElement>(element, 'HTMLSelectElement')) {
     element.click();
     return;
   }
 
   if (
-    element instanceof HTMLButtonElement ||
-    element instanceof HTMLAnchorElement
+    isInstanceOf<HTMLButtonElement>(element, 'HTMLButtonElement') ||
+    isInstanceOf<HTMLAnchorElement>(element, 'HTMLAnchorElement')
   ) {
     element.click();
     return;
@@ -238,6 +263,99 @@ const dispatchEscape = (doc: Document) => {
   doc.dispatchEvent(event);
 };
 
+const escapeSelector = (value: string) => {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(value);
+  }
+  return value.replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+};
+
+const getFocusStateStorageKey = (baseKey: string) => {
+  const url =
+    typeof window !== 'undefined'
+      ? `${window.location.pathname}${window.location.search}`
+      : 'unknown';
+  return `${baseKey}:${url}`;
+};
+
+const readStoredFocusState = (baseKey: string): StoredFocusState | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(getFocusStateStorageKey(baseKey));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredFocusState;
+    if (typeof parsed?.index !== 'number') return null;
+    return {
+      selector: typeof parsed.selector === 'string' ? parsed.selector : null,
+      index: parsed.index,
+    };
+  } catch (_error) {
+    return null;
+  }
+};
+
+const writeStoredFocusState = (baseKey: string, state: StoredFocusState) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(
+      getFocusStateStorageKey(baseKey),
+      JSON.stringify(state),
+    );
+  } catch (_error) {
+    // Ignore storage errors.
+  }
+};
+
+const getElementSelector = (element: HTMLElement) => {
+  if (element.id) {
+    return `#${escapeSelector(element.id)}`;
+  }
+  const explicitKey = element.getAttribute('data-focus-key');
+  if (explicitKey) {
+    return `[data-focus-key="${escapeSelector(explicitKey)}"]`;
+  }
+  return null;
+};
+
+const focusFirstAvailable = (doc: Document, selector: string) => {
+  const scope = getActiveScope(doc);
+  const elements = getFocusableElements(scope, selector);
+  const first = elements[0];
+  if (first) {
+    first.focus();
+    return first;
+  }
+  if (scope instanceof HTMLElement) {
+    scope.focus();
+  }
+  return null;
+};
+
+const restoreLastFocusedElement = (
+  doc: Document,
+  selector: string,
+  focusStorageKey: string,
+) => {
+  const stored = readStoredFocusState(focusStorageKey);
+  if (!stored) return null;
+
+  const scope = getActiveScope(doc);
+  if (stored.selector) {
+    const bySelector = scope.querySelector<HTMLElement>(stored.selector);
+    if (bySelector && isFocusable(bySelector)) {
+      bySelector.focus();
+      return bySelector;
+    }
+  }
+
+  const elements = getFocusableElements(scope, selector);
+  if (elements.length === 0) return null;
+  const clampedIndex = Math.max(0, Math.min(elements.length - 1, stored.index));
+  const target = elements[clampedIndex] ?? elements[0] ?? null;
+  target?.focus();
+  return target;
+};
+
 export const shouldDispatchEscapeFallback = (originKey: string) =>
   originKey !== 'Escape';
 
@@ -252,8 +370,25 @@ const DIRECTIONAL_KEYS = {
   Right: 'right',
 } as const satisfies Record<string, Exclude<FocusDirection, 'next' | 'prev'>>;
 
-const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack']);
-const ENTER_KEYS = new Set(['Enter', 'NumpadEnter', 'OK', 'Select']);
+const BACK_KEYS = new Set([
+  'Escape',
+  'Backspace',
+  'GoBack',
+  'BrowserBack',
+  'Back',
+  'Exit',
+  'MediaBack',
+]);
+const ENTER_KEYS = new Set([
+  'Enter',
+  'NumpadEnter',
+  'OK',
+  'Select',
+  'Return',
+  'Spacebar',
+]);
+const LEGACY_BACK_KEY_CODES = new Set([8, 27, 166, 461, 10009]);
+const LEGACY_ENTER_KEY_CODES = new Set([13, 32, 23]);
 
 const isDirectionalKey = (
   key: string,
@@ -264,6 +399,26 @@ const isDirectionalKey = (
 const getDirectionFromKey = (
   key: keyof typeof DIRECTIONAL_KEYS,
 ): Exclude<FocusDirection, 'next' | 'prev'> => DIRECTIONAL_KEYS[key];
+
+const isBackKey = (event: KeyboardEvent) => {
+  if (BACK_KEYS.has(event.key)) {
+    return true;
+  }
+  const keyCode = event.keyCode || event.which || 0;
+  return LEGACY_BACK_KEY_CODES.has(keyCode);
+};
+
+const isEnterLikeKey = (event: KeyboardEvent) => {
+  if (ENTER_KEYS.has(event.key)) {
+    return true;
+  }
+  const keyCode = event.keyCode || event.which || 0;
+  return LEGACY_ENTER_KEY_CODES.has(keyCode);
+};
+
+export const shouldHandleBackKey = (event: KeyboardEvent) => isBackKey(event);
+export const shouldHandleEnterLikeKey = (event: KeyboardEvent) =>
+  isEnterLikeKey(event);
 
 export const initGamepadNavigation = (
   options: GamepadNavigationOptions = {},
@@ -322,7 +477,7 @@ export const initGamepadNavigation = (
     const isRepeat = lastDirection === direction;
 
     if (
-      active instanceof HTMLInputElement &&
+      isInstanceOf<HTMLInputElement>(active, 'HTMLInputElement') &&
       active.type === 'range' &&
       (direction === 'left' || direction === 'right')
     ) {
@@ -362,7 +517,9 @@ export const initGamepadNavigation = (
     if (aPressed) {
       setActive();
       const active = doc.activeElement as HTMLElement | null;
-      activateElement(active);
+      const target =
+        active ?? focusFirstAvailable(doc, resolved.focusableSelector);
+      activateElement(target);
     }
 
     if (bPressed) {
@@ -393,6 +550,17 @@ export const initGamepadNavigation = (
   };
 
   const handleConnect = () => {
+    if (!doc.activeElement || doc.activeElement === doc.body) {
+      if (resolved.restoreFocus) {
+        restoreLastFocusedElement(
+          doc,
+          resolved.focusableSelector,
+          resolved.focusStorageKey,
+        );
+      }
+      focusFirstAvailable(doc, resolved.focusableSelector);
+    }
+
     if (rafId === null) {
       rafId = window.requestAnimationFrame(tick);
     }
@@ -415,18 +583,34 @@ export const initGamepadNavigation = (
       return;
     }
 
-    if (ENTER_KEYS.has(event.key)) {
+    if (isEnterLikeKey(event)) {
       setActive();
-      activateElement(active);
+      const target =
+        active ?? focusFirstAvailable(doc, resolved.focusableSelector);
+      activateElement(target);
       event.preventDefault();
       return;
     }
 
-    if (BACK_KEYS.has(event.key)) {
+    if (isBackKey(event)) {
       setActive();
       triggerBackOrEscape(event.key);
       event.preventDefault();
     }
+  };
+
+  const onDocumentFocusIn = (event: FocusEvent) => {
+    if (!resolved.restoreFocus) return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const scope = getActiveScope(doc);
+    const elements = getFocusableElements(scope, resolved.focusableSelector);
+    const index = elements.indexOf(target);
+    if (index < 0) return;
+    writeStoredFocusState(resolved.focusStorageKey, {
+      selector: getElementSelector(target),
+      index,
+    });
   };
 
   const handleDisconnect = () => {
@@ -442,6 +626,22 @@ export const initGamepadNavigation = (
   window.addEventListener('gamepadconnected', handleConnect);
   window.addEventListener('gamepaddisconnected', handleDisconnect);
   window.addEventListener('keydown', handleKeydown);
+  doc.addEventListener('focusin', onDocumentFocusIn);
+
+  if (
+    resolved.restoreFocus &&
+    (!doc.activeElement || doc.activeElement === doc.body)
+  ) {
+    if (
+      !restoreLastFocusedElement(
+        doc,
+        resolved.focusableSelector,
+        resolved.focusStorageKey,
+      )
+    ) {
+      focusFirstAvailable(doc, resolved.focusableSelector);
+    }
+  }
 
   if (getPrimaryGamepad()) {
     handleConnect();
@@ -451,6 +651,7 @@ export const initGamepadNavigation = (
     window.removeEventListener('gamepadconnected', handleConnect);
     window.removeEventListener('gamepaddisconnected', handleDisconnect);
     window.removeEventListener('keydown', handleKeydown);
+    doc.removeEventListener('focusin', onDocumentFocusIn);
     if (rafId !== null) {
       window.cancelAnimationFrame(rafId);
     }
