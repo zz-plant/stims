@@ -3667,15 +3667,9 @@ section.intro,
 .library-search,
 .system-check,
 .github {
-  background:
-    linear-gradient(
-      170deg,
-      color-mix(in srgb, var(--panel-highlight) 70%, transparent),
-      transparent 52%
-    ),
-    color-mix(in srgb, var(--card-bg) 94%, transparent);
+  background: color-mix(in srgb, var(--card-bg) 94%, transparent);
   border: 1px solid color-mix(in srgb, var(--surface-border) 72%, transparent);
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(6px) saturate(110%);
 }
 
@@ -3687,19 +3681,12 @@ section.intro,
 
 section.intro::before {
   display: block;
-  background:
-    radial-gradient(
-      circle at 18% 16%,
-      color-mix(in srgb, var(--accent-color) 26%, transparent),
-      transparent 48%
-    ),
-    radial-gradient(
-      circle at 82% 12%,
-      color-mix(in srgb, var(--accent-magenta) 24%, transparent),
-      transparent 50%
-    );
-  opacity: 0.5;
-  animation: introAuroraFloat 16s ease-in-out infinite alternate;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-border) 30%, transparent),
+    transparent 58%
+  );
+  opacity: 0.36;
 }
 
 section.intro::after {
@@ -3707,10 +3694,10 @@ section.intro::after {
   background: linear-gradient(
     115deg,
     transparent 0%,
-    color-mix(in srgb, var(--accent-color) 15%, transparent) 44%,
+    rgba(255, 255, 255, 0.05) 44%,
     transparent 100%
   );
-  opacity: 0.32;
+  opacity: 0.2;
 }
 
 section.intro {
@@ -3736,13 +3723,13 @@ section.intro {
     var(--accent-color) 30%,
     var(--surface-border)
   );
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
   transform: translateZ(0);
 }
 
 .intro-actions .cta-button.primary {
-  background-size: 180% 180%;
-  animation: buttonGradientShift 6s ease infinite;
+  background-size: auto;
+  animation: none;
 }
 
 .intro-secondary-links {
@@ -3772,7 +3759,7 @@ section.intro {
 .starter-pick {
   border-left: 3px solid
     color-mix(in srgb, var(--accent-purple) 62%, transparent);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  box-shadow: none;
 }
 
 .daily-streak {
@@ -3790,7 +3777,7 @@ section.intro {
     var(--accent-color),
     var(--accent-magenta)
   );
-  animation: streakPulse 2.4s ease-in-out infinite;
+  animation: none;
 }
 
 .webtoy-card {
@@ -3803,9 +3790,7 @@ section.intro {
 
 .webtoy-card:hover {
   transform: translateY(-4px) scale(1.01);
-  box-shadow:
-    0 16px 28px rgba(0, 0, 0, 0.28),
-    0 0 0 1px color-mix(in srgb, var(--accent-color) 24%, transparent);
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.25);
 }
 
 .intro-highlights,
@@ -3857,38 +3842,5 @@ section.intro {
 
   .quick-start-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@keyframes introAuroraFloat {
-  from {
-    transform: translate3d(-2%, -1%, 0);
-  }
-  to {
-    transform: translate3d(2%, 1.5%, 0);
-  }
-}
-
-@keyframes buttonGradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes streakPulse {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: scaleX(0.96);
-  }
-  50% {
-    opacity: 0.95;
-    transform: scaleX(1);
   }
 }
