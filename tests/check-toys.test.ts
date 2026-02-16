@@ -78,6 +78,35 @@ describe('check-toys script', () => {
     expect(result.issues).toHaveLength(0);
   });
 
+  test('passes when metadata is defined in YAML', async () => {
+    const root = await createTempRepo();
+    const slug = 'yaml-aligned';
+
+    await writeToyModule(root, slug);
+    await fs.rm(path.join(root, 'assets/data/toys.json'));
+    await fs.writeFile(
+      path.join(root, 'assets/data/toys.yaml'),
+      `- slug: ${slug}
+  title: YAML Aligned
+  description: ok
+  module: assets/js/toys/${slug}.ts
+  type: module
+  requiresWebGPU: false
+  capabilities:
+    microphone: true
+    demoAudio: true
+    motion: false
+`,
+    );
+    await fs.appendFile(
+      path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
+      `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Direct module |
+`,
+    );
+
+    const result = await runToyChecks(root);
+    expect(result.issues).toHaveLength(0);
+  });
   test('flags missing entry files', async () => {
     const root = await createTempRepo();
     const slug = 'missing-entry';
