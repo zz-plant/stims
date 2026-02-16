@@ -608,7 +608,7 @@ export function attachCapabilityPreflight({
   details.className = 'preflight-panel__details';
   const summary = document.createElement('summary');
   summary.className = 'preflight-panel__details-summary';
-  summary.textContent = 'Details';
+  summary.textContent = 'Advanced details';
   details.appendChild(summary);
   const detailsContent = document.createElement('div');
   detailsContent.className = 'preflight-panel__details-content';
@@ -664,7 +664,7 @@ export function attachCapabilityPreflight({
   const performanceButton = document.createElement('button');
   performanceButton.className = 'cta-button ghost';
   performanceButton.type = 'button';
-  performanceButton.textContent = 'Improve performance';
+  performanceButton.textContent = 'Enable lighter visual mode';
   performanceButton.hidden = true;
   actions.appendChild(performanceButton);
   let backLink: HTMLAnchorElement | null = null;
@@ -672,7 +672,7 @@ export function attachCapabilityPreflight({
     backLink = document.createElement('a');
     backLink.className = 'cta-button ghost';
     backLink.href = backHref;
-    backLink.textContent = 'Browse compatible toys';
+    backLink.textContent = 'Browse ready-to-run toys';
     backLink.hidden = true;
     actions.appendChild(backLink);
   }
@@ -699,10 +699,10 @@ export function attachCapabilityPreflight({
 
   const updatePerformanceButton = (result: CapabilityPreflightResult) => {
     latestResult = result;
-    if (!result.performance.lowPower) {
+    if (!result.canProceed || !result.performance.lowPower) {
       performanceButton.hidden = true;
       performanceButton.disabled = false;
-      performanceButton.textContent = 'Improve performance';
+      performanceButton.textContent = 'Enable lighter visual mode';
       return;
     }
 
@@ -719,7 +719,7 @@ export function attachCapabilityPreflight({
       performanceButton.textContent = 'Performance mode enabled';
       performanceButton.disabled = true;
     } else {
-      performanceButton.textContent = 'Improve performance';
+      performanceButton.textContent = 'Enable lighter visual mode';
       performanceButton.disabled = false;
     }
   };

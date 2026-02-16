@@ -1983,9 +1983,11 @@ export function createLibraryView({
       play.className = 'cta-button cta-button--muted';
       play.textContent = toy.capabilities?.demoAudio
         ? toy.capabilities?.microphone
-          ? 'Try demo mode'
-          : 'Preview visuals'
-        : 'Play now';
+          ? 'Preview with demo audio'
+          : 'Preview demo visuals'
+        : toy.capabilities?.microphone
+          ? 'Start mic-reactive mode'
+          : 'Play now';
       play.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
