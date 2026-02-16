@@ -299,6 +299,67 @@
         <main id="toy-list" class="webtoy-container"></main>
       </section>
 
+      <section class="stim-builder" id="stim-builder" data-stim-builder>
+        <div class="section-heading">
+          <p class="eyebrow">Building blocks</p>
+          <h2>Create your own stim setup</h2>
+          <p class="section-description">
+            Mix mood, energy, interaction style, and audio preferences.
+          </p>
+        </div>
+        <form class="builder-form" data-builder-form>
+          <label>
+            <span>Mood</span>
+            <select name="mood">
+              <option value="calming">Calming</option>
+              <option value="energetic">Energetic</option>
+              <option value="dreamy">Dreamy</option>
+              <option value="playful">Playful</option>
+            </select>
+          </label>
+          <label>
+            <span>Energy</span>
+            <select name="energy">
+              <option value="soft">Soft</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="intense">Intense</option>
+            </select>
+          </label>
+          <label>
+            <span>Interaction</span>
+            <select name="interaction">
+              <option value="touch" selected>Touch / gesture</option>
+              <option value="motion">Tilt / motion</option>
+              <option value="ambient">Mostly ambient</option>
+            </select>
+          </label>
+          <label>
+            <span>Audio</span>
+            <select name="audio">
+              <option value="demoAudio" selected>Built-in demo audio</option>
+              <option value="microphone">Microphone reactive</option>
+              <option value="none">No audio required</option>
+            </select>
+          </label>
+          <label>
+            <span>Renderer</span>
+            <select name="renderer">
+              <option value="any" selected>Any</option>
+              <option value="webgpu">WebGPU-first</option>
+              <option value="webgl">Broader compatibility</option>
+            </select>
+          </label>
+        </form>
+        <div class="builder-summary" data-builder-summary aria-live="polite"></div>
+        <ul class="builder-results" data-builder-results></ul>
+        <div class="cta-row">
+          <a href="toy.html?toy=holy" class="cta-button primary" data-builder-cta>
+            Launch a suggested stim
+          </a>
+          <a href="#library" class="text-link">Back to library filters</a>
+        </div>
+      </section>
+
       <div class="home-support-grid">
         <section class="system-check" id="system-check">
         <div class="section-heading">

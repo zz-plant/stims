@@ -21,6 +21,7 @@ import { initLibraryView } from './utils/init-library.ts';
 import { initNavScrollEffects } from './utils/init-nav-scroll.ts';
 import { initQuickstartCta } from './utils/init-quickstart.ts';
 import { initSystemCheck } from './utils/init-system-check.ts';
+import { initStimBuilder } from './utils/stim-builder.ts';
 
 type LoaderOverrides = {
   loadToy?: typeof import('./loader.ts').loadToy;
@@ -135,6 +136,7 @@ const startApp = async () => {
     runInit('quickstart CTA', () => initQuickstartCta({ loadToy }));
     runInit('nav scroll effects', initNavScrollEffects);
     runInit('system check', initSystemCheck);
+    runInit('stim builder', initStimBuilder);
   }
 
   runInit('gamepad navigation', () => {
