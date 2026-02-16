@@ -74,7 +74,7 @@ html.light {
   --bg-color: #f5f6f7;
   --bg-color-secondary: #e2e6ed;
   --text-color: #1f2630;
-  --text-muted: rgba(31, 38, 48, 0.82);
+  --text-muted: rgba(31, 38, 48, 0.9);
   --accent-contrast: #ffffff;
   --link-color: #3a4b61;
   --link-hover: #2f3c50;
@@ -1879,7 +1879,7 @@ html.light .repo-status__metric {
 }
 
 .library {
-  margin-top: clamp(1.5rem, 2.4vw, 2.5rem);
+  margin-top: clamp(2.1rem, 3vw, 3.1rem);
 }
 
 .section-heading {
@@ -2816,13 +2816,29 @@ html.light .filter-toggle {
   background: color-mix(in srgb, var(--card-bg) 94%, transparent);
 }
 
+html.light .filter-chip {
+  color: color-mix(in srgb, var(--text-color) 92%, #0f172a);
+}
+
+html.light .filter-chip.is-active {
+  background: color-mix(in srgb, var(--accent-color) 24%, #e7eef8);
+  border-color: rgba(59, 130, 246, 0.8);
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.26),
+    0 6px 16px rgba(15, 23, 42, 0.12);
+}
+
+html.light .filter-chip.is-active::before {
+  color: #1d4ed8;
+}
+
 html.light .cta-button.primary {
   background: linear-gradient(130deg, #6f8096, #5d6f86);
 }
 
 .webtoy-card p {
   font-size: 0.86rem;
-  color: color-mix(in srgb, var(--text-color) 82%, var(--text-muted));
+  color: color-mix(in srgb, var(--text-color) 90%, var(--text-muted));
   line-height: 1.5;
 }
 
@@ -2846,7 +2862,7 @@ html.light .cta-button.primary {
   margin-top: -2px;
   margin-bottom: 2px;
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: color-mix(in srgb, var(--text-color) 84%, var(--text-muted));
   display: flex;
   flex-wrap: wrap;
   align-items: center;
