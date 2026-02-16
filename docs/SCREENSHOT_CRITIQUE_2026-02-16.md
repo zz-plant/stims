@@ -1,50 +1,54 @@
 # Screenshot critique (2026-02-16)
 
-This pass reviews key user-facing surfaces observed in local screenshots:
+This pass reviews important user-facing pages/sections from a local dev build (`bun run dev:host`):
 
-- Homepage hero + navigation + library controls
-- Library card grid section
-- Toy runtime preflight (“Quick check”) panel
+1. Homepage + top navigation + hero call-to-action
+2. Library controls + filter/search panel
+3. Library card grid (discovery/scanning section)
+4. Toy runtime “Quick check” preflight + performance controls side panel
 
-## What works well
+## What is working well
 
-1. **Strong visual cohesion**
-   - The frosted cards, soft borders, and subtle glow effects create a recognizable visual language that feels calm and intentionally “stim-forward.”
-2. **Clear top-level entry point**
-   - The hero’s “Start now” CTA is prominent and paired with secondary options (“Browse all stims”, “Surprise me”), which supports both directed and exploratory behavior.
-3. **High scannability in the library**
-   - Card titles, short descriptions, and capability pills (Mic, Demo audio, Motion) make it easy to compare toys quickly.
-4. **Thoughtful runtime preflight concept**
-   - The Quick check panel communicates compatibility and microphone expectations before launch, reducing surprise for permission-sensitive features.
+1. **Consistent visual language across surfaces**
+   - Rounded containers, frosted panels, and soft glow accents create a coherent “calm-tech” personality.
+   - The style carries from discovery (library) to runtime preflight, which reduces context switching.
 
-## Constructive critique and improvement opportunities
+2. **Strong discoverability in the library**
+   - The grid makes breadth obvious quickly, and each card presents enough metadata to compare options without entering a detail page.
+   - Capability pills provide practical clues (mic/demo/responsive) at scan speed.
 
-1. **Contrast and readability in light mode could be stronger**
-   - Several text elements (helper copy, muted pill labels, secondary descriptions) appear very low-contrast on gray backgrounds.
-   - Recommendation: raise text contrast for secondary body copy and chip labels to improve accessibility and quick scanning.
+3. **Good safety framing before runtime start**
+   - The “Quick check” preflight sets expectations before microphone prompts and renderer-intensive work.
+   - The performance controls panel is visible and explicit, helping users adapt quality to device limits.
 
-2. **Above-the-fold hierarchy feels slightly compressed**
-   - The nav, hero, and library heading stack tightly; the “Start now” card appears visually detached from the following “Browse all stims” heading.
-   - Recommendation: increase vertical rhythm between hero and library heading, or add a subtle transitional label/anchor.
+## Constructive critique
 
-3. **Filter controls need stronger active-state clarity**
-   - In the library controls, selected vs unselected filter chips are visually close in tone.
-   - Recommendation: add a more distinct active treatment (fill, border weight, icon, or checkmark) so state changes are obvious at a glance.
+1. **Top-of-page hierarchy is visually compressed**
+   - The nav, hero CTA, and “Browse all stims” transition sit close together with limited separation cues.
+   - Suggestion: increase vertical spacing or add a subtle divider/section lead-in between hero and catalog.
 
-4. **Runtime preflight panel has high information density**
-   - The right-side Quick check panel is useful but text-heavy, with multiple similarly styled boxes and CTAs.
-   - Recommendation: collapse lower-priority details by default and emphasize a single primary action path (“Continue to audio setup”).
+2. **Secondary text contrast is low in bright theme contexts**
+   - Helper copy and some muted labels are hard to parse at a glance.
+   - Suggestion: raise contrast on non-primary text tokens and chip labels to improve readability and accessibility.
 
-5. **Whitespace balance in large viewports**
-   - On wide screens, the toy runtime view leaves a large empty canvas area while controls remain constrained in a narrow right column.
-   - Recommendation: consider contextual hints/preview content on the left before toy initialization, or a centered preflight layout prior to playback.
+3. **Filter state clarity can be stronger**
+   - Active vs inactive chips are currently close in treatment.
+   - Suggestion: use a more explicit active state (icon/checkmark, stronger fill, border weight, or tone shift).
 
-6. **Card action labels could be more outcome-specific**
-   - Repeated “Play demo” labels are understandable but generic.
-   - Recommendation: augment with contextual verbs where useful (e.g., “Preview motion”, “Try mic mode”), while keeping terminology consistent.
+4. **Grid density risks scan fatigue on large viewports**
+   - Many similarly weighted cards appear in a long uninterrupted list.
+   - Suggestion: introduce stronger grouping affordances (featured row, category separators, or optional compact/detail toggle).
 
-## Suggested prioritization
+5. **Runtime preflight has high cognitive load**
+   - Quick check + heads-up + details + multiple actions + performance panel compete for attention.
+   - Suggestion: simplify first-run emphasis to a single primary action with progressive disclosure for advanced controls.
 
-- **High impact / low effort**: improve text contrast and filter active states.
-- **Medium effort**: simplify Quick check information architecture and CTA emphasis.
-- **Higher effort**: refine wide-screen runtime layout strategy before toy start.
+6. **Action wording can be more outcome-oriented**
+   - Repeating generic “play/demo” style labels can reduce decision confidence.
+   - Suggestion: tune CTA copy toward expected outcome (e.g., “Preview with demo audio,” “Start mic-reactive mode”).
+
+## Prioritized recommendations
+
+- **High impact / low effort:** increase secondary-text contrast and strengthen filter active state styling.
+- **Medium effort:** tighten above-the-fold spacing rhythm and reduce preflight information density.
+- **Higher effort:** improve large-screen catalog grouping strategy and refine runtime-first action hierarchy.
