@@ -2,10 +2,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/types.js';
 import { z } from 'zod';
 import agentCreateToySkill from '../.agent/skills/create-toy/SKILL.md?raw';
+import agentModifyToySkill from '../.agent/skills/modify-toy/SKILL.md?raw';
 import agentPlayToySkill from '../.agent/skills/play-toy/SKILL.md?raw';
 import agentShipToyChangeSkill from '../.agent/skills/ship-toy-change/SKILL.md?raw';
 import agentTestToySkill from '../.agent/skills/test-toy/SKILL.md?raw';
 import agentCreateToyWorkflow from '../.agent/workflows/create-toy.md?raw';
+import agentModifyToyWorkflow from '../.agent/workflows/modify-toy.md?raw';
 import agentPlayToyWorkflow from '../.agent/workflows/play-toy.md?raw';
 import agentShipToyChangeWorkflow from '../.agent/workflows/ship-toy-change.md?raw';
 import agentTestToyWorkflow from '../.agent/workflows/test-toy.md?raw';
@@ -32,10 +34,12 @@ const markdownSources = {
   'docs/toys.md': docsToys,
   'docs/agents/README.md': docsAgentsReadme,
   '.agent/skills/create-toy/SKILL.md': agentCreateToySkill,
+  '.agent/skills/modify-toy/SKILL.md': agentModifyToySkill,
   '.agent/skills/play-toy/SKILL.md': agentPlayToySkill,
   '.agent/skills/ship-toy-change/SKILL.md': agentShipToyChangeSkill,
   '.agent/skills/test-toy/SKILL.md': agentTestToySkill,
   '.agent/workflows/create-toy.md': agentCreateToyWorkflow,
+  '.agent/workflows/modify-toy.md': agentModifyToyWorkflow,
   '.agent/workflows/play-toy.md': agentPlayToyWorkflow,
   '.agent/workflows/ship-toy-change.md': agentShipToyChangeWorkflow,
   '.agent/workflows/test-toy.md': agentTestToyWorkflow,
@@ -90,6 +94,14 @@ const agentCapabilities: AgentCapability[] = [
     command: '/create-toy',
   },
   {
+    name: 'modify-toy',
+    kind: 'skill',
+    path: '.agent/skills/modify-toy/SKILL.md',
+    description:
+      'Modify an existing toy while keeping metadata, checks, and docs aligned.',
+    command: '/modify-toy',
+  },
+  {
     name: 'play-toy',
     kind: 'skill',
     path: '.agent/skills/play-toy/SKILL.md',
@@ -117,6 +129,14 @@ const agentCapabilities: AgentCapability[] = [
     path: '.agent/workflows/create-toy.md',
     description: 'Workflow checklist for introducing a brand new toy slug.',
     command: '/create-toy',
+  },
+  {
+    name: 'modify-toy',
+    kind: 'workflow',
+    path: '.agent/workflows/modify-toy.md',
+    description:
+      'Workflow checklist for implementing and validating existing toy changes.',
+    command: '/modify-toy',
   },
   {
     name: 'play-toy',
