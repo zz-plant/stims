@@ -301,15 +301,14 @@ body {
   font-weight: 700;
   letter-spacing: 0.01em;
   color: #e9fbff;
-  border: 1px solid rgba(148, 165, 180, 0.55);
-  background: rgba(6, 11, 22, 0.92);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(148, 165, 180, 0.4);
+  background: rgba(6, 11, 22, 0.82);
   touch-action: manipulation;
 }
 
 .toy-shell-escape__link:hover {
-  transform: translateY(-1px);
-  border-color: rgba(148, 165, 180, 0.75);
+  border-color: rgba(148, 165, 180, 0.62);
+  background: rgba(6, 11, 22, 0.9);
 }
 
 .toy-shell-escape__link:focus-visible {
