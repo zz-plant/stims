@@ -5,6 +5,7 @@ import {
   type ToyManifest,
   toyManifestSchema,
 } from '../assets/js/data/toy-schema.ts';
+import { loadToyRegistry } from './toy-registry.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,9 +55,14 @@ export async function runToyChecks(root = repoRoot) {
 }
 
 async function loadToyData(root = repoRoot) {
-  const dataPath = path.join(root, 'assets/data/toys.json');
-  const source = await fs.readFile(dataPath, 'utf8');
-  return toyManifestSchema.parse(JSON.parse(source));
+  const { entries, relativePath } = await loadToyRegistry(root);
+  try {
+    return toyManifestSchema.parse(entries);
+  } catch (error) {
+    throw new Error(
+      `Toy metadata validation failed for ${relativePath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 async function validateEntries(

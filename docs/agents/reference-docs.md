@@ -11,7 +11,7 @@
 ## High-signal code locations
 
 - `assets/js/toys/` — toy modules.
-- `assets/data/toys.json` — toy metadata source of truth.
+- `assets/data/toys.json` (or `assets/data/toys.yaml` / `assets/data/toys.yml`) — toy metadata source of truth.
 - `assets/js/loader.ts` — loader/query param routing.
 - `assets/js/core/toy-runtime.ts` — shared toy runtime plumbing.
 - `assets/js/utils/start-audio.ts` — mic/demo audio unlock path.
