@@ -710,7 +710,7 @@ export function attachCapabilityPreflight({
       continueButton.hidden = false;
       if (backLink) backLink.hidden = true;
       if (closeButton) closeButton.hidden = true;
-      performanceButton.hidden = true;
+      performanceButton.hidden = !result.performance.lowPower;
       return;
     }
 
@@ -727,10 +727,13 @@ export function attachCapabilityPreflight({
   const updatePerformanceButton = (result: CapabilityPreflightResult) => {
     latestResult = result;
     if (!result.canProceed || !result.performance.lowPower) {
+      performanceButton.hidden = true;
       performanceButton.disabled = false;
       performanceButton.textContent = 'Enable lighter visual mode';
       return;
     }
+
+    performanceButton.hidden = false;
 
     const preferences = getActiveRenderPreferences();
     const performanceEnabled =
