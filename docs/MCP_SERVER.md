@@ -22,7 +22,7 @@ All tools are registered on the logical MCP server name `stim-webtoys-mcp` and u
   - **Input:** optional `slug` (string) to fetch a single toy and optional `requiresWebGPU` (boolean) to filter by WebGPU requirements.
   - **Output:** `json` array of `{ slug, title, description, requiresWebGPU, controls, module, type, allowWebGLFallback, url }` entries. Returns a helpful text message when no toys match the filters. Optional fields default to sensible fallbacks when missing from `assets/data/toys.json`.
 - **`read_doc_section`**
-  - **Input:** required `file` enum (e.g., `README.md`, `docs/MCP_SERVER.md`, `docs/agents/README.md`, `.agent/skills/play-toy/SKILL.md`) and optional `heading` string.
+  - **Input:** required `file` enum (e.g., `README.md`, `docs/MCP_SERVER.md`, `docs/agents/README.md`, `.agent/skills/play-toy/SKILL.md`, `.agent/skills/modify-toy/SKILL.md`) and optional `heading` string.
   - **Output:** `text` response containing the full markdown file when no heading is provided, or the matching section beginning at the requested heading. Returns a friendly error when the file or heading cannot be found.
 - **`search_docs`**
   - **Input:** required `query` string plus optional `file` enum to limit search scope and optional `limit` (1-20) for result count.
@@ -34,7 +34,7 @@ All tools are registered on the logical MCP server name `stim-webtoys-mcp` and u
   - **Input:** optional `kind` enum (`skill`, `workflow`) to filter results.
   - **Output:** `json` array describing reusable capabilities from `.agent/skills/*` and `.agent/workflows/*`, including command aliases and file paths so agentic LLMs can decide which playbook to invoke.
 - **`read_agent_capability`**
-  - **Input:** required `kind` enum (`skill`, `workflow`) and required `name` (string such as `play-toy` or `ship-toy-change`).
+  - **Input:** required `kind` enum (`skill`, `workflow`) and required `name` (string such as `create-toy`, `modify-toy`, or `ship-toy-change`).
   - **Output:** `text` response with the selected capability metadata plus full markdown instructions, letting MCP clients execute the same workflow steps as local agents.
 - **`dev_commands`**
   - **Input:** optional `scope` enum (`setup`, `dev`, `build`, `test`, `lint`) to narrow the result.
