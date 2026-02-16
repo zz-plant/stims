@@ -123,6 +123,30 @@ describe('scaffold-toy CLI helpers', () => {
     ).rejects.toThrow(/already exists/);
   });
 
+  test('appends metadata to YAML registry when JSON is absent', async () => {
+    const root = await createTempRepo();
+    const slug = 'yaml-ripple';
+
+    await fs.rm(path.join(root, 'assets/data/toys.json'));
+    await fs.writeFile(path.join(root, 'assets/data/toys.yaml'), '[]\n');
+
+    await scaffoldToy({
+      slug,
+      title: 'YAML Ripple',
+      description: 'YAML-backed toy metadata.',
+      type: 'module',
+      createTest: false,
+      root,
+    });
+
+    const yamlData = await fs.readFile(
+      path.join(root, 'assets/data/toys.yaml'),
+      'utf8',
+    );
+    expect(yamlData).toContain(`slug: ${slug}`);
+    expect(yamlData).toContain('title: YAML Ripple');
+  });
+
   test('creates a standalone HTML entry point and validates metadata', async () => {
     const root = await createTempRepo();
     const slug = 'portal-frame';

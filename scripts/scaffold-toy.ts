@@ -7,6 +7,7 @@ import {
   type ToyManifest,
   toyManifestSchema,
 } from '../assets/js/data/toy-schema.ts';
+import { loadToyRegistry, saveToyRegistry } from './toy-registry.ts';
 
 type ToyType = 'module' | 'page';
 
@@ -80,7 +81,8 @@ async function main() {
         path.relative(parsed.root ?? repoRoot, toyHtmlPath(slug, parsed.root)),
       );
     }
-    console.log('- Metadata: assets/data/toys.json');
+    const { relativePath } = await loadToyRegistry(parsed.root ?? repoRoot);
+    console.log(`- Metadata: ${relativePath}`);
     console.log('- Index: docs/TOY_SCRIPT_INDEX.md');
     if (shouldCreateTest && type === 'module') {
       console.log(`- Test: tests/${testFileName(slug)}`);
@@ -221,7 +223,8 @@ async function promptSlug(
 
   const toysData = await loadToysData(root);
   if (toysData.some((entry) => entry.slug === slug)) {
-    throw new Error(`Slug "${slug}" already exists in assets/data/toys.json.`);
+    const { relativePath } = await loadToyRegistry(root);
+    throw new Error(`Slug "${slug}" already exists in ${relativePath}.`);
   }
 
   return slug;
@@ -271,12 +274,10 @@ async function promptBoolean(
 }
 
 async function loadToysData(root = repoRoot) {
-  const dataPath = path.join(root, 'assets/data/toys.json');
-  const source = await fs.readFile(dataPath, 'utf8');
-  const entries = JSON.parse(source);
+  const { entries, relativePath } = await loadToyRegistry(root);
 
   if (!Array.isArray(entries)) {
-    throw new Error('Expected assets/data/toys.json to export an array.');
+    throw new Error(`Expected ${relativePath} to export an array.`);
   }
 
   return entries as ToyManifest;
@@ -333,11 +334,12 @@ async function appendToyMetadata(
   type: ToyType,
   root = repoRoot,
 ) {
-  const dataPath = path.join(root, 'assets/data/toys.json');
+  const { relativePath } = await loadToyRegistry(root);
   const current = await loadToysData(root);
 
   if (current.some((entry) => entry.slug === slug)) {
-    throw new Error(`Slug "${slug}" already exists in assets/data/toys.json.`);
+    const { relativePath } = await loadToyRegistry(root);
+    throw new Error(`Slug "${slug}" already exists in ${relativePath}.`);
   }
 
   const newEntry = {
@@ -355,7 +357,7 @@ async function appendToyMetadata(
   };
 
   const updated = [...current, newEntry];
-  await fs.writeFile(dataPath, `${JSON.stringify(updated, null, 2)}\n`, 'utf8');
+  await saveToyRegistry(root, relativePath, updated);
 }
 
 async function validateMetadataEntry(
@@ -369,7 +371,8 @@ async function validateMetadataEntry(
   const entry = entries.find((item) => item.slug === slug);
 
   if (!entry) {
-    throw new Error(`Failed to register ${slug} in assets/data/toys.json.`);
+    const { relativePath } = await loadToyRegistry(root);
+    throw new Error(`Failed to register ${slug} in ${relativePath}.`);
   }
 
   const expectedModule =

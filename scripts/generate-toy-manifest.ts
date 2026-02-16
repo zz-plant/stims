@@ -3,12 +3,12 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { inspect } from 'node:util';
 import { toyManifestSchema } from '../assets/js/data/toy-schema.ts';
+import { loadToyRegistry } from './toy-registry.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
-const sourcePath = path.join(repoRoot, 'assets/data/toys.json');
 const manifestPath = path.join(repoRoot, 'assets/js/data/toy-manifest.ts');
 const publicPath = path.join(repoRoot, 'public/toys.json');
 
@@ -31,16 +31,11 @@ function formatZodIssues(error: {
     .join('\n');
 }
 
-async function loadSourceData() {
-  const raw = await fs.readFile(sourcePath, 'utf8');
-  return JSON.parse(raw) as unknown;
-}
-
-function buildManifestSource(data: unknown) {
+function buildManifestSource(data: unknown, sourceLabel: string) {
   const parsed = toyManifestSchema.safeParse(data);
   if (!parsed.success) {
     const message = [
-      'Toy manifest validation failed for assets/data/toys.json:',
+      `Toy manifest validation failed for ${sourceLabel}:`,
       formatZodIssues(parsed.error),
     ].join('\n');
     throw new Error(message);
@@ -66,8 +61,8 @@ async function writeManifestFiles(manifest: unknown) {
 }
 
 async function main() {
-  const data = await loadSourceData();
-  const manifest = buildManifestSource(data);
+  const { entries, relativePath } = await loadToyRegistry(repoRoot);
+  const manifest = buildManifestSource(entries, relativePath);
   await writeManifestFiles(manifest);
   console.log('Generated toy manifest at assets/js/data/toy-manifest.ts.');
   console.log('Updated public/toys.json for runtime fetch overrides.');
