@@ -586,14 +586,13 @@ export function attachCapabilityPreflight({
 
   const description = document.createElement('p');
   description.className = 'control-panel__description';
-  description.textContent =
-    'Step 1 of 2: check what is ready now on this device.';
+  description.textContent = 'One quick check, then you can launch audio.';
   panel.appendChild(description);
 
   const sequenceHint = document.createElement('p');
   sequenceHint.className = 'control-panel__microcopy';
   sequenceHint.textContent =
-    'Next: choose microphone or demo audio and start playing.';
+    'Tip: demo audio starts fastest if you want instant visuals.';
   panel.appendChild(sequenceHint);
 
   const statusContainer = document.createElement('div');
@@ -650,8 +649,9 @@ export function attachCapabilityPreflight({
 
   const actions = document.createElement('div');
   actions.className = 'control-panel__actions control-panel__actions--inline';
+  let closeButton: HTMLButtonElement | null = null;
   if (showCloseButton) {
-    const closeButton = document.createElement('button');
+    closeButton = document.createElement('button');
     closeButton.className = 'cta-button ghost';
     closeButton.type = 'button';
     closeButton.textContent = 'Close';
@@ -697,16 +697,41 @@ export function attachCapabilityPreflight({
 
   let latestResult: CapabilityPreflightResult | null = null;
 
+  const applyActionPriority = (result: CapabilityPreflightResult | null) => {
+    if (!result) {
+      if (closeButton) closeButton.hidden = false;
+      continueButton.hidden = true;
+      performanceButton.hidden = true;
+      if (backLink) backLink.hidden = true;
+      return;
+    }
+
+    if (result.canProceed) {
+      continueButton.hidden = false;
+      if (backLink) backLink.hidden = true;
+      if (closeButton) closeButton.hidden = true;
+      performanceButton.hidden = true;
+      return;
+    }
+
+    continueButton.hidden = true;
+    performanceButton.hidden = true;
+    if (backLink) {
+      backLink.hidden = false;
+      if (closeButton) closeButton.hidden = true;
+    } else if (closeButton) {
+      closeButton.hidden = false;
+    }
+  };
+
   const updatePerformanceButton = (result: CapabilityPreflightResult) => {
     latestResult = result;
     if (!result.canProceed || !result.performance.lowPower) {
-      performanceButton.hidden = true;
       performanceButton.disabled = false;
       performanceButton.textContent = 'Enable lighter visual mode';
       return;
     }
 
-    performanceButton.hidden = false;
     const preferences = getActiveRenderPreferences();
     const performanceEnabled =
       (preferences.maxPixelRatio !== null &&
@@ -735,14 +760,12 @@ export function attachCapabilityPreflight({
 
   const run = async (isRetry = false) => {
     panel.dataset.state = 'running';
+    applyActionPriority(null);
     retryButton.disabled = true;
     const result = await runCapabilityPreflight();
     panel.dataset.state = result.canProceed ? 'ready' : 'blocked';
     retryButton.disabled = false;
-    continueButton.hidden = !result.canProceed;
-    if (backLink) {
-      backLink.hidden = result.canProceed;
-    }
+    applyActionPriority(result);
     updateStatusList(statusContainer, result);
     renderIssueList(issueContainer, result);
     updateWhyDetails(detailsContent, result);
