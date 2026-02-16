@@ -75,6 +75,13 @@ const startApp = async () => {
   }
 
   const router = createRouter();
+
+  const persistentBackLink = document.querySelector<HTMLAnchorElement>(
+    '[data-back-to-library-persistent]',
+  );
+  if (persistentBackLink) {
+    persistentBackLink.href = router.getLibraryHref();
+  }
   const defaultLoader = createLoader({ router });
   const loaderOverrides =
     (
@@ -268,7 +275,7 @@ const startApp = async () => {
     };
 
     const preflight = attachCapabilityPreflight({
-      heading: 'Quick check',
+      heading: 'Ready to start?',
       backHref: router.getLibraryHref(),
       openOnAttach: !shouldSkipPreflightForSession,
       onComplete: handlePreflightReady,
