@@ -280,42 +280,15 @@ function updateStatusList(
           : 'Awaiting permission.';
   microphoneStatus.appendChild(microphoneNote);
 
-  const environmentStatus = buildStatusBadge(
-    'Environment',
-    result.environment.secureContext
-      ? 'Ready for modern browser features'
-      : 'Some features may be limited',
-    result.environment.secureContext ? 'ok' : 'warn',
-  );
-
-  const environmentNote = document.createElement('p');
-  environmentNote.className = 'preflight-status__note';
-  environmentNote.textContent = result.environment.reducedMotion
-    ? 'Reduced motion active.'
-    : 'Full motion active.';
-  environmentStatus.appendChild(environmentNote);
-
-  const performanceStatus = buildStatusBadge(
-    'Performance',
-    result.performance.lowPower ? 'Performance mode recommended' : 'Full speed',
-    result.performance.lowPower ? 'warn' : 'ok',
-  );
-
-  const performanceNote = document.createElement('p');
-  performanceNote.className = 'preflight-status__note';
-  performanceNote.textContent = result.performance.lowPower
-    ? 'Performance mode suggested.'
-    : 'Full quality available.';
-  performanceStatus.appendChild(performanceNote);
-
-  [
-    rendererStatus,
-    microphoneStatus,
-    environmentStatus,
-    performanceStatus,
-  ].forEach((status) => {
+  [rendererStatus, microphoneStatus].forEach((status) => {
     container.appendChild(status);
   });
+
+  const secondaryHint = document.createElement('p');
+  secondaryHint.className = 'preflight-panel__secondary-note';
+  secondaryHint.textContent =
+    'Environment and performance tips are available in Details.';
+  container.appendChild(secondaryHint);
 }
 
 function updateWhyDetails(

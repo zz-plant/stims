@@ -1981,7 +1981,11 @@ export function createLibraryView({
       const play = document.createElement('button');
       play.type = 'button';
       play.className = 'cta-button cta-button--muted';
-      play.textContent = toy.capabilities?.demoAudio ? 'Play demo' : 'Play';
+      play.textContent = toy.capabilities?.demoAudio
+        ? toy.capabilities?.microphone
+          ? 'Try demo mode'
+          : 'Preview visuals'
+        : 'Play now';
       play.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();

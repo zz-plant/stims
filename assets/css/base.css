@@ -1963,8 +1963,15 @@ body {
 }
 
 .preflight-panel {
-  max-width: 420px;
+  max-width: 520px;
   gap: 8px;
+}
+
+.preflight-panel.control-panel--floating {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 28px));
 }
 
 .preflight-dialog {
@@ -1979,9 +1986,11 @@ body {
 }
 
 @media (max-width: 600px) {
-  .preflight-dialog {
+  .preflight-dialog,
+  .preflight-panel.control-panel--floating {
     left: max(12px, env(safe-area-inset-left));
     right: max(12px, env(safe-area-inset-right));
+    transform: none;
     width: auto;
     clip-path: none;
   }
@@ -1993,9 +2002,16 @@ body {
 
 .preflight-panel__statuses {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 10px;
   margin: 8px 0;
+}
+
+.preflight-panel__secondary-note {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: rgba(233, 251, 255, 0.72);
 }
 
 .preflight-status {
@@ -2015,6 +2031,11 @@ body {
   gap: 10px;
   justify-content: flex-end;
   margin-top: 12px;
+}
+
+.preflight-dialog .control-panel__actions .cta-button.primary {
+  min-width: 190px;
+  box-shadow: 0 10px 22px rgba(91, 110, 130, 0.34);
 }
 
 .preflight-panel__remember {
