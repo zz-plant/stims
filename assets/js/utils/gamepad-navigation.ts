@@ -408,9 +408,16 @@ const isBackKey = (event: KeyboardEvent) => {
   return LEGACY_BACK_KEY_CODES.has(keyCode);
 };
 
+const isRemoteLegacyKeyEvent = (event: KeyboardEvent) => {
+  return event.key === 'Unidentified';
+};
+
 const isEnterLikeKey = (event: KeyboardEvent) => {
   if (ENTER_KEYS.has(event.key)) {
     return true;
+  }
+  if (!isRemoteLegacyKeyEvent(event)) {
+    return false;
   }
   const keyCode = event.keyCode || event.which || 0;
   return LEGACY_ENTER_KEY_CODES.has(keyCode);

@@ -32,14 +32,17 @@ describe('remote key mapping', () => {
 
   test('recognizes modern and legacy enter/ok keys', () => {
     expect(shouldHandleEnterLikeKey(keyEvent('Enter'))).toBeTrue();
+    expect(shouldHandleEnterLikeKey(keyEvent('Spacebar'))).toBeTrue();
     expect(shouldHandleEnterLikeKey(keyEvent('NumpadEnter'))).toBeTrue();
     expect(shouldHandleEnterLikeKey(keyEvent('Select'))).toBeTrue();
     expect(shouldHandleEnterLikeKey(keyEvent('Return'))).toBeTrue();
     expect(shouldHandleEnterLikeKey(keyEvent('Unidentified', 23))).toBeTrue();
+    expect(shouldHandleEnterLikeKey(keyEvent('Unidentified', 32))).toBeTrue();
   });
 
   test('ignores unrelated keys', () => {
     expect(shouldHandleBackKey(keyEvent('ArrowLeft'))).toBeFalse();
     expect(shouldHandleEnterLikeKey(keyEvent('ArrowRight'))).toBeFalse();
+    expect(shouldHandleEnterLikeKey(keyEvent(' ', 32))).toBeFalse();
   });
 });
