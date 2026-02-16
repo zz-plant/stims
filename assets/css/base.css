@@ -1986,7 +1986,8 @@ body {
 }
 
 @media (max-width: 600px) {
-  .preflight-dialog {
+  .preflight-dialog,
+  .preflight-panel.control-panel--floating {
     left: max(12px, env(safe-area-inset-left));
     right: max(12px, env(safe-area-inset-right));
     transform: none;
