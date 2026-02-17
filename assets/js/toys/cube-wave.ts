@@ -83,6 +83,7 @@ export function start({ container }: ToyStartOptions = {}) {
       materialFactory: () =>
         new THREE.MeshStandardMaterial({
           color: 0x66ccff,
+          emissive: 0x102040,
           metalness: 0.35,
           roughness: 0.35,
         }),
@@ -97,12 +98,18 @@ export function start({ container }: ToyStartOptions = {}) {
         baseHeight: 0,
         audioHeight: 0,
         baseScale: 1,
-        audioScale: 1.2,
+        audioScale: 1.45,
+        wave: {
+          amplitude: 0.8,
+          frequency: 2.2,
+          phase: (row, col) => row * 0.32 + col * 0.24,
+        },
         rotation: { y: 0.006, audioBoost: 0.02 },
       },
       camera: {
         position: new THREE.Vector3(0, 30, 80),
         lookAtY: 0,
+        sway: { amplitude: 2.2, frequency: 0.18 },
       },
     },
     spheres: {
@@ -306,13 +313,19 @@ export function start({ container }: ToyStartOptions = {}) {
 
   function animate(dataArray: Uint8Array, time: number) {
     const avg = getWeightedAverageFrequency(dataArray);
+    const idlePulse = (Math.sin(time * 2.4) + 1) * 0.5;
 
     const binsPerItem = dataArray.length / Math.max(gridItems.length, 1);
 
     gridItems.forEach((item, index) => {
       const bin = Math.floor(index * binsPerItem);
       const value = dataArray[bin] ?? avg;
-      const normalizedValue = value / 255;
+      const audioReactiveValue = value / 255;
+      const idleEnergy = 0.08 + idlePulse * 0.22;
+      const normalizedValue = Math.min(
+        1,
+        audioReactiveValue * 0.85 + idleEnergy,
+      );
       updateTransforms(item, normalizedValue, value, time);
     });
 

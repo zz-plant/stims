@@ -69,6 +69,7 @@ export function start({ container }: ToyStartOptions = {}) {
 
   function rebuildScene() {
     disposeRingAssets();
+    runtime.toy.scene.fog = new THREE.Fog(0x060612, 80, 720);
     const {
       ringCount,
       ringSpacing,
@@ -85,7 +86,7 @@ export function start({ container }: ToyStartOptions = {}) {
       const outerGeometry = new THREE.TorusGeometry(15, 2, 16, torusDetail);
       const outerMaterial = new THREE.MeshStandardMaterial({
         color: new THREE.Color().setHSL(hue, 0.8, 0.5),
-        emissive: new THREE.Color().setHSL(hue, 0.5, 0.2),
+        emissive: new THREE.Color().setHSL(hue, 0.62, 0.3),
         metalness: 0.6,
         roughness: 0.3,
       });
@@ -96,9 +97,9 @@ export function start({ container }: ToyStartOptions = {}) {
       const innerGeometry = new THREE.TorusGeometry(12, 1, 16, torusDetail);
       const innerMaterial = new THREE.MeshStandardMaterial({
         color: new THREE.Color().setHSL((hue + 0.1) % 1, 0.9, 0.6),
-        emissive: new THREE.Color().setHSL((hue + 0.1) % 1, 0.8, 0.4),
+        emissive: new THREE.Color().setHSL((hue + 0.1) % 1, 0.85, 0.52),
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.78,
         metalness: 0.8,
         roughness: 0.2,
       });
@@ -130,9 +131,9 @@ export function start({ container }: ToyStartOptions = {}) {
     );
     particleMaterial = new THREE.PointsMaterial({
       color: 0xffffff,
-      size: 0.5,
+      size: 0.65,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.78,
     });
     particleTrail = new THREE.Points(particleGeometry, particleMaterial);
     runtime.toy.scene.add(particleTrail);
@@ -149,6 +150,7 @@ export function start({ container }: ToyStartOptions = {}) {
   function animate(data: Uint8Array, time: number) {
     const avg = getWeightedAverageFrequency(data);
     const normalizedAvg = avg / 255;
+    const idleBeat = (Math.sin(time * 3.2) + 1) * 0.5;
 
     const binsPerRing = Math.max(
       1,
@@ -158,7 +160,7 @@ export function start({ container }: ToyStartOptions = {}) {
     rings.forEach((ringData, idx) => {
       const bin = Math.min(Math.floor(idx * binsPerRing), data.length - 1);
       const value = data[bin] || 0;
-      const normalizedValue = value / 255;
+      const normalizedValue = Math.min(1, value / 255 + idleBeat * 0.16);
 
       // Rotate rings at varying speeds
       const rotationSpeed = 0.01 + normalizedValue * 0.05;
@@ -170,7 +172,7 @@ export function start({ container }: ToyStartOptions = {}) {
       }
 
       // Pulsing scale based on audio
-      const scale = 1 + normalizedValue * 0.4;
+      const scale = 1 + normalizedValue * 0.45;
       ringData.outer.scale.set(scale, scale, 1);
       if (ringData.inner) {
         ringData.inner.scale.set(scale * 0.9, scale * 0.9, 1);
@@ -181,7 +183,11 @@ export function start({ container }: ToyStartOptions = {}) {
       const outerMaterial = ringData.outer
         .material as THREE.MeshStandardMaterial;
       outerMaterial.color.setHSL(hueShift, 0.8, 0.5 + normalizedValue * 0.2);
-      outerMaterial.emissive.setHSL(hueShift, 0.6, normalizedValue * 0.4);
+      outerMaterial.emissive.setHSL(
+        hueShift,
+        0.7,
+        0.18 + normalizedValue * 0.45,
+      );
 
       if (ringData.inner) {
         const innerMaterial = ringData.inner
@@ -196,17 +202,17 @@ export function start({ container }: ToyStartOptions = {}) {
           0.8,
           normalizedValue * 0.5,
         );
-        innerMaterial.opacity = 0.5 + normalizedValue * 0.4;
+        innerMaterial.opacity = 0.62 + normalizedValue * 0.35;
       }
     });
 
     // Smooth camera fly-through
-    const flySpeed = 0.8 + normalizedAvg * 2;
+    const flySpeed = 1.15 + normalizedAvg * 2.25 + idleBeat * 0.45;
     runtime.toy.camera.position.z -= flySpeed;
 
     // Add slight camera wobble
-    runtime.toy.camera.position.x = Math.sin(time * 2) * 2;
-    runtime.toy.camera.position.y = Math.cos(time * 1.5) * 2;
+    runtime.toy.camera.position.x = Math.sin(time * 2) * 2.6;
+    runtime.toy.camera.position.y = Math.cos(time * 1.5) * 2.2;
 
     // Reset camera when it reaches the end
     if (runtime.toy.camera.position.z < -tunnelLength + 50) {
