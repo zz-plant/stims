@@ -61,8 +61,24 @@ export function start({ container }: ToyStartOptions = {}) {
       Math.floor(2400 * getParticleScale(quality) * detail),
     );
     const positions = new Float32Array(count * 3);
-    for (let i = 0; i < count * 3; i++) {
-      positions[i] = (Math.random() - 0.5) * 90;
+    const baseRadii = new Float32Array(count);
+    const baseAngles = new Float32Array(count);
+    const verticalOffsets = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      const radius = Math.sqrt(Math.random()) * 46;
+      const angle = Math.random() * Math.PI * 2;
+      const armOffset = Math.sin(radius * 0.22 + angle * 2.5) * 2.4;
+      const yOffset = (Math.random() - 0.5) * 18;
+
+      baseRadii[i] = radius;
+      baseAngles[i] = angle;
+      verticalOffsets[i] = yOffset;
+
+      positions[i3] = Math.cos(angle + armOffset) * radius;
+      positions[i3 + 1] = yOffset;
+      positions[i3 + 2] = Math.sin(angle + armOffset) * radius;
     }
 
     particlesGeometry.setAttribute(
@@ -88,19 +104,52 @@ export function start({ container }: ToyStartOptions = {}) {
     light.position.set(15, 20, 30);
     group.add(light);
 
+    const ambientGlow = new THREE.PointLight(0x4f6bff, 0.45, 180);
+    ambientGlow.position.set(-20, 8, -24);
+    group.add(ambientGlow);
+
     runtime.toy.scene.add(group);
     runtime.toy.camera.position.set(0, 0, 60);
 
     return {
-      animate(data, _time) {
+      animate(data, time) {
         const avg = getWeightedAverageFrequency(data);
-        const rotationSpeed = 0.001 + avg / 100000;
+        const normalizedAvg = avg / 255;
+        const rotationSpeed = 0.002 + normalizedAvg * 0.006;
+
+        const animatedPositions = particles.geometry.attributes.position
+          .array as Float32Array;
+        for (let i = 0; i < count; i++) {
+          const i3 = i * 3;
+          const pulse =
+            1 + normalizedAvg * 0.18 + Math.sin(time * 2 + i * 0.04) * 0.04;
+          const orbitAngle =
+            baseAngles[i] +
+            time * (0.25 + (baseRadii[i] / 46) * 0.65) +
+            Math.sin(time + i * 0.015) * 0.05;
+
+          animatedPositions[i3] = Math.cos(orbitAngle) * baseRadii[i] * pulse;
+          animatedPositions[i3 + 1] =
+            verticalOffsets[i] +
+            Math.sin(time * 1.4 + i * 0.05) * (0.4 + normalizedAvg * 2.2);
+          animatedPositions[i3 + 2] =
+            Math.sin(orbitAngle) * baseRadii[i] * pulse;
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+
         particles.rotation.y += rotationSpeed;
         particles.rotation.x += rotationSpeed / 2;
 
-        particlesMaterial.size = 1.6 + avg / 50;
-        const hue = (avg / 256) % 1;
-        particlesMaterial.color.setHSL(hue, 0.7, 0.6);
+        particlesMaterial.size = 1.3 + normalizedAvg * 2.8;
+        const hue = (time * 0.08 + normalizedAvg * 0.2) % 1;
+        particlesMaterial.color.setHSL(hue, 0.85, 0.64);
+
+        light.intensity = 0.8 + normalizedAvg * 1.4;
+        ambientGlow.intensity = 0.45 + normalizedAvg * 0.8;
+
+        runtime.toy.camera.position.x = Math.sin(time * 0.35) * 8;
+        runtime.toy.camera.position.y = Math.cos(time * 0.24) * 5;
+        runtime.toy.camera.lookAt(0, 0, 0);
 
         runtime.toy.render();
       },
