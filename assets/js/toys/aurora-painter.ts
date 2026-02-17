@@ -5,7 +5,10 @@ import { getBandAverage } from '../utils/audio-bands';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { disposeGeometry, disposeMesh } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControls } from '../utils/toy-settings';
+import {
+  buildToySettingsPanel,
+  createToyQualityControls,
+} from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
 type AuroraPalette = {
@@ -19,7 +22,7 @@ type AuroraPalette = {
 };
 
 export function start({ container }: ToyStartOptions = {}) {
-  const { quality, configurePanel } = createToyQualityControls({
+  const { quality } = createToyQualityControls({
     title: 'Aurora painter',
     description:
       'Control render scale and ribbon density without restarting audio. Pinch to swell the ribbons and rotate to switch moods.',
@@ -241,8 +244,59 @@ export function start({ container }: ToyStartOptions = {}) {
     }
   }
 
+  type AuroraPreset = 'starter' | 'drift' | 'bright';
+
+  function applyPreset(preset: AuroraPreset) {
+    if (preset === 'starter') {
+      targetSpeed = 1.35;
+      targetGlow = 1.35;
+      activePaletteIndex = 0;
+    } else if (preset === 'drift') {
+      targetSpeed = 0.82;
+      targetGlow = 0.9;
+      activePaletteIndex = 3;
+    } else {
+      targetSpeed = 1.55;
+      targetGlow = 1.6;
+      activePaletteIndex = 1;
+    }
+    applyPalette(activePaletteIndex);
+  }
+
   function setupSettingsPanel() {
-    configurePanel();
+    buildToySettingsPanel({
+      title: 'Aurora painter',
+      description:
+        'Use a starter preset for instant glow. Advanced gestures are available after launch (pinch/rotate).',
+      quality,
+      sections: [
+        {
+          title: 'Quick preset',
+          description: 'Start with a tuned look, then refine with gestures.',
+          controls: [
+            {
+              type: 'button-group',
+              options: [
+                { id: 'starter', label: 'Starter' },
+                { id: 'drift', label: 'Drift' },
+                { id: 'bright', label: 'Bright' },
+              ],
+              getActiveId: () => {
+                if (targetSpeed < 0.95) return 'drift';
+                if (targetGlow > 1.45) return 'bright';
+                return 'starter';
+              },
+              onChange: (preset) => applyPreset(preset as AuroraPreset),
+              rowClassName: 'control-panel__row control-panel__mode-row',
+              buttonClassName: 'control-panel__mode',
+              activeClassName: 'is-active',
+              dataAttribute: 'data-aurora-preset',
+              setAriaPressed: true,
+            },
+          ],
+        },
+      ],
+    });
   }
 
   function applyPalette(index: number) {

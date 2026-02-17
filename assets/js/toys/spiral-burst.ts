@@ -127,6 +127,8 @@ export function start({ container }: ToyStartOptions = {}) {
   let smoothedHighs = 0;
   let beatFlash = 0;
   let beatStreak = 0;
+  let beatSensitivity = 1;
+  let pulseIndicator: HTMLSpanElement | null = null;
   const beatTracker = createBeatTracker({
     threshold: 0.45,
     minIntervalMs: 120,
@@ -316,7 +318,7 @@ export function start({ container }: ToyStartOptions = {}) {
 
   function setupSettingsPanel() {
     const modes: SpiralMode[] = ['burst', 'bloom', 'vortex', 'heartbeat'];
-    buildToySettingsPanelWithPerformance({
+    const panel = buildToySettingsPanelWithPerformance({
       title: 'Spiral Burst',
       description:
         'Explosive spirals that pulse with your music. Try different modes, pinch to amplify, and rotate to swap moods!',
@@ -348,6 +350,37 @@ export function start({ container }: ToyStartOptions = {}) {
         },
       ],
     });
+
+    const sensitivitySection = panel.addSection(
+      'Beat sensitivity',
+      'Raise this when beats feel soft in quieter tracks.',
+    );
+    const sensitivitySelect = document.createElement('select');
+    sensitivitySelect.className = 'control-panel__select';
+    [
+      { value: '0.8', label: 'Low' },
+      { value: '1', label: 'Balanced' },
+      { value: '1.25', label: 'High' },
+    ].forEach((option) => {
+      const element = document.createElement('option');
+      element.value = option.value;
+      element.textContent = option.label;
+      sensitivitySelect.appendChild(element);
+    });
+    sensitivitySelect.value = String(beatSensitivity);
+    sensitivitySelect.addEventListener('change', () => {
+      beatSensitivity = Number.parseFloat(sensitivitySelect.value);
+    });
+    sensitivitySection.appendChild(sensitivitySelect);
+
+    const indicatorSection = panel.addSection(
+      'Pulse indicator',
+      'Live beat meter for checking trigger strength.',
+    );
+    pulseIndicator = document.createElement('span');
+    pulseIndicator.className = 'control-panel__microcopy';
+    pulseIndicator.textContent = 'Pulse: --';
+    indicatorSection.appendChild(pulseIndicator);
   }
 
   function applyPalette(index: number) {
@@ -394,9 +427,9 @@ export function start({ container }: ToyStartOptions = {}) {
       ? analyser.getMultiBandEnergy()
       : { bass: 0, mid: 0, treble: 0 };
 
-    const bass = energy.bass;
-    const mids = energy.mid;
-    const highs = energy.treble;
+    const bass = energy.bass * beatSensitivity;
+    const mids = energy.mid * beatSensitivity;
+    const highs = energy.treble * beatSensitivity;
 
     const beatState = beatTracker.update(
       { bass, mid: mids, treble: highs },
@@ -405,7 +438,14 @@ export function start({ container }: ToyStartOptions = {}) {
     smoothedBass = beatState.smoothedBands.bass;
     smoothedMids = beatState.smoothedBands.mid;
     smoothedHighs = beatState.smoothedBands.treble;
-    beatIntensity = beatState.beatIntensity;
+    beatIntensity = THREE.MathUtils.clamp(
+      beatState.beatIntensity * beatSensitivity,
+      0,
+      1.4,
+    );
+    if (pulseIndicator) {
+      pulseIndicator.textContent = `Pulse: ${Math.round(beatIntensity * 100)}%`;
+    }
     if (beatState.isBeat) {
       beatFlash = 1;
       beatStreak = Math.min(1, beatStreak + 0.25 + smoothedHighs * 0.15);

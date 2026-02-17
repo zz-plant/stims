@@ -102,6 +102,7 @@ export function start({ container }: ToyStartOptions = {}) {
     typeof createPerformanceSettingsHandler
   > | null = null;
   let currentTheme: NeonTheme = 'synthwave';
+  let glowProfile: 'vivid' | 'soft' = 'vivid';
   let palette = THEMES[currentTheme];
   let runtime: ToyRuntimeInstance;
   let runtimeRef: ToyRuntimeInstance | null = null;
@@ -408,11 +409,24 @@ export function start({ container }: ToyStartOptions = {}) {
         renderer: webglRenderer,
         scene: toy.scene,
         camera: toy.camera,
-        bloomStrength: palette.bloomStrength,
+        bloomStrength: getBloomStrength(),
         bloomRadius: 0.4,
         bloomThreshold: 0.85,
       });
     });
+  }
+
+  function getBloomStrength() {
+    return glowProfile === 'soft'
+      ? Math.max(0.55, palette.bloomStrength * 0.6)
+      : palette.bloomStrength;
+  }
+
+  function applyGlowProfile(profile: 'vivid' | 'soft') {
+    glowProfile = profile;
+    if (postprocessing?.bloomPass) {
+      postprocessing.bloomPass.strength = getBloomStrength();
+    }
   }
 
   function applyTheme(theme: NeonTheme) {
@@ -440,7 +454,7 @@ export function start({ container }: ToyStartOptions = {}) {
 
     // Update bloom
     if (postprocessing?.bloomPass) {
-      postprocessing.bloomPass.strength = palette.bloomStrength;
+      postprocessing.bloomPass.strength = getBloomStrength();
     }
 
     // Update background
@@ -499,6 +513,36 @@ export function start({ container }: ToyStartOptions = {}) {
               activeClassName: 'active',
               setAriaPressed: false,
               dataAttribute: 'data-neon-theme',
+            },
+          ],
+        },
+        {
+          title: 'Glow profile',
+          description: 'Use Soft glow for reduced bloom intensity.',
+          controls: [
+            {
+              type: 'button-group',
+              options: [
+                { id: 'vivid', label: 'Vivid' },
+                { id: 'soft', label: 'Soft glow' },
+              ],
+              getActiveId: () => glowProfile,
+              onChange: (profile) =>
+                applyGlowProfile(profile as 'vivid' | 'soft'),
+              rowStyle:
+                'display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;',
+              buttonStyle: [
+                'padding: 6px 12px',
+                'border: 1px solid currentColor',
+                'background: transparent',
+                'color: inherit',
+                'border-radius: 4px',
+                'cursor: pointer',
+                'font-size: 12px',
+              ].join('; '),
+              activeClassName: 'active',
+              setAriaPressed: false,
+              dataAttribute: 'data-neon-glow',
             },
           ],
         },
