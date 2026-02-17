@@ -64,7 +64,7 @@ export function start({ container }: ToyStartOptions = {}) {
   const palette = {
     background: new THREE.Color('#04020b'),
     baseHue: 0.58,
-    saturation: 0.7,
+    saturation: 0.82,
   };
 
   function getRingConfig() {
@@ -135,7 +135,8 @@ export function start({ container }: ToyStartOptions = {}) {
     const mids = getBandAverage(data, 0.28, 0.7) / 255;
     const treble = getBandAverage(data, 0.7, 1) / 255;
 
-    const pulse = 0.8 + bass * 0.9;
+    const idlePulse = 0.24 + Math.sin(time * 1.35) * 0.11;
+    const pulse = 0.95 + idlePulse + bass * 0.85;
     const driftX = (input?.normalizedCentroid.x ?? 0) * 2.2;
     const driftY = (input?.normalizedCentroid.y ?? 0) * 1.6;
 
@@ -144,15 +145,18 @@ export function start({ container }: ToyStartOptions = {}) {
     group.rotation.z = time * (0.08 + mids * 0.1);
 
     rings.forEach(({ mesh, baseScale, pulseOffset }) => {
-      const ripple = Math.sin(time * 0.9 + pulseOffset) * (0.12 + treble * 0.2);
+      const ripple =
+        Math.sin(time * (0.9 + mids * 0.28) + pulseOffset) *
+        (0.2 + treble * 0.3);
       const scale = baseScale * (pulse + ripple);
       mesh.scale.setScalar(scale);
-      mesh.rotation.z += 0.002 + treble * 0.004;
+      mesh.rotation.z += 0.003 + mids * 0.002 + treble * 0.004;
     });
 
-    const hue = (palette.baseHue + avg * 0.25 + time * 0.02) % 1;
-    material.color.setHSL(hue, palette.saturation, 0.52 + avg * 0.25);
-    material.opacity = 0.45 + avg * 0.4;
+    const hue =
+      (palette.baseHue + 0.06 * Math.sin(time * 0.6) + avg * 0.28) % 1;
+    material.color.setHSL(hue, palette.saturation, 0.56 + avg * 0.24);
+    material.opacity = 0.6 + avg * 0.25;
   }
 
   function setupSettingsPanel() {
