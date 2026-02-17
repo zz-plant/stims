@@ -56,6 +56,7 @@ type GridPreset = {
     };
   };
   extras?: (group: THREE.Group) => void;
+  updateExtras?: (group: THREE.Group, time: number, avg: number) => void;
 };
 
 export function start({ container }: ToyStartOptions = {}) {
@@ -359,6 +360,8 @@ export function start({ container }: ToyStartOptions = {}) {
         Math.sin(time * sway.frequency) * sway.amplitude;
       runtime.toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
     }
+
+    currentPreset.updateExtras?.(gridGroup, time, avg);
 
     runtime.toy.render();
   }
