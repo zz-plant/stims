@@ -184,9 +184,9 @@
 
     <!-- Control Buttons -->
     <button id="startButton">Start Visualizer</button>
-    <button id="infoButton" type="button" aria-label="Open instructions" title="Open instructions">?</button>
-    <button id="settingsButton" type="button" aria-label="Open settings" title="Open settings">⚙️</button>
-    <button id="fullscreenButton" type="button" aria-label="Toggle fullscreen" title="Toggle fullscreen">⛶</button>
+    <button id="infoButton" aria-label="Open help panel" title="Help">?</button>
+    <button id="settingsButton" aria-label="Open settings panel" title="Settings">⚙️</button>
+    <button id="fullscreenButton" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
 
     <!-- Info Panel -->
     <div id="infoPanel" role="dialog" aria-label="How to use" aria-hidden="true">
@@ -488,16 +488,18 @@
         fullscreenButton.addEventListener('click', toggleFullscreen);
         closeInfoButton?.addEventListener('click', toggleInfoPanel);
         closeSettingsButton?.addEventListener('click', toggleSettingsPanel);
+        window.addEventListener('keydown', onKeydown);
+      }
 
-        document.addEventListener('keydown', (event) => {
-          if (event.key !== 'Escape') return;
-          if (infoPanel.style.display !== 'none') {
-            toggleInfoPanel(false);
-          }
-          if (settingsPanel.style.display !== 'none') {
-            toggleSettingsPanel(false);
-          }
-        });
+      function togglePanel(panel) {
+        const isVisible = getComputedStyle(panel).display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'block';
+      }
+
+      function onKeydown(event) {
+        if (event.key !== 'Escape') return;
+        infoPanel.style.display = 'none';
+        settingsPanel.style.display = 'none';
       }
 
       // Add Lighting to the Scene
@@ -801,25 +803,13 @@
       }
 
       // Toggle Info Panel
-      function toggleInfoPanel(forceOpen) {
-        const open =
-          typeof forceOpen === 'boolean'
-            ? forceOpen
-            : infoPanel.style.display === 'none';
-        infoPanel.style.display = open ? 'block' : 'none';
-        infoPanel.setAttribute('aria-hidden', String(!open));
-        infoButton?.setAttribute('aria-expanded', String(open));
+      function toggleInfoPanel() {
+        togglePanel(infoPanel);
       }
 
       // Toggle Settings Panel
-      function toggleSettingsPanel(forceOpen) {
-        const open =
-          typeof forceOpen === 'boolean'
-            ? forceOpen
-            : settingsPanel.style.display === 'none';
-        settingsPanel.style.display = open ? 'block' : 'none';
-        settingsPanel.setAttribute('aria-hidden', String(!open));
-        settingsButton?.setAttribute('aria-expanded', String(open));
+      function toggleSettingsPanel() {
+        togglePanel(settingsPanel);
       }
 
       // Toggle Fullscreen Mode
@@ -933,6 +923,7 @@
 
       window.addEventListener('pagehide', () => {
         unifiedInput?.dispose();
+        window.removeEventListener('keydown', onKeydown);
       });
 
       // Prevent Context Menu on Long Press

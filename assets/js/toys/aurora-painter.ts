@@ -162,12 +162,10 @@ export function start({ container }: ToyStartOptions = {}) {
 
   function updateRibbon(
     ribbon: (typeof ribbons)[number],
-    data: Uint8Array,
+    metrics: { avg: number; bass: number; treble: number },
     time: number,
   ) {
-    const avg = getWeightedAverageFrequency(data);
-    const bass = getBandAverage(data, 0, 0.32);
-    const treble = getBandAverage(data, 0.65, 1);
+    const { avg, bass, treble } = metrics;
 
     for (let i = ribbon.points.length - 1; i > 0; i -= 1) {
       ribbon.points[i].copy(ribbon.points[i - 1]);
@@ -210,12 +208,17 @@ export function start({ container }: ToyStartOptions = {}) {
   }
 
   function animate(data: Uint8Array, time: number) {
+    const metrics = {
+      avg: getWeightedAverageFrequency(data),
+      bass: getBandAverage(data, 0, 0.32),
+      treble: getBandAverage(data, 0.65, 1),
+    };
     controls.speed = THREE.MathUtils.lerp(controls.speed, targetSpeed, 0.08);
     controls.glow = THREE.MathUtils.lerp(controls.glow, targetGlow, 0.08);
 
     const scaledTime = time * 1.5 * controls.speed;
 
-    ribbons.forEach((ribbon) => updateRibbon(ribbon, data, scaledTime));
+    ribbons.forEach((ribbon) => updateRibbon(ribbon, metrics, scaledTime));
 
     runtime.toy.camera.position.z = 45 + Math.sin(scaledTime * 0.35) * 2.2;
     runtime.toy.camera.lookAt(0, 0, -4);
