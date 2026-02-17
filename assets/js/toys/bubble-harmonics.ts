@@ -47,6 +47,7 @@ export function start({ container }: ToyStartOptions = {}) {
   const tempHighlightColor = new THREE.Color();
   const harmonicBubbles: HarmonicBubble[] = [];
   const bubbleGroup = new THREE.Group();
+  const starField = createStarField();
   let bubbleGeometry: THREE.SphereGeometry | null = null;
   let harmonicGeometry: THREE.SphereGeometry | null = null;
   let bubbleDetail = getBubbleDetail();
@@ -55,10 +56,41 @@ export function start({ container }: ToyStartOptions = {}) {
   function getBubbleDetail() {
     const scale = quality.activeQuality.particleScale ?? 1;
     return {
-      bubbleCount: Math.max(12, Math.round(26 * scale)),
+      bubbleCount: Math.max(14, Math.round(32 * scale)),
       harmonicLimit: Math.max(40, Math.round(120 * scale)),
       segments: Math.max(24, Math.round(64 * Math.sqrt(scale))),
     };
+  }
+
+  function createStarField() {
+    const starCount = 220;
+    const starGeometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(starCount * 3);
+
+    for (let i = 0; i < starCount; i++) {
+      positions[i * 3] = THREE.MathUtils.randFloatSpread(90);
+      positions[i * 3 + 1] = THREE.MathUtils.randFloatSpread(60);
+      positions[i * 3 + 2] = THREE.MathUtils.randFloatSpread(120);
+    }
+
+    starGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(positions, 3),
+    );
+
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0x9fc8ff,
+      size: 0.32,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    stars.position.z = -20;
+    stars.name = 'bubble-stars';
+    return stars;
   }
 
   async function loadShaderSource(path: string) {
@@ -187,8 +219,9 @@ export function start({ container }: ToyStartOptions = {}) {
 
   function clearBubbleMeshes() {
     bubbleGroup.children.slice().forEach((child) => {
-      const mesh = child as THREE.Mesh;
-      disposeMesh(mesh);
+      if (child instanceof THREE.Mesh) {
+        disposeMesh(child);
+      }
     });
     bubbles.length = 0;
     harmonicBubbles.length = 0;
@@ -197,6 +230,7 @@ export function start({ container }: ToyStartOptions = {}) {
   let isReady = false;
   async function init() {
     await loadShaders();
+    bubbleGroup.add(starField);
     runtime.toy.scene.add(bubbleGroup);
     const rimLight = new THREE.PointLight(0x4ee6ff, 1.4, 120, 1.8);
     rimLight.position.set(-14, -18, 22);
@@ -296,6 +330,11 @@ export function start({ container }: ToyStartOptions = {}) {
     animateBubbles(data, avg, scaledTime);
     animateHarmonics(scaledTime);
 
+    const starsMaterial = starField.material;
+    starsMaterial.opacity = 0.2 + (avg / 255) * 0.6;
+    starField.rotation.y += 0.0008 + (avg / 255) * 0.003;
+    starField.rotation.x = Math.sin(time * 0.08) * 0.08;
+
     runtime.toy.render();
   }
 
@@ -335,6 +374,8 @@ export function start({ container }: ToyStartOptions = {}) {
         },
         dispose: () => {
           clearBubbleMeshes();
+          disposeGeometry(starField.geometry);
+          disposeMaterial(starField.material);
           disposeGeometry(bubbleGeometry ?? undefined);
           disposeGeometry(harmonicGeometry ?? undefined);
         },

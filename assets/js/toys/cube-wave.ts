@@ -56,6 +56,7 @@ type GridPreset = {
     };
   };
   extras?: (group: THREE.Group) => void;
+  updateExtras?: (group: THREE.Group, time: number, avg: number) => void;
 };
 
 export function start({ container }: ToyStartOptions = {}) {
@@ -97,12 +98,48 @@ export function start({ container }: ToyStartOptions = {}) {
         baseHeight: 0,
         audioHeight: 0,
         baseScale: 1,
-        audioScale: 1.2,
-        rotation: { y: 0.006, audioBoost: 0.02 },
+        audioScale: 1.45,
+        rotation: { y: 0.008, audioBoost: 0.03 },
       },
       camera: {
         position: new THREE.Vector3(0, 30, 80),
         lookAtY: 0,
+        sway: { amplitude: 3.5, frequency: 0.25 },
+      },
+      extras: (group) => {
+        const floorGeometry = new THREE.PlaneGeometry(100, 100);
+        const floorMaterial = new THREE.MeshStandardMaterial({
+          color: 0x070d1f,
+          emissive: 0x112244,
+          emissiveIntensity: 0.2,
+          roughness: 0.38,
+          metalness: 0.42,
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -2.2;
+        floor.name = 'cube-floor';
+        group.add(floor);
+
+        const pulseLight = new THREE.PointLight(0x44bbff, 1.4, 130, 1.7);
+        pulseLight.position.set(0, 24, 18);
+        pulseLight.name = 'cube-pulse-light';
+        group.add(pulseLight);
+      },
+      updateExtras: (group, time, avg) => {
+        const floor = group.getObjectByName('cube-floor') as THREE.Mesh | null;
+        if (floor?.material instanceof THREE.MeshStandardMaterial) {
+          const intensity = THREE.MathUtils.lerp(0.12, 0.8, avg / 255);
+          floor.material.emissiveIntensity = intensity;
+        }
+
+        const pulseLight = group.getObjectByName(
+          'cube-pulse-light',
+        ) as THREE.PointLight | null;
+        if (pulseLight) {
+          pulseLight.intensity = 0.9 + (avg / 255) * 2.4;
+          pulseLight.position.x = Math.sin(time * 0.7) * 14;
+        }
       },
     },
     spheres: {
@@ -322,6 +359,8 @@ export function start({ container }: ToyStartOptions = {}) {
         Math.sin(time * sway.frequency) * sway.amplitude;
       runtime.toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
     }
+
+    currentPreset.updateExtras?.(gridGroup, time, avg);
 
     runtime.toy.render();
   }
