@@ -670,6 +670,10 @@ export function start({ container }: ToyStartOptions = {}) {
               ? 'bloom'
               : 'burst',
       );
+    } else if (event.key.toLowerCase() === 'w') {
+      targetPulseBoost = THREE.MathUtils.clamp(targetPulseBoost + 0.1, 0.6, 2);
+    } else if (event.key.toLowerCase() === 's') {
+      targetPulseBoost = THREE.MathUtils.clamp(targetPulseBoost - 0.1, 0.6, 2);
     }
   }
 
