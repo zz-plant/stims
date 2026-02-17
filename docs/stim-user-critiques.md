@@ -2,6 +2,28 @@
 
 This guide captures user-standpoint critiques for each Stim toy based on the current registry metadata, helping prioritize onboarding, controls, and clarity improvements alongside visual polish.
 
+## Toy-specific priority implementation set (P0 + P1 only)
+
+This scoped set intentionally includes only toy-level P0 and P1 actions from the wider fun/aesthetic backlog.
+
+### P0 toy actions
+
+- `geom`: add a visible mic-level meter and an obvious demo-audio path in the toy shell.
+- `holy`: expose simple first-screen intensity and palette controls.
+- `bubble-harmonics`: add split sensitivity and a manual demo split trigger.
+- `lights`: add curated starter presets and a shuffle option for quick “best-of” looks.
+
+### P1 toy actions
+
+- `aurora-painter`: add a one-click starter preset and progressive disclosure for advanced controls.
+- `clay`: add a “first sculpt” overlay with animated affordances for core tools.
+- `evol`: add a “boost reactivity” toggle to strengthen audio linkage.
+- `seary`: label frequency-band-to-visual mapping near controls.
+- `legible`: add cadence controls and explicit audio linkage hints.
+- `cube-wave`: add a prominent mode toggle with clear active-state feedback.
+- `spiral-burst`: add beat sensitivity and a pulse indicator.
+- `neon-wave`: add a “soft glow” accessibility preset.
+
 ## 3D Toy (`3dtoy`)
 - Strength: The twisting tunnel premise is easy to understand and promises immediate audio feedback.
 - Friction: As an archived toy, it may feel less polished or consistent with newer UI patterns.
