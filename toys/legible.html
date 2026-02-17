@@ -160,6 +160,7 @@
         <option value="modernIDE">Modern IDE</option>
       </select>
       <button id="reset-button">Reset Grid</button>
+      <button id="surprise-button">Surprise me</button>
     </div>
 
     <div id="particles-js"></div>
@@ -188,6 +189,7 @@
         isMicrophoneEnabled = false;
       const startButton = document.getElementById('start-button');
       const resetButton = document.getElementById('reset-button');
+      const surpriseButton = document.getElementById('surprise-button');
       const sensitivitySlider = document.getElementById('sensitivity');
       const colorSchemeSelect = document.getElementById('color-scheme');
       let sensitivity = parseFloat(sensitivitySlider.value);
@@ -239,6 +241,7 @@
 
       startButton.addEventListener('click', startMicAudio);
       resetButton.addEventListener('click', resetGrid);
+      surpriseButton.addEventListener('click', surpriseMode);
 
       colorSchemeSelect.addEventListener('change', updateColorScheme);
 
@@ -395,6 +398,21 @@
         },
       });
 
+
+      function surpriseMode() {
+        const schemes = Array.from(colorSchemeSelect.options).map(
+          (option) => option.value
+        );
+        colorSchemeSelect.value =
+          schemes[Math.floor(Math.random() * schemes.length)] ?? 'matrix';
+        sensitivity = Number((Math.random() * 0.6 + 0.2).toFixed(2));
+        sensitivitySlider.value = String(sensitivity);
+        updateColorScheme();
+        for (let i = 0; i < 3; i += 1) {
+          revealWordAtRandomLocation();
+        }
+      }
+
       function startMicAudio() {
         startButton.disabled = true;
         void startAudio(
@@ -542,6 +560,16 @@
           gridElement.style.filter = '';
         }
       }
+
+      gridElement.addEventListener('pointerdown', () => {
+        revealWordAtRandomLocation();
+      });
+
+      window.addEventListener('keydown', (event) => {
+        if (event.key.toLowerCase() === 'r') {
+          surpriseMode();
+        }
+      });
 
       // Initialize color scheme
       updateColorScheme();
