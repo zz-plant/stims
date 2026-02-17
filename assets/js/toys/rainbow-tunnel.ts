@@ -40,7 +40,7 @@ export function start({ container }: ToyStartOptions = {}) {
     const ringCount = Math.max(8, Math.round(20 * scale));
     const ringSpacing = 30;
     const tunnelLength = ringCount * ringSpacing;
-    const particleCount = Math.max(250, Math.floor(500 * scale));
+    const particleCount = Math.max(320, Math.floor(680 * scale));
     const torusDetail = Math.max(24, Math.round(64 * Math.sqrt(scale)));
     return { ringCount, ringSpacing, tunnelLength, particleCount, torusDetail };
   }
@@ -130,9 +130,9 @@ export function start({ container }: ToyStartOptions = {}) {
     );
     particleMaterial = new THREE.PointsMaterial({
       color: 0xffffff,
-      size: 0.5,
+      size: 0.75,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.75,
     });
     particleTrail = new THREE.Points(particleGeometry, particleMaterial);
     runtime.toy.scene.add(particleTrail);
@@ -161,7 +161,9 @@ export function start({ container }: ToyStartOptions = {}) {
       const normalizedValue = value / 255;
 
       // Rotate rings at varying speeds
-      const rotationSpeed = 0.01 + normalizedValue * 0.05;
+      const idleEnergy = 0.18 + 0.16 * (Math.sin(time * 0.9 + idx * 0.24) + 1);
+      const energy = Math.max(normalizedValue, idleEnergy);
+      const rotationSpeed = 0.018 + energy * 0.06;
       ringData.outer.rotation.x += rotationSpeed;
       ringData.outer.rotation.z += rotationSpeed * 0.5;
       if (ringData.inner) {
@@ -170,18 +172,18 @@ export function start({ container }: ToyStartOptions = {}) {
       }
 
       // Pulsing scale based on audio
-      const scale = 1 + normalizedValue * 0.4;
+      const scale = 1.04 + energy * 0.45;
       ringData.outer.scale.set(scale, scale, 1);
       if (ringData.inner) {
         ringData.inner.scale.set(scale * 0.9, scale * 0.9, 1);
       }
 
       // Dynamic color shift
-      const hueShift = (ringData.hue + normalizedAvg * 0.3 + time * 0.05) % 1;
+      const hueShift = (ringData.hue + normalizedAvg * 0.4 + time * 0.08) % 1;
       const outerMaterial = ringData.outer
         .material as THREE.MeshStandardMaterial;
-      outerMaterial.color.setHSL(hueShift, 0.8, 0.5 + normalizedValue * 0.2);
-      outerMaterial.emissive.setHSL(hueShift, 0.6, normalizedValue * 0.4);
+      outerMaterial.color.setHSL(hueShift, 0.85, 0.55 + energy * 0.2);
+      outerMaterial.emissive.setHSL(hueShift, 0.72, 0.18 + energy * 0.45);
 
       if (ringData.inner) {
         const innerMaterial = ringData.inner
@@ -189,24 +191,24 @@ export function start({ container }: ToyStartOptions = {}) {
         innerMaterial.color.setHSL(
           (hueShift + 0.1) % 1,
           0.9,
-          0.6 + normalizedValue * 0.2,
+          0.64 + energy * 0.2,
         );
         innerMaterial.emissive.setHSL(
           (hueShift + 0.1) % 1,
-          0.8,
-          normalizedValue * 0.5,
+          0.86,
+          0.2 + energy * 0.5,
         );
-        innerMaterial.opacity = 0.5 + normalizedValue * 0.4;
+        innerMaterial.opacity = 0.62 + energy * 0.3;
       }
     });
 
     // Smooth camera fly-through
-    const flySpeed = 0.8 + normalizedAvg * 2;
+    const flySpeed = 1.55 + normalizedAvg * 2.8;
     runtime.toy.camera.position.z -= flySpeed;
 
     // Add slight camera wobble
-    runtime.toy.camera.position.x = Math.sin(time * 2) * 2;
-    runtime.toy.camera.position.y = Math.cos(time * 1.5) * 2;
+    runtime.toy.camera.position.x = Math.sin(time * 2.4) * 2.4;
+    runtime.toy.camera.position.y = Math.cos(time * 1.85) * 2.2;
 
     // Reset camera when it reaches the end
     if (runtime.toy.camera.position.z < -tunnelLength + 50) {
