@@ -1,7 +1,7 @@
 import type { ToyStartOptions } from '../../core/toy-interface';
 import { ensureWebGL } from '../../utils/webgl-check';
 import { createAudioController } from './audio';
-import { applyLighting, createLightsScene } from './lighting';
+import { applyLighting, createLightsScene, type LightType } from './lighting';
 import { createLightsUI } from './ui';
 
 type LightsStartOptions = ToyStartOptions & {
@@ -26,6 +26,24 @@ function renderLightsMarkup(target: HTMLElement) {
           <option value="SpotLight">Spot Light</option>
           <option value="HemisphereLight">Hemisphere Light</option>
         </select>
+      </div>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Starter look</span>
+          <small>Quick presets for strong first impressions.</small>
+        </div>
+        <select id="look-preset">
+          <option value="punchy">Punchy beam</option>
+          <option value="ambient">Ambient wash</option>
+          <option value="focus">Focus spot</option>
+        </select>
+      </div>
+      <div class="control-panel__row">
+        <div class="control-panel__text">
+          <span class="control-panel__label">Shuffle look</span>
+          <small>Cycle to a random lighting style.</small>
+        </div>
+        <button id="shuffle-look" class="cta-button">Shuffle</button>
       </div>
       <div class="control-panel__row">
         <div class="control-panel__text">
@@ -73,6 +91,8 @@ export const startLightsExperience = ({
   let audioController: ReturnType<typeof createAudioController> | null = null;
   let microphoneFlow: { dispose?: () => void } | null = null;
   let removeLightChangeListener: (() => void) | undefined;
+  let removePresetListener: (() => void) | undefined;
+  let removeShuffleListener: (() => void) | undefined;
 
   const renderOnce = () => {
     scene?.toy.render();
@@ -95,6 +115,29 @@ export const startLightsExperience = ({
     mountTarget.appendChild(shellRoot);
 
     const ui = createLightsUI(shellRoot);
+
+    const presetSelect = shellRoot.querySelector(
+      '#look-preset',
+    ) as HTMLSelectElement | null;
+    const shuffleButton = shellRoot.querySelector(
+      '#shuffle-look',
+    ) as HTMLButtonElement | null;
+
+    const applyLookPreset = (preset: string) => {
+      const mapping: Record<string, LightType> = {
+        punchy: 'PointLight',
+        ambient: 'HemisphereLight',
+        focus: 'SpotLight',
+      };
+      const lightType = mapping[preset] ?? 'PointLight';
+      if (ui.elements.lightSelect) {
+        ui.elements.lightSelect.value = lightType;
+      }
+      if (scene) {
+        scene.light = applyLighting(scene.lightingGroup, lightType);
+        renderOnce();
+      }
+    };
 
     const canvas = shellRoot.querySelector('#toy-canvas');
     if (!(canvas instanceof HTMLCanvasElement)) {
@@ -139,6 +182,28 @@ export const startLightsExperience = ({
       scene.light = applyLighting(scene.lightingGroup, lightType);
       renderOnce();
     });
+
+    if (presetSelect) {
+      const listener = () => applyLookPreset(presetSelect.value);
+      presetSelect.addEventListener('change', listener);
+      removePresetListener = () =>
+        presetSelect.removeEventListener('change', listener);
+      listener();
+    }
+
+    if (shuffleButton) {
+      const options = ['punchy', 'ambient', 'focus'];
+      const listener = () => {
+        const choice = options[Math.floor(Math.random() * options.length)];
+        if (presetSelect) {
+          presetSelect.value = choice;
+        }
+        applyLookPreset(choice);
+      };
+      shuffleButton.addEventListener('click', listener);
+      removeShuffleListener = () =>
+        shuffleButton.removeEventListener('click', listener);
+    }
   };
 
   const dispose = () => {
@@ -147,6 +212,10 @@ export const startLightsExperience = ({
     audioController?.cleanup();
     removeLightChangeListener?.();
     removeLightChangeListener = undefined;
+    removePresetListener?.();
+    removePresetListener = undefined;
+    removeShuffleListener?.();
+    removeShuffleListener = undefined;
     scene?.toy.dispose();
     scene = null;
     audioController = null;

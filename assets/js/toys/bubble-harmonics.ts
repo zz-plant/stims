@@ -52,6 +52,8 @@ export function start({ container }: ToyStartOptions = {}) {
   let harmonicGeometry: THREE.SphereGeometry | null = null;
   let bubbleDetail = getBubbleDetail();
   let shaderSources: { vertex: string; fragment: string } | null = null;
+  let splitSensitivity = 1;
+  let manualTriggerRequested = false;
 
   function getBubbleDetail() {
     const scale = quality.activeQuality.particleScale ?? 1;
@@ -313,8 +315,13 @@ export function start({ container }: ToyStartOptions = {}) {
         material.uniforms.baseColor.value.copy(baseColor);
         material.uniforms.highlightColor.value.copy(highlightColor);
 
-        bubble.harmonicCharge += energy * 0.015;
-        if (bubble.harmonicCharge > 0.55 && energy > 0.62) {
+        bubble.harmonicCharge += energy * (0.015 * splitSensitivity);
+        const splitThreshold = THREE.MathUtils.clamp(
+          0.72 - splitSensitivity * 0.14,
+          0.45,
+          0.75,
+        );
+        if (bubble.harmonicCharge > 0.55 && energy > splitThreshold) {
           addHarmonicBubble(bubble, energy);
           bubble.harmonicCharge = 0.12;
         }
@@ -328,6 +335,11 @@ export function start({ container }: ToyStartOptions = {}) {
     const scaledTime = time;
 
     animateBubbles(data, avg, scaledTime);
+    if (manualTriggerRequested && bubbles.length > 0) {
+      const target = bubbles[Math.floor(Math.random() * bubbles.length)];
+      addHarmonicBubble(target, 0.85);
+      manualTriggerRequested = false;
+    }
     animateHarmonics(scaledTime);
 
     const starsMaterial = starField.material;
@@ -339,7 +351,41 @@ export function start({ container }: ToyStartOptions = {}) {
   }
 
   function setupSettingsPanel() {
-    configurePanel();
+    const panel = configurePanel();
+    const splitSection = panel.addSection(
+      'Split sensitivity',
+      'Increase to trigger harmonic splits more often.',
+    );
+    const splitSelect = document.createElement('select');
+    splitSelect.className = 'control-panel__select';
+    [
+      { value: '0.8', label: 'Low' },
+      { value: '1', label: 'Balanced' },
+      { value: '1.25', label: 'High' },
+    ].forEach((option) => {
+      const element = document.createElement('option');
+      element.value = option.value;
+      element.textContent = option.label;
+      splitSelect.appendChild(element);
+    });
+    splitSelect.value = String(splitSensitivity);
+    splitSelect.addEventListener('change', () => {
+      splitSensitivity = Number.parseFloat(splitSelect.value);
+    });
+    splitSection.appendChild(splitSelect);
+
+    const triggerSection = panel.addSection(
+      'Manual split',
+      'Trigger a demo split if your audio source lacks high-frequency peaks.',
+    );
+    const triggerButton = document.createElement('button');
+    triggerButton.className = 'cta-button';
+    triggerButton.type = 'button';
+    triggerButton.textContent = 'Trigger split';
+    triggerButton.addEventListener('click', () => {
+      manualTriggerRequested = true;
+    });
+    triggerSection.appendChild(triggerButton);
   }
 
   const startRuntime = createToyRuntimeStarter({

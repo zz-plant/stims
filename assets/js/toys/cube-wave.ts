@@ -6,7 +6,7 @@ import { type AudioColorParams, applyAudioColor } from '../utils/color-audio';
 import { disposeObject3D } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
-  buildSingleSelectPanel,
+  buildSingleButtonGroupPanel,
   createToyQualityControls,
 } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
@@ -279,23 +279,28 @@ export function start({ container }: ToyStartOptions = {}) {
   }
 
   function setupSettingsPanel() {
-    buildSingleSelectPanel({
+    buildSingleButtonGroupPanel({
       title: 'Grid visualizer',
       description:
-        'Adjust render resolution caps and switch primitives without restarting audio.',
+        'Switch mode with one tap. The active mode stays highlighted.',
       quality,
       section: {
-        title: 'Shape',
-        description: 'Change the primitive without restarting audio.',
+        title: 'Shape mode',
+        description: 'Cubes pop harder, spheres feel smoother.',
       },
-      select: {
-        type: 'select',
+      buttonGroup: {
+        type: 'button-group',
         options: Object.entries(presets).map(([key, preset]) => ({
-          value: key,
+          id: key,
           label: preset.label,
         })),
-        getValue: () => activeMode,
-        onChange: (value) => rebuildGrid(value as ShapeMode),
+        getActiveId: () => activeMode,
+        onChange: (mode) => rebuildGrid(mode as ShapeMode),
+        rowClassName: 'control-panel__row control-panel__mode-row',
+        buttonClassName: 'control-panel__mode',
+        activeClassName: 'is-active',
+        dataAttribute: 'data-grid-mode',
+        setAriaPressed: true,
       },
     });
   }

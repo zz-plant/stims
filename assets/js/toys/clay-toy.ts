@@ -44,7 +44,25 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
-  (container ?? document.body).appendChild(renderer.domElement);
+  const mountTarget = container ?? document.body;
+  mountTarget.appendChild(renderer.domElement);
+
+  const firstSculptOverlay = document.createElement('div');
+  firstSculptOverlay.className = 'active-toy-status';
+  firstSculptOverlay.style.position = 'absolute';
+  firstSculptOverlay.style.top = '1rem';
+  firstSculptOverlay.style.right = '1rem';
+  firstSculptOverlay.style.maxWidth = '22rem';
+  firstSculptOverlay.style.padding = '0.85rem 1rem';
+  firstSculptOverlay.style.background = 'rgba(8, 10, 22, 0.82)';
+  firstSculptOverlay.style.borderRadius = '12px';
+  firstSculptOverlay.style.border = '1px solid rgba(201, 220, 255, 0.25)';
+  firstSculptOverlay.style.color = '#d9e8ff';
+  firstSculptOverlay.style.fontSize = '0.9rem';
+  firstSculptOverlay.style.lineHeight = '1.35';
+  firstSculptOverlay.innerHTML =
+    '<strong>First sculpt</strong><br/>Drag vertically to shape clay. Use <em>Smooth</em> first, then <em>Carve</em> or <em>Pinch</em> for detail.';
+  mountTarget.appendChild(firstSculptOverlay);
 
   const ambientLight = new AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
@@ -177,6 +195,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
     onInput: (state) => {
       if (state.justPressed && state.primary) {
         isInteracting = true;
+        firstSculptOverlay.remove();
         previousPointer = {
           clientY: state.primary.clientY,
           normalizedY: state.primary.normalizedY,
@@ -257,6 +276,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
       resetButton?.removeEventListener('click', createClay);
       renderer.dispose();
       scene.clear();
+      firstSculptOverlay.remove();
       renderer.domElement.remove();
     },
   };
