@@ -184,12 +184,12 @@
 
     <!-- Control Buttons -->
     <button id="startButton">Start Visualizer</button>
-    <button id="infoButton">?</button>
-    <button id="settingsButton">⚙️</button>
-    <button id="fullscreenButton">⛶</button>
+    <button id="infoButton" type="button" aria-label="Open instructions" title="Open instructions">?</button>
+    <button id="settingsButton" type="button" aria-label="Open settings" title="Open settings">⚙️</button>
+    <button id="fullscreenButton" type="button" aria-label="Toggle fullscreen" title="Toggle fullscreen">⛶</button>
 
     <!-- Info Panel -->
-    <div id="infoPanel">
+    <div id="infoPanel" role="dialog" aria-label="How to use" aria-hidden="true">
       <div class="panel-header">
         <h2>How to Use</h2>
         <button id="closeInfoButton" class="closeButton">×</button>
@@ -204,7 +204,7 @@
     </div>
 
     <!-- Settings Panel -->
-    <div id="settingsPanel">
+    <div id="settingsPanel" role="dialog" aria-label="Settings" aria-hidden="true">
       <div class="panel-header">
         <h2>Settings</h2>
         <button id="closeSettingsButton" class="closeButton">×</button>
@@ -345,6 +345,9 @@
       const settingsPanel = document.getElementById('settingsPanel');
       const closeInfoButton = document.getElementById('closeInfoButton');
       const closeSettingsButton = document.getElementById('closeSettingsButton');
+
+      infoButton?.setAttribute('aria-expanded', 'false');
+      settingsButton?.setAttribute('aria-expanded', 'false');
       const particleCountSlider = document.getElementById('particleCount');
       const particleCountValue = document.getElementById('particleCountValue');
       const shapeDetailSlider = document.getElementById('shapeDetail');
@@ -485,6 +488,16 @@
         fullscreenButton.addEventListener('click', toggleFullscreen);
         closeInfoButton?.addEventListener('click', toggleInfoPanel);
         closeSettingsButton?.addEventListener('click', toggleSettingsPanel);
+
+        document.addEventListener('keydown', (event) => {
+          if (event.key !== 'Escape') return;
+          if (infoPanel.style.display !== 'none') {
+            toggleInfoPanel(false);
+          }
+          if (settingsPanel.style.display !== 'none') {
+            toggleSettingsPanel(false);
+          }
+        });
       }
 
       // Add Lighting to the Scene
@@ -788,15 +801,25 @@
       }
 
       // Toggle Info Panel
-      function toggleInfoPanel() {
-        infoPanel.style.display =
-          infoPanel.style.display === 'none' ? 'block' : 'none';
+      function toggleInfoPanel(forceOpen) {
+        const open =
+          typeof forceOpen === 'boolean'
+            ? forceOpen
+            : infoPanel.style.display === 'none';
+        infoPanel.style.display = open ? 'block' : 'none';
+        infoPanel.setAttribute('aria-hidden', String(!open));
+        infoButton?.setAttribute('aria-expanded', String(open));
       }
 
       // Toggle Settings Panel
-      function toggleSettingsPanel() {
-        settingsPanel.style.display =
-          settingsPanel.style.display === 'none' ? 'block' : 'none';
+      function toggleSettingsPanel(forceOpen) {
+        const open =
+          typeof forceOpen === 'boolean'
+            ? forceOpen
+            : settingsPanel.style.display === 'none';
+        settingsPanel.style.display = open ? 'block' : 'none';
+        settingsPanel.setAttribute('aria-hidden', String(!open));
+        settingsButton?.setAttribute('aria-expanded', String(open));
       }
 
       // Toggle Fullscreen Mode

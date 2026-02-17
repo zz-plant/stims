@@ -32,6 +32,24 @@
         display: none;
         z-index: 5;
       }
+
+      .capability-banner__content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .capability-banner__dismiss {
+        border: 1px solid rgba(255, 229, 189, 0.4);
+        background: rgba(0, 0, 0, 0.25);
+        color: #ffe5bd;
+        border-radius: 999px;
+        width: 24px;
+        height: 24px;
+        line-height: 1;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
@@ -41,7 +59,21 @@
       id="capability-banner"
       class="capability-banner"
       aria-live="polite"
-    ></div>
+      role="status"
+    >
+      <div class="capability-banner__content">
+        <span id="capability-banner-text"></span>
+        <button
+          id="capability-banner-dismiss"
+          class="capability-banner__dismiss"
+          type="button"
+          aria-label="Dismiss capability notice"
+          title="Dismiss capability notice"
+        >
+          ×
+        </button>
+      </div>
+    </div>
     <div id="error-message" style="display: none"></div>
     <script type="module">
       import * as THREE from 'three';
@@ -65,19 +97,31 @@
 
       const canvas = document.getElementById('webglCanvas');
       const capabilityBanner = document.getElementById('capability-banner');
+      const capabilityBannerText = document.getElementById(
+        'capability-banner-text'
+      );
+      const capabilityBannerDismiss = document.getElementById(
+        'capability-banner-dismiss'
+      );
       const allowWebGLFallback = true;
       const hasWebGPU = Boolean(navigator.gpu);
       const useWebGLFallback = allowWebGLFallback && !hasWebGPU;
 
-      if (useWebGLFallback && capabilityBanner) {
-        capabilityBanner.textContent =
+      if (useWebGLFallback && capabilityBannerText && capabilityBanner) {
+        capabilityBannerText.textContent =
           'WebGPU is unavailable, so you are seeing the lighter WebGL preset with fewer particles and simpler lighting.';
         capabilityBanner.style.display = 'block';
-      } else if (!hasWebGPU && capabilityBanner) {
-        capabilityBanner.textContent =
+      } else if (!hasWebGPU && capabilityBannerText && capabilityBanner) {
+        capabilityBannerText.textContent =
           'WebGPU is unavailable in this browser. Try a WebGPU-enabled browser for the full visual fidelity.';
         capabilityBanner.style.display = 'block';
       }
+
+      capabilityBannerDismiss?.addEventListener('click', () => {
+        if (capabilityBanner) {
+          capabilityBanner.style.display = 'none';
+        }
+      });
 
       const hintsButtonHost =
         toyNav?.querySelector('.active-toy-nav__actions') ?? null;
