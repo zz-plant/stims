@@ -361,6 +361,10 @@ export function start({ container }: ToyStartOptions = {}) {
       targetDrift = THREE.MathUtils.clamp(targetDrift + 0.1, 0.6, 1.8);
     } else if (event.key === 'ArrowDown') {
       targetDrift = THREE.MathUtils.clamp(targetDrift - 0.1, 0.6, 1.8);
+    } else if (event.key.toLowerCase() === 'w') {
+      targetSparkle = THREE.MathUtils.clamp(targetSparkle + 0.1, 0.6, 2);
+    } else if (event.key.toLowerCase() === 's') {
+      targetSparkle = THREE.MathUtils.clamp(targetSparkle - 0.1, 0.6, 2);
     }
   }
 

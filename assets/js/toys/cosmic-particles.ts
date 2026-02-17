@@ -15,6 +15,7 @@ import {
   buildToySettingsPanelWithPerformance,
   createToyQualityControls,
 } from '../utils/toy-settings';
+import type { UnifiedInputState } from '../utils/unified-input';
 
 type PresetKey = 'orbit' | 'nebula';
 
@@ -46,6 +47,14 @@ export function start({ container }: ToyStartOptions = {}) {
 
   let activePreset: PresetInstance | null = null;
   let activePresetKey: PresetKey = 'orbit';
+
+  const controls = {
+    motionBoost: 1,
+    colorDrift: 0,
+  };
+  let targetMotionBoost = controls.motionBoost;
+  let targetColorDrift = controls.colorDrift;
+  let rotationLatch = 0;
 
   function getParticleScale(quality: QualityPreset) {
     return (quality.particleScale ?? 1) * performanceSettings.particleBudget;
@@ -114,7 +123,18 @@ export function start({ container }: ToyStartOptions = {}) {
     return {
       animate(data, time) {
         const avg = getWeightedAverageFrequency(data);
-        const normalizedAvg = avg / 255;
+        controls.motionBoost = THREE.MathUtils.lerp(
+          controls.motionBoost,
+          targetMotionBoost,
+          0.08,
+        );
+        controls.colorDrift = THREE.MathUtils.lerp(
+          controls.colorDrift,
+          targetColorDrift,
+          0.08,
+        );
+
+        const normalizedAvg = (avg / 255) * controls.motionBoost;
         const rotationSpeed = 0.002 + normalizedAvg * 0.006;
 
         const animatedPositions = particles.geometry.attributes.position
@@ -141,14 +161,17 @@ export function start({ container }: ToyStartOptions = {}) {
         particles.rotation.x += rotationSpeed / 2;
 
         particlesMaterial.size = 1.3 + normalizedAvg * 2.8;
-        const hue = (time * 0.08 + normalizedAvg * 0.2) % 1;
+        const hue =
+          (time * 0.08 + normalizedAvg * 0.2 + controls.colorDrift) % 1;
         particlesMaterial.color.setHSL(hue, 0.85, 0.64);
 
         light.intensity = 0.8 + normalizedAvg * 1.4;
         ambientGlow.intensity = 0.45 + normalizedAvg * 0.8;
 
-        runtime.toy.camera.position.x = Math.sin(time * 0.35) * 8;
-        runtime.toy.camera.position.y = Math.cos(time * 0.24) * 5;
+        runtime.toy.camera.position.x =
+          Math.sin(time * 0.35) * (6 + controls.motionBoost * 2);
+        runtime.toy.camera.position.y =
+          Math.cos(time * 0.24) * (4 + controls.motionBoost);
         runtime.toy.camera.lookAt(0, 0, 0);
 
         runtime.toy.render();
@@ -283,7 +306,18 @@ export function start({ container }: ToyStartOptions = {}) {
     return {
       animate(data, time) {
         const avg = getWeightedAverageFrequency(data);
-        const normalizedAvg = avg / 255;
+        controls.motionBoost = THREE.MathUtils.lerp(
+          controls.motionBoost,
+          targetMotionBoost,
+          0.08,
+        );
+        controls.colorDrift = THREE.MathUtils.lerp(
+          controls.colorDrift,
+          targetColorDrift,
+          0.08,
+        );
+
+        const normalizedAvg = (avg / 255) * controls.motionBoost;
 
         const positions = stars.geometry.attributes.position
           .array as Float32Array;
@@ -315,7 +349,7 @@ export function start({ container }: ToyStartOptions = {}) {
         (nebulaParticles.material as THREE.PointsMaterial).opacity =
           0.2 + normalizedAvg * 0.3;
 
-        const hueBase = (time * 0.05) % 1;
+        const hueBase = (time * 0.05 + controls.colorDrift) % 1;
         applyAudioColor(starMaterial, normalizedAvg, {
           baseHue: hueBase,
           hueRange: 0.5,
@@ -323,8 +357,10 @@ export function start({ container }: ToyStartOptions = {}) {
           baseLuminance: 0.9,
         });
 
-        runtime.toy.camera.position.x = Math.sin(time * 0.3) * 10;
-        runtime.toy.camera.position.y = Math.cos(time * 0.2) * 5;
+        runtime.toy.camera.position.x =
+          Math.sin(time * 0.3) * (8 + controls.motionBoost * 2);
+        runtime.toy.camera.position.y =
+          Math.cos(time * 0.2) * (4 + controls.motionBoost);
         runtime.toy.camera.lookAt(0, 0, -100);
 
         runtime.toy.render();
@@ -395,6 +431,61 @@ export function start({ container }: ToyStartOptions = {}) {
     activePreset?.animate(data, time);
   }
 
+  function cyclePreset() {
+    setActivePreset(activePresetKey === 'orbit' ? 'nebula' : 'orbit');
+  }
+
+  function handleInput(state: UnifiedInputState | null) {
+    if (!state || state.pointerCount === 0) {
+      rotationLatch = 0;
+      return;
+    }
+
+    targetMotionBoost = THREE.MathUtils.clamp(
+      1 + state.normalizedCentroid.y * 0.6,
+      0.65,
+      1.9,
+    );
+
+    const gesture = state.gesture;
+    if (!gesture || gesture.pointerCount < 2) return;
+
+    targetMotionBoost = THREE.MathUtils.clamp(
+      targetMotionBoost + (gesture.scale - 1) * 0.55,
+      0.65,
+      2.2,
+    );
+
+    if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+      targetColorDrift = (targetColorDrift + 0.08) % 1;
+      cyclePreset();
+    } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+      targetColorDrift = (targetColorDrift - 0.08 + 1) % 1;
+      cyclePreset();
+    }
+    rotationLatch = gesture.rotation;
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowRight') {
+      cyclePreset();
+    } else if (event.key === 'ArrowLeft') {
+      cyclePreset();
+    } else if (event.key === 'ArrowUp') {
+      targetMotionBoost = THREE.MathUtils.clamp(
+        targetMotionBoost + 0.1,
+        0.65,
+        2.2,
+      );
+    } else if (event.key === 'ArrowDown') {
+      targetMotionBoost = THREE.MathUtils.clamp(
+        targetMotionBoost - 0.1,
+        0.65,
+        2.2,
+      );
+    }
+  }
+
   setupSettingsPanel();
   const startRuntime = createAudioToyStarter({
     toyOptions: {
@@ -405,6 +496,9 @@ export function start({ container }: ToyStartOptions = {}) {
       },
     },
     audio: { fftSize: 256 },
+    input: {
+      onInput: (state) => handleInput(state),
+    },
     plugins: [
       {
         name: 'cosmic-particles',
@@ -412,12 +506,14 @@ export function start({ container }: ToyStartOptions = {}) {
           runtime = runtimeInstance;
           setupSettingsPanel();
           setActivePreset(activePresetKey);
+          window.addEventListener('keydown', handleKeydown);
         },
         update: ({ frequencyData, time }) => {
           animate(frequencyData, time);
         },
         dispose: () => {
           activePreset?.dispose();
+          window.removeEventListener('keydown', handleKeydown);
         },
       },
     ],

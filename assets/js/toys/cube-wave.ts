@@ -9,6 +9,7 @@ import {
   buildSingleSelectPanel,
   createToyQualityControls,
 } from '../utils/toy-settings';
+import type { UnifiedInputState } from '../utils/unified-input';
 
 type ShapeMode = 'cubes' | 'spheres';
 
@@ -74,6 +75,13 @@ export function start({ container }: ToyStartOptions = {}) {
     },
   });
   let runtime: ToyRuntimeInstance;
+  const controls = {
+    energyBoost: 1,
+    cameraDrift: 1,
+  };
+  let targetEnergyBoost = controls.energyBoost;
+  let targetCameraDrift = controls.cameraDrift;
+  let rotationLatch = 0;
 
   const presets: Record<ShapeMode, GridPreset> = {
     cubes: {
@@ -343,6 +351,16 @@ export function start({ container }: ToyStartOptions = {}) {
   }
 
   function animate(dataArray: Uint8Array, time: number) {
+    controls.energyBoost = THREE.MathUtils.lerp(
+      controls.energyBoost,
+      targetEnergyBoost,
+      0.08,
+    );
+    controls.cameraDrift = THREE.MathUtils.lerp(
+      controls.cameraDrift,
+      targetCameraDrift,
+      0.08,
+    );
     const avg = getWeightedAverageFrequency(dataArray);
 
     const binsPerItem = dataArray.length / Math.max(gridItems.length, 1);
@@ -350,20 +368,87 @@ export function start({ container }: ToyStartOptions = {}) {
     gridItems.forEach((item, index) => {
       const bin = Math.floor(index * binsPerItem);
       const value = dataArray[bin] ?? avg;
-      const normalizedValue = value / 255;
+      const normalizedValue = THREE.MathUtils.clamp(
+        (value / 255) * controls.energyBoost,
+        0,
+        1.4,
+      );
       updateTransforms(item, normalizedValue, value, time);
     });
 
     const sway = currentPreset.camera.sway;
     if (sway) {
       runtime.toy.camera.position.x =
-        Math.sin(time * sway.frequency) * sway.amplitude;
+        Math.sin(time * sway.frequency) * sway.amplitude * controls.cameraDrift;
+      runtime.toy.camera.position.z =
+        currentPreset.camera.position.z - (controls.energyBoost - 1) * 10;
       runtime.toy.camera.lookAt(0, currentPreset.camera.lookAtY, 0);
     }
 
     currentPreset.updateExtras?.(gridGroup, time, avg);
 
     runtime.toy.render();
+  }
+
+  function switchMode(direction: 1 | -1) {
+    const modeKeys = Object.keys(presets) as ShapeMode[];
+    const currentIndex = modeKeys.indexOf(activeMode);
+    const nextIndex =
+      (currentIndex + direction + modeKeys.length) % modeKeys.length;
+    rebuildGrid(modeKeys[nextIndex]);
+  }
+
+  function handleInput(state: UnifiedInputState | null) {
+    if (!state || state.pointerCount === 0) {
+      rotationLatch = 0;
+      return;
+    }
+
+    targetEnergyBoost = THREE.MathUtils.clamp(
+      1 + state.normalizedCentroid.y * 0.6,
+      0.65,
+      1.9,
+    );
+    targetCameraDrift = THREE.MathUtils.clamp(
+      1 + state.normalizedCentroid.x * 0.45,
+      0.6,
+      1.7,
+    );
+
+    const gesture = state.gesture;
+    if (!gesture || gesture.pointerCount < 2) return;
+
+    targetEnergyBoost = THREE.MathUtils.clamp(
+      targetEnergyBoost + (gesture.scale - 1) * 0.6,
+      0.65,
+      2,
+    );
+    if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+      switchMode(1);
+    } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+      switchMode(-1);
+    }
+    rotationLatch = gesture.rotation;
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowRight') {
+      switchMode(1);
+    } else if (event.key === 'ArrowLeft') {
+      switchMode(-1);
+    } else if (event.key === 'ArrowUp') {
+      targetEnergyBoost = THREE.MathUtils.clamp(
+        targetEnergyBoost + 0.1,
+        0.65,
+        2,
+      );
+    } else if (event.key === 'ArrowDown') {
+      targetEnergyBoost = THREE.MathUtils.clamp(
+        targetEnergyBoost - 0.1,
+        0.65,
+        2,
+      );
+    }
   }
 
   const startRuntime = createToyRuntimeStarter({
@@ -377,17 +462,22 @@ export function start({ container }: ToyStartOptions = {}) {
       ambientLightOptions: { intensity: 0.6 },
     },
     audio: { fftSize: 256 },
+    input: {
+      onInput: (state) => handleInput(state),
+    },
     plugins: [
       {
         name: 'cube-wave',
         setup: ({ toy }) => {
           toy.scene.add(gridGroup);
+          window.addEventListener('keydown', handleKeydown);
         },
         update: ({ frequencyData, time }) => {
           animate(frequencyData, time);
         },
         dispose: () => {
           disposeGroup(gridGroup);
+          window.removeEventListener('keydown', handleKeydown);
         },
       },
     ],

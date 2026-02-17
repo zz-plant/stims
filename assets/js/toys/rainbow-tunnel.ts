@@ -9,6 +9,7 @@ import {
 } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createToyQualityControls } from '../utils/toy-settings';
+import type { UnifiedInputState } from '../utils/unified-input';
 
 interface RingData {
   outer: THREE.Mesh;
@@ -29,6 +30,15 @@ export function start({ container }: ToyStartOptions = {}) {
   let runtime: ToyRuntimeInstance;
 
   const rings: RingData[] = [];
+  const controls = {
+    speed: 1,
+    wobble: 1,
+    spectrumShift: 0,
+  };
+  let targetSpeed = controls.speed;
+  let targetWobble = controls.wobble;
+  let targetSpectrumShift = controls.spectrumShift;
+  let rotationLatch = 0;
   let particleTrail: THREE.Points | null = null;
   let particleGeometry: THREE.BufferGeometry | null = null;
   let particleMaterial: THREE.PointsMaterial | null = null;
@@ -147,6 +157,13 @@ export function start({ container }: ToyStartOptions = {}) {
   }
 
   function animate(data: Uint8Array, time: number) {
+    controls.speed = THREE.MathUtils.lerp(controls.speed, targetSpeed, 0.08);
+    controls.wobble = THREE.MathUtils.lerp(controls.wobble, targetWobble, 0.08);
+    controls.spectrumShift = THREE.MathUtils.lerp(
+      controls.spectrumShift,
+      targetSpectrumShift,
+      0.08,
+    );
     const avg = getWeightedAverageFrequency(data);
     const normalizedAvg = avg / 255;
 
@@ -163,23 +180,29 @@ export function start({ container }: ToyStartOptions = {}) {
       // Rotate rings at varying speeds
       const idleEnergy = 0.18 + 0.16 * (Math.sin(time * 0.9 + idx * 0.24) + 1);
       const energy = Math.max(normalizedValue, idleEnergy);
-      const rotationSpeed = 0.018 + energy * 0.06;
+      const rotationSpeed = (0.018 + energy * 0.06) * controls.speed;
       ringData.outer.rotation.x += rotationSpeed;
-      ringData.outer.rotation.z += rotationSpeed * 0.5;
+      ringData.outer.rotation.z +=
+        rotationSpeed * (0.35 + controls.wobble * 0.2);
       if (ringData.inner) {
         ringData.inner.rotation.x -= rotationSpeed * 0.7;
         ringData.inner.rotation.z -= rotationSpeed * 0.3;
       }
 
       // Pulsing scale based on audio
-      const scale = 1.04 + energy * 0.45;
+      const scale = 1.04 + energy * (0.35 + controls.wobble * 0.2);
       ringData.outer.scale.set(scale, scale, 1);
       if (ringData.inner) {
         ringData.inner.scale.set(scale * 0.9, scale * 0.9, 1);
       }
 
       // Dynamic color shift
-      const hueShift = (ringData.hue + normalizedAvg * 0.4 + time * 0.08) % 1;
+      const hueShift =
+        (ringData.hue +
+          normalizedAvg * 0.4 +
+          time * 0.08 +
+          controls.spectrumShift) %
+        1;
       const outerMaterial = ringData.outer
         .material as THREE.MeshStandardMaterial;
       outerMaterial.color.setHSL(hueShift, 0.85, 0.55 + energy * 0.2);
@@ -203,12 +226,14 @@ export function start({ container }: ToyStartOptions = {}) {
     });
 
     // Smooth camera fly-through
-    const flySpeed = 1.55 + normalizedAvg * 2.8;
+    const flySpeed = (1.55 + normalizedAvg * 2.8) * controls.speed;
     runtime.toy.camera.position.z -= flySpeed;
 
     // Add slight camera wobble
-    runtime.toy.camera.position.x = Math.sin(time * 2.4) * 2.4;
-    runtime.toy.camera.position.y = Math.cos(time * 1.85) * 2.2;
+    runtime.toy.camera.position.x =
+      Math.sin(time * 2.4) * (1.6 + controls.wobble);
+    runtime.toy.camera.position.y =
+      Math.cos(time * 1.85) * (1.4 + controls.wobble);
 
     // Reset camera when it reaches the end
     if (runtime.toy.camera.position.z < -tunnelLength + 50) {
@@ -223,6 +248,57 @@ export function start({ container }: ToyStartOptions = {}) {
     );
 
     runtime.toy.render();
+  }
+
+  function handleInput(state: UnifiedInputState | null) {
+    if (!state || state.pointerCount === 0) {
+      rotationLatch = 0;
+      return;
+    }
+
+    targetSpeed = THREE.MathUtils.clamp(
+      1 + state.normalizedCentroid.x * 0.45,
+      0.65,
+      1.8,
+    );
+    targetWobble = THREE.MathUtils.clamp(
+      1 + state.normalizedCentroid.y * 0.55,
+      0.6,
+      2,
+    );
+
+    const gesture = state.gesture;
+    if (!gesture || gesture.pointerCount < 2) return;
+
+    targetSpeed = THREE.MathUtils.clamp(
+      targetSpeed + (gesture.scale - 1) * 0.5,
+      0.65,
+      2,
+    );
+    targetWobble = THREE.MathUtils.clamp(
+      targetWobble + Math.abs(gesture.rotation) * 0.8,
+      0.6,
+      2.2,
+    );
+
+    if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+      targetSpectrumShift = (targetSpectrumShift + 0.08) % 1;
+    } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+      targetSpectrumShift = (targetSpectrumShift - 0.08 + 1) % 1;
+    }
+    rotationLatch = gesture.rotation;
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowUp') {
+      targetSpeed = THREE.MathUtils.clamp(targetSpeed + 0.1, 0.65, 2);
+    } else if (event.key === 'ArrowDown') {
+      targetSpeed = THREE.MathUtils.clamp(targetSpeed - 0.1, 0.65, 2);
+    } else if (event.key === 'ArrowRight') {
+      targetSpectrumShift = (targetSpectrumShift + 0.06) % 1;
+    } else if (event.key === 'ArrowLeft') {
+      targetSpectrumShift = (targetSpectrumShift - 0.06 + 1) % 1;
+    }
   }
 
   function setupSettingsPanel() {
@@ -240,6 +316,9 @@ export function start({ container }: ToyStartOptions = {}) {
       },
     },
     audio: { fftSize: 256 },
+    input: {
+      onInput: (state) => handleInput(state),
+    },
     plugins: [
       {
         name: 'rainbow-tunnel',
@@ -247,12 +326,14 @@ export function start({ container }: ToyStartOptions = {}) {
           runtime = runtimeInstance;
           setupSettingsPanel();
           rebuildScene();
+          window.addEventListener('keydown', handleKeydown);
         },
         update: ({ frequencyData, time }) => {
           animate(frequencyData, time);
         },
         dispose: () => {
           disposeRingAssets();
+          window.removeEventListener('keydown', handleKeydown);
         },
       },
     ],
