@@ -192,7 +192,10 @@
       const colorSchemeSelect = document.getElementById('color-scheme');
       let sensitivity = parseFloat(sensitivitySlider.value);
       let wordIndex = 0;
-      const cyclingActive = true;
+      let cyclingActive = true;
+      let cyclingTimer = null;
+      const GRID_COLUMNS = 30;
+      const GRID_ROWS = 15;
       let beatPeak = 0.12;
       let trebleGlow = 0;
       const errorDisplayId = 'error-message';
@@ -316,7 +319,7 @@
         gridElement.innerHTML = ''; // Clear the grid before regenerating
         const fragment = document.createDocumentFragment();
 
-        for (let i = 0; i < 450; i++) {
+        for (let i = 0; i < GRID_COLUMNS * GRID_ROWS; i++) {
           // Fixed number of cells for better performance
           const cell = document.createElement('div');
           cell.classList.add('cell');
@@ -334,17 +337,21 @@
       function cycleRandomCharacters() {
         const gridCells = document.querySelectorAll('.cell');
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+        if (cyclingTimer) {
+          window.clearTimeout(cyclingTimer);
+        }
+
         function updateCharacters() {
-          if (cyclingActive) {
-            gridCells.forEach((cell) => {
-              if (!cell.dataset.fixed) {
-                cell.textContent = chars.charAt(
-                  Math.floor(Math.random() * chars.length)
-                );
-              }
-            });
-            setTimeout(updateCharacters, 100); // Use setTimeout to avoid overwhelming the browser
-          }
+          if (!cyclingActive) return;
+          gridCells.forEach((cell) => {
+            if (!cell.dataset.fixed) {
+              cell.textContent = chars.charAt(
+                Math.floor(Math.random() * chars.length)
+              );
+            }
+          });
+          cyclingTimer = window.setTimeout(updateCharacters, 100);
         }
         updateCharacters();
       }
@@ -425,38 +432,48 @@
       }
 
       function revealWordAtRandomLocation() {
-        if (wordIndex < words.length) {
-          const word = words[wordIndex];
-          const gridCells = document.querySelectorAll('.cell');
-          const maxCol = Math.sqrt(gridCells.length) - word.length;
+        if (wordIndex >= words.length) return;
 
-          let randomIndex;
-          do {
-            randomIndex = Math.floor(
-              Math.random() * (gridCells.length - word.length)
-            );
-          } while (isOverlap(randomIndex, word.length));
-
-          const wordElements = [];
-
-          for (let i = 0; i < word.length; i++) {
-            const cell = gridCells[randomIndex + i];
-            cell.textContent = word[i];
-            cell.dataset.fixed = true;
-            cell.classList.add('is-word');
-            cell.classList.add('flicker');
-
-            wordElements.push(cell);
-          }
-
-          revealedLocations.push({ index: randomIndex, length: word.length });
-
-          wordElements.forEach((cell) => {
-            cell.addEventListener('click', () => dissolveWord(wordElements));
-          });
-
+        const word = words[wordIndex];
+        const gridCells = document.querySelectorAll('.cell');
+        if (word.length > GRID_COLUMNS || !gridCells.length) {
           wordIndex++;
+          return;
         }
+
+        const candidates = [];
+        for (let row = 0; row < GRID_ROWS; row++) {
+          for (let col = 0; col <= GRID_COLUMNS - word.length; col++) {
+            const startIndex = row * GRID_COLUMNS + col;
+            if (!isOverlap(startIndex, word.length)) {
+              candidates.push(startIndex);
+            }
+          }
+        }
+
+        if (!candidates.length) return;
+
+        const randomIndex =
+          candidates[Math.floor(Math.random() * candidates.length)];
+        const wordElements = [];
+
+        for (let i = 0; i < word.length; i++) {
+          const cell = gridCells[randomIndex + i];
+          cell.textContent = word[i];
+          cell.dataset.fixed = true;
+          cell.classList.add('is-word');
+          cell.classList.add('flicker');
+
+          wordElements.push(cell);
+        }
+
+        revealedLocations.push({ index: randomIndex, length: word.length });
+
+        wordElements.forEach((cell) => {
+          cell.addEventListener('click', () => dissolveWord(wordElements));
+        });
+
+        wordIndex++;
       }
 
       function isOverlap(index, length) {

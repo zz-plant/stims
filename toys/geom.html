@@ -365,7 +365,7 @@
 
       startButton.addEventListener('click', async () => {
         startButton.disabled = true;
-        startButton.style.display = 'none';
+        startButton.textContent = 'Connecting…';
         clearError('error-message');
 
         try {
@@ -376,6 +376,9 @@
               fallbackToSynthetic: true,
             },
             {
+              onSuccess: () => {
+                startButton.textContent = 'Visualizer running';
+              },
               onError: (error) => {
                 console.error('Error starting audio:', error);
               },
@@ -383,7 +386,7 @@
           );
         } catch (error) {
           startButton.disabled = false;
-          startButton.style.display = 'inline-block';
+          startButton.textContent = 'Retry Microphone Visualizer';
 
           if (error instanceof AudioAccessError) {
             showError('error-message', error.message);

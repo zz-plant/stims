@@ -184,9 +184,9 @@
 
     <!-- Control Buttons -->
     <button id="startButton">Start Visualizer</button>
-    <button id="infoButton">?</button>
-    <button id="settingsButton">⚙️</button>
-    <button id="fullscreenButton">⛶</button>
+    <button id="infoButton" aria-label="Open help panel" title="Help">?</button>
+    <button id="settingsButton" aria-label="Open settings panel" title="Settings">⚙️</button>
+    <button id="fullscreenButton" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
 
     <!-- Info Panel -->
     <div id="infoPanel">
@@ -485,6 +485,18 @@
         fullscreenButton.addEventListener('click', toggleFullscreen);
         closeInfoButton?.addEventListener('click', toggleInfoPanel);
         closeSettingsButton?.addEventListener('click', toggleSettingsPanel);
+        window.addEventListener('keydown', onKeydown);
+      }
+
+      function togglePanel(panel) {
+        const isVisible = getComputedStyle(panel).display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'block';
+      }
+
+      function onKeydown(event) {
+        if (event.key !== 'Escape') return;
+        infoPanel.style.display = 'none';
+        settingsPanel.style.display = 'none';
       }
 
       // Add Lighting to the Scene
@@ -789,14 +801,12 @@
 
       // Toggle Info Panel
       function toggleInfoPanel() {
-        infoPanel.style.display =
-          infoPanel.style.display === 'none' ? 'block' : 'none';
+        togglePanel(infoPanel);
       }
 
       // Toggle Settings Panel
       function toggleSettingsPanel() {
-        settingsPanel.style.display =
-          settingsPanel.style.display === 'none' ? 'block' : 'none';
+        togglePanel(settingsPanel);
       }
 
       // Toggle Fullscreen Mode
@@ -910,6 +920,7 @@
 
       window.addEventListener('pagehide', () => {
         unifiedInput?.dispose();
+        window.removeEventListener('keydown', onKeydown);
       });
 
       // Prevent Context Menu on Long Press
