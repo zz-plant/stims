@@ -87,7 +87,7 @@ html.light {
   --bg-color: #f5f6f7;
   --bg-color-secondary: #e2e6ed;
   --text-color: #1f2630;
-  --text-muted: rgba(31, 38, 48, 0.9);
+  --text-muted: #3f4a5a;
   --accent-contrast: #ffffff;
   --link-color: #3a4b61;
   --link-hover: #2f3c50;
@@ -1893,7 +1893,10 @@ html.light .repo-status__metric {
 }
 
 .library {
-  margin-top: clamp(2.1rem, 3vw, 3.1rem);
+  margin-top: clamp(2.8rem, 3.8vw, 4.2rem);
+  padding-top: clamp(0.85rem, 1.4vw, 1.35rem);
+  border-top: 1px solid
+    color-mix(in srgb, var(--accent-color) 20%, var(--surface-border));
 }
 
 .section-heading {
@@ -2508,11 +2511,13 @@ html.light .active-filters__label {
 }
 
 .filter-chip.is-active {
-  background: color-mix(in srgb, var(--accent-color) 38%, var(--card-bg));
-  border-color: rgba(96, 165, 250, 0.9);
+  background: color-mix(in srgb, var(--accent-color) 56%, var(--card-bg));
+  color: color-mix(in srgb, var(--text-color) 95%, #ffffff);
+  border-color: rgba(96, 165, 250, 1);
+  font-weight: 700;
   padding-left: 1.45rem;
   box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--accent-color) 26%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--accent-color) 40%, transparent),
     var(--shadow-soft);
 }
 
@@ -2835,11 +2840,16 @@ html.light .filter-chip {
 }
 
 html.light .filter-chip.is-active {
-  background: color-mix(in srgb, var(--accent-color) 24%, #e7eef8);
-  border-color: rgba(59, 130, 246, 0.8);
+  background: color-mix(in srgb, var(--accent-color) 38%, #e7eef8);
+  border-color: rgba(29, 78, 216, 0.88);
+  color: #102544;
   box-shadow:
-    0 0 0 2px rgba(59, 130, 246, 0.26),
+    0 0 0 2px rgba(37, 99, 235, 0.32),
     0 6px 16px rgba(15, 23, 42, 0.12);
+}
+
+html.light .library {
+  border-top-color: rgba(63, 74, 90, 0.2);
 }
 
 html.light .filter-chip.is-active::before {
