@@ -78,31 +78,68 @@ export function start({ container }: ToyStartOptions = {}) {
     cubes: {
       label: 'Cubes',
       primitive: 'cubes',
-      grid: { rows: 10, cols: 10, spacingX: 5, spacingZ: 5 },
+      grid: { rows: 12, cols: 12, spacingX: 4.5, spacingZ: 4.5 },
       geometryFactory: () => new THREE.BoxGeometry(4, 4, 4),
       materialFactory: () =>
         new THREE.MeshStandardMaterial({
           color: 0x66ccff,
-          metalness: 0.35,
-          roughness: 0.35,
+          metalness: 0.25,
+          roughness: 0.3,
+          emissive: 0x152844,
+          emissiveIntensity: 0.4,
         }),
       colorFor: () => ({
         baseHue: 0.58,
-        hueRange: -0.45,
+        hueRange: -0.5,
         baseSaturation: 0.8,
         baseLuminance: 0.5,
+        luminanceRange: 0.3,
+        emissive: {
+          baseHue: 0.58,
+          hueRange: -0.25,
+          baseSaturation: 0.55,
+          baseLuminance: 0.06,
+          luminanceRange: 0.22,
+        },
       }),
       animation: {
         heightMode: 'scaleY',
         baseHeight: 0,
         audioHeight: 0,
+        wave: {
+          amplitude: 1.2,
+          frequency: 2.2,
+          phase: (row, col) => row * 0.25 + col * 0.25,
+        },
         baseScale: 1,
-        audioScale: 1.2,
-        rotation: { y: 0.006, audioBoost: 0.02 },
+        audioScale: 1.8,
+        rotation: { y: 0.01, audioBoost: 0.035 },
       },
       camera: {
         position: new THREE.Vector3(0, 30, 80),
-        lookAtY: 0,
+        lookAtY: 2,
+        sway: { amplitude: 3, frequency: 0.18 },
+      },
+      extras: (group) => {
+        const floor = new THREE.Mesh(
+          new THREE.CircleGeometry(56, 48),
+          new THREE.MeshStandardMaterial({
+            color: 0x080b18,
+            roughness: 0.75,
+            metalness: 0.1,
+          }),
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -2.5;
+        group.add(floor);
+
+        const rimLight = new THREE.PointLight(0x66ccff, 0.7, 120);
+        rimLight.position.set(-36, 26, 32);
+        group.add(rimLight);
+
+        const fillLight = new THREE.PointLight(0xff66aa, 0.55, 110);
+        fillLight.position.set(36, 18, -26);
+        group.add(fillLight);
       },
     },
     spheres: {
@@ -177,7 +214,7 @@ export function start({ container }: ToyStartOptions = {}) {
   };
 
   let currentPreset: GridPreset = presets.cubes;
-  let activeMode: ShapeMode = 'cubes';
+  let activeMode: ShapeMode = 'spheres';
 
   function getGridConfig(preset: GridPreset) {
     const particleScale = quality.activeQuality.particleScale ?? 1;
