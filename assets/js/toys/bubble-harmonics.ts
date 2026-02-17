@@ -41,6 +41,10 @@ export function start({ container }: ToyStartOptions = {}) {
 
   const bubbles: Bubble[] = [];
   const tempScale = new THREE.Vector3();
+  const tempDrift = new THREE.Vector3();
+  const tempVelocity = new THREE.Vector3();
+  const tempBaseColor = new THREE.Color();
+  const tempHighlightColor = new THREE.Color();
   const harmonicBubbles: HarmonicBubble[] = [];
   const bubbleGroup = new THREE.Group();
   let bubbleGeometry: THREE.SphereGeometry | null = null;
@@ -248,25 +252,28 @@ export function start({ container }: ToyStartOptions = {}) {
         tempScale.setScalar(scaleTarget);
         bubble.mesh.scale.lerp(tempScale, 0.08);
 
-        const drift = new THREE.Vector3(
+        const drift = tempDrift.set(
           Math.sin(time * 0.45 + index) * 0.002,
           0.003 + energy * 0.014 + normalizedAvg * 0.01,
           Math.cos(time * 0.38 + index) * 0.002,
         );
 
-        bubble.mesh.position.add(bubble.velocity.clone().add(drift));
+        tempVelocity.copy(bubble.velocity).add(drift);
+        bubble.mesh.position.add(tempVelocity);
 
         if (bubble.mesh.position.length() > 38) {
           bubble.mesh.position.multiplyScalar(-0.6);
         }
 
         const hueShift = (energy * 0.2 + normalizedAvg * 0.1) % 1;
-        const baseColor = new THREE.Color().setHSL(
+        const baseColor = tempBaseColor.setHSL(
           (bubble.hue + hueShift) % 1,
           0.5,
           0.45 + energy * 0.2,
         );
-        const highlightColor = baseColor.clone().offsetHSL(0.08, 0, 0.22);
+        const highlightColor = tempHighlightColor
+          .copy(baseColor)
+          .offsetHSL(0.08, 0, 0.22);
         const material = bubble.mesh.material;
         material.uniforms.time.value = time + index * 0.2;
         material.uniforms.baseColor.value.copy(baseColor);

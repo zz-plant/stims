@@ -145,6 +145,7 @@ export function start({ container }: ToyStartOptions = {}) {
   let particleGeometry: BufferGeometry | null = null;
   let particleMaterial: PointsMaterial | null = null;
   let particleVelocities: Float32Array | null = null;
+  let particleBaseColors: Float32Array | null = null;
 
   // Horizon sun/moon
   let horizonMesh: Mesh | null = null;
@@ -328,6 +329,7 @@ export function start({ container }: ToyStartOptions = {}) {
     particleGeometry = new BufferGeometry();
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
+    particleBaseColors = new Float32Array(count * 3);
     particleVelocities = new Float32Array(count);
 
     const primaryCol = new Color(palette.primary);
@@ -348,6 +350,9 @@ export function start({ container }: ToyStartOptions = {}) {
       colors[i3] = mixColor.r;
       colors[i3 + 1] = mixColor.g;
       colors[i3 + 2] = mixColor.b;
+      particleBaseColors[i3] = mixColor.r;
+      particleBaseColors[i3 + 1] = mixColor.g;
+      particleBaseColors[i3 + 2] = mixColor.b;
     }
 
     particleGeometry.setAttribute(
@@ -544,6 +549,7 @@ export function start({ container }: ToyStartOptions = {}) {
     if (
       particles &&
       particleVelocities &&
+      particleBaseColors &&
       particleGeometry &&
       particleMaterial
     ) {
@@ -570,12 +576,13 @@ export function start({ container }: ToyStartOptions = {}) {
 
         // Color pulse
         const brightness = Math.min(1, 0.5 + smoothedHighs);
-        colors[i3] *= brightness;
-        colors[i3 + 1] *= brightness;
-        colors[i3 + 2] *= brightness;
+        colors[i3] = particleBaseColors[i3] * brightness;
+        colors[i3 + 1] = particleBaseColors[i3 + 1] * brightness;
+        colors[i3 + 2] = particleBaseColors[i3 + 2] * brightness;
       }
 
       particleGeometry.attributes.position.needsUpdate = true;
+      particleGeometry.attributes.color.needsUpdate = true;
       particleMaterial.size = 1.5 + smoothedBass * 3;
     }
 
