@@ -85,7 +85,7 @@
       const sparkleCtx = sparkleCanvas.getContext('2d');
 
       const sparkles = [];
-      const maxSparkles = 160;
+      let maxSparkles = 160;
       const burstState = { scale: 1, rotation: 0, intensity: 0 };
       let viewWidth = window.innerWidth;
       let viewHeight = window.innerHeight;
@@ -94,6 +94,18 @@
       let peakSensitivity = 0.2;
       let lastRenderTime = 0;
       let renderElapsed = 0;
+
+      function updateSparkleBudget() {
+        const area = Math.max(viewWidth * viewHeight, 1);
+        const budgetFromArea = Math.round(area / 8500);
+        maxSparkles = Math.min(220, Math.max(80, budgetFromArea));
+
+        if (sparkles.length > maxSparkles) {
+          sparkles.splice(0, sparkles.length - maxSparkles);
+        }
+      }
+
+      updateSparkleBudget();
 
       const hintsButtonHost =
         toyNav?.querySelector('.active-toy-nav__actions') ?? null;
@@ -157,6 +169,7 @@
         onResize: ({ width, height, cssWidth, cssHeight, pixelRatio }) => {
           viewWidth = cssWidth;
           viewHeight = cssHeight;
+          updateSparkleBudget();
           sparkleCanvas.width = width;
           sparkleCanvas.height = height;
           sparkleCanvas.style.width = `${cssWidth}px`;

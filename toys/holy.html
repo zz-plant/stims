@@ -189,7 +189,7 @@
     <button id="fullscreenButton" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
 
     <!-- Info Panel -->
-    <div id="infoPanel">
+    <div id="infoPanel" role="dialog" aria-label="How to use" aria-hidden="true">
       <div class="panel-header">
         <h2>How to Use</h2>
         <button id="closeInfoButton" class="closeButton">×</button>
@@ -204,7 +204,7 @@
     </div>
 
     <!-- Settings Panel -->
-    <div id="settingsPanel">
+    <div id="settingsPanel" role="dialog" aria-label="Settings" aria-hidden="true">
       <div class="panel-header">
         <h2>Settings</h2>
         <button id="closeSettingsButton" class="closeButton">×</button>
@@ -345,6 +345,9 @@
       const settingsPanel = document.getElementById('settingsPanel');
       const closeInfoButton = document.getElementById('closeInfoButton');
       const closeSettingsButton = document.getElementById('closeSettingsButton');
+
+      infoButton?.setAttribute('aria-expanded', 'false');
+      settingsButton?.setAttribute('aria-expanded', 'false');
       const particleCountSlider = document.getElementById('particleCount');
       const particleCountValue = document.getElementById('particleCountValue');
       const shapeDetailSlider = document.getElementById('shapeDetail');
