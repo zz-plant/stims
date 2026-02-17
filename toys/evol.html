@@ -66,6 +66,9 @@
           value="0.8"
         />
       </div>
+      <div class="control-panel__row">
+        <button id="randomizeButton" type="button">Surprise me</button>
+      </div>
     </div>
     <script type="module">
       import {
@@ -326,6 +329,11 @@
 
       const toy = new CanvasToy(canvas);
       const { startAudio } = createToyAudioBootstrap(toy);
+      const fractalIntensitySlider = document.getElementById('fractalIntensity');
+      const audioImpactSlider = document.getElementById('audioImpact');
+      const warpStrengthSlider = document.getElementById('warpStrength');
+      const glitchStrengthSlider = document.getElementById('glitchStrength');
+      const randomizeButton = document.getElementById('randomizeButton');
 
       let time = 0.0;
       let audioData = 0.0;
@@ -334,26 +342,41 @@
       let warpStrength = 1.0;
       let glitchStrength = 0.8;
 
-      document
-        .getElementById('fractalIntensity')
-        .addEventListener('input', (event) => {
+      fractalIntensitySlider.addEventListener('input', (event) => {
           fractalIntensity = Number(event.target.value);
         });
-      document
-        .getElementById('audioImpact')
-        .addEventListener('input', (event) => {
+      audioImpactSlider.addEventListener('input', (event) => {
           audioImpact = Number(event.target.value);
         });
-      document
-        .getElementById('warpStrength')
-        .addEventListener('input', (event) => {
+      warpStrengthSlider.addEventListener('input', (event) => {
           warpStrength = Number(event.target.value);
         });
-      document
-        .getElementById('glitchStrength')
-        .addEventListener('input', (event) => {
+      glitchStrengthSlider.addEventListener('input', (event) => {
           glitchStrength = Number(event.target.value);
         });
+
+      function randomBetween(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function setSliderValue(slider, value) {
+        slider.value = String(value);
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      function randomizeSettings() {
+        setSliderValue(fractalIntensitySlider, randomBetween(0.6, 2).toFixed(2));
+        setSliderValue(audioImpactSlider, randomBetween(4, 14).toFixed(1));
+        setSliderValue(warpStrengthSlider, randomBetween(0.1, 1.5).toFixed(2));
+        setSliderValue(glitchStrengthSlider, randomBetween(0, 1).toFixed(2));
+      }
+
+      randomizeButton.addEventListener('click', randomizeSettings);
+      window.addEventListener('keydown', (event) => {
+        if (event.key.toLowerCase() === 'r') {
+          randomizeSettings();
+        }
+      });
 
       function render(ctxAudio) {
         if (ctxAudio.analyser) {

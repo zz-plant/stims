@@ -148,6 +148,10 @@
       let peakLevel = 0.12;
       let bassPulse = 0;
       let trebleGlow = 0;
+      let pointerActive = false;
+      let pointerX = 0;
+      let pointerY = 0;
+      let attractStrength = 0.12;
 
       function applyQualityPreset(preset) {
         activeQuality = preset;
@@ -284,6 +288,13 @@
           p.y += p.velocityY * speedMultiplier * depthFactor;
           p.rotation += p.angularVelocity;
 
+          if (pointerActive) {
+            const dx = pointerX - p.x;
+            const dy = pointerY - p.y;
+            p.x += dx * attractStrength * (0.35 + p.depth * 0.65);
+            p.y += dy * attractStrength * (0.35 + p.depth * 0.65);
+          }
+
           if (p.x < -p.size) p.x = viewWidth + p.size;
           if (p.x > viewWidth + p.size) p.x = -p.size;
           if (p.y < -p.size) p.y = viewHeight + p.size;
@@ -417,9 +428,27 @@
         trailValue.textContent = trailBlend.toFixed(2);
       }
 
+      function updatePointerFromEvent(event) {
+        const rect = canvas.getBoundingClientRect();
+        pointerX = event.clientX - rect.left;
+        pointerY = event.clientY - rect.top;
+      }
+
       densityControl.addEventListener('input', updateDensity);
       speedControl.addEventListener('input', updateSpeed);
       trailControl.addEventListener('input', updateTrail);
+
+      canvas.addEventListener('pointerdown', (event) => {
+        pointerActive = true;
+        updatePointerFromEvent(event);
+      });
+      canvas.addEventListener('pointermove', (event) => {
+        if (!pointerActive) return;
+        updatePointerFromEvent(event);
+      });
+      window.addEventListener('pointerup', () => {
+        pointerActive = false;
+      });
 
       updateDensity();
       updateSpeed();
