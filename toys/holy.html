@@ -273,6 +273,9 @@
           value="1"
         />
       </div>
+      <div class="slider-container">
+        <button id="surpriseButton" type="button">Surprise mix</button>
+      </div>
     </div>
     <div id="microHint" role="status" aria-live="polite"></div>
 
@@ -358,6 +361,7 @@
       const bloomStrengthValue = document.getElementById('bloomStrengthValue');
       const particleScaleSlider = document.getElementById('particleScale');
       const particleScaleValue = document.getElementById('particleScaleValue');
+      const surpriseButton = document.getElementById('surpriseButton');
       const errorDisplayId = 'error-message';
       const microHint = document.getElementById('microHint');
       const preferDemoAudio =
@@ -864,6 +868,26 @@
         particleScaleValue.textContent = particleScale.toFixed(1);
       }
 
+
+      function randomBetween(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function surpriseMix() {
+        particleCountSlider.value = String(Math.round(randomBetween(250, 1800)));
+        shapeDetailSlider.value = String(Math.round(randomBetween(8, 64) / 2) * 2);
+        opacitySlider.value = randomBetween(0.25, 1).toFixed(1);
+        bloomStrengthSlider.value = randomBetween(0.4, 2.5).toFixed(1);
+        particleScaleSlider.value = randomBetween(0.5, 2).toFixed(1);
+
+        updateParticleCount();
+        updateShapeDetail();
+        updateShapeOpacity();
+        updateBloomStrength();
+        updateParticleScale();
+        changeShape();
+      }
+
       // Start Button Click Handler
       startButton.addEventListener('click', async () => {
         startButton.style.display = 'none';
@@ -920,6 +944,12 @@
       opacitySlider.addEventListener('input', updateShapeOpacity);
       bloomStrengthSlider.addEventListener('input', updateBloomStrength);
       particleScaleSlider.addEventListener('input', updateParticleScale);
+      surpriseButton?.addEventListener('click', surpriseMix);
+      window.addEventListener('keydown', (event) => {
+        if (event.key.toLowerCase() === 'r') {
+          surpriseMix();
+        }
+      });
 
       window.addEventListener('pagehide', () => {
         unifiedInput?.dispose();
