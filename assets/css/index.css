@@ -2256,6 +2256,37 @@ html.light .search-meta__tokens li {
   color: var(--text-muted);
 }
 
+.library-refine {
+  margin-top: 0.65rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  padding: 0.45rem 0.65rem 0.65rem;
+}
+
+.library-refine > summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.3rem 0.2rem;
+  list-style: none;
+}
+
+.library-refine > summary::-webkit-details-marker {
+  display: none;
+}
+
+.library-refine > summary::after {
+  content: "▾";
+  margin-left: 0.5rem;
+  font-size: 0.82em;
+  opacity: 0.82;
+}
+
+.library-refine[open] > summary::after {
+  content: "▴";
+}
+
 .search-meta__tokens {
   list-style: none;
   margin: 0;
@@ -3490,6 +3521,14 @@ footer {
     width: 100%;
   }
 
+  .library-refine {
+    margin-top: 0.5rem;
+  }
+
+  .starter-picks {
+    display: none;
+  }
+
   .filter-row {
     flex-direction: column;
     align-items: flex-start;
@@ -3589,6 +3628,16 @@ footer {
 
   .preview-card {
     padding: 1rem;
+  }
+}
+
+@media (min-width: 681px) {
+  .library-refine {
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    margin-top: 0;
   }
 }
 
