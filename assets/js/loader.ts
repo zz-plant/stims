@@ -19,6 +19,7 @@ import toyManifest from './data/toy-manifest.ts';
 import type { ToyEntry } from './data/toy-schema.ts';
 import { createRouter, type Route } from './router.ts';
 import { createToyView } from './toy-view.ts';
+import { recordToyOpen } from './utils/growth-metrics.ts';
 import { createManifestClient } from './utils/manifest-client';
 import { applyPartyMode } from './utils/party-mode';
 import { resetToyPictureInPicture } from './utils/picture-in-picture';
@@ -477,6 +478,7 @@ export function createLoader({
       setCurrentToy(toy.slug);
       activeToySlug = toy.slug;
       rememberToy(toy.slug);
+      recordToyOpen(toy.slug, pushState ? 'library' : 'direct');
 
       // Setup audio prompt if startAudio globals are registered by the toy.
       const win = (container?.ownerDocument.defaultView ??
