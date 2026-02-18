@@ -1,4 +1,5 @@
 import { setAudioActive, setCurrentToy } from './core/agent-api.ts';
+import { setCompatibilityMode } from './core/render-preferences.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import {
   prewarmMicrophone,
@@ -523,11 +524,27 @@ export function createLoader({
     };
 
     if (capabilityDecision.shouldShowCapabilityError) {
+      const compatibilityModeEnabled =
+        capabilities.fallbackReason ===
+        'Compatibility mode is enabled. Using WebGL.';
       view.showCapabilityError(toy, {
         allowFallback: capabilityDecision.allowWebGLFallback,
         onBack: backToLibrary,
         onBrowseCompatible: browseCompatibleToys,
         details: capabilities.fallbackReason,
+        compatibilityModeEnabled,
+        onUseWebGPU: compatibilityModeEnabled
+          ? () => {
+              setCompatibilityMode(false);
+              view.clearActiveToyContainer();
+              void loadToy(toy.slug, {
+                pushState,
+                preferDemoAudio,
+                startFlow: flowActive,
+                startPartyMode: partyModeActive,
+              });
+            }
+          : undefined,
         onContinue: capabilityDecision.allowWebGLFallback
           ? () => {
               view.clearActiveToyContainer();

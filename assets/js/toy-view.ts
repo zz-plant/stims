@@ -50,6 +50,8 @@ type CapabilityOptions = {
   allowFallback?: boolean;
   onBack?: () => void;
   onContinue?: () => void;
+  onUseWebGPU?: () => void;
+  compatibilityModeEnabled?: boolean;
   onBrowseCompatible?: () => void;
   details?: string | null;
 };
@@ -532,19 +534,27 @@ export function createToyView({
     state.status = {
       variant: options.allowFallback ? 'warning' : 'error',
       title: options.allowFallback
-        ? 'WebGPU is unavailable'
+        ? options.compatibilityModeEnabled
+          ? 'Compatibility mode is enabled'
+          : 'WebGPU is unavailable'
         : 'WebGPU not available',
       message: `${
         options.allowFallback
-          ? toy?.title
-            ? `${toy.title} works best with WebGPU. We can try a lighter WebGL version instead.`
-            : 'This toy works best with WebGPU. We can try a lighter WebGL version instead.'
+          ? options.compatibilityModeEnabled
+            ? toy?.title
+              ? `${toy.title} is running in compatibility mode, so WebGL is being used.`
+              : 'Compatibility mode is enabled, so WebGL is being used.'
+            : toy?.title
+              ? `${toy.title} works best with WebGPU. We can try a lighter WebGL version instead.`
+              : 'This toy works best with WebGPU. We can try a lighter WebGL version instead.'
           : toy?.title
             ? `${toy.title} needs WebGPU, which is not supported in this browser.`
             : 'This toy requires WebGPU, which is not supported in this browser.'
       }${
         options.allowFallback
-          ? ' For the best results, try Chrome or Edge with WebGPU enabled.'
+          ? options.compatibilityModeEnabled
+            ? ' Disable compatibility mode to retry WebGPU on this device.'
+            : ' For the best results, try Chrome or Edge with WebGPU enabled.'
           : ' Try a browser with WebGPU support or choose another toy.'
       }${options.details ? ` (${options.details})` : ''}`,
       actionsClassName: 'active-toy-actions',
@@ -559,6 +569,14 @@ export function createToyView({
         },
         ...(options.allowFallback && options.onContinue
           ? [
+              ...(options.compatibilityModeEnabled && options.onUseWebGPU
+                ? [
+                    {
+                      label: 'Use WebGPU',
+                      onClick: options.onUseWebGPU,
+                    },
+                  ]
+                : []),
               {
                 label: 'Continue with WebGL',
                 onClick: options.onContinue,
