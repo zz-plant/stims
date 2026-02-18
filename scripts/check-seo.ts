@@ -19,9 +19,10 @@ const requiredInIndexHtml = [
 ];
 
 const requiredInGeneratedToyPage = [
-  '<meta property="og:image:type" content="image/svg+xml"',
-  '<meta property="og:image:width" content="1200"',
-  '<meta property="og:image:height" content="630"',
+  '<meta property="og:image" content="https://no.toil.fyi/icons/icon-512.png"',
+  '<meta property="og:image:type" content="image/png"',
+  '<meta property="og:image:width" content="512"',
+  '<meta property="og:image:height" content="512"',
   '<link rel="canonical" href="https://no.toil.fyi/toys/cube-wave/" />',
 ];
 
