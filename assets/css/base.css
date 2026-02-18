@@ -2089,13 +2089,13 @@ body {
 .preflight-panel__statuses {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
-  margin: 10px 0;
+  gap: 8px;
+  margin: 8px 0;
 }
 
 .preflight-status {
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(
     135deg,
@@ -2106,15 +2106,16 @@ body {
 }
 
 .preflight-status--primary {
-  border-width: 1px;
+  border-color: rgba(125, 211, 252, 0.46);
   background: linear-gradient(
     145deg,
-    rgba(125, 211, 252, 0.14),
-    rgba(15, 23, 42, 0.55)
+    rgba(125, 211, 252, 0.16),
+    rgba(15, 23, 42, 0.58)
   );
 }
 
-.preflight-status--secondary {
+.preflight-status--supporting {
+  border-color: rgba(255, 255, 255, 0.12);
   background: rgba(8, 14, 28, 0.5);
 }
 

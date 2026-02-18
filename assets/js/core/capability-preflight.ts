@@ -222,11 +222,15 @@ function buildStatusBadge(
   return badge;
 }
 
-function getPerformanceCheckSummary(result: CapabilityPreflightResult): {
+type StatusCardSummary = {
   value: string;
   note: string;
   variant: 'ok' | 'warn' | 'error';
-} {
+};
+
+function getPerformanceCheckSummary(
+  result: CapabilityPreflightResult,
+): StatusCardSummary {
   if (!result.rendering.rendererBackend) {
     return {
       value: 'Unavailable on this device',
@@ -237,8 +241,8 @@ function getPerformanceCheckSummary(result: CapabilityPreflightResult): {
 
   if (result.performance.lowPower) {
     return {
-      value: 'Ready in lighter mode',
-      note: 'This device will run best with reduced quality settings for smoother visuals.',
+      value: 'Recommended: lighter visuals',
+      note: 'Use reduced quality for smoother playback on this device.',
       variant: 'warn',
     };
   }
@@ -246,15 +250,49 @@ function getPerformanceCheckSummary(result: CapabilityPreflightResult): {
   if (result.rendering.rendererBackend === 'webgl') {
     return {
       value: 'Ready in compatibility mode',
-      note: 'WebGL is active, so visuals will favor compatibility over fidelity.',
+      note: 'WebGL is active and optimized for compatibility.',
       variant: 'warn',
     };
   }
 
   return {
     value: 'Ready for full visuals',
-    note: 'WebGPU is available and full quality can run smoothly.',
+    note: 'WebGPU is available for best-quality rendering.',
     variant: 'ok',
+  };
+}
+
+function getAudioInputSummary(
+  result: CapabilityPreflightResult,
+): StatusCardSummary {
+  if (!result.microphone.supported) {
+    return {
+      value: 'Use demo, tab, or YouTube audio',
+      note: 'Microphone APIs are unavailable in this browser.',
+      variant: 'warn',
+    };
+  }
+
+  if (result.microphone.state === 'denied') {
+    return {
+      value: 'Microphone is blocked',
+      note: 'Update site permissions or continue with alternate audio.',
+      variant: 'warn',
+    };
+  }
+
+  if (result.microphone.state === 'granted') {
+    return {
+      value: 'Microphone ready',
+      note: 'Live audio can start immediately.',
+      variant: 'ok',
+    };
+  }
+
+  return {
+    value: 'Microphone will prompt on start',
+    note: 'Grant access when asked, or use alternate audio.',
+    variant: 'warn',
   };
 }
 
@@ -264,50 +302,32 @@ function updateStatusList(
 ) {
   container.innerHTML = '';
 
-  const performanceSummary = getPerformanceCheckSummary(result);
+  const cards: Array<{
+    label: string;
+    summary: StatusCardSummary;
+    className: string;
+  }> = [
+    {
+      label: 'Performance check',
+      summary: getPerformanceCheckSummary(result),
+      className: 'preflight-status--primary',
+    },
+    {
+      label: 'Audio input',
+      summary: getAudioInputSummary(result),
+      className: 'preflight-status--supporting',
+    },
+  ];
 
-  const rendererStatus = buildStatusBadge(
-    'Performance check',
-    performanceSummary.value,
-    performanceSummary.variant,
-  );
-  rendererStatus.classList.add('preflight-status--primary');
+  cards.forEach(({ label, summary, className }) => {
+    const status = buildStatusBadge(label, summary.value, summary.variant);
+    status.classList.add(className);
 
-  const rendererNote = document.createElement('p');
-  rendererNote.className = 'preflight-status__note';
-  rendererNote.textContent = performanceSummary.note;
-  rendererStatus.appendChild(rendererNote);
+    const note = document.createElement('p');
+    note.className = 'preflight-status__note';
+    note.textContent = summary.note;
+    status.appendChild(note);
 
-  const microphoneStatus = buildStatusBadge(
-    'Audio input',
-    !result.microphone.supported
-      ? 'Unavailable'
-      : result.microphone.state === 'granted'
-        ? 'Ready'
-        : result.microphone.state === 'denied'
-          ? 'Blocked'
-          : 'Will prompt on start',
-    !result.microphone.supported || result.microphone.state === 'denied'
-      ? 'warn'
-      : result.microphone.state === 'granted'
-        ? 'ok'
-        : 'warn',
-  );
-  microphoneStatus.classList.add('preflight-status--secondary');
-
-  const microphoneNote = document.createElement('p');
-  microphoneNote.className = 'preflight-status__note';
-  microphoneNote.textContent =
-    result.microphone.state === 'granted'
-      ? 'Permission granted.'
-      : result.microphone.state === 'denied'
-        ? 'Permission denied.'
-        : !result.microphone.supported
-          ? 'API unavailable.'
-          : 'Awaiting permission.';
-  microphoneStatus.appendChild(microphoneNote);
-
-  [rendererStatus, microphoneStatus].forEach((status) => {
     container.appendChild(status);
   });
 }
@@ -607,14 +627,12 @@ export function attachCapabilityPreflight({
 
   const description = document.createElement('p');
   description.className = 'control-panel__description';
-  description.textContent =
-    'We run a short performance check, then guide you into audio setup.';
+  description.textContent = 'One short performance check before audio setup.';
   panel.appendChild(description);
 
   const sequenceHint = document.createElement('p');
   sequenceHint.className = 'control-panel__microcopy';
-  sequenceHint.textContent =
-    'Tip: choose demo audio for the fastest way to start visuals.';
+  sequenceHint.textContent = 'Tip: demo audio is usually the fastest start.';
   panel.appendChild(sequenceHint);
 
   const statusContainer = document.createElement('div');
@@ -629,7 +647,7 @@ export function attachCapabilityPreflight({
   details.className = 'preflight-panel__details';
   const summary = document.createElement('summary');
   summary.className = 'preflight-panel__details-summary';
-  summary.textContent = 'What we checked';
+  summary.textContent = 'Check details';
   details.appendChild(summary);
   const detailsContent = document.createElement('div');
   detailsContent.className = 'preflight-panel__details-content';
@@ -714,7 +732,7 @@ export function attachCapabilityPreflight({
   const retryButton = document.createElement('button');
   retryButton.className = 'text-link preflight-retry-link';
   retryButton.type = 'button';
-  retryButton.textContent = 'Re-check performance';
+  retryButton.textContent = 'Check again';
   panel.appendChild(retryButton);
 
   let latestResult: CapabilityPreflightResult | null = null;
