@@ -75,6 +75,12 @@ html {
   color-scheme: dark;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body.tv-mode {
   --tv-scale-multiplier: 1.16;
   --tv-focus-outline-width: 4px;
