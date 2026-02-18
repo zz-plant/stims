@@ -1060,6 +1060,14 @@ body {
   gap: 8px;
 }
 
+.control-panel__first-steps-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .control-panel__dismiss {
   min-height: 44px;
   min-width: 44px;
