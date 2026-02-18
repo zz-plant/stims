@@ -1161,6 +1161,7 @@ export function createLibraryView({
   let activeFiltersClear;
   let activeFiltersStatus;
   let searchMetaNote;
+  let libraryRefine;
   const activeFilters = new Set();
 
   const ensureMetaNode = () => {
@@ -1237,6 +1238,36 @@ export function createLibraryView({
       searchMetaNote = document.querySelector('[data-search-note]');
     }
     return searchMetaNote;
+  };
+
+  const ensureLibraryRefine = () => {
+    if (!libraryRefine) {
+      libraryRefine = document.querySelector('[data-library-refine]');
+    }
+    return libraryRefine;
+  };
+
+  const syncRefineDisclosure = () => {
+    const refine = ensureLibraryRefine();
+    if (!(refine instanceof HTMLElement) || refine.tagName !== 'DETAILS')
+      return;
+
+    const hasActiveRefinement =
+      searchQuery.trim().length > 0 ||
+      activeFilters.size > 0 ||
+      sortBy !== 'featured';
+
+    if (hasActiveRefinement) {
+      refine.open = true;
+      return;
+    }
+
+    const shouldCollapseByViewport =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 680px)').matches;
+
+    refine.open = !shouldCollapseByViewport;
   };
 
   const getOriginalIndex = (toy) => originalOrder.get(toy.slug) ?? 0;
@@ -1485,6 +1516,7 @@ export function createLibraryView({
     }
 
     commitState({ replace: false });
+    syncRefineDisclosure();
     renderToys(applyFilters());
     updateSearchClearState();
     updateFilterResetState();
@@ -2267,6 +2299,7 @@ export function createLibraryView({
 
   const filterToys = (query) => {
     searchQuery = query;
+    syncRefineDisclosure();
     renderToys(applyFilters());
     updateSearchClearState();
     updateActiveFiltersSummary();
@@ -2281,6 +2314,7 @@ export function createLibraryView({
       }
     }
     commitState({ replace: false });
+    syncRefineDisclosure();
     renderToys(applyFilters());
     updateSearchClearState();
     updateActiveFiltersSummary();
@@ -2295,6 +2329,7 @@ export function createLibraryView({
     });
     emitFilterStateChange();
     commitState({ replace: false });
+    syncRefineDisclosure();
     renderToys(applyFilters());
     updateFilterResetState();
     updateActiveFiltersSummary();
@@ -2318,6 +2353,7 @@ export function createLibraryView({
     }
 
     commitState({ replace: false });
+    syncRefineDisclosure();
     renderToys(applyFilters());
     updateSearchClearState();
     updateFilterResetState();
@@ -2341,6 +2377,7 @@ export function createLibraryView({
     });
     emitFilterStateChange();
     commitState({ replace: false });
+    syncRefineDisclosure();
     renderToys(applyFilters());
     updateFilterResetState();
     updateActiveFiltersSummary();
@@ -2593,6 +2630,7 @@ export function createLibraryView({
       }
     }
 
+    syncRefineDisclosure();
     renderToys(applyFilters());
 
     if (enableDarkModeToggle) {
@@ -2612,7 +2650,21 @@ export function createLibraryView({
     window.addEventListener('popstate', () => {
       const nextState = getStateFromUrl();
       applyState(nextState, { render: true });
+      syncRefineDisclosure();
     });
+
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function'
+    ) {
+      const narrowViewportQuery = window.matchMedia('(max-width: 680px)');
+      const handleViewportChange = () => syncRefineDisclosure();
+      if (typeof narrowViewportQuery.addEventListener === 'function') {
+        narrowViewportQuery.addEventListener('change', handleViewportChange);
+      } else if (typeof narrowViewportQuery.addListener === 'function') {
+        narrowViewportQuery.addListener(handleViewportChange);
+      }
+    }
   };
 
   return {

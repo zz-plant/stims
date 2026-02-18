@@ -99,7 +99,7 @@ export function initAudioControls(
         <span class="control-panel__microcopy">Reacts to your room in real time. Requires microphone permission.</span>
       </div>
       <button id="start-audio-btn" class="cta-button ghost" type="button">
-        Use microphone
+        Start mic-reactive mode
       </button>
     </div>
     <div class="control-panel__row" data-audio-row="demo">
@@ -109,7 +109,7 @@ export function initAudioControls(
         <span class="control-panel__subtext">Fastest way to preview visuals without permissions.</span>
         <span class="control-panel__microcopy">Starts instantly with built-in audio. Great first try when privacy-sensitive.</span>
       </div>
-      <button id="use-demo-audio" class="cta-button primary" type="button">Use demo audio</button>
+      <button id="use-demo-audio" class="cta-button primary" type="button">Preview instantly with demo audio</button>
     </div>
 
     ${
