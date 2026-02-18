@@ -141,13 +141,14 @@
       <section class="intro" id="intro" aria-label="Primary quick actions">
         <div class="intro-actions" role="group" aria-label="Start options">
           <a
-            href="#system-check"
+            href="toy.html?toy=holy"
             class="cta-button primary"
           >
-            Run quick system check
+            Launch a recommended stim
           </a>
+          <a href="#system-check" class="text-link">Run quick system check first</a>
         </div>
-        <p class="cta-helper intro-helper">Then jump into the library with one tap.</p>
+        <p class="cta-helper intro-helper">Starts immediately with a calm-balanced favorite.</p>
       </section>
 
       <section class="library" id="library">
@@ -175,17 +176,14 @@
               </a>
             </div>
           </section>
-          <div class="search-meta">
-            <p
-              class="search-meta__results"
-              data-search-results
-              role="status"
-              aria-live="polite"
-            >
-              Loading library…
-            </p>
-            <p class="search-meta__note" data-search-note>Use filters to refine.</p>
-          </div>
+          <p
+            class="search-meta__results"
+            data-search-results
+            role="status"
+            aria-live="polite"
+          >
+            Loading library…
+          </p>
           <div class="active-filters" data-active-filters>
             <span class="active-filters__label">Applied filters</span>
             <span class="active-filters__status" data-active-filters-status>
@@ -200,89 +198,93 @@
               Clear filters
             </button>
           </div>
-          <div class="filter-row" role="group" aria-label="Curated filters">
-            <div class="chip-row" data-chip-row>
-              <button
-                type="button"
-                class="filter-chip"
-                data-filter-chip
-                data-filter-type="mood"
-                data-filter-value="calming"
-              >
-                Calm
-              </button>
-              <button
-                type="button"
-                class="filter-chip"
-                data-filter-chip
-                data-filter-type="mood"
-                data-filter-value="energetic"
-              >
-                Energetic
-              </button>
-              <button
-                type="button"
-                class="filter-chip"
-                data-filter-chip
-                data-filter-type="capability"
-                data-filter-value="microphone"
-              >
-                Microphone
-              </button>
-              <button
-                type="button"
-                class="filter-chip"
-                data-filter-chip
-                data-filter-type="capability"
-                data-filter-value="motion"
-                data-filter-advanced
-              >
-                Motion
-              </button>
-              <button
-                type="button"
-                class="filter-chip"
-                data-filter-chip
-                data-filter-type="capability"
-                data-filter-value="demoAudio"
-                data-filter-advanced
-              >
-                Demo audio
-              </button>
-              <button
-                type="button"
-                class="filter-chip"
-                data-filter-chip
-                data-filter-type="feature"
-                data-filter-value="webgpu"
-                data-filter-advanced
-              >
-                WebGPU
-              </button>
+          <details class="library-refine" data-library-refine>
+            <summary>Refine results</summary>
+            <p class="search-meta__note" data-search-note>Use filters to refine.</p>
+            <div class="filter-row" role="group" aria-label="Curated filters">
+              <div class="chip-row" data-chip-row>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="mood"
+                  data-filter-value="calming"
+                >
+                  Calm
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="mood"
+                  data-filter-value="energetic"
+                >
+                  Energetic
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="capability"
+                  data-filter-value="microphone"
+                >
+                  Microphone
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="capability"
+                  data-filter-value="motion"
+                  data-filter-advanced
+                >
+                  Motion
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="capability"
+                  data-filter-value="demoAudio"
+                  data-filter-advanced
+                >
+                  Demo audio
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  data-filter-chip
+                  data-filter-type="feature"
+                  data-filter-value="webgpu"
+                  data-filter-advanced
+                >
+                  WebGPU
+                </button>
+              </div>
+              <div class="filter-actions filter-actions--primary">
+                <button
+                  type="button"
+                  class="filter-toggle"
+                  data-advanced-filters-toggle
+                  aria-expanded="false"
+                  aria-controls="advanced-filters"
+                >
+                  More filters
+                </button>
+              </div>
+              <div class="filter-actions" id="advanced-filters" data-advanced-filters hidden>
+                <label class="sort-control">
+                  <span>Sort</span>
+                  <select data-sort-control>
+                    <option value="featured">Featured</option>
+                    <option value="newest">Newest</option>
+                    <option value="immersive">Most immersive</option>
+                    <option value="az">A → Z</option>
+                  </select>
+                </label>
+              </div>
             </div>
-            <div class="filter-actions filter-actions--primary">
-              <button
-                type="button"
-                class="filter-toggle"
-                data-advanced-filters-toggle
-                aria-expanded="false"
-                aria-controls="advanced-filters"
-              >
-                More filters
-              </button>
-            </div>
-            <div class="filter-actions" id="advanced-filters" data-advanced-filters hidden>
-              <label class="sort-control">
-                <span>Sort</span>
-                <select data-sort-control>
-                  <option value="featured">Featured</option>
-                  <option value="newest">Newest</option>
-                  <option value="immersive">Most immersive</option>
-                  <option value="az">A → Z</option>
-                </select>
-              </label>
-            </div>
-          </div>
+          </details>
         </search>
         <main id="toy-list" class="webtoy-container"></main>
       </section>
