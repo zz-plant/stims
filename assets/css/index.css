@@ -1798,6 +1798,79 @@ h1 {
   pointer-events: none;
 }
 
+.growth-tracks {
+  margin: 0.6rem 0 0;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-border);
+  background: color-mix(in srgb, var(--card-bg) 88%, var(--accent-color));
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 0.55rem;
+}
+
+.growth-tracks .system-legend {
+  margin-top: 0.2rem;
+}
+
+.growth-tracks .system-legend__item {
+  align-items: flex-start;
+}
+
+.growth-tracks__form {
+  margin-top: 0.45rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.growth-tracks__label {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.growth-tracks__form-row {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.growth-tracks__form-row select {
+  min-height: 36px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-border);
+  background: var(--card-bg);
+  color: var(--text-color);
+  padding: 0.35rem 0.6rem;
+}
+
+.growth-tracks__form-row .cta-button {
+  min-height: 36px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+.growth-tracks__form-row .cta-button[data-signal-state="recorded"] {
+  border-color: color-mix(
+    in srgb,
+    var(--accent-color) 62%,
+    var(--surface-border)
+  );
+  background: color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+
+.growth-tracks__segment-note {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.growth-tracks .repo-status__title {
+  font-size: 1.02rem;
+}
+
 .repo-status {
   margin: 1.25rem 0 0.25rem;
   padding: 1.1rem 1.2rem;
