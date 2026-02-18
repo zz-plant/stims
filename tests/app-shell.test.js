@@ -96,8 +96,10 @@ describe('app shell user journeys', () => {
   test('demo button keyboard activation keeps demo-audio launch path', async () => {
     await loadAppShell();
 
-    const playDemo = document.querySelector('.webtoy-card-actions button');
-    expect(playDemo).not.toBeNull();
+    const playDemo = Array.from(
+      document.querySelectorAll('.webtoy-card-actions button'),
+    ).find((button) => button.textContent?.toLowerCase().includes('preview'));
+    expect(playDemo).not.toBeUndefined();
 
     playDemo?.dispatchEvent(
       new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),

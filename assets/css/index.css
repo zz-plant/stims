@@ -198,6 +198,12 @@ html.light .hero-background-canvas {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .skip-link {
+    display: none;
+  }
+}
+
 body,
 html {
   padding: 0;
@@ -362,6 +368,9 @@ footer {
   border-radius: 999px;
   font-weight: 600;
   letter-spacing: 0.01em;
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -1861,8 +1870,12 @@ html.light .repo-status__metric {
 .repo-status__badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border-radius: 999px;
   overflow: hidden;
+  min-height: 44px;
+  min-width: 44px;
+  padding-inline: 0.35rem;
   transition: transform 0.2s ease;
 }
 
@@ -2876,10 +2889,16 @@ html.light .cta-button.primary {
 
 .webtoy-card-bestfor {
   margin-top: -0.15rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.15rem;
   font-size: 0.76rem;
   font-weight: 600;
   color: color-mix(in srgb, var(--accent-color) 62%, var(--text-color) 38%);
+}
+
+.webtoy-card-hint {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
 }
 
 .webtoy-card-match {
@@ -2918,16 +2937,19 @@ html.light .cta-button.primary {
 
 .webtoy-card-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-start;
+  gap: 0.5rem;
   margin-top: 0.3rem;
   position: relative;
   z-index: 2;
 }
 
 .webtoy-card-actions .cta-button {
-  min-height: 36px;
-  padding: 0.45rem 0.8rem;
-  font-size: 0.78rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.58rem 0.9rem;
+  font-size: 0.82rem;
 }
 
 .webtoy-card-meta::before {
