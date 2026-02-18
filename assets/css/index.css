@@ -235,6 +235,10 @@ footer {
   scroll-margin-top: 6rem;
 }
 
+#toy-list {
+  scroll-margin-top: clamp(7.5rem, 17vh, 9.5rem);
+}
+
 .content {
   position: relative;
   z-index: 1;
@@ -3327,14 +3331,13 @@ footer {
   }
 
   .system-legend {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
-    -webkit-overflow-scrolling: touch;
+    flex-wrap: wrap;
+    overflow: visible;
+    padding-bottom: 0;
   }
 
   .system-legend__item {
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .search-row {
@@ -3537,6 +3540,10 @@ footer {
 }
 
 @media (max-width: 520px) {
+  #toy-list {
+    scroll-margin-top: 10rem;
+  }
+
   h1 {
     font-size: clamp(1.6rem, 7vw, 1.8rem);
   }
