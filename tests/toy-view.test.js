@@ -58,6 +58,31 @@ describe('toy view helpers', () => {
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
+  test('renders compatibility mode recovery action when available', () => {
+    const view = createToyView();
+    const onUseWebGPU = mock();
+
+    const status = view.showCapabilityError(
+      { slug: 'webgpu-toy', title: 'Fancy WebGPU' },
+      {
+        allowFallback: true,
+        compatibilityModeEnabled: true,
+        onUseWebGPU,
+        onContinue: mock(),
+      },
+    );
+
+    expect(status?.querySelector('h2')?.textContent).toContain(
+      'Compatibility mode is enabled',
+    );
+    const buttons = status?.querySelectorAll('button');
+    expect(buttons?.length).toBe(4);
+    expect(buttons?.[2]?.textContent).toContain('Use WebGPU');
+
+    buttons?.[2].dispatchEvent(new Event('click', { bubbles: true }));
+    expect(onUseWebGPU).toHaveBeenCalledTimes(1);
+  });
+
   test('renders import error message for TypeScript modules', () => {
     const view = createToyView();
     const status = view.showImportError(

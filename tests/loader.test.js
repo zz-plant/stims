@@ -382,6 +382,50 @@ describe('WebGPU requirements', () => {
     const status = document.querySelector('.active-toy-status');
     expect(status?.classList.contains('is-warning')).toBe(true);
   });
+
+  test('can disable compatibility mode and retry with WebGPU', async () => {
+    capabilitiesMock.getRendererCapabilities
+      .mockResolvedValueOnce({
+        preferredBackend: 'webgl',
+        adapter: null,
+        device: null,
+        triedWebGPU: false,
+        fallbackReason: 'Compatibility mode is enabled. Using WebGL.',
+        shouldRetryWebGPU: false,
+      })
+      .mockResolvedValueOnce(defaultCapabilities);
+
+    window.localStorage.setItem('stims:compatibility-mode', 'true');
+
+    const { loader } = await buildLoader({
+      toys: [
+        {
+          slug: 'webgpu-toy',
+          title: 'Fancy WebGPU',
+          module: './__mocks__/fake-module.js',
+          type: 'module',
+          requiresWebGPU: true,
+          allowWebGLFallback: true,
+        },
+      ],
+    });
+
+    await loader.loadToy('webgpu-toy');
+
+    const useWebGPUButton = Array.from(
+      document.querySelectorAll('.active-toy-actions button'),
+    ).find((button) => button.textContent?.includes('Use WebGPU'));
+    expect(useWebGPUButton).not.toBeUndefined();
+
+    useWebGPUButton?.dispatchEvent(new Event('click', { bubbles: true }));
+    // eslint-disable-next-line no-undef
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(window.localStorage.getItem('stims:compatibility-mode')).toBe(
+      'false',
+    );
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+  });
 });
 
 describe('loadFromQuery routing', () => {
