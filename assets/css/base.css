@@ -2088,16 +2088,9 @@ body {
 
 .preflight-panel__statuses {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
-  margin: 8px 0;
-}
-
-.preflight-panel__secondary-note {
-  grid-column: 1 / -1;
-  margin: 2px 0 0;
-  font-size: 0.82rem;
-  color: rgba(233, 251, 255, 0.72);
+  margin: 10px 0;
 }
 
 .preflight-status {
@@ -2110,6 +2103,19 @@ body {
     rgba(255, 255, 255, 0.01)
   );
   box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.25);
+}
+
+.preflight-status--primary {
+  border-width: 1px;
+  background: linear-gradient(
+    145deg,
+    rgba(125, 211, 252, 0.14),
+    rgba(15, 23, 42, 0.55)
+  );
+}
+
+.preflight-status--secondary {
+  background: rgba(8, 14, 28, 0.5);
 }
 
 .preflight-dialog .control-panel__actions {

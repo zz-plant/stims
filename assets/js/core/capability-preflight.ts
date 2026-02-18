@@ -222,38 +222,64 @@ function buildStatusBadge(
   return badge;
 }
 
+function getPerformanceCheckSummary(result: CapabilityPreflightResult): {
+  value: string;
+  note: string;
+  variant: 'ok' | 'warn' | 'error';
+} {
+  if (!result.rendering.rendererBackend) {
+    return {
+      value: 'Unavailable on this device',
+      note: 'Graphics acceleration was not detected.',
+      variant: 'error',
+    };
+  }
+
+  if (result.performance.lowPower) {
+    return {
+      value: 'Ready in lighter mode',
+      note: 'This device will run best with reduced quality settings for smoother visuals.',
+      variant: 'warn',
+    };
+  }
+
+  if (result.rendering.rendererBackend === 'webgl') {
+    return {
+      value: 'Ready in compatibility mode',
+      note: 'WebGL is active, so visuals will favor compatibility over fidelity.',
+      variant: 'warn',
+    };
+  }
+
+  return {
+    value: 'Ready for full visuals',
+    note: 'WebGPU is available and full quality can run smoothly.',
+    variant: 'ok',
+  };
+}
+
 function updateStatusList(
   container: HTMLElement,
   result: CapabilityPreflightResult,
 ) {
   container.innerHTML = '';
 
+  const performanceSummary = getPerformanceCheckSummary(result);
+
   const rendererStatus = buildStatusBadge(
-    'Rendering',
-    result.rendering.rendererBackend === 'webgpu'
-      ? 'Best visual mode ready'
-      : result.rendering.rendererBackend === 'webgl'
-        ? 'Runs in compatible mode'
-        : 'Needs a different browser or device',
-    result.rendering.rendererBackend
-      ? result.rendering.rendererBackend === 'webgpu'
-        ? 'ok'
-        : 'warn'
-      : 'error',
+    'Performance check',
+    performanceSummary.value,
+    performanceSummary.variant,
   );
+  rendererStatus.classList.add('preflight-status--primary');
 
   const rendererNote = document.createElement('p');
   rendererNote.className = 'preflight-status__note';
-  rendererNote.textContent =
-    result.rendering.rendererBackend === 'webgpu'
-      ? 'You can continue with full visuals.'
-      : result.rendering.rendererBackend === 'webgl'
-        ? 'You can continue with compatible visuals.'
-        : 'Try another browser or device for visuals.';
+  rendererNote.textContent = performanceSummary.note;
   rendererStatus.appendChild(rendererNote);
 
   const microphoneStatus = buildStatusBadge(
-    'Microphone',
+    'Audio input',
     !result.microphone.supported
       ? 'Unavailable'
       : result.microphone.state === 'granted'
@@ -267,6 +293,7 @@ function updateStatusList(
         ? 'ok'
         : 'warn',
   );
+  microphoneStatus.classList.add('preflight-status--secondary');
 
   const microphoneNote = document.createElement('p');
   microphoneNote.className = 'preflight-status__note';
@@ -283,12 +310,6 @@ function updateStatusList(
   [rendererStatus, microphoneStatus].forEach((status) => {
     container.appendChild(status);
   });
-
-  const secondaryHint = document.createElement('p');
-  secondaryHint.className = 'preflight-panel__secondary-note';
-  secondaryHint.textContent =
-    'Environment and performance tips are available in Details.';
-  container.appendChild(secondaryHint);
 }
 
 function updateWhyDetails(
@@ -380,8 +401,8 @@ function renderIssueList(
   const heading = document.createElement('p');
   heading.className = 'preflight-panel__eyebrow';
   heading.textContent = result.blockingIssues.length
-    ? 'Action needed before loading'
-    : 'Heads up';
+    ? 'Action required'
+    : 'Before you continue';
   container.appendChild(heading);
 
   const list = document.createElement('ul');
@@ -586,13 +607,14 @@ export function attachCapabilityPreflight({
 
   const description = document.createElement('p');
   description.className = 'control-panel__description';
-  description.textContent = 'One quick check, then you can launch audio.';
+  description.textContent =
+    'We run a short performance check, then guide you into audio setup.';
   panel.appendChild(description);
 
   const sequenceHint = document.createElement('p');
   sequenceHint.className = 'control-panel__microcopy';
   sequenceHint.textContent =
-    'Tip: demo audio starts fastest if you want instant visuals.';
+    'Tip: choose demo audio for the fastest way to start visuals.';
   panel.appendChild(sequenceHint);
 
   const statusContainer = document.createElement('div');
@@ -607,7 +629,7 @@ export function attachCapabilityPreflight({
   details.className = 'preflight-panel__details';
   const summary = document.createElement('summary');
   summary.className = 'preflight-panel__details-summary';
-  summary.textContent = 'Advanced details';
+  summary.textContent = 'What we checked';
   details.appendChild(summary);
   const detailsContent = document.createElement('div');
   detailsContent.className = 'preflight-panel__details-content';
@@ -692,7 +714,7 @@ export function attachCapabilityPreflight({
   const retryButton = document.createElement('button');
   retryButton.className = 'text-link preflight-retry-link';
   retryButton.type = 'button';
-  retryButton.textContent = 'Run checks again';
+  retryButton.textContent = 'Re-check performance';
   panel.appendChild(retryButton);
 
   let latestResult: CapabilityPreflightResult | null = null;
