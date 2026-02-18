@@ -138,6 +138,28 @@ export function subscribeToQualityPreset(subscriber: QualitySubscriber) {
   };
 }
 
+type SetQualityPresetOptions = {
+  presets?: QualityPreset[];
+  storageKey?: string;
+};
+
+export function setQualityPresetById(
+  presetId: string,
+  {
+    presets = DEFAULT_QUALITY_PRESETS,
+    storageKey = QUALITY_STORAGE_KEY,
+  }: SetQualityPresetOptions = {},
+): QualityPreset | null {
+  const preset = presets.find((entry) => entry.id === presetId);
+  if (!preset) return null;
+
+  getStorage()?.setItem(storageKey, preset.id);
+  activeQualityPreset = preset;
+  activeQualityPresetStorageKey = storageKey;
+  qualitySubscribers.forEach((subscriber) => subscriber(preset));
+  return preset;
+}
+
 export class PersistentSettingsPanel {
   private container: HTMLDivElement;
   private heading: HTMLDivElement;
@@ -359,13 +381,12 @@ export class PersistentSettingsPanel {
   }
 
   private handleQualityChange(presetId: string) {
-    const preset = this.qualityPresets.find((entry) => entry.id === presetId);
+    const preset = setQualityPresetById(presetId, {
+      presets: this.qualityPresets,
+      storageKey: this.qualityStorageKey,
+    });
     if (!preset) return;
 
-    getStorage()?.setItem(this.qualityStorageKey, preset.id);
-    activeQualityPreset = preset;
-    activeQualityPresetStorageKey = this.qualityStorageKey;
-    qualitySubscribers.forEach((subscriber) => subscriber(preset));
     this.updateQualityHint(preset, this.qualityStorageKey);
     this.qualityChangeHandler?.(preset);
   }

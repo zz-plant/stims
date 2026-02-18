@@ -40,6 +40,7 @@ If you need to...
 - [`toys.md`](./toys.md) — per-toy notes and implementation details.
 - [`MCP_SERVER.md`](./MCP_SERVER.md) — MCP stdio server usage.
 - [`FULL_REFACTOR_PLAN.md`](./FULL_REFACTOR_PLAN.md) — staged refactor roadmap.
+- [`TECH_DEBT_REGISTER_2026-02.md`](./TECH_DEBT_REGISTER_2026-02.md) — prioritized technical debt inventory and next steps.
 
 ### Product, UX, and research docs
 

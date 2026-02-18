@@ -1,3 +1,4 @@
+import { setQualityPresetById } from '../core/settings-panel.ts';
 import { YouTubeController } from './youtube-controller';
 
 export interface AudioControlsOptions {
@@ -52,7 +53,10 @@ export function initAudioControls(
     <section class="control-panel__first-steps" data-first-steps role="note" aria-label="First steps">
       <div class="control-panel__first-steps-header">
         <span class="control-panel__label">First 10 seconds</span>
-        <button type="button" class="control-panel__dismiss" data-dismiss-first-steps>Dismiss</button>
+        <div class="control-panel__first-steps-actions">
+          <button type="button" class="control-panel__dismiss" data-apply-starter-preset>Try calm starter preset</button>
+          <button type="button" class="control-panel__dismiss" data-dismiss-first-steps>Dismiss</button>
+        </div>
       </div>
       <ul class="control-panel__tips control-panel__tips--compact">
         <li data-first-step-source>Start with mic for live input, or demo for instant audio.</li>
@@ -67,7 +71,10 @@ export function initAudioControls(
       gestureHints.length > 0
         ? `
     <section class="control-panel__gesture-hints" data-gesture-hints hidden aria-live="polite">
-      <span class="control-panel__label">Touch gestures</span>
+      <div class="control-panel__first-steps-header">
+        <span class="control-panel__label">Touch gestures</span>
+        <button type="button" class="control-panel__dismiss" data-dismiss-gesture-hints>Got it</button>
+      </div>
       <p class="control-panel__microcopy">Once audio starts, try these quick moves:</p>
       <ul class="control-panel__tips control-panel__tips--compact">
         ${gestureHints.map((tip) => `<li>${tip}</li>`).join('')}
@@ -227,6 +234,7 @@ export function initAudioControls(
   const ADVANCED_KEY = 'stims-audio-advanced-open';
   const FIRST_STEPS_KEY = 'stims-first-steps-dismissed';
   const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
+  const QUICK_START_PRESET_KEY = 'stims-quick-start-preset';
 
   const setPrimaryRow = (row: Element | null, isPrimary: boolean): void => {
     row?.classList.toggle('control-panel__row--primary', isPrimary);
@@ -343,6 +351,24 @@ export function initAudioControls(
     dismissFirstSteps?.addEventListener('click', hideFirstSteps);
   }
 
+  const quickStartPresetButton = container.querySelector(
+    '[data-apply-starter-preset]',
+  ) as HTMLButtonElement | null;
+  quickStartPresetButton?.addEventListener('click', () => {
+    const appliedPreset = setQualityPresetById('low-motion');
+    if (!appliedPreset) {
+      updateStatus('Starter preset unavailable on this toy.', 'error');
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(QUICK_START_PRESET_KEY, appliedPreset.id);
+    } catch (_error) {
+      // Ignore storage errors.
+    }
+    updateStatus('Starter preset applied: Low motion.', 'success');
+  });
+
   const gestureHintsPanel = container.querySelector(
     '[data-gesture-hints]',
   ) as HTMLElement | null;
@@ -369,9 +395,7 @@ export function initAudioControls(
     gestureHintsPanel.hidden = false;
 
     let interactionCount = 0;
-    const hideAfterInteractions = () => {
-      interactionCount += 1;
-      if (interactionCount < 2) return;
+    const dismissGestureHints = () => {
       gestureHintsPanel.hidden = true;
       window.removeEventListener('pointerdown', hideAfterInteractions);
       try {
@@ -379,6 +403,19 @@ export function initAudioControls(
       } catch (_error) {
         // Ignore storage errors.
       }
+    };
+
+    const dismissGestureHintsButton = gestureHintsPanel.querySelector(
+      '[data-dismiss-gesture-hints]',
+    ) as HTMLButtonElement | null;
+    dismissGestureHintsButton?.addEventListener('click', dismissGestureHints, {
+      once: true,
+    });
+
+    const hideAfterInteractions = () => {
+      interactionCount += 1;
+      if (interactionCount < 2) return;
+      dismissGestureHints();
     };
 
     window.addEventListener('pointerdown', hideAfterInteractions, {
