@@ -63,3 +63,38 @@ describe('library filter state normalization', () => {
     expect(calmChip?.classList.contains('is-active')).toBe(false);
   });
 });
+
+test('renders continue and premium panels when returner signals are present', async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  window.localStorage.setItem(
+    'stims-growth-metrics-v1',
+    JSON.stringify({
+      activeDays: [yesterday, today],
+      toyOpens: 5,
+      toyOpenHistory: [
+        { slug: 'calm-flow', openedAt: '2026-01-02T00:00:00.000Z' },
+      ],
+      shares: 0,
+      premiumPromptDismissed: false,
+    }),
+  );
+
+  const view = createLibraryView({
+    toys,
+  });
+
+  await view.init();
+
+  expect(document.querySelector('.webtoy-growth-panel')).not.toBeNull();
+  expect(
+    document.querySelector('.webtoy-growth-panel--premium'),
+  ).not.toBeNull();
+  const shareButton = Array.from(document.querySelectorAll('button')).find(
+    (button) => button.textContent === 'Share toy',
+  );
+  expect(shareButton).toBeTruthy();
+});

@@ -1,3 +1,10 @@
+import {
+  dismissPremiumPrompt,
+  getRecentToySlugs,
+  recordToyShare,
+  shouldShowPremiumPrompt,
+} from './utils/growth-metrics.ts';
+
 const ns = 'http://www.w3.org/2000/svg';
 
 function applyAttributes(element, attributes = {}) {
@@ -1804,6 +1811,99 @@ export function createLibraryView({
     return 'Best for visual exploration';
   };
 
+  const copyToyLink = async (toy) => {
+    if (!toy?.slug || typeof window === 'undefined') return false;
+    const url = `${window.location.origin}/toy.html?toy=${encodeURIComponent(toy.slug)}`;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const fallback = document.createElement('textarea');
+        fallback.value = url;
+        fallback.setAttribute('readonly', 'true');
+        fallback.style.position = 'absolute';
+        fallback.style.left = '-9999px';
+        document.body.appendChild(fallback);
+        fallback.select();
+        document.execCommand('copy');
+        fallback.remove();
+      }
+      recordToyShare(toy.slug);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
+
+  const renderGrowthPanels = (listElement) => {
+    if (!(listElement instanceof HTMLElement)) return;
+
+    const recentSlugs = getRecentToySlugs(3);
+    const recentToys = recentSlugs
+      .map((slug) => allToys.find((toy) => toy.slug === slug))
+      .filter(Boolean);
+
+    if (recentToys.length > 0) {
+      const panel = document.createElement('section');
+      panel.className = 'webtoy-growth-panel';
+
+      const heading = document.createElement('h3');
+      heading.className = 'webtoy-growth-panel__title';
+      heading.textContent = 'Continue where you left off';
+      panel.appendChild(heading);
+
+      const list = document.createElement('div');
+      list.className = 'webtoy-card-actions';
+      recentToys.forEach((toy) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'cta-button cta-button--muted';
+        button.textContent = toy.title;
+        button.addEventListener('click', () => openToy(toy));
+        list.appendChild(button);
+      });
+      panel.appendChild(list);
+      listElement.appendChild(panel);
+    }
+
+    if (shouldShowPremiumPrompt()) {
+      const premiumPanel = document.createElement('section');
+      premiumPanel.className =
+        'webtoy-growth-panel webtoy-growth-panel--premium';
+
+      const heading = document.createElement('h3');
+      heading.className = 'webtoy-growth-panel__title';
+      heading.textContent = 'Want premium scene packs?';
+
+      const body = document.createElement('p');
+      body.className = 'webtoy-growth-panel__body';
+      body.textContent =
+        'You keep coming back—join the premium waitlist to unlock saved sessions, exclusive presets, and supporter-only drops.';
+
+      const actions = document.createElement('div');
+      actions.className = 'webtoy-card-actions';
+
+      const join = document.createElement('a');
+      join.className = 'cta-button cta-button--accent';
+      join.href =
+        'mailto:hello@no.toil.fyi?subject=Stim%20premium%20waitlist&body=Add%20me%20to%20the%20premium%20waitlist.';
+      join.textContent = 'Join premium waitlist';
+
+      const dismiss = document.createElement('button');
+      dismiss.type = 'button';
+      dismiss.className = 'cta-button';
+      dismiss.textContent = 'Not now';
+      dismiss.addEventListener('click', () => {
+        dismissPremiumPrompt();
+        premiumPanel.remove();
+      });
+
+      actions.append(join, dismiss);
+      premiumPanel.append(heading, body, actions);
+      listElement.appendChild(premiumPanel);
+    }
+  };
+
   const createCard = (toy) => {
     const card = document.createElement(cardElement);
     card.className = 'webtoy-card';
@@ -2021,6 +2121,28 @@ export function createLibraryView({
       });
 
       actions.appendChild(play);
+
+      const share = document.createElement('button');
+      share.type = 'button';
+      share.className = 'cta-button';
+      share.textContent = 'Share toy';
+      share.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const didCopy = await copyToyLink(toy);
+        const nextLabel = didCopy ? 'Link copied' : 'Copy failed';
+        share.textContent = nextLabel;
+        window.setTimeout(() => {
+          share.textContent = 'Share toy';
+        }, 1400);
+      });
+      share.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.stopPropagation();
+        }
+      });
+      actions.appendChild(share);
+
       card.appendChild(actions);
     }
 
@@ -2137,6 +2259,7 @@ export function createLibraryView({
       return;
     }
 
+    renderGrowthPanels(list);
     listToRender.forEach((toy) => list.appendChild(createCard(toy)));
     updateResultsMeta(listToRender.length);
     updateActiveFiltersSummary();
