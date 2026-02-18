@@ -627,12 +627,14 @@ export function attachCapabilityPreflight({
 
   const description = document.createElement('p');
   description.className = 'control-panel__description';
-  description.textContent = 'One short performance check before audio setup.';
+  description.textContent =
+    'Quick performance check so your audio options open with fewer surprises.';
   panel.appendChild(description);
 
   const sequenceHint = document.createElement('p');
   sequenceHint.className = 'control-panel__microcopy';
-  sequenceHint.textContent = 'Tip: demo audio is usually the fastest start.';
+  sequenceHint.textContent =
+    'Tip: demo audio is usually the fastest way to begin.';
   panel.appendChild(sequenceHint);
 
   const statusContainer = document.createElement('div');
@@ -738,7 +740,7 @@ export function attachCapabilityPreflight({
       if (backLink) backLink.hidden = true;
       if (closeButton) {
         closeButton.hidden = false;
-        closeButton.textContent = 'Start audio options';
+        closeButton.textContent = 'Open audio options';
       }
       performanceButton.hidden = !result.performance.lowPower;
       return;

@@ -148,7 +148,7 @@ export function initAudioControls(
               type="button"
               aria-describedby="tab-audio-info"
             >
-              More info
+              Tab tips
             </button>
             <span id="tab-audio-info" class="control-panel__info-text">
               Capture sound from the current tab. In the picker, choose “This tab” and enable
@@ -173,7 +173,7 @@ export function initAudioControls(
               type="button"
               aria-describedby="youtube-audio-info"
             >
-              More info
+              YouTube tips
             </button>
             <span id="youtube-audio-info" class="control-panel__info-text">
               Paste a link, load it, then capture. In the picker, choose “This tab” and enable
