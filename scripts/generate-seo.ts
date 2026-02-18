@@ -73,7 +73,7 @@ const renderPage = ({
   extraHead = '',
   socialImage = iconUrl,
   socialImageAlt = 'Stim Webtoys Library icon',
-  socialImageType = 'image/svg+xml',
+  socialImageType = 'image/png',
   socialImageWidth = 512,
   socialImageHeight = 512,
 }: {
@@ -547,10 +547,6 @@ const generateSeo = async () => {
       }),
     )}</script>
 `,
-      socialImage: `${baseUrl}/og/default.svg`,
-      socialImageType: 'image/svg+xml',
-      socialImageWidth: ogWidth,
-      socialImageHeight: ogHeight,
       socialImageAlt: 'Stim Webtoys collection preview image',
     }),
   );
@@ -649,10 +645,6 @@ const generateSeo = async () => {
         extraHead: `
 ${extraHead}
 `,
-        socialImage: `${baseUrl}/og/${toy.slug}.svg`,
-        socialImageType: 'image/svg+xml',
-        socialImageWidth: ogWidth,
-        socialImageHeight: ogHeight,
         socialImageAlt: `${toy.title} preview image`,
       }),
     );
