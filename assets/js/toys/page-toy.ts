@@ -56,21 +56,18 @@ export function startPageToy({
     pageUrl.searchParams.set('audio', 'demo');
   }
 
+  const frameUrl = new URL(pageUrl.toString());
+  frameUrl.searchParams.set('embed', '1');
+
   const frame = document.createElement('iframe');
   frame.className = 'toy-frame';
   frame.title = title ?? 'Toy';
-  frame.src = pageUrl.toString();
+  frame.src = frameUrl.toString();
   frame.setAttribute('allow', 'autoplay; microphone; accelerometer; gyroscope');
   frame.setAttribute('loading', 'eager');
-  frame.style.width = '100%';
-  frame.style.minHeight = '70vh';
-  frame.style.border = '0';
-  frame.style.borderRadius = '20px';
-  frame.style.background = 'rgba(5, 7, 24, 0.85)';
 
   const actions = document.createElement('div');
   actions.className = 'active-toy-status__actions';
-  actions.style.marginTop = '1rem';
 
   const newTabLink = document.createElement('a');
   newTabLink.className = 'cta-button';
@@ -82,7 +79,7 @@ export function startPageToy({
   actions.appendChild(newTabLink);
 
   const wrapper = document.createElement('div');
-  wrapper.className = 'active-toy-status';
+  wrapper.className = 'active-toy-status active-toy-status--page';
   wrapper.append(frame, actions);
 
   const activeToy = {
