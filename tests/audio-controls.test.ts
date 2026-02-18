@@ -7,6 +7,7 @@ describe('audio controls primary emphasis', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     sessionStorage.clear();
+    localStorage.clear();
     const bootstrapScript = document.createElement('script');
     document.body.appendChild(bootstrapScript);
     globalThis.HTMLButtonElement =
@@ -162,6 +163,57 @@ describe('audio controls primary emphasis', () => {
 
     expect(firstSteps.hidden).toBe(true);
     expect(sessionStorage.getItem('stims-first-steps-dismissed')).toBe('true');
+  });
+
+  test('applies low-motion starter preset from first-steps quick action', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+    });
+
+    const starterPresetButton = container.querySelector(
+      '[data-apply-starter-preset]',
+    ) as HTMLButtonElement;
+    starterPresetButton.click();
+
+    expect(localStorage.getItem('stims:quality-preset')).toBe('low-motion');
+
+    const status = container.querySelector('#audio-status') as HTMLElement;
+    expect(status.hidden).toBe(false);
+    expect(status.textContent).toContain('Starter preset applied');
+  });
+
+  test('hides gesture hints when dismissed by user', async () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      gestureHints: ['Pinch/rotate gestures', 'Drag to steer'],
+    });
+
+    const demoButton = container.querySelector(
+      '#use-demo-audio',
+    ) as HTMLButtonElement;
+    demoButton.click();
+    await flush();
+
+    const hintPanel = container.querySelector(
+      '[data-gesture-hints]',
+    ) as HTMLElement;
+    expect(hintPanel.hidden).toBe(false);
+
+    const dismiss = hintPanel.querySelector(
+      '[data-dismiss-gesture-hints]',
+    ) as HTMLButtonElement;
+    dismiss.click();
+
+    expect(hintPanel.hidden).toBe(true);
+    expect(sessionStorage.getItem('stims-gesture-hints-dismissed')).toBe(
+      'true',
+    );
   });
 
   test('updates onboarding source copy when demo is preferred', () => {
