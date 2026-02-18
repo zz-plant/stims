@@ -1726,7 +1726,7 @@ body {
       calc(env(safe-area-inset-top) + 84px)
     );
     max-height: min(
-      30svh,
+      44svh,
       calc(
         100dvh -
         var(--toy-nav-floating-offset, 108px) -
@@ -1743,7 +1743,7 @@ body {
   :root[data-toy-controls-expanded="true"] .control-panel--floating {
     display: block;
     max-height: min(
-      24svh,
+      56svh,
       calc(
         100dvh -
         var(--toy-nav-floating-offset, 108px) -
@@ -1758,10 +1758,11 @@ body {
     right: max(6px, env(safe-area-inset-right));
     width: auto;
     padding: 8px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
     clip-path: none;
     border-radius: 18px;
     max-height: min(
-      36svh,
+      52svh,
       calc(
         100dvh -
         12px -

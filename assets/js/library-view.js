@@ -1860,6 +1860,11 @@ export function createLibraryView({
     bestFor.textContent = getBestForLabel(toy);
     card.appendChild(bestFor);
 
+    const tapHint = document.createElement('p');
+    tapHint.className = 'webtoy-card-hint';
+    tapHint.textContent = 'Tap anywhere on this card to open.';
+    card.appendChild(tapHint);
+
     const matchedFields = getMatchedFields(toy, getQueryTokens(searchQuery));
     if (matchedFields.length > 0) {
       const matches = document.createElement('p');
@@ -1977,6 +1982,22 @@ export function createLibraryView({
     if (toy.type === 'module') {
       const actions = document.createElement('div');
       actions.className = 'webtoy-card-actions';
+
+      const open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'cta-button cta-button--accent';
+      open.textContent = 'Open toy';
+      open.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openToy(toy);
+      });
+      open.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.stopPropagation();
+        }
+      });
+      actions.appendChild(open);
 
       const play = document.createElement('button');
       play.type = 'button';
