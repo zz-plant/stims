@@ -627,7 +627,8 @@ export function attachCapabilityPreflight({
 
   const description = document.createElement('p');
   description.className = 'control-panel__description';
-  description.textContent = 'One short performance check before audio setup.';
+  description.textContent =
+    'One short performance check, then choose your audio source.';
   panel.appendChild(description);
 
   const sequenceHint = document.createElement('p');
@@ -719,7 +720,7 @@ export function attachCapabilityPreflight({
   const continueButton = document.createElement('button');
   continueButton.className = 'cta-button primary';
   continueButton.type = 'button';
-  continueButton.textContent = 'Continue to audio setup';
+  continueButton.textContent = 'Choose audio source';
   continueButton.hidden = true;
   continueButton.addEventListener('click', () => {
     setRememberPreference(rememberToggle.checked);
