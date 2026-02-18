@@ -2,7 +2,22 @@ type GrowthEventName =
   | 'library_visit'
   | 'toy_open'
   | 'toy_share'
-  | 'premium_prompt_dismissed';
+  | 'premium_prompt_dismissed'
+  | 'opportunity_interest'
+  | 'opportunity_contact'
+  | 'segment_plan_viewed'
+  | 'segment_plan_contact';
+
+export type OpportunityTrack =
+  | 'creator-mode'
+  | 'partnership-licensing'
+  | 'facilitator-toolkit'
+  | 'community-support';
+
+export type MarketSegment =
+  | 'experiential-installations'
+  | 'wellness-focus-environments'
+  | 'education-enrichment';
 
 type ToyOpenSource = 'library' | 'direct';
 
@@ -31,6 +46,25 @@ const createEmptyState = (): GrowthState => ({
   premiumPromptDismissed: false,
 });
 
+const opportunityTracks: OpportunityTrack[] = [
+  'creator-mode',
+  'partnership-licensing',
+  'facilitator-toolkit',
+  'community-support',
+];
+
+const isOpportunityTrack = (value: string): value is OpportunityTrack =>
+  opportunityTracks.includes(value as OpportunityTrack);
+
+const marketSegments: MarketSegment[] = [
+  'experiential-installations',
+  'wellness-focus-environments',
+  'education-enrichment',
+];
+
+const isMarketSegment = (value: string): value is MarketSegment =>
+  marketSegments.includes(value as MarketSegment);
+
 const isoDay = (timestamp = Date.now()) =>
   new Date(timestamp).toISOString().slice(0, 10);
 
@@ -46,6 +80,7 @@ const readState = (): GrowthState => {
     }
 
     const parsed = JSON.parse(raw) as Partial<GrowthState>;
+
     return {
       activeDays: Array.isArray(parsed.activeDays) ? parsed.activeDays : [],
       lastSeenAt:
@@ -93,6 +128,57 @@ const emitMetricEvent = (
       },
     }),
   );
+};
+
+type GrowthSignalPayload = {
+  name: GrowthEventName;
+  timestamp: string;
+  detail: Record<string, string | number>;
+};
+
+const resolveGrowthSignalEndpoint = () => {
+  if (typeof document === 'undefined') return null;
+  const node = document.querySelector<HTMLMetaElement>(
+    'meta[name="stims-growth-signal-endpoint"]',
+  );
+  return node?.content?.trim() || null;
+};
+
+const sendGrowthSignal = (payload: GrowthSignalPayload) => {
+  if (typeof window === 'undefined') return;
+  const endpoint = resolveGrowthSignalEndpoint();
+  if (!endpoint) return;
+
+  const body = JSON.stringify(payload);
+  try {
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'application/json' });
+      navigator.sendBeacon(endpoint, blob);
+      return;
+    }
+  } catch (_error) {
+    // Ignore and fallback to fetch.
+  }
+
+  void fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+    keepalive: true,
+  }).catch(() => {
+    // Ignore network errors for optional signal endpoint.
+  });
+};
+
+const emitServerSignal = (
+  name: GrowthEventName,
+  detail: Record<string, string | number>,
+) => {
+  sendGrowthSignal({
+    name,
+    timestamp: new Date().toISOString(),
+    detail,
+  });
 };
 
 export const recordLibraryVisit = () => {
@@ -167,6 +253,33 @@ export const getGrowthSnapshot = () => {
     recentToySlugs: getRecentToySlugs(),
   };
 };
+
+export const recordOpportunityInterest = (track: OpportunityTrack) => {
+  emitMetricEvent('opportunity_interest', { track });
+  emitServerSignal('opportunity_interest', { track });
+};
+
+export const recordOpportunityContact = (track: OpportunityTrack) => {
+  emitMetricEvent('opportunity_contact', { track });
+  emitServerSignal('opportunity_contact', { track });
+};
+
+export const isValidOpportunityTrack = (
+  value: string,
+): value is OpportunityTrack => isOpportunityTrack(value);
+
+export const recordSegmentPlanViewed = (segment: MarketSegment) => {
+  emitMetricEvent('segment_plan_viewed', { segment });
+  emitServerSignal('segment_plan_viewed', { segment });
+};
+
+export const recordSegmentPlanContact = (segment: MarketSegment) => {
+  emitMetricEvent('segment_plan_contact', { segment });
+  emitServerSignal('segment_plan_contact', { segment });
+};
+
+export const isValidMarketSegment = (value: string): value is MarketSegment =>
+  isMarketSegment(value);
 
 const getWeeklyActiveDays = (state: GrowthState) => {
   const lastSevenDays = new Set<string>();

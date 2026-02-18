@@ -451,6 +451,104 @@
             changelog, and ongoing experiments. Follow the repo, drop feedback,
             or help ship the next wave of toys.
           </p>
+          <p class="section-description">
+            We are actively exploring sustainability paths that keep the core
+            library open while funding new work.
+          </p>
+        </div>
+        <div
+          class="growth-tracks"
+          id="growth-tracks"
+          data-opportunity-signals
+          hidden
+        >
+          <p class="repo-status__title">Opportunity tracks under consideration</p>
+          <ul class="system-legend" aria-label="Growth opportunities under consideration">
+            <li class="system-legend__item">
+              🎛️ <strong>Creator mode:</strong> optional premium controls,
+              presets, and export workflows for power users.
+            </li>
+            <li class="system-legend__item">
+              🤝 <strong>Partnership licensing:</strong> event, education, and
+              wellness deployments with curated toy bundles.
+            </li>
+            <li class="system-legend__item">
+              🧰 <strong>Facilitator toolkit:</strong> guided session packs for
+              classrooms, studios, and community spaces.
+            </li>
+            <li class="system-legend__item">
+              💖 <strong>Community support:</strong> donation and membership
+              options for people who want to back development.
+            </li>
+          </ul>
+          <form class="growth-tracks__form" data-opportunity-priority-form>
+            <label for="opportunity-priority" class="growth-tracks__label"
+              >Help us prioritize what to build next</label
+            >
+            <div class="growth-tracks__form-row">
+              <select id="opportunity-priority" data-opportunity-priority-select>
+                <option value="creator-mode">Creator mode</option>
+                <option value="partnership-licensing">Partnership licensing</option>
+                <option value="facilitator-toolkit">Facilitator toolkit</option>
+                <option value="community-support">Community support</option>
+              </select>
+              <button
+                type="button"
+                class="cta-button ghost"
+                data-opportunity-action="interest"
+              >
+                Cast priority vote
+              </button>
+              <a
+                class="text-link"
+                href="https://github.com/zz-plant/stims/discussions/new"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-opportunity-action="contact"
+                >Share your use case</a
+              >
+            </div>
+          </form>
+          <form class="growth-tracks__form" data-segment-plan-form>
+            <label for="segment-plan" class="growth-tracks__label"
+              >Choose your environment</label
+            >
+            <div class="growth-tracks__form-row">
+              <select id="segment-plan" data-segment-select>
+                <option value="experiential-installations">
+                  Experiential installations / activations
+                </option>
+                <option value="wellness-focus-environments">
+                  Wellness / focus environments
+                </option>
+                <option value="education-enrichment">Education enrichment</option>
+              </select>
+              <button
+                type="button"
+                class="cta-button ghost"
+                data-segment-action="preview"
+              >
+                Mark segment priority
+              </button>
+              <a
+                class="text-link"
+                href="https://github.com/zz-plant/stims/discussions/new"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-segment-action="contact"
+                >Discuss a pilot</a
+              >
+            </div>
+            <p class="growth-tracks__segment-note" data-segment-outcome aria-live="polite"></p>
+          </form>
+          <p class="repo-status__message" data-opportunity-summary>
+            Growth-lab signals are sent to the configured server endpoint when
+            enabled.
+          </p>
+          <p class="repo-status__message">
+            Have a use case or partnership idea? Open a discussion and tell us
+            what would create the most value for your audience.
+          </p>
         </div>
         <div class="repo-status">
           <div class="repo-status__header">
@@ -547,6 +645,13 @@
               rel="noopener noreferrer"
               class="cta-button ghost"
               >Suggest a toy</a
+            >
+            <a
+              href="https://github.com/zz-plant/stims/discussions"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="cta-button ghost"
+              >Talk partnerships</a
             >
             <a
               href="https://github.com/zz-plant/stims/blob/main/CHANGELOG.md"

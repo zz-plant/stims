@@ -19,6 +19,7 @@ import { isSmartTvDevice } from './utils/device-detect.ts';
 import { initGamepadNavigation } from './utils/gamepad-navigation.ts';
 import { initLibraryView } from './utils/init-library.ts';
 import { initNavScrollEffects } from './utils/init-nav-scroll.ts';
+import { initOpportunitySignals } from './utils/init-opportunity-signals.ts';
 import { initQuickstartCta } from './utils/init-quickstart.ts';
 import { initSystemCheck } from './utils/init-system-check.ts';
 import { initStimBuilder } from './utils/stim-builder.ts';
@@ -144,6 +145,7 @@ const startApp = async () => {
     runInit('nav scroll effects', initNavScrollEffects);
     runInit('system check', initSystemCheck);
     runInit('stim builder', initStimBuilder);
+    runInit('opportunity signals', initOpportunitySignals);
   }
 
   runInit('gamepad navigation', () => {
