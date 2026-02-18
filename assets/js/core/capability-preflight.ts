@@ -716,17 +716,6 @@ export function attachCapabilityPreflight({
     backLink.hidden = true;
     actions.appendChild(backLink);
   }
-  const continueButton = document.createElement('button');
-  continueButton.className = 'cta-button primary';
-  continueButton.type = 'button';
-  continueButton.textContent = 'Continue to audio setup';
-  continueButton.hidden = true;
-  continueButton.addEventListener('click', () => {
-    setRememberPreference(rememberToggle.checked);
-    closePanel();
-  });
-  actions.appendChild(continueButton);
-
   panel.appendChild(actions);
 
   const retryButton = document.createElement('button');
@@ -740,21 +729,24 @@ export function attachCapabilityPreflight({
   const applyActionPriority = (result: CapabilityPreflightResult | null) => {
     if (!result) {
       if (closeButton) closeButton.hidden = false;
-      continueButton.hidden = true;
       performanceButton.hidden = true;
       if (backLink) backLink.hidden = true;
       return;
     }
 
     if (result.canProceed) {
-      continueButton.hidden = false;
       if (backLink) backLink.hidden = true;
-      if (closeButton) closeButton.hidden = true;
+      if (closeButton) {
+        closeButton.hidden = false;
+        closeButton.textContent = 'Start audio options';
+      }
       performanceButton.hidden = !result.performance.lowPower;
       return;
     }
 
-    continueButton.hidden = true;
+    if (closeButton) {
+      closeButton.textContent = 'Close';
+    }
     performanceButton.hidden = true;
     if (backLink) {
       backLink.hidden = false;

@@ -2335,31 +2335,6 @@ export function createLibraryView({
     updateActiveFiltersSummary();
   };
 
-  const clearAllFilters = () => {
-    searchQuery = '';
-    activeFilters.clear();
-    const chips = document.querySelectorAll('[data-filter-chip].is-active');
-    chips.forEach((chip) => {
-      chip.classList.remove('is-active');
-      updateFilterChipA11y(chip, false);
-    });
-    emitFilterStateChange();
-
-    if (searchInputId) {
-      const search = document.getElementById(searchInputId);
-      if (search && 'value' in search) {
-        search.value = '';
-      }
-    }
-
-    commitState({ replace: false });
-    syncRefineDisclosure();
-    renderToys(applyFilters());
-    updateSearchClearState();
-    updateFilterResetState();
-    updateActiveFiltersSummary();
-  };
-
   const removeFilterToken = (token) => {
     const [type, value] = token.split(':');
     if (!type || !value) return;
@@ -2456,7 +2431,7 @@ export function createLibraryView({
       clearButton instanceof HTMLElement &&
       clearButton.tagName === 'BUTTON'
     ) {
-      clearButton.addEventListener('click', () => clearAllFilters());
+      clearButton.addEventListener('click', () => clearFilters());
     }
   };
 
