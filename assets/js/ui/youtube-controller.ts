@@ -70,7 +70,9 @@ export class YouTubeController {
     }
 
     const apiUrl = 'https://www.youtube.com/iframe_api';
-    const existingScript = document.querySelector(`script[src="${apiUrl}"]`);
+    const existingScript = Array.from(
+      document.getElementsByTagName('script'),
+    ).find((script) => script.src === apiUrl);
     if (!existingScript) {
       const tag = document.createElement('script');
       tag.src = apiUrl;
