@@ -5,7 +5,7 @@ const baseUrl = 'https://no.toil.fyi';
 const iconUrl = `${baseUrl}/icons/icon-512.png`;
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'public');
-const generatedDirs = ['toys', 'tags', 'moods', 'capabilities'];
+const generatedDirs = ['toys', 'tags', 'moods', 'capabilities', 'og'];
 const sitemapChunkSize = 5000;
 const ogWidth = 1200;
 const ogHeight = 630;
@@ -577,7 +577,7 @@ const generateSeo = async () => {
       applicationCategory: 'Game',
       operatingSystem: 'Web',
       url: canonical,
-      image: iconUrl,
+      image: `${baseUrl}/og/${toy.slug}.svg`,
       isAccessibleForFree: true,
       audience: {
         '@type': 'Audience',
@@ -645,7 +645,11 @@ const generateSeo = async () => {
         extraHead: `
 ${extraHead}
 `,
+        socialImage: `${baseUrl}/og/${toy.slug}.svg`,
         socialImageAlt: `${toy.title} preview image`,
+        socialImageType: 'image/svg+xml',
+        socialImageWidth: ogWidth,
+        socialImageHeight: ogHeight,
       }),
     );
   }
@@ -900,18 +904,28 @@ ${extraHead}
 
   const today = new Date().toISOString().split('T')[0];
   const urls = [
-    `${baseUrl}/`,
-    `${baseUrl}/index.html`,
-    `${baseUrl}/toys/`,
-    `${baseUrl}/tags/`,
-    `${baseUrl}/moods/`,
-    `${baseUrl}/capabilities/`,
-    ...toys.map((toy) => `${baseUrl}/toys/${toy.slug}/`),
-    ...tagEntries.map((entry) => `${baseUrl}/tags/${entry.slug}/`),
-    ...moodEntries.map((entry) => `${baseUrl}/moods/${entry.slug}/`),
-    ...capabilityEntries.map(
-      (entry) => `${baseUrl}/capabilities/${entry.slug}/`,
-    ),
+    { loc: `${baseUrl}/`, image: `${baseUrl}/og/default.svg` },
+    { loc: `${baseUrl}/index.html`, image: `${baseUrl}/og/default.svg` },
+    { loc: `${baseUrl}/toys/`, image: `${baseUrl}/og/default.svg` },
+    { loc: `${baseUrl}/tags/`, image: `${baseUrl}/og/default.svg` },
+    { loc: `${baseUrl}/moods/`, image: `${baseUrl}/og/default.svg` },
+    { loc: `${baseUrl}/capabilities/`, image: `${baseUrl}/og/default.svg` },
+    ...toys.map((toy) => ({
+      loc: `${baseUrl}/toys/${toy.slug}/`,
+      image: `${baseUrl}/og/${toy.slug}.svg`,
+    })),
+    ...tagEntries.map((entry) => ({
+      loc: `${baseUrl}/tags/${entry.slug}/`,
+      image: `${baseUrl}/og/default.svg`,
+    })),
+    ...moodEntries.map((entry) => ({
+      loc: `${baseUrl}/moods/${entry.slug}/`,
+      image: `${baseUrl}/og/default.svg`,
+    })),
+    ...capabilityEntries.map((entry) => ({
+      loc: `${baseUrl}/capabilities/${entry.slug}/`,
+      image: `${baseUrl}/og/default.svg`,
+    })),
   ];
 
   const sitemapChunks: string[] = [];
@@ -919,15 +933,18 @@ ${extraHead}
     const chunk = urls.slice(index, index + sitemapChunkSize);
     const sitemapName = `sitemap-${Math.floor(index / sitemapChunkSize) + 1}.xml`;
     const sitemapBody = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${chunk
-  .map((url) => {
-    const { changefreq, priority } = getSitemapMeta(url);
+  .map((entry) => {
+    const { changefreq, priority } = getSitemapMeta(entry.loc);
     return `  <url>
-    <loc>${escapeXml(url)}</loc>
+    <loc>${escapeXml(entry.loc)}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
+    <image:image>
+      <image:loc>${escapeXml(entry.image)}</image:loc>
+    </image:image>
   </url>`;
   })
   .join('\n')}
