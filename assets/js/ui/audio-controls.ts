@@ -14,6 +14,7 @@ export interface AudioControlsOptions {
   firstRunHint?: string;
   gestureHints?: string[];
   starterPresetLabel?: string;
+  starterPresetId?: string;
   onApplyStarterPreset?: () => void;
 }
 
@@ -70,6 +71,7 @@ export function initAudioControls(
 
   const starterPresetLabel =
     options.starterPresetLabel?.trim() || 'calm starter preset';
+  const starterPresetId = options.starterPresetId?.trim() || 'low-motion';
 
   container.innerHTML = `
     <p class="control-panel__description">
@@ -421,7 +423,7 @@ export function initAudioControls(
       return;
     }
 
-    const appliedPreset = setQualityPresetById('low-motion');
+    const appliedPreset = setQualityPresetById(starterPresetId);
     if (!appliedPreset) {
       updateStatus('Starter preset unavailable on this toy.', 'error');
       return;
