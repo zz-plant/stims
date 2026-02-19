@@ -5,7 +5,6 @@ import {
   PREFLIGHT_SESSION_DISMISS_KEY,
 } from './core/capability-preflight.ts';
 import { setRendererTelemetryHandler } from './core/renderer-capabilities.ts';
-import { setQualityPresetById } from './core/settings-panel.ts';
 import { startToyAudioFromSource } from './core/toy-audio-startup.ts';
 import type { ToyWindow } from './core/toy-globals';
 import toyManifest from './data/toy-manifest.ts';
@@ -232,6 +231,7 @@ const startApp = async () => {
       const gestureHints = starterTips.filter((tip) =>
         /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip),
       );
+      const starterPresetId = toyMeta?.starterPreset?.id;
       const starterPresetLabel = toyMeta?.starterPreset?.label;
 
       initAudioControls(audioControlsContainer, {
@@ -260,10 +260,8 @@ const startApp = async () => {
         starterTips,
         firstRunHint,
         gestureHints,
+        starterPresetId,
         starterPresetLabel,
-        onApplyStarterPreset: () => {
-          setQualityPresetById('low-motion');
-        },
         ...buildAudioInitState(result),
       });
     };
