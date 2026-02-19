@@ -40,7 +40,7 @@ type SpiralArm = {
 
 type ParticleField = {
   geometry: THREE.BufferGeometry;
-  material: THREE.PointsMaterial;
+  material: THREE.ShaderMaterial;
   points: THREE.Points;
   velocities: Float32Array;
   count: number;
@@ -149,6 +149,27 @@ export function start({ container }: ToyStartOptions = {}) {
     return { armCount, linesPerArm, pointsPerLine };
   }
 
+  function createSpiralParticleSpriteTexture() {
+    const svg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+        <defs>
+          <radialGradient id="spiral-particle" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="white" stop-opacity="1"/>
+            <stop offset="55%" stop-color="white" stop-opacity="0.82"/>
+            <stop offset="100%" stop-color="white" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="60" cy="60" r="58" fill="url(#spiral-particle)"/>
+        <path d="M60 14 L68 44 L100 60 L68 76 L60 106 L52 76 L20 60 L52 44 Z" fill="white" fill-opacity="0.32"/>
+      </svg>
+    `);
+    const texture = new THREE.TextureLoader().load(
+      `data:image/svg+xml;charset=utf-8,${svg}`,
+    );
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
   function getParticleCount() {
     const scale =
       (quality.activeQuality.particleScale ?? 1) *
@@ -186,6 +207,8 @@ export function start({ container }: ToyStartOptions = {}) {
     const positions = new Float32Array(count * 3);
     const velocities = new Float32Array(count);
     const colors = new Float32Array(count * 3);
+    const phases = new Float32Array(count);
+    const sizes = new Float32Array(count);
     const palette = palettes[activePaletteIndex];
 
     for (let i = 0; i < count; i++) {
@@ -198,6 +221,8 @@ export function start({ container }: ToyStartOptions = {}) {
       positions[i3 + 2] = radius * Math.cos(phi) - 40;
       velocities[i] = 0.2 + Math.random() * 0.4;
 
+      phases[i] = Math.random() * Math.PI * 2;
+      sizes[i] = 0.8 + Math.random() * 1.6;
       const hue = (palette.baseHue + Math.random() * 0.2) % 1;
       const color = new THREE.Color().setHSL(hue, 0.85, 0.6);
       colors[i3] = color.r;
@@ -207,17 +232,73 @@ export function start({ container }: ToyStartOptions = {}) {
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-    const material = new THREE.PointsMaterial({
-      size: 1.5,
-      sizeAttenuation: performanceSettings.shaderQuality !== 'low',
+    const sprite = createSpiralParticleSpriteTexture();
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uBeat: { value: 0 },
+        uHighs: { value: 0 },
+        uSprite: { value: sprite },
+      },
+      vertexShader: `
+        attribute float phase;
+        attribute float size;
+        attribute vec3 color;
+
+        uniform float uTime;
+        uniform float uBeat;
+
+        varying vec3 vColor;
+        varying float vPhase;
+        varying float vPulse;
+
+        void main() {
+          vColor = color;
+          vPhase = phase;
+          float pulse = 0.7 + sin(uTime * 5.0 + phase) * 0.25 + uBeat * 0.35;
+          vPulse = pulse;
+
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = size * pulse * (160.0 / max(1.0, -mvPosition.z));
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D uSprite;
+        uniform float uTime;
+        uniform float uHighs;
+
+        varying vec3 vColor;
+        varying float vPhase;
+        varying float vPulse;
+
+        float hash21(vec2 p) {
+          p = fract(p * vec2(234.12, 521.73));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+
+        void main() {
+          vec2 uv = gl_PointCoord;
+          vec4 sprite = texture2D(uSprite, uv);
+          float dist = distance(uv, vec2(0.5));
+          float feather = smoothstep(0.52, 0.03, dist);
+          float flicker = 0.88 + hash21(uv * 22.0 + vec2(vPhase, uTime * 0.17)) * (0.18 + uHighs * 0.15);
+          vec3 color = vColor * (vPulse * flicker + uHighs * 0.3);
+          float alpha = sprite.a * feather;
+          if (alpha < 0.01) discard;
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
       transparent: true,
-      opacity: 0.7,
-      vertexColors: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
 
+    material.userData.sprite = sprite;
     const points = new THREE.Points(geometry, material);
     runtime.toy.scene.add(points);
 
@@ -240,6 +321,10 @@ export function start({ container }: ToyStartOptions = {}) {
     if (!particleField) return;
     runtime.toy.scene.remove(particleField.points);
     disposeGeometry(particleField.geometry);
+    const sprite = particleField.material.userData.sprite as
+      | THREE.Texture
+      | undefined;
+    sprite?.dispose();
     disposeMaterial(particleField.material);
     particleField = null;
   }
@@ -402,10 +487,6 @@ export function start({ container }: ToyStartOptions = {}) {
         );
       });
     });
-
-    if (particleField) {
-      particleField.material.color = new THREE.Color(palette.particle);
-    }
 
     if (bloomMesh) {
       const bloomMaterial = bloomMesh.material as THREE.MeshStandardMaterial;
@@ -618,9 +699,10 @@ export function start({ container }: ToyStartOptions = {}) {
 
       particleField.geometry.attributes.position.needsUpdate = true;
       particleField.geometry.attributes.color.needsUpdate = true;
-      particleField.material.size = 1.2 + smoothedBass * 2 + beatFlash * 0.8;
-      particleField.material.opacity =
-        0.5 + smoothedHighs * 0.4 + beatFlash * 0.2;
+      particleField.material.uniforms.uTime.value = time * 0.001;
+      particleField.material.uniforms.uBeat.value =
+        beatIntensity + beatFlash * 0.6;
+      particleField.material.uniforms.uHighs.value = smoothedHighs;
     }
 
     // Camera movement

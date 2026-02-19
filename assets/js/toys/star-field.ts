@@ -6,7 +6,6 @@ import {
 import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
-import { applyAudioColor } from '../utils/color-audio';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createToyQualityControlsWithPerformance } from '../utils/toy-settings';
@@ -14,7 +13,7 @@ import type { UnifiedInputState } from '../utils/unified-input';
 
 type StarFieldBuffers = {
   geometry: THREE.BufferGeometry;
-  material: THREE.PointsMaterial;
+  material: THREE.ShaderMaterial;
   velocities: Float32Array;
   points: THREE.Points;
   count: number;
@@ -104,10 +103,25 @@ export function start({ container }: ToyStartOptions = {}) {
     u_colorB: { value: new THREE.Color() },
   };
 
-  function getShaderSizeMultiplier() {
-    if (performanceSettings.shaderQuality === 'high') return 1.2;
-    if (performanceSettings.shaderQuality === 'low') return 0.85;
-    return 1;
+  function createStarSpriteTexture() {
+    const svg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+        <defs>
+          <radialGradient id="star-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="white" stop-opacity="1"/>
+            <stop offset="45%" stop-color="white" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="white" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="64" cy="64" r="62" fill="url(#star-glow)"/>
+        <path d="M64 14 L72 52 L114 64 L72 76 L64 114 L56 76 L14 64 L56 52 Z" fill="white" fill-opacity="0.36"/>
+      </svg>
+    `);
+    const texture = new THREE.TextureLoader().load(
+      `data:image/svg+xml;charset=utf-8,${svg}`,
+    );
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
   }
 
   function getStarCount() {
@@ -133,21 +147,103 @@ export function start({ container }: ToyStartOptions = {}) {
       velocities[i] = 0.4 + Math.random() * 0.8;
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const sizes = new Float32Array(count);
+    const phases = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      sizes[i] = 0.8 + Math.random() * 1.4;
+      phases[i] = Math.random() * Math.PI * 2;
+      const c = new THREE.Color().setHSL(
+        (palette.starHue + (Math.random() - 0.5) * 0.08 + 1) % 1,
+        0.45,
+        0.88,
+      );
+      const i3 = i * 3;
+      colors[i3] = c.r;
+      colors[i3 + 1] = c.g;
+      colors[i3 + 2] = c.b;
+    }
 
-    const material = new THREE.PointsMaterial({
-      color: new THREE.Color().setHSL(palette.starHue, 0.4, 0.9),
-      size: 1.2 * getShaderSizeMultiplier(),
-      sizeAttenuation: performanceSettings.shaderQuality !== 'low',
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const starSprite = createStarSpriteTexture();
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uSparkle: { value: 0 },
+        uHue: { value: palette.starHue },
+        uSprite: { value: starSprite },
+      },
+      vertexShader: `
+        attribute float size;
+        attribute float phase;
+        attribute vec3 color;
+
+        uniform float uTime;
+        uniform float uSparkle;
+
+        varying vec3 vColor;
+        varying float vPhase;
+        varying float vPulse;
+
+        void main() {
+          vColor = color;
+          vPhase = phase;
+          float pulse = 0.7 + sin(uTime * 3.8 + phase) * 0.3 + uSparkle * 0.22;
+          vPulse = pulse;
+
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = size * pulse * (170.0 / max(1.0, -mvPosition.z));
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        uniform sampler2D uSprite;
+        uniform float uTime;
+        uniform float uSparkle;
+        uniform float uHue;
+
+        varying vec3 vColor;
+        varying float vPhase;
+        varying float vPulse;
+
+        float hash21(vec2 p) {
+          p = fract(p * vec2(123.34, 456.21));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+
+        vec3 hsl2rgb(vec3 hsl) {
+          vec3 rgb = clamp(abs(mod(hsl.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+          return hsl.z + hsl.y * (rgb - 0.5) * (1.0 - abs(2.0 * hsl.z - 1.0));
+        }
+
+        void main() {
+          vec2 uv = gl_PointCoord;
+          vec4 sprite = texture2D(uSprite, uv);
+          float d = distance(uv, vec2(0.5));
+          float core = smoothstep(0.5, 0.02, d);
+          float flicker = 0.86 + hash21(uv * 23.0 + vec2(vPhase, uTime * 0.14)) * 0.22;
+          vec3 hueColor = hsl2rgb(vec3(mod(uHue + vPhase * 0.02, 1.0), 0.45 + uSparkle * 0.2, 0.84));
+          vec3 color = mix(vColor, hueColor, 0.55) * (vPulse * flicker + uSparkle * 0.3);
+          float alpha = sprite.a * core;
+          if (alpha < 0.01) discard;
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
       transparent: true,
-      opacity: 0.9,
+      depthWrite: false,
       blending:
         performanceSettings.shaderQuality === 'low'
           ? THREE.NormalBlending
           : THREE.AdditiveBlending,
-      depthWrite: false,
     });
 
+    material.userData.starSprite = starSprite;
     const points = new THREE.Points(geometry, material);
     runtime.toy.scene.add(points);
 
@@ -240,6 +336,10 @@ export function start({ container }: ToyStartOptions = {}) {
     if (!starField) return;
     runtime.toy.scene.remove(starField.points);
     disposeGeometry(starField.geometry);
+    const starSprite = starField.material.userData.starSprite as
+      | THREE.Texture
+      | undefined;
+    starSprite?.dispose();
     disposeMaterial(starField.material);
     starField = null;
   }
@@ -298,17 +398,11 @@ export function start({ container }: ToyStartOptions = {}) {
 
     starField.geometry.attributes.position.needsUpdate = true;
 
-    const baseSize =
-      1.2 * getShaderSizeMultiplier() + normalizedAvg * 2.2 * controls.sparkle;
-    starField.material.size = baseSize;
-    starField.material.opacity = 0.65 + normalizedAvg * 0.3;
     const palette = palettes[activePaletteIndex];
-    applyAudioColor(starField.material, normalizedAvg, {
-      baseHue: palette.starHue,
-      hueRange: 0.35 * controls.sparkle,
-      baseSaturation: 0.3,
-      baseLuminance: 0.82,
-    });
+    starField.material.uniforms.uTime.value = time * 0.001;
+    starField.material.uniforms.uSparkle.value =
+      normalizedAvg * controls.sparkle;
+    starField.material.uniforms.uHue.value = palette.starHue;
 
     runtime.toy.camera.position.x = Math.sin(time * 0.0006) * 8;
     runtime.toy.camera.position.y = Math.cos(time * 0.0005) * 6;
@@ -379,7 +473,7 @@ export function start({ container }: ToyStartOptions = {}) {
       }
     });
     if (starField) {
-      starField.material.color.setHSL(palette.starHue, 0.4, 0.9);
+      starField.material.uniforms.uHue.value = palette.starHue;
     }
   }
 
