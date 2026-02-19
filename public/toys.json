@@ -5,7 +5,8 @@
     "description": "A twisting 3D tunnel that responds to sound.",
     "module": "assets/js/toys/three-d-toy.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "energetic",
@@ -33,7 +34,8 @@
     "description": "Paint flowing aurora ribbons that react to your microphone in layered waves.",
     "module": "assets/js/toys/aurora-painter.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 1,
     "moods": [
@@ -63,7 +65,8 @@
     "description": "Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.",
     "module": "assets/js/toys/clay.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "focus",
@@ -91,7 +94,8 @@
     "description": "Watch surreal landscapes evolve with fractals and glitches that react to music.",
     "module": "assets/js/toys/evol.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "psychedelic",
@@ -119,7 +123,8 @@
     "description": "Push shifting geometric forms directly from live mic input with responsive controls.",
     "module": "assets/js/toys/geom.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "energetic",
@@ -147,7 +152,8 @@
     "description": "Layered halos, particles, and shapes that respond to your music.",
     "module": "assets/js/toys/holy.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "serene",
@@ -204,7 +210,8 @@
     "description": "Blend audio and visuals into linked patterns.",
     "module": "assets/js/toys/seary.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "dreamy",
@@ -232,7 +239,8 @@
     "description": "A retro green text grid that pulses to audio and surfaces fresh words as you play.",
     "module": "assets/js/toys/legible.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "focus",
@@ -260,7 +268,8 @@
     "description": "A spectrograph that moves gently with your audio.",
     "module": "assets/js/toys/symph.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "calming",
@@ -288,7 +297,8 @@
     "description": "Swap between cube waves and bouncing spheres without stopping the music.",
     "module": "assets/js/toys/cube-wave.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "pulsing",
@@ -316,7 +326,8 @@
     "description": "Translucent, audio-inflated bubbles that split into harmonics on high frequencies.",
     "module": "assets/js/toys/bubble-harmonics.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 7,
     "moods": [
@@ -345,7 +356,8 @@
     "description": "A mobile-optimized pulse field that responds to audio and touch gestures.",
     "module": "assets/js/toys/pocket-pulse.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "prototype",
     "moods": [
       "uplifting",
@@ -373,7 +385,8 @@
     "description": "Low-power neon ripples tuned for touch-first screens and pocket GPUs.",
     "module": "assets/js/toys/mobile-ripples.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "prototype",
     "moods": [
       "calming",
@@ -401,7 +414,8 @@
     "description": "Jump between orbiting swirls and nebula fly-throughs with a single toggle.",
     "module": "assets/js/toys/cosmic-particles.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 5,
     "moods": [
@@ -430,7 +444,8 @@
     "description": "Swap shader styles and color palettes while lights ripple with your microphone input.",
     "module": "assets/js/toys/lights.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "energetic",
@@ -458,7 +473,8 @@
     "description": "Colorful spirals rotate and expand with every beat.",
     "module": "assets/js/toys/spiral-burst.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 4,
     "moods": [
@@ -488,7 +504,8 @@
     "description": "Fly through colorful rings that spin to your music.",
     "module": "assets/js/toys/rainbow-tunnel.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "cosmic",
@@ -516,7 +533,8 @@
     "description": "A field of shimmering stars reacts to the beat.",
     "module": "assets/js/toys/star-field.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "serene",
@@ -544,7 +562,8 @@
     "description": "Grow branching kite fractals that sway with mids and shimmer with crisp highs.",
     "module": "assets/js/toys/fractal-kite-garden.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
       "dreamy",
@@ -571,7 +590,8 @@
     "description": "Heightfield sand ripples that respond to bass, mids, and device tilt.",
     "module": "assets/js/toys/tactile-sand-table.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 3,
     "moods": [
@@ -600,7 +620,8 @@
     "description": "Sketch glowing currents that bloom with high-frequency sparkle from your music.",
     "module": "assets/js/toys/bioluminescent-tidepools.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 2,
     "moods": [
@@ -634,7 +655,8 @@
     "description": "Retro-wave visualizer with bloom effects, custom shaders, and four color themes.",
     "module": "assets/js/toys/neon-wave.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 6,
     "moods": [
@@ -664,7 +686,8 @@
     "description": "A hardware-accelerated feedback engine inspired by the MilkDrop visualizer system.",
     "module": "assets/js/toys/milkdrop-toy.ts",
     "type": "module",
-    "requiresWebGPU": false,
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
     "lifecycleStage": "prototype",
     "moods": [
       "immersive",
