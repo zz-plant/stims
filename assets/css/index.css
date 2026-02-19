@@ -2270,6 +2270,16 @@ html.light .search-meta__tokens li {
   font-size: 0.9rem;
   padding: 0.3rem 0.2rem;
   list-style: none;
+  border-radius: 0.55rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.library-refine > summary:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-color) 75%, #60a5fa);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .library-refine > summary::-webkit-details-marker {
@@ -2386,8 +2396,8 @@ html.light .active-filters__label {
   font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
-  min-height: 40px;
-  min-width: 40px;
+  min-height: 44px;
+  min-width: 44px;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -2415,8 +2425,8 @@ html.light .active-filters__label {
   padding: 0.4rem 0.95rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  min-height: 40px;
-  min-width: 40px;
+  min-height: 44px;
+  min-width: 44px;
   cursor: pointer;
   transition:
     transform 0.2s ease,
@@ -2906,16 +2916,18 @@ html:not(.light) .webtoy-card {
   z-index: 0;
 }
 
-.webtoy-card:hover {
-  background:
-    var(--surface-highlight), var(--surface-texture), var(--surface-gradient);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-strong);
-  border-color: rgba(59, 130, 246, 0.35);
-}
+@media (hover: hover) and (pointer: fine) {
+  .webtoy-card:hover {
+    background:
+      var(--surface-highlight), var(--surface-texture), var(--surface-gradient);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-strong);
+    border-color: rgba(59, 130, 246, 0.35);
+  }
 
-.webtoy-card:hover::before {
-  opacity: 0.25;
+  .webtoy-card:hover::before {
+    opacity: 0.25;
+  }
 }
 
 .webtoy-card:focus-visible {
@@ -3064,6 +3076,20 @@ html.light .cta-button.primary {
   min-width: 44px;
   padding: 0.58rem 0.9rem;
   font-size: 0.82rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .active-filter-chip,
+  .active-filters__clear,
+  .filter-chip,
+  .filter-toggle,
+  .webtoy-card {
+    transition: none;
+  }
+
+  .webtoy-card {
+    transform: none;
+  }
 }
 
 .webtoy-growth-panel {
