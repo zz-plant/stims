@@ -1359,7 +1359,7 @@ export function createLibraryView({
       .slice(0, 2);
 
     if (activeLabels.length === 0) {
-      note.textContent = 'Use filters to refine.';
+      note.textContent = 'Choose a mood or audio option to narrow results.';
       return;
     }
 

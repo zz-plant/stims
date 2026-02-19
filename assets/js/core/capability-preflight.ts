@@ -275,8 +275,8 @@ function getAudioInputSummary(
 
   if (result.microphone.state === 'denied') {
     return {
-      value: 'Microphone permission is blocked',
-      note: 'Grant permission in browser site settings, or continue with demo audio.',
+      value: 'Continue with demo audio now',
+      note: 'You can keep going with demo audio, then enable microphone access in site settings anytime.',
       variant: 'warn',
     };
   }
@@ -305,7 +305,7 @@ function updatePermissionFlow(
 
   const heading = document.createElement('p');
   heading.className = 'preflight-panel__eyebrow';
-  heading.textContent = 'Audio permission flow';
+  heading.textContent = 'Set up audio access';
   container.appendChild(heading);
 
   const list = document.createElement('ol');
@@ -324,9 +324,11 @@ function updatePermissionFlow(
     addStep('Microphone permission is already granted.');
     addStep('Start live mic mode to react to room audio instantly.');
   } else if (result.microphone.state === 'denied') {
-    addStep('Microphone permission is blocked for this site.');
-    addStep('Open browser site settings and allow microphone access.');
-    addStep('Return and rerun checks, or continue with demo audio.');
+    addStep('Continue now with demo audio, no permission needed.');
+    addStep(
+      'When you are ready, open site settings and allow microphone access.',
+    );
+    addStep('Return to this page and rerun checks for live mic mode.');
   } else {
     addStep('Microphone access has not been granted yet.');
     addStep('Use “Grant microphone access” to trigger the browser prompt.');
@@ -399,7 +401,7 @@ function updateWhyDetails(
   } else if (result.rendering.rendererBackend === 'webgl') {
     items.push(
       result.rendering.webgpuFallbackReason
-        ? `WebGPU fallback reason: ${result.rendering.webgpuFallbackReason}`
+        ? `High-fidelity mode is unavailable (${result.rendering.webgpuFallbackReason}).`
         : 'WebGPU is unavailable, so WebGL is used for compatibility.',
     );
   } else {
@@ -435,7 +437,7 @@ function updateWhyDetails(
   items.push(
     result.environment.reducedMotion
       ? 'Reduced motion preference is enabled; effects will soften.'
-      : 'No reduced-motion preference detected in system settings.',
+      : 'Standard motion effects are enabled.',
   );
 
   if (result.performance.lowPower) {
