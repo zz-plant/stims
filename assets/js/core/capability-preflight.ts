@@ -275,8 +275,8 @@ function getAudioInputSummary(
 
   if (result.microphone.state === 'denied') {
     return {
-      value: 'Microphone is blocked',
-      note: 'Update site permissions or continue with alternate audio.',
+      value: 'Microphone permission is blocked',
+      note: 'Grant permission in browser site settings, or continue with demo audio.',
       variant: 'warn',
     };
   }
@@ -290,10 +290,64 @@ function getAudioInputSummary(
   }
 
   return {
-    value: 'Microphone will prompt on start',
-    note: 'Grant access when asked, or use alternate audio.',
+    value: 'Microphone permission check pending',
+    note: 'You can grant access from this panel, or use alternate audio.',
     variant: 'warn',
   };
+}
+
+function updatePermissionFlow(
+  container: HTMLElement,
+  result: CapabilityPreflightResult,
+  onGrantMicrophone: (() => void) | null,
+) {
+  container.innerHTML = '';
+
+  const heading = document.createElement('p');
+  heading.className = 'preflight-panel__eyebrow';
+  heading.textContent = 'Audio permission flow';
+  container.appendChild(heading);
+
+  const list = document.createElement('ol');
+  list.className = 'preflight-panel__issues';
+
+  const addStep = (label: string) => {
+    const item = document.createElement('li');
+    item.textContent = label;
+    list.appendChild(item);
+  };
+
+  if (!result.microphone.supported) {
+    addStep('Microphone capture is unavailable in this browser.');
+    addStep('Choose demo audio to continue without permissions.');
+  } else if (result.microphone.state === 'granted') {
+    addStep('Microphone permission is already granted.');
+    addStep('Start live mic mode to react to room audio instantly.');
+  } else if (result.microphone.state === 'denied') {
+    addStep('Microphone permission is blocked for this site.');
+    addStep('Open browser site settings and allow microphone access.');
+    addStep('Return and rerun checks, or continue with demo audio.');
+  } else {
+    addStep('Microphone access has not been granted yet.');
+    addStep('Use “Grant microphone access” to trigger the browser prompt.');
+    addStep('If you skip, demo audio still works with no prompt.');
+  }
+
+  container.appendChild(list);
+
+  if (
+    onGrantMicrophone &&
+    result.microphone.supported &&
+    result.microphone.state !== 'granted' &&
+    result.microphone.state !== 'denied'
+  ) {
+    const grantButton = document.createElement('button');
+    grantButton.type = 'button';
+    grantButton.className = 'cta-button ghost';
+    grantButton.textContent = 'Grant microphone access';
+    grantButton.addEventListener('click', onGrantMicrophone);
+    container.appendChild(grantButton);
+  }
 }
 
 function updateStatusList(
@@ -645,6 +699,10 @@ export function attachCapabilityPreflight({
   issueContainer.className = 'preflight-panel__issues-container';
   panel.appendChild(issueContainer);
 
+  const permissionFlowContainer = document.createElement('div');
+  permissionFlowContainer.className = 'preflight-panel__issues-container';
+  panel.appendChild(permissionFlowContainer);
+
   const details = document.createElement('details');
   details.className = 'preflight-panel__details';
   const summary = document.createElement('summary');
@@ -805,6 +863,22 @@ export function attachCapabilityPreflight({
     applyActionPriority(result);
     updateStatusList(statusContainer, result);
     renderIssueList(issueContainer, result);
+    updatePermissionFlow(permissionFlowContainer, result, () => {
+      void (async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          stream.getTracks().forEach((track) => track.stop());
+          retryButton.disabled = true;
+          await run(true);
+        } catch (_error) {
+          // Prompt dismissed or blocked; keep existing status and allow retry.
+        } finally {
+          retryButton.disabled = false;
+        }
+      })();
+    });
     updateWhyDetails(detailsContent, result);
     updatePerformanceButton(result);
     if (isRetry) {

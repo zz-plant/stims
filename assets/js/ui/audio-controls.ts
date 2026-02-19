@@ -15,6 +15,27 @@ export interface AudioControlsOptions {
   gestureHints?: string[];
 }
 
+type MicrophonePermissionState = PermissionState | 'unsupported' | 'unknown';
+
+async function getMicrophonePermissionState(): Promise<MicrophonePermissionState> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return 'unsupported';
+  }
+
+  if (!navigator.permissions?.query) {
+    return 'unknown';
+  }
+
+  try {
+    const result = await navigator.permissions.query({
+      name: 'microphone' as PermissionName,
+    });
+    return result.state;
+  } catch (_error) {
+    return 'unknown';
+  }
+}
+
 export function initAudioControls(
   container: HTMLElement,
   options: AudioControlsOptions,
@@ -225,6 +246,7 @@ export function initAudioControls(
   const statusEl = (options.statusElement ||
     container.querySelector('#audio-status')) as HTMLElement;
   const requestTabAudio = options.onRequestTabAudio;
+  let microphonePermissionState: MicrophonePermissionState = 'unknown';
   const advancedToggle = container.querySelector(
     '[data-advanced-toggle]',
   ) as HTMLButtonElement | null;
@@ -274,6 +296,28 @@ export function initAudioControls(
     }
   };
 
+  const setMicrophoneButtonState = () => {
+    if (!(micBtn instanceof HTMLButtonElement)) return;
+
+    if (microphonePermissionState === 'granted') {
+      micBtn.textContent = 'Start mic-reactive mode';
+      return;
+    }
+
+    if (microphonePermissionState === 'denied') {
+      micBtn.textContent = 'Mic blocked — retry permission';
+      return;
+    }
+
+    if (microphonePermissionState === 'unsupported') {
+      micBtn.textContent = 'Microphone unavailable';
+      micBtn.disabled = true;
+      return;
+    }
+
+    micBtn.textContent = 'Grant mic access and start';
+  };
+
   const updateStatus = (
     message: string,
     variant: 'success' | 'error' = 'error',
@@ -313,6 +357,17 @@ export function initAudioControls(
   } else {
     setPreferredSource('microphone');
   }
+
+  void getMicrophonePermissionState().then((state) => {
+    microphonePermissionState = state;
+    setMicrophoneButtonState();
+    if (state === 'denied') {
+      updateStatus(
+        'Microphone is currently blocked. Use demo audio now, then allow mic in site permissions when ready.',
+      );
+      emphasizeDemoAudio();
+    }
+  });
 
   const firstStepsPanel = container.querySelector(
     '[data-first-steps]',
@@ -488,6 +543,8 @@ export function initAudioControls(
       micBtn,
       async () => {
         await options.onRequestMicrophone();
+        microphonePermissionState = 'granted';
+        setMicrophoneButtonState();
         writeStoredSource('microphone');
       },
       'Microphone access failed.',
@@ -496,7 +553,9 @@ export function initAudioControls(
         updateStatus(buildMicrophoneErrorMessage(message));
       },
       'Mic connected.',
-      'Starting microphone…',
+      microphonePermissionState === 'granted'
+        ? 'Starting microphone…'
+        : 'Requesting microphone permission…',
     );
   });
 
