@@ -714,7 +714,7 @@ export function attachCapabilityPreflight({
     backLink = document.createElement('a');
     backLink.className = 'cta-button ghost';
     backLink.href = backHref;
-    backLink.textContent = 'Browse ready-to-run toys';
+    backLink.textContent = 'Back to library';
     backLink.hidden = true;
     actions.appendChild(backLink);
   }

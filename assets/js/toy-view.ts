@@ -560,7 +560,7 @@ export function createToyView({
       actionsClassName: 'active-toy-actions',
       actions: [
         {
-          label: 'Back to Library',
+          label: 'Back to library',
           onClick: options.onBack,
         },
         {
