@@ -71,6 +71,7 @@
       import { createSymphFunAdapter } from '../assets/symph/fun-adapter.ts';
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
+      import { createMultiWebGPUEffects } from '../assets/js/toys/multi-webgpu-effects.ts';
 
       const toyNav = initToyPageShell();
 
@@ -280,6 +281,21 @@
       let sparklesEnabled = true;
       let burstsEnabled = true;
       let analyserRef = null;
+      let lastFrameAt = performance.now();
+      const gpuProbeParticles = new Float32Array(256 * 3);
+      for (let i = 0; i < gpuProbeParticles.length; i += 3) {
+        gpuProbeParticles[i] = (Math.random() - 0.5) * 2;
+        gpuProbeParticles[i + 1] = (Math.random() - 0.5) * 2;
+        gpuProbeParticles[i + 2] = (Math.random() - 0.5) * 2;
+      }
+      let webgpuEffects = {
+        enabled: false,
+        tick: () => ({
+          audio: { bass: 0, mids: 0, highs: 0, flux: 0 },
+          heightfield: { average: 0, peak: 0 },
+        }),
+        dispose: () => {},
+      };
       const rippleBase = 0.15;
       const SPARKLE_POOL_SIZE = 120;
       const sparklePool = Array.from({ length: SPARKLE_POOL_SIZE }, () => ({
@@ -294,6 +310,15 @@
         alpha: 0,
         color: [255, 255, 255],
       }));
+
+      void createMultiWebGPUEffects({
+        enabled: Boolean(navigator.gpu),
+        particlePositions: gpuProbeParticles,
+        particleCount: 256,
+        heightfieldSize: 12,
+      }).then((effects) => {
+        webgpuEffects = effects;
+      });
 
       const funControls = initFunControls({
         paletteOptions: adapter.paletteOptions,
@@ -516,8 +541,21 @@
       }
 
       function animate(ctxAudio) {
+        const now = performance.now();
+        const delta = Math.min(0.05, Math.max(0.001, (now - lastFrameAt) / 1000));
+        lastFrameAt = now;
+
+        let webgpuSnapshot = webgpuEffects.tick({
+          frequencyData: new Uint8Array(256),
+          delta,
+        });
+
         if (ctxAudio.analyser) {
           const dataArray = getFrequencyData(ctxAudio.analyser);
+          webgpuSnapshot = webgpuEffects.tick({
+            frequencyData: dataArray,
+            delta,
+          });
           const average = getWeightedAverageFrequency(dataArray);
           const bands = getBandLevels({
             analyser: ctxAudio.analyser,
@@ -548,14 +586,24 @@
             triggerBurst(strength);
           }
 
-          bassPulse = Math.max(bassPulse * 0.84, bands.bass);
-          trebleShimmer = Math.max(trebleShimmer * 0.78, bands.treble);
+          bassPulse = Math.max(
+            bassPulse * 0.84,
+            bands.bass * 0.85 + webgpuSnapshot.audio.bass * 0.15
+          );
+          trebleShimmer = Math.max(
+            trebleShimmer * 0.78,
+            bands.treble * 0.85 + webgpuSnapshot.audio.highs * 0.15
+          );
           const audioDrive = Math.min(
             255,
             average * (0.7 + normalized * 1.1 + bassPulse * 0.8)
           );
           audioData = adapter.transformAudioValue(audioDrive);
-          const colorBoost = 1 + trebleShimmer * 0.75 + bassPulse * 0.35;
+          const colorBoost =
+            1 +
+            trebleShimmer * 0.75 +
+            bassPulse * 0.35 +
+            webgpuSnapshot.audio.mids * 0.25;
           reactiveColorOffset = baseColorOffset.map((value) =>
             Math.min(1, value * colorBoost + trebleShimmer * 0.08)
           );
@@ -586,11 +634,15 @@
           rippleBase *
           (1.0 +
             (burstsEnabled ? burstEnergy * 0.8 : 0) +
-            bassPulse * 0.6);
+            bassPulse * 0.6 +
+            webgpuSnapshot.heightfield.average * 0.9);
         gl.uniform3fv(burstTintUniformLocation, burstTint);
         gl.uniform1f(rippleUniformLocation, rippleAmp);
 
-        burstEnergy = Math.max(0, burstEnergy - 0.015);
+        burstEnergy = Math.max(
+          0,
+          burstEnergy - 0.015 + webgpuSnapshot.audio.flux * 0.002
+        );
         bassPulse *= 0.92;
         trebleShimmer *= 0.9;
 
@@ -639,6 +691,7 @@
       window.addEventListener('pagehide', () => {
         disposeResize();
         unifiedInput.dispose();
+        webgpuEffects.dispose();
         toy.dispose?.();
       });
     </script>

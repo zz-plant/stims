@@ -119,6 +119,7 @@
       } from '../assets/js/utils/error-display.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
+      import { createMultiWebGPUEffects } from '../assets/js/toys/multi-webgpu-effects.ts';
 
       initToyPageShell();
 
@@ -152,6 +153,16 @@
       let pointerX = 0;
       let pointerY = 0;
       let attractStrength = 0.12;
+      let particlePositions = new Float32Array(0);
+      let lastFrameAt = performance.now();
+      let webgpuEffects = {
+        enabled: false,
+        tick: () => ({
+          audio: { bass: 0, mids: 0, highs: 0, flux: 0 },
+          heightfield: { average: 0, peak: 0 },
+        }),
+        dispose: () => {},
+      };
 
       function applyQualityPreset(preset) {
         activeQuality = preset;
@@ -238,15 +249,39 @@
         };
       }
 
+      async function initWebgpuEffects() {
+        webgpuEffects.dispose();
+        webgpuEffects = await createMultiWebGPUEffects({
+          enabled: Boolean(navigator.gpu),
+          particlePositions,
+          particleCount,
+          heightfieldSize: 16,
+        });
+      }
+
       function rebuildParticles() {
         particles.length = 0;
+        particlePositions = new Float32Array(particleCount * 3);
         for (let i = 0; i < particleCount; i++) {
-          particles.push(createParticle());
+          const particle = createParticle();
+          particles.push(particle);
+          particlePositions[i * 3] = particle.x;
+          particlePositions[i * 3 + 1] = particle.y;
+          particlePositions[i * 3 + 2] = particle.depth;
         }
+        void initWebgpuEffects();
       }
 
       function animate(ctxAudio) {
+        const now = performance.now();
+        const delta = Math.min(0.05, Math.max(0.001, (now - lastFrameAt) / 1000));
+        lastFrameAt = now;
+
         const frequencyData = getContextFrequencyData(ctxAudio);
+        const webgpuSnapshot = webgpuEffects.tick({
+          frequencyData,
+          delta,
+        });
 
         if (ctxAudio.analyser) {
           const bands = getBandLevels({
@@ -256,8 +291,14 @@
           const weightedEnergy = getWeightedEnergy(bands, { boost: 1.4 });
           peakLevel = updateEnergyPeak(peakLevel, weightedEnergy);
           const normalized = peakLevel ? weightedEnergy / peakLevel : 0;
-          bassPulse = Math.max(bassPulse * 0.85, bands.bass);
-          trebleGlow = Math.max(trebleGlow * 0.8, bands.treble);
+          bassPulse = Math.max(
+            bassPulse * 0.85,
+            bands.bass * 0.85 + webgpuSnapshot.audio.bass * 0.15
+          );
+          trebleGlow = Math.max(
+            trebleGlow * 0.8,
+            bands.treble * 0.85 + webgpuSnapshot.audio.highs * 0.15
+          );
           const hue = ((bassPulse * 0.7 + normalized * 0.3) * 360) % 360;
           const innerLightness = 25 + bassPulse * 30 + trebleGlow * 12;
           const outerLightness = 8 + normalized * 12;
@@ -283,10 +324,17 @@
         ctx.globalAlpha = 1;
 
         particles.forEach((p, index) => {
-          const depthFactor = 0.6 + p.depth * 0.9;
+          if (webgpuEffects.enabled) {
+            p.x = particlePositions[index * 3] ?? p.x;
+            p.y = particlePositions[index * 3 + 1] ?? p.y;
+          }
+
+          const depthFactor =
+            0.6 + p.depth * 0.9 + webgpuSnapshot.heightfield.average * 0.25;
           p.x += p.velocityX * speedMultiplier * depthFactor;
           p.y += p.velocityY * speedMultiplier * depthFactor;
-          p.rotation += p.angularVelocity;
+          p.rotation +=
+            p.angularVelocity + webgpuSnapshot.audio.flux * 0.6;
 
           if (pointerActive) {
             const dx = pointerX - p.x;
@@ -455,6 +503,7 @@
       updateTrail();
 
       window.addEventListener('beforeunload', () => {
+        webgpuEffects.dispose();
         toy.dispose?.();
       });
     </script>
