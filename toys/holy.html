@@ -303,6 +303,7 @@
       import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
       import { ensureWebGL } from '../assets/js/utils/webgl-check.ts';
+      import { createMultiWebGPUEffects } from '../assets/js/toys/multi-webgpu-effects.ts';
 
       initToyPageShell();
 
@@ -326,6 +327,15 @@
       let instancedParticles;
       let particleMaterial;
       let particleGeometry;
+      let particlePositions = new Float32Array(0);
+      let webgpuEffects = {
+        enabled: false,
+        tick: () => ({
+          audio: { bass: 0, mids: 0, highs: 0, flux: 0 },
+          heightfield: { average: 0, peak: 0 },
+        }),
+        dispose: () => {},
+      };
       let unifiedInput = null;
       let energyPeak = 0.12;
       let bassPulse = 0;
@@ -433,6 +443,7 @@
         // Create Visual Elements
         createShape();
         createParticles();
+        void initWebgpuEffects();
 
         // Lighting
         addLighting();
@@ -573,6 +584,7 @@
 
       // Create Particle System using Instanced Mesh
       function createParticles() {
+        particlePositions = new Float32Array(particleCount * 3);
         particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
         particleMaterial = new THREE.MeshBasicMaterial({
           color: 0xffffff,
@@ -594,11 +606,13 @@
         // Initialize Particle Positions and Colors
         const dummy = new THREE.Object3D();
         for (let i = 0; i < particleCount; i++) {
-          dummy.position.set(
-            (Math.random() - 0.5) * 20,
-            (Math.random() - 0.5) * 20,
-            (Math.random() - 0.5) * 20
-          );
+          const x = (Math.random() - 0.5) * 20;
+          const y = (Math.random() - 0.5) * 20;
+          const z = (Math.random() - 0.5) * 20;
+          particlePositions[i * 3] = x;
+          particlePositions[i * 3 + 1] = y;
+          particlePositions[i * 3 + 2] = z;
+          dummy.position.set(x, y, z);
           dummy.scale.setScalar(particleScale);
           dummy.updateMatrix();
           instancedParticles.setMatrixAt(i, dummy.matrix);
@@ -612,6 +626,16 @@
         }
         instancedParticles.instanceMatrix.needsUpdate = true;
         instancedParticles.instanceColor.needsUpdate = true;
+      }
+
+      async function initWebgpuEffects() {
+        webgpuEffects.dispose();
+        webgpuEffects = await createMultiWebGPUEffects({
+          enabled: Boolean(navigator.gpu),
+          particlePositions,
+          particleCount,
+          heightfieldSize: 18,
+        });
       }
 
       // Create Geometry Based on Current Shape
@@ -647,7 +671,7 @@
           analyser = ctx.analyser;
           sampleRate = ctx.analyser.context.sampleRate;
           dataArray = getFrequencyData(ctx.analyser);
-          updateVisualizer(elapsed);
+          updateVisualizer(elapsed, delta);
         } else {
           analyser = null;
           dataArray = new Uint8Array(0);
@@ -662,7 +686,7 @@
       const clock = new THREE.Clock();
 
       // Update Visual Elements Based on Audio Data
-      function updateVisualizer(elapsed) {
+      function updateVisualizer(elapsed, delta) {
         // Calculate Frequency Bands
         const bass = getFrequencyRange(20, 250);
         const mid = getFrequencyRange(250, 2000);
@@ -670,9 +694,18 @@
 
         // Calculate Average Frequencies
         const bands = getBandLevels({ analyser, data: dataArray });
-        const bassAvg = bands.bass ?? average(bass) / 255;
-        const midAvg = bands.mid ?? average(mid) / 255;
-        const trebleAvg = bands.treble ?? average(treble) / 255;
+        const webgpuSnapshot = webgpuEffects.tick({
+          frequencyData: dataArray,
+          delta,
+        });
+
+        const bassAvg =
+          (bands.bass ?? average(bass) / 255) * 0.8 + webgpuSnapshot.audio.bass * 0.2;
+        const midAvg =
+          (bands.mid ?? average(mid) / 255) * 0.85 + webgpuSnapshot.audio.mids * 0.15;
+        const trebleAvg =
+          (bands.treble ?? average(treble) / 255) * 0.8 +
+          webgpuSnapshot.audio.highs * 0.2;
         const weightedEnergy = getWeightedEnergy(bands);
         energyPeak = updateEnergyPeak(energyPeak, weightedEnergy);
         const normalized = weightedEnergy / energyPeak;
@@ -736,6 +769,9 @@
         // Update Particles
         const dummy = new THREE.Object3D();
         for (let i = 0; i < particleCount; i++) {
+          const baseX = particlePositions[i * 3] ?? 0;
+          const baseY = particlePositions[i * 3 + 1] ?? 0;
+          const baseZ = particlePositions[i * 3 + 2] ?? 0;
           const freqIndex = Math.floor((i / particleCount) * dataArray.length);
           const audioValue = dataArray[freqIndex] / 255;
           const reactiveValue = Math.min(
@@ -744,12 +780,19 @@
           );
 
           // Position Update with Smooth Movement
-          instancedParticles.getMatrixAt(i, dummy.matrix);
-          dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+          if (webgpuEffects.enabled) {
+            dummy.position.set(baseX, baseY, baseZ);
+          } else {
+            instancedParticles.getMatrixAt(i, dummy.matrix);
+            dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+          }
 
-          dummy.position.y += (reactiveValue - 0.5) * 0.12;
-          dummy.rotation.x += 0.012 * reactiveValue;
-          dummy.rotation.y += 0.012 * reactiveValue;
+          dummy.position.y +=
+            (reactiveValue - 0.5) * 0.12 + webgpuSnapshot.heightfield.average * 0.05;
+          dummy.rotation.x +=
+            0.012 * reactiveValue + webgpuSnapshot.audio.flux * 0.005;
+          dummy.rotation.y +=
+            0.012 * reactiveValue + webgpuSnapshot.heightfield.peak * 0.002;
           dummy.scale.setScalar(particleScale * (1 + bassPulse * 0.2));
           dummy.updateMatrix();
           instancedParticles.setMatrixAt(i, dummy.matrix);
@@ -837,6 +880,7 @@
         // Recreate particles
         scene.remove(instancedParticles);
         createParticles();
+        void initWebgpuEffects();
       }
 
       // Update Shape Detail
@@ -953,6 +997,7 @@
 
       window.addEventListener('pagehide', () => {
         unifiedInput?.dispose();
+        webgpuEffects.dispose();
         window.removeEventListener('keydown', onKeydown);
       });
 
