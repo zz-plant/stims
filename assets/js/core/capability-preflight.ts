@@ -649,7 +649,7 @@ export function attachCapabilityPreflight({
   details.className = 'preflight-panel__details';
   const summary = document.createElement('summary');
   summary.className = 'preflight-panel__details-summary';
-  summary.textContent = 'Check details';
+  summary.textContent = 'Diagnostic details';
   details.appendChild(summary);
   const detailsContent = document.createElement('div');
   detailsContent.className = 'preflight-panel__details-content';
@@ -663,7 +663,7 @@ export function attachCapabilityPreflight({
   rememberToggle.name = 'preflight-remember';
   rememberToggle.className = 'preflight-panel__remember-toggle';
   const rememberLabel = document.createElement('span');
-  rememberLabel.textContent = 'Skip this check for this session';
+  rememberLabel.textContent = 'Skip preflight for this session';
   rememberWrap.append(rememberToggle, rememberLabel);
   panel.appendChild(rememberWrap);
 
@@ -704,7 +704,7 @@ export function attachCapabilityPreflight({
     actions.appendChild(closeButton);
   }
   const performanceButton = document.createElement('button');
-  performanceButton.className = 'cta-button ghost';
+  performanceButton.className = 'text-link preflight-secondary-link';
   performanceButton.type = 'button';
   performanceButton.textContent = 'Enable lighter visual mode';
   performanceButton.hidden = true;
@@ -723,7 +723,7 @@ export function attachCapabilityPreflight({
   const retryButton = document.createElement('button');
   retryButton.className = 'text-link preflight-retry-link';
   retryButton.type = 'button';
-  retryButton.textContent = 'Check again';
+  retryButton.textContent = 'Rerun checks';
   panel.appendChild(retryButton);
 
   let latestResult: CapabilityPreflightResult | null = null;
@@ -740,7 +740,7 @@ export function attachCapabilityPreflight({
       if (backLink) backLink.hidden = true;
       if (closeButton) {
         closeButton.hidden = false;
-        closeButton.textContent = 'Open audio options';
+        closeButton.textContent = 'Continue';
       }
       performanceButton.hidden = !result.performance.lowPower;
       return;
