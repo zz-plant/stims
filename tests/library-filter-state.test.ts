@@ -93,8 +93,8 @@ test('renders continue and premium panels when returner signals are present', as
   expect(
     document.querySelector('.webtoy-growth-panel--premium'),
   ).not.toBeNull();
-  const shareButton = Array.from(document.querySelectorAll('button')).find(
-    (button) => button.textContent === 'Share toy',
+  const openButton = Array.from(document.querySelectorAll('button')).find(
+    (button) => button.textContent === 'Open toy',
   );
-  expect(shareButton).toBeTruthy();
+  expect(openButton).toBeTruthy();
 });
