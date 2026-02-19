@@ -182,7 +182,32 @@ describe('audio controls primary emphasis', () => {
 
     const status = container.querySelector('#audio-status') as HTMLElement;
     expect(status.hidden).toBe(false);
-    expect(status.textContent).toContain('Starter preset applied');
+    expect(status.textContent).toContain('calm starter preset applied');
+  });
+
+  test('uses custom starter preset label and callback when provided', () => {
+    const container = document.createElement('section');
+    let applied = false;
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      starterPresetLabel: 'best-of starter',
+      onApplyStarterPreset: () => {
+        applied = true;
+      },
+    });
+
+    const starterPresetButton = container.querySelector(
+      '[data-apply-starter-preset]',
+    ) as HTMLButtonElement;
+    expect(starterPresetButton.textContent).toContain('best-of starter');
+
+    starterPresetButton.click();
+    expect(applied).toBe(true);
+
+    const status = container.querySelector('#audio-status') as HTMLElement;
+    expect(status.textContent).toContain('best-of starter applied');
   });
 
   test('hides gesture hints when dismissed by user', async () => {

@@ -25,3 +25,19 @@ Use these quick references when launching or testing the tactile sand table toy:
   - Chill glow: trail length `2.8`, glow strength `1.0`, current speed `0.8`.
   - Punchy surf: trail length `1.8`, glow strength `1.4`, current speed `1.2`.
   - Night drift: trail length `3.4`, glow strength `0.9`, current speed `0.6`.
+
+## Starter presets (P0/P1 rollout)
+
+- `lights`: **best-of starter** — curated high-contrast lighting profile for quick visual payoff.
+- `aurora-painter`: **aurora starter** — balanced glow/speed for instant ribbon clarity.
+- `bioluminescent-tidepools`: **guided glow starter** — elevated glow strength with moderate current speed.
+- `geom`: **reactive starter** — boosted sensitivity for quieter rooms.
+- `holy`: **halo glow starter** — stronger halo intensity with balanced particle density.
+- `bubble-harmonics`: **harmonic pop starter** — higher split sensitivity with quick manual split follow-up.
+- `clay`: **first sculpt starter** — smoothing-first intro then carve.
+- `evol`: **reactivity boost starter** — emphasizes music-linked mutation changes.
+- `seary`: **mapped flow starter** — frequency mapping overlay promoted on first run.
+- `legible`: **pulse typing starter** — faster cadence to make audio linkage visible.
+- `cube-wave`: **mode pop starter** — stronger mode contrast and beat response.
+- `spiral-burst`: **beat pop starter** — heightened beat sensitivity + pulse indicator emphasis.
+- `neon-wave`: **soft glow starter** — reduced bloom intensity for accessibility.

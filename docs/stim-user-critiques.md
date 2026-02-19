@@ -6,6 +6,118 @@ This guide captures user-standpoint critiques for each Stim toy based on the cur
 
 This scoped set intentionally includes only toy-level P0 and P1 actions from the wider fun/aesthetic backlog.
 
+## Prioritized change plan (code + specs)
+
+This sequence prioritizes **time-to-delight in the first 60–120 seconds** and focuses on reducing setup/tuning burden before visual payoff.
+
+### 1) P0 — Ship instant-pleasing defaults for toys that currently require too much tuning
+
+Target toys:
+
+- `lights`
+- `aurora-painter`
+- `bioluminescent-tidepools`
+
+Code changes:
+
+- Add per-toy one-click starter presets tuned for immediate “best look.”
+- Add a toy-shell `Try best preset` affordance that is visible on first load.
+- Apply starter presets automatically for first-run sessions unless users opt out.
+
+Spec/doc changes:
+
+- Add a “first-look preset” requirement to toy UX expectations.
+- Document each toy’s default preset values in `docs/toys.md`.
+
+Success criteria:
+
+- Users reach a visually pleasing state without touching advanced controls.
+- Lower first-session control thrash (fewer setting toggles before sustained viewing).
+
+### 2) P0 — Add explicit visual feedback for low-reactivity/perceived-passive toys
+
+Target toys:
+
+- `geom`
+- `holy`
+- `star-field`
+
+Code changes:
+
+- Add mic/demo activity meters or pulse indicators where audio linkage is currently unclear.
+- Add a single high-impact intensity control surfaced in the primary control row.
+- Ensure demo-audio path is obvious and one tap away from toy load.
+
+Spec/doc changes:
+
+- Define a minimum “reactivity visibility” rule: each toy should expose at least one always-visible reactive indicator.
+- Add expected fallback behavior for quiet environments and no-mic sessions.
+
+Success criteria:
+
+- Toy no longer appears inert in quiet rooms.
+- Users can see clear cause-and-effect from audio in under 10 seconds.
+
+### 3) P1 — Improve discoverability for toys with high interaction complexity
+
+Target toys:
+
+- `clay`
+- `seary`
+- `cube-wave`
+
+Code changes:
+
+- Add lightweight first-use overlays (single-step or two-step maximum).
+- Add in-context labels for mappings/modes and active-state feedback.
+- Add mode labels and transition cues where effect differences are subtle.
+
+Spec/doc changes:
+
+- Add a toy onboarding microcopy checklist (verbs + expected result).
+- Add mapping legend requirements for toys with non-obvious frequency/visual correspondence.
+
+Success criteria:
+
+- New users can identify “what this control does” without trial-and-error loops.
+- Faster discovery of at least one high-reward interaction per session.
+
+### 4) P1 — Normalize “wow path” metadata so the shell can guide users consistently
+
+Target: all toys.
+
+Code changes:
+
+- Extend toy metadata with fields for `starterPreset`, `wowControl`, and `recommendedCapability`.
+- Use metadata to drive shell hints and optional guided prompts.
+
+Spec/doc changes:
+
+- Update metadata schema docs with required/optional fields and examples.
+- Add validation checks ensuring each featured toy defines at least one wow-path hint.
+
+Success criteria:
+
+- The shell can generate toy-specific guidance without hardcoded per-toy logic.
+- Featured toys present consistent first-run guidance quality.
+
+### 5) P2 — Session-level stimulation enhancements after toy-level baseline is fixed
+
+Target: shell and homepage.
+
+Code changes:
+
+- Add `Surprise me` entry point biased toward high-reactivity toys.
+- Add a global `Party mode` profile that raises intensity safely.
+
+Spec/doc changes:
+
+- Add A/B test plan and telemetry definitions for first-session delight metrics.
+
+Success criteria:
+
+- Improved time-to-first-delight and repeat toy exploration rates.
+
 ### P0 toy actions
 
 - `geom`: add a visible mic-level meter and an obvious demo-audio path in the toy shell.
