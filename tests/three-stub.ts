@@ -35,6 +35,17 @@ export class Object3D {
   }
 }
 
+export class PerspectiveCamera extends Camera {
+  constructor(
+    public fov = 50,
+    public aspect = 1,
+    public near = 0.1,
+    public far = 2000,
+  ) {
+    super();
+  }
+}
+
 export class DirectionalLight extends BaseLight {}
 export class SpotLight extends BaseLight {}
 export class HemisphereLight extends BaseLight {}

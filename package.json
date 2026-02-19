@@ -26,6 +26,8 @@
   "packageManager": "bun@1.3.8",
   "scripts": {
     "test": "bun test --preload=./tests/setup.ts --importmap=./tests/importmap.json",
+    "test:compat": "bun run test tests/render-preferences.test.ts tests/postprocessing.test.ts tests/party-mode.test.ts",
+    "test:compat:full": "bun run test tests/loader.test.js tests/toy-view.test.js tests/render-preferences.test.ts tests/postprocessing.test.ts tests/party-mode.test.ts",
     "test:watch": "bun test --watch --preload=./tests/setup.ts --importmap=./tests/importmap.json",
     "lint": "biome lint assets scripts tests",
     "lint:fix": "biome check --write assets scripts tests",

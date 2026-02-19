@@ -65,6 +65,8 @@ Use this to decide the minimum workflow before you start running commands.
 | Full quality gate | `bun run check` | Biome check + typecheck + tests. Required for JS/TS edits. |
 | Quick quality gate | `bun run check:quick` | Biome check + typecheck (faster iteration path). |
 | Run all tests | `bun run test` | Preserves preload/importmap setup. |
+| Run compatibility-focused unit tests | `bun run test:compat` | Fast compatibility coverage for renderer preference and fallback state logic. |
+| Run full compatibility regression suite | `bun run test:compat:full` | Includes loader + toy-view flows to surface integration issues. |
 | Run tests in watch mode | `bun run test:watch` | Iterative local testing. |
 | Run agent integration test | `bun run test:agent` | Focused test for MCP/agent integration path. |
 | Typecheck once | `bun run typecheck` | Runs `tsc --noEmit`. |

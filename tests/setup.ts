@@ -16,6 +16,12 @@ globalThis.Event = windowInstance.Event as unknown as typeof Event;
 globalThis.CustomEvent =
   windowInstance.CustomEvent as unknown as typeof CustomEvent;
 globalThis.DOMParser = windowInstance.DOMParser as unknown as typeof DOMParser;
+
+// Happy DOM selector parser expects these constructors on window.
+(windowInstance as unknown as { SyntaxError: typeof SyntaxError }).SyntaxError =
+  globalThis.SyntaxError;
+(windowInstance as unknown as { TypeError: typeof TypeError }).TypeError =
+  globalThis.TypeError;
 globalThis.requestAnimationFrame = (callback: FrameRequestCallback) =>
   // biome-ignore lint/suspicious/noExplicitAny: polyfill mismatch
   setTimeout(() => callback(Date.now()), 16) as any as number;
