@@ -13,6 +13,8 @@ export interface AudioControlsOptions {
   starterTips?: string[];
   firstRunHint?: string;
   gestureHints?: string[];
+  starterPresetLabel?: string;
+  onApplyStarterPreset?: () => void;
 }
 
 type MicrophonePermissionState = PermissionState | 'unsupported' | 'unknown';
@@ -66,6 +68,9 @@ export function initAudioControls(
     .filter((tip) => /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip))
     .slice(0, 2);
 
+  const starterPresetLabel =
+    options.starterPresetLabel?.trim() || 'calm starter preset';
+
   container.innerHTML = `
     <p class="control-panel__description">
       Choose how this toy listens.
@@ -75,7 +80,7 @@ export function initAudioControls(
       <div class="control-panel__first-steps-header">
         <span class="control-panel__label">First 10 seconds</span>
         <div class="control-panel__first-steps-actions">
-          <button type="button" class="control-panel__dismiss" data-apply-starter-preset>Try calm starter preset</button>
+          <button type="button" class="control-panel__dismiss" data-apply-starter-preset>Try ${starterPresetLabel}</button>
           <button type="button" class="control-panel__dismiss" data-dismiss-first-steps>Dismiss</button>
         </div>
       </div>
@@ -410,6 +415,12 @@ export function initAudioControls(
     '[data-apply-starter-preset]',
   ) as HTMLButtonElement | null;
   quickStartPresetButton?.addEventListener('click', () => {
+    if (typeof options.onApplyStarterPreset === 'function') {
+      options.onApplyStarterPreset();
+      updateStatus(`${starterPresetLabel} applied.`, 'success');
+      return;
+    }
+
     const appliedPreset = setQualityPresetById('low-motion');
     if (!appliedPreset) {
       updateStatus('Starter preset unavailable on this toy.', 'error');
@@ -421,7 +432,7 @@ export function initAudioControls(
     } catch (_error) {
       // Ignore storage errors.
     }
-    updateStatus('Starter preset applied: Low motion.', 'success');
+    updateStatus(`${starterPresetLabel} applied.`, 'success');
   });
 
   const gestureHintsPanel = container.querySelector(

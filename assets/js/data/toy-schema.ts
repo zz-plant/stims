@@ -8,6 +8,18 @@ const toyCapabilitiesSchema = z.object({
 
 const lifecycleStageSchema = z.enum(['featured', 'prototype', 'archived']);
 
+const recommendedCapabilitySchema = z.enum([
+  'microphone',
+  'demoAudio',
+  'motion',
+]);
+
+const starterPresetSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  description: z.string().min(1).optional(),
+});
+
 export const toyEntrySchema = z
   .object({
     slug: z.string().min(1),
@@ -22,6 +34,10 @@ export const toyEntrySchema = z
     moods: z.array(z.string().min(1)).optional(),
     tags: z.array(z.string().min(1)).optional(),
     controls: z.array(z.string().min(1)).optional(),
+    firstRunHint: z.string().min(1).optional(),
+    starterPreset: starterPresetSchema.optional(),
+    wowControl: z.string().min(1).optional(),
+    recommendedCapability: recommendedCapabilitySchema.optional(),
     capabilities: toyCapabilitiesSchema,
   })
   .superRefine((entry, ctx) => {
