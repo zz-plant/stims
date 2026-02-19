@@ -89,6 +89,23 @@ describe('quality preset subscriptions', () => {
     );
   });
 
+  test('quality presets can hide scope and impact copy for compact contexts', () => {
+    const panel = getSettingsPanel();
+
+    panel.setQualityPresets({
+      presets: DEFAULT_QUALITY_PRESETS,
+      defaultPresetId: 'balanced',
+      showScopeHint: false,
+      showChangeSummary: false,
+    });
+
+    expect(panel.getElement().textContent).not.toContain(
+      'Saved on this device and shared across toys.',
+    );
+    expect(panel.getElement().textContent).not.toContain(
+      'What changes: pixel ratio',
+    );
+  });
   test('includes a tv-friendly quality preset', () => {
     const preset = DEFAULT_QUALITY_PRESETS.find((entry) => entry.id === 'tv');
     expect(preset).toBeDefined();

@@ -63,6 +63,8 @@ type QualityOptions = {
   defaultPresetId?: string;
   onChange?: (preset: QualityPreset) => void;
   storageKey?: string;
+  showScopeHint?: boolean;
+  showChangeSummary?: boolean;
 };
 
 type ToggleOptions = {
@@ -218,6 +220,8 @@ export class PersistentSettingsPanel {
       defaultPresetId = DEFAULT_PRESET_ID,
       onChange,
       storageKey = QUALITY_STORAGE_KEY,
+      showScopeHint = true,
+      showChangeSummary = true,
     } = options;
 
     const hadActivePreset =
@@ -244,15 +248,25 @@ export class PersistentSettingsPanel {
       hint.textContent = DEFAULT_QUALITY_HINT;
       this.qualityHint = hint;
 
-      const scopeHint = document.createElement('small');
-      scopeHint.textContent = this.getScopeHint(storageKey);
-      this.qualityScopeHint = scopeHint;
+      if (showScopeHint) {
+        const scopeHint = document.createElement('small');
+        scopeHint.textContent = this.getScopeHint(storageKey);
+        this.qualityScopeHint = scopeHint;
+      }
 
-      const changeSummary = document.createElement('small');
-      changeSummary.className = 'control-panel__microcopy';
-      this.qualityChangeSummary = changeSummary;
+      if (showChangeSummary) {
+        const changeSummary = document.createElement('small');
+        changeSummary.className = 'control-panel__microcopy';
+        this.qualityChangeSummary = changeSummary;
+      }
 
-      text.append(label, hint, scopeHint, changeSummary);
+      text.append(label, hint);
+      if (this.qualityScopeHint) {
+        text.append(this.qualityScopeHint);
+      }
+      if (this.qualityChangeSummary) {
+        text.append(this.qualityChangeSummary);
+      }
 
       const select = document.createElement('select');
       select.id = selectId;
