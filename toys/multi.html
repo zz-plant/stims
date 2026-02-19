@@ -92,6 +92,7 @@
       import { createMultiFunAdapter } from '../assets/multi/fun-adapter.ts';
       import { initFunControls } from '../assets/ui/fun-controls.ts';
       import { initHints } from '../assets/ui/hints.ts';
+      import { createMultiWebGPUEffects } from '../assets/js/toys/multi-webgpu-effects.ts';
 
       const toyNav = initToyPageShell();
 
@@ -217,6 +218,28 @@
       });
       const particles = new THREE.Points(particlesGeometry, particlesMaterial);
       toy.scene.add(particles);
+
+      let webgpuEffects = {
+        enabled: false,
+        tick: () => ({
+          audio: { bass: 0, mids: 0, highs: 0, flux: 0 },
+          heightfield: { average: 0, peak: 0 },
+        }),
+        dispose: () => {},
+      };
+
+      toy.rendererReady
+        .then(async () => {
+          webgpuEffects = await createMultiWebGPUEffects({
+            enabled: toy.rendererBackend === 'webgpu' && !useWebGLFallback,
+            particlePositions: particlesPosition,
+            particleCount: particlesCount,
+            heightfieldSize: 24,
+          });
+        })
+        .catch((error) => {
+          console.warn('Unable to initialize WebGPU compute effects.', error);
+        });
 
       const hazeColor = 0x050505;
       let hazeDensity = useWebGLFallback ? 0.0025 : 0.0018;
@@ -529,6 +552,12 @@
         const delta = clock.getDelta();
         lastFrequencyData = getContextFrequencyData(ctx);
         const avgFrequency = getWeightedAverageFrequency(lastFrequencyData);
+        const webgpuSnapshot = webgpuEffects.tick({
+          frequencyData: lastFrequencyData,
+          delta,
+        });
+        particlesGeometry.attributes.position.needsUpdate =
+          webgpuEffects.enabled;
 
         peakDetector.update(lastFrequencyData);
         const spin = adapter.computeMotion(avgFrequency);
@@ -541,9 +570,14 @@
         );
         burstTarget = THREE.MathUtils.damp(burstTarget, 0, 1.5, delta);
 
-        const burstScale = 1 + burstValue * 0.65;
+        const burstScale =
+          1 +
+          burstValue * 0.65 +
+          webgpuSnapshot.audio.bass * 0.35 +
+          webgpuSnapshot.heightfield.average * 0.4;
         torusKnot.rotation.x += spin + burstValue * 0.02;
-        torusKnot.rotation.y += spin + burstValue * 0.02;
+        torusKnot.rotation.y +=
+          spin + burstValue * 0.02 + webgpuSnapshot.audio.flux * 0.015;
         torusKnot.scale.setScalar(burstScale);
 
         pointLight.intensity =
@@ -552,11 +586,16 @@
           (useWebGLFallback ? 0.6 : 1);
 
         particles.rotation.y += 0.001 + spin / 10;
+        particles.rotation.x += webgpuSnapshot.audio.highs * 0.002;
 
         shapes.forEach((shape) => {
           shape.rotation.x += 0.01 + spin * 2 + burstValue * 0.03;
           shape.rotation.y += 0.01 + spin * 1.5 + burstValue * 0.02;
-          shape.position.z += 0.5 + spin * 60 + burstValue * 4;
+          shape.position.z +=
+            0.5 +
+            spin * 60 +
+            burstValue * 4 +
+            webgpuSnapshot.heightfield.peak * 3.5;
           shape.scale.setScalar(1 + burstValue * 0.5);
 
           if (shape.position.z > 10) {
@@ -565,6 +604,11 @@
         });
 
         updateSparkles(delta);
+
+        if (toy.scene.fog instanceof THREE.FogExp2) {
+          toy.scene.fog.density =
+            hazeDensity + webgpuSnapshot.heightfield.average * 0.0015;
+        }
 
         ctx.toy.render();
       }
@@ -578,6 +622,10 @@
         );
         const silentContext = { toy, analyser: null };
         toy.renderer.setAnimationLoop(() => animate(silentContext));
+      });
+
+      window.addEventListener('beforeunload', () => {
+        webgpuEffects.dispose();
       });
     </script>
   </body>
