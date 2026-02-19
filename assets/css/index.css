@@ -2272,7 +2272,7 @@ html.light .search-meta__tokens li {
   list-style: none;
   border-radius: 0.55rem;
   min-height: 44px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
 }
 
