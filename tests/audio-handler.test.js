@@ -57,7 +57,7 @@ beforeAll(async () => {
   global.AudioContext = FakeAudioContext;
   global.AudioWorkletNode = FakeAudioWorkletNode;
 
-  const baseThree = await import('./three-stub.ts');
+  const baseThree = await import('three');
   mock.module('three', () => {
     const AudioListener = mock(() => ({
       add: mock(),
