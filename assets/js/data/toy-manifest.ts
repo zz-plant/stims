@@ -42,6 +42,15 @@ export const toyManifest: ToyManifest = [
       'Pinch/rotate gestures',
       'Arrow-key mood switching',
     ],
+    firstRunHint:
+      'Tap Starter first, then pinch/rotate once if you want to shape the flow.',
+    starterPreset: {
+      id: 'starter',
+      label: 'aurora starter',
+      description: 'Balanced glow and speed tuned for first look delight.',
+    },
+    wowControl: 'Quick preset · Starter',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -61,6 +70,15 @@ export const toyManifest: ToyManifest = [
     moods: ['focus', 'tactile'],
     tags: ['sculpting', 'pottery', '3d'],
     controls: ['Smoothing tool', 'Carving tool', 'Pinching tool'],
+    firstRunHint:
+      'Start with Smoothing, then try one short carve stroke to reveal form changes.',
+    starterPreset: {
+      id: 'first-sculpt',
+      label: 'first sculpt starter',
+      description: 'Guided intro to smoothing and carving order.',
+    },
+    wowControl: 'Smoothing tool',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -80,6 +98,15 @@ export const toyManifest: ToyManifest = [
     moods: ['psychedelic', 'cosmic'],
     tags: ['fractal', 'glitch', 'evolutionary'],
     controls: ['Reactivity boost', 'Mutation speed', 'Palette shift'],
+    firstRunHint:
+      'Turn on Reactivity boost first to make audio linkage obvious.',
+    starterPreset: {
+      id: 'reactivity-boost',
+      label: 'reactivity boost starter',
+      description: 'Boosted audio response with balanced mutation speed.',
+    },
+    wowControl: 'Reactivity boost',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -103,6 +130,16 @@ export const toyManifest: ToyManifest = [
       'Geometry complexity slider',
       'Sensitivity boost toggle',
     ],
+    firstRunHint:
+      'Use demo audio if your room is quiet, then toggle Sensitivity boost for instant movement.',
+    starterPreset: {
+      id: 'reactive',
+      label: 'reactive starter',
+      description:
+        'Boost sensitivity and simplify geometry for immediate motion.',
+    },
+    wowControl: 'Sensitivity boost toggle',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -122,6 +159,15 @@ export const toyManifest: ToyManifest = [
     moods: ['serene', 'ethereal'],
     tags: ['halos', 'particles', 'ambient'],
     controls: ['Halo intensity', 'Particle density', 'Palette cycle'],
+    firstRunHint:
+      'Start demo audio and raise Halo intensity to quickly reach a vivid look.',
+    starterPreset: {
+      id: 'halo-glow',
+      label: 'halo glow starter',
+      description: 'Higher halo glow with a balanced particle field.',
+    },
+    wowControl: 'Halo intensity',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -166,6 +212,15 @@ export const toyManifest: ToyManifest = [
       'Palette mode switch',
       'Pattern speed slider',
     ],
+    firstRunHint:
+      'Use the frequency mapping overlay once, then adjust Pattern speed.',
+    starterPreset: {
+      id: 'mapped-flow',
+      label: 'mapped flow starter',
+      description: 'Clear frequency-to-visual mapping with balanced speed.',
+    },
+    wowControl: 'Frequency mapping overlay',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -189,6 +244,15 @@ export const toyManifest: ToyManifest = [
       'Character glow level',
       'Vocabulary refresh',
     ],
+    firstRunHint:
+      'Increase cadence first so word updates visibly track the beat.',
+    starterPreset: {
+      id: 'pulse-typing',
+      label: 'pulse typing starter',
+      description: 'Faster text cadence with clearer audio-driven pacing.',
+    },
+    wowControl: 'Cadence control',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -230,6 +294,15 @@ export const toyManifest: ToyManifest = [
       'Beat response amount',
       'Camera drift speed',
     ],
+    firstRunHint:
+      'Tap Shape mode once to compare cubes vs spheres, then raise Beat response.',
+    starterPreset: {
+      id: 'mode-pop',
+      label: 'mode pop starter',
+      description: 'Pronounced mode contrast and stronger beat motion.',
+    },
+    wowControl: 'Shape mode',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -250,6 +323,15 @@ export const toyManifest: ToyManifest = [
     moods: ['playful', 'uplifting'],
     tags: ['bubbles', 'harmonics', 'reactive'],
     controls: ['Split sensitivity', 'Bubble growth rate', 'Trail persistence'],
+    firstRunHint:
+      'Pick High split sensitivity, then hit Trigger split once to reveal harmonic bubbles.',
+    starterPreset: {
+      id: 'harmonic-pop',
+      label: 'harmonic pop starter',
+      description: 'High split sensitivity with brighter highlights.',
+    },
+    wowControl: 'Split sensitivity',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -327,6 +409,16 @@ export const toyManifest: ToyManifest = [
     moods: ['energetic', 'luminous'],
     tags: ['lights', 'shader', 'palette'],
     controls: ['Shader style switch', 'Palette shuffle', 'Bloom intensity'],
+    firstRunHint:
+      'Use Starter look, then tap Shuffle to cycle quick best-of combinations.',
+    starterPreset: {
+      id: 'best-of',
+      label: 'best-of starter',
+      description:
+        'Curated shader, palette, and bloom defaults for immediate impact.',
+    },
+    wowControl: 'Shuffle look',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -346,6 +438,15 @@ export const toyManifest: ToyManifest = [
     moods: ['energetic', 'pulsing', 'cosmic'],
     tags: ['spirals', 'burst', 'gestural'],
     controls: ['Mode buttons', 'Pinch/rotate gestures', 'Arrow-key mode swap'],
+    firstRunHint:
+      'Raise Beat sensitivity and watch the Pulse indicator peak in real time.',
+    starterPreset: {
+      id: 'beat-pop',
+      label: 'beat pop starter',
+      description: 'Higher beat sensitivity with punchy pulse bursts.',
+    },
+    wowControl: 'Beat sensitivity',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -451,6 +552,16 @@ export const toyManifest: ToyManifest = [
       'Pinch/rotate gestures',
       'Arrow-key mood switching',
     ],
+    firstRunHint:
+      'Raise Glow strength first for instant bloom, then adjust Current speed to taste.',
+    starterPreset: {
+      id: 'guided-glow',
+      label: 'guided glow starter',
+      description:
+        'Higher glow with balanced trail and current speed for quick impact.',
+    },
+    wowControl: 'Glow strength',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,
@@ -471,6 +582,15 @@ export const toyManifest: ToyManifest = [
     moods: ['energetic', 'immersive'],
     tags: ['synthwave', 'cyberpunk', 'retro', 'visualizer', 'bloom'],
     controls: ['Theme selector', 'Quality presets'],
+    firstRunHint:
+      'Choose Soft glow first for comfort, then switch themes for style.',
+    starterPreset: {
+      id: 'soft-glow',
+      label: 'soft glow starter',
+      description: 'Reduced bloom intensity for a gentler first look.',
+    },
+    wowControl: 'Soft glow',
+    recommendedCapability: 'demoAudio',
     capabilities: {
       microphone: true,
       demoAudio: true,

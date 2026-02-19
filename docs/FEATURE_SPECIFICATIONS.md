@@ -108,6 +108,7 @@ The toy registry is sourced from `assets/data/toys.json` (with an optional JSON 
 - **Rendering**: `requiresWebGPU`, `allowWebGLFallback`.
 - **Lifecycle**: `lifecycleStage` (featured/prototype/archived) and `featuredRank`.
 - **Discovery**: `moods`, `tags`, and `controls` for search/filter suggestions.
+- **First-run guidance**: optional `firstRunHint`, `starterPreset`, `wowControl`, and `recommendedCapability` fields let the shell surface faster time-to-delight onboarding.
 - **Capabilities**: `capabilities` object with defaults (mic + demo audio on, motion optional).
 
 ## Persistence & storage keys

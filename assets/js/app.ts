@@ -5,6 +5,7 @@ import {
   PREFLIGHT_SESSION_DISMISS_KEY,
 } from './core/capability-preflight.ts';
 import { setRendererTelemetryHandler } from './core/renderer-capabilities.ts';
+import { setQualityPresetById } from './core/settings-panel.ts';
 import { startToyAudioFromSource } from './core/toy-audio-startup.ts';
 import type { ToyWindow } from './core/toy-globals';
 import toyManifest from './data/toy-manifest.ts';
@@ -30,7 +31,15 @@ type LoaderOverrides = {
 };
 
 type Toy = Pick<ToyEntry, 'slug' | 'title'>;
-type ToyWithControls = Pick<ToyEntry, 'slug' | 'controls'>;
+type ToyWithControls = Pick<
+  ToyEntry,
+  | 'slug'
+  | 'controls'
+  | 'firstRunHint'
+  | 'starterPreset'
+  | 'wowControl'
+  | 'recommendedCapability'
+>;
 
 const runInit = (label: string, init: () => void | Promise<void>) => {
   Promise.resolve()
@@ -206,17 +215,24 @@ const startApp = async () => {
     const setupAudio = (result: CapabilityPreflightResult | null) => {
       if (!audioControlsContainer) return;
 
-      const starterTips = (() => {
-        if (!toySlug) return [];
-        const toyWithControls = (toyManifest as ToyWithControls[]).find(
+      const toyMeta = (() => {
+        if (!toySlug) return null;
+        return (toyManifest as ToyWithControls[]).find(
           (entry) => entry.slug === toySlug,
         );
-        return toyWithControls?.controls ?? [];
       })();
-      const firstRunHint = starterTips[0];
+
+      const starterTips = [
+        ...(toyMeta?.controls ?? []),
+        ...(toyMeta?.wowControl
+          ? [`Best wow control: ${toyMeta.wowControl}`]
+          : []),
+      ];
+      const firstRunHint = toyMeta?.firstRunHint ?? starterTips[0];
       const gestureHints = starterTips.filter((tip) =>
         /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip),
       );
+      const starterPresetLabel = toyMeta?.starterPreset?.label;
 
       initAudioControls(audioControlsContainer, {
         onRequestMicrophone: async () => {
@@ -244,6 +260,10 @@ const startApp = async () => {
         starterTips,
         firstRunHint,
         gestureHints,
+        starterPresetLabel,
+        onApplyStarterPreset: () => {
+          setQualityPresetById('low-motion');
+        },
         ...buildAudioInitState(result),
       });
     };
