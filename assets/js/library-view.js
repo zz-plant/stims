@@ -1,7 +1,6 @@
 import {
   dismissPremiumPrompt,
   getRecentToySlugs,
-  recordToyShare,
   shouldShowPremiumPrompt,
 } from './utils/growth-metrics.ts';
 
@@ -1843,30 +1842,6 @@ export function createLibraryView({
     return 'Best for visual exploration';
   };
 
-  const copyToyLink = async (toy) => {
-    if (!toy?.slug || typeof window === 'undefined') return false;
-    const url = `${window.location.origin}/toy.html?toy=${encodeURIComponent(toy.slug)}`;
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        const fallback = document.createElement('textarea');
-        fallback.value = url;
-        fallback.setAttribute('readonly', 'true');
-        fallback.style.position = 'absolute';
-        fallback.style.left = '-9999px';
-        document.body.appendChild(fallback);
-        fallback.select();
-        document.execCommand('copy');
-        fallback.remove();
-      }
-      recordToyShare(toy.slug);
-      return true;
-    } catch (_error) {
-      return false;
-    }
-  };
-
   const renderGrowthPanels = (listElement) => {
     if (!(listElement instanceof HTMLElement)) return;
 
@@ -1991,11 +1966,6 @@ export function createLibraryView({
     bestFor.className = 'webtoy-card-bestfor';
     bestFor.textContent = getBestForLabel(toy);
     card.appendChild(bestFor);
-
-    const tapHint = document.createElement('p');
-    tapHint.className = 'webtoy-card-hint';
-    tapHint.textContent = 'Tap anywhere on this card to open.';
-    card.appendChild(tapHint);
 
     const matchedFields = getMatchedFields(toy, getQueryTokens(searchQuery));
     if (matchedFields.length > 0) {
@@ -2153,27 +2123,6 @@ export function createLibraryView({
       });
 
       actions.appendChild(play);
-
-      const share = document.createElement('button');
-      share.type = 'button';
-      share.className = 'cta-button';
-      share.textContent = 'Share toy';
-      share.addEventListener('click', async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const didCopy = await copyToyLink(toy);
-        const nextLabel = didCopy ? 'Link copied' : 'Copy failed';
-        share.textContent = nextLabel;
-        window.setTimeout(() => {
-          share.textContent = 'Share toy';
-        }, 1400);
-      });
-      share.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.stopPropagation();
-        }
-      });
-      actions.appendChild(share);
 
       card.appendChild(actions);
     }
