@@ -49,10 +49,11 @@ export const initSystemCheck = () => {
   const controlsHost = document.querySelector('[data-system-controls]');
   if (controlsHost instanceof HTMLElement) {
     initSystemControls(controlsHost, {
-      title: 'Performance & compatibility',
-      description:
-        'Tune render quality, cap DPI, and force WebGL for older GPUs. Settings persist on this device.',
+      title: 'Performance settings',
+      description: 'Quick adjustments for this device.',
       variant: 'inline',
+      includeAdvancedControls: false,
+      showDetailedQualitySummary: false,
     });
   }
 
