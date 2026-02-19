@@ -26,6 +26,8 @@ type SystemControlOptions = {
   qualityPresets?: QualityPreset[];
   defaultPresetId?: string;
   variant?: 'floating' | 'inline';
+  includeAdvancedControls?: boolean;
+  showDetailedQualitySummary?: boolean;
 };
 
 const formatQualityLabel = (label: string) =>
@@ -104,6 +106,8 @@ export function initSystemControls(
     qualityPresets = DEFAULT_QUALITY_PRESETS,
     defaultPresetId,
     variant = 'floating',
+    includeAdvancedControls = true,
+    showDetailedQualitySummary = true,
   } = options;
 
   const resolvedDefaultPresetId = resolveDefaultPresetId(defaultPresetId);
@@ -119,6 +123,8 @@ export function initSystemControls(
   panel.setQualityPresets({
     presets: qualityPresets,
     defaultPresetId: resolvedDefaultPresetId,
+    showScopeHint: showDetailedQualitySummary,
+    showChangeSummary: showDetailedQualitySummary,
   });
 
   const renderPreferences = getActiveRenderPreferences();
@@ -145,93 +151,95 @@ export function initSystemControls(
     },
   });
 
-  const resolutionRow = panel.addSection(
-    'Resolution scale',
-    'Lower values ease GPU load; higher values sharpen detail.',
-  );
-  const resolutionValue = createValueLabel('');
-  const resolutionSlider = document.createElement('input');
-  resolutionSlider.type = 'range';
-  resolutionSlider.min = '0.6';
-  resolutionSlider.max = '1';
-  resolutionSlider.step = '0.05';
-  resolutionSlider.value = String(
-    renderPreferences.renderScale ?? activeQuality.renderScale ?? 1,
-  );
-  resolutionSlider.setAttribute('aria-label', 'Resolution scale');
-  resolutionSlider.className = 'control-panel__slider';
-  const updateResolutionValue = (value: number) => {
-    resolutionValue.textContent = `${Math.round(value * 100)}%`;
-  };
-  updateResolutionValue(Number(resolutionSlider.value));
-  resolutionSlider.addEventListener('input', (event) => {
-    const value = Number((event.target as HTMLInputElement).value);
-    updateResolutionValue(value);
-    setRenderPreferences({ renderScale: value });
-  });
-  resolutionRow.append(resolutionSlider, resolutionValue);
-
-  const pixelRatioRow = panel.addSection(
-    'Pixel ratio cap',
-    'Caps effective DPI to balance clarity and thermal load.',
-  );
-  const pixelRatioValue = createValueLabel('');
-  const pixelRatioSlider = document.createElement('input');
-  pixelRatioSlider.type = 'range';
-  pixelRatioSlider.min = '0.75';
-  pixelRatioSlider.max = '3';
-  pixelRatioSlider.step = '0.05';
-  pixelRatioSlider.value = String(
-    renderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
-  );
-  pixelRatioSlider.setAttribute('aria-label', 'Maximum pixel ratio');
-  pixelRatioSlider.className = 'control-panel__slider';
-  const updatePixelRatioValue = (value: number) => {
-    pixelRatioValue.textContent = value.toFixed(2);
-  };
-  updatePixelRatioValue(Number(pixelRatioSlider.value));
-  pixelRatioSlider.addEventListener('input', (event) => {
-    const value = Number((event.target as HTMLInputElement).value);
-    updatePixelRatioValue(value);
-    setRenderPreferences({ maxPixelRatio: value });
-  });
-  pixelRatioRow.append(pixelRatioSlider, pixelRatioValue);
-
-  const resetRow = panel.addSection('Custom overrides', undefined);
-  const resetButton = document.createElement('button');
-  resetButton.type = 'button';
-  resetButton.className = 'cta-button ghost';
-  resetButton.textContent = 'Reset to preset';
-  resetButton.addEventListener('click', () => {
-    clearRenderOverrides();
-    const preset = getActiveQualityPreset({
-      presets: qualityPresets,
-      defaultPresetId: resolvedDefaultPresetId,
-    });
-    resolutionSlider.value = String(preset.renderScale ?? 1);
-    pixelRatioSlider.value = String(preset.maxPixelRatio);
+  if (includeAdvancedControls) {
+    const resolutionRow = panel.addSection(
+      'Resolution scale',
+      'Lower values ease GPU load; higher values sharpen detail.',
+    );
+    const resolutionValue = createValueLabel('');
+    const resolutionSlider = document.createElement('input');
+    resolutionSlider.type = 'range';
+    resolutionSlider.min = '0.6';
+    resolutionSlider.max = '1';
+    resolutionSlider.step = '0.05';
+    resolutionSlider.value = String(
+      renderPreferences.renderScale ?? activeQuality.renderScale ?? 1,
+    );
+    resolutionSlider.setAttribute('aria-label', 'Resolution scale');
+    resolutionSlider.className = 'control-panel__slider';
+    const updateResolutionValue = (value: number) => {
+      resolutionValue.textContent = `${Math.round(value * 100)}%`;
+    };
     updateResolutionValue(Number(resolutionSlider.value));
-    updatePixelRatioValue(Number(pixelRatioSlider.value));
-  });
-  resetRow.appendChild(resetButton);
+    resolutionSlider.addEventListener('input', (event) => {
+      const value = Number((event.target as HTMLInputElement).value);
+      updateResolutionValue(value);
+      setRenderPreferences({ renderScale: value });
+    });
+    resolutionRow.append(resolutionSlider, resolutionValue);
 
-  subscribeToQualityPreset((preset) => {
-    const preferences = getActiveRenderPreferences();
-    if (
-      preferences.renderScale === null ||
-      preferences.renderScale === undefined
-    ) {
+    const pixelRatioRow = panel.addSection(
+      'Pixel ratio cap',
+      'Caps effective DPI to balance clarity and thermal load.',
+    );
+    const pixelRatioValue = createValueLabel('');
+    const pixelRatioSlider = document.createElement('input');
+    pixelRatioSlider.type = 'range';
+    pixelRatioSlider.min = '0.75';
+    pixelRatioSlider.max = '3';
+    pixelRatioSlider.step = '0.05';
+    pixelRatioSlider.value = String(
+      renderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
+    );
+    pixelRatioSlider.setAttribute('aria-label', 'Maximum pixel ratio');
+    pixelRatioSlider.className = 'control-panel__slider';
+    const updatePixelRatioValue = (value: number) => {
+      pixelRatioValue.textContent = value.toFixed(2);
+    };
+    updatePixelRatioValue(Number(pixelRatioSlider.value));
+    pixelRatioSlider.addEventListener('input', (event) => {
+      const value = Number((event.target as HTMLInputElement).value);
+      updatePixelRatioValue(value);
+      setRenderPreferences({ maxPixelRatio: value });
+    });
+    pixelRatioRow.append(pixelRatioSlider, pixelRatioValue);
+
+    const resetRow = panel.addSection('Custom overrides', undefined);
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'cta-button ghost';
+    resetButton.textContent = 'Reset to preset';
+    resetButton.addEventListener('click', () => {
+      clearRenderOverrides();
+      const preset = getActiveQualityPreset({
+        presets: qualityPresets,
+        defaultPresetId: resolvedDefaultPresetId,
+      });
       resolutionSlider.value = String(preset.renderScale ?? 1);
-      updateResolutionValue(Number(resolutionSlider.value));
-    }
-    if (
-      preferences.maxPixelRatio === null ||
-      preferences.maxPixelRatio === undefined
-    ) {
       pixelRatioSlider.value = String(preset.maxPixelRatio);
+      updateResolutionValue(Number(resolutionSlider.value));
       updatePixelRatioValue(Number(pixelRatioSlider.value));
-    }
-  });
+    });
+    resetRow.appendChild(resetButton);
+
+    subscribeToQualityPreset((preset) => {
+      const preferences = getActiveRenderPreferences();
+      if (
+        preferences.renderScale === null ||
+        preferences.renderScale === undefined
+      ) {
+        resolutionSlider.value = String(preset.renderScale ?? 1);
+        updateResolutionValue(Number(resolutionSlider.value));
+      }
+      if (
+        preferences.maxPixelRatio === null ||
+        preferences.maxPixelRatio === undefined
+      ) {
+        pixelRatioSlider.value = String(preset.maxPixelRatio);
+        updatePixelRatioValue(Number(pixelRatioSlider.value));
+      }
+    });
+  }
 
   return panel.getElement();
 }
