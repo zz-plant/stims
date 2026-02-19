@@ -175,6 +175,39 @@
               </a>
             </div>
           </section>
+          <form class="search-field" data-search-form role="search" aria-label="Search stims">
+            <span class="search-field__icon" aria-hidden="true">🔎</span>
+            <input
+              id="toy-search"
+              type="search"
+              inputmode="search"
+              autocomplete="off"
+              placeholder="Search by toy, mood, or capability"
+              aria-label="Search library"
+              list="toy-search-suggestions"
+            />
+            <button
+              type="button"
+              class="search-clear is-hidden"
+              data-search-clear
+              aria-label="Clear search"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              class="search-shortcuts-toggle"
+              data-search-shortcuts-toggle
+              aria-controls="toy-search-hint"
+              aria-expanded="false"
+            >
+              Show shortcuts
+            </button>
+            <p id="toy-search-hint" class="search-field__hint" hidden>
+              Tip: press / to focus search, Enter to open the top match, and Esc to reset.
+            </p>
+            <datalist id="toy-search-suggestions"></datalist>
+          </form>
           <p
             class="search-meta__results"
             data-search-results
