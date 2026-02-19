@@ -39,6 +39,15 @@ Other foundations remain strong: canonical tags, robots directives, JSON-LD on m
 2. Optionally add image sitemap support if image search becomes a KPI.
 3. Continue periodic production checks for `/index.html` → `/` redirect behavior.
 
+## Programmatic growth opportunities (next cycle)
+
+1. **Automate first-party OG image generation per toy page**  
+   Replace the shared icon fallback with generated 1200x630 cards that render toy title + key metadata, then wire those URLs into each generated page's `og:image` and `twitter:image` fields.
+2. **Emit an image sitemap and validate it in `check:seo`**  
+   Extend the SEO generator to emit image discovery metadata (`<image:image>` entries or a dedicated image sitemap index) and fail CI when required assets/entries are missing.
+3. **Generate related-toy internal links from metadata graph**  
+   Use shared tags/moods/capabilities from toy metadata to programmatically add "Related toys" sections on toy landing pages to strengthen crawl paths and topical clustering.
+
 ## Validation commands run for this audit
 
 - `bun run generate:seo`

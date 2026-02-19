@@ -19,10 +19,10 @@ const requiredInIndexHtml = [
 ];
 
 const requiredInGeneratedToyPage = [
-  '<meta property="og:image" content="https://no.toil.fyi/icons/icon-512.png"',
-  '<meta property="og:image:type" content="image/png"',
-  '<meta property="og:image:width" content="512"',
-  '<meta property="og:image:height" content="512"',
+  '<meta property="og:image" content="https://no.toil.fyi/og/cube-wave.svg"',
+  '<meta property="og:image:type" content="image/svg+xml"',
+  '<meta property="og:image:width" content="1200"',
+  '<meta property="og:image:height" content="630"',
   '<link rel="canonical" href="https://no.toil.fyi/toys/cube-wave/" />',
 ];
 
@@ -79,6 +79,24 @@ const run = async () => {
   results.push({
     name: 'Sitemap chunk includes per-URL lastmod fields',
     passed: hasUrlLastmod,
+    details: 'public/sitemap-1.xml',
+  });
+
+  results.push({
+    name: 'Sitemap chunk includes image sitemap namespace',
+    passed: sitemapChunk.includes(
+      'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"',
+    ),
+    details: 'public/sitemap-1.xml',
+  });
+
+  results.push({
+    name: 'Sitemap chunk includes toy OG image entries',
+    passed:
+      sitemapChunk.includes('<loc>https://no.toil.fyi/toys/cube-wave/</loc>') &&
+      sitemapChunk.includes(
+        '<image:loc>https://no.toil.fyi/og/cube-wave.svg</image:loc>',
+      ),
     details: 'public/sitemap-1.xml',
   });
 
