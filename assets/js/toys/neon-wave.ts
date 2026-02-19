@@ -2,7 +2,6 @@ import {
   AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
-  CircleGeometry,
   Color,
   DoubleSide,
   FogExp2,
@@ -11,11 +10,12 @@ import {
   LineBasicMaterial,
   type Material,
   Mesh,
-  MeshBasicMaterial,
   PlaneGeometry,
   Points,
   PointsMaterial,
   ShaderMaterial,
+  type Texture,
+  TextureLoader,
   Vector3,
 } from 'three';
 import {
@@ -150,6 +150,7 @@ export function start({ container }: ToyStartOptions = {}) {
 
   // Horizon sun/moon
   let horizonMesh: Mesh | null = null;
+  let horizonMaskTexture: Texture | null = null;
 
   function getWaveSegments() {
     const scale =
@@ -208,6 +209,25 @@ export function start({ container }: ToyStartOptions = {}) {
     
     varying vec2 vUv;
     varying float vElevation;
+
+    float hash21(vec2 p) {
+      p = fract(p * vec2(123.34, 345.45));
+      p += dot(p, p + 34.345);
+      return fract(p.x * p.y);
+    }
+
+    float noise2d(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      vec2 u = f * f * (3.0 - 2.0 * f);
+
+      float a = hash21(i);
+      float b = hash21(i + vec2(1.0, 0.0));
+      float c = hash21(i + vec2(0.0, 1.0));
+      float d = hash21(i + vec2(1.0, 1.0));
+
+      return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    }
     
     void main() {
       // Gradient based on elevation and position
@@ -233,12 +253,70 @@ export function start({ container }: ToyStartOptions = {}) {
       
       color *= gridX * gridY;
       
+      // Procedural shimmer ripples to avoid flat color bands
+      float rippleNoise = noise2d(vUv * 8.0 + vec2(uTime * 0.2, -uTime * 0.08));
+      float shimmer = 0.9 + rippleNoise * (0.18 + uBass * 0.2);
+      color *= shimmer;
+
       // Pulsing glow
       float pulse = 0.8 + sin(uTime * 2.0) * 0.2 * uBass;
-      
-      gl_FragColor = vec4(color * pulse, edgeFade * 0.9);
+
+      // Depth-heavy vignette keeps focus near center where audio peaks are strongest
+      float vignette = smoothstep(1.0, 0.15, distance(vUv, vec2(0.5)));
+
+      gl_FragColor = vec4(color * pulse, edgeFade * (0.4 + vignette * 0.6));
     }
   `;
+
+  const horizonVertexShader = `
+    varying vec2 vUv;
+
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const horizonFragmentShader = `
+    uniform sampler2D uMask;
+    uniform vec3 uAccent;
+    uniform vec3 uSecondary;
+    uniform float uTime;
+    uniform float uBass;
+    uniform float uMids;
+    uniform float uHighs;
+
+    varying vec2 vUv;
+
+    void main() {
+      vec4 mask = texture2D(uMask, vUv);
+      float ringPulse = 0.86 + sin(uTime * 2.6 + vUv.y * 12.0) * (0.08 + uBass * 0.1);
+      float horizonScan = smoothstep(0.35, 0.95, sin((vUv.y + uTime * 0.06) * 54.0) * 0.5 + 0.5);
+      float spectral = 0.2 + uMids * 0.4 + uHighs * 0.4;
+      vec3 base = mix(uSecondary, uAccent, mask.r);
+      vec3 color = mix(base, vec3(1.0), horizonScan * spectral * 0.45);
+      color *= ringPulse;
+      gl_FragColor = vec4(color, mask.a * (0.68 + spectral * 0.26));
+    }
+  `;
+
+  function createHorizonMaskTexture() {
+    const svg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="sun-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="white" stop-opacity="1"/>
+            <stop offset="100%" stop-color="white" stop-opacity="0.75"/>
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="43" fill="url(#sun-gradient)"/>
+        <rect x="14" y="47" width="72" height="4" fill="black" fill-opacity="0.25"/>
+        <rect x="18" y="58" width="64" height="5" fill="black" fill-opacity="0.3"/>
+        <rect x="23" y="70" width="54" height="5" fill="black" fill-opacity="0.36"/>
+      </svg>
+    `);
+    return new TextureLoader().load(`data:image/svg+xml;charset=utf-8,${svg}`);
+  }
 
   function createWaveMesh() {
     if (waveMesh) {
@@ -383,11 +461,23 @@ export function start({ container }: ToyStartOptions = {}) {
       disposeMaterial(horizonMesh.material as Material);
     }
 
-    const geometry = new CircleGeometry(25, 64);
-    const material = new MeshBasicMaterial({
-      color: palette.accent,
+    horizonMaskTexture ??= createHorizonMaskTexture();
+    const geometry = new PlaneGeometry(56, 56, 1, 1);
+    const material = new ShaderMaterial({
+      vertexShader: horizonVertexShader,
+      fragmentShader: horizonFragmentShader,
+      uniforms: {
+        uMask: { value: horizonMaskTexture },
+        uAccent: { value: new Color(palette.accent) },
+        uSecondary: { value: new Color(palette.secondary) },
+        uTime: { value: 0 },
+        uBass: { value: 0 },
+        uMids: { value: 0 },
+        uHighs: { value: 0 },
+      },
       transparent: true,
-      opacity: 0.9,
+      depthWrite: false,
+      side: DoubleSide,
     });
 
     horizonMesh = new Mesh(geometry, material);
@@ -449,7 +539,9 @@ export function start({ container }: ToyStartOptions = {}) {
 
     // Update horizon
     if (horizonMesh) {
-      (horizonMesh.material as MeshBasicMaterial).color.setHex(palette.accent);
+      const horizonMaterial = horizonMesh.material as ShaderMaterial;
+      horizonMaterial.uniforms.uAccent.value = new Color(palette.accent);
+      horizonMaterial.uniforms.uSecondary.value = new Color(palette.secondary);
     }
 
     // Update bloom
@@ -636,8 +728,11 @@ export function start({ container }: ToyStartOptions = {}) {
       horizonMesh.scale.setScalar(scale);
 
       // Subtle glow pulse
-      (horizonMesh.material as MeshBasicMaterial).opacity =
-        0.7 + smoothedMids * 0.3;
+      const horizonMaterial = horizonMesh.material as ShaderMaterial;
+      horizonMaterial.uniforms.uTime.value = scaledTime;
+      horizonMaterial.uniforms.uBass.value = smoothedBass;
+      horizonMaterial.uniforms.uMids.value = smoothedMids;
+      horizonMaterial.uniforms.uHighs.value = smoothedHighs;
     }
 
     // Camera sway
@@ -709,6 +804,8 @@ export function start({ container }: ToyStartOptions = {}) {
             disposeGeometry(horizonMesh.geometry as BufferGeometry);
             disposeMaterial(horizonMesh.material as Material);
           }
+          horizonMaskTexture?.dispose();
+          horizonMaskTexture = null;
           postprocessing?.dispose();
           settingsPanel.getElement().remove();
         },

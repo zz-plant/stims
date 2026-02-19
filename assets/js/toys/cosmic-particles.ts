@@ -7,7 +7,6 @@ import type { QualityPreset } from '../core/settings-panel';
 import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
-import { applyAudioColor } from '../utils/color-audio';
 import { createPerformanceSettingsHandler } from '../utils/performance-settings';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createAudioToyStarter } from '../utils/toy-runtime-starter';
@@ -184,6 +183,27 @@ export function start({ container }: ToyStartOptions = {}) {
     };
   }
 
+  function createStarSpriteTexture() {
+    const svg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+        <defs>
+          <radialGradient id="g" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="white" stop-opacity="1"/>
+            <stop offset="40%" stop-color="white" stop-opacity="0.85"/>
+            <stop offset="100%" stop-color="white" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="60" cy="60" r="58" fill="url(#g)"/>
+        <path d="M60 10 L66 48 L110 60 L66 72 L60 110 L54 72 L10 60 L54 48 Z" fill="white" fill-opacity="0.38"/>
+      </svg>
+    `);
+    const texture = new THREE.TextureLoader().load(
+      `data:image/svg+xml;charset=utf-8,${svg}`,
+    );
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
   function createNebulaPreset(quality: QualityPreset): PresetInstance {
     const group = new THREE.Group();
 
@@ -238,12 +258,77 @@ export function start({ container }: ToyStartOptions = {}) {
       new THREE.BufferAttribute(starColors, 3),
     );
 
-    const starMaterial = new THREE.PointsMaterial({
-      size: 1.5,
-      vertexColors: true,
+    const starPhases = new Float32Array(STAR_COUNT);
+    for (let i = 0; i < STAR_COUNT; i++) {
+      starPhases[i] = Math.random() * Math.PI * 2;
+    }
+    starGeometry.setAttribute(
+      'phase',
+      new THREE.BufferAttribute(starPhases, 1),
+    );
+
+    const starSpriteTexture = createStarSpriteTexture();
+    const starMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uAudio: { value: 0 },
+        uTint: { value: new THREE.Color(0x99bbff) },
+        uSprite: { value: starSpriteTexture },
+      },
+      vertexShader: `
+        attribute float size;
+        attribute vec3 color;
+        attribute float phase;
+
+        uniform float uTime;
+        uniform float uAudio;
+
+        varying vec3 vColor;
+        varying float vPulse;
+        varying float vPhase;
+
+        void main() {
+          vColor = color;
+          vPhase = phase;
+          float pulse = 0.72 + sin(uTime * 5.0 + phase) * 0.28 + uAudio * 0.3;
+          vPulse = pulse;
+
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = size * pulse * (220.0 / max(1.0, -mvPosition.z));
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D uSprite;
+        uniform vec3 uTint;
+        uniform float uTime;
+        uniform float uAudio;
+
+        varying vec3 vColor;
+        varying float vPulse;
+        varying float vPhase;
+
+        float hash21(vec2 p) {
+          p = fract(p * vec2(234.34, 879.54));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+
+        void main() {
+          vec2 uv = gl_PointCoord;
+          vec4 sprite = texture2D(uSprite, uv);
+          float d = distance(uv, vec2(0.5));
+          float edge = smoothstep(0.52, 0.06, d);
+          float flicker = 0.9 + hash21(uv * 21.0 + vec2(vPhase, uTime * 0.2)) * 0.18;
+          vec3 color = vColor * uTint * (vPulse * flicker + uAudio * 0.35);
+          float alpha = sprite.a * edge;
+          if (alpha < 0.01) discard;
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
       transparent: true,
-      opacity: 0.9,
-      sizeAttenuation: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
     });
 
     const stars = new THREE.Points(starGeometry, starMaterial);
@@ -350,12 +435,9 @@ export function start({ container }: ToyStartOptions = {}) {
           0.2 + normalizedAvg * 0.3;
 
         const hueBase = (time * 0.05 + controls.colorDrift) % 1;
-        applyAudioColor(starMaterial, normalizedAvg, {
-          baseHue: hueBase,
-          hueRange: 0.5,
-          baseSaturation: 0.3,
-          baseLuminance: 0.9,
-        });
+        starMaterial.uniforms.uTime.value = time;
+        starMaterial.uniforms.uAudio.value = normalizedAvg;
+        starMaterial.uniforms.uTint.value.setHSL(hueBase, 0.65, 0.82);
 
         runtime.toy.camera.position.x =
           Math.sin(time * 0.3) * (8 + controls.motionBoost * 2);
@@ -369,6 +451,7 @@ export function start({ container }: ToyStartOptions = {}) {
         runtime.toy.scene.remove(group);
         disposeGeometry(starGeometry);
         disposeMaterial(starMaterial);
+        starSpriteTexture.dispose();
         disposeGeometry(nebulaGeometry);
         disposeMaterial(nebulaMaterial);
       },
