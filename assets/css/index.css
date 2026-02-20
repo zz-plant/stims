@@ -266,7 +266,7 @@ footer {
   position: sticky;
   top: 0;
   z-index: 15;
-  padding-top: max(0.3rem, env(safe-area-inset-top));
+  padding-top: 0.3rem;
   margin-bottom: clamp(0.35rem, 1vw, 0.8rem);
   backdrop-filter: blur(6px) saturate(110%);
 }
