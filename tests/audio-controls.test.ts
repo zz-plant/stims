@@ -114,6 +114,35 @@ describe('audio controls primary emphasis', () => {
     expect(stageLabels).toContain('Step 2 · Advanced capture (optional)');
   });
 
+  test('keeps advanced helper copy hidden until advanced options are expanded', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestTabAudio: async () => {},
+    });
+
+    const toggle = container.querySelector(
+      '[data-advanced-toggle]',
+    ) as HTMLButtonElement;
+    const helper = container.querySelector(
+      '[data-advanced-helper]',
+    ) as HTMLElement;
+    const toggleLabel = container.querySelector(
+      '[data-advanced-toggle-label]',
+    ) as HTMLElement;
+
+    expect(helper.hidden).toBe(true);
+    expect(toggle.getAttribute('aria-controls')).toBe('advanced-audio-panel');
+    expect(toggleLabel.textContent).toBe('Show advanced audio options');
+
+    toggle.click();
+
+    expect(helper.hidden).toBe(false);
+    expect(toggleLabel.textContent).toBe('Hide advanced audio options');
+  });
+
   test('reveals touch gesture hints after audio starts on touch-capable devices', async () => {
     const container = document.createElement('section');
 
@@ -276,6 +305,76 @@ describe('audio controls primary emphasis', () => {
       'Start with demo for instant sound',
     );
   });
+
+  test('disables YouTube load until a valid link is entered', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestYouTubeAudio: async () => {},
+    });
+
+    const input = container.querySelector('#youtube-url') as HTMLInputElement;
+    const loadButton = container.querySelector(
+      '#load-youtube',
+    ) as HTMLButtonElement;
+
+    expect(loadButton.disabled).toBe(true);
+
+    input.value = 'not-a-valid-url';
+    input.dispatchEvent(new Event('input'));
+    expect(loadButton.disabled).toBe(true);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+
+    input.value = 'https://youtube.com/watch?v=dQw4w9WgXcQ';
+    input.dispatchEvent(new Event('input'));
+    expect(loadButton.disabled).toBe(false);
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+  });
+
+  test('pressing Enter in YouTube URL field triggers load action', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestYouTubeAudio: async () => {},
+    });
+
+    const input = container.querySelector('#youtube-url') as HTMLInputElement;
+    const loadButton = container.querySelector(
+      '#load-youtube',
+    ) as HTMLButtonElement;
+    let clickCount = 0;
+    loadButton.addEventListener('click', () => {
+      clickCount += 1;
+    });
+
+    input.value = 'https://youtube.com/watch?v=dQw4w9WgXcQ';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter' }));
+
+    expect(clickCount).toBe(1);
+  });
+
+  test('keeps YouTube capture disabled before a video is ready', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestYouTubeAudio: async () => {},
+    });
+
+    const captureButton = container.querySelector(
+      '#use-youtube-audio',
+    ) as HTMLButtonElement;
+
+    expect(captureButton.disabled).toBe(true);
+    expect(captureButton.getAttribute('aria-disabled')).toBe('true');
+  });
+
   test('switches emphasis to demo row after microphone failure', async () => {
     const container = document.createElement('section');
 

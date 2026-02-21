@@ -156,14 +156,15 @@ export function initAudioControls(
         type="button"
         class="control-panel__advanced-toggle"
         aria-expanded="false"
+        aria-controls="advanced-audio-panel"
         data-advanced-toggle
       >
-        <span class="control-panel__advanced-title">Advanced audio options</span>
+        <span class="control-panel__advanced-title" data-advanced-toggle-label>Show advanced audio options</span>
         <span class="control-panel__advanced-hint">Tab or YouTube capture for media already playing</span>
       </button>
     </div>
-    <p class="control-panel__advanced-helper">Use these when you want visuals to react to music or videos already playing in your browser.</p>
-    <div class="control-panel__advanced" data-advanced-panel hidden>
+    <p class="control-panel__advanced-helper" data-advanced-helper hidden>Use these when you want visuals to react to music or videos already playing in your browser.</p>
+    <div id="advanced-audio-panel" class="control-panel__advanced" data-advanced-panel hidden>
       ${
         options.onRequestTabAudio
           ? `
@@ -259,6 +260,12 @@ export function initAudioControls(
   ) as HTMLButtonElement | null;
   const advancedPanel = container.querySelector(
     '[data-advanced-panel]',
+  ) as HTMLElement | null;
+  const advancedHelper = container.querySelector(
+    '[data-advanced-helper]',
+  ) as HTMLElement | null;
+  const advancedToggleLabel = container.querySelector(
+    '[data-advanced-toggle-label]',
   ) as HTMLElement | null;
   const ADVANCED_KEY = 'stims-audio-advanced-open';
   const FIRST_STEPS_KEY = 'stims-first-steps-dismissed';
@@ -510,12 +517,23 @@ export function initAudioControls(
     } catch (_error) {
       isOpen = false;
     }
-    advancedPanel.hidden = !isOpen;
-    advancedToggle.setAttribute('aria-expanded', String(isOpen));
+    const setAdvancedState = (open: boolean) => {
+      advancedPanel.hidden = !open;
+      if (advancedHelper) {
+        advancedHelper.hidden = !open;
+      }
+      advancedToggle.setAttribute('aria-expanded', String(open));
+      if (advancedToggleLabel) {
+        advancedToggleLabel.textContent = open
+          ? 'Hide advanced audio options'
+          : 'Show advanced audio options';
+      }
+    };
+
+    setAdvancedState(isOpen);
     advancedToggle.addEventListener('click', () => {
       const nextState = advancedPanel.hidden;
-      advancedPanel.hidden = !nextState;
-      advancedToggle.setAttribute('aria-expanded', String(nextState));
+      setAdvancedState(nextState);
       try {
         window.sessionStorage.setItem(ADVANCED_KEY, String(nextState));
       } catch (_error) {
@@ -645,6 +663,24 @@ function setupYouTubeLogic(
   const recentList = container.querySelector('#recent-list') as HTMLElement;
   const STORAGE_KEY = 'stims-youtube-url';
   let youtubeReady = false;
+
+  const setUseButtonReadyState = () => {
+    if (!useBtn) return;
+    useBtn.disabled = !youtubeReady;
+    useBtn.setAttribute('aria-disabled', String(!youtubeReady));
+  };
+
+  const setLoadButtonValidityState = () => {
+    if (!input || !(loadBtn instanceof HTMLButtonElement)) return;
+    const videoId = controller.parseVideoId(input.value);
+    const isValid = Boolean(videoId);
+    loadBtn.disabled = !isValid;
+    loadBtn.setAttribute('aria-disabled', String(!isValid));
+    input.setAttribute(
+      'aria-invalid',
+      input.value.trim() ? String(!isValid) : 'false',
+    );
+  };
   const readStoredUrl = () => {
     try {
       return window.sessionStorage.getItem(STORAGE_KEY);
@@ -687,12 +723,14 @@ function setupYouTubeLogic(
     try {
       playerContainer.hidden = false;
       youtubeReady = false;
+      setUseButtonReadyState();
       updateStatus('Loading player…', 'success');
       await controller.loadVideo('youtube-player', id, (state) => {
         if (state === 1) {
           // Playing
           updateStatus('Ready to capture audio.', 'success');
           youtubeReady = true;
+          setUseButtonReadyState();
         }
       });
       updateStatus('Video loaded.', 'success');
@@ -701,9 +739,12 @@ function setupYouTubeLogic(
       updateStatus('Failed to load YouTube player.');
       playerContainer.hidden = true;
       youtubeReady = false;
+      setUseButtonReadyState();
     }
   };
 
+  setUseButtonReadyState();
+  setLoadButtonValidityState();
   updateRecentList();
 
   if (input) {
@@ -714,6 +755,14 @@ function setupYouTubeLogic(
     input.addEventListener('input', () => {
       writeStoredUrl(input.value);
       youtubeReady = false;
+      setUseButtonReadyState();
+      setLoadButtonValidityState();
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      if (loadBtn instanceof HTMLButtonElement && loadBtn.disabled) return;
+      loadBtn?.dispatchEvent(new Event('click'));
     });
   }
 
@@ -722,6 +771,7 @@ function setupYouTubeLogic(
     if (!videoId) {
       updateStatus('Paste a valid YouTube link.');
       youtubeReady = false;
+      setUseButtonReadyState();
       input.focus();
       return;
     }
