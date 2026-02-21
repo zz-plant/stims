@@ -167,6 +167,29 @@ describe('audio controls primary emphasis', () => {
     expect(hintPanel.textContent).toContain('Touch gestures');
     expect(hintPanel.textContent).toContain('Pinch/rotate gestures');
   });
+  test('does not auto-hide first steps before user dismisses it', () => {
+    const container = document.createElement('section');
+    const originalSetTimeout = window.setTimeout;
+    let timeoutCalls = 0;
+    window.setTimeout = ((...args: Parameters<typeof window.setTimeout>) => {
+      timeoutCalls += 1;
+      return originalSetTimeout(...args);
+    }) as typeof window.setTimeout;
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+    });
+
+    const firstSteps = container.querySelector(
+      '[data-first-steps]',
+    ) as HTMLElement;
+    expect(firstSteps.hidden).toBe(false);
+    expect(timeoutCalls).toBe(0);
+
+    window.setTimeout = originalSetTimeout;
+  });
+
   test('renders and dismisses the first-steps onboarding strip', () => {
     const container = document.createElement('section');
 
@@ -192,6 +215,31 @@ describe('audio controls primary emphasis', () => {
 
     expect(firstSteps.hidden).toBe(true);
     expect(sessionStorage.getItem('stims-first-steps-dismissed')).toBe('true');
+  });
+
+  test('renders quick-start tips with a dismiss action and persists dismissal', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      starterTips: ['Tip one', 'Tip two'],
+    });
+
+    const quickstart = container.querySelector(
+      '[data-quickstart-panel]',
+    ) as HTMLElement;
+    const dismiss = container.querySelector(
+      '[data-dismiss-quickstart]',
+    ) as HTMLButtonElement;
+
+    expect(quickstart.hidden).toBe(false);
+    dismiss.click();
+
+    expect(quickstart.hidden).toBe(true);
+    expect(sessionStorage.getItem('stims-quickstart-tips-dismissed')).toBe(
+      'true',
+    );
   });
 
   test('applies low-motion starter preset from first-steps quick action', () => {
@@ -373,6 +421,87 @@ describe('audio controls primary emphasis', () => {
 
     expect(captureButton.disabled).toBe(true);
     expect(captureButton.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  test('switches emphasis to demo row after successful demo start', async () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+    });
+
+    const demoButton = container.querySelector(
+      '#use-demo-audio',
+    ) as HTMLButtonElement;
+    demoButton.click();
+    await flush();
+
+    const micRow = container.querySelector('[data-audio-row="mic"]');
+    const demoRow = container.querySelector('[data-audio-row="demo"]');
+    const firstSteps = container.querySelector(
+      '[data-first-steps]',
+    ) as HTMLElement;
+
+    expect(micRow?.classList.contains('control-panel__row--primary')).toBe(
+      false,
+    );
+    expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
+      true,
+    );
+    expect(firstSteps.hidden).toBe(true);
+  });
+
+  test('switches emphasis back to microphone after successful mic start', async () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      preferDemoAudio: true,
+    });
+
+    const micButton = container.querySelector(
+      '#start-audio-btn',
+    ) as HTMLButtonElement;
+    micButton.click();
+    await flush();
+
+    const micRow = container.querySelector('[data-audio-row="mic"]');
+    const demoRow = container.querySelector('[data-audio-row="demo"]');
+
+    expect(micRow?.classList.contains('control-panel__row--primary')).toBe(
+      true,
+    );
+    expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
+      false,
+    );
+  });
+
+  test('shows inline YouTube URL feedback copy as validity changes', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestYouTubeAudio: async () => {},
+    });
+
+    const input = container.querySelector('#youtube-url') as HTMLInputElement;
+    const feedback = container.querySelector(
+      '[data-youtube-url-feedback]',
+    ) as HTMLElement;
+
+    expect(input.getAttribute('aria-describedby')).toBe('youtube-url-feedback');
+    expect(feedback.textContent).toContain('Paste a full YouTube link');
+
+    input.value = 'bad';
+    input.dispatchEvent(new Event('input'));
+    expect(feedback.textContent).toContain('not recognized');
+
+    input.value = 'https://youtube.com/watch?v=dQw4w9WgXcQ';
+    input.dispatchEvent(new Event('input'));
+    expect(feedback.textContent).toContain('Link looks good');
   });
 
   test('switches emphasis to demo row after microphone failure', async () => {

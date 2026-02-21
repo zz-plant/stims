@@ -115,7 +115,10 @@ export function initAudioControls(
       options.starterTips && options.starterTips.length > 0
         ? `
     <div class="control-panel__quickstart" data-quickstart-panel>
-      <span class="control-panel__label">Quick start tips</span>
+      <div class="control-panel__first-steps-header">
+        <span class="control-panel__label">Quick start tips</span>
+        <button type="button" class="control-panel__dismiss" data-dismiss-quickstart>Dismiss</button>
+      </div>
       <ul class="control-panel__tips">
         ${options.starterTips
           .slice(0, 3)
@@ -222,6 +225,7 @@ export function initAudioControls(
           />
           <button id="load-youtube" class="cta-button" type="button">Load</button>
         </div>
+        <p id="youtube-url-feedback" class="control-panel__microcopy" data-youtube-url-feedback>Paste a full YouTube link to enable Load.</p>
         <div id="recent-youtube" class="control-panel__recent" hidden>
           <span class="control-panel__label small">Recent</span>
           <div id="recent-list" class="control-panel__chip-list"></div>
@@ -271,6 +275,7 @@ export function initAudioControls(
   const FIRST_STEPS_KEY = 'stims-first-steps-dismissed';
   const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
   const QUICK_START_PRESET_KEY = 'stims-quick-start-preset';
+  const QUICKSTART_TIPS_KEY = 'stims-quickstart-tips-dismissed';
 
   const setPrimaryRow = (row: Element | null, isPrimary: boolean): void => {
     row?.classList.toggle('control-panel__row--primary', isPrimary);
@@ -390,6 +395,7 @@ export function initAudioControls(
     '[data-dismiss-first-steps]',
   ) as HTMLButtonElement | null;
 
+  let hideFirstSteps = () => {};
   if (firstStepsPanel) {
     let isDismissed = false;
     try {
@@ -398,7 +404,7 @@ export function initAudioControls(
       isDismissed = false;
     }
 
-    const hideFirstSteps = () => {
+    hideFirstSteps = () => {
       firstStepsPanel.hidden = true;
       try {
         window.sessionStorage.setItem(FIRST_STEPS_KEY, 'true');
@@ -409,12 +415,6 @@ export function initAudioControls(
 
     if (isDismissed) {
       firstStepsPanel.hidden = true;
-    } else {
-      window.setTimeout(() => {
-        if (!firstStepsPanel.hidden) {
-          hideFirstSteps();
-        }
-      }, 10000);
     }
 
     dismissFirstSteps?.addEventListener('click', hideFirstSteps);
@@ -443,6 +443,36 @@ export function initAudioControls(
     }
     updateStatus(`${starterPresetLabel} applied.`, 'success');
   });
+
+  const quickstartPanel = container.querySelector(
+    '[data-quickstart-panel]',
+  ) as HTMLElement | null;
+  const dismissQuickstart = container.querySelector(
+    '[data-dismiss-quickstart]',
+  ) as HTMLButtonElement | null;
+
+  if (quickstartPanel) {
+    let quickstartDismissed = false;
+    try {
+      quickstartDismissed =
+        window.sessionStorage.getItem(QUICKSTART_TIPS_KEY) === 'true';
+    } catch (_error) {
+      quickstartDismissed = false;
+    }
+
+    if (quickstartDismissed) {
+      quickstartPanel.hidden = true;
+    }
+
+    dismissQuickstart?.addEventListener('click', () => {
+      quickstartPanel.hidden = true;
+      try {
+        window.sessionStorage.setItem(QUICKSTART_TIPS_KEY, 'true');
+      } catch (_error) {
+        // Ignore storage errors.
+      }
+    });
+  }
 
   const gestureHintsPanel = container.querySelector(
     '[data-gesture-hints]',
@@ -501,6 +531,7 @@ export function initAudioControls(
   const handleSuccess = () => {
     options.onSuccess?.();
     showGestureHints();
+    hideFirstSteps();
   };
 
   if (options.initialStatus) {
@@ -577,6 +608,7 @@ export function initAudioControls(
         microphonePermissionState = 'granted';
         setMicrophoneButtonState();
         writeStoredSource('microphone');
+        setPreferredSource('microphone');
       },
       'Microphone access failed.',
       (message) => {
@@ -596,6 +628,7 @@ export function initAudioControls(
       async () => {
         await options.onRequestDemoAudio();
         writeStoredSource('demo');
+        setPreferredSource('demo');
       },
       'Demo audio failed to load.',
       undefined,
@@ -661,6 +694,9 @@ function setupYouTubeLogic(
     '#recent-youtube',
   ) as HTMLElement;
   const recentList = container.querySelector('#recent-list') as HTMLElement;
+  const urlFeedback = container.querySelector(
+    '[data-youtube-url-feedback]',
+  ) as HTMLElement | null;
   const STORAGE_KEY = 'stims-youtube-url';
   let youtubeReady = false;
 
@@ -672,14 +708,22 @@ function setupYouTubeLogic(
 
   const setLoadButtonValidityState = () => {
     if (!input || !(loadBtn instanceof HTMLButtonElement)) return;
+    const value = input.value.trim();
     const videoId = controller.parseVideoId(input.value);
     const isValid = Boolean(videoId);
     loadBtn.disabled = !isValid;
     loadBtn.setAttribute('aria-disabled', String(!isValid));
-    input.setAttribute(
-      'aria-invalid',
-      input.value.trim() ? String(!isValid) : 'false',
-    );
+    input.setAttribute('aria-invalid', value ? String(!isValid) : 'false');
+    if (urlFeedback) {
+      if (!value) {
+        urlFeedback.textContent = 'Paste a full YouTube link to enable Load.';
+      } else if (!isValid) {
+        urlFeedback.textContent =
+          'That link was not recognized. Try a full youtube.com/watch URL.';
+      } else {
+        urlFeedback.textContent = 'Link looks good. Press Load to continue.';
+      }
+    }
   };
   const readStoredUrl = () => {
     try {
@@ -743,6 +787,9 @@ function setupYouTubeLogic(
     }
   };
 
+  if (input) {
+    input.setAttribute('aria-describedby', 'youtube-url-feedback');
+  }
   setUseButtonReadyState();
   setLoadButtonValidityState();
   updateRecentList();
