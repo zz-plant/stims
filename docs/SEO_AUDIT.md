@@ -39,6 +39,25 @@ Other foundations remain strong: canonical tags, robots directives, JSON-LD on m
 2. Optionally add image sitemap support if image search becomes a KPI.
 3. Continue periodic production checks for `/index.html` → `/` redirect behavior.
 
+## Follow-up findings: potential search presence constraints (2026-02-21)
+
+The technical SEO baseline is healthy, but these factors may still limit search visibility growth:
+
+1. **Homepage crawl paths rely heavily on JavaScript-rendered cards.**
+   The homepage keeps the primary library container empty in source (`<main id="toy-list" class="webtoy-container"></main>`), and the full toy grid links are injected client-side. Search crawlers that execute limited JavaScript can still discover URLs through the sitemap, but they may see weaker contextual internal-link signals from the most authoritative page (`/`).
+
+2. **Static internal links on the homepage are sparse compared to inventory size.**
+   In raw HTML, only a few direct toy launch links are present (`toy.html?toy=aurora-painter`, `toy.html?toy=holy`, and `toy.html?toy=seary`) while the full catalog lives under generated `/toys/`, `/tags/`, `/moods/`, and `/capabilities/` pages. That can reduce crawl depth reinforcement if bots prioritize HTML-discoverable links.
+
+3. **Discovery pages are generated, but homepage emphasis favors app interaction over crawlable taxonomy hubs.**
+   The generated SEO surfaces (`/toys/`, `/tags/*`, `/moods/*`, `/capabilities/*`) are included in sitemap artifacts and are indexable, but they are not prominently linked in static homepage nav. This may dampen topical clustering signals despite good metadata and structured data.
+
+### Next actions for visibility growth
+
+1. Add persistent static links from homepage chrome/footer to `/toys/`, `/tags/`, `/moods/`, and `/capabilities/`.
+2. Add a minimal server-rendered "top toys" list in homepage HTML (in addition to JS rendering) to strengthen internal links on first crawl.
+3. Track indexing and impressions in Google Search Console/Bing Webmaster Tools per page group (`/toys/`, `/tags/`, `/moods/`) to confirm which section is underperforming.
+
 ## Programmatic growth opportunities (next cycle)
 
 1. **Automate first-party OG image generation per toy page**  
