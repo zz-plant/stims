@@ -115,7 +115,10 @@ export function initAudioControls(
       options.starterTips && options.starterTips.length > 0
         ? `
     <div class="control-panel__quickstart" data-quickstart-panel>
-      <span class="control-panel__label">Quick start tips</span>
+      <div class="control-panel__first-steps-header">
+        <span class="control-panel__label">Quick start tips</span>
+        <button type="button" class="control-panel__dismiss" data-dismiss-quickstart>Dismiss</button>
+      </div>
       <ul class="control-panel__tips">
         ${options.starterTips
           .slice(0, 3)
@@ -156,14 +159,15 @@ export function initAudioControls(
         type="button"
         class="control-panel__advanced-toggle"
         aria-expanded="false"
+        aria-controls="advanced-audio-panel"
         data-advanced-toggle
       >
-        <span class="control-panel__advanced-title">Advanced audio options</span>
+        <span class="control-panel__advanced-title" data-advanced-toggle-label>Show advanced audio options</span>
         <span class="control-panel__advanced-hint">Tab or YouTube capture for media already playing</span>
       </button>
     </div>
-    <p class="control-panel__advanced-helper">Use these when you want visuals to react to music or videos already playing in your browser.</p>
-    <div class="control-panel__advanced" data-advanced-panel hidden>
+    <p class="control-panel__advanced-helper" data-advanced-helper hidden>Use these when you want visuals to react to music or videos already playing in your browser.</p>
+    <div id="advanced-audio-panel" class="control-panel__advanced" data-advanced-panel hidden>
       ${
         options.onRequestTabAudio
           ? `
@@ -221,6 +225,7 @@ export function initAudioControls(
           />
           <button id="load-youtube" class="cta-button" type="button">Load</button>
         </div>
+        <p id="youtube-url-feedback" class="control-panel__microcopy" data-youtube-url-feedback>Paste a full YouTube link to enable Load.</p>
         <div id="recent-youtube" class="control-panel__recent" hidden>
           <span class="control-panel__label small">Recent</span>
           <div id="recent-list" class="control-panel__chip-list"></div>
@@ -260,10 +265,17 @@ export function initAudioControls(
   const advancedPanel = container.querySelector(
     '[data-advanced-panel]',
   ) as HTMLElement | null;
+  const advancedHelper = container.querySelector(
+    '[data-advanced-helper]',
+  ) as HTMLElement | null;
+  const advancedToggleLabel = container.querySelector(
+    '[data-advanced-toggle-label]',
+  ) as HTMLElement | null;
   const ADVANCED_KEY = 'stims-audio-advanced-open';
   const FIRST_STEPS_KEY = 'stims-first-steps-dismissed';
   const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
   const QUICK_START_PRESET_KEY = 'stims-quick-start-preset';
+  const QUICKSTART_TIPS_KEY = 'stims-quickstart-tips-dismissed';
 
   const setPrimaryRow = (row: Element | null, isPrimary: boolean): void => {
     row?.classList.toggle('control-panel__row--primary', isPrimary);
@@ -383,6 +395,7 @@ export function initAudioControls(
     '[data-dismiss-first-steps]',
   ) as HTMLButtonElement | null;
 
+  let hideFirstSteps = () => {};
   if (firstStepsPanel) {
     let isDismissed = false;
     try {
@@ -391,7 +404,7 @@ export function initAudioControls(
       isDismissed = false;
     }
 
-    const hideFirstSteps = () => {
+    hideFirstSteps = () => {
       firstStepsPanel.hidden = true;
       try {
         window.sessionStorage.setItem(FIRST_STEPS_KEY, 'true');
@@ -402,12 +415,6 @@ export function initAudioControls(
 
     if (isDismissed) {
       firstStepsPanel.hidden = true;
-    } else {
-      window.setTimeout(() => {
-        if (!firstStepsPanel.hidden) {
-          hideFirstSteps();
-        }
-      }, 10000);
     }
 
     dismissFirstSteps?.addEventListener('click', hideFirstSteps);
@@ -436,6 +443,36 @@ export function initAudioControls(
     }
     updateStatus(`${starterPresetLabel} applied.`, 'success');
   });
+
+  const quickstartPanel = container.querySelector(
+    '[data-quickstart-panel]',
+  ) as HTMLElement | null;
+  const dismissQuickstart = container.querySelector(
+    '[data-dismiss-quickstart]',
+  ) as HTMLButtonElement | null;
+
+  if (quickstartPanel) {
+    let quickstartDismissed = false;
+    try {
+      quickstartDismissed =
+        window.sessionStorage.getItem(QUICKSTART_TIPS_KEY) === 'true';
+    } catch (_error) {
+      quickstartDismissed = false;
+    }
+
+    if (quickstartDismissed) {
+      quickstartPanel.hidden = true;
+    }
+
+    dismissQuickstart?.addEventListener('click', () => {
+      quickstartPanel.hidden = true;
+      try {
+        window.sessionStorage.setItem(QUICKSTART_TIPS_KEY, 'true');
+      } catch (_error) {
+        // Ignore storage errors.
+      }
+    });
+  }
 
   const gestureHintsPanel = container.querySelector(
     '[data-gesture-hints]',
@@ -494,6 +531,7 @@ export function initAudioControls(
   const handleSuccess = () => {
     options.onSuccess?.();
     showGestureHints();
+    hideFirstSteps();
   };
 
   if (options.initialStatus) {
@@ -510,12 +548,23 @@ export function initAudioControls(
     } catch (_error) {
       isOpen = false;
     }
-    advancedPanel.hidden = !isOpen;
-    advancedToggle.setAttribute('aria-expanded', String(isOpen));
+    const setAdvancedState = (open: boolean) => {
+      advancedPanel.hidden = !open;
+      if (advancedHelper) {
+        advancedHelper.hidden = !open;
+      }
+      advancedToggle.setAttribute('aria-expanded', String(open));
+      if (advancedToggleLabel) {
+        advancedToggleLabel.textContent = open
+          ? 'Hide advanced audio options'
+          : 'Show advanced audio options';
+      }
+    };
+
+    setAdvancedState(isOpen);
     advancedToggle.addEventListener('click', () => {
       const nextState = advancedPanel.hidden;
-      advancedPanel.hidden = !nextState;
-      advancedToggle.setAttribute('aria-expanded', String(nextState));
+      setAdvancedState(nextState);
       try {
         window.sessionStorage.setItem(ADVANCED_KEY, String(nextState));
       } catch (_error) {
@@ -559,6 +608,7 @@ export function initAudioControls(
         microphonePermissionState = 'granted';
         setMicrophoneButtonState();
         writeStoredSource('microphone');
+        setPreferredSource('microphone');
       },
       'Microphone access failed.',
       (message) => {
@@ -578,6 +628,7 @@ export function initAudioControls(
       async () => {
         await options.onRequestDemoAudio();
         writeStoredSource('demo');
+        setPreferredSource('demo');
       },
       'Demo audio failed to load.',
       undefined,
@@ -643,8 +694,37 @@ function setupYouTubeLogic(
     '#recent-youtube',
   ) as HTMLElement;
   const recentList = container.querySelector('#recent-list') as HTMLElement;
+  const urlFeedback = container.querySelector(
+    '[data-youtube-url-feedback]',
+  ) as HTMLElement | null;
   const STORAGE_KEY = 'stims-youtube-url';
   let youtubeReady = false;
+
+  const setUseButtonReadyState = () => {
+    if (!useBtn) return;
+    useBtn.disabled = !youtubeReady;
+    useBtn.setAttribute('aria-disabled', String(!youtubeReady));
+  };
+
+  const setLoadButtonValidityState = () => {
+    if (!input || !(loadBtn instanceof HTMLButtonElement)) return;
+    const value = input.value.trim();
+    const videoId = controller.parseVideoId(input.value);
+    const isValid = Boolean(videoId);
+    loadBtn.disabled = !isValid;
+    loadBtn.setAttribute('aria-disabled', String(!isValid));
+    input.setAttribute('aria-invalid', value ? String(!isValid) : 'false');
+    if (urlFeedback) {
+      if (!value) {
+        urlFeedback.textContent = 'Paste a full YouTube link to enable Load.';
+      } else if (!isValid) {
+        urlFeedback.textContent =
+          'That link was not recognized. Try a full youtube.com/watch URL.';
+      } else {
+        urlFeedback.textContent = 'Link looks good. Press Load to continue.';
+      }
+    }
+  };
   const readStoredUrl = () => {
     try {
       return window.sessionStorage.getItem(STORAGE_KEY);
@@ -687,12 +767,14 @@ function setupYouTubeLogic(
     try {
       playerContainer.hidden = false;
       youtubeReady = false;
+      setUseButtonReadyState();
       updateStatus('Loading player…', 'success');
       await controller.loadVideo('youtube-player', id, (state) => {
         if (state === 1) {
           // Playing
           updateStatus('Ready to capture audio.', 'success');
           youtubeReady = true;
+          setUseButtonReadyState();
         }
       });
       updateStatus('Video loaded.', 'success');
@@ -701,9 +783,15 @@ function setupYouTubeLogic(
       updateStatus('Failed to load YouTube player.');
       playerContainer.hidden = true;
       youtubeReady = false;
+      setUseButtonReadyState();
     }
   };
 
+  if (input) {
+    input.setAttribute('aria-describedby', 'youtube-url-feedback');
+  }
+  setUseButtonReadyState();
+  setLoadButtonValidityState();
   updateRecentList();
 
   if (input) {
@@ -714,6 +802,14 @@ function setupYouTubeLogic(
     input.addEventListener('input', () => {
       writeStoredUrl(input.value);
       youtubeReady = false;
+      setUseButtonReadyState();
+      setLoadButtonValidityState();
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      if (loadBtn instanceof HTMLButtonElement && loadBtn.disabled) return;
+      loadBtn?.dispatchEvent(new Event('click'));
     });
   }
 
@@ -722,6 +818,7 @@ function setupYouTubeLogic(
     if (!videoId) {
       updateStatus('Paste a valid YouTube link.');
       youtubeReady = false;
+      setUseButtonReadyState();
       input.focus();
       return;
     }
