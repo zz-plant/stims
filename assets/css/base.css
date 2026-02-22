@@ -1896,7 +1896,7 @@ body {
       calc(env(safe-area-inset-top) + 72px)
     );
     max-height: min(
-      36svh,
+      48svh,
       calc(
         100dvh -
         var(--toy-nav-floating-offset, 108px) -
@@ -1908,7 +1908,7 @@ body {
 
   :root[data-toy-controls-expanded="true"] .control-panel--floating {
     max-height: min(
-      34svh,
+      46svh,
       calc(
         100dvh -
         var(--toy-nav-floating-offset, 108px) -

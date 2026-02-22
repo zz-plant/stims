@@ -47,15 +47,14 @@ describe('toy view helpers', () => {
     expect(status?.classList.contains('is-warning')).toBe(true);
 
     const buttons = status?.querySelectorAll('button');
-    expect(buttons?.length).toBe(3);
+    expect(buttons?.length).toBe(2);
 
     buttons?.[0].dispatchEvent(new Event('click', { bubbles: true }));
     buttons?.[1].dispatchEvent(new Event('click', { bubbles: true }));
-    buttons?.[2].dispatchEvent(new Event('click', { bubbles: true }));
 
-    expect(onBack).toHaveBeenCalledTimes(1);
-    expect(onBrowseCompatible).toHaveBeenCalledTimes(1);
     expect(onContinue).toHaveBeenCalledTimes(1);
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(onBrowseCompatible).toHaveBeenCalledTimes(0);
   });
 
   test('renders compatibility mode recovery action when available', () => {
@@ -76,10 +75,10 @@ describe('toy view helpers', () => {
       'Compatibility mode is enabled',
     );
     const buttons = status?.querySelectorAll('button');
-    expect(buttons?.length).toBe(4);
-    expect(buttons?.[2]?.textContent).toContain('Use WebGPU');
+    expect(buttons?.length).toBe(3);
+    expect(buttons?.[1]?.textContent).toContain('Use WebGPU');
 
-    buttons?.[2].dispatchEvent(new Event('click', { bubbles: true }));
+    buttons?.[1].dispatchEvent(new Event('click', { bubbles: true }));
     expect(onUseWebGPU).toHaveBeenCalledTimes(1);
   });
 
