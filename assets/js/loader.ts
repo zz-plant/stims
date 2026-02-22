@@ -364,12 +364,14 @@ export function createLoader({
     pushState: boolean,
     preferDemoAudio: boolean,
     initialCapabilities?: Awaited<ReturnType<typeof rendererCapabilities>>,
+    forceRendererRetry = false,
   ) => {
     void prewarmRendererCapabilitiesFn();
     void prewarmMicrophoneFn();
     const capabilityDecision = await assessToyCapabilities({
       toy,
-      rendererCapabilities,
+      rendererCapabilities: () =>
+        rendererCapabilities({ forceRetry: forceRendererRetry }),
       ensureWebGLCheck,
       initialCapabilities,
     });
@@ -533,18 +535,23 @@ export function createLoader({
         onBrowseCompatible: browseCompatibleToys,
         details: capabilities.fallbackReason,
         compatibilityModeEnabled,
-        onUseWebGPU: compatibilityModeEnabled
-          ? () => {
-              setCompatibilityMode(false);
-              view.clearActiveToyContainer();
-              void loadToy(toy.slug, {
-                pushState,
-                preferDemoAudio,
-                startFlow: flowActive,
-                startPartyMode: partyModeActive,
-              });
-            }
-          : undefined,
+        shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
+        onUseWebGPU:
+          compatibilityModeEnabled || capabilities.shouldRetryWebGPU
+            ? () => {
+                if (compatibilityModeEnabled) {
+                  setCompatibilityMode(false);
+                }
+                view.clearActiveToyContainer();
+                void loadToy(toy.slug, {
+                  pushState,
+                  preferDemoAudio,
+                  startFlow: flowActive,
+                  startPartyMode: partyModeActive,
+                  forceRendererRetry: true,
+                });
+              }
+            : undefined,
         onContinue: capabilityDecision.allowWebGLFallback
           ? () => {
               view.clearActiveToyContainer();
@@ -566,11 +573,13 @@ export function createLoader({
       preferDemoAudio = false,
       startFlow,
       startPartyMode,
+      forceRendererRetry = false,
     }: {
       pushState?: boolean;
       preferDemoAudio?: boolean;
       startFlow?: boolean;
       startPartyMode?: boolean;
+      forceRendererRetry?: boolean;
     } = {},
   ) => {
     initInteractionTracking();
@@ -597,7 +606,13 @@ export function createLoader({
     }
 
     if (toy.type === 'module') {
-      await startModuleToy(toy, pushState, preferDemoAudio);
+      await startModuleToy(
+        toy,
+        pushState,
+        preferDemoAudio,
+        undefined,
+        forceRendererRetry,
+      );
       return;
     }
 

@@ -383,6 +383,49 @@ describe('WebGPU requirements', () => {
     expect(status?.classList.contains('is-warning')).toBe(true);
   });
 
+  test('can retry WebGPU when probing failed on a supported device', async () => {
+    capabilitiesMock.getRendererCapabilities
+      .mockResolvedValueOnce({
+        preferredBackend: 'webgl',
+        adapter: null,
+        device: null,
+        triedWebGPU: true,
+        fallbackReason: 'Unable to acquire a WebGPU device.',
+        shouldRetryWebGPU: true,
+      })
+      .mockResolvedValueOnce(defaultCapabilities);
+
+    const { loader } = await buildLoader({
+      toys: [
+        {
+          slug: 'webgpu-toy',
+          title: 'Fancy WebGPU',
+          module: './__mocks__/fake-module.js',
+          type: 'module',
+          requiresWebGPU: true,
+          allowWebGLFallback: true,
+        },
+      ],
+    });
+
+    await loader.loadToy('webgpu-toy');
+
+    const retryWebGPUButton = Array.from(
+      document.querySelectorAll('.active-toy-actions button'),
+    ).find((button) => button.textContent?.includes('Retry WebGPU'));
+    expect(retryWebGPUButton).not.toBeUndefined();
+
+    retryWebGPUButton?.dispatchEvent(new Event('click', { bubbles: true }));
+    // eslint-disable-next-line no-undef
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(capabilitiesMock.getRendererCapabilities).toHaveBeenNthCalledWith(
+      2,
+      { forceRetry: true },
+    );
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+  });
+
   test('can disable compatibility mode and retry with WebGPU', async () => {
     capabilitiesMock.getRendererCapabilities
       .mockResolvedValueOnce({
