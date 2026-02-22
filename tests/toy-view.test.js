@@ -3,7 +3,8 @@ import { createToyView } from '../assets/js/toy-view.ts';
 
 describe('toy view helpers', () => {
   beforeEach(() => {
-    document.body.innerHTML = '<div id="toy-list"></div>';
+    document.body.innerHTML =
+      '<a class="skip-link" href="#toy-list">Skip to library</a><div id="toy-list"></div>';
   });
 
   afterEach(() => {
@@ -33,6 +34,23 @@ describe('toy view helpers', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
+  test('hides library skip link while a toy is active', () => {
+    const view = createToyView();
+
+    const skipLink = document.querySelector('.skip-link');
+    expect(skipLink?.hidden).toBe(false);
+
+    view.showActiveToyView(mock(), {
+      slug: 'demo',
+      title: 'Demo Toy',
+    });
+
+    expect(skipLink?.hidden).toBe(true);
+
+    view.showLibraryView();
+    expect(skipLink?.hidden).toBe(false);
+  });
+
   test('renders capability error with fallback actions', () => {
     const view = createToyView();
     const onBack = mock();
@@ -47,15 +65,14 @@ describe('toy view helpers', () => {
     expect(status?.classList.contains('is-warning')).toBe(true);
 
     const buttons = status?.querySelectorAll('button');
-    expect(buttons?.length).toBe(3);
+    expect(buttons?.length).toBe(2);
 
     buttons?.[0].dispatchEvent(new Event('click', { bubbles: true }));
     buttons?.[1].dispatchEvent(new Event('click', { bubbles: true }));
-    buttons?.[2].dispatchEvent(new Event('click', { bubbles: true }));
 
-    expect(onBack).toHaveBeenCalledTimes(1);
-    expect(onBrowseCompatible).toHaveBeenCalledTimes(1);
     expect(onContinue).toHaveBeenCalledTimes(1);
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(onBrowseCompatible).toHaveBeenCalledTimes(0);
   });
 
   test('renders compatibility mode recovery action when available', () => {
@@ -76,10 +93,10 @@ describe('toy view helpers', () => {
       'Compatibility mode is enabled',
     );
     const buttons = status?.querySelectorAll('button');
-    expect(buttons?.length).toBe(4);
-    expect(buttons?.[2]?.textContent).toContain('Use WebGPU');
+    expect(buttons?.length).toBe(3);
+    expect(buttons?.[1]?.textContent).toContain('Use WebGPU');
 
-    buttons?.[2].dispatchEvent(new Event('click', { bubbles: true }));
+    buttons?.[1].dispatchEvent(new Event('click', { bubbles: true }));
     expect(onUseWebGPU).toHaveBeenCalledTimes(1);
   });
 

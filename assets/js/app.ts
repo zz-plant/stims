@@ -163,9 +163,18 @@ const startApp = async () => {
     initAgentAPI();
 
     let loaderStarted = false;
+    const hidePersistentBackLink = () => {
+      const escapeShell =
+        persistentBackLink?.closest<HTMLElement>('.toy-shell-escape');
+      if (escapeShell) {
+        escapeShell.hidden = true;
+      }
+    };
+
     const startLoaderIfNeeded = () => {
       if (loaderStarted) return;
       loaderStarted = true;
+      hidePersistentBackLink();
       initNavigation();
       void loadFromQuery();
     };
