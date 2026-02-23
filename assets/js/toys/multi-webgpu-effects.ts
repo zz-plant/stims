@@ -105,7 +105,7 @@ async function initGpuContext({
   });
   const audioState = device.createBuffer({
     size: audioBinCount * 4,
-    usage: usage.STORAGE | usage.COPY_SRC,
+    usage: usage.STORAGE | usage.COPY_SRC | usage.COPY_DST,
   });
   const audioReadback = device.createBuffer({
     size: audioBinCount * 4,
@@ -114,7 +114,7 @@ async function initGpuContext({
 
   const particleState = device.createBuffer({
     size: particleCount * particleStride * 4,
-    usage: usage.STORAGE | usage.COPY_SRC,
+    usage: usage.STORAGE | usage.COPY_SRC | usage.COPY_DST,
   });
   const particleReadback = device.createBuffer({
     size: particleCount * 4 * 4,
@@ -143,7 +143,7 @@ async function initGpuContext({
 
   const heightfieldState = device.createBuffer({
     size: heightfieldCells * 4,
-    usage: usage.STORAGE | usage.COPY_SRC,
+    usage: usage.STORAGE | usage.COPY_SRC | usage.COPY_DST,
   });
   const heightfieldReadback = device.createBuffer({
     size: heightfieldCells * 4,
@@ -228,14 +228,15 @@ async function initGpuContext({
           sin(p.x * 0.05 - p.w)
         );
 
-        v.xyz = v.xyz * 0.985 + wobble * swirl + normalize(p.xyz + vec3<f32>(0.001)) * pulse * 0.02;
-        p.xyz = p.xyz + v.xyz * uniforms.delta * 60.0;
-        p.w = p.w + uniforms.delta * (0.5 + uniforms.highs);
+        let newV = v.xyz * 0.985 + wobble * swirl + normalize(p.xyz + vec3<f32>(0.001)) * pulse * 0.02;
+        v = vec4<f32>(newV, v.w);
+        let newP = p.xyz + v.xyz * uniforms.delta * 60.0;
+        p = vec4<f32>(newP, p.w + uniforms.delta * (0.5 + uniforms.highs));
 
         let r = length(p.xyz);
         if (r > 280.0) {
-          p.xyz = p.xyz * (240.0 / max(r, 0.001));
-          v.xyz = v.xyz * -0.35;
+          p = vec4<f32>(p.xyz * (240.0 / max(r, 0.001)), p.w);
+          v = vec4<f32>(v.xyz * -0.35, v.w);
         }
 
         particles[positionIndex] = p;

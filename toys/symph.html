@@ -561,6 +561,9 @@
             analyser: ctxAudio.analyser,
             data: dataArray,
           });
+          const gpuAudio = webgpuSnapshot?.audio || { bass: 0, mids: 0, highs: 0, flux: 0 };
+          const gpuHeight = webgpuSnapshot?.heightfield || { average: 0, peak: 0 };
+
           const weightedEnergy = getWeightedEnergy(bands, {
             weights: { bass: 0.65, mid: 0.25, treble: 0.1 },
             boost: 1.4,
@@ -588,11 +591,11 @@
 
           bassPulse = Math.max(
             bassPulse * 0.84,
-            bands.bass * 0.85 + webgpuSnapshot.audio.bass * 0.15
+            bands.bass * 0.85 + gpuAudio.bass * 0.15
           );
           trebleShimmer = Math.max(
             trebleShimmer * 0.78,
-            bands.treble * 0.85 + webgpuSnapshot.audio.highs * 0.15
+            bands.treble * 0.85 + gpuAudio.highs * 0.15
           );
           const audioDrive = Math.min(
             255,
@@ -603,7 +606,7 @@
             1 +
             trebleShimmer * 0.75 +
             bassPulse * 0.35 +
-            webgpuSnapshot.audio.mids * 0.25;
+            gpuAudio.mids * 0.25;
           reactiveColorOffset = baseColorOffset.map((value) =>
             Math.min(1, value * colorBoost + trebleShimmer * 0.08)
           );
@@ -630,18 +633,21 @@
               baseColorOffset[2] * burstEnergy * 1.2,
             ]
           : [0, 0, 0];
+        
+        const safeHeightAvg = webgpuSnapshot?.heightfield?.average || 0;
         const rippleAmp =
           rippleBase *
           (1.0 +
             (burstsEnabled ? burstEnergy * 0.8 : 0) +
             bassPulse * 0.6 +
-            webgpuSnapshot.heightfield.average * 0.9);
+            safeHeightAvg * 0.9);
         gl.uniform3fv(burstTintUniformLocation, burstTint);
         gl.uniform1f(rippleUniformLocation, rippleAmp);
 
+        const safeAudioFlux = webgpuSnapshot?.audio?.flux || 0;
         burstEnergy = Math.max(
           0,
-          burstEnergy - 0.015 + webgpuSnapshot.audio.flux * 0.002
+          burstEnergy - 0.015 + safeAudioFlux * 0.002
         );
         bassPulse *= 0.92;
         trebleShimmer *= 0.9;
@@ -652,22 +658,51 @@
         updateSparkles();
       }
 
-      void startAudio(animate, { fallbackToSynthetic: true }, {
-        onSuccess: (ctx) => {
-          analyserRef = ctx.analyser;
-          clearError('error-message');
-        },
-        onError: (err) => {
-          showError(
-            'error-message',
-            'Microphone access is unavailable. Visuals will run without audio reactivity.'
-          );
-          funControls.setAudioAvailable(false);
-          audioData = adapter.transformAudioValue(0);
-          console.error('Error capturing audio: ', err);
-          toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
-        },
-      }).catch(() => {});
+      const urlParams = new URLSearchParams(window.location.search);
+      const isEmbedded = urlParams.get('embed') === '1';
+
+      const doStartAudio = () => {
+        return startAudio(animate, { fallbackToSynthetic: true }, {
+          onSuccess: (ctx) => {
+            analyserRef = ctx.analyser;
+            clearError('error-message');
+          },
+          onError: (err) => {
+            showError(
+              'error-message',
+              'Microphone access is unavailable. Visuals will run without audio reactivity.'
+            );
+            funControls.setAudioAvailable(false);
+            audioData = adapter.transformAudioValue(0);
+            console.error('Error capturing audio: ', err);
+            toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
+          },
+        });
+      };
+
+      if (isEmbedded) {
+        // Expose startAudio to the parent proxy
+        window.exposedStartAudio = async (request) => {
+          return startAudio(animate, Object.assign({ fallbackToSynthetic: true }, request), {
+             onSuccess: (ctx) => {
+               analyserRef = ctx.analyser;
+               clearError('error-message');
+             },
+             onError: (err) => {
+               showError(
+                 'error-message',
+                 'Microphone access is unavailable. Visuals will run without audio reactivity.'
+               );
+               funControls.setAudioAvailable(false);
+               audioData = adapter.transformAudioValue(0);
+               console.error('Error capturing audio: ', err);
+               toy.renderer.setAnimationLoop(() => animate({ toy, analyser: null }));
+             }
+          });
+        };
+      } else {
+        doStartAudio().catch(() => {});
+      }
 
       const unifiedInput = createUnifiedInput({
         target: canvas,
