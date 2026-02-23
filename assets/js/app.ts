@@ -309,6 +309,7 @@ const startApp = async () => {
       onComplete: handlePreflightReady,
       onRetry: handlePreflightReady,
       host: document.body,
+      showCloseButton: true,
     });
 
     if (shouldSkipPreflightForSession) {
