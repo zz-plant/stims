@@ -96,7 +96,12 @@ export function startPageToy({
         };
 
       const isDemo =
-        request === true || request === 'sample' || (request && typeof request === 'object' && 'source' in request && request.source === 'demo');
+        request === true ||
+        request === 'sample' ||
+        (request &&
+          typeof request === 'object' &&
+          'source' in request &&
+          request.source === 'demo');
       const childRequest = isDemo
         ? { preferSynthetic: true, fallbackToSynthetic: true }
         : request;
@@ -121,9 +126,12 @@ export function startPageToy({
     },
   };
 
-  // Register the proxy onto the main window for app.ts to use
-  (window as any).startAudio = activeToy.startAudio;
-  (window as any).startAudioFallback = () =>
+  const globalWindow = window as Window & {
+    startAudio?: typeof activeToy.startAudio;
+    startAudioFallback?: () => Promise<unknown> | undefined;
+  };
+  globalWindow.startAudio = activeToy.startAudio;
+  globalWindow.startAudioFallback = () =>
     activeToy.startAudio({ preferSynthetic: true });
 
   defaultToyLifecycle.adoptActiveToy(activeToy);
