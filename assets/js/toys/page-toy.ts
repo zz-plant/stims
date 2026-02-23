@@ -89,33 +89,42 @@ export function startPageToy({
     },
     // Expose startAudio to the parent wrapper by proxying it
     // to the iframe's contentWindow where the toy actually loads.
-    startAudio: async (request: any) => {
-      const targetWindow = frame.contentWindow as HTMLIFrameElement['contentWindow'] & {
-        exposedStartAudio?: (req: any) => Promise<unknown>;
-      };
-      
-      const isDemo = request === true || request === 'sample' || request?.source === 'demo';
-      const childRequest = isDemo ? { preferSynthetic: true, fallbackToSynthetic: true } : request;
-      
+    startAudio: async (request: unknown) => {
+      const targetWindow =
+        frame.contentWindow as HTMLIFrameElement['contentWindow'] & {
+          exposedStartAudio?: (req: unknown) => Promise<unknown>;
+        };
+
+      const isDemo =
+        request === true || request === 'sample' || (request && typeof request === 'object' && 'source' in request && request.source === 'demo');
+      const childRequest = isDemo
+        ? { preferSynthetic: true, fallbackToSynthetic: true }
+        : request;
+
       if (targetWindow?.exposedStartAudio) {
         return targetWindow.exposedStartAudio(childRequest);
       }
-      
-      console.warn('Toy iframe did not immediately expose startAudio, waiting...');
+
+      console.warn(
+        'Toy iframe did not immediately expose startAudio, waiting...',
+      );
       for (let i = 0; i < 20; i++) {
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise((r) => setTimeout(r, 100));
         if (targetWindow?.exposedStartAudio) {
           return targetWindow.exposedStartAudio(childRequest);
         }
       }
-      
-      throw new Error('Page toy did not expose startAudio to the parent window.');
-    }
+
+      throw new Error(
+        'Page toy did not expose startAudio to the parent window.',
+      );
+    },
   };
 
   // Register the proxy onto the main window for app.ts to use
   (window as any).startAudio = activeToy.startAudio;
-  (window as any).startAudioFallback = () => activeToy.startAudio({ preferSynthetic: true });
+  (window as any).startAudioFallback = () =>
+    activeToy.startAudio({ preferSynthetic: true });
 
   defaultToyLifecycle.adoptActiveToy(activeToy);
   target.appendChild(wrapper);
