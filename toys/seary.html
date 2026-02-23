@@ -619,13 +619,14 @@
         return { lowFreq, midFreq, highFreq };
       }
 
-      async function initializeAudio() {
+      async function initializeAudio(request = null) {
         lastRenderTime = 0;
         renderElapsed = 0;
-        const options =
+        const options = request || (
           audioSelect.value === 'device'
             ? { preferSynthetic: true, fftSize: 256 }
-            : { fftSize: 256, fallbackToSynthetic: true };
+            : { fftSize: 256, fallbackToSynthetic: true }
+        );
 
         try {
           await startAudio(animate, options, {
@@ -652,8 +653,18 @@
         }
       }
 
-      audioSelect.addEventListener('change', initializeAudio);
-      initializeAudio();
+      audioSelect.addEventListener('change', () => initializeAudio());
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const isEmbedded = urlParams.get('embed') === '1';
+
+      if (isEmbedded) {
+        window.exposedStartAudio = async (request) => {
+          return initializeAudio(request);
+        };
+      } else {
+        initializeAudio();
+      }
 
       // Render loop
       function animate(ctxAudio) {
