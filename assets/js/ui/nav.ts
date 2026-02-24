@@ -265,17 +265,26 @@ function renderToyNav(
       </div>
     </div>
     <div class="active-toy-nav__actions" id="toy-nav-actions" data-toy-actions-expanded="true">
-      <div class="renderer-status-container"></div>
-      ${
-        options.onNextToy
-          ? `<div class="toy-nav__next-wrapper">
-              <button type="button" class="toy-nav__next" data-next-toy="true">
-                Next stim
-              </button>
-              <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
-            </div>`
-          : ''
-      }
+      <div class="active-toy-nav__actions-primary">
+        <div class="renderer-status-container"></div>
+        ${
+          options.onNextToy
+            ? `<div class="toy-nav__next-wrapper">
+                <button type="button" class="toy-nav__next" data-next-toy="true">
+                  Next stim
+                </button>
+                <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
+              </div>`
+            : ''
+        }
+        <div class="toy-nav__share-wrapper">
+          <button type="button" class="toy-nav__share" data-share-toy="true">
+            Copy share link
+          </button>
+          <span class="toy-nav__share-status" role="status" aria-live="polite"></span>
+        </div>
+      </div>
+      <div class="active-toy-nav__actions-secondary">
       ${
         options.onToggleHaptics && options.hapticsSupported
           ? `<div class="toy-nav__flow-wrapper">
@@ -292,15 +301,10 @@ function renderToyNav(
         </button>
         <span class="toy-nav__pip-status" role="status" aria-live="polite"></span>
       </div>
-      <div class="toy-nav__share-wrapper">
-        <button type="button" class="toy-nav__share" data-share-toy="true">
-          Copy share link
-        </button>
-        <span class="toy-nav__share-status" role="status" aria-live="polite"></span>
-      </div>
       <button type="button" class="toy-nav__back" data-back-to-library="true">
         <span aria-hidden="true">←</span><span>Back to library</span>
       </button>
+      </div>
     </div>
   `;
 
@@ -350,7 +354,9 @@ function renderToyNav(
       expanded ? 'true' : 'false',
     );
     if (actionsToggleBtn) {
-      actionsToggleBtn.textContent = expanded ? 'Hide controls' : 'Controls';
+      actionsToggleBtn.textContent = expanded
+        ? 'Hide extra controls'
+        : 'More controls';
     }
   };
 

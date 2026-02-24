@@ -122,3 +122,39 @@ describe('library navigation interactions', () => {
     expect(getListenerCount()).toBe(1);
   });
 });
+
+describe('toy navigation visibility states', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="nav"></div>';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    window.matchMedia = originalMatchMedia;
+  });
+
+  test('mobile view keeps primary actions visible while extra controls are collapsed by default', () => {
+    const { matchMedia } = createMatchMediaStub();
+    window.matchMedia = matchMedia;
+
+    const container = document.getElementById('nav') as HTMLElement;
+    initNavigation(container, { mode: 'toy', title: 'Spectrum Bloom' });
+
+    const actions = container.querySelector('#toy-nav-actions') as HTMLElement;
+    const toggle = container.querySelector(
+      '[data-toy-actions-toggle="true"]',
+    ) as HTMLButtonElement;
+    const primary = container.querySelector('.active-toy-nav__actions-primary');
+    const secondary = container.querySelector(
+      '.active-toy-nav__actions-secondary',
+    );
+
+    expect(actions.dataset.toyActionsExpanded).toBe('false');
+    expect(toggle.textContent).toBe('More controls');
+    expect(primary).toBeTruthy();
+    expect(secondary).toBeTruthy();
+    expect(document.documentElement.dataset.toyControlsExpanded).toBe('false');
+  });
+});
