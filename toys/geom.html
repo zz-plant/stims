@@ -41,14 +41,13 @@
         width: 100%;
       }
       #error-message {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        color: #ff0000;
-        background: rgba(0, 0, 0, 0.7);
+        color: #ff9aa2;
+        background: rgba(38, 5, 10, 0.7);
+        border: 1px solid rgba(255, 154, 162, 0.45);
         padding: 10px;
-        border-radius: 5px;
-        z-index: 10;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        line-height: 1.4;
       }
     </style>
   </head>
@@ -98,8 +97,8 @@
           value="0.25"
         />
       </div>
+      <div id="error-message" style="display: none"></div>
     </div>
-    <div id="error-message" style="display: none"></div>
     <canvas id="gameCanvas" class="toy-canvas"></canvas>
     <script type="module">
       import { getContextFrequencyData } from '../assets/js/core/animation-loop.ts';
