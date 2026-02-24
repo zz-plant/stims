@@ -378,6 +378,7 @@ footer {
   align-items: center;
   gap: 0.55rem;
   flex-wrap: wrap;
+  row-gap: 0.45rem;
 }
 
 .nav-toggle {
@@ -467,6 +468,7 @@ footer {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -2602,6 +2604,8 @@ html.light .active-filters__label {
   gap: 0.65rem;
   position: relative;
   scroll-padding-inline: 0.25rem;
+  overflow-x: auto;
+  scrollbar-gutter: stable both-edges;
 }
 
 .filter-actions {
@@ -2662,6 +2666,7 @@ html.light .active-filters__label {
     border-color 0.2s ease,
     background 0.2s ease;
   touch-action: manipulation;
+  white-space: nowrap;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -3349,6 +3354,16 @@ footer {
   align-items: flex-start;
   box-shadow: var(--shadow-soft);
   backdrop-filter: none;
+  min-height: 100%;
+}
+
+.feature-card h3,
+.feature-card p {
+  overflow-wrap: anywhere;
+}
+
+.feature-card .text-link {
+  margin-top: auto;
 }
 
 .feature-card ul {
