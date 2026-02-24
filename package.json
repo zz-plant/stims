@@ -38,6 +38,7 @@
     "dev": "vite",
     "dev:host": "vite --host",
     "dev:check": "bun scripts/dev-check.mjs || node scripts/dev-check.mjs",
+    "setup:codex": "bash scripts/codex-setup.sh",
     "check": "biome check assets scripts tests && bun run typecheck && bun run test",
     "check:quick": "biome check assets scripts tests && bun run typecheck",
     "check:toys": "bun run scripts/check-toys.ts",
