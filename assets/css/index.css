@@ -246,6 +246,10 @@ footer {
   scroll-margin-top: clamp(7.5rem, 17vh, 9.5rem);
 }
 
+#toy-search {
+  scroll-margin-top: clamp(7.5rem, 17vh, 9.5rem);
+}
+
 .content {
   position: relative;
   z-index: 1;
@@ -3800,6 +3804,10 @@ footer {
 
 @media (max-width: 520px) {
   #toy-list {
+    scroll-margin-top: 10rem;
+  }
+
+  #toy-search {
     scroll-margin-top: 10rem;
   }
 
