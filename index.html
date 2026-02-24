@@ -141,16 +141,13 @@
       <section class="intro" id="intro" aria-label="Primary quick actions">
         <p class="eyebrow">Start fast</p>
         <h1>Find a stim in under 10 seconds</h1>
-        <p class="cta-helper intro-helper">Start a recommended visual now, or jump straight into filters and search.</p>
+        <p class="cta-helper intro-helper">Start instantly with a recommendation, then fine-tune with search and filters below.</p>
         <div class="intro-actions" role="group" aria-label="Start options">
           <a
             href="toy.html?toy=holy"
             class="cta-button primary"
           >
             Start a recommended visual
-          </a>
-          <a href="#toy-search" class="cta-button ghost">
-            Browse with filters
           </a>
         </div>
       </section>
@@ -164,22 +161,6 @@
           </p>
         </div>
         <search class="library-search">
-          <section class="starter-picks" aria-label="Recommended starter picks">
-            <div class="starter-picks__grid">
-              <a href="toy.html?toy=seary" class="starter-pick" data-quickstart-slug="seary">
-                <strong>Seary</strong>
-                <span>Ambient and low-pressure</span>
-              </a>
-              <a
-                href="toy.html?toy=aurora-painter"
-                class="starter-pick"
-                data-quickstart-slug="aurora-painter"
-              >
-                <strong>Aurora Painter</strong>
-                <span>Gesture-led and dreamy</span>
-              </a>
-            </div>
-          </section>
           <form class="search-field" data-search-form role="search" aria-label="Search stims">
             <span class="search-field__icon" aria-hidden="true">🔎</span>
             <input
@@ -199,28 +180,8 @@
             >
               Clear
             </button>
-            <button
-              type="button"
-              class="search-shortcuts-toggle"
-              data-search-shortcuts-toggle
-              aria-controls="toy-search-hint"
-              aria-expanded="false"
-            >
-              Show shortcuts
-            </button>
-            <p id="toy-search-hint" class="search-field__hint" hidden>
-              Tip: press / to focus search, Enter to open the top match, and Esc to reset.
-            </p>
             <datalist id="toy-search-suggestions"></datalist>
           </form>
-          <p
-            class="search-meta__results"
-            data-search-results
-            role="status"
-            aria-live="polite"
-          >
-            Loading visual library…
-          </p>
           <div class="active-filters" data-active-filters>
             <span class="active-filters__label">Applied filters</span>
             <span class="active-filters__status" data-active-filters-status>
@@ -235,8 +196,16 @@
               Clear filters
             </button>
           </div>
+          <p
+            class="search-meta__results"
+            data-search-results
+            role="status"
+            aria-live="polite"
+          >
+            Loading visual library…
+          </p>
           <details class="library-refine" data-library-refine>
-            <summary>Refine results</summary>
+            <summary>Filters and sorting</summary>
             <p class="search-meta__note" data-search-note>
               Choose a mood or audio option to narrow results.
             </p>
@@ -325,6 +294,7 @@
             </div>
           </details>
         </search>
+        <main id="toy-list" class="webtoy-container"></main>
         <div class="feature-card-grid" aria-label="Library collection shortcuts">
           <nav class="feature-card" aria-label="Explore static library pages">
             <h3>Explore collections</h3>
@@ -345,68 +315,6 @@
               <li><a class="text-link" href="/toys/cube-wave/">Grid Visualizer details</a></li>
             </ul>
           </nav>
-        </div>
-        <main id="toy-list" class="webtoy-container"></main>
-      </section>
-
-      <section class="stim-builder" id="stim-builder" data-stim-builder>
-        <div class="section-heading">
-          <p class="eyebrow">Building blocks</p>
-          <h2>Create your own stim setup</h2>
-          <p class="section-description">
-            Mix mood, energy, interaction style, and audio preferences.
-          </p>
-        </div>
-        <form class="builder-form" data-builder-form>
-          <label>
-            <span>Mood</span>
-            <select name="mood">
-              <option value="calming">Calming</option>
-              <option value="energetic">Energetic</option>
-              <option value="dreamy">Dreamy</option>
-              <option value="playful">Playful</option>
-            </select>
-          </label>
-          <label>
-            <span>Energy</span>
-            <select name="energy">
-              <option value="soft">Soft</option>
-              <option value="balanced" selected>Balanced</option>
-              <option value="intense">Intense</option>
-            </select>
-          </label>
-          <label>
-            <span>Interaction</span>
-            <select name="interaction">
-              <option value="touch" selected>Touch / gesture</option>
-              <option value="motion">Tilt / motion</option>
-              <option value="ambient">Mostly ambient</option>
-            </select>
-          </label>
-          <label>
-            <span>Audio</span>
-            <select name="audio">
-              <option value="demoAudio" selected>Built-in demo audio</option>
-              <option value="microphone">Microphone reactive</option>
-              <option value="none">No audio required</option>
-            </select>
-          </label>
-          <label>
-            <span>Renderer</span>
-            <select name="renderer">
-              <option value="any" selected>Any</option>
-              <option value="webgpu">WebGPU-first</option>
-              <option value="webgl">Broader compatibility</option>
-            </select>
-          </label>
-        </form>
-        <div class="builder-summary" data-builder-summary aria-live="polite"></div>
-        <ul class="builder-results" data-builder-results></ul>
-        <div class="cta-row">
-          <a href="toy.html?toy=holy" class="cta-button primary" data-builder-cta>
-            Launch a suggested stim
-          </a>
-          <a href="#library" class="text-link">Back to library filters</a>
         </div>
       </section>
 
@@ -641,6 +549,67 @@
             Prefer docs? Start with the README and feature specs inside the
             repository.
           </p>
+        </div>
+      </section>
+
+      <section class="stim-builder" id="stim-builder" data-stim-builder>
+        <div class="section-heading">
+          <p class="eyebrow">Building blocks</p>
+          <h2>Create your own stim setup</h2>
+          <p class="section-description">
+            Mix mood, energy, interaction style, and audio preferences.
+          </p>
+        </div>
+        <form class="builder-form" data-builder-form>
+          <label>
+            <span>Mood</span>
+            <select name="mood">
+              <option value="calming">Calming</option>
+              <option value="energetic">Energetic</option>
+              <option value="dreamy">Dreamy</option>
+              <option value="playful">Playful</option>
+            </select>
+          </label>
+          <label>
+            <span>Energy</span>
+            <select name="energy">
+              <option value="soft">Soft</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="intense">Intense</option>
+            </select>
+          </label>
+          <label>
+            <span>Interaction</span>
+            <select name="interaction">
+              <option value="touch" selected>Touch / gesture</option>
+              <option value="motion">Tilt / motion</option>
+              <option value="ambient">Mostly ambient</option>
+            </select>
+          </label>
+          <label>
+            <span>Audio</span>
+            <select name="audio">
+              <option value="demoAudio" selected>Built-in demo audio</option>
+              <option value="microphone">Microphone reactive</option>
+              <option value="none">No audio required</option>
+            </select>
+          </label>
+          <label>
+            <span>Renderer</span>
+            <select name="renderer">
+              <option value="any" selected>Any</option>
+              <option value="webgpu">WebGPU-first</option>
+              <option value="webgl">Broader compatibility</option>
+            </select>
+          </label>
+        </form>
+        <div class="builder-summary" data-builder-summary aria-live="polite"></div>
+        <ul class="builder-results" data-builder-results></ul>
+        <div class="cta-row">
+          <a href="toy.html?toy=holy" class="cta-button primary" data-builder-cta>
+            Launch a suggested stim
+          </a>
+          <a href="#library" class="text-link">Back to library filters</a>
         </div>
       </section>
 
