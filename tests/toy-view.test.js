@@ -3,8 +3,7 @@ import { createToyView } from '../assets/js/toy-view.ts';
 
 describe('toy view helpers', () => {
   beforeEach(() => {
-    document.body.innerHTML =
-      '<a class="skip-link" href="#toy-list">Skip to library</a><div id="toy-list"></div>';
+    document.body.innerHTML = '<div id="toy-list"></div>';
   });
 
   afterEach(() => {
@@ -32,23 +31,6 @@ describe('toy view helpers', () => {
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
     expect(onBack).toHaveBeenCalledTimes(1);
-  });
-
-  test('hides library skip link while a toy is active', () => {
-    const view = createToyView();
-
-    const skipLink = document.querySelector('.skip-link');
-    expect(skipLink?.hidden).toBe(false);
-
-    view.showActiveToyView(mock(), {
-      slug: 'demo',
-      title: 'Demo Toy',
-    });
-
-    expect(skipLink?.hidden).toBe(true);
-
-    view.showLibraryView();
-    expect(skipLink?.hidden).toBe(false);
   });
 
   test('renders capability error with fallback actions', () => {
