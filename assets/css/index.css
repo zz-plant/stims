@@ -90,8 +90,8 @@ body.tv-mode {
 }
 
 html.light {
-  --bg-color: #f5f6f7;
-  --bg-color-secondary: #e2e6ed;
+  --bg-color: #f7f9fc;
+  --bg-color-secondary: #dee5ef;
   --text-color: #1f2630;
   --text-muted: #3f4a5a;
   --accent-contrast: #ffffff;
@@ -106,7 +106,7 @@ html.light {
   --hover-bg: rgba(91, 110, 130, 0.12);
   --highlight-glow: rgba(163, 109, 89, 0.12);
   --surface-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0.02), transparent);
-  --surface-border: rgba(31, 38, 48, 0.12);
+  --surface-border: rgba(31, 38, 48, 0.18);
   --surface-sheen: none;
   --surface-texture: none;
   --surface-highlight: none;
@@ -125,11 +125,11 @@ html.light {
   );
   --interactive-shadow: 0 2px 7px rgba(15, 23, 42, 0.1);
   --shadow-strong:
-    0 16px 30px rgba(15, 23, 42, 0.15), 0 3px 9px rgba(91, 110, 130, 0.16);
+    0 12px 24px rgba(15, 23, 42, 0.11), 0 2px 8px rgba(91, 110, 130, 0.11);
   --shadow-soft:
-    0 8px 18px rgba(15, 23, 42, 0.1), 0 1px 5px rgba(91, 110, 130, 0.14);
+    0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(91, 110, 130, 0.09);
   --shadow-surface:
-    0 12px 24px rgba(15, 23, 42, 0.12), 0 1px 6px rgba(91, 110, 130, 0.14);
+    0 8px 18px rgba(15, 23, 42, 0.09), 0 1px 5px rgba(91, 110, 130, 0.1);
   color-scheme: light;
 }
 
@@ -172,7 +172,8 @@ html.light .hero-background-canvas {
 
 .skip-link {
   position: fixed;
-  left: 1.5rem;
+  left: max(0.9rem, env(safe-area-inset-left));
+  right: auto;
   top: -6rem;
   padding: 0.65rem 1rem;
   border-radius: var(--radius-pill);
@@ -197,7 +198,7 @@ html.light .hero-background-canvas {
 }
 
 .skip-link:focus-visible {
-  top: max(1.25rem, env(safe-area-inset-top));
+  top: max(4.2rem, calc(env(safe-area-inset-top) + 3.4rem));
   opacity: 1;
   outline: var(--tv-focus-outline-width) solid var(--accent-color);
   outline-offset: var(--tv-focus-outline-offset);
@@ -380,11 +381,12 @@ footer {
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
-  border: 1px solid var(--surface-border);
-  background: var(--card-bg);
+  border: 1px solid
+    color-mix(in srgb, var(--accent-color) 38%, var(--surface-border));
+  background: color-mix(in srgb, var(--card-bg) 86%, var(--accent-color));
   color: inherit;
   padding: 0.55rem 0.85rem;
-  border-radius: 999px;
+  border-radius: 12px;
   font-weight: 600;
   letter-spacing: 0.01em;
   min-height: 44px;
@@ -399,6 +401,7 @@ footer {
 .nav-toggle:hover {
   border-color: color-mix(in srgb, var(--accent-color) 40%, transparent);
   box-shadow: var(--shadow-soft);
+  background: color-mix(in srgb, var(--card-bg) 80%, var(--accent-color));
 }
 
 .nav-toggle:focus-visible {
@@ -407,7 +410,9 @@ footer {
 }
 
 .nav-toggle__icon {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  opacity: 0.9;
 }
 
 .nav-section {
@@ -1365,8 +1370,9 @@ header.hero {
 
 .eyebrow {
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  font-size: 0.86rem;
+  font-weight: 600;
   opacity: 0.85;
   margin: 0 0 0.5rem;
 }
@@ -1465,6 +1471,16 @@ html.light .hero-readiness__text {
   font-size: 1rem;
   color: var(--text-muted);
   line-height: 1.5;
+}
+
+.intro h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 1.1rem + 1.3vw, 2rem);
+  line-height: 1.2;
+}
+
+.intro .cta-helper {
+  margin: 0;
 }
 
 html.light .cta-helper {
@@ -1585,7 +1601,8 @@ body[data-details-open] .readiness-note {
   margin: -0.25rem 0;
   border-radius: 8px;
   touch-action: manipulation;
-  color: var(--link-color);
+  color: color-mix(in srgb, var(--link-color) 88%, var(--text-color));
+  font-weight: 600;
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
@@ -1611,7 +1628,7 @@ button.text-link {
 
 .cta-button {
   padding: 0.7rem 1.25rem;
-  border-radius: var(--radius-pill);
+  border-radius: 12px;
   background: var(--interactive-bg);
   color: var(--text-color);
   text-decoration: none;
@@ -1641,12 +1658,12 @@ button.text-link {
 .cta-button.primary {
   background: linear-gradient(
     130deg,
-    color-mix(in srgb, var(--accent-color) 88%, white),
-    color-mix(in srgb, var(--accent-purple) 70%, var(--accent-color))
+    color-mix(in srgb, var(--accent-color) 74%, #4f86d9),
+    color-mix(in srgb, var(--accent-purple) 58%, #1d4ed8)
   );
   color: var(--accent-contrast);
-  box-shadow: 0 6px 16px
-    color-mix(in srgb, var(--accent-color) 24%, transparent);
+  border-color: color-mix(in srgb, #1d4ed8 52%, var(--surface-border));
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
 }
 
 .cta-button--accent {
@@ -1682,8 +1699,7 @@ button.text-link {
 
 .cta-button.primary:hover {
   color: var(--accent-contrast);
-  box-shadow: 0 10px 22px
-    color-mix(in srgb, var(--accent-color) 28%, transparent);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.34);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1998,7 +2014,7 @@ html.light .repo-status__metric {
 }
 
 .library {
-  margin-top: clamp(2.8rem, 3.8vw, 4.2rem);
+  margin-top: clamp(1.5rem, 2.8vw, 2.6rem);
   padding-top: clamp(0.85rem, 1.4vw, 1.35rem);
   border-top: 1px solid
     color-mix(in srgb, var(--accent-color) 20%, var(--surface-border));
@@ -2145,7 +2161,7 @@ html.light .experience-card {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
-  margin-top: 1.2rem;
+  margin-top: 0.55rem;
   padding: clamp(1.25rem, 2.3vw, 1.8rem);
   border-radius: calc(var(--radius-lg) + 6px);
   border: 1px solid
@@ -3033,7 +3049,8 @@ html.light .filter-chip.is-active::before {
 }
 
 html.light .cta-button.primary {
-  background: linear-gradient(130deg, #6f8096, #5d6f86);
+  background: linear-gradient(130deg, #3f6ea8, #315f97);
+  border-color: rgba(29, 78, 216, 0.54);
 }
 
 .webtoy-card p {
@@ -3328,15 +3345,15 @@ footer {
 .feature-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  margin: 1rem 0 0;
+  gap: 0.85rem;
+  margin: 0.9rem 0 0;
   padding: 0;
   list-style: none;
 }
 
 .feature-card {
   background: var(--surface-gradient);
-  border: 1px solid var(--surface-border);
+  border: 1px solid color-mix(in srgb, var(--surface-border) 95%, #718096);
   border-radius: var(--radius-lg);
   padding: 1rem;
   display: flex;
@@ -3353,6 +3370,11 @@ footer {
   margin: 0;
   display: grid;
   gap: 0.35rem;
+}
+
+.feature-card .text-link {
+  color: color-mix(in srgb, var(--link-color) 84%, #1d4ed8);
+  font-weight: 550;
 }
 
 .feature-icon {
@@ -3781,13 +3803,22 @@ footer {
     scroll-margin-top: 10rem;
   }
 
+  .skip-link:focus-visible {
+    top: max(3.6rem, calc(env(safe-area-inset-top) + 3rem));
+  }
+
   h1 {
     font-size: clamp(1.6rem, 7vw, 1.8rem);
   }
 
   .content {
     --content-padding: clamp(1rem, 4vw, 1.4rem);
-    gap: 1.25rem;
+    gap: 1rem;
+  }
+
+  .library {
+    margin-top: 1.35rem;
+    padding-top: 0.8rem;
   }
 
   .brand {
@@ -3995,7 +4026,7 @@ section.intro,
 .github {
   background: color-mix(in srgb, var(--card-bg) 94%, transparent);
   border: 1px solid color-mix(in srgb, var(--surface-border) 72%, transparent);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(6px) saturate(110%);
 }
 
@@ -4028,22 +4059,22 @@ section.intro::after {
 
 section.intro {
   display: grid;
-  gap: 0.85rem;
-  justify-items: center;
-  padding-block: clamp(1.1rem, 2vw + 0.5rem, 1.7rem);
+  gap: 0.7rem;
+  justify-items: start;
+  padding-block: clamp(0.9rem, 1.2vw + 0.5rem, 1.35rem);
 }
 
 .intro-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.55rem;
 }
 
 .intro-actions .cta-button {
   min-width: 8.75rem;
-  border-radius: 11px;
+  border-radius: 10px;
   border-color: color-mix(
     in srgb,
     var(--accent-color) 30%,
@@ -4116,7 +4147,7 @@ section.intro {
 
 .webtoy-card:hover {
   transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
 }
 
 .intro-highlights,
@@ -4164,6 +4195,10 @@ section.intro {
 
   .intro-actions .cta-button {
     width: 100%;
+  }
+
+  .intro-actions .cta-button.ghost {
+    min-height: 48px;
   }
 
   .quick-start-grid {
