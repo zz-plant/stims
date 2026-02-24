@@ -1,8 +1,4 @@
-import {
-  dismissPremiumPrompt,
-  getRecentToySlugs,
-  shouldShowPremiumPrompt,
-} from './utils/growth-metrics.ts';
+import { getRecentToySlugs } from './utils/growth-metrics.ts';
 
 const ns = 'http://www.w3.org/2000/svg';
 
@@ -1871,43 +1867,6 @@ export function createLibraryView({
       });
       panel.appendChild(list);
       listElement.appendChild(panel);
-    }
-
-    if (shouldShowPremiumPrompt()) {
-      const premiumPanel = document.createElement('section');
-      premiumPanel.className =
-        'webtoy-growth-panel webtoy-growth-panel--premium';
-
-      const heading = document.createElement('h3');
-      heading.className = 'webtoy-growth-panel__title';
-      heading.textContent = 'Want premium scene packs?';
-
-      const body = document.createElement('p');
-      body.className = 'webtoy-growth-panel__body';
-      body.textContent =
-        'You keep coming back—join the premium waitlist to unlock saved sessions, exclusive presets, and supporter-only drops.';
-
-      const actions = document.createElement('div');
-      actions.className = 'webtoy-card-actions';
-
-      const join = document.createElement('a');
-      join.className = 'cta-button cta-button--accent';
-      join.href =
-        'mailto:hello@no.toil.fyi?subject=Stim%20premium%20waitlist&body=Add%20me%20to%20the%20premium%20waitlist.';
-      join.textContent = 'Join premium waitlist';
-
-      const dismiss = document.createElement('button');
-      dismiss.type = 'button';
-      dismiss.className = 'cta-button';
-      dismiss.textContent = 'Not now';
-      dismiss.addEventListener('click', () => {
-        dismissPremiumPrompt();
-        premiumPanel.remove();
-      });
-
-      actions.append(join, dismiss);
-      premiumPanel.append(heading, body, actions);
-      listElement.appendChild(premiumPanel);
     }
   };
 

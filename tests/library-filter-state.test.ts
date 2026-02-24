@@ -64,7 +64,7 @@ describe('library filter state normalization', () => {
   });
 });
 
-test('renders continue and premium panels when returner signals are present', async () => {
+test('renders continue panel when returner signals are present', async () => {
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
     .toISOString()
@@ -90,9 +90,6 @@ test('renders continue and premium panels when returner signals are present', as
   await view.init();
 
   expect(document.querySelector('.webtoy-growth-panel')).not.toBeNull();
-  expect(
-    document.querySelector('.webtoy-growth-panel--premium'),
-  ).not.toBeNull();
   const openButton = Array.from(document.querySelectorAll('button')).find(
     (button) => button.textContent === 'Open toy',
   );

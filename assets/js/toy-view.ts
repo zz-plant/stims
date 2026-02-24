@@ -108,13 +108,6 @@ function showElement(element: HTMLElement | null) {
   }
 }
 
-function setLibrarySkipLinkVisible(doc: Document | null, visible: boolean) {
-  if (!doc) return;
-  const skipLink = doc.querySelector<HTMLElement>('.skip-link');
-  if (!skipLink) return;
-  skipLink.hidden = !visible;
-}
-
 function clearContainerContent(container: HTMLElement | null) {
   if (!container) return;
 
@@ -386,14 +379,12 @@ export function createToyView({
     if (state.mode === 'library') {
       showElement(toyList);
       hideElement(container);
-      setLibrarySkipLinkVisible(doc, true);
       state.status = null;
       return { container, status: null };
     }
 
     hideElement(toyList);
     showElement(container);
-    setLibrarySkipLinkVisible(doc, false);
 
     buildToyNav({
       container,
