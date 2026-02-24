@@ -139,6 +139,9 @@
       </header>
 
       <section class="intro" id="intro" aria-label="Primary quick actions">
+        <p class="eyebrow">Start fast</p>
+        <h1>Find a stim in under 10 seconds</h1>
+        <p class="cta-helper intro-helper">Start a recommended visual now, or jump straight into filters and search.</p>
         <div class="intro-actions" role="group" aria-label="Start options">
           <a
             href="toy.html?toy=holy"
@@ -146,8 +149,10 @@
           >
             Start a recommended visual
           </a>
+          <a href="#toy-search" class="cta-button ghost">
+            Browse with filters
+          </a>
         </div>
-        <p class="cta-helper intro-helper">Starts immediately with a calm-balanced favorite.</p>
       </section>
 
       <section class="library" id="library">
@@ -155,28 +160,9 @@
           <p class="eyebrow">Library</p>
           <h2>Browse all stims</h2>
           <p class="section-description">
-            Select a card to start right away.
+            Search first, then refine by mood or capability.
           </p>
         </div>
-        <nav class="feature-card" aria-label="Explore static library pages">
-          <h3>Explore collections</h3>
-          <p>Browse index pages that organize every toy by category.</p>
-          <ul>
-            <li><a class="text-link" href="/toys/">All toy pages</a></li>
-            <li><a class="text-link" href="/tags/">Tags index</a></li>
-            <li><a class="text-link" href="/moods/">Moods index</a></li>
-            <li><a class="text-link" href="/capabilities/">Capabilities index</a></li>
-          </ul>
-        </nav>
-        <nav class="feature-card" aria-label="Featured toy detail pages">
-          <h3>Featured toy pages</h3>
-          <ul>
-            <li><a class="text-link" href="/toys/aurora-painter/">Aurora Painter details</a></li>
-            <li><a class="text-link" href="/toys/seary/">Seary details</a></li>
-            <li><a class="text-link" href="/toys/holy/">Halo Pulse details</a></li>
-            <li><a class="text-link" href="/toys/cube-wave/">Grid Visualizer details</a></li>
-          </ul>
-        </nav>
         <search class="library-search">
           <section class="starter-picks" aria-label="Recommended starter picks">
             <div class="starter-picks__grid">
@@ -339,6 +325,27 @@
             </div>
           </details>
         </search>
+        <div class="feature-card-grid" aria-label="Library collection shortcuts">
+          <nav class="feature-card" aria-label="Explore static library pages">
+            <h3>Explore collections</h3>
+            <p>Browse index pages that organize every toy by category.</p>
+            <ul>
+              <li><a class="text-link" href="/toys/">All toy pages</a></li>
+              <li><a class="text-link" href="/tags/">Tags index</a></li>
+              <li><a class="text-link" href="/moods/">Moods index</a></li>
+              <li><a class="text-link" href="/capabilities/">Capabilities index</a></li>
+            </ul>
+          </nav>
+          <nav class="feature-card" aria-label="Featured toy detail pages">
+            <h3>Featured toy pages</h3>
+            <ul>
+              <li><a class="text-link" href="/toys/aurora-painter/">Aurora Painter details</a></li>
+              <li><a class="text-link" href="/toys/seary/">Seary details</a></li>
+              <li><a class="text-link" href="/toys/holy/">Halo Pulse details</a></li>
+              <li><a class="text-link" href="/toys/cube-wave/">Grid Visualizer details</a></li>
+            </ul>
+          </nav>
+        </div>
         <main id="toy-list" class="webtoy-container"></main>
       </section>
 
