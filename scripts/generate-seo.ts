@@ -33,25 +33,47 @@ const escapeXml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
+const truncateOgText = (value: string, maxChars: number) =>
+  value.length > maxChars ? `${value.slice(0, maxChars - 1)}…` : value;
+
 const buildOgSvg = ({
   title,
   subtitle,
+  eyebrow = 'Stim Webtoys Library',
+  accentStart = '#0b1024',
+  accentEnd = '#26377f',
+  chip,
 }: {
   title: string;
   subtitle: string;
+  eyebrow?: string;
+  accentStart?: string;
+  accentEnd?: string;
+  chip?: string;
 }) => `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(title)}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0b1024" />
-      <stop offset="100%" stop-color="#26377f" />
+      <stop offset="0%" stop-color="${accentStart}" />
+      <stop offset="100%" stop-color="${accentEnd}" />
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.25)" />
+      <stop offset="100%" stop-color="rgba(255,255,255,0)" />
     </linearGradient>
   </defs>
   <rect width="${ogWidth}" height="${ogHeight}" fill="url(#bg)" />
+  <rect x="0" y="0" width="${ogWidth}" height="${ogHeight}" fill="url(#shine)" opacity="0.4" />
   <circle cx="1035" cy="540" r="160" fill="rgba(255,255,255,0.12)" />
   <circle cx="160" cy="100" r="120" fill="rgba(255,255,255,0.1)" />
-  <text x="90" y="220" font-size="42" fill="#dbe4ff" font-family="Inter, Arial, sans-serif">Stim Webtoys Library</text>
-  <text x="90" y="320" font-size="72" font-weight="700" fill="#ffffff" font-family="Inter, Arial, sans-serif">${escapeHtml(title)}</text>
-  <text x="90" y="390" font-size="32" fill="#e2e8ff" font-family="Inter, Arial, sans-serif">${escapeHtml(subtitle)}</text>
+  ${
+    chip
+      ? `<rect x="90" y="92" width="${Math.max(220, Math.min(560, chip.length * 15))}" height="56" rx="28" fill="rgba(255,255,255,0.14)" />
+  <text x="120" y="128" font-size="30" fill="#f7f9ff" font-family="Inter, Arial, sans-serif">${escapeHtml(truncateOgText(chip, 36))}</text>`
+      : ''
+  }
+  <text x="90" y="${chip ? '220' : '170'}" font-size="40" fill="#dbe4ff" font-family="Inter, Arial, sans-serif">${escapeHtml(truncateOgText(eyebrow, 44))}</text>
+  <text x="90" y="${chip ? '322' : '272'}" font-size="72" font-weight="700" fill="#ffffff" font-family="Inter, Arial, sans-serif">${escapeHtml(truncateOgText(title, 30))}</text>
+  <text x="90" y="${chip ? '392' : '342'}" font-size="32" fill="#e2e8ff" font-family="Inter, Arial, sans-serif">${escapeHtml(truncateOgText(subtitle, 56))}</text>
 </svg>`;
 
 const getSitemapMeta = (url: string) => {
@@ -76,6 +98,8 @@ const renderPage = ({
   socialImageType = 'image/png',
   socialImageWidth = 512,
   socialImageHeight = 512,
+  twitterImage,
+  twitterImageAlt,
 }: {
   title: string;
   description: string;
@@ -88,7 +112,15 @@ const renderPage = ({
   socialImageType?: string;
   socialImageWidth?: number;
   socialImageHeight?: number;
-}) => `<!doctype html>
+  twitterImage?: string;
+  twitterImageAlt?: string;
+}) => {
+  const resolvedTwitterImage =
+    twitterImage ??
+    (socialImageType === 'image/svg+xml' ? iconUrl : socialImage);
+  const resolvedTwitterImageAlt = twitterImageAlt ?? socialImageAlt;
+
+  return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -110,8 +142,8 @@ const renderPage = ({
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${socialImage}" />
-    <meta name="twitter:image:alt" content="${escapeHtml(socialImageAlt)}" />
+    <meta name="twitter:image" content="${resolvedTwitterImage}" />
+    <meta name="twitter:image:alt" content="${escapeHtml(resolvedTwitterImageAlt)}" />
     <link rel="canonical" href="${canonical}" />
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
@@ -128,6 +160,7 @@ ${extraHead}
   </body>
 </html>
 `;
+};
 
 type ToyEntry = {
   slug: string;
@@ -499,8 +532,60 @@ const generateSeo = async () => {
   const defaultOgSvg = buildOgSvg({
     title: 'Stim Webtoys',
     subtitle: 'Audio-reactive sensory visual play',
+    eyebrow: 'Stim Webtoys Library',
+    accentStart: '#0b1024',
+    accentEnd: '#26377f',
   });
   await writeFile(path.join(ogDir, 'default.svg'), defaultOgSvg);
+
+  const toysIndexOgFile = 'toys.svg';
+  const tagsIndexOgFile = 'tags.svg';
+  const moodsIndexOgFile = 'moods.svg';
+  const capabilitiesIndexOgFile = 'capabilities.svg';
+  await writeFile(
+    path.join(ogDir, toysIndexOgFile),
+    buildOgSvg({
+      title: 'All toys',
+      subtitle: 'Browse every interactive audio-reactive visual toy',
+      eyebrow: 'Stim Webtoys collection',
+      accentStart: '#22113f',
+      accentEnd: '#3b82f6',
+      chip: 'SEO collection page',
+    }),
+  );
+  await writeFile(
+    path.join(ogDir, tagsIndexOgFile),
+    buildOgSvg({
+      title: 'Tags',
+      subtitle: 'Explore themes, interactions, and visual styles',
+      eyebrow: 'Stim Webtoys discovery',
+      accentStart: '#0b3b35',
+      accentEnd: '#0ea5a0',
+      chip: 'Browse by tag',
+    }),
+  );
+  await writeFile(
+    path.join(ogDir, moodsIndexOgFile),
+    buildOgSvg({
+      title: 'Moods',
+      subtitle: 'Find visuals that match your sensory flow',
+      eyebrow: 'Stim Webtoys discovery',
+      accentStart: '#3b1027',
+      accentEnd: '#9333ea',
+      chip: 'Browse by mood',
+    }),
+  );
+  await writeFile(
+    path.join(ogDir, capabilitiesIndexOgFile),
+    buildOgSvg({
+      title: 'Capabilities',
+      subtitle: 'Filter toys by microphone, motion, audio, and WebGPU',
+      eyebrow: 'Stim Webtoys discovery',
+      accentStart: '#1f2937',
+      accentEnd: '#2563eb',
+      chip: 'Browse by capability',
+    }),
+  );
 
   const tagEntries = buildTagIndex(toys);
   const moodEntries = buildMoodIndex(toys);
@@ -547,7 +632,11 @@ const generateSeo = async () => {
       }),
     )}</script>
 `,
+      socialImage: `${baseUrl}/og/${toysIndexOgFile}`,
       socialImageAlt: 'Stim Webtoys collection preview image',
+      socialImageType: 'image/svg+xml',
+      socialImageWidth: ogWidth,
+      socialImageHeight: ogHeight,
     }),
   );
 
@@ -566,6 +655,10 @@ const generateSeo = async () => {
     const ogSvg = buildOgSvg({
       title: toy.title,
       subtitle: 'Interactive audio-reactive web toy',
+      eyebrow: 'Stim Webtoys toy page',
+      accentStart: '#1a0c33',
+      accentEnd: '#1d4ed8',
+      chip: 'Launch now',
     });
     await writeFile(path.join(ogDir, `${toy.slug}.svg`), ogSvg);
 
@@ -680,6 +773,11 @@ ${extraHead}
         'audio reactive themes',
         'sensory friendly toys',
       ],
+      socialImage: `${baseUrl}/og/${tagsIndexOgFile}`,
+      socialImageAlt: 'Stim Webtoys tags page preview image',
+      socialImageType: 'image/svg+xml',
+      socialImageWidth: ogWidth,
+      socialImageHeight: ogHeight,
     }),
   );
 
@@ -704,6 +802,18 @@ ${extraHead}
       </section>
     `;
     const tagPath = path.join(tagsDir, entry.slug);
+    const tagOgFile = `tag-${entry.slug}.svg`;
+    await writeFile(
+      path.join(ogDir, tagOgFile),
+      buildOgSvg({
+        title: `${entry.label} toys`,
+        subtitle: `${entry.toys.length} toy${entry.toys.length === 1 ? '' : 's'} in this tag`,
+        eyebrow: 'Stim Webtoys tag collection',
+        accentStart: '#0f2f4f',
+        accentEnd: '#2563eb',
+        chip: `Tag: ${entry.label}`,
+      }),
+    );
     await mkdir(tagPath, { recursive: true });
     await writeFile(
       path.join(tagPath, 'index.html'),
@@ -734,6 +844,11 @@ ${extraHead}
       }),
     )}</script>
 `,
+        socialImage: `${baseUrl}/og/${tagOgFile}`,
+        socialImageAlt: `${entry.label} tag page preview image`,
+        socialImageType: 'image/svg+xml',
+        socialImageWidth: ogWidth,
+        socialImageHeight: ogHeight,
       }),
     );
   }
@@ -760,6 +875,11 @@ ${extraHead}
       canonical: `${baseUrl}/moods/`,
       body: moodsIndexBody,
       keywords: ['mood visualizer', 'calming visuals', 'sensory vibe toys'],
+      socialImage: `${baseUrl}/og/${moodsIndexOgFile}`,
+      socialImageAlt: 'Stim Webtoys moods page preview image',
+      socialImageType: 'image/svg+xml',
+      socialImageWidth: ogWidth,
+      socialImageHeight: ogHeight,
     }),
   );
 
@@ -784,6 +904,18 @@ ${extraHead}
       </section>
     `;
     const moodPath = path.join(moodsDir, entry.slug);
+    const moodOgFile = `mood-${entry.slug}.svg`;
+    await writeFile(
+      path.join(ogDir, moodOgFile),
+      buildOgSvg({
+        title: `${entry.label} mood`,
+        subtitle: `${entry.toys.length} toy${entry.toys.length === 1 ? '' : 's'} with this vibe`,
+        eyebrow: 'Stim Webtoys mood collection',
+        accentStart: '#3f1239',
+        accentEnd: '#c026d3',
+        chip: `Mood: ${entry.label}`,
+      }),
+    );
     await mkdir(moodPath, { recursive: true });
     await writeFile(
       path.join(moodPath, 'index.html'),
@@ -814,6 +946,11 @@ ${extraHead}
       }),
     )}</script>
 `,
+        socialImage: `${baseUrl}/og/${moodOgFile}`,
+        socialImageAlt: `${entry.label} mood page preview image`,
+        socialImageType: 'image/svg+xml',
+        socialImageWidth: ogWidth,
+        socialImageHeight: ogHeight,
       }),
     );
   }
@@ -844,6 +981,11 @@ ${extraHead}
         'demo audio toys',
         'webgpu visual toys',
       ],
+      socialImage: `${baseUrl}/og/${capabilitiesIndexOgFile}`,
+      socialImageAlt: 'Stim Webtoys capabilities page preview image',
+      socialImageType: 'image/svg+xml',
+      socialImageWidth: ogWidth,
+      socialImageHeight: ogHeight,
     }),
   );
 
@@ -868,6 +1010,18 @@ ${extraHead}
       </section>
     `;
     const capPath = path.join(capabilitiesDir, entry.slug);
+    const capabilityOgFile = `capability-${entry.slug}.svg`;
+    await writeFile(
+      path.join(ogDir, capabilityOgFile),
+      buildOgSvg({
+        title: `${entry.label} toys`,
+        subtitle: `${entry.toys.length} toy${entry.toys.length === 1 ? '' : 's'} support this`,
+        eyebrow: 'Stim Webtoys capability collection',
+        accentStart: '#1f2937',
+        accentEnd: '#0ea5e9',
+        chip: `Capability: ${entry.label}`,
+      }),
+    );
     await mkdir(capPath, { recursive: true });
     await writeFile(
       path.join(capPath, 'index.html'),
@@ -898,6 +1052,11 @@ ${extraHead}
       }),
     )}</script>
 `,
+        socialImage: `${baseUrl}/og/${capabilityOgFile}`,
+        socialImageAlt: `${entry.label} capability page preview image`,
+        socialImageType: 'image/svg+xml',
+        socialImageWidth: ogWidth,
+        socialImageHeight: ogHeight,
       }),
     );
   }
@@ -906,25 +1065,28 @@ ${extraHead}
   const urls = [
     { loc: `${baseUrl}/`, image: `${baseUrl}/og/default.svg` },
     { loc: `${baseUrl}/index.html`, image: `${baseUrl}/og/default.svg` },
-    { loc: `${baseUrl}/toys/`, image: `${baseUrl}/og/default.svg` },
-    { loc: `${baseUrl}/tags/`, image: `${baseUrl}/og/default.svg` },
-    { loc: `${baseUrl}/moods/`, image: `${baseUrl}/og/default.svg` },
-    { loc: `${baseUrl}/capabilities/`, image: `${baseUrl}/og/default.svg` },
+    { loc: `${baseUrl}/toys/`, image: `${baseUrl}/og/${toysIndexOgFile}` },
+    { loc: `${baseUrl}/tags/`, image: `${baseUrl}/og/${tagsIndexOgFile}` },
+    { loc: `${baseUrl}/moods/`, image: `${baseUrl}/og/${moodsIndexOgFile}` },
+    {
+      loc: `${baseUrl}/capabilities/`,
+      image: `${baseUrl}/og/${capabilitiesIndexOgFile}`,
+    },
     ...toys.map((toy) => ({
       loc: `${baseUrl}/toys/${toy.slug}/`,
       image: `${baseUrl}/og/${toy.slug}.svg`,
     })),
     ...tagEntries.map((entry) => ({
       loc: `${baseUrl}/tags/${entry.slug}/`,
-      image: `${baseUrl}/og/default.svg`,
+      image: `${baseUrl}/og/tag-${entry.slug}.svg`,
     })),
     ...moodEntries.map((entry) => ({
       loc: `${baseUrl}/moods/${entry.slug}/`,
-      image: `${baseUrl}/og/default.svg`,
+      image: `${baseUrl}/og/mood-${entry.slug}.svg`,
     })),
     ...capabilityEntries.map((entry) => ({
       loc: `${baseUrl}/capabilities/${entry.slug}/`,
-      image: `${baseUrl}/og/default.svg`,
+      image: `${baseUrl}/og/capability-${entry.slug}.svg`,
     })),
   ];
 
