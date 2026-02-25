@@ -98,6 +98,8 @@ const renderPage = ({
   socialImageType = 'image/png',
   socialImageWidth = 512,
   socialImageHeight = 512,
+  twitterImage,
+  twitterImageAlt,
 }: {
   title: string;
   description: string;
@@ -110,7 +112,15 @@ const renderPage = ({
   socialImageType?: string;
   socialImageWidth?: number;
   socialImageHeight?: number;
-}) => `<!doctype html>
+  twitterImage?: string;
+  twitterImageAlt?: string;
+}) => {
+  const resolvedTwitterImage =
+    twitterImage ??
+    (socialImageType === 'image/svg+xml' ? iconUrl : socialImage);
+  const resolvedTwitterImageAlt = twitterImageAlt ?? socialImageAlt;
+
+  return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -132,8 +142,8 @@ const renderPage = ({
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${socialImage}" />
-    <meta name="twitter:image:alt" content="${escapeHtml(socialImageAlt)}" />
+    <meta name="twitter:image" content="${resolvedTwitterImage}" />
+    <meta name="twitter:image:alt" content="${escapeHtml(resolvedTwitterImageAlt)}" />
     <link rel="canonical" href="${canonical}" />
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
@@ -150,6 +160,7 @@ ${extraHead}
   </body>
 </html>
 `;
+};
 
 type ToyEntry = {
   slug: string;
