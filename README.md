@@ -29,6 +29,26 @@ Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil
 - **Demo-audio friendly toys**: https://no.toil.fyi/capabilities/demo-audio/
 - **Responsive experiences**: https://no.toil.fyi/tags/responsive/
 
+## Table of contents
+
+- [Documentation map](#documentation-map)
+- [Architecture at a glance](#architecture-at-a-glance)
+- [Quick Start](#quick-start)
+- [Getting Started](#getting-started)
+- [Repository Layout](#repository-layout)
+- [Toys in the Collection](#toys-in-the-collection)
+- [Roadmap](#roadmap)
+- [Local Setup](#local-setup)
+- [Troubleshooting](#troubleshooting)
+- [Helpful Scripts (Bun-first)](#helpful-scripts-bun-first)
+- [Code of Conduct and Contributions](#code-of-conduct-and-contributions)
+- [Cloudflare Pages (Bun) build & deploy](#cloudflare-pages-bun-build--deploy)
+- [Contributing](#contributing)
+- [Security](#security)
+- [Maintainers and contact](#maintainers-and-contact)
+- [Browser support snapshot](#browser-support-snapshot)
+- [License](#license)
+
 For setup, testing, and contribution details, see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're building or updating toys, the developer docs in [`docs/`](./docs) cover common workflows and patterns. If you’re using the Model Context Protocol server in [`scripts/mcp-server.ts`](./scripts/mcp-server.ts), see the dedicated guide in [`docs/MCP_SERVER.md`](./docs/MCP_SERVER.md).
 
 Looking for release notes? Check out the [CHANGELOG](./CHANGELOG.md) to see what’s new, what changed, and what’s coming next.
@@ -329,6 +349,33 @@ If you run into a problem or want to propose an improvement, please use the GitH
 - **Feature requests**: describe the problem you’re trying to solve, the behavior you’d like, and any alternatives you considered.
 
 When opening a pull request, fill out the PR template with a summary of the change and the tests you ran. Check the lint and test boxes only if you executed those commands.
+
+## Security
+
+If you discover a security issue, please **do not open a public issue with exploit details**. Instead, use GitHub's private vulnerability reporting flow for this repository:
+
+- https://github.com/zz-plant/stims/security/advisories/new
+
+If private reporting is unavailable for any reason, open a regular issue with minimal detail and request a private follow-up.
+
+## Maintainers and contact
+
+- Primary contact and project stewardship currently flow through the repository owner and maintainers on GitHub.
+- For bugs and feature requests, use [GitHub Issues](https://github.com/zz-plant/stims/issues).
+- For contributions, use [Pull Requests](https://github.com/zz-plant/stims/pulls) and follow [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
+## Browser support snapshot
+
+Feature availability varies by browser and device, but this table is a practical baseline:
+
+| Browser | WebGL toys | Microphone input | WebGPU-only toys |
+| --- | --- | --- | --- |
+| Chrome (desktop/mobile) | ✅ | ✅ | ✅ (supported hardware/drivers) |
+| Edge (desktop) | ✅ | ✅ | ✅ (supported hardware/drivers) |
+| Firefox | ✅ | ✅ | ⚠️ Limited/experimental |
+| Safari (macOS/iOS) | ✅ | ✅ | ⚠️ Version/device dependent |
+
+See the capability checks and fallback notes in [Troubleshooting](#troubleshooting) for current behavior.
 
 ---
 
