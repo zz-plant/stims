@@ -5,7 +5,14 @@ const baseUrl = 'https://no.toil.fyi';
 const iconUrl = `${baseUrl}/icons/icon-512.png`;
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'public');
-const generatedDirs = ['toys', 'tags', 'moods', 'capabilities', 'og'];
+const generatedDirs = [
+  'toys',
+  'tags',
+  'moods',
+  'capabilities',
+  'discover',
+  'og',
+];
 const sitemapChunkSize = 5000;
 const ogWidth = 1200;
 const ogHeight = 630;
@@ -77,11 +84,11 @@ const buildOgSvg = ({
 </svg>`;
 
 const getSitemapMeta = (url: string) => {
-  if (url.endsWith('/')) {
-    return { changefreq: 'weekly', priority: '0.9' };
-  }
   if (url.includes('/toys/')) {
     return { changefreq: 'monthly', priority: '0.8' };
+  }
+  if (url.endsWith('/')) {
+    return { changefreq: 'weekly', priority: '0.9' };
   }
   return { changefreq: 'monthly', priority: '0.7' };
 };
@@ -224,21 +231,25 @@ const buildCapabilityIndex = (toys: ToyEntry[]) => {
     {
       slug: 'microphone',
       label: 'Microphone ready',
+      summary: 'toys that support live microphone input',
       match: (toy: ToyEntry) => !!toy.capabilities?.microphone,
     },
     {
       slug: 'demo-audio',
       label: 'Demo audio available',
+      summary: 'toys with built-in demo audio playback',
       match: (toy: ToyEntry) => !!toy.capabilities?.demoAudio,
     },
     {
       slug: 'motion',
       label: 'Device motion support',
+      summary: 'toys that respond to device tilt and movement',
       match: (toy: ToyEntry) => !!toy.capabilities?.motion,
     },
     {
       slug: 'webgpu',
       label: 'WebGPU enhanced',
+      summary: 'toys with enhanced WebGPU visual effects',
       match: (toy: ToyEntry) => !!toy.requiresWebGPU,
     },
   ];
@@ -247,6 +258,37 @@ const buildCapabilityIndex = (toys: ToyEntry[]) => {
     toys: toys.filter(capability.match),
   }));
 };
+
+const buildMoodCapabilityCombos = (
+  moodEntries: { slug: string; label: string; toys: ToyEntry[] }[],
+  capabilityEntries: {
+    slug: string;
+    label: string;
+    summary: string;
+    toys: ToyEntry[];
+  }[],
+) =>
+  moodEntries
+    .flatMap((moodEntry) =>
+      capabilityEntries.map((capabilityEntry) => {
+        const capabilitySlugs = new Set(
+          capabilityEntry.toys.map((toy) => toy.slug),
+        );
+        const toys = moodEntry.toys.filter((toy) =>
+          capabilitySlugs.has(toy.slug),
+        );
+        return {
+          slug: `${moodEntry.slug}-${capabilityEntry.slug}`,
+          moodEntry,
+          capabilityEntry,
+          toys,
+        };
+      }),
+    )
+    .filter((entry) => entry.toys.length >= 2)
+    .sort(
+      (a, b) => b.toys.length - a.toys.length || a.slug.localeCompare(b.slug),
+    );
 
 const renderToyList = (toys: ToyEntry[]) =>
   `<ul class="feature-card-grid">${toys
@@ -302,6 +344,26 @@ const renderCapabilityLinks = (
           <h3>${escapeHtml(entry.label)}</h3>
           <p>${entry.toys.length} toys</p>
           <a class="cta-button ghost" href="/capabilities/${entry.slug}/">View toys</a>
+        </li>
+      `,
+    )
+    .join('')}</ul>`;
+
+const renderDiscoverLinks = (
+  entries: {
+    slug: string;
+    moodEntry: { label: string };
+    capabilityEntry: { label: string };
+    toys: ToyEntry[];
+  }[],
+) =>
+  `<ul class="feature-card-grid">${entries
+    .map(
+      (entry) => `
+        <li class="feature-card">
+          <h3>${escapeHtml(entry.moodEntry.label)} + ${escapeHtml(entry.capabilityEntry.label)}</h3>
+          <p>${entry.toys.length} toys</p>
+          <a class="cta-button ghost" href="/discover/${entry.slug}/">View toys</a>
         </li>
       `,
     )
@@ -522,11 +584,13 @@ const generateSeo = async () => {
   const tagsDir = path.join(publicDir, 'tags');
   const moodsDir = path.join(publicDir, 'moods');
   const capabilitiesDir = path.join(publicDir, 'capabilities');
+  const discoverDir = path.join(publicDir, 'discover');
   const ogDir = path.join(publicDir, 'og');
   await mkdir(toyDir, { recursive: true });
   await mkdir(tagsDir, { recursive: true });
   await mkdir(moodsDir, { recursive: true });
   await mkdir(capabilitiesDir, { recursive: true });
+  await mkdir(discoverDir, { recursive: true });
   await mkdir(ogDir, { recursive: true });
 
   const defaultOgSvg = buildOgSvg({
@@ -590,6 +654,10 @@ const generateSeo = async () => {
   const tagEntries = buildTagIndex(toys);
   const moodEntries = buildMoodIndex(toys);
   const capabilityEntries = buildCapabilityIndex(toys);
+  const comboEntries = buildMoodCapabilityCombos(
+    moodEntries,
+    capabilityEntries,
+  );
 
   const toyIndexBody = `
     <section class="intro">
@@ -1027,7 +1095,7 @@ ${extraHead}
       path.join(capPath, 'index.html'),
       renderPage({
         title: `${entry.label} toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} toys with ${entry.label.toLowerCase()} support.`,
+        description: `Explore ${entry.toys.length} ${entry.summary}.`,
         canonical,
         body,
         keywords: [
@@ -1047,13 +1115,127 @@ ${extraHead}
       buildCollectionJsonLd({
         canonical,
         title: `${entry.label} toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} toys with ${entry.label.toLowerCase()} support.`,
+        description: `Explore ${entry.toys.length} ${entry.summary}.`,
         toys: entry.toys,
       }),
     )}</script>
 `,
         socialImage: `${baseUrl}/og/${capabilityOgFile}`,
         socialImageAlt: `${entry.label} capability page preview image`,
+        socialImageType: 'image/svg+xml',
+        socialImageWidth: ogWidth,
+        socialImageHeight: ogHeight,
+      }),
+    );
+  }
+
+  const discoverIndexBody = `
+    <section class="intro">
+      <div class="section-heading">
+        <p class="eyebrow">Stim Webtoys</p>
+        <h1>Discover combinations</h1>
+        <p class="section-description">Find toys by combining mood and capability filters for high-intent exploration paths.</p>
+        <a class="text-link" href="/index.html">Back to library</a>
+      </div>
+    </section>
+    <section>
+      ${renderDiscoverLinks(comboEntries)}
+    </section>
+  `;
+  await writeFile(
+    path.join(discoverDir, 'index.html'),
+    renderPage({
+      title: 'Discover combinations | Stim Webtoys Library',
+      description:
+        'Discover audio-reactive toys by combining mood and capability filters such as calming + demo audio or cosmic + motion.',
+      canonical: `${baseUrl}/discover/`,
+      body: discoverIndexBody,
+      keywords: [
+        'discover interactive web toys',
+        'mood and capability visualizers',
+        'audio-reactive toy combinations',
+      ],
+      extraHead: `
+    <script type="application/ld+json">${JSON.stringify(
+      buildCollectionJsonLd({
+        canonical: `${baseUrl}/discover/`,
+        title: 'Discover combinations | Stim Webtoys Library',
+        description:
+          'Discover audio-reactive toys by combining mood and capability filters such as calming + demo audio or cosmic + motion.',
+        toys: comboEntries.flatMap((entry) => entry.toys),
+      }),
+    )}</script>
+`,
+    }),
+  );
+
+  for (const entry of comboEntries) {
+    const canonical = `${baseUrl}/discover/${entry.slug}/`;
+    const breadcrumbs = [
+      { label: 'Home', href: '/' },
+      { label: 'Discover', href: '/discover/' },
+      {
+        label: `${entry.moodEntry.label} + ${entry.capabilityEntry.label}`,
+        href: `/discover/${entry.slug}/`,
+      },
+    ];
+    const comboOgFile = `discover-${entry.slug}.svg`;
+    const ogSvg = buildOgSvg({
+      title: `${entry.moodEntry.label} + ${entry.capabilityEntry.label}`,
+      subtitle: `${entry.toys.length} matching toys`,
+      eyebrow: 'Stim Webtoys discover page',
+      accentStart: '#0c1930',
+      accentEnd: '#144657',
+      chip: 'Mood + capability',
+    });
+    await writeFile(path.join(ogDir, comboOgFile), ogSvg);
+
+    const body = `
+      ${renderBreadcrumbs(breadcrumbs)}
+      <section class="intro">
+        <div class="section-heading">
+          <p class="eyebrow">Stim Webtoys</p>
+          <h1>${escapeHtml(entry.moodEntry.label)} toys with ${escapeHtml(entry.capabilityEntry.label.toLowerCase())}</h1>
+          <p class="section-description">Explore ${entry.toys.length} toys in the ${escapeHtml(entry.moodEntry.label.toLowerCase())} mood that are ${escapeHtml(entry.capabilityEntry.summary)}.</p>
+          <div class="cta-row">
+            <a class="cta-button ghost" href="/moods/${entry.moodEntry.slug}/">Browse ${escapeHtml(entry.moodEntry.label)} mood</a>
+            <a class="cta-button ghost" href="/capabilities/${entry.capabilityEntry.slug}/">Browse ${escapeHtml(entry.capabilityEntry.label)}</a>
+          </div>
+        </div>
+      </section>
+      <section>
+        ${renderToyList(entry.toys)}
+      </section>
+    `;
+
+    const discoverPath = path.join(discoverDir, entry.slug);
+    await mkdir(discoverPath, { recursive: true });
+    await writeFile(
+      path.join(discoverPath, 'index.html'),
+      renderPage({
+        title: `${entry.moodEntry.label} + ${entry.capabilityEntry.label} toys | Stim Webtoys`,
+        description: `Explore ${entry.toys.length} ${entry.moodEntry.label.toLowerCase()} toys that are ${entry.capabilityEntry.summary}.`,
+        canonical,
+        body,
+        keywords: [
+          `${entry.moodEntry.label} toys`,
+          `${entry.capabilityEntry.label} toys`,
+          `${entry.moodEntry.label} ${entry.capabilityEntry.label}`,
+          'audio-reactive web toys',
+        ],
+        extraHead: `
+    <script type="application/ld+json">${JSON.stringify(buildBreadcrumbJsonLd(breadcrumbs))}</script>
+    <script type="application/ld+json">${JSON.stringify(
+      buildCollectionJsonLd({
+        canonical,
+        title: `${entry.moodEntry.label} + ${entry.capabilityEntry.label} toys | Stim Webtoys`,
+        description: `Explore ${entry.toys.length} ${entry.moodEntry.label.toLowerCase()} toys that are ${entry.capabilityEntry.summary}.`,
+        toys: entry.toys,
+      }),
+    )}</script>
+`,
+        socialImage: `${baseUrl}/og/${comboOgFile}`,
+        socialImageAlt: `${entry.moodEntry.label} and ${entry.capabilityEntry.label} discover page preview image`,
         socialImageType: 'image/svg+xml',
         socialImageWidth: ogWidth,
         socialImageHeight: ogHeight,
@@ -1072,6 +1254,10 @@ ${extraHead}
       loc: `${baseUrl}/capabilities/`,
       image: `${baseUrl}/og/${capabilitiesIndexOgFile}`,
     },
+    {
+      loc: `${baseUrl}/discover/`,
+      image: `${baseUrl}/og/${capabilitiesIndexOgFile}`,
+    },
     ...toys.map((toy) => ({
       loc: `${baseUrl}/toys/${toy.slug}/`,
       image: `${baseUrl}/og/${toy.slug}.svg`,
@@ -1087,6 +1273,10 @@ ${extraHead}
     ...capabilityEntries.map((entry) => ({
       loc: `${baseUrl}/capabilities/${entry.slug}/`,
       image: `${baseUrl}/og/capability-${entry.slug}.svg`,
+    })),
+    ...comboEntries.map((entry) => ({
+      loc: `${baseUrl}/discover/${entry.slug}/`,
+      image: `${baseUrl}/og/discover-${entry.slug}.svg`,
     })),
   ];
 
