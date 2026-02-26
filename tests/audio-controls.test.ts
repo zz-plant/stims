@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { initAudioControls } from '../assets/js/ui/audio-controls.ts';
 import { YouTubeController } from '../assets/js/ui/youtube-controller.ts';
 
@@ -229,7 +229,7 @@ describe('audio controls primary emphasis', () => {
       '[data-first-steps]',
     ) as HTMLElement;
     expect(firstSteps.hidden).toBe(false);
-    expect(firstSteps.textContent).toContain('First 10 seconds');
+    expect(firstSteps.textContent).toContain('First steps');
     expect(firstSteps.textContent).toContain(
       'Try turning the main knob slowly for smoother motion.',
     );
@@ -243,6 +243,31 @@ describe('audio controls primary emphasis', () => {
     expect(sessionStorage.getItem('stims-first-steps-dismissed')).toBe('true');
   });
 
+  test('auto-starts microphone when permission is already granted', async () => {
+    const container = document.createElement('section');
+    const onRequestMicrophone = mock(async () => {});
+
+    const permissions = navigator.permissions;
+    Object.defineProperty(navigator, 'permissions', {
+      configurable: true,
+      value: {
+        query: mock(async () => ({ state: 'granted' })),
+      },
+    });
+
+    initAudioControls(container, {
+      onRequestMicrophone,
+      onRequestDemoAudio: async () => {},
+    });
+
+    await flush();
+
+    expect(onRequestMicrophone).toHaveBeenCalledTimes(1);
+    Object.defineProperty(navigator, 'permissions', {
+      configurable: true,
+      value: permissions,
+    });
+  });
   test('renders quick-start tips with a dismiss action and persists dismissal', () => {
     const container = document.createElement('section');
 

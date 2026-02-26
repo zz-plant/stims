@@ -16,6 +16,7 @@ export interface AudioControlsOptions {
   starterPresetLabel?: string;
   starterPresetId?: string;
   onApplyStarterPreset?: () => void;
+  autoStartMicrophoneWhenGranted?: boolean;
 }
 
 type MicrophonePermissionState = PermissionState | 'unsupported' | 'unknown';
@@ -80,7 +81,7 @@ export function initAudioControls(
     <p class="control-panel__stage-label">Step 1 · Start audio</p>
     <section class="control-panel__first-steps" data-first-steps role="note" aria-label="First steps">
       <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">First 10 seconds</span>
+        <span class="control-panel__label">First steps</span>
         <div class="control-panel__first-steps-actions">
           <button type="button" class="control-panel__dismiss" data-apply-starter-preset>Try ${starterPresetLabel}</button>
           <button type="button" class="control-panel__dismiss" data-dismiss-first-steps>Dismiss</button>
@@ -370,6 +371,9 @@ export function initAudioControls(
 
   const preferDemoAudio =
     options.preferDemoAudio ?? readStoredSource() === 'demo';
+  const autoStartMicrophoneWhenGranted =
+    options.autoStartMicrophoneWhenGranted ?? true;
+  let hasStartedAudio = false;
 
   if (preferDemoAudio && demoBtn instanceof HTMLButtonElement) {
     setPreferredSource('demo');
@@ -392,6 +396,8 @@ export function initAudioControls(
       );
       emphasizeDemoAudio();
     }
+
+    maybeAutoStartMicrophone();
   });
 
   const firstStepsPanel = container.querySelector(
@@ -535,6 +541,7 @@ export function initAudioControls(
   };
 
   const handleSuccess = () => {
+    hasStartedAudio = true;
     options.onSuccess?.();
     showGestureHints();
     hideFirstSteps();
@@ -590,6 +597,34 @@ export function initAudioControls(
       advancedToggle.focus();
     });
   }
+
+  const maybeAutoStartMicrophone = () => {
+    if (
+      !autoStartMicrophoneWhenGranted ||
+      preferDemoAudio ||
+      hasStartedAudio ||
+      microphonePermissionState !== 'granted' ||
+      !(micBtn instanceof HTMLButtonElement)
+    ) {
+      return;
+    }
+
+    void handleRequest(
+      micBtn,
+      async () => {
+        await options.onRequestMicrophone();
+        writeStoredSource('microphone');
+        setPreferredSource('microphone');
+      },
+      'Microphone access failed.',
+      (message) => {
+        emphasizeDemoAudio();
+        updateStatus(buildMicrophoneErrorMessage(message));
+      },
+      'Mic connected.',
+      'Starting microphone…',
+    );
+  };
 
   const handleRequest = async (
     button: Element | null,
