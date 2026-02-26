@@ -120,7 +120,7 @@ export function setupMicrophonePermissionFlow(options: MicrophoneFlowOptions) {
     requestMicrophone,
     requestSampleAudio,
     analytics,
-    timeoutMs = 8000,
+    timeoutMs = 20000,
     onSuccess,
     onError,
   } = options;
