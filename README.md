@@ -107,7 +107,7 @@ flowchart TD
 2. Confirm your runtime (the repo records `bun@1.3.8` in `package.json` via `packageManager`):
    - **Bun 1.3+**: install from [bun.sh](https://bun.sh/) for the fastest install/test cycle and the supported workflow.
 3. Install dependencies with `bun install`. The repository tracks `bun.lock` for reproducible installs—use `bun install --frozen-lockfile` to respect it.
-4. Start the dev server with `bun run dev`, then open `http://localhost:5173` in your browser. Use `bun run dev:host` when you need the server bound to all interfaces for mobile/LAN testing.
+4. Start the dev server with `bun run dev`, then open `http://localhost:5173` in your browser. Use `bun run dev:host` when you need the server bound to all interfaces for mobile/LAN testing. If you need a WebGPU-focused local session, run `bun run dev:webgpu` to launch Chromium with WebGPU-friendly flags against a localhost dev server.
 
 See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static hosting, and Cloudflare Worker instructions. That playbook also covers PR preview validation and multi-entry-point checks before merging.
 
