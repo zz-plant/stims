@@ -138,6 +138,9 @@ export function start({ container }: ToyStartOptions = {}) {
 
   // Central bloom mesh
   let bloomMesh: THREE.Mesh | null = null;
+  let activeRenderer: ToyRuntimeInstance['toy']['renderer'] = null;
+  const particleColor = new THREE.Color();
+  const backgroundColor = new THREE.Color();
 
   function getArmConfig() {
     const scale =
@@ -471,11 +474,7 @@ export function start({ container }: ToyStartOptions = {}) {
   function applyPalette(index: number) {
     const palette = palettes[index];
     runtime.toy.scene.fog = new THREE.FogExp2(palette.fog, 0.008);
-    runtime.toy.rendererReady.then((result) => {
-      if (result) {
-        result.renderer.setClearColor(palette.background, 1);
-      }
-    });
+    activeRenderer?.setClearColor(palette.background, 1);
 
     spiralArms.forEach((arm) => {
       arm.lines.forEach((line) => {
@@ -687,14 +686,14 @@ export function start({ container }: ToyStartOptions = {}) {
             time * 0.00005 +
             smoothedHighs * 0.2) %
           1;
-        const color = new THREE.Color().setHSL(
+        particleColor.setHSL(
           hue,
           0.9 + beatStreak * 0.05,
           0.5 + smoothedHighs * 0.3 + beatFlash * 0.1,
         );
-        colors[i3] = color.r;
-        colors[i3 + 1] = color.g;
-        colors[i3 + 2] = color.b;
+        colors[i3] = particleColor.r;
+        colors[i3 + 1] = particleColor.g;
+        colors[i3 + 2] = particleColor.b;
       }
 
       particleField.geometry.attributes.position.needsUpdate = true;
@@ -716,18 +715,12 @@ export function start({ container }: ToyStartOptions = {}) {
     runtime.toy.camera.lookAt(0, 0, 0);
 
     // Background color pulse
-    runtime.toy.rendererReady.then((result) => {
-      if (result) {
-        const palette = palettes[activePaletteIndex];
-        const bgHue = (palette.baseHue + smoothedMids * 0.1) % 1;
-        const bgColor = new THREE.Color().setHSL(
-          bgHue,
-          0.3,
-          0.02 + beatIntensity * 0.03,
-        );
-        result.renderer.setClearColor(bgColor);
-      }
-    });
+    if (activeRenderer) {
+      const palette = palettes[activePaletteIndex];
+      const bgHue = (palette.baseHue + smoothedMids * 0.1) % 1;
+      backgroundColor.setHSL(bgHue, 0.3, 0.02 + beatIntensity * 0.03);
+      activeRenderer.setClearColor(backgroundColor);
+    }
 
     runtime.toy.render();
   }
@@ -819,6 +812,9 @@ export function start({ container }: ToyStartOptions = {}) {
         setup: (runtimeInstance) => {
           runtime = runtimeInstance;
           const { toy } = runtimeInstance;
+          toy.rendererReady.then((result) => {
+            activeRenderer = result?.renderer ?? null;
+          });
           toy.scene.add(spiralContainer);
           setupSettingsPanel();
           buildSpiralArms();
@@ -831,6 +827,7 @@ export function start({ container }: ToyStartOptions = {}) {
           animate(frequencyData, time, analyser);
         },
         dispose: () => {
+          activeRenderer = null;
           disposeSpiralArms();
           disposeParticleField();
           if (bloomMesh) {

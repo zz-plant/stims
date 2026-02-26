@@ -12,6 +12,7 @@ import {
 } from '../renderer-capabilities.ts';
 import {
   applyRendererSettings,
+  type RendererViewport,
   resolveRendererSettings,
 } from '../renderer-settings.ts';
 import {
@@ -31,7 +32,10 @@ export type RendererHandle = {
   backend: RendererBackend;
   info: RendererInitResult;
   canvas: HTMLCanvasElement;
-  applySettings: (options?: Partial<RendererInitConfig>) => void;
+  applySettings: (
+    options?: Partial<RendererInitConfig>,
+    viewport?: RendererViewport,
+  ) => void;
   release: () => void;
 };
 
@@ -85,8 +89,9 @@ function applyPoolSettings(
   renderer: THREE.WebGLRenderer | WebGPURenderer,
   info: RendererInitResult,
   options: Partial<RendererInitConfig> = {},
+  viewport?: RendererViewport,
 ) {
-  applyRendererSettings(renderer, info, options, getRenderDefaults());
+  applyRendererSettings(renderer, info, options, getRenderDefaults(), viewport);
 }
 
 async function createRendererHandle(
@@ -105,8 +110,8 @@ async function createRendererHandle(
     backend: initResult.backend,
     info: initResult,
     canvas,
-    applySettings: (nextOptions) =>
-      applyPoolSettings(initResult.renderer, initResult, nextOptions),
+    applySettings: (nextOptions, viewport) =>
+      applyPoolSettings(initResult.renderer, initResult, nextOptions, viewport),
     release: () => {},
   };
 

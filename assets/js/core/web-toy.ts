@@ -60,6 +60,8 @@ export default class WebToy {
   resizeHandler: (() => void) | null;
   rendererHandle: RendererHandle | null;
   viewportResizeHandler: (() => void) | null;
+  viewportWidth: number;
+  viewportHeight: number;
 
   constructor({
     cameraOptions = {},
@@ -124,6 +126,8 @@ export default class WebToy {
     this.resizeObserver = null;
     this.resizeHandler = null;
     this.viewportResizeHandler = null;
+    this.viewportWidth = window.innerWidth;
+    this.viewportHeight = window.innerHeight;
 
     if (typeof ResizeObserver !== 'undefined' && this.container) {
       this.resizeObserver = new ResizeObserver(() => {
@@ -171,6 +175,9 @@ export default class WebToy {
       `${viewportWidth}px`,
     );
 
+    this.viewportWidth = width;
+    this.viewportHeight = height;
+
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.applyRendererSettings();
@@ -179,7 +186,10 @@ export default class WebToy {
   applyRendererSettings() {
     if (!this.renderer) return;
 
-    this.rendererHandle?.applySettings(this.rendererOptions);
+    this.rendererHandle?.applySettings(this.rendererOptions, {
+      width: this.viewportWidth,
+      height: this.viewportHeight,
+    });
   }
 
   updateRendererSettings(options: Partial<RendererInitConfig>) {

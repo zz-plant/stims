@@ -5,6 +5,11 @@ import type {
 } from './renderer-setup.ts';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
 
+export type RendererViewport = {
+  width: number;
+  height: number;
+};
+
 const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   maxPixelRatio: 2,
   renderScale: 1,
@@ -47,6 +52,7 @@ export function applyRendererSettings(
   info: RendererInitResult,
   options: Partial<RendererInitConfig> = {},
   defaults: Partial<RendererInitConfig> = {},
+  viewport?: RendererViewport,
 ) {
   const merged = resolveRendererSettings(options, info, defaults);
   const effectivePixelRatio = Math.min(
@@ -55,7 +61,11 @@ export function applyRendererSettings(
   );
 
   renderer.setPixelRatio(effectivePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(
+    viewport?.width ?? window.innerWidth,
+    viewport?.height ?? window.innerHeight,
+    false,
+  );
   renderer.toneMappingExposure = merged.exposure ?? 1;
 
   info.maxPixelRatio = merged.maxPixelRatio ?? info.maxPixelRatio;
