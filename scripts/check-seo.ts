@@ -26,6 +26,16 @@ const requiredInGeneratedToyPage = [
   '<link rel="canonical" href="https://no.toil.fyi/toys/cube-wave/" />',
 ];
 
+const requiredInDiscoverPage = [
+  '<link rel="canonical" href="https://no.toil.fyi/discover/" />',
+  'Discover combinations | Stim Webtoys Library',
+];
+
+const requiredInDiscoverComboPage = [
+  '<link rel="canonical" href="https://no.toil.fyi/discover/calming-demo-audio/" />',
+  '<h1>calming toys with demo audio available</h1>',
+];
+
 const run = async () => {
   const results: CheckResult[] = [];
 
@@ -47,6 +57,30 @@ const run = async () => {
       name: `Generated toy page contains ${snippet}`,
       passed: toyPage.includes(snippet),
       details: 'public/toys/cube-wave/index.html',
+    });
+  }
+
+  const discoverPage = await readFile(
+    path.join(publicDir, 'discover', 'index.html'),
+    'utf8',
+  );
+  for (const snippet of requiredInDiscoverPage) {
+    results.push({
+      name: `Discover index contains ${snippet}`,
+      passed: discoverPage.includes(snippet),
+      details: 'public/discover/index.html',
+    });
+  }
+
+  const discoverComboPage = await readFile(
+    path.join(publicDir, 'discover', 'calming-demo-audio', 'index.html'),
+    'utf8',
+  );
+  for (const snippet of requiredInDiscoverComboPage) {
+    results.push({
+      name: `Discover combo page contains ${snippet}`,
+      passed: discoverComboPage.includes(snippet),
+      details: 'public/discover/calming-demo-audio/index.html',
     });
   }
 
