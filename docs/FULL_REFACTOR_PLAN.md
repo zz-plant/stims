@@ -137,24 +137,11 @@ Exit criteria:
 - **Milestone D:** Perf/reliability pass complete.
 - **Milestone E:** Documentation closeout and cleanup.
 
-## Status board
+## Implementation status source of truth
 
-Use this checklist to track real execution state for the staged milestones above.
+For editable milestone/workstream status, use `docs/IMPLEMENTATION_STATUS.md` as the single source of truth.
 
-- [ ] **Milestone A:** Baseline + lifecycle contract draft.
-- [ ] **Milestone B:** Pilot migration complete and validated.
-- [ ] **Milestone C:** Broad toy migration done with drift checks hardened.
-- [ ] **Milestone D:** Perf/reliability pass complete.
-- [ ] **Milestone E:** Documentation closeout and cleanup.
-
-### Workstream status snapshot (2026-02)
-
-- [ ] 1) Baseline and observability
-- [ ] 2) Shared runtime boundary extraction
-- [ ] 3) Toy module normalization
-- [ ] 4) Data and metadata consistency hardening
-- [ ] 5) Incremental performance and reliability pass
-- [ ] 6) Documentation and contributor UX completion
+This plan remains the strategy and acceptance-criteria reference; do not duplicate checklist state here.
 
 ## Risk management
 

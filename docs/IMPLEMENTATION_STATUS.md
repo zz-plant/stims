@@ -39,7 +39,7 @@ This document is the consolidated source for implementation progress across road
 - [ ] Add deterministic generated-artifact validation for metadata/taxonomy updates.
 - [ ] Raise toy-level smoke coverage, starting with high-traffic toys.
 - [ ] Harden metadata source-of-truth drift checks.
-- [x] Add visible refactor execution checkpoints (status board).
+- [x] Maintain visible refactor execution checkpoints in this document.
 
 ## UX delivery queue
 
@@ -63,5 +63,6 @@ This document is the consolidated source for implementation progress across road
 
 ## Maintenance notes
 
+- This file is the authoritative, editable status checklist for roadmap/refactor/debt/UX execution.
 - Update this file in the same PR when item status changes.
-- Keep `docs/FULL_REFACTOR_PLAN.md` for detailed strategy and rationale.
+- Keep `docs/FULL_REFACTOR_PLAN.md` for detailed strategy and rationale (non-authoritative for checklist state).
