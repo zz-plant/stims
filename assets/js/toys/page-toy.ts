@@ -18,6 +18,27 @@ type StartPageToyOptions = PageToyStartOptions & {
 
 type PageToyConfig = Omit<StartPageToyOptions, keyof PageToyStartOptions>;
 
+type EmbeddedToyWindow = HTMLIFrameElement['contentWindow'] & {
+  exposedStartAudio?: (req: unknown) => Promise<unknown>;
+  startAudio?: (req: unknown) => Promise<unknown>;
+};
+
+function resolveEmbeddedStarter(targetWindow: EmbeddedToyWindow | null) {
+  if (!targetWindow) {
+    return null;
+  }
+
+  if (typeof targetWindow.exposedStartAudio === 'function') {
+    return targetWindow.exposedStartAudio.bind(targetWindow);
+  }
+
+  if (typeof targetWindow.startAudio === 'function') {
+    return targetWindow.startAudio.bind(targetWindow);
+  }
+
+  return null;
+}
+
 function resolvePageSrc(path: string) {
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   return new URL(path, window.location.origin).toString();
@@ -90,10 +111,7 @@ export function startPageToy({
     // Expose startAudio to the parent wrapper by proxying it
     // to the iframe's contentWindow where the toy actually loads.
     startAudio: async (request: unknown) => {
-      const targetWindow =
-        frame.contentWindow as HTMLIFrameElement['contentWindow'] & {
-          exposedStartAudio?: (req: unknown) => Promise<unknown>;
-        };
+      const targetWindow = frame.contentWindow as EmbeddedToyWindow;
 
       const isDemo =
         request === true ||
@@ -106,22 +124,24 @@ export function startPageToy({
         ? { preferSynthetic: true, fallbackToSynthetic: true }
         : request;
 
-      if (targetWindow?.exposedStartAudio) {
-        return targetWindow.exposedStartAudio(childRequest);
+      const immediateStarter = resolveEmbeddedStarter(targetWindow);
+      if (immediateStarter) {
+        return immediateStarter(childRequest);
       }
 
       console.warn(
-        'Toy iframe did not immediately expose startAudio, waiting...',
+        'Toy iframe did not immediately expose an audio starter, waiting...',
       );
       for (let i = 0; i < 20; i++) {
         await new Promise((r) => setTimeout(r, 100));
-        if (targetWindow?.exposedStartAudio) {
-          return targetWindow.exposedStartAudio(childRequest);
+        const delayedStarter = resolveEmbeddedStarter(targetWindow);
+        if (delayedStarter) {
+          return delayedStarter(childRequest);
         }
       }
 
       throw new Error(
-        'Page toy did not expose startAudio to the parent window.',
+        'Page toy did not expose any audio starter to the parent window.',
       );
     },
   };
