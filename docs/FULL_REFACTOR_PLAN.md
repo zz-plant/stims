@@ -137,6 +137,12 @@ Exit criteria:
 - **Milestone D:** Perf/reliability pass complete.
 - **Milestone E:** Documentation closeout and cleanup.
 
+## Implementation status source of truth
+
+For editable milestone/workstream status, use `docs/IMPLEMENTATION_STATUS.md` as the single source of truth.
+
+This plan remains the strategy and acceptance-criteria reference; do not duplicate checklist state here.
+
 ## Risk management
 
 - Use small PRs grouped by workstream to reduce merge conflicts.
