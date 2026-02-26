@@ -52,6 +52,7 @@ Use this to decide the minimum workflow before you start running commands.
 | --- | --- | --- |
 | Start dev server | `bun run dev` | Default local Vite dev server. |
 | Start dev server on LAN | `bun run dev:host` | Use for device testing on local network. |
+| Start WebGPU-focused dev session | `bun run dev:webgpu` | Launches localhost Vite + Chromium with WebGPU-enabling flags. |
 | Dev smoke check (no browser) | `bun run dev:check` | Scripted health check for local dev boot. |
 | Production build | `bun run build` | Uses Bun with Node fallback in script. |
 | Reuse prior build artifacts | `bun run build:reuse` | Useful in deploy/preview loops. |
@@ -177,6 +178,7 @@ Always prefer `bun run test` over `bun test` directly so preload/importmap flags
 - **Typecheck errors after dependency changes:** rerun `bun install` and then `bun run typecheck`.
 - **`check:toys` failures after renaming a slug:** verify toy docs and metadata updates landed together.
 - **Pages command failures locally:** verify Wrangler auth/context and rerun `bun run pages:dev`.
+- **`navigator.gpu` missing during local testing:** run `bun run dev:webgpu` so Chromium starts with WebGPU flags on localhost.
 
 ## Commit and PR metadata checklist
 
