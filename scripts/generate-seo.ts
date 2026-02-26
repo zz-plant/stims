@@ -290,6 +290,16 @@ const buildMoodCapabilityCombos = (
       (a, b) => b.toys.length - a.toys.length || a.slug.localeCompare(b.slug),
     );
 
+const uniqueToysBySlug = (toys: ToyEntry[]) => {
+  const bySlug = new Map<string, ToyEntry>();
+  for (const toy of toys) {
+    if (!bySlug.has(toy.slug)) {
+      bySlug.set(toy.slug, toy);
+    }
+  }
+  return Array.from(bySlug.values());
+};
+
 const renderToyList = (toys: ToyEntry[]) =>
   `<ul class="feature-card-grid">${toys
     .map(
@@ -657,6 +667,9 @@ const generateSeo = async () => {
   const comboEntries = buildMoodCapabilityCombos(
     moodEntries,
     capabilityEntries,
+  );
+  const discoverUniqueToys = uniqueToysBySlug(
+    comboEntries.flatMap((entry) => entry.toys),
   );
 
   const toyIndexBody = `
@@ -1162,7 +1175,7 @@ ${extraHead}
         title: 'Discover combinations | Stim Webtoys Library',
         description:
           'Discover audio-reactive toys by combining mood and capability filters such as calming + demo audio or cosmic + motion.',
-        toys: comboEntries.flatMap((entry) => entry.toys),
+        toys: discoverUniqueToys,
       }),
     )}</script>
 `,
