@@ -2,10 +2,16 @@ export function createLibraryDomCache(doc = document) {
   const cache = new Map();
 
   const ensure = (key, resolver) => {
-    if (!cache.has(key)) {
-      cache.set(key, resolver());
+    if (cache.has(key)) {
+      return cache.get(key);
     }
-    return cache.get(key);
+
+    const resolved = resolver();
+    if (resolved !== null) {
+      cache.set(key, resolved);
+    }
+
+    return resolved;
   };
 
   return {
