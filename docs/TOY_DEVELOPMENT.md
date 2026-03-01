@@ -6,11 +6,29 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 
 - Place new toy modules under `assets/js/toys/` and export a `start(options)` entry point.
 - Export `start({ container, canvas?, audioContext? })`. `container` is the preferred target for rendering.
-- Register the toy in `assets/data/toys.json` with a unique slug, label, and any default parameters. Keep the module path under `assets/js/toys/`.
+- Register the toy in `assets/data/toys.json` with a unique slug, label, and any default parameters. This JSON file is the authoritative toy metadata source; `assets/js/data/toy-manifest.ts` and `public/toys.json` are generated artifacts. Keep the module path under `assets/js/toys/`.
 - Load toys through `toy.html?toy=<slug>` or a dedicated HTML entry point. Keep query string slugs in sync with `assets/data/toys.json`.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
-- Run `bun run check:toys` before committing to confirm every module in `assets/js/toys/` is registered and page-backed toys have matching HTML entry points.
+- Run `bun run generate:toys` after metadata edits to regenerate derived artifacts, then run `bun run check:toys` to verify schema validity, slug/entrypoint consistency, generated artifact parity, and module/page registration coverage.
 - Run `bun run check:quick` to validate types and code quality with Biome before opening a PR.
+
+
+## Metadata source-of-truth workflow
+
+- **Authoritative metadata:** `assets/data/toys.json`.
+- **Generated from metadata:**
+  - `assets/js/data/toy-manifest.ts`
+  - `public/toys.json`
+- **Regenerate generated artifacts:**
+  ```bash
+  bun run generate:toys
+  ```
+- **Validate no drift (CI/local):**
+  ```bash
+  bun run check:toys
+  ```
+
+If `bun run check:toys` reports drift, run `bun run generate:toys`, review the generated diffs, and commit all three files together when metadata changes.
 
 ## Toy lifecycle and featured rotation
 
