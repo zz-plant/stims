@@ -199,7 +199,7 @@ function registerTools(server: McpServer) {
     'get_toys',
     {
       description:
-        'Return structured toy metadata (including controls and module info) from assets/data/toys.json (or `assets/data/toys.yaml` / `assets/data/toys.yml`) with optional slug or WebGPU filters.',
+        'Return structured toy metadata (including controls and module info) from assets/data/toys.json with optional slug or WebGPU filters.',
       inputSchema: z
         .object({
           slug: z

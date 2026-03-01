@@ -57,7 +57,8 @@
     "prepare": "husky install",
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",
     "check:seo": "bun run scripts/check-seo.ts",
-    "dev:webgpu": "bun scripts/dev-webgpu.mjs || node scripts/dev-webgpu.mjs"
+    "dev:webgpu": "bun scripts/dev-webgpu.mjs || node scripts/dev-webgpu.mjs",
+    "generate:toys": "bun run scripts/generate-toy-manifest.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.15",
