@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from '../core/services/microphone-permission-service.ts';
 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 
@@ -195,19 +196,11 @@ export class FrequencyAnalyser {
 async function queryMicrophonePermissionState(): Promise<
   PermissionState | undefined
 > {
-  if (typeof navigator === 'undefined') return undefined;
-  if (!navigator.permissions?.query) return undefined;
-
-  try {
-    const status = await navigator.permissions.query({
-      name: 'microphone' as PermissionName,
-    });
-
-    return status.state;
-  } catch (error) {
-    console.warn('Unable to query microphone permission status', error);
+  const state = await querySharedMicrophonePermissionState();
+  if (state === 'unsupported' || state === 'unknown') {
     return undefined;
   }
+  return state;
 }
 
 export async function getMicrophonePermissionState() {

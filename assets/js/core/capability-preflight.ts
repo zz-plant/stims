@@ -1,203 +1,18 @@
-import { isMobileDevice } from '../utils/device-detect';
 import {
   getActiveRenderPreferences,
   setRenderPreferences,
 } from './render-preferences.ts';
 import {
-  getRendererCapabilities,
-  getRenderingSupport,
-} from './renderer-capabilities.ts';
+  type CapabilityPreflightResult,
+  runCapabilityProbe,
+} from './services/capability-probe-service.ts';
+
+export type { CapabilityPreflightResult } from './services/capability-probe-service.ts';
 
 export const PREFLIGHT_SESSION_DISMISS_KEY = 'stims:preflight-dismissed';
 
-export type CapabilityPreflightResult = {
-  rendering: {
-    hasWebGL: boolean;
-    rendererBackend: 'webgl' | 'webgpu' | null;
-    webgpuFallbackReason: string | null;
-    triedWebGPU: boolean;
-    shouldRetryWebGPU: boolean;
-  };
-  microphone: {
-    supported: boolean;
-    state: PermissionState | 'unsupported' | 'error';
-    reason: string | null;
-  };
-  environment: {
-    secureContext: boolean;
-    reducedMotion: boolean;
-    hardwareConcurrency: number | null;
-  };
-  performance: {
-    lowPower: boolean;
-    reason: string | null;
-    recommendedMaxPixelRatio: number;
-    recommendedRenderScale: number;
-  };
-  blockingIssues: string[];
-  warnings: string[];
-  canProceed: boolean;
-};
-
-async function getMicrophonePermissionState() {
-  if (typeof navigator === 'undefined') {
-    return {
-      supported: false,
-      state: 'unsupported' as const,
-      reason: 'Navigator unavailable in this environment.',
-    };
-  }
-
-  if (!navigator.mediaDevices?.getUserMedia) {
-    return {
-      supported: false,
-      state: 'unsupported' as const,
-      reason: 'This browser cannot capture microphone audio.',
-    };
-  }
-
-  if (!navigator.permissions?.query) {
-    return {
-      supported: true,
-      state: 'prompt' as const,
-      reason: null,
-    };
-  }
-
-  try {
-    const result = await navigator.permissions.query({
-      // Firefox throws unless this is cast to PermissionName.
-      name: 'microphone' as PermissionName,
-    });
-    return {
-      supported: true,
-      state: result.state,
-      reason:
-        result.state === 'denied'
-          ? 'Microphone access is blocked for this site.'
-          : null,
-    };
-  } catch (error) {
-    console.warn('Microphone permission probe failed', error);
-    return {
-      supported: true,
-      state: 'error' as const,
-      reason:
-        'Unable to read microphone permission state. The browser will still prompt when needed.',
-    };
-  }
-}
-
-const isMobileUserAgent = isMobileDevice();
-
-function getPerformanceProfile() {
-  const deviceMemory =
-    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
-      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
-        null)
-      : null;
-  const hardwareConcurrency =
-    typeof navigator !== 'undefined'
-      ? (navigator.hardwareConcurrency ?? null)
-      : null;
-  const reducedMotionQuery =
-    typeof window !== 'undefined' && window.matchMedia
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false;
-
-  const reasons: string[] = [];
-  if (isMobileUserAgent) reasons.push('mobile device detected');
-  if (reducedMotionQuery) reasons.push('reduced motion preference');
-  if (deviceMemory !== null && deviceMemory <= 4) {
-    reasons.push('limited device memory');
-  }
-  if (hardwareConcurrency !== null && hardwareConcurrency <= 4) {
-    reasons.push('limited CPU cores');
-  }
-
-  const lowPower = reasons.length > 0;
-
-  return {
-    lowPower,
-    reason: reasons.length ? reasons.join(', ') : null,
-    reducedMotion: reducedMotionQuery,
-  };
-}
-
 export async function runCapabilityPreflight(): Promise<CapabilityPreflightResult> {
-  const [capabilities, microphone] = await Promise.all([
-    getRendererCapabilities().catch((error) => {
-      console.warn('Renderer capability probe failed', error);
-      return null;
-    }),
-    getMicrophonePermissionState(),
-  ]);
-
-  const { hasWebGL } = getRenderingSupport();
-
-  const renderingBackend =
-    capabilities?.preferredBackend ?? (hasWebGL ? 'webgl' : null);
-  const webgpuFallbackReason = capabilities?.fallbackReason ?? null;
-
-  const blockingIssues: string[] = [];
-  const warnings: string[] = [];
-
-  if (!renderingBackend) {
-    blockingIssues.push('Graphics acceleration is unavailable (WebGL/WebGPU).');
-  } else if (renderingBackend === 'webgl' && webgpuFallbackReason) {
-    warnings.push(webgpuFallbackReason);
-  }
-
-  if (!microphone.supported) {
-    warnings.push('Microphone APIs are unavailable in this browser.');
-  } else if (microphone.state === 'denied') {
-    warnings.push(
-      'Microphone access is blocked; visuals will fall back to demo audio.',
-    );
-  }
-
-  const performanceProfile = getPerformanceProfile();
-
-  const environment = {
-    secureContext:
-      typeof window !== 'undefined' ? Boolean(window.isSecureContext) : false,
-    reducedMotion: performanceProfile.reducedMotion,
-    hardwareConcurrency:
-      typeof navigator !== 'undefined'
-        ? (navigator.hardwareConcurrency ?? null)
-        : null,
-  };
-
-  const performance = {
-    lowPower: performanceProfile.lowPower,
-    reason: performanceProfile.reason,
-    recommendedMaxPixelRatio: 1.25,
-    recommendedRenderScale: 0.9,
-  };
-
-  if (performance.lowPower) {
-    warnings.push(
-      'Performance mode recommended for smoother visuals on this device.',
-    );
-  }
-
-  const canProceed = blockingIssues.length === 0;
-
-  return {
-    rendering: {
-      hasWebGL,
-      rendererBackend: renderingBackend,
-      webgpuFallbackReason,
-      triedWebGPU: capabilities?.triedWebGPU ?? false,
-      shouldRetryWebGPU: capabilities?.shouldRetryWebGPU ?? false,
-    },
-    microphone,
-    environment,
-    performance,
-    blockingIssues,
-    warnings,
-    canProceed,
-  };
+  return runCapabilityProbe();
 }
 
 function buildStatusBadge(
@@ -416,7 +231,7 @@ function updateWhyDetails(
     items.push(
       'Microphone access is blocked; update permissions or use demo audio.',
     );
-  } else if (result.microphone.state === 'error') {
+  } else if (result.microphone.state === 'unknown') {
     items.push(
       'Permission state could not be read; the browser will still prompt when needed.',
     );

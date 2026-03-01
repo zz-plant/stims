@@ -1,3 +1,7 @@
+import {
+  type MicrophonePermissionState,
+  queryMicrophonePermissionState,
+} from '../core/services/microphone-permission-service.ts';
 import { setQualityPresetById } from '../core/settings-panel.ts';
 import { YouTubeController } from './youtube-controller';
 
@@ -17,27 +21,6 @@ export interface AudioControlsOptions {
   starterPresetId?: string;
   onApplyStarterPreset?: () => void;
   autoStartMicrophoneWhenGranted?: boolean;
-}
-
-type MicrophonePermissionState = PermissionState | 'unsupported' | 'unknown';
-
-async function getMicrophonePermissionState(): Promise<MicrophonePermissionState> {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    return 'unsupported';
-  }
-
-  if (!navigator.permissions?.query) {
-    return 'unknown';
-  }
-
-  try {
-    const result = await navigator.permissions.query({
-      name: 'microphone' as PermissionName,
-    });
-    return result.state;
-  } catch (_error) {
-    return 'unknown';
-  }
 }
 
 export function initAudioControls(
@@ -381,7 +364,7 @@ export function initAudioControls(
     setPreferredSource('microphone');
   }
 
-  void getMicrophonePermissionState().then((state) => {
+  void queryMicrophonePermissionState().then((state) => {
     microphonePermissionState = state;
     setMicrophoneButtonState();
     if (state === 'denied') {

@@ -248,6 +248,13 @@ describe('audio controls primary emphasis', () => {
     const onRequestMicrophone = mock(async () => {});
 
     const permissions = navigator.permissions;
+    const mediaDevices = navigator.mediaDevices;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: mock(async () => ({}) as MediaStream),
+      },
+    });
     Object.defineProperty(navigator, 'permissions', {
       configurable: true,
       value: {
@@ -266,6 +273,10 @@ describe('audio controls primary emphasis', () => {
     Object.defineProperty(navigator, 'permissions', {
       configurable: true,
       value: permissions,
+    });
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: mediaDevices,
     });
   });
   test('renders quick-start tips with a dismiss action and persists dismissal', () => {
