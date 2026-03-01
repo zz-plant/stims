@@ -18,12 +18,15 @@ import {
 } from './core/toy-lifecycle.ts';
 import toyManifest from './data/toy-manifest.ts';
 import type { ToyEntry } from './data/toy-schema.ts';
+import { createFlowTimer, getFlowIntervalMs } from './loader/flow-timer.ts';
+import { canUseHaptics, createHapticsController } from './loader/haptics.ts';
+import { createSessionTracking } from './loader/session-tracking.ts';
+import { createToyLifecycleOrchestration } from './loader/toy-lifecycle-orchestration.ts';
 import { createRouter, type Route } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import { recordToyOpen } from './utils/growth-metrics.ts';
 import { createManifestClient } from './utils/manifest-client';
 import { applyPartyMode } from './utils/party-mode';
-import { resetToyPictureInPicture } from './utils/picture-in-picture';
 import { loadToyModuleStarter } from './utils/toy-module-loader';
 import { ensureWebGL } from './utils/webgl-check';
 
@@ -32,11 +35,6 @@ type Toy = ToyEntry;
 const TOY_QUERY_PARAM = 'toy';
 const LIBRARY_FILTER_PARAM = 'filters';
 const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
-const FLOW_WARMUP_INTERVAL_MS = 60000;
-const FLOW_ENGAGED_INTERVAL_MS = 90000;
-const FLOW_IDLE_INTERVAL_MS = 120000;
-const FLOW_ENGAGEMENT_WINDOW_MS = 2 * 60 * 1000;
-const HAPTICS_STORAGE_KEY = 'stims:haptics-enabled';
 const TOY_MICRO_GOALS: Record<string, string[]> = {
   holy: ['Boost intensity, then settle into a calmer palette.'],
   'bubble-harmonics': [
@@ -47,25 +45,7 @@ const TOY_MICRO_GOALS: Record<string, string[]> = {
   geom: ['Test quiet vs loud input and watch the shape response.'],
 };
 
-export function getFlowIntervalMs({
-  cycleCount,
-  lastInteractionAt,
-  now = Date.now(),
-}: {
-  cycleCount: number;
-  lastInteractionAt: number;
-  now?: number;
-}) {
-  if (cycleCount < 1) {
-    return FLOW_WARMUP_INTERVAL_MS;
-  }
-
-  if (now - lastInteractionAt <= FLOW_ENGAGEMENT_WINDOW_MS) {
-    return FLOW_ENGAGED_INTERVAL_MS;
-  }
-
-  return FLOW_IDLE_INTERVAL_MS;
-}
+export { getFlowIntervalMs } from './loader/flow-timer.ts';
 
 // createLoader orchestrates routing/navigation, renderer capability checks,
 // module resolution/import, view updates, and lifecycle management.
@@ -95,165 +75,52 @@ export function createLoader({
   let navigationInitialized = false;
   const lifecycle = toyLifecycle ?? defaultToyLifecycle;
   lifecycle.reset();
-  const recentToySlugs: string[] = [];
   let flowActive = false;
   let partyModeActive = false;
-  let hapticsEnabled = false;
-  let beatHapticsCleanup: (() => void) | null = null;
-  let flowTimer: number | null = null;
   let flowCycleCount = 0;
-  let lastInteractionAt = Date.now();
-  let interactionTrackingInitialized = false;
   let activeToySlug: string | null = null;
   let nextToyInFlight = false;
   let handleNextToy: ((fromFlow?: boolean) => Promise<void>) | null = null;
 
-  const clearFlowTimer = () => {
-    if (flowTimer === null) return;
-    const win = typeof window !== 'undefined' ? window : null;
-    if (win) {
-      win.clearTimeout(flowTimer);
-    }
-    flowTimer = null;
-  };
+  const session = createSessionTracking({ toys });
+  const haptics = createHapticsController({
+    view,
+    isPartyModeActive: () => partyModeActive,
+  });
+  const {
+    disposeActiveToy,
+    removeEscapeHandler,
+    registerEscapeHandler,
+    updateRendererStatus,
+  } = createToyLifecycleOrchestration({ lifecycle, view });
 
-  const clearBeatHapticsListener = () => {
-    beatHapticsCleanup?.();
-    beatHapticsCleanup = null;
-  };
-
-  const canUseHaptics = () => {
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-      return false;
-    }
-    const supportsVibration = typeof navigator.vibrate === 'function';
-    return (
-      supportsVibration && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
-    );
-  };
-
-  const pulseHaptics = (intensity: number = 0.4) => {
-    if (!hapticsEnabled || !canUseHaptics() || !navigator.vibrate) {
-      return;
-    }
-    if (typeof document !== 'undefined') {
-      const audioActive = document.body.dataset.audioActive === 'true';
-      if (!audioActive) return;
-    }
-    const clampedIntensity = Math.max(0, Math.min(1, intensity));
-    const duration = Math.round(10 + clampedIntensity * 18);
-    navigator.vibrate(partyModeActive ? [duration, 28, duration] : [duration]);
-  };
-
-  const syncBeatHapticsListener = () => {
-    clearBeatHapticsListener();
-    if (!hapticsEnabled || !canUseHaptics() || typeof window === 'undefined') {
-      return;
-    }
-
-    const onBeat = (event: Event) => {
-      const detail = (event as CustomEvent<{ intensity?: number }>).detail;
-      pulseHaptics(detail?.intensity ?? 0.4);
-    };
-
-    window.addEventListener('stims:audio-beat', onBeat as EventListener);
-    beatHapticsCleanup = () => {
-      window.removeEventListener('stims:audio-beat', onBeat as EventListener);
-    };
-  };
-
-  const persistHaptics = (enabled: boolean) => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(
-        HAPTICS_STORAGE_KEY,
-        enabled ? 'true' : 'false',
-      );
-    } catch (_error) {
-      // Ignore storage access issues.
-    }
-  };
-
-  const readPersistedHaptics = () => {
-    if (typeof window === 'undefined') return false;
-    try {
-      return window.localStorage.getItem(HAPTICS_STORAGE_KEY) === 'true';
-    } catch (_error) {
-      return false;
-    }
-  };
-
-  const markInteraction = () => {
-    lastInteractionAt = Date.now();
-  };
-
-  const initInteractionTracking = () => {
-    if (interactionTrackingInitialized || typeof window === 'undefined') return;
-    interactionTrackingInitialized = true;
-    const interactionEvents: (keyof WindowEventMap)[] = [
-      'pointerdown',
-      'keydown',
-      'touchstart',
-    ];
-    interactionEvents.forEach((eventName) => {
-      window.addEventListener(eventName, markInteraction, { passive: true });
-    });
-  };
-
-  const rememberToy = (slug: string) => {
-    if (!slug) return;
-    const existingIndex = recentToySlugs.indexOf(slug);
-    if (existingIndex === 0) return;
-    if (existingIndex > -1) {
-      recentToySlugs.splice(existingIndex, 1);
-    }
-    recentToySlugs.unshift(slug);
-    if (recentToySlugs.length > 4) {
-      recentToySlugs.pop();
-    }
-  };
-
-  const pickNextToySlug = (currentSlug?: string | null) => {
-    const available = toys.filter((toy) => toy.type === 'module');
-    if (!available.length) return null;
-
-    const avoid = new Set(recentToySlugs);
-    if (currentSlug) {
-      avoid.add(currentSlug);
-    }
-    const fresh = available.filter((toy) => !avoid.has(toy.slug));
-    const fallback = available.filter((toy) => toy.slug !== currentSlug);
-    const pool = fresh.length ? fresh : fallback.length ? fallback : available;
-    if (!pool.length) return null;
-
-    const choice = pool[Math.floor(Math.random() * pool.length)];
-    return choice?.slug ?? null;
-  };
-
-  const scheduleFlow = () => {
-    clearFlowTimer();
-    if (!flowActive) return;
-    const win = typeof window !== 'undefined' ? window : null;
-    if (!win) return;
-    const delay = getFlowIntervalMs({
-      cycleCount: flowCycleCount,
-      lastInteractionAt,
-    });
-    flowTimer = win.setTimeout(() => {
+  const flowTimer = createFlowTimer({
+    getDelay: () =>
+      getFlowIntervalMs({
+        cycleCount: flowCycleCount,
+        lastInteractionAt: session.getLastInteractionAt(),
+      }),
+    onTick: () => {
       if (handleNextToy) {
         void handleNextToy(true);
       }
-    }, delay);
+    },
+  });
+
+  const scheduleFlow = () => {
+    flowTimer.clear();
+    if (!flowActive) return;
+    flowTimer.schedule();
   };
 
   const setFlowActive = (active: boolean) => {
     flowActive = active;
     if (!flowActive) {
       flowCycleCount = 0;
-      clearFlowTimer();
+      flowTimer.clear();
       return;
     }
-    markInteraction();
+    session.markInteraction();
     flowCycleCount = 0;
     scheduleFlow();
   };
@@ -261,33 +128,6 @@ export function createLoader({
   const setPartyModeActive = (active: boolean) => {
     partyModeActive = active;
     applyPartyMode({ enabled: active });
-  };
-
-  const setHapticsEnabled = (enabled: boolean) => {
-    const nextEnabled = enabled && canUseHaptics();
-    hapticsEnabled = nextEnabled;
-    view?.setHapticsState?.(nextEnabled);
-    persistHaptics(nextEnabled);
-    if (!nextEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(0);
-    }
-    syncBeatHapticsListener();
-  };
-  const updateRendererStatus = (
-    capabilities: Awaited<ReturnType<typeof rendererCapabilities>> | null,
-    onRetry?: () => void,
-  ) => {
-    view?.setRendererStatus?.(
-      capabilities
-        ? {
-            backend: capabilities.preferredBackend,
-            fallbackReason: capabilities.fallbackReason,
-            shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
-            triedWebGPU: capabilities.triedWebGPU,
-            onRetry,
-          }
-        : null,
-    );
   };
 
   const showModuleImportError = (
@@ -301,18 +141,6 @@ export function createLoader({
       onBrowseCompatible: browseCompatibleToys,
     });
   };
-
-  const disposeActiveToy = () => {
-    if (typeof document !== 'undefined') {
-      resetToyPictureInPicture(document);
-    }
-    lifecycle.disposeActiveToy();
-    view?.clearActiveToyContainer?.();
-    setCurrentToy(null);
-    setAudioActive(false);
-  };
-
-  const removeEscapeHandler = () => lifecycle.removeEscapeHandler();
 
   const backToLibrary = ({ updateRoute = true } = {}) => {
     removeEscapeHandler();
@@ -328,7 +156,7 @@ export function createLoader({
     if (partyModeActive) {
       setPartyModeActive(false);
     }
-    clearBeatHapticsListener();
+    haptics.clearBeatHapticsListener();
   };
 
   const browseCompatibleToys = () => {
@@ -353,10 +181,6 @@ export function createLoader({
       // Ignore storage access issues.
     }
     window.location.href = url.toString();
-  };
-
-  const registerEscapeHandler = () => {
-    lifecycle.attachEscapeHandler(backToLibrary);
   };
 
   const startModuleToy = async (
@@ -388,7 +212,7 @@ export function createLoader({
     handleNextToy = async (fromFlow = false) => {
       if (nextToyInFlight) return;
       const currentSlug = activeToySlug ?? toy.slug;
-      const nextSlug = pickNextToySlug(currentSlug);
+      const nextSlug = session.pickNextToySlug(currentSlug);
       if (!nextSlug) {
         if (fromFlow) {
           setFlowActive(false);
@@ -396,7 +220,7 @@ export function createLoader({
         return;
       }
       nextToyInFlight = true;
-      clearFlowTimer();
+      flowTimer.clear();
       try {
         flowCycleCount += fromFlow ? 1 : 0;
         await loadToy(nextSlug, { pushState: true, preferDemoAudio });
@@ -410,8 +234,8 @@ export function createLoader({
 
     const container = view.showActiveToyView(backToLibrary, toy, {
       onNextToy: handleNextToy,
-      onToggleHaptics: (active) => setHapticsEnabled(active),
-      hapticsActive: hapticsEnabled,
+      onToggleHaptics: (active) => haptics.setHapticsEnabled(active),
+      hapticsActive: haptics.getHapticsEnabled(),
       hapticsSupported: canUseHaptics(),
     });
     if (!container) return;
@@ -430,7 +254,7 @@ export function createLoader({
         : undefined,
     );
 
-    registerEscapeHandler();
+    registerEscapeHandler(backToLibrary);
 
     let navigated = false;
     const commitNavigation = () => {
@@ -480,7 +304,7 @@ export function createLoader({
       // Track toy load for agents
       setCurrentToy(toy.slug);
       activeToySlug = toy.slug;
-      rememberToy(toy.slug);
+      session.rememberToy(toy.slug);
       recordToyOpen(toy.slug, pushState ? 'library' : 'direct');
 
       // Setup audio prompt if startAudio globals are registered by the toy.
@@ -582,10 +406,10 @@ export function createLoader({
       forceRendererRetry?: boolean;
     } = {},
   ) => {
-    initInteractionTracking();
+    session.initInteractionTracking();
 
-    if (canUseHaptics() && !hapticsEnabled) {
-      hapticsEnabled = readPersistedHaptics();
+    if (canUseHaptics() && !haptics.getHapticsEnabled()) {
+      haptics.setFromPersisted();
     }
 
     if (typeof startFlow === 'boolean') {
@@ -596,7 +420,7 @@ export function createLoader({
       setPartyModeActive(startPartyMode);
     }
 
-    syncBeatHapticsListener();
+    haptics.syncBeatHapticsListener();
 
     const toy = toys.find((t) => t.slug === slug);
     if (!toy) {
@@ -643,7 +467,7 @@ export function createLoader({
   };
 
   const initNavigation = () => {
-    initInteractionTracking();
+    session.initInteractionTracking();
     if (navigationInitialized) return;
 
     navigationInitialized = true;
