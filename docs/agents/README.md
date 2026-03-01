@@ -27,7 +27,7 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 ## Fast repo map
 
 - `assets/js/toys/` — toy implementations.
-- `assets/data/toys.json` (or `assets/data/toys.yaml` / `assets/data/toys.yml`) — toy metadata source of truth.
+- `assets/data/toys.json` — authoritative toy metadata source of truth; `assets/js/data/toy-manifest.ts` and `public/toys.json` are generated from it.
 - `toys/` — standalone toy pages.
 - `tests/` — automated test suite.
 - `docs/` — contributor and architecture docs.
