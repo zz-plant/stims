@@ -29,8 +29,18 @@
   "overrides": [
     {
       "includes": ["assets/js/lib/**"],
-      "linter": { "enabled": false },
-      "formatter": { "enabled": false }
+      "linter": {
+        "enabled": false
+      },
+      "formatter": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": ["assets/js/data/toy-manifest.ts"],
+      "formatter": {
+        "enabled": false
+      }
     }
   ]
 }
