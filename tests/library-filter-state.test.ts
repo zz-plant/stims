@@ -91,7 +91,7 @@ test('renders continue panel when returner signals are present', async () => {
 
   expect(document.querySelector('.webtoy-growth-panel')).not.toBeNull();
   const openButton = Array.from(document.querySelectorAll('button')).find(
-    (button) => button.textContent === 'Open toy',
+    (button) => (button.textContent ?? '').startsWith('Launch'),
   );
   expect(openButton).toBeTruthy();
 });

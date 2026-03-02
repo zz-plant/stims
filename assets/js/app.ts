@@ -221,7 +221,10 @@ const startApp = async () => {
       return {};
     };
 
-    const setupAudio = (result: CapabilityPreflightResult | null) => {
+    const setupAudio = (
+      result: CapabilityPreflightResult | null,
+      { forcePreferDemoAudio = false }: { forcePreferDemoAudio?: boolean } = {},
+    ) => {
       if (!audioControlsContainer) return;
 
       const toyMeta = (() => {
@@ -243,6 +246,8 @@ const startApp = async () => {
       );
       const starterPresetId = toyMeta?.starterPreset?.id;
       const starterPresetLabel = toyMeta?.starterPreset?.label;
+
+      const audioInitState = buildAudioInitState(result);
 
       initAudioControls(audioControlsContainer, {
         onRequestMicrophone: async () => {
@@ -272,7 +277,9 @@ const startApp = async () => {
         gestureHints,
         starterPresetId,
         starterPresetLabel,
-        ...buildAudioInitState(result),
+        ...audioInitState,
+        preferDemoAudio:
+          forcePreferDemoAudio || audioInitState.preferDemoAudio || undefined,
       });
     };
 
@@ -302,6 +309,12 @@ const startApp = async () => {
       setupSystemControls();
     };
 
+    const handleStartWithDemoAudio = () => {
+      startLoaderIfNeeded();
+      setupAudio(null, { forcePreferDemoAudio: true });
+      setupSystemControls();
+    };
+
     const preflight = attachCapabilityPreflight({
       heading: 'Ready to start?',
       backHref: router.getLibraryHref(),
@@ -310,6 +323,7 @@ const startApp = async () => {
       onRetry: handlePreflightReady,
       host: document.body,
       showCloseButton: true,
+      onStartWithDemoAudio: handleStartWithDemoAudio,
     });
 
     if (shouldSkipPreflightForSession) {
