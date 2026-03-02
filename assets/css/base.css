@@ -51,12 +51,8 @@ body.gamepad-active :focus:not(:focus-visible) {
 }
 
 .toy-canvas {
-  width: 100vw;
   width: var(--app-width, 100vw);
-  height: 100vh;
-  height: 100svh;
-  height: 100dvh;
-  height: var(--app-height, 100dvh);
+  height: var(--app-height, 100vh);
   max-width: 100%;
   max-height: 100%;
   touch-action: none;
@@ -113,10 +109,7 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
-  min-height: var(--app-height, 100dvh);
+  min-height: var(--app-height, 100vh);
   background:
     radial-gradient(
       circle at 50% 12%,

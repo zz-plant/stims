@@ -107,6 +107,10 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
         </div>
         <div class="nav-section nav-section--utilities" aria-label="Utilities">
           <a class="nav-link" href="#toy-list">Browse library</a>
+          <a class="nav-link" href="/toys/">Toy pages</a>
+          <a class="nav-link" href="/tags/">Tags</a>
+          <a class="nav-link" href="/moods/">Moods</a>
+          <a class="nav-link" href="/capabilities/">Capabilities</a>
           <a class="nav-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a>
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
             <span class="theme-toggle__icon" aria-hidden="true">🌙</span>

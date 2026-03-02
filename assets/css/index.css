@@ -2508,7 +2508,6 @@ html.light .active-filters__label {
   position: sticky;
   top: 0.5rem;
   z-index: 2;
-  position: relative;
 }
 
 .search-field__icon {
