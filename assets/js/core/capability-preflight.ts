@@ -353,6 +353,7 @@ export function attachCapabilityPreflight({
   openOnAttach = true,
   allowCloseWhenBlocked = false,
   showCloseButton = false,
+  onStartWithDemoAudio,
 }: {
   host?: HTMLElement;
   heading?: string;
@@ -362,6 +363,7 @@ export function attachCapabilityPreflight({
   openOnAttach?: boolean;
   allowCloseWhenBlocked?: boolean;
   showCloseButton?: boolean;
+  onStartWithDemoAudio?: (() => void) | null;
 } = {}) {
   const panel = document.createElement('dialog');
   panel.className =
@@ -566,6 +568,18 @@ export function attachCapabilityPreflight({
 
   const actions = document.createElement('div');
   actions.className = 'control-panel__actions control-panel__actions--inline';
+  const startWithDemoButton = document.createElement('button');
+  startWithDemoButton.className = 'cta-button primary';
+  startWithDemoButton.type = 'button';
+  startWithDemoButton.textContent = 'Start with demo audio';
+  startWithDemoButton.hidden = true;
+  startWithDemoButton.addEventListener('click', () => {
+    setRememberPreference(rememberToggle.checked);
+    onStartWithDemoAudio?.();
+    closePanel();
+  });
+  actions.appendChild(startWithDemoButton);
+
   let closeButton: HTMLButtonElement | null = null;
   if (showCloseButton) {
     closeButton = document.createElement('button');
@@ -605,6 +619,7 @@ export function attachCapabilityPreflight({
 
   const applyActionPriority = (result: CapabilityPreflightResult | null) => {
     if (!result) {
+      startWithDemoButton.hidden = true;
       if (closeButton) closeButton.hidden = false;
       performanceButton.hidden = true;
       if (backLink) backLink.hidden = true;
@@ -612,6 +627,7 @@ export function attachCapabilityPreflight({
     }
 
     if (result.canProceed) {
+      startWithDemoButton.hidden = false;
       if (backLink) backLink.hidden = true;
       if (closeButton) {
         closeButton.hidden = false;
@@ -624,6 +640,7 @@ export function attachCapabilityPreflight({
     if (closeButton) {
       closeButton.textContent = 'Close';
     }
+    startWithDemoButton.hidden = true;
     performanceButton.hidden = true;
     if (backLink) {
       backLink.hidden = false;

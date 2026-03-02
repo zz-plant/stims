@@ -550,6 +550,19 @@ export function createLibraryView({
     openToy(toy);
   };
 
+  const getLaunchLabel = (toy) => {
+    if (toy.capabilities?.demoAudio && toy.capabilities?.microphone) {
+      return 'Launch • Demo audio ready';
+    }
+    if (toy.capabilities?.demoAudio) {
+      return 'Launch • No permissions needed';
+    }
+    if (toy.capabilities?.microphone) {
+      return 'Launch • Mic recommended';
+    }
+    return 'Launch toy';
+  };
+
   const getBestForLabel = (toy) => {
     if (toy.capabilities?.motion) return 'Best for mobile tilt';
     if (toy.capabilities?.demoAudio && toy.capabilities?.microphone) {
@@ -769,7 +782,7 @@ export function createLibraryView({
       const open = document.createElement('button');
       open.type = 'button';
       open.className = 'cta-button cta-button--accent';
-      open.textContent = 'Open toy';
+      open.textContent = getLaunchLabel(toy);
       open.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
