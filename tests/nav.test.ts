@@ -110,6 +110,23 @@ describe('library navigation interactions', () => {
     expect(actions.hasAttribute('inert')).toBeFalse();
   });
 
+  test('library utilities expose crawlable collection links', () => {
+    const { matchMedia } = createMatchMediaStub(false);
+    window.matchMedia = matchMedia;
+
+    const container = document.getElementById('nav') as HTMLElement;
+    initNavigation(container, { mode: 'library' });
+
+    const hrefs = Array.from(
+      container.querySelectorAll('.nav-section--utilities .nav-link'),
+    ).map((link) => (link as HTMLAnchorElement).getAttribute('href'));
+
+    expect(hrefs).toContain('/toys/');
+    expect(hrefs).toContain('/tags/');
+    expect(hrefs).toContain('/moods/');
+    expect(hrefs).toContain('/capabilities/');
+  });
+
   test('re-rendering library nav cleans up previous media-query listener', () => {
     const { matchMedia, getListenerCount } = createMatchMediaStub();
     window.matchMedia = matchMedia;
