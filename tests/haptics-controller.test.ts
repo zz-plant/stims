@@ -4,11 +4,18 @@ import { createHapticsController } from '../assets/js/loader/haptics.ts';
 describe('haptics controller', () => {
   test('persists and toggles haptics state', () => {
     const setItem = mock((_k: string, _v: string) => {});
-    const vibrate = mock((_pattern: number | number[]) => true);
+    const trigger = mock(
+      (_pattern?: number | number[] | Array<{ duration: number }>) =>
+        Promise.resolve(),
+    );
     const controller = createHapticsController({
       isPartyModeActive: () => false,
-      navigatorRef: () =>
-        ({ userAgent: 'iPhone', vibrate }) as unknown as Navigator,
+      hapticEngine: {
+        isSupported: true,
+        trigger,
+        cancel: mock(() => {}),
+      },
+      navigatorRef: () => ({ userAgent: 'iPhone' }) as unknown as Navigator,
       documentRef: () =>
         ({ body: { dataset: { audioActive: 'true' } } }) as unknown as Document,
       windowRef: () =>
@@ -24,6 +31,6 @@ describe('haptics controller', () => {
     expect(setItem).toHaveBeenCalledWith('stims:haptics-enabled', 'true');
 
     controller.pulseHaptics(0.5);
-    expect(vibrate).toHaveBeenCalled();
+    expect(trigger).toHaveBeenCalled();
   });
 });
