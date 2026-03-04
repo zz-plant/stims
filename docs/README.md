@@ -56,6 +56,7 @@ If you need to...
 - [`COPYWRITING_AUDIT_2026-02.md`](./COPYWRITING_AUDIT_2026-02.md)
 - [`OUTSTANDING_ISSUES_AUDIT_2026-03.md`](./OUTSTANDING_ISSUES_AUDIT_2026-03.md)
 - [`TECH_STACK_CAPABILITY_RESEARCH_2026-02.md`](./TECH_STACK_CAPABILITY_RESEARCH_2026-02.md)
+- [`PUBLIC_DOCS_SITE_MAP.md`](./PUBLIC_DOCS_SITE_MAP.md)
 - [`LITERATURE.md`](./LITERATURE.md)
 - [`stim-assessment.md`](./stim-assessment.md)
 - [`stim-user-critiques.md`](./stim-user-critiques.md)
