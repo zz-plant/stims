@@ -27,6 +27,7 @@ async function createTempRepo() {
     'export const toyManifest = [];\n',
   );
   await fs.writeFile(path.join(root, 'public/toys.json'), '[]\n');
+  await fs.writeFile(path.join(root, 'README.md'), '# temp repo\n');
   return root;
 }
 
