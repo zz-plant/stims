@@ -34,13 +34,15 @@ Run before commit:
 bun run check
 ```
 
-This runs Biome checks, TypeScript typechecking, and tests.
+This runs a no-`@ts-nocheck` guard, Biome checks, TypeScript typechecking, and tests.
 
 Useful fast path while iterating:
 
 ```bash
 bun run check:quick
 ```
+
+`check:quick` also includes the no-`@ts-nocheck` guard.
 
 ## Task-specific checks
 
