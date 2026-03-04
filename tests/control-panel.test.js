@@ -8,9 +8,7 @@ function setUserAgent(userAgent) {
 }
 
 const freshImport = async () =>
-  import(
-    `../assets/js/utils/control-panel.ts?t=${Date.now()}-${Math.random()}`
-  );
+  import(`../assets/js/ui/system-controls.ts?t=${Date.now()}-${Math.random()}`);
 
 const DEFAULT_DESKTOP_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
@@ -25,22 +23,27 @@ describe('control panel mobile affordances', () => {
     if (originalUserAgent) {
       setUserAgent(originalUserAgent);
     }
+    document.body.innerHTML = '';
   });
 
   test('defaults to mobile-friendly idle preset when user agent is mobile', async () => {
     originalUserAgent = navigator.userAgent;
     setUserAgent(DEFAULT_MOBILE_UA);
 
-    const { createControlPanel } = await freshImport();
-    const panel = createControlPanel();
+    const { initSystemControls } = await freshImport();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const panel = initSystemControls(host, {
+      includeVisualBehaviorControls: true,
+    });
 
-    expect(panel.getState()).toEqual({
+    expect(panel.getVisualBehaviorState()).toEqual({
       idleEnabled: false,
       paletteCycle: true,
       mobilePreset: true,
     });
 
-    const checkboxes = panel.panel.querySelectorAll('input[type="checkbox"]');
+    const checkboxes = panel.element.querySelectorAll('input[type="checkbox"]');
     expect(checkboxes[0].checked).toBe(false);
     expect(checkboxes[2].checked).toBe(true);
   });
@@ -49,16 +52,20 @@ describe('control panel mobile affordances', () => {
     originalUserAgent = navigator.userAgent;
     setUserAgent(DEFAULT_DESKTOP_UA);
 
-    const { createControlPanel } = await freshImport();
-    const panel = createControlPanel();
+    const { initSystemControls } = await freshImport();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const panel = initSystemControls(host, {
+      includeVisualBehaviorControls: true,
+    });
 
-    expect(panel.getState()).toEqual({
+    expect(panel.getVisualBehaviorState()).toEqual({
       idleEnabled: true,
       paletteCycle: true,
       mobilePreset: false,
     });
 
-    const checkboxes = panel.panel.querySelectorAll('input[type="checkbox"]');
+    const checkboxes = panel.element.querySelectorAll('input[type="checkbox"]');
     expect(checkboxes[0].checked).toBe(true);
     expect(checkboxes[2].checked).toBe(false);
   });

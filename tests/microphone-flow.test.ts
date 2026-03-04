@@ -17,6 +17,11 @@ function buildDom() {
 }
 
 function mockPermissionState(state: PermissionState) {
+  Object.defineProperty(navigator, 'mediaDevices', {
+    configurable: true,
+    value: { getUserMedia: mock() },
+  });
+
   Object.defineProperty(navigator, 'permissions', {
     configurable: true,
     value: {
@@ -33,6 +38,10 @@ const waitForAsyncTasks = () =>
 afterEach(() => {
   document.body.innerHTML = '';
   Object.defineProperty(navigator, 'permissions', {
+    configurable: true,
+    value: undefined,
+  });
+  Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
     value: undefined,
   });
