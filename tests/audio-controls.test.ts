@@ -79,17 +79,13 @@ describe('audio controls primary emphasis', () => {
     );
   });
 
-  test('shows comparison guidance and recommended source badge', () => {
+  test('highlights recommended source badge for primary action', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
       onRequestMicrophone: async () => {},
       onRequestDemoAudio: async () => {},
     });
-
-    expect(container.textContent).toContain(
-      'Mic reacts to your space right now. Demo starts instantly with no permissions.',
-    );
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
     const demoBadge = container.querySelector('[data-recommended-for="demo"]');
@@ -98,7 +94,7 @@ describe('audio controls primary emphasis', () => {
     expect((demoBadge as HTMLElement | null)?.hidden).toBe(true);
   });
 
-  test('shows a two-step sequence with advanced options labeled optional', () => {
+  test('keeps start audio as the only top-level stage label', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -111,11 +107,10 @@ describe('audio controls primary emphasis', () => {
       container.querySelectorAll('.control-panel__stage-label'),
     ).map((node) => node.textContent?.trim());
 
-    expect(stageLabels).toContain('Step 1 · Start audio');
-    expect(stageLabels).toContain('Step 2 · Advanced capture (optional)');
+    expect(stageLabels).toEqual(['Step 1 · Start audio']);
   });
 
-  test('keeps advanced helper copy hidden until advanced options are expanded', () => {
+  test('renders advanced options inside a collapsed disclosure', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -124,28 +119,20 @@ describe('audio controls primary emphasis', () => {
       onRequestTabAudio: async () => {},
     });
 
-    const toggle = container.querySelector(
-      '[data-advanced-toggle]',
-    ) as HTMLButtonElement;
-    const helper = container.querySelector(
-      '[data-advanced-helper]',
-    ) as HTMLElement;
-    const toggleLabel = container.querySelector(
-      '[data-advanced-toggle-label]',
-    ) as HTMLElement;
+    const disclosure = container.querySelector(
+      '[data-advanced-audio-disclosure]',
+    ) as HTMLDetailsElement;
+    expect(disclosure.open).toBe(false);
 
-    expect(helper.hidden).toBe(true);
-    expect(toggle.getAttribute('aria-controls')).toBe('advanced-audio-panel');
-    expect(toggleLabel.textContent).toBe('Show advanced audio options');
+    disclosure.open = true;
+    disclosure.dispatchEvent(new Event('toggle'));
 
-    toggle.click();
-
-    expect(helper.hidden).toBe(false);
-    expect(toggleLabel.textContent).toBe('Hide advanced audio options');
+    expect(sessionStorage.getItem('stims-audio-advanced-open')).toBe('true');
   });
 
-  test('closes advanced options when Escape is pressed on toggle', () => {
+  test('restores advanced disclosure state from session storage', () => {
     const container = document.createElement('section');
+    sessionStorage.setItem('stims-audio-advanced-open', 'true');
 
     initAudioControls(container, {
       onRequestMicrophone: async () => {},
@@ -153,20 +140,10 @@ describe('audio controls primary emphasis', () => {
       onRequestTabAudio: async () => {},
     });
 
-    const toggle = container.querySelector(
-      '[data-advanced-toggle]',
-    ) as HTMLButtonElement;
-    const panel = container.querySelector(
-      '[data-advanced-panel]',
-    ) as HTMLElement;
-
-    toggle.click();
-    expect(panel.hidden).toBe(false);
-
-    toggle.dispatchEvent(
-      new window.KeyboardEvent('keydown', { key: 'Escape' }),
-    );
-    expect(panel.hidden).toBe(true);
+    const disclosure = container.querySelector(
+      '[data-advanced-audio-disclosure]',
+    ) as HTMLDetailsElement;
+    expect(disclosure.open).toBe(true);
   });
 
   test('reveals touch gesture hints after audio starts on touch-capable devices', async () => {

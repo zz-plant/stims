@@ -158,36 +158,20 @@ export function createLibraryView({
 
     const tokens = Array.from(activeFilters);
     const hasTokens = tokens.length > 0;
+    const visibleLabels = tokens
+      .map((token) => formatTokenLabel(token))
+      .slice(0, 2);
+
     summary.hidden = false;
     summary.setAttribute('aria-hidden', 'false');
     summary.classList.toggle('is-empty', !hasTokens);
     chipsContainer.innerHTML = '';
-
-    const appendChip = ({ label, onClick, ariaLabel }) => {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'active-filter-chip';
-      chip.textContent = label;
-      if (ariaLabel) {
-        chip.setAttribute('aria-label', ariaLabel);
-      }
-      chip.addEventListener('click', onClick);
-      chipsContainer.appendChild(chip);
-    };
-
-    tokens.forEach((token) => {
-      const label = formatTokenLabel(token);
-      appendChip({
-        label,
-        ariaLabel: `Remove filter ${label}`,
-        onClick: () => removeFilterToken(token),
-      });
-    });
+    chipsContainer.hidden = true;
 
     const status = ensureActiveFiltersStatus();
     if (status instanceof HTMLElement) {
       status.textContent = hasTokens
-        ? `${tokens.length} active`
+        ? `${tokens.length} active${visibleLabels.length > 0 ? ` · ${visibleLabels.join(' + ')}` : ''}`
         : 'No filters selected';
     }
 
@@ -198,6 +182,7 @@ export function createLibraryView({
     ) {
       clearButton.disabled = !hasTokens;
       clearButton.setAttribute('aria-disabled', String(!hasTokens));
+      clearButton.textContent = 'Clear all';
     }
 
     updateSearchMetaNote();
@@ -969,29 +954,6 @@ export function createLibraryView({
     chips.forEach((chip) => {
       chip.classList.remove('is-active');
       updateFilterChipA11y(chip, false);
-    });
-    emitFilterStateChange();
-    commitState({ replace: false });
-    syncRefineDisclosure();
-    renderToys(applyFilters());
-    updateFilterResetState();
-    updateActiveFiltersSummary();
-  };
-
-  const removeFilterToken = (token) => {
-    const [type, value] = token.split(':');
-    if (!type || !value) return;
-    activeFilters.delete(token);
-    const chips = document.querySelectorAll('[data-filter-chip]');
-    chips.forEach((chip) => {
-      const chipType = chip.getAttribute('data-filter-type');
-      const chipValue = chip.getAttribute('data-filter-value');
-      const chipToken =
-        chipType && chipValue ? createFilterToken(chipType, chipValue) : null;
-      if (chipToken === token) {
-        chip.classList.remove('is-active');
-        updateFilterChipA11y(chip, false);
-      }
     });
     emitFilterStateChange();
     commitState({ replace: false });

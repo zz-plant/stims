@@ -1283,6 +1283,29 @@ body {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
+.control-panel__disclosure {
+  margin: 8px 0;
+  border: 1px solid rgba(148, 165, 180, 0.28);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.25);
+  padding: 8px 10px;
+}
+
+.control-panel__disclosure > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.control-panel__advanced-content {
+  padding-top: 6px;
+}
+
+.control-panel__advanced-content .control-panel__row:first-child {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
 .control-panel__status {
   margin-top: 8px;
   font-size: 0.9rem;
