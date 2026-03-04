@@ -1,73 +1,16 @@
-import { WebHaptics } from 'web-haptics';
+import {
+  createHapticsEngine,
+  type HapticEngine,
+  supportsHaptics,
+} from '../utils/haptics-engine';
 
 export const HAPTICS_STORAGE_KEY = 'stims:haptics-enabled';
-
-type HapticPatternStep = {
-  delay?: number;
-  duration: number;
-  intensity?: number;
-};
-
-type HapticEngine = {
-  isSupported: boolean;
-  trigger: (input?: number | number[] | HapticPatternStep[]) => Promise<void>;
-  cancel: () => void;
-};
-
-function createDefaultHapticEngine(
-  navigatorRef: () => Navigator | null,
-): HapticEngine {
-  const webHaptics = new WebHaptics();
-
-  const triggerWithNavigatorFallback = (
-    input: number | number[] | HapticPatternStep[] = [
-      { duration: 25, intensity: 0.7 },
-    ],
-  ) => {
-    if (WebHaptics.isSupported) {
-      return webHaptics.trigger(input);
-    }
-
-    const nav = navigatorRef();
-    if (!nav?.vibrate) {
-      return Promise.resolve();
-    }
-
-    if (typeof input === 'number') {
-      nav.vibrate(input);
-      return Promise.resolve();
-    }
-
-    if (Array.isArray(input) && typeof input[0] === 'number') {
-      nav.vibrate(input as number[]);
-      return Promise.resolve();
-    }
-
-    const steps = (input as HapticPatternStep[]) ?? [];
-    const pattern = steps.flatMap((entry) =>
-      entry.delay ? [entry.delay, entry.duration] : [entry.duration],
-    );
-    nav.vibrate(pattern);
-    return Promise.resolve();
-  };
-
-  return {
-    isSupported: WebHaptics.isSupported,
-    trigger: triggerWithNavigatorFallback,
-    cancel: () => {
-      webHaptics.cancel();
-      const nav = navigatorRef();
-      nav?.vibrate?.(0);
-    },
-  };
-}
 
 export function canUseHaptics() {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return false;
   }
-  const supportsVibration =
-    WebHaptics.isSupported || typeof navigator.vibrate === 'function';
+  const supportsVibration = supportsHaptics(() => navigator);
   return (
     supportsVibration && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
   );
@@ -79,7 +22,7 @@ export function createHapticsController({
   windowRef = () => (typeof window !== 'undefined' ? window : null),
   navigatorRef = () => (typeof navigator !== 'undefined' ? navigator : null),
   documentRef = () => (typeof document !== 'undefined' ? document : null),
-  hapticEngine = createDefaultHapticEngine(navigatorRef),
+  hapticEngine = createHapticsEngine(navigatorRef),
 }: {
   view?: { setHapticsState?: (active: boolean) => void };
   isPartyModeActive: () => boolean;
@@ -96,7 +39,7 @@ export function createHapticsController({
     const nav = navigatorRef();
     if (!win || !nav) return false;
     const supportsVibration =
-      hapticEngine.isSupported || typeof nav.vibrate === 'function';
+      hapticEngine.isSupported || supportsHaptics(() => nav);
     return supportsVibration && /Mobi|Android|iPhone|iPad/i.test(nav.userAgent);
   };
 

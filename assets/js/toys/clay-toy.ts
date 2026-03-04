@@ -12,6 +12,7 @@ import {
   SpotLight,
   Vector2,
 } from 'three';
+import { createHapticsEngine, supportsHaptics } from '../utils/haptics-engine';
 import { createUnifiedInput } from '../utils/unified-input';
 import { ensureWebGL } from '../utils/webgl-check';
 import { createWebGLRenderer } from '../utils/webgl-renderer';
@@ -100,6 +101,35 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
   const height = 12;
   const segments = 100;
   let potteryMesh!: Mesh<LatheGeometry, MeshStandardMaterial>;
+  const haptics = createHapticsEngine(() => navigator);
+  const hapticsSupported = supportsHaptics(() => navigator);
+  let lastDragPulseAt = 0;
+
+  const triggerSculptHaptic = (deltaY: number) => {
+    if (!hapticsSupported) {
+      return;
+    }
+
+    const now = performance.now();
+    if (now - lastDragPulseAt < 80) {
+      return;
+    }
+    lastDragPulseAt = now;
+
+    const energy = Math.min(Math.abs(deltaY), 100) / 100;
+    const duration = Math.round(8 + energy * 18);
+    const intensity = MathUtils.clamp(0.18 + energy * 0.72, 0.18, 0.9);
+
+    void haptics.trigger([{ duration, intensity }]);
+  };
+
+  const triggerContactHaptic = () => {
+    if (!hapticsSupported) {
+      return;
+    }
+
+    void haptics.trigger([{ duration: 45, intensity: 0.55 }]);
+  };
 
   function createClay() {
     const profilePoints: Vector2[] = [];
@@ -200,9 +230,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
           clientY: state.primary.clientY,
           normalizedY: state.primary.normalizedY,
         };
-        if (navigator.vibrate) {
-          navigator.vibrate(50);
-        }
+        triggerContactHaptic();
       }
 
       if (state.justReleased) {
@@ -213,11 +241,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
       if (isInteracting && state.primary && previousPointer) {
         const deltaY = state.primary.clientY - previousPointer.clientY;
         deformClay(deltaY, state.primary.normalizedY);
-
-        if (navigator.vibrate) {
-          const intensity = Math.min(Math.abs(deltaY), 100);
-          navigator.vibrate(intensity);
-        }
+        triggerSculptHaptic(deltaY);
 
         previousPointer = {
           clientY: state.primary.clientY,
@@ -275,6 +299,7 @@ export function startClayToy({ container }: ClayStartOptions = {}) {
       unifiedInput.dispose();
       resetButton?.removeEventListener('click', createClay);
       renderer.dispose();
+      haptics.cancel();
       scene.clear();
       firstSculptOverlay.remove();
       renderer.domElement.remove();
