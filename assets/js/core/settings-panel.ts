@@ -72,6 +72,7 @@ type ToggleOptions = {
   description?: string;
   defaultValue?: boolean;
   onChange?: (checked: boolean) => void;
+  parent?: HTMLElement;
 };
 
 export const QUALITY_STORAGE_KEY = 'stims:quality-preset';
@@ -304,6 +305,7 @@ export class PersistentSettingsPanel {
     title: string,
     description?: string,
     labelFor?: string,
+    parent?: HTMLElement,
   ): HTMLDivElement {
     const row = document.createElement('div');
     row.className = 'control-panel__row';
@@ -327,12 +329,22 @@ export class PersistentSettingsPanel {
     actions.className = 'control-panel__actions';
 
     row.append(text, actions);
-    this.sectionHost.appendChild(row);
+    (parent ?? this.sectionHost).appendChild(row);
     return actions;
   }
 
+  appendSectionContent(element: HTMLElement) {
+    this.sectionHost.appendChild(element);
+  }
+
   addToggle(options: ToggleOptions) {
-    const { label, description, defaultValue = false, onChange } = options;
+    const {
+      label,
+      description,
+      defaultValue = false,
+      onChange,
+      parent,
+    } = options;
     const row = document.createElement('label');
     row.className = 'control-panel__row control-panel__row--toggle';
 
@@ -363,7 +375,7 @@ export class PersistentSettingsPanel {
 
     actions.appendChild(input);
     row.append(text, actions);
-    this.sectionHost.appendChild(row);
+    (parent ?? this.sectionHost).appendChild(row);
     return input;
   }
 

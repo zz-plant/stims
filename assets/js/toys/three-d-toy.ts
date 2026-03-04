@@ -5,31 +5,24 @@ import {
   resolveWebGLRenderer,
 } from '../core/postprocessing';
 import type { RendererBackend } from '../core/renderer-capabilities';
+import { getActiveQualityPreset } from '../core/settings-panel';
 import { registerToyGlobals } from '../core/toy-globals';
 import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
+import {
+  initSystemControls,
+  type VisualBehaviorState,
+} from '../ui/system-controls';
 import { getWeightedAverageFrequency } from '../utils/audio-handler';
 import { createRuntimeAudioStarter } from '../utils/audio-start-helpers';
-import {
-  type ControlPanelState,
-  createControlPanel,
-} from '../utils/control-panel';
 import { createIdleDetector } from '../utils/idle-detector';
 import { disposeGeometry, disposeMesh } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControls } from '../utils/toy-settings';
 
 export function start({ container }: ToyStartOptions = {}) {
   let errorElement: HTMLElement | null = null;
-  const { quality, configurePanel } = createToyQualityControls({
-    title: '3D soundscape',
-    description: 'Resolution and particle density follow the preset you pick.',
-    getRuntime: () => runtime,
-    onChange: () => {
-      rebuildSceneContents();
-    },
-  });
   let runtime: ToyRuntimeInstance;
+  let activeQuality = getActiveQualityPreset();
 
   let torusKnot: THREE.Mesh | null = null;
   let particles: THREE.Points | null = null;
@@ -40,12 +33,16 @@ export function start({ container }: ToyStartOptions = {}) {
   const instanceScale = new THREE.Vector3();
   let paletteHue = 0.6;
   let idleBlend = 0;
-  let controlState: ControlPanelState;
+  let controlState: VisualBehaviorState = {
+    idleEnabled: true,
+    paletteCycle: true,
+    mobilePreset: false,
+  };
   const idleDetector = createIdleDetector();
   const clock = new THREE.Clock();
 
   function getCounts() {
-    const scale = quality.activeQuality.particleScale ?? 1;
+    const scale = activeQuality.particleScale ?? 1;
     return {
       particleCount: Math.max(600, Math.floor(1500 * scale)),
       shapeCount: Math.max(3, Math.round(7 * scale)),
@@ -353,7 +350,23 @@ export function start({ container }: ToyStartOptions = {}) {
   }
 
   function setupSettingsPanel() {
-    configurePanel();
+    const panel = initSystemControls(container ?? document.body, {
+      title: '3D soundscape',
+      description: 'Pick visual behavior and performance for this toy.',
+      includeVisualBehaviorControls: true,
+      onQualityPresetChange: (preset) => {
+        activeQuality = preset;
+        runtime?.toy.updateRendererSettings({
+          maxPixelRatio: preset.maxPixelRatio,
+          renderScale: preset.renderScale,
+        });
+        rebuildSceneContents();
+      },
+    });
+    controlState = panel.getVisualBehaviorState();
+    panel.onVisualBehaviorChange((state) => {
+      controlState = state;
+    });
   }
 
   const startRuntime = createToyRuntimeStarter({
@@ -367,8 +380,8 @@ export function start({ container }: ToyStartOptions = {}) {
       },
       ambientLightOptions: { color: 0x404040, intensity: 0.8 },
       rendererOptions: {
-        maxPixelRatio: quality.activeQuality.maxPixelRatio,
-        renderScale: quality.activeQuality.renderScale,
+        maxPixelRatio: activeQuality.maxPixelRatio,
+        renderScale: activeQuality.renderScale,
       },
     },
     audio: { fftSize: 512 },
@@ -378,11 +391,6 @@ export function start({ container }: ToyStartOptions = {}) {
         setup: (runtimeInstance) => {
           runtime = runtimeInstance;
           setupSettingsPanel();
-          const controlPanel = createControlPanel();
-          controlState = controlPanel.getState();
-          controlPanel.onChange((state) => {
-            controlState = state;
-          });
           rebuildSceneContents();
           runtimeInstance.toy.rendererReady.then((handle) => {
             if (!handle) return;
