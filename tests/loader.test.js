@@ -483,6 +483,25 @@ describe('loadFromQuery routing', () => {
     expect(location.search).toBe('?toy=aurora-painter');
   });
 
+  test('loads legacy three-d-toy query alias using the canonical slug', async () => {
+    const { loader } = await buildLoader({
+      toys: [
+        {
+          slug: '3dtoy',
+          title: '3D Toy',
+          module: './__mocks__/fake-module.js',
+          type: 'module',
+          requiresWebGPU: false,
+        },
+      ],
+      locationHref: 'http://example.com/library?toy=three-d-toy',
+    });
+
+    await loader.loadFromQuery();
+
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+  });
+
   test('returns to library when query param is missing', async () => {
     const { loader } = await buildLoader({
       locationHref: 'http://example.com/library',

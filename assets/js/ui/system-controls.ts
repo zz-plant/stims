@@ -18,7 +18,15 @@ import {
   type QualityPreset,
   subscribeToQualityPreset,
 } from '../core/settings-panel.ts';
-import { isSmartTvDevice } from '../utils/device-detect.ts';
+import { isMobileDevice, isSmartTvDevice } from '../utils/device-detect.ts';
+
+export type VisualBehaviorState = {
+  idleEnabled: boolean;
+  paletteCycle: boolean;
+  mobilePreset: boolean;
+};
+
+type VisualBehaviorKey = keyof VisualBehaviorState;
 
 type SystemControlOptions = {
   title?: string;
@@ -28,6 +36,18 @@ type SystemControlOptions = {
   variant?: 'floating' | 'inline';
   includeAdvancedControls?: boolean;
   showDetailedQualitySummary?: boolean;
+  onQualityPresetChange?: (preset: QualityPreset) => void;
+  includeVisualBehaviorControls?: boolean;
+  visualBehaviorInitial?: Partial<VisualBehaviorState>;
+  onVisualBehaviorChange?: (state: VisualBehaviorState) => void;
+};
+
+type SystemControlsHandle = {
+  element: HTMLElement;
+  getVisualBehaviorState: () => VisualBehaviorState;
+  onVisualBehaviorChange: (
+    listener: (state: VisualBehaviorState) => void,
+  ) => void;
 };
 
 const formatQualityLabel = (label: string) =>
@@ -96,10 +116,47 @@ function applySmartTvDefaults() {
   }
 }
 
+function createSectionHost(
+  panel: PersistentSettingsPanel,
+  title: string,
+  description?: string,
+  collapsed = false,
+) {
+  const details = document.createElement('details');
+  details.className = 'control-panel__details';
+  details.open = !collapsed;
+
+  const summary = document.createElement('summary');
+  summary.className = 'control-panel__row';
+
+  const text = document.createElement('div');
+  text.className = 'control-panel__text';
+
+  const label = document.createElement('span');
+  label.className = 'control-panel__label';
+  label.textContent = title;
+  text.appendChild(label);
+
+  if (description) {
+    const hint = document.createElement('small');
+    hint.textContent = description;
+    text.appendChild(hint);
+  }
+
+  summary.appendChild(text);
+
+  const body = document.createElement('div');
+  body.className = 'control-panel__section';
+
+  details.append(summary, body);
+  panel.appendSectionContent(details);
+  return body;
+}
+
 export function initSystemControls(
   host: HTMLElement,
   options: SystemControlOptions = {},
-) {
+): SystemControlsHandle {
   const {
     title = 'Performance controls',
     description = 'Tune visuals, renderer mode, and motion settings for this device.',
@@ -108,6 +165,10 @@ export function initSystemControls(
     variant = 'floating',
     includeAdvancedControls = true,
     showDetailedQualitySummary = true,
+    onQualityPresetChange,
+    includeVisualBehaviorControls = false,
+    visualBehaviorInitial,
+    onVisualBehaviorChange,
   } = options;
 
   const resolvedDefaultPresetId = resolveDefaultPresetId(defaultPresetId);
@@ -125,6 +186,7 @@ export function initSystemControls(
     defaultPresetId: resolvedDefaultPresetId,
     showScopeHint: showDetailedQualitySummary,
     showChangeSummary: showDetailedQualitySummary,
+    onChange: onQualityPresetChange,
   });
 
   const renderPreferences = getActiveRenderPreferences();
@@ -133,28 +195,83 @@ export function initSystemControls(
     defaultPresetId: resolvedDefaultPresetId,
   });
 
+  const isMobile = isMobileDevice();
+  const visualBehaviorState: VisualBehaviorState = {
+    idleEnabled: visualBehaviorInitial?.idleEnabled ?? !isMobile,
+    paletteCycle: visualBehaviorInitial?.paletteCycle ?? true,
+    mobilePreset: visualBehaviorInitial?.mobilePreset ?? isMobile,
+  };
+  const visualBehaviorListeners = new Set<
+    (state: VisualBehaviorState) => void
+  >();
+  if (onVisualBehaviorChange) {
+    visualBehaviorListeners.add(onVisualBehaviorChange);
+  }
+
+  const emitVisualBehaviorChange = () => {
+    const next = { ...visualBehaviorState };
+    visualBehaviorListeners.forEach((listener) => listener(next));
+  };
+
+  if (includeVisualBehaviorControls) {
+    const visualHost = createSectionHost(
+      panel,
+      'Visual behavior',
+      'Adjust how visuals drift when audio is quiet.',
+    );
+    const visualToggles: Array<{ key: VisualBehaviorKey; label: string }> = [
+      { key: 'idleEnabled', label: 'Idle visuals' },
+      { key: 'paletteCycle', label: 'Palette drift' },
+      { key: 'mobilePreset', label: 'Mobile-friendly idle' },
+    ];
+
+    visualToggles.forEach(({ key, label }) => {
+      panel.addToggle({
+        label,
+        defaultValue: visualBehaviorState[key],
+        parent: visualHost,
+        onChange: (value) => {
+          visualBehaviorState[key] = value;
+          emitVisualBehaviorChange();
+        },
+      });
+    });
+  }
+
+  const performanceHost = createSectionHost(panel, 'Performance');
+
   panel.addToggle({
-    label: 'Compatibility mode (WebGL)',
-    description: 'Favor the most compatible renderer for older hardware.',
+    label: 'Compatibility mode',
+    description: 'Use safer rendering for older hardware.',
     defaultValue: renderPreferences.compatibilityMode,
+    parent: performanceHost,
     onChange: (value) => {
       setCompatibilityMode(value);
     },
   });
 
   panel.addToggle({
-    label: 'Enable motion input',
-    description: 'Allow device tilt controls on toys that support motion.',
+    label: 'Motion input',
+    description: 'Enable tilt controls on supported toys.',
     defaultValue: getActiveMotionPreference().enabled,
+    parent: performanceHost,
     onChange: (value) => {
       setMotionPreference({ enabled: value });
     },
   });
 
   if (includeAdvancedControls) {
+    const advancedHost = createSectionHost(
+      panel,
+      'Advanced',
+      'Fine-tune rendering when needed.',
+      true,
+    );
     const resolutionRow = panel.addSection(
       'Resolution scale',
       'Lower values ease GPU load; higher values sharpen detail.',
+      undefined,
+      advancedHost,
     );
     const resolutionValue = createValueLabel('');
     const resolutionSlider = document.createElement('input');
@@ -181,6 +298,8 @@ export function initSystemControls(
     const pixelRatioRow = panel.addSection(
       'Pixel ratio cap',
       'Caps effective DPI to balance clarity and thermal load.',
+      undefined,
+      advancedHost,
     );
     const pixelRatioValue = createValueLabel('');
     const pixelRatioSlider = document.createElement('input');
@@ -204,7 +323,12 @@ export function initSystemControls(
     });
     pixelRatioRow.append(pixelRatioSlider, pixelRatioValue);
 
-    const resetRow = panel.addSection('Custom overrides', undefined);
+    const resetRow = panel.addSection(
+      'Reset overrides',
+      undefined,
+      undefined,
+      advancedHost,
+    );
     const resetButton = document.createElement('button');
     resetButton.type = 'button';
     resetButton.className = 'cta-button ghost';
@@ -241,5 +365,11 @@ export function initSystemControls(
     });
   }
 
-  return panel.getElement();
+  return {
+    element: panel.getElement(),
+    getVisualBehaviorState: () => ({ ...visualBehaviorState }),
+    onVisualBehaviorChange: (listener) => {
+      visualBehaviorListeners.add(listener);
+    },
+  };
 }
