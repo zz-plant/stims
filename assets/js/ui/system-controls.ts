@@ -64,6 +64,20 @@ function createValueLabel(label: string) {
   return value;
 }
 
+function createAdvancedControlsSection() {
+  const section = document.createElement('details');
+  section.className = 'control-panel__disclosure';
+  const summary = document.createElement('summary');
+  summary.textContent = 'Advanced rendering';
+  section.appendChild(summary);
+
+  const content = document.createElement('div');
+  content.className = 'control-panel__advanced-content';
+  section.appendChild(content);
+
+  return { section, content };
+}
+
 function resolveDefaultPresetId(defaultPresetId?: string) {
   if (defaultPresetId) return defaultPresetId;
   return isSmartTvDevice() ? 'tv' : 'balanced';
@@ -152,10 +166,54 @@ export function initSystemControls(
   });
 
   if (includeAdvancedControls) {
-    const resolutionRow = panel.addSection(
-      'Resolution scale',
-      'Lower values ease GPU load; higher values sharpen detail.',
+    const advancedContainerRow = panel.addSection(
+      'Fine tuning',
+      'Optional controls for render sharpness and GPU load.',
     );
+    const { section: advancedSection, content: advancedSectionContent } =
+      createAdvancedControlsSection();
+    advancedContainerRow.appendChild(advancedSection);
+
+    const resolutionRow = document.createElement('div');
+    resolutionRow.className = 'control-panel__row';
+    advancedSectionContent.appendChild(resolutionRow);
+    const resolutionText = document.createElement('div');
+    resolutionText.className = 'control-panel__text';
+    resolutionText.innerHTML = `
+      <span class="control-panel__label">Resolution scale</span>
+      <span class="control-panel__microcopy">Lower values ease GPU load; higher values sharpen detail.</span>
+    `;
+    resolutionRow.appendChild(resolutionText);
+
+    const resolutionControl = document.createElement('div');
+    resolutionControl.className =
+      'control-panel__actions control-panel__actions--inline';
+    resolutionRow.appendChild(resolutionControl);
+
+    const pixelRatioRow = document.createElement('div');
+    pixelRatioRow.className = 'control-panel__row';
+    advancedSectionContent.appendChild(pixelRatioRow);
+    const pixelText = document.createElement('div');
+    pixelText.className = 'control-panel__text';
+    pixelText.innerHTML = `
+      <span class="control-panel__label">Pixel ratio cap</span>
+      <span class="control-panel__microcopy">Caps effective DPI to balance clarity and thermal load.</span>
+    `;
+    pixelRatioRow.appendChild(pixelText);
+    const pixelControl = document.createElement('div');
+    pixelControl.className =
+      'control-panel__actions control-panel__actions--inline';
+    pixelRatioRow.appendChild(pixelControl);
+
+    const resetRow = document.createElement('div');
+    resetRow.className = 'control-panel__row';
+    advancedSectionContent.appendChild(resetRow);
+    const resetText = document.createElement('div');
+    resetText.className = 'control-panel__text';
+    resetText.innerHTML =
+      '<span class="control-panel__label">Custom overrides</span>';
+    resetRow.appendChild(resetText);
+
     const resolutionValue = createValueLabel('');
     const resolutionSlider = document.createElement('input');
     resolutionSlider.type = 'range';
@@ -176,12 +234,8 @@ export function initSystemControls(
       updateResolutionValue(value);
       setRenderPreferences({ renderScale: value });
     });
-    resolutionRow.append(resolutionSlider, resolutionValue);
+    resolutionControl.append(resolutionSlider, resolutionValue);
 
-    const pixelRatioRow = panel.addSection(
-      'Pixel ratio cap',
-      'Caps effective DPI to balance clarity and thermal load.',
-    );
     const pixelRatioValue = createValueLabel('');
     const pixelRatioSlider = document.createElement('input');
     pixelRatioSlider.type = 'range';
@@ -202,9 +256,8 @@ export function initSystemControls(
       updatePixelRatioValue(value);
       setRenderPreferences({ maxPixelRatio: value });
     });
-    pixelRatioRow.append(pixelRatioSlider, pixelRatioValue);
+    pixelControl.append(pixelRatioSlider, pixelRatioValue);
 
-    const resetRow = panel.addSection('Custom overrides', undefined);
     const resetButton = document.createElement('button');
     resetButton.type = 'button';
     resetButton.className = 'cta-button ghost';
