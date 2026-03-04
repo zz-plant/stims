@@ -59,6 +59,7 @@ export async function runToyChecks(root = repoRoot) {
     validateSlugEntrypointConsistency(entries, issues);
     await detectUnregisteredToyFiles(entries, issues, root);
     await validateGeneratedArtifactParity(entries, issues, root);
+    await validateCapabilityClaims(entries, issues, root);
   } catch (error) {
     issues.push(error instanceof Error ? error.message : String(error));
   }
@@ -233,6 +234,32 @@ async function detectUnregisteredToyFiles(
 
     issues.push(
       `Unregistered toy module detected: ${modulePath}\nEither register it in assets/data/toys.json or remove the file, then run: ${REGENERATE_COMMAND}`,
+    );
+  }
+}
+
+async function validateCapabilityClaims(
+  entries: ToyManifest,
+  issues: string[],
+  root = repoRoot,
+) {
+  const hasWebGpuOnlyToy = entries.some(
+    (entry) => entry.requiresWebGPU && !entry.allowWebGLFallback,
+  );
+
+  if (hasWebGpuOnlyToy) return;
+
+  const readmePath = path.join(root, 'README.md');
+  const readme = await fs.readFile(readmePath, 'utf8');
+  const staleClaims = [
+    'WebGPU-only toys (like [`multi`](./multi.html))',
+    '| Browser | WebGL toys | Microphone input | WebGPU-only toys |',
+  ];
+
+  for (const claim of staleClaims) {
+    if (!readme.includes(claim)) continue;
+    issues.push(
+      `README contains stale WebGPU-only wording ("${claim}") but assets/data/toys.json currently exposes fallback for all toys. Update README copy or metadata to match.`,
     );
   }
 }

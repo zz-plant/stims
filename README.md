@@ -272,7 +272,7 @@ All JavaScript dependencies are installed via Bun and bundled locally with Vite,
 
 - A WebGPU fallback warning means the browser lacked a compatible adapter or device at startup; toys will fall back to WebGL when possible.
 - To force a retry (for example, after toggling a browser flag or switching GPUs), refresh the page—WebGPU detection resets and will attempt the adapter/device handshake again.
-- WebGPU-only toys (like [`multi`](./multi.html)) won’t run without WebGPU; expect them to stay idle or prompt you to pick another toy until the capability probe succeeds. The renderer capability probe and fallback reasons live in [`assets/js/core/renderer-capabilities.ts`](./assets/js/core/renderer-capabilities.ts) if you need to trace the gating logic.
+- Toys that disable WebGL fallback won’t run without WebGPU; expect those entries to stay idle or prompt you to pick another toy until the capability probe succeeds. Most current toys can still fall back to WebGL when WebGPU is unavailable. The renderer capability probe and fallback reasons live in [`assets/js/core/renderer-capabilities.ts`](./assets/js/core/renderer-capabilities.ts) if you need to trace the gating logic.
 
 #### Dev-server hosting
 
@@ -374,7 +374,7 @@ If private reporting is unavailable for any reason, open a regular issue with mi
 
 Feature availability varies by browser and device, but this table is a practical baseline:
 
-| Browser | WebGL toys | Microphone input | WebGPU-only toys |
+| Browser | WebGL toys | Microphone input | WebGPU-optimized toys |
 | --- | --- | --- | --- |
 | Chrome (desktop/mobile) | ✅ | ✅ | ✅ (supported hardware/drivers) |
 | Edge (desktop) | ✅ | ✅ | ✅ (supported hardware/drivers) |
