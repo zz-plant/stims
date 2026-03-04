@@ -38,6 +38,7 @@ export function start({ container }: ToyStartOptions = {}) {
     paletteCycle: true,
     mobilePreset: false,
   };
+  let systemControls: ReturnType<typeof initSystemControls> | null = null;
   const idleDetector = createIdleDetector();
   const clock = new THREE.Clock();
 
@@ -350,7 +351,9 @@ export function start({ container }: ToyStartOptions = {}) {
   }
 
   function setupSettingsPanel() {
-    const panel = initSystemControls(container ?? document.body, {
+    const controlHost = container?.ownerDocument?.body ?? document.body;
+    systemControls?.element.remove();
+    systemControls = initSystemControls(controlHost, {
       title: '3D soundscape',
       description: 'Pick visual behavior and performance for this toy.',
       includeVisualBehaviorControls: true,
@@ -363,8 +366,8 @@ export function start({ container }: ToyStartOptions = {}) {
         rebuildSceneContents();
       },
     });
-    controlState = panel.getVisualBehaviorState();
-    panel.onVisualBehaviorChange((state) => {
+    controlState = systemControls.getVisualBehaviorState();
+    systemControls.onVisualBehaviorChange((state) => {
       controlState = state;
     });
   }
@@ -405,6 +408,8 @@ export function start({ container }: ToyStartOptions = {}) {
         dispose: () => {
           errorElement?.remove();
           postprocessing?.dispose();
+          systemControls?.element.remove();
+          systemControls = null;
         },
       },
     ],
