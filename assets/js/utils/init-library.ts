@@ -25,81 +25,6 @@ type InitLibraryViewOptions = {
   loadFromQuery: typeof import('../loader.ts').loadFromQuery;
 };
 
-const ADVANCED_FILTER_KEYS = [
-  'capability:motion',
-  'capability:demoaudio',
-  'feature:webgpu',
-] as const;
-
-const hasAdvancedFiltersInUrl = () => {
-  if (typeof window === 'undefined') return false;
-  const params = new URLSearchParams(window.location.search);
-  const filters = (params.get('filters') ?? '').toLowerCase();
-  return ADVANCED_FILTER_KEYS.some((key) => filters.includes(key));
-};
-
-const readExpanded = (element: HTMLElement) =>
-  element.getAttribute('aria-expanded') === 'true';
-
-const writeExpanded = (element: HTMLElement, expanded: boolean) => {
-  element.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-};
-
-const bindAdvancedFiltersToggle = () => {
-  if (typeof document === 'undefined') return;
-  const toggle = document.querySelector<HTMLElement>(
-    '[data-advanced-filters-toggle]',
-  );
-  const advancedFilters = document.querySelector<HTMLElement>(
-    '[data-advanced-filters]',
-  );
-
-  if (!toggle || !advancedFilters) return;
-
-  const advancedChips = Array.from(
-    document.querySelectorAll<HTMLElement>('[data-filter-advanced]'),
-  );
-
-  const syncChipVisibility = (expanded: boolean) => {
-    for (const chip of advancedChips) {
-      const isActive = chip.classList.contains('is-active');
-      chip.hidden = !(expanded || isActive);
-    }
-  };
-
-  const setExpandedState = (expanded: boolean) => {
-    writeExpanded(toggle, expanded);
-    toggle.textContent = expanded ? 'Hide filters' : 'More filters';
-    advancedFilters.hidden = !expanded;
-    syncChipVisibility(expanded);
-  };
-
-  setExpandedState(hasAdvancedFiltersInUrl());
-
-  const refreshVisibility = () => {
-    syncChipVisibility(readExpanded(toggle));
-  };
-
-  const scheduleRefresh = () => {
-    window.requestAnimationFrame(refreshVisibility);
-  };
-
-  for (const chip of advancedChips) {
-    chip.addEventListener('click', scheduleRefresh);
-  }
-
-  window.addEventListener('popstate', scheduleRefresh);
-  document.addEventListener('library:filters-changed', scheduleRefresh);
-
-  document
-    .querySelector('[data-active-filters-clear]')
-    ?.addEventListener('click', scheduleRefresh);
-
-  toggle.addEventListener('click', () => {
-    setExpandedState(!readExpanded(toggle));
-  });
-};
-
 export const initLibraryView = async ({
   loadToy,
   initNavigation,
@@ -125,7 +50,6 @@ export const initLibraryView = async ({
   const resolvedToys = await resolveToys();
   libraryView.setToys(resolvedToys);
   libraryView.init();
-  bindAdvancedFiltersToggle();
   document.body.dataset.libraryEnhanced = 'true';
 
   return libraryView;
