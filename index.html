@@ -197,17 +197,16 @@
             <datalist id="toy-search-suggestions"></datalist>
           </form>
           <div class="active-filters" data-active-filters>
-            <span class="active-filters__label">Applied filters</span>
+            <span class="active-filters__label">Active view</span>
             <span class="active-filters__status" data-active-filters-status>
-              No filters selected
+              Featured
             </span>
-            <div class="active-filters__chips" data-active-filters-chips></div>
             <button
               type="button"
               class="active-filters__clear"
               data-active-filters-clear
             >
-              Clear filters
+              Clear all
             </button>
           </div>
           <p
@@ -219,9 +218,9 @@
             Loading visual library…
           </p>
           <details class="library-refine" data-library-refine>
-            <summary>Filters and sorting</summary>
+            <summary>Filter library</summary>
             <p class="search-meta__note" data-search-note>
-              Choose a mood or audio option to narrow results.
+              Quick filters: mood and microphone input.
             </p>
             <div class="filter-row" role="group" aria-label="Curated filters">
               <div class="chip-row" data-chip-row>
@@ -252,60 +251,56 @@
                 >
                   Microphone
                 </button>
-                <button
-                  type="button"
-                  class="filter-chip"
-                  data-filter-chip
-                  data-filter-type="capability"
-                  data-filter-value="motion"
-                  data-filter-advanced
-                >
-                  Motion
-                </button>
-                <button
-                  type="button"
-                  class="filter-chip"
-                  data-filter-chip
-                  data-filter-type="capability"
-                  data-filter-value="demoAudio"
-                  data-filter-advanced
-                >
-                  Demo audio
-                </button>
-                <button
-                  type="button"
-                  class="filter-chip"
-                  data-filter-chip
-                  data-filter-type="feature"
-                  data-filter-value="webgpu"
-                  data-filter-advanced
-                >
-                  WebGPU
-                </button>
-              </div>
-              <div class="filter-actions filter-actions--primary">
-                <button
-                  type="button"
-                  class="filter-toggle"
-                  data-advanced-filters-toggle
-                  aria-expanded="false"
-                  aria-controls="advanced-filters"
-                >
-                  More filters
-                </button>
-              </div>
-              <div class="filter-actions" id="advanced-filters" data-advanced-filters hidden>
-                <label class="sort-control">
-                  <span>Sort</span>
-                  <select data-sort-control>
-                    <option value="featured">Featured</option>
-                    <option value="newest">Newest</option>
-                    <option value="immersive">Most immersive</option>
-                    <option value="az">A → Z</option>
-                  </select>
-                </label>
               </div>
             </div>
+            <details class="more-filters" data-advanced-filters>
+              <summary>More filters</summary>
+              <div class="filter-row" role="group" aria-label="Advanced filters and sorting">
+                <div class="chip-row" data-chip-row-advanced>
+                  <button
+                    type="button"
+                    class="filter-chip"
+                    data-filter-chip
+                    data-filter-type="capability"
+                    data-filter-value="motion"
+                    data-filter-advanced
+                  >
+                    Motion
+                  </button>
+                  <button
+                    type="button"
+                    class="filter-chip"
+                    data-filter-chip
+                    data-filter-type="capability"
+                    data-filter-value="demoAudio"
+                    data-filter-advanced
+                  >
+                    Demo audio
+                  </button>
+                  <button
+                    type="button"
+                    class="filter-chip"
+                    data-filter-chip
+                    data-filter-type="feature"
+                    data-filter-value="webgpu"
+                    data-filter-advanced
+                  >
+                    WebGPU
+                  </button>
+                </div>
+                <div class="filter-actions">
+                  <label class="sort-control">
+                    <span>Sort</span>
+                    <select data-sort-control>
+                      <option value="featured">Featured</option>
+                      <option value="newest">Newest</option>
+                      <option value="immersive">Most immersive</option>
+                      <option value="az">A → Z</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </details>
           </details>
         </search>
         <main id="toy-list" class="webtoy-container"></main>

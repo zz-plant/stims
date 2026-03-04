@@ -46,7 +46,6 @@ export function createLibraryView({
     ensureFilterResetButton,
     ensureSearchSuggestions,
     ensureActiveFiltersSummary,
-    ensureActiveFiltersChips,
     ensureActiveFiltersClear,
     ensureActiveFiltersStatus,
     ensureSearchMetaNote,
@@ -134,61 +133,52 @@ export function createLibraryView({
     const note = ensureSearchMetaNote();
     if (!(note instanceof HTMLElement)) return;
 
-    const activeLabels = Array.from(activeFilters)
+    const baseActiveLabels = Array.from(activeFilters)
+      .filter(
+        (token) =>
+          token.startsWith('mood:') || token === 'capability:microphone',
+      )
       .map((token) => formatTokenLabel(token))
       .slice(0, 2);
 
-    if (activeLabels.length === 0) {
-      note.textContent = 'Choose a mood or audio option to narrow results.';
+    if (baseActiveLabels.length === 0) {
+      note.textContent = 'Quick filters: mood and microphone input.';
       return;
     }
 
-    note.textContent = `Matched: ${activeLabels.join(' + ')}`;
+    note.textContent = `Quick filters active: ${baseActiveLabels.join(' + ')}`;
   };
 
   const updateActiveFiltersSummary = () => {
     const summary = ensureActiveFiltersSummary();
-    const chipsContainer = ensureActiveFiltersChips();
-    if (
-      !(summary instanceof HTMLElement) ||
-      !(chipsContainer instanceof HTMLElement)
-    ) {
+    if (!(summary instanceof HTMLElement)) {
       return;
     }
 
     const tokens = Array.from(activeFilters);
     const hasTokens = tokens.length > 0;
+    const canClear =
+      hasTokens || sortBy !== 'featured' || searchQuery.trim().length > 0;
+    const tokenLabels = tokens.map((token) => formatTokenLabel(token));
+
+    const summaryTextParts = [];
+    if (searchQuery.trim().length > 0) {
+      summaryTextParts.push(`Search: ${searchQuery.trim()}`);
+    }
+    if (tokenLabels.length > 0) {
+      summaryTextParts.push(`Filters: ${tokenLabels.join(', ')}`);
+    }
+    if (sortBy !== 'featured') {
+      summaryTextParts.push(`Sort: ${getSortLabel()}`);
+    }
+
     summary.hidden = false;
     summary.setAttribute('aria-hidden', 'false');
-    summary.classList.toggle('is-empty', !hasTokens);
-    chipsContainer.innerHTML = '';
-
-    const appendChip = ({ label, onClick, ariaLabel }) => {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'active-filter-chip';
-      chip.textContent = label;
-      if (ariaLabel) {
-        chip.setAttribute('aria-label', ariaLabel);
-      }
-      chip.addEventListener('click', onClick);
-      chipsContainer.appendChild(chip);
-    };
-
-    tokens.forEach((token) => {
-      const label = formatTokenLabel(token);
-      appendChip({
-        label,
-        ariaLabel: `Remove filter ${label}`,
-        onClick: () => removeFilterToken(token),
-      });
-    });
+    summary.classList.toggle('is-empty', !canClear);
 
     const status = ensureActiveFiltersStatus();
     if (status instanceof HTMLElement) {
-      status.textContent = hasTokens
-        ? `${tokens.length} active`
-        : 'No filters selected';
+      status.textContent = summaryTextParts.join(' • ') || 'Featured';
     }
 
     const clearButton = ensureActiveFiltersClear();
@@ -196,8 +186,8 @@ export function createLibraryView({
       clearButton instanceof HTMLElement &&
       clearButton.tagName === 'BUTTON'
     ) {
-      clearButton.disabled = !hasTokens;
-      clearButton.setAttribute('aria-disabled', String(!hasTokens));
+      clearButton.disabled = !canClear;
+      clearButton.setAttribute('aria-disabled', String(!canClear));
     }
 
     updateSearchMetaNote();
@@ -978,27 +968,8 @@ export function createLibraryView({
     updateActiveFiltersSummary();
   };
 
-  const removeFilterToken = (token) => {
-    const [type, value] = token.split(':');
-    if (!type || !value) return;
-    activeFilters.delete(token);
-    const chips = document.querySelectorAll('[data-filter-chip]');
-    chips.forEach((chip) => {
-      const chipType = chip.getAttribute('data-filter-type');
-      const chipValue = chip.getAttribute('data-filter-value');
-      const chipToken =
-        chipType && chipValue ? createFilterToken(chipType, chipValue) : null;
-      if (chipToken === token) {
-        chip.classList.remove('is-active');
-        updateFilterChipA11y(chip, false);
-      }
-    });
-    emitFilterStateChange();
-    commitState({ replace: false });
-    syncRefineDisclosure();
-    renderToys(applyFilters());
-    updateFilterResetState();
-    updateActiveFiltersSummary();
+  const clearAllFilters = () => {
+    resetFiltersAndSearch();
   };
 
   const populateSearchSuggestions = () => {
@@ -1074,7 +1045,7 @@ export function createLibraryView({
       clearButton instanceof HTMLElement &&
       clearButton.tagName === 'BUTTON'
     ) {
-      clearButton.addEventListener('click', () => clearFilters());
+      clearButton.addEventListener('click', () => resetFiltersAndSearch());
     }
   };
 
