@@ -45,9 +45,6 @@ export function initAudioControls(
   };
 
   container.className = 'control-panel';
-  const hasAdvancedOptions =
-    Boolean(options.onRequestTabAudio) ||
-    Boolean(options.onRequestYouTubeAudio);
   const firstRunHint = options.firstRunHint?.trim();
   const gestureHints = (options.gestureHints ?? options.starterTips ?? [])
     .filter((tip) => /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip))
@@ -58,179 +55,15 @@ export function initAudioControls(
   const starterPresetId = options.starterPresetId?.trim() || 'low-motion';
 
   container.innerHTML = `
-    <p class="control-panel__description">
-      Choose how this toy listens.
-    </p>
-    <p class="control-panel__stage-label">Step 1 · Start audio</p>
-    <section class="control-panel__first-steps" data-first-steps role="note" aria-label="First steps">
-      <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">First steps</span>
-        <div class="control-panel__first-steps-actions">
-          <button type="button" class="control-panel__dismiss" data-apply-starter-preset>Try ${starterPresetLabel}</button>
-          <button type="button" class="control-panel__dismiss" data-dismiss-first-steps>Dismiss</button>
-        </div>
-      </div>
-      <ul class="control-panel__tips control-panel__tips--compact">
-        <li data-first-step-source>Start with mic for live input, or demo for instant audio.</li>
-        <li>Then open quality controls and pick <strong>Low motion</strong> if you want a calmer feel.</li>
-        <li>${firstRunHint ?? 'Tap or drag in the canvas once audio starts to quickly feel the response.'}</li>
-      </ul>
-    </section>
-    <p class="control-panel__comparison" data-audio-comparison>
-      Mic reacts to your space right now. Demo starts instantly with no permissions.
-    </p>
-    ${
-      gestureHints.length > 0
-        ? `
-    <section class="control-panel__gesture-hints" data-gesture-hints hidden aria-live="polite">
-      <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">Touch gestures</span>
-        <button type="button" class="control-panel__dismiss" data-dismiss-gesture-hints>Got it</button>
-      </div>
-      <p class="control-panel__microcopy">Once audio starts, try these quick moves:</p>
-      <ul class="control-panel__tips control-panel__tips--compact">
-        ${gestureHints.map((tip) => `<li>${tip}</li>`).join('')}
-      </ul>
-    </section>
-    `
-        : ''
-    }
-    ${
-      options.starterTips && options.starterTips.length > 0
-        ? `
-    <div class="control-panel__quickstart" data-quickstart-panel>
-      <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">Quick start tips</span>
-        <button type="button" class="control-panel__dismiss" data-dismiss-quickstart>Dismiss</button>
-      </div>
-      <ul class="control-panel__tips">
-        ${options.starterTips
-          .slice(0, 3)
-          .map((tip) => `<li>${tip}</li>`)
-          .join('')}
-      </ul>
-    </div>
-    `
-        : ''
-    }
-    <div class="control-panel__row" data-audio-row="mic">
-      <div class="control-panel__text">
-        <span class="control-panel__label">Live mic</span>
-        <span class="control-panel__pill" data-recommended-for="mic" hidden>Recommended first try</span>
-        <span class="control-panel__subtext">Best for live instruments, voice, and ambient sound.</span>
-        <span class="control-panel__microcopy">Reacts to your room in real time. Requires microphone permission.</span>
-      </div>
-      <button id="start-audio-btn" class="cta-button ghost" type="button">
-        Start mic-reactive mode
-      </button>
-    </div>
-    <div class="control-panel__row" data-audio-row="demo">
-      <div class="control-panel__text">
-        <span class="control-panel__label">Curated demo</span>
-        <span class="control-panel__pill" data-recommended-for="demo" hidden>Recommended first try</span>
-        <span class="control-panel__subtext">Fastest way to preview visuals without permissions.</span>
-        <span class="control-panel__microcopy">Starts instantly with built-in audio. Great first try when privacy-sensitive.</span>
-      </div>
-      <button id="use-demo-audio" class="cta-button primary" type="button">Preview instantly with demo audio</button>
-    </div>
-
-    ${
-      hasAdvancedOptions
-        ? `
-    <p class="control-panel__stage-label">Step 2 · Advanced capture (optional)</p>
-    <div class="control-panel__row control-panel__row--advanced-toggle">
-      <button
-        type="button"
-        class="control-panel__advanced-toggle"
-        aria-expanded="false"
-        aria-controls="advanced-audio-panel"
-        data-advanced-toggle
-      >
-        <span class="control-panel__advanced-title" data-advanced-toggle-label>Show advanced audio options</span>
-        <span class="control-panel__advanced-hint">Tab or YouTube capture for media already playing</span>
-      </button>
-    </div>
-    <p class="control-panel__advanced-helper" data-advanced-helper hidden>Use these when you want visuals to react to music or videos already playing in your browser.</p>
-    <div id="advanced-audio-panel" class="control-panel__advanced" data-advanced-panel hidden>
-      ${
-        options.onRequestTabAudio
-          ? `
-      <div class="control-panel__row">
-        <div class="control-panel__text">
-          <span class="control-panel__label">Tab capture</span>
-          <span class="control-panel__info-wrap">
-            <button
-              class="control-panel__info"
-              type="button"
-              aria-describedby="tab-audio-info"
-            >
-              Tab tips
-            </button>
-            <span id="tab-audio-info" class="control-panel__info-text">
-              Capture sound from the current tab. In the picker, choose “This tab” and enable
-              Share audio.
-            </span>
-          </span>
-        </div>
-        <button id="use-tab-audio" class="cta-button" type="button">Capture tab</button>
-      </div>
-      `
-          : ''
-      }
-      ${
-        options.onRequestYouTubeAudio
-          ? `
-      <div class="control-panel__row control-panel__row--stacked">
-        <div class="control-panel__text">
-          <span class="control-panel__label">YouTube capture</span>
-          <span class="control-panel__info-wrap">
-            <button
-              class="control-panel__info"
-              type="button"
-              aria-describedby="youtube-audio-info"
-            >
-              YouTube tips
-            </button>
-            <span id="youtube-audio-info" class="control-panel__info-text">
-              Paste a link, load it, then capture. In the picker, choose “This tab” and enable
-              Share audio.
-            </span>
-          </span>
-        </div>
-        <div class="control-panel__field">
-          <label class="sr-only" for="youtube-url">YouTube URL</label>
-          <input
-            id="youtube-url"
-            class="control-panel__input"
-            type="url"
-            placeholder="https://youtube.com/watch?v=..."
-            autocomplete="off"
-            inputmode="url"
-          />
-          <button id="load-youtube" class="cta-button" type="button">Load</button>
-        </div>
-        <p id="youtube-url-feedback" class="control-panel__microcopy" data-youtube-url-feedback role="status" aria-live="polite">Paste a full YouTube link to enable Load.</p>
-        <div id="recent-youtube" class="control-panel__recent" hidden>
-          <span class="control-panel__label small">Recent</span>
-          <div id="recent-list" class="control-panel__chip-list"></div>
-        </div>
-        <div class="control-panel__actions control-panel__actions--inline">
-          <button id="use-youtube-audio" class="cta-button" type="button">
-            Capture YouTube
-          </button>
-        </div>
-        <div id="youtube-player-container" class="control-panel__embed" hidden>
-          <div id="youtube-player"></div>
-        </div>
-      </div>
-      `
-          : ''
-      }
-    </div>
-    `
-        : ''
-    }
-
+    <p class="control-panel__description">Choose how this toy listens.</p>
+    ${renderPrimaryAudioChoice()}
+    ${renderOnboardingHelp({
+      firstRunHint,
+      gestureHints,
+      starterTips: options.starterTips,
+      starterPresetLabel,
+    })}
+    ${renderAdvancedSources(options)}
     <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
   `;
 
@@ -243,18 +76,9 @@ export function initAudioControls(
     container.querySelector('#audio-status')) as HTMLElement;
   const requestTabAudio = options.onRequestTabAudio;
   let microphonePermissionState: MicrophonePermissionState = 'unknown';
-  const advancedToggle = container.querySelector(
-    '[data-advanced-toggle]',
-  ) as HTMLButtonElement | null;
-  const advancedPanel = container.querySelector(
-    '[data-advanced-panel]',
-  ) as HTMLElement | null;
-  const advancedHelper = container.querySelector(
-    '[data-advanced-helper]',
-  ) as HTMLElement | null;
-  const advancedToggleLabel = container.querySelector(
-    '[data-advanced-toggle-label]',
-  ) as HTMLElement | null;
+  const advancedInputs = container.querySelector(
+    '[data-advanced-inputs]',
+  ) as HTMLDetailsElement | null;
   const ADVANCED_KEY = 'stims-audio-advanced-open';
   const FIRST_STEPS_KEY = 'stims-first-steps-dismissed';
   const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
@@ -537,29 +361,15 @@ export function initAudioControls(
     );
   }
 
-  if (advancedToggle && advancedPanel) {
+  if (advancedInputs) {
     let isOpen = false;
     try {
       isOpen = window.sessionStorage.getItem(ADVANCED_KEY) === 'true';
     } catch (_error) {
       isOpen = false;
     }
-    const setAdvancedState = (open: boolean) => {
-      advancedPanel.hidden = !open;
-      if (advancedHelper) {
-        advancedHelper.hidden = !open;
-      }
-      advancedToggle.setAttribute('aria-expanded', String(open));
-      if (advancedToggleLabel) {
-        advancedToggleLabel.textContent = open
-          ? 'Hide advanced audio options'
-          : 'Show advanced audio options';
-      }
-    };
-
-    setAdvancedState(isOpen);
     const persistAdvancedState = (nextState: boolean) => {
-      setAdvancedState(nextState);
+      advancedInputs.open = nextState;
       try {
         window.sessionStorage.setItem(ADVANCED_KEY, String(nextState));
       } catch (_error) {
@@ -567,17 +377,10 @@ export function initAudioControls(
       }
     };
 
-    advancedToggle.addEventListener('click', () => {
-      const nextState = advancedPanel.hidden;
-      persistAdvancedState(nextState);
-    });
+    persistAdvancedState(isOpen);
 
-    advancedToggle.addEventListener('keydown', (event) => {
-      if (event.key !== 'Escape') return;
-      if (advancedPanel.hidden) return;
-      event.preventDefault();
-      persistAdvancedState(false);
-      advancedToggle.focus();
+    advancedInputs.addEventListener('toggle', () => {
+      persistAdvancedState(advancedInputs.open);
     });
   }
 
@@ -708,6 +511,185 @@ export function initAudioControls(
       handleSuccess,
     );
   }
+}
+
+function renderPrimaryAudioChoice() {
+  return `
+    <div class="control-panel__row" data-audio-row="mic">
+      <div class="control-panel__text">
+        <span class="control-panel__label">Live mic</span>
+        <span class="control-panel__pill" data-recommended-for="mic" hidden>Recommended first try</span>
+        <span class="control-panel__subtext">Best for live instruments, voice, and ambient sound.</span>
+        <span class="control-panel__microcopy">Reacts to your room in real time. Requires microphone permission.</span>
+      </div>
+      <button id="start-audio-btn" class="cta-button ghost" type="button">Start mic-reactive mode</button>
+    </div>
+    <div class="control-panel__row" data-audio-row="demo">
+      <div class="control-panel__text">
+        <span class="control-panel__label">Curated demo</span>
+        <span class="control-panel__pill" data-recommended-for="demo" hidden>Recommended first try</span>
+        <span class="control-panel__subtext">Fastest way to preview visuals without permissions.</span>
+        <span class="control-panel__microcopy">Starts instantly with built-in audio. Great first try when privacy-sensitive.</span>
+      </div>
+      <button id="use-demo-audio" class="cta-button primary" type="button">Preview with demo audio</button>
+    </div>
+  `;
+}
+
+function renderOnboardingHelp({
+  firstRunHint,
+  gestureHints,
+  starterTips,
+  starterPresetLabel,
+}: {
+  firstRunHint?: string;
+  gestureHints: string[];
+  starterTips?: string[];
+  starterPresetLabel: string;
+}) {
+  return `
+    <details class="control-panel__details" data-onboarding-help>
+      <summary class="control-panel__label">Help me choose</summary>
+      <p class="control-panel__comparison" data-audio-comparison>
+        Mic reacts to your space right now. Demo starts instantly with no permissions.
+      </p>
+      <section class="control-panel__first-steps" data-first-steps role="note" aria-label="First steps">
+        <div class="control-panel__first-steps-header">
+          <span class="control-panel__label">First steps</span>
+          <div class="control-panel__first-steps-actions">
+            <button type="button" class="control-panel__dismiss" data-apply-starter-preset>Try ${starterPresetLabel}</button>
+            <button type="button" class="control-panel__dismiss" data-dismiss-first-steps>Dismiss</button>
+          </div>
+        </div>
+        <ul class="control-panel__tips control-panel__tips--compact">
+          <li data-first-step-source>Start with mic for live input, or demo for instant audio.</li>
+          <li>Then open quality controls and pick <strong>Low motion</strong> if you want a calmer feel.</li>
+          <li>${firstRunHint ?? 'Tap or drag in the canvas once audio starts to quickly feel the response.'}</li>
+        </ul>
+      </section>
+      ${
+        gestureHints.length > 0
+          ? `
+      <section class="control-panel__gesture-hints" data-gesture-hints hidden aria-live="polite">
+        <div class="control-panel__first-steps-header">
+          <span class="control-panel__label">Touch gestures</span>
+          <button type="button" class="control-panel__dismiss" data-dismiss-gesture-hints>Got it</button>
+        </div>
+        <p class="control-panel__microcopy">Once audio starts, try these quick moves:</p>
+        <ul class="control-panel__tips control-panel__tips--compact">
+          ${gestureHints.map((tip) => `<li>${tip}</li>`).join('')}
+        </ul>
+      </section>
+      `
+          : ''
+      }
+      ${
+        starterTips && starterTips.length > 0
+          ? `
+      <div class="control-panel__quickstart" data-quickstart-panel>
+        <div class="control-panel__first-steps-header">
+          <span class="control-panel__label">Quick start tips</span>
+          <button type="button" class="control-panel__dismiss" data-dismiss-quickstart>Dismiss</button>
+        </div>
+        <ul class="control-panel__tips">
+          ${starterTips
+            .slice(0, 3)
+            .map((tip) => `<li>${tip}</li>`)
+            .join('')}
+        </ul>
+      </div>
+      `
+          : ''
+      }
+    </details>
+  `;
+}
+
+function renderAdvancedSources(options: AudioControlsOptions) {
+  if (!options.onRequestTabAudio && !options.onRequestYouTubeAudio) {
+    return '';
+  }
+
+  return `
+    <details class="control-panel__details" data-advanced-inputs>
+      <summary class="control-panel__label">Advanced inputs</summary>
+      <p class="control-panel__advanced-helper">Use these when you want visuals to react to music or videos already playing in your browser.</p>
+      <div id="advanced-audio-panel" class="control-panel__advanced" data-advanced-panel>
+        ${
+          options.onRequestTabAudio
+            ? `
+        <div class="control-panel__row">
+          <div class="control-panel__text">
+            <span class="control-panel__label">Tab capture</span>
+            <span class="control-panel__info-wrap">
+              <button
+                class="control-panel__info"
+                type="button"
+                aria-describedby="tab-audio-info"
+              >
+                Tab tips
+              </button>
+              <span id="tab-audio-info" class="control-panel__info-text">
+                Capture sound from the current tab. In the picker, choose “This tab” and enable
+                Share audio.
+              </span>
+            </span>
+          </div>
+          <button id="use-tab-audio" class="cta-button" type="button">Capture tab</button>
+        </div>
+        `
+            : ''
+        }
+        ${
+          options.onRequestYouTubeAudio
+            ? `
+        <div class="control-panel__row control-panel__row--stacked">
+          <div class="control-panel__text">
+            <span class="control-panel__label">YouTube capture</span>
+            <span class="control-panel__info-wrap">
+              <button
+                class="control-panel__info"
+                type="button"
+                aria-describedby="youtube-audio-info"
+              >
+                YouTube tips
+              </button>
+              <span id="youtube-audio-info" class="control-panel__info-text">
+                Paste a link, load it, then capture. In the picker, choose “This tab” and enable
+                Share audio.
+              </span>
+            </span>
+          </div>
+          <div class="control-panel__field">
+            <label class="sr-only" for="youtube-url">YouTube URL</label>
+            <input
+              id="youtube-url"
+              class="control-panel__input"
+              type="url"
+              placeholder="https://youtube.com/watch?v=..."
+              autocomplete="off"
+              inputmode="url"
+            />
+            <button id="load-youtube" class="cta-button" type="button">Load</button>
+          </div>
+          <p id="youtube-url-feedback" class="control-panel__microcopy" data-youtube-url-feedback role="status" aria-live="polite">Paste a full YouTube link to enable Load.</p>
+          <div id="recent-youtube" class="control-panel__recent" hidden>
+            <span class="control-panel__label small">Recent</span>
+            <div id="recent-list" class="control-panel__chip-list"></div>
+          </div>
+          <div class="control-panel__actions control-panel__actions--inline">
+            <button id="use-youtube-audio" class="cta-button" type="button">Capture YouTube</button>
+          </div>
+          <div id="youtube-player-container" class="control-panel__embed" hidden>
+            <div id="youtube-player"></div>
+          </div>
+        </div>
+        `
+            : ''
+        }
+      </div>
+    </details>
+  `;
 }
 
 function setupYouTubeLogic(

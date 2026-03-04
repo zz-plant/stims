@@ -35,6 +35,16 @@ type Toy = ToyEntry;
 const TOY_QUERY_PARAM = 'toy';
 const LIBRARY_FILTER_PARAM = 'filters';
 const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
+
+const TOY_SLUG_ALIASES: Record<string, string> = {
+  'three-d-toy': '3dtoy',
+};
+
+function resolveToySlug(slug: string) {
+  const normalized = slug.trim().toLowerCase();
+  return TOY_SLUG_ALIASES[normalized] ?? normalized;
+}
+
 const TOY_MICRO_GOALS: Record<string, string[]> = {
   holy: ['Boost intensity, then settle into a calmer palette.'],
   'bubble-harmonics': [
@@ -422,7 +432,8 @@ export function createLoader({
 
     haptics.syncBeatHapticsListener();
 
-    const toy = toys.find((t) => t.slug === slug);
+    const resolvedSlug = resolveToySlug(slug);
+    const toy = toys.find((t) => t.slug === resolvedSlug);
     if (!toy) {
       console.error(`Toy not found: ${slug}`);
       view.showUnavailableToy?.(slug, { onBack: backToLibrary });
