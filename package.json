@@ -39,8 +39,8 @@
     "dev:host": "vite --host",
     "dev:check": "bun scripts/dev-check.mjs || node scripts/dev-check.mjs",
     "setup:codex": "bash scripts/codex-setup.sh",
-    "check": "biome check assets scripts tests && bun run typecheck && bun run test",
-    "check:quick": "biome check assets scripts tests && bun run typecheck",
+    "check": "bun run check:no-ts-nocheck && biome check assets scripts tests && bun run typecheck && bun run test",
+    "check:quick": "bun run check:no-ts-nocheck && biome check assets scripts tests && bun run typecheck",
     "check:toys": "bun run scripts/check-toys.ts",
     "generate:seo": "bun run scripts/generate-seo.ts",
     "build": "bun scripts/build.mjs || node scripts/build.mjs",
@@ -58,7 +58,8 @@
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",
     "check:seo": "bun run scripts/check-seo.ts",
     "dev:webgpu": "bun scripts/dev-webgpu.mjs || node scripts/dev-webgpu.mjs",
-    "generate:toys": "bun run scripts/generate-toy-manifest.ts"
+    "generate:toys": "bun run scripts/generate-toy-manifest.ts",
+    "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.15",
