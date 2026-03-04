@@ -14,9 +14,16 @@
 
 -
 
-## Checklist
+## Review risk checklist
 
-- [ ] Linting (`bun run lint`) if applicable
-- [ ] Tests (`bun run test`) if applicable
-- [ ] Build (`bun run build`) if applicable
-- [ ] Type checking (`bun run typecheck`) if applicable
+- [ ] Null/undefined paths reviewed for changed logic
+- [ ] Async/lifecycle state transitions reviewed (loading, visibility, audio, teardown)
+- [ ] Existing shared helper/module checked before introducing duplicate logic
+- [ ] New visual literals use existing design tokens (or include a new named token)
+- [ ] Behavior change is covered by tests (or reason provided)
+
+## Quality checklist
+
+- [ ] `bun run check:quick`
+- [ ] `bun run check` (required for JS/TS changes)
+- [ ] `bun run build` (if build/runtime output changed)
