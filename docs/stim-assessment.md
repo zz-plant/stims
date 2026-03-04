@@ -2,13 +2,18 @@
 
 ## Findings
 
-- **Multi-Capability Visualizer (`multi`)**
-  - The library manifest lists `multi` as a standalone page that requires WebGPU, but the toy metadata leaves `requiresWebGPU` set to `false`, so the loader never shows the capability warning or aborts on unsupported devices.
-  - Result: users on browsers without WebGPU attempt to load `multi` with no notice about degraded visuals.
+- **Manifest truth has changed; docs lag remains**
+  - `assets/data/toys.json` now marks `multi` and the rest of the catalog with `requiresWebGPU: true`, and the entries include `allowWebGLFallback: true`.
+  - Some long-lived docs/copy still use older “WebGPU-only” language that implies hard gating where fallback is available.
+  - Result: contributor and user-facing guidance can drift from runtime behavior.
 
 ## Fix plan
 
-- **Multi-Capability Visualizer (`multi`)**
-  - Align toy metadata with the documented requirement by marking the toy as `requiresWebGPU` so the loader surfaces the WebGPU capability screen instead of failing silently.
-  - Expand the standalone page entry (`multi.html`) to present a friendlier WebGPU warning plus a tuned WebGL fallback preset (reduced particles/light bounces) for unsupported browsers.
-  - Add a lightweight telemetry hook in the loader to track WebGPU support rates so we can tune defaults before forcing WebGPU-only paths.
+- **Keep docs aligned with metadata reality**
+  - Treat `assets/data/toys.json` as the source of truth for capability claims.
+  - Remove or rephrase copy that implies specific toys are WebGPU-only unless `allowWebGLFallback` is explicitly false.
+  - Enforce this with automated checks in `bun run check:toys` so stale claims are caught in CI.
+
+- **Follow-up product validation**
+  - Add lightweight loader telemetry to track WebGPU support rates and fallback frequency.
+  - Use telemetry to decide whether any toys should become truly WebGPU-only in the future.
