@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=flat-square)](./LICENSE)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=flat-square&logo=bun)](https://bun.sh)
 
-Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). This is a collection of interactive web-based toys designed to deliver playful sensory stimulation. They’re built with **Three.js**, **WebGL**, and live **audio interaction** for anyone who enjoys engaging, responsive visuals. These are great for casual play or sensory exploration, especially for neurodiverse folks.
+Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). Stims is an interactive, audio-reactive web toy collection built with **Three.js** + **WebGL** (with WebGPU support where available) for playful, sensory-friendly exploration.
 
 **Keywords for discovery:** interactive web toys, audio-reactive visuals, Three.js/WebGL experiments, sensory-friendly play, generative art playground, calming visualizers.
 
@@ -17,6 +17,12 @@ Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil
 - 🧠 **Toy index**: https://no.toil.fyi/toy.html
 - 📘 **Docs hub**: [`docs/README.md`](./docs/README.md)
 - 🧰 **Contribute**: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+
+
+**Learn the basics in order**
+- 1️⃣ Overview + orientation: [`docs/README.md`](./docs/README.md)
+- 2️⃣ Local setup and workflows: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
+- 3️⃣ Runtime and compatibility expectations: [`docs/PAGE_SPECIFICATIONS.md`](./docs/PAGE_SPECIFICATIONS.md) and [`README.md#browser-support-snapshot`](#browser-support-snapshot)
 
 **Discover by theme**
 - 🌈 **Moods**: https://no.toil.fyi/moods/
