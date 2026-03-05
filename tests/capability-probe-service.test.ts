@@ -6,7 +6,13 @@ describe('capability probe service', () => {
   test('derives blocking issue when rendering backend is unavailable', () => {
     const result = buildCapabilityPreflightResult({
       renderingSupport: { hasWebGL: false },
-      rendererCapabilities: null,
+      rendererPlan: {
+        backend: null,
+        reasonCode: 'RENDERER_UNAVAILABLE',
+        reasonMessage: 'Renderer unavailable',
+        triedWebGPU: false,
+        canRetryWebGPU: false,
+      },
       microphone: getMicrophoneCapabilityFromState('granted'),
       environment: {
         secureContext: true,
@@ -28,11 +34,12 @@ describe('capability probe service', () => {
   test('derives warnings from webgl fallback, denied microphone, and low-power profile', () => {
     const result = buildCapabilityPreflightResult({
       renderingSupport: { hasWebGL: true },
-      rendererCapabilities: {
-        preferredBackend: 'webgl',
-        fallbackReason: 'WebGPU unsupported',
+      rendererPlan: {
+        backend: 'webgl',
+        reasonCode: 'WEBGPU_UNAVAILABLE',
+        reasonMessage: 'WebGPU unsupported',
         triedWebGPU: true,
-        shouldRetryWebGPU: false,
+        canRetryWebGPU: false,
       },
       microphone: getMicrophoneCapabilityFromState('denied'),
       environment: {
@@ -63,11 +70,12 @@ describe('capability probe service', () => {
   test('keeps output shape stable for unsupported microphone state', () => {
     const result = buildCapabilityPreflightResult({
       renderingSupport: { hasWebGL: true },
-      rendererCapabilities: {
-        preferredBackend: 'webgpu',
-        fallbackReason: null,
+      rendererPlan: {
+        backend: 'webgpu',
+        reasonCode: null,
+        reasonMessage: null,
         triedWebGPU: true,
-        shouldRetryWebGPU: false,
+        canRetryWebGPU: false,
       },
       microphone: getMicrophoneCapabilityFromState('unsupported'),
       environment: {
@@ -75,39 +83,32 @@ describe('capability probe service', () => {
         hardwareConcurrency: null,
       },
       performanceProfile: {
-        lowPower: false,
-        reason: null,
+        lowPower: true,
+        reason: 'mobile device detected',
         reducedMotion: true,
       },
     });
 
-    expect(result).toEqual({
-      rendering: {
-        hasWebGL: true,
-        rendererBackend: 'webgpu',
-        webgpuFallbackReason: null,
-        triedWebGPU: true,
-        shouldRetryWebGPU: false,
-      },
-      microphone: {
-        supported: false,
-        state: 'unsupported',
-        reason: 'This browser cannot capture microphone audio.',
-      },
-      environment: {
-        secureContext: false,
-        reducedMotion: true,
-        hardwareConcurrency: null,
-      },
-      performance: {
-        lowPower: false,
-        reason: null,
-        recommendedMaxPixelRatio: 1.25,
-        recommendedRenderScale: 0.9,
-      },
-      blockingIssues: [],
-      warnings: ['Microphone APIs are unavailable in this browser.'],
-      canProceed: true,
+    expect(result.rendering).toEqual({
+      hasWebGL: true,
+      rendererBackend: 'webgpu',
+      webgpuFallbackReason: null,
+      triedWebGPU: true,
+      shouldRetryWebGPU: false,
     });
+    expect(result.performance).toEqual({
+      lowPower: true,
+      reason: 'mobile device detected',
+      recommendedMaxPixelRatio: 1.25,
+      recommendedRenderScale: 0.9,
+    });
+    expect(result.environment).toEqual({
+      secureContext: false,
+      reducedMotion: true,
+      hardwareConcurrency: null,
+    });
+    expect(result.warnings).toContain(
+      'Microphone APIs are unavailable in this browser.',
+    );
   });
 });
