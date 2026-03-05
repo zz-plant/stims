@@ -1,9 +1,9 @@
-import { isMobileDevice } from '../../utils/device-detect';
 import {
-  getRendererCapabilities,
-  getRenderingSupport,
-  type RendererCapabilities,
-} from '../renderer-capabilities.ts';
+  type DevicePerformanceProfile,
+  getDevicePerformanceProfile,
+} from '../device-profile.ts';
+import { getRenderingSupport } from '../renderer-capabilities.ts';
+import { getRendererPlan, type RendererPlan } from '../renderer-plan.ts';
 import {
   type MicrophoneCapability,
   probeMicrophoneCapability,
@@ -34,79 +34,35 @@ export type CapabilityPreflightResult = {
   canProceed: boolean;
 };
 
-type PerformanceProfile = {
-  lowPower: boolean;
-  reason: string | null;
-  reducedMotion: boolean;
-};
-
 type CapabilityProbeInputs = {
   renderingSupport: { hasWebGL: boolean };
-  rendererCapabilities: Pick<
-    RendererCapabilities,
-    'preferredBackend' | 'fallbackReason' | 'triedWebGPU' | 'shouldRetryWebGPU'
-  > | null;
+  rendererPlan: RendererPlan;
   microphone: MicrophoneCapability;
   environment: {
     secureContext: boolean;
     hardwareConcurrency: number | null;
   };
-  performanceProfile: PerformanceProfile;
+  performanceProfile: DevicePerformanceProfile;
 };
 
-const isMobileUserAgent = isMobileDevice();
-
-export function getPerformanceProfile(): PerformanceProfile {
-  const deviceMemory =
-    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
-      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
-        null)
-      : null;
-  const hardwareConcurrency =
-    typeof navigator !== 'undefined'
-      ? (navigator.hardwareConcurrency ?? null)
-      : null;
-  const reducedMotion =
-    typeof window !== 'undefined' && window.matchMedia
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false;
-
-  const reasons: string[] = [];
-  if (isMobileUserAgent) reasons.push('mobile device detected');
-  if (reducedMotion) reasons.push('reduced motion preference');
-  if (deviceMemory !== null && deviceMemory <= 4) {
-    reasons.push('limited device memory');
-  }
-  if (hardwareConcurrency !== null && hardwareConcurrency <= 4) {
-    reasons.push('limited CPU cores');
-  }
-
-  return {
-    lowPower: reasons.length > 0,
-    reason: reasons.length > 0 ? reasons.join(', ') : null,
-    reducedMotion,
-  };
+export function getPerformanceProfile(): DevicePerformanceProfile {
+  return getDevicePerformanceProfile();
 }
 
 export function buildCapabilityPreflightResult({
   renderingSupport,
-  rendererCapabilities,
+  rendererPlan,
   microphone,
   environment,
   performanceProfile,
 }: CapabilityProbeInputs): CapabilityPreflightResult {
-  const renderingBackend =
-    rendererCapabilities?.preferredBackend ??
-    (renderingSupport.hasWebGL ? 'webgl' : null);
-  const webgpuFallbackReason = rendererCapabilities?.fallbackReason ?? null;
-
   const blockingIssues: string[] = [];
   const warnings: string[] = [];
 
-  if (!renderingBackend) {
+  if (!rendererPlan.backend) {
     blockingIssues.push('Graphics acceleration is unavailable (WebGL/WebGPU).');
-  } else if (renderingBackend === 'webgl' && webgpuFallbackReason) {
-    warnings.push(webgpuFallbackReason);
+  } else if (rendererPlan.backend === 'webgl' && rendererPlan.reasonMessage) {
+    warnings.push(rendererPlan.reasonMessage);
   }
 
   if (!microphone.supported) {
@@ -126,10 +82,10 @@ export function buildCapabilityPreflightResult({
   return {
     rendering: {
       hasWebGL: renderingSupport.hasWebGL,
-      rendererBackend: renderingBackend,
-      webgpuFallbackReason,
-      triedWebGPU: rendererCapabilities?.triedWebGPU ?? false,
-      shouldRetryWebGPU: rendererCapabilities?.shouldRetryWebGPU ?? false,
+      rendererBackend: rendererPlan.backend,
+      webgpuFallbackReason: rendererPlan.reasonMessage,
+      triedWebGPU: rendererPlan.triedWebGPU,
+      shouldRetryWebGPU: rendererPlan.canRetryWebGPU,
     },
     microphone,
     environment: {
@@ -150,17 +106,26 @@ export function buildCapabilityPreflightResult({
 }
 
 export async function runCapabilityProbe(): Promise<CapabilityPreflightResult> {
-  const [rendererCapabilities, microphone] = await Promise.all([
-    getRendererCapabilities().catch((error) => {
+  const [rendererPlanResult, microphone] = await Promise.all([
+    getRendererPlan().catch((error) => {
       console.warn('Renderer capability probe failed', error);
-      return null;
+      return {
+        capabilities: null,
+        plan: {
+          backend: null,
+          reasonCode: null,
+          reasonMessage: 'Renderer capability probe failed.',
+          canRetryWebGPU: true,
+          triedWebGPU: false,
+        } as RendererPlan,
+      };
     }),
     probeMicrophoneCapability(),
   ]);
 
   return buildCapabilityPreflightResult({
     renderingSupport: getRenderingSupport(),
-    rendererCapabilities,
+    rendererPlan: rendererPlanResult.plan,
     microphone,
     environment: {
       secureContext:

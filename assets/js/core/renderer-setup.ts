@@ -3,11 +3,17 @@ import { ACESFilmicToneMapping, SRGBColorSpace, WebGLRenderer } from 'three';
 import { isMobileDevice } from '../utils/device-detect';
 import { ensureWebGL } from '../utils/webgl-check';
 import { createWebGLRenderer } from '../utils/webgl-renderer';
+import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import {
   getRendererCapabilities,
   type RendererBackend,
   rememberRendererFallback,
 } from './renderer-capabilities.ts';
+import {
+  getRendererFallbackReasonMessage,
+  RENDERER_FALLBACK_REASON_CODES,
+} from './renderer-fallback-reasons.ts';
+import { deriveRendererPlan } from './renderer-plan.ts';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
 
 export type RendererInitResult = {
@@ -55,34 +61,6 @@ async function detectXrSupport(): Promise<boolean> {
     (result) => result.status === 'fulfilled' && Boolean(result.value),
   );
 }
-
-const getAdaptiveMaxPixelRatio = (maxPixelRatio: number) => {
-  if (typeof navigator === 'undefined' || typeof window === 'undefined') {
-    return maxPixelRatio;
-  }
-
-  const deviceMemory =
-    'deviceMemory' in navigator
-      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
-        null)
-      : null;
-  const hardwareConcurrency = navigator.hardwareConcurrency ?? null;
-  const prefersReducedMotion = window.matchMedia
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    : false;
-
-  const lowPowerDevice =
-    isMobileUserAgent ||
-    prefersReducedMotion ||
-    (deviceMemory !== null && deviceMemory <= 4) ||
-    (hardwareConcurrency !== null && hardwareConcurrency <= 4);
-
-  if (!lowPowerDevice) {
-    return maxPixelRatio;
-  }
-
-  return Math.min(maxPixelRatio, 1.25);
-};
 
 export async function initRenderer(
   canvas: HTMLCanvasElement,
@@ -153,34 +131,26 @@ export async function initRenderer(
     }
     rememberRendererFallback(reason, { shouldRetryWebGPU, triedWebGPU });
 
-    // Mobile-optimized WebGL context attributes
     const renderer = createWebGLRenderer({
       canvas,
       antialias,
       alpha,
-      // Use high-performance mode on desktop, default on mobile for better battery life
       powerPreference: isMobileUserAgent ? 'default' : 'high-performance',
-      // Don't fail if there are performance caveats - mobile GPUs often have them
       failIfMajorPerformanceCaveat: false,
-      // Enable stencil buffer for better rendering compatibility
       stencil: true,
-      // Preserve drawing buffer for screenshots/recording if needed
       preserveDrawingBuffer: false,
     });
     return finalize(renderer, 'webgl', null, null);
   };
 
-  if (xrSupported) {
-    return fallbackToWebGL(
-      'WebXR session support detected. Using WebGL for XR compatibility.',
-      undefined,
-      { shouldRetryWebGPU: true, triedWebGPU: false },
-    );
-  }
-
   const capabilities = await getRendererCapabilities();
+  const plan = deriveRendererPlan({
+    capabilities,
+    hasWebGL: true,
+    xrSupported,
+  });
 
-  if (capabilities.preferredBackend === 'webgpu' && capabilities.adapter) {
+  if (plan.backend === 'webgpu' && capabilities?.adapter) {
     const adapter = capabilities.adapter;
     let device = capabilities.device;
 
@@ -188,7 +158,12 @@ export async function initRenderer(
       try {
         device = await adapter.requestDevice();
       } catch (error) {
-        return fallbackToWebGL('Unable to acquire a WebGPU device.', error);
+        return fallbackToWebGL(
+          getRendererFallbackReasonMessage(
+            RENDERER_FALLBACK_REASON_CODES.noDevice,
+          ),
+          error,
+        );
       }
     }
 
@@ -206,16 +181,24 @@ export async function initRenderer(
       });
       return finalize(renderer, 'webgpu', adapter, device);
     } catch (error) {
-      return fallbackToWebGL('Failed to create a WebGPU renderer.', error);
+      return fallbackToWebGL(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.webgpuRendererCreationFailed,
+        ),
+        error,
+      );
     }
   }
 
   return fallbackToWebGL(
-    capabilities.fallbackReason ?? 'WebGPU is not available in this browser.',
+    plan.reasonMessage ??
+      getRendererFallbackReasonMessage(
+        RENDERER_FALLBACK_REASON_CODES.webgpuUnavailable,
+      ),
     undefined,
     {
-      shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
-      triedWebGPU: capabilities.triedWebGPU,
+      shouldRetryWebGPU: plan.canRetryWebGPU,
+      triedWebGPU: plan.triedWebGPU,
     },
   );
 }

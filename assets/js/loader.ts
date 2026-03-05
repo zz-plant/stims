@@ -212,7 +212,7 @@ export function createLoader({
 
     let capabilities = capabilityDecision.capabilities;
 
-    if (!capabilityDecision.supportsRendering) {
+    if (capabilityDecision.runMode === 'blocked') {
       return;
     }
 
