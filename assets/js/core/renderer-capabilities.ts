@@ -3,6 +3,12 @@
 import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
 
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
+import {
+  getRendererFallbackReasonMessage,
+  inferRendererFallbackReasonCode,
+  RENDERER_FALLBACK_REASON_CODES,
+  type RendererFallbackReasonCode,
+} from './renderer-fallback-reasons.ts';
 
 export type RendererBackend = 'webgl' | 'webgpu';
 
@@ -12,6 +18,7 @@ export type RendererCapabilities = {
   device: GPUDevice | null;
   triedWebGPU: boolean;
   fallbackReason: string | null;
+  fallbackReasonCode: RendererFallbackReasonCode | null;
   shouldRetryWebGPU: boolean;
 };
 
@@ -19,6 +26,7 @@ export type RendererTelemetryEvent = {
   preferredBackend: RendererBackend;
   triedWebGPU: boolean;
   fallbackReason: string | null;
+  fallbackReasonCode: RendererFallbackReasonCode | null;
   isWebGPUSupported: boolean;
 };
 
@@ -52,6 +60,7 @@ const buildFallback = (
   device: null,
   triedWebGPU,
   fallbackReason,
+  fallbackReasonCode: inferRendererFallbackReasonCode(fallbackReason),
   shouldRetryWebGPU,
 });
 
@@ -63,6 +72,7 @@ const reportRendererTelemetry = (result: RendererCapabilities) => {
     preferredBackend: result.preferredBackend,
     triedWebGPU: result.triedWebGPU,
     fallbackReason: result.fallbackReason,
+    fallbackReasonCode: result.fallbackReasonCode,
     isWebGPUSupported: result.preferredBackend === 'webgpu',
   };
   telemetryHandler?.('renderer_capabilities', detail);
@@ -107,24 +117,41 @@ export function getRenderingSupport(): RenderingSupport {
 
 async function probeRendererCapabilities(): Promise<RendererCapabilities> {
   if (typeof navigator === 'undefined') {
-    return cacheResult(buildFallback('Renderer capabilities are unavailable.'));
+    return cacheResult(
+      buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.rendererUnavailable,
+        ),
+      ),
+    );
   }
 
   if (isCompatibilityModeEnabled()) {
     return cacheResult(
-      buildFallback('Compatibility mode is enabled. Using WebGL.', {
-        triedWebGPU: false,
-        shouldRetryWebGPU: false,
-      }),
+      buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.compatibilityMode,
+        ),
+        {
+          triedWebGPU: false,
+          shouldRetryWebGPU: false,
+        },
+      ),
     );
   }
+
   const { gpu } = navigator as Navigator & { gpu?: GPU };
   if (!gpu?.requestAdapter) {
     return cacheResult(
-      buildFallback('WebGPU is not available in this browser.', {
-        triedWebGPU: false,
-        shouldRetryWebGPU: false,
-      }),
+      buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.webgpuUnavailable,
+        ),
+        {
+          triedWebGPU: false,
+          shouldRetryWebGPU: false,
+        },
+      ),
     );
   }
 
@@ -132,10 +159,15 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
     const adapter = await gpu.requestAdapter();
     if (!adapter) {
       return cacheResult(
-        buildFallback('No compatible WebGPU adapter was found.', {
-          triedWebGPU: true,
-          shouldRetryWebGPU: true,
-        }),
+        buildFallback(
+          getRendererFallbackReasonMessage(
+            RENDERER_FALLBACK_REASON_CODES.noAdapter,
+          ),
+          {
+            triedWebGPU: true,
+            shouldRetryWebGPU: true,
+          },
+        ),
       );
     }
 
@@ -148,10 +180,15 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
         error,
       );
       return cacheResult(
-        buildFallback('Unable to acquire a WebGPU device.', {
-          triedWebGPU: true,
-          shouldRetryWebGPU: true,
-        }),
+        buildFallback(
+          getRendererFallbackReasonMessage(
+            RENDERER_FALLBACK_REASON_CODES.noDevice,
+          ),
+          {
+            triedWebGPU: true,
+            shouldRetryWebGPU: true,
+          },
+        ),
       );
     }
 
@@ -170,15 +207,21 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
       device,
       triedWebGPU: true,
       fallbackReason: null,
+      fallbackReasonCode: null,
       shouldRetryWebGPU: false,
     });
   } catch (error) {
     console.warn('WebGPU initialization failed. Falling back to WebGL.', error);
     return cacheResult(
-      buildFallback('WebGPU initialization failed.', {
-        triedWebGPU: true,
-        shouldRetryWebGPU: true,
-      }),
+      buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
+        ),
+        {
+          triedWebGPU: true,
+          shouldRetryWebGPU: true,
+        },
+      ),
     );
   }
 }
@@ -199,15 +242,27 @@ export function rememberRendererFallback(
   {
     shouldRetryWebGPU = false,
     triedWebGPU = true,
-  }: { shouldRetryWebGPU?: boolean; triedWebGPU?: boolean } = {},
+    fallbackReasonCode,
+  }: {
+    shouldRetryWebGPU?: boolean;
+    triedWebGPU?: boolean;
+    fallbackReasonCode?: RendererFallbackReasonCode;
+  } = {},
 ) {
   cachedEnvironmentKey = getEnvironmentKey();
-  const result = cacheResult(
-    buildFallback(fallbackReason, {
+  const resolvedFallbackReason =
+    fallbackReasonCode && !fallbackReason
+      ? getRendererFallbackReasonMessage(fallbackReasonCode)
+      : fallbackReason;
+  const result = cacheResult({
+    ...buildFallback(resolvedFallbackReason, {
       triedWebGPU,
       shouldRetryWebGPU,
     }),
-  );
+    fallbackReasonCode:
+      fallbackReasonCode ??
+      inferRendererFallbackReasonCode(resolvedFallbackReason),
+  });
   capabilitiesPromise = Promise.resolve(result);
   return result;
 }

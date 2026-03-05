@@ -19,6 +19,7 @@ export type ToyCapabilityDecision = {
   supportsRendering: boolean;
   shouldShowCapabilityError: boolean;
   allowWebGLFallback: boolean;
+  runMode: 'full' | 'fallback' | 'blocked';
 };
 
 export async function assessToyCapabilities({
@@ -36,13 +37,22 @@ export async function assessToyCapabilities({
       'We could not detect WebGL or WebGPU support on this device. Try a modern browser with hardware acceleration enabled.',
   });
 
-  const shouldShowCapabilityError =
-    Boolean(toy.requiresWebGPU) && capabilities.preferredBackend !== 'webgpu';
+  const allowWebGLFallback = Boolean(toy.allowWebGLFallback);
+  const requiresWebGPU = Boolean(toy.requiresWebGPU);
+  const isWebGPU = capabilities.preferredBackend === 'webgpu';
+  const shouldShowCapabilityError = requiresWebGPU && !isWebGPU;
+
+  const runMode: ToyCapabilityDecision['runMode'] = !supportsRendering
+    ? 'blocked'
+    : isWebGPU
+      ? 'full'
+      : 'fallback';
 
   return {
     capabilities,
     supportsRendering,
     shouldShowCapabilityError,
-    allowWebGLFallback: Boolean(toy.allowWebGLFallback),
+    allowWebGLFallback,
+    runMode,
   };
 }
