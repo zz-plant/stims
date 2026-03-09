@@ -58,6 +58,7 @@ Stim Webtoys is positioned as **interactive, audio-reactive web toys built with 
 - **Performance**: quality presets, persistent settings, and performance panel details.
 - **Toy overview / category pages**: toy taxonomy by lifecycle, moods, tags, capabilities, and category-specific guidance.
 - **Contributing getting started**: quality checks, commit/PR expectations, and docs consistency guidance.
+- **Competitive messaging handoff**: external-safe value propositions derived from internal battlecards, avoiding direct competitor callouts.
 
 ## Repo alignment checklist
 
@@ -68,3 +69,4 @@ When updating user-facing copy (README, landing copy, docs hubs), keep these the
 3. Explicit mention of accessibility and performance controls.
 4. Discovery vocabulary (moods, tags, capabilities, featured/audio/interactive/WebGPU).
 5. Contributor expectations (quality gates, commit/PR metadata, docs consistency).
+6. External copy should use internal battlecard outputs without public competitor callouts.
