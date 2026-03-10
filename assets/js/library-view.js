@@ -11,6 +11,7 @@ import {
 } from './library-view/filter-state.js';
 import { ensureIconSymbol, SVG_NS } from './library-view/icon-sprite.js';
 import { setupDarkModeToggle } from './library-view/theme-toggle.js';
+import { createLibraryThreeEffects } from './library-view/three-library-effects.ts';
 import { getRecentToySlugs } from './utils/growth-metrics.ts';
 
 export function createLibraryView({
@@ -39,6 +40,7 @@ export function createLibraryView({
   let pendingCommit;
   let lastFilteredToys = [];
   const activeFilters = new Set();
+  const threeEffects = createLibraryThreeEffects();
   const {
     ensureMetaNode,
     ensureSearchForm,
@@ -514,6 +516,7 @@ export function createLibraryView({
   };
 
   const openToy = (toy, { preferDemoAudio = false } = {}) => {
+    threeEffects.triggerLaunchTransition();
     if (toy.type === 'module' && typeof loadToy === 'function') {
       loadToy(toy.slug, { pushState: true, preferDemoAudio });
     } else if (toy.module) {
@@ -926,6 +929,10 @@ export function createLibraryView({
 
     renderGrowthPanels(list);
     listToRender.forEach((toy) => list.appendChild(createCard(toy)));
+    const cards = Array.from(list.querySelectorAll('.webtoy-card')).filter(
+      (card) => card instanceof HTMLElement,
+    );
+    threeEffects.syncCardPreviews(cards, listToRender);
     updateResultsMeta(listToRender.length);
     updateActiveFiltersSummary();
   };
@@ -1220,6 +1227,7 @@ export function createLibraryView({
     }
 
     syncRefineDisclosure();
+    threeEffects.init();
     renderToys(applyFilters());
 
     if (enableDarkModeToggle) {
