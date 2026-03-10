@@ -1,19 +1,19 @@
 import * as THREE from 'three';
-import { resolveWebGLRenderer } from '../core/postprocessing';
+import {
+  createBloomComposer,
+  type PostprocessingPipeline,
+  resolveWebGLRenderer,
+} from '../core/postprocessing';
 import type { ToyStartOptions } from '../core/toy-interface';
-import FeedbackManager from '../utils/feedback-manager';
+import { createFeedbackWarpEffect } from '../utils/feedback-warp-effect';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createToyQualityControls } from '../utils/toy-settings';
-import WarpShader from '../utils/warp-shader';
 
 export function start({ container }: ToyStartOptions = {}) {
-  let feedback: FeedbackManager | null = null;
+  let feedbackEffect: ReturnType<typeof createFeedbackWarpEffect> | null = null;
+  let postprocessing: PostprocessingPipeline | null = null;
   let webglRenderer: THREE.WebGLRenderer | null = null;
-  let warpMaterial: THREE.ShaderMaterial | null = null;
-  let warpMesh: THREE.Mesh | null = null;
-  const overlayScene = new THREE.Scene();
-  const overlayCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
   const particleCount = 100;
   const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
@@ -54,23 +54,15 @@ export function start({ container }: ToyStartOptions = {}) {
               return;
             }
 
-            feedback = new FeedbackManager({ renderer: webglRenderer });
-
-            warpMaterial = new THREE.ShaderMaterial({
-              ...WarpShader,
-              uniforms: THREE.UniformsUtils.clone(WarpShader.uniforms),
+            feedbackEffect = createFeedbackWarpEffect(webglRenderer);
+            postprocessing = createBloomComposer({
+              renderer: webglRenderer,
+              scene: toy.scene,
+              camera: toy.camera,
+              bloomStrength: 0.95,
+              bloomRadius: 0.5,
+              bloomThreshold: 0.85,
             });
-            warpMaterial.uniforms.tDiffuse.value = feedback.texture;
-            warpMaterial.uniforms.uResolution.value.set(
-              window.innerWidth,
-              window.innerHeight,
-            );
-
-            warpMesh = new THREE.Mesh(
-              new THREE.PlaneGeometry(2, 2),
-              warpMaterial,
-            );
-            overlayScene.add(warpMesh);
           });
         },
         update: ({ time, analyser, toy }) => {
@@ -98,51 +90,24 @@ export function start({ container }: ToyStartOptions = {}) {
           });
 
           // Feedback and Warp
-          if (feedback && warpMaterial && webglRenderer) {
-            const renderer = webglRenderer;
-
-            // 1. Update warp uniforms
-            warpMaterial.uniforms.uTime.value = time;
-            warpMaterial.uniforms.uAudioIntensity.value = energy.bass;
-            warpMaterial.uniforms.uZoom.value =
-              1.0 + Math.sin(time * 0.5) * 0.02;
-            warpMaterial.uniforms.uRotation.value = Math.sin(time * 0.2) * 0.01;
-
-            // 2. Render main scene + feedback into write buffer
-            // In MilkDrop, we render the PREVIOUS frame (distorted) and then overlay new graphics
-            renderer.setRenderTarget(null); // Clear default
-
-            // Actually, we need to render the warped texture BACK into the feedback buffer
-            // or render the scene ON TOP of the warped texture.
-
-            // Sequence:
-            // a. Render overlay (warpMesh showing feedback.texture) into writeBuffer
-            // b. Render main scene (particles) into writeBuffer (no clear)
-            // c. Render writeBuffer to screen
-            // d. Swap
-
-            renderer.setRenderTarget(feedback.writeTarget);
-            renderer.clear();
-            renderer.render(overlayScene, overlayCamera); // Draw the warped previous frame
-            renderer.autoClear = false;
-            renderer.render(toy.scene, toy.camera); // Draw new elements on top
-            renderer.autoClear = true;
-
-            renderer.setRenderTarget(null);
-            renderer.render(overlayScene, overlayCamera); // Final output to screen
-
-            feedback.swap();
-            warpMaterial.uniforms.tDiffuse.value = feedback.texture;
+          if (feedbackEffect && webglRenderer) {
+            feedbackEffect.render({
+              scene: toy.scene,
+              camera: toy.camera,
+              time,
+              intensity: energy.bass,
+            });
+            postprocessing?.updateSize();
           } else {
-            toy.render();
+            postprocessing?.updateSize();
+            postprocessing?.render();
           }
         },
         dispose: () => {
-          feedback?.dispose();
+          feedbackEffect?.dispose();
+          postprocessing?.dispose();
           disposeGeometry(particleGeometry);
           particleMaterials.forEach((material) => disposeMaterial(material));
-          disposeMaterial(warpMaterial);
-          disposeGeometry(warpMesh?.geometry ?? undefined);
         },
       },
     ],
