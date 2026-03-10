@@ -4330,3 +4330,108 @@ body.tv-mode .content {
   width: 100%;
   height: auto;
 }
+
+/* UI polish v2: stronger hierarchy, better readability, and less cramped cards */
+.shell-header {
+  margin-bottom: clamp(1rem, 2.2vw, 1.7rem);
+}
+
+section.intro {
+  padding: clamp(1.05rem, 1.2vw + 0.8rem, 1.55rem) clamp(1.05rem, 1.5vw, 1.6rem);
+  border-radius: calc(var(--radius-lg) + 6px);
+}
+
+.intro h1 {
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.intro .cta-helper {
+  max-width: 70ch;
+  line-height: 1.68;
+}
+
+.library {
+  margin-top: clamp(2.1rem, 4vw, 3.2rem);
+  padding-top: clamp(1.2rem, 2.1vw, 1.8rem);
+}
+
+.section-heading {
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+}
+
+.section-description {
+  max-width: 72ch;
+}
+
+.library-search {
+  border-radius: calc(var(--radius-lg) + 12px);
+  padding: clamp(1.35rem, 1.9vw, 1.9rem);
+}
+
+.search-field {
+  min-height: 52px;
+  border-radius: calc(var(--radius-pill) + 6px);
+}
+
+.webtoy-container {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: clamp(1rem, 1.4vw, 1.3rem);
+}
+
+.webtoy-card {
+  padding: 1.05rem;
+  border-radius: var(--radius-lg);
+  gap: 0.75rem;
+}
+
+.webtoy-card h3 {
+  margin-top: 0.1rem;
+  font-size: 1.02rem;
+  line-height: 1.4;
+}
+
+.webtoy-card p {
+  font-size: 0.9rem;
+  line-height: 1.56;
+}
+
+.webtoy-card-description {
+  -webkit-line-clamp: 3;
+}
+
+.webtoy-card-meta {
+  gap: 0.45rem;
+  padding-top: 0.7rem;
+}
+
+.webtoy-card-preview {
+  aspect-ratio: 16 / 10;
+  margin-bottom: 0.65rem;
+}
+
+.webtoy-card-preview canvas {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 1280px) {
+  .webtoy-container {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  section.intro {
+    border-radius: calc(var(--radius-lg) + 2px);
+  }
+
+  .library-search {
+    padding: 1rem;
+  }
+
+  .webtoy-container {
+    grid-template-columns: 1fr;
+  }
+}
