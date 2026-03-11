@@ -38,13 +38,43 @@ const isCompactDevice = () => {
   );
 };
 
+function getDynamicsProfile(presetId: string | undefined) {
+  if (presetId === 'performance') {
+    return {
+      beatBoost: 1.2,
+      interactionBoost: 1.18,
+      spectralBoost: 1.22,
+      swirlBoost: 1.18,
+      offsetBoost: 1.2,
+      glowBoost: 1.15,
+    };
+  }
+  if (presetId === 'mobile') {
+    return {
+      beatBoost: 0.86,
+      interactionBoost: 0.9,
+      spectralBoost: 0.84,
+      swirlBoost: 0.88,
+      offsetBoost: 0.9,
+      glowBoost: 0.88,
+    };
+  }
+  return {
+    beatBoost: 1,
+    interactionBoost: 1,
+    spectralBoost: 1,
+    swirlBoost: 1,
+    offsetBoost: 1,
+    glowBoost: 1,
+  };
+}
 export function start({ container }: ToyStartOptions = {}) {
   const { quality, configurePanel } = createToyQualityControls({
     title: 'Pocket Pulse',
     description:
       'Mobile-tuned pulses that reward touch with extra glow and motion.',
     presets: QUALITY_PRESETS,
-    defaultPresetId: isCompactDevice() ? 'mobile' : 'balanced',
+    defaultPresetId: isCompactDevice() ? 'mobile' : 'performance',
     storageKey: 'stims:pocket-pulse:quality',
     getRuntime: () => runtime,
     onChange: () => {
@@ -143,6 +173,8 @@ export function start({ container }: ToyStartOptions = {}) {
   ) {
     if (!geometry || !basePositions || !material || !points) return;
 
+    const dynamics = getDynamicsProfile(quality.activeQuality.id);
+
     const avg = getWeightedAverageFrequency(data) / 255;
     const bass = getBandAverage(data, 0, 0.28) / 255;
     const mids = getBandAverage(data, 0.28, 0.7) / 255;
@@ -154,12 +186,13 @@ export function start({ container }: ToyStartOptions = {}) {
 
     spectralFlux = Math.max(
       0,
-      spectralFlux * 0.78 + bassRise * 2.3 + trebleRise * 1.9,
+      (spectralFlux * 0.78 + bassRise * 2.3 + trebleRise * 1.9) *
+        dynamics.spectralBoost,
     );
 
     const kick = Math.max(0, bass - 0.18);
     beatEnergy = Math.max(
-      kick * 1.4 + spectralFlux * 0.6,
+      (kick * 1.4 + spectralFlux * 0.6) * dynamics.beatBoost,
       beatEnergy * (0.82 - Math.min(0.12, bassRise * 0.9)),
     );
     const deltaSeconds = Math.max(0.001, (input?.deltaMs ?? 16) / 1000);
@@ -192,8 +225,11 @@ export function start({ container }: ToyStartOptions = {}) {
       trebleRise * 1.5 +
       spectralFlux * 0.3;
     interactionEnergy = Math.min(
-      1.6,
-      Math.max(interactionTarget, interactionEnergy - deltaSeconds * 0.6),
+      1.8,
+      Math.max(
+        interactionTarget * dynamics.interactionBoost,
+        interactionEnergy - deltaSeconds * 0.6,
+      ),
     );
 
     const pulse =
@@ -204,10 +240,17 @@ export function start({ container }: ToyStartOptions = {}) {
       spectralFlux * 0.35;
     const swirl =
       time *
-      (0.35 + mids * 0.45 + interactionEnergy * 0.3 + spectralFlux * 0.18);
+      (0.35 + mids * 0.45 + interactionEnergy * 0.3 + spectralFlux * 0.18) *
+      dynamics.swirlBoost;
 
-    const offsetX = normalizedCentroid.x * (5.5 + interactionEnergy * 2.6);
-    const offsetY = normalizedCentroid.y * (4.2 + interactionEnergy * 2.1);
+    const offsetX =
+      normalizedCentroid.x *
+      (5.5 + interactionEnergy * 2.6) *
+      dynamics.offsetBoost;
+    const offsetY =
+      normalizedCentroid.y *
+      (4.2 + interactionEnergy * 2.1) *
+      dynamics.offsetBoost;
     const kickLift = beatEnergy * 3.3 + touchPulse * 2.6 + spectralFlux * 1.8;
 
     const positionAttribute = geometry.getAttribute(
@@ -243,12 +286,15 @@ export function start({ container }: ToyStartOptions = {}) {
       (palette.baseHue + avg * 0.2 + interactionEnergy * 0.12 + time * 0.02) %
       1;
     material.color.setHSL(hue, palette.saturation, 0.55 + avg * 0.25);
-    material.opacity =
+    material.opacity = Math.min(
+      0.98,
       0.52 +
-      avg * 0.3 +
-      beatEnergy * 0.24 +
-      interactionEnergy * 0.18 +
-      spectralFlux * 0.15;
+        (avg * 0.3 +
+          beatEnergy * 0.24 +
+          interactionEnergy * 0.18 +
+          spectralFlux * 0.15) *
+          dynamics.glowBoost,
+    );
     material.size =
       activeSize *
       (0.68 +
@@ -256,7 +302,8 @@ export function start({ container }: ToyStartOptions = {}) {
         beatEnergy * 0.35 +
         interactionEnergy * 0.35 +
         spectralFlux * 0.22 +
-        touchPulse * 0.2);
+        touchPulse * 0.2) *
+      dynamics.glowBoost;
 
     points.rotation.z = time * 0.12;
   }
