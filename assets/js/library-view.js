@@ -38,7 +38,12 @@ export function createLibraryView({
   let sortBy = 'featured';
   let lastCommittedQuery = '';
   let pendingCommit;
+  let pendingRenderFrame = 0;
   let lastFilteredToys = [];
+  let lastRenderedQuery = '';
+  let suggestionSignature = '';
+  let renderedCardMap = new Map();
+  const filterLabelCache = new Map();
   const activeFilters = new Set();
   const threeEffects = createLibraryThreeEffects();
   const {
@@ -52,7 +57,11 @@ export function createLibraryView({
     ensureActiveFiltersStatus,
     ensureSearchMetaNote,
     ensureLibraryRefine,
+    ensureSortControl,
+    ensureFilterChips,
   } = createLibraryDomCache(document);
+
+  const getToyList = () => document.getElementById(targetId);
 
   const syncRefineDisclosure = () => {
     const refine = ensureLibraryRefine();
@@ -84,7 +93,7 @@ export function createLibraryView({
       : Number.POSITIVE_INFINITY;
 
   const getSortLabel = () => {
-    const sortControl = document.querySelector('[data-sort-control]');
+    const sortControl = ensureSortControl();
     if (sortControl && sortControl.tagName === 'SELECT') {
       const selected = sortControl.selectedOptions?.[0];
       const label = selected?.textContent?.trim();
@@ -113,22 +122,24 @@ export function createLibraryView({
   };
 
   const formatTokenLabel = (token) => {
+    if (filterLabelCache.has(token)) {
+      return filterLabelCache.get(token);
+    }
     const [type, value = ''] = token.split(':');
     if (!type) return token;
     const normalizedValue = value.toLowerCase();
-    const chipMatch = Array.from(
-      document.querySelectorAll('[data-filter-chip]'),
-    ).find((chip) => {
-      const chipType = chip.getAttribute('data-filter-type');
-      const chipValue = chip.getAttribute('data-filter-value');
-      return chipType === type && chipValue?.toLowerCase() === normalizedValue;
-    });
-    const chipLabel = chipMatch?.textContent?.trim();
-    if (chipLabel) return chipLabel;
+    const cacheKey = `${type}:${normalizedValue}`;
+    const chipLabel = filterLabelCache.get(cacheKey);
+    if (chipLabel) {
+      filterLabelCache.set(token, chipLabel);
+      return chipLabel;
+    }
     const fallbackLabel = normalizedValue.replace(/[-_]/g, ' ');
-    return fallbackLabel
+    const label = fallbackLabel
       ? `${fallbackLabel[0].toUpperCase()}${fallbackLabel.slice(1)}`
       : token;
+    filterLabelCache.set(token, label);
+    return label;
   };
 
   const updateSearchMetaNote = () => {
@@ -281,7 +292,7 @@ export function createLibraryView({
       }
     }
 
-    const sortControl = document.querySelector('[data-sort-control]');
+    const sortControl = ensureSortControl();
     if (sortControl && sortControl.tagName === 'SELECT') {
       sortControl.value = sortBy;
     }
@@ -489,7 +500,7 @@ export function createLibraryView({
       }
     }
 
-    const chips = document.querySelectorAll('[data-filter-chip]');
+    const chips = ensureFilterChips();
     chips.forEach((chip) => {
       const type = chip.getAttribute('data-filter-type');
       const value = chip.getAttribute('data-filter-value');
@@ -502,7 +513,7 @@ export function createLibraryView({
     });
     emitFilterStateChange();
 
-    const sortControl = document.querySelector('[data-sort-control]');
+    const sortControl = ensureSortControl();
     if (sortControl && sortControl.tagName === 'SELECT') {
       sortControl.value = sortBy;
     }
@@ -567,7 +578,7 @@ export function createLibraryView({
   };
 
   const renderGrowthPanels = (listElement) => {
-    if (!(listElement instanceof HTMLElement)) return;
+    if (!listElement || typeof listElement.appendChild !== 'function') return;
 
     const recentSlugs = getRecentToySlugs(3);
     const recentToys = recentSlugs
@@ -848,90 +859,130 @@ export function createLibraryView({
     });
   };
 
-  const renderToys = (listToRender) => {
-    const list = document.getElementById(targetId);
-    if (!list) return;
-    list.innerHTML = '';
-    if (listToRender.length === 0) {
-      const emptyState = document.createElement('div');
-      emptyState.className = 'empty-state';
-      emptyState.setAttribute('role', 'status');
-      emptyState.setAttribute('aria-live', 'polite');
+  const createEmptyState = () => {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-state';
+    emptyState.setAttribute('role', 'status');
+    emptyState.setAttribute('aria-live', 'polite');
 
-      const message = document.createElement('p');
-      message.className = 'empty-state__message';
-      message.textContent =
-        'No stims match your search or filters. Try clearing your search or removing filters.';
+    const message = document.createElement('p');
+    message.className = 'empty-state__message';
+    message.textContent =
+      'No stims match your search or filters. Try clearing your search or removing filters.';
 
-      const resetButton = document.createElement('button');
-      resetButton.type = 'button';
-      resetButton.className = 'cta-button';
-      resetButton.textContent = 'Reset search and filters';
-      resetButton.addEventListener('click', () => resetFiltersAndSearch());
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'cta-button';
+    resetButton.textContent = 'Reset search and filters';
+    resetButton.addEventListener('click', () => resetFiltersAndSearch());
 
-      const quickActions = document.createElement('div');
-      quickActions.className = 'webtoy-card-actions';
+    const quickActions = document.createElement('div');
+    quickActions.className = 'webtoy-card-actions';
 
-      const applySuggestedSearch = (query) => {
-        searchQuery = query;
-        if (searchInputId) {
-          const search = document.getElementById(searchInputId);
-          if (search && 'value' in search) {
-            search.value = query;
-          }
+    const applySuggestedSearch = (query) => {
+      searchQuery = query;
+      if (searchInputId) {
+        const search = document.getElementById(searchInputId);
+        if (search && 'value' in search) {
+          search.value = query;
         }
-        commitState({ replace: false });
-        renderToys(applyFilters());
-        updateSearchClearState();
-        updateActiveFiltersSummary();
-      };
-
-      [
-        { label: 'Try demo audio', query: 'demo audio' },
-        { label: 'Try mobile', query: 'mobile' },
-        { label: 'Try webgpu', query: 'webgpu' },
-      ].forEach(({ label, query }) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'cta-button cta-button--muted';
-        button.textContent = label;
-        button.addEventListener('click', () => applySuggestedSearch(query));
-        quickActions.appendChild(button);
-      });
-
-      const collapseSuggestions =
-        typeof window !== 'undefined' &&
-        typeof window.matchMedia === 'function' &&
-        window.matchMedia('(max-width: 600px)').matches;
-
-      emptyState.appendChild(message);
-      emptyState.appendChild(resetButton);
-
-      if (collapseSuggestions) {
-        const suggestionsDisclosure = document.createElement('details');
-        suggestionsDisclosure.className = 'empty-state__suggestions';
-
-        const summary = document.createElement('summary');
-        summary.textContent = 'Try suggestions';
-
-        suggestionsDisclosure.appendChild(summary);
-        suggestionsDisclosure.appendChild(quickActions);
-        emptyState.appendChild(suggestionsDisclosure);
-      } else {
-        emptyState.appendChild(quickActions);
       }
+      commitState({ replace: false });
+      renderToys(applyFilters());
+      updateSearchClearState();
+      updateActiveFiltersSummary();
+    };
 
-      list.appendChild(emptyState);
+    [
+      { label: 'Try demo audio', query: 'demo audio' },
+      { label: 'Try mobile', query: 'mobile' },
+      { label: 'Try webgpu', query: 'webgpu' },
+    ].forEach(({ label, query }) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'cta-button cta-button--muted';
+      button.textContent = label;
+      button.addEventListener('click', () => applySuggestedSearch(query));
+      quickActions.appendChild(button);
+    });
+
+    const collapseSuggestions =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 600px)').matches;
+
+    emptyState.append(message, resetButton);
+
+    if (collapseSuggestions) {
+      const suggestionsDisclosure = document.createElement('details');
+      suggestionsDisclosure.className = 'empty-state__suggestions';
+
+      const summary = document.createElement('summary');
+      summary.textContent = 'Try suggestions';
+
+      suggestionsDisclosure.append(summary, quickActions);
+      emptyState.appendChild(suggestionsDisclosure);
+    } else {
+      emptyState.appendChild(quickActions);
+    }
+
+    return emptyState;
+  };
+
+  const scheduleRender = () => {
+    if (pendingRenderFrame) return;
+
+    const commitRender = () => {
+      pendingRenderFrame = 0;
+      renderToys(applyFilters());
+      updateSearchClearState();
+      updateActiveFiltersSummary();
+    };
+
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.requestAnimationFrame === 'function'
+    ) {
+      pendingRenderFrame = window.requestAnimationFrame(commitRender);
+      return;
+    }
+
+    pendingRenderFrame = globalThis.setTimeout(commitRender, 16);
+  };
+
+  const renderToys = (listToRender) => {
+    const list = getToyList();
+    if (!list) return;
+    const shouldRebuildCards = lastRenderedQuery !== searchQuery;
+    if (shouldRebuildCards) {
+      renderedCardMap = new Map();
+    }
+
+    const fragment = document.createDocumentFragment();
+    if (listToRender.length === 0) {
+      renderedCardMap.clear();
+      fragment.appendChild(createEmptyState());
+      list.replaceChildren(fragment);
       updateResultsMeta(0);
       updateActiveFiltersSummary();
       return;
     }
 
-    renderGrowthPanels(list);
-    listToRender.forEach((toy) => list.appendChild(createCard(toy)));
-    const cards = Array.from(list.querySelectorAll('.webtoy-card')).filter(
-      (card) => card instanceof HTMLElement,
-    );
+    renderGrowthPanels(fragment);
+    const nextCardMap = new Map();
+    const cards = [];
+    listToRender.forEach((toy, index) => {
+      const key = toy.slug ?? `toy-${index}`;
+      const card = renderedCardMap.get(key) ?? createCard(toy);
+      nextCardMap.set(key, card);
+      cards.push(card);
+      fragment.appendChild(card);
+    });
+
+    renderedCardMap = nextCardMap;
+    lastRenderedQuery = searchQuery;
+    list.replaceChildren(fragment);
+
     threeEffects.syncCardPreviews(cards, listToRender);
     updateResultsMeta(listToRender.length);
     updateActiveFiltersSummary();
@@ -940,9 +991,7 @@ export function createLibraryView({
   const filterToys = (query) => {
     searchQuery = query;
     syncRefineDisclosure();
-    renderToys(applyFilters());
-    updateSearchClearState();
-    updateActiveFiltersSummary();
+    scheduleRender();
   };
 
   const clearSearch = () => {
@@ -982,7 +1031,12 @@ export function createLibraryView({
   const populateSearchSuggestions = () => {
     const datalist = ensureSearchSuggestions();
     if (!datalist) return;
-    datalist.innerHTML = '';
+    const nextSuggestionSignature = allToys
+      .map((toy) => toy.slug ?? toy.title ?? '')
+      .join('|');
+    if (nextSuggestionSignature === suggestionSignature) return;
+    suggestionSignature = nextSuggestionSignature;
+
     const suggestions = new Set();
     allToys.forEach((toy) => {
       if (toy.title) suggestions.add(toy.title);
@@ -994,42 +1048,71 @@ export function createLibraryView({
       if (toy.capabilities?.motion) suggestions.add('motion');
       if (toy.requiresWebGPU) suggestions.add('webgpu');
     });
+    const fragment = document.createDocumentFragment();
     Array.from(suggestions)
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b))
       .forEach((suggestion) => {
         const option = document.createElement('option');
         option.value = suggestion;
-        datalist.appendChild(option);
+        fragment.appendChild(option);
       });
+    datalist.replaceChildren(fragment);
+  };
+
+  const toggleFilterChip = (chip) => {
+    const type = chip.getAttribute('data-filter-type');
+    const value = chip.getAttribute('data-filter-value');
+    if (!type || !value) return;
+    const token = createFilterToken(type, value);
+    if (!token) return;
+    const isActive = chip.classList.toggle('is-active');
+    updateFilterChipA11y(chip, isActive);
+    emitFilterStateChange();
+    if (isActive) {
+      activeFilters.add(token);
+    } else {
+      activeFilters.delete(token);
+    }
+    commitState({ replace: false });
+    renderToys(applyFilters());
+    updateFilterResetState();
+    updateActiveFiltersSummary();
   };
 
   const initFilters = () => {
-    const chips = document.querySelectorAll('[data-filter-chip]');
+    const chips = ensureFilterChips();
     chips.forEach((chip) => {
       updateFilterChipA11y(chip, chip.classList.contains('is-active'));
-      chip.addEventListener('click', () => {
-        const type = chip.getAttribute('data-filter-type');
-        const value = chip.getAttribute('data-filter-value');
-        if (!type || !value) return;
-        const token = createFilterToken(type, value);
-        if (!token) return;
-        const isActive = chip.classList.toggle('is-active');
-        updateFilterChipA11y(chip, isActive);
-        emitFilterStateChange();
-        if (isActive) {
-          activeFilters.add(token);
-        } else {
-          activeFilters.delete(token);
-        }
-        commitState({ replace: false });
-        renderToys(applyFilters());
-        updateFilterResetState();
-        updateActiveFiltersSummary();
-      });
+      const type = chip.getAttribute('data-filter-type');
+      const value = chip.getAttribute('data-filter-value');
+      if (!type || !value) return;
+      const token = `${type}:${value.toLowerCase()}`;
+      const label = chip.textContent?.trim();
+      if (label) {
+        filterLabelCache.set(token, label);
+      }
     });
 
-    const sortControl = document.querySelector('[data-sort-control]');
+    const FILTER_DELEGATE_KEY = '__stimsLibraryFilterDelegate';
+    const previousDelegate = document[FILTER_DELEGATE_KEY];
+    if (typeof previousDelegate === 'function') {
+      document.removeEventListener('click', previousDelegate);
+    }
+
+    const handleFilterChipClick = (event) => {
+      const target = event.target;
+      if (!(target && typeof target === 'object' && 'closest' in target))
+        return;
+      const chip = target.closest?.('[data-filter-chip]');
+      if (!(chip instanceof HTMLElement)) return;
+      toggleFilterChip(chip);
+    };
+
+    document[FILTER_DELEGATE_KEY] = handleFilterChipClick;
+    document.addEventListener('click', handleFilterChipClick);
+
+    const sortControl = ensureSortControl();
     if (sortControl && sortControl.tagName === 'SELECT') {
       sortControl.addEventListener('change', () => {
         sortBy = sortControl.value;
