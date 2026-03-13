@@ -1,27 +1,5 @@
 [
   {
-    "slug": "3dtoy",
-    "title": "3D Toy",
-    "description": "A twisting 3D tunnel that responds to sound.",
-    "module": "assets/js/toys/three-d-toy.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "lifecycleStage": "archived",
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": false
-    },
-    "moods": ["energetic", "immersive"],
-    "tags": ["tunnel", "3d", "legacy"],
-    "controls": [
-      "Tunnel twist amount",
-      "Color pulse intensity",
-      "Reactivity sensitivity"
-    ],
-    "allowWebGLFallback": true
-  },
-  {
     "slug": "aurora-painter",
     "title": "Aurora Painter",
     "description": "Paint flowing aurora ribbons that react to your microphone in layered waves.",
@@ -49,7 +27,7 @@
       "label": "aurora starter",
       "description": "Balanced glow and speed tuned for first look delight."
     },
-    "wowControl": "Quick preset \u00b7 Starter",
+    "wowControl": "Quick preset · Starter",
     "recommendedCapability": "demoAudio"
   },
   {
@@ -243,24 +221,6 @@
     "recommendedCapability": "demoAudio"
   },
   {
-    "slug": "symph",
-    "title": "Spectrograph",
-    "description": "A spectrograph that moves gently with your audio.",
-    "module": "assets/js/toys/symph.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "lifecycleStage": "archived",
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": false
-    },
-    "controls": ["Sensitivity slider", "Smoothing toggle", "Color intensity"],
-    "tags": ["spectrograph", "ambient", "calming"],
-    "moods": ["calming", "serene"],
-    "allowWebGLFallback": true
-  },
-  {
     "slug": "cube-wave",
     "title": "Grid Visualizer",
     "description": "Swap between cube waves and bouncing spheres without stopping the music.",
@@ -432,46 +392,6 @@
     },
     "wowControl": "Beat sensitivity",
     "recommendedCapability": "demoAudio"
-  },
-  {
-    "slug": "rainbow-tunnel",
-    "title": "Rainbow Tunnel",
-    "description": "Fly through colorful rings that spin to your music.",
-    "module": "assets/js/toys/rainbow-tunnel.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "lifecycleStage": "archived",
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": false
-    },
-    "controls": [
-      "Tunnel speed slider",
-      "Camera drift toggle",
-      "Color pulse depth"
-    ],
-    "tags": ["tunnel", "rainbow", "immersive"],
-    "moods": ["cosmic", "drifting"],
-    "allowWebGLFallback": true
-  },
-  {
-    "slug": "star-field",
-    "title": "Star Field",
-    "description": "A field of shimmering stars reacts to the beat.",
-    "module": "assets/js/toys/star-field.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "lifecycleStage": "archived",
-    "moods": ["serene", "drifting", "celestial"],
-    "tags": ["stars", "nebula", "gestural"],
-    "controls": ["Pinch/rotate gestures", "Arrow-key mood switching"],
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": false
-    },
-    "allowWebGLFallback": true
   },
   {
     "slug": "fractal-kite-garden",

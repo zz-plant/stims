@@ -179,7 +179,7 @@ Cloudflare Pages issues a unique preview deployment for each pull request. Every
 
 ## Validate multiple HTML entry points before merge
 
-The project ships several standalone HTML entry points (e.g., `index.html`, `legible.html`, `multi.html`, `symph.html`, `toy.html`). Validate them locally and on the PR preview:
+The project ships several standalone HTML entry points (e.g., `index.html`, `legible.html`, `multi.html`, `toy.html`). Validate them locally and on the PR preview:
 
 1. Run `bun run build` followed by `bun run preview` and open each entry point path manually (for example, `http://localhost:4173/legible.html`).
 2. Repeat the checks against the PR’s Cloudflare Pages preview URL to ensure CDN caching and hashed asset references behave the same as local preview.

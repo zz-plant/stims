@@ -1,34 +1,5 @@
 [
   {
-    "slug": "3dtoy",
-    "title": "3D Toy",
-    "description": "A twisting 3D tunnel that responds to sound.",
-    "module": "assets/js/toys/three-d-toy.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "allowWebGLFallback": true,
-    "lifecycleStage": "archived",
-    "moods": [
-      "energetic",
-      "immersive"
-    ],
-    "tags": [
-      "tunnel",
-      "3d",
-      "legacy"
-    ],
-    "controls": [
-      "Tunnel twist amount",
-      "Color pulse intensity",
-      "Reactivity sensitivity"
-    ],
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": false
-    }
-  },
-  {
     "slug": "aurora-painter",
     "title": "Aurora Painter",
     "description": "Paint flowing aurora ribbons that react to your microphone in layered waves.",
@@ -319,35 +290,6 @@
     }
   },
   {
-    "slug": "symph",
-    "title": "Spectrograph",
-    "description": "A spectrograph that moves gently with your audio.",
-    "module": "assets/js/toys/symph.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "allowWebGLFallback": true,
-    "lifecycleStage": "archived",
-    "moods": [
-      "calming",
-      "serene"
-    ],
-    "tags": [
-      "spectrograph",
-      "ambient",
-      "calming"
-    ],
-    "controls": [
-      "Sensitivity slider",
-      "Smoothing toggle",
-      "Color intensity"
-    ],
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": false
-    }
-  },
-  {
     "slug": "cube-wave",
     "title": "Grid Visualizer",
     "description": "Swap between cube waves and bouncing spheres without stopping the music.",
@@ -580,64 +522,6 @@
     },
     "wowControl": "Beat sensitivity",
     "recommendedCapability": "demoAudio",
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": false
-    }
-  },
-  {
-    "slug": "rainbow-tunnel",
-    "title": "Rainbow Tunnel",
-    "description": "Fly through colorful rings that spin to your music.",
-    "module": "assets/js/toys/rainbow-tunnel.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "allowWebGLFallback": true,
-    "lifecycleStage": "archived",
-    "moods": [
-      "cosmic",
-      "drifting"
-    ],
-    "tags": [
-      "tunnel",
-      "rainbow",
-      "immersive"
-    ],
-    "controls": [
-      "Tunnel speed slider",
-      "Camera drift toggle",
-      "Color pulse depth"
-    ],
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": false
-    }
-  },
-  {
-    "slug": "star-field",
-    "title": "Star Field",
-    "description": "A field of shimmering stars reacts to the beat.",
-    "module": "assets/js/toys/star-field.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "allowWebGLFallback": true,
-    "lifecycleStage": "archived",
-    "moods": [
-      "serene",
-      "drifting",
-      "celestial"
-    ],
-    "tags": [
-      "stars",
-      "nebula",
-      "gestural"
-    ],
-    "controls": [
-      "Pinch/rotate gestures",
-      "Arrow-key mood switching"
-    ],
     "capabilities": {
       "microphone": true,
       "demoAudio": true,

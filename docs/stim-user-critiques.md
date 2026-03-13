@@ -40,7 +40,6 @@ Target toys:
 
 - `geom`
 - `holy`
-- `star-field`
 
 Code changes:
 
@@ -136,11 +135,6 @@ Success criteria:
 - `spiral-burst`: add beat sensitivity and a pulse indicator.
 - `neon-wave`: add a “soft glow” accessibility preset.
 
-## 3D Toy (`3dtoy`)
-- Strength: The twisting tunnel premise is easy to understand and promises immediate audio feedback.
-- Friction: As an archived toy, it may feel less polished or consistent with newer UI patterns.
-- Opportunity: Add a quick hint about which frequencies drive the tunnel so users feel in control.
-
 ## Aurora Painter (`aurora-painter`)
 - Strength: The “paint aurora ribbons” pitch and gestural controls signal creativity and depth.
 - Friction: Multiple controls (density, pinch/rotate, mood switching) can overwhelm first-time users.
@@ -181,11 +175,6 @@ Success criteria:
 - Friction: Users may not see how audio changes influence word timing.
 - Opportunity: Offer word cadence controls and clearer audio linkage hints.
 
-## Spectrograph (`symph`)
-- Strength: Gentle motion is calming and approachable.
-- Friction: Some users may want stronger motion in louder environments.
-- Opportunity: Add a sensitivity slider or intensity toggle.
-
 ## Grid Visualizer (`cube-wave`)
 - Strength: Mode switching between cube waves and spheres adds variety.
 - Friction: Mode changes may feel subtle without clear UI feedback.
@@ -210,16 +199,6 @@ Success criteria:
 - Strength: Beat-synced expansion encourages rhythmic engagement.
 - Friction: Beat detection can feel soft if sensitivity is low.
 - Opportunity: Provide a beat sensitivity slider or pulse indicator.
-
-## Rainbow Tunnel (`rainbow-tunnel`)
-- Strength: Continuous motion and color produce immersive flow states.
-- Friction: Constant forward motion may be fatiguing for some users.
-- Opportunity: Add speed control or a stationary camera option.
-
-## Star Field (`star-field`)
-- Strength: Soothing visuals for ambient listening.
-- Friction: Lack of interactivity can feel passive.
-- Opportunity: Add twinkle intensity or parallax controls.
 
 ## Fractal Kite Garden (`fractal-kite-garden`)
 - Strength: Explicit density + palette controls promote customization.
