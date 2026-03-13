@@ -439,7 +439,7 @@ export function createLibraryView({
     return Array.from(matchedSources).slice(0, 3);
   };
 
-  const applyFilters = () => {
+  const computeFilteredToys = () => {
     const filtered = allToys.filter((toy) => {
       const matchesChips =
         activeFilters.size === 0 ||
@@ -447,7 +447,11 @@ export function createLibraryView({
       return matchesChips;
     });
 
-    const sorted = sortList(filtered);
+    return sortList(filtered);
+  };
+
+  const applyFilters = () => {
+    const sorted = computeFilteredToys();
     lastFilteredToys = sorted;
     updateResultsMeta(sorted.length);
     return sorted;
@@ -990,6 +994,7 @@ export function createLibraryView({
 
   const filterToys = (query) => {
     searchQuery = query;
+    lastFilteredToys = computeFilteredToys();
     syncRefineDisclosure();
     scheduleRender();
   };
