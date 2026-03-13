@@ -49,5 +49,9 @@ export function createLibraryDomCache(doc = document) {
       ensure('library-refine', () =>
         doc.querySelector('[data-library-refine]'),
       ),
+    ensureSortControl: () =>
+      ensure('sort-control', () => doc.querySelector('[data-sort-control]')),
+    ensureFilterChips: () =>
+      ensure('filter-chips', () => doc.querySelectorAll('[data-filter-chip]')),
   };
 }

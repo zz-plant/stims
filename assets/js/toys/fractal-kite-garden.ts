@@ -51,6 +51,10 @@ export function start({ container }: ToyStartOptions = {}) {
   let kiteGeometry: THREE.BufferGeometry | null = null;
   const kiteGroup = new THREE.Group();
   const kiteInstances: KiteInstance[] = [];
+  const tempSway = new THREE.Vector3();
+  const tempTargetColor = new THREE.Color();
+  const tempEmissive = new THREE.Color();
+  const whiteColor = new THREE.Color(0xffffff);
   let panelDensityInput: HTMLInputElement | null = null;
 
   function getDensity() {
@@ -291,11 +295,11 @@ export function start({ container }: ToyStartOptions = {}) {
       const mesh = kite.mesh;
       const flutter =
         Math.sin(time * 0.0012 + kite.flutterSpeed) * (0.4 + mid * 1.6);
-      const sway = kite.swayAxis
-        .clone()
+      tempSway
+        .copy(kite.swayAxis)
         .multiplyScalar(flutter * (0.6 + kite.branchDepth * 0.35));
 
-      mesh.position.copy(kite.basePosition).add(sway);
+      mesh.position.copy(kite.basePosition).add(tempSway);
       mesh.rotation.z =
         kite.twist +
         Math.sin(time * 0.0009 + kite.flutterSpeed * 2) * 0.18 +
@@ -306,13 +310,12 @@ export function start({ container }: ToyStartOptions = {}) {
       mesh.scale.setScalar(scale);
 
       const material = mesh.material as THREE.MeshStandardMaterial;
-      const targetColor = kite.baseColor
-        .clone()
-        .lerp(new THREE.Color(0xffffff), Math.min(1, high * 0.7 + mid * 0.3));
-      material.color.copy(targetColor);
-      material.emissive.copy(
-        targetColor.clone().multiplyScalar(0.2 + high * 0.4),
-      );
+      tempTargetColor
+        .copy(kite.baseColor)
+        .lerp(whiteColor, Math.min(1, high * 0.7 + mid * 0.3));
+      material.color.copy(tempTargetColor);
+      tempEmissive.copy(tempTargetColor).multiplyScalar(0.2 + high * 0.4);
+      material.emissive.copy(tempEmissive);
     });
 
     runtime.toy.render();
