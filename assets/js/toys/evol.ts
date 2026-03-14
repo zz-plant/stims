@@ -1,6 +1,3 @@
-import { createPageToyStarter } from './page-toy';
+import { createManifestBackedPageToyStarter } from './page-toy';
 
-export const start = createPageToyStarter({
-  path: './toys/evol.html',
-  title: 'Evolutionary Weirdcore',
-});
+export const start = createManifestBackedPageToyStarter('evol');

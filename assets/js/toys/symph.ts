@@ -1,8 +1,3 @@
-import { createPageToyStarter } from './page-toy';
+import { createManifestBackedPageToyStarter } from './page-toy';
 
-export const start = createPageToyStarter({
-  path: './toys/symph.html',
-  title: 'Dreamy Spectrograph',
-  description:
-    'Adjust render quality for the flowing spectrograph and sparkles.',
-});
+export const start = createManifestBackedPageToyStarter('symph');

@@ -280,6 +280,10 @@ if (import.meta.main) {
   await startServer();
 }
 
-export { startServer };
 export * from './mcp-shared.ts';
-export { defaultQualityGateTimeoutMs, resolveQualityGateCommand, runCommand };
+export {
+  defaultQualityGateTimeoutMs,
+  resolveQualityGateCommand,
+  runCommand,
+  startServer,
+};
