@@ -8,7 +8,7 @@
 
 1. Land on `https://no.toil.fyi`.
 2. Click `/toys/` from the hero/primary nav.
-3. Click first toy card (`3dtoy`) and land on capability-check modal.
+3. Click the first featured toy card and land on capability-check modal.
 
 ### Observed friction
 
