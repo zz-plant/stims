@@ -1,6 +1,3 @@
-import { createPageToyStarter } from './page-toy';
+import { createManifestBackedPageToyStarter } from './page-toy';
 
-export const start = createPageToyStarter({
-  path: './toys/legible.html',
-  title: 'Terminal Word Grid',
-});
+export const start = createManifestBackedPageToyStarter('legible');

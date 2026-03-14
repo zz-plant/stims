@@ -5,6 +5,7 @@ import {
 } from '../core/settings-panel';
 import type { ToyStartOptions } from '../core/toy-interface';
 import { defaultToyLifecycle } from '../core/toy-lifecycle.ts';
+import toyManifest from '../data/toy-manifest.ts';
 
 type PageToyStartOptions = ToyStartOptions & {
   preferDemoAudio?: boolean;
@@ -41,7 +42,14 @@ function resolveEmbeddedStarter(targetWindow: EmbeddedToyWindow | null) {
 
 function resolvePageSrc(path: string) {
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  return new URL(path, window.location.origin).toString();
+
+  const origin =
+    typeof window.location.origin === 'string' &&
+    window.location.origin !== 'null'
+      ? window.location.origin
+      : 'http://localhost/';
+
+  return new URL(path, origin).toString();
 }
 
 export function startPageToy({
@@ -171,4 +179,17 @@ export function createPageToyStarter(config: PageToyConfig) {
       ...config,
     });
   };
+}
+
+export function createManifestBackedPageToyStarter(slug: string) {
+  const manifestEntry = toyManifest.find((toy) => toy.slug === slug);
+  if (!manifestEntry) {
+    throw new Error(`Unknown toy slug for page-backed starter: ${slug}`);
+  }
+
+  return createPageToyStarter({
+    path: `./toys/${slug}.html`,
+    title: manifestEntry.title,
+    description: manifestEntry.description,
+  });
 }
