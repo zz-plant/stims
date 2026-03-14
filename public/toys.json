@@ -1,5 +1,34 @@
 [
   {
+    "slug": "3dtoy",
+    "title": "3D Toy",
+    "description": "A twisting 3D tunnel that responds to sound.",
+    "module": "assets/js/toys/three-d-toy.ts",
+    "type": "module",
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
+    "lifecycleStage": "archived",
+    "moods": [
+      "energetic",
+      "immersive"
+    ],
+    "tags": [
+      "tunnel",
+      "3d",
+      "legacy"
+    ],
+    "controls": [
+      "Tunnel twist amount",
+      "Color pulse intensity",
+      "Reactivity sensitivity"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
+  },
+  {
     "slug": "aurora-painter",
     "title": "Aurora Painter",
     "description": "Paint flowing aurora ribbons that react to your microphone in layered waves.",
@@ -187,102 +216,28 @@
     }
   },
   {
-    "slug": "multi",
-    "title": "Multi-Capability Visualizer",
-    "description": "Shapes and lights move with both sound and device motion.",
-    "module": "assets/js/toys/multi.ts",
+    "slug": "symph",
+    "title": "Spectrograph",
+    "description": "A spectrograph that moves gently with your audio.",
+    "module": "assets/js/toys/symph.ts",
     "type": "module",
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
-      "energetic",
-      "cosmic"
+      "calming",
+      "serene"
     ],
     "tags": [
-      "motion",
-      "hybrid",
-      "immersive"
+      "spectrograph",
+      "ambient",
+      "calming"
     ],
     "controls": [
-      "Motion input toggle",
-      "Audio gain slider",
-      "WebGL fallback notice"
+      "Sensitivity slider",
+      "Smoothing toggle",
+      "Color intensity"
     ],
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": true
-    }
-  },
-  {
-    "slug": "seary",
-    "title": "Synesthetic Visualizer",
-    "description": "Blend audio and visuals into linked patterns.",
-    "module": "assets/js/toys/seary.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "allowWebGLFallback": true,
-    "lifecycleStage": "archived",
-    "moods": [
-      "dreamy",
-      "immersive"
-    ],
-    "tags": [
-      "synesthetic",
-      "patterns",
-      "audio-mapped"
-    ],
-    "controls": [
-      "Frequency mapping overlay",
-      "Palette mode switch",
-      "Pattern speed slider"
-    ],
-    "firstRunHint": "Use the frequency mapping overlay once, then adjust Pattern speed.",
-    "starterPreset": {
-      "id": "mapped-flow",
-      "label": "mapped flow starter",
-      "description": "Clear frequency-to-visual mapping with balanced speed."
-    },
-    "wowControl": "Frequency mapping overlay",
-    "recommendedCapability": "demoAudio",
-    "capabilities": {
-      "microphone": true,
-      "demoAudio": true,
-      "motion": false
-    }
-  },
-  {
-    "slug": "legible",
-    "title": "Terminal Word Grid",
-    "description": "A retro green text grid that pulses to audio and surfaces fresh words as you play.",
-    "module": "assets/js/toys/legible.ts",
-    "type": "module",
-    "requiresWebGPU": true,
-    "allowWebGLFallback": true,
-    "lifecycleStage": "archived",
-    "moods": [
-      "focus",
-      "minimal"
-    ],
-    "tags": [
-      "text",
-      "retro",
-      "grid"
-    ],
-    "controls": [
-      "Word cadence slider",
-      "Character glow level",
-      "Vocabulary refresh"
-    ],
-    "firstRunHint": "Increase cadence first so word updates visibly track the beat.",
-    "starterPreset": {
-      "id": "pulse-typing",
-      "label": "pulse typing starter",
-      "description": "Faster text cadence with clearer audio-driven pacing."
-    },
-    "wowControl": "Cadence control",
-    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
@@ -529,26 +484,56 @@
     }
   },
   {
-    "slug": "fractal-kite-garden",
-    "title": "Fractal Kite Garden",
-    "description": "Grow branching kite fractals that sway with mids and shimmer with crisp highs.",
-    "module": "assets/js/toys/fractal-kite-garden.ts",
+    "slug": "rainbow-tunnel",
+    "title": "Rainbow Tunnel",
+    "description": "Fly through colorful rings that spin to your music.",
+    "module": "assets/js/toys/rainbow-tunnel.ts",
     "type": "module",
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
     "moods": [
-      "dreamy",
-      "serene"
+      "cosmic",
+      "drifting"
     ],
     "tags": [
-      "fractal",
-      "kite",
-      "generative"
+      "tunnel",
+      "rainbow",
+      "immersive"
     ],
     "controls": [
-      "Pattern density slider",
-      "Palette switches"
+      "Tunnel speed slider",
+      "Camera drift toggle",
+      "Color pulse depth"
+    ],
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
+  },
+  {
+    "slug": "star-field",
+    "title": "Star Field",
+    "description": "A field of shimmering stars reacts to the beat.",
+    "module": "assets/js/toys/star-field.ts",
+    "type": "module",
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
+    "lifecycleStage": "archived",
+    "moods": [
+      "serene",
+      "drifting",
+      "celestial"
+    ],
+    "tags": [
+      "stars",
+      "nebula",
+      "gestural"
+    ],
+    "controls": [
+      "Pinch/rotate gestures",
+      "Arrow-key mood switching"
     ],
     "capabilities": {
       "microphone": true,

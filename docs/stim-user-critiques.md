@@ -40,6 +40,7 @@ Target toys:
 
 - `geom`
 - `holy`
+- `star-field`
 
 Code changes:
 
@@ -62,7 +63,6 @@ Success criteria:
 Target toys:
 
 - `clay`
-- `seary`
 - `cube-wave`
 
 Code changes:
@@ -129,11 +129,14 @@ Success criteria:
 - `aurora-painter`: add a one-click starter preset and progressive disclosure for advanced controls.
 - `clay`: add a “first sculpt” overlay with animated affordances for core tools.
 - `evol`: add a “boost reactivity” toggle to strengthen audio linkage.
-- `seary`: label frequency-band-to-visual mapping near controls.
-- `legible`: add cadence controls and explicit audio linkage hints.
 - `cube-wave`: add a prominent mode toggle with clear active-state feedback.
 - `spiral-burst`: add beat sensitivity and a pulse indicator.
 - `neon-wave`: add a “soft glow” accessibility preset.
+
+## 3D Toy (`3dtoy`)
+- Strength: The twisting tunnel premise is easy to understand and promises immediate audio feedback.
+- Friction: As an archived toy, it may feel less polished or consistent with newer UI patterns.
+- Opportunity: Add a quick hint about which frequencies drive the tunnel so users feel in control.
 
 ## Aurora Painter (`aurora-painter`)
 - Strength: The “paint aurora ribbons” pitch and gestural controls signal creativity and depth.
@@ -160,20 +163,10 @@ Success criteria:
 - Friction: If interactions are minimal, users may perceive it as passive.
 - Opportunity: Expose a simple intensity/palette control for immediate agency.
 
-## Multi-Capability Visualizer (`multi`)
-- Strength: Combines sound + device motion for a more embodied experience.
-- Friction: WebGPU and motion permissions can block entry on some devices.
-- Opportunity: Add a clear preflight screen plus “try without motion” guidance.
-
-## Synesthetic Visualizer (`seary`)
-- Strength: Promises tight audio-visual mapping and cohesive patterns.
-- Friction: Mapping may be opaque to new users.
-- Opportunity: Label which frequency bands map to which visual elements.
-
-## Terminal Word Grid (`legible`)
-- Strength: Retro text grid and live word surfacing is distinctive.
-- Friction: Users may not see how audio changes influence word timing.
-- Opportunity: Offer word cadence controls and clearer audio linkage hints.
+## Spectrograph (`symph`)
+- Strength: Gentle motion is calming and approachable.
+- Friction: Some users may want stronger motion in louder environments.
+- Opportunity: Add a sensitivity slider or intensity toggle.
 
 ## Grid Visualizer (`cube-wave`)
 - Strength: Mode switching between cube waves and spheres adds variety.
@@ -200,10 +193,15 @@ Success criteria:
 - Friction: Beat detection can feel soft if sensitivity is low.
 - Opportunity: Provide a beat sensitivity slider or pulse indicator.
 
-## Fractal Kite Garden (`fractal-kite-garden`)
-- Strength: Explicit density + palette controls promote customization.
-- Friction: “Pattern density” may be ambiguous without feedback.
-- Opportunity: Show a small preview or tooltip on density changes.
+## Rainbow Tunnel (`rainbow-tunnel`)
+- Strength: Continuous motion and color produce immersive flow states.
+- Friction: Constant forward motion may be fatiguing for some users.
+- Opportunity: Add speed control or a stationary camera option.
+
+## Star Field (`star-field`)
+- Strength: Soothing visuals for ambient listening.
+- Friction: Lack of interactivity can feel passive.
+- Opportunity: Add twinkle intensity or parallax controls.
 
 ## Tactile Sand Table (`tactile-sand-table`)
 - Strength: Audio + tilt control offers tactile depth.
