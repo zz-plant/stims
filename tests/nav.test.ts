@@ -110,7 +110,7 @@ describe('library navigation interactions', () => {
     expect(actions.hasAttribute('inert')).toBeFalse();
   });
 
-  test('library utilities expose crawlable collection links', () => {
+  test('library nav keeps the IA to a short primary link set', () => {
     const { matchMedia } = createMatchMediaStub(false);
     window.matchMedia = matchMedia;
 
@@ -118,13 +118,14 @@ describe('library navigation interactions', () => {
     initNavigation(container, { mode: 'library' });
 
     const hrefs = Array.from(
-      container.querySelectorAll('.nav-section--utilities .nav-link'),
+      container.querySelectorAll('.nav-section--primary .nav-link'),
     ).map((link) => (link as HTMLAnchorElement).getAttribute('href'));
 
+    expect(hrefs).toContain('#intro');
+    expect(hrefs).toContain('#library');
     expect(hrefs).toContain('/toys/');
-    expect(hrefs).toContain('/tags/');
-    expect(hrefs).toContain('/moods/');
-    expect(hrefs).toContain('/capabilities/');
+    expect(hrefs).toContain('https://github.com/zz-plant/stims');
+    expect(hrefs).toHaveLength(4);
   });
 
   test('re-rendering library nav cleans up previous media-query listener', () => {
