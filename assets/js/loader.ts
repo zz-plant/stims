@@ -1,49 +1,32 @@
-import { setAudioActive, setCurrentToy } from './core/agent-api.ts';
-import { setCompatibilityMode } from './core/render-preferences.ts';
+import { setCurrentToy } from './core/agent-api.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import {
   prewarmMicrophone,
   resetAudioPool,
 } from './core/services/audio-service.ts';
 import { prewarmRendererCapabilities } from './core/services/render-service.ts';
-import {
-  ensureToyAudioStarter,
-  startToyAudioFromSource,
-} from './core/toy-audio-startup.ts';
-import { assessToyCapabilities } from './core/toy-capabilities.ts';
-import type { ToyWindow } from './core/toy-globals';
+import type { ToyLaunchRequest } from './core/toy-launch.ts';
 import {
   defaultToyLifecycle,
   type ToyLifecycle,
 } from './core/toy-lifecycle.ts';
 import toyManifest from './data/toy-manifest.ts';
 import type { ToyEntry } from './data/toy-schema.ts';
-import { createFlowTimer, getFlowIntervalMs } from './loader/flow-timer.ts';
-import { canUseHaptics, createHapticsController } from './loader/haptics.ts';
-import { createSessionTracking } from './loader/session-tracking.ts';
+import { createLoaderRouteController } from './loader/route-controller.ts';
+import { createToyAudioPromptController } from './loader/toy-audio-prompt-controller.ts';
+import { createToyCapabilityController } from './loader/toy-capability-controller.ts';
+import { createToyLaunchController } from './loader/toy-launch-controller.ts';
 import { createToyLifecycleOrchestration } from './loader/toy-lifecycle-orchestration.ts';
-import { createRouter, type Route } from './router.ts';
+import { createToySessionController } from './loader/toy-session-controller.ts';
+import { createRouter } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import { recordToyOpen } from './utils/growth-metrics.ts';
 import { createManifestClient } from './utils/manifest-client';
-import { applyPartyMode } from './utils/party-mode';
-import { loadToyModuleStarter } from './utils/toy-module-loader';
-import { ensureWebGL } from './utils/webgl-check';
+import { ensureWebGL } from './utils/webgl-check.ts';
 
 type Toy = ToyEntry;
 
 const TOY_QUERY_PARAM = 'toy';
-const LIBRARY_FILTER_PARAM = 'filters';
-const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
-
-const TOY_SLUG_ALIASES: Record<string, string> = {
-  'three-d-toy': '3dtoy',
-};
-
-function resolveToySlug(slug: string) {
-  const normalized = slug.trim().toLowerCase();
-  return TOY_SLUG_ALIASES[normalized] ?? normalized;
-}
 
 const TOY_MICRO_GOALS: Record<string, string[]> = {
   holy: ['Boost intensity, then settle into a calmer palette.'],
@@ -55,7 +38,7 @@ const TOY_MICRO_GOALS: Record<string, string[]> = {
   geom: ['Test quiet vs loud input and watch the shape response.'],
 };
 
-export { getFlowIntervalMs } from './loader/flow-timer.ts';
+export { getFlowIntervalMs } from './loader/toy-session-controller.ts';
 
 // createLoader orchestrates routing/navigation, renderer capability checks,
 // module resolution/import, view updates, and lifecycle management.
@@ -85,60 +68,24 @@ export function createLoader({
   let navigationInitialized = false;
   const lifecycle = toyLifecycle ?? defaultToyLifecycle;
   lifecycle.reset();
-  let flowActive = false;
-  let partyModeActive = false;
-  let flowCycleCount = 0;
   let activeToySlug: string | null = null;
-  let nextToyInFlight = false;
-  let handleNextToy: ((fromFlow?: boolean) => Promise<void>) | null = null;
-
-  const session = createSessionTracking({ toys });
-  const haptics = createHapticsController({
-    view,
-    isPartyModeActive: () => partyModeActive,
+  const sessionController = createToySessionController({ toys, view });
+  const capabilityController = createToyCapabilityController({
+    ensureWebGLCheck,
+    rendererCapabilities,
   });
+  const launchController = createToyLaunchController({
+    manifestClient,
+    lifecycle,
+    toys,
+  });
+  const audioPromptController = createToyAudioPromptController({ view });
   const {
     disposeActiveToy,
     removeEscapeHandler,
     registerEscapeHandler,
     updateRendererStatus,
   } = createToyLifecycleOrchestration({ lifecycle, view });
-
-  const flowTimer = createFlowTimer({
-    getDelay: () =>
-      getFlowIntervalMs({
-        cycleCount: flowCycleCount,
-        lastInteractionAt: session.getLastInteractionAt(),
-      }),
-    onTick: () => {
-      if (handleNextToy) {
-        void handleNextToy(true);
-      }
-    },
-  });
-
-  const scheduleFlow = () => {
-    flowTimer.clear();
-    if (!flowActive) return;
-    flowTimer.schedule();
-  };
-
-  const setFlowActive = (active: boolean) => {
-    flowActive = active;
-    if (!flowActive) {
-      flowCycleCount = 0;
-      flowTimer.clear();
-      return;
-    }
-    session.markInteraction();
-    flowCycleCount = 0;
-    scheduleFlow();
-  };
-
-  const setPartyModeActive = (active: boolean) => {
-    partyModeActive = active;
-    applyPartyMode({ enabled: active });
-  };
 
   const showModuleImportError = (
     toy: Toy,
@@ -148,7 +95,7 @@ export function createLoader({
       moduleUrl,
       importError,
       onBack: backToLibrary,
-      onBrowseCompatible: browseCompatibleToys,
+      onBrowseCompatible: capabilityController.browseCompatibleToys,
     });
   };
 
@@ -162,35 +109,7 @@ export function createLoader({
     updateRendererStatus(null);
     void resetAudioPoolFn({ stopStreams: true });
     activeToySlug = null;
-    setFlowActive(false);
-    if (partyModeActive) {
-      setPartyModeActive(false);
-    }
-    haptics.clearBeatHapticsListener();
-  };
-
-  const browseCompatibleToys = () => {
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    const currentFilters = (url.searchParams.get(LIBRARY_FILTER_PARAM) ?? '')
-      .split(',')
-      .map((token) => token.trim())
-      .filter(Boolean)
-      .filter((token) => token.toLowerCase() !== 'feature:webgpu');
-    url.searchParams.set(
-      LIBRARY_FILTER_PARAM,
-      Array.from(new Set([...currentFilters, 'feature:compatible'])).join(','),
-    );
-    url.searchParams.delete(TOY_QUERY_PARAM);
-    url.pathname = url.pathname.endsWith('/toy.html')
-      ? url.pathname.replace(/\/toy\.html$/, '/index.html')
-      : url.pathname;
-    try {
-      window.sessionStorage.setItem(COMPATIBILITY_MODE_KEY, 'true');
-    } catch (_error) {
-      // Ignore storage access issues.
-    }
-    window.location.href = url.toString();
+    sessionController.clearOnBack();
   };
 
   const startModuleToy = async (
@@ -202,12 +121,10 @@ export function createLoader({
   ) => {
     void prewarmRendererCapabilitiesFn();
     void prewarmMicrophoneFn();
-    const capabilityDecision = await assessToyCapabilities({
+    const capabilityDecision = await capabilityController.assess({
       toy,
-      rendererCapabilities: () =>
-        rendererCapabilities({ forceRetry: forceRendererRetry }),
-      ensureWebGLCheck,
       initialCapabilities,
+      forceRendererRetry,
     });
 
     let capabilities = capabilityDecision.capabilities;
@@ -218,35 +135,18 @@ export function createLoader({
 
     disposeActiveToy();
     removeEscapeHandler();
-
-    handleNextToy = async (fromFlow = false) => {
-      if (nextToyInFlight) return;
-      const currentSlug = activeToySlug ?? toy.slug;
-      const nextSlug = session.pickNextToySlug(currentSlug);
-      if (!nextSlug) {
-        if (fromFlow) {
-          setFlowActive(false);
-        }
-        return;
-      }
-      nextToyInFlight = true;
-      flowTimer.clear();
-      try {
-        flowCycleCount += fromFlow ? 1 : 0;
-        await loadToy(nextSlug, { pushState: true, preferDemoAudio });
-      } finally {
-        nextToyInFlight = false;
-        if (flowActive) {
-          scheduleFlow();
-        }
-      }
-    };
+    const handleNextToy = sessionController.createNextToyHandler({
+      getCurrentSlug: () => activeToySlug ?? toy.slug,
+      loadToy,
+      preferDemoAudio,
+    });
 
     const container = view.showActiveToyView(backToLibrary, toy, {
       onNextToy: handleNextToy,
-      onToggleHaptics: (active) => haptics.setHapticsEnabled(active),
-      hapticsActive: haptics.getHapticsEnabled(),
-      hapticsSupported: canUseHaptics(),
+      onToggleHaptics: (active) =>
+        sessionController.haptics.setHapticsEnabled(active),
+      hapticsActive: sessionController.haptics.getHapticsEnabled(),
+      hapticsSupported: sessionController.canUseHaptics(),
     });
     if (!container) return;
     updateRendererStatus(
@@ -278,9 +178,15 @@ export function createLoader({
       commitNavigation();
       view.showLoadingIndicator(toy.title || toy.slug, toy);
 
-      const moduleResult = await loadToyModuleStarter({
-        moduleId: toy.module,
-        manifestClient,
+      const launchRequest: ToyLaunchRequest = {
+        slug: toy.slug,
+        container,
+        audioPreference: preferDemoAudio ? 'demo' : 'microphone',
+        forceRendererRetry,
+      };
+      const moduleResult = await launchController.launchToy({
+        toy,
+        request: launchRequest,
       });
       if (!moduleResult.ok) {
         console.error('Error loading toy module:', moduleResult.error);
@@ -291,72 +197,26 @@ export function createLoader({
         return;
       }
 
-      const { moduleUrl, starter } = moduleResult;
-
-      try {
-        const active = await starter({
-          container,
-          slug: toy.slug,
-          preferDemoAudio,
-        });
-        lifecycle.adoptActiveToy(active ?? lifecycle.getActiveToy()?.ref);
-      } catch (error) {
-        console.error('Error starting toy module:', error);
-        showModuleImportError(toy, {
-          moduleUrl,
-          importError: error as Error,
-        });
-        return;
-      }
+      const { launchResult } = moduleResult;
+      lifecycle.adoptActiveToy(
+        launchResult.instance ?? lifecycle.getActiveToy()?.ref,
+      );
 
       view.removeStatusElement();
 
       // Track toy load for agents
       setCurrentToy(toy.slug);
       activeToySlug = toy.slug;
-      session.rememberToy(toy.slug);
+      sessionController.session.rememberToy(toy.slug);
       recordToyOpen(toy.slug, pushState ? 'library' : 'direct');
-
-      // Setup audio prompt if startAudio globals are registered by the toy.
-      const win = (container?.ownerDocument.defaultView ??
-        window) as unknown as ToyWindow;
-      const setupAudioPrompt = async () => {
-        try {
-          await ensureToyAudioStarter(win);
-        } catch (_error) {
-          return;
-        }
-
-        let lastAudioSource: 'microphone' | 'demo' = 'microphone';
-
-        view.showAudioPrompt(true, {
-          preferDemoAudio,
-          starterTips: TOY_MICRO_GOALS[toy.slug] ?? [
-            'Try mic, then demo audio, and keep whichever feels better.',
-          ],
-          onRequestMicrophone: async () => {
-            lastAudioSource = 'microphone';
-            await startToyAudioFromSource(win, { source: 'microphone' });
-          },
-          onRequestDemoAudio: async () => {
-            lastAudioSource = 'demo';
-            await startToyAudioFromSource(win, { source: 'demo' });
-          },
-          onSuccess: () => {
-            view.showAudioPrompt(false);
-            setAudioActive(true, lastAudioSource);
-          },
-        });
-
-        if (preferDemoAudio) {
-          const demoButton = container?.querySelector('#use-demo-audio');
-          if (demoButton instanceof HTMLButtonElement) {
-            demoButton.click();
-          }
-        }
-      };
-
-      void setupAudioPrompt();
+      audioPromptController.maybeShowPrompt({
+        launchResult,
+        preferDemoAudio,
+        container,
+        starterTips: TOY_MICRO_GOALS[toy.slug] ?? [
+          'Try mic, then demo audio, and keep whichever feels better.',
+        ],
+      });
     };
 
     if (capabilityDecision.shouldShowCapabilityError) {
@@ -366,25 +226,24 @@ export function createLoader({
       view.showCapabilityError(toy, {
         allowFallback: capabilityDecision.allowWebGLFallback,
         onBack: backToLibrary,
-        onBrowseCompatible: browseCompatibleToys,
+        onBrowseCompatible: capabilityController.browseCompatibleToys,
         details: capabilities.fallbackReason,
         compatibilityModeEnabled,
         shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
         onUseWebGPU:
           compatibilityModeEnabled || capabilities.shouldRetryWebGPU
-            ? () => {
-                if (compatibilityModeEnabled) {
-                  setCompatibilityMode(false);
-                }
-                view.clearActiveToyContainer();
-                void loadToy(toy.slug, {
+            ? capabilityController.createUseWebGPU({
+                compatibilityModeEnabled,
+                retry: capabilityController.createFallbackRetry({
+                  toy,
                   pushState,
                   preferDemoAudio,
-                  startFlow: flowActive,
-                  startPartyMode: partyModeActive,
-                  forceRendererRetry: true,
-                });
-              }
+                  startFlow: sessionController.isFlowActive(),
+                  startPartyMode: sessionController.isPartyModeActive(),
+                  loadToy,
+                  view,
+                }),
+              })
             : undefined,
         onContinue: capabilityDecision.allowWebGLFallback
           ? () => {
@@ -416,24 +275,9 @@ export function createLoader({
       forceRendererRetry?: boolean;
     } = {},
   ) => {
-    session.initInteractionTracking();
+    sessionController.syncBeforeLoad({ startFlow, startPartyMode });
 
-    if (canUseHaptics() && !haptics.getHapticsEnabled()) {
-      haptics.setFromPersisted();
-    }
-
-    if (typeof startFlow === 'boolean') {
-      setFlowActive(startFlow);
-    }
-
-    if (typeof startPartyMode === 'boolean') {
-      setPartyModeActive(startPartyMode);
-    }
-
-    haptics.syncBeatHapticsListener();
-
-    const resolvedSlug = resolveToySlug(slug);
-    const toy = toys.find((t) => t.slug === resolvedSlug);
+    const toy = launchController.findToy(slug);
     if (!toy) {
       console.error(`Toy not found: ${slug}`);
       view.showUnavailableToy?.(slug, { onBack: backToLibrary });
@@ -458,32 +302,23 @@ export function createLoader({
       window.location.href = toy.module;
     }
   };
-
-  const handleRoute = async (route: Route, { updateRoute = false } = {}) => {
-    if (route.view === 'toy') {
-      if (route.slug) {
-        await loadToy(route.slug);
-        return;
-      }
-      backToLibrary({ updateRoute: true });
-      return;
-    }
-
-    backToLibrary({ updateRoute });
-  };
+  const routeController = createLoaderRouteController({
+    backToLibrary,
+    loadToy: async (slug: string) => loadToy(slug),
+  });
 
   const loadFromQuery = async () => {
     const route = router.getCurrentRoute();
-    await handleRoute(route, { updateRoute: false });
+    await routeController.handleRoute(route, { updateRoute: false });
   };
 
   const initNavigation = () => {
-    session.initInteractionTracking();
+    sessionController.session.initInteractionTracking();
     if (navigationInitialized) return;
 
     navigationInitialized = true;
     router.listen((route) => {
-      void handleRoute(route, { updateRoute: false });
+      void routeController.handleRoute(route, { updateRoute: false });
     });
   };
 

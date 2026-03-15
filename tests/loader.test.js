@@ -116,7 +116,10 @@ beforeEach(() => {
   window.history.replaceState({}, '', '/');
   window.localStorage.clear();
   window.sessionStorage.clear();
+  delete document.body.dataset.audioActive;
+  delete document.body.dataset.currentToy;
   document.body.innerHTML = '<div id="toy-list"></div>';
+  globalThis.HTMLButtonElement = window.HTMLButtonElement;
   capabilitiesMock = {
     getRendererCapabilities: mock(async () => defaultCapabilities),
     rememberRendererFallback: mock(),
@@ -266,6 +269,29 @@ describe('loadToy', () => {
     );
 
     expect(vibrate).toHaveBeenCalled();
+  });
+
+  test('does not show a duplicate floating audio prompt when shell controls already exist', async () => {
+    document.body.innerHTML =
+      '<div id="toy-list"></div><div data-audio-controls><div data-existing="true"></div></div>';
+
+    const { loader } = await buildLoader({
+      toys: [
+        {
+          slug: 'audio-toy',
+          title: 'Audio Toy',
+          module: './__mocks__/fake-global-audio-module.js',
+          type: 'module',
+          requiresWebGPU: false,
+        },
+      ],
+    });
+
+    await loader.loadToy('audio-toy');
+
+    expect(
+      document.querySelector('#active-toy-container .control-panel'),
+    ).toBeNull();
   });
 });
 

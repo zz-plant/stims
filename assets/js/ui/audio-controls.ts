@@ -44,7 +44,12 @@ export function initAudioControls(
     }
   };
 
-  container.className = 'control-panel';
+  const preserveFloatingLayout = container.classList.contains(
+    'control-panel--floating',
+  );
+  container.className = preserveFloatingLayout
+    ? 'control-panel control-panel--floating'
+    : 'control-panel';
   const firstRunHint = options.firstRunHint?.trim();
   const gestureHints = (options.gestureHints ?? options.starterTips ?? [])
     .filter((tip) => /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip))

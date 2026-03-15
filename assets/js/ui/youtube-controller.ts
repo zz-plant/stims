@@ -77,7 +77,11 @@ export class YouTubeController {
       const tag = document.createElement('script');
       tag.src = apiUrl;
       const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+      if (firstScriptTag?.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      } else {
+        document.head?.appendChild(tag) ?? document.body?.appendChild(tag);
+      }
     }
 
     const previousReady = window.onYouTubeIframeAPIReady;
