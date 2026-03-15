@@ -132,11 +132,9 @@
       <header class="shell-header">
         <div data-top-nav-container>
           <nav class="top-nav top-nav--static" aria-label="Primary">
+            <a class="nav-link" href="#intro">Start</a>
             <a class="nav-link" href="#library">Library</a>
             <a class="nav-link" href="/toys/">Toy pages</a>
-            <a class="nav-link" href="/tags/">Tags</a>
-            <a class="nav-link" href="/moods/">Moods</a>
-            <a class="nav-link" href="/capabilities/">Capabilities</a>
             <a
               class="nav-link"
               href="https://github.com/zz-plant/stims"
@@ -153,25 +151,26 @@
       </header>
 
       <section class="intro" id="intro" aria-label="Primary quick actions">
-        <p class="eyebrow">Library</p>
-        <h1>Play visual toys instantly</h1>
-        <p class="cta-helper intro-helper">Explore audio-reactive scenes for sound, touch, and motion—no setup required.</p>
+        <p class="eyebrow">Start here</p>
+        <h1>Open a visual toy in seconds</h1>
+        <p class="cta-helper intro-helper">Pick a stim and play. Search if you know what you want, or start with the first recommended toy.</p>
         <div class="intro-actions" role="group" aria-label="Start options">
           <a
             href="toy.html?toy=holy"
             class="cta-button primary"
           >
-            Start a visual toy
+            Start playing
           </a>
+          <a href="#library" class="text-link">Browse the library</a>
         </div>
       </section>
 
       <section class="library" id="library">
         <div class="section-heading">
           <p class="eyebrow">Library</p>
-          <h2>Browse all stims</h2>
+          <h2>Browse the full library</h2>
           <p class="section-description">
-            Discover interactive toys, then refine by mood, microphone, motion, demo audio, or WebGPU.
+            Search by name or use a few simple filters to narrow the list.
           </p>
         </div>
         <search class="library-search">
@@ -182,7 +181,7 @@
               type="search"
               inputmode="search"
               autocomplete="off"
-              placeholder="Search by toy, mood, or capability"
+              placeholder="Search toys"
               aria-label="Search library"
               list="toy-search-suggestions"
             />
@@ -199,7 +198,7 @@
           <div class="active-filters" data-active-filters>
             <span class="active-filters__label">Active view</span>
             <span class="active-filters__status" data-active-filters-status>
-              Featured
+              All toys
             </span>
             <button
               type="button"
@@ -218,9 +217,9 @@
             Loading visual library…
           </p>
           <details class="library-refine" data-library-refine>
-            <summary>Filter library</summary>
+            <summary>Filters</summary>
             <p class="search-meta__note" data-search-note>
-              Quick filters: mood and microphone input.
+              Start with mood or microphone input.
             </p>
             <div class="filter-row" role="group" aria-label="Curated filters">
               <div class="chip-row" data-chip-row>
@@ -252,55 +251,18 @@
                   Microphone
                 </button>
               </div>
-            </div>
-            <details class="more-filters" data-advanced-filters>
-              <summary>More filters</summary>
-              <div class="filter-row" role="group" aria-label="Advanced filters and sorting">
-                <div class="chip-row" data-chip-row-advanced>
-                  <button
-                    type="button"
-                    class="filter-chip"
-                    data-filter-chip
-                    data-filter-type="capability"
-                    data-filter-value="motion"
-                    data-filter-advanced
-                  >
-                    Motion
-                  </button>
-                  <button
-                    type="button"
-                    class="filter-chip"
-                    data-filter-chip
-                    data-filter-type="capability"
-                    data-filter-value="demoAudio"
-                    data-filter-advanced
-                  >
-                    Demo audio
-                  </button>
-                  <button
-                    type="button"
-                    class="filter-chip"
-                    data-filter-chip
-                    data-filter-type="feature"
-                    data-filter-value="webgpu"
-                    data-filter-advanced
-                  >
-                    WebGPU
-                  </button>
-                </div>
-                <div class="filter-actions">
-                  <label class="sort-control">
-                    <span>Sort</span>
-                    <select data-sort-control>
-                      <option value="featured">Featured</option>
-                      <option value="newest">Newest</option>
-                      <option value="immersive">Most immersive</option>
-                      <option value="az">A → Z</option>
-                    </select>
-                  </label>
-                </div>
+              <div class="filter-actions">
+                <label class="sort-control">
+                  <span>Sort</span>
+                  <select data-sort-control>
+                    <option value="featured">Featured</option>
+                    <option value="newest">Newest</option>
+                    <option value="immersive">Most immersive</option>
+                    <option value="az">A → Z</option>
+                  </select>
+                </label>
               </div>
-            </details>
+            </div>
           </details>
         </search>
         <main id="toy-list" class="webtoy-container">
@@ -313,10 +275,6 @@
               </p>
               <ul>
                 <li><a class="text-link" href="/toys/">All toy pages</a></li>
-                <li><a class="text-link" href="/tags/">Tags index</a></li>
-                <li><a class="text-link" href="/moods/">Moods index</a></li>
-                <li><a class="text-link" href="/capabilities/">Capabilities index</a></li>
-                <li><a class="text-link" href="/discover/">Discover combinations</a></li>
                 <li><a class="text-link" href="/toys/holy/">Halo Pulse toy page</a></li>
                 <li><a class="text-link" href="/toys/cube-wave/">Grid Visualizer toy page</a></li>
                 <li><a class="text-link" href="/toys/aurora-painter/">Aurora Painter toy page</a></li>
@@ -325,135 +283,14 @@
             </section>
           </noscript>
         </main>
-        <div class="feature-card-grid" aria-label="Library collection shortcuts">
-          <nav class="feature-card" aria-label="Explore static library pages">
-            <h3>Explore collections</h3>
-            <p>Browse index pages that organize every toy by category.</p>
-            <ul>
-              <li><a class="text-link" href="/toys/">All toy pages</a></li>
-              <li><a class="text-link" href="/tags/">Tags index</a></li>
-              <li><a class="text-link" href="/moods/">Moods index</a></li>
-              <li><a class="text-link" href="/capabilities/">Capabilities index</a></li>
-            </ul>
-          </nav>
-          <nav class="feature-card" aria-label="Featured toy detail pages">
-            <h3>Featured toy pages</h3>
-            <ul>
-              <li><a class="text-link" href="/toys/aurora-painter/">Aurora Painter details</a></li>
-              <li><a class="text-link" href="/toys/seary/">Seary details</a></li>
-              <li><a class="text-link" href="/toys/holy/">Halo Pulse details</a></li>
-              <li><a class="text-link" href="/toys/cube-wave/">Grid Visualizer details</a></li>
-            </ul>
-          </nav>
-        </div>
       </section>
-
-      <div class="home-support-grid">
-        <section class="system-check" id="system-check">
-        <div class="section-heading">
-          <p class="eyebrow">System check</p>
-          <h2>Check your device</h2>
-          <p class="section-description">Quick readiness summary for graphics, mic, and motion.</p>
-          <p
-            class="section-description details-panel"
-            data-details-panel
-            id="system-check-details"
-          >
-            Graphics, mic, motion, comfort.
-          </p>
-          <button
-            type="button"
-            class="text-link details-toggle"
-            data-details-toggle
-            aria-expanded="false"
-            aria-controls="system-check-details"
-          >
-            <span data-details-label="open">Details</span>
-            <span data-details-label="close">Hide details</span>
-          </button>
-        </div>
-        <ul class="system-legend" aria-label="System signals">
-          <li class="system-legend__item">🖥️ Graphics</li>
-          <li class="system-legend__item">🎙️ Mic</li>
-          <li class="system-legend__item">🧭 Motion</li>
-          <li class="system-legend__item">🫧 Comfort</li>
-        </ul>
-        <div class="system-grid">
-          <div class="readiness-panel" data-readiness-panel>
-            <div class="readiness-header">
-              <h3 class="readiness-title">Ready now?</h3>
-              <p class="readiness-subtitle" data-details-panel>
-                We’ll keep these signals updated so you know what’s available.
-              </p>
-            </div>
-            <ul class="readiness-list">
-              <li class="readiness-item">
-                <div class="readiness-label">
-                  <span
-                    class="readiness-dot"
-                    data-status-dot="render"
-                    aria-hidden="true"
-                  ></span>
-                  <span class="readiness-name">Visual performance</span>
-                </div>
-                <p class="readiness-note" data-status-note="render">
-                  Checking graphics…
-                </p>
-              </li>
-              <li class="readiness-item">
-                <div class="readiness-label">
-                  <span class="readiness-dot" data-status-dot="mic" aria-hidden="true"></span>
-                  <span class="readiness-name">Microphone</span>
-                </div>
-                <p class="readiness-note" data-status-note="mic">Checking mic…</p>
-              </li>
-              <li class="readiness-item">
-                <div class="readiness-label">
-                  <span
-                    class="readiness-dot"
-                    data-status-dot="motion"
-                    aria-hidden="true"
-                  ></span>
-                  <span class="readiness-name">Tilt controls</span>
-                </div>
-                <p class="readiness-note" data-status-note="motion">Checking motion…</p>
-              </li>
-              <li class="readiness-item">
-                <div class="readiness-label">
-                  <span
-                    class="readiness-dot"
-                    data-status-dot="reduced"
-                    aria-hidden="true"
-                  ></span>
-                  <span class="readiness-name">Low-motion mode</span>
-                </div>
-                <p class="readiness-note" data-status-note="reduced">Reading comfort…</p>
-              </li>
-            </ul>
-          </div>
-          <div class="system-controls" data-system-controls></div>
-        </div>
-        <div class="cta-row system-actions">
-          <button type="button" class="cta-button primary" data-open-preflight>
-            Open full system check
-          </button>
-          <a href="#toy-list" class="text-link">Back to library</a>
-        </div>
-        </section>
-      </div>
 
       <section class="github" id="github">
         <div class="section-heading">
           <p class="eyebrow">GitHub</p>
-          <h2>Build the stims library together</h2>
+          <h2>Follow the project</h2>
           <p class="section-description">
-            The library lives in public on GitHub, including the roadmaps,
-            changelog, and ongoing experiments. Follow the repo, drop feedback,
-            or help ship the next wave of toys.
-          </p>
-          <p class="section-description">
-            We are actively exploring sustainability paths that keep the core
-            library open while funding new work.
+            The code, changelog, and discussion all live in public. If you want more than the library itself, GitHub is the only next stop.
           </p>
         </div>
         
@@ -576,70 +413,8 @@
             >
           </div>
           <p class="repo-status__message">
-            Prefer docs? Start with the README and feature specs inside the
-            repository.
+            Prefer docs? Start with the README in the repository.
           </p>
-        </div>
-      </section>
-
-      <section class="stim-builder" id="stim-builder" data-stim-builder>
-        <div class="section-heading">
-          <p class="eyebrow">Building blocks</p>
-          <h2>Create your own stim setup</h2>
-          <p class="section-description">
-            Mix mood, energy, interaction style, and audio preferences.
-          </p>
-        </div>
-        <form class="builder-form" data-builder-form>
-          <label>
-            <span>Mood</span>
-            <select name="mood">
-              <option value="calming">Calming</option>
-              <option value="energetic">Energetic</option>
-              <option value="dreamy">Dreamy</option>
-              <option value="playful">Playful</option>
-            </select>
-          </label>
-          <label>
-            <span>Energy</span>
-            <select name="energy">
-              <option value="soft">Soft</option>
-              <option value="balanced" selected>Balanced</option>
-              <option value="intense">Intense</option>
-            </select>
-          </label>
-          <label>
-            <span>Interaction</span>
-            <select name="interaction">
-              <option value="touch" selected>Touch / gesture</option>
-              <option value="motion">Tilt / motion</option>
-              <option value="ambient">Mostly ambient</option>
-            </select>
-          </label>
-          <label>
-            <span>Audio</span>
-            <select name="audio">
-              <option value="demoAudio" selected>Built-in demo audio</option>
-              <option value="microphone">Microphone reactive</option>
-              <option value="none">No audio required</option>
-            </select>
-          </label>
-          <label>
-            <span>Renderer</span>
-            <select name="renderer">
-              <option value="any" selected>Any</option>
-              <option value="webgpu">WebGPU-first</option>
-              <option value="webgl">Broader compatibility</option>
-            </select>
-          </label>
-        </form>
-        <div class="builder-summary" data-builder-summary aria-live="polite"></div>
-        <ul class="builder-results" data-builder-results></ul>
-        <div class="cta-row">
-          <a href="toy.html?toy=holy" class="cta-button primary" data-builder-cta>
-            Launch a suggested stim
-          </a>
-          <a href="#library" class="text-link">Back to library filters</a>
         </div>
       </section>
 
@@ -658,8 +433,6 @@
           </p>
           <p class="footer-nav">
             <a href="#intro" class="text-link">Intro</a>
-            <span aria-hidden="true">·</span>
-            <a href="#system-check" class="text-link">System check</a>
             <span aria-hidden="true">·</span>
             <a href="#library" class="text-link">Library</a>
             <span aria-hidden="true">·</span>
