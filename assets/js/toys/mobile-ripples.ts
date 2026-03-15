@@ -44,12 +44,45 @@ type RingState = {
   pulseOffset: number;
 };
 
+function getDynamicsProfile(presetId: string | undefined) {
+  if (presetId === 'performance') {
+    return {
+      pulseBoost: 1.18,
+      rippleBoost: 1.2,
+      spinBoost: 1.18,
+      driftBoostX: 1.25,
+      driftBoostY: 1.2,
+      hueBoost: 1.2,
+      opacityBoost: 1.14,
+    };
+  }
+  if (presetId === 'mobile') {
+    return {
+      pulseBoost: 0.88,
+      rippleBoost: 0.82,
+      spinBoost: 0.88,
+      driftBoostX: 0.9,
+      driftBoostY: 0.9,
+      hueBoost: 0.9,
+      opacityBoost: 0.88,
+    };
+  }
+  return {
+    pulseBoost: 1,
+    rippleBoost: 1,
+    spinBoost: 1,
+    driftBoostX: 1,
+    driftBoostY: 1,
+    hueBoost: 1,
+    opacityBoost: 1,
+  };
+}
 export function start({ container }: ToyStartOptions = {}) {
   const { quality, configurePanel } = createToyQualityControls({
     title: 'Mobile Ripples',
-    description: 'Low-power neon ripples tuned for touch-first screens.',
+    description: 'Punchy neon ripples tuned for touch-first screens.',
     presets: QUALITY_PRESETS,
-    defaultPresetId: isCompactDevice() ? 'mobile' : 'balanced',
+    defaultPresetId: isCompactDevice() ? 'mobile' : 'performance',
     storageKey: 'stims:mobile-ripples:quality',
     getRuntime: () => runtime,
     onChange: () => rebuildRings(),
@@ -135,28 +168,36 @@ export function start({ container }: ToyStartOptions = {}) {
     const mids = getBandAverage(data, 0.28, 0.7) / 255;
     const treble = getBandAverage(data, 0.7, 1) / 255;
 
+    const dynamics = getDynamicsProfile(quality.activeQuality.id);
     const idlePulse = 0.24 + Math.sin(time * 1.35) * 0.11;
-    const pulse = 0.95 + idlePulse + bass * 0.85;
-    const driftX = (input?.normalizedCentroid.x ?? 0) * 2.2;
-    const driftY = (input?.normalizedCentroid.y ?? 0) * 1.6;
+    const pulse = (0.95 + idlePulse + bass * 0.85) * dynamics.pulseBoost;
+    const driftX =
+      (input?.normalizedCentroid.x ?? 0) * 2.2 * dynamics.driftBoostX;
+    const driftY =
+      (input?.normalizedCentroid.y ?? 0) * 1.6 * dynamics.driftBoostY;
 
     group.position.x = driftX;
     group.position.y = driftY;
-    group.rotation.z = time * (0.08 + mids * 0.1);
+    group.rotation.z = time * (0.08 + mids * 0.1) * dynamics.spinBoost;
 
     rings.forEach(({ mesh, baseScale, pulseOffset }) => {
       const ripple =
         Math.sin(time * (0.9 + mids * 0.28) + pulseOffset) *
-        (0.2 + treble * 0.3);
+        (0.2 + treble * 0.3) *
+        dynamics.rippleBoost;
       const scale = baseScale * (pulse + ripple);
       mesh.scale.setScalar(scale);
-      mesh.rotation.z += 0.003 + mids * 0.002 + treble * 0.004;
+      mesh.rotation.z +=
+        (0.003 + mids * 0.002 + treble * 0.004) * dynamics.spinBoost;
     });
 
     const hue =
-      (palette.baseHue + 0.06 * Math.sin(time * 0.6) + avg * 0.28) % 1;
+      (palette.baseHue +
+        0.06 * Math.sin(time * 0.6) +
+        avg * 0.28 * dynamics.hueBoost) %
+      1;
     material.color.setHSL(hue, palette.saturation, 0.56 + avg * 0.24);
-    material.opacity = 0.6 + avg * 0.25;
+    material.opacity = Math.min(0.98, 0.6 + avg * 0.25 * dynamics.opacityBoost);
   }
 
   function setupSettingsPanel() {

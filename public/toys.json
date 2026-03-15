@@ -425,7 +425,7 @@
   {
     "slug": "pocket-pulse",
     "title": "Pocket Pulse",
-    "description": "A mobile-optimized pulse field that responds to audio and touch gestures.",
+    "description": "A punchy pulse field that responds to audio and touch gestures.",
     "module": "assets/js/toys/pocket-pulse.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -454,7 +454,7 @@
   {
     "slug": "mobile-ripples",
     "title": "Mobile Ripples",
-    "description": "Low-power neon ripples tuned for touch-first screens and pocket GPUs.",
+    "description": "Punchy neon ripples tuned for touch-first screens and pocket GPUs.",
     "module": "assets/js/toys/mobile-ripples.ts",
     "type": "module",
     "requiresWebGPU": true,
