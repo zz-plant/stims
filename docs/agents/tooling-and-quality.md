@@ -64,6 +64,18 @@ bun run check:quick
   bun run test tests/path/to/spec.test.ts
   ```
 
+- Unit-only test sweep:
+
+  ```bash
+  bun run test:unit
+  ```
+
+- Browser-backed integration sweep:
+
+  ```bash
+  bun run test:integration
+  ```
+
 ## Docs-only updates
 
 For Markdown-only edits, you can skip typecheck/tests unless the change modifies commands, paths, or workflow-critical instructions that should be validated.

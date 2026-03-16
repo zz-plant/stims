@@ -11,7 +11,6 @@ const defaultCapabilities = {
   preferredBackend: 'webgpu',
   adapter: {},
   device: {},
-  triedWebGPU: true,
   fallbackReason: null,
   shouldRetryWebGPU: false,
 };
@@ -307,7 +306,6 @@ describe('WebGPU requirements', () => {
       preferredBackend: 'webgl',
       adapter: null,
       device: null,
-      triedWebGPU: false,
       fallbackReason: 'WebGPU unavailable',
       shouldRetryWebGPU: false,
     });
@@ -345,7 +343,6 @@ describe('WebGPU requirements', () => {
       preferredBackend: 'webgl',
       adapter: null,
       device: null,
-      triedWebGPU: false,
       fallbackReason: 'WebGPU unavailable',
       shouldRetryWebGPU: false,
     });
@@ -384,7 +381,6 @@ describe('WebGPU requirements', () => {
       preferredBackend: 'webgl',
       adapter: null,
       device: null,
-      triedWebGPU: true,
       fallbackReason: 'Cached fallback',
       shouldRetryWebGPU: false,
     });
@@ -415,7 +411,6 @@ describe('WebGPU requirements', () => {
         preferredBackend: 'webgl',
         adapter: null,
         device: null,
-        triedWebGPU: true,
         fallbackReason: 'Unable to acquire a WebGPU device.',
         shouldRetryWebGPU: true,
       })
@@ -438,7 +433,7 @@ describe('WebGPU requirements', () => {
 
     const retryWebGPUButton = Array.from(
       document.querySelectorAll('.active-toy-actions button'),
-    ).find((button) => button.textContent?.includes('Retry WebGPU'));
+    ).find((button) => button.textContent?.includes('Try WebGPU'));
     expect(retryWebGPUButton).not.toBeUndefined();
 
     retryWebGPUButton?.dispatchEvent(new Event('click', { bubbles: true }));
@@ -458,7 +453,6 @@ describe('WebGPU requirements', () => {
         preferredBackend: 'webgl',
         adapter: null,
         device: null,
-        triedWebGPU: false,
         fallbackReason: 'Compatibility mode is enabled. Using WebGL.',
         shouldRetryWebGPU: false,
       })

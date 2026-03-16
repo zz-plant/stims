@@ -66,10 +66,12 @@ Use this to decide the minimum workflow before you start running commands.
 | Full quality gate | `bun run check` | Biome check + typecheck + tests. Required for JS/TS edits. |
 | Quick quality gate | `bun run check:quick` | No `@ts-nocheck` directives + Biome check + typecheck (faster iteration path). |
 | Run all tests | `bun run test` | Preserves preload/importmap setup. |
+| Run unit tests only | `bun run test:unit` | Excludes the browser-backed agent integration flow. |
 | Run compatibility-focused unit tests | `bun run test:compat` | Fast compatibility coverage for renderer preference and fallback state logic. |
 | Run full compatibility regression suite | `bun run test:compat:full` | Includes loader + toy-view flows to surface integration issues. |
 | Run tests in watch mode | `bun run test:watch` | Iterative local testing. |
-| Run agent integration test | `bun run test:agent` | Focused test for MCP/agent integration path. |
+| Run browser-backed integration test | `bun run test:integration` | Boots the local Vite server and runs the Playwright agent path. |
+| Run agent integration test (alias) | `bun run test:agent` | Alias for `bun run test:integration`. |
 | Typecheck once | `bun run typecheck` | Runs `tsc --noEmit`. |
 | Typecheck watch | `bun run typecheck:watch` | Continuous TS diagnostics. |
 | Lint | `bun run lint` | Lint-only diagnostics. |
