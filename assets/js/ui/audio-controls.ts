@@ -661,7 +661,7 @@ function renderAdvancedSources(options: AudioControlsOptions) {
               </button>
               <span id="youtube-audio-info" class="control-panel__info-text">
                 Paste a link, load it, then capture. In the picker, choose “This tab” and enable
-                Share audio.
+                Share audio. The embedded video keeps playing with sound here while it drives the toy.
               </span>
             </span>
           </div>
