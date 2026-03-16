@@ -285,7 +285,7 @@ const buildMoodCapabilityCombos = (
         };
       }),
     )
-    .filter((entry) => entry.toys.length >= 2)
+    .filter((entry) => entry.toys.length > 0)
     .sort(
       (a, b) => b.toys.length - a.toys.length || a.slug.localeCompare(b.slug),
     );

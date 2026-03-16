@@ -1,8 +1,10 @@
 import { expect, test } from 'bun:test';
 import {
+  clearDebugSnapshot,
   initAgentAPI,
   setAudioActive,
   setCurrentToy,
+  setDebugSnapshot,
 } from '../assets/js/core/agent-api.ts';
 
 test('activateVibeMode toggles state and root dataset', async () => {
@@ -38,4 +40,17 @@ test('api state includes vibe mode alongside toy and audio state', () => {
     audioSource: 'demo',
     vibeMode: false,
   });
+});
+
+test('debug snapshots are exposed through the agent api', () => {
+  const api = initAgentAPI();
+  setDebugSnapshot('milkdrop', { presetId: 'aurora-painter', status: 'ok' });
+
+  expect(api.getDebugSnapshot('milkdrop')).toEqual({
+    presetId: 'aurora-painter',
+    status: 'ok',
+  });
+
+  clearDebugSnapshot('milkdrop');
+  expect(api.getDebugSnapshot('milkdrop')).toBeNull();
 });

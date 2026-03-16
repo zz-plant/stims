@@ -1,11 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ToyManifest } from '../assets/js/data/toy-schema.ts';
+import { applyMilkdropBehaviorMetadata } from '../assets/js/toys/milkdrop-behaviors/metadata.ts';
 
 const TOY_DATA_RELATIVE_PATH = 'assets/data/toys.json';
 
 export type LoadedToyRegistry = {
   entries: unknown;
+  rawEntries: unknown;
   dataPath: string;
   relativePath: string;
 };
@@ -24,10 +26,14 @@ export async function loadToyRegistry(
   }
 
   const source = await fs.readFile(dataPath, 'utf8');
-  const entries = JSON.parse(source) as unknown;
+  const rawEntries = JSON.parse(source) as unknown;
+  const entries = Array.isArray(rawEntries)
+    ? applyMilkdropBehaviorMetadata(rawEntries)
+    : rawEntries;
 
   return {
     entries,
+    rawEntries,
     dataPath,
     relativePath: TOY_DATA_RELATIVE_PATH,
   };

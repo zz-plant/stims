@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { toyManifestSchema } from '../assets/js/data/toy-schema.ts';
-import { loadToyRegistry } from './toy-registry.ts';
+import { loadToyRegistry, saveToyRegistry } from './toy-registry.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +68,7 @@ export async function generateToyArtifacts(root = repoRoot) {
   const publicJson = buildPublicToysJson(manifest);
 
   if (root === repoRoot) {
+    await saveToyRegistry(root, relativePath, manifest);
     await writeManifestFiles(manifest);
   }
 
@@ -80,6 +81,9 @@ export async function generateToyArtifacts(root = repoRoot) {
 
 async function main() {
   await generateToyArtifacts(repoRoot);
+  console.log(
+    'Synced assets/data/toys.json from behavior-backed MilkDrop metadata.',
+  );
   console.log('Generated toy manifest at assets/js/data/toy-manifest.ts.');
   console.log('Updated public/toys.json for runtime fetch overrides.');
 }

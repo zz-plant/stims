@@ -12,6 +12,8 @@ Guidance for writing automated tests for Stims toys. Stims is MilkDrop-led but q
 
 The repo already ships with shared helpers in `tests/toy-test-helpers.ts` and a working example spec in `tests/sample-toy.test.ts`.
 
+For browser-backed MilkDrop parity work, the repo also keeps integration coverage in `tests/agent-integration.test.ts` for shared drag, gesture, and motion behavior.
+
 ### Shared helpers
 
 - `createToyContainer(id?)`: Creates and appends a container to `document.body` and returns `{ container, dispose }`.
@@ -91,6 +93,17 @@ When adding new helpers (color math, easing, or audio utilities), write small un
 ## Smoke checks for toy metadata
 
 If you change the toy registry (`assets/data/toys.json`) or entry points, consider updating or extending `scripts/check-toys.ts` tests so metadata stays consistent. The `tests/check-toys.test.ts` file covers this workflow with a temporary repo fixture.
+
+## Browser-backed interaction regressions
+
+Use a browser-backed integration test when a MilkDrop preset alias depends on:
+
+- drag-driven preset fields,
+- multi-touch pinch/rotate behavior,
+- device-motion permission and tilt control,
+- control-panel cycling behavior that must stay in sync with gesture rotation.
+
+The canonical place for those checks is `tests/agent-integration.test.ts` so the existing `bun run test:integration` profile keeps covering the shared toy shell and the migrated preset aliases together.
 
 ## Verification checklist
 

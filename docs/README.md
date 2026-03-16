@@ -49,6 +49,7 @@ If you need to...
 ### Implementation references
 
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — runtime composition and data flow.
+- [`MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md) — shared MilkDrop preset runtime, signal contract, and behavior metadata pipeline.
 - [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md) — page-level UX/spec requirements.
 - [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md) — toy slug-to-entry-point map.
 - [`toys.md`](./toys.md) — per-toy notes and implementation details.
