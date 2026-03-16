@@ -1,50 +1,60 @@
 ---
-description: Update an existing toy while preserving registration, docs, and quality gates
+description: Update an existing toy and keep metadata, docs, and validation aligned
 ---
 
 # Modify an Existing Toy
 
-Use this workflow when a request asks you to tweak behavior, visuals, controls, or metadata for a toy that already exists.
+## 1. Confirm scope
 
-## Step 1: Confirm scope
+1. Identify the slug in `assets/data/toys.json`.
+2. Read the implementation in `assets/js/toys/<slug>.ts`.
+3. Decide whether metadata, docs, or tests must change too.
 
-1. Identify the target toy slug in `assets/data/toys.json`.
-2. Review current implementation in `assets/js/toys/<slug>.ts`.
-3. Note any metadata or docs that may need updates (`docs/TOY_SCRIPT_INDEX.md`, `docs/toys.md`, `docs/TOY_DEVELOPMENT.md`).
+Relevant docs:
 
-## Step 2: Implement the change
+- `docs/TOY_DEVELOPMENT.md`
+- `docs/TOY_SCRIPT_INDEX.md`
+- `docs/toys.md`
 
-- Keep cleanup logic intact (animation frame cancellation, event listener teardown, DOM cleanup).
-- Preserve loader contract (`start` export and toy global registration) unless the change intentionally updates integration behavior.
-- Update controls/descriptions when UX-facing behavior changes.
+## 2. Implement
 
-## Step 3: Run checks
+- Keep cleanup behavior intact.
+- Preserve shared loader/runtime expectations.
+- Prefer shared helpers when refactoring repeated logic.
 
-Use MCP quality-gate automation where available:
+## 3. Validate incrementally
 
-```text
-run_quality_gate(scope: "toys")
-run_quality_gate(scope: "typecheck")
-run_quality_gate(scope: "full", timeoutMs: 600000)
-```
-
-Or run shell equivalents:
+Run focused checks while iterating:
 
 ```bash
+bun run test tests/path/to/spec.test.ts
+```
+
+If metadata or toy docs changed:
+
+```bash
+bun run generate:toys
 bun run check:toys
-bun run typecheck
+```
+
+## 4. Final validation
+
+```bash
 bun run check
 ```
 
-## Step 4: Validate behavior
+## 5. Optional browser verification
 
-1. Start dev server with `bun run dev`.
-2. Open `http://localhost:5173/toy.html?toy=<slug>&agent=true`.
-3. Enable demo audio or microphone input.
-4. Confirm the modified behavior works and no regressions appear.
+Use one of:
 
-## Step 5: Finalize
+```bash
+bun run play:toy <slug>
+```
 
-1. Sync docs/metadata for any changed controls, capabilities, or behavior notes.
-2. Prepare sentence-case commit title with no trailing period.
-3. Include PR summary, explicit tests list, and docs touched list.
+or
+
+```bash
+bun run dev
+```
+
+then open `http://localhost:5173/toy.html?toy=<slug>&agent=true`.

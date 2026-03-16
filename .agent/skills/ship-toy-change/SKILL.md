@@ -1,32 +1,55 @@
 ---
 name: ship-toy-change
-description: "Orchestrate toy implementation, quality gates, docs sync, and PR-ready metadata in one repeatable flow."
+description: "Run the end-to-end flow for a toy-focused change. Use when a toy change spans implementation, docs sync, validation, and PR-ready completion."
 ---
 
 # Ship a toy change
 
-## Use when
+Use this when the request is not just “edit one toy file,” but “carry the toy change all the way through.”
 
-- A change touches toy code, toy metadata, or toy docs.
-- You need deterministic quality-gate output for agent reports.
+## Gather context
 
-## Workflow
+- Confirm affected slug(s) in `assets/data/toys.json`.
+- Read:
+  - `docs/TOY_DEVELOPMENT.md`
+  - `docs/TOY_SCRIPT_INDEX.md`
+  - `docs/toys.md`
+  - `docs/agents/toy-workflows.md`
 
-1. Confirm impacted toy slug(s) and metadata.
-2. Implement updates.
-3. Run checks:
+## Implement
 
-```text
-run_quality_gate(scope: "toys")
-run_quality_gate(scope: "typecheck")
-run_quality_gate(scope: "full", timeoutMs: 600000)
+- Update code, metadata, tests, and toy docs together.
+- Regenerate derived toy artifacts when metadata changes:
+
+```bash
+bun run generate:toys
 ```
 
-4. If visual behavior changed, validate in browser and capture screenshot evidence.
-5. Ensure docs are synchronized.
-6. Finalize commit/PR metadata.
+## Validate
 
-## Notes
+Run the toy-specific gate when applicable:
 
-- The full gate maps to `bun run check`.
-- For quick iteration, use `run_quality_gate(scope: "quick")`.
+```bash
+bun run check:toys
+```
+
+Then run the full repo gate:
+
+```bash
+bun run check
+```
+
+If visual behavior changed, also run:
+
+```bash
+bun run play:toy <slug>
+```
+
+## Finalize
+
+- Keep docs in sync.
+- Use a sentence-case commit title with no trailing period.
+- Prepare PR metadata with:
+  - short summary,
+  - explicit tests run,
+  - explicit docs touched.

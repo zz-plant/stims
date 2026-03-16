@@ -195,11 +195,50 @@
             </button>
             <datalist id="toy-search-suggestions"></datalist>
           </form>
+          <div class="quick-filter-strip" aria-label="Quick filters">
+            <button
+              type="button"
+              class="filter-chip filter-chip--quick"
+              data-filter-chip
+              data-filter-type="capability"
+              data-filter-value="demoAudio"
+            >
+              Demo
+            </button>
+            <button
+              type="button"
+              class="filter-chip filter-chip--quick"
+              data-filter-chip
+              data-filter-type="capability"
+              data-filter-value="microphone"
+            >
+              Mic
+            </button>
+            <button
+              type="button"
+              class="filter-chip filter-chip--quick"
+              data-filter-chip
+              data-filter-type="tag"
+              data-filter-value="mobile"
+            >
+              Mobile
+            </button>
+            <button
+              type="button"
+              class="filter-chip filter-chip--quick"
+              data-filter-chip
+              data-filter-type="capability"
+              data-filter-value="motion"
+            >
+              Motion
+            </button>
+          </div>
           <div class="active-filters" data-active-filters>
             <span class="active-filters__label">Active view</span>
             <span class="active-filters__status" data-active-filters-status>
               All toys
             </span>
+            <div class="active-filters__chips" data-active-filters-chips></div>
             <button
               type="button"
               class="active-filters__clear"

@@ -43,6 +43,7 @@ describe('library filter state normalization', () => {
     document.body.innerHTML = `
       <p data-search-results></p>
       <div data-active-filters hidden>
+        <span data-active-filters-status></span>
         <div data-active-filters-chips></div>
         <button data-active-filters-clear type="button">Clear all</button>
       </div>
@@ -82,6 +83,60 @@ describe('library filter state normalization', () => {
     expect(JSON.parse(persisted ?? '{}').filters).toEqual([]);
     expect(calmChip?.classList.contains('is-active')).toBe(false);
   });
+
+  test('keeps duplicate quick-filter chips in sync and supports tag filters', async () => {
+    document.body.innerHTML = `
+      <p data-search-results></p>
+      <div data-active-filters>
+        <span data-active-filters-status></span>
+        <div data-active-filters-chips></div>
+        <button data-active-filters-clear type="button">Clear all</button>
+      </div>
+      <form data-search-form>
+        <input id="toy-search" type="search" />
+        <button data-search-clear type="button">Clear</button>
+        <datalist id="toy-search-suggestions"></datalist>
+      </form>
+      <div class="quick-filter-strip">
+        <button data-filter-chip data-filter-type="tag" data-filter-value="mobile" type="button">Mobile-friendly</button>
+      </div>
+      <details data-library-refine open>
+        <summary>Filters</summary>
+        <button data-filter-chip data-filter-type="tag" data-filter-value="mobile" type="button">Mobile</button>
+      </details>
+      <button data-filter-reset type="button">Reset</button>
+      <select data-sort-control>
+        <option value="featured">Featured</option>
+      </select>
+      <div id="toy-list"></div>
+    `;
+
+    const view = createLibraryView({
+      toys,
+      searchInputId: 'toy-search',
+    });
+
+    await view.init();
+
+    const [quickChip, refineChip] = Array.from(
+      document.querySelectorAll('[data-filter-chip]'),
+    ) as HTMLButtonElement[];
+
+    quickChip?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(quickChip?.classList.contains('is-active')).toBe(true);
+    expect(refineChip?.classList.contains('is-active')).toBe(true);
+    expect(document.querySelectorAll('.webtoy-card')).toHaveLength(1);
+    expect(document.querySelector('.webtoy-card')?.textContent).toContain(
+      'Tilt Wave',
+    );
+
+    refineChip?.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(quickChip?.classList.contains('is-active')).toBe(false);
+    expect(refineChip?.classList.contains('is-active')).toBe(false);
+    expect(document.querySelectorAll('.webtoy-card')).toHaveLength(2);
+  });
 });
 
 test('renders continue panel when returner signals are present', async () => {
@@ -110,9 +165,7 @@ test('renders continue panel when returner signals are present', async () => {
   await view.init();
 
   expect(document.querySelector('.webtoy-growth-panel')).not.toBeNull();
-  const openButton = Array.from(document.querySelectorAll('button')).find(
-    (button) => (button.textContent ?? '').startsWith('Launch'),
-  );
+  const openButton = document.querySelector('.webtoy-growth-panel button');
   expect(openButton).toBeTruthy();
 });
 
@@ -171,4 +224,105 @@ test('restores search query from URL state on init', async () => {
   const cards = Array.from(document.querySelectorAll('.webtoy-card'));
   expect(cards).toHaveLength(1);
   expect(cards[0]?.textContent).toContain('Tilt Wave');
+});
+
+test('renders guidance and feel signals instead of setup-heavy badges', async () => {
+  window.location.href = 'https://example.com/';
+  window.sessionStorage.clear();
+  window.localStorage.clear();
+
+  document.body.innerHTML = `
+    <p data-search-results></p>
+    <div data-active-filters>
+      <span data-active-filters-status></span>
+      <button data-active-filters-clear type="button">Clear all</button>
+    </div>
+    <form data-search-form>
+      <input id="toy-search" type="search" />
+      <button data-search-clear type="button">Clear</button>
+      <datalist id="toy-search-suggestions"></datalist>
+    </form>
+    <button data-filter-reset type="button">Reset</button>
+    <select data-sort-control>
+      <option value="featured">Featured</option>
+    </select>
+    <div id="toy-list"></div>
+  `;
+
+  const view = createLibraryView({
+    toys: [
+      {
+        slug: 'halo-flow',
+        title: 'Halo Flow',
+        description: 'Layered halos and particles for ambient sessions.',
+        module: 'assets/js/toys/halo-flow.ts',
+        type: 'module',
+        moods: ['serene', 'ethereal'],
+        wowControl: 'Halo intensity',
+        starterPreset: {
+          id: 'halo-glow',
+          label: 'halo glow starter',
+        },
+        recommendedCapability: 'demoAudio',
+        capabilities: {
+          demoAudio: true,
+          microphone: true,
+          motion: false,
+        },
+      },
+    ],
+    enableCapabilityBadges: true,
+  });
+
+  await view.init();
+
+  const card = document.querySelector('.webtoy-card');
+  const cardText = card?.textContent ?? '';
+
+  expect(cardText).toContain('Try first: Halo glow starter • Halo intensity');
+  expect(cardText).toContain('Serene');
+  expect(cardText).toContain('Ethereal');
+  expect(cardText).toContain('Open');
+  expect(cardText).toContain('Preview');
+  expect(card?.querySelector('.webtoy-card-signals')).not.toBeNull();
+  expect(card?.querySelector('.capability-badge')).toBeNull();
+});
+
+test('falls back to interaction guidance for motion-led toys', async () => {
+  window.location.href = 'https://example.com/';
+  window.sessionStorage.clear();
+  window.localStorage.clear();
+
+  document.body.innerHTML = `
+    <p data-search-results></p>
+    <div data-active-filters>
+      <span data-active-filters-status></span>
+      <button data-active-filters-clear type="button">Clear all</button>
+    </div>
+    <form data-search-form>
+      <input id="toy-search" type="search" />
+      <button data-search-clear type="button">Clear</button>
+      <datalist id="toy-search-suggestions"></datalist>
+    </form>
+    <button data-filter-reset type="button">Reset</button>
+    <select data-sort-control>
+      <option value="featured">Featured</option>
+    </select>
+    <div id="toy-list"></div>
+  `;
+
+  const view = createLibraryView({
+    toys,
+    enableCapabilityBadges: true,
+  });
+
+  await view.init();
+
+  const motionCard = Array.from(document.querySelectorAll('.webtoy-card')).find(
+    (card) => card.textContent?.includes('Tilt Wave'),
+  );
+
+  expect(motionCard?.textContent).toContain('Try first: Tilt your device');
+  expect(motionCard?.textContent).toContain('Tilt');
+  expect(motionCard?.textContent).toContain('Energetic');
 });

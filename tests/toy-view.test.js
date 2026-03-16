@@ -82,6 +82,18 @@ describe('toy view helpers', () => {
     expect(onUseWebGPU).toHaveBeenCalledTimes(1);
   });
 
+  test('marks the active toy container when a blocking status is visible', () => {
+    const view = createToyView();
+
+    view.showCapabilityError(
+      { slug: 'webgpu-toy', title: 'Fancy WebGPU' },
+      { allowFallback: true, onContinue: mock() },
+    );
+
+    const container = document.getElementById('active-toy-container');
+    expect(container?.dataset.hasBlockingStatus).toBe('true');
+  });
+
   test('renders import error message for TypeScript modules', () => {
     const view = createToyView();
     const status = view.showImportError(

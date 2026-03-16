@@ -17,6 +17,7 @@ Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil
 - 🧠 **Toy index**: https://no.toil.fyi/toy.html
 - 📘 **Docs hub**: [`docs/README.md`](./docs/README.md)
 - 🧰 **Contribute**: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- 🤖 **Agent capability guide**: [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md)
 
 
 **Learn the basics in order**
@@ -70,6 +71,12 @@ Use these quick entry points:
 - [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md): toy implementation patterns and checklists.
 - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md): deployment and release guidance.
 - [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md): synchronization checklist for doc restructures and workflow changes.
+- [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md): repo-local `.agent` skills and workflows.
+
+Use the docs intentionally:
+
+- operational how-to docs in `docs/DEVELOPMENT.md`, `docs/TOY_DEVELOPMENT.md`, `docs/DEPLOYMENT.md`, and `docs/agents/*` are the current working guides,
+- audit, critique, and roadmap docs in `docs/` are useful context, but many are historical or planning-oriented rather than day-to-day instructions.
 
 When docs are added, renamed, moved, or deleted, update `docs/README.md` in the same change.
 

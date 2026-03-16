@@ -27,6 +27,13 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
 
 4. Open `http://localhost:5173`.
 
+## Where to look first
+
+- Current command/reference docs: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
+- Toy implementation guidance: [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md)
+- Canonical docs index: [`docs/README.md`](./docs/README.md)
+- Repo-local agent capabilities in `.agent/`: [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md)
+
 ## Quality checks
 
 Use these commands before opening a PR:

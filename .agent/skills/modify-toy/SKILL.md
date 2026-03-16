@@ -1,32 +1,57 @@
 ---
 name: modify-toy
-description: "Update an existing toy implementation and keep metadata/docs/tests synchronized. Use when asked to modify, tune, or refactor an existing stim."
+description: "Modify an existing toy safely. Use when a request changes a toy's visuals, controls, performance, metadata, tests, or toy-specific docs."
 ---
 
 # Modify an existing toy
 
-## Use when
+Use this skill when the target toy already exists and the change touches its behavior or supporting files.
 
-- A user asks to change behavior in an existing toy.
-- A toy needs updated controls, metadata, or docs after implementation changes.
+## First checks
 
-## Workflow
+1. Find the slug in `assets/data/toys.json`.
+2. Read the current implementation in `assets/js/toys/<slug>.ts`.
+3. Identify which of these may need updates:
+   - `docs/toys.md`
+   - `docs/TOY_SCRIPT_INDEX.md`
+   - tests under `tests/`
 
-1. Confirm the target slug and current metadata in `assets/data/toys.json`.
-2. Edit the toy module in `assets/js/toys/<slug>.ts` and preserve cleanup logic.
-3. Update related metadata/docs when behavior or controls change.
-4. Run checks:
+## Implementation rules
 
-```text
-run_quality_gate(scope: "toys")
-run_quality_gate(scope: "typecheck")
-run_quality_gate(scope: "full", timeoutMs: 600000)
+- Keep cleanup logic intact.
+- Preserve the loader contract unless the change intentionally updates it.
+- Prefer shared runtime/helpers over bespoke plumbing when refactoring.
+
+## Validation
+
+While iterating, use targeted tests where possible:
+
+```bash
+bun run test tests/path/to/spec.test.ts
 ```
 
-5. Optionally run browser validation and capture screenshot evidence when visuals changed.
-6. Finalize commit/PR metadata.
+When the change is ready:
 
-## Notes
+```bash
+bun run check
+```
 
-- For quick iteration, use `run_quality_gate(scope: "quick")`.
-- Pair with `/ship-toy-change` when the change spans multiple files and docs.
+If the toy slug, metadata, or docs changed, also run:
+
+```bash
+bun run check:toys
+```
+
+## Browser check
+
+If the change is visual, interactive, or performance-sensitive:
+
+```bash
+bun run play:toy <slug>
+```
+
+Or run a manual dev session with `bun run dev` and open `toy.html?toy=<slug>&agent=true`.
+
+## Escalation
+
+If the task spans implementation, docs sync, and PR-ready validation, use the `ship-toy-change` skill/workflow instead of treating it as a narrow toy edit.

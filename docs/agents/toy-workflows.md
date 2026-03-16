@@ -10,6 +10,8 @@ The repository includes markdown workflows under `.agent/workflows/`:
 - `/test-toy` — execute toy-focused tests.
 - `/ship-toy-change` — orchestrate implementation, checks, and metadata for toy updates.
 
+For the matching repo-local skills plus “when do I use which one?” guidance, see [`custom-capabilities.md`](./custom-capabilities.md).
+
 ## Common commands
 
 ```bash
@@ -18,6 +20,9 @@ bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --w
 
 # Validate toy registration, entry points, and docs index
 bun run check:toys
+
+# Scripted toy smoke run
+bun run play:toy <slug>
 
 # Local development server
 bun run dev
@@ -34,6 +39,6 @@ bun run check
 ## Manual verification flow
 
 1. Run `bun run dev`.
-2. Open `http://localhost:5173/toy.html?toy=<slug>`.
+2. Open `http://localhost:5173/toy.html?toy=<slug>&agent=true`.
 3. Use demo audio if microphone access is unavailable.
 4. Confirm render loop, controls, and cleanup behavior work as expected.
