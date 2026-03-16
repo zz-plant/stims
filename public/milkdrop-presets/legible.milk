@@ -1,0 +1,55 @@
+title=Terminal Word Grid
+author=Stims Alias Pack
+description=A retro terminal preset with grid-like mesh lines, phosphor greens, and measured pulse trails.
+
+fRating=4
+blend_duration=2.8
+decay=0.96
+zoom=1
+rot=0
+warp=0.04
+wave_mode=0
+wave_scale=0.78
+wave_smoothing=0.74
+wave_a=0.72
+wave_r=0.36
+wave_g=0.98
+wave_b=0.46
+wave_x=0.5
+wave_y=0.5
+wave_mystery=0.08
+wave_thick=1.2
+wave_additive=1
+wave_brighten=1
+mesh_density=26
+mesh_alpha=0.28
+mesh_r=0.12
+mesh_g=0.7
+mesh_b=0.22
+bg_r=0
+bg_g=0.04
+bg_b=0.02
+shape_1_enabled=1
+shape_1_sides=4
+shape_1_x=0.5
+shape_1_y=0.5
+shape_1_rad=0.26
+shape_1_ang=0
+shape_1_a=0.04
+shape_1_r=0.1
+shape_1_g=0.6
+shape_1_b=0.18
+shape_1_border_a=0.86
+shape_1_border_r=0.42
+shape_1_border_g=0.92
+shape_1_border_b=0.5
+shape_1_additive=0
+shape_1_thickoutline=1
+
+per_frame_1=wave_y = 0.5 + sin(time * 0.18) * 0.03
+per_frame_2=mesh_alpha = 0.2 + treble_att * 0.1
+per_frame_3=wave_a = 0.62 + bass_att * 0.14
+per_frame_4=rot = rot + beat_pulse * 0.001
+
+per_pixel_1=warp = warp + sin(rad * 7 + time * 0.32) * 0.008
+

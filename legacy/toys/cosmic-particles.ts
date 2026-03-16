@@ -1,0 +1,701 @@
+import * as THREE from 'three';
+import {
+  getActivePerformanceSettings,
+  type PerformanceSettings,
+} from '../core/performance-panel';
+import type { QualityPreset } from '../core/settings-panel';
+import type { ToyStartOptions } from '../core/toy-interface';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
+import {
+  getBandLevels,
+  getWeightedEnergy,
+  updateEnergyPeak,
+} from '../utils/audio-reactivity';
+import { createPerformanceSettingsHandler } from '../utils/performance-settings';
+import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { createAudioToyStarter } from '../utils/toy-runtime-starter';
+import {
+  buildToySettingsPanelWithPerformance,
+  createToyQualityControls,
+} from '../utils/toy-settings';
+import type { UnifiedInputState } from '../utils/unified-input';
+
+type PresetKey = 'orbit' | 'nebula';
+
+type PresetInstance = {
+  animate: (data: Uint8Array, time: number) => void;
+  dispose: () => void;
+};
+
+export function start({ container }: ToyStartOptions = {}) {
+  const { quality } = createToyQualityControls({
+    title: 'Cosmic controls',
+    description:
+      'Quality changes persist between toys so you can cap DPI or ramp visuals.',
+    defaultPresetId: 'balanced',
+    getRuntime: () => runtime,
+    getRendererSettings: (preset) => ({
+      maxPixelRatio: performanceSettings.maxPixelRatio,
+      renderScale: preset.renderScale,
+    }),
+    onChange: () => {
+      setActivePreset(activePresetKey, { force: true });
+    },
+  });
+  let performanceSettings = getActivePerformanceSettings();
+  let performanceSettingsHandler: ReturnType<
+    typeof createPerformanceSettingsHandler
+  > | null = null;
+  let runtime: ToyRuntimeInstance;
+
+  let activePreset: PresetInstance | null = null;
+  let activePresetKey: PresetKey = 'orbit';
+
+  const controls = {
+    motionBoost: 1,
+    colorDrift: 0,
+  };
+  let targetMotionBoost = controls.motionBoost;
+  let targetColorDrift = controls.colorDrift;
+  let rotationLatch = 0;
+  let audioPeak = 0.03;
+  let bassPeak = 0.03;
+  let treblePeak = 0.03;
+  let previousBass = 0;
+  let previousTreble = 0;
+
+  function getParticleScale(quality: QualityPreset) {
+    return (quality.particleScale ?? 1) * performanceSettings.particleBudget;
+  }
+
+  function createOrbitPreset(quality: QualityPreset): PresetInstance {
+    const group = new THREE.Group();
+
+    const particlesGeometry = new THREE.BufferGeometry();
+    const detail = performanceSettings.shaderQuality === 'high' ? 1.2 : 1;
+    const count = Math.max(
+      900,
+      Math.floor(2400 * getParticleScale(quality) * detail),
+    );
+    const positions = new Float32Array(count * 3);
+    const baseRadii = new Float32Array(count);
+    const baseAngles = new Float32Array(count);
+    const verticalOffsets = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      const radius = Math.sqrt(Math.random()) * 46;
+      const angle = Math.random() * Math.PI * 2;
+      const armOffset = Math.sin(radius * 0.22 + angle * 2.5) * 2.4;
+      const yOffset = (Math.random() - 0.5) * 18;
+
+      baseRadii[i] = radius;
+      baseAngles[i] = angle;
+      verticalOffsets[i] = yOffset;
+
+      positions[i3] = Math.cos(angle + armOffset) * radius;
+      positions[i3 + 1] = yOffset;
+      positions[i3 + 2] = Math.sin(angle + armOffset) * radius;
+    }
+
+    particlesGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(positions, 3),
+    );
+
+    const particlesMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 1.6,
+      transparent: true,
+      opacity: 0.9,
+      blending:
+        performanceSettings.shaderQuality === 'low'
+          ? THREE.NormalBlending
+          : THREE.AdditiveBlending,
+    });
+
+    const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+    group.add(particles);
+
+    const light = new THREE.PointLight(0xffffff, 0.8);
+    light.position.set(15, 20, 30);
+    group.add(light);
+
+    const ambientGlow = new THREE.PointLight(0x4f6bff, 0.45, 180);
+    ambientGlow.position.set(-20, 8, -24);
+    group.add(ambientGlow);
+
+    runtime.toy.scene.add(group);
+    runtime.toy.camera.position.set(0, 0, 60);
+
+    return {
+      animate(data, time) {
+        const bands = getBandLevels({ data });
+        const weightedEnergy = getWeightedEnergy(bands, { boost: 1.55 });
+        audioPeak = updateEnergyPeak(audioPeak, weightedEnergy, {
+          decay: 0.94,
+          floor: 0.03,
+        });
+        bassPeak = updateEnergyPeak(bassPeak, bands.bass, {
+          decay: 0.91,
+          floor: 0.025,
+        });
+        treblePeak = updateEnergyPeak(treblePeak, bands.treble, {
+          decay: 0.89,
+          floor: 0.02,
+        });
+        const bassRise = Math.max(0, bands.bass - previousBass);
+        const trebleRise = Math.max(0, bands.treble - previousTreble);
+        previousBass = bands.bass;
+        previousTreble = bands.treble;
+
+        controls.motionBoost = THREE.MathUtils.lerp(
+          controls.motionBoost,
+          targetMotionBoost,
+          0.08,
+        );
+        controls.colorDrift = THREE.MathUtils.lerp(
+          controls.colorDrift,
+          targetColorDrift,
+          0.08,
+        );
+
+        const motionEnergy =
+          (audioPeak * 0.75 + bassPeak * 0.55 + bands.mid * 0.35) *
+          controls.motionBoost;
+        const rotationSpeed = 0.002 + motionEnergy * 0.009 + bassRise * 0.008;
+
+        const animatedPositions = particles.geometry.attributes.position
+          .array as Float32Array;
+        for (let i = 0; i < count; i++) {
+          const i3 = i * 3;
+          const pulse =
+            1 +
+            motionEnergy * 0.22 +
+            bassPeak * 0.18 +
+            Math.sin(time * 2 + i * 0.04) * (0.04 + treblePeak * 0.08);
+          const orbitAngle =
+            baseAngles[i] +
+            time * (0.25 + (baseRadii[i] / 46) * (0.65 + bassPeak * 0.75)) +
+            Math.sin(time + i * 0.015) * (0.05 + bands.mid * 0.08);
+
+          animatedPositions[i3] = Math.cos(orbitAngle) * baseRadii[i] * pulse;
+          animatedPositions[i3 + 1] =
+            verticalOffsets[i] +
+            Math.sin(time * (1.4 + bands.mid * 0.7) + i * 0.05) *
+              (0.4 + bands.mid * 3 + trebleRise * 1.4);
+          animatedPositions[i3 + 2] =
+            Math.sin(orbitAngle) * baseRadii[i] * pulse;
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+
+        particles.rotation.y += rotationSpeed;
+        particles.rotation.x += rotationSpeed / 2;
+
+        particlesMaterial.size = 1.3 + audioPeak * 1.5 + treblePeak * 2.2;
+        const hue =
+          (time * 0.08 +
+            bands.mid * 0.16 +
+            treblePeak * 0.12 +
+            controls.colorDrift) %
+          1;
+        particlesMaterial.color.setHSL(
+          hue,
+          0.82 + treblePeak * 0.14,
+          0.58 + bassPeak * 0.18,
+        );
+
+        light.intensity = 0.8 + bassPeak * 1.9 + audioPeak * 0.6;
+        ambientGlow.intensity = 0.45 + treblePeak * 1.1 + bands.mid * 0.55;
+
+        runtime.toy.camera.position.x =
+          Math.sin(time * (0.35 + bands.mid * 0.1)) *
+          (6 + controls.motionBoost * 2 + treblePeak * 2);
+        runtime.toy.camera.position.y =
+          Math.cos(time * (0.24 + bassPeak * 0.08)) *
+          (4 + controls.motionBoost + bassPeak * 3);
+        runtime.toy.camera.lookAt(0, 0, 0);
+
+        runtime.toy.render();
+      },
+      dispose() {
+        runtime.toy.scene.remove(group);
+        disposeGeometry(particlesGeometry);
+        disposeMaterial(particlesMaterial);
+      },
+    };
+  }
+
+  function createStarSpriteTexture() {
+    const svg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+        <defs>
+          <radialGradient id="g" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="white" stop-opacity="1"/>
+            <stop offset="40%" stop-color="white" stop-opacity="0.85"/>
+            <stop offset="100%" stop-color="white" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="60" cy="60" r="58" fill="url(#g)"/>
+        <path d="M60 10 L66 48 L110 60 L66 72 L60 110 L54 72 L10 60 L54 48 Z" fill="white" fill-opacity="0.38"/>
+      </svg>
+    `);
+    const texture = new THREE.TextureLoader().load(
+      `data:image/svg+xml;charset=utf-8,${svg}`,
+    );
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  function createNebulaPreset(quality: QualityPreset): PresetInstance {
+    const group = new THREE.Group();
+
+    const starGeometry = new THREE.BufferGeometry();
+    const shaderDetail =
+      performanceSettings.shaderQuality === 'high'
+        ? 1.25
+        : performanceSettings.shaderQuality === 'low'
+          ? 0.9
+          : 1;
+    const STAR_COUNT = Math.max(
+      1200,
+      Math.floor(4000 * getParticleScale(quality) * shaderDetail),
+    );
+    const starPositions = new Float32Array(STAR_COUNT * 3);
+    const starSizes = new Float32Array(STAR_COUNT);
+    const starColors = new Float32Array(STAR_COUNT * 3);
+
+    for (let i = 0; i < STAR_COUNT; i++) {
+      const i3 = i * 3;
+      starPositions[i3] = (Math.random() - 0.5) * 400;
+      starPositions[i3 + 1] = (Math.random() - 0.5) * 400;
+      starPositions[i3 + 2] = (Math.random() - 0.5) * 800 - 200;
+
+      starSizes[i] = Math.random() * 2 + 0.5;
+
+      const colorChoice = Math.random();
+      if (colorChoice < 0.7) {
+        starColors[i3] = 1;
+        starColors[i3 + 1] = 1;
+        starColors[i3 + 2] = 1;
+      } else if (colorChoice < 0.85) {
+        starColors[i3] = 0.6;
+        starColors[i3 + 1] = 0.8;
+        starColors[i3 + 2] = 1;
+      } else {
+        starColors[i3] = 1;
+        starColors[i3 + 1] = 0.9;
+        starColors[i3 + 2] = 0.6;
+      }
+    }
+
+    const positionAttribute = new THREE.BufferAttribute(starPositions, 3);
+    positionAttribute.setUsage(THREE.DynamicDrawUsage);
+    starGeometry.setAttribute('position', positionAttribute);
+
+    const sizeAttribute = new THREE.BufferAttribute(starSizes, 1);
+    sizeAttribute.setUsage(THREE.DynamicDrawUsage);
+    starGeometry.setAttribute('size', sizeAttribute);
+    starGeometry.setAttribute(
+      'color',
+      new THREE.BufferAttribute(starColors, 3),
+    );
+
+    const starPhases = new Float32Array(STAR_COUNT);
+    for (let i = 0; i < STAR_COUNT; i++) {
+      starPhases[i] = Math.random() * Math.PI * 2;
+    }
+    starGeometry.setAttribute(
+      'phase',
+      new THREE.BufferAttribute(starPhases, 1),
+    );
+
+    const starSpriteTexture = createStarSpriteTexture();
+    const starMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uAudio: { value: 0 },
+        uTint: { value: new THREE.Color(0x99bbff) },
+        uSprite: { value: starSpriteTexture },
+      },
+      vertexShader: `
+        attribute float size;
+        attribute vec3 color;
+        attribute float phase;
+
+        uniform float uTime;
+        uniform float uAudio;
+
+        varying vec3 vColor;
+        varying float vPulse;
+        varying float vPhase;
+
+        void main() {
+          vColor = color;
+          vPhase = phase;
+          float pulse = 0.72 + sin(uTime * 5.0 + phase) * 0.28 + uAudio * 0.3;
+          vPulse = pulse;
+
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = size * pulse * (220.0 / max(1.0, -mvPosition.z));
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D uSprite;
+        uniform vec3 uTint;
+        uniform float uTime;
+        uniform float uAudio;
+
+        varying vec3 vColor;
+        varying float vPulse;
+        varying float vPhase;
+
+        float hash21(vec2 p) {
+          p = fract(p * vec2(234.34, 879.54));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+
+        void main() {
+          vec2 uv = gl_PointCoord;
+          vec4 sprite = texture2D(uSprite, uv);
+          float d = distance(uv, vec2(0.5));
+          float edge = smoothstep(0.52, 0.06, d);
+          float flicker = 0.9 + hash21(uv * 21.0 + vec2(vPhase, uTime * 0.2)) * 0.18;
+          vec3 color = vColor * uTint * (vPulse * flicker + uAudio * 0.35);
+          float alpha = sprite.a * edge;
+          if (alpha < 0.01) discard;
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    group.add(stars);
+
+    const nebulaGeometry = new THREE.BufferGeometry();
+    const NEBULA_COUNT = Math.max(
+      80,
+      Math.floor(200 * getParticleScale(quality) * shaderDetail),
+    );
+    const nebulaPositions = new Float32Array(NEBULA_COUNT * 3);
+    const nebulaColors = new Float32Array(NEBULA_COUNT * 3);
+
+    for (let i = 0; i < NEBULA_COUNT; i++) {
+      const i3 = i * 3;
+      const clusterX = (Math.floor(Math.random() * 3) - 1) * 100;
+      const clusterY = (Math.floor(Math.random() * 3) - 1) * 50;
+      nebulaPositions[i3] = clusterX + (Math.random() - 0.5) * 80;
+      nebulaPositions[i3 + 1] = clusterY + (Math.random() - 0.5) * 60;
+      nebulaPositions[i3 + 2] = (Math.random() - 0.5) * 200 - 100;
+
+      const hue = 0.7 + Math.random() * 0.3;
+      const color = new THREE.Color().setHSL(hue % 1, 0.6, 0.5);
+      nebulaColors[i3] = color.r;
+      nebulaColors[i3 + 1] = color.g;
+      nebulaColors[i3 + 2] = color.b;
+    }
+
+    nebulaGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(nebulaPositions, 3),
+    );
+    nebulaGeometry.setAttribute(
+      'color',
+      new THREE.BufferAttribute(nebulaColors, 3),
+    );
+
+    const nebulaMaterial = new THREE.PointsMaterial({
+      size: 15,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.3,
+      sizeAttenuation: true,
+    });
+
+    const nebulaParticles = new THREE.Points(nebulaGeometry, nebulaMaterial);
+    group.add(nebulaParticles);
+
+    const purpleLight = new THREE.PointLight(0x8800ff, 0.5, 500);
+    purpleLight.position.set(-100, 50, -200);
+    group.add(purpleLight);
+
+    const blueLight = new THREE.PointLight(0x0088ff, 0.5, 500);
+    blueLight.position.set(100, -50, -200);
+    group.add(blueLight);
+
+    runtime.toy.scene.add(group);
+    runtime.toy.camera.position.set(0, 0, 100);
+
+    return {
+      animate(data, time) {
+        const bands = getBandLevels({ data });
+        const weightedEnergy = getWeightedEnergy(bands, { boost: 1.6 });
+        audioPeak = updateEnergyPeak(audioPeak, weightedEnergy, {
+          decay: 0.94,
+          floor: 0.03,
+        });
+        bassPeak = updateEnergyPeak(bassPeak, bands.bass, {
+          decay: 0.91,
+          floor: 0.025,
+        });
+        treblePeak = updateEnergyPeak(treblePeak, bands.treble, {
+          decay: 0.89,
+          floor: 0.02,
+        });
+        const bassRise = Math.max(0, bands.bass - previousBass);
+        const trebleRise = Math.max(0, bands.treble - previousTreble);
+        previousBass = bands.bass;
+        previousTreble = bands.treble;
+
+        controls.motionBoost = THREE.MathUtils.lerp(
+          controls.motionBoost,
+          targetMotionBoost,
+          0.08,
+        );
+        controls.colorDrift = THREE.MathUtils.lerp(
+          controls.colorDrift,
+          targetColorDrift,
+          0.08,
+        );
+
+        const warpEnergy =
+          (audioPeak * 0.72 + bassPeak * 0.55 + treblePeak * 0.35) *
+          controls.motionBoost;
+
+        const positions = stars.geometry.attributes.position
+          .array as Float32Array;
+        const warpSpeed = 0.5 + warpEnergy * 4.5 + bassRise * 3;
+
+        for (let i = 0; i < STAR_COUNT; i++) {
+          const i3 = i * 3;
+          positions[i3 + 2] += warpSpeed;
+          positions[i3] += Math.sin(time * 0.7 + i * 0.03) * trebleRise * 1.8;
+          positions[i3 + 1] += Math.cos(time * 0.55 + i * 0.02) * bands.mid;
+
+          if (positions[i3 + 2] > 100) {
+            positions[i3 + 2] = -600;
+            positions[i3] = (Math.random() - 0.5) * 400;
+            positions[i3 + 1] = (Math.random() - 0.5) * 400;
+          }
+        }
+        stars.geometry.attributes.position.needsUpdate = true;
+
+        const sizes = stars.geometry.attributes.size.array as Float32Array;
+        for (let i = 0; i < STAR_COUNT; i++) {
+          const twinkle =
+            Math.sin(time * (10 + treblePeak * 9) + i * 0.1) * 0.3 + 0.7;
+          sizes[i] =
+            starSizes[i] *
+            twinkle *
+            (1 + audioPeak * 0.45 + treblePeak * 0.8 + trebleRise * 0.9);
+        }
+        stars.geometry.attributes.size.needsUpdate = true;
+
+        stars.rotation.z += 0.0002 + warpEnergy * 0.0014 + trebleRise * 0.001;
+
+        nebulaParticles.rotation.y += 0.001 + bands.mid * 0.003;
+        nebulaParticles.rotation.x =
+          Math.sin(time * (0.1 + bands.mid * 0.08)) * (0.1 + bassPeak * 0.18);
+        (nebulaParticles.material as THREE.PointsMaterial).opacity =
+          0.2 + audioPeak * 0.18 + bassPeak * 0.14 + treblePeak * 0.16;
+
+        const hueBase = (time * 0.05 + controls.colorDrift) % 1;
+        starMaterial.uniforms.uTime.value = time;
+        starMaterial.uniforms.uAudio.value =
+          warpEnergy * 0.65 + treblePeak * 0.55;
+        starMaterial.uniforms.uTint.value.setHSL(
+          (hueBase + bands.mid * 0.08 + treblePeak * 0.05) % 1,
+          0.65 + treblePeak * 0.16,
+          0.74 + bassPeak * 0.16,
+        );
+
+        runtime.toy.camera.position.x =
+          Math.sin(time * (0.3 + bands.mid * 0.08)) *
+          (8 + controls.motionBoost * 2 + treblePeak * 2.5);
+        runtime.toy.camera.position.y =
+          Math.cos(time * (0.2 + bassPeak * 0.06)) *
+          (4 + controls.motionBoost + bassPeak * 3.2);
+        runtime.toy.camera.lookAt(0, 0, -100);
+
+        runtime.toy.render();
+      },
+      dispose() {
+        runtime.toy.scene.remove(group);
+        disposeGeometry(starGeometry);
+        disposeMaterial(starMaterial);
+        starSpriteTexture.dispose();
+        disposeGeometry(nebulaGeometry);
+        disposeMaterial(nebulaMaterial);
+      },
+    };
+  }
+
+  function setActivePreset(key: PresetKey, { force } = { force: false }) {
+    if (key === activePresetKey && activePreset && !force) return;
+
+    activePreset?.dispose();
+    activePreset =
+      key === 'orbit'
+        ? createOrbitPreset(quality.activeQuality)
+        : createNebulaPreset(quality.activeQuality);
+    activePresetKey = key;
+  }
+
+  function applyPerformanceSettings(settings: PerformanceSettings) {
+    performanceSettings = settings;
+    setActivePreset(activePresetKey, { force: true });
+  }
+
+  function setupSettingsPanel() {
+    buildToySettingsPanelWithPerformance({
+      title: 'Cosmic controls',
+      description:
+        'Quality changes persist between toys so you can cap DPI or ramp visuals.',
+      quality,
+      performance: {
+        title: 'Performance',
+        description:
+          'Cap DPI, trim particle budgets, or lower shader detail for smoother play.',
+      },
+      sections: [
+        {
+          title: 'Cosmic preset',
+          description:
+            'Switch between swirling orbits and deep nebula fly-throughs.',
+          controls: [
+            {
+              type: 'button-group',
+              options: [
+                { id: 'orbit', label: 'Orbit' },
+                { id: 'nebula', label: 'Nebula' },
+              ],
+              getActiveId: () => activePresetKey,
+              onChange: (key) => setActivePreset(key as PresetKey),
+              buttonClassName: 'cta-button',
+              activeClassName: 'active',
+              setDisabledOnActive: true,
+              setAriaPressed: false,
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  function animate(data: Uint8Array, time: number) {
+    activePreset?.animate(data, time);
+  }
+
+  function cyclePreset() {
+    setActivePreset(activePresetKey === 'orbit' ? 'nebula' : 'orbit');
+  }
+
+  function handleInput(state: UnifiedInputState | null) {
+    if (!state || state.pointerCount === 0) {
+      rotationLatch = 0;
+      return;
+    }
+
+    targetMotionBoost = THREE.MathUtils.clamp(
+      1 + state.normalizedCentroid.y * 0.6,
+      0.65,
+      1.9,
+    );
+
+    const gesture = state.gesture;
+    if (!gesture || gesture.pointerCount < 2) return;
+
+    targetMotionBoost = THREE.MathUtils.clamp(
+      targetMotionBoost + (gesture.scale - 1) * 0.55,
+      0.65,
+      2.2,
+    );
+
+    if (rotationLatch <= 0.45 && gesture.rotation > 0.45) {
+      targetColorDrift = (targetColorDrift + 0.08) % 1;
+      cyclePreset();
+    } else if (rotationLatch >= -0.45 && gesture.rotation < -0.45) {
+      targetColorDrift = (targetColorDrift - 0.08 + 1) % 1;
+      cyclePreset();
+    }
+    rotationLatch = gesture.rotation;
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowRight') {
+      cyclePreset();
+    } else if (event.key === 'ArrowLeft') {
+      cyclePreset();
+    } else if (event.key === 'ArrowUp') {
+      targetMotionBoost = THREE.MathUtils.clamp(
+        targetMotionBoost + 0.1,
+        0.65,
+        2.2,
+      );
+    } else if (event.key === 'ArrowDown') {
+      targetMotionBoost = THREE.MathUtils.clamp(
+        targetMotionBoost - 0.1,
+        0.65,
+        2.2,
+      );
+    }
+  }
+
+  setupSettingsPanel();
+  const startRuntime = createAudioToyStarter({
+    toyOptions: {
+      cameraOptions: { position: { x: 0, y: 0, z: 80 } },
+      ambientLightOptions: { intensity: 0.35 },
+      rendererOptions: {
+        maxPixelRatio: performanceSettings.maxPixelRatio,
+      },
+    },
+    audio: { fftSize: 256 },
+    input: {
+      onInput: (state) => handleInput(state),
+    },
+    plugins: [
+      {
+        name: 'cosmic-particles',
+        setup: (runtimeInstance) => {
+          runtime = runtimeInstance;
+          setupSettingsPanel();
+          setActivePreset(activePresetKey);
+          window.addEventListener('keydown', handleKeydown);
+        },
+        update: ({ frequencyData, time }) => {
+          animate(frequencyData, time);
+        },
+        dispose: () => {
+          activePreset?.dispose();
+          window.removeEventListener('keydown', handleKeydown);
+        },
+      },
+    ],
+  });
+
+  runtime = startRuntime({ container });
+  performanceSettingsHandler = createPerformanceSettingsHandler({
+    applyRendererSettings: (settings) => {
+      runtime.toy.updateRendererSettings({
+        maxPixelRatio: settings.maxPixelRatio,
+        renderScale: quality.activeQuality.renderScale,
+      });
+    },
+    onChange: applyPerformanceSettings,
+  });
+  performanceSettings = performanceSettingsHandler.getSettings();
+
+  return {
+    ...runtime,
+    dispose: () => {
+      performanceSettingsHandler?.dispose();
+      runtime.dispose();
+    },
+  };
+}

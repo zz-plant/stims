@@ -9,6 +9,7 @@ import type { ToyWindow } from '../core/toy-globals.ts';
 import toyManifest from '../data/toy-manifest.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
 import type { createLoader } from '../loader.ts';
+import { requestMilkdropPresetSelection } from '../milkdrop/preset-selection.ts';
 import { initAudioControls } from '../ui/audio-controls.ts';
 import { initSystemControls } from '../ui/system-controls.ts';
 import { isSmartTvDevice } from '../utils/device-detect.ts';
@@ -189,6 +190,12 @@ export function bootToyPage({
       gestureHints,
       starterPresetId,
       starterPresetLabel,
+      onApplyStarterPreset: starterPresetId
+        ? () => {
+            requestMilkdropPresetSelection(starterPresetId);
+            startLoaderIfNeeded();
+          }
+        : undefined,
       ...audioInitState,
       preferDemoAudio:
         shouldPreferDemoAudio({

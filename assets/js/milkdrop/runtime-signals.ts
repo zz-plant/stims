@@ -49,19 +49,38 @@ export function createMilkdropSignalTracker() {
       );
       rms = rms * 0.82 + (analyser?.getRmsLevel() ?? weightedEnergy) * 0.18;
 
+      const bass = bands.bass;
+      const mid = bands.mid;
+      const treble = bands.treble;
+      const bassAtt = update.smoothedBands.bass;
+      const midsAtt = update.smoothedBands.mid;
+      const trebleAtt = update.smoothedBands.treble;
+      const beatPulse = update.beatIntensity;
+
       return {
         time,
         deltaMs,
         frame,
-        bass: bands.bass,
-        mids: bands.mid,
-        treble: bands.treble,
-        bassAtt: update.smoothedBands.bass,
-        midsAtt: update.smoothedBands.mid,
-        trebleAtt: update.smoothedBands.treble,
+        fps: deltaMs > 0 ? 1000 / deltaMs : 60,
+        bass,
+        mid,
+        mids: mid,
+        treb: treble,
+        treble,
+        bassAtt,
+        midsAtt,
+        trebleAtt,
+        bass_att: bassAtt,
+        mid_att: midsAtt,
+        mids_att: midsAtt,
+        treb_att: trebleAtt,
+        treble_att: trebleAtt,
         rms,
+        vol: rms,
+        music: weightedEnergy,
         beat: update.isBeat ? 1 : 0,
-        beatPulse: update.beatIntensity,
+        beatPulse,
+        beat_pulse: beatPulse,
         weightedEnergy,
         frequencyData,
       };

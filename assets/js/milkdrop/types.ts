@@ -80,13 +80,86 @@ export type MilkdropProgramBlock = {
   sourceLines: string[];
 };
 
+export type MilkdropFeatureKey =
+  | 'base-globals'
+  | 'per-frame-equations'
+  | 'per-pixel-equations'
+  | 'custom-waves'
+  | 'custom-shapes'
+  | 'borders'
+  | 'video-echo'
+  | 'post-effects'
+  | 'unsupported-shader-text';
+
+export type MilkdropSupportStatus = 'supported' | 'partial' | 'unsupported';
+
+export type MilkdropBackendSupport = {
+  status: MilkdropSupportStatus;
+  reasons: string[];
+  requiredFeatures: MilkdropFeatureKey[];
+  unsupportedFeatures: MilkdropFeatureKey[];
+  recommendedFallback?: 'webgl' | 'webgpu';
+};
+
+export type MilkdropFeatureAnalysis = {
+  featuresUsed: MilkdropFeatureKey[];
+  unsupportedShaderText: boolean;
+  registerUsage: {
+    q: number;
+    t: number;
+  };
+};
+
 export type MilkdropCompatibilityReport = {
-  webgl: boolean;
-  webgpu: boolean;
+  backends: {
+    webgl: MilkdropBackendSupport;
+    webgpu: MilkdropBackendSupport;
+  };
+  featureAnalysis: MilkdropFeatureAnalysis;
   warnings: string[];
   blockingReasons: string[];
   supportedFeatures: string[];
   unsupportedKeys: string[];
+  webgl: boolean;
+  webgpu: boolean;
+};
+
+export type MilkdropWavePrograms = {
+  init: MilkdropProgramBlock;
+  perFrame: MilkdropProgramBlock;
+  perPoint: MilkdropProgramBlock;
+};
+
+export type MilkdropShapePrograms = {
+  init: MilkdropProgramBlock;
+  perFrame: MilkdropProgramBlock;
+};
+
+export type MilkdropWaveDefinition = {
+  index: number;
+  fields: Record<string, number>;
+  programs: MilkdropWavePrograms;
+};
+
+export type MilkdropShapeDefinition = {
+  index: number;
+  fields: Record<string, number>;
+  programs: MilkdropShapePrograms;
+};
+
+export type MilkdropBorderDefinition = {
+  outer: Record<string, number>;
+  inner: Record<string, number>;
+};
+
+export type MilkdropPostEffects = {
+  brighten: boolean;
+  darken: boolean;
+  solarize: boolean;
+  invert: boolean;
+  videoEchoEnabled: boolean;
+  videoEchoAlpha: number;
+  videoEchoZoom: number;
 };
 
 export type MilkdropPresetIR = {
@@ -100,6 +173,12 @@ export type MilkdropPresetIR = {
     perFrame: MilkdropProgramBlock;
     perPixel: MilkdropProgramBlock;
   };
+  globals: Record<string, number>;
+  mainWave: Record<string, number>;
+  customWaves: MilkdropWaveDefinition[];
+  customShapes: MilkdropShapeDefinition[];
+  borders: MilkdropBorderDefinition;
+  post: MilkdropPostEffects;
   compatibility: MilkdropCompatibilityReport;
 };
 
@@ -128,6 +207,13 @@ export type MilkdropPolyline = {
   closed?: boolean;
 };
 
+export type MilkdropWaveVisual = MilkdropPolyline & {
+  drawMode: 'line' | 'dots';
+  additive: boolean;
+  pointSize: number;
+  spectrum?: boolean;
+};
+
 export type MilkdropMeshVisual = {
   positions: number[];
   color: MilkdropColor;
@@ -142,24 +228,54 @@ export type MilkdropShapeVisual = {
   sides: number;
   rotation: number;
   color: MilkdropColor;
+  secondaryColor?: MilkdropColor | null;
   borderColor: MilkdropColor;
   additive: boolean;
   thickOutline: boolean;
+};
+
+export type MilkdropBorderVisual = {
+  key: 'outer' | 'inner';
+  size: number;
+  color: MilkdropColor;
+  alpha: number;
+};
+
+export type MilkdropPostVisual = {
+  brighten: boolean;
+  darken: boolean;
+  solarize: boolean;
+  invert: boolean;
+  videoEchoEnabled: boolean;
+  videoEchoAlpha: number;
+  videoEchoZoom: number;
+  warp: number;
 };
 
 export type MilkdropRuntimeSignals = {
   time: number;
   deltaMs: number;
   frame: number;
+  fps: number;
   bass: number;
+  mid: number;
   mids: number;
+  treb: number;
   treble: number;
   bassAtt: number;
   midsAtt: number;
   trebleAtt: number;
+  bass_att: number;
+  mid_att: number;
+  mids_att: number;
+  treb_att: number;
+  treble_att: number;
   rms: number;
+  vol: number;
+  music: number;
   beat: number;
   beatPulse: number;
+  beat_pulse: number;
   weightedEnergy: number;
   frequencyData: Uint8Array;
 };
@@ -168,23 +284,34 @@ export type MilkdropFrameState = {
   presetId: string;
   title: string;
   background: MilkdropColor;
-  waveform: MilkdropPolyline;
+  waveform: MilkdropWaveVisual;
+  mainWave: MilkdropWaveVisual;
+  customWaves: MilkdropWaveVisual[];
   trails: MilkdropPolyline[];
   mesh: MilkdropMeshVisual;
   shapes: MilkdropShapeVisual[];
+  borders: MilkdropBorderVisual[];
+  post: MilkdropPostVisual;
   signals: MilkdropRuntimeSignals;
   variables: Record<string, number>;
   compatibility: MilkdropCompatibilityReport;
 };
 
+export type MilkdropBlendState = {
+  background: MilkdropColor;
+  waveform: MilkdropWaveVisual;
+  mainWave: MilkdropWaveVisual;
+  customWaves: MilkdropWaveVisual[];
+  trails: MilkdropPolyline[];
+  shapes: MilkdropShapeVisual[];
+  borders: MilkdropBorderVisual[];
+  post: MilkdropPostVisual;
+  alpha: number;
+};
+
 export type MilkdropRenderPayload = {
   frameState: MilkdropFrameState;
-  blendState?: {
-    waveform: MilkdropPolyline | null;
-    trails: MilkdropPolyline[];
-    shapes: MilkdropShapeVisual[];
-    alpha: number;
-  } | null;
+  blendState?: MilkdropBlendState | null;
 };
 
 export interface MilkdropVM {
@@ -225,11 +352,15 @@ export type MilkdropCatalogEntry = {
   tags: string[];
   curatedRank?: number;
   isFavorite: boolean;
+  rating: number;
   lastOpenedAt?: number;
   updatedAt?: number;
+  historyIndex?: number;
+  featuresUsed: MilkdropFeatureKey[];
+  warnings: string[];
   supports: {
-    webgl: boolean;
-    webgpu: boolean;
+    webgl: MilkdropBackendSupport;
+    webgpu: MilkdropBackendSupport;
   };
   bundledFile?: string;
 };
@@ -242,7 +373,10 @@ export interface MilkdropCatalogStore {
   saveDraft(id: string, raw: string): Promise<void>;
   getDraft(id: string): Promise<string | null>;
   setFavorite(id: string, favorite: boolean): Promise<void>;
+  setRating(id: string, rating: number): Promise<void>;
   recordRecent(id: string): Promise<void>;
+  pushHistory(id: string): Promise<void>;
+  getHistory(): Promise<string[]>;
 }
 
 export type MilkdropEditorSessionState = {

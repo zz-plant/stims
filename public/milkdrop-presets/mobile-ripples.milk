@@ -1,0 +1,71 @@
+title=Mobile Ripples
+author=Stims Alias Pack
+description=A low-motion ripple preset with neon rings, calm drift, and lightweight audio response.
+
+fRating=4
+blend_duration=3.1
+decay=0.97
+zoom=1
+rot=0.002
+warp=0.05
+wave_mode=1
+wave_scale=0.86
+wave_smoothing=0.74
+wave_a=0.74
+wave_r=0.62
+wave_g=0.52
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+wave_mystery=0.08
+wave_thick=1.3
+wave_additive=1
+wave_brighten=1
+mesh_density=12
+mesh_alpha=0.1
+mesh_r=0.44
+mesh_g=0.34
+mesh_b=0.92
+bg_r=0.03
+bg_g=0.02
+bg_b=0.08
+shape_1_enabled=1
+shape_1_sides=24
+shape_1_x=0.5
+shape_1_y=0.5
+shape_1_rad=0.22
+shape_1_ang=0.1
+shape_1_a=0.05
+shape_1_r=0.66
+shape_1_g=0.56
+shape_1_b=1
+shape_1_border_a=0.86
+shape_1_border_r=0.9
+shape_1_border_g=0.84
+shape_1_border_b=1
+shape_1_additive=1
+shape_1_thickoutline=1
+shape_2_enabled=1
+shape_2_sides=24
+shape_2_x=0.5
+shape_2_y=0.5
+shape_2_rad=0.34
+shape_2_ang=0.2
+shape_2_a=0.04
+shape_2_r=0.42
+shape_2_g=0.36
+shape_2_b=0.96
+shape_2_border_a=0.86
+shape_2_border_r=0.8
+shape_2_border_g=0.76
+shape_2_border_b=1
+shape_2_additive=1
+shape_2_thickoutline=1
+
+per_frame_1=wave_scale = 0.82 + bass_att * 0.08
+per_frame_2=shape_1_rad = 0.2 + bass_att * 0.05
+per_frame_3=shape_2_rad = 0.3 + mids_att * 0.04
+per_frame_4=rot = rot + 0.001
+
+per_pixel_1=warp = warp + sin(rad * 8 + time * 0.32) * 0.01
+

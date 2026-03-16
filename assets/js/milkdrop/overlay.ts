@@ -14,21 +14,26 @@ import type {
   MilkdropCompiledPreset,
   MilkdropEditorSessionState,
   MilkdropFrameState,
+  MilkdropSupportStatus,
 } from './types';
 
 type OverlayCallbacks = {
   onSelectPreset: (id: string) => void;
   onToggleFavorite: (id: string, favorite: boolean) => void;
+  onSetRating: (id: string, rating: number) => void;
   onToggleAutoplay: (enabled: boolean) => void;
+  onGoBackPreset: () => void;
+  onNextPreset: () => void;
+  onPreviousPreset: () => void;
   onRandomize: () => void;
   onBlendDurationChange: (value: number) => void;
   onImportFiles: (files: FileList) => void;
   onExport: () => void;
   onDuplicatePreset: () => void;
+  onDeletePreset: () => void;
   onEditorSourceChange: (source: string) => void;
   onRevertToActive: () => void;
   onInspectorFieldChange: (key: string, value: string | number) => void;
-  onRetryWebGL: () => void;
 };
 
 function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
@@ -37,6 +42,16 @@ function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
     button.classList.toggle('is-active', isActive);
     button.setAttribute('aria-pressed', String(isActive));
   });
+}
+
+function supportLabel(status: MilkdropSupportStatus) {
+  if (status === 'supported') {
+    return 'Supported';
+  }
+  if (status === 'partial') {
+    return 'Partial';
+  }
+  return 'Fallback';
 }
 
 export class MilkdropOverlay {
@@ -55,13 +70,15 @@ export class MilkdropOverlay {
   private readonly autoplayToggle: HTMLInputElement;
   private readonly blendSlider: HTMLInputElement;
   private readonly blendValue: HTMLElement;
-  private readonly retryButton: HTMLButtonElement;
   private readonly fileInput: HTMLInputElement;
+  private readonly deleteButton: HTMLButtonElement;
+  private readonly activeRating: HTMLSelectElement;
   private readonly tabPanels: Record<string, HTMLElement>;
   private readonly tabButtons: HTMLButtonElement[];
   private editor: EditorView;
   private presets: MilkdropCatalogEntry[] = [];
   private activePresetId: string | null = null;
+  private activeBackend: 'webgl' | 'webgpu' = 'webgl';
   private suppressEditorChange = false;
   private editorDebounceId: number | null = null;
   private lastInspectorSignature = '';
@@ -81,9 +98,7 @@ export class MilkdropOverlay {
     this.toggleButton.type = 'button';
     this.toggleButton.className = 'milkdrop-overlay__toggle';
     this.toggleButton.textContent = 'Presets';
-    this.toggleButton.addEventListener('click', () => {
-      this.root.classList.toggle('is-open');
-    });
+    this.toggleButton.addEventListener('click', () => this.toggleOpen());
 
     this.panel = document.createElement('aside');
     this.panel.className = 'milkdrop-overlay__panel';
@@ -100,9 +115,9 @@ export class MilkdropOverlay {
     closeButton.type = 'button';
     closeButton.className = 'milkdrop-overlay__close';
     closeButton.textContent = 'Close';
-    closeButton.addEventListener('click', () => {
-      this.root.classList.remove('is-open');
-    });
+    closeButton.addEventListener('click', () =>
+      this.root.classList.remove('is-open'),
+    );
     header.append(this.currentPresetLabel, this.statusLabel, closeButton);
 
     const toolbar = document.createElement('div');
@@ -120,6 +135,23 @@ export class MilkdropOverlay {
       this.autoplayToggle,
       document.createTextNode('Autoplay'),
     );
+
+    const backButton = document.createElement('button');
+    backButton.type = 'button';
+    backButton.textContent = 'Back';
+    backButton.addEventListener('click', () => this.callbacks.onGoBackPreset());
+
+    const previousButton = document.createElement('button');
+    previousButton.type = 'button';
+    previousButton.textContent = 'Prev';
+    previousButton.addEventListener('click', () =>
+      this.callbacks.onPreviousPreset(),
+    );
+
+    const nextButton = document.createElement('button');
+    nextButton.type = 'button';
+    nextButton.textContent = 'Next';
+    nextButton.addEventListener('click', () => this.callbacks.onNextPreset());
 
     const randomButton = document.createElement('button');
     randomButton.type = 'button';
@@ -142,6 +174,32 @@ export class MilkdropOverlay {
     exportButton.type = 'button';
     exportButton.textContent = 'Export';
     exportButton.addEventListener('click', () => this.callbacks.onExport());
+
+    this.deleteButton = document.createElement('button');
+    this.deleteButton.type = 'button';
+    this.deleteButton.textContent = 'Delete';
+    this.deleteButton.hidden = true;
+    this.deleteButton.addEventListener('click', () =>
+      this.callbacks.onDeletePreset(),
+    );
+
+    this.activeRating = document.createElement('select');
+    this.activeRating.className = 'milkdrop-overlay__rating-select';
+    [0, 1, 2, 3, 4, 5].forEach((value) => {
+      const option = document.createElement('option');
+      option.value = String(value);
+      option.textContent = value === 0 ? 'Rate' : `${value}★`;
+      this.activeRating.appendChild(option);
+    });
+    this.activeRating.addEventListener('change', () => {
+      if (!this.activePresetId) {
+        return;
+      }
+      this.callbacks.onSetRating(
+        this.activePresetId,
+        Number.parseInt(this.activeRating.value, 10),
+      );
+    });
 
     this.blendSlider = document.createElement('input');
     this.blendSlider.type = 'range';
@@ -166,22 +224,18 @@ export class MilkdropOverlay {
       this.blendValue,
     );
 
-    this.retryButton = document.createElement('button');
-    this.retryButton.type = 'button';
-    this.retryButton.textContent = 'Retry in WebGL';
-    this.retryButton.hidden = true;
-    this.retryButton.addEventListener('click', () =>
-      this.callbacks.onRetryWebGL(),
-    );
-
     toolbar.append(
       autoplayLabel,
+      backButton,
+      previousButton,
+      nextButton,
       randomButton,
       duplicateButton,
       importButton,
       exportButton,
+      this.deleteButton,
+      this.activeRating,
       blendWrap,
-      this.retryButton,
     );
 
     const tabs = document.createElement('div');
@@ -295,6 +349,18 @@ export class MilkdropOverlay {
     });
   }
 
+  toggleOpen(force?: boolean) {
+    if (typeof force === 'boolean') {
+      this.root.classList.toggle('is-open', force);
+      return;
+    }
+    this.root.classList.toggle('is-open');
+  }
+
+  isOpen() {
+    return this.root.classList.contains('is-open');
+  }
+
   private setActiveTab(tab: string) {
     Object.entries(this.tabPanels).forEach(([id, panel]) => {
       panel.hidden = id !== tab;
@@ -336,11 +402,21 @@ export class MilkdropOverlay {
       meta.textContent = [
         preset.author,
         preset.origin,
+        preset.rating > 0 ? `${preset.rating}★` : null,
+        preset.historyIndex !== undefined ? 'recent' : null,
         ...preset.tags.slice(0, 2),
       ]
         .filter(Boolean)
         .join(' · ');
-      launch.append(title, meta);
+
+      const support = preset.supports[this.activeBackend];
+      const supportBadge = document.createElement('span');
+      supportBadge.className = `milkdrop-overlay__support milkdrop-overlay__support--${support.status}`;
+      supportBadge.textContent = supportLabel(support.status);
+      launch.append(title, meta, supportBadge);
+
+      const actions = document.createElement('div');
+      actions.className = 'milkdrop-overlay__preset-actions';
 
       const favorite = document.createElement('button');
       favorite.type = 'button';
@@ -351,7 +427,41 @@ export class MilkdropOverlay {
         this.callbacks.onToggleFavorite(preset.id, !preset.isFavorite);
       });
 
-      row.append(launch, favorite);
+      const rating = document.createElement('select');
+      rating.className = 'milkdrop-overlay__rating-select';
+      [0, 1, 2, 3, 4, 5].forEach((value) => {
+        const option = document.createElement('option');
+        option.value = String(value);
+        option.textContent = value === 0 ? 'Rate' : `${value}★`;
+        rating.appendChild(option);
+      });
+      rating.value = String(preset.rating);
+      rating.addEventListener('change', (event) => {
+        event.stopPropagation();
+        this.callbacks.onSetRating(
+          preset.id,
+          Number.parseInt(rating.value, 10),
+        );
+      });
+
+      actions.append(favorite, rating);
+
+      if (preset.origin !== 'bundled') {
+        const removable = document.createElement('span');
+        removable.className = 'milkdrop-overlay__preset-flag';
+        removable.textContent = 'Delete from toolbar';
+        actions.appendChild(removable);
+      }
+
+      row.append(launch, actions);
+
+      if (support.reasons.length > 0) {
+        const reasons = document.createElement('div');
+        reasons.className = 'milkdrop-overlay__preset-warning';
+        reasons.textContent = support.reasons[0] as string;
+        row.appendChild(reasons);
+      }
+
       this.browseList.appendChild(row);
     });
   }
@@ -403,7 +513,7 @@ export class MilkdropOverlay {
     }
     this.lastInspectorSignature = signature;
 
-    this.inspectorControls.replaceChildren(
+    const fields: HTMLElement[] = [
       this.buildInspectorField('title', 'Title', compiled.title),
       this.buildInspectorField('author', 'Author', compiled.author ?? ''),
       this.buildInspectorField('zoom', 'Zoom', compiled.ir.numericFields.zoom, {
@@ -423,9 +533,19 @@ export class MilkdropOverlay {
       ),
       this.buildInspectorField('warp', 'Warp', compiled.ir.numericFields.warp, {
         min: 0,
-        max: 0.4,
+        max: 0.45,
         step: 0.005,
       }),
+      this.buildInspectorField(
+        'blend_duration',
+        'Blend seconds',
+        compiled.ir.numericFields.blend_duration,
+        {
+          min: 0,
+          max: 8,
+          step: 0.25,
+        },
+      ),
       this.buildInspectorField(
         'mesh_density',
         'Mesh density',
@@ -434,27 +554,88 @@ export class MilkdropOverlay {
       ),
       this.buildInspectorField(
         'wave_scale',
-        'Wave scale',
+        'Main wave scale',
         compiled.ir.numericFields.wave_scale,
         { min: 0.5, max: 2, step: 0.01 },
       ),
       this.buildInspectorField(
-        'decay',
-        'Decay',
-        compiled.ir.numericFields.decay,
+        'ob_size',
+        'Outer border',
+        compiled.ir.numericFields.ob_size,
         {
-          min: 0.72,
-          max: 0.99,
+          min: 0,
+          max: 0.3,
           step: 0.005,
         },
       ),
-    );
+      this.buildInspectorField(
+        'ib_size',
+        'Inner border',
+        compiled.ir.numericFields.ib_size,
+        {
+          min: 0,
+          max: 0.3,
+          step: 0.005,
+        },
+      ),
+    ];
+
+    compiled.ir.customWaves.forEach((wave) => {
+      fields.push(
+        this.buildInspectorField(
+          `wavecode_${wave.index - 1}_enabled`,
+          `Wave ${wave.index} enabled`,
+          wave.fields.enabled ?? 0,
+          { min: 0, max: 1, step: 1 },
+        ),
+      );
+      fields.push(
+        this.buildInspectorField(
+          `wavecode_${wave.index - 1}_samples`,
+          `Wave ${wave.index} samples`,
+          wave.fields.samples ?? 64,
+          { min: 8, max: 192, step: 1 },
+        ),
+      );
+    });
+
+    compiled.ir.customShapes.forEach((shape) => {
+      fields.push(
+        this.buildInspectorField(
+          `shapecode_${shape.index - 1}_enabled`,
+          `Shape ${shape.index} enabled`,
+          shape.fields.enabled ?? 0,
+          { min: 0, max: 1, step: 1 },
+        ),
+      );
+      fields.push(
+        this.buildInspectorField(
+          `shapecode_${shape.index - 1}_rad`,
+          `Shape ${shape.index} radius`,
+          shape.fields.rad ?? 0.15,
+          { min: 0.04, max: 0.8, step: 0.01 },
+        ),
+      );
+    });
+
+    this.inspectorControls.replaceChildren(...fields);
   }
 
-  setCatalog(presets: MilkdropCatalogEntry[], activePresetId: string | null) {
+  setCatalog(
+    presets: MilkdropCatalogEntry[],
+    activePresetId: string | null,
+    backend: 'webgl' | 'webgpu',
+  ) {
     this.presets = presets;
     this.activePresetId = activePresetId;
+    this.activeBackend = backend;
     this.renderBrowseList();
+    const activePreset = this.presets.find(
+      (entry) => entry.id === activePresetId,
+    );
+    this.deleteButton.hidden =
+      !activePreset || activePreset.origin === 'bundled';
+    this.activeRating.value = String(activePreset?.rating ?? 0);
   }
 
   setAutoplay(enabled: boolean) {
@@ -490,7 +671,7 @@ export class MilkdropOverlay {
         : 'Editor synced with live preset';
 
     this.diagnosticsList.replaceChildren();
-    state.diagnostics.slice(0, 8).forEach((diagnostic) => {
+    state.diagnostics.slice(0, 10).forEach((diagnostic) => {
       const item = document.createElement('div');
       item.className = `milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--${diagnostic.severity}`;
       item.textContent = diagnostic.line
@@ -513,27 +694,30 @@ export class MilkdropOverlay {
     frameState: MilkdropFrameState | null;
     backend: 'webgl' | 'webgpu';
   }) {
+    this.activeBackend = backend;
     if (compiled) {
       this.currentPresetLabel.textContent = compiled.title;
-      this.retryButton.hidden = !(
-        backend === 'webgpu' && !compiled.ir.compatibility.webgpu
-      );
     }
 
-    if (!frameState) {
+    if (!frameState || !compiled) {
       this.inspectorMetrics.textContent = 'Waiting for preview frames...';
       return;
     }
 
+    const support = compiled.ir.compatibility.backends[backend];
     this.inspectorMetrics.innerHTML = `
       <div><strong>Backend:</strong> ${backend}</div>
+      <div><strong>Support:</strong> ${supportLabel(support.status)}</div>
+      <div><strong>Features:</strong> ${compiled.ir.compatibility.featureAnalysis.featuresUsed.join(', ') || 'base-globals'}</div>
       <div><strong>Frame:</strong> ${frameState.signals.frame}</div>
-      <div><strong>Bass / mids / treble:</strong> ${frameState.signals.bass.toFixed(2)} / ${frameState.signals.mids.toFixed(2)} / ${frameState.signals.treble.toFixed(2)}</div>
+      <div><strong>Bass / mid / treb:</strong> ${frameState.signals.bass.toFixed(2)} / ${frameState.signals.mid.toFixed(2)} / ${frameState.signals.treb.toFixed(2)}</div>
       <div><strong>Beat pulse:</strong> ${frameState.signals.beatPulse.toFixed(2)}</div>
-      <div><strong>Wave points:</strong> ${Math.floor(frameState.waveform.positions.length / 3)}</div>
-      <div><strong>Mesh segments:</strong> ${Math.floor(frameState.mesh.positions.length / 6)}</div>
+      <div><strong>Main wave points:</strong> ${Math.floor(frameState.mainWave.positions.length / 3)}</div>
+      <div><strong>Custom waves:</strong> ${frameState.customWaves.length}</div>
       <div><strong>Shapes:</strong> ${frameState.shapes.length}</div>
-      <div><strong>Compatibility:</strong> ${frameState.compatibility.warnings.length ? frameState.compatibility.warnings.join(' ') : 'All bundled features supported.'}</div>
+      <div><strong>Borders:</strong> ${frameState.borders.length}</div>
+      <div><strong>Register pressure:</strong> q${compiled.ir.compatibility.featureAnalysis.registerUsage.q} / t${compiled.ir.compatibility.featureAnalysis.registerUsage.t}</div>
+      <div><strong>Notes:</strong> ${support.reasons[0] ?? 'Validated for the active backend.'}</div>
     `;
   }
 

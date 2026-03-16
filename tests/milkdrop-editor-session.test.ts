@@ -35,6 +35,12 @@ describe('milkdrop editor session', () => {
       6,
     );
 
+    const structured = await session.updateField('wavecode_0_enabled', 1);
+    expect(structured.activeCompiled?.ir.customWaves.length).toBe(1);
+    expect(structured.activeCompiled?.ir.customWaves[0]?.fields.enabled).toBe(
+      1,
+    );
+
     session.dispose();
   });
 });

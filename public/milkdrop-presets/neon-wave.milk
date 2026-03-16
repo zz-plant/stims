@@ -1,0 +1,71 @@
+title=Neon Wave
+author=Stims Alias Pack
+description=A synthwave preset with horizon glow, neon mesh movement, and saturated beat response.
+
+fRating=4
+blend_duration=2.4
+decay=0.94
+zoom=1.02
+rot=0.006
+warp=0.1
+wave_mode=0
+wave_scale=1.12
+wave_smoothing=0.74
+wave_a=0.86
+wave_r=1
+wave_g=0.28
+wave_b=0.9
+wave_x=0.5
+wave_y=0.5
+wave_mystery=0.24
+wave_thick=1.7
+wave_additive=1
+wave_brighten=1
+mesh_density=22
+mesh_alpha=0.22
+mesh_r=0.2
+mesh_g=0.92
+mesh_b=1
+bg_r=0.05
+bg_g=0
+bg_b=0.08
+shape_1_enabled=1
+shape_1_sides=18
+shape_1_x=0.5
+shape_1_y=0.68
+shape_1_rad=0.12
+shape_1_ang=0.1
+shape_1_a=0.08
+shape_1_r=1
+shape_1_g=0.4
+shape_1_b=0.9
+shape_1_border_a=0.86
+shape_1_border_r=1
+shape_1_border_g=0.84
+shape_1_border_b=0.98
+shape_1_additive=1
+shape_1_thickoutline=1
+shape_2_enabled=1
+shape_2_sides=4
+shape_2_x=0.5
+shape_2_y=0.5
+shape_2_rad=0.28
+shape_2_ang=0.1
+shape_2_a=0.04
+shape_2_r=0.18
+shape_2_g=0.94
+shape_2_b=1
+shape_2_border_a=0.86
+shape_2_border_r=0.84
+shape_2_border_g=1
+shape_2_border_b=1
+shape_2_additive=1
+shape_2_thickoutline=1
+
+per_frame_1=wave_y = 0.62 + sin(time * 0.24) * 0.08
+per_frame_2=shape_1_y = 0.68 + bass_att * 0.06
+per_frame_3=rot = rot + 0.005 + treble_att * 0.012
+per_frame_4=zoom = 1.0 + mids_att * 0.04
+
+per_pixel_1=warp = warp + sin(x * 10 + y * 4 + time * 0.6) * 0.02
+

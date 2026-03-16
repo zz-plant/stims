@@ -1,0 +1,71 @@
+title=Halo Visualizer
+author=Stims Alias Pack
+description=A halo preset with luminous rings, suspended shapes, and gentle audio-driven bloom.
+
+fRating=4
+blend_duration=3.2
+decay=0.97
+zoom=1
+rot=0.003
+warp=0.06
+wave_mode=1
+wave_scale=0.92
+wave_smoothing=0.74
+wave_a=0.74
+wave_r=0.9
+wave_g=0.82
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+wave_mystery=0.08
+wave_thick=1.6
+wave_additive=1
+wave_brighten=1
+mesh_density=14
+mesh_alpha=0.12
+mesh_r=0.66
+mesh_g=0.54
+mesh_b=0.98
+bg_r=0.03
+bg_g=0.02
+bg_b=0.08
+shape_1_enabled=1
+shape_1_sides=24
+shape_1_x=0.5
+shape_1_y=0.5
+shape_1_rad=0.2
+shape_1_ang=0
+shape_1_a=0.1
+shape_1_r=0.96
+shape_1_g=0.88
+shape_1_b=1
+shape_1_border_a=0.86
+shape_1_border_r=1
+shape_1_border_g=1
+shape_1_border_b=1
+shape_1_additive=1
+shape_1_thickoutline=1
+shape_2_enabled=1
+shape_2_sides=24
+shape_2_x=0.5
+shape_2_y=0.5
+shape_2_rad=0.34
+shape_2_ang=0.1
+shape_2_a=0.05
+shape_2_r=0.7
+shape_2_g=0.56
+shape_2_b=1
+shape_2_border_a=0.86
+shape_2_border_r=0.92
+shape_2_border_g=0.84
+shape_2_border_b=1
+shape_2_additive=1
+shape_2_thickoutline=1
+
+per_frame_1=shape_1_rad = 0.18 + bass_att * 0.05
+per_frame_2=shape_2_rad = 0.3 + treble_att * 0.06
+per_frame_3=rot = rot + 0.001 + beat_pulse * 0.003
+per_frame_4=wave_scale = 0.88 + mids_att * 0.06
+
+per_pixel_1=warp = warp + sin(rad * 8 + time * 0.45) * 0.014
+

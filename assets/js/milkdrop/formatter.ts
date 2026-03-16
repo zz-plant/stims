@@ -1,12 +1,29 @@
-import type { MilkdropCompiledPreset } from './types';
+import type {
+  MilkdropCompiledPreset,
+  MilkdropProgramBlock,
+  MilkdropShapeDefinition,
+  MilkdropWaveDefinition,
+} from './types';
 
-const numericOrder = [
+const globalOrder = [
   'fRating',
+  'beat_sensitivity',
   'blend_duration',
-  'fDecay',
+  'decay',
   'zoom',
   'rot',
   'warp',
+  'mesh_density',
+  'mesh_alpha',
+  'mesh_r',
+  'mesh_g',
+  'mesh_b',
+  'bg_r',
+  'bg_g',
+  'bg_b',
+] as const;
+
+const mainWaveOrder = [
   'wave_mode',
   'wave_scale',
   'wave_smoothing',
@@ -21,19 +38,74 @@ const numericOrder = [
   'wave_additive',
   'wave_usedots',
   'wave_brighten',
-  'mesh_density',
-  'mesh_alpha',
-  'mesh_r',
-  'mesh_g',
-  'mesh_b',
-  'bg_r',
-  'bg_g',
-  'bg_b',
-  'echo_alpha',
-];
+] as const;
+
+const borderOrder = [
+  'ob_size',
+  'ob_r',
+  'ob_g',
+  'ob_b',
+  'ob_a',
+  'ib_size',
+  'ib_r',
+  'ib_g',
+  'ib_b',
+  'ib_a',
+] as const;
+
+const postOrder = [
+  'brighten',
+  'darken',
+  'solarize',
+  'invert',
+  'video_echo_enabled',
+  'video_echo_alpha',
+  'video_echo_zoom',
+] as const;
+
+const customWaveFieldOrder = [
+  'enabled',
+  'samples',
+  'spectrum',
+  'additive',
+  'usedots',
+  'scaling',
+  'smoothing',
+  'mystery',
+  'thick',
+  'x',
+  'y',
+  'r',
+  'g',
+  'b',
+  'a',
+] as const;
+
+const customShapeFieldOrder = [
+  'enabled',
+  'sides',
+  'x',
+  'y',
+  'rad',
+  'ang',
+  'r',
+  'g',
+  'b',
+  'a',
+  'r2',
+  'g2',
+  'b2',
+  'a2',
+  'border_r',
+  'border_g',
+  'border_b',
+  'border_a',
+  'additive',
+  'thickoutline',
+] as const;
 
 function serializeString(value: string) {
-  return /\s/.test(value) ? JSON.stringify(value) : value;
+  return /\s/u.test(value) ? JSON.stringify(value) : value;
 }
 
 function formatNumber(value: number) {
@@ -44,25 +116,93 @@ function formatNumber(value: number) {
   return Number.isInteger(rounded) ? String(rounded) : String(rounded);
 }
 
-function serializeCanonicalKey(key: string) {
+function canonicalKey(key: string) {
   if (key === 'decay') {
     return 'fDecay';
+  }
+  if (key === 'brighten') {
+    return 'bBrighten';
+  }
+  if (key === 'darken') {
+    return 'bDarken';
+  }
+  if (key === 'solarize') {
+    return 'bSolarize';
+  }
+  if (key === 'invert') {
+    return 'bInvert';
   }
   return key;
 }
 
-function shapeKeySorter(left: string, right: string) {
-  const leftMatch = left.match(/^shape_(\d+)_(.+)$/u);
-  const rightMatch = right.match(/^shape_(\d+)_(.+)$/u);
-  if (!leftMatch || !rightMatch) {
-    return left.localeCompare(right);
-  }
-  const indexDelta =
-    Number.parseInt(leftMatch[1], 10) - Number.parseInt(rightMatch[1], 10);
-  if (indexDelta !== 0) {
-    return indexDelta;
-  }
-  return leftMatch[2].localeCompare(rightMatch[2]);
+function orderedKeys(
+  values: Record<string, number>,
+  preferredOrder: readonly string[],
+) {
+  const keys = Object.keys(values);
+  return [
+    ...preferredOrder.filter((key) => keys.includes(key)),
+    ...keys
+      .filter((key) => !preferredOrder.includes(key))
+      .sort((left, right) => left.localeCompare(right)),
+  ];
+}
+
+function emitNumericSection(
+  lines: string[],
+  values: Record<string, number>,
+  preferredOrder: readonly string[],
+) {
+  orderedKeys(values, preferredOrder).forEach((key) => {
+    lines.push(`${canonicalKey(key)}=${formatNumber(values[key] as number)}`);
+  });
+}
+
+function emitProgramLines(
+  lines: string[],
+  prefix: string,
+  block: MilkdropProgramBlock,
+) {
+  block.sourceLines.forEach((statement, index) => {
+    lines.push(`${prefix}${index + 1}=${statement}`);
+  });
+}
+
+function emitWaveDefinition(lines: string[], wave: MilkdropWaveDefinition) {
+  const zeroIndex = wave.index - 1;
+  orderedKeys(wave.fields, customWaveFieldOrder).forEach((key) => {
+    lines.push(
+      `wavecode_${zeroIndex}_${key}=${formatNumber(wave.fields[key] as number)}`,
+    );
+  });
+  emitProgramLines(lines, `wave_${zeroIndex}_init`, wave.programs.init);
+  emitProgramLines(
+    lines,
+    `wave_${zeroIndex}_per_frame`,
+    wave.programs.perFrame,
+  );
+  emitProgramLines(
+    lines,
+    `wave_${zeroIndex}_per_point`,
+    wave.programs.perPoint,
+  );
+}
+
+function emitShapeDefinition(lines: string[], shape: MilkdropShapeDefinition) {
+  const zeroIndex = shape.index - 1;
+  orderedKeys(shape.fields, customShapeFieldOrder).forEach((key) => {
+    lines.push(
+      `shapecode_${zeroIndex}_${key}=${formatNumber(
+        shape.fields[key] as number,
+      )}`,
+    );
+  });
+  emitProgramLines(lines, `shape_${zeroIndex}_init`, shape.programs.init);
+  emitProgramLines(
+    lines,
+    `shape_${zeroIndex}_per_frame`,
+    shape.programs.perFrame,
+  );
 }
 
 export function formatMilkdropPreset(compiled: MilkdropCompiledPreset) {
@@ -76,61 +216,62 @@ export function formatMilkdropPreset(compiled: MilkdropCompiledPreset) {
   if (ir.description) {
     lines.push(`description=${serializeString(ir.description)}`);
   }
+
   lines.push('');
+  emitNumericSection(lines, ir.globals, globalOrder);
+  emitNumericSection(lines, ir.mainWave, mainWaveOrder);
 
-  const presentNumericKeys = Object.keys(ir.numericFields);
-  const orderedNumericKeys = [
-    ...numericOrder.filter((key) =>
-      presentNumericKeys.includes(key === 'fDecay' ? 'decay' : key),
-    ),
-    ...presentNumericKeys
-      .filter(
-        (key) =>
-          !numericOrder.includes(serializeCanonicalKey(key)) &&
-          !key.startsWith('shape_'),
-      )
-      .sort(),
-  ];
+  const borderFields = Object.fromEntries(
+    borderOrder
+      .map((key) => [key, ir.numericFields[key]])
+      .filter(([, value]) => typeof value === 'number'),
+  ) as Record<string, number>;
+  emitNumericSection(lines, borderFields, borderOrder);
 
-  orderedNumericKeys.forEach((key) => {
-    const canonicalKey = key === 'fDecay' ? 'decay' : key;
-    if (!(canonicalKey in ir.numericFields)) {
-      return;
-    }
-    lines.push(
-      `${serializeCanonicalKey(canonicalKey)}=${formatNumber(
-        ir.numericFields[canonicalKey] as number,
-      )}`,
-    );
-  });
+  const postFields = Object.fromEntries(
+    postOrder
+      .map((key) => [key, ir.numericFields[key]])
+      .filter(([, value]) => typeof value === 'number'),
+  ) as Record<string, number>;
+  emitNumericSection(lines, postFields, postOrder);
 
-  const shapeKeys = Object.keys(ir.numericFields)
-    .filter((key) => key.startsWith('shape_'))
-    .sort(shapeKeySorter);
-  if (shapeKeys.length > 0) {
+  if (ir.customWaves.length > 0) {
     lines.push('');
-    shapeKeys.forEach((key) => {
-      lines.push(`${key}=${formatNumber(ir.numericFields[key] as number)}`);
+    ir.customWaves.forEach((wave, index) => {
+      if (index > 0) {
+        lines.push('');
+      }
+      emitWaveDefinition(lines, wave);
     });
   }
 
-  const programSections = [
-    ['init', ir.programs.init.sourceLines],
-    ['per_frame', ir.programs.perFrame.sourceLines],
-    ['per_pixel', ir.programs.perPixel.sourceLines],
+  if (ir.customShapes.length > 0) {
+    lines.push('');
+    ir.customShapes.forEach((shape, index) => {
+      if (index > 0) {
+        lines.push('');
+      }
+      emitShapeDefinition(lines, shape);
+    });
+  }
+
+  const rootPrograms = [
+    ['init_', ir.programs.init],
+    ['per_frame_', ir.programs.perFrame],
+    ['per_pixel_', ir.programs.perPixel],
   ] as const;
 
-  programSections.forEach(([prefix, statements]) => {
-    if (!statements.length) {
-      return;
-    }
+  if (rootPrograms.some(([, block]) => block.sourceLines.length > 0)) {
     lines.push('');
-    statements.forEach((statement, index) => {
-      lines.push(`${prefix}_${index + 1}=${statement}`);
+    rootPrograms.forEach(([prefix, block]) => {
+      emitProgramLines(lines, prefix, block);
     });
-  });
+  }
 
-  return `${lines.join('\n').replace(/\n{3,}/gu, '\n\n')}\n`;
+  return `${lines
+    .join('\n')
+    .replace(/\n{3,}/gu, '\n\n')
+    .trim()}\n`;
 }
 
 export function upsertMilkdropField(

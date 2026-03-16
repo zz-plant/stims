@@ -5,8 +5,8 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "3dtoy",
     "title": "3D Toy",
-    "description": "A twisting 3D tunnel that responds to sound.",
-    "module": "assets/js/toys/three-d-toy.ts",
+    "description": "A twisting MilkDrop tunnel preset with chrome hues, orbiting mesh, and audio-driven spin.",
+    "module": "assets/js/toys/3dtoy.ts",
     "type": "module",
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
@@ -21,10 +21,18 @@ export const toyManifest: ToyManifest = [
       "legacy"
     ],
     "controls": [
-      "Tunnel twist amount",
-      "Color pulse intensity",
-      "Reactivity sensitivity"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
+    "firstRunHint": "Start with the 3D Toy preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "3dtoy",
+      "label": "3D Toy preset",
+      "description": "Loads the curated 3D Toy preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
@@ -34,7 +42,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "aurora-painter",
     "title": "Aurora Painter",
-    "description": "Paint flowing aurora ribbons that react to your microphone in layered waves.",
+    "description": "A flowing aurora preset with layered ribbons of color, soft drift, and microphone-reactive sway.",
     "module": "assets/js/toys/aurora-painter.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -52,17 +60,17 @@ export const toyManifest: ToyManifest = [
       "gestural"
     ],
     "controls": [
-      "Ribbon density",
-      "Pinch/rotate gestures",
-      "Arrow-key mood switching"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Tap Starter first, then pinch/rotate once if you want to shape the flow.",
+    "firstRunHint": "Start with the Aurora Painter preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "starter",
-      "label": "aurora starter",
-      "description": "Balanced glow and speed tuned for first look delight."
+      "id": "aurora-painter",
+      "label": "Aurora Painter preset",
+      "description": "Loads the curated Aurora Painter preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Quick preset · Starter",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -73,7 +81,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "clay",
     "title": "Pottery Wheel Sculptor",
-    "description": "Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.",
+    "description": "An earthy sculptural preset with kiln-glow waves, grounded motion, and slow reactive pulses.",
     "module": "assets/js/toys/clay.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -89,17 +97,17 @@ export const toyManifest: ToyManifest = [
       "3d"
     ],
     "controls": [
-      "Smoothing tool",
-      "Carving tool",
-      "Pinching tool"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with Smoothing, then try one short carve stroke to reveal form changes.",
+    "firstRunHint": "Start with the Pottery Wheel Sculptor preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "first-sculpt",
-      "label": "first sculpt starter",
-      "description": "Guided intro to smoothing and carving order."
+      "id": "clay",
+      "label": "Pottery Wheel Sculptor preset",
+      "description": "Loads the curated Pottery Wheel Sculptor preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Smoothing tool",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -110,7 +118,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "evol",
     "title": "Evolutionary Weirdcore",
-    "description": "Watch surreal landscapes evolve with fractals and glitches that react to music.",
+    "description": "A glitch-fractal preset that mutates between weirdcore colors, warped mesh lines, and unstable beat flashes.",
     "module": "assets/js/toys/evol.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -126,17 +134,17 @@ export const toyManifest: ToyManifest = [
       "evolutionary"
     ],
     "controls": [
-      "Reactivity boost",
-      "Mutation speed",
-      "Palette shift"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Turn on Reactivity boost first to make audio linkage obvious.",
+    "firstRunHint": "Start with the Evolutionary Weirdcore preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "reactivity-boost",
-      "label": "reactivity boost starter",
-      "description": "Boosted audio response with balanced mutation speed."
+      "id": "evol",
+      "label": "Evolutionary Weirdcore preset",
+      "description": "Loads the curated Evolutionary Weirdcore preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Reactivity boost",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -147,7 +155,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "geom",
     "title": "Microphone Geometry Visualizer",
-    "description": "Push shifting geometric forms directly from live mic input with responsive controls.",
+    "description": "A geometry-first preset with crisp polygons, reactive rings, and shifting symmetry.",
     "module": "assets/js/toys/geom.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -163,17 +171,17 @@ export const toyManifest: ToyManifest = [
       "reactive"
     ],
     "controls": [
-      "Frequency band modes",
-      "Geometry complexity slider",
-      "Sensitivity boost toggle"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Use demo audio if your room is quiet, then toggle Sensitivity boost for instant movement.",
+    "firstRunHint": "Start with the Microphone Geometry Visualizer preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "reactive",
-      "label": "reactive starter",
-      "description": "Boost sensitivity and simplify geometry for immediate motion."
+      "id": "geom",
+      "label": "Microphone Geometry Visualizer preset",
+      "description": "Loads the curated Microphone Geometry Visualizer preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Sensitivity boost toggle",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -184,7 +192,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "holy",
     "title": "Halo Visualizer",
-    "description": "Layered halos, particles, and shapes that respond to your music.",
+    "description": "A halo preset with luminous rings, suspended shapes, and gentle audio-driven bloom.",
     "module": "assets/js/toys/holy.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -200,17 +208,17 @@ export const toyManifest: ToyManifest = [
       "ambient"
     ],
     "controls": [
-      "Halo intensity",
-      "Particle density",
-      "Palette cycle"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Start demo audio and raise Halo intensity to quickly reach a vivid look.",
+    "firstRunHint": "Start with the Halo Visualizer preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "halo-glow",
-      "label": "halo glow starter",
-      "description": "Higher halo glow with a balanced particle field."
+      "id": "holy",
+      "label": "Halo Visualizer preset",
+      "description": "Loads the curated Halo Visualizer preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Halo intensity",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -221,7 +229,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "multi",
     "title": "Multi-Capability Visualizer",
-    "description": "Shapes and lights move with both sound and device motion.",
+    "description": "A hybrid preset that folds the old multi-capability vibe into one dense, reactive MilkDrop scene.",
     "module": "assets/js/toys/multi.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -237,20 +245,28 @@ export const toyManifest: ToyManifest = [
       "immersive"
     ],
     "controls": [
-      "Motion input toggle",
-      "Audio gain slider",
-      "WebGL fallback notice"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
+    "firstRunHint": "Start with the Multi-Capability Visualizer preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "multi",
+      "label": "Multi-Capability Visualizer preset",
+      "description": "Loads the curated Multi-Capability Visualizer preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
-      "motion": true
+      "motion": false
     }
   },
   {
     "slug": "seary",
     "title": "Synesthetic Visualizer",
-    "description": "Blend audio and visuals into linked patterns.",
+    "description": "A synesthetic pattern preset with mapped color shifts, looping forms, and responsive movement.",
     "module": "assets/js/toys/seary.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -266,17 +282,17 @@ export const toyManifest: ToyManifest = [
       "audio-mapped"
     ],
     "controls": [
-      "Frequency mapping overlay",
-      "Palette mode switch",
-      "Pattern speed slider"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Use the frequency mapping overlay once, then adjust Pattern speed.",
+    "firstRunHint": "Start with the Synesthetic Visualizer preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "mapped-flow",
-      "label": "mapped flow starter",
-      "description": "Clear frequency-to-visual mapping with balanced speed."
+      "id": "seary",
+      "label": "Synesthetic Visualizer preset",
+      "description": "Loads the curated Synesthetic Visualizer preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Frequency mapping overlay",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -287,7 +303,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "legible",
     "title": "Terminal Word Grid",
-    "description": "A retro green text grid that pulses to audio and surfaces fresh words as you play.",
+    "description": "A retro terminal preset with grid-like mesh lines, phosphor greens, and measured pulse trails.",
     "module": "assets/js/toys/legible.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -303,17 +319,17 @@ export const toyManifest: ToyManifest = [
       "grid"
     ],
     "controls": [
-      "Word cadence slider",
-      "Character glow level",
-      "Vocabulary refresh"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Increase cadence first so word updates visibly track the beat.",
+    "firstRunHint": "Start with the Terminal Word Grid preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "pulse-typing",
-      "label": "pulse typing starter",
-      "description": "Faster text cadence with clearer audio-driven pacing."
+      "id": "legible",
+      "label": "Terminal Word Grid preset",
+      "description": "Loads the curated Terminal Word Grid preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Cadence control",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -324,7 +340,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "symph",
     "title": "Spectrograph",
-    "description": "A spectrograph that moves gently with your audio.",
+    "description": "A spectrograph-inspired preset with calm bands, soft trails, and readable music response.",
     "module": "assets/js/toys/symph.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -340,12 +356,17 @@ export const toyManifest: ToyManifest = [
       "calming"
     ],
     "controls": [
-      "Sensitivity slider",
-      "Smoothing toggle",
-      "Color intensity"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with demo audio, then raise Sensitivity until the graph feels obviously alive.",
-    "wowControl": "Sensitivity slider",
+    "firstRunHint": "Start with the Spectrograph preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "symph",
+      "label": "Spectrograph preset",
+      "description": "Loads the curated Spectrograph preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -356,7 +377,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "cube-wave",
     "title": "Grid Visualizer",
-    "description": "Swap between cube waves and bouncing spheres without stopping the music.",
+    "description": "A grid preset with stacked wave motion, squared silhouettes, and strong beat lift.",
     "module": "assets/js/toys/cube-wave.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -372,17 +393,17 @@ export const toyManifest: ToyManifest = [
       "mode-switch"
     ],
     "controls": [
-      "Wave/sphere mode toggle",
-      "Beat response amount",
-      "Camera drift speed"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Tap Shape mode once to compare cubes vs spheres, then raise Beat response.",
+    "firstRunHint": "Start with the Grid Visualizer preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "mode-pop",
-      "label": "mode pop starter",
-      "description": "Pronounced mode contrast and stronger beat motion."
+      "id": "cube-wave",
+      "label": "Grid Visualizer preset",
+      "description": "Loads the curated Grid Visualizer preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Shape mode",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -393,7 +414,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "bubble-harmonics",
     "title": "Bubble Harmonics",
-    "description": "Translucent, audio-inflated bubbles that split into harmonics on high frequencies.",
+    "description": "A bubble preset with translucent rings, harmonic pulse motion, and bright high-end shimmer.",
     "module": "assets/js/toys/bubble-harmonics.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -410,17 +431,17 @@ export const toyManifest: ToyManifest = [
       "reactive"
     ],
     "controls": [
-      "Split sensitivity",
-      "Bubble growth rate",
-      "Trail persistence"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Pick High split sensitivity, then hit Trigger split once to reveal harmonic bubbles.",
+    "firstRunHint": "Start with the Bubble Harmonics preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "harmonic-pop",
-      "label": "harmonic pop starter",
-      "description": "High split sensitivity with brighter highlights."
+      "id": "bubble-harmonics",
+      "label": "Bubble Harmonics preset",
+      "description": "Loads the curated Bubble Harmonics preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Split sensitivity",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -431,7 +452,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "pocket-pulse",
     "title": "Pocket Pulse",
-    "description": "A mobile-optimized pulse field that responds to audio and touch gestures.",
+    "description": "A compact pulse preset tuned for quick reactions, centered glow, and mobile-friendly motion.",
     "module": "assets/js/toys/pocket-pulse.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -448,9 +469,18 @@ export const toyManifest: ToyManifest = [
       "touch"
     ],
     "controls": [
-      "Quality presets",
-      "Touch drift"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
+    "firstRunHint": "Start with the Pocket Pulse preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "pocket-pulse",
+      "label": "Pocket Pulse preset",
+      "description": "Loads the curated Pocket Pulse preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
@@ -460,7 +490,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "mobile-ripples",
     "title": "Mobile Ripples",
-    "description": "Low-power neon ripples tuned for touch-first screens and pocket GPUs.",
+    "description": "A low-motion ripple preset with neon rings, calm drift, and lightweight audio response.",
     "module": "assets/js/toys/mobile-ripples.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -477,9 +507,18 @@ export const toyManifest: ToyManifest = [
       "touch"
     ],
     "controls": [
-      "Quality presets",
-      "Touch drift"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
+    "firstRunHint": "Start with the Mobile Ripples preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "mobile-ripples",
+      "label": "Mobile Ripples preset",
+      "description": "Loads the curated Mobile Ripples preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
@@ -489,7 +528,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "juke-grid",
     "title": "Juke Grid",
-    "description": "A razor-cut lattice that chops sideways on kicks and flickers on footwork snares.",
+    "description": "A chopped grid preset with lateral snaps, razor mesh lines, and footwork-ready energy.",
     "module": "assets/js/toys/juke-grid.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -506,10 +545,17 @@ export const toyManifest: ToyManifest = [
       "reactive"
     ],
     "controls": [
-      "Quality presets",
-      "Pointer drift"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "A 160 BPM track or the built-in demo audio makes the lane chop read immediately.",
+    "firstRunHint": "Start with the Juke Grid preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "juke-grid",
+      "label": "Juke Grid preset",
+      "description": "Loads the curated Juke Grid preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -520,7 +566,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "heel-toe-comets",
     "title": "Heel-Toe Comets",
-    "description": "Diagonal comet lanes built for footwork rushes, hat chatter, and chopped vocal sparks.",
+    "description": "A diagonal comet preset with rapid lane streaks, hat chatter, and rush-forward depth.",
     "module": "assets/js/toys/heel-toe-comets.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -537,10 +583,17 @@ export const toyManifest: ToyManifest = [
       "reactive"
     ],
     "controls": [
-      "Quality presets",
-      "Lane drift"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Fast hats and clipped vocal edits make the lane swaps pop hardest.",
+    "firstRunHint": "Start with the Heel-Toe Comets preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "heel-toe-comets",
+      "label": "Heel-Toe Comets preset",
+      "description": "Loads the curated Heel-Toe Comets preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -551,7 +604,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "battle-fan",
     "title": "Battle Fan",
-    "description": "A radial fan of strobing bars tuned for footwork call-and-response and rapid kick-snare flips.",
+    "description": "A radial fan preset with spoke-like bursts, kick-snare flips, and fast reactive color changes.",
     "module": "assets/js/toys/battle-fan.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -568,10 +621,17 @@ export const toyManifest: ToyManifest = [
       "reactive"
     ],
     "controls": [
-      "Quality presets",
-      "Center drift"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Footwork tracks with sharp kick-snare contrast make the outer spokes snap best.",
+    "firstRunHint": "Start with the Battle Fan preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "battle-fan",
+      "label": "Battle Fan preset",
+      "description": "Loads the curated Battle Fan preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -582,7 +642,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "cosmic-particles",
     "title": "Cosmic Particles",
-    "description": "Jump between orbiting swirls and nebula fly-throughs with a single toggle.",
+    "description": "A cosmic preset with orbiting particle lines, nebula mesh motion, and big reactive depth.",
     "module": "assets/js/toys/cosmic-particles.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -599,10 +659,18 @@ export const toyManifest: ToyManifest = [
       "swirl"
     ],
     "controls": [
-      "Mode toggle",
-      "Orbit speed",
-      "Particle density"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
+    "firstRunHint": "Start with the Cosmic Particles preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "cosmic-particles",
+      "label": "Cosmic Particles preset",
+      "description": "Loads the curated Cosmic Particles preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
@@ -612,7 +680,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "lights",
     "title": "Audio Light Show",
-    "description": "Swap shader styles and color palettes while lights ripple with your microphone input.",
+    "description": "A lighting preset with bright palette sweeps, layered glow, and punchy audio-driven contrast.",
     "module": "assets/js/toys/lights.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -628,17 +696,17 @@ export const toyManifest: ToyManifest = [
       "palette"
     ],
     "controls": [
-      "Shader style switch",
-      "Palette shuffle",
-      "Bloom intensity"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Use Starter look, then tap Shuffle to cycle quick best-of combinations.",
+    "firstRunHint": "Start with the Audio Light Show preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "best-of",
-      "label": "best-of starter",
-      "description": "Curated shader, palette, and bloom defaults for immediate impact."
+      "id": "lights",
+      "label": "Audio Light Show preset",
+      "description": "Loads the curated Audio Light Show preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Shuffle look",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -649,7 +717,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "spiral-burst",
     "title": "Spiral Burst",
-    "description": "Colorful spirals rotate and expand with every beat.",
+    "description": "A spiral preset with blooming coils, central bursts, and emphatic beat pulses.",
     "module": "assets/js/toys/spiral-burst.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -667,17 +735,17 @@ export const toyManifest: ToyManifest = [
       "gestural"
     ],
     "controls": [
-      "Mode buttons",
-      "Pinch/rotate gestures",
-      "Arrow-key mode swap"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Raise Beat sensitivity and watch the Pulse indicator peak in real time.",
+    "firstRunHint": "Start with the Spiral Burst preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "beat-pop",
-      "label": "beat pop starter",
-      "description": "Higher beat sensitivity with punchy pulse bursts."
+      "id": "spiral-burst",
+      "label": "Spiral Burst preset",
+      "description": "Loads the curated Spiral Burst preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Beat sensitivity",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -688,7 +756,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "rainbow-tunnel",
     "title": "Rainbow Tunnel",
-    "description": "Fly through colorful rings that spin to your music.",
+    "description": "A tunnel preset with prism rings, color cycling, and forward-drifting motion.",
     "module": "assets/js/toys/rainbow-tunnel.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -704,12 +772,17 @@ export const toyManifest: ToyManifest = [
       "immersive"
     ],
     "controls": [
-      "Tunnel speed slider",
-      "Camera drift toggle",
-      "Color pulse depth"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Use Cruise for longer sessions, then switch to Burst when you want bigger drops and brighter color swings.",
-    "wowControl": "Motion mode",
+    "firstRunHint": "Start with the Rainbow Tunnel preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "rainbow-tunnel",
+      "label": "Rainbow Tunnel preset",
+      "description": "Loads the curated Rainbow Tunnel preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -720,7 +793,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "star-field",
     "title": "Star Field",
-    "description": "A field of shimmering stars reacts to the beat.",
+    "description": "A star field preset with drifting spark trails, dark nebula tones, and gentle beat shimmer.",
     "module": "assets/js/toys/star-field.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -737,11 +810,17 @@ export const toyManifest: ToyManifest = [
       "gestural"
     ],
     "controls": [
-      "Pinch/rotate gestures",
-      "Arrow-key mood switching"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Switch to Vivid sky and drag upward once the audio starts to make the stars surge and twinkle harder.",
-    "wowControl": "Sky intensity",
+    "firstRunHint": "Start with the Star Field preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "star-field",
+      "label": "Star Field preset",
+      "description": "Loads the curated Star Field preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -752,7 +831,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "fractal-kite-garden",
     "title": "Fractal Kite Garden",
-    "description": "Grow branching kite fractals that sway with mids and shimmer with crisp highs.",
+    "description": "A kite-garden preset with branching polygon clusters, soft sway, and airy shimmer.",
     "module": "assets/js/toys/fractal-kite-garden.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -768,9 +847,18 @@ export const toyManifest: ToyManifest = [
       "generative"
     ],
     "controls": [
-      "Pattern density slider",
-      "Palette switches"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
+    "firstRunHint": "Start with the Fractal Kite Garden preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "fractal-kite-garden",
+      "label": "Fractal Kite Garden preset",
+      "description": "Loads the curated Fractal Kite Garden preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
@@ -780,7 +868,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "tactile-sand-table",
     "title": "Tactile Sand Table",
-    "description": "Heightfield sand ripples that respond to bass, mids, and device tilt.",
+    "description": "A sand-table preset with earthy ripples, low-motion waves, and grounded reactive texture.",
     "module": "assets/js/toys/tactile-sand-table.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -797,20 +885,28 @@ export const toyManifest: ToyManifest = [
       "haptics"
     ],
     "controls": [
-      "Grain size slider",
-      "Damping slider",
-      "Gravity lock toggle"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
+    "firstRunHint": "Start with the Tactile Sand Table preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "starterPreset": {
+      "id": "tactile-sand-table",
+      "label": "Tactile Sand Table preset",
+      "description": "Loads the curated Tactile Sand Table preset inside the shared MilkDrop runtime."
+    },
+    "wowControl": "Live source editor",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
-      "motion": true
+      "motion": false
     }
   },
   {
     "slug": "bioluminescent-tidepools",
     "title": "Bioluminescent Tidepools",
-    "description": "Sketch glowing currents that bloom with high-frequency sparkle from your music.",
+    "description": "A tidepool preset with caustic glow, flowing currents, and bright treble sparkle.",
     "module": "assets/js/toys/bioluminescent-tidepools.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -830,19 +926,17 @@ export const toyManifest: ToyManifest = [
       "gestural"
     ],
     "controls": [
-      "Trail length",
-      "Glow strength",
-      "Current speed",
-      "Pinch/rotate gestures",
-      "Arrow-key mood switching"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Raise Glow strength first for instant bloom, then adjust Current speed to taste.",
+    "firstRunHint": "Start with the Bioluminescent Tidepools preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "guided-glow",
-      "label": "guided glow starter",
-      "description": "Higher glow with balanced trail and current speed for quick impact."
+      "id": "bioluminescent-tidepools",
+      "label": "Bioluminescent Tidepools preset",
+      "description": "Loads the curated Bioluminescent Tidepools preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Glow strength",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -853,7 +947,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "neon-wave",
     "title": "Neon Wave",
-    "description": "Retro-wave visualizer with bloom effects, custom shaders, and four color themes.",
+    "description": "A synthwave preset with horizon glow, neon mesh movement, and saturated beat response.",
     "module": "assets/js/toys/neon-wave.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -872,16 +966,17 @@ export const toyManifest: ToyManifest = [
       "bloom"
     ],
     "controls": [
-      "Theme selector",
-      "Quality presets"
+      "Preset browser + favorites",
+      "Blend duration + autoplay/random",
+      "Live source editor + import/export"
     ],
-    "firstRunHint": "Choose Soft glow first for comfort, then switch themes for style.",
+    "firstRunHint": "Start with the Neon Wave preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
     "starterPreset": {
-      "id": "soft-glow",
-      "label": "soft glow starter",
-      "description": "Reduced bloom intensity for a gentler first look."
+      "id": "neon-wave",
+      "label": "Neon Wave preset",
+      "description": "Loads the curated Neon Wave preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Soft glow",
+    "wowControl": "Live source editor",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,

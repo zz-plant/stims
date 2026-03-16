@@ -1,7 +1,10 @@
+import { compileMilkdropPresetSource } from './compiler';
 import type {
+  MilkdropBackendSupport,
   MilkdropBundledCatalogEntry,
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
+  MilkdropCompiledPreset,
   MilkdropPresetSource,
 } from './types';
 
@@ -10,8 +13,10 @@ type StoredPresetRecord = MilkdropPresetSource;
 type StoredMetaRecord = {
   id: string;
   favorite?: boolean;
+  rating?: number;
   lastOpenedAt?: number;
   draft?: string;
+  stack?: string[];
 };
 
 type BundledCatalogDocument =
@@ -27,6 +32,8 @@ type BundledCatalogDocument =
         }
       >;
     };
+
+const HISTORY_RECORD_ID = '__history__';
 
 function slugify(value: string) {
   return (
@@ -58,7 +65,7 @@ function openDb(name: string) {
   }
 
   return new Promise<IDBDatabase | null>((resolve, reject) => {
-    const request = indexedDB.open(name, 1);
+    const request = indexedDB.open(name, 2);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains('presets')) {
@@ -135,44 +142,43 @@ async function loadText(url: string) {
   return response.text();
 }
 
-function toCatalogEntry(
-  entry: MilkdropBundledCatalogEntry,
-  meta: StoredMetaRecord | null,
-): MilkdropCatalogEntry {
+function supportsFromCompiled(compiled: MilkdropCompiledPreset): {
+  webgl: MilkdropBackendSupport;
+  webgpu: MilkdropBackendSupport;
+} {
   return {
-    id: entry.id,
-    title: entry.title,
-    author: entry.author,
-    origin: 'bundled',
-    tags: entry.tags ?? [],
-    curatedRank: entry.curatedRank,
-    isFavorite: Boolean(meta?.favorite),
-    lastOpenedAt: meta?.lastOpenedAt,
-    supports: {
-      webgl: entry.supports?.webgl !== false,
-      webgpu: entry.supports?.webgpu !== false,
-    },
-    bundledFile: entry.file,
+    webgl: compiled.ir.compatibility.backends.webgl,
+    webgpu: compiled.ir.compatibility.backends.webgpu,
   };
 }
 
-function toStoredEntry(
-  entry: StoredPresetRecord,
+function toCatalogEntry(
+  source: MilkdropPresetSource,
+  compiled: MilkdropCompiledPreset,
   meta: StoredMetaRecord | null,
+  options: {
+    tags?: string[];
+    curatedRank?: number;
+    bundledFile?: string;
+    historyIndex?: number;
+  } = {},
 ): MilkdropCatalogEntry {
   return {
-    id: entry.id,
-    title: entry.title,
-    author: entry.author,
-    origin: entry.origin,
-    tags: ['custom'],
+    id: source.id,
+    title: compiled.title,
+    author: compiled.author ?? source.author,
+    origin: source.origin,
+    tags: options.tags ?? [],
+    curatedRank: options.curatedRank,
     isFavorite: Boolean(meta?.favorite),
+    rating: meta?.rating ?? 0,
     lastOpenedAt: meta?.lastOpenedAt,
-    updatedAt: entry.updatedAt,
-    supports: {
-      webgl: true,
-      webgpu: true,
-    },
+    updatedAt: source.updatedAt,
+    historyIndex: options.historyIndex,
+    featuresUsed: compiled.ir.compatibility.featureAnalysis.featuresUsed,
+    warnings: compiled.ir.compatibility.warnings,
+    supports: supportsFromCompiled(compiled),
+    bundledFile: options.bundledFile,
   };
 }
 
@@ -185,6 +191,8 @@ export function createMilkdropCatalogStore({
 } = {}): MilkdropCatalogStore {
   const memoryPresets = new Map<string, StoredPresetRecord>();
   const memoryMeta = new Map<string, StoredMetaRecord>();
+  const bundledSourceCache = new Map<string, MilkdropPresetSource>();
+  const analysisCache = new Map<string, MilkdropCompiledPreset>();
   let dbPromise: Promise<IDBDatabase | null> | null = null;
   let bundledCatalogPromise: Promise<MilkdropBundledCatalogEntry[]> | null =
     null;
@@ -239,9 +247,45 @@ export function createMilkdropCatalogStore({
     await putRecord(db, 'meta', record);
   };
 
+  const getHistoryRecord = async () =>
+    (await readMeta(HISTORY_RECORD_ID)) ?? { id: HISTORY_RECORD_ID, stack: [] };
+
+  const getCompiled = (source: MilkdropPresetSource) => {
+    const cacheKey = `${source.id}:${source.updatedAt ?? 0}:${source.raw}`;
+    const cached = analysisCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    const compiled = compileMilkdropPresetSource(source.raw, source);
+    analysisCache.set(cacheKey, compiled);
+    return compiled;
+  };
+
+  const loadBundledSource = async (entry: MilkdropBundledCatalogEntry) => {
+    const cached = bundledSourceCache.get(entry.id);
+    if (cached) {
+      return cached;
+    }
+    const raw = await loadText(entry.file);
+    const source: MilkdropPresetSource = {
+      id: entry.id,
+      title: entry.title,
+      author: entry.author,
+      raw,
+      origin: 'bundled',
+      path: entry.file,
+    };
+    bundledSourceCache.set(entry.id, source);
+    return source;
+  };
+
   return {
     async listPresets() {
-      const [bundled, db] = await Promise.all([getBundledCatalog(), getDb()]);
+      const [bundled, db, historyRecord] = await Promise.all([
+        getBundledCatalog(),
+        getDb(),
+        getHistoryRecord(),
+      ]);
       const storedPresets = db
         ? await getAllRecords<StoredPresetRecord>(db, 'presets')
         : [...memoryPresets.values()];
@@ -249,20 +293,90 @@ export function createMilkdropCatalogStore({
         ? await getAllRecords<StoredMetaRecord>(db, 'meta')
         : [...memoryMeta.values()];
       const metaById = new Map(storedMeta.map((record) => [record.id, record]));
+      const history = historyRecord.stack ?? [];
 
-      const bundledEntries = bundled.map((entry) =>
-        toCatalogEntry(entry, metaById.get(entry.id) ?? null),
+      const bundledEntries = await Promise.all(
+        bundled.map(async (entry) => {
+          try {
+            const source = await loadBundledSource(entry);
+            const compiled = getCompiled(source);
+            return toCatalogEntry(
+              source,
+              compiled,
+              metaById.get(entry.id) ?? null,
+              {
+                tags: entry.tags ?? [],
+                curatedRank: entry.curatedRank,
+                bundledFile: entry.file,
+                historyIndex: history.indexOf(entry.id),
+              },
+            );
+          } catch {
+            return {
+              id: entry.id,
+              title: entry.title,
+              author: entry.author,
+              origin: 'bundled' as const,
+              tags: entry.tags ?? [],
+              curatedRank: entry.curatedRank,
+              isFavorite: Boolean(metaById.get(entry.id)?.favorite),
+              rating: metaById.get(entry.id)?.rating ?? 0,
+              lastOpenedAt: metaById.get(entry.id)?.lastOpenedAt,
+              updatedAt: undefined,
+              historyIndex: history.indexOf(entry.id),
+              featuresUsed: [],
+              warnings: ['Bundled preset could not be analyzed.'],
+              supports: {
+                webgl: {
+                  status:
+                    entry.supports?.webgl === false ? 'unsupported' : 'partial',
+                  reasons: ['Bundled preset could not be analyzed.'],
+                  requiredFeatures: [],
+                  unsupportedFeatures: [],
+                },
+                webgpu: {
+                  status:
+                    entry.supports?.webgpu === false
+                      ? 'unsupported'
+                      : 'partial',
+                  reasons: ['Bundled preset could not be analyzed.'],
+                  requiredFeatures: [],
+                  unsupportedFeatures: [],
+                  recommendedFallback: 'webgl',
+                },
+              },
+              bundledFile: entry.file,
+            } satisfies MilkdropCatalogEntry;
+          }
+        }),
       );
-      const customEntries = storedPresets.map((entry) =>
-        toStoredEntry(entry, metaById.get(entry.id) ?? null),
-      );
+
+      const customEntries = storedPresets.map((entry) => {
+        const compiled = getCompiled(entry);
+        return toCatalogEntry(entry, compiled, metaById.get(entry.id) ?? null, {
+          tags: ['custom'],
+          historyIndex: history.indexOf(entry.id),
+        });
+      });
 
       return [...bundledEntries, ...customEntries].sort((left, right) => {
         if (left.isFavorite !== right.isFavorite) {
           return left.isFavorite ? -1 : 1;
         }
+        if (
+          (left.historyIndex ?? Number.MAX_SAFE_INTEGER) !==
+          (right.historyIndex ?? Number.MAX_SAFE_INTEGER)
+        ) {
+          return (
+            (left.historyIndex ?? Number.MAX_SAFE_INTEGER) -
+            (right.historyIndex ?? Number.MAX_SAFE_INTEGER)
+          );
+        }
         if ((left.lastOpenedAt ?? 0) !== (right.lastOpenedAt ?? 0)) {
           return (right.lastOpenedAt ?? 0) - (left.lastOpenedAt ?? 0);
+        }
+        if (left.rating !== right.rating) {
+          return right.rating - left.rating;
         }
         if (
           (left.curatedRank ?? Number.MAX_SAFE_INTEGER) !==
@@ -277,7 +391,7 @@ export function createMilkdropCatalogStore({
       });
     },
 
-    async getPresetSource(id: string) {
+    async getPresetSource(id) {
       const db = await getDb();
       const stored = db
         ? await getRecord<StoredPresetRecord>(db, 'presets', id)
@@ -291,15 +405,7 @@ export function createMilkdropCatalogStore({
       if (!entry) {
         return null;
       }
-      const raw = await loadText(entry.file);
-      return {
-        id: entry.id,
-        title: entry.title,
-        author: entry.author,
-        raw,
-        origin: 'bundled',
-        path: entry.file,
-      };
+      return loadBundledSource(entry);
     },
 
     async savePreset(source) {
@@ -322,10 +428,16 @@ export function createMilkdropCatalogStore({
       if (!db) {
         memoryPresets.delete(id);
         memoryMeta.delete(id);
-        return;
+      } else {
+        await deleteRecord(db, 'presets', id);
+        await deleteRecord(db, 'meta', id);
       }
-      await deleteRecord(db, 'presets', id);
-      await deleteRecord(db, 'meta', id);
+      const history = await getHistoryRecord();
+      const nextStack = (history.stack ?? []).filter((entry) => entry !== id);
+      await writeMeta({
+        ...history,
+        stack: nextStack,
+      });
     },
 
     async saveDraft(id, raw) {
@@ -342,9 +454,34 @@ export function createMilkdropCatalogStore({
       await writeMeta({ ...current, favorite });
     },
 
+    async setRating(id, rating) {
+      const current = (await readMeta(id)) ?? { id };
+      await writeMeta({ ...current, rating: clampRating(rating) });
+    },
+
     async recordRecent(id) {
       const current = (await readMeta(id)) ?? { id };
       await writeMeta({ ...current, lastOpenedAt: Date.now() });
     },
+
+    async pushHistory(id) {
+      const current = await getHistoryRecord();
+      const nextStack = [
+        id,
+        ...(current.stack ?? []).filter((entry) => entry !== id),
+      ].slice(0, 32);
+      await writeMeta({
+        ...current,
+        stack: nextStack,
+      });
+    },
+
+    async getHistory() {
+      return (await getHistoryRecord()).stack ?? [];
+    },
   };
+}
+
+function clampRating(value: number) {
+  return Math.min(5, Math.max(0, Math.round(value)));
 }

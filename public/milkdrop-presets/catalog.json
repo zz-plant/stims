@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "generatedAt": "2026-03-16",
   "presets": [
     {
@@ -9,7 +9,11 @@
       "order": 1,
       "file": "/milkdrop-presets/aurora-feedback-core.milk",
       "preview": true,
-      "tags": ["feedback", "warp", "atmospheric"],
+      "tags": [
+        "feedback",
+        "warp",
+        "atmospheric"
+      ],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -22,7 +26,11 @@
       "order": 2,
       "file": "/milkdrop-presets/kinetic-grid-pulse.milk",
       "preview": true,
-      "tags": ["grid", "beat", "high-energy"],
+      "tags": [
+        "grid",
+        "beat",
+        "high-energy"
+      ],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -35,7 +43,11 @@
       "order": 3,
       "file": "/milkdrop-presets/low-motion-halo-drift.milk",
       "preview": false,
-      "tags": ["low-motion", "ambient", "halo"],
+      "tags": [
+        "low-motion",
+        "ambient",
+        "halo"
+      ],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -48,7 +60,482 @@
       "order": 4,
       "file": "/milkdrop-presets/prism-drum-tunnel.milk",
       "preview": false,
-      "tags": ["tunnel", "drums", "psychedelic"],
+      "tags": [
+        "tunnel",
+        "drums",
+        "psychedelic"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "3dtoy",
+      "title": "3D Toy",
+      "author": "Stims Alias Pack",
+      "order": 5,
+      "file": "/milkdrop-presets/3dtoy.milk",
+      "preview": false,
+      "tags": [
+        "tunnel",
+        "3d",
+        "legacy",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "aurora-painter",
+      "title": "Aurora Painter",
+      "author": "Stims Alias Pack",
+      "order": 6,
+      "file": "/milkdrop-presets/aurora-painter.milk",
+      "preview": true,
+      "tags": [
+        "aurora",
+        "ribbons",
+        "gestural",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "clay",
+      "title": "Pottery Wheel Sculptor",
+      "author": "Stims Alias Pack",
+      "order": 7,
+      "file": "/milkdrop-presets/clay.milk",
+      "preview": false,
+      "tags": [
+        "sculpting",
+        "pottery",
+        "3d",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "evol",
+      "title": "Evolutionary Weirdcore",
+      "author": "Stims Alias Pack",
+      "order": 8,
+      "file": "/milkdrop-presets/evol.milk",
+      "preview": false,
+      "tags": [
+        "fractal",
+        "glitch",
+        "evolutionary",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "geom",
+      "title": "Microphone Geometry Visualizer",
+      "author": "Stims Alias Pack",
+      "order": 9,
+      "file": "/milkdrop-presets/geom.milk",
+      "preview": false,
+      "tags": [
+        "geometry",
+        "microphone",
+        "reactive",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "holy",
+      "title": "Halo Visualizer",
+      "author": "Stims Alias Pack",
+      "order": 10,
+      "file": "/milkdrop-presets/holy.milk",
+      "preview": false,
+      "tags": [
+        "halos",
+        "particles",
+        "ambient",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "multi",
+      "title": "Multi-Capability Visualizer",
+      "author": "Stims Alias Pack",
+      "order": 11,
+      "file": "/milkdrop-presets/multi.milk",
+      "preview": false,
+      "tags": [
+        "motion",
+        "hybrid",
+        "immersive",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "seary",
+      "title": "Synesthetic Visualizer",
+      "author": "Stims Alias Pack",
+      "order": 12,
+      "file": "/milkdrop-presets/seary.milk",
+      "preview": false,
+      "tags": [
+        "synesthetic",
+        "patterns",
+        "audio-mapped",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "legible",
+      "title": "Terminal Word Grid",
+      "author": "Stims Alias Pack",
+      "order": 13,
+      "file": "/milkdrop-presets/legible.milk",
+      "preview": false,
+      "tags": [
+        "text",
+        "retro",
+        "grid",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "symph",
+      "title": "Spectrograph",
+      "author": "Stims Alias Pack",
+      "order": 14,
+      "file": "/milkdrop-presets/symph.milk",
+      "preview": false,
+      "tags": [
+        "spectrograph",
+        "ambient",
+        "calming",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "cube-wave",
+      "title": "Grid Visualizer",
+      "author": "Stims Alias Pack",
+      "order": 15,
+      "file": "/milkdrop-presets/cube-wave.milk",
+      "preview": false,
+      "tags": [
+        "grid",
+        "waves",
+        "mode-switch",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "bubble-harmonics",
+      "title": "Bubble Harmonics",
+      "author": "Stims Alias Pack",
+      "order": 16,
+      "file": "/milkdrop-presets/bubble-harmonics.milk",
+      "preview": true,
+      "tags": [
+        "bubbles",
+        "harmonics",
+        "reactive",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "pocket-pulse",
+      "title": "Pocket Pulse",
+      "author": "Stims Alias Pack",
+      "order": 17,
+      "file": "/milkdrop-presets/pocket-pulse.milk",
+      "preview": false,
+      "tags": [
+        "mobile",
+        "pulses",
+        "touch",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "mobile-ripples",
+      "title": "Mobile Ripples",
+      "author": "Stims Alias Pack",
+      "order": 18,
+      "file": "/milkdrop-presets/mobile-ripples.milk",
+      "preview": false,
+      "tags": [
+        "mobile",
+        "ripples",
+        "touch",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "juke-grid",
+      "title": "Juke Grid",
+      "author": "Stims Alias Pack",
+      "order": 19,
+      "file": "/milkdrop-presets/juke-grid.milk",
+      "preview": false,
+      "tags": [
+        "grid",
+        "glitch",
+        "reactive",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "heel-toe-comets",
+      "title": "Heel-Toe Comets",
+      "author": "Stims Alias Pack",
+      "order": 20,
+      "file": "/milkdrop-presets/heel-toe-comets.milk",
+      "preview": false,
+      "tags": [
+        "particles",
+        "pulses",
+        "reactive",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "battle-fan",
+      "title": "Battle Fan",
+      "author": "Stims Alias Pack",
+      "order": 21,
+      "file": "/milkdrop-presets/battle-fan.milk",
+      "preview": false,
+      "tags": [
+        "burst",
+        "patterns",
+        "reactive",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "cosmic-particles",
+      "title": "Cosmic Particles",
+      "author": "Stims Alias Pack",
+      "order": 22,
+      "file": "/milkdrop-presets/cosmic-particles.milk",
+      "preview": true,
+      "tags": [
+        "particles",
+        "nebula",
+        "swirl",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "lights",
+      "title": "Audio Light Show",
+      "author": "Stims Alias Pack",
+      "order": 23,
+      "file": "/milkdrop-presets/lights.milk",
+      "preview": false,
+      "tags": [
+        "lights",
+        "shader",
+        "palette",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "spiral-burst",
+      "title": "Spiral Burst",
+      "author": "Stims Alias Pack",
+      "order": 24,
+      "file": "/milkdrop-presets/spiral-burst.milk",
+      "preview": true,
+      "tags": [
+        "spirals",
+        "burst",
+        "gestural",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "rainbow-tunnel",
+      "title": "Rainbow Tunnel",
+      "author": "Stims Alias Pack",
+      "order": 25,
+      "file": "/milkdrop-presets/rainbow-tunnel.milk",
+      "preview": false,
+      "tags": [
+        "tunnel",
+        "rainbow",
+        "immersive",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "star-field",
+      "title": "Star Field",
+      "author": "Stims Alias Pack",
+      "order": 26,
+      "file": "/milkdrop-presets/star-field.milk",
+      "preview": false,
+      "tags": [
+        "stars",
+        "nebula",
+        "gestural",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "fractal-kite-garden",
+      "title": "Fractal Kite Garden",
+      "author": "Stims Alias Pack",
+      "order": 27,
+      "file": "/milkdrop-presets/fractal-kite-garden.milk",
+      "preview": false,
+      "tags": [
+        "fractal",
+        "kite",
+        "generative",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "tactile-sand-table",
+      "title": "Tactile Sand Table",
+      "author": "Stims Alias Pack",
+      "order": 28,
+      "file": "/milkdrop-presets/tactile-sand-table.milk",
+      "preview": true,
+      "tags": [
+        "sand",
+        "tilt",
+        "haptics",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "bioluminescent-tidepools",
+      "title": "Bioluminescent Tidepools",
+      "author": "Stims Alias Pack",
+      "order": 29,
+      "file": "/milkdrop-presets/bioluminescent-tidepools.milk",
+      "preview": true,
+      "tags": [
+        "ocean",
+        "bioluminescent",
+        "caustics",
+        "gestural",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "neon-wave",
+      "title": "Neon Wave",
+      "author": "Stims Alias Pack",
+      "order": 30,
+      "file": "/milkdrop-presets/neon-wave.milk",
+      "preview": true,
+      "tags": [
+        "synthwave",
+        "cyberpunk",
+        "retro",
+        "visualizer",
+        "bloom",
+        "preset"
+      ],
       "compatibility": {
         "webgl": true,
         "webgpu": true

@@ -443,6 +443,12 @@ export function evaluateMilkdropExpression(
           return Math.cos(args[0] ?? 0);
         case 'tan':
           return Math.tan(args[0] ?? 0);
+        case 'asin':
+          return Math.asin(Math.min(1, Math.max(-1, args[0] ?? 0)));
+        case 'acos':
+          return Math.acos(Math.min(1, Math.max(-1, args[0] ?? 0)));
+        case 'atan':
+          return Math.atan(args[0] ?? 0);
         case 'abs':
           return Math.abs(args[0] ?? 0);
         case 'sqrt':
@@ -604,4 +610,25 @@ export function parseMilkdropStatement(
     },
     diagnostics: expressionResult.diagnostics,
   };
+}
+
+export function walkMilkdropExpression(
+  node: MilkdropExpressionNode,
+  visitor: (node: MilkdropExpressionNode) => void,
+) {
+  visitor(node);
+  switch (node.type) {
+    case 'literal':
+    case 'identifier':
+      return;
+    case 'unary':
+      walkMilkdropExpression(node.operand, visitor);
+      return;
+    case 'binary':
+      walkMilkdropExpression(node.left, visitor);
+      walkMilkdropExpression(node.right, visitor);
+      return;
+    case 'call':
+      node.args.forEach((arg) => walkMilkdropExpression(arg, visitor));
+  }
 }

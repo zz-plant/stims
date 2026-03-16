@@ -2483,7 +2483,8 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__toolbar button,
 .milkdrop-overlay__preset-launch,
 .milkdrop-overlay__favorite,
-.milkdrop-overlay__tabs button {
+.milkdrop-overlay__tabs button,
+.milkdrop-overlay__rating-select {
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.64);
@@ -2493,7 +2494,8 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__close,
 .milkdrop-overlay__toolbar button,
 .milkdrop-overlay__favorite,
-.milkdrop-overlay__tabs button {
+.milkdrop-overlay__tabs button,
+.milkdrop-overlay__rating-select {
   min-height: 40px;
   padding: 8px 12px;
 }
@@ -2589,6 +2591,55 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__preset-meta {
   color: rgba(191, 219, 254, 0.74);
   font-size: 0.83rem;
+}
+
+.milkdrop-overlay__preset-actions {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.milkdrop-overlay__support {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.milkdrop-overlay__support--supported {
+  background: rgba(22, 163, 74, 0.18);
+  color: #bbf7d0;
+}
+
+.milkdrop-overlay__support--partial {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fde68a;
+}
+
+.milkdrop-overlay__support--unsupported {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+}
+
+.milkdrop-overlay__preset-warning {
+  grid-column: 1 / -1;
+  font-size: 0.82rem;
+  color: rgba(253, 230, 138, 0.9);
+  background: rgba(120, 53, 15, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.16);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+.milkdrop-overlay__preset-flag {
+  color: rgba(191, 219, 254, 0.66);
+  font-size: 0.75rem;
 }
 
 .milkdrop-overlay__editor {

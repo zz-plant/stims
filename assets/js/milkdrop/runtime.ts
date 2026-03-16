@@ -1,13 +1,21 @@
-import { setCompatibilityMode } from '../core/render-preferences';
+import {
+  isCompatibilityModeEnabled,
+  setCompatibilityMode,
+} from '../core/render-preferences';
 import type { ToyRuntimeFrame, ToyRuntimeInstance } from '../core/toy-runtime';
 import type { QualityPresetManager } from '../utils/toy-settings';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
 import { MilkdropOverlay } from './overlay';
+import {
+  consumeRequestedMilkdropPresetSelection,
+  MILKDROP_PRESET_SELECTION_EVENT,
+} from './preset-selection';
 import { createMilkdropRendererAdapter } from './renderer-adapter';
 import { createMilkdropSignalTracker } from './runtime-signals';
 import type {
+  MilkdropBlendState,
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -21,6 +29,7 @@ type UiPrefs = {
   autoplay?: boolean;
   blendDuration?: number;
   lastPresetId?: string;
+  fallbackNotice?: string;
 };
 
 const DEFAULT_PRESET_SOURCE = `title=Signal Bloom
@@ -51,29 +60,50 @@ mesh_b=0.94
 bg_r=0.02
 bg_g=0.03
 bg_b=0.06
-shape_1_enabled=1
-shape_1_sides=6
-shape_1_x=0.5
-shape_1_y=0.5
-shape_1_rad=0.17
-shape_1_ang=0
-shape_1_a=0.18
-shape_1_r=1
-shape_1_g=0.48
-shape_1_b=0.84
-shape_1_border_a=0.9
-shape_1_border_r=1
-shape_1_border_g=0.78
-shape_1_border_b=1
-shape_1_additive=1
-shape_1_thickoutline=1
+bBrighten=1
+video_echo_enabled=1
+video_echo_alpha=0.18
+video_echo_zoom=1.03
+ob_size=0.02
+ob_r=0.9
+ob_g=0.95
+ob_b=1
+ob_a=0.76
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_x=0.5
+shapecode_0_y=0.5
+shapecode_0_rad=0.17
+shapecode_0_ang=0
+shapecode_0_a=0.18
+shapecode_0_r=1
+shapecode_0_g=0.48
+shapecode_0_b=0.84
+shapecode_0_border_a=0.9
+shapecode_0_border_r=1
+shapecode_0_border_g=0.78
+shapecode_0_border_b=1
+shapecode_0_additive=1
+shapecode_0_thickoutline=1
+wavecode_0_enabled=1
+wavecode_0_samples=72
+wavecode_0_spectrum=1
+wavecode_0_additive=1
+wavecode_0_r=0.92
+wavecode_0_g=0.6
+wavecode_0_b=1
+wavecode_0_a=0.42
 
 per_frame_1=zoom = 1.0 + bass_att * 0.08
 per_frame_2=rot = rot + beat_pulse * 0.004
 per_frame_3=wave_y = 0.5 + sin(time * 0.35) * 0.08
-per_frame_4=shape_1_ang = shape_1_ang + 0.01 + treble_att * 0.01
+per_frame_4=shape_1_ang = shape_1_ang + 0.01 + treb_att * 0.01
+per_frame_5=ob_size = 0.01 + beat_pulse * 0.02
 
 per_pixel_1=warp = warp + sin(rad * 10 + time * 0.8) * 0.03
+wave_0_per_frame1=a = 0.18 + bass_att * 0.36
+wave_0_per_point1=y = y + sin(sample * pi * 12 + time) * 0.06
+shape_0_per_frame1=rad = 0.14 + beat_pulse * 0.08
 `;
 
 function readUiPrefs(): UiPrefs {
@@ -107,16 +137,26 @@ function downloadPresetFile(name: string, contents: string) {
   URL.revokeObjectURL(url);
 }
 
-function cloneBlendState(frameState: MilkdropFrameState | null) {
+function cloneBlendState(
+  frameState: MilkdropFrameState | null,
+): MilkdropBlendState | null {
   if (!frameState) {
     return null;
   }
+  const waveform = {
+    ...frameState.mainWave,
+    positions: [...frameState.mainWave.positions],
+    color: { ...frameState.mainWave.color },
+  };
   return {
-    waveform: {
-      ...frameState.waveform,
-      positions: [...frameState.waveform.positions],
-      color: { ...frameState.waveform.color },
-    },
+    background: { ...frameState.background },
+    waveform,
+    mainWave: waveform,
+    customWaves: frameState.customWaves.map((wave) => ({
+      ...wave,
+      positions: [...wave.positions],
+      color: { ...wave.color },
+    })),
     trails: frameState.trails.map((trail) => ({
       ...trail,
       positions: [...trail.positions],
@@ -125,18 +165,30 @@ function cloneBlendState(frameState: MilkdropFrameState | null) {
     shapes: frameState.shapes.map((shape) => ({
       ...shape,
       color: { ...shape.color },
+      secondaryColor: shape.secondaryColor ? { ...shape.secondaryColor } : null,
       borderColor: { ...shape.borderColor },
     })),
+    borders: frameState.borders.map((border) => ({
+      ...border,
+      color: { ...border.color },
+    })),
+    post: { ...frameState.post },
     alpha: 1,
   };
+}
+
+function isEditablePreset(entry: MilkdropCatalogEntry | undefined | null) {
+  return entry?.origin === 'imported' || entry?.origin === 'user';
 }
 
 export function createMilkdropExperience({
   container,
   quality,
+  initialPresetId,
 }: {
   container?: HTMLElement | null;
   quality: QualityPresetManager;
+  initialPresetId?: string;
 }) {
   const prefs = readUiPrefs();
   const catalogStore = createMilkdropCatalogStore();
@@ -158,11 +210,23 @@ export function createMilkdropExperience({
         void selectPreset(id);
       },
       onToggleFavorite: (id, favorite) => {
-        void catalogStore.setFavorite(id, favorite).then(refreshCatalog);
+        void catalogStore.setFavorite(id, favorite).then(syncCatalog);
+      },
+      onSetRating: (id, rating) => {
+        void catalogStore.setRating(id, rating).then(syncCatalog);
       },
       onToggleAutoplay: (enabled) => {
         autoplay = enabled;
         writeUiPrefs({ autoplay: enabled });
+      },
+      onGoBackPreset: () => {
+        void goBackPreset();
+      },
+      onNextPreset: () => {
+        void selectAdjacentPreset(1);
+      },
+      onPreviousPreset: () => {
+        void selectAdjacentPreset(-1);
       },
       onRandomize: () => {
         void selectRandomPreset();
@@ -180,6 +244,9 @@ export function createMilkdropExperience({
       onDuplicatePreset: () => {
         void duplicatePreset();
       },
+      onDeletePreset: () => {
+        void deleteActivePreset();
+      },
       onEditorSourceChange: (source) => {
         void session.applySource(source);
       },
@@ -188,10 +255,6 @@ export function createMilkdropExperience({
       },
       onInspectorFieldChange: (key, value) => {
         void session.updateField(key, value);
-      },
-      onRetryWebGL: () => {
-        setCompatibilityMode(true);
-        window.location.reload();
       },
     },
   });
@@ -209,14 +272,50 @@ export function createMilkdropExperience({
   let lastPresetSwitchAt = performance.now();
   let catalogEntries: MilkdropCatalogEntry[] = [];
   let activeBackend: 'webgl' | 'webgpu' = 'webgl';
+  let selectionHistory: string[] = [];
+  let selectionCursor = -1;
+  let fallbackTriggered = false;
+  let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
+  let requestedPresetListener: ((event: Event) => void) | null = null;
 
   overlay.setAutoplay(autoplay);
   overlay.setBlendDuration(blendDuration);
   overlay.setSessionState(session.getState());
+  if (prefs.fallbackNotice) {
+    overlay.setStatus(prefs.fallbackNotice);
+    writeUiPrefs({ fallbackNotice: undefined });
+  }
 
-  const refreshCatalog = async () => {
+  const syncCatalog = async () => {
     catalogEntries = await catalogStore.listPresets();
-    overlay.setCatalog(catalogEntries, activePresetId);
+    overlay.setCatalog(catalogEntries, activePresetId, activeBackend);
+  };
+
+  const getActiveCatalogEntry = () =>
+    catalogEntries.find((entry) => entry.id === activePresetId) ?? null;
+
+  const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
+    activeBackend === 'webgpu' &&
+    compiled.ir.compatibility.backends.webgpu.status !== 'supported' &&
+    !isCompatibilityModeEnabled();
+
+  const triggerWebglFallback = ({
+    presetId,
+    reason,
+  }: {
+    presetId: string;
+    reason: string;
+  }) => {
+    if (fallbackTriggered || activeBackend !== 'webgpu') {
+      return;
+    }
+    fallbackTriggered = true;
+    writeUiPrefs({
+      lastPresetId: presetId,
+      fallbackNotice: reason,
+    });
+    setCompatibilityMode(true);
+    window.location.reload();
   };
 
   const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
@@ -232,7 +331,20 @@ export function createMilkdropExperience({
     });
   };
 
-  const selectPreset = async (id: string) => {
+  const rememberSelection = async (id: string) => {
+    if (selectionHistory[selectionCursor] !== id) {
+      selectionHistory = selectionHistory.slice(0, selectionCursor + 1);
+      selectionHistory.push(id);
+      selectionCursor = selectionHistory.length - 1;
+    }
+    await catalogStore.recordRecent(id);
+    await catalogStore.pushHistory(id);
+  };
+
+  const selectPreset = async (
+    id: string,
+    options: { recordHistory?: boolean } = {},
+  ) => {
     const source = await catalogStore.getPresetSource(id);
     if (!source) {
       overlay.setStatus(`Preset ${id} could not be loaded.`);
@@ -244,40 +356,104 @@ export function createMilkdropExperience({
       raw: draft ?? source.raw,
     };
 
+    const nextState = await session.loadPreset(resolvedSource);
+    const nextCompiled = nextState.activeCompiled;
+    if (!nextCompiled) {
+      overlay.setStatus(`Preset ${id} did not compile.`);
+      return;
+    }
+
+    if (shouldFallbackToWebgl(nextCompiled)) {
+      triggerWebglFallback({
+        presetId: id,
+        reason: `${nextCompiled.title} needs WebGL for validated feedback/post rendering.`,
+      });
+      return;
+    }
+
     blendState = cloneBlendState(currentFrameState);
     blendEndAtMs = performance.now() + blendDuration * 1000;
     lastPresetSwitchAt = performance.now();
-    await catalogStore.recordRecent(id);
-    writeUiPrefs({ lastPresetId: id });
-    const nextState = await session.loadPreset(resolvedSource);
-    if (nextState.activeCompiled) {
-      applyCompiledPreset(nextState.activeCompiled);
-      overlay.setStatus(`Loaded ${nextState.activeCompiled.title}.`);
+
+    if (options.recordHistory !== false) {
+      await rememberSelection(id);
     }
-    await refreshCatalog();
+
+    writeUiPrefs({ lastPresetId: id });
+    applyCompiledPreset(nextCompiled);
+    overlay.setStatus(`Loaded ${nextCompiled.title}.`);
+    await syncCatalog();
+  };
+
+  const selectAdjacentPreset = async (direction: 1 | -1) => {
+    if (!catalogEntries.length) {
+      return;
+    }
+    const currentIndex = catalogEntries.findIndex(
+      (entry) => entry.id === activePresetId,
+    );
+    const nextIndex =
+      currentIndex >= 0
+        ? (currentIndex + direction + catalogEntries.length) %
+          catalogEntries.length
+        : 0;
+    const next = catalogEntries[nextIndex];
+    if (next) {
+      await selectPreset(next.id);
+    }
   };
 
   const selectRandomPreset = async () => {
     if (!catalogEntries.length) {
       return;
     }
-    const supported = catalogEntries.filter(
-      (entry) =>
-        entry.id !== activePresetId &&
-        (activeBackend === 'webgpu'
-          ? entry.supports.webgpu
-          : entry.supports.webgl),
-    );
-    const pool = supported.length
-      ? supported
+    const pool = catalogEntries.filter((entry) => {
+      if (entry.id === activePresetId) {
+        return false;
+      }
+      return entry.supports[activeBackend].status === 'supported';
+    });
+    const candidates = pool.length
+      ? pool
       : catalogEntries.filter((entry) => entry.id !== activePresetId);
-    if (!pool.length) {
+    if (!candidates.length) {
       return;
     }
-    const selection = pool[
-      Math.floor(Math.random() * pool.length)
-    ] as MilkdropCatalogEntry;
-    await selectPreset(selection.id);
+
+    const weightedPool = candidates.flatMap((entry) => {
+      const weight = Math.max(
+        1,
+        1 +
+          (entry.isFavorite ? 2 : 0) +
+          entry.rating +
+          (entry.historyIndex !== undefined ? 1 : 0),
+      );
+      return Array.from({ length: weight }, () => entry.id);
+    });
+
+    const selectionId =
+      weightedPool[Math.floor(Math.random() * weightedPool.length)];
+    if (selectionId) {
+      await selectPreset(selectionId);
+    }
+  };
+
+  const goBackPreset = async () => {
+    if (selectionCursor <= 0) {
+      const persisted = await catalogStore.getHistory();
+      if (persisted.length > 1) {
+        const previous = persisted[1] as string;
+        selectionHistory = [...persisted].reverse();
+        selectionCursor = Math.max(0, selectionHistory.length - 2);
+        await selectPreset(previous, { recordHistory: false });
+      }
+      return;
+    }
+    selectionCursor -= 1;
+    const previousId = selectionHistory[selectionCursor];
+    if (previousId) {
+      await selectPreset(previousId, { recordHistory: false });
+    }
   };
 
   const importFiles = async (files: FileList) => {
@@ -296,7 +472,7 @@ export function createMilkdropExperience({
         fileName: file.name,
       });
       await catalogStore.saveDraft(saved.id, compiled.formattedSource);
-      await refreshCatalog();
+      await syncCatalog();
       await selectPreset(saved.id);
     }
   };
@@ -310,8 +486,24 @@ export function createMilkdropExperience({
       origin: 'user',
       author: compiled.author,
     });
-    await refreshCatalog();
+    await syncCatalog();
     await selectPreset(saved.id);
+  };
+
+  const deleteActivePreset = async () => {
+    const entry = getActiveCatalogEntry();
+    if (!entry || !isEditablePreset(entry)) {
+      return;
+    }
+    const deletedId = entry.id;
+    await catalogStore.deletePreset(deletedId);
+    await syncCatalog();
+    const replacement = catalogEntries.find(
+      (candidate) => candidate.id !== deletedId,
+    );
+    if (replacement) {
+      await selectPreset(replacement.id, { recordHistory: false });
+    }
   };
 
   const exportPreset = () => {
@@ -319,10 +511,95 @@ export function createMilkdropExperience({
     downloadPresetFile(compiled.source.id, compiled.formattedSource);
   };
 
+  const installKeyboardShortcuts = () => {
+    if (keyboardHandler) {
+      return;
+    }
+    keyboardHandler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target instanceof HTMLElement &&
+        (target.closest('.cm-editor') ||
+          /^(INPUT|TEXTAREA|SELECT)$/u.test(target.tagName))
+      ) {
+        return;
+      }
+
+      if (event.key === 'o') {
+        overlay.toggleOpen();
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'n') {
+        void selectAdjacentPreset(1);
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'p') {
+        void selectAdjacentPreset(-1);
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'r') {
+        void selectRandomPreset();
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'b' || event.key === 'Backspace') {
+        void goBackPreset();
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'f' && activePresetId) {
+        const entry = getActiveCatalogEntry();
+        if (!entry) {
+          return;
+        }
+        void catalogStore
+          .setFavorite(activePresetId, !entry.isFavorite)
+          .then(syncCatalog);
+        event.preventDefault();
+        return;
+      }
+      if (/^[1-5]$/u.test(event.key) && activePresetId) {
+        void catalogStore
+          .setRating(activePresetId, Number.parseInt(event.key, 10))
+          .then(syncCatalog);
+      }
+    };
+    document.addEventListener('keydown', keyboardHandler);
+  };
+
+  const installRequestedPresetListener = () => {
+    if (requestedPresetListener || typeof window === 'undefined') {
+      return;
+    }
+    requestedPresetListener = (event: Event) => {
+      const presetId = (
+        event as CustomEvent<{ presetId?: string }>
+      ).detail?.presetId?.trim();
+      if (!presetId) {
+        return;
+      }
+      void selectPreset(presetId);
+    };
+    window.addEventListener(
+      MILKDROP_PRESET_SELECTION_EVENT,
+      requestedPresetListener,
+    );
+  };
+
   session.subscribe((state) => {
     overlay.setSessionState(state);
     const nextCompiled = state.activeCompiled;
     if (!nextCompiled) {
+      return;
+    }
+    if (shouldFallbackToWebgl(nextCompiled)) {
+      triggerWebglFallback({
+        presetId: nextCompiled.source.id,
+        reason: `${nextCompiled.title} needs WebGL for validated feedback/post rendering.`,
+      });
       return;
     }
     const didPresetChange =
@@ -332,35 +609,49 @@ export function createMilkdropExperience({
       applyCompiledPreset(nextCompiled);
       void catalogStore.saveDraft(nextCompiled.source.id, state.source);
     }
-    void refreshCatalog();
+    void syncCatalog();
   });
 
-  void refreshCatalog().then(async () => {
-    const initialPresetId = prefs.lastPresetId;
+  installRequestedPresetListener();
+  void syncCatalog().then(async () => {
+    const requestedPresetId = consumeRequestedMilkdropPresetSelection();
+    const startupPresetId =
+      requestedPresetId ?? initialPresetId ?? prefs.lastPresetId;
     if (
-      initialPresetId &&
-      catalogEntries.some((entry) => entry.id === initialPresetId)
+      startupPresetId &&
+      catalogEntries.some((entry) => entry.id === startupPresetId)
     ) {
-      await selectPreset(initialPresetId);
+      await selectPreset(startupPresetId, { recordHistory: false });
       return;
     }
     const first = catalogEntries[0];
     if (first) {
-      await selectPreset(first.id);
+      await selectPreset(first.id, { recordHistory: false });
     }
   });
 
   return {
     attachRuntime(nextRuntime: ToyRuntimeInstance) {
       runtime = nextRuntime;
+      installKeyboardShortcuts();
       nextRuntime.toy.rendererReady.then((handle) => {
         activeBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
         adapter = createMilkdropRendererAdapter({
           scene: nextRuntime.toy.scene,
+          camera: nextRuntime.toy.camera,
+          renderer: handle?.renderer,
           backend: activeBackend,
         });
         adapter.attach();
         adapter.setPreset(activeCompiled);
+        if (shouldFallbackToWebgl(activeCompiled)) {
+          triggerWebglFallback({
+            presetId: activeCompiled.source.id,
+            reason: `${activeCompiled.title} needs WebGL for validated feedback/post rendering.`,
+          });
+          return;
+        }
+        void syncCatalog();
       });
     },
 
@@ -419,6 +710,17 @@ export function createMilkdropExperience({
       adapter?.dispose();
       adapter = null;
       runtime = null;
+      if (keyboardHandler) {
+        document.removeEventListener('keydown', keyboardHandler);
+        keyboardHandler = null;
+      }
+      if (requestedPresetListener) {
+        window.removeEventListener(
+          MILKDROP_PRESET_SELECTION_EVENT,
+          requestedPresetListener,
+        );
+        requestedPresetListener = null;
+      }
     },
   };
 }

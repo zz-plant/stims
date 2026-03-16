@@ -31,6 +31,9 @@ describe('milkdrop runtime signals', () => {
     expect(first.weightedEnergy).toBeLessThanOrEqual(1);
     expect(second.beat).toBe(1);
     expect(second.beatPulse).toBeGreaterThan(0);
+    expect(second.beat_pulse).toBe(second.beatPulse);
+    expect(second.vol).toBeCloseTo(second.rms, 6);
+    expect(second.music).toBeCloseTo(second.weightedEnergy, 6);
   });
 
   test('uses analyser-provided bands and smoothed RMS when available', () => {
@@ -48,8 +51,13 @@ describe('milkdrop runtime signals', () => {
     });
 
     expect(update.bass).toBeCloseTo(0.75, 6);
+    expect(update.mid).toBeCloseTo(update.mids, 6);
+    expect(update.treb).toBeCloseTo(update.treble, 6);
     expect(update.mids).toBeCloseTo(0.4, 6);
     expect(update.treble).toBeCloseTo(0.25, 6);
+    expect(update.bass_att).toBeCloseTo(update.bassAtt, 6);
+    expect(update.mid_att).toBeCloseTo(update.midsAtt, 6);
+    expect(update.treb_att).toBeCloseTo(update.trebleAtt, 6);
     expect(update.rms).toBeGreaterThan(0.1);
     expect(update.rms).toBeLessThan(0.2);
   });
