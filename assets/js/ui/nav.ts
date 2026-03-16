@@ -89,8 +89,8 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
       <div class="brand">
         <span class="brand-mark"></span>
         <div class="brand-copy">
-          <p class="eyebrow">Stim Lab</p>
-          <p class="brand-title">Webtoy Library ✦</p>
+          <p class="eyebrow">Stim Webtoys</p>
+          <p class="brand-title">Stims ✦</p>
         </div>
       </div>
       <button class="nav-toggle" type="button" aria-expanded="true" aria-controls="nav-actions">
@@ -99,8 +99,8 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
       </button>
       <div class="nav-actions" id="nav-actions">
         <div class="nav-section nav-section--primary" aria-label="Primary links">
-          <a class="nav-link nav-link--section" data-section-link href="#intro">Start</a>
-          <a class="nav-link nav-link--section" data-section-link href="#library">Library</a>
+          <a class="nav-link nav-link--section" data-section-link href="#milkdrop">MilkDrop</a>
+          <a class="nav-link nav-link--section" data-section-link href="#library">Toy lab</a>
           <a class="nav-link" href="/toys/">Toy pages</a>
           <a class="nav-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a>
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">

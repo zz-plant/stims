@@ -91,10 +91,14 @@ type ViewState = {
   status: StatusConfig | null;
   audioPromptActive: boolean;
   audioPromptOptions?: AudioPromptCallbacks;
+  activeStageSlot: 'primary' | 'secondary';
+  pendingStageSlot: 'primary' | 'secondary' | null;
 };
 
 const TOY_CONTAINER_CLASS = 'active-toy-container';
 const HIDDEN_CLASS = 'is-hidden';
+const TOY_STAGE_CLASS = 'active-toy-stage';
+const TRANSITION_DURATION_MS = 320;
 
 function hideElement(element: HTMLElement | null) {
   if (element && !element.classList.contains(HIDDEN_CLASS)) {
@@ -118,6 +122,35 @@ function clearContainerContent(container: HTMLElement | null) {
 
     child.remove();
   });
+}
+
+function clearToyRootContent(container: HTMLElement | null) {
+  if (!container) return;
+
+  Array.from(container.children).forEach((child) => {
+    if (
+      child instanceof HTMLElement &&
+      (child.dataset.preserve === 'toy-ui' ||
+        child.classList.contains(TOY_STAGE_CLASS))
+    ) {
+      return;
+    }
+
+    child.remove();
+  });
+
+  container
+    .querySelectorAll<HTMLElement>(`.${TOY_STAGE_CLASS}`)
+    .forEach((stage) => clearContainerContent(stage));
+}
+
+function clearStageState(container: HTMLElement | null) {
+  if (!container) return;
+
+  container.removeAttribute('data-transition-state');
+  container
+    .querySelectorAll<HTMLElement>(`.${TOY_STAGE_CLASS}`)
+    .forEach((stage) => stage.removeAttribute('data-stage-state'));
 }
 
 function renderStatusElement(
@@ -295,6 +328,8 @@ export function createToyView({
     status: null,
     audioPromptActive: false,
     audioPromptOptions: undefined,
+    activeStageSlot: 'primary',
+    pendingStageSlot: null,
   };
 
   const getDocument = () => documentRef();
@@ -357,6 +392,28 @@ export function createToyView({
     return container;
   };
 
+  const ensureToyStage = (
+    root: HTMLElement,
+    slot: 'primary' | 'secondary' = state.activeStageSlot,
+  ) => {
+    let stage = root.querySelector<HTMLElement>(`[data-stage-slot="${slot}"]`);
+    if (stage) return stage;
+
+    stage = root.ownerDocument.createElement('div');
+    stage.className = TOY_STAGE_CLASS;
+    stage.dataset.stageSlot = slot;
+    root.prepend(stage);
+    return stage;
+  };
+
+  const getActiveToyStage = (root: HTMLElement) =>
+    ensureToyStage(root, state.activeStageSlot);
+
+  const getPendingToyStage = (root: HTMLElement) =>
+    state.pendingStageSlot
+      ? ensureToyStage(root, state.pendingStageSlot)
+      : null;
+
   const render = ({
     clearContainer = false,
   }: {
@@ -381,12 +438,14 @@ export function createToyView({
       showElement(toyList);
       hideElement(container);
       container.dataset.hasBlockingStatus = 'false';
+      clearStageState(container);
       state.status = null;
       return { container, status: null };
     }
 
     hideElement(toyList);
     showElement(container);
+    getActiveToyStage(container);
 
     buildToyNav({
       container,
@@ -428,6 +487,8 @@ export function createToyView({
     state.status = null;
     state.audioPromptActive = false;
     state.audioPromptOptions = undefined;
+    state.activeStageSlot = 'primary';
+    state.pendingStageSlot = null;
     runViewTransition(() => render({ clearContainer: true }));
   };
 
@@ -454,7 +515,43 @@ export function createToyView({
     state.hapticsSupported = hapticsSupported ?? state.hapticsSupported;
     state.activeToyMeta = toy ?? state.activeToyMeta;
     const { container } = runViewTransition(() => render());
-    return container;
+    return container ? getActiveToyStage(container) : null;
+  };
+
+  const showIncomingToyView = (
+    onBack?: () => void,
+    toy?: Toy,
+    {
+      onNextToy,
+      onToggleHaptics,
+      hapticsActive,
+      hapticsSupported,
+    }: {
+      onNextToy?: () => void;
+      onToggleHaptics?: (active: boolean) => void;
+      hapticsActive?: boolean;
+      hapticsSupported?: boolean;
+    } = {},
+  ) => {
+    state.pendingStageSlot =
+      state.activeStageSlot === 'primary' ? 'secondary' : 'primary';
+    showActiveToyView(onBack, toy, {
+      onNextToy,
+      onToggleHaptics,
+      hapticsActive,
+      hapticsSupported,
+    });
+    const root = ensureActiveToyContainer();
+    const incoming =
+      root && state.pendingStageSlot
+        ? ensureToyStage(root, state.pendingStageSlot)
+        : null;
+    if (!incoming) return null;
+
+    clearContainerContent(incoming);
+    incoming.dataset.stageState = 'incoming';
+    root?.setAttribute('data-transition-state', 'loading');
+    return incoming;
   };
 
   const showLoadingIndicator = (toyTitle?: string, toy?: Toy) => {
@@ -473,6 +570,56 @@ export function createToyView({
   const removeStatusElement = () => {
     state.status = null;
     render();
+  };
+
+  const finishTransitionState = (root: HTMLElement | null) => {
+    clearStageState(root);
+    const pendingSlot = state.pendingStageSlot;
+    if (!root || !pendingSlot) return;
+
+    const outgoing = ensureToyStage(root, state.activeStageSlot);
+    clearContainerContent(outgoing);
+    outgoing.remove();
+    state.activeStageSlot = pendingSlot;
+    state.pendingStageSlot = null;
+    ensureToyStage(root, state.activeStageSlot);
+  };
+
+  const completeToyTransition = async () => {
+    const root = ensureActiveToyContainer();
+    const pending = root ? getPendingToyStage(root) : null;
+    if (!root || !pending) return;
+
+    const current = ensureToyStage(root, state.activeStageSlot);
+    root.setAttribute('data-transition-state', 'running');
+    current.dataset.stageState = 'outgoing';
+    pending.dataset.stageState = 'incoming';
+
+    if (
+      typeof window === 'undefined' ||
+      typeof window.setTimeout !== 'function' ||
+      prefersReducedMotion()
+    ) {
+      finishTransitionState(root);
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, TRANSITION_DURATION_MS);
+    });
+
+    finishTransitionState(root);
+  };
+
+  const cancelToyTransition = () => {
+    const root = ensureActiveToyContainer();
+    const pending = root ? getPendingToyStage(root) : null;
+    if (pending) {
+      clearContainerContent(pending);
+      pending.remove();
+    }
+    state.pendingStageSlot = null;
+    clearStageState(root);
   };
 
   const showImportError = (
@@ -625,12 +772,20 @@ export function createToyView({
   return {
     showLibraryView,
     showActiveToyView,
+    showIncomingToyView,
     showLoadingIndicator,
     showImportError,
     showCapabilityError,
     removeStatusElement,
+    completeToyTransition,
+    cancelToyTransition,
     clearActiveToyContainer: () =>
-      clearContainerContent(findActiveToyContainer()),
+      (() => {
+        const root = findActiveToyContainer();
+        clearToyRootContent(root);
+        state.pendingStageSlot = null;
+        clearStageState(root);
+      })(),
     ensureActiveToyContainer,
     setRendererStatus,
     setHapticsState,

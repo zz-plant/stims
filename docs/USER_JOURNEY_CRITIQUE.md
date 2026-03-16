@@ -1,5 +1,7 @@
 # Three typical user routes: constructive critique (browser traversal)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical UX critique context rather than the current product-positioning baseline.
+
 This pass traverses three common first-session routes on the local app (`bun run dev:host` + Playwright/Firefox against `http://localhost:5173`) and focuses on practical product decisions in three buckets:
 - what can be **removed**,
 - what should be **rebuilt**,

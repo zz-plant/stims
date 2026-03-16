@@ -1,5 +1,7 @@
 # New-user route critique (browser traversal)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical route-critique context rather than the current product-positioning baseline.
+
 ## Priority order (suggested fixes first)
 1. **Route 1 modal/action hierarchy cleanup** (largest first-session friction)
 2. **Route 2 capability card action hierarchy** (largest list-scanning friction)

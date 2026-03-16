@@ -1,6 +1,6 @@
 # Toy and Visualizer Script Index
 
-This index maps each toy slug to the module that powers it and how the experience loads inside `toy.html`. Use it to find the right entry point quickly when updating assets or debugging loading behavior.
+This index maps each toy slug to the module that powers it and how the experience loads inside `toy.html`. Stims is MilkDrop-led, but this index remains the source for all toy entrypoints in the broader lab. Use it to find the right entry point quickly when updating assets or debugging loading behavior.
 
 ## Query-driven toys (`toy.html`)
 

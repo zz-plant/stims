@@ -1044,6 +1044,140 @@ header.hero {
   isolation: isolate;
 }
 
+.milkdrop-stage {
+  width: min(520px, 90vw);
+  display: grid;
+  gap: 1rem;
+}
+
+.milkdrop-stage__frame {
+  position: relative;
+  aspect-ratio: 1 / 0.92;
+  border-radius: 32px;
+  overflow: hidden;
+  border: 1px solid
+    color-mix(in srgb, var(--accent-color) 24%, var(--surface-border));
+  background:
+    radial-gradient(
+      circle at 50% 48%,
+      rgba(236, 181, 211, 0.16),
+      transparent 14%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(111, 136, 231, 0.18),
+      transparent 42%
+    ),
+    linear-gradient(180deg, rgba(19, 28, 50, 0.96), rgba(12, 17, 33, 0.98));
+  box-shadow: var(--shadow-strong);
+  isolation: isolate;
+}
+
+.milkdrop-stage__frame::before,
+.milkdrop-stage__frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.milkdrop-stage__frame::before {
+  background:
+    radial-gradient(circle at 22% 18%, rgba(95, 192, 181, 0.2), transparent 38%),
+    radial-gradient(
+      circle at 80% 78%,
+      rgba(211, 137, 84, 0.12),
+      transparent 34%
+    );
+  opacity: 0.75;
+}
+
+.milkdrop-stage__frame::after {
+  inset: 12px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.milkdrop-stage__halo,
+.milkdrop-stage__mesh,
+.milkdrop-stage__wave,
+.milkdrop-stage__core {
+  position: absolute;
+}
+
+.milkdrop-stage__halo {
+  inset: 18% 18%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(207, 167, 218, 0.4) 0%,
+    rgba(136, 157, 255, 0.14) 28%,
+    transparent 64%
+  );
+  filter: blur(16px);
+  animation: milkdropPulse 6.8s ease-in-out infinite;
+}
+
+.milkdrop-stage__mesh {
+  inset: 18% 20%;
+  border-radius: 32px;
+  background-image:
+    linear-gradient(rgba(132, 160, 240, 0.7) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(132, 160, 240, 0.7) 1px, transparent 1px);
+  background-size: 10% 10%;
+  transform: perspective(720px) rotateX(66deg) rotateZ(-6deg);
+  opacity: 0.78;
+  mask-image: radial-gradient(circle at center, black 58%, transparent 92%);
+  animation: milkdropMesh 8.5s ease-in-out infinite;
+}
+
+.milkdrop-stage__wave {
+  left: 16%;
+  right: 16%;
+  top: 49%;
+  height: 24%;
+  border-radius: 999px;
+  border-top: 2px solid rgba(206, 230, 255, 0.9);
+  border-bottom: 2px solid rgba(219, 158, 199, 0.55);
+  filter: drop-shadow(0 0 18px rgba(180, 212, 255, 0.2));
+  transform: translateY(-50%);
+  animation: milkdropWave 4.9s ease-in-out infinite;
+}
+
+.milkdrop-stage__core {
+  width: 16%;
+  aspect-ratio: 1;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 24px;
+  background:
+    radial-gradient(
+      circle at 35% 35%,
+      rgba(255, 255, 255, 0.7),
+      transparent 30%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(233, 162, 202, 0.95),
+      rgba(124, 141, 255, 0.75)
+    );
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 0 32px rgba(221, 168, 205, 0.22);
+  animation: milkdropCore 5.4s ease-in-out infinite;
+}
+
+.milkdrop-stage__meta {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.milkdrop-preset-strip {
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+}
+
 .preview-reel {
   width: min(520px, 90vw);
   border-radius: 24px;
@@ -4573,6 +4707,78 @@ section.intro {
   50% {
     transform: scaleX(1.08);
     filter: saturate(1.2);
+  }
+}
+
+@keyframes milkdropPulse {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.66;
+  }
+
+  50% {
+    transform: scale(1.04);
+    opacity: 0.9;
+  }
+}
+
+@keyframes milkdropMesh {
+  0%,
+  100% {
+    transform: perspective(720px) rotateX(66deg) rotateZ(-6deg) scale(0.98);
+  }
+
+  50% {
+    transform: perspective(720px) rotateX(66deg) rotateZ(4deg) scale(1.02);
+  }
+}
+
+@keyframes milkdropWave {
+  0%,
+  100% {
+    clip-path: polygon(
+      0% 55%,
+      10% 46%,
+      22% 62%,
+      35% 44%,
+      50% 58%,
+      64% 42%,
+      78% 60%,
+      90% 45%,
+      100% 54%,
+      100% 70%,
+      0% 70%
+    );
+  }
+
+  50% {
+    clip-path: polygon(
+      0% 48%,
+      12% 61%,
+      24% 43%,
+      36% 58%,
+      50% 40%,
+      65% 63%,
+      78% 46%,
+      90% 57%,
+      100% 46%,
+      100% 70%,
+      0% 70%
+    );
+  }
+}
+
+@keyframes milkdropCore {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.94);
+    border-radius: 24px;
+  }
+
+  50% {
+    transform: translate(-50%, -50%) rotate(14deg) scale(1.08);
+    border-radius: 18px;
   }
 }
 

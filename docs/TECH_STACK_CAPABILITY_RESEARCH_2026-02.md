@@ -1,5 +1,7 @@
 # Tech stack capability research (2026-02)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical stack-research context rather than the current product-positioning baseline.
+
 This note captures **newer capabilities** available across the core stack used in this repo, with a focus on practical upgrade opportunities.
 
 ## Snapshot: current vs latest

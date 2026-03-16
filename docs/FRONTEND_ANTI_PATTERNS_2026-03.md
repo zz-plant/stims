@@ -1,5 +1,7 @@
 # Front-end inefficiencies and antipatterns (2026-03)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical engineering-audit context rather than the current product-positioning baseline.
+
 This audit identifies 10 concrete inefficiencies/antipatterns in the current front-end code.
 
 1. **Repeated global DOM querying in hot paths**  

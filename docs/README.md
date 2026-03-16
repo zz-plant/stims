@@ -2,6 +2,8 @@
 
 This is the canonical documentation map for the repository. Root-level entry points (`README.md`, `CONTRIBUTING.md`, and `AGENTS.md`) should link here instead of duplicating large doc lists.
 
+Stims positioning baseline: Stims is a browser-native **MilkDrop successor** with a broader collection of related audio-reactive toys. Keep this framing consistent in public and routing docs.
+
 ## Start here
 
 - Human contributors: [`../CONTRIBUTING.md`](../CONTRIBUTING.md)
@@ -23,6 +25,7 @@ If you only need the current operating surface, prefer the sections below named 
 
 If you need to...
 
+- Align homepage/public messaging with MilkDrop-led positioning: [`PUBLIC_DOCS_SITE_MAP.md`](./PUBLIC_DOCS_SITE_MAP.md), [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md), [`FEATURE_SPECIFICATIONS.md`](./FEATURE_SPECIFICATIONS.md)
 - Set up locally, run scripts, or understand quality gates: [`DEVELOPMENT.md`](./DEVELOPMENT.md)
 - Add or modify a toy: [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md)
 - Verify toy coverage/expectations: [`TOY_TESTING_SPEC.md`](./TOY_TESTING_SPEC.md)
@@ -56,6 +59,8 @@ If you need to...
 ### Product, UX, and research docs
 
 These are useful context docs, but many are audits, critiques, or dated planning documents rather than day-to-day operating guides.
+
+When these docs predate major positioning changes, keep findings intact and add a short historical-context note instead of rewriting conclusions as current product truth.
 
 - [`FEATURE_SPECIFICATIONS.md`](./FEATURE_SPECIFICATIONS.md)
 - [`FEATURE_AUDIT.md`](./FEATURE_AUDIT.md)

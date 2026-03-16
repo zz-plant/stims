@@ -1,6 +1,6 @@
 # Toy Development Playbook
 
-Use this playbook when adding or modifying toys so new experiences integrate cleanly with the rest of the Stim Webtoys Library.
+Use this playbook when adding or modifying toys so new experiences integrate cleanly with Stims. The product is MilkDrop-led, but this guide covers the broader toy lab workflow so all toys share the same runtime quality bar.
 
 ## Core Expectations
 

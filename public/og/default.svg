@@ -14,7 +14,7 @@
   <circle cx="1035" cy="540" r="160" fill="rgba(255,255,255,0.12)" />
   <circle cx="160" cy="100" r="120" fill="rgba(255,255,255,0.1)" />
   
-  <text x="90" y="170" font-size="40" fill="#dbe4ff" font-family="Inter, Arial, sans-serif">Stim Webtoys Library</text>
-  <text x="90" y="272" font-size="72" font-weight="700" fill="#ffffff" font-family="Inter, Arial, sans-serif">Stim Webtoys</text>
-  <text x="90" y="342" font-size="32" fill="#e2e8ff" font-family="Inter, Arial, sans-serif">Audio-reactive sensory visual play</text>
+  <text x="90" y="170" font-size="40" fill="#dbe4ff" font-family="Inter, Arial, sans-serif">Stims</text>
+  <text x="90" y="272" font-size="72" font-weight="700" fill="#ffffff" font-family="Inter, Arial, sans-serif">MilkDrop starts here</text>
+  <text x="90" y="342" font-size="32" fill="#e2e8ff" font-family="Inter, Arial, sans-serif">Browser-native successor, broader toy lab</text>
 </svg>

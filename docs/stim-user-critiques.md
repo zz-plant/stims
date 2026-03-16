@@ -1,5 +1,7 @@
 # User-Focused Critiques by Toy
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical critique context rather than the current product-positioning baseline.
+
 This guide captures user-standpoint critiques for each Stim toy based on the current registry metadata, helping prioritize onboarding, controls, and clarity improvements alongside visual polish.
 
 ## Toy-specific priority implementation set (P0 + P1 only)

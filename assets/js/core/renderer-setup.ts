@@ -152,6 +152,9 @@ export async function initRenderer(
         alpha,
         device,
       });
+      if ('init' in renderer && typeof renderer.init === 'function') {
+        await renderer.init();
+      }
       return finalize(renderer, 'webgpu', adapter, device);
     } catch (error) {
       return fallbackToWebGL(

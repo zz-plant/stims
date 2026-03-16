@@ -1,5 +1,7 @@
 # SEO Audit (2026-02-18)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical SEO context rather than the current product-positioning baseline.
+
 ## Scope
 
 This audit reviews the production SEO surface for [https://no.toil.fyi](https://no.toil.fyi):

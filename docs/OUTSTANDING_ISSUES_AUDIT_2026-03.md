@@ -1,5 +1,7 @@
 # Outstanding issues audit (2026-03-02)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical backlog/audit context rather than the current product-positioning baseline.
+
 ## Scope
 
 This audit consolidates currently outstanding work discovered from:

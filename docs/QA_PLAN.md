@@ -1,11 +1,11 @@
 # QA plan and automation map
 
-This guide captures the highest-impact flows to validate and how we keep them covered with automation. Run the linked tests when touching the associated areas so regressions surface quickly.
+This guide captures the highest-impact flows to validate and how we keep them covered with automation. Stims is positioned as a browser-native MilkDrop successor with a broader toy lab, so QA should protect both the flagship `milkdrop` flow and cross-toy reliability. Run the linked tests when touching the associated areas so regressions surface quickly.
 
 ## High-value flows
 
-- **Library discovery and launch**
-  - What to verify: the landing page renders toy cards, search filters the list, and launching a toy routes module-based entries without breaking external HTML links.
+- **Flagship launch and broader discovery**
+  - What to verify: the landing page can launch `milkdrop` as the primary path, toy cards still render, search filters the list, and launching a toy routes module-based entries without breaking external HTML links.
   - Automation: `tests/app-shell.test.js` exercises card rendering, search filtering, and routing logic under happy-dom.
   - Supporting checks: `bun run dev:check` confirms the Vite dev server wiring without opening a browser.
 - **Shared quality preset persistence**

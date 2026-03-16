@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
-      content="Play audio-reactive visual toys instantly for sound, touch, and motion. No setup, no signup."
+      content="Stims is a browser-native MilkDrop successor with a broader lab of audio-reactive toys. Launch MilkDrop Visualizer instantly, then explore the rest."
     />
     <meta
       name="keywords"
-      content="audio-reactive, webgl, three.js, visual toys, sensory play, stimming, interactive art"
+      content="milkdrop successor, audio visualizer, preset editor, webgl, webgpu, browser visualizer, interactive art, stims"
     />
-    <meta name="application-name" content="Stim Webtoys Library" />
+    <meta name="application-name" content="Stim Webtoys" />
     <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#0b0f1a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -25,28 +25,28 @@
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <title>Stim Webtoys Library | Audio-reactive visual toys</title>
-    <meta property="og:title" content="Stim Webtoys Library | Audio-reactive visual toys" />
+    <title>Stims | Browser-native MilkDrop successor</title>
+    <meta property="og:title" content="Stims | Browser-native MilkDrop successor" />
     <meta
       property="og:description"
-      content="Play audio-reactive visual toys instantly for sound, touch, and motion. No setup, no signup."
+      content="Launch MilkDrop Visualizer instantly, then explore the broader Stims toy lab of audio-reactive scenes."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://no.toil.fyi/" />
     <meta property="og:image" content="https://no.toil.fyi/icons/icon-512.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
-    <meta property="og:image:alt" content="Stim Webtoys Library icon" />
-    <meta property="og:site_name" content="Stim Webtoys Library" />
+    <meta property="og:image:alt" content="Stims icon" />
+    <meta property="og:site_name" content="Stim Webtoys" />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Stim Webtoys Library | Audio-reactive visual toys" />
+    <meta name="twitter:title" content="Stims | Browser-native MilkDrop successor" />
     <meta
       name="twitter:description"
-      content="Play audio-reactive visual toys instantly for sound, touch, and motion. No setup, no signup."
+      content="Launch MilkDrop Visualizer instantly, then explore the broader Stims toy lab of audio-reactive scenes."
     />
     <meta name="twitter:image" content="https://no.toil.fyi/icons/icon-512.png" />
-    <meta name="twitter:image:alt" content="Stim Webtoys Library icon" />
+    <meta name="twitter:image:alt" content="Stims icon" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
@@ -74,10 +74,10 @@
             "@type": "WebSite",
             "@id": "https://no.toil.fyi/#website",
             "url": "https://no.toil.fyi/",
-            "name": "Stim Webtoys Library",
+            "name": "Stims",
             "publisher": { "@id": "https://no.toil.fyi/#organization" },
             "inLanguage": "en",
-            "description": "Play audio-reactive visual toys instantly for sound, touch, and motion.",
+            "description": "Browser-native MilkDrop successor with a broader lab of audio-reactive toys.",
             "potentialAction": {
               "@type": "SearchAction",
               "target": "https://no.toil.fyi/?q={search_term_string}",
@@ -94,9 +94,9 @@
             "@type": ["WebPage", "CollectionPage"],
             "@id": "https://no.toil.fyi/#webpage",
             "url": "https://no.toil.fyi/",
-            "name": "Stim Webtoys Library",
-            "headline": "Feel-first visuals that breathe with your audio.",
-            "description": "Explore audio, color, and motion without setup. Every stim opens fast, responds to mic and touch, and comes with sensible defaults that keep you in flow.",
+            "name": "Stims",
+            "headline": "A browser-native MilkDrop successor, ready in one click.",
+            "description": "Launch MilkDrop Visualizer instantly, live-edit presets in the browser, and keep the broader Stims toy lab close when you want more than one visualizer.",
             "isPartOf": { "@id": "https://no.toil.fyi/#website" },
             "publisher": { "@id": "https://no.toil.fyi/#organization" },
             "inLanguage": "en",
@@ -110,10 +110,10 @@
           {
             "@type": "SoftwareSourceCode",
             "@id": "https://github.com/zz-plant/stims",
-            "name": "Stim Webtoys Library",
+            "name": "Stims",
             "url": "https://github.com/zz-plant/stims",
             "codeRepository": "https://github.com/zz-plant/stims",
-            "description": "Open-source library of audio-reactive visual toys for sensory play.",
+            "description": "Open-source browser-native MilkDrop successor with a broader collection of related audio-reactive toys.",
             "license": "https://github.com/zz-plant/stims/blob/main/LICENSE",
             "programmingLanguage": [
               "TypeScript",
@@ -128,12 +128,18 @@
     </script>
   </head>
   <body data-page="library">
+    <canvas
+      class="hero-background-canvas"
+      data-hero-canvas
+      data-color-scheme="aurora"
+      aria-hidden="true"
+    ></canvas>
     <div class="content">
       <header class="shell-header">
         <div data-top-nav-container>
           <nav class="top-nav top-nav--static" aria-label="Primary">
-            <a class="nav-link" href="#intro">Start</a>
-            <a class="nav-link" href="#library">Library</a>
+            <a class="nav-link" href="#milkdrop">MilkDrop</a>
+            <a class="nav-link" href="#library">Toy lab</a>
             <a class="nav-link" href="/toys/">Toy pages</a>
             <a
               class="nav-link"
@@ -150,27 +156,147 @@
         </div>
       </header>
 
-      <section class="intro" id="intro" aria-label="Primary quick actions">
-        <p class="eyebrow">Start here</p>
-        <h1>Open a visual toy in seconds</h1>
-        <p class="cta-helper intro-helper">Pick a stim and play. Search if you know what you want, or start with the first recommended toy.</p>
-        <div class="intro-actions" role="group" aria-label="Start options">
-          <a
-            href="toy.html?toy=holy"
-            class="cta-button primary"
-          >
-            Start playing
-          </a>
-          <a href="#library" class="text-link">Browse the library</a>
+      <header class="hero" id="milkdrop" aria-label="MilkDrop spotlight">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Flagship visualizer</p>
+            <h1>A browser-native MilkDrop successor, ready in one click.</h1>
+            <p class="tagline">
+              Stims leads with MilkDrop Visualizer: preset-driven feedback
+              motion, live source editing, import/export, and browser-friendly
+              fallback paths. The broader toy lab stays close when you want
+              more than one visualizer.
+            </p>
+            <div
+              class="hero-readiness"
+              data-hero-readiness-summary
+              aria-label="Launch readiness"
+            >
+              <p class="hero-readiness__text" data-hero-readiness-text>
+                Ready • Balanced • WebGPU when available
+              </p>
+              <a href="#library" class="cta-button ghost hero-readiness__action"
+                >Explore the broader toy lab</a
+              >
+            </div>
+            <div class="hero-cta-row" role="group" aria-label="MilkDrop actions">
+              <a
+                href="toy.html?toy=milkdrop"
+                class="cta-button primary"
+                data-quickstart-slug="milkdrop"
+              >
+                Launch MilkDrop Visualizer
+              </a>
+              <a href="#proof" class="cta-button ghost">Why Stims leads here</a>
+              <a href="#library" class="cta-button cta-button--muted"
+                >Browse the toy lab</a
+              >
+            </div>
+            <p class="cta-helper intro-helper">
+              Start with curated presets, then branch into halos, tunnels,
+              tidepools, grids, and the rest of the Stims collection when you
+              want more than one style of audio-reactive play.
+            </p>
+          </div>
+          <div class="hero-visual">
+            <div class="milkdrop-stage">
+              <div class="milkdrop-stage__frame">
+                <div class="milkdrop-stage__halo"></div>
+                <div class="milkdrop-stage__mesh"></div>
+                <div class="milkdrop-stage__wave"></div>
+                <div class="milkdrop-stage__core"></div>
+              </div>
+              <div class="milkdrop-stage__meta">
+                <div class="callout-card">
+                  <p class="callout-title">Bundled preset showcase</p>
+                  <p class="callout-copy" data-milkdrop-preset-count>
+                    Loading curated preset pack…
+                  </p>
+                  <div
+                    class="callout-row milkdrop-preset-strip"
+                    data-milkdrop-preset-list
+                  >
+                    <span class="pill pill--accent">Aurora Feedback Core</span>
+                    <span class="pill pill--soft">Kinetic Grid Pulse</span>
+                    <span class="pill pill--soft">Low Motion Halo Drift</span>
+                    <span class="pill pill--contrast">Prism Drum Tunnel</span>
+                  </div>
+                </div>
+                <div class="hero-callouts">
+                  <article class="callout-card">
+                    <p class="callout-title">Preset-first</p>
+                    <p class="callout-copy">
+                      Switch looks quickly, then go deeper with live edits
+                      instead of hopping between one-off demos.
+                    </p>
+                  </article>
+                  <article class="callout-card">
+                    <p class="callout-title">Broader than one visualizer</p>
+                    <p class="callout-copy">
+                      MilkDrop is the lead story now. The rest of the toy lab
+                      expands that story rather than competing with it.
+                    </p>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="experience" id="proof">
+        <div class="section-heading">
+          <p class="eyebrow">Why Stims leads with MilkDrop</p>
+          <h2>The flagship story is presets, playback, and live control.</h2>
+          <p class="section-description">
+            Stims now opens with the use case people already recognize: a
+            browser-native successor to classic MilkDrop-style visualizer
+            workflows. The wider toy lab builds outward from that foundation.
+          </p>
+        </div>
+        <div class="experience-grid">
+          <article class="experience-card">
+            <p class="experience-card__eyebrow">Preset engine</p>
+            <h3>Curated looks ship with the site</h3>
+            <p>
+              The homepage points straight at a visualizer built around bundled
+              presets, blend timing, and compatibility-aware playback.
+            </p>
+          </article>
+          <article class="experience-card">
+            <p class="experience-card__eyebrow">Live editing</p>
+            <h3>Change the look without breaking playback</h3>
+            <p>
+              Source editing, diagnostics, and last-good rollback make the
+              browser session feel like a real visualizer workspace.
+            </p>
+          </article>
+          <article class="experience-card">
+            <p class="experience-card__eyebrow">Import and export</p>
+            <h3>Round-trip presets, not just screenshots</h3>
+            <p>
+              Bring in `.milk` presets, tune them in place, and export the
+              result once the visual feels stable.
+            </p>
+          </article>
+          <article class="experience-card">
+            <p class="experience-card__eyebrow">Toy lab</p>
+            <h3>Go wider when you want more than MilkDrop</h3>
+            <p>
+              Halos, tidepools, tunnels, grids, and touch-heavy scenes are
+              still one click away when you want to branch out.
+            </p>
+          </article>
         </div>
       </section>
 
       <section class="library" id="library">
         <div class="section-heading">
-          <p class="eyebrow">Library</p>
-          <h2>Browse the full library</h2>
+          <p class="eyebrow">Broader toy lab</p>
+          <h2>Explore everything beyond the flagship visualizer</h2>
           <p class="section-description">
-            Search by name or use a few simple filters to narrow the list.
+            MilkDrop leads the homepage now, but the broader Stims catalog is
+            still searchable by name, mood, capability, and device fit.
           </p>
         </div>
         <search class="library-search">
@@ -181,7 +307,7 @@
               type="search"
               inputmode="search"
               autocomplete="off"
-              placeholder="Search toys"
+              placeholder="Search the toy lab"
               aria-label="Search library"
               list="toy-search-suggestions"
             />
@@ -253,7 +379,7 @@
             role="status"
             aria-live="polite"
           >
-            Loading visual library…
+            Loading toy lab…
           </p>
           <details class="library-refine" data-library-refine>
             <summary>Filters</summary>
@@ -307,13 +433,14 @@
         <main id="toy-list" class="webtoy-container">
           <noscript>
             <section aria-label="Static library links">
-              <h3>Browse toy pages without JavaScript</h3>
+              <h3>Explore the toy lab without JavaScript</h3>
               <p>
-                The interactive library needs JavaScript, but every toy and collection page is available as
-                a regular link.
+                The interactive toy lab needs JavaScript, but every toy and
+                collection page is still available as a regular link.
               </p>
               <ul>
                 <li><a class="text-link" href="/toys/">All toy pages</a></li>
+                <li><a class="text-link" href="/toys/milkdrop/">MilkDrop Visualizer toy page</a></li>
                 <li><a class="text-link" href="/toys/holy/">Halo Pulse toy page</a></li>
                 <li><a class="text-link" href="/toys/cube-wave/">Grid Visualizer toy page</a></li>
                 <li><a class="text-link" href="/toys/aurora-painter/">Aurora Painter toy page</a></li>
@@ -327,9 +454,11 @@
       <section class="github" id="github">
         <div class="section-heading">
           <p class="eyebrow">GitHub</p>
-          <h2>Follow the project</h2>
+          <h2>Build on the visualizer engine in public</h2>
           <p class="section-description">
-            The code, changelog, and discussion all live in public. If you want more than the library itself, GitHub is the only next stop.
+            The visualizer engine, docs, preset work, and broader toy-lab
+            experiments all live in the open. GitHub is where the MilkDrop-led
+            story turns back into source.
           </p>
         </div>
         
@@ -452,7 +581,8 @@
             >
           </div>
           <p class="repo-status__message">
-            Prefer docs? Start with the README in the repository.
+            Prefer docs? Start with the README, then follow the docs hub into
+            the MilkDrop and toy-lab guides.
           </p>
         </div>
       </section>
@@ -471,9 +601,11 @@
             </a>
           </p>
           <p class="footer-nav">
-            <a href="#intro" class="text-link">Intro</a>
+            <a href="#milkdrop" class="text-link">MilkDrop</a>
             <span aria-hidden="true">·</span>
-            <a href="#library" class="text-link">Library</a>
+            <a href="#proof" class="text-link">Why Stims leads here</a>
+            <span aria-hidden="true">·</span>
+            <a href="#library" class="text-link">Toy lab</a>
             <span aria-hidden="true">·</span>
             <a href="#github" class="text-link">GitHub</a>
           </p>
@@ -494,7 +626,7 @@
             >
           </div>
           <p class="cta-helper footer-helper">
-            Open-source and building in public.
+            Open-source, building in public, and now led by MilkDrop Visualizer.
           </p>
         </div>
       </footer>

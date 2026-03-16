@@ -1,6 +1,6 @@
 {
   "name": "stims",
-  "description": "Interactive audio-reactive web toys built with Three.js/WebGL for sensory-friendly play.",
+  "description": "Browser-native MilkDrop successor with a broader collection of related audio-reactive toys.",
   "version": "1.0.0",
   "type": "module",
   "homepage": "https://no.toil.fyi",
@@ -12,16 +12,16 @@
     "url": "https://github.com/zz-plant/stims/issues"
   },
   "keywords": [
+    "milkdrop",
+    "milkdrop-successor",
+    "visualizer",
+    "audio-reactive",
     "threejs",
     "webgl",
-    "generative-art",
-    "audio-reactive",
-    "visualizer",
-    "sensory",
-    "interactive",
-    "web-toys",
     "webgpu",
-    "creative-coding"
+    "generative-art",
+    "creative-coding",
+    "web-toys"
   ],
   "packageManager": "bun@1.3.8",
   "scripts": {
@@ -82,6 +82,14 @@
   },
   "dependencies": {
     "@cfworker/json-schema": "^4.1.1",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/language": "^6.12.2",
+    "@codemirror/legacy-modes": "^6.5.2",
+    "@codemirror/lint": "^6.9.5",
+    "@codemirror/search": "^6.6.0",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.40.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "three": "^0.182.0",
     "web-haptics": "^0.0.6",

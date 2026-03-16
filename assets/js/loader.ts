@@ -99,6 +99,17 @@ export function createLoader({
     });
   };
 
+  const disposeToyRecord = (
+    record: ReturnType<typeof lifecycle.getActiveToy> | null,
+  ) => {
+    if (!record?.dispose) return;
+    try {
+      record.dispose();
+    } catch (error) {
+      console.error('Error disposing staged toy', error);
+    }
+  };
+
   const backToLibrary = ({ updateRoute = true } = {}) => {
     removeEscapeHandler();
     disposeActiveToy();
@@ -121,6 +132,8 @@ export function createLoader({
   ) => {
     void prewarmRendererCapabilitiesFn();
     void prewarmMicrophoneFn();
+    const outgoingToy = lifecycle.getActiveToy();
+    const shouldBlend = Boolean(outgoingToy);
     const capabilityDecision = await capabilityController.assess({
       toy,
       initialCapabilities,
@@ -130,24 +143,34 @@ export function createLoader({
     let capabilities = capabilityDecision.capabilities;
 
     if (capabilityDecision.runMode === 'blocked') {
+      if (shouldBlend) {
+        view.cancelToyTransition?.();
+      }
       return;
     }
 
-    disposeActiveToy();
-    removeEscapeHandler();
     const handleNextToy = sessionController.createNextToyHandler({
       getCurrentSlug: () => activeToySlug ?? toy.slug,
       loadToy,
       preferDemoAudio,
     });
 
-    const container = view.showActiveToyView(backToLibrary, toy, {
+    if (!shouldBlend) {
+      disposeActiveToy();
+      removeEscapeHandler();
+    }
+
+    const viewOptions = {
       onNextToy: handleNextToy,
-      onToggleHaptics: (active) =>
+      onToggleHaptics: (active: boolean) =>
         sessionController.haptics.setHapticsEnabled(active),
       hapticsActive: sessionController.haptics.getHapticsEnabled(),
       hapticsSupported: sessionController.canUseHaptics(),
-    });
+    };
+
+    let container = shouldBlend
+      ? view.showIncomingToyView?.(backToLibrary, toy, viewOptions)
+      : view.showActiveToyView(backToLibrary, toy, viewOptions);
     if (!container) return;
     updateRendererStatus(
       capabilities,
@@ -156,8 +179,13 @@ export function createLoader({
             capabilities = await rendererCapabilities({ forceRetry: true });
             updateRendererStatus(capabilities);
             if (capabilities.preferredBackend === 'webgpu') {
-              disposeActiveToy();
-              view.clearActiveToyContainer?.();
+              if (shouldBlend) {
+                view.cancelToyTransition?.();
+                lifecycle.adoptActiveToy(outgoingToy?.ref);
+              } else {
+                disposeActiveToy();
+                view.clearActiveToyContainer?.();
+              }
               await startModuleToy(toy, false, preferDemoAudio, capabilities);
             }
           }
@@ -177,10 +205,12 @@ export function createLoader({
     const runToy = async () => {
       commitNavigation();
       view.showLoadingIndicator(toy.title || toy.slug, toy);
+      const targetContainer = container;
+      if (!targetContainer) return;
 
       const launchRequest: ToyLaunchRequest = {
         slug: toy.slug,
-        container,
+        container: targetContainer,
         audioPreference: preferDemoAudio ? 'demo' : 'microphone',
         forceRendererRetry,
       };
@@ -189,6 +219,10 @@ export function createLoader({
         request: launchRequest,
       });
       if (!moduleResult.ok) {
+        if (shouldBlend) {
+          view.cancelToyTransition?.();
+          lifecycle.adoptActiveToy(outgoingToy?.ref);
+        }
         console.error('Error loading toy module:', moduleResult.error);
         showModuleImportError(toy, {
           moduleUrl: moduleResult.moduleUrl,
@@ -198,9 +232,13 @@ export function createLoader({
       }
 
       const { launchResult } = moduleResult;
-      lifecycle.adoptActiveToy(
-        launchResult.instance ?? lifecycle.getActiveToy()?.ref,
-      );
+      const nextActiveToy =
+        launchResult.instance ?? lifecycle.getActiveToy()?.ref;
+      if (shouldBlend) {
+        await view.completeToyTransition?.();
+        disposeToyRecord(outgoingToy);
+      }
+      lifecycle.adoptActiveToy(nextActiveToy);
 
       view.removeStatusElement();
 
@@ -247,7 +285,12 @@ export function createLoader({
             : undefined,
         onContinue: capabilityDecision.allowWebGLFallback
           ? () => {
-              view.clearActiveToyContainer();
+              if (!shouldBlend) {
+                container =
+                  view.showActiveToyView(backToLibrary, toy, viewOptions) ??
+                  container;
+                view.clearActiveToyContainer();
+              }
               void runToy();
             }
           : undefined,

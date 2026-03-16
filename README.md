@@ -1,4 +1,4 @@
-# Stim Webtoys Library
+# Stim Webtoys (Stims)
 
 [![Live site](https://img.shields.io/badge/live-no.toil.fyi-5a67d8?style=flat-square&logo=cloudflare)](https://no.toil.fyi)
 [![GitHub stars](https://img.shields.io/github/stars/zz-plant/stims?style=flat-square)](https://github.com/zz-plant/stims/stargazers)
@@ -6,14 +6,15 @@
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=flat-square)](./LICENSE)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=flat-square&logo=bun)](https://bun.sh)
 
-Welcome to the **Stim Webtoys Library**, hosted at [no.toil.fyi](https://no.toil.fyi). Stims is an interactive, audio-reactive web toy collection built with **Three.js** + **WebGL** (with WebGPU support where available) for playful, sensory-friendly exploration.
+Welcome to **Stim Webtoys (Stims)**, hosted at [no.toil.fyi](https://no.toil.fyi). Stims is a browser-native **MilkDrop successor** with a broader collection of related audio-reactive toys, built with **Three.js** + **WebGL** (with WebGPU support where available).
 
-**Keywords for discovery:** interactive web toys, audio-reactive visuals, Three.js/WebGL experiments, sensory-friendly play, generative art playground, calming visualizers.
+**Keywords for discovery:** MilkDrop successor, browser-native visualizer, audio-reactive visuals, Three.js/WebGL experiments, preset-driven visuals, generative art playground.
 
 **If this project sparks joy, please ⭐ star the repo and share the live site.** It helps more people find the toys and keeps new experiments flowing.
 
 **Quick links**
 - 🎮 **Play now**: https://no.toil.fyi
+- 🌊 **Launch MilkDrop Visualizer**: https://no.toil.fyi/toy.html?toy=milkdrop
 - 🧠 **Toy index**: https://no.toil.fyi/toy.html
 - 📘 **Docs hub**: [`docs/README.md`](./docs/README.md)
 - 🧰 **Contribute**: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
@@ -128,12 +129,13 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 
 ### Why people use Stim Webtoys
 
-- **Self-regulation moments**: settle into a repeatable rhythm of sound + visuals without claiming a specific outcome.
-- **Instant sensory input**: open a toy and play—no signup, no install, just a browser.
+- **MilkDrop Visualizer first**: start with a preset-driven, browser-native successor flow that supports live editing and import/export.
+- **Self-regulation moments**: settle into repeatable rhythm of sound + visuals without claiming a specific outcome.
+- **Instant browser launch**: open and play with no signup, no install, and fallback audio paths when permissions are blocked.
 - **Clear control surfaces**: adjust intensity with the shared settings panel and its [performance/quality presets](./docs/DEVELOPMENT.md#performance-tips).
 - **Fallback audio**: switch to demo audio when mic access is hard or you just want to listen.
 - **Short, contained sessions**: jump in for a few minutes and return whenever you want.
-- **Sensory-first exploration**: controls support different comfort and input needs.
+- **Broader toy lab**: branch into other Stims toys after MilkDrop, using shared controls and discovery filters.
 
 ### What You’ll Need
 
@@ -145,9 +147,10 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 
 Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond to sound, touch, and other inputs to create a chill or stimulating experience. If you’d rather play locally, follow the steps in **Local Setup** to run the dev server and open the toys at `http://localhost:5173`.
 
-### What the library experience includes
+### What the broader toy lab includes
 
-- **Searchable discovery**: the landing page ships a searchable toy grid that matches against titles, tags, moods, and capability terms, plus badges for microphone, motion, demo audio, and WebGPU requirements. A no-JS fallback renders the same data from `toys.json` when needed.
+- **MilkDrop-led homepage**: the landing page prioritizes MilkDrop launch, then routes into broader discovery.
+- **Searchable discovery**: the toy grid matches titles, tags, moods, and capability terms, plus badges for microphone, motion, demo audio, and WebGPU requirements. A no-JS fallback renders the same data from `toys.json` when needed.
 - **Guided toy start**: the shared toy shell runs a capability preflight before loading a toy, then offers microphone, demo audio, and YouTube tab-capture audio flows with status messaging.
 - **Consistent performance controls**: quality presets and pixel-ratio caps persist between toys, while pooled renderer/audio services keep toy switching fast without re-prompting for microphone access.
 
@@ -198,7 +201,7 @@ If you add a new toy, place the implementation in `assets/js/toys/`, register it
 | [Tactile Sand Table](https://no.toil.fyi/toy.html?toy=tactile-sand-table)   | Heightfield sand ripples that respond to bass, mids, and device tilt.                 |
 | [Bioluminescent Tidepools](https://no.toil.fyi/toy.html?toy=bioluminescent-tidepools) | Sketch glowing currents that bloom with high-frequency sparkle from your music. |
 | [Neon Wave](https://no.toil.fyi/toy.html?toy=neon-wave)                     | Retro-wave visualizer with bloom effects, custom shaders, and four color themes.      |
-| [MilkDrop Proto](https://no.toil.fyi/toy.html?toy=milkdrop)                 | A hardware-accelerated feedback engine inspired by the MilkDrop visualizer system.   |
+| [MilkDrop Visualizer](https://no.toil.fyi/toy.html?toy=milkdrop)            | Preset-driven feedback visualizer with blend transitions, live source editing, and import/export flows. |
 
 ---
 
