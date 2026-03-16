@@ -17,11 +17,26 @@ const toys = [
       motion: false,
     },
   },
+  {
+    slug: 'tilt-wave',
+    title: 'Tilt Wave',
+    description: 'Mobile-first visuals driven by device motion.',
+    module: 'assets/js/toys/tilt-wave.ts',
+    type: 'module',
+    requiresWebGPU: false,
+    moods: ['energetic'],
+    tags: ['mobile', 'motion'],
+    capabilities: {
+      demoAudio: false,
+      microphone: false,
+      motion: true,
+    },
+  },
 ];
 
 describe('library filter state normalization', () => {
   beforeEach(() => {
-    window.history.replaceState({}, '', '/');
+    window.location.href = 'https://example.com/';
     window.sessionStorage.clear();
     window.localStorage.clear();
 
@@ -31,6 +46,11 @@ describe('library filter state normalization', () => {
         <div data-active-filters-chips></div>
         <button data-active-filters-clear type="button">Clear all</button>
       </div>
+      <form data-search-form>
+        <input id="toy-search" type="search" />
+        <button data-search-clear type="button">Clear</button>
+        <datalist id="toy-search-suggestions"></datalist>
+      </form>
       <button data-filter-chip data-filter-type="mood" data-filter-value="calming" type="button">Calm</button>
       <button data-filter-reset type="button">Reset</button>
       <select data-sort-control>
@@ -94,4 +114,61 @@ test('renders continue panel when returner signals are present', async () => {
     (button) => (button.textContent ?? '').startsWith('Launch'),
   );
   expect(openButton).toBeTruthy();
+});
+
+test('search query filters library cards and persists in the URL', async () => {
+  document.body.innerHTML = `
+    <p data-search-results></p>
+    <div data-active-filters>
+      <span data-active-filters-status></span>
+      <button data-active-filters-clear type="button">Clear all</button>
+    </div>
+    <form data-search-form>
+      <input id="toy-search" type="search" />
+      <button data-search-clear type="button">Clear</button>
+      <datalist id="toy-search-suggestions"></datalist>
+    </form>
+    <button data-filter-reset type="button">Reset</button>
+    <select data-sort-control>
+      <option value="featured">Featured</option>
+    </select>
+    <div id="toy-list"></div>
+  `;
+
+  const view = createLibraryView({
+    toys,
+    searchInputId: 'toy-search',
+  });
+
+  await view.init();
+
+  const search = document.getElementById('toy-search') as HTMLInputElement;
+  search.value = 'mobile';
+  search.dispatchEvent(new Event('input', { bubbles: true }));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  const cards = Array.from(document.querySelectorAll('.webtoy-card'));
+  expect(cards).toHaveLength(1);
+  expect(cards[0]?.textContent).toContain('Tilt Wave');
+  expect(window.sessionStorage.getItem('stims-library-state')).toContain(
+    '"query":"mobile"',
+  );
+});
+
+test('restores search query from URL state on init', async () => {
+  window.location.href = 'https://example.com/?q=mobile';
+
+  const view = createLibraryView({
+    toys,
+    searchInputId: 'toy-search',
+  });
+
+  await view.init();
+
+  const search = document.getElementById('toy-search') as HTMLInputElement;
+  expect(search.value).toBe('mobile');
+
+  const cards = Array.from(document.querySelectorAll('.webtoy-card'));
+  expect(cards).toHaveLength(1);
+  expect(cards[0]?.textContent).toContain('Tilt Wave');
 });

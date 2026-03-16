@@ -6,7 +6,11 @@ import {
 import type { QualityPreset } from '../core/settings-panel';
 import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import {
+  getBandLevels,
+  getWeightedEnergy,
+  updateEnergyPeak,
+} from '../utils/audio-reactivity';
 import { createPerformanceSettingsHandler } from '../utils/performance-settings';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createAudioToyStarter } from '../utils/toy-runtime-starter';
@@ -54,6 +58,11 @@ export function start({ container }: ToyStartOptions = {}) {
   let targetMotionBoost = controls.motionBoost;
   let targetColorDrift = controls.colorDrift;
   let rotationLatch = 0;
+  let audioPeak = 0.03;
+  let bassPeak = 0.03;
+  let treblePeak = 0.03;
+  let previousBass = 0;
+  let previousTreble = 0;
 
   function getParticleScale(quality: QualityPreset) {
     return (quality.particleScale ?? 1) * performanceSettings.particleBudget;
@@ -121,7 +130,25 @@ export function start({ container }: ToyStartOptions = {}) {
 
     return {
       animate(data, time) {
-        const avg = getWeightedAverageFrequency(data);
+        const bands = getBandLevels({ data });
+        const weightedEnergy = getWeightedEnergy(bands, { boost: 1.55 });
+        audioPeak = updateEnergyPeak(audioPeak, weightedEnergy, {
+          decay: 0.94,
+          floor: 0.03,
+        });
+        bassPeak = updateEnergyPeak(bassPeak, bands.bass, {
+          decay: 0.91,
+          floor: 0.025,
+        });
+        treblePeak = updateEnergyPeak(treblePeak, bands.treble, {
+          decay: 0.89,
+          floor: 0.02,
+        });
+        const bassRise = Math.max(0, bands.bass - previousBass);
+        const trebleRise = Math.max(0, bands.treble - previousTreble);
+        previousBass = bands.bass;
+        previousTreble = bands.treble;
+
         controls.motionBoost = THREE.MathUtils.lerp(
           controls.motionBoost,
           targetMotionBoost,
@@ -133,24 +160,30 @@ export function start({ container }: ToyStartOptions = {}) {
           0.08,
         );
 
-        const normalizedAvg = (avg / 255) * controls.motionBoost;
-        const rotationSpeed = 0.002 + normalizedAvg * 0.006;
+        const motionEnergy =
+          (audioPeak * 0.75 + bassPeak * 0.55 + bands.mid * 0.35) *
+          controls.motionBoost;
+        const rotationSpeed = 0.002 + motionEnergy * 0.009 + bassRise * 0.008;
 
         const animatedPositions = particles.geometry.attributes.position
           .array as Float32Array;
         for (let i = 0; i < count; i++) {
           const i3 = i * 3;
           const pulse =
-            1 + normalizedAvg * 0.18 + Math.sin(time * 2 + i * 0.04) * 0.04;
+            1 +
+            motionEnergy * 0.22 +
+            bassPeak * 0.18 +
+            Math.sin(time * 2 + i * 0.04) * (0.04 + treblePeak * 0.08);
           const orbitAngle =
             baseAngles[i] +
-            time * (0.25 + (baseRadii[i] / 46) * 0.65) +
-            Math.sin(time + i * 0.015) * 0.05;
+            time * (0.25 + (baseRadii[i] / 46) * (0.65 + bassPeak * 0.75)) +
+            Math.sin(time + i * 0.015) * (0.05 + bands.mid * 0.08);
 
           animatedPositions[i3] = Math.cos(orbitAngle) * baseRadii[i] * pulse;
           animatedPositions[i3 + 1] =
             verticalOffsets[i] +
-            Math.sin(time * 1.4 + i * 0.05) * (0.4 + normalizedAvg * 2.2);
+            Math.sin(time * (1.4 + bands.mid * 0.7) + i * 0.05) *
+              (0.4 + bands.mid * 3 + trebleRise * 1.4);
           animatedPositions[i3 + 2] =
             Math.sin(orbitAngle) * baseRadii[i] * pulse;
         }
@@ -159,18 +192,28 @@ export function start({ container }: ToyStartOptions = {}) {
         particles.rotation.y += rotationSpeed;
         particles.rotation.x += rotationSpeed / 2;
 
-        particlesMaterial.size = 1.3 + normalizedAvg * 2.8;
+        particlesMaterial.size = 1.3 + audioPeak * 1.5 + treblePeak * 2.2;
         const hue =
-          (time * 0.08 + normalizedAvg * 0.2 + controls.colorDrift) % 1;
-        particlesMaterial.color.setHSL(hue, 0.85, 0.64);
+          (time * 0.08 +
+            bands.mid * 0.16 +
+            treblePeak * 0.12 +
+            controls.colorDrift) %
+          1;
+        particlesMaterial.color.setHSL(
+          hue,
+          0.82 + treblePeak * 0.14,
+          0.58 + bassPeak * 0.18,
+        );
 
-        light.intensity = 0.8 + normalizedAvg * 1.4;
-        ambientGlow.intensity = 0.45 + normalizedAvg * 0.8;
+        light.intensity = 0.8 + bassPeak * 1.9 + audioPeak * 0.6;
+        ambientGlow.intensity = 0.45 + treblePeak * 1.1 + bands.mid * 0.55;
 
         runtime.toy.camera.position.x =
-          Math.sin(time * 0.35) * (6 + controls.motionBoost * 2);
+          Math.sin(time * (0.35 + bands.mid * 0.1)) *
+          (6 + controls.motionBoost * 2 + treblePeak * 2);
         runtime.toy.camera.position.y =
-          Math.cos(time * 0.24) * (4 + controls.motionBoost);
+          Math.cos(time * (0.24 + bassPeak * 0.08)) *
+          (4 + controls.motionBoost + bassPeak * 3);
         runtime.toy.camera.lookAt(0, 0, 0);
 
         runtime.toy.render();
@@ -390,7 +433,25 @@ export function start({ container }: ToyStartOptions = {}) {
 
     return {
       animate(data, time) {
-        const avg = getWeightedAverageFrequency(data);
+        const bands = getBandLevels({ data });
+        const weightedEnergy = getWeightedEnergy(bands, { boost: 1.6 });
+        audioPeak = updateEnergyPeak(audioPeak, weightedEnergy, {
+          decay: 0.94,
+          floor: 0.03,
+        });
+        bassPeak = updateEnergyPeak(bassPeak, bands.bass, {
+          decay: 0.91,
+          floor: 0.025,
+        });
+        treblePeak = updateEnergyPeak(treblePeak, bands.treble, {
+          decay: 0.89,
+          floor: 0.02,
+        });
+        const bassRise = Math.max(0, bands.bass - previousBass);
+        const trebleRise = Math.max(0, bands.treble - previousTreble);
+        previousBass = bands.bass;
+        previousTreble = bands.treble;
+
         controls.motionBoost = THREE.MathUtils.lerp(
           controls.motionBoost,
           targetMotionBoost,
@@ -402,15 +463,19 @@ export function start({ container }: ToyStartOptions = {}) {
           0.08,
         );
 
-        const normalizedAvg = (avg / 255) * controls.motionBoost;
+        const warpEnergy =
+          (audioPeak * 0.72 + bassPeak * 0.55 + treblePeak * 0.35) *
+          controls.motionBoost;
 
         const positions = stars.geometry.attributes.position
           .array as Float32Array;
-        const warpSpeed = 0.5 + normalizedAvg * 3;
+        const warpSpeed = 0.5 + warpEnergy * 4.5 + bassRise * 3;
 
         for (let i = 0; i < STAR_COUNT; i++) {
           const i3 = i * 3;
           positions[i3 + 2] += warpSpeed;
+          positions[i3] += Math.sin(time * 0.7 + i * 0.03) * trebleRise * 1.8;
+          positions[i3 + 1] += Math.cos(time * 0.55 + i * 0.02) * bands.mid;
 
           if (positions[i3 + 2] > 100) {
             positions[i3 + 2] = -600;
@@ -422,27 +487,39 @@ export function start({ container }: ToyStartOptions = {}) {
 
         const sizes = stars.geometry.attributes.size.array as Float32Array;
         for (let i = 0; i < STAR_COUNT; i++) {
-          const twinkle = Math.sin(time * 10 + i * 0.1) * 0.3 + 0.7;
-          sizes[i] = starSizes[i] * twinkle * (1 + normalizedAvg * 0.5);
+          const twinkle =
+            Math.sin(time * (10 + treblePeak * 9) + i * 0.1) * 0.3 + 0.7;
+          sizes[i] =
+            starSizes[i] *
+            twinkle *
+            (1 + audioPeak * 0.45 + treblePeak * 0.8 + trebleRise * 0.9);
         }
         stars.geometry.attributes.size.needsUpdate = true;
 
-        stars.rotation.z += 0.0002 + normalizedAvg * 0.001;
+        stars.rotation.z += 0.0002 + warpEnergy * 0.0014 + trebleRise * 0.001;
 
-        nebulaParticles.rotation.y += 0.001;
-        nebulaParticles.rotation.x = Math.sin(time * 0.1) * 0.1;
+        nebulaParticles.rotation.y += 0.001 + bands.mid * 0.003;
+        nebulaParticles.rotation.x =
+          Math.sin(time * (0.1 + bands.mid * 0.08)) * (0.1 + bassPeak * 0.18);
         (nebulaParticles.material as THREE.PointsMaterial).opacity =
-          0.2 + normalizedAvg * 0.3;
+          0.2 + audioPeak * 0.18 + bassPeak * 0.14 + treblePeak * 0.16;
 
         const hueBase = (time * 0.05 + controls.colorDrift) % 1;
         starMaterial.uniforms.uTime.value = time;
-        starMaterial.uniforms.uAudio.value = normalizedAvg;
-        starMaterial.uniforms.uTint.value.setHSL(hueBase, 0.65, 0.82);
+        starMaterial.uniforms.uAudio.value =
+          warpEnergy * 0.65 + treblePeak * 0.55;
+        starMaterial.uniforms.uTint.value.setHSL(
+          (hueBase + bands.mid * 0.08 + treblePeak * 0.05) % 1,
+          0.65 + treblePeak * 0.16,
+          0.74 + bassPeak * 0.16,
+        );
 
         runtime.toy.camera.position.x =
-          Math.sin(time * 0.3) * (8 + controls.motionBoost * 2);
+          Math.sin(time * (0.3 + bands.mid * 0.08)) *
+          (8 + controls.motionBoost * 2 + treblePeak * 2.5);
         runtime.toy.camera.position.y =
-          Math.cos(time * 0.2) * (4 + controls.motionBoost);
+          Math.cos(time * (0.2 + bassPeak * 0.06)) *
+          (4 + controls.motionBoost + bassPeak * 3.2);
         runtime.toy.camera.lookAt(0, 0, -100);
 
         runtime.toy.render();

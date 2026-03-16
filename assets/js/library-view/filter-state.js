@@ -1,5 +1,6 @@
 export const FILTER_PARAM = 'filters';
 export const SORT_PARAM = 'sort';
+export const QUERY_PARAM = 'q';
 
 export const normalizeCapabilityToken = (value) => {
   const normalized = value.toLowerCase();
@@ -39,13 +40,19 @@ export const parseFilters = (value) => {
 
 export const getStateFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
+  const query = params.get(QUERY_PARAM) ?? '';
   const filters = parseFilters(params.get(FILTER_PARAM));
   const sort = params.get(SORT_PARAM) ?? 'featured';
-  return { query: '', filters, sort };
+  return { query, filters, sort };
 };
 
 export const stateToParams = (state) => {
   const params = new URLSearchParams(window.location.search);
+  if (state.query?.trim()) {
+    params.set(QUERY_PARAM, state.query.trim());
+  } else {
+    params.delete(QUERY_PARAM);
+  }
   if (state.filters?.length) {
     params.set(FILTER_PARAM, state.filters.join(','));
   } else {

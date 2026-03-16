@@ -105,8 +105,16 @@ const startApp = async () => {
   }
 };
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startApp, { once: true });
-} else {
+let appStarted = false;
+
+const startAppOnce = () => {
+  if (appStarted) return;
+  appStarted = true;
   void startApp();
+};
+
+if (document.readyState === 'loading' && !document.body) {
+  document.addEventListener('DOMContentLoaded', startAppOnce, { once: true });
+} else {
+  startAppOnce();
 }

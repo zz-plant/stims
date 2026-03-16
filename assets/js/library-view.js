@@ -439,12 +439,35 @@ export function createLibraryView({
     return Array.from(matchedSources).slice(0, 3);
   };
 
+  const matchesSearchQuery = (toy, query) => {
+    const queryTokens = getQueryTokens(query);
+    if (queryTokens.length === 0) return true;
+
+    const searchHaystacks = [
+      toy.title,
+      toy.slug,
+      toy.description,
+      ...(toy.tags ?? []),
+      ...(toy.moods ?? []),
+      toy.requiresWebGPU ? 'webgpu webgl gpu' : '',
+      toy.capabilities?.microphone ? 'microphone mic live audio' : '',
+      toy.capabilities?.demoAudio ? 'demo audio preview starter' : '',
+      toy.capabilities?.motion ? 'motion tilt gyro mobile' : '',
+    ]
+      .filter(Boolean)
+      .map((value) => value.toLowerCase());
+
+    return queryTokens.every((token) =>
+      searchHaystacks.some((field) => field.includes(token)),
+    );
+  };
+
   const computeFilteredToys = () => {
     const filtered = allToys.filter((toy) => {
       const matchesChips =
         activeFilters.size === 0 ||
         Array.from(activeFilters).every((token) => matchesFilter(toy, token));
-      return matchesChips;
+      return matchesChips && matchesSearchQuery(toy, searchQuery);
     });
 
     return sortList(filtered);
@@ -467,7 +490,7 @@ export function createLibraryView({
 
   const commitState = ({ replace }) => {
     const state = {
-      query: '',
+      query: searchQuery,
       filters: Array.from(activeFilters),
       sort: sortBy,
     };
@@ -488,7 +511,7 @@ export function createLibraryView({
   };
 
   const applyState = (state, { render = true } = {}) => {
-    searchQuery = '';
+    searchQuery = typeof state.query === 'string' ? state.query : '';
     sortBy = state.sort ?? 'featured';
     activeFilters.clear();
     (state.filters ?? [])
@@ -846,6 +869,19 @@ export function createLibraryView({
     return card;
   };
 
+  const applyCardMotionVariant = (card, index) => {
+    if (!(card instanceof HTMLElement)) return;
+    const variants = [
+      'card-motion--rise',
+      'card-motion--tilt',
+      'card-motion--glide',
+      'card-motion--bloom',
+    ];
+    card.classList.remove(...variants);
+    card.classList.add(variants[index % variants.length]);
+    card.style.setProperty('--card-enter-delay', `${index * 45}ms`);
+  };
+
   const initCardClickHandlers = () => {
     const list = document.getElementById(targetId);
     if (!list) return;
@@ -978,6 +1014,7 @@ export function createLibraryView({
     listToRender.forEach((toy, index) => {
       const key = toy.slug ?? `toy-${index}`;
       const card = renderedCardMap.get(key) ?? createCard(toy);
+      applyCardMotionVariant(card, index);
       nextCardMap.set(key, card);
       cards.push(card);
       fragment.appendChild(card);
@@ -1278,7 +1315,10 @@ export function createLibraryView({
   const init = async () => {
     setToys(allToys);
     const urlState = getStateFromUrl();
-    const hasUrlState = urlState.filters.length || urlState.sort !== 'featured';
+    const hasUrlState =
+      urlState.query.trim().length > 0 ||
+      urlState.filters.length > 0 ||
+      urlState.sort !== 'featured';
     if (hasUrlState) {
       applyState(urlState, { render: false });
     } else {

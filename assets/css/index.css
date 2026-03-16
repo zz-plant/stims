@@ -1994,6 +1994,28 @@ h1 {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--surface-border);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  animation: repoMetricPulse 7.2s ease-in-out infinite;
+  animation-delay: calc(var(--metric-index, 0) * 140ms);
+}
+
+.repo-status__metric:nth-child(1) {
+  --metric-index: 0;
+}
+
+.repo-status__metric:nth-child(2) {
+  --metric-index: 1;
+  animation-name: repoMetricFloat;
+}
+
+.repo-status__metric:nth-child(3) {
+  --metric-index: 2;
+  animation-name: repoMetricTilt;
+}
+
+.repo-status__metric:nth-child(4) {
+  --metric-index: 3;
+  animation-name: repoMetricFloat;
+  animation-duration: 8.6s;
 }
 
 html.light .repo-status__metric {
@@ -2082,6 +2104,8 @@ html.light .repo-status__metric {
   border-radius: 999px;
   background: var(--accent-gradient);
   box-shadow: 0 0 24px color-mix(in srgb, var(--accent-color) 34%, transparent);
+  animation: headingBeam 4.8s ease-in-out infinite;
+  transform-origin: left center;
 }
 
 .section-heading h2 {
@@ -2894,7 +2918,7 @@ html.light .search-meta__note {
   background:
     var(--surface-highlight), var(--surface-texture), var(--surface-gradient);
   border-radius: var(--radius-lg);
-  padding: 1.15rem 1.1rem;
+  padding: 0.95rem 1rem;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -2910,13 +2934,13 @@ html.light .search-meta__note {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.6rem;
+  gap: 0.45rem;
   text-decoration: none;
   appearance: none;
   position: relative;
   overflow: hidden;
   touch-action: manipulation;
-  min-height: clamp(214px, 20vw, 250px);
+  min-height: clamp(188px, 18vw, 224px);
   isolation: isolate;
 }
 
@@ -2949,7 +2973,7 @@ html:not(.light) .webtoy-card {
 .webtoy-card__content {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.45rem;
   width: 100%;
   position: relative;
   z-index: 1;
@@ -3026,7 +3050,7 @@ html:not(.light) .webtoy-card {
 
 .webtoy-card h3 {
   font-size: 1.08rem;
-  margin: 0.25rem 0 0;
+  margin: 0.1rem 0 0;
   color: var(--text-color);
 }
 
@@ -3081,7 +3105,7 @@ html.light .cta-button.primary {
 .webtoy-card p {
   font-size: 0.86rem;
   color: color-mix(in srgb, var(--text-color) 90%, var(--text-muted));
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .webtoy-card-description {
@@ -3093,8 +3117,8 @@ html.light .cta-button.primary {
 }
 
 .webtoy-card-bestfor {
-  margin-top: -0.15rem;
-  margin-bottom: 0.15rem;
+  margin-top: -0.1rem;
+  margin-bottom: 0.05rem;
   font-size: 0.76rem;
   font-weight: 600;
   color: color-mix(in srgb, var(--accent-color) 62%, var(--text-color) 38%);
@@ -3133,9 +3157,9 @@ html.light .cta-button.primary {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.5rem;
+  gap: 0.4rem;
   margin-top: auto;
-  padding-top: 0.9rem;
+  padding-top: 0.65rem;
   position: relative;
   z-index: 2;
 }
@@ -3144,8 +3168,8 @@ html.light .cta-button.primary {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-start;
-  gap: 0.5rem;
-  margin-top: 0.3rem;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
   position: relative;
   z-index: 2;
 }
@@ -3153,8 +3177,8 @@ html.light .cta-button.primary {
 .webtoy-card-actions .cta-button {
   min-height: 44px;
   min-width: 44px;
-  padding: 0.58rem 0.9rem;
-  font-size: 0.82rem;
+  padding: 0.5rem 0.78rem;
+  font-size: 0.79rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4031,7 +4055,11 @@ footer {
 
   section.intro::before,
   .intro-actions .cta-button.primary,
-  .daily-streak::after {
+  .daily-streak::after,
+  .quick-card,
+  .repo-status__metric,
+  .webtoy-card,
+  .section-heading::after {
     animation: none;
   }
 
@@ -4125,7 +4153,7 @@ section.intro {
 
 .intro-actions .cta-button.primary {
   background-size: auto;
-  animation: none;
+  animation: homeHeroButtonPulse 5.4s ease-in-out infinite;
 }
 
 .intro-secondary-links {
@@ -4173,7 +4201,7 @@ section.intro {
     var(--accent-color),
     var(--accent-magenta)
   );
-  animation: none;
+  animation: streakScan 3.8s ease-in-out infinite;
 }
 
 .webtoy-card {
@@ -4182,6 +4210,26 @@ section.intro {
     var(--accent-color) 18%,
     var(--surface-border)
   );
+  animation-duration: 620ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-fill-mode: both;
+  animation-delay: var(--card-enter-delay, 0ms);
+}
+
+.card-motion--rise {
+  animation-name: cardRiseIn;
+}
+
+.card-motion--tilt {
+  animation-name: cardTiltIn;
+}
+
+.card-motion--glide {
+  animation-name: cardGlideIn;
+}
+
+.card-motion--bloom {
+  animation-name: cardBloomIn;
 }
 
 .webtoy-card:hover {
@@ -4204,6 +4252,17 @@ section.intro {
   border: 1px solid color-mix(in srgb, var(--surface-border) 68%, transparent);
   box-shadow: none;
   padding: 1rem 1rem 0.9rem;
+  animation: quickCardBob 8.5s ease-in-out infinite;
+}
+
+.quick-card:nth-child(2n) {
+  animation-name: quickCardSway;
+  animation-duration: 9.5s;
+}
+
+.quick-card:nth-child(3n) {
+  animation-name: quickCardLift;
+  animation-duration: 7.8s;
 }
 
 .quick-card h3 {
@@ -4486,5 +4545,157 @@ section.intro {
 
   .webtoy-container {
     grid-template-columns: 1fr;
+  }
+}
+
+@keyframes homeHeroButtonPulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 14px 28px
+      color-mix(in srgb, var(--accent-color) 28%, transparent);
+  }
+}
+
+@keyframes headingBeam {
+  0%,
+  100% {
+    transform: scaleX(0.9);
+    filter: saturate(0.95);
+  }
+  50% {
+    transform: scaleX(1.08);
+    filter: saturate(1.2);
+  }
+}
+
+@keyframes streakScan {
+  0%,
+  100% {
+    transform: scaleX(0.35);
+    transform-origin: left center;
+    opacity: 0.7;
+  }
+  50% {
+    transform: scaleX(1);
+    transform-origin: left center;
+    opacity: 1;
+  }
+}
+
+@keyframes cardRiseIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardTiltIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(-14px, 18px, 0) rotate(-1.4deg) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0) scale(1);
+  }
+}
+
+@keyframes cardGlideIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(16px, 10px, 0) scale(0.97);
+    filter: saturate(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: saturate(1);
+  }
+}
+
+@keyframes cardBloomIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes quickCardBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes quickCardSway {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  35% {
+    transform: translateX(2px) rotate(0.35deg);
+  }
+  70% {
+    transform: translateX(-2px) rotate(-0.35deg);
+  }
+}
+
+@keyframes quickCardLift {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.01);
+  }
+}
+
+@keyframes repoMetricPulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.015);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+  }
+}
+
+@keyframes repoMetricFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes repoMetricTilt {
+  0%,
+  100% {
+    transform: perspective(400px) rotateX(0deg);
+  }
+  50% {
+    transform: perspective(400px) rotateX(4deg) translateY(-2px);
   }
 }
