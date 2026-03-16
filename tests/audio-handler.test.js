@@ -13,6 +13,7 @@ let originalNavigatorDesc;
 let initAudio;
 let DEFAULT_MICROPHONE_CONSTRAINTS;
 let getFrequencyData;
+let stylizeFrequencyData;
 let originalAudioContext;
 let originalAudioWorkletNode;
 let AudioCtor;
@@ -107,8 +108,12 @@ beforeAll(async () => {
     };
   });
 
-  ({ DEFAULT_MICROPHONE_CONSTRAINTS, initAudio, getFrequencyData } =
-    await import('../assets/js/utils/audio-handler.ts'));
+  ({
+    DEFAULT_MICROPHONE_CONSTRAINTS,
+    initAudio,
+    getFrequencyData,
+    stylizeFrequencyData,
+  } = await import('../assets/js/utils/audio-handler.ts'));
 });
 
 describe('audio-handler utilities', () => {
@@ -227,15 +232,48 @@ describe('audio-handler utilities', () => {
     }
   });
 
-  test('getFrequencyData returns array of the expected length', () => {
-    const data = new Uint8Array(64);
+  test('getFrequencyData returns a stylized copy without mutating analyser data', () => {
+    const data = new Uint8Array([8, 12, 17, 15, 10, 7, 4, 2]);
     const analyser = {
       getFrequencyData: mock(() => data),
     };
 
     const result = getFrequencyData(analyser);
 
-    expect(result).toBe(data);
+    expect(result).toHaveLength(data.length);
+    expect(result).not.toBe(data);
+    expect([...data]).toEqual([8, 12, 17, 15, 10, 7, 4, 2]);
+    expect(Math.max(...result)).toBeLessThan(17);
     expect(analyser.getFrequencyData).toHaveBeenCalled();
+  });
+
+  test('stylizeFrequencyData leaves silent buffers untouched', () => {
+    const data = new Uint8Array(16);
+
+    const result = stylizeFrequencyData(data);
+
+    expect(result).toBe(data);
+    expect([...result]).toEqual(new Array(16).fill(0));
+  });
+
+  test('stylizeFrequencyData boosts bass-led spectra without clipping everything', () => {
+    const data = new Uint8Array([18, 34, 52, 76, 68, 48, 28, 16, 10, 6]);
+
+    stylizeFrequencyData(data);
+
+    expect(data[0]).toBeGreaterThan(18);
+    expect(data[2]).toBeGreaterThan(52);
+    expect(data[8]).toBeGreaterThan(10);
+    expect(Math.max(...data)).toBeLessThan(255);
+  });
+
+  test('stylizeFrequencyData damps very low activity instead of exaggerating it', () => {
+    const data = new Uint8Array([6, 8, 11, 10, 7, 5, 4, 3]);
+
+    stylizeFrequencyData(data);
+
+    expect(Math.max(...data)).toBeLessThan(11);
+    expect(data[0]).toBeLessThan(6);
+    expect(data[2]).toBeLessThan(11);
   });
 });
