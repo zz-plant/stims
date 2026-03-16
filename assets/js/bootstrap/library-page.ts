@@ -12,11 +12,13 @@ type LoaderApi = ReturnType<typeof createLoader>;
 type Toy = Pick<ToyEntry, 'slug' | 'title'>;
 
 const runInit = (label: string, init: () => void | Promise<void>) => {
-  Promise.resolve()
-    .then(() => init())
-    .catch((error) => {
+  try {
+    Promise.resolve(init()).catch((error) => {
       console.error(`Failed to initialize ${label}`, error);
     });
+  } catch (error) {
+    console.error(`Failed to initialize ${label}`, error);
+  }
 };
 
 export function bootLibraryPage({
@@ -52,7 +54,7 @@ export function bootLibraryPage({
         enableDarkModeToggle: true,
         themeToggleId: 'theme-toggle',
       });
-      libraryView.init();
+      await libraryView.init();
       document.body.dataset.libraryEnhanced = 'true';
       return;
     }

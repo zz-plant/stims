@@ -2,6 +2,11 @@ import * as THREE from 'three';
 import { registerToyGlobals } from '../core/toy-globals';
 import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
+import {
+  getBandLevels,
+  getWeightedEnergy,
+  updateEnergyPeak,
+} from '../utils/audio-reactivity';
 import { createRuntimeAudioStarter } from '../utils/audio-start-helpers';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
@@ -279,6 +284,10 @@ export function start({ container }: ToyStartOptions = {}) {
   let targetThreshold = uniforms.u_threshold.value;
   let gestureRotation = 0;
   let rotationLatch = 0;
+  let audioPeak = 0.04;
+  let bassPeak = 0.04;
+  let treblePeak = 0.04;
+  let previousTreble = 0;
 
   function applyPalette(index: number) {
     const palette = palettes[index];
@@ -445,13 +454,13 @@ export function start({ container }: ToyStartOptions = {}) {
     rotationLatch = gestureRotation;
   }
 
-  function updateSparks(delta: number, energy: number) {
+  function updateSparks(delta: number, energy: number, bassEnergy: number) {
     const positions = sparkGeometry.getAttribute(
       'position',
     ) as THREE.BufferAttribute;
     const respawnBudget = Math.min(
       activeSparkCount,
-      Math.floor(4 + energy * 24),
+      Math.floor(5 + energy * 20 + bassEnergy * 10),
     );
     let respawned = 0;
 
@@ -469,9 +478,11 @@ export function start({ container }: ToyStartOptions = {}) {
     for (let i = 0; i < activeSparkCount; i += 1) {
       if (sparkLife[i] <= 0) continue;
 
-      sparkLife[i] -= delta * (0.6 + energy * 0.8);
-      sparkPositions[i * 3] += sparkVelocities[i * 3] * delta * 0.4;
-      sparkPositions[i * 3 + 1] += sparkVelocities[i * 3 + 1] * delta * 0.4;
+      sparkLife[i] -= delta * (0.6 + energy * 0.6 + bassEnergy * 0.45);
+      sparkPositions[i * 3] +=
+        sparkVelocities[i * 3] * delta * (0.35 + energy * 0.25);
+      sparkPositions[i * 3 + 1] +=
+        sparkVelocities[i * 3 + 1] * delta * (0.35 + energy * 0.25);
 
       sparkPositions[i * 3] = THREE.MathUtils.clamp(
         sparkPositions[i * 3],
@@ -501,20 +512,27 @@ export function start({ container }: ToyStartOptions = {}) {
     configurePanel();
   }
 
-  function computeHighBandEnergy(data: Uint8Array) {
-    if (!data.length) return 0;
-    const start = Math.floor(data.length * 0.65);
-    let sum = 0;
-    for (let i = start; i < data.length; i += 1) {
-      sum += data[i];
-    }
-    const average = sum / Math.max(data.length - start, 1);
-    return average / 255;
-  }
-
   function animate(data: Uint8Array) {
     const delta = clock.getDelta();
-    const highBand = computeHighBandEnergy(data);
+    const bands = getBandLevels({ data, ratios: { bass: 0.16, mid: 0.58 } });
+    const weightedEnergy = getWeightedEnergy(bands, {
+      boost: 1.5,
+      weights: { bass: 0.18, mid: 0.27, treble: 0.55 },
+    });
+    audioPeak = updateEnergyPeak(audioPeak, weightedEnergy, {
+      decay: 0.94,
+      floor: 0.04,
+    });
+    bassPeak = updateEnergyPeak(bassPeak, bands.bass, {
+      decay: 0.92,
+      floor: 0.03,
+    });
+    treblePeak = updateEnergyPeak(treblePeak, bands.treble, {
+      decay: 0.88,
+      floor: 0.035,
+    });
+    const trebleRise = Math.max(0, bands.treble - previousTreble);
+    previousTreble = bands.treble;
 
     controls.glowStrength = THREE.MathUtils.lerp(
       controls.glowStrength,
@@ -542,17 +560,17 @@ export function start({ container }: ToyStartOptions = {}) {
     uniforms.u_time.value += delta;
     uniforms.u_audioGlow.value = THREE.MathUtils.lerp(
       uniforms.u_audioGlow.value,
-      0.25 + highBand * 1.5,
+      0.2 + audioPeak * 0.4 + treblePeak * 1.15 + bassPeak * 0.25,
       0.08,
     );
     uniforms.u_audioSpark.value = THREE.MathUtils.lerp(
       uniforms.u_audioSpark.value,
-      highBand,
+      treblePeak * 0.9 + trebleRise * 0.55 + audioPeak * 0.2,
       0.15,
     );
 
     updateBlobs(delta);
-    updateSparks(delta, highBand);
+    updateSparks(delta, treblePeak + trebleRise * 0.4, bassPeak);
     runtime.toy.render();
   }
 

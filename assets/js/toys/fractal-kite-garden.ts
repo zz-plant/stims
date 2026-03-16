@@ -1,7 +1,11 @@
 import * as THREE from 'three';
 import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { getBandAverage } from '../utils/audio-bands';
+import {
+  getBandLevels,
+  getWeightedEnergy,
+  updateEnergyPeak,
+} from '../utils/audio-reactivity';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import {
@@ -56,6 +60,10 @@ export function start({ container }: ToyStartOptions = {}) {
   const tempEmissive = new THREE.Color();
   const whiteColor = new THREE.Color(0xffffff);
   let panelDensityInput: HTMLInputElement | null = null;
+  let audioPeak = 0.04;
+  let bassPeak = 0.04;
+  let treblePeak = 0.04;
+  let previousMid = 0;
 
   function getDensity() {
     const scale = quality.activeQuality.particleScale ?? 1;
@@ -288,35 +296,78 @@ export function start({ container }: ToyStartOptions = {}) {
   }
 
   function animate(data: Uint8Array, time: number) {
-    const mid = getBandAverage(data, 0.35, 0.65) / 255;
-    const high = getBandAverage(data, 0.65, 1) / 255;
+    const bands = getBandLevels({ data, ratios: { bass: 0.18, mid: 0.62 } });
+    const weightedEnergy = getWeightedEnergy(bands, {
+      boost: 1.45,
+      weights: { bass: 0.2, mid: 0.5, treble: 0.3 },
+    });
+    audioPeak = updateEnergyPeak(audioPeak, weightedEnergy, {
+      decay: 0.94,
+      floor: 0.04,
+    });
+    bassPeak = updateEnergyPeak(bassPeak, bands.bass, {
+      decay: 0.92,
+      floor: 0.03,
+    });
+    treblePeak = updateEnergyPeak(treblePeak, bands.treble, {
+      decay: 0.9,
+      floor: 0.03,
+    });
+    const midRise = Math.max(0, bands.mid - previousMid);
+    previousMid = bands.mid;
 
     kiteInstances.forEach((kite) => {
       const mesh = kite.mesh;
       const flutter =
-        Math.sin(time * 0.0012 + kite.flutterSpeed) * (0.4 + mid * 1.6);
+        Math.sin(time * (0.0012 + bands.mid * 0.0009) + kite.flutterSpeed) *
+        (0.4 + bands.mid * 2 + midRise * 1.5);
       tempSway
         .copy(kite.swayAxis)
-        .multiplyScalar(flutter * (0.6 + kite.branchDepth * 0.35));
+        .multiplyScalar(
+          flutter *
+            (0.6 + kite.branchDepth * 0.35 + bassPeak * 0.45 + audioPeak * 0.2),
+        );
 
       mesh.position.copy(kite.basePosition).add(tempSway);
       mesh.rotation.z =
         kite.twist +
-        Math.sin(time * 0.0009 + kite.flutterSpeed * 2) * 0.18 +
-        mid * 0.35;
-      mesh.rotation.y += 0.0025 + high * 0.02;
+        Math.sin(time * 0.0009 + kite.flutterSpeed * 2) *
+          (0.18 + bands.mid * 0.18) +
+        bands.mid * 0.45 +
+        midRise * 0.22;
+      mesh.rotation.y += 0.0025 + treblePeak * 0.03 + audioPeak * 0.006;
+      mesh.rotation.x =
+        Math.cos(time * 0.0007 + kite.flutterSpeed) * (0.05 + bassPeak * 0.18);
 
-      const scale = 0.9 + kite.branchDepth * 0.06 + high * 0.9 + mid * 0.45;
+      const scale =
+        0.9 +
+        kite.branchDepth * 0.06 +
+        treblePeak * 0.85 +
+        bands.mid * 0.4 +
+        bassPeak * 0.18 +
+        midRise * 0.24;
       mesh.scale.setScalar(scale);
 
       const material = mesh.material as THREE.MeshStandardMaterial;
       tempTargetColor
         .copy(kite.baseColor)
-        .lerp(whiteColor, Math.min(1, high * 0.7 + mid * 0.3));
+        .lerp(
+          whiteColor,
+          Math.min(1, treblePeak * 0.75 + bands.mid * 0.25 + audioPeak * 0.18),
+        );
       material.color.copy(tempTargetColor);
-      tempEmissive.copy(tempTargetColor).multiplyScalar(0.2 + high * 0.4);
+      tempEmissive
+        .copy(tempTargetColor)
+        .multiplyScalar(0.18 + treblePeak * 0.42 + bassPeak * 0.16);
       material.emissive.copy(tempEmissive);
+      material.opacity = 0.88 + treblePeak * 0.08;
     });
+
+    runtime.toy.camera.position.x =
+      Math.sin(time * 0.0005) * (2 + bands.mid * 4);
+    runtime.toy.camera.position.y =
+      6 + Math.cos(time * 0.0004) * (1 + bassPeak * 2);
+    runtime.toy.camera.lookAt(0, 1 + bands.mid * 2, 0);
 
     runtime.toy.render();
   }

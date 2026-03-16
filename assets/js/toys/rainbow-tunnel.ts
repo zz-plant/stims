@@ -1,7 +1,11 @@
 import * as THREE from 'three';
 import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { getWeightedAverageFrequency } from '../utils/audio-handler';
+import {
+  getBandLevels,
+  getWeightedEnergy,
+  updateEnergyPeak,
+} from '../utils/audio-reactivity';
 import {
   disposeGeometry,
   disposeMaterial,
@@ -44,6 +48,10 @@ export function start({ container }: ToyStartOptions = {}) {
   let particleMaterial: THREE.PointsMaterial | null = null;
   const lightSources: THREE.PointLight[] = [];
   let tunnelLength = 0;
+  let energyPeak = 0.05;
+  let bassPeak = 0.05;
+  let treblePeak = 0.04;
+  let previousBass = 0;
 
   function getTunnelConfig() {
     const scale = quality.activeQuality.particleScale ?? 1;
@@ -164,8 +172,22 @@ export function start({ container }: ToyStartOptions = {}) {
       targetSpectrumShift,
       0.08,
     );
-    const avg = getWeightedAverageFrequency(data);
-    const normalizedAvg = avg / 255;
+    const bands = getBandLevels({ data });
+    const weightedEnergy = getWeightedEnergy(bands, { boost: 1.55 });
+    energyPeak = updateEnergyPeak(energyPeak, weightedEnergy, {
+      decay: 0.94,
+      floor: 0.05,
+    });
+    bassPeak = updateEnergyPeak(bassPeak, bands.bass, {
+      decay: 0.91,
+      floor: 0.04,
+    });
+    treblePeak = updateEnergyPeak(treblePeak, bands.treble, {
+      decay: 0.89,
+      floor: 0.03,
+    });
+    const bassRise = Math.max(0, bands.bass - previousBass);
+    previousBass = bands.bass;
 
     const binsPerRing = Math.max(
       1,
@@ -179,61 +201,85 @@ export function start({ container }: ToyStartOptions = {}) {
 
       // Rotate rings at varying speeds
       const idleEnergy = 0.18 + 0.16 * (Math.sin(time * 0.9 + idx * 0.24) + 1);
-      const energy = Math.max(normalizedValue, idleEnergy);
-      const rotationSpeed = (0.018 + energy * 0.06) * controls.speed;
+      const energy = Math.max(
+        normalizedValue,
+        idleEnergy,
+        bassPeak * 0.65 + bands.mid * 0.35,
+      );
+      const rotationSpeed =
+        (0.018 + energy * 0.06 + treblePeak * 0.03) * controls.speed;
       ringData.outer.rotation.x += rotationSpeed;
       ringData.outer.rotation.z +=
-        rotationSpeed * (0.35 + controls.wobble * 0.2);
+        rotationSpeed * (0.35 + controls.wobble * 0.2 + bands.mid * 0.18);
       if (ringData.inner) {
-        ringData.inner.rotation.x -= rotationSpeed * 0.7;
-        ringData.inner.rotation.z -= rotationSpeed * 0.3;
+        ringData.inner.rotation.x -= rotationSpeed * (0.7 + bassPeak * 0.35);
+        ringData.inner.rotation.z -= rotationSpeed * (0.3 + treblePeak * 0.25);
       }
 
       // Pulsing scale based on audio
-      const scale = 1.04 + energy * (0.35 + controls.wobble * 0.2);
+      const scale =
+        1.04 +
+        energy * (0.35 + controls.wobble * 0.2) +
+        bassPeak * 0.3 +
+        bassRise * 0.45;
       ringData.outer.scale.set(scale, scale, 1);
       if (ringData.inner) {
-        ringData.inner.scale.set(scale * 0.9, scale * 0.9, 1);
+        const innerScale = scale * (0.86 + treblePeak * 0.08);
+        ringData.inner.scale.set(innerScale, innerScale, 1);
       }
 
       // Dynamic color shift
       const hueShift =
         (ringData.hue +
-          normalizedAvg * 0.4 +
+          energyPeak * 0.28 +
+          bands.mid * 0.22 +
+          treblePeak * 0.12 +
           time * 0.08 +
           controls.spectrumShift) %
         1;
       const outerMaterial = ringData.outer
         .material as THREE.MeshStandardMaterial;
-      outerMaterial.color.setHSL(hueShift, 0.85, 0.55 + energy * 0.2);
-      outerMaterial.emissive.setHSL(hueShift, 0.72, 0.18 + energy * 0.45);
+      outerMaterial.color.setHSL(
+        hueShift,
+        0.82 + treblePeak * 0.12,
+        0.52 + energy * 0.16 + bassPeak * 0.14,
+      );
+      outerMaterial.emissive.setHSL(
+        hueShift,
+        0.72,
+        0.18 + energy * 0.32 + bassPeak * 0.34 + treblePeak * 0.18,
+      );
 
       if (ringData.inner) {
         const innerMaterial = ringData.inner
           .material as THREE.MeshStandardMaterial;
         innerMaterial.color.setHSL(
           (hueShift + 0.1) % 1,
-          0.9,
-          0.64 + energy * 0.2,
+          0.88 + treblePeak * 0.08,
+          0.62 + energy * 0.12 + treblePeak * 0.2,
         );
         innerMaterial.emissive.setHSL(
           (hueShift + 0.1) % 1,
           0.86,
-          0.2 + energy * 0.5,
+          0.2 + energy * 0.28 + treblePeak * 0.44,
         );
-        innerMaterial.opacity = 0.62 + energy * 0.3;
+        innerMaterial.opacity = 0.58 + energy * 0.18 + treblePeak * 0.24;
       }
     });
 
     // Smooth camera fly-through
-    const flySpeed = (1.55 + normalizedAvg * 2.8) * controls.speed;
+    const flySpeed =
+      (1.55 + energyPeak * 2.2 + bassPeak * 3.1 + bassRise * 3.8) *
+      controls.speed;
     runtime.toy.camera.position.z -= flySpeed;
 
     // Add slight camera wobble
     runtime.toy.camera.position.x =
-      Math.sin(time * 2.4) * (1.6 + controls.wobble);
+      Math.sin(time * (2.4 + bands.mid * 0.9)) *
+      (1.6 + controls.wobble + treblePeak * 1.4);
     runtime.toy.camera.position.y =
-      Math.cos(time * 1.85) * (1.4 + controls.wobble);
+      Math.cos(time * (1.85 + bassPeak * 0.45)) *
+      (1.4 + controls.wobble + bassPeak * 1.6);
 
     // Reset camera when it reaches the end
     if (runtime.toy.camera.position.z < -tunnelLength + 50) {
@@ -242,10 +288,51 @@ export function start({ container }: ToyStartOptions = {}) {
 
     // Camera look-ahead
     runtime.toy.camera.lookAt(
-      Math.sin(time * 0.5) * 3,
-      Math.cos(time * 0.5) * 3,
+      Math.sin(time * (0.5 + bands.mid * 0.16)) * (3 + treblePeak * 1.4),
+      Math.cos(time * (0.5 + bassPeak * 0.12)) * (3 + bassPeak * 1.1),
       runtime.toy.camera.position.z - 50,
     );
+
+    if (particleTrail && particleGeometry && particleMaterial) {
+      const positions = particleGeometry.attributes.position
+        .array as Float32Array;
+      for (let i = 0; i < positions.length / 3; i += 1) {
+        const i3 = i * 3;
+        positions[i3 + 2] +=
+          0.8 +
+          energyPeak * 2.1 +
+          bassPeak * 2.6 +
+          (i % 7 === 0 ? treblePeak : 0);
+        if (positions[i3 + 2] > 50) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 5 + Math.random() * (8 + bassPeak * 6);
+          positions[i3] = Math.cos(angle) * radius;
+          positions[i3 + 1] = Math.sin(angle) * radius;
+          positions[i3 + 2] = -tunnelLength;
+        }
+      }
+      particleGeometry.attributes.position.needsUpdate = true;
+      particleMaterial.size = 0.75 + treblePeak * 1.5 + energyPeak * 0.4;
+      particleMaterial.opacity = 0.62 + treblePeak * 0.28 + energyPeak * 0.12;
+      particleMaterial.color.setHSL(
+        (time * 0.08 + controls.spectrumShift + treblePeak * 0.16) % 1,
+        0.8,
+        0.72 + treblePeak * 0.12,
+      );
+    }
+
+    lightSources.forEach((light, index) => {
+      light.intensity =
+        0.7 +
+        bassPeak * 1.4 +
+        treblePeak * 0.5 +
+        Math.sin(time * 1.4 + index) * 0.08;
+      light.distance = 100 + energyPeak * 18;
+      light.position.x =
+        Math.sin(time * (0.8 + index * 0.12)) * (12 + bands.mid * 8);
+      light.position.y =
+        Math.cos(time * (0.7 + index * 0.1)) * (10 + bassPeak * 10);
+    });
 
     runtime.toy.render();
   }

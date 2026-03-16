@@ -147,7 +147,10 @@
       let particleCount = baseParticleCount;
       let peakLevel = 0.12;
       let bassPulse = 0;
+      let midPulse = 0;
       let trebleGlow = 0;
+      let previousBass = 0;
+      let previousTreble = 0;
       let pointerActive = false;
       let pointerX = 0;
       let pointerY = 0;
@@ -288,19 +291,37 @@
             data: frequencyData,
           });
           const weightedEnergy = getWeightedEnergy(bands, { boost: 1.4 });
-          peakLevel = updateEnergyPeak(peakLevel, weightedEnergy);
-          const normalized = peakLevel ? weightedEnergy / peakLevel : 0;
+          peakLevel = updateEnergyPeak(peakLevel, weightedEnergy, {
+            decay: 0.93,
+            floor: 0.12,
+          });
+          const normalized = peakLevel
+            ? Math.min(1.35, weightedEnergy / Math.max(peakLevel * 0.82, 0.001))
+            : 0;
+          const bassLevel = bands.bass * 0.85 + webgpuSnapshot.audio.bass * 0.15;
+          const midLevel = bands.mid * 0.82 + webgpuSnapshot.audio.mids * 0.18;
+          const trebleLevel = bands.treble * 0.85 + webgpuSnapshot.audio.highs * 0.15;
+          const bassRise = Math.max(0, bassLevel - previousBass);
+          const trebleRise = Math.max(0, trebleLevel - previousTreble);
           bassPulse = Math.max(
             bassPulse * 0.85,
-            bands.bass * 0.85 + webgpuSnapshot.audio.bass * 0.15
+            bassLevel
+          );
+          midPulse = Math.max(
+            midPulse * 0.86,
+            midLevel
           );
           trebleGlow = Math.max(
             trebleGlow * 0.8,
-            bands.treble * 0.85 + webgpuSnapshot.audio.highs * 0.15
+            trebleLevel
           );
-          const hue = ((bassPulse * 0.7 + normalized * 0.3) * 360) % 360;
-          const innerLightness = 25 + bassPulse * 30 + trebleGlow * 12;
-          const outerLightness = 8 + normalized * 12;
+          const transientLift = bassRise * 26 + trebleRise * 18;
+          const hue =
+            ((bassPulse * 0.56 + midPulse * 0.18 + normalized * 0.26) * 360) %
+            360;
+          const innerLightness =
+            22 + bassPulse * 38 + trebleGlow * 16 + transientLift;
+          const outerLightness = 6 + normalized * 16 + bassPulse * 8;
           const gradient = ctx.createRadialGradient(
             viewWidth / 2,
             viewHeight / 2,
@@ -312,9 +333,11 @@
           gradient.addColorStop(0, `hsl(${hue}, 100%, ${innerLightness}%)`);
           gradient.addColorStop(
             1,
-            `hsl(${(hue + 60) % 360}, 100%, ${outerLightness}%)`
+            `hsl(${(hue + 70 + trebleGlow * 24) % 360}, 100%, ${outerLightness}%)`
           );
           ctx.fillStyle = gradient;
+          previousBass = bassLevel;
+          previousTreble = trebleLevel;
         } else {
           ctx.fillStyle = '#000';
         }
@@ -350,14 +373,25 @@
           if (ctxAudio.analyser && frequencyData.length) {
             const freqIndex = Math.floor(index % frequencyData.length);
             const amplitude = frequencyData[freqIndex] / 255;
-            const energyBoost = 0.7 + peakLevel * 1.1 + bassPulse * 0.8;
+            const energyBoost =
+              0.72 +
+              normalized * 0.75 +
+              bassPulse * 1.05 +
+              midPulse * 0.38 +
+              bassRise * 1.6;
             p.size =
-              p.baseSize * (0.8 + p.depth) + amplitude * 12 * energyBoost;
-            p.hue = (p.hue + amplitude * (6 + trebleGlow * 10)) % 360;
-            p.lightness = 30 + amplitude * 25 + trebleGlow * 15 + p.depth * 10;
+              p.baseSize * (0.72 + p.depth) + amplitude * 14 * energyBoost;
+            p.hue =
+              (p.hue + amplitude * (7 + trebleGlow * 15 + trebleRise * 40)) % 360;
+            p.lightness =
+              26 +
+              amplitude * 30 +
+              trebleGlow * 20 +
+              midPulse * 8 +
+              p.depth * 12;
             p.alpha = Math.min(
               1,
-              (p.baseAlpha + amplitude * 0.55 + peakLevel * 0.2) *
+              (p.baseAlpha + amplitude * 0.62 + normalized * 0.24 + trebleGlow * 0.12) *
                 (0.7 + p.depth * 0.6)
             );
           }
@@ -387,9 +421,11 @@
           const barWidth = (viewWidth / frequencyData.length) * 2.5;
           let x = 0;
           for (let i = 0; i < frequencyData.length; i++) {
-            const barHeight = frequencyData[i] * (1.1 + peakLevel * 0.6);
+            const barHeight =
+              frequencyData[i] *
+              (1.08 + normalized * 0.8 + bassPulse * 0.55 + (i / frequencyData.length) * trebleGlow * 0.4);
             const hue = (i / frequencyData.length) * 360;
-            ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.7)`;
+            ctx.fillStyle = `hsla(${(hue + trebleGlow * 24) % 360}, 100%, ${48 + trebleGlow * 14}%, ${0.62 + normalized * 0.18})`;
             ctx.fillRect(x, viewHeight - barHeight, barWidth, barHeight);
             x += barWidth + 1;
           }
@@ -398,8 +434,8 @@
         if (ctxAudio.analyser) {
           const timeData = new Uint8Array(ctxAudio.analyser.fftSize);
           ctxAudio.analyser.getByteTimeDomainData(timeData);
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 + peakLevel * 0.6})`;
+          ctx.lineWidth = 2 + bassPulse * 1.8 + midPulse * 0.7;
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.24 + normalized * 0.42 + trebleGlow * 0.18})`;
           ctx.beginPath();
           const sliceWidth = viewWidth / timeData.length;
           let x = 0;
@@ -418,6 +454,7 @@
         }
 
         bassPulse *= 0.9;
+        midPulse *= 0.9;
         trebleGlow *= 0.9;
       }
 
