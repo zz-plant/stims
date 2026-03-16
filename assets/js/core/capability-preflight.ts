@@ -571,6 +571,7 @@ export function attachCapabilityPreflight({
   const startWithDemoButton = document.createElement('button');
   startWithDemoButton.className = 'cta-button primary';
   startWithDemoButton.type = 'button';
+  startWithDemoButton.dataset.demoAudioBtn = 'true';
   startWithDemoButton.textContent = 'Start with demo audio';
   startWithDemoButton.hidden = true;
   startWithDemoButton.addEventListener('click', () => {

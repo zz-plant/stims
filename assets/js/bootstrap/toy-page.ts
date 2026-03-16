@@ -1,3 +1,4 @@
+import { setAudioActive } from '../core/agent-api.ts';
 import {
   attachCapabilityPreflight,
   type CapabilityPreflightResult,
@@ -139,10 +140,12 @@ export function bootToyPage({
       onRequestMicrophone: async () => {
         startLoaderIfNeeded();
         await startToyAudioFromSource(toyWindow, { source: 'microphone' });
+        setAudioActive(true, 'microphone');
       },
       onRequestDemoAudio: async () => {
         startLoaderIfNeeded();
         await startToyAudioFromSource(toyWindow, { source: 'demo' });
+        setAudioActive(true, 'demo');
       },
       onRequestYouTubeAudio: async (stream) => {
         startLoaderIfNeeded();

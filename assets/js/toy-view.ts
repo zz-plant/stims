@@ -91,6 +91,7 @@ type ViewState = {
   activeToyMeta?: Toy;
   status: StatusConfig | null;
   audioPromptActive: boolean;
+  audioPromptOptions?: AudioPromptCallbacks;
 };
 
 const TOY_CONTAINER_CLASS = 'active-toy-container';
@@ -294,6 +295,7 @@ export function createToyView({
     rendererStatus: null,
     status: null,
     audioPromptActive: false,
+    audioPromptOptions: undefined,
   };
 
   const getDocument = () => documentRef();
@@ -399,10 +401,11 @@ export function createToyView({
 
     const statusElement = renderStatusElement(doc, container, state.status);
 
-    if (state.audioPromptActive) {
-      // Note: Audio callbacks are handled in loader.ts which calls showAudioPrompt(active, callbacks)
-      // For now, toy-view state doesn't hold callbacks, so we'll need to adapt loader.ts or pass them here
-      // buildAudioPrompt({ container, options: ... });
+    if (state.audioPromptActive && state.audioPromptOptions) {
+      const existingPrompt = container.querySelector('.control-panel');
+      if (!(existingPrompt instanceof HTMLElement)) {
+        buildAudioPrompt({ container, options: state.audioPromptOptions });
+      }
     } else {
       container.querySelector('.control-panel')?.remove();
     }
@@ -421,6 +424,7 @@ export function createToyView({
     state.activeToyMeta = undefined;
     state.status = null;
     state.audioPromptActive = false;
+    state.audioPromptOptions = undefined;
     runViewTransition(() => render({ clearContainer: true }));
   };
 
@@ -629,12 +633,16 @@ export function createToyView({
       callbacks?: AudioPromptCallbacks,
     ) => {
       state.audioPromptActive = active;
+      state.audioPromptOptions =
+        active && callbacks
+          ? callbacks
+          : active
+            ? state.audioPromptOptions
+            : undefined;
       if (active && callbacks) {
-        const container = findActiveToyContainer();
-        buildAudioPrompt({ container, options: callbacks });
-      } else {
-        render();
+        findActiveToyContainer()?.querySelector('.control-panel')?.remove();
       }
+      render();
     },
   };
 }

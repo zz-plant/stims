@@ -94,4 +94,36 @@ describe('toy view helpers', () => {
       status?.querySelector('.active-toy-status__actions button'),
     ).not.toBeNull();
   });
+
+  test('rebuilds the floating audio prompt after container content is cleared', () => {
+    const view = createToyView();
+    view.showActiveToyView();
+    view.showAudioPrompt(true, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      starterTips: ['Try demo first'],
+    });
+
+    expect(document.querySelector('.control-panel')).not.toBeNull();
+
+    view.clearActiveToyContainer();
+    expect(document.querySelector('.control-panel')).toBeNull();
+
+    view.setRendererStatus({ backend: 'webgpu' });
+    expect(document.querySelector('.control-panel')).not.toBeNull();
+  });
+
+  test('removes the floating audio prompt when disabled', () => {
+    const view = createToyView();
+    view.showActiveToyView();
+    view.showAudioPrompt(true, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+    });
+
+    expect(document.querySelector('.control-panel')).not.toBeNull();
+
+    view.showAudioPrompt(false);
+    expect(document.querySelector('.control-panel')).toBeNull();
+  });
 });

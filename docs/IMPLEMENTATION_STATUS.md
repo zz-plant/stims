@@ -9,6 +9,7 @@ This document is the consolidated source for implementation progress across road
 - [x] Audio permission clarity improvements are in place.
 - [x] Touch + gesture consistency baseline is in place.
 - [x] Library discovery improvements are in place.
+- [x] Homepage first-view CTAs are reduced to one primary launch path plus browse.
 - [x] Shared runtime helper foundations are in place.
 
 ## Active priorities
@@ -45,8 +46,8 @@ This document is the consolidated source for implementation progress across road
 
 ### Now (1 sprint)
 
-- [ ] De-duplicate first-step prompts (hero vs quick-start).
-- [ ] Reduce first-view control density and keep active filters visible.
+- [ ] Keep filter/refine state obvious on mobile and during scroll.
+- [ ] Reduce first-view library control density.
 - [ ] Simplify preflight/error states to one primary CTA.
 
 ### Next (1–2 sprints)
