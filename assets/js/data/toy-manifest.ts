@@ -484,6 +484,99 @@ export const toyManifest: ToyManifest = [
     }
   },
   {
+    "slug": "juke-grid",
+    "title": "Juke Grid",
+    "description": "A razor-cut lattice that chops sideways on kicks and flickers on footwork snares.",
+    "module": "assets/js/toys/juke-grid.ts",
+    "type": "module",
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
+    "lifecycleStage": "prototype",
+    "moods": [
+      "energetic",
+      "focus",
+      "pulsing"
+    ],
+    "tags": [
+      "grid",
+      "glitch",
+      "reactive"
+    ],
+    "controls": [
+      "Quality presets",
+      "Pointer drift"
+    ],
+    "firstRunHint": "A 160 BPM track or the built-in demo audio makes the lane chop read immediately.",
+    "recommendedCapability": "demoAudio",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
+  },
+  {
+    "slug": "heel-toe-comets",
+    "title": "Heel-Toe Comets",
+    "description": "Diagonal comet lanes built for footwork rushes, hat chatter, and chopped vocal sparks.",
+    "module": "assets/js/toys/heel-toe-comets.ts",
+    "type": "module",
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
+    "lifecycleStage": "prototype",
+    "moods": [
+      "energetic",
+      "immersive",
+      "pulsing"
+    ],
+    "tags": [
+      "particles",
+      "pulses",
+      "reactive"
+    ],
+    "controls": [
+      "Quality presets",
+      "Lane drift"
+    ],
+    "firstRunHint": "Fast hats and clipped vocal edits make the lane swaps pop hardest.",
+    "recommendedCapability": "demoAudio",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
+  },
+  {
+    "slug": "battle-fan",
+    "title": "Battle Fan",
+    "description": "A radial fan of strobing bars tuned for footwork call-and-response and rapid kick-snare flips.",
+    "module": "assets/js/toys/battle-fan.ts",
+    "type": "module",
+    "requiresWebGPU": true,
+    "allowWebGLFallback": true,
+    "lifecycleStage": "prototype",
+    "moods": [
+      "energetic",
+      "pulsing",
+      "immersive"
+    ],
+    "tags": [
+      "burst",
+      "patterns",
+      "reactive"
+    ],
+    "controls": [
+      "Quality presets",
+      "Center drift"
+    ],
+    "firstRunHint": "Footwork tracks with sharp kick-snare contrast make the outer spokes snap best.",
+    "recommendedCapability": "demoAudio",
+    "capabilities": {
+      "microphone": true,
+      "demoAudio": true,
+      "motion": false
+    }
+  },
+  {
     "slug": "cosmic-particles",
     "title": "Cosmic Particles",
     "description": "Jump between orbiting swirls and nebula fly-throughs with a single toggle.",

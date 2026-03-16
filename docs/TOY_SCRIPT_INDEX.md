@@ -23,6 +23,9 @@ This index maps each toy slug to the module that powers it and how the experienc
 | `pocket-pulse`             | `assets/js/toys/pocket-pulse.ts`             | Direct module; load with `toy.html?toy=pocket-pulse`.             |
 | `cosmic-particles`         | `assets/js/toys/cosmic-particles.ts`         | Direct module; load with `toy.html?toy=cosmic-particles`.         |
 | `lights`                   | `assets/js/toys/lights.ts`                   | Direct module; load with `toy.html?toy=lights`.                   |
+| `juke-grid`                | `assets/js/toys/juke-grid.ts`                | Direct module; load with `toy.html?toy=juke-grid`.                |
+| `heel-toe-comets`          | `assets/js/toys/heel-toe-comets.ts`          | Direct module; load with `toy.html?toy=heel-toe-comets`.          |
+| `battle-fan`               | `assets/js/toys/battle-fan.ts`               | Direct module; load with `toy.html?toy=battle-fan`.               |
 | `spiral-burst`             | `assets/js/toys/spiral-burst.ts`             | Direct module; load with `toy.html?toy=spiral-burst`.             |
 | `rainbow-tunnel`           | `assets/js/toys/rainbow-tunnel.ts`           | Direct module; load with `toy.html?toy=rainbow-tunnel`.           |
 | `star-field`               | `assets/js/toys/star-field.ts`               | Direct module; load with `toy.html?toy=star-field`.               |
