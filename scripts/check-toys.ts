@@ -20,6 +20,8 @@ const repoRoot = path.resolve(__dirname, '..');
 
 const IGNORED_TOY_FILES = new Set(['clay-toy.ts', 'page-toy.ts']);
 const REGENERATE_COMMAND = 'bun run generate:toys';
+const TOY_START_EXPORT_PATTERN =
+  /export\s+(async\s+)?function\s+start\b|export\s+const\s+start\b/;
 
 async function main() {
   const { issues, warnings } = await runToyChecks();
@@ -56,6 +58,7 @@ export async function runToyChecks(root = repoRoot) {
     ]);
 
     await validateEntries(entries, issues, warnings, indexContents, root);
+    await validateRegisteredToyEntrypoints(entries, issues, root);
     validateSlugEntrypointConsistency(entries, issues);
     await detectUnregisteredToyFiles(entries, issues, root);
     await validateGeneratedArtifactParity(entries, issues, root);
@@ -74,6 +77,26 @@ async function loadToyData(root = repoRoot) {
   } catch (error) {
     throw new Error(
       `Toy metadata schema validation failed for ${relativePath}: ${error instanceof Error ? error.message : String(error)}\nRegenerate derived artifacts with: ${REGENERATE_COMMAND}`,
+    );
+  }
+}
+
+async function validateRegisteredToyEntrypoints(
+  entries: ToyManifest,
+  issues: string[],
+  root = repoRoot,
+) {
+  for (const entry of entries) {
+    if (entry.type !== 'module') continue;
+
+    const modulePath = path.join(root, entry.module);
+    const fileContents = await fs.readFile(modulePath, 'utf8');
+    if (TOY_START_EXPORT_PATTERN.test(fileContents)) {
+      continue;
+    }
+
+    issues.push(
+      `Registered toy entrypoint is missing an exported start() function for ${entry.slug}: ${entry.module}\nExport start() or fix assets/data/toys.json, then run: ${REGENERATE_COMMAND}`,
     );
   }
 }
@@ -226,10 +249,7 @@ async function detectUnregisteredToyFiles(
     if (registeredModules.has(modulePath)) continue;
 
     const fileContents = await fs.readFile(path.join(toyDir, file), 'utf8');
-    const looksLikeToyEntrypoint =
-      /export\s+(async\s+)?function\s+start\b|export\s+const\s+start\b/.test(
-        fileContents,
-      );
+    const looksLikeToyEntrypoint = TOY_START_EXPORT_PATTERN.test(fileContents);
     if (!looksLikeToyEntrypoint) continue;
 
     issues.push(

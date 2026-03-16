@@ -12,6 +12,16 @@ globalThis.sessionStorage = windowInstance.sessionStorage;
 // Align commonly used globals
 globalThis.HTMLElement =
   windowInstance.HTMLElement as unknown as typeof HTMLElement;
+globalThis.HTMLAnchorElement =
+  windowInstance.HTMLAnchorElement as unknown as typeof HTMLAnchorElement;
+globalThis.HTMLButtonElement =
+  windowInstance.HTMLButtonElement as unknown as typeof HTMLButtonElement;
+globalThis.HTMLDetailsElement =
+  windowInstance.HTMLDetailsElement as unknown as typeof HTMLDetailsElement;
+globalThis.HTMLInputElement =
+  windowInstance.HTMLInputElement as unknown as typeof HTMLInputElement;
+globalThis.HTMLSelectElement =
+  windowInstance.HTMLSelectElement as unknown as typeof HTMLSelectElement;
 globalThis.Event = windowInstance.Event as unknown as typeof Event;
 globalThis.CustomEvent =
   windowInstance.CustomEvent as unknown as typeof CustomEvent;

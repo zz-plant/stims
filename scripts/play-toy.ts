@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { type Browser, type ConsoleMessage, chromium } from 'playwright';
+import {
+  type Browser,
+  type ConsoleMessage,
+  chromium,
+  type Page,
+} from 'playwright';
 
 export type PlayToyResult = {
   slug: string;
@@ -35,6 +40,10 @@ const DEFAULT_OPTIONS = {
   duration: 5000,
   outputDir: './screenshots',
 };
+const SHELL_DEMO_SELECTOR = '[data-demo-audio-btn]';
+const CONTROL_DEMO_SELECTOR = '#use-demo-audio';
+const CONTROL_MIC_SELECTOR = '#start-audio-btn';
+const WEBGL_FALLBACK_LABEL = 'Continue with WebGL';
 
 function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
   return {
@@ -56,6 +65,42 @@ async function closeBrowser(browser?: Browser) {
   if (browser) {
     await browser.close();
   }
+}
+
+async function clickVisibleButton(page: Page, selector: string) {
+  return page.evaluate((buttonSelector) => {
+    const button = document.querySelector<HTMLElement>(buttonSelector);
+    if (!(button instanceof HTMLElement)) return false;
+
+    const style = window.getComputedStyle(button);
+    const isVisible =
+      !button.hidden &&
+      style.display !== 'none' &&
+      style.visibility !== 'hidden';
+    if (!isVisible) return false;
+
+    button.click();
+    return true;
+  }, selector);
+}
+
+async function clickVisibleButtonByText(page: Page, label: string) {
+  return page.evaluate((buttonLabel) => {
+    const buttons = [...document.querySelectorAll('button')];
+    const target = buttons.find((element) => {
+      if (!(element instanceof HTMLElement)) return false;
+      const style = window.getComputedStyle(element);
+      const isVisible =
+        !element.hidden &&
+        style.display !== 'none' &&
+        style.visibility !== 'hidden';
+      return isVisible && element.textContent?.trim() === buttonLabel;
+    });
+
+    if (!(target instanceof HTMLElement)) return false;
+    target.click();
+    return true;
+  }, label);
 }
 
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
@@ -94,7 +139,59 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     await page.goto(url);
 
-    // Wait for toy to load
+    // Wait for either an already-loaded toy or the shell audio controls
+    await page.waitForFunction(
+      () =>
+        document.body.dataset.toyLoaded === 'true' ||
+        [
+          ...document.querySelectorAll(
+            '[data-demo-audio-btn], #use-demo-audio, [data-mic-audio-btn], #start-audio-btn',
+          ),
+        ].some((element) => {
+          if (!(element instanceof HTMLElement)) return false;
+          const style = window.getComputedStyle(element);
+          return (
+            !element.hidden &&
+            style.display !== 'none' &&
+            style.visibility !== 'hidden'
+          );
+        }),
+      undefined,
+      { timeout: 10000 },
+    );
+    console.log('Toy shell ready.');
+
+    // Click demo audio button if present
+    if (await clickVisibleButton(page, SHELL_DEMO_SELECTOR)) {
+      console.log('Advancing through preflight with demo audio...');
+    }
+
+    await page.waitForFunction(
+      () =>
+        document.body.dataset.toyLoaded === 'true' ||
+        document.querySelector('#use-demo-audio') ||
+        document.querySelector('#start-audio-btn'),
+      undefined,
+      { timeout: 10000 },
+    );
+
+    const toyLoadedAfterPreflight = await page.evaluate(
+      () => document.body.dataset.toyLoaded === 'true',
+    );
+    if (!toyLoadedAfterPreflight) {
+      if (await clickVisibleButtonByText(page, WEBGL_FALLBACK_LABEL)) {
+        console.log('Continuing with WebGL fallback...');
+      }
+
+      if (await clickVisibleButton(page, CONTROL_DEMO_SELECTOR)) {
+        console.log('Enabling demo audio...');
+      } else if (await clickVisibleButton(page, CONTROL_MIC_SELECTOR)) {
+        console.log('No demo audio button found. Enabling microphone...');
+      } else {
+        console.log('No audio start button found. Checking if auto-started...');
+      }
+    }
+
     await page.waitForFunction(
       () => document.body.dataset.toyLoaded === 'true',
       undefined,
@@ -102,27 +199,18 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     );
     console.log('Toy loaded.');
 
-    // Click demo audio button if present
-    const demoBtn = await page.$('[data-demo-audio-btn], #use-demo-audio');
-    if (demoBtn) {
-      console.log('Enabling demo audio...');
-      await demoBtn.click();
-
-      // Wait for audio activation
-      await page
-        .waitForFunction(
-          () => document.body.dataset.audioActive === 'true',
-          undefined,
-          { timeout: 5000 },
-        )
-        .catch(() =>
-          console.warn(
-            'Audio activation timed out or not detected via data attribute.',
-          ),
-        );
-    } else {
-      console.log('No demo audio button found. Checking if auto-started...');
-    }
+    // Wait for audio activation
+    await page
+      .waitForFunction(
+        () => document.body.dataset.audioActive === 'true',
+        undefined,
+        { timeout: 5000 },
+      )
+      .catch(() =>
+        console.warn(
+          'Audio activation timed out or not detected via data attribute.',
+        ),
+      );
 
     // Trigger a temporary vibe mode in agent sessions when available
     const vibeModeActivated = await page

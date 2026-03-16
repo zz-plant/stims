@@ -227,4 +227,45 @@ describe('check-toys script', () => {
       ),
     ).toBe(true);
   });
+
+  test('flags registered toy modules that do not export start', async () => {
+    const root = await createTempRepo();
+    const slug = 'missing-start';
+
+    await fs.writeFile(
+      path.join(root, 'assets/js/toys', `${slug}.ts`),
+      'export const notStart = () => {};\n',
+    );
+
+    const entries = [
+      {
+        slug,
+        title: 'Missing Start',
+        description: 'oops',
+        module: `assets/js/toys/${slug}.ts`,
+        type: 'module',
+        requiresWebGPU: false,
+        capabilities: {
+          microphone: true,
+          demoAudio: true,
+          motion: false,
+        },
+      },
+    ];
+
+    await fs.writeFile(
+      path.join(root, 'assets/data/toys.json'),
+      `${JSON.stringify(entries, null, 2)}\n`,
+    );
+    await writeGeneratedArtifacts(root, entries);
+
+    const result = await runToyChecks(root);
+    expect(
+      result.issues.some((issue) =>
+        issue.includes(
+          'Registered toy entrypoint is missing an exported start() function',
+        ),
+      ),
+    ).toBe(true);
+  });
 });
