@@ -2,6 +2,8 @@
 
 The repository includes a Model Context Protocol (MCP) stdio server at [`scripts/mcp-server.ts`](../scripts/mcp-server.ts) and a Cloudflare Worker transport at [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). Both expose documentation, toy metadata, loader behavior, and development command references so MCP-compatible clients can retrieve structured information without scraping markdown. The stdio server is the baseline path for local/tooling use; the Worker transport is an optional deployment target when remote MCP access is needed.
 
+For the human-readable overview of repo-local `.agent/skills/*` and `.agent/workflows/*`, see [`agents/custom-capabilities.md`](./agents/custom-capabilities.md).
+
 ## Starting the server
 
 - Install dependencies (`bun install`).

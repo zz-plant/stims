@@ -16,6 +16,7 @@ When restructuring docs, keep these entry points in sync:
 - `AGENTS.md`
 - `docs/README.md`
 - `docs/agents/README.md`
+- `docs/agents/custom-capabilities.md` when repo-local agent skills/workflows change
 
 ## What to update by change type
 
@@ -24,6 +25,7 @@ When restructuring docs, keep these entry points in sync:
 | New script or renamed script | `docs/DEVELOPMENT.md` plus agent overlays that reference scripts. |
 | New toy / renamed toy slug | `docs/TOY_DEVELOPMENT.md`, `docs/TOY_SCRIPT_INDEX.md`, and `docs/toys.md` in the same change. |
 | Workflow behavior changes | Update the source workflow doc (for example `docs/DEVELOPMENT.md`, `docs/DEPLOYMENT.md`, `docs/QA_PLAN.md`). |
+| Repo-local agent skill/workflow changes | `docs/agents/custom-capabilities.md` plus any agent overlays or MCP docs that mention the changed capability. |
 | Docs restructuring | Update links and references across all entry points listed above. |
 
 ## PR metadata expectations

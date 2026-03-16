@@ -53,6 +53,7 @@ export function createLibraryView({
     ensureFilterResetButton,
     ensureSearchSuggestions,
     ensureActiveFiltersSummary,
+    ensureActiveFiltersChips,
     ensureActiveFiltersClear,
     ensureActiveFiltersStatus,
     ensureSearchMetaNote,
@@ -134,9 +135,17 @@ export function createLibraryView({
       filterLabelCache.set(token, chipLabel);
       return chipLabel;
     }
+    const typeLabels = {
+      compatible: 'More devices',
+      mobile: 'Mobile-friendly',
+      motion: 'Motion',
+      microphone: 'Live mic',
+      demoaudio: 'Demo audio',
+    };
     const fallbackLabel = normalizedValue.replace(/[-_]/g, ' ');
-    const label = fallbackLabel
-      ? `${fallbackLabel[0].toUpperCase()}${fallbackLabel.slice(1)}`
+    const resolvedLabel = typeLabels[normalizedValue] ?? fallbackLabel;
+    const label = resolvedLabel
+      ? `${resolvedLabel[0].toUpperCase()}${resolvedLabel.slice(1)}`
       : token;
     filterLabelCache.set(token, label);
     return label;
@@ -155,7 +164,8 @@ export function createLibraryView({
       .slice(0, 2);
 
     if (baseActiveLabels.length === 0) {
-      note.textContent = 'Quick filters: mood and microphone input.';
+      note.textContent =
+        'Quick filters: demo audio, microphone, mobile-friendly, and motion.';
       return;
     }
 
@@ -194,6 +204,30 @@ export function createLibraryView({
       status.textContent = summaryTextParts.join(' • ') || 'Featured';
     }
 
+    const chips = ensureActiveFiltersChips();
+    if (chips instanceof HTMLElement) {
+      chips.replaceChildren();
+      tokenLabels.forEach((label, index) => {
+        const token = tokens[index];
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'active-filter-chip';
+        button.textContent = label;
+        button.setAttribute('aria-label', `Remove ${label} filter`);
+        button.addEventListener('click', () => {
+          activeFilters.delete(token);
+          syncFilterTokenState(token, false);
+          emitFilterStateChange();
+          commitState({ replace: false });
+          renderToys(applyFilters());
+          updateFilterResetState();
+          updateActiveFiltersSummary();
+        });
+        chips.appendChild(button);
+      });
+      chips.hidden = tokenLabels.length === 0;
+    }
+
     const clearButton = ensureActiveFiltersClear();
     if (
       clearButton instanceof HTMLElement &&
@@ -227,6 +261,27 @@ export function createLibraryView({
   const updateFilterChipA11y = (chip, isActive) => {
     if (!chip || typeof chip.setAttribute !== 'function') return;
     chip.setAttribute('aria-pressed', String(isActive));
+  };
+
+  const resolveChipToken = (chip) => {
+    if (!(chip instanceof HTMLElement)) return null;
+    const type = chip.getAttribute('data-filter-type');
+    const value = chip.getAttribute('data-filter-value');
+    if (!type || !value) return null;
+    return createFilterToken(type, value);
+  };
+
+  const setChipActiveState = (chip, isActive) => {
+    if (!(chip instanceof HTMLElement)) return;
+    chip.classList.toggle('is-active', isActive);
+    updateFilterChipA11y(chip, isActive);
+  };
+
+  const syncFilterTokenState = (token, isActive) => {
+    document.querySelectorAll('[data-filter-chip]').forEach((chip) => {
+      if (resolveChipToken(chip) !== token) return;
+      setChipActiveState(chip, isActive);
+    });
   };
 
   const emitFilterStateChange = () => {
@@ -275,14 +330,11 @@ export function createLibraryView({
 
   const resetFiltersAndSearch = () => {
     searchQuery = '';
+    Array.from(activeFilters).forEach((token) => {
+      syncFilterTokenState(token, false);
+    });
     activeFilters.clear();
     sortBy = 'featured';
-
-    const chips = document.querySelectorAll('[data-filter-chip].is-active');
-    chips.forEach((chip) => {
-      chip.classList.remove('is-active');
-      updateFilterChipA11y(chip, false);
-    });
     emitFilterStateChange();
 
     if (searchInputId) {
@@ -392,6 +444,8 @@ export function createLibraryView({
           return !toy.requiresWebGPU || Boolean(toy.allowWebGLFallback);
         }
         return true;
+      case 'tag':
+        return (toy.tags ?? []).some((tag) => tag.toLowerCase() === value);
       default:
         return true;
     }
@@ -581,27 +635,127 @@ export function createLibraryView({
     openToy(toy);
   };
 
-  const getLaunchLabel = (toy) => {
-    if (toy.capabilities?.demoAudio && toy.capabilities?.microphone) {
-      return 'Launch • Demo audio ready';
-    }
-    if (toy.capabilities?.demoAudio) {
-      return 'Launch • No permissions needed';
-    }
-    if (toy.capabilities?.microphone) {
-      return 'Launch • Mic recommended';
-    }
-    return 'Launch toy';
+  const titleCaseLabel = (value = '') =>
+    value
+      .replace(/\s*·\s*/g, ' ')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^\w/, (char) => char.toUpperCase());
+
+  const normalizeGuideKey = (value = '') =>
+    value
+      .toLowerCase()
+      .replace(/\s*·\s*/g, ' ')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+
+  const guidesOverlap = (left, right) => {
+    const normalizedLeft = normalizeGuideKey(left);
+    const normalizedRight = normalizeGuideKey(right);
+    if (!normalizedLeft || !normalizedRight) return false;
+    return (
+      normalizedLeft === normalizedRight ||
+      normalizedLeft.includes(normalizedRight) ||
+      normalizedRight.includes(normalizedLeft)
+    );
   };
 
-  const getBestForLabel = (toy) => {
-    if (toy.capabilities?.motion) return 'Best for mobile tilt';
-    if (toy.capabilities?.demoAudio && toy.capabilities?.microphone) {
-      return 'Best for quick starts or live rooms';
+  const getInteractionSignal = (toy) => {
+    if (toy.capabilities?.motion) return 'Tilt';
+    const tags = (toy.tags ?? []).map((tag) => tag.toLowerCase());
+    if (
+      tags.some((tag) =>
+        ['touch', 'gestural', 'sculpting', 'pottery', 'haptics'].includes(tag),
+      )
+    ) {
+      return 'Touch-led';
     }
-    if (toy.capabilities?.demoAudio) return 'Best for no-permission preview';
-    if (toy.capabilities?.microphone) return 'Best for live room audio';
-    return 'Best for visual exploration';
+    return null;
+  };
+
+  const getCardSignals = (toy) => {
+    const signals = [];
+    const interactionSignal = getInteractionSignal(toy);
+    if (interactionSignal) {
+      signals.push(interactionSignal);
+    }
+
+    (toy.moods ?? []).slice(0, 2).forEach((mood) => {
+      const label = titleCaseLabel(mood);
+      if (!signals.includes(label)) {
+        signals.push(label);
+      }
+    });
+
+    return signals.slice(0, 3);
+  };
+
+  const getPrimaryGuideLabel = (toy) => {
+    if (toy.starterPreset?.label) {
+      return titleCaseLabel(toy.starterPreset.label);
+    }
+    if (toy.capabilities?.motion) {
+      return 'Tilt your device';
+    }
+    if (getInteractionSignal(toy) === 'Touch-led') {
+      return 'Use touch';
+    }
+    if (toy.wowControl) {
+      return titleCaseLabel(toy.wowControl);
+    }
+    if (toy.controls?.[0]) {
+      return titleCaseLabel(toy.controls[0]);
+    }
+    if (toy.recommendedCapability === 'microphone') {
+      return 'Use live mic';
+    }
+    if (toy.recommendedCapability === 'demoAudio') {
+      return 'Use demo audio';
+    }
+    return null;
+  };
+
+  const getSecondaryGuideLabel = (toy, primaryGuide) => {
+    if (toy.wowControl) {
+      const wowLabel = titleCaseLabel(toy.wowControl);
+      const usesPresetLanguage = /preset|starter/i.test(wowLabel);
+      if (!guidesOverlap(primaryGuide, wowLabel) && !usesPresetLanguage) {
+        return wowLabel;
+      }
+    }
+
+    if (
+      toy.recommendedCapability === 'microphone' &&
+      !guidesOverlap(primaryGuide, 'Use live mic')
+    ) {
+      return 'Use live mic';
+    }
+
+    if (
+      toy.recommendedCapability === 'demoAudio' &&
+      !guidesOverlap(primaryGuide, 'Use demo audio')
+    ) {
+      return 'Use demo audio';
+    }
+
+    return null;
+  };
+
+  const getCardGuidance = (toy) => {
+    const primaryGuide = getPrimaryGuideLabel(toy);
+    const secondaryGuide = getSecondaryGuideLabel(toy, primaryGuide);
+    const guides = [primaryGuide, secondaryGuide].filter(Boolean);
+
+    if (guides.length > 0) {
+      return `Try first: ${guides.join(' • ')}`;
+    }
+
+    if (toy.firstRunHint) {
+      return toy.firstRunHint;
+    }
+
+    return null;
   };
 
   const renderGrowthPanels = (listElement) => {
@@ -687,10 +841,13 @@ export function createLibraryView({
     card.appendChild(title);
     card.appendChild(desc);
 
-    const bestFor = document.createElement('p');
-    bestFor.className = 'webtoy-card-bestfor';
-    bestFor.textContent = getBestForLabel(toy);
-    card.appendChild(bestFor);
+    const guidance = getCardGuidance(toy);
+    if (guidance) {
+      const guidanceNode = document.createElement('p');
+      guidanceNode.className = 'webtoy-card-guidance';
+      guidanceNode.textContent = guidance;
+      card.appendChild(guidanceNode);
+    }
 
     const matchedFields = getMatchedFields(toy, getQueryTokens(searchQuery));
     if (matchedFields.length > 0) {
@@ -711,97 +868,16 @@ export function createLibraryView({
     }
 
     if (enableCapabilityBadges) {
-      const metaRow = document.createElement('div');
-      metaRow.className = 'webtoy-card-meta';
-
-      const createBadge = ({
-        label,
-        title,
-        ariaLabel,
-        warning = false,
-        role = null,
-        tone = null,
-      }) => {
-        const badge = document.createElement('span');
-        badge.className = 'capability-badge';
-        badge.textContent = label;
-        if (title) {
-          badge.title = title;
-        }
-        if (ariaLabel) {
-          badge.setAttribute('aria-label', ariaLabel);
-        }
-        if (role) {
-          badge.setAttribute('role', role);
-        }
-        if (tone) {
-          badge.classList.add(`capability-badge--${tone}`);
-        }
-        if (warning) {
-          badge.classList.add('capability-badge--warning');
-        }
-        return badge;
-      };
-
-      if (toy.requiresWebGPU) {
-        const hasWebGPU =
-          typeof navigator !== 'undefined' && Boolean(navigator.gpu);
-        metaRow.appendChild(
-          createBadge({
-            label: 'WebGPU',
-            title: hasWebGPU
-              ? 'Requires WebGPU to run.'
-              : 'WebGPU not detected; falling back to WebGL if available.',
-            ariaLabel: 'Requires WebGPU',
-            role: 'status',
-            warning: !hasWebGPU,
-            tone: 'webgpu',
-          }),
-        );
-
-        if (!hasWebGPU) {
-          const fallbackNote = document.createElement('span');
-          fallbackNote.className = 'capability-note';
-          fallbackNote.textContent =
-            'No WebGPU detected — will try WebGL fallback.';
-          metaRow.appendChild(fallbackNote);
-        }
-      }
-
-      if (toy.capabilities?.microphone) {
-        metaRow.appendChild(
-          createBadge({
-            label: 'Mic',
-            title: 'Uses live microphone input.',
-            ariaLabel: 'Requires microphone input',
-            tone: 'primary',
-          }),
-        );
-      }
-
-      if (toy.capabilities?.demoAudio) {
-        metaRow.appendChild(
-          createBadge({
-            label: 'Demo audio',
-            title: 'Includes a demo track if you skip the mic.',
-            ariaLabel: 'Demo audio available',
-            tone: 'soft',
-          }),
-        );
-      }
-
-      if (toy.capabilities?.motion) {
-        metaRow.appendChild(
-          createBadge({
-            label: 'Motion',
-            title: 'Responds to device motion or tilt.',
-            ariaLabel: 'Requires device motion',
-            tone: 'motion',
-          }),
-        );
-      }
-
-      if (metaRow.childElementCount > 0) {
+      const signals = getCardSignals(toy);
+      if (signals.length > 0) {
+        const metaRow = document.createElement('div');
+        metaRow.className = 'webtoy-card-signals';
+        signals.forEach((signal) => {
+          const badge = document.createElement('span');
+          badge.className = 'webtoy-card-signal';
+          badge.textContent = signal;
+          metaRow.appendChild(badge);
+        });
         card.appendChild(metaRow);
       }
     }
@@ -813,7 +889,7 @@ export function createLibraryView({
       const open = document.createElement('button');
       open.type = 'button';
       open.className = 'cta-button cta-button--accent';
-      open.textContent = getLaunchLabel(toy);
+      open.textContent = 'Open';
       open.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -830,12 +906,10 @@ export function createLibraryView({
       play.type = 'button';
       play.className = 'cta-button cta-button--muted';
       play.textContent = toy.capabilities?.demoAudio
-        ? toy.capabilities?.microphone
-          ? 'Preview with demo audio'
-          : 'Preview demo visuals'
+        ? 'Preview'
         : toy.capabilities?.microphone
-          ? 'Start mic-reactive mode'
-          : 'Play now';
+          ? 'Use mic'
+          : 'Open';
       play.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -1052,12 +1126,10 @@ export function createLibraryView({
   };
 
   const clearFilters = () => {
-    activeFilters.clear();
-    const chips = document.querySelectorAll('[data-filter-chip].is-active');
-    chips.forEach((chip) => {
-      chip.classList.remove('is-active');
-      updateFilterChipA11y(chip, false);
+    Array.from(activeFilters).forEach((token) => {
+      syncFilterTokenState(token, false);
     });
+    activeFilters.clear();
     emitFilterStateChange();
     commitState({ replace: false });
     syncRefineDisclosure();
@@ -1103,19 +1175,16 @@ export function createLibraryView({
   };
 
   const toggleFilterChip = (chip) => {
-    const type = chip.getAttribute('data-filter-type');
-    const value = chip.getAttribute('data-filter-value');
-    if (!type || !value) return;
-    const token = createFilterToken(type, value);
+    const token = resolveChipToken(chip);
     if (!token) return;
-    const isActive = chip.classList.toggle('is-active');
-    updateFilterChipA11y(chip, isActive);
+    const isActive = !activeFilters.has(token);
     emitFilterStateChange();
     if (isActive) {
       activeFilters.add(token);
     } else {
       activeFilters.delete(token);
     }
+    syncFilterTokenState(token, isActive);
     commitState({ replace: false });
     renderToys(applyFilters());
     updateFilterResetState();
@@ -1126,10 +1195,8 @@ export function createLibraryView({
     const chips = ensureFilterChips();
     chips.forEach((chip) => {
       updateFilterChipA11y(chip, chip.classList.contains('is-active'));
-      const type = chip.getAttribute('data-filter-type');
-      const value = chip.getAttribute('data-filter-value');
-      if (!type || !value) return;
-      const token = `${type}:${value.toLowerCase()}`;
+      const token = resolveChipToken(chip);
+      if (!token) return;
       const label = chip.textContent?.trim();
       if (label) {
         filterLabelCache.set(token, label);

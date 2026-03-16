@@ -380,6 +380,7 @@ export function createToyView({
     if (state.mode === 'library') {
       showElement(toyList);
       hideElement(container);
+      container.dataset.hasBlockingStatus = 'false';
       state.status = null;
       return { container, status: null };
     }
@@ -399,6 +400,9 @@ export function createToyView({
     });
 
     const statusElement = renderStatusElement(doc, container, state.status);
+    const hasBlockingStatus =
+      state.status?.variant === 'error' || state.status?.variant === 'warning';
+    container.dataset.hasBlockingStatus = hasBlockingStatus ? 'true' : 'false';
 
     if (state.audioPromptActive && state.audioPromptOptions) {
       const existingPrompt = container.querySelector('.control-panel');

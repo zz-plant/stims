@@ -1,149 +1,48 @@
 ---
-description: Launch and interact with a toy in the browser
+description: Launch a toy in a real browser and verify its runtime behavior
 ---
 
 # Play a Toy
 
-This workflow helps agents launch toys and make them react to audio, just like a human would.
+## 1. Choose the path
 
-## Step 1: Start the Dev Server
+For a quick scripted smoke run:
 
-// turbo
+```bash
+bun run play:toy <slug>
+```
 
-First, start the development server:
+For a manual inspection session:
 
 ```bash
 bun run dev
 ```
 
-Wait for the server to start (usually shows "Local: http://localhost:5173").
+Open:
 
-## Step 2: Launch and Play a Toy
-
-Use the `browser_subagent` tool to launch a toy and interact with it. Here's an example task:
-
-```
-Task: "Navigate to http://localhost:5173/toy.html?toy=holy and make the visualization react to audio.
-
-Steps:
-1. Navigate to the toy URL
-2. Wait for the page to load completely
-3. Look for and click the 'Use demo audio' button (or similar button to start audio)
-4. Wait 5 seconds to observe the visualization reacting to the audio
-5. Take a screenshot to capture the active visualization
-6. Report what you observed - describe the visual effects and how they respond to the audio
-
-Return: Describe what the visualization looks like and how it responds to the audio."
+```text
+http://localhost:5173/toy.html?toy=<slug>&agent=true
 ```
 
-## Available Toys to Try
+## 2. Start the toy
 
-| Slug | Title | What to Expect |
-|------|-------|----------------|
-| `holy` | Halo Flow | Glowing halos and particles that pulse with bass |
-| `spiral-burst` | Spiral Burst | Colorful spirals that expand on beats |
-| `neon-wave` | Neon Wave | Retro synthwave grid that ripples with music |
-| `geom` | Geometry Visualizer | 3D shapes that morph with frequency |
-| `defrag` | Defrag Visualizer | Retro blocks that shuffle to rhythm |
-| `milkdrop` | MilkDrop Proto | Psychedelic feedback patterns |
-| `star-field` | Star Field | Stars that shimmer with audio |
-| `rainbow-tunnel` | Rainbow Tunnel | Rings that spin faster with bass |
+1. Let the shell load.
+2. Choose demo audio when the toy supports it and you want repeatable input.
+3. Use microphone input only when the task specifically needs live audio behavior.
 
-## How the Audio Works
+## 3. Observe
 
-1. **Demo Audio Mode**: Click "Use demo audio" - this plays procedural audio that the toy reacts to. No microphone needed!
+Check:
 
-2. **What to observe**:
-   - Bass hits → Large visual movements, pulses, size changes
-   - Mid frequencies → Color shifts, rotations
-   - High frequencies → Sparkles, fine details, shimmer effects
+- toy loads without obvious errors,
+- audio start path works,
+- visuals react after audio starts,
+- back-to-library flow still works.
 
-## Example Browser Subagent Tasks
+## 4. Capture evidence when useful
 
-### Quick Visual Check
-```
-Navigate to http://localhost:5173/toy.html?toy=spiral-burst, click the 'Use demo audio' button when it appears, wait 3 seconds, then screenshot the result. Describe how the spirals are moving.
-```
+Take screenshots only if they help explain a visual regression, UX issue, or before/after change.
 
-### Compare Multiple Toys
-```
-1. Navigate to http://localhost:5173/toy.html?toy=holy
-2. Click 'Use demo audio'
-3. Wait 3 seconds and take a screenshot
-4. Press Escape to return to library
-5. Click on 'Neon Wave' toy card
-6. Click 'Use demo audio'
-7. Wait 3 seconds and take a screenshot
-8. Compare: which toy had more dramatic audio reactions?
-```
+## 5. Agent-mode helpers
 
-### Test Audio Reactivity
-```
-Navigate to http://localhost:5173/toy.html?toy=neon-wave, enable demo audio, and observe for 10 seconds. Note:
-- Does the grid move with the beat?
-- Do colors change with frequency?
-- Are there bloom/glow effects on bass hits?
-Take screenshots at different moments to capture the variation.
-```
-
-## Tips for Agents
-
-1. **Always click "Use demo audio"** - this bypasses microphone permissions and gives consistent audio input
-
-2. **Wait a few seconds** after enabling audio before judging the visualization - it takes a moment to "warm up"
-
-3. **Take multiple screenshots** - the visualizations are dynamic, so one screenshot may not capture the full range of effects
-
-4. **Use the Escape key** to return to the library from any toy
-
-5. **Watch for these audio-reactive behaviors**:
-   - Pulsing/scaling on bass beats
-   - Color cycling with melody
-   - Particle bursts on transients
-   - Camera movement with energy levels
-
-## Programmatic Control via window.stim State
-
-The app exposes a `window.stimState` API for programmatic interaction:
-
-```javascript
-// Get current state
-const state = window.stimState.getState();
-console.log(state.currentToy);  // Current toy slug
-console.log(state.audioActive);  // Is audio playing?
-
-// Enable demo audio programmatically
-await window.stimState.enableDemoAudio();
-
-// Wait for toy to load
-const toySlug = await window.stimState.waitForToyLoad();
-
-// Wait for audio to activate
-const audioSource = await window.stimState.waitForAudioActive();
-
-// Listen to events
-const unlisten = window.stimState.onToyLoad((slug) => {
-  console.log(`Toy loaded: ${slug}`);
-});
-
-// Return to library
-window.stimState.returnToLibrary();
-```
-
-The body element also gets data attributes for easy querying:
-- `data-current-toy` - slug of active toy
-- `data-toy-loaded` - "true" when toy is ready
-- `data-audio-active` - "true" when audio is playing
-- `data-audio-source` - "microphone" or "demo"
-
-## Agent Mode
-
-Add `?agent=true` to the URL to enable agent mode:
-```
-http://localhost:5173/toy.html?toy=holy&agent=true
-```
-
-In agent mode:
-- State tracking is enabled
-- Data attributes are added to body
-- window.stimState API is available
+`?agent=true` enables stateful hooks for automation and debugging. Use it when you need deterministic toy-load or audio-active checks.

@@ -7,6 +7,17 @@ This is the canonical documentation map for the repository. Root-level entry poi
 - Human contributors: [`../CONTRIBUTING.md`](../CONTRIBUTING.md)
 - Agent contributors: [`../AGENTS.md`](../AGENTS.md) then [`agents/README.md`](./agents/README.md)
 - Day-to-day implementation: [`DEVELOPMENT.md`](./DEVELOPMENT.md)
+- Repo-local agent capabilities: [`agents/custom-capabilities.md`](./agents/custom-capabilities.md)
+
+## How to use this map
+
+Use the docs in this order:
+
+1. Start with the routing docs (`README.md`, `CONTRIBUTING.md`, `docs/README.md`, `docs/agents/README.md`).
+2. Move to the current operational/spec docs for the task at hand.
+3. Treat audit, critique, and roadmap docs as context and follow-up material unless they explicitly say they are authoritative.
+
+If you only need the current operating surface, prefer the sections below named **Core workflows**, **Implementation references**, and **Agent overlays**.
 
 ## Quick task routing
 
@@ -44,6 +55,8 @@ If you need to...
 
 ### Product, UX, and research docs
 
+These are useful context docs, but many are audits, critiques, or dated planning documents rather than day-to-day operating guides.
+
 - [`FEATURE_SPECIFICATIONS.md`](./FEATURE_SPECIFICATIONS.md)
 - [`FEATURE_AUDIT.md`](./FEATURE_AUDIT.md)
 - [`SEO_AUDIT.md`](./SEO_AUDIT.md)
@@ -67,6 +80,7 @@ If you need to...
 ### Agent overlays
 
 - [`agents/README.md`](./agents/README.md)
+- [`agents/custom-capabilities.md`](./agents/custom-capabilities.md)
 - [`agents/tooling-and-quality.md`](./agents/tooling-and-quality.md)
 - [`agents/metadata-and-docs.md`](./agents/metadata-and-docs.md)
 - [`agents/toy-development.md`](./agents/toy-development.md)
