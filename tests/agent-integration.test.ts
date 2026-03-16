@@ -250,58 +250,6 @@ async function dispatchPointerEvent(
   }, event);
 }
 
-async function runPinchRotateGesture(page: Page) {
-  const box = await getPrimaryCanvasBox(page);
-  const centerX = box.x + box.width / 2;
-  const centerY = box.y + box.height / 2;
-
-  const startLeft = { x: centerX - 80, y: centerY };
-  const startRight = { x: centerX + 80, y: centerY };
-  const endLeft = { x: centerX - 120, y: centerY + 60 };
-  const endRight = { x: centerX + 120, y: centerY - 60 };
-
-  await dispatchPointerEvent(page, {
-    type: 'pointerdown',
-    pointerId: 1,
-    clientX: startLeft.x,
-    clientY: startLeft.y,
-  });
-  await dispatchPointerEvent(page, {
-    type: 'pointerdown',
-    pointerId: 2,
-    clientX: startRight.x,
-    clientY: startRight.y,
-  });
-  await page.waitForTimeout(80);
-
-  await dispatchPointerEvent(page, {
-    type: 'pointermove',
-    pointerId: 1,
-    clientX: endLeft.x,
-    clientY: endLeft.y,
-  });
-  await dispatchPointerEvent(page, {
-    type: 'pointermove',
-    pointerId: 2,
-    clientX: endRight.x,
-    clientY: endRight.y,
-  });
-  await page.waitForTimeout(180);
-
-  await dispatchPointerEvent(page, {
-    type: 'pointerup',
-    pointerId: 1,
-    clientX: endLeft.x,
-    clientY: endLeft.y,
-  });
-  await dispatchPointerEvent(page, {
-    type: 'pointerup',
-    pointerId: 2,
-    clientX: endRight.x,
-    clientY: endRight.y,
-  });
-}
-
 async function installMotionMock(page: Page) {
   await page.addInitScript(() => {
     class FakeDeviceOrientationEvent extends Event {
