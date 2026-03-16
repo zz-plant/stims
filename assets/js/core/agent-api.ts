@@ -16,6 +16,7 @@ export type StimState = {
 export type StimAPI = {
   // Current state
   getState: () => StimState;
+  getDebugSnapshot: (key: string) => unknown | null;
 
   // Control methods
   enableDemoAudio: () => Promise<void>;
@@ -63,6 +64,7 @@ const eventTarget =
   typeof window !== 'undefined' && window.EventTarget
     ? new window.EventTarget()
     : new EventTarget();
+const debugSnapshots = new Map<string, unknown>();
 
 const addStimEventListener = <K extends keyof StimEventMap>(
   eventName: K,
@@ -93,6 +95,9 @@ if (typeof window !== 'undefined') {
 export function initAgentAPI(): StimAPI {
   const api: StimAPI = {
     getState: () => ({ ...state }),
+    getDebugSnapshot: (key) => {
+      return debugSnapshots.get(key) ?? null;
+    },
 
     enableDemoAudio: async () => {
       const demoBtn = document.querySelector(
@@ -256,4 +261,12 @@ export function setAudioActive(
 
 export function isAgentMode(): boolean {
   return state.isAgentMode;
+}
+
+export function setDebugSnapshot(key: string, value: unknown) {
+  debugSnapshots.set(key, value);
+}
+
+export function clearDebugSnapshot(key: string) {
+  debugSnapshots.delete(key);
 }

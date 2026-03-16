@@ -1,4 +1,9 @@
 import {
+  clearDebugSnapshot,
+  isAgentMode,
+  setDebugSnapshot,
+} from '../core/agent-api.ts';
+import {
   isCompatibilityModeEnabled,
   setCompatibilityMode,
 } from '../core/render-preferences';
@@ -107,6 +112,47 @@ wave_0_per_frame1=a = 0.18 + bass_att * 0.36
 wave_0_per_point1=y = y + sin(sample * pi * 12 + time) * 0.06
 shape_0_per_frame1=rad = 0.14 + beat_pulse * 0.08
 `;
+
+function sanitizeRuntimeSignals(signals: MilkdropRuntimeSignals) {
+  const { frequencyData: _frequencyData, ...rest } = signals;
+  return rest;
+}
+
+function buildAgentMilkdropDebugSnapshot({
+  activePresetId,
+  compiledPreset,
+  frameState,
+  status,
+}: {
+  activePresetId: string | null;
+  compiledPreset: MilkdropCompiledPreset | null;
+  frameState: MilkdropFrameState | null;
+  status: string | null;
+}) {
+  if (!frameState) {
+    return {
+      activePresetId,
+      status,
+      frameState: null,
+      title: compiledPreset?.title ?? null,
+    };
+  }
+
+  return {
+    activePresetId,
+    status,
+    title: compiledPreset?.title ?? frameState.title,
+    frameState: {
+      presetId: frameState.presetId,
+      title: frameState.title,
+      signals: sanitizeRuntimeSignals(frameState.signals),
+      variables: frameState.variables,
+      mainWave: frameState.mainWave,
+      shapes: frameState.shapes,
+      post: frameState.post,
+    },
+  };
+}
 
 function readUiPrefs(): UiPrefs {
   try {
@@ -277,14 +323,36 @@ export function createMilkdropExperience({
   let selectionHistory: string[] = [];
   let selectionCursor = -1;
   let fallbackTriggered = false;
+  let lastStatusMessage: string | null = null;
   let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
   let requestedPresetListener: ((event: Event) => void) | null = null;
+
+  const updateAgentDebugSnapshot = () => {
+    if (!isAgentMode()) {
+      return;
+    }
+    setDebugSnapshot(
+      'milkdrop',
+      buildAgentMilkdropDebugSnapshot({
+        activePresetId,
+        compiledPreset: activeCompiled,
+        frameState: currentFrameState,
+        status: lastStatusMessage,
+      }),
+    );
+  };
+
+  const setOverlayStatus = (message: string) => {
+    lastStatusMessage = message;
+    overlay.setStatus(message);
+    updateAgentDebugSnapshot();
+  };
 
   overlay.setAutoplay(autoplay);
   overlay.setBlendDuration(blendDuration);
   overlay.setSessionState(session.getState());
   if (prefs.fallbackNotice) {
-    overlay.setStatus(prefs.fallbackNotice);
+    setOverlayStatus(prefs.fallbackNotice);
     writeUiPrefs({ fallbackNotice: undefined });
   }
 
@@ -331,6 +399,7 @@ export function createMilkdropExperience({
       frameState: currentFrameState,
       backend: activeBackend,
     });
+    updateAgentDebugSnapshot();
   };
 
   const rememberSelection = async (id: string) => {
@@ -349,7 +418,7 @@ export function createMilkdropExperience({
   ) => {
     const source = await catalogStore.getPresetSource(id);
     if (!source) {
-      overlay.setStatus(`Preset ${id} could not be loaded.`);
+      setOverlayStatus(`Preset ${id} could not be loaded.`);
       return;
     }
     const draft = await catalogStore.getDraft(id);
@@ -361,7 +430,7 @@ export function createMilkdropExperience({
     const nextState = await session.loadPreset(resolvedSource);
     const nextCompiled = nextState.activeCompiled;
     if (!nextCompiled) {
-      overlay.setStatus(`Preset ${id} did not compile.`);
+      setOverlayStatus(`Preset ${id} did not compile.`);
       return;
     }
 
@@ -383,7 +452,7 @@ export function createMilkdropExperience({
 
     writeUiPrefs({ lastPresetId: id });
     applyCompiledPreset(nextCompiled);
-    overlay.setStatus(`Loaded ${nextCompiled.title}.`);
+    setOverlayStatus(`Loaded ${nextCompiled.title}.`);
     await syncCatalog();
   };
 
@@ -655,7 +724,7 @@ export function createMilkdropExperience({
     selectPreset,
 
     setStatus(message: string) {
-      overlay.setStatus(message);
+      setOverlayStatus(message);
     },
 
     attachRuntime(nextRuntime: ToyRuntimeInstance) {
@@ -754,6 +823,7 @@ export function createMilkdropExperience({
       }
 
       currentFrameState = vm.step(signals);
+      updateAgentDebugSnapshot();
       const activeBlendState =
         blendState && performance.now() < blendEndAtMs
           ? {
@@ -778,6 +848,7 @@ export function createMilkdropExperience({
     },
 
     dispose() {
+      clearDebugSnapshot('milkdrop');
       overlay.dispose();
       session.dispose();
       adapter?.dispose();

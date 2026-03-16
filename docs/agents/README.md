@@ -30,7 +30,7 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 ## Fast repo map
 
 - `assets/js/toys/` — toy implementations.
-- `assets/data/toys.json` — authoritative toy metadata source of truth; `assets/js/data/toy-manifest.ts` and `public/toys.json` are generated from it.
+- `assets/data/toys.json` — checked-in toy manifest source; behavior-backed MilkDrop aliases also sync interaction metadata from `assets/js/toys/milkdrop-behaviors/metadata.ts` when `bun run generate:toys` runs.
 - `toys/` — standalone toy pages.
 - `tests/` — automated test suite.
 - `docs/` — contributor and architecture docs.

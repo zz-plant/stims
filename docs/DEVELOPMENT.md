@@ -83,7 +83,7 @@ Use this to decide the minimum workflow before you start running commands.
 
 | Task | Command | Notes |
 | --- | --- | --- |
-| Toy consistency check | `bun run check:toys` | Validates toy registration/docs consistency. |
+| Toy consistency check | `bun run check:toys` | Validates toy registration/docs consistency, including behavior-derived MilkDrop interaction metadata. |
 | Toy health check | `bun run health:toys` | Runs toy runtime/metadata health diagnostics. |
 | Play a specific toy | `bun run play:toy <slug>` | Scripted toy-run helper against local dev server. |
 | Generate SEO artifacts | `bun run generate:seo` | Regenerates SEO-derived assets. |
@@ -120,6 +120,7 @@ If `bun run check` is too slow during iteration, use `bun run check:quick` until
 ```bash
 bun run dev
 # implement toy + metadata + docs updates
+bun run generate:toys
 bun run check
 bun run check:toys
 ```

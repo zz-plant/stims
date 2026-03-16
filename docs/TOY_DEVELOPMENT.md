@@ -6,9 +6,10 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 
 - Place new toy modules under `assets/js/toys/` and export a `start(options)` entry point.
 - Export `start({ container, canvas?, audioContext? })`. `container` is the preferred target for rendering.
-- Register the toy in `assets/data/toys.json` with a unique slug, label, and any default parameters. This JSON file is the authoritative toy metadata source; `assets/js/data/toy-manifest.ts` and `public/toys.json` are generated artifacts. Keep the module path under `assets/js/toys/`.
+- Register the toy in `assets/data/toys.json` with a unique slug, label, and any default parameters. This JSON file is the checked-in manifest source; `assets/js/data/toy-manifest.ts` and `public/toys.json` are generated artifacts. Keep the module path under `assets/js/toys/`.
 - Load toys through `toy.html?toy=<slug>`. Legacy `toys/*.html` files now remain only as archived reference assets and redirect direct visits back to the shell.
 - If a toy is just a curated MilkDrop look, prefer `createMilkdropPresetToyStarter(...)` over spinning up a bespoke scene/runtime module.
+- For MilkDrop preset aliases with custom touch/gesture/motion behavior, keep interaction metadata in `assets/js/toys/milkdrop-behaviors/metadata.ts` and let `bun run generate:toys` sync the JSON.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
 - Run `bun run generate:toys` after metadata edits to regenerate derived artifacts, then run `bun run check:toys` to verify schema validity, slug/entrypoint consistency, generated artifact parity, and module/page registration coverage.
 - Run `bun run check:quick` to validate types and code quality with Biome before opening a PR.
@@ -29,7 +30,7 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
   bun run check:toys
   ```
 
-If `bun run check:toys` reports drift, run `bun run generate:toys`, review the generated diffs, and commit all three files together when metadata changes.
+If `bun run check:toys` reports drift, run `bun run generate:toys`, review the generated diffs, and commit all three files together when metadata changes. For behavior-backed MilkDrop aliases, this command also rewrites the interaction metadata in `assets/data/toys.json` from the behavior registry.
 
 ## Toy lifecycle and featured rotation
 
@@ -43,6 +44,7 @@ Treat toys like live game content and keep their status explicit in metadata:
 - **Rotation cadence**: revisit the featured set on a regular schedule (every 4–6 weeks). When rotating, update `featuredRank` and `lifecycleStage` in `assets/data/toys.json` so the UI reflects the new lineup.
 - **Polish passes**: schedule periodic quality passes on `featured` toys (monthly) and `prototype` toys (as needed). Each pass should include performance verification, accessibility checks, and a quick review of controls/labels against the latest UI conventions.
 - **Preset aliases**: when a slug should launch the shared MilkDrop runtime with a fixed bundled preset, keep the public slug in `assets/data/toys.json`, point the module at `assets/js/toys/<slug>.ts`, and implement that file as a thin wrapper around `createMilkdropPresetToyStarter(...)`.
+- **Behavior-backed preset aliases**: when a preset alias needs custom drag/pinch/rotate/motion parity, add or update a behavior module under `assets/js/toys/milkdrop-behaviors/` and update `assets/js/toys/milkdrop-behaviors/metadata.ts` instead of hand-editing those interaction fields in `assets/data/toys.json`.
 
 ## Quality preset mapping (toy author guidance)
 
