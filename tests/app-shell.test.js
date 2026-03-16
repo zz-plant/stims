@@ -56,6 +56,7 @@ async function loadAppShell() {
   };
 
   await freshImport('../assets/js/app.ts');
+  await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 describe('app shell user journeys', () => {
@@ -63,6 +64,7 @@ describe('app shell user journeys', () => {
 
   beforeEach(() => {
     mock.restore();
+    window.location.href = 'https://example.com/';
     document.body.innerHTML = '<div id="toy-list"></div>';
     document.body.dataset.page = 'library';
     try {

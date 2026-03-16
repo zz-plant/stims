@@ -339,10 +339,13 @@
       let unifiedInput = null;
       let energyPeak = 0.12;
       let bassPulse = 0;
+      let midPulse = 0;
       let trebleShimmer = 0;
       let beatPulse = 0;
       let lastBeatTime = -10;
       let beatStreak = 0;
+      let previousBass = 0;
+      let previousTreble = 0;
       let hintTimeout = null;
       let hasDragged = false;
       let hasPinched = false;
@@ -707,14 +710,25 @@
           (bands.treble ?? average(treble) / 255) * 0.8 +
           webgpuSnapshot.audio.highs * 0.2;
         const weightedEnergy = getWeightedEnergy(bands);
-        energyPeak = updateEnergyPeak(energyPeak, weightedEnergy);
-        const normalized = weightedEnergy / energyPeak;
+        energyPeak = updateEnergyPeak(energyPeak, weightedEnergy, {
+          decay: 0.93,
+          floor: 0.12,
+        });
+        const normalized = Math.min(
+          1.35,
+          weightedEnergy / Math.max(energyPeak * 0.82, 0.001)
+        );
+        const bassRise = Math.max(0, bassAvg - previousBass);
+        const trebleRise = Math.max(0, trebleAvg - previousTreble);
         bassPulse = Math.max(bassPulse * 0.85, bassAvg);
+        midPulse = Math.max(midPulse * 0.86, midAvg);
         trebleShimmer = Math.max(trebleShimmer * 0.8, trebleAvg);
-        const beatReady = normalized > 0.88 && elapsed - lastBeatTime > 0.35;
-        if (beatReady) {
+        const beatReady =
+          (normalized > 0.8 && bassRise > 0.035) ||
+          (normalized > 0.72 && trebleRise > 0.06 && elapsed - lastBeatTime > 0.24);
+        if (beatReady && elapsed - lastBeatTime > 0.22) {
           lastBeatTime = elapsed;
-          beatPulse = 1;
+          beatPulse = Math.min(1.15, 0.6 + bassRise * 8 + trebleRise * 4 + normalized * 0.18);
           beatStreak += 1;
           if (beatStreak % 6 === 0) {
             currentShape = (currentShape + 1) % shapes.length;
@@ -727,42 +741,71 @@
         }
 
         // Scale Shape Smoothly
-        const scale = 1 + bassAvg * 0.55 + normalized * 0.2;
+        const scale =
+          1 + bassAvg * 0.82 + midPulse * 0.22 + normalized * 0.26 + beatPulse * 0.16;
         visualizerShape.scale.lerp(
           new THREE.Vector3(scale, scale, scale),
-          0.05
+          0.09
         );
 
         // Rotate Shape Smoothly
-        visualizerShape.rotation.x += 0.002 + midAvg * 0.002 + normalized * 0.001;
-        visualizerShape.rotation.y += 0.003 + trebleAvg * 0.002 + normalized * 0.0012;
+        visualizerShape.rotation.x +=
+          0.002 +
+          midAvg * 0.004 +
+          bassPulse * 0.0018 +
+          normalized * 0.0016;
+        visualizerShape.rotation.y +=
+          0.003 +
+          trebleAvg * 0.0042 +
+          midPulse * 0.0015 +
+          normalized * 0.0018;
+        visualizerShape.rotation.z += 0.0008 + trebleRise * 0.015 + beatPulse * 0.01;
 
         // Update Shape Color
         const hue =
-          (bassAvg * 0.5 + midAvg * 0.3 + trebleAvg * 0.2 + normalized * 0.1) %
+          (
+            bassAvg * 0.44 +
+            midAvg * 0.26 +
+            trebleAvg * 0.24 +
+            normalized * 0.14 +
+            beatPulse * 0.08
+          ) %
           1;
-        visualizerShape.material.color.setHSL(hue, 1, 0.5);
-        visualizerShape.material.emissive.setHSL(hue, 1, 0.2);
+        visualizerShape.material.color.setHSL(
+          hue,
+          Math.min(1, 0.82 + trebleShimmer * 0.35),
+          0.48 + beatPulse * 0.08
+        );
+        visualizerShape.material.emissive.setHSL(
+          (hue + trebleShimmer * 0.04) % 1,
+          1,
+          0.16 + bassPulse * 0.14 + trebleShimmer * 0.2 + beatPulse * 0.18
+        );
 
         // Beat-driven bloom + camera breathing
-        beatPulse = Math.max(0, beatPulse * 0.86);
+        beatPulse = Math.max(0, beatPulse * 0.84);
         if (bloomPass) {
           bloomPass.strength =
-            bloomStrength + beatPulse * 1.25 + bassPulse * 0.55;
+            bloomStrength +
+            beatPulse * 1.6 +
+            bassPulse * 0.8 +
+            trebleShimmer * 0.3;
         }
         const zoomPulse =
-          Math.sin(elapsed * 1.2) * (0.08 + bassPulse * 0.2) + beatPulse * 0.25;
+          Math.sin(elapsed * (1.2 + midPulse * 0.3)) * (0.08 + bassPulse * 0.3) +
+          beatPulse * 0.36;
         camera.position.z = zoomDistance + zoomPulse;
 
         // Dynamic background glow
         if (backgroundUniforms) {
-          const glow = 0.05 + normalized * 0.12 + beatPulse * 0.12;
+          const glow =
+            0.04 + normalized * 0.16 + beatPulse * 0.18 + trebleShimmer * 0.08;
           const hueShift = (hue + elapsed * 0.02) % 1;
           backgroundUniforms.color1.value.setHSL(hueShift, 0.6, glow);
           backgroundUniforms.color2.value.setHSL(
-            (hueShift + 0.18 + trebleShimmer * 0.08) % 1,
-            0.7,
-            glow * 1.3
+            (hueShift + 0.18 + trebleShimmer * 0.12 + midPulse * 0.05) % 1,
+            0.82,
+            glow * 1.45
           );
         }
 
@@ -776,7 +819,8 @@
           const audioValue = dataArray[freqIndex] / 255;
           const reactiveValue = Math.min(
             1,
-            audioValue * (0.75 + normalized * 0.9 + trebleShimmer * 0.4)
+            audioValue *
+              (0.8 + normalized * 1.1 + trebleShimmer * 0.5 + bassPulse * 0.35)
           );
 
           // Position Update with Smooth Movement
@@ -788,25 +832,40 @@
           }
 
           dummy.position.y +=
-            (reactiveValue - 0.5) * 0.12 + webgpuSnapshot.heightfield.average * 0.05;
+            (reactiveValue - 0.45) * 0.22 +
+            webgpuSnapshot.heightfield.average * 0.09 +
+            bassPulse * 0.05;
+          dummy.position.x += Math.sin(elapsed * 1.2 + i * 0.17) * (midPulse * 0.025);
           dummy.rotation.x +=
-            0.012 * reactiveValue + webgpuSnapshot.audio.flux * 0.005;
+            0.02 * reactiveValue + webgpuSnapshot.audio.flux * 0.008 + bassPulse * 0.01;
           dummy.rotation.y +=
-            0.012 * reactiveValue + webgpuSnapshot.heightfield.peak * 0.002;
-          dummy.scale.setScalar(particleScale * (1 + bassPulse * 0.2));
+            0.02 * reactiveValue +
+            webgpuSnapshot.heightfield.peak * 0.004 +
+            trebleShimmer * 0.008;
+          dummy.scale.setScalar(
+            particleScale *
+              (1 + bassPulse * 0.42 + trebleShimmer * 0.16 + reactiveValue * 0.12)
+          );
           dummy.updateMatrix();
           instancedParticles.setMatrixAt(i, dummy.matrix);
 
           // Color Update based on Audio
           const color = new THREE.Color();
-          color.setHSL(hue, 1, 0.5 + 0.5 * reactiveValue);
+          color.setHSL(
+            (hue + trebleShimmer * 0.06 + reactiveValue * 0.04) % 1,
+            1,
+            0.42 + 0.42 * reactiveValue + trebleShimmer * 0.12
+          );
           instancedParticles.instanceColor.setXYZ(i, color.r, color.g, color.b);
         }
         instancedParticles.instanceMatrix.needsUpdate = true;
         instancedParticles.instanceColor.needsUpdate = true;
 
         bassPulse *= 0.9;
+        midPulse *= 0.9;
         trebleShimmer *= 0.9;
+        previousBass = bassAvg;
+        previousTreble = trebleAvg;
       }
 
       // Get Frequencies within a Range
