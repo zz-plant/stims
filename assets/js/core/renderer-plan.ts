@@ -14,37 +14,21 @@ export type RendererPlan = {
   reasonCode: RendererFallbackReasonCode | null;
   reasonMessage: string | null;
   canRetryWebGPU: boolean;
-  triedWebGPU: boolean;
 };
 
 export function deriveRendererPlan({
   capabilities,
   hasWebGL,
-  xrSupported = false,
 }: {
   capabilities: Pick<
     RendererCapabilities,
     | 'preferredBackend'
     | 'fallbackReason'
     | 'fallbackReasonCode'
-    | 'triedWebGPU'
     | 'shouldRetryWebGPU'
   > | null;
   hasWebGL: boolean;
-  xrSupported?: boolean;
 }): RendererPlan {
-  if (xrSupported && hasWebGL) {
-    return {
-      backend: 'webgl',
-      reasonCode: RENDERER_FALLBACK_REASON_CODES.xrRequiresWebGL,
-      reasonMessage: getRendererFallbackReasonMessage(
-        RENDERER_FALLBACK_REASON_CODES.xrRequiresWebGL,
-      ),
-      canRetryWebGPU: true,
-      triedWebGPU: false,
-    };
-  }
-
   if (!capabilities) {
     return {
       backend: hasWebGL ? 'webgl' : null,
@@ -55,7 +39,6 @@ export function deriveRendererPlan({
         RENDERER_FALLBACK_REASON_CODES.rendererUnavailable,
       ),
       canRetryWebGPU: false,
-      triedWebGPU: false,
     };
   }
 
@@ -65,7 +48,6 @@ export function deriveRendererPlan({
       reasonCode: null,
       reasonMessage: null,
       canRetryWebGPU: false,
-      triedWebGPU: capabilities.triedWebGPU,
     };
   }
 
@@ -77,16 +59,13 @@ export function deriveRendererPlan({
       capabilities.fallbackReason ??
       getRendererFallbackReasonMessage(RENDERER_FALLBACK_REASON_CODES.unknown),
     canRetryWebGPU: capabilities.shouldRetryWebGPU,
-    triedWebGPU: capabilities.triedWebGPU,
   };
 }
 
 export async function getRendererPlan({
   forceRetry = false,
-  xrSupported = false,
 }: {
   forceRetry?: boolean;
-  xrSupported?: boolean;
 } = {}): Promise<{
   plan: RendererPlan;
   capabilities: RendererCapabilities | null;
@@ -101,7 +80,6 @@ export async function getRendererPlan({
     plan: deriveRendererPlan({
       capabilities,
       hasWebGL: support.hasWebGL,
-      xrSupported,
     }),
   };
 }

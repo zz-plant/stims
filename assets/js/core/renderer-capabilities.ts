@@ -16,7 +16,6 @@ export type RendererCapabilities = {
   preferredBackend: RendererBackend;
   adapter: GPUAdapter | null;
   device: GPUDevice | null;
-  triedWebGPU: boolean;
   fallbackReason: string | null;
   fallbackReasonCode: RendererFallbackReasonCode | null;
   shouldRetryWebGPU: boolean;
@@ -24,7 +23,6 @@ export type RendererCapabilities = {
 
 export type RendererTelemetryEvent = {
   preferredBackend: RendererBackend;
-  triedWebGPU: boolean;
   fallbackReason: string | null;
   fallbackReasonCode: RendererFallbackReasonCode | null;
   isWebGPUSupported: boolean;
@@ -40,10 +38,7 @@ export type RenderingSupport = {
   hasWebGL: boolean;
 };
 
-type FallbackOptions = {
-  triedWebGPU?: boolean;
-  shouldRetryWebGPU?: boolean;
-};
+type FallbackOptions = { shouldRetryWebGPU?: boolean };
 
 let capabilitiesPromise: Promise<RendererCapabilities> | null = null;
 let cachedCapabilities: RendererCapabilities | null = null;
@@ -53,12 +48,11 @@ let telemetryReportedKey: unknown = null;
 
 const buildFallback = (
   fallbackReason: string,
-  { triedWebGPU = false, shouldRetryWebGPU = false }: FallbackOptions = {},
+  { shouldRetryWebGPU = false }: FallbackOptions = {},
 ): RendererCapabilities => ({
   preferredBackend: 'webgl',
   adapter: null,
   device: null,
-  triedWebGPU,
   fallbackReason,
   fallbackReasonCode: inferRendererFallbackReasonCode(fallbackReason),
   shouldRetryWebGPU,
@@ -70,7 +64,6 @@ const reportRendererTelemetry = (result: RendererCapabilities) => {
   telemetryReportedKey = environmentKey;
   const detail: RendererTelemetryEvent = {
     preferredBackend: result.preferredBackend,
-    triedWebGPU: result.triedWebGPU,
     fallbackReason: result.fallbackReason,
     fallbackReasonCode: result.fallbackReasonCode,
     isWebGPUSupported: result.preferredBackend === 'webgpu',
@@ -132,10 +125,6 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.compatibilityMode,
         ),
-        {
-          triedWebGPU: false,
-          shouldRetryWebGPU: false,
-        },
       ),
     );
   }
@@ -147,10 +136,6 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.webgpuUnavailable,
         ),
-        {
-          triedWebGPU: false,
-          shouldRetryWebGPU: false,
-        },
       ),
     );
   }
@@ -164,7 +149,6 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
             RENDERER_FALLBACK_REASON_CODES.noAdapter,
           ),
           {
-            triedWebGPU: true,
             shouldRetryWebGPU: true,
           },
         ),
@@ -185,7 +169,6 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
             RENDERER_FALLBACK_REASON_CODES.noDevice,
           ),
           {
-            triedWebGPU: true,
             shouldRetryWebGPU: true,
           },
         ),
@@ -195,7 +178,6 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
     if (!device) {
       return cacheResult(
         buildFallback('WebGPU device request returned no device.', {
-          triedWebGPU: true,
           shouldRetryWebGPU: true,
         }),
       );
@@ -205,7 +187,6 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
       preferredBackend: 'webgpu',
       adapter,
       device,
-      triedWebGPU: true,
       fallbackReason: null,
       fallbackReasonCode: null,
       shouldRetryWebGPU: false,
@@ -218,7 +199,6 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
           RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
         ),
         {
-          triedWebGPU: true,
           shouldRetryWebGPU: true,
         },
       ),
@@ -241,11 +221,9 @@ export function rememberRendererFallback(
   fallbackReason: string,
   {
     shouldRetryWebGPU = false,
-    triedWebGPU = true,
     fallbackReasonCode,
   }: {
     shouldRetryWebGPU?: boolean;
-    triedWebGPU?: boolean;
     fallbackReasonCode?: RendererFallbackReasonCode;
   } = {},
 ) {
@@ -255,10 +233,7 @@ export function rememberRendererFallback(
       ? getRendererFallbackReasonMessage(fallbackReasonCode)
       : fallbackReason;
   const result = cacheResult({
-    ...buildFallback(resolvedFallbackReason, {
-      triedWebGPU,
-      shouldRetryWebGPU,
-    }),
+    ...buildFallback(resolvedFallbackReason, { shouldRetryWebGPU }),
     fallbackReasonCode:
       fallbackReasonCode ??
       inferRendererFallbackReasonCode(resolvedFallbackReason),

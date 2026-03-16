@@ -14,7 +14,6 @@ export type CapabilityPreflightResult = {
     hasWebGL: boolean;
     rendererBackend: 'webgl' | 'webgpu' | null;
     webgpuFallbackReason: string | null;
-    triedWebGPU: boolean;
     shouldRetryWebGPU: boolean;
   };
   microphone: MicrophoneCapability;
@@ -84,7 +83,6 @@ export function buildCapabilityPreflightResult({
       hasWebGL: renderingSupport.hasWebGL,
       rendererBackend: rendererPlan.backend,
       webgpuFallbackReason: rendererPlan.reasonMessage,
-      triedWebGPU: rendererPlan.triedWebGPU,
       shouldRetryWebGPU: rendererPlan.canRetryWebGPU,
     },
     microphone,
@@ -116,7 +114,6 @@ export async function runCapabilityProbe(): Promise<CapabilityPreflightResult> {
           reasonCode: null,
           reasonMessage: 'Renderer capability probe failed.',
           canRetryWebGPU: true,
-          triedWebGPU: false,
         } as RendererPlan,
       };
     }),

@@ -17,7 +17,6 @@ describe('applyRendererSettings', () => {
       maxPixelRatio: 2,
       renderScale: 1,
       exposure: 1,
-      xrSupported: false,
     };
 
     applyRendererSettings(

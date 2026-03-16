@@ -25,7 +25,6 @@ export function createToyLifecycleOrchestration({
             backend: capabilities.preferredBackend,
             fallbackReason: capabilities.fallbackReason,
             shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
-            triedWebGPU: capabilities.triedWebGPU,
             onRetry,
           }
         : null,

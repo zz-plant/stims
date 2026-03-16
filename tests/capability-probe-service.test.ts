@@ -10,7 +10,6 @@ describe('capability probe service', () => {
         backend: null,
         reasonCode: 'RENDERER_UNAVAILABLE',
         reasonMessage: 'Renderer unavailable',
-        triedWebGPU: false,
         canRetryWebGPU: false,
       },
       microphone: getMicrophoneCapabilityFromState('granted'),
@@ -38,7 +37,6 @@ describe('capability probe service', () => {
         backend: 'webgl',
         reasonCode: 'WEBGPU_UNAVAILABLE',
         reasonMessage: 'WebGPU unsupported',
-        triedWebGPU: true,
         canRetryWebGPU: false,
       },
       microphone: getMicrophoneCapabilityFromState('denied'),
@@ -60,8 +58,8 @@ describe('capability probe service', () => {
     ]);
     expect(result.canProceed).toBe(true);
     expect(result.rendering).toMatchObject({
+      hasWebGL: true,
       rendererBackend: 'webgl',
-      triedWebGPU: true,
       shouldRetryWebGPU: false,
       webgpuFallbackReason: 'WebGPU unsupported',
     });
@@ -74,7 +72,6 @@ describe('capability probe service', () => {
         backend: 'webgpu',
         reasonCode: null,
         reasonMessage: null,
-        triedWebGPU: true,
         canRetryWebGPU: false,
       },
       microphone: getMicrophoneCapabilityFromState('unsupported'),
@@ -93,7 +90,6 @@ describe('capability probe service', () => {
       hasWebGL: true,
       rendererBackend: 'webgpu',
       webgpuFallbackReason: null,
-      triedWebGPU: true,
       shouldRetryWebGPU: false,
     });
     expect(result.performance).toEqual({

@@ -44,7 +44,6 @@ describe('render-service pooling', () => {
       maxPixelRatio: 2,
       renderScale: 1,
       exposure: 1,
-      xrSupported: false,
     }));
 
     const first = await requestRenderer({ host, initRendererImpl });

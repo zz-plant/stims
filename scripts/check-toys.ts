@@ -21,7 +21,7 @@ const repoRoot = path.resolve(__dirname, '..');
 const IGNORED_TOY_FILES = new Set(['clay-toy.ts', 'page-toy.ts']);
 const REGENERATE_COMMAND = 'bun run generate:toys';
 const TOY_START_EXPORT_PATTERN =
-  /export\s+(async\s+)?function\s+start\b|export\s+const\s+start\b/;
+  /export\s+(async\s+)?function\s+start\b|export\s+const\s+start\b|export\s*\{\s*start\s*\}\s*from\b/;
 
 async function main() {
   const { issues, warnings } = await runToyChecks();

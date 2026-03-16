@@ -68,7 +68,6 @@ type RendererStatusState = {
   backend: 'webgl' | 'webgpu';
   fallbackReason?: string | null;
   shouldRetryWebGPU?: boolean;
-  triedWebGPU?: boolean;
   onRetry?: () => void;
 };
 
@@ -538,11 +537,21 @@ export function createToyView({
     state.activeToyMeta = toy ?? state.activeToyMeta;
 
     const isFallbackFlow = Boolean(options.allowFallback && options.onContinue);
+    const canUseWebGPUAction = Boolean(options.onUseWebGPU);
     const webgpuActionLabel = options.compatibilityModeEnabled
       ? 'Use WebGPU'
-      : options.shouldRetryWebGPU
-        ? 'Retry WebGPU'
-        : 'Try WebGPU';
+      : 'Try WebGPU';
+    const fallbackMessage = options.compatibilityModeEnabled
+      ? toy?.title
+        ? `${toy.title} is running with WebGL because compatibility mode is on. You can switch back to WebGPU.`
+        : 'Compatibility mode is on, so WebGL is being used. You can switch back to WebGPU.'
+      : canUseWebGPUAction
+        ? toy?.title
+          ? `${toy.title} can run with lighter WebGL visuals for now. You can also try WebGPU again.`
+          : 'This toy can run with lighter WebGL visuals for now. You can also try WebGPU again.'
+        : toy?.title
+          ? `${toy.title} can run with lighter WebGL visuals for now.`
+          : 'This toy can run with lighter WebGL visuals for now.';
 
     state.status = {
       variant: options.allowFallback ? 'warning' : 'error',
@@ -552,13 +561,7 @@ export function createToyView({
           : 'WebGPU could not start'
         : 'WebGPU not available',
       message: options.allowFallback
-        ? options.compatibilityModeEnabled
-          ? toy?.title
-            ? `${toy.title} is running with WebGL because compatibility mode is on. You can switch back to WebGPU.`
-            : 'Compatibility mode is on, so WebGL is being used. You can switch back to WebGPU.'
-          : toy?.title
-            ? `${toy.title} can run with lighter WebGL visuals for now. You can also retry WebGPU.`
-            : 'This toy can run with lighter WebGL visuals for now. You can also retry WebGPU.'
+        ? fallbackMessage
         : `${
             toy?.title
               ? `${toy.title} needs WebGPU, which is not supported in this browser.`

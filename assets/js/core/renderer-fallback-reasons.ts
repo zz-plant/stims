@@ -7,7 +7,6 @@ export const RENDERER_FALLBACK_REASON_CODES = {
   webgpuInitFailed: 'WEBGPU_INIT_FAILED',
   webgpuRendererCreationFailed: 'WEBGPU_RENDERER_CREATION_FAILED',
   rendererInitFailed: 'RENDERER_INIT_FAILED',
-  xrRequiresWebGL: 'XR_REQUIRES_WEBGL',
   unknown: 'UNKNOWN',
 } as const;
 
@@ -23,8 +22,6 @@ const REASON_MESSAGES: Record<RendererFallbackReasonCode, string> = {
   WEBGPU_INIT_FAILED: 'WebGPU initialization failed.',
   WEBGPU_RENDERER_CREATION_FAILED: 'Failed to create a WebGPU renderer.',
   RENDERER_INIT_FAILED: 'Renderer initialization failed.',
-  XR_REQUIRES_WEBGL:
-    'WebXR session support detected. Using WebGL for XR compatibility.',
   UNKNOWN: 'WebGPU fallback engaged.',
 };
 

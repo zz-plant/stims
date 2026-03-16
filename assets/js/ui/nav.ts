@@ -27,7 +27,6 @@ export interface NavOptions {
     backend: 'webgl' | 'webgpu';
     fallbackReason?: string | null;
     shouldRetryWebGPU?: boolean;
-    triedWebGPU?: boolean;
     onRetry?: () => void;
   } | null;
 }
@@ -662,7 +661,7 @@ function renderRendererStatus(
         ${fallback ? 'WebGL fallback' : 'WebGPU'}
       </span>
       ${fallbackReason ? `<small class="renderer-pill__detail">${fallbackReason}</small>` : ''}
-      ${status.shouldRetryWebGPU ? `<button type="button" class="renderer-pill__retry">${status.triedWebGPU ? 'Retry WebGPU' : 'Try WebGPU'}</button>` : ''}
+      ${status.shouldRetryWebGPU ? '<button type="button" class="renderer-pill__retry">Try WebGPU</button>' : ''}
     </div>
   `;
 
