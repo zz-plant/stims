@@ -60,7 +60,7 @@ export function initAudioControls(
   const starterPresetId = options.starterPresetId?.trim() || 'low-motion';
 
   container.innerHTML = `
-    <p class="control-panel__description">Choose how this toy listens.</p>
+    <p class="control-panel__description">Pick an audio source to start.</p>
     ${renderPrimaryAudioChoice()}
     ${renderOnboardingHelp({
       firstRunHint,
@@ -524,8 +524,8 @@ function renderPrimaryAudioChoice() {
       <div class="control-panel__text">
         <span class="control-panel__label">Live mic</span>
         <span class="control-panel__pill" data-recommended-for="mic" hidden>Recommended first try</span>
-        <span class="control-panel__subtext">Best for live instruments, voice, and ambient sound.</span>
-        <span class="control-panel__microcopy">Reacts to your room in real time. Requires microphone permission.</span>
+        <span class="control-panel__subtext">Use your room, voice, or instrument as input.</span>
+        <span class="control-panel__microcopy">Requires microphone permission.</span>
       </div>
       <button id="start-audio-btn" class="cta-button ghost" type="button">Start mic-reactive mode</button>
     </div>
@@ -533,8 +533,8 @@ function renderPrimaryAudioChoice() {
       <div class="control-panel__text">
         <span class="control-panel__label">Curated demo</span>
         <span class="control-panel__pill" data-recommended-for="demo" hidden>Recommended first try</span>
-        <span class="control-panel__subtext">Fastest way to preview visuals without permissions.</span>
-        <span class="control-panel__microcopy">Starts instantly with built-in audio. Great first try when privacy-sensitive.</span>
+        <span class="control-panel__subtext">Start instantly with built-in audio.</span>
+        <span class="control-panel__microcopy">No permission prompt.</span>
       </div>
       <button id="use-demo-audio" class="cta-button primary" type="button">Preview with demo audio</button>
     </div>
@@ -554,9 +554,9 @@ function renderOnboardingHelp({
 }) {
   return `
     <details class="control-panel__details" data-onboarding-help>
-      <summary class="control-panel__label">Help me choose</summary>
+      <summary class="control-panel__label">Tips</summary>
       <p class="control-panel__comparison" data-audio-comparison>
-        Mic reacts to your space right now. Demo starts instantly with no permissions.
+        Mic is live. Demo is instant.
       </p>
       <section class="control-panel__first-steps" data-first-steps role="note" aria-label="First steps">
         <div class="control-panel__first-steps-header">
@@ -568,7 +568,7 @@ function renderOnboardingHelp({
         </div>
         <ul class="control-panel__tips control-panel__tips--compact">
           <li data-first-step-source>Start with mic for live input, or demo for instant audio.</li>
-          <li>Then open quality controls and pick <strong>Low motion</strong> if you want a calmer feel.</li>
+          <li>Pick <strong>Low motion</strong> in Controls if you want a calmer feel.</li>
           <li>${firstRunHint ?? 'Tap or drag in the canvas once audio starts to quickly feel the response.'}</li>
         </ul>
       </section>
@@ -593,7 +593,7 @@ function renderOnboardingHelp({
           ? `
       <div class="control-panel__quickstart" data-quickstart-panel>
         <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">Quick start tips</span>
+          <span class="control-panel__label">More tips</span>
           <button type="button" class="control-panel__dismiss" data-dismiss-quickstart>Dismiss</button>
         </div>
         <ul class="control-panel__tips">

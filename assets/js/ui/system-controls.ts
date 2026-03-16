@@ -158,13 +158,13 @@ export function initSystemControls(
   options: SystemControlOptions = {},
 ): SystemControlsHandle {
   const {
-    title = 'Performance controls',
-    description = 'Tune visuals, renderer mode, and motion settings for this device.',
+    title = 'Controls',
+    description = 'Adjust quality, motion, and compatibility for this toy.',
     qualityPresets = DEFAULT_QUALITY_PRESETS,
     defaultPresetId,
     variant = 'floating',
     includeAdvancedControls = true,
-    showDetailedQualitySummary = true,
+    showDetailedQualitySummary = false,
     onQualityPresetChange,
     includeVisualBehaviorControls = false,
     visualBehaviorInitial,
@@ -214,11 +214,6 @@ export function initSystemControls(
   };
 
   if (includeVisualBehaviorControls) {
-    const visualHost = createSectionHost(
-      panel,
-      'Visual behavior',
-      'Adjust how visuals drift when audio is quiet.',
-    );
     const visualToggles: Array<{ key: VisualBehaviorKey; label: string }> = [
       { key: 'idleEnabled', label: 'Idle visuals' },
       { key: 'paletteCycle', label: 'Palette drift' },
@@ -229,7 +224,12 @@ export function initSystemControls(
       panel.addToggle({
         label,
         defaultValue: visualBehaviorState[key],
-        parent: visualHost,
+        description:
+          key === 'idleEnabled'
+            ? 'Keep motion active when audio is quiet.'
+            : key === 'paletteCycle'
+              ? 'Slowly shift colors over time.'
+              : 'Reduce background drift on phones and tablets.',
         onChange: (value) => {
           visualBehaviorState[key] = value;
           emitVisualBehaviorChange();
@@ -238,13 +238,10 @@ export function initSystemControls(
     });
   }
 
-  const performanceHost = createSectionHost(panel, 'Performance');
-
   panel.addToggle({
     label: 'Compatibility mode',
     description: 'Use safer rendering for older hardware.',
     defaultValue: renderPreferences.compatibilityMode,
-    parent: performanceHost,
     onChange: (value) => {
       setCompatibilityMode(value);
     },
@@ -254,7 +251,6 @@ export function initSystemControls(
     label: 'Motion input',
     description: 'Enable tilt controls on supported toys.',
     defaultValue: getActiveMotionPreference().enabled,
-    parent: performanceHost,
     onChange: (value) => {
       setMotionPreference({ enabled: value });
     },

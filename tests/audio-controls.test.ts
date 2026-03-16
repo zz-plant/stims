@@ -87,9 +87,7 @@ describe('audio controls primary emphasis', () => {
       onRequestDemoAudio: async () => {},
     });
 
-    expect(container.textContent).toContain(
-      'Mic reacts to your space right now. Demo starts instantly with no permissions.',
-    );
+    expect(container.textContent).toContain('Mic is live. Demo is instant.');
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
     const demoBadge = container.querySelector('[data-recommended-for="demo"]');
@@ -116,7 +114,7 @@ describe('audio controls primary emphasis', () => {
 
     expect(onboardingHelp.open).toBe(false);
     expect(advancedInputs.open).toBe(false);
-    expect(onboardingHelp.textContent).toContain('Help me choose');
+    expect(onboardingHelp.textContent).toContain('Tips');
     expect(advancedInputs.textContent).toContain('Advanced inputs');
   });
 
