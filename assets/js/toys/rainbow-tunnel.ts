@@ -12,7 +12,10 @@ import {
   disposeMesh,
 } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControls } from '../utils/toy-settings';
+import {
+  buildToySettingsPanel,
+  createRendererQualityManager,
+} from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
 interface RingData {
@@ -22,22 +25,42 @@ interface RingData {
   hue: number;
 }
 
+type TunnelMotionMode = 'cruise' | 'glide' | 'burst';
+type TunnelColorMode = 'steady' | 'neon' | 'prism';
+
 export function start({ container }: ToyStartOptions = {}) {
-  const { quality, configurePanel } = createToyQualityControls({
-    title: 'Rainbow tunnel',
-    description: 'Preset tweaks update DPI and ring density together.',
+  const quality = createRendererQualityManager({
     getRuntime: () => runtime,
+    getRendererSettings: (preset) => ({
+      maxPixelRatio: preset.maxPixelRatio,
+      renderScale: preset.renderScale,
+    }),
     onChange: () => {
       rebuildScene();
     },
   });
   let runtime: ToyRuntimeInstance;
+  let currentMotionMode: TunnelMotionMode = 'glide';
+  let currentColorMode: TunnelColorMode = 'neon';
+  const motionModes: Record<
+    TunnelMotionMode,
+    { speed: number; wobble: number; forwardBias: number; cameraDrift: number }
+  > = {
+    cruise: { speed: 0.82, wobble: 0.6, forwardBias: 0.82, cameraDrift: 0.72 },
+    glide: { speed: 1.02, wobble: 1.0, forwardBias: 1.0, cameraDrift: 1.0 },
+    burst: { speed: 1.24, wobble: 1.28, forwardBias: 1.16, cameraDrift: 1.15 },
+  };
+  const colorModes: Record<TunnelColorMode, number> = {
+    steady: 0,
+    neon: 0.18,
+    prism: 0.42,
+  };
 
   const rings: RingData[] = [];
   const controls = {
-    speed: 1,
-    wobble: 1,
-    spectrumShift: 0,
+    speed: motionModes.glide.speed,
+    wobble: motionModes.glide.wobble,
+    spectrumShift: colorModes.neon,
   };
   let targetSpeed = controls.speed;
   let targetWobble = controls.wobble;
@@ -164,6 +187,18 @@ export function start({ container }: ToyStartOptions = {}) {
     });
   }
 
+  function setMotionMode(mode: TunnelMotionMode) {
+    currentMotionMode = mode;
+    const profile = motionModes[mode];
+    targetSpeed = profile.speed;
+    targetWobble = profile.wobble;
+  }
+
+  function setColorMode(mode: TunnelColorMode) {
+    currentColorMode = mode;
+    targetSpectrumShift = colorModes[mode];
+  }
+
   function animate(data: Uint8Array, time: number) {
     controls.speed = THREE.MathUtils.lerp(controls.speed, targetSpeed, 0.08);
     controls.wobble = THREE.MathUtils.lerp(controls.wobble, targetWobble, 0.08);
@@ -269,17 +304,20 @@ export function start({ container }: ToyStartOptions = {}) {
 
     // Smooth camera fly-through
     const flySpeed =
-      (1.55 + energyPeak * 2.2 + bassPeak * 3.1 + bassRise * 3.8) *
-      controls.speed;
+      (0.95 + energyPeak * 1.95 + bassPeak * 2.55 + bassRise * 3.45) *
+      controls.speed *
+      motionModes[currentMotionMode].forwardBias;
     runtime.toy.camera.position.z -= flySpeed;
 
     // Add slight camera wobble
     runtime.toy.camera.position.x =
       Math.sin(time * (2.4 + bands.mid * 0.9)) *
-      (1.6 + controls.wobble + treblePeak * 1.4);
+      (1.4 + controls.wobble + treblePeak * 1.2) *
+      motionModes[currentMotionMode].cameraDrift;
     runtime.toy.camera.position.y =
       Math.cos(time * (1.85 + bassPeak * 0.45)) *
-      (1.4 + controls.wobble + bassPeak * 1.6);
+      (1.2 + controls.wobble + bassPeak * 1.4) *
+      motionModes[currentMotionMode].cameraDrift;
 
     // Reset camera when it reaches the end
     if (runtime.toy.camera.position.z < -tunnelLength + 50) {
@@ -389,7 +427,56 @@ export function start({ container }: ToyStartOptions = {}) {
   }
 
   function setupSettingsPanel() {
-    configurePanel();
+    buildToySettingsPanel({
+      title: 'Rainbow tunnel',
+      description:
+        'Choose a comfort level first, then nudge the color drift when you want a stronger rush.',
+      quality,
+      sections: [
+        {
+          title: 'Motion mode',
+          description:
+            'Cruise is easier to stay with. Burst is louder and more physical.',
+          controls: [
+            {
+              type: 'button-group',
+              options: [
+                { id: 'cruise', label: 'Cruise' },
+                { id: 'glide', label: 'Glide' },
+                { id: 'burst', label: 'Burst' },
+              ],
+              getActiveId: () => currentMotionMode,
+              onChange: (mode) => setMotionMode(mode as TunnelMotionMode),
+              buttonClassName: 'cta-button',
+              activeClassName: 'active',
+              setDisabledOnActive: true,
+              setAriaPressed: false,
+            },
+          ],
+        },
+        {
+          title: 'Color drift',
+          description:
+            'Steady keeps hue changes grounded. Prism swings harder with the beat.',
+          controls: [
+            {
+              type: 'button-group',
+              options: [
+                { id: 'steady', label: 'Steady' },
+                { id: 'neon', label: 'Neon' },
+                { id: 'prism', label: 'Prism' },
+              ],
+              getActiveId: () => currentColorMode,
+              onChange: (mode) => setColorMode(mode as TunnelColorMode),
+              buttonClassName: 'cta-button',
+              activeClassName: 'active',
+              setDisabledOnActive: true,
+              setAriaPressed: false,
+            },
+          ],
+        },
+      ],
+    });
   }
 
   const startRuntime = createToyRuntimeStarter({

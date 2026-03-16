@@ -258,7 +258,10 @@
     "controls": ["Sensitivity slider", "Smoothing toggle", "Color intensity"],
     "tags": ["spectrograph", "ambient", "calming"],
     "moods": ["calming", "serene"],
-    "allowWebGLFallback": true
+    "allowWebGLFallback": true,
+    "firstRunHint": "Start with demo audio, then raise Sensitivity until the graph feels obviously alive.",
+    "wowControl": "Sensitivity slider",
+    "recommendedCapability": "demoAudio"
   },
   {
     "slug": "cube-wave",
@@ -513,7 +516,10 @@
     ],
     "tags": ["tunnel", "rainbow", "immersive"],
     "moods": ["cosmic", "drifting"],
-    "allowWebGLFallback": true
+    "allowWebGLFallback": true,
+    "firstRunHint": "Use Cruise for longer sessions, then switch to Burst when you want bigger drops and brighter color swings.",
+    "wowControl": "Motion mode",
+    "recommendedCapability": "demoAudio"
   },
   {
     "slug": "star-field",
@@ -531,7 +537,10 @@
       "demoAudio": true,
       "motion": false
     },
-    "allowWebGLFallback": true
+    "allowWebGLFallback": true,
+    "firstRunHint": "Switch to Vivid sky and drag upward once the audio starts to make the stars surge and twinkle harder.",
+    "wowControl": "Sky intensity",
+    "recommendedCapability": "demoAudio"
   },
   {
     "slug": "fractal-kite-garden",

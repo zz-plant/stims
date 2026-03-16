@@ -344,6 +344,9 @@ export const toyManifest: ToyManifest = [
       "Smoothing toggle",
       "Color intensity"
     ],
+    "firstRunHint": "Start with demo audio, then raise Sensitivity until the graph feels obviously alive.",
+    "wowControl": "Sensitivity slider",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
@@ -705,6 +708,9 @@ export const toyManifest: ToyManifest = [
       "Camera drift toggle",
       "Color pulse depth"
     ],
+    "firstRunHint": "Use Cruise for longer sessions, then switch to Burst when you want bigger drops and brighter color swings.",
+    "wowControl": "Motion mode",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
@@ -734,6 +740,9 @@ export const toyManifest: ToyManifest = [
       "Pinch/rotate gestures",
       "Arrow-key mood switching"
     ],
+    "firstRunHint": "Switch to Vivid sky and drag upward once the audio starts to make the stars surge and twinkle harder.",
+    "wowControl": "Sky intensity",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,

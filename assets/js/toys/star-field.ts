@@ -12,7 +12,10 @@ import {
 } from '../utils/audio-reactivity';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
-import { createToyQualityControlsWithPerformance } from '../utils/toy-settings';
+import {
+  buildToySettingsPanelWithPerformance,
+  createRendererQualityManager,
+} from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 
 type StarFieldBuffers = {
@@ -32,11 +35,11 @@ type StarfieldPalette = {
   nebulaB: THREE.ColorRepresentation;
 };
 
+type StarfieldIntensityMode = 'calm' | 'vivid' | 'pulse';
+
 export function start({ container }: ToyStartOptions = {}) {
-  const { quality, configurePanel } = createToyQualityControlsWithPerformance({
-    title: 'Star field',
-    description:
-      'Tune render resolution and particle density for your GPU. Pinch to intensify the drift and rotate to swap nebula moods.',
+  let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
+  const quality = createRendererQualityManager({
     getRuntime: () => runtime,
     getRendererSettings: (preset) => ({
       maxPixelRatio: performanceSettings.maxPixelRatio,
@@ -46,12 +49,8 @@ export function start({ container }: ToyStartOptions = {}) {
       disposeStarField();
       starField = createStarField();
     },
-    performance: {
-      title: 'Performance',
-      description: 'Cap DPI or scale particle budgets to match your device.',
-    },
   });
-  let performanceSettings: PerformanceSettings = getActivePerformanceSettings();
+  let currentIntensityMode: StarfieldIntensityMode = 'vivid';
   let activePaletteIndex = 0;
   let runtime: ToyRuntimeInstance;
 
@@ -90,9 +89,18 @@ export function start({ container }: ToyStartOptions = {}) {
     },
   ];
 
+  const intensityModes: Record<
+    StarfieldIntensityMode,
+    { drift: number; sparkle: number }
+  > = {
+    calm: { drift: 0.82, sparkle: 0.92 },
+    vivid: { drift: 1.18, sparkle: 1.35 },
+    pulse: { drift: 1.42, sparkle: 1.72 },
+  };
+
   const controls = {
-    drift: 1,
-    sparkle: 1,
+    drift: intensityModes.vivid.drift,
+    sparkle: intensityModes.vivid.sparkle,
   };
   let targetDrift = controls.drift;
   let targetSparkle = controls.sparkle;
@@ -111,6 +119,7 @@ export function start({ container }: ToyStartOptions = {}) {
     u_colorA: { value: new THREE.Color() },
     u_colorB: { value: new THREE.Color() },
   };
+  let activityLabel: HTMLElement | null = null;
 
   function createStarSpriteTexture() {
     const svg = encodeURIComponent(`
@@ -370,8 +379,73 @@ export function start({ container }: ToyStartOptions = {}) {
     starField = createStarField();
   }
 
+  function setIntensityMode(mode: StarfieldIntensityMode) {
+    currentIntensityMode = mode;
+    const profile = intensityModes[mode];
+    targetDrift = profile.drift;
+    targetSparkle = profile.sparkle;
+  }
+
   function setupSettingsPanel() {
-    configurePanel();
+    const panel = buildToySettingsPanelWithPerformance({
+      title: 'Star field',
+      description:
+        'Choose a brighter sky profile first, then pinch or drag to amplify drift and sparkle.',
+      quality,
+      performance: {
+        title: 'Performance',
+        description: 'Cap DPI or scale particle density to match your device.',
+      },
+      sections: [
+        {
+          title: 'Sky intensity',
+          description:
+            'Lift the motion and twinkle when the scene feels too passive.',
+          controls: [
+            {
+              type: 'button-group',
+              options: [
+                { id: 'calm', label: 'Calm' },
+                { id: 'vivid', label: 'Vivid' },
+                { id: 'pulse', label: 'Pulse' },
+              ],
+              getActiveId: () => currentIntensityMode,
+              onChange: (mode) =>
+                setIntensityMode(mode as StarfieldIntensityMode),
+              buttonClassName: 'cta-button',
+              activeClassName: 'active',
+              setDisabledOnActive: true,
+              setAriaPressed: false,
+            },
+            {
+              type: 'button-group',
+              options: palettes.map((palette, index) => ({
+                id: String(index),
+                label: palette.name,
+              })),
+              getActiveId: () => String(activePaletteIndex),
+              onChange: (index) => {
+                activePaletteIndex = Number(index);
+                applyPalette(activePaletteIndex);
+              },
+              buttonClassName: 'cta-button',
+              activeClassName: 'active',
+              setDisabledOnActive: true,
+              setAriaPressed: false,
+            },
+          ],
+        },
+      ],
+    });
+
+    const activitySection = panel.addSection(
+      'Pulse meter',
+      'Confirms when the stars are actually reacting to the current audio.',
+    );
+    activityLabel = document.createElement('span');
+    activityLabel.className = 'control-panel__microcopy';
+    activityLabel.textContent = 'Pulse: warming up';
+    activitySection.appendChild(activityLabel);
   }
 
   function animate(
@@ -415,7 +489,7 @@ export function start({ container }: ToyStartOptions = {}) {
 
     nebulaUniforms.u_time.value = time * 0.0006;
     nebulaUniforms.u_intensity.value =
-      (audioPeak * 0.7 + bassPeak * 0.45 + treblePeak * 0.35) *
+      (audioPeak * 0.86 + bassPeak * 0.55 + treblePeak * 0.42) *
       controls.sparkle;
 
     const positions = starField.geometry.attributes.position
@@ -433,9 +507,9 @@ export function start({ container }: ToyStartOptions = {}) {
       positions[i3 + 2] +=
         starField.velocities[i] *
         (1 +
-          audioPeak * 2.8 * controls.sparkle +
-          bassPeak * 4.2 +
-          bassRise * 6.5);
+          audioPeak * 3.3 * controls.sparkle +
+          bassPeak * 4.8 +
+          bassRise * 7.2);
 
       if (positions[i3 + 2] > 80) {
         resetStar(i, positions);
@@ -447,7 +521,7 @@ export function start({ container }: ToyStartOptions = {}) {
     const palette = palettes[activePaletteIndex];
     starField.material.uniforms.uTime.value = time * 0.001;
     starField.material.uniforms.uSparkle.value =
-      (treblePeak * 0.75 + audioPeak * 0.35 + trebleRise * 0.8) *
+      (treblePeak * 0.9 + audioPeak * 0.42 + trebleRise * 0.95) *
       controls.sparkle;
     starField.material.uniforms.uHue.value =
       (palette.starHue + bands.mid * 0.08 + treblePeak * 0.04) % 1;
@@ -457,6 +531,16 @@ export function start({ container }: ToyStartOptions = {}) {
     runtime.toy.camera.position.y =
       Math.cos(time * 0.0005) * (6 + bands.bass * 4 + audioPeak * 2);
     runtime.toy.camera.lookAt(0, 0, -120);
+    if (activityLabel) {
+      const pulseValue = Math.round(
+        THREE.MathUtils.clamp(
+          (audioPeak * 0.45 + bassPeak * 0.2 + treblePeak * 0.35) * 100,
+          0,
+          100,
+        ),
+      );
+      activityLabel.textContent = `Pulse: ${pulseValue}% · ${palettes[activePaletteIndex].name}`;
+    }
 
     runtime.toy.render();
   }

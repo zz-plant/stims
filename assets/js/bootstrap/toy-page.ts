@@ -70,6 +70,22 @@ function buildAudioInitState(result: CapabilityPreflightResult | null) {
   return {};
 }
 
+export function shouldPreferDemoAudio({
+  forcePreferDemoAudio,
+  audioInitPrefersDemoAudio,
+  recommendedCapability,
+}: {
+  forcePreferDemoAudio: boolean;
+  audioInitPrefersDemoAudio?: boolean;
+  recommendedCapability?: ToyWithControls['recommendedCapability'];
+}) {
+  return (
+    forcePreferDemoAudio ||
+    audioInitPrefersDemoAudio === true ||
+    recommendedCapability === 'demoAudio'
+  );
+}
+
 export function bootToyPage({
   router,
   loadFromQuery,
@@ -168,7 +184,11 @@ export function bootToyPage({
       starterPresetLabel,
       ...audioInitState,
       preferDemoAudio:
-        forcePreferDemoAudio || audioInitState.preferDemoAudio || undefined,
+        shouldPreferDemoAudio({
+          forcePreferDemoAudio,
+          audioInitPrefersDemoAudio: audioInitState.preferDemoAudio,
+          recommendedCapability: toyMeta?.recommendedCapability,
+        }) || undefined,
     });
   };
 
