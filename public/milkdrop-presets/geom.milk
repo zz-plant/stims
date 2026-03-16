@@ -1,0 +1,87 @@
+title=Microphone Geometry Visualizer
+author=Stims Alias Pack
+description=A geometry-first preset with crisp polygons, reactive rings, and shifting symmetry.
+
+fRating=4
+blend_duration=2.5
+decay=0.94
+zoom=1.02
+rot=0.008
+warp=0.12
+wave_mode=1
+wave_scale=1
+wave_smoothing=0.74
+wave_a=0.82
+wave_r=0.44
+wave_g=0.84
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+wave_mystery=0.12
+wave_thick=1.5
+wave_additive=1
+wave_brighten=1
+mesh_density=20
+mesh_alpha=0.24
+mesh_r=0.34
+mesh_g=0.66
+mesh_b=0.98
+bg_r=0.02
+bg_g=0.03
+bg_b=0.05
+shape_1_enabled=1
+shape_1_sides=4
+shape_1_x=0.5
+shape_1_y=0.5
+shape_1_rad=0.2
+shape_1_ang=0.1
+shape_1_a=0.08
+shape_1_r=0.4
+shape_1_g=0.82
+shape_1_b=1
+shape_1_border_a=0.86
+shape_1_border_r=0.9
+shape_1_border_g=0.98
+shape_1_border_b=1
+shape_1_additive=1
+shape_1_thickoutline=1
+shape_2_enabled=1
+shape_2_sides=6
+shape_2_x=0.5
+shape_2_y=0.5
+shape_2_rad=0.32
+shape_2_ang=0.3
+shape_2_a=0.06
+shape_2_r=0.92
+shape_2_g=0.54
+shape_2_b=1
+shape_2_border_a=0.86
+shape_2_border_r=1
+shape_2_border_g=0.88
+shape_2_border_b=1
+shape_2_additive=1
+shape_2_thickoutline=1
+shape_3_enabled=1
+shape_3_sides=3
+shape_3_x=0.32
+shape_3_y=0.66
+shape_3_rad=0.1
+shape_3_ang=0
+shape_3_a=0.1
+shape_3_r=1
+shape_3_g=0.7
+shape_3_b=0.3
+shape_3_border_a=0.86
+shape_3_border_r=1
+shape_3_border_g=0.92
+shape_3_border_b=0.74
+shape_3_additive=1
+shape_3_thickoutline=1
+
+per_frame_1=rot = rot + 0.004 + mids_att * 0.01
+per_frame_2=shape_1_ang = shape_1_ang + 0.015
+per_frame_3=shape_2_ang = shape_2_ang - 0.012
+per_frame_4=shape_3_x = 0.32 + sin(time * 0.4) * 0.14
+
+per_pixel_1=warp = warp + sin(rad * 14 + time * 0.8) * 0.025
+

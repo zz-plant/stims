@@ -1,0 +1,87 @@
+title=Bioluminescent Tidepools
+author=Stims Alias Pack
+description=A tidepool preset with caustic glow, flowing currents, and bright treble sparkle.
+
+fRating=4
+blend_duration=3
+decay=0.96
+zoom=1.01
+rot=0.004
+warp=0.09
+wave_mode=1
+wave_scale=0.96
+wave_smoothing=0.74
+wave_a=0.82
+wave_r=0.3
+wave_g=0.92
+wave_b=0.86
+wave_x=0.5
+wave_y=0.5
+wave_mystery=0.18
+wave_thick=1.5
+wave_additive=1
+wave_brighten=1
+mesh_density=16
+mesh_alpha=0.16
+mesh_r=0.18
+mesh_g=0.74
+mesh_b=0.82
+bg_r=0.01
+bg_g=0.08
+bg_b=0.09
+shape_1_enabled=1
+shape_1_sides=20
+shape_1_x=0.3
+shape_1_y=0.5
+shape_1_rad=0.14
+shape_1_ang=0
+shape_1_a=0.08
+shape_1_r=0.24
+shape_1_g=0.84
+shape_1_b=0.8
+shape_1_border_a=0.86
+shape_1_border_r=0.8
+shape_1_border_g=0.98
+shape_1_border_b=0.94
+shape_1_additive=1
+shape_1_thickoutline=1
+shape_2_enabled=1
+shape_2_sides=18
+shape_2_x=0.54
+shape_2_y=0.4
+shape_2_rad=0.18
+shape_2_ang=0.1
+shape_2_a=0.08
+shape_2_r=0.32
+shape_2_g=0.96
+shape_2_b=0.92
+shape_2_border_a=0.86
+shape_2_border_r=0.9
+shape_2_border_g=1
+shape_2_border_b=1
+shape_2_additive=1
+shape_2_thickoutline=1
+shape_3_enabled=1
+shape_3_sides=22
+shape_3_x=0.68
+shape_3_y=0.66
+shape_3_rad=0.12
+shape_3_ang=0.2
+shape_3_a=0.08
+shape_3_r=0.56
+shape_3_g=0.74
+shape_3_b=1
+shape_3_border_a=0.86
+shape_3_border_r=0.92
+shape_3_border_g=0.94
+shape_3_border_b=1
+shape_3_additive=1
+shape_3_thickoutline=1
+
+per_frame_1=shape_1_x = 0.3 + sin(time * 0.18) * 0.08
+per_frame_2=shape_2_x = 0.54 + cos(time * 0.22) * 0.12
+per_frame_3=shape_3_y = 0.66 + sin(time * 0.3) * 0.08
+per_frame_4=wave_scale = 0.9 + treble_att * 0.1
+
+per_pixel_1=warp = warp + sin(rad * 11 + time * 0.52) * 0.016
+

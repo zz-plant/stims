@@ -12,6 +12,7 @@
 
 - Toy modules export `start(...)` and return a disposable cleanup handle.
 - Canvas-heavy toys should prefer shared runtime scaffolding (`createToyRuntime(...)`) over bespoke setup.
+- MilkDrop preset aliases should use `createMilkdropPresetToyStarter(...)` instead of re-implementing a scene.
 - Page-backed toys should use `startPageToy(...)` only when a legacy HTML implementation still needs to be embedded behind the `toy.html` shell.
 - Audio-reactive toys should integrate with shared audio helpers and support demo-audio fallback when applicable.
 

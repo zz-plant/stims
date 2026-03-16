@@ -24,13 +24,17 @@ per_pixel_1=zoom = zoom + 0.0;
     expect(compiled.ir.programs.init.statements.length).toBe(1);
     expect(compiled.ir.programs.perFrame.statements.length).toBe(2);
     expect(compiled.ir.programs.perPixel.statements.length).toBe(1);
+    expect(compiled.ir.compatibility.featureAnalysis.registerUsage.q).toBe(1);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'per-frame-equations',
+    );
     expect(
       compiled.diagnostics.some((entry) => entry.severity === 'error'),
     ).toBe(false);
     expect(compiled.formattedSource).toContain('title="Smoke Preset"');
   });
 
-  test('reports unsupported keys and marks compatibility blocks', () => {
+  test('classifies backend support and feature usage for feedback presets', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Compat Flag
@@ -39,17 +43,16 @@ video_echo=1
       { id: 'compat-flag' },
     );
 
-    expect(compiled.ir.compatibility.unsupportedKeys).toContain('video_echo');
-    expect(compiled.ir.compatibility.webgl).toBe(false);
-    expect(compiled.ir.compatibility.webgpu).toBe(false);
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.blockingReasons.length).toBeGreaterThan(0);
-    expect(
-      compiled.diagnostics.some(
-        (entry) =>
-          entry.code === 'preset_unsupported_field' &&
-          entry.field === 'video_echo',
-      ),
-    ).toBe(true);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'video-echo',
+    );
+    expect(compiled.ir.compatibility.backends.webgpu.recommendedFallback).toBe(
+      'webgl',
+    );
   });
 
   test('surfaces diagnostics for invalid scalar expressions', () => {
@@ -69,5 +72,35 @@ wave_r=bad(
     expect(
       compiled.diagnostics.some((entry) => entry.severity === 'error'),
     ).toBe(true);
+  });
+
+  test('parses custom waves, custom shapes, and shader-text incompatibility', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Structured Preset
+wavecode_0_enabled=1
+wavecode_0_samples=48
+wave_0_per_point1=y = y + sin(sample * pi * 4) * 0.1
+shapecode_0_enabled=1
+shapecode_0_sides=7
+shape_0_per_frame1=rad = 0.2 + bass_att * 0.05
+warp_shader=this is unsupported
+      `.trim(),
+      { id: 'structured-preset' },
+    );
+
+    expect(compiled.ir.customWaves.length).toBe(1);
+    expect(compiled.ir.customWaves[0]?.fields.enabled).toBe(1);
+    expect(
+      compiled.ir.customWaves[0]?.programs.perPoint.statements.length,
+    ).toBe(1);
+    expect(compiled.ir.customShapes.length).toBe(1);
+    expect(compiled.ir.customShapes[0]?.fields.sides).toBe(7);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'unsupported-shader-text',
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('unsupported');
+    expect(compiled.formattedSource).toContain('wavecode_0_enabled=1');
+    expect(compiled.formattedSource).toContain('shapecode_0_enabled=1');
   });
 });

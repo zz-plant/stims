@@ -1,0 +1,87 @@
+title=Star Field
+author=Stims Alias Pack
+description=A star field preset with drifting spark trails, dark nebula tones, and gentle beat shimmer.
+
+fRating=4
+blend_duration=3.2
+decay=0.97
+zoom=1
+rot=0.002
+warp=0.05
+wave_mode=0
+wave_scale=0.78
+wave_smoothing=0.74
+wave_a=0.62
+wave_r=0.74
+wave_g=0.84
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+wave_mystery=0.12
+wave_thick=1.2
+wave_additive=1
+wave_brighten=1
+mesh_density=12
+mesh_alpha=0.08
+mesh_r=0.24
+mesh_g=0.36
+mesh_b=0.72
+bg_r=0.01
+bg_g=0.02
+bg_b=0.05
+shape_1_enabled=1
+shape_1_sides=5
+shape_1_x=0.24
+shape_1_y=0.32
+shape_1_rad=0.05
+shape_1_ang=0.1
+shape_1_a=0.08
+shape_1_r=0.86
+shape_1_g=0.9
+shape_1_b=1
+shape_1_border_a=0.86
+shape_1_border_r=1
+shape_1_border_g=1
+shape_1_border_b=1
+shape_1_additive=1
+shape_1_thickoutline=1
+shape_2_enabled=1
+shape_2_sides=6
+shape_2_x=0.74
+shape_2_y=0.26
+shape_2_rad=0.07
+shape_2_ang=0.3
+shape_2_a=0.07
+shape_2_r=0.78
+shape_2_g=0.86
+shape_2_b=1
+shape_2_border_a=0.86
+shape_2_border_r=1
+shape_2_border_g=1
+shape_2_border_b=1
+shape_2_additive=1
+shape_2_thickoutline=1
+shape_3_enabled=1
+shape_3_sides=7
+shape_3_x=0.62
+shape_3_y=0.72
+shape_3_rad=0.09
+shape_3_ang=0.4
+shape_3_a=0.06
+shape_3_r=0.76
+shape_3_g=0.8
+shape_3_b=1
+shape_3_border_a=0.86
+shape_3_border_r=1
+shape_3_border_g=1
+shape_3_border_b=1
+shape_3_additive=1
+shape_3_thickoutline=1
+
+per_frame_1=wave_y = 0.54 + sin(time * 0.12) * 0.03
+per_frame_2=shape_1_x = 0.24 + sin(time * 0.08) * 0.1
+per_frame_3=shape_2_y = 0.26 + cos(time * 0.1) * 0.08
+per_frame_4=shape_3_x = 0.62 + cos(time * 0.06) * 0.12
+
+per_pixel_1=warp = warp + sin(rad * 7 + time * 0.22) * 0.008
+

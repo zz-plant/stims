@@ -1,10 +1,10 @@
 # Architecture Overview
 
-This document summarizes how the Stims app is assembled, from the entry HTML shells through module loading, rendering, audio, and quality controls. Stims is positioned as a browser-native MilkDrop successor with a broader toy lab, and this guide maps the runtime layers that support both the flagship `milkdrop` flow and the rest of the catalog.
+This document summarizes how the Stims app is assembled, from the entry HTML shells through module loading, rendering, audio, and quality controls. Stims is positioned as a browser-native MilkDrop successor with a broader toy lab, and this guide maps the runtime layers that support both the flagship `milkdrop` flow and the preset-alias toy catalog around it.
 
 ## Architecture at a Glance
 
-- **Entry shells** (`index.html`, `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `toy.html` passes a `toy=<slug>` query param. Legacy `toys/*.html` files remain as internal embed targets for a few page-backed toys and redirect direct visits back into `toy.html`.
+- **Entry shells** (`index.html`, `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `toy.html` passes a `toy=<slug>` query param. Legacy `toys/*.html` files now remain only as archived reference assets and redirect direct visits back into `toy.html`.
 - **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
 - **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
 - **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.
@@ -29,7 +29,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 - **Core runtime** (`assets/js/core/*`) initializes the scene, camera, renderer (WebGPU or WebGL), audio pipeline, quality controls, and handles linting/formatting via **Biome**. Helpers such as `animation-loop.ts`, `settings-panel.ts`, and `iframe-quality-sync.ts` manage per-frame work and preset propagation.
 - **Capability + startup contracts** (`assets/js/core/renderer-capabilities.ts`, `assets/js/core/capability-preflight.ts`, `assets/js/core/toy-audio-startup.ts`) provide the unified rendering-support probe and typed toy-audio start flow used by both `app.ts` and `loader.ts`.
 - **Shared services** (`assets/js/core/services/*`) pool renderers and microphone streams so toys can hand off resources without re-allocating (and re-prompting for mic access).
-- **Toys** (`assets/js/toys/*.ts`) compose the core primitives, export a `start` entry, and provide a cleanup hook (commonly via `dispose`).
+- **Toys** (`assets/js/toys/*.ts`) export either the flagship MilkDrop module or thin preset-alias starters that select a bundled preset and then reuse the shared MilkDrop runtime/editor shell.
 
 ## Source Map (Where Things Live)
 
@@ -79,7 +79,7 @@ flowchart TD
 
 ## Documentation verification status
 
-Last verified against the current runtime structure: **2026-02-15**.
+Last verified against the current runtime structure: **2026-03-16**.
 
 Verification checks performed:
 

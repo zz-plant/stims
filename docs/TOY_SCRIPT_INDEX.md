@@ -1,55 +1,41 @@
 # Toy and Visualizer Script Index
 
-This index maps each toy slug to the module that powers it and how the experience loads inside `toy.html`. Stims is MilkDrop-led, but this index remains the source for all toy entrypoints in the broader lab. Use it to find the right entry point quickly when updating assets or debugging loading behavior.
+This index maps each toy slug to the module that powers it and how the experience loads inside `toy.html`. Stims is MilkDrop-led, and the broader lab now runs on the same runtime: non-`milkdrop` slugs are thin preset-alias modules that boot the shared MilkDrop runtime with a bundled starter preset.
 
 ## Query-driven toys (`toy.html`)
 
-`toy.html` reads the `toy` query parameter, looks up the matching entry in `assets/data/toys.json`, and imports the corresponding module through `assets/js/app.ts` and `assets/js/loader.ts`. Many modules render directly; a few still use `startPageToy` to embed a legacy HTML implementation internally while keeping `toy.html` as the public entry surface.
+`toy.html` reads the `toy` query parameter, looks up the matching entry in `assets/data/toys.json`, and imports the corresponding module through `assets/js/app.ts` and `assets/js/loader.ts`. The flagship `milkdrop` slug uses the full MilkDrop module directly; every other registered slug now resolves to a thin preset-alias module that selects a bundled preset and reuses the same runtime/editor shell.
 
 | Slug                       | Entry module                                 | How it loads                                                      |
 | -------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
-| `3dtoy`                    | `assets/js/toys/three-d-toy.ts`              | Direct module; load with `toy.html?toy=3dtoy`.                    |
-| `aurora-painter`           | `assets/js/toys/aurora-painter.ts`           | Direct module; load with `toy.html?toy=aurora-painter`.           |
-| `clay`                     | `assets/js/toys/clay.ts`                     | Direct module; load with `toy.html?toy=clay`.                     |
-| `evol`                     | `assets/js/toys/evol.ts`                     | Shell entry is `toy.html?toy=evol`; internally embeds `toys/evol.html`.                    |
-| `geom`                     | `assets/js/toys/geom.ts`                     | Shell entry is `toy.html?toy=geom`; internally embeds `toys/geom.html`.                    |
-| `holy`                     | `assets/js/toys/holy.ts`                     | Shell entry is `toy.html?toy=holy`; internally embeds `toys/holy.html`.                    |
-| `multi`                    | `assets/js/toys/multi.ts`                    | Shell entry is `toy.html?toy=multi`; internally embeds `toys/multi.html`; requires WebGPU.  |
-| `seary`                    | `assets/js/toys/seary.ts`                    | Shell entry is `toy.html?toy=seary`; internally embeds `toys/seary.html`.                   |
-| `legible`                  | `assets/js/toys/legible.ts`                  | Shell entry is `toy.html?toy=legible`; internally embeds `toys/legible.html`.                 |
-| `symph`                    | `assets/js/toys/symph.ts`                    | Shell entry is `toy.html?toy=symph`; internally embeds `toys/symph.html`.                   |
-| `cube-wave`                | `assets/js/toys/cube-wave.ts`                | Direct module; load with `toy.html?toy=cube-wave`.                |
-| `bubble-harmonics`         | `assets/js/toys/bubble-harmonics.ts`         | Direct module; load with `toy.html?toy=bubble-harmonics`.         |
-| `pocket-pulse`             | `assets/js/toys/pocket-pulse.ts`             | Direct module; load with `toy.html?toy=pocket-pulse`.             |
-| `cosmic-particles`         | `assets/js/toys/cosmic-particles.ts`         | Direct module; load with `toy.html?toy=cosmic-particles`.         |
-| `lights`                   | `assets/js/toys/lights.ts`                   | Direct module; load with `toy.html?toy=lights`.                   |
-| `juke-grid`                | `assets/js/toys/juke-grid.ts`                | Direct module; load with `toy.html?toy=juke-grid`.                |
-| `heel-toe-comets`          | `assets/js/toys/heel-toe-comets.ts`          | Direct module; load with `toy.html?toy=heel-toe-comets`.          |
-| `battle-fan`               | `assets/js/toys/battle-fan.ts`               | Direct module; load with `toy.html?toy=battle-fan`.               |
-| `spiral-burst`             | `assets/js/toys/spiral-burst.ts`             | Direct module; load with `toy.html?toy=spiral-burst`.             |
-| `rainbow-tunnel`           | `assets/js/toys/rainbow-tunnel.ts`           | Direct module; load with `toy.html?toy=rainbow-tunnel`.           |
-| `star-field`               | `assets/js/toys/star-field.ts`               | Direct module; load with `toy.html?toy=star-field`.               |
-| `fractal-kite-garden`      | `assets/js/toys/fractal-kite-garden.ts`      | Direct module; load with `toy.html?toy=fractal-kite-garden`.      |
-| `tactile-sand-table`       | `assets/js/toys/tactile-sand-table.ts`       | Direct module; load with `toy.html?toy=tactile-sand-table`.       |
-| `bioluminescent-tidepools` | `assets/js/toys/bioluminescent-tidepools.ts` | Direct module; load with `toy.html?toy=bioluminescent-tidepools`. |
-| `mobile-ripples`          | `assets/js/toys/mobile-ripples.ts`          | Direct module; load with `toy.html?toy=mobile-ripples`.          |
-| `neon-wave`               | `assets/js/toys/neon-wave.ts`               | Direct module; load with `toy.html?toy=neon-wave`.               |
-| `milkdrop`                | `assets/js/toys/milkdrop-toy.ts`            | Direct module; load with `toy.html?toy=milkdrop`.                |
+| `3dtoy`                    | `assets/js/toys/3dtoy.ts`                    | MilkDrop preset alias; launches the shared runtime with the bundled `3dtoy` preset. |
+| `aurora-painter`           | `assets/js/toys/aurora-painter.ts`           | MilkDrop preset alias; launches the shared runtime with the bundled `aurora-painter` preset. |
+| `clay`                     | `assets/js/toys/clay.ts`                     | MilkDrop preset alias; launches the shared runtime with the bundled `clay` preset. |
+| `evol`                     | `assets/js/toys/evol.ts`                     | MilkDrop preset alias; launches the shared runtime with the bundled `evol` preset. |
+| `geom`                     | `assets/js/toys/geom.ts`                     | MilkDrop preset alias; launches the shared runtime with the bundled `geom` preset. |
+| `holy`                     | `assets/js/toys/holy.ts`                     | MilkDrop preset alias; launches the shared runtime with the bundled `holy` preset. |
+| `multi`                    | `assets/js/toys/multi.ts`                    | MilkDrop preset alias; launches the shared runtime with the bundled `multi` preset. |
+| `seary`                    | `assets/js/toys/seary.ts`                    | MilkDrop preset alias; launches the shared runtime with the bundled `seary` preset. |
+| `legible`                  | `assets/js/toys/legible.ts`                  | MilkDrop preset alias; launches the shared runtime with the bundled `legible` preset. |
+| `symph`                    | `assets/js/toys/symph.ts`                    | MilkDrop preset alias; launches the shared runtime with the bundled `symph` preset. |
+| `cube-wave`                | `assets/js/toys/cube-wave.ts`                | MilkDrop preset alias; launches the shared runtime with the bundled `cube-wave` preset. |
+| `bubble-harmonics`         | `assets/js/toys/bubble-harmonics.ts`         | MilkDrop preset alias; launches the shared runtime with the bundled `bubble-harmonics` preset. |
+| `pocket-pulse`             | `assets/js/toys/pocket-pulse.ts`             | MilkDrop preset alias; launches the shared runtime with the bundled `pocket-pulse` preset. |
+| `mobile-ripples`           | `assets/js/toys/mobile-ripples.ts`           | MilkDrop preset alias; launches the shared runtime with the bundled `mobile-ripples` preset. |
+| `juke-grid`                | `assets/js/toys/juke-grid.ts`                | MilkDrop preset alias; launches the shared runtime with the bundled `juke-grid` preset. |
+| `heel-toe-comets`          | `assets/js/toys/heel-toe-comets.ts`          | MilkDrop preset alias; launches the shared runtime with the bundled `heel-toe-comets` preset. |
+| `battle-fan`               | `assets/js/toys/battle-fan.ts`               | MilkDrop preset alias; launches the shared runtime with the bundled `battle-fan` preset. |
+| `cosmic-particles`         | `assets/js/toys/cosmic-particles.ts`         | MilkDrop preset alias; launches the shared runtime with the bundled `cosmic-particles` preset. |
+| `lights`                   | `assets/js/toys/lights.ts`                   | MilkDrop preset alias; launches the shared runtime with the bundled `lights` preset. |
+| `spiral-burst`             | `assets/js/toys/spiral-burst.ts`             | MilkDrop preset alias; launches the shared runtime with the bundled `spiral-burst` preset. |
+| `rainbow-tunnel`           | `assets/js/toys/rainbow-tunnel.ts`           | MilkDrop preset alias; launches the shared runtime with the bundled `rainbow-tunnel` preset. |
+| `star-field`               | `assets/js/toys/star-field.ts`               | MilkDrop preset alias; launches the shared runtime with the bundled `star-field` preset. |
+| `fractal-kite-garden`      | `assets/js/toys/fractal-kite-garden.ts`      | MilkDrop preset alias; launches the shared runtime with the bundled `fractal-kite-garden` preset. |
+| `tactile-sand-table`       | `assets/js/toys/tactile-sand-table.ts`       | MilkDrop preset alias; launches the shared runtime with the bundled `tactile-sand-table` preset. |
+| `bioluminescent-tidepools` | `assets/js/toys/bioluminescent-tidepools.ts` | MilkDrop preset alias; launches the shared runtime with the bundled `bioluminescent-tidepools` preset. |
+| `neon-wave`                | `assets/js/toys/neon-wave.ts`                | MilkDrop preset alias; launches the shared runtime with the bundled `neon-wave` preset. |
+| `milkdrop`                 | `assets/js/toys/milkdrop-toy.ts`             | Flagship MilkDrop module; loads the full curated catalog and editor shell. |
 
-## Standalone HTML entry points
+## Legacy HTML assets
 
-Direct visits to `toys/*.html` now redirect into `toy.html?toy=<slug>`. Those HTML files remain only as legacy embed targets for the iframe bridge (`?embed=1`) and should not be treated as a separate user-facing shell.
-
-## Page-backed toy migration status
-
-The following toy slugs still rely on `startPageToy` and open `toys/<slug>.html` through an embedded iframe bridge:
-
-- `evol`
-- `geom`
-- `holy`
-- `legible`
-- `multi`
-- `seary`
-- `symph`
-
-This removes the manual “Open standalone page” launcher, but these toys are still page-backed internally. To fully complete migration, convert each toy to direct module rendering in `assets/js/toys/<slug>.ts` and retire the iframe bridge.
+Direct visits to `toys/*.html` still redirect into `toy.html?toy=<slug>`, but no registered toy slug depends on the old iframe bridge anymore. Those HTML files remain in the repo only as archived reference surfaces while the active runtime lives entirely in module entrypoints and bundled MilkDrop presets.

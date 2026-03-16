@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://no.toil.fyi/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -11,7 +11,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/index.html</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -20,7 +20,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -29,7 +29,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -38,7 +38,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -47,7 +47,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/capabilities/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -56,7 +56,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -65,7 +65,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/3dtoy/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -74,7 +74,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/aurora-painter/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -83,7 +83,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/clay/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -92,7 +92,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/evol/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -101,7 +101,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/geom/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -110,7 +110,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/holy/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -119,7 +119,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/multi/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -128,7 +128,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/seary/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -137,7 +137,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/legible/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -146,7 +146,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/symph/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -155,7 +155,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/cube-wave/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -164,7 +164,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/bubble-harmonics/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -173,7 +173,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/pocket-pulse/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -182,7 +182,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/mobile-ripples/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -190,8 +190,35 @@
     </image:image>
   </url>
   <url>
+    <loc>https://no.toil.fyi/toys/juke-grid/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/juke-grid.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/toys/heel-toe-comets/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/heel-toe-comets.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/toys/battle-fan/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/battle-fan.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://no.toil.fyi/toys/cosmic-particles/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -200,7 +227,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/lights/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -209,7 +236,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/spiral-burst/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -218,7 +245,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/rainbow-tunnel/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -227,7 +254,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/star-field/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -236,7 +263,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/fractal-kite-garden/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -245,7 +272,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/tactile-sand-table/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -254,7 +281,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/bioluminescent-tidepools/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -263,7 +290,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/neon-wave/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -272,7 +299,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/toys/milkdrop/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -281,7 +308,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/3d/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -290,7 +317,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/ambient/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -299,7 +326,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/audio-mapped/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -308,7 +335,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/aurora/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -317,7 +344,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/bioluminescent/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -326,7 +353,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/bloom/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -335,7 +362,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/bubbles/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -344,7 +371,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/burst/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -353,7 +380,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/calming/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -362,7 +389,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/caustics/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -371,7 +398,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/cyberpunk/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -379,8 +406,17 @@
     </image:image>
   </url>
   <url>
+    <loc>https://no.toil.fyi/tags/editor/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/tag-editor.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://no.toil.fyi/tags/evolutionary/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -389,7 +425,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/feedback/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -398,7 +434,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/fractal/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -407,7 +443,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/generative/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -416,7 +452,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/geometry/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -425,7 +461,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/gestural/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -434,7 +470,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/glitch/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -443,7 +479,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/grid/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -452,7 +488,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/halos/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -461,7 +497,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/haptics/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -470,7 +506,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/harmonics/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -479,7 +515,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/hybrid/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -488,7 +524,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/immersive/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -497,7 +533,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/kite/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -506,7 +542,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/legacy/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -515,7 +551,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/lights/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -524,7 +560,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -533,7 +569,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/mobile/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -542,7 +578,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/mode-switch/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -551,7 +587,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/motion/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -560,7 +596,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/nebula/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -569,7 +605,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/ocean/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -578,7 +614,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/palette/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -587,7 +623,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/particles/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -596,7 +632,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/patterns/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -605,7 +641,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/pottery/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -613,8 +649,17 @@
     </image:image>
   </url>
   <url>
+    <loc>https://no.toil.fyi/tags/presets/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/tag-presets.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://no.toil.fyi/tags/pulses/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -623,7 +668,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/rainbow/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -632,7 +677,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/reactive/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -641,7 +686,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/retro/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -650,7 +695,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/ribbons/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -659,7 +704,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/ripples/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -668,7 +713,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/sand/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -677,7 +722,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/sculpting/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -686,7 +731,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/shader/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -695,7 +740,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/spectrograph/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -704,7 +749,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/spirals/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -713,7 +758,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/stars/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -722,7 +767,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/swirl/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -731,7 +776,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/synesthetic/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -740,7 +785,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/synthwave/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -749,7 +794,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/text/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -758,7 +803,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/tilt/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -767,7 +812,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/touch/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -776,7 +821,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/tunnel/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -785,7 +830,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/visualizer/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -794,7 +839,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/warp/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -803,7 +848,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/tags/waves/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -812,7 +857,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/calming/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -821,7 +866,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/celestial/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -830,7 +875,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/cosmic/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -839,7 +884,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/dreamy/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -848,7 +893,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/drifting/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -857,7 +902,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/energetic/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -866,7 +911,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/ethereal/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -875,7 +920,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/fiery/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -884,7 +929,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/focus/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -893,7 +938,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/glow/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -902,7 +947,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/grounded/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -911,7 +956,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/immersive/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -920,7 +965,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/luminous/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -929,7 +974,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/minimal/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -938,7 +983,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/playful/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -947,7 +992,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/psychedelic/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -956,7 +1001,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/pulsing/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -965,7 +1010,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/serene/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -974,7 +1019,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/tactile/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -983,7 +1028,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/moods/uplifting/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -992,7 +1037,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/capabilities/microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1001,7 +1046,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/capabilities/demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1010,7 +1055,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/capabilities/motion/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1019,7 +1064,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/capabilities/webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1028,7 +1073,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/energetic-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1037,7 +1082,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/energetic-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1046,7 +1091,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/energetic-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1055,7 +1100,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/immersive-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1064,7 +1109,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/immersive-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1073,7 +1118,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/immersive-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1082,7 +1127,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/cosmic-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1091,7 +1136,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/cosmic-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1100,7 +1145,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/cosmic-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1108,62 +1153,8 @@
     </image:image>
   </url>
   <url>
-    <loc>https://no.toil.fyi/discover/serene-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-serene-demo-audio.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/serene-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-serene-microphone.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/serene-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-serene-webgpu.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/dreamy-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-dreamy-demo-audio.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/dreamy-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-dreamy-microphone.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/dreamy-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-dreamy-webgpu.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
     <loc>https://no.toil.fyi/discover/focus-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1172,7 +1163,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/focus-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1181,7 +1172,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/focus-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1189,170 +1180,8 @@
     </image:image>
   </url>
   <url>
-    <loc>https://no.toil.fyi/discover/calming-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-calming-demo-audio.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/calming-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-calming-microphone.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/calming-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-calming-webgpu.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/ethereal-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-ethereal-demo-audio.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/ethereal-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-ethereal-microphone.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/ethereal-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-ethereal-webgpu.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/drifting-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-drifting-demo-audio.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/drifting-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-drifting-microphone.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/drifting-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-drifting-webgpu.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/luminous-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-luminous-demo-audio.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/luminous-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-luminous-microphone.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/luminous-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-luminous-webgpu.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/minimal-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-minimal-demo-audio.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/minimal-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-minimal-microphone.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/minimal-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-minimal-webgpu.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/psychedelic-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-psychedelic-demo-audio.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/psychedelic-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-psychedelic-microphone.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://no.toil.fyi/discover/psychedelic-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/discover-psychedelic-webgpu.svg</image:loc>
-    </image:image>
-  </url>
-  <url>
     <loc>https://no.toil.fyi/discover/pulsing-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1361,7 +1190,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/pulsing-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1370,7 +1199,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/pulsing-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1378,8 +1207,224 @@
     </image:image>
   </url>
   <url>
+    <loc>https://no.toil.fyi/discover/serene-demo-audio/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-serene-demo-audio.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/serene-microphone/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-serene-microphone.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/serene-webgpu/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-serene-webgpu.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/dreamy-demo-audio/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-dreamy-demo-audio.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/dreamy-microphone/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-dreamy-microphone.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/dreamy-webgpu/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-dreamy-webgpu.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/calming-demo-audio/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-calming-demo-audio.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/calming-microphone/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-calming-microphone.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/calming-webgpu/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-calming-webgpu.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/ethereal-demo-audio/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-ethereal-demo-audio.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/ethereal-microphone/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-ethereal-microphone.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/ethereal-webgpu/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-ethereal-webgpu.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/drifting-demo-audio/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-drifting-demo-audio.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/drifting-microphone/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-drifting-microphone.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/drifting-webgpu/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-drifting-webgpu.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/luminous-demo-audio/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-luminous-demo-audio.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/luminous-microphone/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-luminous-microphone.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/luminous-webgpu/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-luminous-webgpu.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/minimal-demo-audio/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-minimal-demo-audio.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/minimal-microphone/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-minimal-microphone.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/minimal-webgpu/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-minimal-webgpu.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/psychedelic-demo-audio/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-psychedelic-demo-audio.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/psychedelic-microphone/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-psychedelic-microphone.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://no.toil.fyi/discover/psychedelic-webgpu/</loc>
+    <lastmod>2026-03-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://no.toil.fyi/og/discover-psychedelic-webgpu.svg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://no.toil.fyi/discover/uplifting-demo-audio/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1388,7 +1433,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/uplifting-microphone/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -1397,7 +1442,7 @@
   </url>
   <url>
     <loc>https://no.toil.fyi/discover/uplifting-webgpu/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-03-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
