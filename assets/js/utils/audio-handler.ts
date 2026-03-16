@@ -569,7 +569,9 @@ export async function initAudio(options: AudioInitOptions = {}) {
 }
 
 export function getFrequencyData(analyser: FrequencyAnalyser) {
-  return analyser.getFrequencyData();
+  const rawFrequencyData = analyser.getFrequencyData();
+
+  return stylizeFrequencyData(rawFrequencyData.slice());
 }
 
 /**
@@ -585,6 +587,75 @@ export function getAverageFrequency(data: Uint8Array): number {
   }
 
   return sum / data.length;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+/**
+ * Shape live frequency data into a more presentation-friendly curve.
+ * This keeps subtle bins visible, gives bass-led tracks more body, and
+ * preserves enough treble sparkle that most toys feel more musical.
+ */
+export function stylizeFrequencyData(data: Uint8Array): Uint8Array {
+  const len = data.length;
+  if (len === 0) return data;
+
+  let peak = 0;
+  for (let i = 0; i < len; i += 1) {
+    peak = Math.max(peak, data[i] ?? 0);
+  }
+
+  if (peak === 0) {
+    return data;
+  }
+
+  const average = getAverageFrequency(data);
+  const averageNormalized = average / 255;
+  const activity = clamp((averageNormalized - 0.045) / 0.22, 0, 1);
+
+  if (activity === 0 && peak < 26) {
+    for (let i = 0; i < len; i += 1) {
+      data[i] = Math.max(0, Math.round((data[i] ?? 0) * 0.55));
+    }
+    return data;
+  }
+
+  const peakNormalization = clamp(160 / Math.max(72, peak), 0.96, 1.38);
+  const lowLift = 1 + activity * (0.22 + (1 - averageNormalized) * 0.08);
+  const midLift = 1 + activity * (0.12 + (1 - averageNormalized) * 0.05);
+  const highLift = 1 + activity * (0.12 + averageNormalized * 0.08);
+
+  let previousValue = data[0] ?? 0;
+  for (let i = 0; i < len; i += 1) {
+    const raw = (data[i] ?? 0) / 255;
+    const ratio = len > 1 ? i / (len - 1) : 0;
+    const curve = raw ** (0.96 - activity * 0.16);
+    const bucketLift =
+      ratio < 0.12
+        ? lowLift + activity * (1 - ratio / 0.12) * 0.12
+        : ratio < 0.56
+          ? midLift
+          : highLift + activity * Math.max(0, ratio - 0.72) * 0.24;
+    const transientLift =
+      i === 0
+        ? 0
+        : clamp((raw - previousValue / 255) * (0.22 + activity * 0.33), 0, 0.12);
+    const shaped = clamp(
+      curve * (1 + (peakNormalization - 1) * activity) * bucketLift,
+      0,
+      1,
+    );
+    const blendAmount = 0.12 + activity * 0.54;
+    const blended =
+      raw * (1 - blendAmount) + shaped * blendAmount + transientLift;
+
+    data[i] = Math.round(clamp(blended, 0, 1) * 255);
+    previousValue = data[i];
+  }
+
+  return data;
 }
 
 /**
