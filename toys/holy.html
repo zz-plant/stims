@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Ultimate Satisfying Audio Visualizer</title>
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('embed') === '1') return;
+        params.delete('embed');
+        params.set('toy', 'holy');
+        const nextUrl = new URL('../toy.html', window.location.href);
+        nextUrl.search = params.toString();
+        window.location.replace(nextUrl.toString());
+      })();
+    </script>
     <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body {
@@ -299,6 +310,10 @@
         initErrorDisplay,
         setErrorVisible,
       } from '../assets/js/utils/error-display.ts';
+      import {
+        hideEmbeddedToyHud,
+        isEmbeddedToyPage,
+      } from '../assets/js/utils/embedded-toy-page.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import { createUnifiedInput } from '../assets/js/utils/unified-input.ts';
@@ -384,6 +399,59 @@
 
       if (preferDemoAudio && startButton instanceof HTMLButtonElement) {
         startButton.textContent = 'Start Demo Visualizer';
+      }
+
+      let activeToy = null;
+
+      async function startVisualizerAudio(request = null) {
+        startButton.style.display = 'none';
+        loadingOverlay.style.display = 'flex';
+
+        if (!renderer) {
+          init();
+        }
+
+        if (!activeToy) {
+          activeToy = {
+            renderer,
+            analyser: null,
+            audioCleanup: null,
+            dispose() {
+              this.audioCleanup?.();
+            },
+          };
+        }
+
+        const { startAudio } = createToyAudioBootstrap(activeToy);
+
+        try {
+          await startAudio(
+            animate,
+            {
+              fftSize: 1024,
+              fallbackToSynthetic: true,
+              preferSynthetic: preferDemoAudio,
+              ...(request ?? {}),
+            },
+            {
+              onError: (err) => {
+                console.error('Error accessing microphone:', err);
+              },
+            }
+          );
+          setErrorVisible(errorDisplayId);
+          loadingOverlay.style.display = 'none';
+        } catch (err) {
+          setErrorVisible(
+            errorDisplayId,
+            preferDemoAudio
+              ? 'Demo audio could not be loaded. Please try again.'
+              : 'Microphone access is required for the visualizer to work.'
+          );
+          loadingOverlay.style.display = 'none';
+          startButton.style.display = 'block';
+          throw err;
+        }
       }
 
       function showMicroHint(message) {
@@ -991,49 +1059,15 @@
         changeShape();
       }
 
-      // Start Button Click Handler
-      startButton.addEventListener('click', async () => {
-        startButton.style.display = 'none';
-        loadingOverlay.style.display = 'flex';
-        init();
-
-        const toy = {
-          renderer,
-          analyser: null,
-          audioCleanup: null,
-          dispose() {
-            this.audioCleanup?.();
-          },
-        };
-        const { startAudio } = createToyAudioBootstrap(toy);
-
-        try {
-          await startAudio(
-            animate,
-            {
-              fftSize: 1024,
-              fallbackToSynthetic: true,
-              preferSynthetic: preferDemoAudio,
-            },
-            {
-              onError: (err) => {
-                console.error('Error accessing microphone:', err);
-              },
-            }
-          );
-          setErrorVisible(errorDisplayId);
-          loadingOverlay.style.display = 'none';
-        } catch (err) {
-          setErrorVisible(
-            errorDisplayId,
-            preferDemoAudio
-              ? 'Demo audio could not be loaded. Please try again.'
-              : 'Microphone access is required for the visualizer to work.'
-          );
-          loadingOverlay.style.display = 'none';
-          startButton.style.display = 'block';
-        }
-      });
+      if (isEmbeddedToyPage()) {
+        hideEmbeddedToyHud(['#startButton']);
+        window.exposedStartAudio = async (request) =>
+          startVisualizerAudio(request ?? null);
+      } else {
+        startButton.addEventListener('click', async () => {
+          await startVisualizerAudio();
+        });
+      }
 
       // Settings Panel Initialization
       particleCountValue.textContent = particleCount;

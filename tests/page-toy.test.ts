@@ -49,6 +49,7 @@ describe('page-toy starters', () => {
   test('startPageToy supports explicit path and title', () => {
     const activeToy = startPageToy({
       path: './toys/evol.html',
+      shellHref: './toy.html?toy=evol',
       title: 'Custom title',
       description: 'Custom description',
     });
@@ -56,7 +57,11 @@ describe('page-toy starters', () => {
     const iframe = document.querySelector(
       'iframe.toy-frame',
     ) as HTMLIFrameElement | null;
+    const newTabLink = document.querySelector(
+      '.active-toy-status__actions a',
+    ) as HTMLAnchorElement | null;
     expect(iframe?.title).toBe('Custom title');
+    expect(newTabLink?.getAttribute('href')).toBe('./toy.html?toy=evol');
 
     activeToy.dispose();
   });

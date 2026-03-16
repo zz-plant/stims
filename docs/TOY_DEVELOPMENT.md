@@ -7,7 +7,7 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 - Place new toy modules under `assets/js/toys/` and export a `start(options)` entry point.
 - Export `start({ container, canvas?, audioContext? })`. `container` is the preferred target for rendering.
 - Register the toy in `assets/data/toys.json` with a unique slug, label, and any default parameters. This JSON file is the authoritative toy metadata source; `assets/js/data/toy-manifest.ts` and `public/toys.json` are generated artifacts. Keep the module path under `assets/js/toys/`.
-- Load toys through `toy.html?toy=<slug>` or a dedicated HTML entry point. Keep query string slugs in sync with `assets/data/toys.json`.
+- Load toys through `toy.html?toy=<slug>`. Legacy `toys/*.html` files still exist for a small iframe-backed subset, but they redirect direct visits back to the shell and should not be treated as a second public entry surface.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
 - Run `bun run generate:toys` after metadata edits to regenerate derived artifacts, then run `bun run check:toys` to verify schema validity, slug/entrypoint consistency, generated artifact parity, and module/page registration coverage.
 - Run `bun run check:quick` to validate types and code quality with Biome before opening a PR.

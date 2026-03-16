@@ -4,7 +4,7 @@ This document summarizes how the Stim Webtoys app is assembled, from the entry H
 
 ## Architecture at a Glance
 
-- **Entry shells** (`toy.html`, `toys/*.html`) are thin HTML pages that bootstrap `assets/js/app.ts`; toy shells pass a `toy=<slug>` query param, while `index.html` boots the library shell.
+- **Entry shells** (`index.html`, `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `toy.html` passes a `toy=<slug>` query param. Legacy `toys/*.html` files remain as internal embed targets for a few page-backed toys and redirect direct visits back into `toy.html`.
 - **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
 - **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
 - **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.
@@ -21,7 +21,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 ## Runtime Layers
 
-- **HTML entry points** (`index.html`, `toy.html`, `toys/*.html`) load `assets/js/app.ts`; toy pages provide `?toy=<slug>` query params.
+- **HTML entry points** (`index.html`, `toy.html`) load `assets/js/app.ts`; toy pages provide `?toy=<slug>` query params. Legacy `toys/*.html` pages are no longer a separate public surface.
 - **App bootstrap** (`assets/js/app.ts`) detects library vs toy pages, wires controls, runs capability preflight, and starts loader flows.
 - **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, active toy lifecycle, and dynamic module loading.
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
@@ -35,7 +35,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 | Concern | Primary files | Notes |
 | --- | --- | --- |
-| Entry points | `index.html`, `toy.html`, `toys/*.html` | HTML shells are intentionally slim; runtime logic starts in `app.ts`. |
+| Entry points | `index.html`, `toy.html` | Public HTML shells are intentionally slim; runtime logic starts in `app.ts`. |
 | App bootstrap | `assets/js/app.ts` | Chooses library vs toy boot flow, connects controls, and runs capability preflight before toy start. |
 | Loader + routing | `assets/js/loader.ts`, `assets/js/router.ts` | Navigation, lifecycle, and dynamic imports live here. |
 | Views | `assets/js/toy-view.ts`, `assets/js/library-view.js` | UI for the library grid, toy container, loading, and error states. |
