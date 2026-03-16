@@ -42,7 +42,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "aurora-painter",
     "title": "Aurora Painter",
-    "description": "A flowing aurora preset with layered ribbons of color, soft drift, and microphone-reactive sway.",
+    "description": "A flowing aurora preset with drag-steered ribbons, pinch bloom, and rotate-to-switch color moods.",
     "module": "assets/js/toys/aurora-painter.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -57,20 +57,23 @@ export const toyManifest: ToyManifest = [
     "tags": [
       "aurora",
       "ribbons",
-      "gestural"
+      "gestural",
+      "touch"
     ],
     "controls": [
+      "Drag drift + pinch bloom + rotate moods",
+      "Quick preset + color mood buttons",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Aurora Painter preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Aurora Painter preset, drag to steer the ribbons, pinch to swell the glow, then rotate or use Color Mood buttons to switch palettes.",
     "starterPreset": {
       "id": "aurora-painter",
       "label": "Aurora Painter preset",
       "description": "Loads the curated Aurora Painter preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Live source editor",
+    "wowControl": "Color mood buttons",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -377,7 +380,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "cube-wave",
     "title": "Grid Visualizer",
-    "description": "A grid preset with stacked wave motion, squared silhouettes, and strong beat lift.",
+    "description": "A grid preset with drag-steered wave drift, pinch energy lift, and rotate-to-switch grid modes.",
     "module": "assets/js/toys/cube-wave.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -390,20 +393,23 @@ export const toyManifest: ToyManifest = [
     "tags": [
       "grid",
       "waves",
-      "mode-switch"
+      "mode-switch",
+      "gestural"
     ],
     "controls": [
+      "Drag drift + pinch lift + rotate modes",
+      "Grid mode buttons",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Grid Visualizer preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Grid Visualizer preset, drag to steer the drift, pinch to lift the energy, then rotate or use Grid Mode buttons to switch feels.",
     "starterPreset": {
       "id": "cube-wave",
       "label": "Grid Visualizer preset",
       "description": "Loads the curated Grid Visualizer preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Live source editor",
+    "wowControl": "Grid mode buttons",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -452,7 +458,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "pocket-pulse",
     "title": "Pocket Pulse",
-    "description": "A compact pulse preset tuned for quick reactions, centered glow, and mobile-friendly motion.",
+    "description": "A compact pulse preset with touch-steered center drift, tap-triggered lift, and quick reactive glow.",
     "module": "assets/js/toys/pocket-pulse.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -469,11 +475,12 @@ export const toyManifest: ToyManifest = [
       "touch"
     ],
     "controls": [
+      "Touch drag steering + tap accents",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Pocket Pulse preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Pocket Pulse preset, then drag to steer the pulse center and tap to spike the glow before refining Blend or source fields.",
     "starterPreset": {
       "id": "pocket-pulse",
       "label": "Pocket Pulse preset",
@@ -490,7 +497,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "mobile-ripples",
     "title": "Mobile Ripples",
-    "description": "A low-motion ripple preset with neon rings, calm drift, and lightweight audio response.",
+    "description": "A low-motion ripple preset with touch-steered drift, press-responsive ring growth, and lightweight audio response.",
     "module": "assets/js/toys/mobile-ripples.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -507,11 +514,12 @@ export const toyManifest: ToyManifest = [
       "touch"
     ],
     "controls": [
+      "Touch drag steering",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Mobile Ripples preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Mobile Ripples preset, then drag to drift the ripple center and hold touch to widen the rings before adjusting Blend.",
     "starterPreset": {
       "id": "mobile-ripples",
       "label": "Mobile Ripples preset",
@@ -528,7 +536,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "juke-grid",
     "title": "Juke Grid",
-    "description": "A chopped grid preset with lateral snaps, razor mesh lines, and footwork-ready energy.",
+    "description": "A chopped grid preset with touch-steered lane snaps, razor mesh lines, and footwork-ready energy.",
     "module": "assets/js/toys/juke-grid.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -542,14 +550,16 @@ export const toyManifest: ToyManifest = [
     "tags": [
       "grid",
       "glitch",
+      "touch",
       "reactive"
     ],
     "controls": [
+      "Touch drag lane steering",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Juke Grid preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Juke Grid preset, then drag across the screen to shove lane offsets and sharpen the chop energy before tuning Blend.",
     "starterPreset": {
       "id": "juke-grid",
       "label": "Juke Grid preset",
@@ -566,7 +576,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "heel-toe-comets",
     "title": "Heel-Toe Comets",
-    "description": "A diagonal comet preset with rapid lane streaks, hat chatter, and rush-forward depth.",
+    "description": "A diagonal comet preset with touch-aimed lane drift, rapid streaks, and rush-forward depth.",
     "module": "assets/js/toys/heel-toe-comets.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -580,14 +590,16 @@ export const toyManifest: ToyManifest = [
     "tags": [
       "particles",
       "pulses",
+      "touch",
       "reactive"
     ],
     "controls": [
+      "Touch drag lane steering",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Heel-Toe Comets preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Heel-Toe Comets preset, then drag to angle the comet lanes and hold touch to increase rush depth before tweaking Blend.",
     "starterPreset": {
       "id": "heel-toe-comets",
       "label": "Heel-Toe Comets preset",
@@ -604,7 +616,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "battle-fan",
     "title": "Battle Fan",
-    "description": "A radial fan preset with spoke-like bursts, kick-snare flips, and fast reactive color changes.",
+    "description": "A radial fan preset with touch-steered burst center, kick-snare flips, and fast reactive color changes.",
     "module": "assets/js/toys/battle-fan.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -618,14 +630,16 @@ export const toyManifest: ToyManifest = [
     "tags": [
       "burst",
       "patterns",
+      "touch",
       "reactive"
     ],
     "controls": [
+      "Touch drag fan steering",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Battle Fan preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Battle Fan preset, then drag to move the fan center and spike burst intensity with quick touch motion before adjusting Blend.",
     "starterPreset": {
       "id": "battle-fan",
       "label": "Battle Fan preset",
@@ -642,7 +656,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "cosmic-particles",
     "title": "Cosmic Particles",
-    "description": "A cosmic preset with orbiting particle lines, nebula mesh motion, and big reactive depth.",
+    "description": "A cosmic preset with drag-steered orbit drift, pinch depth lift, and rotate-to-switch cosmic modes.",
     "module": "assets/js/toys/cosmic-particles.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -656,20 +670,23 @@ export const toyManifest: ToyManifest = [
     "tags": [
       "particles",
       "nebula",
-      "swirl"
+      "swirl",
+      "gestural"
     ],
     "controls": [
+      "Drag drift + pinch depth + rotate modes",
+      "Cosmic preset buttons",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Cosmic Particles preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Cosmic Particles preset, drag to steer the orbit, pinch to deepen the pull, then rotate or use Cosmic Preset buttons to switch modes.",
     "starterPreset": {
       "id": "cosmic-particles",
       "label": "Cosmic Particles preset",
       "description": "Loads the curated Cosmic Particles preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Live source editor",
+    "wowControl": "Cosmic preset buttons",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -717,7 +734,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "spiral-burst",
     "title": "Spiral Burst",
-    "description": "A spiral preset with blooming coils, central bursts, and emphatic beat pulses.",
+    "description": "A spiral preset with drag-steered spin, pinch burst lift, and rotate-to-cycle palettes.",
     "module": "assets/js/toys/spiral-burst.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -735,17 +752,19 @@ export const toyManifest: ToyManifest = [
       "gestural"
     ],
     "controls": [
+      "Drag spin + pinch burst + rotate palettes",
+      "Spiral mode + palette buttons",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Spiral Burst preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Spiral Burst preset, drag to torque the spin, pinch to intensify the burst, then rotate or use Spiral controls to change the feel.",
     "starterPreset": {
       "id": "spiral-burst",
       "label": "Spiral Burst preset",
       "description": "Loads the curated Spiral Burst preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Live source editor",
+    "wowControl": "Spiral mode buttons",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -756,7 +775,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "rainbow-tunnel",
     "title": "Rainbow Tunnel",
-    "description": "A tunnel preset with prism rings, color cycling, and forward-drifting motion.",
+    "description": "A tunnel preset with drag-steered drift, pinch speed lift, and rotate-to-cycle color modes.",
     "module": "assets/js/toys/rainbow-tunnel.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -769,20 +788,23 @@ export const toyManifest: ToyManifest = [
     "tags": [
       "tunnel",
       "rainbow",
-      "immersive"
+      "immersive",
+      "gestural"
     ],
     "controls": [
+      "Drag drift + pinch speed + rotate palettes",
+      "Motion mode + color drift buttons",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Rainbow Tunnel preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Rainbow Tunnel preset, drag to steer the tunnel, pinch to increase speed, then rotate or use Color Drift buttons to cycle the palette.",
     "starterPreset": {
       "id": "rainbow-tunnel",
       "label": "Rainbow Tunnel preset",
       "description": "Loads the curated Rainbow Tunnel preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Live source editor",
+    "wowControl": "Color drift buttons",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -793,7 +815,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "star-field",
     "title": "Star Field",
-    "description": "A star field preset with drifting spark trails, dark nebula tones, and gentle beat shimmer.",
+    "description": "A star field preset with drag-steered drift, pinch sparkle lift, and rotate-to-cycle sky palettes.",
     "module": "assets/js/toys/star-field.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -810,17 +832,20 @@ export const toyManifest: ToyManifest = [
       "gestural"
     ],
     "controls": [
+      "Drag drift + pinch sparkle + rotate palettes",
+      "Sky intensity + palette buttons",
+      "Pulse meter",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Star Field preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Star Field preset, drag to steer drift, pinch to lift sparkle, then rotate or use Sky Palette buttons while watching the pulse meter.",
     "starterPreset": {
       "id": "star-field",
       "label": "Star Field preset",
       "description": "Loads the curated Star Field preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Live source editor",
+    "wowControl": "Sky palette buttons",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
@@ -868,7 +893,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "tactile-sand-table",
     "title": "Tactile Sand Table",
-    "description": "A sand-table preset with earthy ripples, low-motion waves, and grounded reactive texture.",
+    "description": "A sand-table preset with earthy ripples, tilt-steered gravity, and grounded reactive texture.",
     "module": "assets/js/toys/tactile-sand-table.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -882,31 +907,33 @@ export const toyManifest: ToyManifest = [
     "tags": [
       "sand",
       "tilt",
-      "haptics"
+      "haptics",
+      "motion"
     ],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
-      "Live source editor + import/export"
+      "Live source editor + import/export",
+      "Motion controls (enable tilt, lock gravity, re-center)"
     ],
-    "firstRunHint": "Start with the Tactile Sand Table preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Tactile Sand Table preset, enable tilt control in Gravity settings, then lock or re-center gravity as needed.",
     "starterPreset": {
       "id": "tactile-sand-table",
       "label": "Tactile Sand Table preset",
       "description": "Loads the curated Tactile Sand Table preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Live source editor",
+    "wowControl": "Tilt gravity controls",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,
-      "motion": false
+      "motion": true
     }
   },
   {
     "slug": "bioluminescent-tidepools",
     "title": "Bioluminescent Tidepools",
-    "description": "A tidepool preset with caustic glow, flowing currents, and bright treble sparkle.",
+    "description": "A tidepool preset with drag-shaped currents, pinch lift, and rotate-to-cycle moods.",
     "module": "assets/js/toys/bioluminescent-tidepools.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -926,17 +953,19 @@ export const toyManifest: ToyManifest = [
       "gestural"
     ],
     "controls": [
+      "Drag currents + pinch lift + rotate moods",
+      "Tidepool mood + current buttons",
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
       "Live source editor + import/export"
     ],
-    "firstRunHint": "Start with the Bioluminescent Tidepools preset, then use Blend for slower transitions or open the source editor to push the palette and motion further.",
+    "firstRunHint": "Start with the Bioluminescent Tidepools preset, drag to shape the currents, pinch to brighten the pool, then rotate or use Tidepool Mood buttons to shift the scene.",
     "starterPreset": {
       "id": "bioluminescent-tidepools",
       "label": "Bioluminescent Tidepools preset",
       "description": "Loads the curated Bioluminescent Tidepools preset inside the shared MilkDrop runtime."
     },
-    "wowControl": "Live source editor",
+    "wowControl": "Tidepool mood buttons",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,

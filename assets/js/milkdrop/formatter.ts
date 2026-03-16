@@ -303,3 +303,42 @@ export function upsertMilkdropField(
     .replace(/\n{3,}/gu, '\n\n')
     .trim()}\n`;
 }
+
+export function upsertMilkdropFields(
+  source: string,
+  updates: Record<string, string | number>,
+) {
+  const lines = source.split(/\r?\n/u);
+  const pending = new Map(
+    Object.entries(updates).map(([key, value]) => [
+      key.trim(),
+      typeof value === 'number' ? formatNumber(value) : serializeString(value),
+    ]),
+  );
+
+  const nextLines = lines.map((line) => {
+    const trimmed = line.trim();
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex <= 0) {
+      return line;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const value = pending.get(key);
+    if (value === undefined) {
+      return line;
+    }
+
+    pending.delete(key);
+    return `${key}=${value}`;
+  });
+
+  pending.forEach((value, key) => {
+    nextLines.push(`${key}=${value}`);
+  });
+
+  return `${nextLines
+    .join('\n')
+    .replace(/\n{3,}/gu, '\n\n')
+    .trim()}\n`;
+}

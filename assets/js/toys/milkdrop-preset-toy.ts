@@ -1,22 +1,30 @@
+import type { PersistentSettingsPanel } from '../core/settings-panel';
 import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createMilkdropExperience } from '../milkdrop/runtime';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createToyQualityControls } from '../utils/toy-settings';
+import type {
+  MilkdropPresetToyBehaviorApi,
+  MilkdropPresetToyBehaviorFactory,
+} from './milkdrop-preset-behavior';
 
 type MilkdropPresetToyConfig = {
   presetId: string;
   title: string;
   description: string;
+  createBehavior?: MilkdropPresetToyBehaviorFactory;
 };
 
 export function createMilkdropPresetToyStarter({
   presetId,
   title,
   description,
+  createBehavior,
 }: MilkdropPresetToyConfig) {
   return function start({ container }: ToyStartOptions = {}) {
     let runtime: ToyRuntimeInstance | null = null;
+    const behavior = createBehavior?.() ?? null;
 
     const { quality, configurePanel } = createToyQualityControls({
       title,
@@ -31,6 +39,16 @@ export function createMilkdropPresetToyStarter({
       quality,
       initialPresetId: presetId,
     });
+    const behaviorApi: MilkdropPresetToyBehaviorApi = {
+      presetId,
+      getActivePresetId: () => experience.getActivePresetId(),
+      getActiveCompiledPreset: () => experience.getActiveCompiledPreset(),
+      applyFields: async (updates) => {
+        await experience.applyFields(updates);
+      },
+      selectPreset: (id) => experience.selectPreset(id),
+      setStatus: (message) => experience.setStatus(message),
+    };
 
     const startRuntime = createToyRuntimeStarter({
       toyOptions: {
@@ -42,6 +60,7 @@ export function createMilkdropPresetToyStarter({
       audio: {
         fftSize: 1024,
       },
+      input: behavior?.input,
       plugins: [
         {
           name: `milkdrop-preset-${presetId}`,
@@ -49,9 +68,14 @@ export function createMilkdropPresetToyStarter({
             experience.attachRuntime(runtimeInstance);
           },
           update: (frame) => {
-            experience.update(frame);
+            const context = { frame, api: behaviorApi };
+            behavior?.onFrame?.(context);
+            experience.update(frame, {
+              signalOverrides: behavior?.getSignalOverrides?.(context),
+            });
           },
           dispose: () => {
+            behavior?.dispose?.();
             experience.dispose();
           },
         },
@@ -59,7 +83,8 @@ export function createMilkdropPresetToyStarter({
     });
 
     runtime = startRuntime({ container });
-    configurePanel();
+    const panel: PersistentSettingsPanel = configurePanel();
+    behavior?.setupPanel?.(panel, behaviorApi);
     return runtime;
   };
 }

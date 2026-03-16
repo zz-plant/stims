@@ -7,6 +7,7 @@ import type { QualityPresetManager } from '../utils/toy-settings';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
+import { upsertMilkdropFields } from './formatter';
 import { MilkdropOverlay } from './overlay';
 import {
   consumeRequestedMilkdropPresetSelection,
@@ -20,6 +21,7 @@ import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropPresetSource,
+  MilkdropRuntimeSignals,
 } from './types';
 import { createMilkdropVM } from './vm';
 
@@ -385,6 +387,13 @@ export function createMilkdropExperience({
     await syncCatalog();
   };
 
+  const applyFieldValues = async (updates: Record<string, string | number>) => {
+    const baseline =
+      session.getState().latestCompiled?.formattedSource ??
+      session.getState().source;
+    return session.applySource(upsertMilkdropFields(baseline, updates));
+  };
+
   const selectAdjacentPreset = async (direction: 1 | -1) => {
     if (!catalogEntries.length) {
       return;
@@ -631,6 +640,24 @@ export function createMilkdropExperience({
   });
 
   return {
+    applyFields(updates: Record<string, string | number>) {
+      return applyFieldValues(updates);
+    },
+
+    getActiveCompiledPreset() {
+      return activeCompiled;
+    },
+
+    getActivePresetId() {
+      return activePresetId;
+    },
+
+    selectPreset,
+
+    setStatus(message: string) {
+      overlay.setStatus(message);
+    },
+
     attachRuntime(nextRuntime: ToyRuntimeInstance) {
       runtime = nextRuntime;
       installKeyboardShortcuts();
@@ -655,7 +682,12 @@ export function createMilkdropExperience({
       });
     },
 
-    update(frame: ToyRuntimeFrame) {
+    update(
+      frame: ToyRuntimeFrame,
+      options: {
+        signalOverrides?: Partial<MilkdropRuntimeSignals>;
+      } = {},
+    ) {
       if (!runtime || !adapter) {
         return;
       }
@@ -664,12 +696,53 @@ export function createMilkdropExperience({
         (quality.activeQuality.particleScale ?? 1) *
         frame.performance.particleBudget;
       vm.setDetailScale(detailScale);
-      const signals = signalTracker.update({
+      const baseSignals = signalTracker.update({
         time: frame.time,
         deltaMs: frame.deltaMs,
         analyser: frame.analyser,
         frequencyData: frame.frequencyData,
       });
+      const input = frame.input;
+      const gesture = input?.gesture;
+      const inputOverrides: Partial<MilkdropRuntimeSignals> = {
+        inputX: input?.normalizedCentroid.x ?? 0,
+        inputY: input?.normalizedCentroid.y ?? 0,
+        input_x: input?.normalizedCentroid.x ?? 0,
+        input_y: input?.normalizedCentroid.y ?? 0,
+        inputDx: input?.dragDelta.x ?? 0,
+        inputDy: input?.dragDelta.y ?? 0,
+        input_dx: input?.dragDelta.x ?? 0,
+        input_dy: input?.dragDelta.y ?? 0,
+        inputSpeed: Math.hypot(
+          input?.dragDelta.x ?? 0,
+          input?.dragDelta.y ?? 0,
+        ),
+        input_speed: Math.hypot(
+          input?.dragDelta.x ?? 0,
+          input?.dragDelta.y ?? 0,
+        ),
+        inputPressed: input?.isPressed ? 1 : 0,
+        input_pressed: input?.isPressed ? 1 : 0,
+        inputJustPressed: input?.justPressed ? 1 : 0,
+        input_just_pressed: input?.justPressed ? 1 : 0,
+        inputJustReleased: input?.justReleased ? 1 : 0,
+        input_just_released: input?.justReleased ? 1 : 0,
+        inputCount: input?.pointerCount ?? 0,
+        input_count: input?.pointerCount ?? 0,
+        gestureScale: gesture?.scale ?? 1,
+        gesture_scale: gesture?.scale ?? 1,
+        gestureRotation: gesture?.rotation ?? 0,
+        gesture_rotation: gesture?.rotation ?? 0,
+        gestureTranslateX: gesture?.translation.x ?? 0,
+        gestureTranslateY: gesture?.translation.y ?? 0,
+        gesture_translate_x: gesture?.translation.x ?? 0,
+        gesture_translate_y: gesture?.translation.y ?? 0,
+      };
+      const signals = {
+        ...baseSignals,
+        ...inputOverrides,
+        ...options.signalOverrides,
+      };
 
       if (
         autoplay &&

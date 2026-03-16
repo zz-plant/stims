@@ -62,10 +62,16 @@ shape_2_border_b=1
 shape_2_additive=1
 shape_2_thickoutline=1
 
-per_frame_1=rot = rot + 0.01 + treble_att * 0.016
-per_frame_2=wave_y = 0.5 + sin(time * 0.72) * 0.08
-per_frame_3=shape_1_x = 0.3 + sin(time * 1.1) * 0.18
-per_frame_4=shape_2_x = 0.7 - sin(time * 1.1) * 0.18
+per_frame_1=q1 = clamp(input_x, -1, 1)
+per_frame_2=q2 = clamp(input_y, -1, 1)
+per_frame_3=q3 = min(1.6, input_speed * 9 + input_pressed * 0.5)
+per_frame_4=wave_x = 0.5 + q1 * 0.22
+per_frame_5=wave_y = 0.5 + q2 * 0.16
+per_frame_6=shape_1_x = 0.3 + sin(time * 1.1 + q1 * 4) * 0.18 + q1 * 0.1
+per_frame_7=shape_2_x = 0.7 - sin(time * 1.1 - q1 * 4) * 0.18 + q1 * 0.08
+per_frame_8=shape_1_y = 0.4 + q2 * 0.14
+per_frame_9=shape_2_y = 0.6 + q2 * 0.12
+per_frame_10=wave_scale = 0.98 + beat_pulse * 0.12 + q3 * 0.2
+per_frame_11=rot = rot + 0.008 + treble_att * 0.016 + q1 * 0.01 + input_dx * 0.04
 
-per_pixel_1=warp = warp + sin(x * 24 + time * 1.5) * 0.03
-
+per_pixel_1=warp = warp + sin(x * 24 + time * 1.5 + input_x * 6 + input_y * 4) * (0.02 + q3 * 0.02)
