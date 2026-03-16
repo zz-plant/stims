@@ -641,7 +641,11 @@ export function stylizeFrequencyData(data: Uint8Array): Uint8Array {
     const transientLift =
       i === 0
         ? 0
-        : clamp((raw - previousValue / 255) * (0.22 + activity * 0.33), 0, 0.12);
+        : clamp(
+            (raw - previousValue / 255) * (0.22 + activity * 0.33),
+            0,
+            0.12,
+          );
     const shaped = clamp(
       curve * (1 + (peakNormalization - 1) * activity) * bucketLift,
       0,
