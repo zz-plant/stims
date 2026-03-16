@@ -62,10 +62,16 @@ shape_2_border_b=1
 shape_2_additive=1
 shape_2_thickoutline=1
 
-per_frame_1=wave_scale = 0.82 + bass_att * 0.08
-per_frame_2=shape_1_rad = 0.2 + bass_att * 0.05
-per_frame_3=shape_2_rad = 0.3 + mids_att * 0.04
-per_frame_4=rot = rot + 0.001
+per_frame_1=q1 = min(1.2, input_speed * 8 + input_pressed * 0.4)
+per_frame_2=wave_x = 0.5 + input_x * 0.14
+per_frame_3=wave_y = 0.5 + input_y * 0.12
+per_frame_4=wave_scale = 0.8 + bass_att * 0.08 + q1 * 0.06
+per_frame_5=shape_1_rad = 0.19 + bass_att * 0.05 + input_speed * 0.07
+per_frame_6=shape_2_rad = 0.29 + mids_att * 0.04 + input_pressed * 0.04 + q1 * 0.03
+per_frame_7=shape_1_x = 0.5 + input_x * 0.18
+per_frame_8=shape_1_y = 0.5 + input_y * 0.14
+per_frame_9=shape_2_x = 0.5 + input_x * 0.1
+per_frame_10=shape_2_y = 0.5 + input_y * 0.08
+per_frame_11=rot = rot + 0.0008 + input_dx * 0.012 + input_dy * 0.008
 
-per_pixel_1=warp = warp + sin(rad * 8 + time * 0.32) * 0.01
-
+per_pixel_1=warp = warp + sin(rad * 8 + time * 0.32 + input_x * 3 + input_y * 2) * (0.008 + input_speed * 0.02)

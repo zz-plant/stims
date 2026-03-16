@@ -1,6 +1,6 @@
 title=Tactile Sand Table
 author=Stims Alias Pack
-description=A sand-table preset with earthy ripples, low-motion waves, and grounded reactive texture.
+description=A sand-table preset with earthy ripples, tilt-steered gravity, and grounded reactive texture.
 
 fRating=4
 blend_duration=3.2
@@ -46,10 +46,12 @@ shape_1_border_b=0.62
 shape_1_additive=0
 shape_1_thickoutline=1
 
-per_frame_1=wave_scale = 0.78 + bass_att * 0.08
-per_frame_2=wave_y = 0.5 + sin(time * 0.18) * 0.04
-per_frame_3=shape_1_rad = 0.14 + mids_att * 0.03
-per_frame_4=rot = rot + 0.0005
+per_frame_1=wave_scale = 0.78 + bass_att * 0.08 + motion_strength * 0.04
+per_frame_2=wave_x = 0.5 + motion_x * 0.14
+per_frame_3=wave_y = 0.5 + motion_y * 0.1 + sin(time * 0.18) * 0.03
+per_frame_4=shape_1_x = 0.5 + motion_x * 0.18
+per_frame_5=shape_1_y = 0.5 + motion_y * 0.14
+per_frame_6=shape_1_rad = 0.13 + mids_att * 0.03 + motion_strength * 0.02
+per_frame_7=rot = rot + 0.0005 + motion_x * 0.0012
 
 per_pixel_1=warp = warp + sin(rad * 6 + time * 0.24) * 0.008
-

@@ -62,10 +62,13 @@ shape_2_border_b=1
 shape_2_additive=1
 shape_2_thickoutline=1
 
-per_frame_1=zoom = 1.04 + bass_att * 0.08
-per_frame_2=rot = rot + 0.012 + treble_att * 0.018
-per_frame_3=wave_x = 0.5 + sin(time * 0.34) * 0.08
-per_frame_4=wave_y = 0.5 + cos(time * 0.26) * 0.08
+per_frame_1=zoom = 1.04 + bass_att * 0.08 + abs(input_x) * 0.04
+per_frame_2=rot = rot + 0.012 + treble_att * 0.018 + input_dx * 0.04
+per_frame_3=wave_scale = clamp(wave_scale + (gesture_scale - 1) * 0.1, 0.9, 1.9)
+per_frame_4=warp = clamp(warp + abs(gesture_rotation) * 0.04 + input_speed * 0.025, 0.12, 0.34)
+per_frame_5=wave_x = 0.5 + sin(time * 0.34 + input_x * 1.2) * (0.06 + abs(input_x) * 0.06)
+per_frame_6=wave_y = 0.5 + cos(time * 0.26 + input_y * 1.2) * (0.06 + abs(input_y) * 0.06)
+per_frame_7=shape_1_ang = shape_1_ang + 0.012 + gesture_rotation * 0.02
+per_frame_8=shape_2_ang = shape_2_ang - 0.01 - gesture_rotation * 0.018
 
 per_pixel_1=warp = warp + sin(rad * 19 - time * 1.15) * 0.04
-
