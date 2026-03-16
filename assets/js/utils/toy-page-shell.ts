@@ -1,4 +1,5 @@
 import { initNavigation } from '../ui/nav.ts';
+import { navigateBackToLibrary } from './library-back-navigation.ts';
 
 export interface ToyPageShellOptions {
   container?: HTMLElement | null;
@@ -39,7 +40,7 @@ export const initToyPageShell = (
     title,
     slug: options.slug,
     onBack: () => {
-      win.location.href = backHref;
+      navigateBackToLibrary({ doc, win, backHref });
     },
   });
 

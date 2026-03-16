@@ -7,6 +7,17 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Multi-Capability Visualizer (WebGPU/WebGL Fallback)</title>
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('embed') === '1') return;
+        params.delete('embed');
+        params.set('toy', 'multi');
+        const nextUrl = new URL('../toy.html', window.location.href);
+        nextUrl.search = params.toString();
+        window.location.replace(nextUrl.toString());
+      })();
+    </script>
     <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body,

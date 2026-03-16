@@ -13,6 +13,7 @@ type PageToyStartOptions = ToyStartOptions & {
 
 type StartPageToyOptions = PageToyStartOptions & {
   path: string;
+  shellHref?: string;
   title?: string;
   description?: string;
 };
@@ -55,6 +56,7 @@ function resolvePageSrc(path: string) {
 export function startPageToy({
   container,
   path,
+  shellHref,
   title,
   description,
   preferDemoAudio = false,
@@ -101,7 +103,7 @@ export function startPageToy({
   const newTabLink = document.createElement('a');
   newTabLink.className = 'cta-button';
   newTabLink.textContent = 'Open in new tab';
-  newTabLink.href = pageUrl.toString();
+  newTabLink.href = shellHref ?? pageUrl.toString();
   newTabLink.target = '_blank';
   newTabLink.rel = 'noopener noreferrer';
 
@@ -189,6 +191,7 @@ export function createManifestBackedPageToyStarter(slug: string) {
 
   return createPageToyStarter({
     path: `./toys/${slug}.html`,
+    shellHref: `./toy.html?toy=${encodeURIComponent(slug)}`,
     title: manifestEntry.title,
     description: manifestEntry.description,
   });

@@ -1,3 +1,4 @@
+import { bindLibraryBackLink } from '../utils/library-back-navigation.ts';
 import {
   getActiveRenderPreferences,
   setRenderPreferences,
@@ -605,6 +606,7 @@ export function attachCapabilityPreflight({
     backLink.className = 'cta-button ghost';
     backLink.href = backHref;
     backLink.textContent = 'Back to library';
+    bindLibraryBackLink(backLink, { backHref });
     backLink.hidden = true;
     actions.appendChild(backLink);
   }

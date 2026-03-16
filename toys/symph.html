@@ -7,6 +7,17 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Dreamy Interactive Spectrograph Music Visualizer</title>
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('embed') === '1') return;
+        params.delete('embed');
+        params.set('toy', 'symph');
+        const nextUrl = new URL('../toy.html', window.location.href);
+        nextUrl.search = params.toString();
+        window.location.replace(nextUrl.toString());
+      })();
+    </script>
     <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body {

@@ -12,6 +12,7 @@ import type { createLoader } from '../loader.ts';
 import { initAudioControls } from '../ui/audio-controls.ts';
 import { initSystemControls } from '../ui/system-controls.ts';
 import { isSmartTvDevice } from '../utils/device-detect.ts';
+import { bindLibraryBackLink } from '../utils/library-back-navigation.ts';
 
 type LoaderApi = ReturnType<typeof createLoader>;
 type Toy = Pick<ToyEntry, 'slug' | 'title'>;
@@ -124,6 +125,12 @@ export function bootToyPage({
   const toySlug = new URLSearchParams(window.location.search).get('toy');
   const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
   document.title = toySlug ? `${toyTitle} · Stim Webtoy` : document.title;
+
+  if (persistentBackLink) {
+    bindLibraryBackLink(persistentBackLink, {
+      backHref: router.getLibraryHref(),
+    });
+  }
 
   const setupAudio = (
     result: CapabilityPreflightResult | null,

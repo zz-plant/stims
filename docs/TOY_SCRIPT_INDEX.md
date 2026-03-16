@@ -4,20 +4,20 @@ This index maps each toy slug to the module that powers it and how the experienc
 
 ## Query-driven toys (`toy.html`)
 
-`toy.html` reads the `toy` query parameter, looks up the matching entry in `assets/data/toys.json`, and imports the corresponding module through `assets/js/app.ts` and `assets/js/loader.ts`. Many modules render directly; others use the `startPageToy` helper to launch a standalone HTML page from the library shell.
+`toy.html` reads the `toy` query parameter, looks up the matching entry in `assets/data/toys.json`, and imports the corresponding module through `assets/js/app.ts` and `assets/js/loader.ts`. Many modules render directly; a few still use `startPageToy` to embed a legacy HTML implementation internally while keeping `toy.html` as the public entry surface.
 
 | Slug                       | Entry module                                 | How it loads                                                      |
 | -------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
 | `3dtoy`                    | `assets/js/toys/three-d-toy.ts`              | Direct module; load with `toy.html?toy=3dtoy`.                    |
 | `aurora-painter`           | `assets/js/toys/aurora-painter.ts`           | Direct module; load with `toy.html?toy=aurora-painter`.           |
 | `clay`                     | `assets/js/toys/clay.ts`                     | Direct module; load with `toy.html?toy=clay`.                     |
-| `evol`                     | `assets/js/toys/evol.ts`                     | Standalone page launcher for `toys/evol.html`.                    |
-| `geom`                     | `assets/js/toys/geom.ts`                     | Standalone page launcher for `toys/geom.html`.                    |
-| `holy`                     | `assets/js/toys/holy.ts`                     | Standalone page launcher for `toys/holy.html`.                    |
-| `multi`                    | `assets/js/toys/multi.ts`                    | Standalone page launcher for `toys/multi.html`; requires WebGPU.  |
-| `seary`                    | `assets/js/toys/seary.ts`                    | Standalone page launcher for `toys/seary.html`.                   |
-| `legible`                  | `assets/js/toys/legible.ts`                  | Standalone page launcher for `toys/legible.html`.                 |
-| `symph`                    | `assets/js/toys/symph.ts`                    | Standalone page launcher for `toys/symph.html`.                   |
+| `evol`                     | `assets/js/toys/evol.ts`                     | Shell entry is `toy.html?toy=evol`; internally embeds `toys/evol.html`.                    |
+| `geom`                     | `assets/js/toys/geom.ts`                     | Shell entry is `toy.html?toy=geom`; internally embeds `toys/geom.html`.                    |
+| `holy`                     | `assets/js/toys/holy.ts`                     | Shell entry is `toy.html?toy=holy`; internally embeds `toys/holy.html`.                    |
+| `multi`                    | `assets/js/toys/multi.ts`                    | Shell entry is `toy.html?toy=multi`; internally embeds `toys/multi.html`; requires WebGPU.  |
+| `seary`                    | `assets/js/toys/seary.ts`                    | Shell entry is `toy.html?toy=seary`; internally embeds `toys/seary.html`.                   |
+| `legible`                  | `assets/js/toys/legible.ts`                  | Shell entry is `toy.html?toy=legible`; internally embeds `toys/legible.html`.                 |
+| `symph`                    | `assets/js/toys/symph.ts`                    | Shell entry is `toy.html?toy=symph`; internally embeds `toys/symph.html`.                   |
 | `cube-wave`                | `assets/js/toys/cube-wave.ts`                | Direct module; load with `toy.html?toy=cube-wave`.                |
 | `bubble-harmonics`         | `assets/js/toys/bubble-harmonics.ts`         | Direct module; load with `toy.html?toy=bubble-harmonics`.         |
 | `pocket-pulse`             | `assets/js/toys/pocket-pulse.ts`             | Direct module; load with `toy.html?toy=pocket-pulse`.             |
@@ -38,7 +38,7 @@ This index maps each toy slug to the module that powers it and how the experienc
 
 ## Standalone HTML entry points
 
-Standalone toys can still be visited directly via their HTML pages under `toys/` (for example, `toys/holy.html` or `toys/lights.html`).
+Direct visits to `toys/*.html` now redirect into `toy.html?toy=<slug>`. Those HTML files remain only as legacy embed targets for the iframe bridge (`?embed=1`) and should not be treated as a separate user-facing shell.
 
 ## Page-backed toy migration status
 

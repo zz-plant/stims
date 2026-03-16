@@ -7,6 +7,17 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Trippy Synesthetic Visualizer with WebGL</title>
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('embed') === '1') return;
+        params.delete('embed');
+        params.set('toy', 'seary');
+        const nextUrl = new URL('../toy.html', window.location.href);
+        nextUrl.search = params.toString();
+        window.location.replace(nextUrl.toString());
+      })();
+    </script>
     <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body,
@@ -62,6 +73,10 @@
         supportsDeviceOrientation,
       } from '../assets/js/utils/motion-permission.ts';
       import { createPeakDetector } from '../assets/js/utils/peak-detector.ts';
+      import {
+        hideEmbeddedToyHud,
+        isEmbeddedToyPage,
+      } from '../assets/js/utils/embedded-toy-page.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { createToyCanvas } from '../assets/js/utils/toy-canvas.ts';
       import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
@@ -655,10 +670,10 @@
 
       audioSelect.addEventListener('change', () => initializeAudio());
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const isEmbedded = urlParams.get('embed') === '1';
+      const isEmbedded = isEmbeddedToyPage();
 
       if (isEmbedded) {
+        hideEmbeddedToyHud(['.control-panel[aria-label="Audio controls"]']);
         window.exposedStartAudio = async (request) => {
           return initializeAudio(request);
         };

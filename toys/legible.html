@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Enhanced Terminal-Like Visualizer with Datamuse API</title>
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('embed') === '1') return;
+        params.delete('embed');
+        params.set('toy', 'legible');
+        const nextUrl = new URL('../toy.html', window.location.href);
+        nextUrl.search = params.toString();
+        window.location.replace(nextUrl.toString());
+      })();
+    </script>
 
     <!-- Particles.js Library -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
@@ -179,6 +190,10 @@
         initErrorDisplay,
         setErrorVisible,
       } from '../assets/js/utils/error-display.ts';
+      import {
+        hideEmbeddedToyHud,
+        isEmbeddedToyPage,
+      } from '../assets/js/utils/embedded-toy-page.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
 
@@ -239,7 +254,6 @@
         sensitivity = parseFloat(sensitivitySlider.value);
       });
 
-      startButton.addEventListener('click', startMicAudio);
       resetButton.addEventListener('click', resetGrid);
       surpriseButton.addEventListener('click', surpriseMode);
 
@@ -435,6 +449,33 @@
           startButton.disabled = false;
           startButton.textContent = 'Enable Microphone';
         });
+      }
+
+      if (isEmbeddedToyPage()) {
+        hideEmbeddedToyHud(['#start-button']);
+        window.exposedStartAudio = async (request) =>
+          startAudio(
+            render,
+            {
+              fftSize: 512,
+              fallbackToSynthetic: true,
+              ...(request ?? {}),
+            },
+            {
+              onSuccess: () => {
+                isMicrophoneEnabled = true;
+                setErrorVisible(errorDisplayId);
+              },
+              onError: () => {
+                setErrorVisible(
+                  errorDisplayId,
+                  'Microphone access denied. Please allow microphone access to enable the visualizer.'
+                );
+              },
+            }
+          );
+      } else {
+        startButton.addEventListener('click', startMicAudio);
       }
 
       function getBeat() {

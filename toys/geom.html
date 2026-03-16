@@ -7,6 +7,17 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Microphone Input Music Visualizer</title>
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('embed') === '1') return;
+        params.delete('embed');
+        params.set('toy', 'geom');
+        const nextUrl = new URL('../toy.html', window.location.href);
+        nextUrl.search = params.toString();
+        window.location.replace(nextUrl.toString());
+      })();
+    </script>
     <link rel="stylesheet" href="../assets/css/base.css" />
     <style>
       body {
@@ -116,6 +127,10 @@
         clearError,
         showError,
       } from '../assets/js/utils/error-display.ts';
+      import {
+        hideEmbeddedToyHud,
+        isEmbeddedToyPage,
+      } from '../assets/js/utils/embedded-toy-page.ts';
       import { createToyAudioBootstrap } from '../assets/js/utils/toy-audio-bootstrap.ts';
       import { initToyPageShell } from '../assets/js/utils/toy-page-shell.ts';
       import { createMultiWebGPUEffects } from '../assets/js/toys/multi-webgpu-effects.ts';
@@ -458,7 +473,7 @@
         trebleGlow *= 0.9;
       }
 
-      startButton.addEventListener('click', async () => {
+      async function startVisualizerAudio(request = {}) {
         startButton.disabled = true;
         startButton.textContent = 'Connecting…';
         clearError('error-message');
@@ -469,6 +484,7 @@
             {
               fftSize: 1024,
               fallbackToSynthetic: true,
+              ...(request ?? {}),
             },
             {
               onSuccess: () => {
@@ -492,7 +508,17 @@
             );
           }
         }
-      });
+      }
+
+      if (isEmbeddedToyPage()) {
+        hideEmbeddedToyHud(['#controls']);
+        window.exposedStartAudio = async (request) =>
+          startVisualizerAudio(request ?? {});
+      } else {
+        startButton.addEventListener('click', async () => {
+          await startVisualizerAudio();
+        });
+      }
 
       function updateDensity() {
         densityMultiplier = Number(densityControl.value);
