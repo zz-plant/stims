@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers how to build the Stim Webtoys Library, validate the production bundle locally, and ship it to production. Commands reference the scripts in `package.json` so you can copy/paste without drift.
+This guide covers how to build Stims, validate the production bundle locally, and ship it to production. Stims leads with the MilkDrop Visualizer as its flagship experience while continuing to ship a broader toy lab, and the deployment workflow below applies to that full surface. Commands reference the scripts in `package.json` so you can copy/paste without drift.
 
 ## Choose your deployment track
 

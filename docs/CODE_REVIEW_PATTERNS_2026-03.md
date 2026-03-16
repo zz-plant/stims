@@ -1,5 +1,7 @@
 # Code review comment patterns (GitHub PR comments snapshot)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical review-pattern context rather than the current product-positioning baseline.
+
 Snapshot date: 2026-03-04
 
 ## Scope and method

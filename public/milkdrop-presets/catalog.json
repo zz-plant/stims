@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "generatedAt": "2026-03-16",
+  "presets": [
+    {
+      "id": "aurora-feedback-core",
+      "title": "Aurora Feedback Core",
+      "author": "Stims Curated",
+      "order": 1,
+      "file": "/milkdrop-presets/aurora-feedback-core.milk",
+      "preview": true,
+      "tags": ["feedback", "warp", "atmospheric"],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "kinetic-grid-pulse",
+      "title": "Kinetic Grid Pulse",
+      "author": "Stims Curated",
+      "order": 2,
+      "file": "/milkdrop-presets/kinetic-grid-pulse.milk",
+      "preview": true,
+      "tags": ["grid", "beat", "high-energy"],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "low-motion-halo-drift",
+      "title": "Low Motion Halo Drift",
+      "author": "Stims Curated",
+      "order": 3,
+      "file": "/milkdrop-presets/low-motion-halo-drift.milk",
+      "preview": false,
+      "tags": ["low-motion", "ambient", "halo"],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "prism-drum-tunnel",
+      "title": "Prism Drum Tunnel",
+      "author": "Stims Curated",
+      "order": 4,
+      "file": "/milkdrop-presets/prism-drum-tunnel.milk",
+      "preview": false,
+      "tags": ["tunnel", "drums", "psychedelic"],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    }
+  ]
+}

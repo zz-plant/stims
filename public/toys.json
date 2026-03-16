@@ -888,13 +888,13 @@
   },
   {
     "slug": "milkdrop",
-    "title": "MilkDrop Proto",
-    "description": "A hardware-accelerated feedback engine inspired by the MilkDrop visualizer system.",
+    "title": "MilkDrop Visualizer",
+    "description": "Preset-driven feedback visualizer with blend transitions, live source editing, and import/export flows.",
     "module": "assets/js/toys/milkdrop-toy.ts",
     "type": "module",
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
-    "lifecycleStage": "prototype",
+    "lifecycleStage": "featured",
     "moods": [
       "immersive",
       "psychedelic"
@@ -903,11 +903,25 @@
       "feedback",
       "warp",
       "visualizer",
-      "retro"
+      "retro",
+      "presets",
+      "editor"
     ],
     "controls": [
+      "Preset browser + favorites/recent",
+      "Blend duration + autoplay/random",
+      "Live source editor + diagnostics",
+      "Import/export preset files",
       "Quality presets"
     ],
+    "firstRunHint": "Start with the curated preset browser, then toggle autoplay to hear smooth blend transitions.",
+    "starterPreset": {
+      "id": "aurora-feedback-core",
+      "label": "aurora feedback starter",
+      "description": "Balanced feedback and blend settings for a quick first run."
+    },
+    "wowControl": "Preset browser",
+    "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
       "demoAudio": true,

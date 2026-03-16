@@ -18,6 +18,8 @@ Use these quick references when launching or testing the tactile sand table toy:
 
 # Toy notes and presets
 
+Stims now leads with **MilkDrop Visualizer** as the flagship browser-native successor story. The notes below still cover the broader toy lab and the per-toy presets or workflows that remain useful once you move beyond MilkDrop.
+
 ## Bioluminescent Tidepools
 
 - **Summary:** Draw rippling currents of light; metaball tides bloom with your mic’s crisp highs and sprinkle reactive sparks when treble peaks hit.
@@ -41,3 +43,15 @@ Use these quick references when launching or testing the tactile sand table toy:
 - `cube-wave`: **mode pop starter** — stronger mode contrast and beat response.
 - `spiral-burst`: **beat pop starter** — heightened beat sensitivity + pulse indicator emphasis.
 - `neon-wave`: **soft glow starter** — reduced bloom intensity for accessibility.
+
+## MilkDrop Visualizer
+
+- **Summary:** Preset-driven feedback visualizer with blend transitions, live source editing, and import/export support.
+- **Controls:**
+  - _Preset browser_ includes bundled presets, favorites, and recent-first ordering.
+  - _Blend duration_ controls transition timing between preset swaps.
+  - _Autoplay/random_ cycles through compatible presets while skipping blocked combinations.
+  - _Source editor_ allows live preset edits with diagnostics and rollback to last-good compile.
+  - _Import/export_ supports round-tripping preset files.
+- **Bundled curated presets:** stored under `public/milkdrop-presets/` with catalog metadata in `public/milkdrop-presets/catalog.json`.
+- **Workflow:** start from a bundled preset, tune values in the editor, then export when the look is stable.

@@ -1,4 +1,4 @@
-# Competitor battlecard (Stim Webtoys Library)
+# Competitor battlecard (Stims)
 
 This doc intentionally separates **internal strategy content** from **external-safe messaging** so teams can reuse the same research without leaking direct competitor framing into public copy.
 
@@ -18,25 +18,27 @@ Use this table for positioning, GTM planning, and sales/support alignment.
 
 Use these lines in public-facing pages (README/site/docs) without naming competitors directly.
 
-- **No-code instant play:** "Play audio-reactive visual toys instantly—no shader coding required."
+- **MilkDrop-led successor framing:** "Stims brings a browser-native MilkDrop successor to the web."
+- **Careful claim language:** "Preset-driven and inspired by MilkDrop-era workflows, without claiming full legacy parity."
+- **Instant launch:** "Open the MilkDrop Visualizer in one click, then branch into the broader toy lab."
 - **Beyond one-off visuals:** "Explore a full collection with audio, motion, and performance controls."
-- **Curated over complex tooling:** "A ready-to-play sensory playground, designed for fast exploration."
-- **More than a visualizer:** "Discover interactive toys for sound, touch, and motion in one place."
-- **Consistent UX across toys:** "One shared experience layer across many playful, audio-reactive scenes."
+- **Consistent UX across toys:** "One shared experience layer across MilkDrop and the rest of Stims."
 
 ## How this should change the site
 
 Apply the external angle bank to public surfaces in this order:
 
 1. **Homepage hero (`index.html`)**
-   - Primary headline should emphasize instant play.
-   - Supporting sentence should mention sound/touch/motion and low friction.
-2. **Homepage discovery section (`index.html`)**
-   - Section description should reinforce breadth (collection + capabilities).
+   - Primary headline should position Stims as a browser-native MilkDrop successor.
+   - Primary CTA should launch `toy.html?toy=milkdrop`.
+   - Supporting sentence should reinforce presets, live editing, import/export, and careful successor language.
+2. **Homepage proof + discovery sections (`index.html`)**
+   - Add a MilkDrop proof section before broader toy-lab discovery.
+   - Keep broader discovery language secondary and explicit.
 3. **Metadata snippets (`index.html` OG/Twitter/description)**
-   - Keep concise value proposition aligned with no-code, instant-play messaging.
+   - Keep concise value proposition aligned with MilkDrop-led messaging and Stims branding.
 4. **Public docs IA guidance (`docs/PUBLIC_DOCS_SITE_MAP.md`)**
-   - Keep external-safe messaging rule explicit.
+   - Keep external-safe messaging rule explicit and successor wording consistent.
 
 ## Placement guidance (internal vs external)
 

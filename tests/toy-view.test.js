@@ -14,11 +14,13 @@ describe('toy view helpers', () => {
     const view = createToyView();
     const onBack = mock();
 
-    const container = view.showActiveToyView(onBack, {
+    const stage = view.showActiveToyView(onBack, {
       slug: 'demo',
       title: 'Demo Toy',
     });
+    const container = document.getElementById('active-toy-container');
 
+    expect(stage?.dataset.stageSlot).toBe('primary');
     expect(container?.classList.contains('is-hidden')).toBe(false);
     const backControl = container?.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
@@ -137,5 +139,34 @@ describe('toy view helpers', () => {
 
     view.showAudioPrompt(false);
     expect(document.querySelector('.control-panel')).toBeNull();
+  });
+
+  test('prepares and completes staged toy transitions', async () => {
+    const view = createToyView();
+    const currentStage = view.showActiveToyView(undefined, {
+      slug: 'one',
+      title: 'One',
+    });
+    const currentToy = document.createElement('div');
+    currentToy.dataset.toy = 'current';
+    currentStage?.appendChild(currentToy);
+
+    const incomingStage = view.showIncomingToyView(undefined, {
+      slug: 'two',
+      title: 'Two',
+    });
+    const incomingToy = document.createElement('div');
+    incomingToy.dataset.toy = 'incoming';
+    incomingStage?.appendChild(incomingToy);
+
+    expect(currentStage?.dataset.stageSlot).toBe('primary');
+    expect(incomingStage?.dataset.stageSlot).toBe('secondary');
+    expect(document.querySelector('[data-toy="current"]')).not.toBeNull();
+    expect(document.querySelector('[data-toy="incoming"]')).not.toBeNull();
+
+    await view.completeToyTransition();
+
+    expect(document.querySelector('[data-toy="current"]')).toBeNull();
+    expect(document.querySelector('[data-toy="incoming"]')).not.toBeNull();
   });
 });

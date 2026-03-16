@@ -1,12 +1,12 @@
 # Feature specifications (current build)
 
-This document captures the **current, shipped feature set** of the Stim Webtoys Library as implemented in this repository. It is intended to be a baseline reference for audits, QA, and future planning.
+This document captures the **current, shipped feature set** of Stims as implemented in this repository. Product framing for current public surfaces is MilkDrop-led: Stims is a browser-native MilkDrop successor with a broader collection of related audio-reactive toys.
 
 ## Audit snapshot
 
 | Area | Current state | Primary sources in repo |
 | --- | --- | --- |
-| Library landing page | Intro hero, system check, search + filters, and toy grid are live. | `index.html`, `assets/js/library-view.js` |
+| Homepage (`index.html`) | MilkDrop-led hero path, system check, broader toy-lab search + filters, and toy grid are live. | `index.html`, `assets/js/library-view.js` |
 | System readiness & performance | Readiness probes + performance controls + preflight dialog are wired. | `assets/js/readiness-probe.ts`, `assets/js/utils/init-system-check.ts`, `assets/js/core/capability-preflight.ts` |
 | Toy runtime shell | Loader, toy nav, status/errors, audio prompt, and settings panel are live. | `assets/js/loader.ts`, `assets/js/toy-view.ts`, `assets/js/ui/*` |
 | Audio input options | Mic, demo audio, tab capture, and YouTube capture are available. | `assets/js/ui/audio-controls.ts`, `assets/js/ui/youtube-controller.ts` |
@@ -15,17 +15,22 @@ This document captures the **current, shipped feature set** of the Stim Webtoys 
 | Gamepad + remote navigation | Focus + input support is enabled on library and toy pages for gamepads and keyboard-style TV remotes. | `assets/js/utils/gamepad-navigation.ts`, `assets/js/app.ts` |
 | Toy catalog metadata | Registry includes titles, tags, moods, controls, and lifecycle stage. | `assets/data/toys.json` |
 
-## Library landing page & discovery
+## Homepage and discovery
 
 ### Global navigation
-- **Brand + jump links**: “Intro”, “System check”, “Library”, and “Connect” anchors are shown alongside the brand mark.
+- **Brand + jump links**: MilkDrop/start, system check/proof, broader toy-lab discovery, and connect anchors are shown alongside the brand mark.
 - **Utilities**: Jump to the toy list, open GitHub, and toggle light/dark theme.
 - **Theme toggle**: A dark-mode toggle persists preference in local storage and uses view transitions when available.
 
 ### Intro hero
-- **Quickstart CTA**: “Open Halo Flow” deep-links to `toy.html?toy=holy`.
+- **Quickstart CTA**: Primary launch deep-links to `toy.html?toy=milkdrop`.
 - **Readiness summary**: “Ready • <performance> • <compatibility>” reacts to performance settings and renderer compatibility.
 - **System check entry**: “Adjust performance” button opens the preflight dialog and deep-links to the system check section.
+- **Claim posture**: Copy uses careful successor language and does not claim blanket legacy compatibility.
+
+### MilkDrop flagship proof
+- **Preset-led proof points**: Bundled presets, blend transitions, live editor flow, and import/export are presented as the flagship product path.
+- **Lightweight showcase**: Homepage visuals remain lightweight and do not mount the full live runtime in-place.
 
 ### System check section
 - **Live readiness panel**: Displays status for graphics acceleration, microphone, motion input, and reduced motion preference.
@@ -34,7 +39,7 @@ This document captures the **current, shipped feature set** of the Stim Webtoys 
 - **Preflight dialog**: Modal with readiness badges for rendering, mic, and performance warnings.
 
 ### Search, filters, and sorting
-- **Search**: Input supports keyword matching across toy title, slug, description, tags, moods, and capability terms.
+- **Search**: Broader toy-lab input supports keyword matching across title, slug, description, tags, moods, and capability terms.
 - **Suggestions**: Datalist is populated from toy metadata (title, tags, moods, capability terms, WebGPU).
 - **Filters**: Chips for moods (Calm/Energetic), capabilities (Microphone/Motion/Demo audio), and WebGPU feature.
 - **Sort controls**: Featured, Newest, Most immersive, and A → Z.

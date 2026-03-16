@@ -121,7 +121,7 @@ describe('library navigation interactions', () => {
       container.querySelectorAll('.nav-section--primary .nav-link'),
     ).map((link) => (link as HTMLAnchorElement).getAttribute('href'));
 
-    expect(hrefs).toContain('#intro');
+    expect(hrefs).toContain('#milkdrop');
     expect(hrefs).toContain('#library');
     expect(hrefs).toContain('/toys/');
     expect(hrefs).toContain('https://github.com/zz-plant/stims');

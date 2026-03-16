@@ -1,6 +1,6 @@
 # Toy Testing Specification
 
-Guidance for writing automated tests for stim toys. This spec focuses on **repeatable lifecycle checks** and **shared test helpers** so new toy tests follow consistent patterns.
+Guidance for writing automated tests for Stims toys. Stims is MilkDrop-led but quality is enforced across the full toy lab, so this spec focuses on **repeatable lifecycle checks** and **shared test helpers** that keep module behavior consistent.
 
 ## Goals
 

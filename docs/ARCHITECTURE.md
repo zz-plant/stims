@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document summarizes how the Stim Webtoys app is assembled, from the entry HTML shells through module loading, rendering, audio, and quality controls. It is meant as a quick map for contributors adding new toys or extending the core runtime.
+This document summarizes how the Stims app is assembled, from the entry HTML shells through module loading, rendering, audio, and quality controls. Stims is positioned as a browser-native MilkDrop successor with a broader toy lab, and this guide maps the runtime layers that support both the flagship `milkdrop` flow and the rest of the catalog.
 
 ## Architecture at a Glance
 

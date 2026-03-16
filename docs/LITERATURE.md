@@ -1,6 +1,8 @@
 # Scientific literature reference map
 
-This guide collects published scientific literature that can serve as grounding references for the **Stim Webtoys Library** positioning: interactive, audio-reactive visuals for playful sensory stimulation and exploration, with particular relevance to neurodiverse audiences. Use these references when documenting the rationale for audio-visual mappings, multisensory experiences, or sensory processing considerations. It also links literature themes to product features so citations are specific rather than generic.
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical reference context rather than the current product-positioning baseline.
+
+This guide collects published scientific literature that can serve as grounding references for the historical **Stims** positioning: interactive, audio-reactive visuals for playful sensory stimulation and exploration, with particular relevance to neurodiverse audiences. Use these references when documenting the rationale for audio-visual mappings, multisensory experiences, or sensory processing considerations. It also links literature themes to product features so citations are specific rather than generic.
 
 ## How to use this list
 
@@ -60,5 +62,5 @@ If describing how rhythmic or musical inputs shape engagement or emotional respo
 
 ## Notes on scope
 
-- This list is not exhaustive; it is a starter set aligned with the current positioning of the library.
+- This list is not exhaustive; it is a starter set aligned with the historical positioning captured in this document.
 - Add new references as new claims or toy mechanics emerge (e.g., motion coupling, haptic feedback, or attention effects).

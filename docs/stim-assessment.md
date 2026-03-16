@@ -1,5 +1,7 @@
 # Stim assessment and remediation plan
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical assessment context rather than the current product-positioning baseline.
+
 ## Findings
 
 - **Manifest truth has changed; docs lag remains**

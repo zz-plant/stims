@@ -1,5 +1,7 @@
 # Usability audit (non-a11y)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical usability context rather than the current product-positioning baseline.
+
 ## Scope and method
 
 - Reviewed the landing page library experience (`index.html`) and the shared toy entry flow (`toy.html`).

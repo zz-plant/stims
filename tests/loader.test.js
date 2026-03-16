@@ -88,7 +88,9 @@ async function buildLoader({
     value: createMockHistory(location),
   });
 
-  const manifestClient = { resolveModulePath: mock(() => manifestPath) };
+  const resolveModulePath =
+    typeof manifestPath === 'function' ? manifestPath : () => manifestPath;
+  const manifestClient = { resolveModulePath: mock(resolveModulePath) };
   const router = createRouter({ windowRef: () => window, queryParam: 'toy' });
   const view = createToyView({ documentRef: () => document });
   // Bust module cache in case other specs mocked the loader exports.
@@ -284,6 +286,7 @@ describe('loadToy', () => {
           requiresWebGPU: false,
         },
       ],
+      manifestPath: (modulePath) => modulePath,
     });
 
     await loader.loadToy('audio-toy');
@@ -291,6 +294,45 @@ describe('loadToy', () => {
     expect(
       document.querySelector('#active-toy-container .control-panel'),
     ).toBeNull();
+  });
+
+  test('keeps the current toy mounted while the next toy is loading', async () => {
+    const { loader } = await buildLoader({
+      toys: [
+        {
+          slug: 'first-toy',
+          title: 'First Toy',
+          module: './__mocks__/fake-module.js',
+          type: 'module',
+          requiresWebGPU: false,
+        },
+        {
+          slug: 'second-toy',
+          title: 'Second Toy',
+          module: './__mocks__/fake-delayed-module.js',
+          type: 'module',
+          requiresWebGPU: false,
+        },
+      ],
+      manifestPath: (modulePath) => modulePath,
+    });
+
+    await loader.loadToy('first-toy', { pushState: true });
+    const firstToyNode = document.querySelector('[data-fake-toy]');
+    expect(firstToyNode).not.toBeNull();
+
+    const transition = loader.loadToy('second-toy', { pushState: true });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(firstToyNode?.isConnected).toBe(true);
+
+    await transition;
+
+    expect(firstToyNode?.isConnected).toBe(false);
+    expect(
+      document.querySelector('[data-fake-toy="second-toy"]'),
+    ).not.toBeNull();
+    expect(document.querySelectorAll('[data-fake-toy]')).toHaveLength(1);
   });
 });
 

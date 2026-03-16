@@ -1,5 +1,7 @@
 # UX audit 2026-02 (Consolidated)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical UX audit context rather than the current product-positioning baseline.
+
 Date: 2026-02-11  
 Scope: Library home and toy shell (`/`, `/toy.html?toy=...`) across desktop and mobile.
 

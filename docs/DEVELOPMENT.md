@@ -1,6 +1,6 @@
 # Development Guide
 
-This is the operational handbook for day-to-day contribution to Stim Webtoys Library. Use it to choose the right command quickly, run the right quality gates, and ship changes with predictable metadata/docs hygiene.
+This is the operational handbook for day-to-day contribution to Stims. Stims is a browser-native MilkDrop successor with a broader toy lab of related audio-reactive experiences. Use this guide to choose the right command quickly, run the right quality gates, and ship changes with predictable metadata/docs hygiene.
 
 ## Toolchain baseline
 

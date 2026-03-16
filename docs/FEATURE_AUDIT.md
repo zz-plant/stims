@@ -1,5 +1,7 @@
 # Feature audit vs docs
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical audit context rather than the current product-positioning baseline.
+
 This audit maps product features to their current documentation so we can spot gaps and keep references aligned with the live experience.
 
 ## How to use this audit

@@ -1,5 +1,7 @@
 # UX reduction critique (80/20 pass)
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical UX reduction context rather than the current product-positioning baseline.
+
 This revision is intentionally concrete: each recommendation maps to current UI elements in `index.html` and is scored for expected impact, risk, and implementation effort.
 
 ## 80% functionality baseline (must keep)

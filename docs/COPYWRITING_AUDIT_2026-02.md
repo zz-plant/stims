@@ -1,5 +1,7 @@
 # Copywriting audit (user-friendliness) — 2026-02
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical copy audit context rather than the current product-positioning baseline.
+
 This audit identifies user-facing copy that may feel unclear, jargony, or less welcoming for first-time visitors.
 
 ## Library page copy to revisit

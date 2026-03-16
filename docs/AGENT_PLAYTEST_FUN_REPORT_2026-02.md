@@ -1,5 +1,7 @@
 # Agent playtest report: making Stim more fun and stimulating
 
+> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical playtest context rather than the current product-positioning baseline.
+
 _Date:_ 2026-02-11  
 _Tester:_ GPT agent (rapid exploratory playtest)
 
