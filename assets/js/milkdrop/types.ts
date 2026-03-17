@@ -162,6 +162,40 @@ export type MilkdropShaderColorControls = {
   b: number;
 };
 
+export type MilkdropShaderExpressionNode =
+  | { type: 'literal'; value: number }
+  | { type: 'identifier'; name: string }
+  | {
+      type: 'unary';
+      operator: '+' | '-';
+      operand: MilkdropShaderExpressionNode;
+    }
+  | {
+      type: 'binary';
+      operator: '+' | '-' | '*' | '/';
+      left: MilkdropShaderExpressionNode;
+      right: MilkdropShaderExpressionNode;
+    }
+  | {
+      type: 'call';
+      name: string;
+      args: MilkdropShaderExpressionNode[];
+    }
+  | {
+      type: 'member';
+      object: MilkdropShaderExpressionNode;
+      property: string;
+    };
+
+export type MilkdropShaderStatement = {
+  declaration: 'const' | 'float' | null;
+  target: string;
+  operator: '=' | '+=' | '-=' | '*=' | '/=';
+  rawValue: string;
+  expression: MilkdropShaderExpressionNode;
+  source: string;
+};
+
 export type MilkdropShaderControlExpressions = {
   warpScale: MilkdropExpressionNode | null;
   offsetX: MilkdropExpressionNode | null;
@@ -241,6 +275,8 @@ export type MilkdropPresetIR = {
   shaderText: {
     warp: string | null;
     comp: string | null;
+    warpAst: MilkdropShaderStatement[];
+    compAst: MilkdropShaderStatement[];
     supported: boolean;
     unsupportedLines: string[];
     controls: MilkdropShaderControls;

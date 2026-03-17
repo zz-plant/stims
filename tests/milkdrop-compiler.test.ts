@@ -280,6 +280,8 @@ comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
     expect(compiled.ir.post.shaderControls.colorScale.r).toBeCloseTo(1.2, 6);
     expect(compiled.ir.post.shaderControls.colorScale.g).toBeCloseTo(1.2, 6);
     expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(1.2, 6);
+    expect(compiled.ir.shaderText.warpAst).toHaveLength(1);
+    expect(compiled.ir.shaderText.compAst).toHaveLength(1);
   });
 
   test('supports affine uv shader-body transforms', () => {

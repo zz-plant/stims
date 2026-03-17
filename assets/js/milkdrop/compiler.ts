@@ -7,6 +7,7 @@ import {
 } from './expression';
 import { formatMilkdropPreset } from './formatter';
 import { parseMilkdropPreset } from './preset-parser';
+import { parseMilkdropShaderStatement } from './shader-ast';
 import type {
   MilkdropBackendSupport,
   MilkdropCompiledPreset,
@@ -22,6 +23,7 @@ import type {
   MilkdropProgramBlock,
   MilkdropShaderControlExpressions,
   MilkdropShaderControls,
+  MilkdropShaderStatement,
   MilkdropShapeDefinition,
   MilkdropWaveDefinition,
 } from './types';
@@ -947,6 +949,20 @@ function extractShaderControls(
   shaderText: string | null,
   env: Record<string, number> = DEFAULT_MILKDROP_STATE,
 ) {
+  if (!shaderText) {
+    return {
+      controls: createDefaultShaderControls(),
+      expressions: createDefaultShaderControlExpressions(),
+      unsupportedLines: [],
+      supported: false,
+      statements: [],
+    };
+  }
+
+  const normalized = shaderText
+    .split(/[\r\n;]+/u)
+    .map((line) => line.replace(/\/\/.*$/u, '').trim())
+    .filter(Boolean);
   const controls = createDefaultShaderControls();
   const expressions = createDefaultShaderControlExpressions();
   const shaderEnv: Record<string, number> = {
@@ -957,17 +973,14 @@ function extractShaderControls(
     tint_b: controls.tint.b,
   };
   const unsupportedLines: string[] = [];
-  if (!shaderText) {
-    return { controls, expressions, unsupportedLines, supported: false };
-  }
+  const statements: MilkdropShaderStatement[] = [];
 
   let supportedLineCount = 0;
-  const normalized = shaderText
-    .split(/[\r\n;]+/u)
-    .map((line) => line.replace(/\/\/.*$/u, '').trim())
-    .filter(Boolean);
-
   normalized.forEach((line) => {
+    const parsedStatement = parseMilkdropShaderStatement(line);
+    if (parsedStatement) {
+      statements.push(parsedStatement);
+    }
     const assignment = line.match(
       /^(?:(?:const|float)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
     );
@@ -1329,6 +1342,7 @@ function extractShaderControls(
     expressions,
     unsupportedLines,
     supported: supportedLineCount > 0 && unsupportedLines.length === 0,
+    statements,
   };
 }
 
@@ -2366,6 +2380,8 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
     shaderText: {
       warp: warpShaderText,
       comp: compShaderText,
+      warpAst: shaderWarpAnalysis.statements,
+      compAst: shaderCompAnalysis.statements,
       supported: supportedShaderText && !unsupportedShaderText,
       unsupportedLines: [
         ...shaderWarpAnalysis.unsupportedLines,
