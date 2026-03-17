@@ -1178,6 +1178,110 @@ header.hero {
   margin-top: 0.65rem;
 }
 
+.milkdrop-showcase__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
+.milkdrop-showcase__filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0.6rem 0.95rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--surface-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-color);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.milkdrop-showcase__filter span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.85rem;
+  min-height: 1.5rem;
+  padding: 0 0.45rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.milkdrop-showcase__filter[data-active="true"] {
+  border-color: color-mix(in srgb, var(--accent-color) 45%, transparent);
+  background: color-mix(in srgb, var(--accent-color) 18%, transparent);
+  box-shadow: 0 12px 24px
+    color-mix(in srgb, var(--accent-color) 14%, transparent);
+}
+
+.milkdrop-showcase__grid {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.85rem;
+}
+
+.milkdrop-showcase__card {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid
+    color-mix(in srgb, var(--accent-color) 12%, var(--surface-border));
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--accent-color) 10%, transparent),
+      transparent 36%
+    ),
+    rgba(255, 255, 255, 0.03);
+}
+
+.milkdrop-showcase__card-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.milkdrop-showcase__card-title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.milkdrop-showcase__card-meta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.milkdrop-showcase__card-copy {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.milkdrop-showcase__tag-row,
+.milkdrop-showcase__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.milkdrop-showcase__card-actions .cta-button {
+  min-height: 40px;
+  padding-inline: 0.95rem;
+}
+
 .preview-reel {
   width: min(520px, 90vw);
   border-radius: 24px;

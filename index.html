@@ -214,18 +214,42 @@
               </div>
               <div class="milkdrop-stage__meta">
                 <div class="callout-card">
-                  <p class="callout-title">Bundled preset showcase</p>
+                  <p class="callout-title">Browse the bundled preset library</p>
                   <p class="callout-copy" data-milkdrop-preset-count>
-                    Loading curated preset pack…
+                    Loading bundled preset collections…
                   </p>
-                  <div
-                    class="callout-row milkdrop-preset-strip"
-                    data-milkdrop-preset-list
-                  >
-                    <span class="pill pill--accent">Aurora Feedback Core</span>
-                    <span class="pill pill--soft">Kinetic Grid Pulse</span>
-                    <span class="pill pill--soft">Low Motion Halo Drift</span>
-                    <span class="pill pill--contrast">Prism Drum Tunnel</span>
+                  <div class="milkdrop-showcase__filters" data-milkdrop-preset-filters>
+                    <button type="button" class="milkdrop-showcase__filter" data-active="true">
+                      Classic MilkDrop
+                      <span>8</span>
+                    </button>
+                    <button type="button" class="milkdrop-showcase__filter" data-active="false">
+                      Feedback Lab
+                      <span>6</span>
+                    </button>
+                    <button type="button" class="milkdrop-showcase__filter" data-active="false">
+                      Low Motion
+                      <span>4</span>
+                    </button>
+                  </div>
+                  <div class="milkdrop-showcase__grid" data-milkdrop-preset-list>
+                    <article class="milkdrop-showcase__card">
+                      <p class="milkdrop-showcase__card-eyebrow">Classic MilkDrop</p>
+                      <h3 class="milkdrop-showcase__card-title">Aurora Feedback Core</h3>
+                      <p class="milkdrop-showcase__card-meta">Stims Curated</p>
+                      <p class="milkdrop-showcase__card-copy">
+                        feedback · warp · atmospheric preset in the shared browser-native MilkDrop runtime.
+                      </p>
+                      <div class="milkdrop-showcase__tag-row">
+                        <span class="pill pill--accent">feedback</span>
+                        <span class="pill pill--soft">warp</span>
+                        <span class="pill pill--contrast">atmospheric</span>
+                      </div>
+                      <div class="milkdrop-showcase__card-actions">
+                        <a class="cta-button primary" href="/toy.html?toy=milkdrop">Launch with preset</a>
+                        <a class="cta-button ghost" href="/toys/milkdrop/">Preset browser</a>
+                      </div>
+                    </article>
                   </div>
                 </div>
                 <div class="hero-callouts">
