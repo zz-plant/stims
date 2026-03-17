@@ -277,4 +277,106 @@ per_pixel_1=zoom=1.08; rot=0.15; warp=0.3;
     expect(motionVectorGroup.children.length).toBeGreaterThan(0);
     expect(motionVectorGroup.children[0]?.type).toBe('Line');
   });
+
+  test('skips feedback composite rendering when shader mode is disabled', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Off
+fShader=0
+video_echo=1
+      `.trim(),
+      { id: 'shader-off' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer & {
+      setRenderTargetCalls: number;
+    };
+    fakeRenderer.setRenderTargetCalls = 0;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => {
+      fakeRenderer.setRenderTargetCalls += 1;
+      return fakeRenderer;
+    };
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    const result = adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    expect(result).toBe(false);
+    expect(fakeRenderer.setRenderTargetCalls).toBe(0);
+  });
+
+  test('supports feedback composite path on webgpu backends with target-capable renderers', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGPU Feedback
+video_echo=1
+warp_shader=warp=0.6; hue=0.2
+comp_shader=mix=0.25; tint=1,0.5,0.5
+texture_wrap=1
+feedback_texture=1
+ob_size=0.02
+ob_border=1
+      `.trim(),
+      { id: 'webgpu-feedback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    const result = adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: { compositeMaterial: ShaderMaterial } | null;
+      }
+    ).feedback;
+    const root = scene.children[0] as {
+      children: Array<{ children?: Array<{ type?: string }> }>;
+    };
+    const borderGroup = root.children[6] as {
+      children: Array<{ type?: string; children?: Array<{ type?: string }> }>;
+    };
+
+    expect(result).toBe(true);
+    expect(feedback?.compositeMaterial.uniforms.textureWrap.value).toBe(1);
+    expect(feedback?.compositeMaterial.uniforms.feedbackTexture.value).toBe(1);
+    expect(feedback?.compositeMaterial.uniforms.hueShift.value).toBeCloseTo(
+      0.2,
+      6,
+    );
+    expect(borderGroup.children[0]?.type ?? 'Group').toBe('Group');
+  });
 });

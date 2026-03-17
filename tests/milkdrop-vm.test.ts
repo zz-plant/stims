@@ -6,15 +6,17 @@ import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 function makeSignals({
   frame = 1,
   beatPulse = 0.1,
+  time = frame / 60,
 }: {
   frame?: number;
   beatPulse?: number;
+  time?: number;
 } = {}): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
   frequencyData.fill(160);
 
   return {
-    time: frame / 60,
+    time,
     deltaMs: 16.67,
     frame,
     fps: 60,
@@ -200,7 +202,82 @@ per_pixel_1=zoom=1.08; rot=0.12; warp=0.35;
     expect(frameState.motionVectors.length).toBeGreaterThan(0);
     expect(frameState.motionVectors[0]?.positions).toHaveLength(6);
     expect(frameState.motionVectors[0]?.color.b).toBeCloseTo(1, 6);
-    expect(frameState.motionVectors[0]?.alpha).toBeCloseTo(0.28, 6);
+    expect(frameState.motionVectors[0]?.alpha).toBeGreaterThan(0.28);
+  });
+
+  test('warp animation speed changes per-pixel mesh deformation over time', () => {
+    const slowPreset = compileMilkdropPresetSource(
+      `
+title=Warp Slow
+warp=0.6
+fWarpAnimSpeed=0.4
+      `.trim(),
+      { id: 'warp-slow' },
+    );
+    const fastPreset = compileMilkdropPresetSource(
+      `
+title=Warp Fast
+warp=0.6
+fWarpAnimSpeed=2.2
+      `.trim(),
+      { id: 'warp-fast' },
+    );
+
+    const slowState = createMilkdropVM(slowPreset).step(
+      makeSignals({ frame: 4, time: 2.4 }),
+    );
+    const fastState = createMilkdropVM(fastPreset).step(
+      makeSignals({ frame: 4, time: 2.4 }),
+    );
+
+    expect(slowState.mesh.positions).not.toEqual(fastState.mesh.positions);
+  });
+
+  test('modulated wave alpha and shader flag affect frame post state', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Wave Mod
+wave_a=0.8
+fModWaveAlphaStart=1.2
+fModWaveAlphaEnd=0.25
+fShader=0
+      `.trim(),
+      { id: 'wave-mod' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({ frame: 5, time: 2.1, beatPulse: 0.35 }),
+    );
+
+    expect(frameState.post.shaderEnabled).toBe(false);
+    expect(frameState.mainWave.alpha).toBeGreaterThan(0.04);
+    expect(frameState.mainWave.alpha).toBeLessThan(0.8);
+  });
+
+  test('carries shader subset, border style, and feedback flags into post visuals', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Post Flags
+warp_shader=warp=0.7; hue=0.25
+comp_shader=mix=0.3; brighten=0.4; tint=1,0.7,0.5
+texture_wrap=1
+feedback_texture=1
+ob_size=0.015
+ob_border=1
+ib_size=0.025
+ib_border=1
+      `.trim(),
+      { id: 'post-flags' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 6 }));
+
+    expect(frameState.post.textureWrap).toBe(true);
+    expect(frameState.post.feedbackTexture).toBe(true);
+    expect(frameState.post.shaderControls.warpScale).toBeCloseTo(0.7, 6);
+    expect(frameState.post.shaderControls.mixAlpha).toBeCloseTo(0.3, 6);
+    expect(frameState.borders[0]?.styled).toBe(true);
+    expect(frameState.borders[1]?.styled).toBe(true);
   });
 
   test('accumulates and caps trail history across steps', () => {

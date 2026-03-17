@@ -60,7 +60,7 @@ describe('milkdrop catalog store', () => {
     );
 
     expect(bundled?.supports.webgl.status).toBe('supported');
-    expect(bundled?.supports.webgpu.status).toBe('partial');
+    expect(bundled?.supports.webgpu.status).toBe('supported');
     expect(bundled?.featuresUsed).toContain('video-echo');
     expect(bundled?.featuresUsed).toContain('custom-waves');
 
