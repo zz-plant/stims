@@ -6,9 +6,9 @@
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=flat-square)](./LICENSE)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=flat-square&logo=bun)](https://bun.sh)
 
-Welcome to **Stim Webtoys (Stims)**, hosted at [no.toil.fyi](https://no.toil.fyi). Stims is a browser-native **MilkDrop successor** with a broader collection of related audio-reactive toys, built with **Three.js** + **WebGL** (with WebGPU support where available).
+Welcome to **Stim Webtoys (Stims)**, hosted at [no.toil.fyi](https://no.toil.fyi). Stims is an independent browser-native visualizer and toy lab built in the lineage of **Ryan Geiss's MilkDrop**, with **Three.js** + **WebGL** (and WebGPU support where available).
 
-**Keywords for discovery:** MilkDrop successor, browser-native visualizer, audio-reactive visuals, Three.js/WebGL experiments, preset-driven visuals, generative art playground.
+**Keywords for discovery:** MilkDrop-inspired visualizer, browser-native visualizer, audio-reactive visuals, Three.js/WebGL experiments, preset-driven visuals, generative art playground.
 
 **If this project sparks joy, please ⭐ star the repo and share the live site.** It helps more people find the toys and keeps new experiments flowing.
 
@@ -40,6 +40,7 @@ Welcome to **Stim Webtoys (Stims)**, hosted at [no.toil.fyi](https://no.toil.fyi
 ## Table of contents
 
 - [Documentation map](#documentation-map)
+- [Lineage and credits](#lineage-and-credits)
 - [Architecture at a glance](#architecture-at-a-glance)
 - [Quick Start](#quick-start)
 - [Getting Started](#getting-started)
@@ -80,6 +81,16 @@ Use the docs intentionally:
 - audit, critique, and roadmap docs in `docs/` are useful context, but many are historical or planning-oriented rather than day-to-day instructions.
 
 When docs are added, renamed, moved, or deleted, update `docs/README.md` in the same change.
+
+## Lineage and credits
+
+Stims is not an official MilkDrop or Winamp release. It is an independent browser-native visualizer and toy lab built in the lineage of Ryan Geiss's MilkDrop and the preset-driven workflows that grew around it.
+
+- Credit **Ryan Geiss** and **MilkDrop** when describing the lineage of the flagship visualizer.
+- Credit **Winamp/Nullsoft** when referring to MilkDrop's original public product context.
+- Credit **preset authors and curators** whenever presets, packs, fixtures, or screenshots come from their work.
+- Credit **projectM contributors** when projectM is used as a compatibility reference, behavior oracle, code source, or preset corpus.
+- Use [`docs/LINEAGE_AND_CREDITS.md`](./docs/LINEAGE_AND_CREDITS.md) as the repository policy for public wording and attribution expectations.
 
 ## Architecture at a glance
 
@@ -129,7 +140,7 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 
 ### Why people use Stim Webtoys
 
-- **MilkDrop Visualizer first**: start with a preset-driven, browser-native successor flow that supports live editing and import/export.
+- **MilkDrop Visualizer first**: start with a preset-driven browser flow built in the lineage of MilkDrop, with live editing and import/export.
 - **Self-regulation moments**: settle into repeatable rhythm of sound + visuals without claiming a specific outcome.
 - **Instant browser launch**: open and play with no signup, no install, and fallback audio paths when permissions are blocked.
 - **Clear control surfaces**: adjust intensity with the shared settings panel and its [performance/quality presets](./docs/DEVELOPMENT.md#performance-tips).

@@ -4,7 +4,7 @@ This document captures what the public Stims docs communicate, so repository doc
 
 ## Core product message
 
-Stim Webtoys is positioned as a **browser-native MilkDrop successor** with a broader collection of related audio-reactive toys, with WebGPU paths for capable browsers.
+Stim Webtoys is positioned as an **independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop**, with a broader collection of related audio-reactive toys and WebGPU paths for capable browsers.
 
 ## Public docs information architecture
 
@@ -50,7 +50,7 @@ Stim Webtoys is positioned as a **browser-native MilkDrop successor** with a bro
 
 ## What each public page emphasizes
 
-- **Introduction**: MilkDrop-led value proposition, successor framing, and quick links to launch + browse.
+- **Introduction**: MilkDrop-led value proposition, lineage framing, and quick links to launch + browse.
 - **Quickstart**: launch MilkDrop first, then explore the broader toy lab.
 - **Browser support**: feature-level compatibility and troubleshooting for WebGL, microphone, and WebGPU.
 - **MilkDrop visualizer guide**: presets, blending, editor flow, import/export, and compatibility guardrails.
@@ -67,7 +67,7 @@ Stim Webtoys is positioned as a **browser-native MilkDrop successor** with a bro
 When updating user-facing copy (README, landing copy, docs hubs), keep these themes visible:
 
 1. Audio-reactive + sensory-friendly positioning.
-2. MilkDrop-led successor framing with careful language (no blanket compatibility claims).
+2. MilkDrop-led lineage framing with careful language (no blanket compatibility claims).
 3. Clear onboarding path (`introduction` -> `quickstart` -> `browser-support`).
 4. Explicit mention of accessibility and performance controls.
 5. Discovery vocabulary for the broader toy lab (moods, tags, capabilities, featured/audio/interactive/WebGPU).

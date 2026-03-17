@@ -18,7 +18,7 @@ Use this table for positioning, GTM planning, and sales/support alignment.
 
 Use these lines in public-facing pages (README/site/docs) without naming competitors directly.
 
-- **MilkDrop-led successor framing:** "Stims brings a browser-native MilkDrop successor to the web."
+- **MilkDrop-led lineage framing:** "Stims brings an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop to the web."
 - **Careful claim language:** "Preset-driven and inspired by MilkDrop-era workflows, without claiming full legacy parity."
 - **Instant launch:** "Open the MilkDrop Visualizer in one click, then branch into the broader toy lab."
 - **Beyond one-off visuals:** "Explore a full collection with audio, motion, and performance controls."
@@ -29,9 +29,9 @@ Use these lines in public-facing pages (README/site/docs) without naming competi
 Apply the external angle bank to public surfaces in this order:
 
 1. **Homepage hero (`index.html`)**
-   - Primary headline should position Stims as a browser-native MilkDrop successor.
+   - Primary headline should position Stims as an independent browser-native visualizer in the MilkDrop lineage.
    - Primary CTA should launch `toy.html?toy=milkdrop`.
-   - Supporting sentence should reinforce presets, live editing, import/export, and careful successor language.
+   - Supporting sentence should reinforce presets, live editing, import/export, and careful lineage language.
 2. **Homepage proof + discovery sections (`index.html`)**
    - Add a MilkDrop proof section before broader toy-lab discovery.
    - Keep broader discovery language secondary and explicit.

@@ -202,4 +202,33 @@ per_frame_2=t1=t1+1;
     expect(resetFrame.variables.q1).toBe(0);
     expect(resetFrame.variables.t1).toBe(0);
   });
+
+  test('renders distinct geometry across all eight main wave modes', () => {
+    const signatures = new Set<string>();
+
+    for (let mode = 0; mode < 8; mode += 1) {
+      const preset = compileMilkdropPresetSource(
+        `
+title=Wave Mode ${mode}
+wave_mode=${mode}
+wave_mystery=0.42
+        `.trim(),
+        { id: `wave-mode-${mode}` },
+      );
+
+      const frameState = createMilkdropVM(preset).step(
+        makeSignals({ frame: 3, beatPulse: 0.2 }),
+      );
+
+      expect(frameState.mainWave.positions.length).toBeGreaterThan(0);
+      signatures.add(
+        frameState.mainWave.positions
+          .slice(0, 18)
+          .map((value) => value.toFixed(3))
+          .join(','),
+      );
+    }
+
+    expect(signatures.size).toBe(8);
+  });
 });

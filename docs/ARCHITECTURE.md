@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document summarizes how the Stims app is assembled, from the entry HTML shells through module loading, rendering, audio, and quality controls. Stims is positioned as a browser-native MilkDrop successor with a broader toy lab, and this guide maps the runtime layers that support both the flagship `milkdrop` flow and the preset-alias toy catalog around it.
+This document summarizes how the Stims app is assembled, from the entry HTML shells through module loading, rendering, audio, and quality controls. Stims is positioned as an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, with a broader toy lab, and this guide maps the runtime layers that support both the flagship `milkdrop` flow and the preset-alias toy catalog around it.
 
 ## Architecture at a Glance
 

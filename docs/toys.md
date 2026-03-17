@@ -1,6 +1,6 @@
 # Toy notes and presets
 
-Stims now leads with **MilkDrop Visualizer** as the flagship browser-native successor story, and the rest of the toy catalog now launches through the same runtime as curated preset aliases.
+Stims now leads with **MilkDrop Visualizer** as the flagship browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, and the rest of the toy catalog now launches through the same runtime as curated preset aliases.
 
 ## Shared preset-alias model
 
