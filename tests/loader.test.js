@@ -13,6 +13,7 @@ const defaultCapabilities = {
   device: {},
   fallbackReason: null,
   shouldRetryWebGPU: false,
+  forceWebGL: false,
 };
 
 let capabilitiesMock;
@@ -350,6 +351,7 @@ describe('WebGPU requirements', () => {
       device: null,
       fallbackReason: 'WebGPU unavailable',
       shouldRetryWebGPU: false,
+      forceWebGL: false,
     });
 
     const { loader } = await buildLoader({
@@ -374,7 +376,7 @@ describe('WebGPU requirements', () => {
     expect(window.location.search).toBe('');
   });
 
-  test('continues when WebGL fallback is allowed', async () => {
+  test('loads immediately when WebGL fallback is allowed', async () => {
     Object.defineProperty(global, 'navigator', {
       writable: true,
       configurable: true,
@@ -387,6 +389,7 @@ describe('WebGPU requirements', () => {
       device: null,
       fallbackReason: 'WebGPU unavailable',
       shouldRetryWebGPU: false,
+      forceWebGL: false,
     });
 
     const { loader } = await buildLoader({
@@ -404,16 +407,6 @@ describe('WebGPU requirements', () => {
 
     await loader.loadToy('webgpu-toy');
 
-    const continueButton = document.querySelector(
-      '.active-toy-actions .cta-button.primary',
-    );
-    expect(continueButton).not.toBeNull();
-
-    continueButton?.dispatchEvent(new Event('click', { bubbles: true }));
-
-    // eslint-disable-next-line no-undef
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
     expect(document.querySelector('.active-toy-status')).toBeNull();
   });
@@ -425,6 +418,7 @@ describe('WebGPU requirements', () => {
       device: null,
       fallbackReason: 'Cached fallback',
       shouldRetryWebGPU: false,
+      forceWebGL: false,
     });
 
     const { loader } = await buildLoader({
@@ -443,8 +437,8 @@ describe('WebGPU requirements', () => {
     await loader.loadToy('webgpu-toy');
 
     expect(capabilitiesMock.getRendererCapabilities).toHaveBeenCalledTimes(1);
-    const status = document.querySelector('.active-toy-status');
-    expect(status?.classList.contains('is-warning')).toBe(true);
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+    expect(document.querySelector('.active-toy-status')).toBeNull();
   });
 
   test('can retry WebGPU when probing failed on a supported device', async () => {
@@ -455,6 +449,7 @@ describe('WebGPU requirements', () => {
         device: null,
         fallbackReason: 'Unable to acquire a WebGPU device.',
         shouldRetryWebGPU: true,
+        forceWebGL: false,
       })
       .mockResolvedValueOnce(defaultCapabilities);
 
@@ -473,10 +468,9 @@ describe('WebGPU requirements', () => {
 
     await loader.loadToy('webgpu-toy');
 
-    const retryWebGPUButton = Array.from(
-      document.querySelectorAll('.active-toy-actions button'),
-    ).find((button) => button.textContent?.includes('Try WebGPU'));
-    expect(retryWebGPUButton).not.toBeUndefined();
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+    const retryWebGPUButton = document.querySelector('.renderer-pill__retry');
+    expect(retryWebGPUButton?.textContent).toContain('Try WebGPU');
 
     retryWebGPUButton?.dispatchEvent(new Event('click', { bubbles: true }));
     // eslint-disable-next-line no-undef
@@ -497,6 +491,7 @@ describe('WebGPU requirements', () => {
         device: null,
         fallbackReason: 'Compatibility mode is enabled. Using WebGL.',
         shouldRetryWebGPU: false,
+        forceWebGL: true,
       })
       .mockResolvedValueOnce(defaultCapabilities);
 
@@ -517,10 +512,9 @@ describe('WebGPU requirements', () => {
 
     await loader.loadToy('webgpu-toy');
 
-    const useWebGPUButton = Array.from(
-      document.querySelectorAll('.active-toy-actions button'),
-    ).find((button) => button.textContent?.includes('Use WebGPU'));
-    expect(useWebGPUButton).not.toBeUndefined();
+    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+    const useWebGPUButton = document.querySelector('.renderer-pill__retry');
+    expect(useWebGPUButton?.textContent).toContain('Use WebGPU');
 
     useWebGPUButton?.dispatchEvent(new Event('click', { bubbles: true }));
     // eslint-disable-next-line no-undef

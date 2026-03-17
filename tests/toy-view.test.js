@@ -35,18 +35,17 @@ describe('toy view helpers', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  test('renders capability error with fallback actions', () => {
+  test('renders capability error with recovery and exit actions', () => {
     const view = createToyView();
     const onBack = mock();
-    const onContinue = mock();
     const onBrowseCompatible = mock();
 
     const status = view.showCapabilityError(
       { slug: 'webgpu-toy', title: 'Fancy WebGPU' },
-      { allowFallback: true, onBack, onContinue, onBrowseCompatible },
+      { onBack, onBrowseCompatible },
     );
 
-    expect(status?.classList.contains('is-warning')).toBe(true);
+    expect(status?.classList.contains('is-error')).toBe(true);
 
     const buttons = status?.querySelectorAll('button');
     expect(buttons?.length).toBe(2);
@@ -54,34 +53,32 @@ describe('toy view helpers', () => {
     buttons?.[0].dispatchEvent(new Event('click', { bubbles: true }));
     buttons?.[1].dispatchEvent(new Event('click', { bubbles: true }));
 
-    expect(onContinue).toHaveBeenCalledTimes(1);
     expect(onBack).toHaveBeenCalledTimes(1);
-    expect(onBrowseCompatible).toHaveBeenCalledTimes(0);
+    expect(onBrowseCompatible).toHaveBeenCalledTimes(1);
   });
 
-  test('renders compatibility mode recovery action when available', () => {
+  test('renders preferred renderer recovery action when available', () => {
     const view = createToyView();
-    const onUseWebGPU = mock();
+    const onUsePreferredRenderer = mock();
 
     const status = view.showCapabilityError(
       { slug: 'webgpu-toy', title: 'Fancy WebGPU' },
       {
-        allowFallback: true,
-        compatibilityModeEnabled: true,
-        onUseWebGPU,
-        onContinue: mock(),
+        preferredRendererActionLabel: 'Use WebGPU',
+        onUsePreferredRenderer,
+        onBack: mock(),
       },
     );
 
     expect(status?.querySelector('h2')?.textContent).toContain(
-      'Compatibility mode is enabled',
+      'WebGPU not available',
     );
     const buttons = status?.querySelectorAll('button');
     expect(buttons?.length).toBe(3);
-    expect(buttons?.[1]?.textContent).toContain('Use WebGPU');
+    expect(buttons?.[0]?.textContent).toContain('Use WebGPU');
 
-    buttons?.[1].dispatchEvent(new Event('click', { bubbles: true }));
-    expect(onUseWebGPU).toHaveBeenCalledTimes(1);
+    buttons?.[0].dispatchEvent(new Event('click', { bubbles: true }));
+    expect(onUsePreferredRenderer).toHaveBeenCalledTimes(1);
   });
 
   test('marks the active toy container when a blocking status is visible', () => {
@@ -89,7 +86,7 @@ describe('toy view helpers', () => {
 
     view.showCapabilityError(
       { slug: 'webgpu-toy', title: 'Fancy WebGPU' },
-      { allowFallback: true, onContinue: mock() },
+      { onBack: mock() },
     );
 
     const container = document.getElementById('active-toy-container');

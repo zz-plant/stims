@@ -151,7 +151,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
 
 - **MilkDrop-led homepage**: the landing page prioritizes MilkDrop launch, then routes into broader discovery.
 - **Searchable discovery**: the toy grid matches titles, tags, moods, and capability terms, plus badges for microphone, motion, demo audio, and WebGPU requirements. A no-JS fallback renders the same data from `toys.json` when needed.
-- **Guided toy start**: the shared toy shell runs a capability preflight before loading a toy, then offers microphone, demo audio, and YouTube tab-capture audio flows with status messaging.
+- **Guided toy start**: the shared toy shell runs a capability preflight before loading a toy, auto-falls back to WebGL when a toy allows it, and then offers microphone, demo audio, and YouTube tab-capture audio flows with status messaging.
 - **Consistent performance controls**: quality presets and pixel-ratio caps persist between toys, while pooled renderer/audio services keep toy switching fast without re-prompting for microphone access.
 
 ### Accessibility & comfort notes
@@ -281,7 +281,7 @@ All JavaScript dependencies are installed via Bun and bundled locally with Vite,
 #### WebGPU gating
 
 - A WebGPU fallback warning means the browser lacked a compatible adapter or device at startup; toys will fall back to WebGL when possible.
-- To force a retry (for example, after toggling a browser flag or switching GPUs), refresh the page—WebGPU detection resets and will attempt the adapter/device handshake again.
+- To force a retry (for example, after toggling a browser flag or switching GPUs), use the shell’s `Try WebGPU` / `Use WebGPU` action or refresh the page—either path resets detection and attempts the adapter/device handshake again.
 - Toys that disable WebGL fallback won’t run without WebGPU; expect those entries to stay idle or prompt you to pick another toy until the capability probe succeeds. Most current toys can still fall back to WebGL when WebGPU is unavailable. The renderer capability probe and fallback reasons live in [`assets/js/core/renderer-capabilities.ts`](./assets/js/core/renderer-capabilities.ts) if you need to trace the gating logic.
 
 #### Dev-server hosting

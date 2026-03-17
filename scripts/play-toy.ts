@@ -73,10 +73,12 @@ async function clickVisibleButton(page: Page, selector: string) {
     if (!(button instanceof HTMLElement)) return false;
 
     const style = window.getComputedStyle(button);
+    const rect = button.getBoundingClientRect();
     const isVisible =
-      !button.hidden &&
       style.display !== 'none' &&
-      style.visibility !== 'hidden';
+      style.visibility !== 'hidden' &&
+      rect.width > 0 &&
+      rect.height > 0;
     if (!isVisible) return false;
 
     button.click();
@@ -90,10 +92,12 @@ async function clickVisibleButtonByText(page: Page, label: string) {
     const target = buttons.find((element) => {
       if (!(element instanceof HTMLElement)) return false;
       const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
       const isVisible =
-        !element.hidden &&
         style.display !== 'none' &&
-        style.visibility !== 'hidden';
+        style.visibility !== 'hidden' &&
+        rect.width > 0 &&
+        rect.height > 0;
       return isVisible && element.textContent?.trim() === buttonLabel;
     });
 
@@ -150,10 +154,12 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         ].some((element) => {
           if (!(element instanceof HTMLElement)) return false;
           const style = window.getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
           return (
-            !element.hidden &&
             style.display !== 'none' &&
-            style.visibility !== 'hidden'
+            style.visibility !== 'hidden' &&
+            rect.width > 0 &&
+            rect.height > 0
           );
         }),
       undefined,
