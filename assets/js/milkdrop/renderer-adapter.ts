@@ -1,15 +1,19 @@
 import type { Camera, Scene } from 'three';
 import {
   AdditiveBlending,
-  BufferAttribute,
   BufferGeometry,
   Color,
   DoubleSide,
+  Float32BufferAttribute,
   Group,
+  HalfFloatType,
   Line,
+  LinearFilter,
   LineBasicMaterial,
+  LineLoop,
   Mesh,
   MeshBasicMaterial,
+  NormalBlending,
   OrthographicCamera,
   PlaneGeometry,
   Points,
@@ -25,7 +29,6 @@ import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import type {
   MilkdropBorderVisual,
   MilkdropCompiledPreset,
-  MilkdropPolyline,
   MilkdropRendererAdapter,
   MilkdropRenderPayload,
   MilkdropShapeVisual,
@@ -37,6 +40,67 @@ type RendererLike = {
   render: (scene: Scene, camera: Camera) => void;
   setRenderTarget?: (target: WebGLRenderTarget | null) => void;
 };
+
+const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
+const FULLSCREEN_QUAD_GEOMETRY = markSharedGeometry(new PlaneGeometry(2, 2));
+const BACKGROUND_GEOMETRY = markSharedGeometry(new PlaneGeometry(6.4, 6.4));
+const polygonFillGeometryCache = new Map<number, ShapeGeometry>();
+const polygonOutlineGeometryCache = new Map<number, BufferGeometry>();
+
+function markSharedGeometry<T extends BufferGeometry>(geometry: T) {
+  geometry.userData[SHARED_GEOMETRY_FLAG] = true;
+  return geometry;
+}
+
+function isSharedGeometry(geometry: BufferGeometry) {
+  return geometry.userData[SHARED_GEOMETRY_FLAG] === true;
+}
+
+function getUnitPolygonVertices(sides: number) {
+  const safeSides = Math.max(3, Math.round(sides));
+  return Array.from({ length: safeSides }, (_, index) => {
+    const theta =
+      (index / safeSides) * Math.PI * 2 + Math.PI / Math.max(3, safeSides);
+    return new Vector2(Math.cos(theta), Math.sin(theta));
+  });
+}
+
+function getUnitPolygonFillGeometry(sides: number) {
+  const safeSides = Math.max(3, Math.round(sides));
+  const cached = polygonFillGeometryCache.get(safeSides);
+  if (cached) {
+    return cached;
+  }
+
+  const vertices = getUnitPolygonVertices(safeSides);
+  const firstVertex = vertices[0] ?? new Vector2(1, 0);
+  const fillShape = new Shape();
+  fillShape.moveTo(firstVertex.x, firstVertex.y);
+  vertices.slice(1).forEach((vertex) => fillShape.lineTo(vertex.x, vertex.y));
+  fillShape.lineTo(firstVertex.x, firstVertex.y);
+
+  const geometry = markSharedGeometry(new ShapeGeometry(fillShape));
+  polygonFillGeometryCache.set(safeSides, geometry);
+  return geometry;
+}
+
+function getUnitPolygonOutlineGeometry(sides: number) {
+  const safeSides = Math.max(3, Math.round(sides));
+  const cached = polygonOutlineGeometryCache.get(safeSides);
+  if (cached) {
+    return cached;
+  }
+
+  const geometry = markSharedGeometry(new BufferGeometry());
+  const positions = getUnitPolygonVertices(safeSides).flatMap((vertex) => [
+    vertex.x,
+    vertex.y,
+    0,
+  ]);
+  ensureGeometryPositions(geometry, positions);
+  polygonOutlineGeometryCache.set(safeSides, geometry);
+  return geometry;
+}
 
 function isFeedbackCapableRenderer(
   renderer: RendererLike | null,
@@ -52,7 +116,7 @@ function setMaterialColor(
   value: { r: number; g: number; b: number },
   opacity: number,
 ) {
-  material.color = new Color(value.r, value.g, value.b);
+  material.color.setRGB(value.r, value.g, value.b);
   material.opacity = opacity;
   material.transparent = opacity < 1;
 }
@@ -61,35 +125,57 @@ function ensureGeometryPositions(
   geometry: BufferGeometry,
   positions: number[],
 ) {
-  geometry.setAttribute(
-    'position',
-    new BufferAttribute(new Float32Array(positions), 3),
-  );
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
   geometry.computeBoundingSphere();
-}
-
-function closePolylinePositions(polyline: MilkdropPolyline) {
-  if (!polyline.closed || polyline.positions.length < 3) {
-    return polyline.positions;
-  }
-  return [
-    ...polyline.positions,
-    polyline.positions[0] as number,
-    polyline.positions[1] as number,
-    polyline.positions[2] as number,
-  ];
 }
 
 function clearGroup(group: Group) {
   group.children.slice().forEach((child) => {
+    disposeObject(child);
     group.remove(child);
-    if ('geometry' in child) {
-      disposeGeometry((child as Line | Mesh | Points).geometry);
-    }
-    if ('material' in child) {
-      disposeMaterial((child as Line | Mesh | Points).material);
-    }
   });
+}
+
+function disposeObject(object: { children?: unknown[] }) {
+  if (
+    'children' in object &&
+    Array.isArray(object.children) &&
+    object.children.length
+  ) {
+    object.children.forEach((child) =>
+      disposeObject(child as { children?: unknown[] }),
+    );
+  }
+  if ('geometry' in object) {
+    const geometry = (object as Line | Mesh | Points).geometry;
+    if (!isSharedGeometry(geometry)) {
+      disposeGeometry(geometry);
+    }
+  }
+  if ('material' in object) {
+    disposeMaterial((object as Line | Mesh | Points).material);
+  }
+}
+
+function createFeedbackRenderTarget(
+  width: number,
+  height: number,
+  backend: 'webgl' | 'webgpu',
+) {
+  const resolutionScale = backend === 'webgpu' ? 1.5 : 1.1;
+  const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
+  const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
+  const target = new WebGLRenderTarget(scaledWidth, scaledHeight, {
+    minFilter: LinearFilter,
+    magFilter: LinearFilter,
+    ...(backend === 'webgpu'
+      ? {
+          type: HalfFloatType,
+        }
+      : {}),
+  });
+  target.samples = backend === 'webgpu' ? 4 : 2;
+  return target;
 }
 
 function createWaveObject(
@@ -116,7 +202,8 @@ function createWaveObject(
     return object;
   }
 
-  const object = new Line(
+  const ObjectType = wave.closed ? LineLoop : Line;
+  const object = new ObjectType(
     new BufferGeometry(),
     new LineBasicMaterial({
       transparent: true,
@@ -124,7 +211,7 @@ function createWaveObject(
       ...(wave.additive ? { blending: AdditiveBlending } : {}),
     }),
   );
-  ensureGeometryPositions(object.geometry, closePolylinePositions(wave));
+  ensureGeometryPositions(object.geometry, wave.positions);
   setMaterialColor(object.material, wave.color, wave.alpha * alphaMultiplier);
   object.position.z = 0.24;
   return object;
@@ -132,23 +219,6 @@ function createWaveObject(
 
 function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
   const group = new Group();
-  const vertices: Vector2[] = [];
-  for (let index = 0; index < shape.sides; index += 1) {
-    const theta =
-      (index / shape.sides) * Math.PI * 2 +
-      shape.rotation +
-      Math.PI / Math.max(3, shape.sides);
-    vertices.push(new Vector2(Math.cos(theta), Math.sin(theta)));
-  }
-  const positions = vertices.flatMap((vertex) => [vertex.x, vertex.y, 0]);
-  const firstVertex = vertices[0] ?? new Vector2(1, 0);
-  positions.push(firstVertex.x, firstVertex.y, 0);
-
-  const fillShape = new Shape();
-  fillShape.moveTo(firstVertex.x, firstVertex.y);
-  vertices.slice(1).forEach((vertex) => fillShape.lineTo(vertex.x, vertex.y));
-  fillShape.lineTo(firstVertex.x, firstVertex.y);
-
   const fillMaterial = shape.secondaryColor
     ? new ShaderMaterial({
         uniforms: {
@@ -202,15 +272,15 @@ function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
         ...(shape.additive ? { blending: AdditiveBlending } : {}),
       });
 
-  const fill = new Mesh(new ShapeGeometry(fillShape), fillMaterial);
+  const fill = new Mesh(getUnitPolygonFillGeometry(shape.sides), fillMaterial);
   fill.position.set(shape.x, shape.y, 0.14);
   fill.scale.set(shape.radius, shape.radius, 1);
   fill.rotation.z = shape.rotation;
   group.add(fill);
 
   if (shape.thickOutline) {
-    const accentBorder = new Line(
-      new BufferGeometry(),
+    const accentBorder = new LineLoop(
+      getUnitPolygonOutlineGeometry(shape.sides),
       new LineBasicMaterial({
         color: new Color(
           shape.borderColor.r,
@@ -223,14 +293,14 @@ function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
         ...(shape.additive ? { blending: AdditiveBlending } : {}),
       }),
     );
-    ensureGeometryPositions(accentBorder.geometry, positions);
     accentBorder.position.set(shape.x, shape.y, 0.15);
     accentBorder.scale.set(shape.radius * 1.045, shape.radius * 1.045, 1);
+    accentBorder.rotation.z = shape.rotation;
     group.add(accentBorder);
   }
 
-  const border = new Line(
-    new BufferGeometry(),
+  const border = new LineLoop(
+    getUnitPolygonOutlineGeometry(shape.sides),
     new LineBasicMaterial({
       color: new Color(
         shape.borderColor.r,
@@ -242,9 +312,9 @@ function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
       ...(shape.additive ? { blending: AdditiveBlending } : {}),
     }),
   );
-  ensureGeometryPositions(border.geometry, positions);
   border.position.set(shape.x, shape.y, 0.16);
   border.scale.set(shape.radius, shape.radius, 1);
+  border.rotation.z = shape.rotation;
   group.add(border);
 
   return group;
@@ -282,7 +352,7 @@ function createBorderObject(border: MilkdropBorderVisual, alphaMultiplier = 1) {
     top,
     0.3,
   ];
-  const object = new Line(
+  const object = new LineLoop(
     new BufferGeometry(),
     new LineBasicMaterial({
       transparent: true,
@@ -301,7 +371,7 @@ function createBorderObject(border: MilkdropBorderVisual, alphaMultiplier = 1) {
 
   const group = new Group();
   group.add(object);
-  const accent = new Line(
+  const accent = new LineLoop(
     new BufferGeometry(),
     new LineBasicMaterial({
       transparent: true,
@@ -324,6 +394,124 @@ function createBorderObject(border: MilkdropBorderVisual, alphaMultiplier = 1) {
   return group;
 }
 
+function updateWaveObject(
+  object: Line | LineLoop | Points,
+  wave: MilkdropWaveVisual,
+  alphaMultiplier: number,
+) {
+  ensureGeometryPositions(object.geometry, wave.positions);
+  if (object instanceof Points) {
+    const material = object.material as PointsMaterial;
+    material.size = wave.pointSize;
+    material.blending = wave.additive ? AdditiveBlending : NormalBlending;
+    setMaterialColor(material, wave.color, wave.alpha * alphaMultiplier);
+  } else {
+    const material = object.material as LineBasicMaterial;
+    material.blending = wave.additive ? AdditiveBlending : NormalBlending;
+    setMaterialColor(material, wave.color, wave.alpha * alphaMultiplier);
+  }
+  object.position.z = 0.24;
+}
+
+function syncWaveObject(
+  existing: Line | LineLoop | Points | undefined,
+  wave: MilkdropWaveVisual,
+  alphaMultiplier: number,
+) {
+  const wantsPoints = wave.drawMode === 'dots';
+  const wantsLoop = wave.closed && !wantsPoints;
+  const matches =
+    !!existing &&
+    ((wantsPoints && existing instanceof Points) ||
+      (wantsLoop && existing instanceof LineLoop) ||
+      (!wantsPoints && !wantsLoop && existing instanceof Line));
+
+  if (!matches) {
+    if (existing) {
+      disposeObject(existing);
+    }
+    const created = createWaveObject(wave, alphaMultiplier);
+    return created;
+  }
+
+  updateWaveObject(existing, wave, alphaMultiplier);
+  return existing;
+}
+
+function updateBorderLine(
+  object: LineLoop,
+  border: MilkdropBorderVisual,
+  alphaMultiplier: number,
+) {
+  const inset = border.key === 'outer' ? border.size : border.size + 0.08;
+  const left = -1 + inset * 2;
+  const right = 1 - inset * 2;
+  const top = 1 - inset * 2;
+  const bottom = -1 + inset * 2;
+  ensureGeometryPositions(object.geometry, [
+    left,
+    top,
+    0.3,
+    right,
+    top,
+    0.3,
+    right,
+    bottom,
+    0.3,
+    left,
+    bottom,
+    0.3,
+  ]);
+  setMaterialColor(
+    object.material as LineBasicMaterial,
+    border.color,
+    border.alpha * alphaMultiplier,
+  );
+}
+
+function syncBorderObject(
+  existing: LineLoop | Group | undefined,
+  border: MilkdropBorderVisual,
+  alphaMultiplier: number,
+) {
+  if (!border.styled) {
+    if (existing instanceof LineLoop) {
+      updateBorderLine(existing, border, alphaMultiplier);
+      return existing;
+    }
+    if (existing) {
+      disposeObject(existing);
+    }
+    return createBorderObject(border, alphaMultiplier);
+  }
+
+  if (!(existing instanceof Group)) {
+    if (existing) {
+      disposeObject(existing);
+    }
+    return createBorderObject(border, alphaMultiplier);
+  }
+
+  const base = existing.children[0];
+  const accent = existing.children[1];
+  if (!(base instanceof LineLoop) || !(accent instanceof LineLoop)) {
+    disposeObject(existing);
+    return createBorderObject(border, alphaMultiplier);
+  }
+
+  updateBorderLine(base, border, alphaMultiplier);
+  updateBorderLine(accent, border, alphaMultiplier);
+  accent.scale.set(
+    border.key === 'outer' ? 0.985 : 1.015,
+    border.key === 'outer' ? 0.985 : 1.015,
+    1,
+  );
+  accent.position.z = 0.31;
+  (accent.material as LineBasicMaterial).opacity =
+    Math.max(0.15, border.alpha * 0.55) * alphaMultiplier;
+  return existing;
+}
+
 class FeedbackManager {
   readonly compositeScene = new ThreeScene();
   readonly presentScene = new ThreeScene();
@@ -332,14 +520,16 @@ class FeedbackManager {
   readonly presentMaterial: MeshBasicMaterial;
   readonly sceneTarget: WebGLRenderTarget;
   readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
+  readonly resolutionScale: number;
   private index = 0;
 
-  constructor(width: number, height: number) {
+  constructor(width: number, height: number, backend: 'webgl' | 'webgpu') {
     this.camera.position.z = 1;
-    this.sceneTarget = new WebGLRenderTarget(width, height);
+    this.resolutionScale = backend === 'webgpu' ? 1.5 : 1.1;
+    this.sceneTarget = createFeedbackRenderTarget(width, height, backend);
     this.targets = [
-      new WebGLRenderTarget(width, height),
-      new WebGLRenderTarget(width, height),
+      createFeedbackRenderTarget(width, height, backend),
+      createFeedbackRenderTarget(width, height, backend),
     ];
     this.compositeMaterial = new ShaderMaterial({
       uniforms: {
@@ -478,8 +668,11 @@ class FeedbackManager {
     this.presentMaterial = new MeshBasicMaterial({
       map: this.targets[0].texture,
     });
-    const quad = new Mesh(new PlaneGeometry(2, 2), this.compositeMaterial);
-    const presentQuad = new Mesh(new PlaneGeometry(2, 2), this.presentMaterial);
+    const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
+    const presentQuad = new Mesh(
+      FULLSCREEN_QUAD_GEOMETRY,
+      this.presentMaterial,
+    );
     this.compositeScene.add(quad);
     this.presentScene.add(presentQuad);
   }
@@ -499,8 +692,10 @@ class FeedbackManager {
   }
 
   resize(width: number, height: number) {
-    this.sceneTarget.setSize(width, height);
-    this.targets.forEach((target) => target.setSize(width, height));
+    const scaledWidth = Math.max(1, Math.round(width * this.resolutionScale));
+    const scaledHeight = Math.max(1, Math.round(height * this.resolutionScale));
+    this.sceneTarget.setSize(scaledWidth, scaledHeight);
+    this.targets.forEach((target) => target.setSize(scaledWidth, scaledHeight));
   }
 
   dispose() {
@@ -520,7 +715,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly renderer: RendererLike | null;
   private readonly root = new Group();
   private readonly background = new Mesh(
-    new PlaneGeometry(6.4, 6.4),
+    BACKGROUND_GEOMETRY,
     new MeshBasicMaterial({
       color: 0x000000,
       transparent: false,
@@ -587,6 +782,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.feedback = new FeedbackManager(
         Math.max(1, Math.round(size.x)),
         Math.max(1, Math.round(size.y)),
+        backend,
       );
     } else {
       this.feedback = null;
@@ -614,12 +810,26 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     waves: MilkdropWaveVisual[],
     alphaMultiplier = 1,
   ) {
-    clearGroup(group);
-    waves.forEach((wave) => {
-      const object = createWaveObject(wave, alphaMultiplier);
-      if (object) {
-        group.add(object);
+    waves.forEach((wave, index) => {
+      const existing = group.children[index] as
+        | Line
+        | LineLoop
+        | Points
+        | undefined;
+      const synced = syncWaveObject(existing, wave, alphaMultiplier);
+      if (!synced) {
+        return;
       }
+      if (!existing) {
+        group.add(synced);
+      } else if (synced !== existing) {
+        group.remove(existing);
+        group.add(synced);
+      }
+    });
+    group.children.slice(waves.length).forEach((child) => {
+      disposeObject(child as { children?: unknown[] });
+      group.remove(child);
     });
   }
 
@@ -639,9 +849,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     borders: MilkdropBorderVisual[],
     alphaMultiplier = 1,
   ) {
-    clearGroup(group);
-    borders.forEach((border) => {
-      group.add(createBorderObject(border, alphaMultiplier));
+    borders.forEach((border, index) => {
+      const existing = group.children[index] as LineLoop | Group | undefined;
+      const synced = syncBorderObject(existing, border, alphaMultiplier);
+      if (!existing) {
+        group.add(synced);
+      } else if (synced !== existing) {
+        group.remove(existing);
+        group.add(synced);
+      }
+    });
+    group.children.slice(borders.length).forEach((child) => {
+      disposeObject(child as { children?: unknown[] });
+      group.remove(child);
     });
   }
 
@@ -816,7 +1036,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     clearGroup(this.blendShapeGroup);
     clearGroup(this.blendBorderGroup);
     clearGroup(this.blendMotionVectorGroup);
-    disposeGeometry(this.background.geometry);
+    if (!isSharedGeometry(this.background.geometry)) {
+      disposeGeometry(this.background.geometry);
+    }
     disposeMaterial(this.background.material);
     disposeGeometry(this.meshLines.geometry);
     disposeMaterial(this.meshLines.material);

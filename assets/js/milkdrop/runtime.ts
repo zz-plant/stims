@@ -120,6 +120,20 @@ function sanitizeRuntimeSignals(signals: MilkdropRuntimeSignals) {
   return rest;
 }
 
+export function getMilkdropDetailScale({
+  backend,
+  particleScale,
+  particleBudget,
+}: {
+  backend: 'webgl' | 'webgpu';
+  particleScale?: number;
+  particleBudget: number;
+}) {
+  const baseScale = (particleScale ?? 1) * particleBudget;
+  const backendBoost = backend === 'webgpu' ? 1.35 : 1.1;
+  return Math.min(2, Math.max(0.5, baseScale * backendBoost));
+}
+
 export function buildMilkdropInputSignalOverrides(
   input: UnifiedInputState | null,
 ): Partial<MilkdropRuntimeSignals> {
@@ -1066,9 +1080,11 @@ export function createMilkdropExperience({
         return;
       }
 
-      const detailScale =
-        (quality.activeQuality.particleScale ?? 1) *
-        frame.performance.particleBudget;
+      const detailScale = getMilkdropDetailScale({
+        backend: activeBackend,
+        particleScale: quality.activeQuality.particleScale,
+        particleBudget: frame.performance.particleBudget,
+      });
       vm.setDetailScale(detailScale);
       const baseSignals = signalTracker.update({
         time: frame.time,

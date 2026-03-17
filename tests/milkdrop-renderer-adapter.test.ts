@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import type { Vector2 } from 'three';
 import {
+  HalfFloatType,
+  LinearFilter,
   OrthographicCamera,
   Scene,
   ShaderMaterial,
@@ -187,6 +189,98 @@ shapecode_0_thickoutline=1
     expect(
       (fill?.material as ShaderMaterial).uniforms.secondaryColor?.value,
     ).toBeDefined();
+  });
+
+  test('reuses cached polygon geometries for same-sided shapes', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shared Shape Geometry
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_1_enabled=1
+shapecode_1_sides=6
+      `.trim(),
+      { id: 'shared-shape-geometry' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    expect(frameState.shapes).toHaveLength(2);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        children?: Array<{ children?: Array<{ geometry?: unknown }> }>;
+      }>;
+    };
+    const shapesGroup = root.children[5] as {
+      children: Array<{ children: Array<{ geometry?: unknown }> }>;
+    };
+
+    const firstFillGeometry = shapesGroup.children[0]?.children[0]?.geometry;
+    const secondFillGeometry = shapesGroup.children[1]?.children[0]?.geometry;
+    const firstBorderGeometry = shapesGroup.children[0]?.children[1]?.geometry;
+    const secondBorderGeometry = shapesGroup.children[1]?.children[1]?.geometry;
+
+    expect(firstFillGeometry).toBeDefined();
+    expect(firstFillGeometry).toBe(secondFillGeometry);
+    expect(firstBorderGeometry).toBeDefined();
+    expect(firstBorderGeometry).toBe(secondBorderGeometry);
+  });
+
+  test('reuses wave and border objects across renders', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Stable Objects
+ob_size=0.03
+      `.trim(),
+      { id: 'stable-objects' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    const firstFrame = createMilkdropVM(preset).step(makeSignals());
+    const secondFrame = createMilkdropVM(preset).step(makeSignals());
+
+    adapter.attach();
+    adapter.render({
+      frameState: firstFrame,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ children?: unknown[] }>;
+    };
+    const mainWaveGroup = root.children[2] as { children: unknown[] };
+    const borderGroup = root.children[6] as { children: unknown[] };
+    const firstWaveObject = mainWaveGroup.children[0];
+    const firstBorderObject = borderGroup.children[0];
+
+    adapter.render({
+      frameState: secondFrame,
+      blendState: null,
+    });
+
+    expect(mainWaveGroup.children[0]).toBe(firstWaveObject);
+    expect(borderGroup.children[0]).toBe(firstBorderObject);
   });
 
   test('forwards gamma-adjusted post state into feedback uniforms', () => {
@@ -378,6 +472,110 @@ ob_border=1
       6,
     );
     expect(borderGroup.children[0]?.type ?? 'Group').toBe('Group');
+  });
+
+  test('uses higher-quality feedback targets on webgpu backends', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGPU Feedback Quality
+video_echo=1
+      `.trim(),
+      { id: 'webgpu-feedback-quality' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          sceneTarget: {
+            width: number;
+            height: number;
+            samples: number;
+            texture: { type: number };
+          };
+        } | null;
+      }
+    ).feedback;
+
+    expect(feedback).not.toBeNull();
+    expect(feedback?.sceneTarget.width).toBe(960);
+    expect(feedback?.sceneTarget.height).toBe(540);
+    expect(feedback?.sceneTarget.samples).toBe(4);
+    expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
+  });
+
+  test('uses tuned feedback targets on webgl backends', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL Feedback Quality
+video_echo=1
+      `.trim(),
+      { id: 'webgl-feedback-quality' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          sceneTarget: {
+            width: number;
+            height: number;
+            samples: number;
+            texture: { type: number; minFilter: number; magFilter: number };
+          };
+        } | null;
+      }
+    ).feedback;
+
+    expect(feedback).not.toBeNull();
+    expect(feedback?.sceneTarget.width).toBe(704);
+    expect(feedback?.sceneTarget.height).toBe(396);
+    expect(feedback?.sceneTarget.samples).toBe(2);
+    expect(feedback?.sceneTarget.texture.type).not.toBe(HalfFloatType);
+    expect(feedback?.sceneTarget.texture.minFilter).toBe(LinearFilter);
+    expect(feedback?.sceneTarget.texture.magFilter).toBe(LinearFilter);
   });
 
   test('forwards shader transform controls into composite uniforms', () => {
