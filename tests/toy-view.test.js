@@ -138,6 +138,22 @@ describe('toy view helpers', () => {
     expect(document.querySelector('.control-panel')).toBeNull();
   });
 
+  test('marks the active toy container when the audio prompt HUD is active', () => {
+    const view = createToyView();
+
+    view.showActiveToyView();
+    view.showAudioPrompt(true, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+    });
+
+    const container = document.getElementById('active-toy-container');
+    expect(container?.dataset.audioPromptActive).toBe('true');
+
+    view.showAudioPrompt(false);
+    expect(container?.dataset.audioPromptActive).toBe('false');
+  });
+
   test('prepares and completes staged toy transitions', async () => {
     const view = createToyView();
     const currentStage = view.showActiveToyView(undefined, {

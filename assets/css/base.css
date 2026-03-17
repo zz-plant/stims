@@ -1783,11 +1783,7 @@ body {
   }
 
   .toy-nav__back {
-    grid-column: 1 / -1;
-    width: 100%;
-    min-height: 36px;
-    padding: 8px 10px;
-    justify-content: center;
+    display: none;
   }
 
   .active-toy-nav__actions[data-toy-actions-expanded="false"]
@@ -1811,8 +1807,15 @@ body {
     );
   }
 
-  :root[data-toy-controls-expanded="false"] .control-panel--floating {
+  :root[data-toy-controls-expanded="false"]
+    .active-toy-container[data-audio-prompt-active="false"]
+    .control-panel--floating {
     display: none;
+  }
+
+  .active-toy-container[data-audio-prompt-active="true"]
+    .control-panel--floating {
+    display: block;
   }
 
   :root[data-toy-controls-expanded="true"] .control-panel--floating {

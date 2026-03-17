@@ -350,8 +350,8 @@ function renderToyNav(
     );
     if (actionsToggleBtn) {
       actionsToggleBtn.textContent = expanded
-        ? 'Hide extra controls'
-        : 'More controls';
+        ? 'Hide controls'
+        : 'Open controls';
     }
   };
 

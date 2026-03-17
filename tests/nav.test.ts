@@ -170,9 +170,26 @@ describe('toy navigation visibility states', () => {
     );
 
     expect(actions.dataset.toyActionsExpanded).toBe('false');
-    expect(toggle.textContent).toBe('More controls');
+    expect(toggle.textContent).toBe('Open controls');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
     expect(document.documentElement.dataset.toyControlsExpanded).toBe('false');
+  });
+
+  test('mobile toy nav toggle updates to a clearer control label when expanded', () => {
+    const { matchMedia } = createMatchMediaStub();
+    window.matchMedia = matchMedia;
+
+    const container = document.getElementById('nav') as HTMLElement;
+    initNavigation(container, { mode: 'toy', title: 'Spectrum Bloom' });
+
+    const toggle = container.querySelector(
+      '[data-toy-actions-toggle="true"]',
+    ) as HTMLButtonElement;
+
+    toggle.click();
+
+    expect(toggle.textContent).toBe('Hide controls');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
   });
 });

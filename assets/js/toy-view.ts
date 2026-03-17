@@ -435,6 +435,7 @@ export function createToyView({
       showElement(toyList);
       hideElement(container);
       container.dataset.hasBlockingStatus = 'false';
+      container.dataset.audioPromptActive = 'false';
       clearStageState(container);
       state.status = null;
       return { container, status: null };
@@ -459,6 +460,9 @@ export function createToyView({
     const hasBlockingStatus =
       state.status?.variant === 'error' || state.status?.variant === 'warning';
     container.dataset.hasBlockingStatus = hasBlockingStatus ? 'true' : 'false';
+    container.dataset.audioPromptActive = state.audioPromptActive
+      ? 'true'
+      : 'false';
 
     if (state.audioPromptActive && state.audioPromptOptions) {
       const existingPrompt = container.querySelector('.control-panel');

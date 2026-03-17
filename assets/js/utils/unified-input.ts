@@ -26,6 +26,7 @@ export type UnifiedInputState = {
   source: InputSource;
   gesture: UnifiedGesture | null;
   mic: { level: number; available: boolean };
+  performance: UnifiedPerformanceState;
 };
 
 export type UnifiedGesture = {
@@ -33,6 +34,37 @@ export type UnifiedGesture = {
   scale: number;
   rotation: number;
   translation: { x: number; y: number };
+};
+
+export type UnifiedPerformanceActions = {
+  accent: number;
+  modeNext: number;
+  modePrevious: number;
+  presetNext: number;
+  presetPrevious: number;
+  quickLook1: number;
+  quickLook2: number;
+  quickLook3: number;
+  remix: number;
+};
+
+export type UnifiedPerformanceState = {
+  hoverActive: boolean;
+  hover: { x: number; y: number } | null;
+  wheelDelta: number;
+  wheelAccum: number;
+  dragIntensity: number;
+  dragAngle: number;
+  accentPulse: number;
+  sourceFlags: {
+    pointer: boolean;
+    keyboard: boolean;
+    gamepad: boolean;
+    mouse: boolean;
+    touch: boolean;
+    pen: boolean;
+  };
+  actions: UnifiedPerformanceActions;
 };
 
 export type UnifiedInputOptions = {
@@ -53,6 +85,22 @@ const DEFAULT_KEYBOARD_SPEED = 1.4;
 const DEFAULT_KEYBOARD_BOOST = 2.2;
 const DEFAULT_GAMEPAD_SPEED = 1.2;
 const DEFAULT_GAMEPAD_DEADZONE = 0.18;
+const PERFORMANCE_PULSE_MS = 220;
+const PERFORMANCE_WHEEL_DECAY = 0.76;
+const PERFORMANCE_WHEEL_ACCUM_DECAY = 0.9;
+const PERFORMANCE_WHEEL_MIN = 0.001;
+
+const PERFORMANCE_ACTION_KEYS = {
+  accent: [' ', 'enter'],
+  modeNext: ['e', 'x'],
+  modePrevious: ['q', 'z'],
+  presetNext: [']'],
+  presetPrevious: ['['],
+  quickLook1: ['1'],
+  quickLook2: ['2'],
+  quickLook3: ['3'],
+  remix: ['r'],
+} satisfies Record<keyof UnifiedPerformanceActions, string[]>;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
@@ -134,6 +182,21 @@ export function createUnifiedInput({
   let gamepadFrameId: number | null = null;
   let lastSource: InputSource = 'none';
   let lastGamepadConnected = false;
+  let wheelDelta = 0;
+  let wheelAccum = 0;
+  let lastAccentAt = -Infinity;
+  const actionLastTriggeredAt: Record<keyof UnifiedPerformanceActions, number> =
+    {
+      accent: -Infinity,
+      modeNext: -Infinity,
+      modePrevious: -Infinity,
+      presetNext: -Infinity,
+      presetPrevious: -Infinity,
+      quickLook1: -Infinity,
+      quickLook2: -Infinity,
+      quickLook3: -Infinity,
+      remix: -Infinity,
+    };
   let gestureAnchor: {
     centroid: { x: number; y: number };
     normalizedCentroid: { x: number; y: number };
@@ -193,6 +256,16 @@ export function createUnifiedInput({
     scheduleFrame();
   };
 
+  const triggerPerformanceAction = (
+    action: keyof UnifiedPerformanceActions,
+    now: number,
+  ) => {
+    actionLastTriggeredAt[action] = now;
+    if (action === 'accent') {
+      lastAccentAt = now;
+    }
+  };
+
   const handlePointerDown = (event: PointerEvent) => {
     if (focusOnPress) {
       target.focus({ preventScroll: true });
@@ -202,6 +275,10 @@ export function createUnifiedInput({
     } catch {
       // Ignore capture failures for non-capturing elements.
     }
+    triggerPerformanceAction(
+      'accent',
+      typeof performance !== 'undefined' ? performance.now() : Date.now(),
+    );
     queuePointerEvent(event);
   };
 
@@ -236,10 +313,34 @@ export function createUnifiedInput({
   target.addEventListener('pointerout', handlePointerLeave);
   target.addEventListener('lostpointercapture', handlePointerLost);
 
+  const handleWheel = (event: WheelEvent) => {
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+    const normalizedDelta = clamp(-event.deltaY / 240, -1.5, 1.5);
+    wheelDelta = clamp(wheelDelta + normalizedDelta, -2, 2);
+    wheelAccum = clamp(wheelAccum + normalizedDelta, -3, 3);
+    scheduleFrame();
+  };
+
+  target.addEventListener('wheel', handleWheel, { passive: false });
+
   const handleKeyDown = (event: KeyboardEvent) => {
     if (!keyboardEnabled) return;
     if (isTextInput(document.activeElement)) return;
     keyState.add(event.key.toLowerCase());
+    if (!event.repeat) {
+      const now =
+        typeof performance !== 'undefined' ? performance.now() : Date.now();
+      for (const [action, keys] of Object.entries(PERFORMANCE_ACTION_KEYS) as [
+        keyof UnifiedPerformanceActions,
+        string[],
+      ][]) {
+        if (keys.includes(event.key.toLowerCase())) {
+          triggerPerformanceAction(action, now);
+        }
+      }
+    }
     scheduleFrame();
   };
 
@@ -480,6 +581,73 @@ export function createUnifiedInput({
             y: primary.normalizedY - lastPrimary.normalizedY,
           }
         : { x: 0, y: 0 };
+    const dragIntensity = Math.hypot(dragDelta.x, dragDelta.y);
+    const performanceState: UnifiedPerformanceState = {
+      hoverActive: Boolean(hoverPointer),
+      hover: hoverPointer
+        ? {
+            x: hoverPointer.normalizedX,
+            y: hoverPointer.normalizedY,
+          }
+        : null,
+      wheelDelta,
+      wheelAccum,
+      dragIntensity,
+      dragAngle: dragIntensity > 0 ? Math.atan2(dragDelta.y, dragDelta.x) : 0,
+      accentPulse: Math.max(
+        0,
+        1 - (now - lastAccentAt) / PERFORMANCE_PULSE_MS,
+      ),
+      sourceFlags: {
+        pointer: source === 'pointer',
+        keyboard: source === 'keyboard',
+        gamepad: source === 'gamepad',
+        mouse:
+          primary?.pointerType === 'mouse' || hoverPointer?.pointerType === 'mouse',
+        touch: activePointerList.some((pointer) => pointer.pointerType === 'touch'),
+        pen: activePointerList.some((pointer) => pointer.pointerType === 'pen'),
+      },
+      actions: {
+        accent: Math.max(
+          0,
+          1 - (now - actionLastTriggeredAt.accent) / PERFORMANCE_PULSE_MS,
+        ),
+        modeNext: Math.max(
+          0,
+          1 - (now - actionLastTriggeredAt.modeNext) / PERFORMANCE_PULSE_MS,
+        ),
+        modePrevious: Math.max(
+          0,
+          1 -
+            (now - actionLastTriggeredAt.modePrevious) / PERFORMANCE_PULSE_MS,
+        ),
+        presetNext: Math.max(
+          0,
+          1 - (now - actionLastTriggeredAt.presetNext) / PERFORMANCE_PULSE_MS,
+        ),
+        presetPrevious: Math.max(
+          0,
+          1 -
+            (now - actionLastTriggeredAt.presetPrevious) / PERFORMANCE_PULSE_MS,
+        ),
+        quickLook1: Math.max(
+          0,
+          1 - (now - actionLastTriggeredAt.quickLook1) / PERFORMANCE_PULSE_MS,
+        ),
+        quickLook2: Math.max(
+          0,
+          1 - (now - actionLastTriggeredAt.quickLook2) / PERFORMANCE_PULSE_MS,
+        ),
+        quickLook3: Math.max(
+          0,
+          1 - (now - actionLastTriggeredAt.quickLook3) / PERFORMANCE_PULSE_MS,
+        ),
+        remix: Math.max(
+          0,
+          1 - (now - actionLastTriggeredAt.remix) / PERFORMANCE_PULSE_MS,
+        ),
+      },
+    };
 
     const state: UnifiedInputState = {
       time: now,
@@ -496,10 +664,19 @@ export function createUnifiedInput({
       source: source === 'none' ? lastSource : source,
       gesture,
       mic: micProvider?.() ?? { level: 0, available: false },
+      performance: performanceState,
     };
 
     isPressed = pressed;
     lastPrimary = primary;
+    wheelDelta *= PERFORMANCE_WHEEL_DECAY;
+    wheelAccum *= PERFORMANCE_WHEEL_ACCUM_DECAY;
+    if (Math.abs(wheelDelta) < PERFORMANCE_WHEEL_MIN) {
+      wheelDelta = 0;
+    }
+    if (Math.abs(wheelAccum) < PERFORMANCE_WHEEL_MIN) {
+      wheelAccum = 0;
+    }
 
     return state;
   };
@@ -518,7 +695,12 @@ export function createUnifiedInput({
     if (
       keyState.size > 0 ||
       activePointers.size > 0 ||
-      (gamepadEnabled && getPrimaryGamepad())
+      (gamepadEnabled && getPrimaryGamepad()) ||
+      Math.abs(wheelDelta) > PERFORMANCE_WHEEL_MIN ||
+      Math.abs(wheelAccum) > PERFORMANCE_WHEEL_MIN ||
+      Object.values(actionLastTriggeredAt).some(
+        (value) => now - value < PERFORMANCE_PULSE_MS,
+      )
     ) {
       scheduleFrame();
     }
@@ -564,6 +746,7 @@ export function createUnifiedInput({
     target.removeEventListener('pointerleave', handlePointerLeave);
     target.removeEventListener('pointerout', handlePointerLeave);
     target.removeEventListener('lostpointercapture', handlePointerLost);
+    target.removeEventListener('wheel', handleWheel);
     target.removeEventListener('keydown', handleKeyDown);
     target.removeEventListener('keyup', handleKeyUp);
     subscribers.clear();
