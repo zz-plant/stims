@@ -103,7 +103,10 @@ export async function initRenderer(
     if (error) {
       console.debug(error);
     }
-    rememberRendererFallback(reason, { shouldRetryWebGPU });
+    rememberRendererFallback(reason, {
+      shouldRetryWebGPU,
+      backend: 'webgl',
+    });
 
     const renderer = createWebGLRenderer({
       canvas,

@@ -51,6 +51,21 @@ export function deriveRendererPlan({
     };
   }
 
+  if (!capabilities.preferredBackend) {
+    return {
+      backend: null,
+      reasonCode:
+        capabilities.fallbackReasonCode ??
+        RENDERER_FALLBACK_REASON_CODES.rendererUnavailable,
+      reasonMessage:
+        capabilities.fallbackReason ??
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.rendererUnavailable,
+        ),
+      canRetryWebGPU: capabilities.shouldRetryWebGPU,
+    };
+  }
+
   return {
     backend: 'webgl',
     reasonCode:

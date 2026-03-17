@@ -26,8 +26,8 @@ export interface NavOptions {
   rendererStatus?: {
     backend: 'webgl' | 'webgpu';
     fallbackReason?: string | null;
-    shouldRetryWebGPU?: boolean;
-    onRetry?: () => void;
+    actionLabel?: string;
+    onAction?: () => void;
   } | null;
 }
 
@@ -661,12 +661,12 @@ function renderRendererStatus(
         ${fallback ? 'WebGL fallback' : 'WebGPU'}
       </span>
       ${fallbackReason ? `<small class="renderer-pill__detail">${fallbackReason}</small>` : ''}
-      ${status.shouldRetryWebGPU ? '<button type="button" class="renderer-pill__retry">Try WebGPU</button>' : ''}
+      ${status.actionLabel ? `<button type="button" class="renderer-pill__retry">${escapeHtml(status.actionLabel)}</button>` : ''}
     </div>
   `;
 
   const retryBtn = container.querySelector('.renderer-pill__retry');
-  retryBtn?.addEventListener('click', () => status.onRetry?.());
+  retryBtn?.addEventListener('click', () => status.onAction?.());
 }
 
 function setupThemeToggle(container: HTMLElement) {

@@ -47,12 +47,9 @@ type StatusAction = {
 };
 
 type CapabilityOptions = {
-  allowFallback?: boolean;
   onBack?: () => void;
-  onContinue?: () => void;
-  onUseWebGPU?: () => void;
-  compatibilityModeEnabled?: boolean;
-  shouldRetryWebGPU?: boolean;
+  onUsePreferredRenderer?: () => void;
+  preferredRendererActionLabel?: string;
   onBrowseCompatible?: () => void;
   details?: string | null;
 };
@@ -67,8 +64,8 @@ type ImportErrorOptions = {
 type RendererStatusState = {
   backend: 'webgl' | 'webgpu';
   fallbackReason?: string | null;
-  shouldRetryWebGPU?: boolean;
-  onRetry?: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
 };
 
 type AudioPromptCallbacks = {
@@ -686,71 +683,41 @@ export function createToyView({
     state.mode = 'toy';
     state.backHandler = options.onBack ?? state.backHandler;
     state.activeToyMeta = toy ?? state.activeToyMeta;
-
-    const isFallbackFlow = Boolean(options.allowFallback && options.onContinue);
-    const canUseWebGPUAction = Boolean(options.onUseWebGPU);
-    const webgpuActionLabel = options.compatibilityModeEnabled
-      ? 'Use WebGPU'
-      : 'Try WebGPU';
-    const fallbackMessage = options.compatibilityModeEnabled
-      ? toy?.title
-        ? `${toy.title} is running with WebGL because compatibility mode is on. You can switch back to WebGPU.`
-        : 'Compatibility mode is on, so WebGL is being used. You can switch back to WebGPU.'
-      : canUseWebGPUAction
-        ? toy?.title
-          ? `${toy.title} can run with lighter WebGL visuals for now. You can also try WebGPU again.`
-          : 'This toy can run with lighter WebGL visuals for now. You can also try WebGPU again.'
-        : toy?.title
-          ? `${toy.title} can run with lighter WebGL visuals for now.`
-          : 'This toy can run with lighter WebGL visuals for now.';
+    const hasPreferredRendererAction = Boolean(
+      options.onUsePreferredRenderer && options.preferredRendererActionLabel,
+    );
 
     state.status = {
-      variant: options.allowFallback ? 'warning' : 'error',
-      title: options.allowFallback
-        ? options.compatibilityModeEnabled
-          ? 'Compatibility mode is enabled'
-          : 'WebGPU could not start'
-        : 'WebGPU not available',
-      message: options.allowFallback
-        ? fallbackMessage
-        : `${
-            toy?.title
-              ? `${toy.title} needs WebGPU, which is not supported in this browser.`
-              : 'This toy requires WebGPU, which is not supported in this browser.'
-          } Try a browser with WebGPU support or choose another toy.${
-            options.details ? ` (${options.details})` : ''
-          }`,
+      variant: 'error',
+      title: 'WebGPU not available',
+      message: `${
+        toy?.title
+          ? `${toy.title} needs WebGPU, which is not supported in this browser.`
+          : 'This toy requires WebGPU, which is not supported in this browser.'
+      } Try a browser with WebGPU support or choose another toy.${
+        options.details ? ` (${options.details})` : ''
+      }`,
       actionsClassName: 'active-toy-actions',
-      actions: isFallbackFlow
-        ? [
-            {
-              label: 'Continue with WebGL',
-              onClick: options.onContinue,
-              primary: true,
-            },
-            ...(options.onUseWebGPU
-              ? [
-                  {
-                    label: webgpuActionLabel,
-                    onClick: options.onUseWebGPU,
-                  },
-                ]
-              : []),
-            {
-              label: 'Back to library',
-              onClick: options.onBack,
-            },
-          ]
-        : [
-            {
-              label: 'Back to library',
-              onClick: options.onBack,
-            },
-            {
-              label: 'Browse compatible toys',
-              onClick: options.onBrowseCompatible,
-            },
-          ],
+      actions: [
+        ...(hasPreferredRendererAction
+          ? [
+              {
+                label: options.preferredRendererActionLabel as string,
+                onClick: options.onUsePreferredRenderer,
+                primary: true,
+              },
+            ]
+          : []),
+        {
+          label: 'Back to library',
+          onClick: options.onBack,
+          primary: !hasPreferredRendererAction,
+        },
+        {
+          label: 'Browse compatible toys',
+          onClick: options.onBrowseCompatible,
+        },
+      ],
     };
 
     const { status } = runViewTransition(() =>

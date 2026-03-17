@@ -10,7 +10,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 | System readiness & performance | Readiness probes + performance controls + preflight dialog are wired. | `assets/js/readiness-probe.ts`, `assets/js/utils/init-system-check.ts`, `assets/js/core/capability-preflight.ts` |
 | Toy runtime shell | Loader, toy nav, status/errors, audio prompt, and settings panel are live. | `assets/js/loader.ts`, `assets/js/toy-view.ts`, `assets/js/ui/*` |
 | Audio input options | Mic, demo audio, tab capture, and YouTube capture are available. | `assets/js/ui/audio-controls.ts`, `assets/js/ui/youtube-controller.ts` |
-| Renderer fallback | WebGPU preferred with WebGL fallback + compatibility mode. | `assets/js/core/renderer-capabilities.ts`, `assets/js/core/render-preferences.ts` |
+| Renderer fallback | WebGPU preferred with direct WebGL fallback plus an optional force-WebGL compatibility mode. | `assets/js/core/renderer-capabilities.ts`, `assets/js/core/render-preferences.ts` |
 | Personalization & persistence | Theme, quality presets, render/motion preferences, and search state persist. | `assets/js/library-view.js`, `assets/js/core/settings-panel.ts` |
 | Gamepad + remote navigation | Focus + input support is enabled on library and toy pages for gamepads and keyboard-style TV remotes. | `assets/js/utils/gamepad-navigation.ts`, `assets/js/app.ts` |
 | Toy catalog metadata | Registry includes titles, tags, moods, controls, and lifecycle stage. | `assets/data/toys.json` |
@@ -58,12 +58,12 @@ This document captures the **current, shipped feature set** of Stims as implemen
 ### Loader & routing
 - **Route entry**: `toy.html?toy=<slug>` loads the matching module from the toy registry.
 - **Lifecycle**: Loader handles status states, disposal, and cleanup before switching toys.
-- **WebGPU gating**: Toys can require WebGPU, optionally allow WebGL fallback, and show a capability error when unavailable.
+- **WebGPU gating**: Toys can require WebGPU, optionally auto-load with WebGL fallback, and only hard-stop when a WebGPU-only toy cannot run.
 - **Prewarming**: Renderer capabilities and microphone permissions are prewarmed before loading.
 
 ### Toy navigation bar
 - **Now playing header**: Shows title + slug pill and “Press Esc” hint.
-- **Renderer status**: Displays active renderer (WebGPU/WebGL) and fallback reason + retry when applicable.
+- **Renderer status**: Displays active renderer (WebGPU/WebGL), fallback reason, and a recovery action when the preferred renderer can be retried.
 - **Share link**: Copies the current URL to clipboard with status feedback.
 - **Picture-in-picture**: Captures the toy canvas into a PiP video window when supported.
 - **Back to library**: Returns to the library view.

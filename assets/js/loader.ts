@@ -140,9 +140,9 @@ export function createLoader({
       forceRendererRetry,
     });
 
-    let capabilities = capabilityDecision.capabilities;
+    const capabilities = capabilityDecision.capabilities;
 
-    if (capabilityDecision.runMode === 'blocked') {
+    if (capabilityDecision.blockReason === 'rendering-unavailable') {
       if (shouldBlend) {
         view.cancelToyTransition?.();
       }
@@ -168,29 +168,33 @@ export function createLoader({
       hapticsSupported: sessionController.canUseHaptics(),
     };
 
-    let container = shouldBlend
+    const container = shouldBlend
       ? view.showIncomingToyView?.(backToLibrary, toy, viewOptions)
       : view.showActiveToyView(backToLibrary, toy, viewOptions);
     if (!container) return;
-    updateRendererStatus(
-      capabilities,
-      capabilities.shouldRetryWebGPU
-        ? async () => {
-            capabilities = await rendererCapabilities({ forceRetry: true });
-            updateRendererStatus(capabilities);
-            if (capabilities.preferredBackend === 'webgpu') {
-              if (shouldBlend) {
-                view.cancelToyTransition?.();
-                lifecycle.adoptActiveToy(outgoingToy?.ref);
-              } else {
-                disposeActiveToy();
-                view.clearActiveToyContainer?.();
-              }
-              await startModuleToy(toy, false, preferDemoAudio, capabilities);
-            }
-          }
-        : undefined,
-    );
+    const refreshRendererStatus = () => {
+      const preferredRendererAction =
+        capabilityController.createPreferredRendererAction({
+          capabilities,
+          retry: capabilityController.createPreferredRendererRetry({
+            toy,
+            pushState,
+            preferDemoAudio,
+            startFlow: sessionController.isFlowActive(),
+            startPartyMode: sessionController.isPartyModeActive(),
+            loadToy,
+            view,
+          }),
+        });
+
+      updateRendererStatus(
+        capabilities.preferredBackend ? capabilities : null,
+        preferredRendererAction,
+      );
+      return preferredRendererAction;
+    };
+
+    const preferredRendererAction = refreshRendererStatus();
 
     registerEscapeHandler(backToLibrary);
 
@@ -257,43 +261,13 @@ export function createLoader({
       });
     };
 
-    if (capabilityDecision.shouldShowCapabilityError) {
-      const compatibilityModeEnabled =
-        capabilities.fallbackReason ===
-        'Compatibility mode is enabled. Using WebGL.';
+    if (capabilityDecision.blockReason === 'webgpu-required') {
       view.showCapabilityError(toy, {
-        allowFallback: capabilityDecision.allowWebGLFallback,
         onBack: backToLibrary,
         onBrowseCompatible: capabilityController.browseCompatibleToys,
         details: capabilities.fallbackReason,
-        compatibilityModeEnabled,
-        shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
-        onUseWebGPU:
-          compatibilityModeEnabled || capabilities.shouldRetryWebGPU
-            ? capabilityController.createUseWebGPU({
-                compatibilityModeEnabled,
-                retry: capabilityController.createFallbackRetry({
-                  toy,
-                  pushState,
-                  preferDemoAudio,
-                  startFlow: sessionController.isFlowActive(),
-                  startPartyMode: sessionController.isPartyModeActive(),
-                  loadToy,
-                  view,
-                }),
-              })
-            : undefined,
-        onContinue: capabilityDecision.allowWebGLFallback
-          ? () => {
-              if (!shouldBlend) {
-                container =
-                  view.showActiveToyView(backToLibrary, toy, viewOptions) ??
-                  container;
-                view.clearActiveToyContainer();
-              }
-              void runToy();
-            }
-          : undefined,
+        preferredRendererActionLabel: preferredRendererAction?.label,
+        onUsePreferredRenderer: preferredRendererAction?.onClick,
       });
 
       return;

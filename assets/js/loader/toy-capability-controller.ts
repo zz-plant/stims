@@ -54,7 +54,7 @@ export function createToyCapabilityController({
       initialCapabilities,
     });
 
-  const createFallbackRetry =
+  const createPreferredRendererRetry =
     ({
       toy,
       pushState,
@@ -94,24 +94,41 @@ export function createToyCapabilityController({
       });
     };
 
-  const createUseWebGPU = ({
-    compatibilityModeEnabled,
+  const createPreferredRendererAction = ({
+    capabilities,
     retry,
   }: {
-    compatibilityModeEnabled: boolean;
+    capabilities: RendererCapabilities;
     retry: () => void;
   }) => {
-    if (!compatibilityModeEnabled) return retry;
-    return () => {
-      setCompatibilityMode(false);
-      retry();
+    if (capabilities.preferredBackend === 'webgpu') {
+      return undefined;
+    }
+
+    const label = capabilities.forceWebGL
+      ? 'Use WebGPU'
+      : capabilities.shouldRetryWebGPU
+        ? 'Try WebGPU'
+        : null;
+    if (!label) {
+      return undefined;
+    }
+
+    return {
+      label,
+      onClick: () => {
+        if (capabilities.forceWebGL) {
+          setCompatibilityMode(false);
+        }
+        retry();
+      },
     };
   };
 
   return {
     assess,
     browseCompatibleToys,
-    createFallbackRetry,
-    createUseWebGPU,
+    createPreferredRendererRetry,
+    createPreferredRendererAction,
   };
 }

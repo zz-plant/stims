@@ -17,9 +17,9 @@ type RenderCapabilityCheckInput = {
 export type ToyCapabilityDecision = {
   capabilities: RendererCapabilities;
   supportsRendering: boolean;
-  shouldShowCapabilityError: boolean;
   allowWebGLFallback: boolean;
   runMode: 'full' | 'fallback' | 'blocked';
+  blockReason: 'rendering-unavailable' | 'webgpu-required' | null;
 };
 
 export async function assessToyCapabilities({
@@ -40,9 +40,13 @@ export async function assessToyCapabilities({
   const allowWebGLFallback = Boolean(toy.allowWebGLFallback);
   const requiresWebGPU = Boolean(toy.requiresWebGPU);
   const isWebGPU = capabilities.preferredBackend === 'webgpu';
-  const shouldShowCapabilityError = requiresWebGPU && !isWebGPU;
+  const blockReason: ToyCapabilityDecision['blockReason'] = !supportsRendering
+    ? 'rendering-unavailable'
+    : requiresWebGPU && !isWebGPU && !allowWebGLFallback
+      ? 'webgpu-required'
+      : null;
 
-  const runMode: ToyCapabilityDecision['runMode'] = !supportsRendering
+  const runMode: ToyCapabilityDecision['runMode'] = blockReason
     ? 'blocked'
     : isWebGPU
       ? 'full'
@@ -51,8 +55,8 @@ export async function assessToyCapabilities({
   return {
     capabilities,
     supportsRendering,
-    shouldShowCapabilityError,
     allowWebGLFallback,
     runMode,
+    blockReason,
   };
 }

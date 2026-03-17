@@ -17,15 +17,15 @@ export function createToyLifecycleOrchestration({
 }) {
   const updateRendererStatus = (
     capabilities: RendererCapabilities | null,
-    onRetry?: () => void,
+    action?: { label: string; onClick: () => void },
   ) => {
     view?.setRendererStatus?.(
-      capabilities
+      capabilities?.preferredBackend
         ? {
             backend: capabilities.preferredBackend,
             fallbackReason: capabilities.fallbackReason,
-            shouldRetryWebGPU: capabilities.shouldRetryWebGPU,
-            onRetry,
+            actionLabel: action?.label,
+            onAction: action?.onClick,
           }
         : null,
     );

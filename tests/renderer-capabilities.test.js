@@ -73,6 +73,7 @@ describe('renderer capabilities', () => {
     expect(requestDevice).toHaveBeenCalledTimes(1);
     expect(result.preferredBackend).toBe('webgpu');
     expect(result.fallbackReason).toBeNull();
+    expect(result.forceWebGL).toBe(false);
   });
 
   test('falls back to WebGL when WebGPU is missing', async () => {
@@ -84,9 +85,24 @@ describe('renderer capabilities', () => {
 
     const result = await getRendererCapabilities({ forceRetry: true });
 
-    expect(result.preferredBackend).toBe('webgl');
+    expect(result.preferredBackend).toBeNull();
     expect(result.fallbackReason).toContain('WebGPU');
     expect(result.shouldRetryWebGPU).toBe(false);
+    expect(result.forceWebGL).toBe(false);
+  });
+
+  test('marks forced WebGL when compatibility mode is enabled', async () => {
+    window.localStorage.setItem('stims:compatibility-mode', 'true');
+    const { resetRenderPreferencesState } = await import(
+      '../assets/js/core/render-preferences.ts'
+    );
+    resetRenderPreferencesState();
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(result.preferredBackend).toBeNull();
+    expect(result.fallbackReason).toContain('Compatibility mode');
+    expect(result.forceWebGL).toBe(true);
   });
 
   test('retains fallback preference when renderer creation fails', async () => {
@@ -95,6 +111,7 @@ describe('renderer capabilities', () => {
     await getRendererCapabilities({ forceRetry: true });
     const recorded = rememberRendererFallback('Renderer creation failed.', {
       shouldRetryWebGPU: true,
+      backend: 'webgl',
     });
 
     expect(recorded.preferredBackend).toBe('webgl');
