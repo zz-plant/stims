@@ -177,6 +177,40 @@ describe('audio controls primary emphasis', () => {
     expect(hintPanel.textContent).toContain('Touch gestures');
     expect(hintPanel.textContent).toContain('Pinch/rotate gestures');
   });
+
+  test('shows desktop control legend by default on laptop-like devices', () => {
+    window.matchMedia = ((query: string) =>
+      ({
+        media: query,
+        matches: false,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList) as typeof window.matchMedia;
+
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      desktopHints: ['Move to steer', 'Press Q/E for mode changes'],
+      touchHints: ['Pinch to change scale'],
+    });
+
+    const desktopHints = container.querySelector(
+      '[data-desktop-hints]',
+    ) as HTMLElement | null;
+    const touchHints = container.querySelector(
+      '[data-gesture-hints]',
+    ) as HTMLElement | null;
+
+    expect(desktopHints?.textContent).toContain('Desktop controls');
+    expect(desktopHints?.textContent).toContain('Move to steer');
+    expect(touchHints?.hidden).toBe(true);
+  });
   test('does not auto-hide first steps before user dismisses it', () => {
     const container = document.createElement('section');
     const originalSetTimeout = window.setTimeout;

@@ -1,9 +1,12 @@
 import type { MilkdropPresetToyBehaviorFactory } from '../../milkdrop-preset-behavior';
 import {
   attachButtonGroup,
+  buildDesktopGestureSignalOverrides,
   createOptionCycler,
+  createPerformanceActionStepper,
   createQueuedFieldApplier,
   createRotationStepper,
+  handleDesktopPerformanceCycle,
   type PresetOption,
 } from './shared';
 
@@ -127,6 +130,7 @@ export const createAuroraPainterBehavior: MilkdropPresetToyBehaviorFactory =
     ];
 
     const stepper = createRotationStepper();
+    const actionStepper = createPerformanceActionStepper();
     let applyFields: ReturnType<typeof createQueuedFieldApplier> | null = null;
     let syncPaletteButtons: (() => void) | null = null;
 
@@ -160,31 +164,33 @@ export const createAuroraPainterBehavior: MilkdropPresetToyBehaviorFactory =
         syncPaletteButtons = attachButtonGroup({
           panel,
           title: 'Color mood',
-          description: 'Rotate with two fingers to cycle moods while playing.',
+          description:
+            'Press Q/E on desktop or rotate with two fingers to cycle moods.',
           options: palettes,
           getActiveId: paletteCycler.getActiveId,
           onChange: (id) => paletteCycler.select(id),
         });
+        api.setStatus(
+          'Move to steer, drag to push the ribbons, scroll to swell the glow, then press 1/2/3 or Q/E to perform the mood.',
+        );
+      },
+      getSignalOverrides({ frame }) {
+        return buildDesktopGestureSignalOverrides(frame, {
+          wheelScaleSensitivity: 0.15,
+          maxScaleOffset: 0.42,
+        });
       },
       onFrame({ frame }) {
-        const state = frame.input;
-        if (!state || state.pointerCount === 0) {
-          stepper.reset();
-          return;
-        }
-        const gesture = state.gesture;
-        if (!gesture || gesture.pointerCount < 2) {
-          return;
-        }
-        stepper.step(
-          gesture.rotation,
-          () => {
-            paletteCycler.next();
+        handleDesktopPerformanceCycle({
+          frame,
+          rotationStepper: stepper,
+          actionStepper,
+          onNext: () => paletteCycler.next(),
+          onPrevious: () => paletteCycler.previous(),
+          onQuickLook: (index) => {
+            quickCycler.select(quickPresets[index]?.id ?? quickCycler.getActiveId());
           },
-          () => {
-            paletteCycler.previous();
-          },
-        );
+        });
       },
       dispose() {
         syncPaletteButtons = null;

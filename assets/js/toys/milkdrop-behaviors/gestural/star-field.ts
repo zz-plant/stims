@@ -1,9 +1,12 @@
 import type { MilkdropPresetToyBehaviorFactory } from '../../milkdrop-preset-behavior';
 import {
   attachButtonGroup,
+  buildDesktopGestureSignalOverrides,
   createOptionCycler,
+  createPerformanceActionStepper,
   createQueuedFieldApplier,
   createRotationStepper,
+  handleDesktopPerformanceCycle,
   type PresetOption,
 } from './shared';
 
@@ -86,13 +89,14 @@ export const createStarFieldBehavior: MilkdropPresetToyBehaviorFactory = () => {
   ];
 
   const stepper = createRotationStepper();
+  const actionStepper = createPerformanceActionStepper();
   let applyFields: ReturnType<typeof createQueuedFieldApplier> | null = null;
   let pulseLabel: HTMLElement | null = null;
   let syncPaletteButtons: (() => void) | null = null;
 
   const intensityCycler = createOptionCycler({
     options: intensityModes,
-    initialId: 'vivid',
+    initialId: 'pulse',
     applyOption: (option) => {
       applyFields?.(option.fields, option.status);
     },
@@ -121,7 +125,8 @@ export const createStarFieldBehavior: MilkdropPresetToyBehaviorFactory = () => {
       syncPaletteButtons = attachButtonGroup({
         panel,
         title: 'Sky palette',
-        description: 'Rotate with two fingers to step through palette moods.',
+        description:
+          'Press Q/E on desktop or rotate with two fingers to step through palette moods.',
         options: palettes,
         getActiveId: paletteCycler.getActiveId,
         onChange: (id) => paletteCycler.select(id),
@@ -134,10 +139,16 @@ export const createStarFieldBehavior: MilkdropPresetToyBehaviorFactory = () => {
       pulseLabel.className = 'control-panel__microcopy';
       pulseLabel.textContent = 'Pulse: warming up';
       section.appendChild(pulseLabel);
-      void applyFields?.(intensityModes[1].fields, intensityModes[1].status);
+      void applyFields?.(intensityModes[2].fields, intensityModes[2].status);
       api.setStatus(
-        'Sky controls ready. Drag, pinch, and rotate to steer the scene.',
+        'Sky controls ready. Move to steer drift, drag to shove the field, scroll to lift sparkle, then press 1/2/3 or Q/E while the pulse meter runs.',
       );
+    },
+    getSignalOverrides({ frame }) {
+      return buildDesktopGestureSignalOverrides(frame, {
+        wheelScaleSensitivity: 0.18,
+        maxScaleOffset: 0.48,
+      });
     },
     onFrame({ frame }) {
       if (pulseLabel) {
@@ -151,20 +162,18 @@ export const createStarFieldBehavior: MilkdropPresetToyBehaviorFactory = () => {
         pulseLabel.textContent = `Pulse: ${pulse}%`;
       }
 
-      const state = frame.input;
-      if (!state || state.pointerCount === 0) {
-        stepper.reset();
-        return;
-      }
-      const gesture = state.gesture;
-      if (!gesture || gesture.pointerCount < 2) {
-        return;
-      }
-      stepper.step(
-        gesture.rotation,
-        () => paletteCycler.next(),
-        () => paletteCycler.previous(),
-      );
+      handleDesktopPerformanceCycle({
+        frame,
+        rotationStepper: stepper,
+        actionStepper,
+        onNext: () => paletteCycler.next(),
+        onPrevious: () => paletteCycler.previous(),
+        onQuickLook: (index) => {
+          intensityCycler.select(
+            intensityModes[index]?.id ?? intensityCycler.getActiveId(),
+          );
+        },
+      });
     },
     dispose() {
       pulseLabel = null;

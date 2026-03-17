@@ -1,9 +1,12 @@
 import type { MilkdropPresetToyBehaviorFactory } from '../../milkdrop-preset-behavior';
 import {
   attachButtonGroup,
+  buildDesktopGestureSignalOverrides,
   createOptionCycler,
+  createPerformanceActionStepper,
   createQueuedFieldApplier,
   createRotationStepper,
+  handleDesktopPerformanceCycle,
   type PresetOption,
 } from './shared';
 
@@ -51,11 +54,12 @@ export const createCubeWaveBehavior: MilkdropPresetToyBehaviorFactory = () => {
   ];
 
   const stepper = createRotationStepper();
+  const actionStepper = createPerformanceActionStepper();
   let applyFields: ReturnType<typeof createQueuedFieldApplier> | null = null;
   let syncModeButtons: (() => void) | null = null;
   const modeCycler = createOptionCycler({
     options: modes,
-    initialId: 'stack',
+    initialId: 'pulse',
     applyOption: (option) => {
       applyFields?.(option.fields, option.status);
       syncModeButtons?.();
@@ -68,27 +72,34 @@ export const createCubeWaveBehavior: MilkdropPresetToyBehaviorFactory = () => {
       syncModeButtons = attachButtonGroup({
         panel,
         title: 'Grid mode',
-        description: 'Rotate with two fingers to step through modes.',
+        description:
+          'Press Q/E on desktop or rotate with two fingers to step through modes.',
         options: modes,
         getActiveId: modeCycler.getActiveId,
         onChange: (id) => modeCycler.select(id),
       });
+      void applyFields?.(modes[2].fields, modes[2].status);
+      api.setStatus(
+        'Move to steer the grid, drag to shove it harder, scroll to lift the energy, then press 1/2/3 or Q/E to swap modes.',
+      );
+    },
+    getSignalOverrides({ frame }) {
+      return buildDesktopGestureSignalOverrides(frame, {
+        wheelScaleSensitivity: 0.14,
+        maxScaleOffset: 0.38,
+      });
     },
     onFrame({ frame }) {
-      const state = frame.input;
-      if (!state || state.pointerCount === 0) {
-        stepper.reset();
-        return;
-      }
-      const gesture = state.gesture;
-      if (!gesture || gesture.pointerCount < 2) {
-        return;
-      }
-      stepper.step(
-        gesture.rotation,
-        () => modeCycler.next(),
-        () => modeCycler.previous(),
-      );
+      handleDesktopPerformanceCycle({
+        frame,
+        rotationStepper: stepper,
+        actionStepper,
+        onNext: () => modeCycler.next(),
+        onPrevious: () => modeCycler.previous(),
+        onQuickLook: (index) => {
+          modeCycler.select(modes[index]?.id ?? modeCycler.getActiveId());
+        },
+      });
     },
     dispose() {
       syncModeButtons = null;

@@ -21,6 +21,8 @@ type ToyWithControls = Pick<
   ToyEntry,
   | 'slug'
   | 'controls'
+  | 'desktopHints'
+  | 'touchHints'
   | 'firstRunHint'
   | 'starterPreset'
   | 'wowControl'
@@ -153,9 +155,19 @@ export function bootToyPage({
         : []),
     ];
     const firstRunHint = toyMeta?.firstRunHint ?? starterTips[0];
-    const gestureHints = starterTips.filter((tip) =>
+    const touchHints = (toyMeta?.touchHints ?? starterTips).filter((tip) =>
       /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip),
     );
+    const desktopHints = (
+      toyMeta?.desktopHints ?? [
+        'Move to steer the scene.',
+        'Drag to inject force.',
+        'Scroll or trackpad pinch for depth and intensity.',
+        'Press Space for an accent burst.',
+        'Press R to remix the preset browser.',
+        'Press Q/E or 1/2/3 for fast mode changes.',
+      ]
+    ).slice(0, 6);
     const starterPresetId = toyMeta?.starterPreset?.id;
     const starterPresetLabel = toyMeta?.starterPreset?.label;
     const audioInitState = buildAudioInitState(result);
@@ -187,7 +199,8 @@ export function bootToyPage({
       },
       starterTips,
       firstRunHint,
-      gestureHints,
+      desktopHints,
+      touchHints,
       starterPresetId,
       starterPresetLabel,
       onApplyStarterPreset: starterPresetId

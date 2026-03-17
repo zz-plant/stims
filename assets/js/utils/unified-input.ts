@@ -594,17 +594,17 @@ export function createUnifiedInput({
       wheelAccum,
       dragIntensity,
       dragAngle: dragIntensity > 0 ? Math.atan2(dragDelta.y, dragDelta.x) : 0,
-      accentPulse: Math.max(
-        0,
-        1 - (now - lastAccentAt) / PERFORMANCE_PULSE_MS,
-      ),
+      accentPulse: Math.max(0, 1 - (now - lastAccentAt) / PERFORMANCE_PULSE_MS),
       sourceFlags: {
         pointer: source === 'pointer',
         keyboard: source === 'keyboard',
         gamepad: source === 'gamepad',
         mouse:
-          primary?.pointerType === 'mouse' || hoverPointer?.pointerType === 'mouse',
-        touch: activePointerList.some((pointer) => pointer.pointerType === 'touch'),
+          primary?.pointerType === 'mouse' ||
+          hoverPointer?.pointerType === 'mouse',
+        touch: activePointerList.some(
+          (pointer) => pointer.pointerType === 'touch',
+        ),
         pen: activePointerList.some((pointer) => pointer.pointerType === 'pen'),
       },
       actions: {
@@ -618,8 +618,7 @@ export function createUnifiedInput({
         ),
         modePrevious: Math.max(
           0,
-          1 -
-            (now - actionLastTriggeredAt.modePrevious) / PERFORMANCE_PULSE_MS,
+          1 - (now - actionLastTriggeredAt.modePrevious) / PERFORMANCE_PULSE_MS,
         ),
         presetNext: Math.max(
           0,

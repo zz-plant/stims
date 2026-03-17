@@ -8,6 +8,7 @@ import {
   setCompatibilityMode,
 } from '../core/render-preferences';
 import type { ToyRuntimeFrame, ToyRuntimeInstance } from '../core/toy-runtime';
+import type { UnifiedInputState } from '../utils/unified-input';
 import type { QualityPresetManager } from '../utils/toy-settings';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
@@ -116,6 +117,93 @@ shape_0_per_frame1=rad = 0.14 + beat_pulse * 0.08
 function sanitizeRuntimeSignals(signals: MilkdropRuntimeSignals) {
   const { frequencyData: _frequencyData, ...rest } = signals;
   return rest;
+}
+
+export function buildMilkdropInputSignalOverrides(
+  input: UnifiedInputState | null,
+): Partial<MilkdropRuntimeSignals> {
+  const gesture = input?.gesture;
+  const performance = input?.performance;
+  const sourceFlags = performance?.sourceFlags;
+  const actions = performance?.actions;
+
+  return {
+    inputX: input?.normalizedCentroid.x ?? 0,
+    inputY: input?.normalizedCentroid.y ?? 0,
+    input_x: input?.normalizedCentroid.x ?? 0,
+    input_y: input?.normalizedCentroid.y ?? 0,
+    inputDx: input?.dragDelta.x ?? 0,
+    inputDy: input?.dragDelta.y ?? 0,
+    input_dx: input?.dragDelta.x ?? 0,
+    input_dy: input?.dragDelta.y ?? 0,
+    inputSpeed: Math.hypot(input?.dragDelta.x ?? 0, input?.dragDelta.y ?? 0),
+    input_speed: Math.hypot(
+      input?.dragDelta.x ?? 0,
+      input?.dragDelta.y ?? 0,
+    ),
+    inputPressed: input?.isPressed ? 1 : 0,
+    input_pressed: input?.isPressed ? 1 : 0,
+    inputJustPressed: input?.justPressed ? 1 : 0,
+    input_just_pressed: input?.justPressed ? 1 : 0,
+    inputJustReleased: input?.justReleased ? 1 : 0,
+    input_just_released: input?.justReleased ? 1 : 0,
+    inputCount: input?.pointerCount ?? 0,
+    input_count: input?.pointerCount ?? 0,
+    gestureScale: gesture?.scale ?? 1,
+    gesture_scale: gesture?.scale ?? 1,
+    gestureRotation: gesture?.rotation ?? 0,
+    gesture_rotation: gesture?.rotation ?? 0,
+    gestureTranslateX: gesture?.translation.x ?? 0,
+    gestureTranslateY: gesture?.translation.y ?? 0,
+    gesture_translate_x: gesture?.translation.x ?? 0,
+    gesture_translate_y: gesture?.translation.y ?? 0,
+    hoverActive: performance?.hoverActive ? 1 : 0,
+    hover_active: performance?.hoverActive ? 1 : 0,
+    hoverX: performance?.hover?.x ?? 0,
+    hoverY: performance?.hover?.y ?? 0,
+    hover_x: performance?.hover?.x ?? 0,
+    hover_y: performance?.hover?.y ?? 0,
+    wheelDelta: performance?.wheelDelta ?? 0,
+    wheel_delta: performance?.wheelDelta ?? 0,
+    wheelAccum: performance?.wheelAccum ?? 0,
+    wheel_accum: performance?.wheelAccum ?? 0,
+    dragIntensity: performance?.dragIntensity ?? 0,
+    drag_intensity: performance?.dragIntensity ?? 0,
+    dragAngle: performance?.dragAngle ?? 0,
+    drag_angle: performance?.dragAngle ?? 0,
+    accentPulse: performance?.accentPulse ?? 0,
+    accent_pulse: performance?.accentPulse ?? 0,
+    actionAccent: actions?.accent ?? 0,
+    action_accent: actions?.accent ?? 0,
+    actionModeNext: actions?.modeNext ?? 0,
+    action_mode_next: actions?.modeNext ?? 0,
+    actionModePrevious: actions?.modePrevious ?? 0,
+    action_mode_previous: actions?.modePrevious ?? 0,
+    actionPresetNext: actions?.presetNext ?? 0,
+    action_preset_next: actions?.presetNext ?? 0,
+    actionPresetPrevious: actions?.presetPrevious ?? 0,
+    action_preset_previous: actions?.presetPrevious ?? 0,
+    actionQuickLook1: actions?.quickLook1 ?? 0,
+    action_quick_look_1: actions?.quickLook1 ?? 0,
+    actionQuickLook2: actions?.quickLook2 ?? 0,
+    action_quick_look_2: actions?.quickLook2 ?? 0,
+    actionQuickLook3: actions?.quickLook3 ?? 0,
+    action_quick_look_3: actions?.quickLook3 ?? 0,
+    actionRemix: actions?.remix ?? 0,
+    action_remix: actions?.remix ?? 0,
+    inputSourcePointer: sourceFlags?.pointer ? 1 : 0,
+    input_source_pointer: sourceFlags?.pointer ? 1 : 0,
+    inputSourceKeyboard: sourceFlags?.keyboard ? 1 : 0,
+    input_source_keyboard: sourceFlags?.keyboard ? 1 : 0,
+    inputSourceGamepad: sourceFlags?.gamepad ? 1 : 0,
+    input_source_gamepad: sourceFlags?.gamepad ? 1 : 0,
+    inputSourceMouse: sourceFlags?.mouse ? 1 : 0,
+    input_source_mouse: sourceFlags?.mouse ? 1 : 0,
+    inputSourceTouch: sourceFlags?.touch ? 1 : 0,
+    input_source_touch: sourceFlags?.touch ? 1 : 0,
+    inputSourcePen: sourceFlags?.pen ? 1 : 0,
+    input_source_pen: sourceFlags?.pen ? 1 : 0,
+  };
 }
 
 function buildAgentMilkdropDebugSnapshot({
@@ -771,42 +859,7 @@ export function createMilkdropExperience({
         analyser: frame.analyser,
         frequencyData: frame.frequencyData,
       });
-      const input = frame.input;
-      const gesture = input?.gesture;
-      const inputOverrides: Partial<MilkdropRuntimeSignals> = {
-        inputX: input?.normalizedCentroid.x ?? 0,
-        inputY: input?.normalizedCentroid.y ?? 0,
-        input_x: input?.normalizedCentroid.x ?? 0,
-        input_y: input?.normalizedCentroid.y ?? 0,
-        inputDx: input?.dragDelta.x ?? 0,
-        inputDy: input?.dragDelta.y ?? 0,
-        input_dx: input?.dragDelta.x ?? 0,
-        input_dy: input?.dragDelta.y ?? 0,
-        inputSpeed: Math.hypot(
-          input?.dragDelta.x ?? 0,
-          input?.dragDelta.y ?? 0,
-        ),
-        input_speed: Math.hypot(
-          input?.dragDelta.x ?? 0,
-          input?.dragDelta.y ?? 0,
-        ),
-        inputPressed: input?.isPressed ? 1 : 0,
-        input_pressed: input?.isPressed ? 1 : 0,
-        inputJustPressed: input?.justPressed ? 1 : 0,
-        input_just_pressed: input?.justPressed ? 1 : 0,
-        inputJustReleased: input?.justReleased ? 1 : 0,
-        input_just_released: input?.justReleased ? 1 : 0,
-        inputCount: input?.pointerCount ?? 0,
-        input_count: input?.pointerCount ?? 0,
-        gestureScale: gesture?.scale ?? 1,
-        gesture_scale: gesture?.scale ?? 1,
-        gestureRotation: gesture?.rotation ?? 0,
-        gesture_rotation: gesture?.rotation ?? 0,
-        gestureTranslateX: gesture?.translation.x ?? 0,
-        gestureTranslateY: gesture?.translation.y ?? 0,
-        gesture_translate_x: gesture?.translation.x ?? 0,
-        gesture_translate_y: gesture?.translation.y ?? 0,
-      };
+      const inputOverrides = buildMilkdropInputSignalOverrides(frame.input);
       const signals = {
         ...baseSignals,
         ...inputOverrides,

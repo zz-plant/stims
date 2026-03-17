@@ -17,6 +17,8 @@ export interface AudioControlsOptions {
   starterTips?: string[];
   firstRunHint?: string;
   gestureHints?: string[];
+  desktopHints?: string[];
+  touchHints?: string[];
   starterPresetLabel?: string;
   starterPresetId?: string;
   onApplyStarterPreset?: () => void;
@@ -50,10 +52,23 @@ export function initAudioControls(
   container.className = preserveFloatingLayout
     ? 'control-panel control-panel--floating'
     : 'control-panel';
+  const supportsTouchLikeInput =
+    (typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches) ||
+    navigator.maxTouchPoints > 0;
   const firstRunHint = options.firstRunHint?.trim();
-  const gestureHints = (options.gestureHints ?? options.starterTips ?? [])
+  const touchHints = (
+    options.touchHints ??
+    options.gestureHints ??
+    options.starterTips ??
+    []
+  )
     .filter((tip) => /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip))
     .slice(0, 2);
+  const desktopHints = (options.desktopHints ?? [])
+    .map((tip) => tip.trim())
+    .filter(Boolean)
+    .slice(0, 6);
 
   const starterPresetLabel =
     options.starterPresetLabel?.trim() || 'calm starter preset';
@@ -64,7 +79,9 @@ export function initAudioControls(
     ${renderPrimaryAudioChoice()}
     ${renderOnboardingHelp({
       firstRunHint,
-      gestureHints,
+      desktopHints,
+      touchHints,
+      supportsTouchLikeInput,
       starterTips: options.starterTips,
       starterPresetLabel,
     })}
@@ -301,10 +318,6 @@ export function initAudioControls(
   const gestureHintsPanel = container.querySelector(
     '[data-gesture-hints]',
   ) as HTMLElement | null;
-  const supportsTouchLikeInput =
-    (typeof window.matchMedia === 'function' &&
-      window.matchMedia('(pointer: coarse)').matches) ||
-    navigator.maxTouchPoints > 0;
 
   const showGestureHints = () => {
     if (!gestureHintsPanel || !supportsTouchLikeInput) return;
@@ -543,12 +556,16 @@ function renderPrimaryAudioChoice() {
 
 function renderOnboardingHelp({
   firstRunHint,
-  gestureHints,
+  desktopHints,
+  touchHints,
+  supportsTouchLikeInput,
   starterTips,
   starterPresetLabel,
 }: {
   firstRunHint?: string;
-  gestureHints: string[];
+  desktopHints: string[];
+  touchHints: string[];
+  supportsTouchLikeInput: boolean;
   starterTips?: string[];
   starterPresetLabel: string;
 }) {
@@ -569,11 +586,26 @@ function renderOnboardingHelp({
         <ul class="control-panel__tips control-panel__tips--compact">
           <li data-first-step-source>Start with mic for live input, or demo for instant audio.</li>
           <li>Pick <strong>Low motion</strong> in Controls if you want a calmer feel.</li>
-          <li>${firstRunHint ?? 'Tap or drag in the canvas once audio starts to quickly feel the response.'}</li>
+          <li>${firstRunHint ?? 'Click or drag in the canvas once audio starts to quickly feel the response.'}</li>
         </ul>
       </section>
       ${
-        gestureHints.length > 0
+        desktopHints.length > 0 && !supportsTouchLikeInput
+          ? `
+      <section class="control-panel__gesture-hints" data-desktop-hints aria-live="polite">
+        <div class="control-panel__first-steps-header">
+          <span class="control-panel__label">Desktop controls</span>
+        </div>
+        <p class="control-panel__microcopy">Laptop play is tuned as a live performance surface:</p>
+        <ul class="control-panel__tips control-panel__tips--compact">
+          ${desktopHints.map((tip) => `<li>${tip}</li>`).join('')}
+        </ul>
+      </section>
+      `
+          : ''
+      }
+      ${
+        touchHints.length > 0
           ? `
       <section class="control-panel__gesture-hints" data-gesture-hints hidden aria-live="polite">
         <div class="control-panel__first-steps-header">
@@ -582,7 +614,7 @@ function renderOnboardingHelp({
         </div>
         <p class="control-panel__microcopy">Once audio starts, try these quick moves:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
-          ${gestureHints.map((tip) => `<li>${tip}</li>`).join('')}
+          ${touchHints.map((tip) => `<li>${tip}</li>`).join('')}
         </ul>
       </section>
       `

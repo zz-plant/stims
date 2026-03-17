@@ -1,9 +1,12 @@
 import type { MilkdropPresetToyBehaviorFactory } from '../../milkdrop-preset-behavior';
 import {
   attachButtonGroup,
+  buildDesktopGestureSignalOverrides,
   createOptionCycler,
+  createPerformanceActionStepper,
   createQueuedFieldApplier,
   createRotationStepper,
+  handleDesktopPerformanceCycle,
   type PresetOption,
 } from './shared';
 
@@ -98,6 +101,7 @@ export const createSpiralBurstBehavior: MilkdropPresetToyBehaviorFactory =
     ];
 
     const stepper = createRotationStepper();
+    const actionStepper = createPerformanceActionStepper();
     let applyFields: ReturnType<typeof createQueuedFieldApplier> | null = null;
     let syncPaletteButtons: (() => void) | null = null;
     const modeCycler = createOptionCycler({
@@ -131,27 +135,33 @@ export const createSpiralBurstBehavior: MilkdropPresetToyBehaviorFactory =
         syncPaletteButtons = attachButtonGroup({
           panel,
           title: 'Spiral palette',
-          description: 'Rotate with two fingers to cycle palettes.',
+          description:
+            'Press Q/E on desktop or rotate with two fingers to cycle palettes.',
           options: palettes,
           getActiveId: paletteCycler.getActiveId,
           onChange: (id) => paletteCycler.select(id),
         });
+        api.setStatus(
+          'Move to torque the spiral, drag to slam it harder, scroll to intensify the burst, then press 1/2/3 or Q/E to shape the palette and mode.',
+        );
+      },
+      getSignalOverrides({ frame }) {
+        return buildDesktopGestureSignalOverrides(frame, {
+          wheelScaleSensitivity: 0.18,
+          maxScaleOffset: 0.5,
+        });
       },
       onFrame({ frame }) {
-        const state = frame.input;
-        if (!state || state.pointerCount === 0) {
-          stepper.reset();
-          return;
-        }
-        const gesture = state.gesture;
-        if (!gesture || gesture.pointerCount < 2) {
-          return;
-        }
-        stepper.step(
-          gesture.rotation,
-          () => paletteCycler.next(),
-          () => paletteCycler.previous(),
-        );
+        handleDesktopPerformanceCycle({
+          frame,
+          rotationStepper: stepper,
+          actionStepper,
+          onNext: () => paletteCycler.next(),
+          onPrevious: () => paletteCycler.previous(),
+          onQuickLook: (index) => {
+            modeCycler.select(modes[index]?.id ?? modeCycler.getActiveId());
+          },
+        });
       },
       dispose() {
         syncPaletteButtons = null;

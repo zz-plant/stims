@@ -1,4 +1,5 @@
 import type { PersistentSettingsPanel } from '../../../core/settings-panel';
+import type { ToyRuntimeFrame } from '../../../core/toy-runtime';
 import { createStatefulControlPanelButtonGroup } from '../../../utils/toy-settings';
 import type {
   MilkdropPresetFieldValue,
@@ -41,6 +42,92 @@ export function createRotationStepper(threshold = 0.45) {
       }
       latch = rotation;
     },
+  };
+}
+
+export function createPerformanceActionStepper(threshold = 0.55) {
+  const active = new Map<string, boolean>();
+  const trigger = (id: string, value: number, action: () => void) => {
+    const isActive = value >= threshold;
+    if (isActive && !active.get(id)) {
+      action();
+    }
+    active.set(id, isActive);
+  };
+
+  return {
+    trigger,
+    reset() {
+      active.clear();
+    },
+  };
+}
+
+export function handleDesktopPerformanceCycle({
+  frame,
+  rotationStepper,
+  actionStepper,
+  onNext,
+  onPrevious,
+  onQuickLook,
+}: {
+  frame: ToyRuntimeFrame;
+  rotationStepper: ReturnType<typeof createRotationStepper>;
+  actionStepper: ReturnType<typeof createPerformanceActionStepper>;
+  onNext: () => void;
+  onPrevious: () => void;
+  onQuickLook?: (index: number) => void;
+}) {
+  const state = frame.input;
+  if (!state || state.pointerCount === 0) {
+    rotationStepper.reset();
+  } else {
+    const gesture = state.gesture;
+    if (gesture?.pointerCount && gesture.pointerCount >= 2) {
+      rotationStepper.step(gesture.rotation, onNext, onPrevious);
+    }
+  }
+
+  const actions = state?.performance.actions;
+  if (!actions) {
+    actionStepper.reset();
+    return;
+  }
+
+  actionStepper.trigger('mode-next', actions.modeNext, onNext);
+  actionStepper.trigger('mode-previous', actions.modePrevious, onPrevious);
+  actionStepper.trigger('quick-1', actions.quickLook1, () => onQuickLook?.(0));
+  actionStepper.trigger('quick-2', actions.quickLook2, () => onQuickLook?.(1));
+  actionStepper.trigger('quick-3', actions.quickLook3, () => onQuickLook?.(2));
+}
+
+export function buildDesktopGestureSignalOverrides(
+  frame: ToyRuntimeFrame,
+  {
+    wheelScaleSensitivity = 0.12,
+    maxScaleOffset = 0.35,
+  }: {
+    wheelScaleSensitivity?: number;
+    maxScaleOffset?: number;
+  } = {},
+) {
+  const state = frame.input;
+  if (!state) {
+    return null;
+  }
+
+  if (state.gesture?.pointerCount && state.gesture.pointerCount >= 2) {
+    return null;
+  }
+
+  const wheelScaleOffset = Math.max(
+    -maxScaleOffset,
+    Math.min(maxScaleOffset, state.performance.wheelAccum * wheelScaleSensitivity),
+  );
+
+  return {
+    gestureScale: 1 + wheelScaleOffset,
+    gesture_scale: 1 + wheelScaleOffset,
   };
 }
 

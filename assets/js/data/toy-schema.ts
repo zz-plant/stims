@@ -34,6 +34,8 @@ export const toyEntrySchema = z
     moods: z.array(z.string().min(1)).optional(),
     tags: z.array(z.string().min(1)).optional(),
     controls: z.array(z.string().min(1)).optional(),
+    desktopHints: z.array(z.string().min(1)).optional(),
+    touchHints: z.array(z.string().min(1)).optional(),
     firstRunHint: z.string().min(1).optional(),
     starterPreset: starterPresetSchema.optional(),
     wowControl: z.string().min(1).optional(),

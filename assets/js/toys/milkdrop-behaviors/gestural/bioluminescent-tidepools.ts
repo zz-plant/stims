@@ -1,9 +1,12 @@
 import type { MilkdropPresetToyBehaviorFactory } from '../../milkdrop-preset-behavior';
 import {
   attachButtonGroup,
+  buildDesktopGestureSignalOverrides,
   createOptionCycler,
+  createPerformanceActionStepper,
   createQueuedFieldApplier,
   createRotationStepper,
+  handleDesktopPerformanceCycle,
   type PresetOption,
 } from './shared';
 
@@ -109,6 +112,7 @@ export const createBioluminescentTidepoolsBehavior: MilkdropPresetToyBehaviorFac
     ];
 
     const stepper = createRotationStepper();
+    const actionStepper = createPerformanceActionStepper();
     let applyFields: ReturnType<typeof createQueuedFieldApplier> | null = null;
     let syncMoodButtons: (() => void) | null = null;
     const moodCycler = createOptionCycler({
@@ -133,7 +137,8 @@ export const createBioluminescentTidepoolsBehavior: MilkdropPresetToyBehaviorFac
         syncMoodButtons = attachButtonGroup({
           panel,
           title: 'Tidepool mood',
-          description: 'Rotate with two fingers to cycle palette moods.',
+          description:
+            'Press Q/E on desktop or rotate with two fingers to cycle palette moods.',
           options: moods,
           getActiveId: moodCycler.getActiveId,
           onChange: (id) => moodCycler.select(id),
@@ -146,22 +151,29 @@ export const createBioluminescentTidepoolsBehavior: MilkdropPresetToyBehaviorFac
           getActiveId: currentCycler.getActiveId,
           onChange: (id) => currentCycler.select(id),
         });
+        api.setStatus(
+          'Move to shape the currents, drag to push the pool, scroll to brighten the lift, then press 1/2/3 or Q/E to shift the tide.',
+        );
+      },
+      getSignalOverrides({ frame }) {
+        return buildDesktopGestureSignalOverrides(frame, {
+          wheelScaleSensitivity: 0.18,
+          maxScaleOffset: 0.44,
+        });
       },
       onFrame({ frame }) {
-        const state = frame.input;
-        if (!state || state.pointerCount === 0) {
-          stepper.reset();
-          return;
-        }
-        const gesture = state.gesture;
-        if (!gesture || gesture.pointerCount < 2) {
-          return;
-        }
-        stepper.step(
-          gesture.rotation,
-          () => moodCycler.next(),
-          () => moodCycler.previous(),
-        );
+        handleDesktopPerformanceCycle({
+          frame,
+          rotationStepper: stepper,
+          actionStepper,
+          onNext: () => moodCycler.next(),
+          onPrevious: () => moodCycler.previous(),
+          onQuickLook: (index) => {
+            currentCycler.select(
+              currentModes[index]?.id ?? currentCycler.getActiveId(),
+            );
+          },
+        });
       },
       dispose() {
         syncMoodButtons = null;
