@@ -151,6 +151,39 @@ ib_border=1
     expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.25, 6);
   });
 
+  test('supports shader transform controls in the subset', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Transform
+warp_shader=dx=0.08; dy=-0.04; rot=0.3; zoom=1.15
+      `.trim(),
+      { id: 'shader-transform' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0.08, 6);
+    expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(-0.04, 6);
+    expect(compiled.ir.post.shaderControls.rotation).toBeCloseTo(0.3, 6);
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(1.15, 6);
+  });
+
+  test('supports shader color controls in the subset', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Color
+comp_shader=saturation=1.3; contrast=1.15; r=1.1; g=0.8; b=0.6
+      `.trim(),
+      { id: 'shader-color' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.saturation).toBeCloseTo(1.3, 6);
+    expect(compiled.ir.post.shaderControls.contrast).toBeCloseTo(1.15, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.r).toBeCloseTo(1.1, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.g).toBeCloseTo(0.8, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(0.6, 6);
+  });
+
   test('surfaces diagnostics for invalid scalar expressions', () => {
     const compiled = compileMilkdropPresetSource(
       `

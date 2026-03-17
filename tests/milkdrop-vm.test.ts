@@ -280,6 +280,41 @@ ib_border=1
     expect(frameState.borders[1]?.styled).toBe(true);
   });
 
+  test('carries shader transform controls into post visuals', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Transform VM
+warp_shader=dx=0.06; dy=-0.03; rot=0.22; zoom=1.1
+      `.trim(),
+      { id: 'shader-transform-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 7 }));
+
+    expect(frameState.post.shaderControls.offsetX).toBeCloseTo(0.06, 6);
+    expect(frameState.post.shaderControls.offsetY).toBeCloseTo(-0.03, 6);
+    expect(frameState.post.shaderControls.rotation).toBeCloseTo(0.22, 6);
+    expect(frameState.post.shaderControls.zoom).toBeCloseTo(1.1, 6);
+  });
+
+  test('carries shader color controls into post visuals', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Color VM
+comp_shader=saturation=1.25; contrast=1.1; r=1.05; g=0.9; b=0.7
+      `.trim(),
+      { id: 'shader-color-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 8 }));
+
+    expect(frameState.post.shaderControls.saturation).toBeCloseTo(1.25, 6);
+    expect(frameState.post.shaderControls.contrast).toBeCloseTo(1.1, 6);
+    expect(frameState.post.shaderControls.colorScale.r).toBeCloseTo(1.05, 6);
+    expect(frameState.post.shaderControls.colorScale.g).toBeCloseTo(0.9, 6);
+    expect(frameState.post.shaderControls.colorScale.b).toBeCloseTo(0.7, 6);
+  });
+
   test('accumulates and caps trail history across steps', () => {
     const preset = compileMilkdropPresetSource('title=Trail Test', {
       id: 'trail-test',
