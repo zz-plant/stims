@@ -28,7 +28,7 @@ export function createQueuedFieldApplier(api: MilkdropPresetToyBehaviorApi) {
   };
 }
 
-export function createRotationStepper(threshold = 0.45) {
+export function createRotationStepper(threshold = 0.35) {
   let latch = 0;
   return {
     reset() {
@@ -110,19 +110,25 @@ export function buildDesktopGestureSignalOverrides(
     wheelScaleSensitivity?: number;
     maxScaleOffset?: number;
   } = {},
-) {
+): {
+  gestureScale?: number;
+  gesture_scale?: number;
+} {
   const state = frame.input;
   if (!state) {
-    return null;
+    return {};
   }
 
   if (state.gesture?.pointerCount && state.gesture.pointerCount >= 2) {
-    return null;
+    return {};
   }
 
   const wheelScaleOffset = Math.max(
     -maxScaleOffset,
-    Math.min(maxScaleOffset, state.performance.wheelAccum * wheelScaleSensitivity),
+    Math.min(
+      maxScaleOffset,
+      state.performance.wheelAccum * wheelScaleSensitivity,
+    ),
   );
 
   return {

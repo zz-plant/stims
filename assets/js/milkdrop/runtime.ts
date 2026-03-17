@@ -8,8 +8,8 @@ import {
   setCompatibilityMode,
 } from '../core/render-preferences';
 import type { ToyRuntimeFrame, ToyRuntimeInstance } from '../core/toy-runtime';
-import type { UnifiedInputState } from '../utils/unified-input';
 import type { QualityPresetManager } from '../utils/toy-settings';
+import type { UnifiedInputState } from '../utils/unified-input';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
@@ -137,10 +137,7 @@ export function buildMilkdropInputSignalOverrides(
     input_dx: input?.dragDelta.x ?? 0,
     input_dy: input?.dragDelta.y ?? 0,
     inputSpeed: Math.hypot(input?.dragDelta.x ?? 0, input?.dragDelta.y ?? 0),
-    input_speed: Math.hypot(
-      input?.dragDelta.x ?? 0,
-      input?.dragDelta.y ?? 0,
-    ),
+    input_speed: Math.hypot(input?.dragDelta.x ?? 0, input?.dragDelta.y ?? 0),
     inputPressed: input?.isPressed ? 1 : 0,
     input_pressed: input?.isPressed ? 1 : 0,
     inputJustPressed: input?.justPressed ? 1 : 0,

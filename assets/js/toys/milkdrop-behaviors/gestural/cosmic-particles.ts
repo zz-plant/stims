@@ -82,7 +82,9 @@ export const createCosmicParticlesBehavior: MilkdropPresetToyBehaviorFactory =
           onNext: () => presetCycler.next(),
           onPrevious: () => presetCycler.previous(),
           onQuickLook: (index) => {
-            presetCycler.select(presets[index]?.id ?? presetCycler.getActiveId());
+            presetCycler.select(
+              presets[index]?.id ?? presetCycler.getActiveId(),
+            );
           },
         });
       },

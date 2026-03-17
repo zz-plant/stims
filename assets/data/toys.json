@@ -8,15 +8,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "energetic",
-      "immersive"
-    ],
-    "tags": [
-      "tunnel",
-      "3d",
-      "legacy"
-    ],
+    "moods": ["energetic", "immersive"],
+    "tags": ["tunnel", "3d", "legacy"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -46,17 +39,8 @@
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 1,
-    "moods": [
-      "dreamy",
-      "ethereal",
-      "luminous"
-    ],
-    "tags": [
-      "aurora",
-      "ribbons",
-      "gestural",
-      "touch"
-    ],
+    "moods": ["dreamy", "ethereal", "luminous"],
+    "tags": ["aurora", "ribbons", "gestural", "touch"],
     "controls": [
       "Move/drag ribbons + scroll bloom + Q/E moods",
       "Quick preset + color mood buttons",
@@ -99,15 +83,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "focus",
-      "tactile"
-    ],
-    "tags": [
-      "sculpting",
-      "pottery",
-      "3d"
-    ],
+    "moods": ["focus", "tactile"],
+    "tags": ["sculpting", "pottery", "3d"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -136,15 +113,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "psychedelic",
-      "cosmic"
-    ],
-    "tags": [
-      "fractal",
-      "glitch",
-      "evolutionary"
-    ],
+    "moods": ["psychedelic", "cosmic"],
+    "tags": ["fractal", "glitch", "evolutionary"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -173,15 +143,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "energetic",
-      "immersive"
-    ],
-    "tags": [
-      "geometry",
-      "microphone",
-      "reactive"
-    ],
+    "moods": ["energetic", "immersive"],
+    "tags": ["geometry", "microphone", "reactive"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -210,15 +173,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "serene",
-      "ethereal"
-    ],
-    "tags": [
-      "halos",
-      "particles",
-      "ambient"
-    ],
+    "moods": ["serene", "ethereal"],
+    "tags": ["halos", "particles", "ambient"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -247,15 +203,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "energetic",
-      "cosmic"
-    ],
-    "tags": [
-      "motion",
-      "hybrid",
-      "immersive"
-    ],
+    "moods": ["energetic", "cosmic"],
+    "tags": ["motion", "hybrid", "immersive"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -284,15 +233,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "dreamy",
-      "immersive"
-    ],
-    "tags": [
-      "synesthetic",
-      "patterns",
-      "audio-mapped"
-    ],
+    "moods": ["dreamy", "immersive"],
+    "tags": ["synesthetic", "patterns", "audio-mapped"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -321,15 +263,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "focus",
-      "minimal"
-    ],
-    "tags": [
-      "text",
-      "retro",
-      "grid"
-    ],
+    "moods": ["focus", "minimal"],
+    "tags": ["text", "retro", "grid"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -358,15 +293,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "calming",
-      "serene"
-    ],
-    "tags": [
-      "spectrograph",
-      "ambient",
-      "calming"
-    ],
+    "moods": ["calming", "serene"],
+    "tags": ["spectrograph", "ambient", "calming"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -395,16 +323,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "pulsing",
-      "energetic"
-    ],
-    "tags": [
-      "grid",
-      "waves",
-      "mode-switch",
-      "gestural"
-    ],
+    "moods": ["pulsing", "energetic"],
+    "tags": ["grid", "waves", "mode-switch", "gestural"],
     "controls": [
       "Move/drag drift + scroll lift + Q/E modes",
       "Grid mode buttons",
@@ -448,15 +368,8 @@
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 7,
-    "moods": [
-      "playful",
-      "uplifting"
-    ],
-    "tags": [
-      "bubbles",
-      "harmonics",
-      "reactive"
-    ],
+    "moods": ["playful", "uplifting"],
+    "tags": ["bubbles", "harmonics", "reactive"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -485,16 +398,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "prototype",
-    "moods": [
-      "uplifting",
-      "focus",
-      "minimal"
-    ],
-    "tags": [
-      "mobile",
-      "pulses",
-      "touch"
-    ],
+    "moods": ["uplifting", "focus", "minimal"],
+    "tags": ["mobile", "pulses", "touch"],
     "controls": [
       "Touch drag steering + tap accents",
       "Preset browser + favorites",
@@ -524,16 +429,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "prototype",
-    "moods": [
-      "calming",
-      "focus",
-      "glow"
-    ],
-    "tags": [
-      "mobile",
-      "ripples",
-      "touch"
-    ],
+    "moods": ["calming", "focus", "glow"],
+    "tags": ["mobile", "ripples", "touch"],
     "controls": [
       "Touch drag steering",
       "Preset browser + favorites",
@@ -563,17 +460,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "prototype",
-    "moods": [
-      "energetic",
-      "focus",
-      "pulsing"
-    ],
-    "tags": [
-      "grid",
-      "glitch",
-      "touch",
-      "reactive"
-    ],
+    "moods": ["energetic", "focus", "pulsing"],
+    "tags": ["grid", "glitch", "touch", "reactive"],
     "controls": [
       "Touch drag lane steering",
       "Preset browser + favorites",
@@ -603,17 +491,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "prototype",
-    "moods": [
-      "energetic",
-      "immersive",
-      "pulsing"
-    ],
-    "tags": [
-      "particles",
-      "pulses",
-      "touch",
-      "reactive"
-    ],
+    "moods": ["energetic", "immersive", "pulsing"],
+    "tags": ["particles", "pulses", "touch", "reactive"],
     "controls": [
       "Touch drag lane steering",
       "Preset browser + favorites",
@@ -643,17 +522,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "prototype",
-    "moods": [
-      "energetic",
-      "pulsing",
-      "immersive"
-    ],
-    "tags": [
-      "burst",
-      "patterns",
-      "touch",
-      "reactive"
-    ],
+    "moods": ["energetic", "pulsing", "immersive"],
+    "tags": ["burst", "patterns", "touch", "reactive"],
     "controls": [
       "Touch drag fan steering",
       "Preset browser + favorites",
@@ -684,16 +554,8 @@
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 5,
-    "moods": [
-      "cosmic",
-      "immersive"
-    ],
-    "tags": [
-      "particles",
-      "nebula",
-      "swirl",
-      "gestural"
-    ],
+    "moods": ["cosmic", "immersive"],
+    "tags": ["particles", "nebula", "swirl", "gestural"],
     "controls": [
       "Move/drag orbit + scroll depth + Q/E modes",
       "Cosmic preset buttons",
@@ -736,15 +598,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "energetic",
-      "luminous"
-    ],
-    "tags": [
-      "lights",
-      "shader",
-      "palette"
-    ],
+    "moods": ["energetic", "luminous"],
+    "tags": ["lights", "shader", "palette"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -774,16 +629,8 @@
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 4,
-    "moods": [
-      "energetic",
-      "pulsing",
-      "cosmic"
-    ],
-    "tags": [
-      "spirals",
-      "burst",
-      "gestural"
-    ],
+    "moods": ["energetic", "pulsing", "cosmic"],
+    "tags": ["spirals", "burst", "gestural"],
     "controls": [
       "Move/drag spin + scroll burst + Q/E palettes",
       "Spiral mode + palette buttons",
@@ -826,16 +673,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "cosmic",
-      "drifting"
-    ],
-    "tags": [
-      "tunnel",
-      "rainbow",
-      "immersive",
-      "gestural"
-    ],
+    "moods": ["cosmic", "drifting"],
+    "tags": ["tunnel", "rainbow", "immersive", "gestural"],
     "controls": [
       "Move/drag tunnel + scroll speed + Q/E palettes",
       "Motion mode + color drift buttons",
@@ -878,16 +717,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "serene",
-      "drifting",
-      "celestial"
-    ],
-    "tags": [
-      "stars",
-      "nebula",
-      "gestural"
-    ],
+    "moods": ["serene", "drifting", "celestial"],
+    "tags": ["stars", "nebula", "gestural"],
     "controls": [
       "Move/drag drift + scroll sparkle + Q/E palettes",
       "Sky intensity + palette buttons",
@@ -931,15 +762,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "archived",
-    "moods": [
-      "dreamy",
-      "serene"
-    ],
-    "tags": [
-      "fractal",
-      "kite",
-      "generative"
-    ],
+    "moods": ["dreamy", "serene"],
+    "tags": ["fractal", "kite", "generative"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -969,16 +793,8 @@
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 3,
-    "moods": [
-      "calming",
-      "grounded"
-    ],
-    "tags": [
-      "sand",
-      "tilt",
-      "haptics",
-      "motion"
-    ],
+    "moods": ["calming", "grounded"],
+    "tags": ["sand", "tilt", "haptics", "motion"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -1009,18 +825,8 @@
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 2,
-    "moods": [
-      "serene",
-      "ethereal",
-      "fiery",
-      "dreamy"
-    ],
-    "tags": [
-      "ocean",
-      "bioluminescent",
-      "caustics",
-      "gestural"
-    ],
+    "moods": ["serene", "ethereal", "fiery", "dreamy"],
+    "tags": ["ocean", "bioluminescent", "caustics", "gestural"],
     "controls": [
       "Move/drag currents + scroll lift + Q/E moods",
       "Tidepool mood + current buttons",
@@ -1064,17 +870,8 @@
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
     "featuredRank": 6,
-    "moods": [
-      "energetic",
-      "immersive"
-    ],
-    "tags": [
-      "synthwave",
-      "cyberpunk",
-      "retro",
-      "visualizer",
-      "bloom"
-    ],
+    "moods": ["energetic", "immersive"],
+    "tags": ["synthwave", "cyberpunk", "retro", "visualizer", "bloom"],
     "controls": [
       "Preset browser + favorites",
       "Blend duration + autoplay/random",
@@ -1103,18 +900,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
-    "moods": [
-      "immersive",
-      "psychedelic"
-    ],
-    "tags": [
-      "feedback",
-      "warp",
-      "visualizer",
-      "retro",
-      "presets",
-      "editor"
-    ],
+    "moods": ["immersive", "psychedelic"],
+    "tags": ["feedback", "warp", "visualizer", "retro", "presets", "editor"],
     "controls": [
       "Preset browser + favorites/recent",
       "Blend duration + autoplay/random",

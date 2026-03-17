@@ -188,7 +188,9 @@ export const createAuroraPainterBehavior: MilkdropPresetToyBehaviorFactory =
           onNext: () => paletteCycler.next(),
           onPrevious: () => paletteCycler.previous(),
           onQuickLook: (index) => {
-            quickCycler.select(quickPresets[index]?.id ?? quickCycler.getActiveId());
+            quickCycler.select(
+              quickPresets[index]?.id ?? quickCycler.getActiveId(),
+            );
           },
         });
       },
