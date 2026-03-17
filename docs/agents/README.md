@@ -31,7 +31,7 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 
 - `assets/js/toys/` — toy implementations.
 - `assets/data/toys.json` — checked-in toy manifest source; behavior-backed MilkDrop aliases also sync interaction metadata from `assets/js/toys/milkdrop-behaviors/metadata.ts` when `bun run generate:toys` runs.
-- `toys/` — standalone toy pages.
+- `public/toys/` — generated public toy pages.
 - `tests/` — automated test suite.
 - `docs/` — contributor and architecture docs.
 - `.agent/workflows/` + `.agent/skills/` — reusable automation workflows.

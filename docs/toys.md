@@ -7,7 +7,7 @@ Stims now leads with **MilkDrop Visualizer** as the flagship browser-native succ
 - Every non-`milkdrop` toy slug now starts the shared MilkDrop runtime with a bundled preset stored at `public/milkdrop-presets/<slug>.milk`.
 - The shared preset browser, blend controls, autoplay/random flow, source editor, and import/export tools are available from every toy alias.
 - The quickstart "starter preset" action on the audio panel now requests the toy slug's curated MilkDrop preset instead of trying to apply a quality preset.
-- Legacy bespoke implementations are preserved under `legacy/toys/` for reference only and are no longer loaded by `toy.html`.
+- Active toy loading now lives entirely in module entrypoints under `assets/js/toys/`.
 
 ## Bundled preset packs
 

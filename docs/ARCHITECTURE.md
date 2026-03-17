@@ -4,7 +4,7 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 
 ## Architecture at a Glance
 
-- **Entry shells** (`index.html`, `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `toy.html` passes a `toy=<slug>` query param. Legacy `toys/*.html` files now remain only as archived reference assets and redirect direct visits back into `toy.html`.
+- **Entry shells** (`index.html`, `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `toy.html` passes a `toy=<slug>` query param.
 - **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
 - **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
 - **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.
@@ -21,7 +21,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 ## Runtime Layers
 
-- **HTML entry points** (`index.html`, `toy.html`) load `assets/js/app.ts`; toy pages provide `?toy=<slug>` query params. Legacy `toys/*.html` pages are no longer a separate public surface.
+- **HTML entry points** (`index.html`, `toy.html`) load `assets/js/app.ts`; toy pages provide `?toy=<slug>` query params.
 - **App bootstrap** (`assets/js/app.ts`) detects library vs toy pages, wires controls, runs capability preflight, and starts loader flows.
 - **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, active toy lifecycle, and dynamic module loading.
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
@@ -49,7 +49,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 ```mermaid
 flowchart TD
   Entry[HTML shell
-  index.html, toy.html, toys/*.html] --> App[app.ts
+  index.html, toy.html] --> App[app.ts
   startApp()]
   App --> Loader[loader.ts
   createLoader()]
@@ -83,7 +83,7 @@ Last verified against the current runtime structure: **2026-03-16**.
 
 Verification checks performed:
 
-- Confirmed active entry pages are `index.html`, `toy.html`, and `toys/*.html` and that they bootstrap `assets/js/app.ts`.
+- Confirmed active source entry pages are `index.html` and `toy.html` and that they bootstrap `assets/js/app.ts`.
 - Confirmed runtime boot orchestration now starts in `assets/js/app.ts`, which then initializes loader/router plus capability and control wiring.
 - Confirmed architecture-critical modules documented here still exist (`loader.ts`, `router.ts`, `toy-view.ts`, `core/*`, and `core/services/*`).
 
@@ -109,7 +109,7 @@ Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option r
 
 ### P2 — Shrink shell and toy entry fragmentation
 
-- **Standardize shell responsibilities** across `index.html`, `toy.html`, and `toys/*.html` with a single documented shell contract and minimal per-page variation.
+- **Standardize shell responsibilities** across `index.html` and `toy.html` with a single documented shell contract and minimal per-page variation.
 - **Document generated/static page boundaries** (`public/toys/*` and capability/tag/mood pages) so contributors know which entry points are authoritative vs generated artifacts.
 - **Why this matters:** reducing entry ambiguity helps avoid accidental fixes in generated or non-authoritative pages.
 

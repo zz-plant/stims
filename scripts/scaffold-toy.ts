@@ -9,13 +9,13 @@ import {
 } from '../assets/js/data/toy-schema.ts';
 import { loadToyRegistry, saveToyRegistry } from './toy-registry.ts';
 
-type ToyType = 'module' | 'page';
+type ToyType = 'module';
 
 type ScaffoldOptions = {
   slug?: string;
   title?: string;
   description?: string;
-  type?: ToyType;
+  type?: string;
   createTest?: boolean;
   createSpec?: boolean;
   root?: string;
@@ -41,7 +41,7 @@ async function main() {
   try {
     const slug = parsed.slug ?? (await promptSlug(rl, parsed.root));
     const title = parsed.title ?? (await promptTitle(rl, slug));
-    const type = resolveType(parsed.type) ?? (await promptType(rl));
+    const type = resolveType(parsed.type) ?? 'module';
     const description =
       parsed.description ??
       ((
@@ -67,24 +67,14 @@ async function main() {
     });
 
     console.log(`\nCreated scaffold for ${slug}.`);
-    if (type === 'module') {
-      console.log(
-        '- Module:',
-        path.relative(
-          parsed.root ?? repoRoot,
-          toyModulePath(slug, parsed.root),
-        ),
-      );
-    } else {
-      console.log(
-        '- HTML entry:',
-        path.relative(parsed.root ?? repoRoot, toyHtmlPath(slug, parsed.root)),
-      );
-    }
+    console.log(
+      '- Module:',
+      path.relative(parsed.root ?? repoRoot, toyModulePath(slug, parsed.root)),
+    );
     const { relativePath } = await loadToyRegistry(parsed.root ?? repoRoot);
     console.log(`- Metadata: ${relativePath}`);
     console.log('- Index: docs/TOY_SCRIPT_INDEX.md');
-    if (shouldCreateTest && type === 'module') {
+    if (shouldCreateTest) {
       console.log(`- Test: tests/${testFileName(slug)}`);
     }
   } catch (error) {
@@ -112,29 +102,18 @@ export async function scaffoldToy({
     throw new Error(`A toy module already exists for slug "${slug}".`);
   }
 
-  if (type === 'page' && (await fileExists(toyHtmlPath(slug, root)))) {
-    throw new Error(
-      `HTML entry point ${toyHtmlPath(slug, root)} already exists.`,
-    );
-  }
-
-  await createToyModule(slug, type, root);
-  await ensureEntryPoint(slug, type, title, root);
+  await createToyModule(slug, root);
   await appendToyMetadata(slug, title, description, type, root);
   await validateMetadataEntry(slug, title, description, type, root);
-  await updateToyIndex(slug, type, root);
+  await updateToyIndex(slug, root);
 
-  if (createTest && type === 'module') {
+  if (createTest) {
     await createTestSpec(slug, root);
   }
 }
 
 function toyModulePath(slug: string, root = repoRoot) {
   return path.join(root, 'assets/js/toys', `${slug}.ts`);
-}
-
-function toyHtmlPath(slug: string, root = repoRoot) {
-  return path.join(root, 'toys', `${slug}.html`);
 }
 
 function testFileName(slug: string) {
@@ -194,11 +173,15 @@ async function ensureToysDataValid(root = repoRoot) {
 
 function resolveType(type?: string): ToyType | null {
   if (!type) return null;
-  if (type === 'module' || type === 'page') return type;
+  if (type === 'module') return 'module';
   const normalized = type.toLowerCase();
   if (normalized === 'm') return 'module';
-  if (normalized === 'p') return 'page';
-  throw new Error('Toy type must be "module" or "page".');
+  if (normalized === 'page' || normalized === 'p') {
+    throw new Error(
+      'Page-backed toy scaffolds have been removed. Use a module toy instead.',
+    );
+  }
+  throw new Error('Toy type must be "module".');
 }
 
 async function promptSlug(
@@ -250,19 +233,6 @@ async function promptTitle(
   return title;
 }
 
-async function promptType(
-  rl: ReturnType<typeof createInterface>,
-): Promise<ToyType> {
-  const rawType = (await rl.question('Toy type (module/page) [module]: '))
-    .trim()
-    .toLowerCase();
-
-  if (!rawType || rawType === 'module' || rawType === 'm') return 'module';
-  if (rawType === 'page' || rawType === 'p') return 'page';
-
-  throw new Error('Toy type must be "module" or "page".');
-}
-
 async function promptBoolean(
   rl: ReturnType<typeof createInterface>,
   question: string,
@@ -283,43 +253,7 @@ async function loadToysData(root = repoRoot) {
   return entries as ToyManifest;
 }
 
-async function ensureEntryPoint(
-  slug: string,
-  type: ToyType,
-  title: string,
-  root = repoRoot,
-) {
-  if (type !== 'page') return;
-
-  const htmlPath = toyHtmlPath(slug, root);
-  if (await fileExists(htmlPath)) return;
-  await fs.mkdir(path.dirname(htmlPath), { recursive: true });
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>${title}</title>
-    <link rel="stylesheet" href="../assets/css/base.css" />
-  </head>
-  <body>
-    <a href="../index.html" class="home-link">Back to Library</a>
-    <main class="toy-canvas" style="display: grid; place-items: center; min-height: 100vh;">
-      <p style="text-align: center; max-width: 38rem;">
-        Replace this placeholder with your experience for <strong>${title}</strong>.
-        Mount canvases or DOM elements here for a standalone toy page.
-      </p>
-    </main>
-  </body>
-</html>
-`;
-
-  await fs.writeFile(htmlPath, html, 'utf8');
-}
-
-async function createToyModule(slug: string, type: ToyType, root = repoRoot) {
-  if (type === 'page') return;
+async function createToyModule(slug: string, root = repoRoot) {
   const modulePath = toyModulePath(slug, root);
   await fs.mkdir(path.dirname(modulePath), { recursive: true });
 
@@ -346,8 +280,8 @@ async function appendToyMetadata(
     slug,
     title,
     description,
-    module: type === 'page' ? `toys/${slug}.html` : `assets/js/toys/${slug}.ts`,
-    type,
+    module: `assets/js/toys/${slug}.ts`,
+    type: 'module' as const,
     requiresWebGPU: false,
     capabilities: {
       microphone: true,
@@ -375,14 +309,13 @@ async function validateMetadataEntry(
     throw new Error(`Failed to register ${slug} in ${relativePath}.`);
   }
 
-  const expectedModule =
-    type === 'page' ? `toys/${slug}.html` : `assets/js/toys/${slug}.ts`;
+  const expectedModule = `assets/js/toys/${slug}.ts`;
   if (entry.module !== expectedModule) {
     throw new Error(`Module path for ${slug} must be ${expectedModule}.`);
   }
 
-  if (entry.type !== type) {
-    throw new Error(`Metadata type for ${slug} should be "${type}".`);
+  if (entry.type !== 'module') {
+    throw new Error(`Metadata type for ${slug} should be "module".`);
   }
 
   if (!entry.description || !entry.title) {
@@ -398,14 +331,11 @@ async function validateMetadataEntry(
   }
 }
 
-async function updateToyIndex(slug: string, type: ToyType, root = repoRoot) {
+async function updateToyIndex(slug: string, root = repoRoot) {
   const indexPath = path.join(root, 'docs/TOY_SCRIPT_INDEX.md');
   const current = await fs.readFile(indexPath, 'utf8');
 
-  const row =
-    type === 'page'
-      ? `| \`${slug}\` | \`toys/${slug}.html\` | Standalone HTML page. |`
-      : `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Direct module; load with \`toy.html?toy=${slug}\`. |`;
+  const row = `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Direct module; load with \`toy.html?toy=${slug}\`. |`;
 
   if (current.includes(row)) return;
   if (current.includes(`| \`${slug}\``)) {
@@ -414,17 +344,17 @@ async function updateToyIndex(slug: string, type: ToyType, root = repoRoot) {
     );
   }
 
-  const marker = '## Standalone HTML entry points';
+  const marker = '## Generated public toy pages';
   const markerIndex = current.indexOf(marker);
-  if (markerIndex === -1) {
-    throw new Error(
-      'Could not find insertion point in docs/TOY_SCRIPT_INDEX.md.',
-    );
-  }
-
-  const before = current.slice(0, markerIndex).replace(/\s*$/, '');
-  const after = current.slice(markerIndex);
-  const updated = `${before}\n${row}\n\n${after}`;
+  const before =
+    markerIndex === -1
+      ? current.replace(/\s*$/, '')
+      : current.slice(0, markerIndex).replace(/\s*$/, '');
+  const after = markerIndex === -1 ? '\n' : current.slice(markerIndex);
+  const updated =
+    markerIndex === -1
+      ? `${before}\n${row}\n`
+      : `${before}\n${row}\n\n${after}`;
 
   await fs.writeFile(indexPath, updated, 'utf8');
 }

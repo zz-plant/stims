@@ -7,11 +7,11 @@ Use this playbook when adding or modifying toys so new experiences integrate cle
 - Place new toy modules under `assets/js/toys/` and export a `start(options)` entry point.
 - Export `start({ container, canvas?, audioContext? })`. `container` is the preferred target for rendering.
 - Register the toy in `assets/data/toys.json` with a unique slug, label, and any default parameters. This JSON file is the checked-in manifest source; `assets/js/data/toy-manifest.ts` and `public/toys.json` are generated artifacts. Keep the module path under `assets/js/toys/`.
-- Load toys through `toy.html?toy=<slug>`. Legacy `toys/*.html` files now remain only as archived reference assets and redirect direct visits back to the shell.
+- Load toys through `toy.html?toy=<slug>`. Generated public toy pages under `public/toys/<slug>/` are output artifacts, not source entrypoints.
 - If a toy is just a curated MilkDrop look, prefer `createMilkdropPresetToyStarter(...)` over spinning up a bespoke scene/runtime module.
 - For MilkDrop preset aliases with custom touch/gesture/motion behavior, keep interaction metadata in `assets/js/toys/milkdrop-behaviors/metadata.ts` and let `bun run generate:toys` sync the JSON.
 - Keep assets (textures, JSON data, audio snippets) in `assets/data/` and reference them with relative paths.
-- Run `bun run generate:toys` after metadata edits to regenerate derived artifacts, then run `bun run check:toys` to verify schema validity, slug/entrypoint consistency, generated artifact parity, and module/page registration coverage.
+- Run `bun run generate:toys` after metadata edits to regenerate derived artifacts, then run `bun run check:toys` to verify schema validity, slug/entrypoint consistency, generated artifact parity, and module registration coverage.
 - Run `bun run check:quick` to validate types and code quality with Biome before opening a PR.
 
 
@@ -77,7 +77,7 @@ When exposing toy-specific controls, align them with the shared panel patterns s
 
 ## Add-and-test checklist (fast path)
 
-Use this sequence when you want to stand up a fresh toy quickly (you can also run `bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test` to automate the setup steps).
+Use this sequence when you want to stand up a fresh toy quickly (you can also run `bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --with-test` to automate the setup steps).
 
 ### Add a new stim (step-by-step)
 
@@ -86,7 +86,7 @@ Use the scaffold script whenever possible; it wires up metadata, docs, and optio
 1. **Pick a slug**: choose a short, kebab-case slug (for example `pocket-pulse`) that will become the `toy.html?toy=<slug>` route.
 2. **Scaffold the module** (recommended):
    ```bash
-   bun run scripts/scaffold-toy.ts --slug pocket-pulse --title "Pocket Pulse" --type module --with-test
+   bun run scripts/scaffold-toy.ts --slug pocket-pulse --title "Pocket Pulse" --with-test
    ```
    The script creates `assets/js/toys/<slug>.ts` with a typed `ToyStartFunction` + `WebToy` cleanup starter, appends the metadata entry in `assets/data/toys.json`, updates `docs/TOY_SCRIPT_INDEX.md`, and generates a minimal test in `tests/`. After scaffolding, add a short entry to `docs/toys.md` so contributor notes cover the new stim.
 3. **Manual alternative** (if you skipped the scaffold):
@@ -94,14 +94,13 @@ Use the scaffold script whenever possible; it wires up metadata, docs, and optio
    - Add the entry to `assets/data/toys.json` (include `title`, `description`, `module`, `type`, and any `lifecycleStage` metadata).
    - Add the slug row to `docs/TOY_SCRIPT_INDEX.md` so the loader docs stay in sync.
    - Add a short section to `docs/toys.md` with any controls/preset notes worth preserving for future contributors.
-   - Create `toys/<slug>.html` only if the toy uses a standalone page.
 4. **Wire the runtime**: use `createToyRuntimeStarter` or `createToyRuntime` so audio, renderer, input, and settings panel behavior matches the rest of the library. Keep all DOM work scoped to the provided `container`.
 5. **Verify locally**: run `bun run dev` and load `http://localhost:5173/toy.html?toy=<slug>` to confirm the new card loads, starts audio, and cleans up on exit.
 6. **Run quality checks** before opening a PR:
-   - `bun run check:toys` (ensures metadata, modules, and HTML entry points stay in sync)
+   - `bun run check:toys` (ensures metadata, modules, docs, and generated artifacts stay in sync)
    - `bun run check` (Biome + typecheck + tests)
 
-   The scaffold script can also generate a minimal Bun spec for you (`--with-spec`) that asserts the module exports `start`, and it will create a placeholder HTML page for page-based toys when one is missing.
+   The scaffold script can also generate a minimal Bun spec for you (`--with-spec`) that asserts the module exports `start`.
 
 7. **Manual spot-checks**:
    - Confirm the Back to Library control returns to the grid and removes your DOM nodes (cleanup).
@@ -217,6 +216,5 @@ Manual scenarios to verify:
 ## Documentation
 
 - Update `README.md` and `CONTRIBUTING.md` if you introduce new scripts or global expectations.
-- Describe user-facing controls or setup steps in the associated HTML entry point if they deviate from existing patterns.
+- Describe user-facing controls or setup steps in the toy module docs or supporting contributor docs if they deviate from existing patterns.
 - Include inline comments for novel shader parameters, math tricks, or input handling quirks.
-- When you wrap an existing HTML page for use in `toy.html`, expose it through `startPageToy` (see `assets/js/toys/*`) and add the slug to `assets/data/toys.json` so the loader can surface it in the library view.

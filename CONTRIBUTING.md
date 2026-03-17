@@ -97,12 +97,11 @@ For new or renamed toys, update all of the following together:
 
 - Toy implementation in `assets/js/toys/`.
 - Toy metadata in `assets/data/toys.json`.
-- Standalone page in `toys/` for page-backed toys.
 - `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md`.
 - Tests in `tests/` where behavior changed.
 
 Scaffold helper:
 
 ```bash
-bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test
+bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --with-test
 ```

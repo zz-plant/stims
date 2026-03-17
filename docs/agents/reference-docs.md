@@ -15,7 +15,7 @@
 - `assets/js/loader.ts` — loader/query param routing.
 - `assets/js/core/toy-runtime.ts` — shared toy runtime plumbing.
 - `assets/js/utils/start-audio.ts` — mic/demo audio unlock path.
-- `toys/` — standalone page-backed toy entry points.
+- `public/toys/` — generated public toy detail pages.
 
 ## Config and entry points
 

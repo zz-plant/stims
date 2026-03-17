@@ -18,7 +18,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
-const IGNORED_TOY_FILES = new Set(['clay-toy.ts', 'page-toy.ts']);
 const REGENERATE_COMMAND = 'bun run generate:toys';
 const TOY_START_EXPORT_PATTERN =
   /export\s+(async\s+)?function\s+start\b|export\s+const\s+start\b|export\s*\{\s*start\s*\}\s*from\b/;
@@ -141,10 +140,6 @@ async function validateEntries(
       );
     }
 
-    if (entry.type === 'page' && !entry.module.endsWith('.html')) {
-      issues.push(`Page entry for ${entry.slug} should point to an HTML file.`);
-    }
-
     if (!entry.description.trim()) {
       warnings.push(`Description missing or empty for ${entry.slug}.`);
     }
@@ -193,15 +188,6 @@ function validateSlugEntrypointConsistency(
       issues.push(
         `Module entrypoint mismatch for ${entry.slug}: module entries must point to a TypeScript file, found "${normalizedModule}".`,
       );
-    }
-
-    if (entry.type === 'page') {
-      const expectedPagePath = `toys/${entry.slug}.html`;
-      if (normalizedModule !== expectedPagePath) {
-        issues.push(
-          `Page entrypoint mismatch for ${entry.slug}: expected "${expectedPagePath}" but found "${normalizedModule}".`,
-        );
-      }
     }
   }
 }
@@ -266,7 +252,6 @@ async function detectUnregisteredToyFiles(
 
   for (const file of files) {
     if (!file.endsWith('.ts')) continue;
-    if (IGNORED_TOY_FILES.has(file)) continue;
 
     const modulePath = path.join('assets/js/toys', file).replace(/\\/g, '/');
     if (registeredModules.has(modulePath)) continue;

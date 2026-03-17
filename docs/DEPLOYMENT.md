@@ -177,13 +177,13 @@ Cloudflare Pages issues a unique preview deployment for each pull request. Every
 2. Confirm that all static assets load without 404s and that console logs remain clean.
 3. Smoke-test a representative sample of HTML entry points (see below) to ensure routing and asset resolution work in the CDN environment.
 
-## Validate multiple HTML entry points before merge
+## Validate shell and generated routes before merge
 
-The project ships several standalone HTML entry points (e.g., `index.html`, `legible.html`, `multi.html`, `symph.html`, `toy.html`). Validate them locally and on the PR preview:
+The project ships two source HTML shells (`index.html` and `toy.html`) plus generated public routes such as `/toys/<slug>/` and `/discover/*`. Validate representative routes locally and on the PR preview:
 
-1. Run `bun run build` followed by `bun run preview` and open each entry point path manually (for example, `http://localhost:4173/legible.html`).
+1. Run `bun run build` followed by `bun run preview` and open representative routes manually (for example, `http://localhost:4173/`, `http://localhost:4173/toy.html?toy=milkdrop`, and `http://localhost:4173/toys/cube-wave/`).
 2. Repeat the checks against the PR’s Cloudflare Pages preview URL to ensure CDN caching and hashed asset references behave the same as local preview.
-3. If any entry point relies on audio or interaction-specific features, perform at least one interaction test (mic input, pointer/touch) to confirm runtime permissions and event handling.
+3. If any route relies on audio or interaction-specific features, perform at least one interaction test (mic input, pointer/touch) to confirm runtime permissions and event handling.
 
 ## Release Checklist
 

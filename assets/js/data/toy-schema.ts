@@ -26,7 +26,7 @@ export const toyEntrySchema = z
     title: z.string().min(1),
     description: z.string().min(1),
     module: z.string().min(1),
-    type: z.enum(['module', 'page']),
+    type: z.literal('module'),
     requiresWebGPU: z.boolean().optional(),
     allowWebGLFallback: z.boolean().optional(),
     lifecycleStage: lifecycleStageSchema.optional(),
