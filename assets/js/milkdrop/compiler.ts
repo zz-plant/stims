@@ -61,6 +61,7 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   darken: 0,
   solarize: 0,
   invert: 0,
+  gammaadj: 1,
   video_echo_enabled: 0,
   video_echo_alpha: 0.18,
   video_echo_zoom: 1.02,
@@ -258,7 +259,7 @@ const aliasMap: Record<string, string | null> = {
   milkdrop_preset_version: null,
   frating: 'fRating',
   fdecay: 'decay',
-  fgammaadj: null,
+  fgammaadj: 'gammaadj',
   fvideoechozoom: 'video_echo_zoom',
   fvideoechoalpha: 'video_echo_alpha',
   fwavealpha: 'wave_a',
@@ -688,7 +689,8 @@ function buildFeatureAnalysis({
     (numericFields.brighten ?? 0) > 0.5 ||
     (numericFields.darken ?? 0) > 0.5 ||
     (numericFields.solarize ?? 0) > 0.5 ||
-    (numericFields.invert ?? 0) > 0.5
+    (numericFields.invert ?? 0) > 0.5 ||
+    Math.abs((numericFields.gammaadj ?? 1) - 1) > 0.001
   ) {
     features.add('post-effects');
   }
@@ -1025,6 +1027,7 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
         key !== 'darken' &&
         key !== 'solarize' &&
         key !== 'invert' &&
+        key !== 'gammaadj' &&
         key !== 'video_echo_enabled' &&
         key !== 'video_echo_alpha' &&
         key !== 'video_echo_zoom'
@@ -1068,6 +1071,7 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
       darken: (numericFields.darken ?? 0) > 0.5,
       solarize: (numericFields.solarize ?? 0) > 0.5,
       invert: (numericFields.invert ?? 0) > 0.5,
+      gammaAdj: numericFields.gammaadj ?? 1,
       videoEchoEnabled: (numericFields.video_echo_enabled ?? 0) > 0.5,
       videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
       videoEchoZoom: numericFields.video_echo_zoom ?? 1,

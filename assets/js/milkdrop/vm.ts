@@ -166,6 +166,25 @@ function normalizeWaveMode(value: number) {
   return ((rounded % 8) + 8) % 8;
 }
 
+function brightenWaveColor(waveColor: {
+  r: number;
+  g: number;
+  b: number;
+  a?: number;
+}) {
+  const peak = Math.max(waveColor.r, waveColor.g, waveColor.b);
+  if (peak <= 0.0001 || peak >= 1) {
+    return waveColor;
+  }
+  const gain = 1 / peak;
+  return color(
+    clamp(waveColor.r * gain, 0, 1),
+    clamp(waveColor.g * gain, 0, 1),
+    clamp(waveColor.b * gain, 0, 1),
+    waveColor.a,
+  );
+}
+
 function sampleFrequencyData(signals: MilkdropRuntimeSignals, t: number) {
   const sampleIndex = Math.min(
     signals.frequencyData.length - 1,
@@ -517,14 +536,20 @@ class MilkdropPresetVM implements MilkdropVM {
       positions.push(x, y, 0.25);
     }
 
+    const waveColor = color(
+      this.state.wave_r ?? 1,
+      this.state.wave_g ?? 1,
+      this.state.wave_b ?? 1,
+      this.state.wave_a ?? 0.9,
+    );
+    const finalWaveColor =
+      (this.state.wave_brighten ?? 0) >= 0.5
+        ? brightenWaveColor(waveColor)
+        : waveColor;
+
     return {
       positions,
-      color: color(
-        this.state.wave_r ?? 1,
-        this.state.wave_g ?? 1,
-        this.state.wave_b ?? 1,
-        this.state.wave_a ?? 0.9,
-      ),
+      color: finalWaveColor,
       alpha: clamp(this.state.wave_a ?? 0.9, 0.04, 1),
       thickness: clamp(this.state.wave_thick ?? 1, 1, 5),
       drawMode: (this.state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line',
@@ -845,6 +870,7 @@ class MilkdropPresetVM implements MilkdropVM {
       darken: (this.state.darken ?? 0) > 0.5,
       solarize: (this.state.solarize ?? 0) > 0.5,
       invert: (this.state.invert ?? 0) > 0.5,
+      gammaAdj: clamp(this.state.gammaadj ?? 1, 0.25, 4),
       videoEchoEnabled: (this.state.video_echo_enabled ?? 0) > 0.5,
       videoEchoAlpha: clamp(this.state.video_echo_alpha ?? 0.18, 0, 1),
       videoEchoZoom: clamp(this.state.video_echo_zoom ?? 1, 0.85, 1.3),

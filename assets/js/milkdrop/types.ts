@@ -159,6 +159,7 @@ export type MilkdropPostEffects = {
   darken: boolean;
   solarize: boolean;
   invert: boolean;
+  gammaAdj: number;
   videoEchoEnabled: boolean;
   videoEchoAlpha: number;
   videoEchoZoom: number;
@@ -248,6 +249,7 @@ export type MilkdropPostVisual = {
   darken: boolean;
   solarize: boolean;
   invert: boolean;
+  gammaAdj: number;
   videoEchoEnabled: boolean;
   videoEchoAlpha: number;
   videoEchoZoom: number;

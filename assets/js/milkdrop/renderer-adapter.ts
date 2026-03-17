@@ -15,6 +15,8 @@ import {
   Points,
   PointsMaterial,
   ShaderMaterial,
+  Shape,
+  ShapeGeometry,
   Scene as ThreeScene,
   Vector2,
   WebGLRenderer,
@@ -121,29 +123,102 @@ function createWaveObject(
 
 function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
   const group = new Group();
-  const positions: number[] = [];
-  for (let index = 0; index <= shape.sides; index += 1) {
+  const vertices: Vector2[] = [];
+  for (let index = 0; index < shape.sides; index += 1) {
     const theta =
       (index / shape.sides) * Math.PI * 2 +
       shape.rotation +
       Math.PI / Math.max(3, shape.sides);
-    positions.push(Math.cos(theta), Math.sin(theta), 0);
+    vertices.push(new Vector2(Math.cos(theta), Math.sin(theta)));
   }
+  const positions = vertices.flatMap((vertex) => [vertex.x, vertex.y, 0]);
+  const firstVertex = vertices[0] ?? new Vector2(1, 0);
+  positions.push(firstVertex.x, firstVertex.y, 0);
 
-  const fill = new Mesh(
-    new PlaneGeometry(2, 2),
-    new MeshBasicMaterial({
-      color: new Color(shape.color.r, shape.color.g, shape.color.b),
-      opacity: (shape.color.a ?? 0.4) * alphaMultiplier,
-      transparent: true,
-      side: DoubleSide,
-      blending: shape.additive ? AdditiveBlending : undefined,
-    }),
-  );
+  const fillShape = new Shape();
+  fillShape.moveTo(firstVertex.x, firstVertex.y);
+  vertices.slice(1).forEach((vertex) => fillShape.lineTo(vertex.x, vertex.y));
+  fillShape.lineTo(firstVertex.x, firstVertex.y);
+
+  const fillMaterial = shape.secondaryColor
+    ? new ShaderMaterial({
+        uniforms: {
+          primaryColor: {
+            value: new Color(shape.color.r, shape.color.g, shape.color.b),
+          },
+          secondaryColor: {
+            value: new Color(
+              shape.secondaryColor.r,
+              shape.secondaryColor.g,
+              shape.secondaryColor.b,
+            ),
+          },
+          primaryAlpha: {
+            value: (shape.color.a ?? 0.4) * alphaMultiplier,
+          },
+          secondaryAlpha: {
+            value: (shape.secondaryColor.a ?? 0) * alphaMultiplier,
+          },
+        },
+        transparent: true,
+        side: DoubleSide,
+        blending: shape.additive ? AdditiveBlending : undefined,
+        vertexShader: `
+          varying vec2 vLocal;
+          void main() {
+            vLocal = position.xy;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 primaryColor;
+          uniform vec3 secondaryColor;
+          uniform float primaryAlpha;
+          uniform float secondaryAlpha;
+          varying vec2 vLocal;
+
+          void main() {
+            float blend = clamp(length(vLocal), 0.0, 1.0);
+            vec3 color = mix(primaryColor, secondaryColor, blend);
+            float alpha = mix(primaryAlpha, secondaryAlpha, blend);
+            gl_FragColor = vec4(color, alpha);
+          }
+        `,
+      })
+    : new MeshBasicMaterial({
+        color: new Color(shape.color.r, shape.color.g, shape.color.b),
+        opacity: (shape.color.a ?? 0.4) * alphaMultiplier,
+        transparent: true,
+        side: DoubleSide,
+        blending: shape.additive ? AdditiveBlending : undefined,
+      });
+
+  const fill = new Mesh(new ShapeGeometry(fillShape), fillMaterial);
   fill.position.set(shape.x, shape.y, 0.14);
   fill.scale.set(shape.radius, shape.radius, 1);
   fill.rotation.z = shape.rotation;
   group.add(fill);
+
+  if (shape.thickOutline) {
+    const accentBorder = new Line(
+      new BufferGeometry(),
+      new LineBasicMaterial({
+        color: new Color(
+          shape.borderColor.r,
+          shape.borderColor.g,
+          shape.borderColor.b,
+        ),
+        opacity:
+          Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45) * alphaMultiplier,
+        transparent: true,
+        blending: shape.additive ? AdditiveBlending : undefined,
+      }),
+    );
+    ensureGeometryPositions(accentBorder.geometry, positions);
+    accentBorder.position.set(shape.x, shape.y, 0.15);
+    accentBorder.scale.set(shape.radius * 1.045, shape.radius * 1.045, 1);
+    group.add(accentBorder);
+  }
 
   const border = new Line(
     new BufferGeometry(),
@@ -241,6 +316,7 @@ class FeedbackManager {
         darken: { value: 0 },
         solarize: { value: 0 },
         invert: { value: 0 },
+        gammaAdj: { value: 1 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -258,6 +334,7 @@ class FeedbackManager {
         uniform float darken;
         uniform float solarize;
         uniform float invert;
+        uniform float gammaAdj;
         varying vec2 vUv;
 
         void main() {
@@ -277,6 +354,7 @@ class FeedbackManager {
           if (invert > 0.5) {
             color = 1.0 - color;
           }
+          color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           gl_FragColor = vec4(color, 1.0);
         }
       `,
@@ -531,6 +609,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       .post.invert
       ? 1
       : 0;
+    this.feedback.compositeMaterial.uniforms.gammaAdj.value =
+      payload.frameState.post.gammaAdj;
 
     this.renderer.setRenderTarget(this.feedback.sceneTarget);
     this.renderer.render(this.scene, this.camera);
