@@ -94,8 +94,8 @@ describe('milkdrop legacy fixture corpus', () => {
         webgpu: 'supported',
       },
       'legacy-unsupported-full-shader-code.milk': {
-        webgl: 'unsupported',
-        webgpu: 'unsupported',
+        webgl: 'supported',
+        webgpu: 'supported',
       },
     } as const;
 
@@ -111,7 +111,7 @@ describe('milkdrop legacy fixture corpus', () => {
     });
   });
 
-  test('keeps the harder legacy fixture tier split across supported, partial, and unsupported', () => {
+  test('keeps the harder legacy fixture tier split across supported and partial', () => {
     const corpus = loadLegacyFixtureCorpus();
     const stats = {
       supported: 0,
@@ -124,9 +124,9 @@ describe('milkdrop legacy fixture corpus', () => {
     });
 
     expect(stats).toEqual({
-      supported: 2,
+      supported: 3,
       partial: 2,
-      unsupported: 1,
+      unsupported: 0,
     });
   });
 });

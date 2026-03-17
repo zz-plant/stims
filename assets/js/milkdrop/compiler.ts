@@ -26,8 +26,8 @@ import type {
   MilkdropWaveDefinition,
 } from './types';
 
-const MAX_CUSTOM_WAVES = 16;
-const MAX_CUSTOM_SHAPES = 16;
+const MAX_CUSTOM_WAVES = 32;
+const MAX_CUSTOM_SHAPES = 32;
 
 function createDefaultShapeSlot(index: number): Record<string, number> {
   if (index === 1) {
@@ -460,6 +460,22 @@ function applyShaderExpressionOperator(
   };
 }
 
+function applyShaderControlValue(
+  operator: '=' | '+=' | '-=' | '*=' | '/=',
+  currentValue: number,
+  currentExpression: MilkdropExpressionNode | null,
+  nextValue: number,
+  nextExpression: MilkdropExpressionNode | null,
+) {
+  return applyShaderExpressionOperator(
+    operator,
+    currentValue,
+    currentExpression,
+    nextValue,
+    nextExpression,
+  );
+}
+
 function isKnownShaderScalarKey(key: string) {
   return new Set([
     'warp',
@@ -492,6 +508,195 @@ function isKnownShaderScalarKey(key: string) {
     'invert',
     'solarize',
   ]).has(key);
+}
+
+function isIdentityTextureSampleExpression(rawValue: string) {
+  const normalized = rawValue
+    .toLowerCase()
+    .replace(/\s+/gu, '')
+    .replace(/texture2d/gu, 'tex2d');
+  return (
+    normalized === 'tex2d(sampler_main,uv).rgb' ||
+    normalized === 'texture(sampler_main,uv).rgb'
+  );
+}
+
+function applyShaderProgramHeuristicLine({
+  key,
+  operator,
+  rawValue,
+  controls,
+  expressions,
+  shaderEnv,
+}: {
+  key: string;
+  operator: '=' | '+=' | '-=' | '*=' | '/=';
+  rawValue: string;
+  controls: MilkdropShaderControls;
+  expressions: MilkdropShaderControlExpressions;
+  shaderEnv: Record<string, number>;
+}) {
+  const normalizedValue = rawValue
+    .trim()
+    .replace(/\s+/gu, '')
+    .replace(/texture2d/giu, 'tex2d')
+    .toLowerCase();
+
+  if (key === 'shader_body' && isIdentityTextureSampleExpression(rawValue)) {
+    return true;
+  }
+
+  const offsetMatch = normalizedValue.match(
+    /^uv(?:[+-]=|=uv[+-])vec2\((.+),(.+)\)$/u,
+  );
+  if (key === 'uv' && offsetMatch) {
+    const xScalar = parseShaderScalar(offsetMatch[1] ?? '', shaderEnv);
+    const yScalar = parseShaderScalar(offsetMatch[2] ?? '', shaderEnv);
+    if (!xScalar || !yScalar) {
+      return false;
+    }
+    const xSign = normalizedValue.includes('-vec2(') ? -1 : 1;
+    const ySign = normalizedValue.includes('-vec2(') ? -1 : 1;
+    const nextX = applyShaderControlValue(
+      '=',
+      controls.offsetX,
+      expressions.offsetX,
+      xScalar.value * xSign,
+      xScalar.expression,
+    );
+    const nextY = applyShaderControlValue(
+      '=',
+      controls.offsetY,
+      expressions.offsetY,
+      yScalar.value * ySign,
+      yScalar.expression,
+    );
+    controls.offsetX = nextX.value;
+    controls.offsetY = nextY.value;
+    expressions.offsetX = nextX.expression;
+    expressions.offsetY = nextY.expression;
+    shaderEnv.offset_x = nextX.value;
+    shaderEnv.offset_y = nextY.value;
+    shaderEnv.dx = nextX.value;
+    shaderEnv.dy = nextY.value;
+    return true;
+  }
+
+  if (key !== 'ret' && key !== 'shader_body') {
+    return false;
+  }
+
+  if (isIdentityTextureSampleExpression(rawValue)) {
+    return true;
+  }
+
+  const scaleMatch = normalizedValue.match(
+    /^tex2d\(sampler_main,uv\)\.rgb\*(.+)$/u,
+  );
+  if (scaleMatch) {
+    const scalar = parseShaderScalar(scaleMatch[1] ?? '', shaderEnv);
+    if (!scalar) {
+      return false;
+    }
+    const channels: Array<'r' | 'g' | 'b'> = ['r', 'g', 'b'];
+    channels.forEach((channel) => {
+      const next = applyShaderControlValue(
+        operator,
+        controls.colorScale[channel],
+        expressions.colorScale[channel],
+        scalar.value,
+        scalar.expression,
+      );
+      controls.colorScale[channel] = next.value;
+      expressions.colorScale[channel] = next.expression;
+      shaderEnv[channel] = next.value;
+    });
+    return true;
+  }
+
+  const vecScaleMatch = normalizedValue.match(
+    /^tex2d\(sampler_main,uv\)\.rgb\*vec3\((.+),(.+),(.+)\)$/u,
+  );
+  if (vecScaleMatch) {
+    const tint = parseShaderTintList(
+      `${vecScaleMatch[1]}, ${vecScaleMatch[2]}, ${vecScaleMatch[3]}`,
+      shaderEnv,
+    );
+    if (!tint) {
+      return false;
+    }
+    const nextR = applyShaderControlValue(
+      operator,
+      controls.colorScale.r,
+      expressions.colorScale.r,
+      tint.value.r,
+      tint.expressions.r,
+    );
+    const nextG = applyShaderControlValue(
+      operator,
+      controls.colorScale.g,
+      expressions.colorScale.g,
+      tint.value.g,
+      tint.expressions.g,
+    );
+    const nextB = applyShaderControlValue(
+      operator,
+      controls.colorScale.b,
+      expressions.colorScale.b,
+      tint.value.b,
+      tint.expressions.b,
+    );
+    controls.colorScale = {
+      r: nextR.value,
+      g: nextG.value,
+      b: nextB.value,
+    };
+    expressions.colorScale = {
+      r: nextR.expression,
+      g: nextG.expression,
+      b: nextB.expression,
+    };
+    shaderEnv.r = nextR.value;
+    shaderEnv.g = nextG.value;
+    shaderEnv.b = nextB.value;
+    return true;
+  }
+
+  if (
+    normalizedValue === '1.0-tex2d(sampler_main,uv).rgb' ||
+    normalizedValue === '1-tex2d(sampler_main,uv).rgb'
+  ) {
+    const next = applyShaderControlValue(
+      operator,
+      controls.invertBoost,
+      expressions.invertBoost,
+      1,
+      createLiteralExpression(1),
+    );
+    controls.invertBoost = next.value;
+    expressions.invertBoost = next.expression;
+    shaderEnv.invert = next.value;
+    return true;
+  }
+
+  if (
+    normalizedValue === 'abs(tex2d(sampler_main,uv).rgb-0.5)*1.5' ||
+    normalizedValue === 'abs(tex2d(sampler_main,uv).rgb-vec3(0.5))*1.5'
+  ) {
+    const next = applyShaderControlValue(
+      operator,
+      controls.solarizeBoost,
+      expressions.solarizeBoost,
+      1,
+      createLiteralExpression(1),
+    );
+    controls.solarizeBoost = next.value;
+    expressions.solarizeBoost = next.expression;
+    shaderEnv.solarize = next.value;
+    return true;
+  }
+
+  return false;
 }
 
 function extractShaderControls(
@@ -529,6 +734,19 @@ function extractShaderControls(
     const key = assignment[1]?.toLowerCase() ?? '';
     const operator = (assignment[2] ?? '=') as '=' | '+=' | '-=' | '*=' | '/=';
     const rawValue = assignment[3]?.trim() ?? '';
+    if (
+      applyShaderProgramHeuristicLine({
+        key,
+        operator,
+        rawValue,
+        controls,
+        expressions,
+        shaderEnv,
+      })
+    ) {
+      supportedLineCount += 1;
+      return;
+    }
     const numeric = parseShaderScalar(rawValue, shaderEnv);
     if (!isKnownShaderScalarKey(key) && key !== 'tint') {
       if (numeric !== null) {
@@ -1561,7 +1779,7 @@ function buildBackendSupport({
 
   if (featureAnalysis.unsupportedShaderText) {
     reasons.push(
-      'This preset includes custom shader text that the Stims MilkDrop runtime does not execute.',
+      'This preset includes custom shader text outside the fully supported subset and will be approximated.',
     );
     unsupportedFeatures.push('unsupported-shader-text');
   }
@@ -1575,10 +1793,7 @@ function buildBackendSupport({
   const uniqueReasons = [...new Set(reasons)];
   const uniqueUnsupported = [...new Set(unsupportedFeatures)];
 
-  if (
-    featureAnalysis.unsupportedShaderText ||
-    unsupportedKeys.some((key) => hardUnsupportedKeys.has(key))
-  ) {
+  if (unsupportedKeys.some((key) => hardUnsupportedKeys.has(key))) {
     return {
       status: 'unsupported',
       reasons: uniqueReasons,
@@ -1830,7 +2045,9 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
       (key) => `Unsupported preset field "${key}" was ignored.`,
     ),
     ...(featureAnalysis.unsupportedShaderText
-      ? ['Shader-text sections are detected but not executed.']
+      ? [
+          'Shader-text sections include unsupported lines and are being approximated.',
+        ]
       : []),
   ];
   const backends = {

@@ -15,6 +15,7 @@ import {
   MeshBasicMaterial,
   NormalBlending,
   OrthographicCamera,
+  Path,
   PlaneGeometry,
   Points,
   PointsMaterial,
@@ -352,25 +353,57 @@ function createBorderObject(border: MilkdropBorderVisual, alphaMultiplier = 1) {
     top,
     0.3,
   ];
-  const object = new LineLoop(
+  const group = new Group();
+  const fillShape = new Shape();
+  fillShape.moveTo(-1, 1);
+  fillShape.lineTo(1, 1);
+  fillShape.lineTo(1, -1);
+  fillShape.lineTo(-1, -1);
+  fillShape.lineTo(-1, 1);
+  const hole = new Path();
+  hole.moveTo(left, top);
+  hole.lineTo(left, bottom);
+  hole.lineTo(right, bottom);
+  hole.lineTo(right, top);
+  hole.lineTo(left, top);
+  fillShape.holes.push(hole);
+
+  const fill = new Mesh(
+    new ShapeGeometry(fillShape),
+    new MeshBasicMaterial({
+      transparent: true,
+      opacity: Math.max(0.08, border.alpha * 0.45) * alphaMultiplier,
+      side: DoubleSide,
+    }),
+  );
+  setMaterialColor(
+    fill.material,
+    border.color,
+    Math.max(0.08, border.alpha * 0.45) * alphaMultiplier,
+  );
+  fill.position.z = 0.285;
+  group.add(fill);
+
+  const outline = new LineLoop(
     new BufferGeometry(),
     new LineBasicMaterial({
       transparent: true,
       opacity: border.alpha * alphaMultiplier,
     }),
   );
-  ensureGeometryPositions(object.geometry, positions);
+  ensureGeometryPositions(outline.geometry, positions);
   setMaterialColor(
-    object.material,
+    outline.material,
     border.color,
     border.alpha * alphaMultiplier,
   );
+  outline.position.z = 0.3;
+  group.add(outline);
+
   if (!border.styled) {
-    return object;
+    return group;
   }
 
-  const group = new Group();
-  group.add(object);
   const accent = new LineLoop(
     new BufferGeometry(),
     new LineBasicMaterial({
@@ -469,22 +502,47 @@ function updateBorderLine(
   );
 }
 
-function syncBorderObject(
-  existing: LineLoop | Group | undefined,
+function updateBorderFill(
+  object: Mesh,
   border: MilkdropBorderVisual,
   alphaMultiplier: number,
 ) {
-  if (!border.styled) {
-    if (existing instanceof LineLoop) {
-      updateBorderLine(existing, border, alphaMultiplier);
-      return existing;
-    }
-    if (existing) {
-      disposeObject(existing);
-    }
-    return createBorderObject(border, alphaMultiplier);
-  }
+  const inset = border.key === 'outer' ? border.size : border.size + 0.08;
+  const left = -1 + inset * 2;
+  const right = 1 - inset * 2;
+  const top = 1 - inset * 2;
+  const bottom = -1 + inset * 2;
+  const fillShape = new Shape();
+  fillShape.moveTo(-1, 1);
+  fillShape.lineTo(1, 1);
+  fillShape.lineTo(1, -1);
+  fillShape.lineTo(-1, -1);
+  fillShape.lineTo(-1, 1);
+  const hole = new Path();
+  hole.moveTo(left, top);
+  hole.lineTo(left, bottom);
+  hole.lineTo(right, bottom);
+  hole.lineTo(right, top);
+  hole.lineTo(left, top);
+  fillShape.holes.push(hole);
 
+  if (!isSharedGeometry(object.geometry)) {
+    disposeGeometry(object.geometry);
+  }
+  object.geometry = new ShapeGeometry(fillShape);
+  setMaterialColor(
+    object.material as MeshBasicMaterial,
+    border.color,
+    Math.max(0.08, border.alpha * 0.45) * alphaMultiplier,
+  );
+  object.position.z = 0.285;
+}
+
+function syncBorderObject(
+  existing: Group | undefined,
+  border: MilkdropBorderVisual,
+  alphaMultiplier: number,
+) {
   if (!(existing instanceof Group)) {
     if (existing) {
       disposeObject(existing);
@@ -492,23 +550,37 @@ function syncBorderObject(
     return createBorderObject(border, alphaMultiplier);
   }
 
-  const base = existing.children[0];
-  const accent = existing.children[1];
-  if (!(base instanceof LineLoop) || !(accent instanceof LineLoop)) {
+  const fill = existing.children[0];
+  const outline = existing.children[1];
+  const accent = existing.children[2];
+  const wantsAccent = border.styled;
+  if (
+    !(fill instanceof Mesh) ||
+    !(outline instanceof LineLoop) ||
+    (wantsAccent && !(accent instanceof LineLoop))
+  ) {
     disposeObject(existing);
     return createBorderObject(border, alphaMultiplier);
   }
 
-  updateBorderLine(base, border, alphaMultiplier);
-  updateBorderLine(accent, border, alphaMultiplier);
-  accent.scale.set(
-    border.key === 'outer' ? 0.985 : 1.015,
-    border.key === 'outer' ? 0.985 : 1.015,
-    1,
-  );
-  accent.position.z = 0.31;
-  (accent.material as LineBasicMaterial).opacity =
-    Math.max(0.15, border.alpha * 0.55) * alphaMultiplier;
+  updateBorderFill(fill, border, alphaMultiplier);
+  updateBorderLine(outline, border, alphaMultiplier);
+  outline.position.z = 0.3;
+  if (wantsAccent && accent instanceof LineLoop) {
+    updateBorderLine(accent, border, alphaMultiplier);
+    accent.scale.set(
+      border.key === 'outer' ? 0.985 : 1.015,
+      border.key === 'outer' ? 0.985 : 1.015,
+      1,
+    );
+    accent.position.z = 0.31;
+    (accent.material as LineBasicMaterial).opacity =
+      Math.max(0.15, border.alpha * 0.55) * alphaMultiplier;
+  }
+  if (!wantsAccent && accent) {
+    disposeObject(accent as { children?: unknown[] });
+    existing.remove(accent);
+  }
   return existing;
 }
 
@@ -850,7 +922,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     alphaMultiplier = 1,
   ) {
     borders.forEach((border, index) => {
-      const existing = group.children[index] as LineLoop | Group | undefined;
+      const existing = group.children[index] as Group | undefined;
       const synced = syncBorderObject(existing, border, alphaMultiplier);
       if (!existing) {
         group.add(synced);

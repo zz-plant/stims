@@ -21,8 +21,8 @@ import type {
 } from './types';
 
 const MAX_TRAILS = 5;
-const MAX_CUSTOM_WAVE_SLOTS = 16;
-const MAX_CUSTOM_SHAPE_SLOTS = 16;
+const MAX_CUSTOM_WAVE_SLOTS = 32;
+const MAX_CUSTOM_SHAPE_SLOTS = 32;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
