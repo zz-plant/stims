@@ -1,0 +1,8 @@
+MILKDROP_PRESET_VERSION=201
+TITLE=Legacy Partial Extra Custom Shape
+AUTHOR=Fixture
+shapecode_8_enabled=1
+shapecode_8_sides=6
+shape_8_per_frame1=rad=0.24;
+ob_border=1
+fOuterBorderSize=0.01

@@ -1,0 +1,7 @@
+MILKDROP_PRESET_VERSION=201
+TITLE=Legacy Unsupported Full Shader Code
+AUTHOR=Fixture
+fShader=1
+warp_shader=shader_body=tex2d(sampler_main,uv).rgb;
+comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
+video_echo=1
