@@ -379,4 +379,120 @@ ob_border=1
     );
     expect(borderGroup.children[0]?.type ?? 'Group').toBe('Group');
   });
+
+  test('forwards shader transform controls into composite uniforms', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Transform Render
+warp_shader=dx=0.05; dy=-0.02; rot=0.18; zoom=1.12
+      `.trim(),
+      { id: 'shader-transform-render' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => fakeRenderer;
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: { compositeMaterial: ShaderMaterial } | null;
+      }
+    ).feedback;
+
+    expect(feedback?.compositeMaterial.uniforms.offsetX.value).toBeCloseTo(
+      0.05,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.offsetY.value).toBeCloseTo(
+      -0.02,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.rotation.value).toBeCloseTo(
+      0.18,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.zoomMul.value).toBeCloseTo(
+      1.12,
+      6,
+    );
+  });
+
+  test('forwards shader color controls into composite uniforms', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Color Render
+comp_shader=saturation=1.4; contrast=1.2; r=1.1; g=0.85; b=0.65
+      `.trim(),
+      { id: 'shader-color-render' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => fakeRenderer;
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: { compositeMaterial: ShaderMaterial } | null;
+      }
+    ).feedback;
+
+    expect(feedback?.compositeMaterial.uniforms.saturation.value).toBeCloseTo(
+      1.4,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.contrast.value).toBeCloseTo(
+      1.2,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.colorScale.value.r).toBeCloseTo(
+      1.1,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.colorScale.value.g).toBeCloseTo(
+      0.85,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.colorScale.value.b).toBeCloseTo(
+      0.65,
+      6,
+    );
+  });
 });

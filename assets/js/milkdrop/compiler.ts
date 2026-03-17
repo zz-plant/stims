@@ -277,6 +277,13 @@ function parseShaderTintList(rawValue: string) {
 function extractShaderControls(shaderText: string | null) {
   const controls = {
     warpScale: 0,
+    offsetX: 0,
+    offsetY: 0,
+    rotation: 0,
+    zoom: 1,
+    saturation: 1,
+    contrast: 1,
+    colorScale: { r: 1, g: 1, b: 1 },
     hueShift: 0,
     mixAlpha: 0,
     brightenBoost: 0,
@@ -309,6 +316,79 @@ function extractShaderControls(shaderText: string | null) {
       case 'warp_scale':
         if (Number.isFinite(numeric)) {
           controls.warpScale = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'dx':
+      case 'offset_x':
+      case 'translate_x':
+        if (Number.isFinite(numeric)) {
+          controls.offsetX = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'dy':
+      case 'offset_y':
+      case 'translate_y':
+        if (Number.isFinite(numeric)) {
+          controls.offsetY = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'rot':
+      case 'rotation':
+        if (Number.isFinite(numeric)) {
+          controls.rotation = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'zoom':
+      case 'scale':
+        if (Number.isFinite(numeric)) {
+          controls.zoom = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'saturation':
+      case 'sat':
+        if (Number.isFinite(numeric)) {
+          controls.saturation = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'contrast':
+        if (Number.isFinite(numeric)) {
+          controls.contrast = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'r':
+      case 'red':
+        if (Number.isFinite(numeric)) {
+          controls.colorScale.r = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'g':
+      case 'green':
+        if (Number.isFinite(numeric)) {
+          controls.colorScale.g = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'b':
+      case 'blue':
+        if (Number.isFinite(numeric)) {
+          controls.colorScale.b = numeric;
           supportedLineCount += 1;
           return;
         }
@@ -1197,6 +1277,33 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
         warpScale:
           shaderWarpAnalysis.controls.warpScale ||
           shaderCompAnalysis.controls.warpScale,
+        offsetX:
+          shaderWarpAnalysis.controls.offsetX ||
+          shaderCompAnalysis.controls.offsetX,
+        offsetY:
+          shaderWarpAnalysis.controls.offsetY ||
+          shaderCompAnalysis.controls.offsetY,
+        rotation:
+          shaderWarpAnalysis.controls.rotation ||
+          shaderCompAnalysis.controls.rotation,
+        zoom:
+          shaderWarpAnalysis.controls.zoom !== 1
+            ? shaderWarpAnalysis.controls.zoom
+            : shaderCompAnalysis.controls.zoom,
+        saturation:
+          shaderCompAnalysis.controls.saturation !== 1
+            ? shaderCompAnalysis.controls.saturation
+            : shaderWarpAnalysis.controls.saturation,
+        contrast:
+          shaderCompAnalysis.controls.contrast !== 1
+            ? shaderCompAnalysis.controls.contrast
+            : shaderWarpAnalysis.controls.contrast,
+        colorScale:
+          shaderCompAnalysis.controls.colorScale.r !== 1 ||
+          shaderCompAnalysis.controls.colorScale.g !== 1 ||
+          shaderCompAnalysis.controls.colorScale.b !== 1
+            ? shaderCompAnalysis.controls.colorScale
+            : shaderWarpAnalysis.controls.colorScale,
         hueShift:
           shaderCompAnalysis.controls.hueShift ||
           shaderWarpAnalysis.controls.hueShift,
@@ -1250,6 +1357,33 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
         warpScale:
           shaderWarpAnalysis.controls.warpScale ||
           shaderCompAnalysis.controls.warpScale,
+        offsetX:
+          shaderWarpAnalysis.controls.offsetX ||
+          shaderCompAnalysis.controls.offsetX,
+        offsetY:
+          shaderWarpAnalysis.controls.offsetY ||
+          shaderCompAnalysis.controls.offsetY,
+        rotation:
+          shaderWarpAnalysis.controls.rotation ||
+          shaderCompAnalysis.controls.rotation,
+        zoom:
+          shaderWarpAnalysis.controls.zoom !== 1
+            ? shaderWarpAnalysis.controls.zoom
+            : shaderCompAnalysis.controls.zoom,
+        saturation:
+          shaderCompAnalysis.controls.saturation !== 1
+            ? shaderCompAnalysis.controls.saturation
+            : shaderWarpAnalysis.controls.saturation,
+        contrast:
+          shaderCompAnalysis.controls.contrast !== 1
+            ? shaderCompAnalysis.controls.contrast
+            : shaderWarpAnalysis.controls.contrast,
+        colorScale:
+          shaderCompAnalysis.controls.colorScale.r !== 1 ||
+          shaderCompAnalysis.controls.colorScale.g !== 1 ||
+          shaderCompAnalysis.controls.colorScale.b !== 1
+            ? shaderCompAnalysis.controls.colorScale
+            : shaderWarpAnalysis.controls.colorScale,
         hueShift:
           shaderCompAnalysis.controls.hueShift ||
           shaderWarpAnalysis.controls.hueShift,

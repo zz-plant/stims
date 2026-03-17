@@ -355,6 +355,13 @@ class FeedbackManager {
         textureWrap: { value: 0 },
         feedbackTexture: { value: 0 },
         warpScale: { value: 0 },
+        offsetX: { value: 0 },
+        offsetY: { value: 0 },
+        rotation: { value: 0 },
+        zoomMul: { value: 1 },
+        saturation: { value: 1 },
+        contrast: { value: 1 },
+        colorScale: { value: new Color(1, 1, 1) },
         hueShift: { value: 0 },
         brightenBoost: { value: 0 },
         invertBoost: { value: 0 },
@@ -381,6 +388,13 @@ class FeedbackManager {
         uniform float textureWrap;
         uniform float feedbackTexture;
         uniform float warpScale;
+        uniform float offsetX;
+        uniform float offsetY;
+        uniform float rotation;
+        uniform float zoomMul;
+        uniform float saturation;
+        uniform float contrast;
+        uniform vec3 colorScale;
         uniform float hueShift;
         uniform float brightenBoost;
         uniform float invertBoost;
@@ -405,8 +419,25 @@ class FeedbackManager {
           return clamp(mat * color, 0.0, 1.0);
         }
 
+        vec3 applySaturation(vec3 color, float amount) {
+          float luminance = dot(color, vec3(0.299, 0.587, 0.114));
+          return mix(vec3(luminance), color, amount);
+        }
+
+        vec3 applyContrast(vec3 color, float amount) {
+          return clamp((color - 0.5) * amount + 0.5, 0.0, 1.0);
+        }
+
         void main() {
-          vec2 warpUv = vUv + vec2(
+          vec2 centeredUv = vUv - 0.5;
+          float rotSin = sin(rotation);
+          float rotCos = cos(rotation);
+          vec2 rotatedUv = vec2(
+            centeredUv.x * rotCos - centeredUv.y * rotSin,
+            centeredUv.x * rotSin + centeredUv.y * rotCos
+          );
+          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+          vec2 warpUv = transformedUv + 0.5 + vec2(
             sin((vUv.y - 0.5) * 6.2831) * warpScale * 0.04,
             cos((vUv.x - 0.5) * 6.2831) * warpScale * 0.04
           );
@@ -434,6 +465,9 @@ class FeedbackManager {
             color = mix(color, 1.0 - color, clamp(max(invert, invertBoost), 0.0, 1.0));
           }
           color = hueRotate(color, hueShift);
+          color = applySaturation(color, saturation);
+          color = applyContrast(color, contrast);
+          color *= colorScale;
           color *= tint;
           color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           gl_FragColor = vec4(color, 1.0);
@@ -729,6 +763,23 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       : 0;
     this.feedback.compositeMaterial.uniforms.warpScale.value =
       payload.frameState.post.shaderControls.warpScale;
+    this.feedback.compositeMaterial.uniforms.offsetX.value =
+      payload.frameState.post.shaderControls.offsetX;
+    this.feedback.compositeMaterial.uniforms.offsetY.value =
+      payload.frameState.post.shaderControls.offsetY;
+    this.feedback.compositeMaterial.uniforms.rotation.value =
+      payload.frameState.post.shaderControls.rotation;
+    this.feedback.compositeMaterial.uniforms.zoomMul.value =
+      payload.frameState.post.shaderControls.zoom;
+    this.feedback.compositeMaterial.uniforms.saturation.value =
+      payload.frameState.post.shaderControls.saturation;
+    this.feedback.compositeMaterial.uniforms.contrast.value =
+      payload.frameState.post.shaderControls.contrast;
+    this.feedback.compositeMaterial.uniforms.colorScale.value = new Color(
+      payload.frameState.post.shaderControls.colorScale.r,
+      payload.frameState.post.shaderControls.colorScale.g,
+      payload.frameState.post.shaderControls.colorScale.b,
+    );
     this.feedback.compositeMaterial.uniforms.hueShift.value =
       payload.frameState.post.shaderControls.hueShift;
     this.feedback.compositeMaterial.uniforms.brightenBoost.value =

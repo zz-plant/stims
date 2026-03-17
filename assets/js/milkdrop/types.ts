@@ -164,6 +164,13 @@ export type MilkdropPostEffects = {
   innerBorderStyle: boolean;
   shaderControls: {
     warpScale: number;
+    offsetX: number;
+    offsetY: number;
+    rotation: number;
+    zoom: number;
+    saturation: number;
+    contrast: number;
+    colorScale: { r: number; g: number; b: number };
     hueShift: number;
     mixAlpha: number;
     brightenBoost: number;
@@ -204,6 +211,13 @@ export type MilkdropPresetIR = {
     unsupportedLines: string[];
     controls: {
       warpScale: number;
+      offsetX: number;
+      offsetY: number;
+      rotation: number;
+      zoom: number;
+      saturation: number;
+      contrast: number;
+      colorScale: { r: number; g: number; b: number };
       hueShift: number;
       mixAlpha: number;
       brightenBoost: number;
@@ -292,6 +306,13 @@ export type MilkdropPostVisual = {
   innerBorderStyle: boolean;
   shaderControls: {
     warpScale: number;
+    offsetX: number;
+    offsetY: number;
+    rotation: number;
+    zoom: number;
+    saturation: number;
+    contrast: number;
+    colorScale: { r: number; g: number; b: number };
     hueShift: number;
     mixAlpha: number;
     brightenBoost: number;
