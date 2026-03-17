@@ -306,6 +306,11 @@ function cloneBlendState(
       ...border,
       color: { ...border.color },
     })),
+    motionVectors: frameState.motionVectors.map((vector) => ({
+      ...vector,
+      positions: [...vector.positions],
+      color: { ...vector.color },
+    })),
     post: { ...frameState.post },
     alpha: 1,
   };

@@ -6,6 +6,7 @@ import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropMeshVisual,
+  MilkdropMotionVectorVisual,
   MilkdropPolyline,
   MilkdropPostVisual,
   MilkdropRuntimeSignals,
@@ -649,6 +650,41 @@ class MilkdropPresetVM implements MilkdropVM {
     return waves;
   }
 
+  private transformMeshPoint(
+    signals: MilkdropRuntimeSignals,
+    gridX: number,
+    gridY: number,
+  ) {
+    const local: MutableState = {
+      x: gridX,
+      y: gridY,
+      rad: Math.sqrt(gridX * gridX + gridY * gridY),
+      ang: Math.atan2(gridY, gridX),
+      zoom: this.state.zoom ?? 1,
+      rot: this.state.rot ?? 0,
+      warp: this.state.warp ?? 0,
+    };
+    this.runProgram(
+      this.preset.ir.programs.perPixel,
+      this.createEnv(signals, local),
+      local,
+    );
+
+    const angle = local.ang + local.rot;
+    const ripple =
+      Math.sin(local.rad * 12 + signals.time * (0.6 + signals.trebleAtt)) *
+      local.warp *
+      0.08;
+    const px = (local.x + Math.cos(angle * 3) * ripple) * local.zoom;
+    const py = (local.y + Math.sin(angle * 4) * ripple) * local.zoom;
+    const cos = Math.cos(local.rot);
+    const sin = Math.sin(local.rot);
+    return {
+      x: px * cos - py * sin,
+      y: px * sin + py * cos,
+    };
+  }
+
   private buildMesh(signals: MilkdropRuntimeSignals): MilkdropMeshVisual {
     const density = clamp(
       Math.round((this.state.mesh_density ?? 16) * this.detailScale),
@@ -657,45 +693,15 @@ class MilkdropPresetVM implements MilkdropVM {
     );
     const positions: number[] = [];
 
-    const computePoint = (gridX: number, gridY: number) => {
-      const local: MutableState = {
-        x: gridX,
-        y: gridY,
-        rad: Math.sqrt(gridX * gridX + gridY * gridY),
-        ang: Math.atan2(gridY, gridX),
-        zoom: this.state.zoom ?? 1,
-        rot: this.state.rot ?? 0,
-        warp: this.state.warp ?? 0,
-      };
-      this.runProgram(
-        this.preset.ir.programs.perPixel,
-        this.createEnv(signals, local),
-        local,
-      );
-
-      const angle = local.ang + local.rot;
-      const ripple =
-        Math.sin(local.rad * 12 + signals.time * (0.6 + signals.trebleAtt)) *
-        local.warp *
-        0.08;
-      const px = (local.x + Math.cos(angle * 3) * ripple) * local.zoom;
-      const py = (local.y + Math.sin(angle * 4) * ripple) * local.zoom;
-      const cos = Math.cos(local.rot);
-      const sin = Math.sin(local.rot);
-      return {
-        x: px * cos - py * sin,
-        y: px * sin + py * cos,
-      };
-    };
-
     for (let row = 0; row < density; row += 1) {
       for (let col = 0; col < density; col += 1) {
         const x = (col / Math.max(1, density - 1)) * 2 - 1;
         const y = (row / Math.max(1, density - 1)) * 2 - 1;
-        const point = computePoint(x, y);
+        const point = this.transformMeshPoint(signals, x, y);
 
         if (col + 1 < density) {
-          const next = computePoint(
+          const next = this.transformMeshPoint(
+            signals,
             ((col + 1) / Math.max(1, density - 1)) * 2 - 1,
             y,
           );
@@ -703,7 +709,8 @@ class MilkdropPresetVM implements MilkdropVM {
         }
 
         if (row + 1 < density) {
-          const next = computePoint(
+          const next = this.transformMeshPoint(
+            signals,
             x,
             ((row + 1) / Math.max(1, density - 1)) * 2 - 1,
           );
@@ -722,6 +729,47 @@ class MilkdropPresetVM implements MilkdropVM {
       ),
       alpha: clamp(this.state.mesh_alpha ?? 0.2, 0.02, 0.9),
     };
+  }
+
+  private buildMotionVectors(
+    signals: MilkdropRuntimeSignals,
+  ): MilkdropMotionVectorVisual[] {
+    if ((this.state.motion_vectors ?? 0) < 0.5) {
+      return [];
+    }
+
+    const countX = clamp(Math.round(this.state.motion_vectors_x ?? 16), 1, 64);
+    const countY = clamp(Math.round(this.state.motion_vectors_y ?? 12), 1, 64);
+    const colorValue = color(
+      this.state.mv_r ?? 1,
+      this.state.mv_g ?? 1,
+      this.state.mv_b ?? 1,
+      this.state.mv_a ?? 0.35,
+    );
+    const alpha = clamp(this.state.mv_a ?? 0.35, 0.02, 1);
+    const vectors: MilkdropMotionVectorVisual[] = [];
+
+    for (let row = 0; row < countY; row += 1) {
+      for (let col = 0; col < countX; col += 1) {
+        const x = countX === 1 ? 0 : (col / (countX - 1)) * 2 - 1;
+        const y = countY === 1 ? 0 : (row / (countY - 1)) * 2 - 1;
+        const transformed = this.transformMeshPoint(signals, x, y);
+        const dx = clamp((transformed.x - x) * 1.35, -0.22, 0.22);
+        const dy = clamp((transformed.y - y) * 1.35, -0.22, 0.22);
+        if (Math.abs(dx) + Math.abs(dy) < 0.002) {
+          continue;
+        }
+        vectors.push({
+          positions: [x, y, 0.18, x + dx, y + dy, 0.18],
+          color: colorValue,
+          alpha,
+          thickness: 1,
+          additive: false,
+        });
+      }
+    }
+
+    return vectors;
   }
 
   private buildShapes(signals: MilkdropRuntimeSignals): MilkdropShapeVisual[] {
@@ -907,6 +955,7 @@ class MilkdropPresetVM implements MilkdropVM {
       mesh: this.buildMesh(signals),
       shapes: this.buildShapes(signals),
       borders: this.buildBorders(),
+      motionVectors: this.buildMotionVectors(signals),
       post: this.buildPost(),
       signals,
       variables: this.getStateSnapshot(),

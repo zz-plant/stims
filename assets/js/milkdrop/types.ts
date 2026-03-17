@@ -89,6 +89,7 @@ export type MilkdropFeatureKey =
   | 'custom-waves'
   | 'custom-shapes'
   | 'borders'
+  | 'motion-vectors'
   | 'video-echo'
   | 'post-effects'
   | 'unsupported-shader-text';
@@ -244,6 +245,14 @@ export type MilkdropBorderVisual = {
   alpha: number;
 };
 
+export type MilkdropMotionVectorVisual = {
+  positions: number[];
+  color: MilkdropColor;
+  alpha: number;
+  thickness: number;
+  additive: boolean;
+};
+
 export type MilkdropPostVisual = {
   brighten: boolean;
   darken: boolean;
@@ -377,6 +386,7 @@ export type MilkdropFrameState = {
   mesh: MilkdropMeshVisual;
   shapes: MilkdropShapeVisual[];
   borders: MilkdropBorderVisual[];
+  motionVectors: MilkdropMotionVectorVisual[];
   post: MilkdropPostVisual;
   signals: MilkdropRuntimeSignals;
   variables: Record<string, number>;
@@ -391,6 +401,7 @@ export type MilkdropBlendState = {
   trails: MilkdropPolyline[];
   shapes: MilkdropShapeVisual[];
   borders: MilkdropBorderVisual[];
+  motionVectors: MilkdropMotionVectorVisual[];
   post: MilkdropPostVisual;
   alpha: number;
 };

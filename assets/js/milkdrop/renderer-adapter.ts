@@ -98,7 +98,7 @@ function createWaveObject(
         size: wave.pointSize,
         transparent: true,
         opacity: wave.alpha * alphaMultiplier,
-        blending: wave.additive ? AdditiveBlending : undefined,
+        ...(wave.additive ? { blending: AdditiveBlending } : {}),
       }),
     );
     ensureGeometryPositions(object.geometry, wave.positions);
@@ -112,7 +112,7 @@ function createWaveObject(
     new LineBasicMaterial({
       transparent: true,
       opacity: wave.alpha * alphaMultiplier,
-      blending: wave.additive ? AdditiveBlending : undefined,
+      ...(wave.additive ? { blending: AdditiveBlending } : {}),
     }),
   );
   ensureGeometryPositions(object.geometry, closePolylinePositions(wave));
@@ -162,7 +162,7 @@ function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
         },
         transparent: true,
         side: DoubleSide,
-        blending: shape.additive ? AdditiveBlending : undefined,
+        ...(shape.additive ? { blending: AdditiveBlending } : {}),
         vertexShader: `
           varying vec2 vLocal;
           void main() {
@@ -190,7 +190,7 @@ function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
         opacity: (shape.color.a ?? 0.4) * alphaMultiplier,
         transparent: true,
         side: DoubleSide,
-        blending: shape.additive ? AdditiveBlending : undefined,
+        ...(shape.additive ? { blending: AdditiveBlending } : {}),
       });
 
   const fill = new Mesh(new ShapeGeometry(fillShape), fillMaterial);
@@ -211,7 +211,7 @@ function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
         opacity:
           Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45) * alphaMultiplier,
         transparent: true,
-        blending: shape.additive ? AdditiveBlending : undefined,
+        ...(shape.additive ? { blending: AdditiveBlending } : {}),
       }),
     );
     ensureGeometryPositions(accentBorder.geometry, positions);
@@ -230,7 +230,7 @@ function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
       ),
       opacity: (shape.borderColor.a ?? 1) * alphaMultiplier,
       transparent: true,
-      blending: shape.additive ? AdditiveBlending : undefined,
+      ...(shape.additive ? { blending: AdditiveBlending } : {}),
     }),
   );
   ensureGeometryPositions(border.geometry, positions);
@@ -427,10 +427,12 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly trailGroup = new Group();
   private readonly shapesGroup = new Group();
   private readonly borderGroup = new Group();
+  private readonly motionVectorGroup = new Group();
   private readonly blendWaveGroup = new Group();
   private readonly blendCustomWaveGroup = new Group();
   private readonly blendShapeGroup = new Group();
   private readonly blendBorderGroup = new Group();
+  private readonly blendMotionVectorGroup = new Group();
   private readonly feedback: FeedbackManager | null;
 
   constructor({
@@ -458,10 +460,12 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.trailGroup);
     this.root.add(this.shapesGroup);
     this.root.add(this.borderGroup);
+    this.root.add(this.motionVectorGroup);
     this.root.add(this.blendWaveGroup);
     this.root.add(this.blendCustomWaveGroup);
     this.root.add(this.blendShapeGroup);
     this.root.add(this.blendBorderGroup);
+    this.root.add(this.blendMotionVectorGroup);
 
     if (renderer instanceof WebGLRenderer) {
       const size = renderer.getSize(new Vector2());
@@ -554,6 +558,14 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     );
     this.renderShapeGroup(this.shapesGroup, payload.frameState.shapes);
     this.renderBorderGroup(this.borderGroup, payload.frameState.borders);
+    this.renderWaveGroup(
+      this.motionVectorGroup,
+      payload.frameState.motionVectors.map((vector) => ({
+        ...vector,
+        drawMode: 'line',
+        pointSize: 1,
+      })),
+    );
 
     const blend = payload.blendState;
     this.renderWaveGroup(
@@ -574,6 +586,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.renderBorderGroup(
       this.blendBorderGroup,
       blend?.borders ?? [],
+      blend?.alpha ?? 0,
+    );
+    this.renderWaveGroup(
+      this.blendMotionVectorGroup,
+      (blend?.motionVectors ?? []).map((vector) => ({
+        ...vector,
+        drawMode: 'line',
+        pointSize: 1,
+      })),
       blend?.alpha ?? 0,
     );
 
@@ -628,10 +649,12 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     clearGroup(this.trailGroup);
     clearGroup(this.shapesGroup);
     clearGroup(this.borderGroup);
+    clearGroup(this.motionVectorGroup);
     clearGroup(this.blendWaveGroup);
     clearGroup(this.blendCustomWaveGroup);
     clearGroup(this.blendShapeGroup);
     clearGroup(this.blendBorderGroup);
+    clearGroup(this.blendMotionVectorGroup);
     disposeGeometry(this.background.geometry);
     disposeMaterial(this.background.material);
     disposeGeometry(this.meshLines.geometry);

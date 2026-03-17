@@ -75,6 +75,13 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   ib_g: 0.96,
   ib_b: 1,
   ib_a: 0.76,
+  motion_vectors: 0,
+  motion_vectors_x: 16,
+  motion_vectors_y: 12,
+  mv_r: 1,
+  mv_g: 1,
+  mv_b: 1,
+  mv_a: 0.35,
   shape_1_enabled: 1,
   shape_1_sides: 6,
   shape_1_x: 0.5,
@@ -224,6 +231,7 @@ const FEATURE_ORDER: MilkdropFeatureKey[] = [
   'custom-waves',
   'custom-shapes',
   'borders',
+  'motion-vectors',
   'video-echo',
   'post-effects',
   'unsupported-shader-text',
@@ -242,15 +250,8 @@ const shapecodeFieldPattern = /^shapecode_(\d+)_(.+)$/u;
 const unsupportedShaderPattern =
   /^(?:warp_[0-9]+|comp_[0-9]+|warp_shader|comp_shader|shader_text|warp_code|comp_code)$/u;
 const hardUnsupportedKeys = new Set([
-  'motion_vectors',
-  'motion_vectors_x',
-  'motion_vectors_y',
   'texture_wrap',
   'feedback_texture',
-  'mv_r',
-  'mv_g',
-  'mv_b',
-  'mv_a',
   'ob_border',
   'ib_border',
 ]);
@@ -679,6 +680,10 @@ function buildFeatureAnalysis({
 
   if ((numericFields.ob_size ?? 0) > 0 || (numericFields.ib_size ?? 0) > 0) {
     features.add('borders');
+  }
+
+  if ((numericFields.motion_vectors ?? 0) > 0.5) {
+    features.add('motion-vectors');
   }
 
   if ((numericFields.video_echo_enabled ?? 0) > 0.5) {
