@@ -407,6 +407,43 @@ function parseShaderTintList(
   };
 }
 
+function parseShaderVec2List(
+  rawValue: string,
+  env: Record<string, number> = DEFAULT_MILKDROP_STATE,
+) {
+  const components = splitShaderListValues(rawValue)
+    .slice(0, 2)
+    .map((entry) => parseShaderScalar(entry, env));
+  if (components.length < 2 || components.some((entry) => entry === null)) {
+    return null;
+  }
+  const values = components as Array<{
+    value: number;
+    expression: MilkdropExpressionNode | null;
+  }>;
+  return {
+    value: {
+      x: values[0]?.value ?? 0,
+      y: values[1]?.value ?? 0,
+    },
+    expressions: {
+      x: values[0]?.expression ?? null,
+      y: values[1]?.expression ?? null,
+    },
+  };
+}
+
+function parseShaderVec2Constructor(
+  rawValue: string,
+  env: Record<string, number> = DEFAULT_MILKDROP_STATE,
+) {
+  const match = rawValue.match(/^vec2\((.+)\)$/iu);
+  if (!match) {
+    return null;
+  }
+  return parseShaderVec2List(match[1] ?? '', env);
+}
+
 function createLiteralExpression(value: number): MilkdropExpressionNode {
   return {
     type: 'literal',
@@ -474,6 +511,34 @@ function applyShaderControlValue(
     nextValue,
     nextExpression,
   );
+}
+
+function parseShaderVec3Constructor(
+  rawValue: string,
+  env: Record<string, number>,
+) {
+  const match = rawValue.match(/^vec3\((.+)\)$/iu);
+  if (!match) {
+    return null;
+  }
+  return parseShaderTintList(match[1] ?? '', env);
+}
+
+function parseShaderSampleMixPattern(rawValue: string) {
+  const normalized = rawValue.trim().replace(/texture2d/giu, 'tex2d');
+  const match = normalized.match(/^mix\((.+)\)$/iu);
+  if (!match) {
+    return null;
+  }
+  const parts = splitShaderListValues(match[1] ?? '');
+  if (parts.length !== 3) {
+    return null;
+  }
+  return {
+    left: (parts[0] ?? '').replace(/\s+/gu, '').toLowerCase(),
+    right: (parts[1] ?? '').replace(/\s+/gu, '').toLowerCase(),
+    amount: parts[2] ?? '',
+  };
 }
 
 function isKnownShaderScalarKey(key: string) {
@@ -546,17 +611,49 @@ function applyShaderProgramHeuristicLine({
     return true;
   }
 
-  const offsetMatch = normalizedValue.match(
-    /^uv(?:[+-]=|=uv[+-])vec2\((.+),(.+)\)$/u,
-  );
-  if (key === 'uv' && offsetMatch) {
-    const xScalar = parseShaderScalar(offsetMatch[1] ?? '', shaderEnv);
-    const yScalar = parseShaderScalar(offsetMatch[2] ?? '', shaderEnv);
+  const uvOffset =
+    key === 'uv'
+      ? operator === '+=' || operator === '-='
+        ? parseShaderVec2Constructor(rawValue, shaderEnv)
+        : null
+      : null;
+  if (key === 'uv' && uvOffset) {
+    const xSign = operator === '-=' ? -1 : 1;
+    const ySign = operator === '-=' ? -1 : 1;
+    const nextX = applyShaderControlValue(
+      '=',
+      controls.offsetX,
+      expressions.offsetX,
+      uvOffset.value.x * xSign,
+      uvOffset.expressions.x,
+    );
+    const nextY = applyShaderControlValue(
+      '=',
+      controls.offsetY,
+      expressions.offsetY,
+      uvOffset.value.y * ySign,
+      uvOffset.expressions.y,
+    );
+    controls.offsetX = nextX.value;
+    controls.offsetY = nextY.value;
+    expressions.offsetX = nextX.expression;
+    expressions.offsetY = nextY.expression;
+    shaderEnv.offset_x = nextX.value;
+    shaderEnv.offset_y = nextY.value;
+    shaderEnv.dx = nextX.value;
+    shaderEnv.dy = nextY.value;
+    return true;
+  }
+
+  const offsetMatch = normalizedValue.match(/^uv([+-])vec2\((.+),(.+)\)$/u);
+  if (key === 'uv' && operator === '=' && offsetMatch) {
+    const xScalar = parseShaderScalar(offsetMatch[2] ?? '', shaderEnv);
+    const yScalar = parseShaderScalar(offsetMatch[3] ?? '', shaderEnv);
     if (!xScalar || !yScalar) {
       return false;
     }
-    const xSign = normalizedValue.includes('-vec2(') ? -1 : 1;
-    const ySign = normalizedValue.includes('-vec2(') ? -1 : 1;
+    const xSign = offsetMatch[1] === '-' ? -1 : 1;
+    const ySign = offsetMatch[1] === '-' ? -1 : 1;
     const nextX = applyShaderControlValue(
       '=',
       controls.offsetX,
@@ -575,6 +672,59 @@ function applyShaderProgramHeuristicLine({
     controls.offsetY = nextY.value;
     expressions.offsetX = nextX.expression;
     expressions.offsetY = nextY.expression;
+    shaderEnv.offset_x = nextX.value;
+    shaderEnv.offset_y = nextY.value;
+    shaderEnv.dx = nextX.value;
+    shaderEnv.dy = nextY.value;
+    return true;
+  }
+
+  const uvAffineMatch = normalizedValue.match(
+    /^\(uv-0\.5\)([*/])([^+]+)\+0\.5([+-])vec2\((.+),(.+)\)$/u,
+  );
+  if (key === 'uv' && operator === '=' && uvAffineMatch) {
+    const zoomScalar = parseShaderScalar(uvAffineMatch[2] ?? '', shaderEnv);
+    const offset = parseShaderVec2List(
+      `${uvAffineMatch[4]}, ${uvAffineMatch[5]}`,
+      shaderEnv,
+    );
+    if (!zoomScalar || !offset) {
+      return false;
+    }
+    const offsetSign = uvAffineMatch[3] === '-' ? -1 : 1;
+    const zoomValue =
+      uvAffineMatch[1] === '/' && zoomScalar.value !== 0
+        ? 1 / zoomScalar.value
+        : zoomScalar.value;
+    const nextZoom = applyShaderControlValue(
+      '=',
+      controls.zoom,
+      expressions.zoom,
+      zoomValue,
+      zoomScalar.expression,
+    );
+    const nextX = applyShaderControlValue(
+      '=',
+      controls.offsetX,
+      expressions.offsetX,
+      offset.value.x * offsetSign,
+      offset.expressions.x,
+    );
+    const nextY = applyShaderControlValue(
+      '=',
+      controls.offsetY,
+      expressions.offsetY,
+      offset.value.y * offsetSign,
+      offset.expressions.y,
+    );
+    controls.zoom = nextZoom.value;
+    controls.offsetX = nextX.value;
+    controls.offsetY = nextY.value;
+    expressions.zoom = nextZoom.expression;
+    expressions.offsetX = nextX.expression;
+    expressions.offsetY = nextY.expression;
+    shaderEnv.zoom = nextZoom.value;
+    shaderEnv.scale = nextZoom.value;
     shaderEnv.offset_x = nextX.value;
     shaderEnv.offset_y = nextY.value;
     shaderEnv.dx = nextX.value;
@@ -611,6 +761,19 @@ function applyShaderProgramHeuristicLine({
       expressions.colorScale[channel] = next.expression;
       shaderEnv[channel] = next.value;
     });
+    return true;
+  }
+
+  const powMatch = normalizedValue.match(
+    /^pow\(tex2d\(sampler_main,uv\)\.rgb,vec3\((.+)\)\)$/u,
+  );
+  if (powMatch) {
+    const scalar = parseShaderScalar(powMatch[1] ?? '', shaderEnv);
+    if (!scalar || scalar.value === 0) {
+      return false;
+    }
+    const gammaValue = 1 / scalar.value;
+    shaderEnv.gammaadj = gammaValue;
     return true;
   }
 
@@ -660,6 +823,87 @@ function applyShaderProgramHeuristicLine({
     shaderEnv.g = nextG.value;
     shaderEnv.b = nextB.value;
     return true;
+  }
+
+  const mixPattern = parseShaderSampleMixPattern(rawValue);
+  if (mixPattern) {
+    const amount = parseShaderScalar(mixPattern.amount, shaderEnv);
+    if (!amount) {
+      return false;
+    }
+    const invertLeft = isIdentityTextureSampleExpression(mixPattern.left);
+    const invertRight =
+      mixPattern.right === '1.0-tex2d(sampler_main,uv).rgb' ||
+      mixPattern.right === '1-tex2d(sampler_main,uv).rgb';
+    if (invertLeft && invertRight) {
+      const next = applyShaderControlValue(
+        operator,
+        controls.invertBoost,
+        expressions.invertBoost,
+        amount.value,
+        amount.expression,
+      );
+      controls.invertBoost = next.value;
+      expressions.invertBoost = next.expression;
+      shaderEnv.invert = next.value;
+      return true;
+    }
+
+    const solarizeRight =
+      mixPattern.right === 'abs(tex2d(sampler_main,uv).rgb-0.5)*1.5' ||
+      mixPattern.right === 'abs(tex2d(sampler_main,uv).rgb-vec3(0.5))*1.5';
+    if (invertLeft && solarizeRight) {
+      const next = applyShaderControlValue(
+        operator,
+        controls.solarizeBoost,
+        expressions.solarizeBoost,
+        amount.value,
+        amount.expression,
+      );
+      controls.solarizeBoost = next.value;
+      expressions.solarizeBoost = next.expression;
+      shaderEnv.solarize = next.value;
+      return true;
+    }
+
+    const tintVec = parseShaderVec3Constructor(mixPattern.right, shaderEnv);
+    if (invertLeft && tintVec) {
+      const nextR = applyShaderControlValue(
+        operator,
+        controls.tint.r,
+        expressions.tint.r,
+        1 + (tintVec.value.r - 1) * amount.value,
+        tintVec.expressions.r,
+      );
+      const nextG = applyShaderControlValue(
+        operator,
+        controls.tint.g,
+        expressions.tint.g,
+        1 + (tintVec.value.g - 1) * amount.value,
+        tintVec.expressions.g,
+      );
+      const nextB = applyShaderControlValue(
+        operator,
+        controls.tint.b,
+        expressions.tint.b,
+        1 + (tintVec.value.b - 1) * amount.value,
+        tintVec.expressions.b,
+      );
+      controls.tint = {
+        r: nextR.value,
+        g: nextG.value,
+        b: nextB.value,
+      };
+      expressions.tint = {
+        r: nextR.expression,
+        g: nextG.expression,
+        b: nextB.expression,
+      };
+      shaderEnv.tint_r = nextR.value;
+      shaderEnv.tint_g = nextG.value;
+      shaderEnv.tint_b = nextB.value;
+      return true;
+    }
   }
 
   if (
