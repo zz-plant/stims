@@ -36,6 +36,7 @@ const UI_PREFS_KEY = 'stims:milkdrop:ui';
 type UiPrefs = {
   autoplay?: boolean;
   blendDuration?: number;
+  transitionMode?: 'blend' | 'cut';
   lastPresetId?: string;
   fallbackNotice?: string;
 };
@@ -352,6 +353,9 @@ export function createMilkdropExperience({
         autoplay = enabled;
         writeUiPrefs({ autoplay: enabled });
       },
+      onTransitionModeChange: (mode) => {
+        setTransitionMode(mode);
+      },
       onGoBackPreset: () => {
         void goBackPreset();
       },
@@ -402,6 +406,7 @@ export function createMilkdropExperience({
   let autoplay = prefs.autoplay ?? false;
   let blendDuration =
     prefs.blendDuration ?? activeCompiled.ir.numericFields.blend_duration;
+  let transitionMode: 'blend' | 'cut' = prefs.transitionMode ?? 'blend';
   let lastPresetSwitchAt = performance.now();
   let catalogEntries: MilkdropCatalogEntry[] = [];
   let activeBackend: 'webgl' | 'webgpu' = 'webgl';
@@ -433,8 +438,15 @@ export function createMilkdropExperience({
     updateAgentDebugSnapshot();
   };
 
+  const setTransitionMode = (mode: 'blend' | 'cut') => {
+    transitionMode = mode;
+    overlay.setTransitionMode(mode);
+    writeUiPrefs({ transitionMode: mode });
+  };
+
   overlay.setAutoplay(autoplay);
   overlay.setBlendDuration(blendDuration);
+  overlay.setTransitionMode(transitionMode);
   overlay.setSessionState(session.getState());
   if (prefs.fallbackNotice) {
     setOverlayStatus(prefs.fallbackNotice);
@@ -527,8 +539,13 @@ export function createMilkdropExperience({
       return;
     }
 
-    blendState = cloneBlendState(currentFrameState);
-    blendEndAtMs = performance.now() + blendDuration * 1000;
+    if (transitionMode === 'blend' && blendDuration > 0) {
+      blendState = cloneBlendState(currentFrameState);
+      blendEndAtMs = performance.now() + blendDuration * 1000;
+    } else {
+      blendState = null;
+      blendEndAtMs = 0;
+    }
     lastPresetSwitchAt = performance.now();
 
     if (options.recordHistory !== false) {
@@ -546,6 +563,39 @@ export function createMilkdropExperience({
       session.getState().latestCompiled?.formattedSource ??
       session.getState().source;
     return session.applySource(upsertMilkdropFields(baseline, updates));
+  };
+
+  const nudgeNumericField = async ({
+    key,
+    delta,
+    min,
+    max,
+    label,
+    digits = 3,
+  }: {
+    key: string;
+    delta: number;
+    min: number;
+    max: number;
+    label: string;
+    digits?: number;
+  }) => {
+    const compiled = session.getState().activeCompiled ?? activeCompiled;
+    const current = compiled.ir.numericFields[key] ?? 0;
+    const next = Math.min(
+      max,
+      Math.max(min, Number.parseFloat((current + delta).toFixed(digits))),
+    );
+    await session.updateField(key, next);
+    setOverlayStatus(`${label}: ${next.toFixed(Math.min(digits, 2))}`);
+  };
+
+  const cycleWaveMode = async (direction: 1 | -1) => {
+    const compiled = session.getState().activeCompiled ?? activeCompiled;
+    const current = Math.round(compiled.ir.numericFields.wave_mode ?? 0);
+    const next = (((current + direction) % 8) + 8) % 8;
+    await session.updateField('wave_mode', next);
+    setOverlayStatus(`Wave mode: ${next}`);
   };
 
   const selectAdjacentPreset = async (direction: 1 | -1) => {
@@ -688,8 +738,13 @@ export function createMilkdropExperience({
         return;
       }
 
-      if (event.key === 'o') {
+      if (event.key === 'm' || event.key === 'M') {
         overlay.toggleOpen();
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'Escape' && overlay.isOpen()) {
+        overlay.toggleOpen(false);
         event.preventDefault();
         return;
       }
@@ -710,6 +765,166 @@ export function createMilkdropExperience({
       }
       if (event.key === 'b' || event.key === 'Backspace') {
         void goBackPreset();
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'h' || event.key === 'H') {
+        const nextMode = transitionMode === 'blend' ? 'cut' : 'blend';
+        setTransitionMode(nextMode);
+        setOverlayStatus(
+          nextMode === 'cut'
+            ? 'Transition mode: hard cut.'
+            : `Transition mode: blend (${blendDuration.toFixed(2)}s).`,
+        );
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'w' || event.key === 'W') {
+        void cycleWaveMode(event.shiftKey ? -1 : 1);
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'i') {
+        void nudgeNumericField({
+          key: 'zoom',
+          delta: 0.02,
+          min: 0.5,
+          max: 2.5,
+          label: 'Zoom',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'I') {
+        void nudgeNumericField({
+          key: 'zoom',
+          delta: -0.02,
+          min: 0.5,
+          max: 2.5,
+          label: 'Zoom',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'o') {
+        void nudgeNumericField({
+          key: 'warp',
+          delta: -0.01,
+          min: 0,
+          max: 1,
+          label: 'Warp',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'O') {
+        void nudgeNumericField({
+          key: 'warp',
+          delta: 0.01,
+          min: 0,
+          max: 1,
+          label: 'Warp',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'j') {
+        void nudgeNumericField({
+          key: 'wave_scale',
+          delta: -0.03,
+          min: 0.25,
+          max: 3,
+          label: 'Wave scale',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'J') {
+        void nudgeNumericField({
+          key: 'wave_scale',
+          delta: 0.03,
+          min: 0.25,
+          max: 3,
+          label: 'Wave scale',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'e') {
+        void nudgeNumericField({
+          key: 'wave_a',
+          delta: -0.04,
+          min: 0,
+          max: 1,
+          label: 'Wave alpha',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'E') {
+        void nudgeNumericField({
+          key: 'wave_a',
+          delta: 0.04,
+          min: 0,
+          max: 1,
+          label: 'Wave alpha',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'q') {
+        void nudgeNumericField({
+          key: 'video_echo_zoom',
+          delta: -0.01,
+          min: 0.85,
+          max: 1.3,
+          label: 'Video echo zoom',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === 'Q') {
+        void nudgeNumericField({
+          key: 'video_echo_zoom',
+          delta: 0.01,
+          min: 0.85,
+          max: 1.3,
+          label: 'Video echo zoom',
+          digits: 3,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === '<') {
+        void nudgeNumericField({
+          key: 'rot',
+          delta: -0.003,
+          min: -1,
+          max: 1,
+          label: 'Rotation',
+          digits: 4,
+        });
+        event.preventDefault();
+        return;
+      }
+      if (event.key === '>') {
+        void nudgeNumericField({
+          key: 'rot',
+          delta: 0.003,
+          min: -1,
+          max: 1,
+          label: 'Rotation',
+          digits: 4,
+        });
         event.preventDefault();
         return;
       }
@@ -875,7 +1090,9 @@ export function createMilkdropExperience({
       currentFrameState = vm.step(signals);
       updateAgentDebugSnapshot();
       const activeBlendState =
-        blendState && performance.now() < blendEndAtMs
+        transitionMode === 'blend' &&
+        blendState &&
+        performance.now() < blendEndAtMs
           ? {
               ...blendState,
               alpha:

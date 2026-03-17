@@ -1,7 +1,7 @@
 {
   "name": "Stim Webtoys",
   "short_name": "Stims",
-  "description": "Browser-native MilkDrop successor with a broader lab of audio-reactive toys. Open-source, no accounts required.",
+  "description": "Browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, with a broader lab of audio-reactive toys. Open-source, no accounts required.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b0f1a",

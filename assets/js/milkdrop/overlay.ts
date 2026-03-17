@@ -22,6 +22,7 @@ type OverlayCallbacks = {
   onToggleFavorite: (id: string, favorite: boolean) => void;
   onSetRating: (id: string, rating: number) => void;
   onToggleAutoplay: (enabled: boolean) => void;
+  onTransitionModeChange: (mode: 'blend' | 'cut') => void;
   onGoBackPreset: () => void;
   onNextPreset: () => void;
   onPreviousPreset: () => void;
@@ -68,6 +69,7 @@ export class MilkdropOverlay {
   private readonly inspectorMetrics: HTMLElement;
   private readonly searchInput: HTMLInputElement;
   private readonly autoplayToggle: HTMLInputElement;
+  private readonly transitionModeSelect: HTMLSelectElement;
   private readonly blendSlider: HTMLInputElement;
   private readonly blendValue: HTMLElement;
   private readonly fileInput: HTMLInputElement;
@@ -135,6 +137,24 @@ export class MilkdropOverlay {
       this.autoplayToggle,
       document.createTextNode('Autoplay'),
     );
+
+    this.transitionModeSelect = document.createElement('select');
+    this.transitionModeSelect.className = 'milkdrop-overlay__rating-select';
+    (
+      [
+        { value: 'blend', label: 'Blend' },
+        { value: 'cut', label: 'Hard cut' },
+      ] satisfies Array<{ value: 'blend' | 'cut'; label: string }>
+    ).forEach((optionConfig) => {
+      const option = document.createElement('option');
+      option.value = optionConfig.value;
+      option.textContent = optionConfig.label;
+      this.transitionModeSelect.appendChild(option);
+    });
+    this.transitionModeSelect.addEventListener('change', () => {
+      const mode = this.transitionModeSelect.value === 'cut' ? 'cut' : 'blend';
+      this.callbacks.onTransitionModeChange(mode);
+    });
 
     const backButton = document.createElement('button');
     backButton.type = 'button';
@@ -226,6 +246,7 @@ export class MilkdropOverlay {
 
     toolbar.append(
       autoplayLabel,
+      this.transitionModeSelect,
       backButton,
       previousButton,
       nextButton,
@@ -645,6 +666,11 @@ export class MilkdropOverlay {
   setBlendDuration(value: number) {
     this.blendSlider.value = String(value);
     this.blendValue.textContent = `${value.toFixed(2)}s`;
+  }
+
+  setTransitionMode(mode: 'blend' | 'cut') {
+    this.transitionModeSelect.value = mode;
+    this.blendSlider.disabled = mode === 'cut';
   }
 
   setSessionState(state: MilkdropEditorSessionState) {

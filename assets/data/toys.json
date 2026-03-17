@@ -894,7 +894,7 @@
   {
     "slug": "milkdrop",
     "title": "MilkDrop Visualizer",
-    "description": "Preset-driven feedback visualizer with blend transitions, live source editing, and import/export flows.",
+    "description": "Preset-driven feedback visualizer in the lineage of Ryan Geiss's MilkDrop, with blend transitions, live source editing, and import/export flows.",
     "module": "assets/js/toys/milkdrop-toy.ts",
     "type": "module",
     "requiresWebGPU": true,

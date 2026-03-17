@@ -1,6 +1,6 @@
 # QA plan and automation map
 
-This guide captures the highest-impact flows to validate and how we keep them covered with automation. Stims is positioned as a browser-native MilkDrop successor with a broader toy lab, so QA should protect both the flagship `milkdrop` flow and cross-toy reliability. Run the linked tests when touching the associated areas so regressions surface quickly.
+This guide captures the highest-impact flows to validate and how we keep them covered with automation. Stims is positioned as an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, with a broader toy lab, so QA should protect both the flagship `milkdrop` flow and cross-toy reliability. Run the linked tests when touching the associated areas so regressions surface quickly.
 
 ## High-value flows
 

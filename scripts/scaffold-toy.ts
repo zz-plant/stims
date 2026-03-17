@@ -265,7 +265,7 @@ async function appendToyMetadata(
   slug: string,
   title: string,
   description: string,
-  type: ToyType,
+  _type: ToyType,
   root = repoRoot,
 ) {
   const { relativePath } = await loadToyRegistry(root);
@@ -298,7 +298,7 @@ async function validateMetadataEntry(
   slug: string,
   title: string,
   description: string,
-  type: ToyType,
+  _type: ToyType,
   root = repoRoot,
 ) {
   const entries = await ensureToysDataValid(root);

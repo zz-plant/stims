@@ -1,6 +1,6 @@
 # Feature specifications (current build)
 
-This document captures the **current, shipped feature set** of Stims as implemented in this repository. Product framing for current public surfaces is MilkDrop-led: Stims is a browser-native MilkDrop successor with a broader collection of related audio-reactive toys.
+This document captures the **current, shipped feature set** of Stims as implemented in this repository. Product framing for current public surfaces is MilkDrop-led: Stims is an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, with a broader collection of related audio-reactive toys.
 
 ## Audit snapshot
 
@@ -26,7 +26,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Quickstart CTA**: Primary launch deep-links to `toy.html?toy=milkdrop`.
 - **Readiness summary**: “Ready • <performance> • <compatibility>” reacts to performance settings and renderer compatibility.
 - **System check entry**: “Adjust performance” button opens the preflight dialog and deep-links to the system check section.
-- **Claim posture**: Copy uses careful successor language and does not claim blanket legacy compatibility.
+- **Claim posture**: Copy uses careful lineage language and does not claim blanket legacy compatibility.
 
 ### MilkDrop flagship proof
 - **Preset-led proof points**: Bundled presets, blend transitions, live editor flow, and import/export are presented as the flagship product path.

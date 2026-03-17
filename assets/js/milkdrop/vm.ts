@@ -161,6 +161,19 @@ function defaultSignalEnv(): MilkdropRuntimeSignals {
   };
 }
 
+function normalizeWaveMode(value: number) {
+  const rounded = Math.round(value);
+  return ((rounded % 8) + 8) % 8;
+}
+
+function sampleFrequencyData(signals: MilkdropRuntimeSignals, t: number) {
+  const sampleIndex = Math.min(
+    signals.frequencyData.length - 1,
+    Math.max(0, Math.round(t * Math.max(0, signals.frequencyData.length - 1))),
+  );
+  return (signals.frequencyData[sampleIndex] ?? 0) / 255;
+}
+
 type MutableState = Record<string, number>;
 
 class MilkdropPresetVM implements MilkdropVM {
@@ -412,45 +425,93 @@ class MilkdropPresetVM implements MilkdropVM {
       192,
     );
     const positions: number[] = [];
-    const mode = Math.round(this.state.wave_mode) % 3;
+    const mode = normalizeWaveMode(this.state.wave_mode ?? 0);
     const centerX = ((this.state.wave_x ?? 0.5) - 0.5) * 2;
     const centerY = (0.5 - (this.state.wave_y ?? 0.5)) * 2;
     const scale = 0.16 + (this.state.wave_scale ?? 1) * 0.18;
     const mystery = this.state.wave_mystery ?? 0;
+    const mysteryPhase = mystery * Math.PI;
 
     for (let index = 0; index < samples; index += 1) {
-      const sampleIndex = Math.min(
-        signals.frequencyData.length - 1,
-        Math.max(
-          0,
-          Math.round(
-            (index / Math.max(1, samples - 1)) *
-              (signals.frequencyData.length - 1),
-          ),
-        ),
-      );
-      const sampleValue = (signals.frequencyData[sampleIndex] ?? 0) / 255;
       const t = index / Math.max(1, samples - 1);
+      const sampleValue = sampleFrequencyData(signals, t);
       let x = 0;
       let y = 0;
 
-      if (mode === 1) {
-        const angle = t * Math.PI * 2 + signals.time * 0.32;
-        const radius = 0.22 + sampleValue * scale + signals.beatPulse * 0.08;
-        x = centerX + Math.cos(angle) * radius;
-        y = centerY + Math.sin(angle) * radius;
-      } else if (mode === 2) {
-        const angle = t * Math.PI * 5 + signals.time * (0.4 + mystery * 0.2);
-        const radius = 0.08 + t * 0.6 + sampleValue * scale * 0.6;
-        x = centerX + Math.cos(angle) * radius;
-        y = centerY + Math.sin(angle) * radius;
-      } else {
-        x = -1.1 + t * 2.2;
-        y =
-          centerY +
-          Math.sin(t * Math.PI * 2 + signals.time * (0.55 + mystery)) *
-            (0.06 + signals.trebleAtt * 0.08) +
-          (sampleValue - 0.5) * scale * 1.7;
+      switch (mode) {
+        case 1: {
+          const angle = t * Math.PI * 2 + signals.time * 0.32;
+          const radius = 0.22 + sampleValue * scale + signals.beatPulse * 0.08;
+          x = centerX + Math.cos(angle) * radius;
+          y = centerY + Math.sin(angle) * radius;
+          break;
+        }
+        case 2: {
+          const angle = t * Math.PI * 5 + signals.time * (0.4 + mystery * 0.2);
+          const radius = 0.08 + t * 0.6 + sampleValue * scale * 0.6;
+          x = centerX + Math.cos(angle) * radius;
+          y = centerY + Math.sin(angle) * radius;
+          break;
+        }
+        case 3: {
+          const angle = t * Math.PI * 2 + signals.time * 0.22;
+          const spoke =
+            0.2 +
+            sampleValue * scale * 1.05 +
+            Math.sin(t * Math.PI * 12 + mysteryPhase) * 0.05;
+          const pinch = 0.55 + Math.cos(t * Math.PI * 6 + signals.time) * 0.2;
+          x = centerX + Math.cos(angle) * spoke;
+          y = centerY + Math.sin(angle) * spoke * pinch;
+          break;
+        }
+        case 4: {
+          x =
+            centerX +
+            (sampleValue - 0.5) * scale * 1.85 +
+            Math.sin(t * Math.PI * 10 + signals.time * 0.5) * 0.04;
+          y = 1.08 - t * 2.16;
+          break;
+        }
+        case 5: {
+          const angle = t * Math.PI * 2 + signals.time * 0.18;
+          const xAmp = 0.26 + sampleValue * scale * 0.75;
+          const yAmp = 0.18 + sampleValue * scale;
+          x =
+            centerX +
+            Math.sin(angle * (2 + mystery * 0.6)) * xAmp +
+            Math.cos(angle * 4 + mysteryPhase) * 0.04;
+          y =
+            centerY +
+            Math.sin(angle * (3 + mystery * 0.5) + Math.PI / 2) * yAmp;
+          break;
+        }
+        case 6: {
+          const band = (sampleValue - 0.5) * scale * 1.4;
+          x = -1.05 + t * 2.1;
+          y =
+            centerY +
+            (index % 2 === 0 ? band : -band) +
+            Math.sin(t * Math.PI * 8 + signals.time * 0.55) * 0.03;
+          break;
+        }
+        case 7: {
+          const angle = t * Math.PI * 2 + signals.time * (0.24 + mystery * 0.1);
+          const petals = 3 + Math.round(clamp(mystery * 3, 0, 3));
+          const radius =
+            0.12 +
+            (0.2 + sampleValue * scale * 0.9) *
+              Math.cos(petals * angle + mysteryPhase);
+          x = centerX + Math.cos(angle) * radius;
+          y = centerY + Math.sin(angle) * radius;
+          break;
+        }
+        default:
+          x = -1.1 + t * 2.2;
+          y =
+            centerY +
+            Math.sin(t * Math.PI * 2 + signals.time * (0.55 + mystery)) *
+              (0.06 + signals.trebleAtt * 0.08) +
+            (sampleValue - 0.5) * scale * 1.7;
       }
 
       positions.push(x, y, 0.25);

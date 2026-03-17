@@ -19,6 +19,10 @@ type ParseResult<T> = {
 
 const operatorTokens = ['<=', '>=', '==', '!=', '&&', '||'];
 
+function toMilkdropInt(value: number) {
+  return Number.isFinite(value) ? Math.trunc(value) : 0;
+}
+
 function createDiagnostic(
   line: number,
   code: string,
@@ -54,7 +58,7 @@ function tokenize(source: string, line: number): ParseResult<Token[]> {
       continue;
     }
 
-    if ('+-*/%^<>!'.includes(current)) {
+    if ('+-*/%^<>!|&'.includes(current)) {
       tokens.push({ type: 'operator', value: current });
       index += 1;
       continue;
@@ -180,11 +184,37 @@ class ExpressionParser {
   }
 
   private parseLogicalAnd(): MilkdropExpressionNode {
-    let node = this.parseEquality();
+    let node = this.parseBitwiseOr();
     while (this.matchOperator('&&')) {
       node = {
         type: 'binary',
         operator: '&&',
+        left: node,
+        right: this.parseBitwiseOr(),
+      };
+    }
+    return node;
+  }
+
+  private parseBitwiseOr(): MilkdropExpressionNode {
+    let node = this.parseBitwiseAnd();
+    while (this.matchOperator('|')) {
+      node = {
+        type: 'binary',
+        operator: '|',
+        left: node,
+        right: this.parseBitwiseAnd(),
+      };
+    }
+    return node;
+  }
+
+  private parseBitwiseAnd(): MilkdropExpressionNode {
+    let node = this.parseEquality();
+    while (this.matchOperator('&')) {
+      node = {
+        type: 'binary',
+        operator: '&',
         left: node,
         right: this.parseEquality(),
       };
@@ -408,10 +438,17 @@ export function evaluateMilkdropExpression(
           return left * right;
         case '/':
           return right === 0 ? 0 : left / right;
-        case '%':
-          return right === 0 ? 0 : left % right;
+        case '%': {
+          const leftInt = toMilkdropInt(left);
+          const rightInt = toMilkdropInt(right);
+          return rightInt === 0 ? 0 : leftInt % rightInt;
+        }
         case '^':
           return left ** right;
+        case '|':
+          return toMilkdropInt(left) | toMilkdropInt(right);
+        case '&':
+          return toMilkdropInt(left) & toMilkdropInt(right);
         case '<':
           return left < right ? 1 : 0;
         case '<=':
@@ -460,10 +497,15 @@ export function evaluateMilkdropExpression(
         case 'max':
           return Math.max(...args);
         case 'floor':
-        case 'int':
           return Math.floor(args[0] ?? 0);
+        case 'int':
+          return toMilkdropInt(args[0] ?? 0);
         case 'ceil':
           return Math.ceil(args[0] ?? 0);
+        case 'sqr': {
+          const value = args[0] ?? 0;
+          return value * value;
+        }
         case 'clamp':
           return Math.min(Math.max(args[0] ?? 0, args[1] ?? 0), args[2] ?? 1);
         case 'log':
@@ -472,6 +514,12 @@ export function evaluateMilkdropExpression(
           return Math.exp(args[0] ?? 0);
         case 'sign':
           return Math.sign(args[0] ?? 0);
+        case 'bor':
+          return toMilkdropInt(args[0] ?? 0) | toMilkdropInt(args[1] ?? 0);
+        case 'band':
+          return toMilkdropInt(args[0] ?? 0) & toMilkdropInt(args[1] ?? 0);
+        case 'bnot':
+          return ~toMilkdropInt(args[0] ?? 0);
         case 'atan2':
           return Math.atan2(args[0] ?? 0, args[1] ?? 0);
         case 'frac': {

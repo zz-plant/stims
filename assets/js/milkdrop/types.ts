@@ -51,6 +51,8 @@ export type MilkdropExpressionNode =
         | '/'
         | '%'
         | '^'
+        | '|'
+        | '&'
         | '<'
         | '<='
         | '>'

@@ -462,7 +462,7 @@ const buildFaqItems = (toy: ToyEntry) => {
       ? 'Uses WebGPU for enhanced effects and needs a compatible browser/device.'
       : 'Runs without WebGPU requirements.',
   ];
-  return [
+  const items = [
     {
       question: `What is ${toy.title}?`,
       answer: toy.description,
@@ -476,6 +476,54 @@ const buildFaqItems = (toy: ToyEntry) => {
       answer: capabilityLines.join(' '),
     },
   ];
+
+  if (toy.slug === 'milkdrop') {
+    items.push({
+      question: 'How does this relate to MilkDrop and projectM?',
+      answer:
+        "Stims is an independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop. It is not an official MilkDrop or Winamp release, and when presets or compatibility work draw on the broader ecosystem, Stims should also credit preset authors and projectM contributors where relevant.",
+    });
+  }
+
+  return items;
+};
+
+const renderLineageSection = (toy: ToyEntry) => {
+  if (toy.slug !== 'milkdrop') {
+    return '';
+  }
+
+  return `
+      <section>
+        <div class="section-heading">
+          <p class="eyebrow">Lineage and credits</p>
+          <h2>Built in the lineage of MilkDrop, not as an official port</h2>
+          <p class="section-description">
+            MilkDrop Visualizer is an independent browser-native implementation. The lineage, historical context, and preset ecosystem should stay visible wherever this page is shared.
+          </p>
+        </div>
+        <div class="feature-card-grid">
+          <article class="feature-card">
+            <h3>Ryan Geiss and MilkDrop</h3>
+            <p>
+              Stims owes explicit credit to Ryan Geiss and MilkDrop for the flagship visualizer lineage and the preset-driven workflows that made this form recognizable.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Winamp context</h3>
+            <p>
+              MilkDrop's original public home was Winamp/Nullsoft. Stims is not affiliated with Winamp and does not present itself as an official MilkDrop release.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Preset ecosystem</h3>
+            <p>
+              When presets, fixture packs, or compatibility work draw on the broader ecosystem, Stims should credit the original preset authors, curators, and projectM contributors where relevant.
+            </p>
+          </article>
+        </div>
+      </section>
+  `;
 };
 
 const buildFaqJsonLd = (
@@ -787,6 +835,7 @@ const generateSeo = async () => {
           ${renderCapabilityMetaList('Capabilities', capabilityMeta)}
         </div>
       </section>
+      ${renderLineageSection(toy)}
       <section>
         <div class="section-heading">
           <p class="eyebrow">Related</p>
