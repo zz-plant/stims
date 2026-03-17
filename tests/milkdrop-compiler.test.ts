@@ -265,6 +265,23 @@ comp_shader=const pulse = beat_pulse * 0.4; mix = pulse; tint = 1, pulse + 0.2, 
     expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0, 6);
   });
 
+  test('supports common tex2d shader program patterns', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Tex2D Shader Program
+warp_shader=shader_body=tex2d(sampler_main,uv).rgb;
+comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
+      `.trim(),
+      { id: 'tex2d-shader-program' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.post.shaderControls.colorScale.r).toBeCloseTo(1.2, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.g).toBeCloseTo(1.2, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(1.2, 6);
+  });
+
   test('supports ninth custom wave and shape definitions', () => {
     const compiled = compileMilkdropPresetSource(
       `
@@ -353,7 +370,7 @@ warp_shader=this is unsupported
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'unsupported-shader-text',
     );
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('unsupported');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.formattedSource).toContain('wavecode_0_enabled=1');
     expect(compiled.formattedSource).toContain('shapecode_0_enabled=1');
   });
