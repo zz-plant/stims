@@ -821,7 +821,7 @@ class MilkdropPresetVM implements MilkdropVM {
       (shape): shape is MilkdropShapeVisual => shape !== null,
     );
 
-    for (let index = 1; index <= 4; index += 1) {
+    for (let index = 1; index <= 8; index += 1) {
       if (this.preset.ir.customShapes.some((shape) => shape.index === index)) {
         continue;
       }
@@ -938,14 +938,62 @@ class MilkdropPresetVM implements MilkdropVM {
     return borders;
   }
 
-  private buildPost(): MilkdropPostVisual {
+  private buildShaderControls(signals: MilkdropRuntimeSignals) {
+    const controls = this.preset.ir.post.shaderControls;
+    const expressions = this.preset.ir.post.shaderControlExpressions;
+    const env = this.createEnv(signals);
+    const evaluate = (
+      expression: typeof expressions.warpScale,
+      fallback: number,
+    ) => {
+      if (!expression) {
+        return fallback;
+      }
+      return evaluateMilkdropExpression(expression, env, {
+        nextRandom: this.nextRandom,
+      });
+    };
+
+    return {
+      warpScale: evaluate(expressions.warpScale, controls.warpScale),
+      offsetX: evaluate(expressions.offsetX, controls.offsetX),
+      offsetY: evaluate(expressions.offsetY, controls.offsetY),
+      rotation: evaluate(expressions.rotation, controls.rotation),
+      zoom: evaluate(expressions.zoom, controls.zoom),
+      saturation: evaluate(expressions.saturation, controls.saturation),
+      contrast: evaluate(expressions.contrast, controls.contrast),
+      colorScale: {
+        r: evaluate(expressions.colorScale.r, controls.colorScale.r),
+        g: evaluate(expressions.colorScale.g, controls.colorScale.g),
+        b: evaluate(expressions.colorScale.b, controls.colorScale.b),
+      },
+      hueShift: evaluate(expressions.hueShift, controls.hueShift),
+      mixAlpha: evaluate(expressions.mixAlpha, controls.mixAlpha),
+      brightenBoost: evaluate(
+        expressions.brightenBoost,
+        controls.brightenBoost,
+      ),
+      invertBoost: evaluate(expressions.invertBoost, controls.invertBoost),
+      solarizeBoost: evaluate(
+        expressions.solarizeBoost,
+        controls.solarizeBoost,
+      ),
+      tint: {
+        r: evaluate(expressions.tint.r, controls.tint.r),
+        g: evaluate(expressions.tint.g, controls.tint.g),
+        b: evaluate(expressions.tint.b, controls.tint.b),
+      },
+    };
+  }
+
+  private buildPost(signals: MilkdropRuntimeSignals): MilkdropPostVisual {
     return {
       shaderEnabled: (this.state.shader ?? 1) > 0.5,
       textureWrap: (this.state.texture_wrap ?? 0) > 0.5,
       feedbackTexture: (this.state.feedback_texture ?? 0) > 0.5,
       outerBorderStyle: (this.state.ob_border ?? 0) > 0.5,
       innerBorderStyle: (this.state.ib_border ?? 0) > 0.5,
-      shaderControls: this.preset.ir.post.shaderControls,
+      shaderControls: this.buildShaderControls(signals),
       brighten: (this.state.brighten ?? 0) > 0.5,
       darken: (this.state.darken ?? 0) > 0.5,
       solarize: (this.state.solarize ?? 0) > 0.5,
@@ -988,7 +1036,7 @@ class MilkdropPresetVM implements MilkdropVM {
       shapes: this.buildShapes(signals),
       borders: this.buildBorders(),
       motionVectors: this.buildMotionVectors(signals),
-      post: this.buildPost(),
+      post: this.buildPost(signals),
       signals,
       variables: this.getStateSnapshot(),
       compatibility: this.preset.ir.compatibility,

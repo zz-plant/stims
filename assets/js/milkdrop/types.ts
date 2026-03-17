@@ -156,28 +156,62 @@ export type MilkdropBorderDefinition = {
   inner: Record<string, number>;
 };
 
+export type MilkdropShaderColorControls = {
+  r: number;
+  g: number;
+  b: number;
+};
+
+export type MilkdropShaderControlExpressions = {
+  warpScale: MilkdropExpressionNode | null;
+  offsetX: MilkdropExpressionNode | null;
+  offsetY: MilkdropExpressionNode | null;
+  rotation: MilkdropExpressionNode | null;
+  zoom: MilkdropExpressionNode | null;
+  saturation: MilkdropExpressionNode | null;
+  contrast: MilkdropExpressionNode | null;
+  colorScale: {
+    r: MilkdropExpressionNode | null;
+    g: MilkdropExpressionNode | null;
+    b: MilkdropExpressionNode | null;
+  };
+  hueShift: MilkdropExpressionNode | null;
+  mixAlpha: MilkdropExpressionNode | null;
+  brightenBoost: MilkdropExpressionNode | null;
+  invertBoost: MilkdropExpressionNode | null;
+  solarizeBoost: MilkdropExpressionNode | null;
+  tint: {
+    r: MilkdropExpressionNode | null;
+    g: MilkdropExpressionNode | null;
+    b: MilkdropExpressionNode | null;
+  };
+};
+
+export type MilkdropShaderControls = {
+  warpScale: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+  zoom: number;
+  saturation: number;
+  contrast: number;
+  colorScale: MilkdropShaderColorControls;
+  hueShift: number;
+  mixAlpha: number;
+  brightenBoost: number;
+  invertBoost: number;
+  solarizeBoost: number;
+  tint: MilkdropShaderColorControls;
+};
+
 export type MilkdropPostEffects = {
   shaderEnabled: boolean;
   textureWrap: boolean;
   feedbackTexture: boolean;
   outerBorderStyle: boolean;
   innerBorderStyle: boolean;
-  shaderControls: {
-    warpScale: number;
-    offsetX: number;
-    offsetY: number;
-    rotation: number;
-    zoom: number;
-    saturation: number;
-    contrast: number;
-    colorScale: { r: number; g: number; b: number };
-    hueShift: number;
-    mixAlpha: number;
-    brightenBoost: number;
-    invertBoost: number;
-    solarizeBoost: number;
-    tint: { r: number; g: number; b: number };
-  };
+  shaderControls: MilkdropShaderControls;
+  shaderControlExpressions: MilkdropShaderControlExpressions;
   brighten: boolean;
   darken: boolean;
   solarize: boolean;
@@ -209,22 +243,8 @@ export type MilkdropPresetIR = {
     comp: string | null;
     supported: boolean;
     unsupportedLines: string[];
-    controls: {
-      warpScale: number;
-      offsetX: number;
-      offsetY: number;
-      rotation: number;
-      zoom: number;
-      saturation: number;
-      contrast: number;
-      colorScale: { r: number; g: number; b: number };
-      hueShift: number;
-      mixAlpha: number;
-      brightenBoost: number;
-      invertBoost: number;
-      solarizeBoost: number;
-      tint: { r: number; g: number; b: number };
-    };
+    controls: MilkdropShaderControls;
+    controlExpressions: MilkdropShaderControlExpressions;
   };
   post: MilkdropPostEffects;
   compatibility: MilkdropCompatibilityReport;
@@ -304,22 +324,7 @@ export type MilkdropPostVisual = {
   feedbackTexture: boolean;
   outerBorderStyle: boolean;
   innerBorderStyle: boolean;
-  shaderControls: {
-    warpScale: number;
-    offsetX: number;
-    offsetY: number;
-    rotation: number;
-    zoom: number;
-    saturation: number;
-    contrast: number;
-    colorScale: { r: number; g: number; b: number };
-    hueShift: number;
-    mixAlpha: number;
-    brightenBoost: number;
-    invertBoost: number;
-    solarizeBoost: number;
-    tint: { r: number; g: number; b: number };
-  };
+  shaderControls: MilkdropShaderControls;
   brighten: boolean;
   darken: boolean;
   solarize: boolean;

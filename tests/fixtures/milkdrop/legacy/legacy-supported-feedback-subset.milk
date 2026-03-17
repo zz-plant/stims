@@ -1,0 +1,16 @@
+MILKDROP_PRESET_VERSION=201
+TITLE=Legacy Supported Feedback Subset
+AUTHOR=Fixture
+fShader=1
+fVideoEchoAlpha=0.22
+fVideoEchoZoom=1.01
+video_echo=1
+texture_wrap=1
+feedback_texture=1
+fBrighten=1
+warp_shader=warp=0.65; hue=0.18; dx=0.03; dy=-0.02
+comp_shader=mix=0.24; tint=1,0.7,0.5; saturation=1.2; contrast=1.08
+fOuterBorderSize=0.01
+fInnerBorderSize=0.02
+ob_border=1
+ib_border=1

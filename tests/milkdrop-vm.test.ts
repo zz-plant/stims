@@ -315,6 +315,56 @@ comp_shader=saturation=1.25; contrast=1.1; r=1.05; g=0.9; b=0.7
     expect(frameState.post.shaderControls.colorScale.b).toBeCloseTo(0.7, 6);
   });
 
+  test('evaluates runtime-driven shader expressions against live signals and registers', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Runtime VM
+per_frame_1=q1=q1+0.25;
+warp_shader=dx=bass_att*0.1; rot=time*0.5; zoom=1+q1*0.1
+comp_shader=mix=beat_pulse*0.5; saturation=1+mid_att*0.5; tint=1, mid, treb_att+0.2
+      `.trim(),
+      { id: 'shader-runtime-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({ frame: 9, time: 0.8, beatPulse: 0.3 }),
+    );
+
+    expect(frameState.variables.q1).toBeCloseTo(0.25, 6);
+    expect(frameState.post.shaderControls.offsetX).toBeCloseTo(0.06, 6);
+    expect(frameState.post.shaderControls.rotation).toBeCloseTo(0.4, 6);
+    expect(frameState.post.shaderControls.zoom).toBeCloseTo(1.025, 6);
+    expect(frameState.post.shaderControls.mixAlpha).toBeCloseTo(0.15, 6);
+    expect(frameState.post.shaderControls.saturation).toBeCloseTo(1.225, 6);
+    expect(frameState.post.shaderControls.tint.g).toBeCloseTo(0.5, 6);
+    expect(frameState.post.shaderControls.tint.b).toBeCloseTo(0.55, 6);
+  });
+
+  test('renders extended shape slots beyond the original four defaults', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Extended Shape Slots
+shape_5_enabled=1
+shape_5_sides=7
+shape_5_rad=0.18
+shape_5_a=0.3
+shape_5_r=0.9
+shape_5_g=0.7
+shape_5_b=0.4
+wavecode_4_enabled=1
+wave_4_per_point1=y=y+0.02;
+      `.trim(),
+      { id: 'extended-shape-slots' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 8 }));
+
+    expect(frameState.shapes.some((shape) => shape.key === 'shape_5')).toBe(
+      true,
+    );
+    expect(frameState.customWaves).toHaveLength(1);
+  });
+
   test('accumulates and caps trail history across steps', () => {
     const preset = compileMilkdropPresetSource('title=Trail Test', {
       id: 'trail-test',

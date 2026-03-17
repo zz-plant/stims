@@ -184,6 +184,69 @@ comp_shader=saturation=1.3; contrast=1.15; r=1.1; g=0.8; b=0.6
     expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(0.6, 6);
   });
 
+  test('supports shader expressions in the subset', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Expressions
+warp_shader=dx=sin(pi/2)*0.08; rot=pi/6; zoom=1+0.15
+comp_shader=saturation=1+0.2; mix=0.1+0.05; tint=1, 0.4+0.2, sqrt(0.25)+0.1
+      `.trim(),
+      { id: 'shader-expressions' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0.08, 6);
+    expect(compiled.ir.post.shaderControls.rotation).toBeCloseTo(
+      Math.PI / 6,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(1.15, 6);
+    expect(compiled.ir.post.shaderControls.saturation).toBeCloseTo(1.2, 6);
+    expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.15, 6);
+    expect(compiled.ir.post.shaderControls.tint.g).toBeCloseTo(0.6, 6);
+    expect(compiled.ir.post.shaderControls.tint.b).toBeCloseTo(0.6, 6);
+  });
+
+  test('preserves runtime-driven shader expressions for vm evaluation', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Runtime Expressions
+warp_shader=dx=bass_att*0.1; rot=time*0.5
+comp_shader=mix=beat_pulse*0.5; tint=1, mid, treb_att+0.2
+      `.trim(),
+      { id: 'shader-runtime-expressions' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControlExpressions.offsetX).not.toBeNull();
+    expect(compiled.ir.post.shaderControlExpressions.rotation).not.toBeNull();
+    expect(compiled.ir.post.shaderControlExpressions.mixAlpha).not.toBeNull();
+    expect(compiled.ir.post.shaderControlExpressions.tint.g).not.toBeNull();
+  });
+
+  test('supports fifth custom wave and shape definitions', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Extended Custom Slots
+wavecode_4_enabled=1
+wavecode_4_samples=32
+wave_4_per_point1=x=x+0.01;
+shapecode_4_enabled=1
+shapecode_4_sides=9
+shape_4_per_frame1=rad=0.16+bass_att*0.03;
+      `.trim(),
+      { id: 'extended-custom-slots' },
+    );
+
+    expect(compiled.ir.customWaves).toHaveLength(1);
+    expect(compiled.ir.customWaves[0]?.index).toBe(5);
+    expect(compiled.ir.customWaves[0]?.fields.enabled).toBe(1);
+    expect(compiled.ir.customShapes).toHaveLength(1);
+    expect(compiled.ir.customShapes[0]?.index).toBe(5);
+    expect(compiled.ir.customShapes[0]?.fields.sides).toBe(9);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+  });
+
   test('surfaces diagnostics for invalid scalar expressions', () => {
     const compiled = compileMilkdropPresetSource(
       `

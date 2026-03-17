@@ -20,12 +20,14 @@ import type {
   MilkdropPresetIR,
   MilkdropPresetSource,
   MilkdropProgramBlock,
+  MilkdropShaderControlExpressions,
+  MilkdropShaderControls,
   MilkdropShapeDefinition,
   MilkdropWaveDefinition,
 } from './types';
 
-const MAX_CUSTOM_WAVES = 4;
-const MAX_CUSTOM_SHAPES = 4;
+const MAX_CUSTOM_WAVES = 8;
+const MAX_CUSTOM_SHAPES = 8;
 
 export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   fRating: 3,
@@ -170,6 +172,86 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   shape_4_border_b: 1,
   shape_4_additive: 0,
   shape_4_thickoutline: 0,
+  shape_5_enabled: 0,
+  shape_5_sides: 7,
+  shape_5_x: 0.5,
+  shape_5_y: 0.5,
+  shape_5_rad: 0.08,
+  shape_5_ang: 0,
+  shape_5_a: 0.14,
+  shape_5_r: 1,
+  shape_5_g: 0.8,
+  shape_5_b: 0.45,
+  shape_5_a2: 0,
+  shape_5_r2: 0,
+  shape_5_g2: 0,
+  shape_5_b2: 0,
+  shape_5_border_a: 0.72,
+  shape_5_border_r: 1,
+  shape_5_border_g: 0.9,
+  shape_5_border_b: 0.6,
+  shape_5_additive: 0,
+  shape_5_thickoutline: 0,
+  shape_6_enabled: 0,
+  shape_6_sides: 3,
+  shape_6_x: 0.5,
+  shape_6_y: 0.5,
+  shape_6_rad: 0.07,
+  shape_6_ang: 0,
+  shape_6_a: 0.13,
+  shape_6_r: 0.8,
+  shape_6_g: 1,
+  shape_6_b: 0.55,
+  shape_6_a2: 0,
+  shape_6_r2: 0,
+  shape_6_g2: 0,
+  shape_6_b2: 0,
+  shape_6_border_a: 0.7,
+  shape_6_border_r: 0.9,
+  shape_6_border_g: 1,
+  shape_6_border_b: 0.7,
+  shape_6_additive: 0,
+  shape_6_thickoutline: 0,
+  shape_7_enabled: 0,
+  shape_7_sides: 9,
+  shape_7_x: 0.5,
+  shape_7_y: 0.5,
+  shape_7_rad: 0.06,
+  shape_7_ang: 0,
+  shape_7_a: 0.12,
+  shape_7_r: 0.7,
+  shape_7_g: 0.9,
+  shape_7_b: 1,
+  shape_7_a2: 0,
+  shape_7_r2: 0,
+  shape_7_g2: 0,
+  shape_7_b2: 0,
+  shape_7_border_a: 0.68,
+  shape_7_border_r: 0.8,
+  shape_7_border_g: 0.95,
+  shape_7_border_b: 1,
+  shape_7_additive: 0,
+  shape_7_thickoutline: 0,
+  shape_8_enabled: 0,
+  shape_8_sides: 5,
+  shape_8_x: 0.5,
+  shape_8_y: 0.5,
+  shape_8_rad: 0.05,
+  shape_8_ang: 0,
+  shape_8_a: 0.1,
+  shape_8_r: 1,
+  shape_8_g: 0.65,
+  shape_8_b: 0.9,
+  shape_8_a2: 0,
+  shape_8_r2: 0,
+  shape_8_g2: 0,
+  shape_8_b2: 0,
+  shape_8_border_a: 0.66,
+  shape_8_border_r: 1,
+  shape_8_border_g: 0.75,
+  shape_8_border_b: 0.95,
+  shape_8_additive: 0,
+  shape_8_thickoutline: 0,
   custom_wave_1_enabled: 0,
   custom_wave_1_samples: 64,
   custom_wave_1_spectrum: 0,
@@ -230,6 +312,66 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   custom_wave_4_g: 1,
   custom_wave_4_b: 1,
   custom_wave_4_a: 0.4,
+  custom_wave_5_enabled: 0,
+  custom_wave_5_samples: 64,
+  custom_wave_5_spectrum: 0,
+  custom_wave_5_additive: 0,
+  custom_wave_5_usedots: 0,
+  custom_wave_5_scaling: 1,
+  custom_wave_5_smoothing: 0.5,
+  custom_wave_5_mystery: 0,
+  custom_wave_5_thick: 1,
+  custom_wave_5_x: 0.5,
+  custom_wave_5_y: 0.5,
+  custom_wave_5_r: 1,
+  custom_wave_5_g: 1,
+  custom_wave_5_b: 1,
+  custom_wave_5_a: 0.4,
+  custom_wave_6_enabled: 0,
+  custom_wave_6_samples: 64,
+  custom_wave_6_spectrum: 0,
+  custom_wave_6_additive: 0,
+  custom_wave_6_usedots: 0,
+  custom_wave_6_scaling: 1,
+  custom_wave_6_smoothing: 0.5,
+  custom_wave_6_mystery: 0,
+  custom_wave_6_thick: 1,
+  custom_wave_6_x: 0.5,
+  custom_wave_6_y: 0.5,
+  custom_wave_6_r: 1,
+  custom_wave_6_g: 1,
+  custom_wave_6_b: 1,
+  custom_wave_6_a: 0.4,
+  custom_wave_7_enabled: 0,
+  custom_wave_7_samples: 64,
+  custom_wave_7_spectrum: 0,
+  custom_wave_7_additive: 0,
+  custom_wave_7_usedots: 0,
+  custom_wave_7_scaling: 1,
+  custom_wave_7_smoothing: 0.5,
+  custom_wave_7_mystery: 0,
+  custom_wave_7_thick: 1,
+  custom_wave_7_x: 0.5,
+  custom_wave_7_y: 0.5,
+  custom_wave_7_r: 1,
+  custom_wave_7_g: 1,
+  custom_wave_7_b: 1,
+  custom_wave_7_a: 0.4,
+  custom_wave_8_enabled: 0,
+  custom_wave_8_samples: 64,
+  custom_wave_8_spectrum: 0,
+  custom_wave_8_additive: 0,
+  custom_wave_8_usedots: 0,
+  custom_wave_8_scaling: 1,
+  custom_wave_8_smoothing: 0.5,
+  custom_wave_8_mystery: 0,
+  custom_wave_8_thick: 1,
+  custom_wave_8_x: 0.5,
+  custom_wave_8_y: 0.5,
+  custom_wave_8_r: 1,
+  custom_wave_8_g: 1,
+  custom_wave_8_b: 1,
+  custom_wave_8_a: 0.4,
 };
 
 const FEATURE_ORDER: MilkdropFeatureKey[] = [
@@ -259,23 +401,8 @@ const shaderFieldPattern =
   /^(?:warp_[0-9]+|comp_[0-9]+|warp_shader|comp_shader|shader_text|warp_code|comp_code)$/u;
 const hardUnsupportedKeys = new Set<string>([]);
 
-function parseShaderTintList(rawValue: string) {
-  const values = rawValue
-    .split(/[\s,]+/u)
-    .map((entry) => Number(entry))
-    .filter((entry) => Number.isFinite(entry));
-  if (values.length < 3) {
-    return null;
-  }
+function createDefaultShaderControls(): MilkdropShaderControls {
   return {
-    r: Math.min(Math.max(values[0] ?? 1, 0), 2),
-    g: Math.min(Math.max(values[1] ?? 1, 0), 2),
-    b: Math.min(Math.max(values[2] ?? 1, 0), 2),
-  };
-}
-
-function extractShaderControls(shaderText: string | null) {
-  const controls = {
     warpScale: 0,
     offsetX: 0,
     offsetY: 0,
@@ -291,9 +418,110 @@ function extractShaderControls(shaderText: string | null) {
     solarizeBoost: 0,
     tint: { r: 1, g: 1, b: 1 },
   };
+}
+
+function createDefaultShaderControlExpressions(): MilkdropShaderControlExpressions {
+  return {
+    warpScale: null,
+    offsetX: null,
+    offsetY: null,
+    rotation: null,
+    zoom: null,
+    saturation: null,
+    contrast: null,
+    colorScale: { r: null, g: null, b: null },
+    hueShift: null,
+    mixAlpha: null,
+    brightenBoost: null,
+    invertBoost: null,
+    solarizeBoost: null,
+    tint: { r: null, g: null, b: null },
+  };
+}
+
+function parseShaderScalar(rawValue: string) {
+  const numeric = Number(rawValue);
+  if (Number.isFinite(numeric)) {
+    return {
+      value: numeric,
+      expression: null,
+    };
+  }
+
+  const expressionResult = parseMilkdropExpression(rawValue, 1);
+  if (!expressionResult.value) {
+    return null;
+  }
+
+  return {
+    value: evaluateMilkdropExpression(
+      expressionResult.value,
+      DEFAULT_MILKDROP_STATE,
+    ),
+    expression: expressionResult.value,
+  };
+}
+
+function splitShaderListValues(rawValue: string) {
+  if (rawValue.includes(',')) {
+    const values: string[] = [];
+    let depth = 0;
+    let start = 0;
+
+    for (let index = 0; index < rawValue.length; index += 1) {
+      const char = rawValue[index];
+      if (char === '(') {
+        depth += 1;
+      } else if (char === ')') {
+        depth = Math.max(depth - 1, 0);
+      } else if (char === ',' && depth === 0) {
+        values.push(rawValue.slice(start, index).trim());
+        start = index + 1;
+      }
+    }
+
+    values.push(rawValue.slice(start).trim());
+    return values.filter(Boolean);
+  }
+
+  return rawValue
+    .trim()
+    .split(/\s+/u)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function parseShaderTintList(rawValue: string) {
+  const components = splitShaderListValues(rawValue)
+    .slice(0, 3)
+    .map((entry) => parseShaderScalar(entry));
+  if (components.length < 3 || components.some((entry) => entry === null)) {
+    return null;
+  }
+  const values = components as Array<{
+    value: number;
+    expression: MilkdropExpressionNode | null;
+  }>;
+  return {
+    value: {
+      r: Math.min(Math.max(values[0]?.value ?? 1, 0), 2),
+      g: Math.min(Math.max(values[1]?.value ?? 1, 0), 2),
+      b: Math.min(Math.max(values[2]?.value ?? 1, 0), 2),
+    },
+    expressions: {
+      r: values[0]?.expression ?? null,
+      g: values[1]?.expression ?? null,
+      b: values[2]?.expression ?? null,
+    },
+  };
+}
+
+function extractShaderControls(shaderText: string | null) {
+  const controls = createDefaultShaderControls();
+  const expressions = createDefaultShaderControlExpressions();
   const unsupportedLines: string[] = [];
   if (!shaderText) {
-    return { controls, unsupportedLines, supported: false };
+    return { controls, expressions, unsupportedLines, supported: false };
   }
 
   let supportedLineCount = 0;
@@ -310,12 +538,13 @@ function extractShaderControls(shaderText: string | null) {
     }
     const key = assignment[1]?.toLowerCase() ?? '';
     const rawValue = assignment[2]?.trim() ?? '';
-    const numeric = Number(rawValue);
+    const numeric = parseShaderScalar(rawValue);
     switch (key) {
       case 'warp':
       case 'warp_scale':
-        if (Number.isFinite(numeric)) {
-          controls.warpScale = numeric;
+        if (numeric !== null) {
+          controls.warpScale = numeric.value;
+          expressions.warpScale = numeric.expression;
           supportedLineCount += 1;
           return;
         }
@@ -323,8 +552,9 @@ function extractShaderControls(shaderText: string | null) {
       case 'dx':
       case 'offset_x':
       case 'translate_x':
-        if (Number.isFinite(numeric)) {
-          controls.offsetX = numeric;
+        if (numeric !== null) {
+          controls.offsetX = numeric.value;
+          expressions.offsetX = numeric.expression;
           supportedLineCount += 1;
           return;
         }
@@ -332,71 +562,80 @@ function extractShaderControls(shaderText: string | null) {
       case 'dy':
       case 'offset_y':
       case 'translate_y':
-        if (Number.isFinite(numeric)) {
-          controls.offsetY = numeric;
+        if (numeric !== null) {
+          controls.offsetY = numeric.value;
+          expressions.offsetY = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'rot':
       case 'rotation':
-        if (Number.isFinite(numeric)) {
-          controls.rotation = numeric;
+        if (numeric !== null) {
+          controls.rotation = numeric.value;
+          expressions.rotation = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'zoom':
       case 'scale':
-        if (Number.isFinite(numeric)) {
-          controls.zoom = numeric;
+        if (numeric !== null) {
+          controls.zoom = numeric.value;
+          expressions.zoom = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'saturation':
       case 'sat':
-        if (Number.isFinite(numeric)) {
-          controls.saturation = numeric;
+        if (numeric !== null) {
+          controls.saturation = numeric.value;
+          expressions.saturation = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'contrast':
-        if (Number.isFinite(numeric)) {
-          controls.contrast = numeric;
+        if (numeric !== null) {
+          controls.contrast = numeric.value;
+          expressions.contrast = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'r':
       case 'red':
-        if (Number.isFinite(numeric)) {
-          controls.colorScale.r = numeric;
+        if (numeric !== null) {
+          controls.colorScale.r = numeric.value;
+          expressions.colorScale.r = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'g':
       case 'green':
-        if (Number.isFinite(numeric)) {
-          controls.colorScale.g = numeric;
+        if (numeric !== null) {
+          controls.colorScale.g = numeric.value;
+          expressions.colorScale.g = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'b':
       case 'blue':
-        if (Number.isFinite(numeric)) {
-          controls.colorScale.b = numeric;
+        if (numeric !== null) {
+          controls.colorScale.b = numeric.value;
+          expressions.colorScale.b = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'hue':
       case 'hue_shift':
-        if (Number.isFinite(numeric)) {
-          controls.hueShift = numeric;
+        if (numeric !== null) {
+          controls.hueShift = numeric.value;
+          expressions.hueShift = numeric.expression;
           supportedLineCount += 1;
           return;
         }
@@ -404,29 +643,33 @@ function extractShaderControls(shaderText: string | null) {
       case 'mix':
       case 'feedback':
       case 'feedback_alpha':
-        if (Number.isFinite(numeric)) {
-          controls.mixAlpha = numeric;
+        if (numeric !== null) {
+          controls.mixAlpha = numeric.value;
+          expressions.mixAlpha = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'brighten':
-        if (Number.isFinite(numeric)) {
-          controls.brightenBoost = numeric;
+        if (numeric !== null) {
+          controls.brightenBoost = numeric.value;
+          expressions.brightenBoost = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'invert':
-        if (Number.isFinite(numeric)) {
-          controls.invertBoost = numeric;
+        if (numeric !== null) {
+          controls.invertBoost = numeric.value;
+          expressions.invertBoost = numeric.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'solarize':
-        if (Number.isFinite(numeric)) {
-          controls.solarizeBoost = numeric;
+        if (numeric !== null) {
+          controls.solarizeBoost = numeric.value;
+          expressions.solarizeBoost = numeric.expression;
           supportedLineCount += 1;
           return;
         }
@@ -434,7 +677,8 @@ function extractShaderControls(shaderText: string | null) {
       case 'tint': {
         const tint = parseShaderTintList(rawValue);
         if (tint) {
-          controls.tint = tint;
+          controls.tint = tint.value;
+          expressions.tint = tint.expressions;
           supportedLineCount += 1;
           return;
         }
@@ -446,8 +690,209 @@ function extractShaderControls(shaderText: string | null) {
 
   return {
     controls,
+    expressions,
     unsupportedLines,
     supported: supportedLineCount > 0 && unsupportedLines.length === 0,
+  };
+}
+
+function pickShaderScalar(
+  primaryValue: number,
+  primaryExpression: MilkdropExpressionNode | null,
+  secondaryValue: number,
+  secondaryExpression: MilkdropExpressionNode | null,
+  defaultValue: number,
+) {
+  if (primaryExpression || primaryValue !== defaultValue) {
+    return { value: primaryValue, expression: primaryExpression };
+  }
+  return { value: secondaryValue, expression: secondaryExpression };
+}
+
+function mergeShaderControlAnalysis(
+  warpAnalysis: ReturnType<typeof extractShaderControls>,
+  compAnalysis: ReturnType<typeof extractShaderControls>,
+) {
+  const warpScale = pickShaderScalar(
+    warpAnalysis.controls.warpScale,
+    warpAnalysis.expressions.warpScale,
+    compAnalysis.controls.warpScale,
+    compAnalysis.expressions.warpScale,
+    0,
+  );
+  const offsetX = pickShaderScalar(
+    warpAnalysis.controls.offsetX,
+    warpAnalysis.expressions.offsetX,
+    compAnalysis.controls.offsetX,
+    compAnalysis.expressions.offsetX,
+    0,
+  );
+  const offsetY = pickShaderScalar(
+    warpAnalysis.controls.offsetY,
+    warpAnalysis.expressions.offsetY,
+    compAnalysis.controls.offsetY,
+    compAnalysis.expressions.offsetY,
+    0,
+  );
+  const rotation = pickShaderScalar(
+    warpAnalysis.controls.rotation,
+    warpAnalysis.expressions.rotation,
+    compAnalysis.controls.rotation,
+    compAnalysis.expressions.rotation,
+    0,
+  );
+  const zoom = pickShaderScalar(
+    warpAnalysis.controls.zoom,
+    warpAnalysis.expressions.zoom,
+    compAnalysis.controls.zoom,
+    compAnalysis.expressions.zoom,
+    1,
+  );
+  const saturation = pickShaderScalar(
+    compAnalysis.controls.saturation,
+    compAnalysis.expressions.saturation,
+    warpAnalysis.controls.saturation,
+    warpAnalysis.expressions.saturation,
+    1,
+  );
+  const contrast = pickShaderScalar(
+    compAnalysis.controls.contrast,
+    compAnalysis.expressions.contrast,
+    warpAnalysis.controls.contrast,
+    warpAnalysis.expressions.contrast,
+    1,
+  );
+  const hueShift = pickShaderScalar(
+    compAnalysis.controls.hueShift,
+    compAnalysis.expressions.hueShift,
+    warpAnalysis.controls.hueShift,
+    warpAnalysis.expressions.hueShift,
+    0,
+  );
+  const mixAlpha = pickShaderScalar(
+    compAnalysis.controls.mixAlpha,
+    compAnalysis.expressions.mixAlpha,
+    warpAnalysis.controls.mixAlpha,
+    warpAnalysis.expressions.mixAlpha,
+    0,
+  );
+  const brightenBoost = pickShaderScalar(
+    compAnalysis.controls.brightenBoost,
+    compAnalysis.expressions.brightenBoost,
+    warpAnalysis.controls.brightenBoost,
+    warpAnalysis.expressions.brightenBoost,
+    0,
+  );
+  const invertBoost = pickShaderScalar(
+    compAnalysis.controls.invertBoost,
+    compAnalysis.expressions.invertBoost,
+    warpAnalysis.controls.invertBoost,
+    warpAnalysis.expressions.invertBoost,
+    0,
+  );
+  const solarizeBoost = pickShaderScalar(
+    compAnalysis.controls.solarizeBoost,
+    compAnalysis.expressions.solarizeBoost,
+    warpAnalysis.controls.solarizeBoost,
+    warpAnalysis.expressions.solarizeBoost,
+    0,
+  );
+  const colorScale = {
+    r: pickShaderScalar(
+      compAnalysis.controls.colorScale.r,
+      compAnalysis.expressions.colorScale.r,
+      warpAnalysis.controls.colorScale.r,
+      warpAnalysis.expressions.colorScale.r,
+      1,
+    ),
+    g: pickShaderScalar(
+      compAnalysis.controls.colorScale.g,
+      compAnalysis.expressions.colorScale.g,
+      warpAnalysis.controls.colorScale.g,
+      warpAnalysis.expressions.colorScale.g,
+      1,
+    ),
+    b: pickShaderScalar(
+      compAnalysis.controls.colorScale.b,
+      compAnalysis.expressions.colorScale.b,
+      warpAnalysis.controls.colorScale.b,
+      warpAnalysis.expressions.colorScale.b,
+      1,
+    ),
+  };
+  const tint = {
+    r: pickShaderScalar(
+      compAnalysis.controls.tint.r,
+      compAnalysis.expressions.tint.r,
+      warpAnalysis.controls.tint.r,
+      warpAnalysis.expressions.tint.r,
+      1,
+    ),
+    g: pickShaderScalar(
+      compAnalysis.controls.tint.g,
+      compAnalysis.expressions.tint.g,
+      warpAnalysis.controls.tint.g,
+      warpAnalysis.expressions.tint.g,
+      1,
+    ),
+    b: pickShaderScalar(
+      compAnalysis.controls.tint.b,
+      compAnalysis.expressions.tint.b,
+      warpAnalysis.controls.tint.b,
+      warpAnalysis.expressions.tint.b,
+      1,
+    ),
+  };
+
+  return {
+    controls: {
+      warpScale: warpScale.value,
+      offsetX: offsetX.value,
+      offsetY: offsetY.value,
+      rotation: rotation.value,
+      zoom: zoom.value,
+      saturation: saturation.value,
+      contrast: contrast.value,
+      colorScale: {
+        r: colorScale.r.value,
+        g: colorScale.g.value,
+        b: colorScale.b.value,
+      },
+      hueShift: hueShift.value,
+      mixAlpha: mixAlpha.value,
+      brightenBoost: brightenBoost.value,
+      invertBoost: invertBoost.value,
+      solarizeBoost: solarizeBoost.value,
+      tint: {
+        r: tint.r.value,
+        g: tint.g.value,
+        b: tint.b.value,
+      },
+    },
+    expressions: {
+      warpScale: warpScale.expression,
+      offsetX: offsetX.expression,
+      offsetY: offsetY.expression,
+      rotation: rotation.expression,
+      zoom: zoom.expression,
+      saturation: saturation.expression,
+      contrast: contrast.expression,
+      colorScale: {
+        r: colorScale.r.expression,
+        g: colorScale.g.expression,
+        b: colorScale.b.expression,
+      },
+      hueShift: hueShift.expression,
+      mixAlpha: mixAlpha.expression,
+      brightenBoost: brightenBoost.expression,
+      invertBoost: invertBoost.expression,
+      solarizeBoost: solarizeBoost.expression,
+      tint: {
+        r: tint.r.expression,
+        g: tint.g.expression,
+        b: tint.b.expression,
+      },
+    },
   };
 }
 
@@ -1161,6 +1606,10 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
   );
   const shaderWarpAnalysis = extractShaderControls(warpShaderText);
   const shaderCompAnalysis = extractShaderControls(compShaderText);
+  const mergedShaderControls = mergeShaderControlAnalysis(
+    shaderWarpAnalysis,
+    shaderCompAnalysis,
+  );
   supportedShaderText =
     shaderWarpAnalysis.supported || shaderCompAnalysis.supported;
   unsupportedShaderText =
@@ -1273,59 +1722,8 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
         ...shaderWarpAnalysis.unsupportedLines,
         ...shaderCompAnalysis.unsupportedLines,
       ],
-      controls: {
-        warpScale:
-          shaderWarpAnalysis.controls.warpScale ||
-          shaderCompAnalysis.controls.warpScale,
-        offsetX:
-          shaderWarpAnalysis.controls.offsetX ||
-          shaderCompAnalysis.controls.offsetX,
-        offsetY:
-          shaderWarpAnalysis.controls.offsetY ||
-          shaderCompAnalysis.controls.offsetY,
-        rotation:
-          shaderWarpAnalysis.controls.rotation ||
-          shaderCompAnalysis.controls.rotation,
-        zoom:
-          shaderWarpAnalysis.controls.zoom !== 1
-            ? shaderWarpAnalysis.controls.zoom
-            : shaderCompAnalysis.controls.zoom,
-        saturation:
-          shaderCompAnalysis.controls.saturation !== 1
-            ? shaderCompAnalysis.controls.saturation
-            : shaderWarpAnalysis.controls.saturation,
-        contrast:
-          shaderCompAnalysis.controls.contrast !== 1
-            ? shaderCompAnalysis.controls.contrast
-            : shaderWarpAnalysis.controls.contrast,
-        colorScale:
-          shaderCompAnalysis.controls.colorScale.r !== 1 ||
-          shaderCompAnalysis.controls.colorScale.g !== 1 ||
-          shaderCompAnalysis.controls.colorScale.b !== 1
-            ? shaderCompAnalysis.controls.colorScale
-            : shaderWarpAnalysis.controls.colorScale,
-        hueShift:
-          shaderCompAnalysis.controls.hueShift ||
-          shaderWarpAnalysis.controls.hueShift,
-        mixAlpha:
-          shaderCompAnalysis.controls.mixAlpha ||
-          shaderWarpAnalysis.controls.mixAlpha,
-        brightenBoost:
-          shaderCompAnalysis.controls.brightenBoost ||
-          shaderWarpAnalysis.controls.brightenBoost,
-        invertBoost:
-          shaderCompAnalysis.controls.invertBoost ||
-          shaderWarpAnalysis.controls.invertBoost,
-        solarizeBoost:
-          shaderCompAnalysis.controls.solarizeBoost ||
-          shaderWarpAnalysis.controls.solarizeBoost,
-        tint:
-          shaderCompAnalysis.controls.tint.r !== 1 ||
-          shaderCompAnalysis.controls.tint.g !== 1 ||
-          shaderCompAnalysis.controls.tint.b !== 1
-            ? shaderCompAnalysis.controls.tint
-            : shaderWarpAnalysis.controls.tint,
-      },
+      controls: mergedShaderControls.controls,
+      controlExpressions: mergedShaderControls.expressions,
     },
     borders: {
       outer: {
@@ -1353,59 +1751,8 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
       feedbackTexture: (numericFields.feedback_texture ?? 0) > 0.5,
       outerBorderStyle: (numericFields.ob_border ?? 0) > 0.5,
       innerBorderStyle: (numericFields.ib_border ?? 0) > 0.5,
-      shaderControls: {
-        warpScale:
-          shaderWarpAnalysis.controls.warpScale ||
-          shaderCompAnalysis.controls.warpScale,
-        offsetX:
-          shaderWarpAnalysis.controls.offsetX ||
-          shaderCompAnalysis.controls.offsetX,
-        offsetY:
-          shaderWarpAnalysis.controls.offsetY ||
-          shaderCompAnalysis.controls.offsetY,
-        rotation:
-          shaderWarpAnalysis.controls.rotation ||
-          shaderCompAnalysis.controls.rotation,
-        zoom:
-          shaderWarpAnalysis.controls.zoom !== 1
-            ? shaderWarpAnalysis.controls.zoom
-            : shaderCompAnalysis.controls.zoom,
-        saturation:
-          shaderCompAnalysis.controls.saturation !== 1
-            ? shaderCompAnalysis.controls.saturation
-            : shaderWarpAnalysis.controls.saturation,
-        contrast:
-          shaderCompAnalysis.controls.contrast !== 1
-            ? shaderCompAnalysis.controls.contrast
-            : shaderWarpAnalysis.controls.contrast,
-        colorScale:
-          shaderCompAnalysis.controls.colorScale.r !== 1 ||
-          shaderCompAnalysis.controls.colorScale.g !== 1 ||
-          shaderCompAnalysis.controls.colorScale.b !== 1
-            ? shaderCompAnalysis.controls.colorScale
-            : shaderWarpAnalysis.controls.colorScale,
-        hueShift:
-          shaderCompAnalysis.controls.hueShift ||
-          shaderWarpAnalysis.controls.hueShift,
-        mixAlpha:
-          shaderCompAnalysis.controls.mixAlpha ||
-          shaderWarpAnalysis.controls.mixAlpha,
-        brightenBoost:
-          shaderCompAnalysis.controls.brightenBoost ||
-          shaderWarpAnalysis.controls.brightenBoost,
-        invertBoost:
-          shaderCompAnalysis.controls.invertBoost ||
-          shaderWarpAnalysis.controls.invertBoost,
-        solarizeBoost:
-          shaderCompAnalysis.controls.solarizeBoost ||
-          shaderWarpAnalysis.controls.solarizeBoost,
-        tint:
-          shaderCompAnalysis.controls.tint.r !== 1 ||
-          shaderCompAnalysis.controls.tint.g !== 1 ||
-          shaderCompAnalysis.controls.tint.b !== 1
-            ? shaderCompAnalysis.controls.tint
-            : shaderWarpAnalysis.controls.tint,
-      },
+      shaderControls: mergedShaderControls.controls,
+      shaderControlExpressions: mergedShaderControls.expressions,
       gammaAdj: numericFields.gammaadj ?? 1,
       videoEchoEnabled: (numericFields.video_echo_enabled ?? 0) > 0.5,
       videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
