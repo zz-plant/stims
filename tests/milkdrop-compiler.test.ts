@@ -71,6 +71,31 @@ fGammaAdj=1.75
     );
   });
 
+  test('accepts motion vector fields as supported preset inputs', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Motion Vectors
+motion_vectors=1
+motion_vectors_x=11
+motion_vectors_y=7
+mv_r=0.2
+mv_g=0.4
+mv_b=0.9
+mv_a=0.3
+      `.trim(),
+      { id: 'motion-vectors' },
+    );
+
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.numericFields.motion_vectors).toBe(1);
+    expect(compiled.ir.numericFields.motion_vectors_x).toBe(11);
+    expect(compiled.ir.numericFields.motion_vectors_y).toBe(7);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'motion-vectors',
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+  });
+
   test('surfaces diagnostics for invalid scalar expressions', () => {
     const compiled = compileMilkdropPresetSource(
       `

@@ -179,6 +179,30 @@ fGammaAdj=1.75
     expect(frameState.post.gammaAdj).toBeCloseTo(1.75, 6);
   });
 
+  test('builds motion vector overlays from per-pixel transforms', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Motion Overlay
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mv_r=0.2
+mv_g=0.5
+mv_b=1
+mv_a=0.28
+per_pixel_1=zoom=1.08; rot=0.12; warp=0.35;
+      `.trim(),
+      { id: 'motion-overlay' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 2 }));
+
+    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+    expect(frameState.motionVectors[0]?.positions).toHaveLength(6);
+    expect(frameState.motionVectors[0]?.color.b).toBeCloseTo(1, 6);
+    expect(frameState.motionVectors[0]?.alpha).toBeCloseTo(0.28, 6);
+  });
+
   test('accumulates and caps trail history across steps', () => {
     const preset = compileMilkdropPresetSource('title=Trail Test', {
       id: 'trail-test',

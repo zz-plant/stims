@@ -236,4 +236,45 @@ video_echo=1
       6,
     );
   });
+
+  test('renders motion vector overlays as line objects', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Motion Vectors
+motion_vectors=1
+motion_vectors_x=5
+motion_vectors_y=3
+mv_a=0.25
+per_pixel_1=zoom=1.08; rot=0.15; warp=0.3;
+      `.trim(),
+      { id: 'motion-vectors' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ children?: Array<{ type?: string }> }>;
+    };
+    const motionVectorGroup = root.children[7] as {
+      children: Array<{ type?: string }>;
+    };
+
+    expect(motionVectorGroup.children.length).toBeGreaterThan(0);
+    expect(motionVectorGroup.children[0]?.type).toBe('Line');
+  });
 });
