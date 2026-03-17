@@ -10,6 +10,8 @@
       "file": "/milkdrop-presets/aurora-feedback-core.milk",
       "preview": true,
       "tags": [
+        "collection:feedback-lab",
+        "collection:classic-milkdrop",
         "feedback",
         "warp",
         "atmospheric"
@@ -27,6 +29,8 @@
       "file": "/milkdrop-presets/kinetic-grid-pulse.milk",
       "preview": true,
       "tags": [
+        "collection:feedback-lab",
+        "collection:classic-milkdrop",
         "grid",
         "beat",
         "high-energy"
@@ -43,11 +47,7 @@
       "order": 3,
       "file": "/milkdrop-presets/low-motion-halo-drift.milk",
       "preview": false,
-      "tags": [
-        "low-motion",
-        "ambient",
-        "halo"
-      ],
+      "tags": ["collection:low-motion", "low-motion", "ambient", "halo"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -61,6 +61,8 @@
       "file": "/milkdrop-presets/prism-drum-tunnel.milk",
       "preview": false,
       "tags": [
+        "collection:classic-milkdrop",
+        "collection:feedback-lab",
         "tunnel",
         "drums",
         "psychedelic"
@@ -78,6 +80,7 @@
       "file": "/milkdrop-presets/3dtoy.milk",
       "preview": false,
       "tags": [
+        "collection:classic-milkdrop",
         "tunnel",
         "3d",
         "legacy",
@@ -95,12 +98,7 @@
       "order": 6,
       "file": "/milkdrop-presets/aurora-painter.milk",
       "preview": true,
-      "tags": [
-        "aurora",
-        "ribbons",
-        "gestural",
-        "preset"
-      ],
+      "tags": ["aurora", "ribbons", "gestural", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -113,12 +111,7 @@
       "order": 7,
       "file": "/milkdrop-presets/clay.milk",
       "preview": false,
-      "tags": [
-        "sculpting",
-        "pottery",
-        "3d",
-        "preset"
-      ],
+      "tags": ["sculpting", "pottery", "3d", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -132,6 +125,7 @@
       "file": "/milkdrop-presets/evol.milk",
       "preview": false,
       "tags": [
+        "collection:classic-milkdrop",
         "fractal",
         "glitch",
         "evolutionary",
@@ -150,6 +144,7 @@
       "file": "/milkdrop-presets/geom.milk",
       "preview": false,
       "tags": [
+        "collection:classic-milkdrop",
         "geometry",
         "microphone",
         "reactive",
@@ -168,6 +163,7 @@
       "file": "/milkdrop-presets/holy.milk",
       "preview": false,
       "tags": [
+        "collection:low-motion",
         "halos",
         "particles",
         "ambient",
@@ -186,6 +182,7 @@
       "file": "/milkdrop-presets/multi.milk",
       "preview": false,
       "tags": [
+        "collection:feedback-lab",
         "motion",
         "hybrid",
         "immersive",
@@ -203,12 +200,7 @@
       "order": 12,
       "file": "/milkdrop-presets/seary.milk",
       "preview": false,
-      "tags": [
-        "synesthetic",
-        "patterns",
-        "audio-mapped",
-        "preset"
-      ],
+      "tags": ["synesthetic", "patterns", "audio-mapped", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -222,6 +214,7 @@
       "file": "/milkdrop-presets/legible.milk",
       "preview": false,
       "tags": [
+        "collection:classic-milkdrop",
         "text",
         "retro",
         "grid",
@@ -240,6 +233,7 @@
       "file": "/milkdrop-presets/symph.milk",
       "preview": false,
       "tags": [
+        "collection:classic-milkdrop",
         "spectrograph",
         "ambient",
         "calming",
@@ -258,6 +252,7 @@
       "file": "/milkdrop-presets/cube-wave.milk",
       "preview": false,
       "tags": [
+        "collection:classic-milkdrop",
         "grid",
         "waves",
         "mode-switch",
@@ -275,12 +270,7 @@
       "order": 16,
       "file": "/milkdrop-presets/bubble-harmonics.milk",
       "preview": true,
-      "tags": [
-        "bubbles",
-        "harmonics",
-        "reactive",
-        "preset"
-      ],
+      "tags": ["bubbles", "harmonics", "reactive", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -294,6 +284,7 @@
       "file": "/milkdrop-presets/pocket-pulse.milk",
       "preview": false,
       "tags": [
+        "collection:touch-friendly",
         "mobile",
         "pulses",
         "touch",
@@ -312,6 +303,8 @@
       "file": "/milkdrop-presets/mobile-ripples.milk",
       "preview": false,
       "tags": [
+        "collection:touch-friendly",
+        "collection:low-motion",
         "mobile",
         "ripples",
         "touch",
@@ -330,6 +323,7 @@
       "file": "/milkdrop-presets/juke-grid.milk",
       "preview": false,
       "tags": [
+        "collection:classic-milkdrop",
         "grid",
         "glitch",
         "reactive",
@@ -347,12 +341,7 @@
       "order": 20,
       "file": "/milkdrop-presets/heel-toe-comets.milk",
       "preview": false,
-      "tags": [
-        "particles",
-        "pulses",
-        "reactive",
-        "preset"
-      ],
+      "tags": ["particles", "pulses", "reactive", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -365,12 +354,7 @@
       "order": 21,
       "file": "/milkdrop-presets/battle-fan.milk",
       "preview": false,
-      "tags": [
-        "burst",
-        "patterns",
-        "reactive",
-        "preset"
-      ],
+      "tags": ["burst", "patterns", "reactive", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -383,12 +367,7 @@
       "order": 22,
       "file": "/milkdrop-presets/cosmic-particles.milk",
       "preview": true,
-      "tags": [
-        "particles",
-        "nebula",
-        "swirl",
-        "preset"
-      ],
+      "tags": ["particles", "nebula", "swirl", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -402,6 +381,7 @@
       "file": "/milkdrop-presets/lights.milk",
       "preview": false,
       "tags": [
+        "collection:feedback-lab",
         "lights",
         "shader",
         "palette",
@@ -419,12 +399,7 @@
       "order": 24,
       "file": "/milkdrop-presets/spiral-burst.milk",
       "preview": true,
-      "tags": [
-        "spirals",
-        "burst",
-        "gestural",
-        "preset"
-      ],
+      "tags": ["spirals", "burst", "gestural", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -438,6 +413,7 @@
       "file": "/milkdrop-presets/rainbow-tunnel.milk",
       "preview": false,
       "tags": [
+        "collection:classic-milkdrop",
         "tunnel",
         "rainbow",
         "immersive",
@@ -455,12 +431,7 @@
       "order": 26,
       "file": "/milkdrop-presets/star-field.milk",
       "preview": false,
-      "tags": [
-        "stars",
-        "nebula",
-        "gestural",
-        "preset"
-      ],
+      "tags": ["stars", "nebula", "gestural", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -473,12 +444,7 @@
       "order": 27,
       "file": "/milkdrop-presets/fractal-kite-garden.milk",
       "preview": false,
-      "tags": [
-        "fractal",
-        "kite",
-        "generative",
-        "preset"
-      ],
+      "tags": ["fractal", "kite", "generative", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true
@@ -492,6 +458,7 @@
       "file": "/milkdrop-presets/tactile-sand-table.milk",
       "preview": true,
       "tags": [
+        "collection:touch-friendly",
         "sand",
         "tilt",
         "haptics",
@@ -509,13 +476,7 @@
       "order": 29,
       "file": "/milkdrop-presets/bioluminescent-tidepools.milk",
       "preview": true,
-      "tags": [
-        "ocean",
-        "bioluminescent",
-        "caustics",
-        "gestural",
-        "preset"
-      ],
+      "tags": ["ocean", "bioluminescent", "caustics", "gestural", "preset"],
       "compatibility": {
         "webgl": true,
         "webgpu": true

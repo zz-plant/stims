@@ -340,6 +340,30 @@ comp_shader=mix=beat_pulse*0.5; saturation=1+mid_att*0.5; tint=1, mid, treb_att+
     expect(frameState.post.shaderControls.tint.b).toBeCloseTo(0.55, 6);
   });
 
+  test('evaluates shader declarations and compound assignments per frame', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Extended VM
+per_frame_1=q1=q1+0.5;
+warp_shader=float dx = 0.01; dx += if(above(bass_att,0.5), q1*0.02, 0); rot = mix(0, time, 0.5)
+comp_shader=const mix = 0.05; mix += step(0.2, beat_pulse) * 0.2; tint += 0.1, mod(mid, 0.3), fmod(treb_att + 0.2, 0.4)
+      `.trim(),
+      { id: 'shader-extended-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({ frame: 10, time: 0.8, beatPulse: 0.3 }),
+    );
+
+    expect(frameState.variables.q1).toBeCloseTo(0.5, 6);
+    expect(frameState.post.shaderControls.offsetX).toBeCloseTo(0.02, 6);
+    expect(frameState.post.shaderControls.rotation).toBeCloseTo(0.4, 6);
+    expect(frameState.post.shaderControls.mixAlpha).toBeCloseTo(0.25, 6);
+    expect(frameState.post.shaderControls.tint.r).toBeCloseTo(1.1, 6);
+    expect(frameState.post.shaderControls.tint.g).toBeCloseTo(1.2, 6);
+    expect(frameState.post.shaderControls.tint.b).toBeCloseTo(1.15, 6);
+  });
+
   test('renders extended shape slots beyond the original four defaults', () => {
     const preset = compileMilkdropPresetSource(
       `

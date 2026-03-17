@@ -516,6 +516,59 @@ function parseShaderTintList(rawValue: string) {
   };
 }
 
+function createLiteralExpression(value: number): MilkdropExpressionNode {
+  return {
+    type: 'literal',
+    value,
+  };
+}
+
+function applyShaderExpressionOperator(
+  operator: '=' | '+=' | '-=' | '*=' | '/=',
+  currentValue: number,
+  currentExpression: MilkdropExpressionNode | null,
+  nextValue: number,
+  nextExpression: MilkdropExpressionNode | null,
+) {
+  if (operator === '=') {
+    return {
+      value: nextValue,
+      expression: nextExpression,
+    };
+  }
+
+  const leftExpression =
+    currentExpression ?? createLiteralExpression(currentValue);
+  const rightExpression = nextExpression ?? createLiteralExpression(nextValue);
+  const binaryOperator =
+    operator === '+='
+      ? '+'
+      : operator === '-='
+        ? '-'
+        : operator === '*='
+          ? '*'
+          : '/';
+
+  return {
+    value:
+      operator === '+='
+        ? currentValue + nextValue
+        : operator === '-='
+          ? currentValue - nextValue
+          : operator === '*='
+            ? currentValue * nextValue
+            : nextValue === 0
+              ? 0
+              : currentValue / nextValue,
+    expression: {
+      type: 'binary',
+      operator: binaryOperator,
+      left: leftExpression,
+      right: rightExpression,
+    } satisfies MilkdropExpressionNode,
+  };
+}
+
 function extractShaderControls(shaderText: string | null) {
   const controls = createDefaultShaderControls();
   const expressions = createDefaultShaderControlExpressions();
@@ -527,24 +580,34 @@ function extractShaderControls(shaderText: string | null) {
   let supportedLineCount = 0;
   const normalized = shaderText
     .split(/[\r\n;]+/u)
-    .map((line) => line.trim())
+    .map((line) => line.replace(/\/\/.*$/u, '').trim())
     .filter(Boolean);
 
   normalized.forEach((line) => {
-    const assignment = line.match(/^([a-z_][a-z0-9_]*)\s*=\s*(.+)$/iu);
+    const assignment = line.match(
+      /^(?:(?:const|float)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
+    );
     if (!assignment) {
       unsupportedLines.push(line);
       return;
     }
     const key = assignment[1]?.toLowerCase() ?? '';
-    const rawValue = assignment[2]?.trim() ?? '';
+    const operator = (assignment[2] ?? '=') as '=' | '+=' | '-=' | '*=' | '/=';
+    const rawValue = assignment[3]?.trim() ?? '';
     const numeric = parseShaderScalar(rawValue);
     switch (key) {
       case 'warp':
       case 'warp_scale':
         if (numeric !== null) {
-          controls.warpScale = numeric.value;
-          expressions.warpScale = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.warpScale,
+            expressions.warpScale,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.warpScale = next.value;
+          expressions.warpScale = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -553,8 +616,15 @@ function extractShaderControls(shaderText: string | null) {
       case 'offset_x':
       case 'translate_x':
         if (numeric !== null) {
-          controls.offsetX = numeric.value;
-          expressions.offsetX = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.offsetX,
+            expressions.offsetX,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.offsetX = next.value;
+          expressions.offsetX = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -563,8 +633,15 @@ function extractShaderControls(shaderText: string | null) {
       case 'offset_y':
       case 'translate_y':
         if (numeric !== null) {
-          controls.offsetY = numeric.value;
-          expressions.offsetY = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.offsetY,
+            expressions.offsetY,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.offsetY = next.value;
+          expressions.offsetY = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -572,8 +649,15 @@ function extractShaderControls(shaderText: string | null) {
       case 'rot':
       case 'rotation':
         if (numeric !== null) {
-          controls.rotation = numeric.value;
-          expressions.rotation = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.rotation,
+            expressions.rotation,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.rotation = next.value;
+          expressions.rotation = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -581,8 +665,15 @@ function extractShaderControls(shaderText: string | null) {
       case 'zoom':
       case 'scale':
         if (numeric !== null) {
-          controls.zoom = numeric.value;
-          expressions.zoom = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.zoom,
+            expressions.zoom,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.zoom = next.value;
+          expressions.zoom = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -590,16 +681,30 @@ function extractShaderControls(shaderText: string | null) {
       case 'saturation':
       case 'sat':
         if (numeric !== null) {
-          controls.saturation = numeric.value;
-          expressions.saturation = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.saturation,
+            expressions.saturation,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.saturation = next.value;
+          expressions.saturation = next.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'contrast':
         if (numeric !== null) {
-          controls.contrast = numeric.value;
-          expressions.contrast = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.contrast,
+            expressions.contrast,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.contrast = next.value;
+          expressions.contrast = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -607,8 +712,15 @@ function extractShaderControls(shaderText: string | null) {
       case 'r':
       case 'red':
         if (numeric !== null) {
-          controls.colorScale.r = numeric.value;
-          expressions.colorScale.r = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.colorScale.r,
+            expressions.colorScale.r,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.colorScale.r = next.value;
+          expressions.colorScale.r = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -616,8 +728,15 @@ function extractShaderControls(shaderText: string | null) {
       case 'g':
       case 'green':
         if (numeric !== null) {
-          controls.colorScale.g = numeric.value;
-          expressions.colorScale.g = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.colorScale.g,
+            expressions.colorScale.g,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.colorScale.g = next.value;
+          expressions.colorScale.g = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -625,8 +744,15 @@ function extractShaderControls(shaderText: string | null) {
       case 'b':
       case 'blue':
         if (numeric !== null) {
-          controls.colorScale.b = numeric.value;
-          expressions.colorScale.b = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.colorScale.b,
+            expressions.colorScale.b,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.colorScale.b = next.value;
+          expressions.colorScale.b = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -634,8 +760,15 @@ function extractShaderControls(shaderText: string | null) {
       case 'hue':
       case 'hue_shift':
         if (numeric !== null) {
-          controls.hueShift = numeric.value;
-          expressions.hueShift = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.hueShift,
+            expressions.hueShift,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.hueShift = next.value;
+          expressions.hueShift = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -644,32 +777,60 @@ function extractShaderControls(shaderText: string | null) {
       case 'feedback':
       case 'feedback_alpha':
         if (numeric !== null) {
-          controls.mixAlpha = numeric.value;
-          expressions.mixAlpha = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.mixAlpha,
+            expressions.mixAlpha,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.mixAlpha = next.value;
+          expressions.mixAlpha = next.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'brighten':
         if (numeric !== null) {
-          controls.brightenBoost = numeric.value;
-          expressions.brightenBoost = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.brightenBoost,
+            expressions.brightenBoost,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.brightenBoost = next.value;
+          expressions.brightenBoost = next.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'invert':
         if (numeric !== null) {
-          controls.invertBoost = numeric.value;
-          expressions.invertBoost = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.invertBoost,
+            expressions.invertBoost,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.invertBoost = next.value;
+          expressions.invertBoost = next.expression;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'solarize':
         if (numeric !== null) {
-          controls.solarizeBoost = numeric.value;
-          expressions.solarizeBoost = numeric.expression;
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.solarizeBoost,
+            expressions.solarizeBoost,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.solarizeBoost = next.value;
+          expressions.solarizeBoost = next.expression;
           supportedLineCount += 1;
           return;
         }
@@ -677,8 +838,37 @@ function extractShaderControls(shaderText: string | null) {
       case 'tint': {
         const tint = parseShaderTintList(rawValue);
         if (tint) {
-          controls.tint = tint.value;
-          expressions.tint = tint.expressions;
+          const nextR = applyShaderExpressionOperator(
+            operator,
+            controls.tint.r,
+            expressions.tint.r,
+            tint.value.r,
+            tint.expressions.r,
+          );
+          const nextG = applyShaderExpressionOperator(
+            operator,
+            controls.tint.g,
+            expressions.tint.g,
+            tint.value.g,
+            tint.expressions.g,
+          );
+          const nextB = applyShaderExpressionOperator(
+            operator,
+            controls.tint.b,
+            expressions.tint.b,
+            tint.value.b,
+            tint.expressions.b,
+          );
+          controls.tint = {
+            r: nextR.value,
+            g: nextG.value,
+            b: nextB.value,
+          };
+          expressions.tint = {
+            r: nextR.expression,
+            g: nextG.expression,
+            b: nextB.expression,
+          };
           supportedLineCount += 1;
           return;
         }

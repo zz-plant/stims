@@ -492,10 +492,23 @@ export function evaluateMilkdropExpression(
           return Math.sqrt(Math.max(0, args[0] ?? 0));
         case 'pow':
           return (args[0] ?? 0) ** (args[1] ?? 0);
+        case 'mod':
+        case 'fmod': {
+          const left = args[0] ?? 0;
+          const right = args[1] ?? 0;
+          return right === 0 ? 0 : left % right;
+        }
         case 'min':
           return Math.min(...args);
         case 'max':
           return Math.max(...args);
+        case 'mix':
+        case 'lerp': {
+          const start = args[0] ?? 0;
+          const end = args[1] ?? 0;
+          const amount = args[2] ?? 0;
+          return start + (end - start) * amount;
+        }
         case 'floor':
           return Math.floor(args[0] ?? 0);
         case 'int':
@@ -508,10 +521,27 @@ export function evaluateMilkdropExpression(
         }
         case 'clamp':
           return Math.min(Math.max(args[0] ?? 0, args[1] ?? 0), args[2] ?? 1);
+        case 'step':
+          return (args[1] ?? 0) < (args[0] ?? 0) ? 0 : 1;
+        case 'smoothstep': {
+          const edge0 = args[0] ?? 0;
+          const edge1 = args[1] ?? 1;
+          const value = args[2] ?? 0;
+          if (edge0 === edge1) {
+            return value < edge0 ? 0 : 1;
+          }
+          const t = Math.min(Math.max((value - edge0) / (edge1 - edge0), 0), 1);
+          return t * t * (3 - 2 * t);
+        }
         case 'log':
           return Math.log(Math.max(0.000001, args[0] ?? 0));
         case 'exp':
           return Math.exp(args[0] ?? 0);
+        case 'sigmoid': {
+          const value = args[0] ?? 0;
+          const slope = args[1] ?? 1;
+          return 1 / (1 + Math.exp(-value * slope));
+        }
         case 'sign':
           return Math.sign(args[0] ?? 0);
         case 'bor':

@@ -2612,12 +2612,83 @@ body.tv-mode .control-panel input {
   padding: 10px 12px;
 }
 
+.milkdrop-overlay__browse-controls,
+.milkdrop-overlay__collection-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.milkdrop-overlay__collection-filters {
+  margin-top: 10px;
+}
+
+.milkdrop-overlay__collection-filter {
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.56);
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 0.82rem;
+}
+
+.milkdrop-overlay__collection-filter[data-active="true"] {
+  border-color: rgba(56, 189, 248, 0.38);
+  background: rgba(56, 189, 248, 0.16);
+  color: #e0f2fe;
+}
+
 .milkdrop-overlay__browse {
   display: grid;
   gap: 10px;
   margin-top: 12px;
   max-height: 430px;
   overflow: auto;
+}
+
+.milkdrop-overlay__browse-section {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.32);
+}
+
+.milkdrop-overlay__browse-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.milkdrop-overlay__browse-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.14);
+  color: #bae6fd;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.milkdrop-overlay__browse-empty {
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.34);
+  color: rgba(191, 219, 254, 0.78);
+  font-size: 0.9rem;
 }
 
 .milkdrop-overlay__preset {
