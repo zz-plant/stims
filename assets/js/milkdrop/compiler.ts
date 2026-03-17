@@ -35,6 +35,10 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   zoom: 1,
   rot: 0,
   warp: 0.08,
+  warpanimspeed: 1,
+  shader: 1,
+  modwavealphastart: 1,
+  modwavealphaend: 1,
   wave_mode: 0,
   wave_scale: 1,
   wave_smoothing: 0.72,
@@ -75,6 +79,10 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   ib_g: 0.96,
   ib_b: 1,
   ib_a: 0.76,
+  texture_wrap: 0,
+  feedback_texture: 0,
+  ob_border: 0,
+  ib_border: 0,
   motion_vectors: 0,
   motion_vectors_x: 16,
   motion_vectors_y: 12,
@@ -247,14 +255,121 @@ const customShapeProgramPattern = /^shape_(\d+)_(init|per_frame)(\d+)?$/u;
 const shapeSectionPattern = /^shape_(\d+)$/u;
 const wavecodeFieldPattern = /^wavecode_(\d+)_(.+)$/u;
 const shapecodeFieldPattern = /^shapecode_(\d+)_(.+)$/u;
-const unsupportedShaderPattern =
+const shaderFieldPattern =
   /^(?:warp_[0-9]+|comp_[0-9]+|warp_shader|comp_shader|shader_text|warp_code|comp_code)$/u;
-const hardUnsupportedKeys = new Set([
-  'texture_wrap',
-  'feedback_texture',
-  'ob_border',
-  'ib_border',
-]);
+const hardUnsupportedKeys = new Set<string>([]);
+
+function parseShaderTintList(rawValue: string) {
+  const values = rawValue
+    .split(/[\s,]+/u)
+    .map((entry) => Number(entry))
+    .filter((entry) => Number.isFinite(entry));
+  if (values.length < 3) {
+    return null;
+  }
+  return {
+    r: Math.min(Math.max(values[0] ?? 1, 0), 2),
+    g: Math.min(Math.max(values[1] ?? 1, 0), 2),
+    b: Math.min(Math.max(values[2] ?? 1, 0), 2),
+  };
+}
+
+function extractShaderControls(shaderText: string | null) {
+  const controls = {
+    warpScale: 0,
+    hueShift: 0,
+    mixAlpha: 0,
+    brightenBoost: 0,
+    invertBoost: 0,
+    solarizeBoost: 0,
+    tint: { r: 1, g: 1, b: 1 },
+  };
+  const unsupportedLines: string[] = [];
+  if (!shaderText) {
+    return { controls, unsupportedLines, supported: false };
+  }
+
+  let supportedLineCount = 0;
+  const normalized = shaderText
+    .split(/[\r\n;]+/u)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  normalized.forEach((line) => {
+    const assignment = line.match(/^([a-z_][a-z0-9_]*)\s*=\s*(.+)$/iu);
+    if (!assignment) {
+      unsupportedLines.push(line);
+      return;
+    }
+    const key = assignment[1]?.toLowerCase() ?? '';
+    const rawValue = assignment[2]?.trim() ?? '';
+    const numeric = Number(rawValue);
+    switch (key) {
+      case 'warp':
+      case 'warp_scale':
+        if (Number.isFinite(numeric)) {
+          controls.warpScale = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'hue':
+      case 'hue_shift':
+        if (Number.isFinite(numeric)) {
+          controls.hueShift = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'mix':
+      case 'feedback':
+      case 'feedback_alpha':
+        if (Number.isFinite(numeric)) {
+          controls.mixAlpha = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'brighten':
+        if (Number.isFinite(numeric)) {
+          controls.brightenBoost = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'invert':
+        if (Number.isFinite(numeric)) {
+          controls.invertBoost = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'solarize':
+        if (Number.isFinite(numeric)) {
+          controls.solarizeBoost = numeric;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'tint': {
+        const tint = parseShaderTintList(rawValue);
+        if (tint) {
+          controls.tint = tint;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      }
+    }
+    unsupportedLines.push(line);
+  });
+
+  return {
+    controls,
+    unsupportedLines,
+    supported: supportedLineCount > 0 && unsupportedLines.length === 0,
+  };
+}
 
 const aliasMap: Record<string, string | null> = {
   milkdrop_preset_version: null,
@@ -266,12 +381,12 @@ const aliasMap: Record<string, string | null> = {
   fwavealpha: 'wave_a',
   fwavescale: 'wave_scale',
   fwavesmoothing: 'wave_smoothing',
-  fmodwavealphastart: null,
-  fmodwavealphaend: null,
+  fmodwavealphastart: 'modwavealphastart',
+  fmodwavealphaend: 'modwavealphaend',
   fwarpscale: 'warp',
-  fwarpanimspeed: null,
+  fwarpanimspeed: 'warpanimspeed',
   fzoomexponent: 'zoom',
-  fshader: null,
+  fshader: 'shader',
   fbrighten: 'brighten',
   fdarken: 'darken',
   fsolarize: 'solarize',
@@ -629,12 +744,14 @@ function buildFeatureAnalysis({
   customShapes,
   numericFields,
   unsupportedShaderText,
+  supportedShaderText,
 }: {
   programs: MilkdropPresetIR['programs'];
   customWaves: MilkdropWaveDefinition[];
   customShapes: MilkdropShapeDefinition[];
   numericFields: Record<string, number>;
   unsupportedShaderText: boolean;
+  supportedShaderText: boolean;
 }): MilkdropFeatureAnalysis {
   const features = new Set<MilkdropFeatureKey>(['base-globals']);
   const registerUsage = { q: 0, t: 0 };
@@ -707,6 +824,7 @@ function buildFeatureAnalysis({
   return {
     featuresUsed: FEATURE_ORDER.filter((feature) => features.has(feature)),
     unsupportedShaderText,
+    supportedShaderText,
     registerUsage,
   };
 }
@@ -739,21 +857,6 @@ function buildBackendSupport({
     reasons.push(
       'This preset depends on unsupported MilkDrop features that are outside the current runtime scope.',
     );
-  }
-
-  if (backend === 'webgpu') {
-    if (featureAnalysis.featuresUsed.includes('video-echo')) {
-      reasons.push(
-        'Video echo and framebuffer feedback are only validated on WebGL right now.',
-      );
-      unsupportedFeatures.push('video-echo');
-    }
-    if (featureAnalysis.featuresUsed.includes('post-effects')) {
-      reasons.push(
-        'Post effects are only validated on the WebGL reference renderer right now.',
-      );
-      unsupportedFeatures.push('post-effects');
-    }
   }
 
   const uniqueReasons = [...new Set(reasons)];
@@ -821,6 +924,9 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
   const customShapeMap = new Map<number, MilkdropShapeDefinition>();
   const unsupportedKeys = new Set<string>();
   let unsupportedShaderText = false;
+  let supportedShaderText = false;
+  let warpShaderText: string | null = null;
+  let compShaderText: string | null = null;
 
   ast.fields.forEach((field) => {
     if (
@@ -845,19 +951,21 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
       return;
     }
 
-    if (unsupportedShaderPattern.test(normalizedKey)) {
-      unsupportedShaderText = true;
-      unsupportedKeys.add(normalizedKey);
-      addDiagnostic(
-        diagnostics,
-        'warning',
-        'preset_unsupported_shader_text',
-        `Unsupported shader-text field "${normalizedKey}" was detected.`,
-        {
-          line: field.line,
-          field: normalizedKey,
-        },
-      );
+    if (shaderFieldPattern.test(normalizedKey)) {
+      const rawValue = normalizeString(field.rawValue);
+      if (
+        normalizedKey === 'warp_shader' ||
+        normalizedKey === 'warp_code' ||
+        normalizedKey.startsWith('warp_')
+      ) {
+        warpShaderText = warpShaderText
+          ? `${warpShaderText}; ${rawValue}`
+          : rawValue;
+      } else {
+        compShaderText = compShaderText
+          ? `${compShaderText}; ${rawValue}`
+          : rawValue;
+      }
       return;
     }
 
@@ -971,12 +1079,34 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
   const customShapes = [...customShapeMap.values()].sort(
     (left, right) => left.index - right.index,
   );
+  const shaderWarpAnalysis = extractShaderControls(warpShaderText);
+  const shaderCompAnalysis = extractShaderControls(compShaderText);
+  supportedShaderText =
+    shaderWarpAnalysis.supported || shaderCompAnalysis.supported;
+  unsupportedShaderText =
+    (!shaderWarpAnalysis.supported &&
+      !!warpShaderText &&
+      shaderWarpAnalysis.unsupportedLines.length > 0) ||
+    (!shaderCompAnalysis.supported &&
+      !!compShaderText &&
+      shaderCompAnalysis.unsupportedLines.length > 0) ||
+    shaderWarpAnalysis.unsupportedLines.length > 0 ||
+    shaderCompAnalysis.unsupportedLines.length > 0;
+  if (unsupportedShaderText) {
+    addDiagnostic(
+      diagnostics,
+      'warning',
+      'preset_unsupported_shader_text',
+      'Shader-text sections include lines outside the supported subset.',
+    );
+  }
   const featureAnalysis = buildFeatureAnalysis({
     programs,
     customWaves,
     customShapes,
     numericFields,
     unsupportedShaderText,
+    supportedShaderText,
   });
   const warnings = [
     ...[...unsupportedKeys].map(
@@ -1055,6 +1185,41 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
     mainWave,
     customWaves,
     customShapes,
+    shaderText: {
+      warp: warpShaderText,
+      comp: compShaderText,
+      supported: supportedShaderText && !unsupportedShaderText,
+      unsupportedLines: [
+        ...shaderWarpAnalysis.unsupportedLines,
+        ...shaderCompAnalysis.unsupportedLines,
+      ],
+      controls: {
+        warpScale:
+          shaderWarpAnalysis.controls.warpScale ||
+          shaderCompAnalysis.controls.warpScale,
+        hueShift:
+          shaderCompAnalysis.controls.hueShift ||
+          shaderWarpAnalysis.controls.hueShift,
+        mixAlpha:
+          shaderCompAnalysis.controls.mixAlpha ||
+          shaderWarpAnalysis.controls.mixAlpha,
+        brightenBoost:
+          shaderCompAnalysis.controls.brightenBoost ||
+          shaderWarpAnalysis.controls.brightenBoost,
+        invertBoost:
+          shaderCompAnalysis.controls.invertBoost ||
+          shaderWarpAnalysis.controls.invertBoost,
+        solarizeBoost:
+          shaderCompAnalysis.controls.solarizeBoost ||
+          shaderWarpAnalysis.controls.solarizeBoost,
+        tint:
+          shaderCompAnalysis.controls.tint.r !== 1 ||
+          shaderCompAnalysis.controls.tint.g !== 1 ||
+          shaderCompAnalysis.controls.tint.b !== 1
+            ? shaderCompAnalysis.controls.tint
+            : shaderWarpAnalysis.controls.tint,
+      },
+    },
     borders: {
       outer: {
         size: numericFields.ob_size,
@@ -1076,6 +1241,37 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
       darken: (numericFields.darken ?? 0) > 0.5,
       solarize: (numericFields.solarize ?? 0) > 0.5,
       invert: (numericFields.invert ?? 0) > 0.5,
+      shaderEnabled: (numericFields.shader ?? 1) > 0.5,
+      textureWrap: (numericFields.texture_wrap ?? 0) > 0.5,
+      feedbackTexture: (numericFields.feedback_texture ?? 0) > 0.5,
+      outerBorderStyle: (numericFields.ob_border ?? 0) > 0.5,
+      innerBorderStyle: (numericFields.ib_border ?? 0) > 0.5,
+      shaderControls: {
+        warpScale:
+          shaderWarpAnalysis.controls.warpScale ||
+          shaderCompAnalysis.controls.warpScale,
+        hueShift:
+          shaderCompAnalysis.controls.hueShift ||
+          shaderWarpAnalysis.controls.hueShift,
+        mixAlpha:
+          shaderCompAnalysis.controls.mixAlpha ||
+          shaderWarpAnalysis.controls.mixAlpha,
+        brightenBoost:
+          shaderCompAnalysis.controls.brightenBoost ||
+          shaderWarpAnalysis.controls.brightenBoost,
+        invertBoost:
+          shaderCompAnalysis.controls.invertBoost ||
+          shaderWarpAnalysis.controls.invertBoost,
+        solarizeBoost:
+          shaderCompAnalysis.controls.solarizeBoost ||
+          shaderWarpAnalysis.controls.solarizeBoost,
+        tint:
+          shaderCompAnalysis.controls.tint.r !== 1 ||
+          shaderCompAnalysis.controls.tint.g !== 1 ||
+          shaderCompAnalysis.controls.tint.b !== 1
+            ? shaderCompAnalysis.controls.tint
+            : shaderWarpAnalysis.controls.tint,
+      },
       gammaAdj: numericFields.gammaadj ?? 1,
       videoEchoEnabled: (numericFields.video_echo_enabled ?? 0) > 0.5,
       videoEchoAlpha: numericFields.video_echo_alpha ?? 0,

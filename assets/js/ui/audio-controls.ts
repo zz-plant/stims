@@ -50,8 +50,8 @@ export function initAudioControls(
     'control-panel--floating',
   );
   container.className = preserveFloatingLayout
-    ? 'control-panel control-panel--floating'
-    : 'control-panel';
+    ? 'control-panel control-panel--audio control-panel--floating'
+    : 'control-panel control-panel--audio';
   const supportsTouchLikeInput =
     (typeof window.matchMedia === 'function' &&
       window.matchMedia('(pointer: coarse)').matches) ||

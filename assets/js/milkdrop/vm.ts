@@ -186,6 +186,10 @@ function brightenWaveColor(waveColor: {
   );
 }
 
+function mix(start: number, end: number, amount: number) {
+  return start + (end - start) * amount;
+}
+
 function sampleFrequencyData(signals: MilkdropRuntimeSignals, t: number) {
   const sampleIndex = Math.min(
     signals.frequencyData.length - 1,
@@ -451,6 +455,16 @@ class MilkdropPresetVM implements MilkdropVM {
     const scale = 0.16 + (this.state.wave_scale ?? 1) * 0.18;
     const mystery = this.state.wave_mystery ?? 0;
     const mysteryPhase = mystery * Math.PI;
+    const modWaveAlphaStart = clamp(this.state.modwavealphastart ?? 1, 0, 2);
+    const modWaveAlphaEnd = clamp(this.state.modwavealphaend ?? 1, 0, 2);
+    const modWaveAlphaPhase = clamp(
+      0.5 +
+        Math.sin(signals.time * (0.9 + (this.state.warpanimspeed ?? 1) * 0.4)) *
+          0.35 +
+        signals.beatPulse * 0.25,
+      0,
+      1,
+    );
 
     for (let index = 0; index < samples; index += 1) {
       const t = index / Math.max(1, samples - 1);
@@ -551,7 +565,12 @@ class MilkdropPresetVM implements MilkdropVM {
     return {
       positions,
       color: finalWaveColor,
-      alpha: clamp(this.state.wave_a ?? 0.9, 0.04, 1),
+      alpha: clamp(
+        (this.state.wave_a ?? 0.9) *
+          mix(modWaveAlphaStart, modWaveAlphaEnd, modWaveAlphaPhase),
+        0.04,
+        1,
+      ),
       thickness: clamp(this.state.wave_thick ?? 1, 1, 5),
       drawMode: (this.state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line',
       additive: (this.state.wave_additive ?? 0) >= 0.5,
@@ -670,9 +689,13 @@ class MilkdropPresetVM implements MilkdropVM {
       local,
     );
 
+    const warpAnimSpeed = clamp(this.state.warpanimspeed ?? 1, 0, 4);
     const angle = local.ang + local.rot;
     const ripple =
-      Math.sin(local.rad * 12 + signals.time * (0.6 + signals.trebleAtt)) *
+      Math.sin(
+        local.rad * 12 +
+          signals.time * (0.6 + signals.trebleAtt) * (0.35 + warpAnimSpeed),
+      ) *
       local.warp *
       0.08;
     const px = (local.x + Math.cos(angle * 3) * ripple) * local.zoom;
@@ -756,14 +779,15 @@ class MilkdropPresetVM implements MilkdropVM {
         const transformed = this.transformMeshPoint(signals, x, y);
         const dx = clamp((transformed.x - x) * 1.35, -0.22, 0.22);
         const dy = clamp((transformed.y - y) * 1.35, -0.22, 0.22);
-        if (Math.abs(dx) + Math.abs(dy) < 0.002) {
+        const magnitude = Math.hypot(dx, dy);
+        if (magnitude < 0.002) {
           continue;
         }
         vectors.push({
-          positions: [x, y, 0.18, x + dx, y + dy, 0.18],
+          positions: [x - dx * 0.18, y - dy * 0.18, 0.18, x + dx, y + dy, 0.18],
           color: colorValue,
-          alpha,
-          thickness: 1,
+          alpha: clamp(alpha * (0.75 + magnitude * 2.2), 0.02, 1),
+          thickness: clamp(1 + magnitude * 18, 1, 4),
           additive: false,
         });
       }
@@ -894,6 +918,7 @@ class MilkdropPresetVM implements MilkdropVM {
           this.state.ob_a ?? 0.8,
         ),
         alpha: clamp(this.state.ob_a ?? 0.8, 0.02, 1),
+        styled: (this.state.ob_border ?? 0) > 0.5,
       });
     }
     if ((this.state.ib_size ?? 0) > 0.001) {
@@ -907,6 +932,7 @@ class MilkdropPresetVM implements MilkdropVM {
           this.state.ib_a ?? 0.76,
         ),
         alpha: clamp(this.state.ib_a ?? 0.76, 0.02, 1),
+        styled: (this.state.ib_border ?? 0) > 0.5,
       });
     }
     return borders;
@@ -914,6 +940,12 @@ class MilkdropPresetVM implements MilkdropVM {
 
   private buildPost(): MilkdropPostVisual {
     return {
+      shaderEnabled: (this.state.shader ?? 1) > 0.5,
+      textureWrap: (this.state.texture_wrap ?? 0) > 0.5,
+      feedbackTexture: (this.state.feedback_texture ?? 0) > 0.5,
+      outerBorderStyle: (this.state.ob_border ?? 0) > 0.5,
+      innerBorderStyle: (this.state.ib_border ?? 0) > 0.5,
+      shaderControls: this.preset.ir.post.shaderControls,
       brighten: (this.state.brighten ?? 0) > 0.5,
       darken: (this.state.darken ?? 0) > 0.5,
       solarize: (this.state.solarize ?? 0) > 0.5,

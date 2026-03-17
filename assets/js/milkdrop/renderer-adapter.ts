@@ -19,7 +19,6 @@ import {
   ShapeGeometry,
   Scene as ThreeScene,
   Vector2,
-  WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
@@ -36,7 +35,17 @@ import type {
 type RendererLike = {
   getSize?: (target: Vector2) => Vector2;
   render: (scene: Scene, camera: Camera) => void;
+  setRenderTarget?: (target: WebGLRenderTarget | null) => void;
 };
+
+function isFeedbackCapableRenderer(
+  renderer: RendererLike | null,
+): renderer is RendererLike & {
+  getSize: (target: Vector2) => Vector2;
+  setRenderTarget: (target: WebGLRenderTarget | null) => void;
+} {
+  return !!renderer && !!renderer.getSize && !!renderer.setRenderTarget;
+}
 
 function setMaterialColor(
   material: LineBasicMaterial | MeshBasicMaterial | PointsMaterial,
@@ -286,7 +295,33 @@ function createBorderObject(border: MilkdropBorderVisual, alphaMultiplier = 1) {
     border.color,
     border.alpha * alphaMultiplier,
   );
-  return object;
+  if (!border.styled) {
+    return object;
+  }
+
+  const group = new Group();
+  group.add(object);
+  const accent = new Line(
+    new BufferGeometry(),
+    new LineBasicMaterial({
+      transparent: true,
+      opacity: Math.max(0.15, border.alpha * 0.55) * alphaMultiplier,
+    }),
+  );
+  ensureGeometryPositions(accent.geometry, positions);
+  setMaterialColor(
+    accent.material,
+    border.color,
+    border.alpha * alphaMultiplier,
+  );
+  accent.scale.set(
+    border.key === 'outer' ? 0.985 : 1.015,
+    border.key === 'outer' ? 0.985 : 1.015,
+    1,
+  );
+  accent.position.z = 0.31;
+  group.add(accent);
+  return group;
 }
 
 class FeedbackManager {
@@ -317,6 +352,14 @@ class FeedbackManager {
         solarize: { value: 0 },
         invert: { value: 0 },
         gammaAdj: { value: 1 },
+        textureWrap: { value: 0 },
+        feedbackTexture: { value: 0 },
+        warpScale: { value: 0 },
+        hueShift: { value: 0 },
+        brightenBoost: { value: 0 },
+        invertBoost: { value: 0 },
+        solarizeBoost: { value: 0 },
+        tint: { value: new Color(1, 1, 1) },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -335,25 +378,63 @@ class FeedbackManager {
         uniform float solarize;
         uniform float invert;
         uniform float gammaAdj;
+        uniform float textureWrap;
+        uniform float feedbackTexture;
+        uniform float warpScale;
+        uniform float hueShift;
+        uniform float brightenBoost;
+        uniform float invertBoost;
+        uniform float solarizeBoost;
+        uniform vec3 tint;
         varying vec2 vUv;
 
+        vec3 hueRotate(vec3 color, float angle) {
+          float s = sin(angle);
+          float c = cos(angle);
+          mat3 mat = mat3(
+            0.213 + c * 0.787 - s * 0.213,
+            0.715 - c * 0.715 - s * 0.715,
+            0.072 - c * 0.072 + s * 0.928,
+            0.213 - c * 0.213 + s * 0.143,
+            0.715 + c * 0.285 + s * 0.140,
+            0.072 - c * 0.072 - s * 0.283,
+            0.213 - c * 0.213 - s * 0.787,
+            0.715 - c * 0.715 + s * 0.715,
+            0.072 + c * 0.928 + s * 0.072
+          );
+          return clamp(mat * color, 0.0, 1.0);
+        }
+
         void main() {
-          vec2 prevUv = (vUv - 0.5) / max(zoom, 0.0001) + 0.5;
+          vec2 warpUv = vUv + vec2(
+            sin((vUv.y - 0.5) * 6.2831) * warpScale * 0.04,
+            cos((vUv.x - 0.5) * 6.2831) * warpScale * 0.04
+          );
+          vec2 prevUv = (warpUv - 0.5) / max(zoom, 0.0001) + 0.5;
+          if (textureWrap > 0.5) {
+            prevUv = fract(prevUv);
+          }
           vec4 current = texture2D(currentTex, vUv);
-          vec4 previous = texture2D(previousTex, prevUv);
-          vec3 color = mix(current.rgb, previous.rgb, clamp(mixAlpha, 0.0, 1.0));
-          if (brighten > 0.5) {
-            color = min(vec3(1.0), color * 1.18);
+          vec4 previous = texture2D(previousTex, clamp(prevUv, 0.0, 1.0));
+          vec3 color = mix(
+            current.rgb,
+            previous.rgb,
+            clamp(mixAlpha + feedbackTexture * 0.2, 0.0, 1.0)
+          );
+          if (brighten > 0.01 || brightenBoost > 0.01) {
+            color = min(vec3(1.0), color * (1.0 + 0.18 + brightenBoost * 0.35));
           }
           if (darken > 0.5) {
             color = color * 0.82;
           }
-          if (solarize > 0.5) {
-            color = abs(color - 0.5) * 1.5;
+          if (solarize > 0.01 || solarizeBoost > 0.01) {
+            color = mix(color, abs(color - 0.5) * 1.5, clamp(max(solarize, solarizeBoost), 0.0, 1.0));
           }
-          if (invert > 0.5) {
-            color = 1.0 - color;
+          if (invert > 0.01 || invertBoost > 0.01) {
+            color = mix(color, 1.0 - color, clamp(max(invert, invertBoost), 0.0, 1.0));
           }
+          color = hueRotate(color, hueShift);
+          color *= tint;
           color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           gl_FragColor = vec4(color, 1.0);
         }
@@ -467,7 +548,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.blendBorderGroup);
     this.root.add(this.blendMotionVectorGroup);
 
-    if (renderer instanceof WebGLRenderer) {
+    if (isFeedbackCapableRenderer(renderer)) {
       const size = renderer.getSize(new Vector2());
       this.feedback = new FeedbackManager(
         Math.max(1, Math.round(size.x)),
@@ -598,7 +679,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       blend?.alpha ?? 0,
     );
 
-    if (!(this.renderer instanceof WebGLRenderer) || !this.feedback) {
+    if (
+      !isFeedbackCapableRenderer(this.renderer) ||
+      !this.feedback ||
+      !payload.frameState.post.shaderEnabled
+    ) {
       return false;
     }
 
@@ -608,11 +693,13 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.feedback.readTarget.texture;
     this.feedback.compositeMaterial.uniforms.mixAlpha.value = payload.frameState
       .post.videoEchoEnabled
-      ? payload.frameState.post.videoEchoAlpha
-      : 0;
+      ? payload.frameState.post.videoEchoAlpha +
+        payload.frameState.post.shaderControls.mixAlpha
+      : payload.frameState.post.shaderControls.mixAlpha;
     this.feedback.compositeMaterial.uniforms.zoom.value = payload.frameState
       .post.videoEchoEnabled
-      ? payload.frameState.post.videoEchoZoom
+      ? payload.frameState.post.videoEchoZoom +
+        payload.frameState.post.shaderControls.warpScale * 0.04
       : 1;
     this.feedback.compositeMaterial.uniforms.brighten.value = payload.frameState
       .post.brighten
@@ -632,6 +719,29 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       : 0;
     this.feedback.compositeMaterial.uniforms.gammaAdj.value =
       payload.frameState.post.gammaAdj;
+    this.feedback.compositeMaterial.uniforms.textureWrap.value = payload
+      .frameState.post.textureWrap
+      ? 1
+      : 0;
+    this.feedback.compositeMaterial.uniforms.feedbackTexture.value = payload
+      .frameState.post.feedbackTexture
+      ? 1
+      : 0;
+    this.feedback.compositeMaterial.uniforms.warpScale.value =
+      payload.frameState.post.shaderControls.warpScale;
+    this.feedback.compositeMaterial.uniforms.hueShift.value =
+      payload.frameState.post.shaderControls.hueShift;
+    this.feedback.compositeMaterial.uniforms.brightenBoost.value =
+      payload.frameState.post.shaderControls.brightenBoost;
+    this.feedback.compositeMaterial.uniforms.invertBoost.value =
+      payload.frameState.post.shaderControls.invertBoost;
+    this.feedback.compositeMaterial.uniforms.solarizeBoost.value =
+      payload.frameState.post.shaderControls.solarizeBoost;
+    this.feedback.compositeMaterial.uniforms.tint.value = new Color(
+      payload.frameState.post.shaderControls.tint.r,
+      payload.frameState.post.shaderControls.tint.g,
+      payload.frameState.post.shaderControls.tint.b,
+    );
 
     this.renderer.setRenderTarget(this.feedback.sceneTarget);
     this.renderer.render(this.scene, this.camera);

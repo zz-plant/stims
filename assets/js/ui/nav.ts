@@ -340,6 +340,19 @@ function renderToyNav(
       'data-toy-actions-expanded',
       expanded ? 'true' : 'false',
     );
+    const isCompactViewport = isBelowBreakpoint(BREAKPOINTS.md);
+    if (actionsContainer) {
+      actionsContainer.hidden = isCompactViewport && !expanded;
+      actionsContainer.setAttribute(
+        'aria-hidden',
+        isCompactViewport && !expanded ? 'true' : 'false',
+      );
+      if (isCompactViewport && !expanded) {
+        actionsContainer.setAttribute('inert', '');
+      } else {
+        actionsContainer.removeAttribute('inert');
+      }
+    }
     doc.documentElement.setAttribute(
       'data-toy-controls-expanded',
       expanded ? 'true' : 'false',

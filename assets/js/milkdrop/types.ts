@@ -107,6 +107,7 @@ export type MilkdropBackendSupport = {
 export type MilkdropFeatureAnalysis = {
   featuresUsed: MilkdropFeatureKey[];
   unsupportedShaderText: boolean;
+  supportedShaderText: boolean;
   registerUsage: {
     q: number;
     t: number;
@@ -156,6 +157,20 @@ export type MilkdropBorderDefinition = {
 };
 
 export type MilkdropPostEffects = {
+  shaderEnabled: boolean;
+  textureWrap: boolean;
+  feedbackTexture: boolean;
+  outerBorderStyle: boolean;
+  innerBorderStyle: boolean;
+  shaderControls: {
+    warpScale: number;
+    hueShift: number;
+    mixAlpha: number;
+    brightenBoost: number;
+    invertBoost: number;
+    solarizeBoost: number;
+    tint: { r: number; g: number; b: number };
+  };
   brighten: boolean;
   darken: boolean;
   solarize: boolean;
@@ -182,6 +197,21 @@ export type MilkdropPresetIR = {
   customWaves: MilkdropWaveDefinition[];
   customShapes: MilkdropShapeDefinition[];
   borders: MilkdropBorderDefinition;
+  shaderText: {
+    warp: string | null;
+    comp: string | null;
+    supported: boolean;
+    unsupportedLines: string[];
+    controls: {
+      warpScale: number;
+      hueShift: number;
+      mixAlpha: number;
+      brightenBoost: number;
+      invertBoost: number;
+      solarizeBoost: number;
+      tint: { r: number; g: number; b: number };
+    };
+  };
   post: MilkdropPostEffects;
   compatibility: MilkdropCompatibilityReport;
 };
@@ -243,6 +273,7 @@ export type MilkdropBorderVisual = {
   size: number;
   color: MilkdropColor;
   alpha: number;
+  styled: boolean;
 };
 
 export type MilkdropMotionVectorVisual = {
@@ -254,6 +285,20 @@ export type MilkdropMotionVectorVisual = {
 };
 
 export type MilkdropPostVisual = {
+  shaderEnabled: boolean;
+  textureWrap: boolean;
+  feedbackTexture: boolean;
+  outerBorderStyle: boolean;
+  innerBorderStyle: boolean;
+  shaderControls: {
+    warpScale: number;
+    hueShift: number;
+    mixAlpha: number;
+    brightenBoost: number;
+    invertBoost: number;
+    solarizeBoost: number;
+    tint: { r: number; g: number; b: number };
+  };
   brighten: boolean;
   darken: boolean;
   solarize: boolean;
@@ -423,7 +468,7 @@ export interface MilkdropRendererAdapter {
   readonly backend: 'webgl' | 'webgpu';
   attach(): void;
   setPreset(preset: MilkdropCompiledPreset): void;
-  render(payload: MilkdropRenderPayload): void;
+  render(payload: MilkdropRenderPayload): boolean;
   resize(width: number, height: number): void;
   dispose(): void;
 }

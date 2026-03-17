@@ -45,14 +45,11 @@ video_echo=1
 
     expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(compiled.ir.compatibility.blockingReasons.length).toBeGreaterThan(0);
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'video-echo',
     );
-    expect(compiled.ir.compatibility.backends.webgpu.recommendedFallback).toBe(
-      'webgl',
-    );
+    expect(compiled.ir.compatibility.blockingReasons).toEqual([]);
   });
 
   test('maps gamma adjustment into post state and post-effect feature usage', () => {
@@ -94,6 +91,64 @@ mv_a=0.3
       'motion-vectors',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+  });
+
+  test('maps warp animation speed into numeric fields', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Warp Speed
+fWarpAnimSpeed=1.88
+      `.trim(),
+      { id: 'warp-speed' },
+    );
+
+    expect(compiled.ir.numericFields.warpanimspeed).toBeCloseTo(1.88, 6);
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+  });
+
+  test('maps wave alpha modulation and shader flags into numeric fields', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Wave Alpha Mod
+fModWaveAlphaStart=1.2
+fModWaveAlphaEnd=0.3
+fShader=0
+      `.trim(),
+      { id: 'wave-alpha-mod' },
+    );
+
+    expect(compiled.ir.numericFields.modwavealphastart).toBeCloseTo(1.2, 6);
+    expect(compiled.ir.numericFields.modwavealphaend).toBeCloseTo(0.3, 6);
+    expect(compiled.ir.numericFields.shader).toBe(0);
+    expect(compiled.ir.post.shaderEnabled).toBe(false);
+  });
+
+  test('supports shader-text subset and feedback-style flags', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Subset
+warp_shader=warp=0.9; hue=0.35
+comp_shader=mix=0.25; tint=1,0.6,0.4
+texture_wrap=1
+feedback_texture=1
+ob_border=1
+ib_border=1
+      `.trim(),
+      { id: 'shader-subset' },
+    );
+
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(
+      compiled.ir.compatibility.featureAnalysis.unsupportedShaderText,
+    ).toBe(false);
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.textureWrap).toBe(true);
+    expect(compiled.ir.post.feedbackTexture).toBe(true);
+    expect(compiled.ir.post.outerBorderStyle).toBe(true);
+    expect(compiled.ir.post.innerBorderStyle).toBe(true);
+    expect(compiled.ir.post.shaderControls.hueShift).toBeCloseTo(0.35, 6);
+    expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.25, 6);
   });
 
   test('surfaces diagnostics for invalid scalar expressions', () => {

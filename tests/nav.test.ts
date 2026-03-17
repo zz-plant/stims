@@ -153,7 +153,7 @@ describe('toy navigation visibility states', () => {
     window.matchMedia = originalMatchMedia;
   });
 
-  test('mobile view keeps primary actions visible while extra controls are collapsed by default', () => {
+  test('mobile view collapses the toy action drawer by default', () => {
     const { matchMedia } = createMatchMediaStub();
     window.matchMedia = matchMedia;
 
@@ -170,6 +170,9 @@ describe('toy navigation visibility states', () => {
     );
 
     expect(actions.dataset.toyActionsExpanded).toBe('false');
+    expect(actions.hidden).toBe(true);
+    expect(actions.getAttribute('aria-hidden')).toBe('true');
+    expect(actions.hasAttribute('inert')).toBe(true);
     expect(toggle.textContent).toBe('Open controls');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
@@ -191,5 +194,8 @@ describe('toy navigation visibility states', () => {
 
     expect(toggle.textContent).toBe('Hide controls');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(
+      (container.querySelector('#toy-nav-actions') as HTMLElement).hidden,
+    ).toBe(false);
   });
 });

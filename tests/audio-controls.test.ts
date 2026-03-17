@@ -58,6 +58,7 @@ describe('audio controls primary emphasis', () => {
         ) as HTMLElement | null
       )?.hidden,
     ).toBe(true);
+    expect(container.classList.contains('control-panel--audio')).toBe(true);
   });
 
   test('keeps microphone row primary by default', () => {
