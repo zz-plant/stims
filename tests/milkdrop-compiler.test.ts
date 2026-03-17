@@ -282,6 +282,36 @@ comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
     expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(1.2, 6);
   });
 
+  test('supports affine uv shader-body transforms', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Affine UV Shader
+warp_shader=uv=(uv-0.5)/1.25+0.5+vec2(0.03,-0.02);
+      `.trim(),
+      { id: 'affine-uv-shader' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(0.8, 6);
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0.03, 6);
+    expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(-0.02, 6);
+  });
+
+  test('supports mix-based shader-body post patterns', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Mix Shader Body
+comp_shader=ret=mix(tex2d(sampler_main,uv).rgb,1.0-tex2d(sampler_main,uv).rgb,0.35);
+      `.trim(),
+      { id: 'mix-shader-body' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.post.shaderControls.invertBoost).toBeCloseTo(0.35, 6);
+  });
+
   test('supports ninth custom wave and shape definitions', () => {
     const compiled = compileMilkdropPresetSource(
       `
