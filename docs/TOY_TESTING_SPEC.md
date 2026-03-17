@@ -66,27 +66,7 @@ Notes:
 - If a toy returns `{ dispose() }`, wrap it into a `cleanup` function inside the test.
 - Always reset `document.body` in `afterEach` when you add additional nodes.
 
-### 2) Page toys (`startPageToy` wrappers)
-
-For toys that export `start({ container })` and use the page wrapper, assert that the **active toy status UI** mounts and unmounts cleanly.
-
-```ts
-import { expect, test } from 'bun:test';
-import { start } from '../assets/js/toys/holy.ts';
-
-test('page toy mounts and disposes status UI', () => {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-
-  const activeToy = start({ container });
-  expect(container.querySelector('.active-toy-status')).not.toBeNull();
-
-  activeToy.dispose();
-  expect(container.querySelector('.active-toy-status')).toBeNull();
-});
-```
-
-### 3) Helper utilities
+### 2) Helper utilities
 
 When adding new helpers (color math, easing, or audio utilities), write small unit tests under `tests/` and use `createMockRenderer()` or `FakeAudioContext` as needed.
 

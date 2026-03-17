@@ -16,7 +16,7 @@ For the matching repo-local skills plus “when do I use which one?” guidance,
 
 ```bash
 # Scaffold a toy module and metadata/docs wiring
-bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --type module --with-test
+bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --with-test
 
 # Validate toy registration, entry points, and docs index
 bun run check:toys

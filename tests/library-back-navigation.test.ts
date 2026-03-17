@@ -10,7 +10,7 @@ describe('library back navigation', () => {
     const historyBack = mock();
     const win = {
       history: { back: historyBack },
-      location: { href: 'https://example.com/toys/evol.html' },
+      location: { href: 'https://example.com/toys/evol/' },
     } as unknown as Window & typeof globalThis;
     const doc = {
       referrer: 'https://example.com/',
@@ -20,11 +20,11 @@ describe('library back navigation', () => {
       shouldUseHistoryBackToLibrary({
         doc,
         win,
-        backHref: '../index.html',
+        backHref: '/index.html',
       }),
     ).toBe(true);
 
-    navigateBackToLibrary({ doc, win, backHref: '../index.html' });
+    navigateBackToLibrary({ doc, win, backHref: '/index.html' });
 
     expect(historyBack).toHaveBeenCalledTimes(1);
   });
@@ -33,7 +33,7 @@ describe('library back navigation', () => {
     const historyBack = mock();
     const win = {
       history: { back: historyBack },
-      location: { href: 'https://example.com/toys/evol.html' },
+      location: { href: 'https://example.com/toys/evol/' },
     } as unknown as Window & typeof globalThis;
     const doc = {
       referrer: '',
@@ -45,7 +45,7 @@ describe('library back navigation', () => {
     expect(win.location.href).toBe('../index.html');
   });
 
-  test('intercepts library back links so toy.html and standalone pages share behavior', () => {
+  test('intercepts library back links so toy.html and public toy pages share behavior', () => {
     const link = document.createElement('a');
     link.href = 'https://example.com/index.html';
 

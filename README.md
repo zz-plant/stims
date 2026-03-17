@@ -306,7 +306,7 @@ All JavaScript dependencies are installed via Bun and bundled locally with Vite,
 - `bun run typecheck:watch`: Keep TypeScript checking in watch mode without emitting files.
 - `bun run check`: Run lint, typecheck, and tests in one go (handy before opening a PR).
 - `bun run check:quick`: Run lint and typecheck only (fast guardrail during iteration).
-- `bun run scripts/scaffold-toy.ts`: Interactive (or flag-driven) scaffolder that prompts for a slug/title/type, creates a starter module from [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), appends metadata to `assets/data/toys.json`, updates `docs/TOY_SCRIPT_INDEX.md`, and can optionally drop a minimal Bun spec. Pass flags such as `--slug ripple-orb --title "Ripple Orb" --type module --with-test` for non-interactive runs.
+- `bun run scripts/scaffold-toy.ts`: Interactive (or flag-driven) scaffolder that prompts for a slug/title/description, creates a starter module from [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md), appends metadata to `assets/data/toys.json`, updates `docs/TOY_SCRIPT_INDEX.md`, and can optionally drop a minimal Bun spec. Pass flags such as `--slug ripple-orb --title "Ripple Orb" --with-test` for non-interactive runs.
 - `bun run serve:dist`: Serve the `dist/` build with Bun (preferred for local production previews).
 
 ## Code of Conduct and Contributions

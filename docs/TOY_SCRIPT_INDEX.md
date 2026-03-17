@@ -36,6 +36,6 @@ This index maps each toy slug to the module that powers it and how the experienc
 | `neon-wave`                | `assets/js/toys/neon-wave.ts`                | MilkDrop preset alias; launches the shared runtime with the bundled `neon-wave` preset. |
 | `milkdrop`                 | `assets/js/toys/milkdrop-toy.ts`             | Flagship MilkDrop module; loads the full curated catalog and editor shell. |
 
-## Legacy HTML assets
+## Generated public toy pages
 
-Direct visits to `toys/*.html` still redirect into `toy.html?toy=<slug>`, but no registered toy slug depends on the old iframe bridge anymore. Those HTML files remain in the repo only as archived reference surfaces while the active runtime lives entirely in module entrypoints and bundled MilkDrop presets.
+Static public toy detail pages are generated into `public/toys/<slug>/index.html` for SEO and sharing, but they are not source entrypoints. The authoritative runtime entrypoint for interactive toy loading remains `toy.html?toy=<slug>`.

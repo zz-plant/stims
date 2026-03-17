@@ -19,12 +19,11 @@ async function createTempRepo() {
 | Slug | Entry module | How it loads |
 | --- | --- | --- |
 
-## Standalone HTML entry points
+## Generated public toy pages
 `,
   );
 
   await fs.mkdir(path.join(root, 'tests'), { recursive: true });
-  await fs.mkdir(path.join(root, 'toys'), { recursive: true });
 
   return root;
 }
@@ -74,7 +73,7 @@ describe('scaffold-toy CLI helpers', () => {
     );
     expect(index).toContain(`| \`${slug}\``);
     expect(index.indexOf(slug)).toBeLessThan(
-      index.indexOf('## Standalone HTML entry points'),
+      index.indexOf('## Generated public toy pages'),
     );
 
     const testSpec = await fs.readFile(
@@ -138,43 +137,5 @@ describe('scaffold-toy CLI helpers', () => {
         root,
       }),
     ).rejects.toThrow(/assets\/data\/toys\.json/);
-  });
-
-  test('creates a standalone HTML entry point and validates metadata', async () => {
-    const root = await createTempRepo();
-    const slug = 'portal-frame';
-    const title = 'Portal Frame';
-    const description = 'Standalone page placeholder.';
-
-    await scaffoldToy({
-      slug,
-      title,
-      description,
-      type: 'page',
-      createTest: false,
-      root,
-    });
-
-    const htmlPath = path.join(root, 'toys', `${slug}.html`);
-    const html = await fs.readFile(htmlPath, 'utf8');
-    expect(html).toContain('<title>Portal Frame</title>');
-    expect(html).toContain('standalone toy page');
-
-    const raw = await fs.readFile(
-      path.join(root, 'assets/data/toys.json'),
-      'utf8',
-    );
-    const data = JSON.parse(raw) as Array<{
-      slug: string;
-      type: string;
-      module: string;
-    }>;
-    const entry = data.find((item) => item.slug === slug) ?? null;
-    expect(entry).toBeTruthy();
-    if (!entry) {
-      throw new Error('Scaffolded entry was not added to metadata.');
-    }
-    expect(entry.type).toBe('page');
-    expect(entry.module).toBe(`toys/${slug}.html`);
   });
 });

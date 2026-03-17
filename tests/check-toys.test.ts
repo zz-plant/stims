@@ -15,10 +15,9 @@ async function createTempRepo() {
   await fs.mkdir(path.join(root, 'assets/js/data'), { recursive: true });
   await fs.mkdir(path.join(root, 'assets/data'), { recursive: true });
   await fs.mkdir(path.join(root, 'docs'), { recursive: true });
-  await fs.mkdir(path.join(root, 'toys'), { recursive: true });
   await fs.mkdir(path.join(root, 'public'), { recursive: true });
 
-  const index = `# Toy and Visualizer Script Index\n\n| Slug | Entry module | How it loads |\n| --- | --- | --- |\n`;
+  const index = `# Toy and Visualizer Script Index\n\n## Query-driven toys (\`toy.html\`)\n| Slug | Entry module | How it loads |\n| --- | --- | --- |\n\n## Generated public toy pages\n`;
   await fs.writeFile(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'), index);
 
   await fs.writeFile(path.join(root, 'assets/data/toys.json'), '[]\n');
@@ -51,21 +50,12 @@ async function writeGeneratedArtifacts(root: string, entries: unknown) {
 describe('check-toys script', () => {
   test('passes when metadata and files are consistent', async () => {
     const root = await createTempRepo();
-    const slug = 'aligned';
-    const pageSlug = 'standalone';
-
-    await writeToyModule(root, slug);
-    await fs.writeFile(
-      path.join(root, 'toys', `${pageSlug}.html`),
-      '<!doctype html>',
-    );
-
     const entries = [
       {
-        slug,
+        slug: 'aligned',
         title: 'Aligned',
         description: 'ok',
-        module: `assets/js/toys/${slug}.ts`,
+        module: 'assets/js/toys/aligned.ts',
         type: 'module',
         requiresWebGPU: false,
         capabilities: {
@@ -75,11 +65,11 @@ describe('check-toys script', () => {
         },
       },
       {
-        slug: pageSlug,
-        title: 'Standalone',
+        slug: 'steady-bloom',
+        title: 'Steady Bloom',
         description: 'ok',
-        module: `toys/${pageSlug}.html`,
-        type: 'page',
+        module: 'assets/js/toys/steady-bloom.ts',
+        type: 'module',
         requiresWebGPU: false,
         capabilities: {
           microphone: true,
@@ -89,6 +79,8 @@ describe('check-toys script', () => {
       },
     ];
 
+    await Promise.all(entries.map((entry) => writeToyModule(root, entry.slug)));
+
     await fs.writeFile(
       path.join(root, 'assets/data/toys.json'),
       `${JSON.stringify(entries, null, 2)}\n`,
@@ -96,7 +88,12 @@ describe('check-toys script', () => {
     await writeGeneratedArtifacts(root, entries);
     await fs.appendFile(
       path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
-      `| \`${slug}\` | \`assets/js/toys/${slug}.ts\` | Direct module |\n| \`${pageSlug}\` | \`toys/${pageSlug}.html\` | Standalone HTML page |\n`,
+      entries
+        .map(
+          (entry) =>
+            `| \`${entry.slug}\` | \`${entry.module}\` | Direct module |\n`,
+        )
+        .join(''),
     );
 
     const result = await runToyChecks(root);
@@ -112,8 +109,8 @@ describe('check-toys script', () => {
         slug,
         title: 'Missing Entry',
         description: 'oops',
-        module: `toys/${slug}.html`,
-        type: 'page',
+        module: `assets/js/toys/${slug}.ts`,
+        type: 'module',
         requiresWebGPU: false,
         capabilities: {
           microphone: true,
@@ -236,38 +233,6 @@ describe('check-toys script', () => {
     expect(
       result.issues.some((issue) =>
         issue.includes('Behavior-derived interaction metadata is out of date'),
-      ),
-    ).toBe(true);
-  });
-
-  test('flags page slug and entrypoint mismatch', async () => {
-    const root = await createTempRepo();
-    const entries = [
-      {
-        slug: 'page-slug',
-        title: 'Page slug mismatch',
-        description: 'ok',
-        module: 'toys/not-the-slug.html',
-        type: 'page',
-        requiresWebGPU: false,
-        capabilities: {
-          microphone: true,
-          demoAudio: true,
-          motion: false,
-        },
-      },
-    ];
-
-    await fs.writeFile(
-      path.join(root, 'assets/data/toys.json'),
-      `${JSON.stringify(entries, null, 2)}\n`,
-    );
-    await writeGeneratedArtifacts(root, entries);
-
-    const result = await runToyChecks(root);
-    expect(
-      result.issues.some((issue) =>
-        issue.includes('Page entrypoint mismatch for page-slug'),
       ),
     ).toBe(true);
   });

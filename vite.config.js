@@ -9,21 +9,10 @@ const toysData = fs.existsSync(toysDataPath)
   ? JSON.parse(fs.readFileSync(toysDataPath, 'utf8'))
   : [];
 const toyEntries = Array.isArray(toysData) ? toysData : [];
-const getHtmlInputs = (dir) => {
-  if (!fs.existsSync(dir)) return {};
-  return Object.fromEntries(
-    fs
-      .readdirSync(dir)
-      .filter((entry) => entry.endsWith('.html'))
-      .sort()
-      .map((file) => [path.parse(file).name, path.resolve(dir, file)]),
-  );
-};
 
 const htmlInputs = {
   index: path.resolve(rootDir, 'index.html'),
   toy: path.resolve(rootDir, 'toy.html'),
-  ...getHtmlInputs(path.resolve(rootDir, 'toys')),
 };
 const moduleInputs = Object.fromEntries(
   toyEntries
