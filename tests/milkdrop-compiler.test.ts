@@ -224,6 +224,31 @@ comp_shader=mix=beat_pulse*0.5; tint=1, mid, treb_att+0.2
     expect(compiled.ir.post.shaderControlExpressions.tint.g).not.toBeNull();
   });
 
+  test('supports shader declarations, compound assignment, and conditional helper math', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Extended Syntax
+warp_shader=float dx = 0.02; dx += if(above(bass_att,0.5), 0.03, 0.01); rot = mix(0, pi/2, 0.5); zoom *= smoothstep(0, 1, 0.5)
+comp_shader=const mix = 0.1; mix += step(0.2, beat_pulse) * 0.15; saturation = lerp(1, 1.4, 0.5); contrast = sigmoid(1, 2); tint += 0.1, mod(0.7, 0.4), fmod(0.9, 0.5)
+      `.trim(),
+      { id: 'shader-extended-syntax' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0.03, 6);
+    expect(compiled.ir.post.shaderControls.rotation).toBeCloseTo(
+      Math.PI / 4,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(0.5, 6);
+    expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.1, 6);
+    expect(compiled.ir.post.shaderControls.saturation).toBeCloseTo(1.2, 6);
+    expect(compiled.ir.post.shaderControls.tint.r).toBeCloseTo(1.1, 6);
+    expect(compiled.ir.post.shaderControls.tint.g).toBeCloseTo(1.3, 6);
+    expect(compiled.ir.post.shaderControls.tint.b).toBeCloseTo(1.4, 6);
+    expect(compiled.ir.post.shaderControlExpressions.offsetX).not.toBeNull();
+  });
+
   test('supports fifth custom wave and shape definitions', () => {
     const compiled = compileMilkdropPresetSource(
       `
