@@ -55,6 +55,22 @@ video_echo=1
     );
   });
 
+  test('maps gamma adjustment into post state and post-effect feature usage', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Gamma Flag
+fGammaAdj=1.75
+      `.trim(),
+      { id: 'gamma-flag' },
+    );
+
+    expect(compiled.ir.numericFields.gammaadj).toBeCloseTo(1.75, 6);
+    expect(compiled.ir.post.gammaAdj).toBeCloseTo(1.75, 6);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'post-effects',
+    );
+  });
+
   test('surfaces diagnostics for invalid scalar expressions', () => {
     const compiled = compileMilkdropPresetSource(
       `

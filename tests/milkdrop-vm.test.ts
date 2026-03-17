@@ -158,6 +158,27 @@ per_pixel_1=rot = rot + 0.001;
     expect(frameState.variables.q1).toBeCloseTo(1, 6);
   });
 
+  test('applies wave_brighten normalization and gamma-adjusted post state', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Wave Brighten
+wave_r=0.2
+wave_g=0.4
+wave_b=0.6
+wave_brighten=1
+fGammaAdj=1.75
+      `.trim(),
+      { id: 'wave-brighten' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.mainWave.color.r).toBeCloseTo(1 / 3, 5);
+    expect(frameState.mainWave.color.g).toBeCloseTo(2 / 3, 5);
+    expect(frameState.mainWave.color.b).toBeCloseTo(1, 5);
+    expect(frameState.post.gammaAdj).toBeCloseTo(1.75, 6);
+  });
+
   test('accumulates and caps trail history across steps', () => {
     const preset = compileMilkdropPresetSource('title=Trail Test', {
       id: 'trail-test',
