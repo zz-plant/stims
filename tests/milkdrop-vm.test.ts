@@ -364,6 +364,54 @@ comp_shader=const mix = 0.05; mix += step(0.2, beat_pulse) * 0.2; tint += 0.1, m
     expect(frameState.post.shaderControls.tint.b).toBeCloseTo(1.15, 6);
   });
 
+  test('evaluates shader temp variables against live signal values', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Temp VM
+warp_shader=float drift = bass_att * 0.05; dx = drift; rot = drift * 4
+comp_shader=const pulse = beat_pulse * 0.4; mix = pulse; tint = 1, pulse + 0.2, pulse + 0.4
+      `.trim(),
+      { id: 'shader-temp-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({ frame: 11, time: 0.5, beatPulse: 0.3 }),
+    );
+
+    expect(frameState.post.shaderControls.offsetX).toBeCloseTo(0.03, 6);
+    expect(frameState.post.shaderControls.rotation).toBeCloseTo(0.12, 6);
+    expect(frameState.post.shaderControls.mixAlpha).toBeCloseTo(0.12, 6);
+    expect(frameState.post.shaderControls.tint.g).toBeCloseTo(0.32, 6);
+    expect(frameState.post.shaderControls.tint.b).toBeCloseTo(0.52, 6);
+  });
+
+  test('renders ninth shape slot beyond the previous ceiling', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Extended Shape Slot Nine
+shape_9_enabled=1
+shape_9_sides=8
+shape_9_rad=0.16
+shape_9_a=0.28
+shape_9_r=0.8
+shape_9_g=0.9
+shape_9_b=0.5
+wavecode_8_enabled=1
+wave_8_per_point1=y=y+0.015;
+      `.trim(),
+      { id: 'extended-shape-slot-nine' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({ frame: 12 }),
+    );
+
+    expect(frameState.shapes.some((shape) => shape.key === 'shape_9')).toBe(
+      true,
+    );
+    expect(frameState.customWaves).toHaveLength(1);
+  });
+
   test('renders extended shape slots beyond the original four defaults', () => {
     const preset = compileMilkdropPresetSource(
       `

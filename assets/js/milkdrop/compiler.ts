@@ -26,8 +26,166 @@ import type {
   MilkdropWaveDefinition,
 } from './types';
 
-const MAX_CUSTOM_WAVES = 8;
-const MAX_CUSTOM_SHAPES = 8;
+const MAX_CUSTOM_WAVES = 16;
+const MAX_CUSTOM_SHAPES = 16;
+
+function createDefaultShapeSlot(index: number): Record<string, number> {
+  if (index === 1) {
+    return {
+      shape_1_enabled: 1,
+      shape_1_sides: 6,
+      shape_1_x: 0.5,
+      shape_1_y: 0.5,
+      shape_1_rad: 0.17,
+      shape_1_ang: 0,
+      shape_1_a: 0.24,
+      shape_1_r: 1,
+      shape_1_g: 0.48,
+      shape_1_b: 0.84,
+      shape_1_a2: 0,
+      shape_1_r2: 0,
+      shape_1_g2: 0,
+      shape_1_b2: 0,
+      shape_1_border_a: 0.86,
+      shape_1_border_r: 1,
+      shape_1_border_g: 0.8,
+      shape_1_border_b: 1,
+      shape_1_additive: 1,
+      shape_1_thickoutline: 1,
+    };
+  }
+
+  const fallbackByIndex: Record<number, Record<string, number>> = {
+    2: {
+      sides: 5,
+      rad: 0.12,
+      a: 0.18,
+      r: 0.8,
+      g: 0.5,
+      b: 1,
+      border_a: 0.78,
+      border_r: 0.9,
+      border_g: 0.9,
+      border_b: 1,
+    },
+    3: {
+      sides: 4,
+      rad: 0.1,
+      a: 0.16,
+      r: 1,
+      g: 0.7,
+      b: 0.4,
+      border_a: 0.7,
+      border_r: 1,
+      border_g: 0.9,
+      border_b: 0.5,
+    },
+    4: {
+      sides: 8,
+      rad: 0.09,
+      a: 0.14,
+      r: 0.6,
+      g: 0.85,
+      b: 1,
+      border_a: 0.7,
+      border_r: 0.75,
+      border_g: 0.95,
+      border_b: 1,
+    },
+    5: {
+      sides: 7,
+      rad: 0.08,
+      a: 0.14,
+      r: 1,
+      g: 0.8,
+      b: 0.45,
+      border_a: 0.72,
+      border_r: 1,
+      border_g: 0.9,
+      border_b: 0.6,
+    },
+    6: {
+      sides: 3,
+      rad: 0.07,
+      a: 0.13,
+      r: 0.8,
+      g: 1,
+      b: 0.55,
+      border_a: 0.7,
+      border_r: 0.9,
+      border_g: 1,
+      border_b: 0.7,
+    },
+    7: {
+      sides: 9,
+      rad: 0.06,
+      a: 0.12,
+      r: 0.7,
+      g: 0.9,
+      b: 1,
+      border_a: 0.68,
+      border_r: 0.8,
+      border_g: 0.95,
+      border_b: 1,
+    },
+    8: {
+      sides: 5,
+      rad: 0.05,
+      a: 0.1,
+      r: 1,
+      g: 0.65,
+      b: 0.9,
+      border_a: 0.66,
+      border_r: 1,
+      border_g: 0.75,
+      border_b: 0.95,
+    },
+  };
+
+  const fallback = fallbackByIndex[index] ?? fallbackByIndex[8];
+  return {
+    [`shape_${index}_enabled`]: 0,
+    [`shape_${index}_sides`]: fallback.sides,
+    [`shape_${index}_x`]: 0.5,
+    [`shape_${index}_y`]: 0.5,
+    [`shape_${index}_rad`]: fallback.rad,
+    [`shape_${index}_ang`]: 0,
+    [`shape_${index}_a`]: fallback.a,
+    [`shape_${index}_r`]: fallback.r,
+    [`shape_${index}_g`]: fallback.g,
+    [`shape_${index}_b`]: fallback.b,
+    [`shape_${index}_a2`]: 0,
+    [`shape_${index}_r2`]: 0,
+    [`shape_${index}_g2`]: 0,
+    [`shape_${index}_b2`]: 0,
+    [`shape_${index}_border_a`]: fallback.border_a,
+    [`shape_${index}_border_r`]: fallback.border_r,
+    [`shape_${index}_border_g`]: fallback.border_g,
+    [`shape_${index}_border_b`]: fallback.border_b,
+    [`shape_${index}_additive`]: 0,
+    [`shape_${index}_thickoutline`]: 0,
+  };
+}
+
+function createDefaultCustomWaveSlot(index: number): Record<string, number> {
+  return {
+    [`custom_wave_${index}_enabled`]: 0,
+    [`custom_wave_${index}_samples`]: 64,
+    [`custom_wave_${index}_spectrum`]: 0,
+    [`custom_wave_${index}_additive`]: 0,
+    [`custom_wave_${index}_usedots`]: 0,
+    [`custom_wave_${index}_scaling`]: 1,
+    [`custom_wave_${index}_smoothing`]: 0.5,
+    [`custom_wave_${index}_mystery`]: 0,
+    [`custom_wave_${index}_thick`]: 1,
+    [`custom_wave_${index}_x`]: 0.5,
+    [`custom_wave_${index}_y`]: 0.5,
+    [`custom_wave_${index}_r`]: 1,
+    [`custom_wave_${index}_g`]: 1,
+    [`custom_wave_${index}_b`]: 1,
+    [`custom_wave_${index}_a`]: 0.4,
+  };
+}
 
 export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   fRating: 3,
@@ -92,286 +250,16 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   mv_g: 1,
   mv_b: 1,
   mv_a: 0.35,
-  shape_1_enabled: 1,
-  shape_1_sides: 6,
-  shape_1_x: 0.5,
-  shape_1_y: 0.5,
-  shape_1_rad: 0.17,
-  shape_1_ang: 0,
-  shape_1_a: 0.24,
-  shape_1_r: 1,
-  shape_1_g: 0.48,
-  shape_1_b: 0.84,
-  shape_1_a2: 0,
-  shape_1_r2: 0,
-  shape_1_g2: 0,
-  shape_1_b2: 0,
-  shape_1_border_a: 0.86,
-  shape_1_border_r: 1,
-  shape_1_border_g: 0.8,
-  shape_1_border_b: 1,
-  shape_1_additive: 1,
-  shape_1_thickoutline: 1,
-  shape_2_enabled: 0,
-  shape_2_sides: 5,
-  shape_2_x: 0.5,
-  shape_2_y: 0.5,
-  shape_2_rad: 0.12,
-  shape_2_ang: 0,
-  shape_2_a: 0.18,
-  shape_2_r: 0.8,
-  shape_2_g: 0.5,
-  shape_2_b: 1,
-  shape_2_a2: 0,
-  shape_2_r2: 0,
-  shape_2_g2: 0,
-  shape_2_b2: 0,
-  shape_2_border_a: 0.78,
-  shape_2_border_r: 0.9,
-  shape_2_border_g: 0.9,
-  shape_2_border_b: 1,
-  shape_2_additive: 0,
-  shape_2_thickoutline: 0,
-  shape_3_enabled: 0,
-  shape_3_sides: 4,
-  shape_3_x: 0.5,
-  shape_3_y: 0.5,
-  shape_3_rad: 0.1,
-  shape_3_ang: 0,
-  shape_3_a: 0.16,
-  shape_3_r: 1,
-  shape_3_g: 0.7,
-  shape_3_b: 0.4,
-  shape_3_a2: 0,
-  shape_3_r2: 0,
-  shape_3_g2: 0,
-  shape_3_b2: 0,
-  shape_3_border_a: 0.7,
-  shape_3_border_r: 1,
-  shape_3_border_g: 0.9,
-  shape_3_border_b: 0.5,
-  shape_3_additive: 0,
-  shape_3_thickoutline: 0,
-  shape_4_enabled: 0,
-  shape_4_sides: 8,
-  shape_4_x: 0.5,
-  shape_4_y: 0.5,
-  shape_4_rad: 0.09,
-  shape_4_ang: 0,
-  shape_4_a: 0.14,
-  shape_4_r: 0.6,
-  shape_4_g: 0.85,
-  shape_4_b: 1,
-  shape_4_a2: 0,
-  shape_4_r2: 0,
-  shape_4_g2: 0,
-  shape_4_b2: 0,
-  shape_4_border_a: 0.7,
-  shape_4_border_r: 0.75,
-  shape_4_border_g: 0.95,
-  shape_4_border_b: 1,
-  shape_4_additive: 0,
-  shape_4_thickoutline: 0,
-  shape_5_enabled: 0,
-  shape_5_sides: 7,
-  shape_5_x: 0.5,
-  shape_5_y: 0.5,
-  shape_5_rad: 0.08,
-  shape_5_ang: 0,
-  shape_5_a: 0.14,
-  shape_5_r: 1,
-  shape_5_g: 0.8,
-  shape_5_b: 0.45,
-  shape_5_a2: 0,
-  shape_5_r2: 0,
-  shape_5_g2: 0,
-  shape_5_b2: 0,
-  shape_5_border_a: 0.72,
-  shape_5_border_r: 1,
-  shape_5_border_g: 0.9,
-  shape_5_border_b: 0.6,
-  shape_5_additive: 0,
-  shape_5_thickoutline: 0,
-  shape_6_enabled: 0,
-  shape_6_sides: 3,
-  shape_6_x: 0.5,
-  shape_6_y: 0.5,
-  shape_6_rad: 0.07,
-  shape_6_ang: 0,
-  shape_6_a: 0.13,
-  shape_6_r: 0.8,
-  shape_6_g: 1,
-  shape_6_b: 0.55,
-  shape_6_a2: 0,
-  shape_6_r2: 0,
-  shape_6_g2: 0,
-  shape_6_b2: 0,
-  shape_6_border_a: 0.7,
-  shape_6_border_r: 0.9,
-  shape_6_border_g: 1,
-  shape_6_border_b: 0.7,
-  shape_6_additive: 0,
-  shape_6_thickoutline: 0,
-  shape_7_enabled: 0,
-  shape_7_sides: 9,
-  shape_7_x: 0.5,
-  shape_7_y: 0.5,
-  shape_7_rad: 0.06,
-  shape_7_ang: 0,
-  shape_7_a: 0.12,
-  shape_7_r: 0.7,
-  shape_7_g: 0.9,
-  shape_7_b: 1,
-  shape_7_a2: 0,
-  shape_7_r2: 0,
-  shape_7_g2: 0,
-  shape_7_b2: 0,
-  shape_7_border_a: 0.68,
-  shape_7_border_r: 0.8,
-  shape_7_border_g: 0.95,
-  shape_7_border_b: 1,
-  shape_7_additive: 0,
-  shape_7_thickoutline: 0,
-  shape_8_enabled: 0,
-  shape_8_sides: 5,
-  shape_8_x: 0.5,
-  shape_8_y: 0.5,
-  shape_8_rad: 0.05,
-  shape_8_ang: 0,
-  shape_8_a: 0.1,
-  shape_8_r: 1,
-  shape_8_g: 0.65,
-  shape_8_b: 0.9,
-  shape_8_a2: 0,
-  shape_8_r2: 0,
-  shape_8_g2: 0,
-  shape_8_b2: 0,
-  shape_8_border_a: 0.66,
-  shape_8_border_r: 1,
-  shape_8_border_g: 0.75,
-  shape_8_border_b: 0.95,
-  shape_8_additive: 0,
-  shape_8_thickoutline: 0,
-  custom_wave_1_enabled: 0,
-  custom_wave_1_samples: 64,
-  custom_wave_1_spectrum: 0,
-  custom_wave_1_additive: 0,
-  custom_wave_1_usedots: 0,
-  custom_wave_1_scaling: 1,
-  custom_wave_1_smoothing: 0.5,
-  custom_wave_1_mystery: 0,
-  custom_wave_1_thick: 1,
-  custom_wave_1_x: 0.5,
-  custom_wave_1_y: 0.5,
-  custom_wave_1_r: 1,
-  custom_wave_1_g: 1,
-  custom_wave_1_b: 1,
-  custom_wave_1_a: 0.4,
-  custom_wave_2_enabled: 0,
-  custom_wave_2_samples: 64,
-  custom_wave_2_spectrum: 0,
-  custom_wave_2_additive: 0,
-  custom_wave_2_usedots: 0,
-  custom_wave_2_scaling: 1,
-  custom_wave_2_smoothing: 0.5,
-  custom_wave_2_mystery: 0,
-  custom_wave_2_thick: 1,
-  custom_wave_2_x: 0.5,
-  custom_wave_2_y: 0.5,
-  custom_wave_2_r: 1,
-  custom_wave_2_g: 1,
-  custom_wave_2_b: 1,
-  custom_wave_2_a: 0.4,
-  custom_wave_3_enabled: 0,
-  custom_wave_3_samples: 64,
-  custom_wave_3_spectrum: 0,
-  custom_wave_3_additive: 0,
-  custom_wave_3_usedots: 0,
-  custom_wave_3_scaling: 1,
-  custom_wave_3_smoothing: 0.5,
-  custom_wave_3_mystery: 0,
-  custom_wave_3_thick: 1,
-  custom_wave_3_x: 0.5,
-  custom_wave_3_y: 0.5,
-  custom_wave_3_r: 1,
-  custom_wave_3_g: 1,
-  custom_wave_3_b: 1,
-  custom_wave_3_a: 0.4,
-  custom_wave_4_enabled: 0,
-  custom_wave_4_samples: 64,
-  custom_wave_4_spectrum: 0,
-  custom_wave_4_additive: 0,
-  custom_wave_4_usedots: 0,
-  custom_wave_4_scaling: 1,
-  custom_wave_4_smoothing: 0.5,
-  custom_wave_4_mystery: 0,
-  custom_wave_4_thick: 1,
-  custom_wave_4_x: 0.5,
-  custom_wave_4_y: 0.5,
-  custom_wave_4_r: 1,
-  custom_wave_4_g: 1,
-  custom_wave_4_b: 1,
-  custom_wave_4_a: 0.4,
-  custom_wave_5_enabled: 0,
-  custom_wave_5_samples: 64,
-  custom_wave_5_spectrum: 0,
-  custom_wave_5_additive: 0,
-  custom_wave_5_usedots: 0,
-  custom_wave_5_scaling: 1,
-  custom_wave_5_smoothing: 0.5,
-  custom_wave_5_mystery: 0,
-  custom_wave_5_thick: 1,
-  custom_wave_5_x: 0.5,
-  custom_wave_5_y: 0.5,
-  custom_wave_5_r: 1,
-  custom_wave_5_g: 1,
-  custom_wave_5_b: 1,
-  custom_wave_5_a: 0.4,
-  custom_wave_6_enabled: 0,
-  custom_wave_6_samples: 64,
-  custom_wave_6_spectrum: 0,
-  custom_wave_6_additive: 0,
-  custom_wave_6_usedots: 0,
-  custom_wave_6_scaling: 1,
-  custom_wave_6_smoothing: 0.5,
-  custom_wave_6_mystery: 0,
-  custom_wave_6_thick: 1,
-  custom_wave_6_x: 0.5,
-  custom_wave_6_y: 0.5,
-  custom_wave_6_r: 1,
-  custom_wave_6_g: 1,
-  custom_wave_6_b: 1,
-  custom_wave_6_a: 0.4,
-  custom_wave_7_enabled: 0,
-  custom_wave_7_samples: 64,
-  custom_wave_7_spectrum: 0,
-  custom_wave_7_additive: 0,
-  custom_wave_7_usedots: 0,
-  custom_wave_7_scaling: 1,
-  custom_wave_7_smoothing: 0.5,
-  custom_wave_7_mystery: 0,
-  custom_wave_7_thick: 1,
-  custom_wave_7_x: 0.5,
-  custom_wave_7_y: 0.5,
-  custom_wave_7_r: 1,
-  custom_wave_7_g: 1,
-  custom_wave_7_b: 1,
-  custom_wave_7_a: 0.4,
-  custom_wave_8_enabled: 0,
-  custom_wave_8_samples: 64,
-  custom_wave_8_spectrum: 0,
-  custom_wave_8_additive: 0,
-  custom_wave_8_usedots: 0,
-  custom_wave_8_scaling: 1,
-  custom_wave_8_smoothing: 0.5,
-  custom_wave_8_mystery: 0,
-  custom_wave_8_thick: 1,
-  custom_wave_8_x: 0.5,
-  custom_wave_8_y: 0.5,
-  custom_wave_8_r: 1,
-  custom_wave_8_g: 1,
-  custom_wave_8_b: 1,
-  custom_wave_8_a: 0.4,
+  ...Object.fromEntries(
+    Array.from({ length: MAX_CUSTOM_SHAPES }, (_, index) =>
+      Object.entries(createDefaultShapeSlot(index + 1)),
+    ).flat(),
+  ),
+  ...Object.fromEntries(
+    Array.from({ length: MAX_CUSTOM_WAVES }, (_, index) =>
+      Object.entries(createDefaultCustomWaveSlot(index + 1)),
+    ).flat(),
+  ),
 };
 
 const FEATURE_ORDER: MilkdropFeatureKey[] = [
@@ -439,7 +327,10 @@ function createDefaultShaderControlExpressions(): MilkdropShaderControlExpressio
   };
 }
 
-function parseShaderScalar(rawValue: string) {
+function parseShaderScalar(
+  rawValue: string,
+  env: Record<string, number> = DEFAULT_MILKDROP_STATE,
+) {
   const numeric = Number(rawValue);
   if (Number.isFinite(numeric)) {
     return {
@@ -454,10 +345,7 @@ function parseShaderScalar(rawValue: string) {
   }
 
   return {
-    value: evaluateMilkdropExpression(
-      expressionResult.value,
-      DEFAULT_MILKDROP_STATE,
-    ),
+    value: evaluateMilkdropExpression(expressionResult.value, env),
     expression: expressionResult.value,
   };
 }
@@ -491,10 +379,13 @@ function splitShaderListValues(rawValue: string) {
     .filter(Boolean);
 }
 
-function parseShaderTintList(rawValue: string) {
+function parseShaderTintList(
+  rawValue: string,
+  env: Record<string, number> = DEFAULT_MILKDROP_STATE,
+) {
   const components = splitShaderListValues(rawValue)
     .slice(0, 3)
-    .map((entry) => parseShaderScalar(entry));
+    .map((entry) => parseShaderScalar(entry, env));
   if (components.length < 3 || components.some((entry) => entry === null)) {
     return null;
   }
@@ -569,9 +460,53 @@ function applyShaderExpressionOperator(
   };
 }
 
-function extractShaderControls(shaderText: string | null) {
+function isKnownShaderScalarKey(key: string) {
+  return new Set([
+    'warp',
+    'warp_scale',
+    'dx',
+    'offset_x',
+    'translate_x',
+    'dy',
+    'offset_y',
+    'translate_y',
+    'rot',
+    'rotation',
+    'zoom',
+    'scale',
+    'saturation',
+    'sat',
+    'contrast',
+    'r',
+    'red',
+    'g',
+    'green',
+    'b',
+    'blue',
+    'hue',
+    'hue_shift',
+    'mix',
+    'feedback',
+    'feedback_alpha',
+    'brighten',
+    'invert',
+    'solarize',
+  ]).has(key);
+}
+
+function extractShaderControls(
+  shaderText: string | null,
+  env: Record<string, number> = DEFAULT_MILKDROP_STATE,
+) {
   const controls = createDefaultShaderControls();
   const expressions = createDefaultShaderControlExpressions();
+  const shaderEnv: Record<string, number> = {
+    ...env,
+    ...controls.colorScale,
+    tint_r: controls.tint.r,
+    tint_g: controls.tint.g,
+    tint_b: controls.tint.b,
+  };
   const unsupportedLines: string[] = [];
   if (!shaderText) {
     return { controls, expressions, unsupportedLines, supported: false };
@@ -594,7 +529,24 @@ function extractShaderControls(shaderText: string | null) {
     const key = assignment[1]?.toLowerCase() ?? '';
     const operator = (assignment[2] ?? '=') as '=' | '+=' | '-=' | '*=' | '/=';
     const rawValue = assignment[3]?.trim() ?? '';
-    const numeric = parseShaderScalar(rawValue);
+    const numeric = parseShaderScalar(rawValue, shaderEnv);
+    if (!isKnownShaderScalarKey(key) && key !== 'tint') {
+      if (numeric !== null) {
+        const currentValue = shaderEnv[key] ?? 0;
+        const next = applyShaderExpressionOperator(
+          operator,
+          currentValue,
+          null,
+          numeric.value,
+          numeric.expression,
+        );
+        shaderEnv[key] = next.value;
+        supportedLineCount += 1;
+        return;
+      }
+      unsupportedLines.push(line);
+      return;
+    }
     switch (key) {
       case 'warp':
       case 'warp_scale':
@@ -608,6 +560,8 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.warpScale = next.value;
           expressions.warpScale = next.expression;
+          shaderEnv.warp = next.value;
+          shaderEnv.warp_scale = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -625,6 +579,9 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.offsetX = next.value;
           expressions.offsetX = next.expression;
+          shaderEnv.dx = next.value;
+          shaderEnv.offset_x = next.value;
+          shaderEnv.translate_x = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -642,6 +599,9 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.offsetY = next.value;
           expressions.offsetY = next.expression;
+          shaderEnv.dy = next.value;
+          shaderEnv.offset_y = next.value;
+          shaderEnv.translate_y = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -658,6 +618,8 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.rotation = next.value;
           expressions.rotation = next.expression;
+          shaderEnv.rot = next.value;
+          shaderEnv.rotation = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -674,6 +636,8 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.zoom = next.value;
           expressions.zoom = next.expression;
+          shaderEnv.zoom = next.value;
+          shaderEnv.scale = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -690,6 +654,8 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.saturation = next.value;
           expressions.saturation = next.expression;
+          shaderEnv.saturation = next.value;
+          shaderEnv.sat = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -705,6 +671,7 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.contrast = next.value;
           expressions.contrast = next.expression;
+          shaderEnv.contrast = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -721,6 +688,8 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.colorScale.r = next.value;
           expressions.colorScale.r = next.expression;
+          shaderEnv.r = next.value;
+          shaderEnv.red = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -737,6 +706,8 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.colorScale.g = next.value;
           expressions.colorScale.g = next.expression;
+          shaderEnv.g = next.value;
+          shaderEnv.green = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -753,6 +724,8 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.colorScale.b = next.value;
           expressions.colorScale.b = next.expression;
+          shaderEnv.b = next.value;
+          shaderEnv.blue = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -769,6 +742,8 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.hueShift = next.value;
           expressions.hueShift = next.expression;
+          shaderEnv.hue = next.value;
+          shaderEnv.hue_shift = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -786,6 +761,9 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.mixAlpha = next.value;
           expressions.mixAlpha = next.expression;
+          shaderEnv.mix = next.value;
+          shaderEnv.feedback = next.value;
+          shaderEnv.feedback_alpha = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -801,6 +779,7 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.brightenBoost = next.value;
           expressions.brightenBoost = next.expression;
+          shaderEnv.brighten = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -816,6 +795,7 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.invertBoost = next.value;
           expressions.invertBoost = next.expression;
+          shaderEnv.invert = next.value;
           supportedLineCount += 1;
           return;
         }
@@ -831,12 +811,13 @@ function extractShaderControls(shaderText: string | null) {
           );
           controls.solarizeBoost = next.value;
           expressions.solarizeBoost = next.expression;
+          shaderEnv.solarize = next.value;
           supportedLineCount += 1;
           return;
         }
         break;
       case 'tint': {
-        const tint = parseShaderTintList(rawValue);
+        const tint = parseShaderTintList(rawValue, shaderEnv);
         if (tint) {
           const nextR = applyShaderExpressionOperator(
             operator,
@@ -869,6 +850,9 @@ function extractShaderControls(shaderText: string | null) {
             g: nextG.expression,
             b: nextB.expression,
           };
+          shaderEnv.tint_r = nextR.value;
+          shaderEnv.tint_g = nextG.value;
+          shaderEnv.tint_b = nextB.value;
           supportedLineCount += 1;
           return;
         }
@@ -884,6 +868,20 @@ function extractShaderControls(shaderText: string | null) {
     unsupportedLines,
     supported: supportedLineCount > 0 && unsupportedLines.length === 0,
   };
+}
+
+export function evaluateMilkdropShaderControlProgram({
+  warp,
+  comp,
+  env,
+}: {
+  warp: string | null;
+  comp: string | null;
+  env: Record<string, number>;
+}) {
+  const warpAnalysis = extractShaderControls(warp, env);
+  const compAnalysis = extractShaderControls(comp, env);
+  return mergeShaderControlAnalysis(warpAnalysis, compAnalysis).controls;
 }
 
 function pickShaderScalar(

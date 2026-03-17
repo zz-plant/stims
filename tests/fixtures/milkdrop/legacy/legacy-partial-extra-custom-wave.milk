@@ -1,7 +1,7 @@
 MILKDROP_PRESET_VERSION=201
 TITLE=Legacy Partial Extra Custom Wave
 AUTHOR=Fixture
-wavecode_8_enabled=1
-wavecode_8_samples=64
-wave_8_per_point1=x=x+0.02;
+wavecode_16_enabled=1
+wavecode_16_samples=64
+wave_16_per_point1=x=x+0.02;
 video_echo=1

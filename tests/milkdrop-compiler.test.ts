@@ -249,6 +249,43 @@ comp_shader=const mix = 0.1; mix += step(0.2, beat_pulse) * 0.15; saturation = l
     expect(compiled.ir.post.shaderControlExpressions.offsetX).not.toBeNull();
   });
 
+  test('supports shader temp variables before control assignment', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Temp Vars
+warp_shader=float drift = bass_att * 0.05; dx = drift; rot = drift * 4
+comp_shader=const pulse = beat_pulse * 0.4; mix = pulse; tint = 1, pulse + 0.2, pulse + 0.4
+      `.trim(),
+      { id: 'shader-temp-vars' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0, 6);
+    expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0, 6);
+  });
+
+  test('supports ninth custom wave and shape definitions', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Extended Custom Slots Nine
+wavecode_8_enabled=1
+wavecode_8_samples=40
+wave_8_per_point1=x=x+0.015;
+shapecode_8_enabled=1
+shapecode_8_sides=11
+shape_8_per_frame1=rad=0.14+bass_att*0.02;
+      `.trim(),
+      { id: 'extended-custom-slots-nine' },
+    );
+
+    expect(compiled.ir.customWaves).toHaveLength(1);
+    expect(compiled.ir.customWaves[0]?.index).toBe(9);
+    expect(compiled.ir.customShapes).toHaveLength(1);
+    expect(compiled.ir.customShapes[0]?.index).toBe(9);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+  });
+
   test('supports fifth custom wave and shape definitions', () => {
     const compiled = compileMilkdropPresetSource(
       `

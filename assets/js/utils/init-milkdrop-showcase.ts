@@ -77,12 +77,14 @@ function buildPresetDescription(entry: MilkdropCatalogEntry) {
     (tag) => !tag.startsWith('collection:'),
   );
   if (!tags.length) {
-    return 'Launch this preset inside the shared browser-native MilkDrop runtime.';
+    return 'Opens this preset inside the shared browser-native MilkDrop Visualizer.';
   }
   return `${tags
     .slice(0, 3)
     .map((tag) => tag.replace(/-/gu, ' '))
-    .join(' · ')} preset in the shared browser-native MilkDrop runtime.`;
+    .join(
+      ' · ',
+    )} preset. Opens inside the shared browser-native MilkDrop Visualizer.`;
 }
 
 function createCollectionButton(
@@ -151,7 +153,7 @@ function createPresetCard(
   const launch = documentRef.createElement('a');
   launch.href = '/toy.html?toy=milkdrop';
   launch.className = 'cta-button primary';
-  launch.textContent = 'Launch with preset';
+  launch.textContent = 'Open in MilkDrop';
   launch.addEventListener('click', () => {
     requestMilkdropPresetSelection(entry.id);
   });
@@ -159,7 +161,7 @@ function createPresetCard(
   const browse = documentRef.createElement('a');
   browse.href = '/toys/milkdrop/';
   browse.className = 'cta-button ghost';
-  browse.textContent = 'Preset browser';
+  browse.textContent = 'MilkDrop page';
 
   actions.append(launch, browse);
   card.append(eyebrow, title, meta, description, tagRow, actions);
@@ -221,7 +223,7 @@ export async function initMilkdropShowcase() {
         ),
       );
 
-      presetCount.textContent = `${entries.length} bundled presets. ${collectionTags.length} quick collections. ${featuredEntries.length} shown from ${collectionLabel}.`;
+      presetCount.textContent = `${entries.length} bundled presets. ${collectionTags.length} quick collections. Showing ${featuredEntries.length} launchable presets from ${collectionLabel}.`;
 
       presetFilters.replaceChildren(
         createCollectionButton(document, {

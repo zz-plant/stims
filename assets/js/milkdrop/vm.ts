@@ -1,4 +1,7 @@
-import { DEFAULT_MILKDROP_STATE } from './compiler';
+import {
+  DEFAULT_MILKDROP_STATE,
+  evaluateMilkdropShaderControlProgram,
+} from './compiler';
 import { evaluateMilkdropExpression } from './expression';
 import type {
   MilkdropBorderVisual,
@@ -18,6 +21,8 @@ import type {
 } from './types';
 
 const MAX_TRAILS = 5;
+const MAX_CUSTOM_WAVE_SLOTS = 16;
+const MAX_CUSTOM_SHAPE_SLOTS = 16;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -231,7 +236,7 @@ class MilkdropPresetVM implements MilkdropVM {
     for (let index = 1; index <= 32; index += 1) {
       this.registers[`q${index}`] = 0;
     }
-    for (let index = 1; index <= 8; index += 1) {
+    for (let index = 1; index <= MAX_CUSTOM_WAVE_SLOTS; index += 1) {
       this.registers[`t${index}`] = 0;
     }
     this.randomState =
@@ -821,7 +826,7 @@ class MilkdropPresetVM implements MilkdropVM {
       (shape): shape is MilkdropShapeVisual => shape !== null,
     );
 
-    for (let index = 1; index <= 8; index += 1) {
+    for (let index = 1; index <= MAX_CUSTOM_SHAPE_SLOTS; index += 1) {
       if (this.preset.ir.customShapes.some((shape) => shape.index === index)) {
         continue;
       }
@@ -939,51 +944,12 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   private buildShaderControls(signals: MilkdropRuntimeSignals) {
-    const controls = this.preset.ir.post.shaderControls;
-    const expressions = this.preset.ir.post.shaderControlExpressions;
     const env = this.createEnv(signals);
-    const evaluate = (
-      expression: typeof expressions.warpScale,
-      fallback: number,
-    ) => {
-      if (!expression) {
-        return fallback;
-      }
-      return evaluateMilkdropExpression(expression, env, {
-        nextRandom: this.nextRandom,
-      });
-    };
-
-    return {
-      warpScale: evaluate(expressions.warpScale, controls.warpScale),
-      offsetX: evaluate(expressions.offsetX, controls.offsetX),
-      offsetY: evaluate(expressions.offsetY, controls.offsetY),
-      rotation: evaluate(expressions.rotation, controls.rotation),
-      zoom: evaluate(expressions.zoom, controls.zoom),
-      saturation: evaluate(expressions.saturation, controls.saturation),
-      contrast: evaluate(expressions.contrast, controls.contrast),
-      colorScale: {
-        r: evaluate(expressions.colorScale.r, controls.colorScale.r),
-        g: evaluate(expressions.colorScale.g, controls.colorScale.g),
-        b: evaluate(expressions.colorScale.b, controls.colorScale.b),
-      },
-      hueShift: evaluate(expressions.hueShift, controls.hueShift),
-      mixAlpha: evaluate(expressions.mixAlpha, controls.mixAlpha),
-      brightenBoost: evaluate(
-        expressions.brightenBoost,
-        controls.brightenBoost,
-      ),
-      invertBoost: evaluate(expressions.invertBoost, controls.invertBoost),
-      solarizeBoost: evaluate(
-        expressions.solarizeBoost,
-        controls.solarizeBoost,
-      ),
-      tint: {
-        r: evaluate(expressions.tint.r, controls.tint.r),
-        g: evaluate(expressions.tint.g, controls.tint.g),
-        b: evaluate(expressions.tint.b, controls.tint.b),
-      },
-    };
+    return evaluateMilkdropShaderControlProgram({
+      warp: this.preset.ir.shaderText.warp,
+      comp: this.preset.ir.shaderText.comp,
+      env,
+    });
   }
 
   private buildPost(signals: MilkdropRuntimeSignals): MilkdropPostVisual {
