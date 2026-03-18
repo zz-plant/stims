@@ -107,4 +107,47 @@ describe('unified input desktop performance state', () => {
     input.dispose();
     target.remove();
   });
+
+  test('polls an already-connected gamepad on startup', async () => {
+    const target = createTarget();
+    const originalGetGamepads = navigator.getGamepads;
+    let latestState: UnifiedInputState | null = null;
+    Object.defineProperty(navigator, 'getGamepads', {
+      configurable: true,
+      value: () => [
+        {
+          connected: true,
+          axes: [0.75, -0.5, 0, 0],
+          buttons: [],
+        },
+      ],
+    });
+
+    const input = createUnifiedInput({
+      target,
+      onInput: (state) => {
+        latestState = state;
+      },
+    });
+
+    await flushInput();
+
+    if (!latestState) {
+      throw new Error(
+        'Expected a unified input state for a connected gamepad.',
+      );
+    }
+    const state = latestState as UnifiedInputState;
+    expect(state.source).toBe('gamepad');
+    expect(state.performance.sourceFlags.gamepad).toBe(true);
+    expect(state.primary?.normalizedX).toBeGreaterThan(0);
+    expect(state.primary?.normalizedY).toBeGreaterThan(0);
+
+    input.dispose();
+    target.remove();
+    Object.defineProperty(navigator, 'getGamepads', {
+      configurable: true,
+      value: originalGetGamepads,
+    });
+  });
 });
