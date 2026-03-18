@@ -33,7 +33,8 @@ interface PreviewItem {
   dispose: () => void;
 }
 
-const PREVIEW_LIMIT = 6;
+const BACKGROUND_FRAME_INTERVAL_MS = 1000 / 30;
+const PREVIEW_FRAME_INTERVAL_MS = 1000 / 24;
 
 export function createLibraryThreeEffects() {
   let backgroundRenderer: WebGLRenderer | null = null;
@@ -44,8 +45,11 @@ export function createLibraryThreeEffects() {
   let pulse = 0;
   let resizeHandler: (() => void) | null = null;
   let previewObserver: IntersectionObserver | null = null;
+  let visibilityHandler: (() => void) | null = null;
   const backgroundColor = new Color(0x0b0d16);
   const previews = new Map<string, PreviewItem>();
+  let lastBackgroundRenderAt = 0;
+  let lastPreviewRenderAt = 0;
 
   const canUseWebGL = () => {
     try {
@@ -62,12 +66,29 @@ export function createLibraryThreeEffects() {
     typeof window !== 'undefined' &&
     typeof document !== 'undefined' &&
     canUseWebGL();
+  const isCompactViewport =
+    typeof window !== 'undefined' && window.innerWidth < 960;
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const previewLimit = prefersReducedMotion ? 0 : isCompactViewport ? 2 : 4;
 
-  const animate = () => {
+  const shouldRender = () =>
+    typeof document === 'undefined' ? true : !document.hidden;
+
+  const animate = (now: number) => {
     animationFrame = window.requestAnimationFrame(animate);
+    if (!shouldRender()) return;
 
-    if (backgroundRenderer && backgroundScene && backgroundCamera) {
-      const time = performance.now() * 0.0002;
+    if (
+      backgroundRenderer &&
+      backgroundScene &&
+      backgroundCamera &&
+      now - lastBackgroundRenderAt >= BACKGROUND_FRAME_INTERVAL_MS
+    ) {
+      lastBackgroundRenderAt = now;
+      const time = now * 0.0002;
       if (backgroundParticles) {
         backgroundParticles.rotation.y = time * (0.18 + pulse * 0.6);
         backgroundParticles.rotation.x = Math.sin(time * 2) * 0.07;
@@ -81,12 +102,15 @@ export function createLibraryThreeEffects() {
       backgroundRenderer.render(backgroundScene, backgroundCamera);
     }
 
-    previews.forEach((item) => {
-      if (!item.isVisible) return;
-      item.mesh.rotation.x += 0.004 + pulse * 0.01;
-      item.mesh.rotation.y += 0.007 + pulse * 0.01;
-      item.renderer.render(item.scene, item.camera);
-    });
+    if (now - lastPreviewRenderAt >= PREVIEW_FRAME_INTERVAL_MS) {
+      lastPreviewRenderAt = now;
+      previews.forEach((item) => {
+        if (!item.isVisible) return;
+        item.mesh.rotation.x += 0.004 + pulse * 0.01;
+        item.mesh.rotation.y += 0.007 + pulse * 0.01;
+        item.renderer.render(item.scene, item.camera);
+      });
+    }
 
     pulse = Math.max(0, pulse * 0.93 - 0.003);
   };
@@ -167,7 +191,7 @@ export function createLibraryThreeEffects() {
             item.isVisible = entry.isIntersecting;
           });
         },
-        { root: null, rootMargin: '120px', threshold: 0.01 },
+        { root: null, rootMargin: '80px', threshold: 0.01 },
       );
     }
 
@@ -178,7 +202,7 @@ export function createLibraryThreeEffects() {
 
     let renderer: WebGLRenderer;
     try {
-      renderer = new WebGLRenderer({ alpha: true, antialias: true });
+      renderer = new WebGLRenderer({ alpha: true, antialias: false });
     } catch (_error) {
       previewRoot.remove();
       return;
@@ -238,7 +262,7 @@ export function createLibraryThreeEffects() {
 
   const syncCardPreviews = (cards: HTMLElement[], toys: ToyLike[]) => {
     const nextKeys = new Set<string>();
-    cards.slice(0, PREVIEW_LIMIT).forEach((card, index) => {
+    cards.slice(0, previewLimit).forEach((card, index) => {
       const toy = toys[index];
       if (!toy) return;
       if (!webglAvailable) return;
@@ -257,7 +281,14 @@ export function createLibraryThreeEffects() {
   return {
     init() {
       createAmbientLayer();
-      animate();
+      visibilityHandler = () => {
+        if (!document.hidden) {
+          lastBackgroundRenderAt = 0;
+          lastPreviewRenderAt = 0;
+        }
+      };
+      document.addEventListener('visibilitychange', visibilityHandler);
+      animationFrame = window.requestAnimationFrame(animate);
     },
     syncCardPreviews,
     triggerLaunchTransition() {
@@ -266,6 +297,10 @@ export function createLibraryThreeEffects() {
     dispose() {
       if (animationFrame) {
         window.cancelAnimationFrame(animationFrame);
+      }
+      if (visibilityHandler) {
+        document.removeEventListener('visibilitychange', visibilityHandler);
+        visibilityHandler = null;
       }
       previews.forEach((preview) => preview.dispose());
       previews.clear();
