@@ -45,7 +45,7 @@ describe('library filter state normalization', () => {
       <div data-active-filters hidden>
         <span data-active-filters-status></span>
         <div data-active-filters-chips></div>
-        <button data-active-filters-clear type="button">Clear all</button>
+        <button data-active-filters-clear type="button">Reset view</button>
       </div>
       <form data-search-form>
         <input id="toy-search" type="search" />
@@ -53,7 +53,7 @@ describe('library filter state normalization', () => {
         <datalist id="toy-search-suggestions"></datalist>
       </form>
       <button data-filter-chip data-filter-type="mood" data-filter-value="calming" type="button">Calm</button>
-      <button data-filter-reset type="button">Reset</button>
+      <button data-filter-reset type="button">Reset view</button>
       <select data-sort-control>
         <option value="featured">Featured</option>
       </select>
@@ -90,7 +90,7 @@ describe('library filter state normalization', () => {
       <div data-active-filters>
         <span data-active-filters-status></span>
         <div data-active-filters-chips></div>
-        <button data-active-filters-clear type="button">Clear all</button>
+        <button data-active-filters-clear type="button">Reset view</button>
       </div>
       <form data-search-form>
         <input id="toy-search" type="search" />
@@ -104,7 +104,7 @@ describe('library filter state normalization', () => {
         <summary>Filters</summary>
         <button data-filter-chip data-filter-type="tag" data-filter-value="mobile" type="button">Mobile</button>
       </details>
-      <button data-filter-reset type="button">Reset</button>
+      <button data-filter-reset type="button">Reset view</button>
       <select data-sort-control>
         <option value="featured">Featured</option>
       </select>
@@ -174,14 +174,14 @@ test('search query filters library cards and persists in the URL', async () => {
     <p data-search-results></p>
     <div data-active-filters>
       <span data-active-filters-status></span>
-      <button data-active-filters-clear type="button">Clear all</button>
+      <button data-active-filters-clear type="button">Reset view</button>
     </div>
     <form data-search-form>
       <input id="toy-search" type="search" />
       <button data-search-clear type="button">Clear</button>
       <datalist id="toy-search-suggestions"></datalist>
     </form>
-    <button data-filter-reset type="button">Reset</button>
+    <button data-filter-reset type="button">Reset view</button>
     <select data-sort-control>
       <option value="featured">Featured</option>
     </select>
@@ -206,6 +206,68 @@ test('search query filters library cards and persists in the URL', async () => {
   expect(window.sessionStorage.getItem('stims-library-state')).toContain(
     '"query":"mobile"',
   );
+});
+
+test('reset view clears active search, filters, and sort chips from the sticky rail', async () => {
+  document.body.innerHTML = `
+    <p data-search-results></p>
+    <div data-active-filters>
+      <span data-active-filters-status></span>
+      <div data-active-filters-chips></div>
+      <button data-active-filters-clear data-filter-reset type="button">Reset view</button>
+    </div>
+    <form data-search-form>
+      <input id="toy-search" type="search" />
+      <button data-search-clear type="button">Clear</button>
+      <datalist id="toy-search-suggestions"></datalist>
+    </form>
+    <details data-library-refine>
+      <summary>More filters</summary>
+      <button data-filter-chip data-filter-type="tag" data-filter-value="mobile" type="button">Mobile</button>
+    </details>
+    <select data-sort-control>
+      <option value="featured">Featured</option>
+      <option value="az">A → Z</option>
+    </select>
+    <div id="toy-list"></div>
+  `;
+
+  const view = createLibraryView({
+    toys,
+    searchInputId: 'toy-search',
+  });
+
+  await view.init();
+
+  const search = document.getElementById('toy-search') as HTMLInputElement;
+  const chip = document.querySelector(
+    '[data-filter-chip]',
+  ) as HTMLButtonElement;
+  const sort = document.querySelector(
+    '[data-sort-control]',
+  ) as HTMLSelectElement;
+
+  search.value = 'mobile';
+  search.dispatchEvent(new Event('input', { bubbles: true }));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  chip.click();
+  sort.value = 'az';
+  sort.dispatchEvent(new Event('change', { bubbles: true }));
+
+  const activeChips = Array.from(
+    document.querySelectorAll('.active-filter-chip'),
+  ).map((node) => node.textContent?.trim());
+  expect(activeChips).toEqual(['Search: mobile', 'Mobile', 'Sort: A → Z']);
+
+  const reset = document.querySelector(
+    '[data-filter-reset]',
+  ) as HTMLButtonElement;
+  reset.click();
+
+  expect(search.value).toBe('');
+  expect(sort.value).toBe('featured');
+  expect(document.querySelectorAll('.active-filter-chip')).toHaveLength(0);
+  expect(document.querySelectorAll('.webtoy-card')).toHaveLength(2);
 });
 
 test('restores search query from URL state on init', async () => {
@@ -235,14 +297,14 @@ test('renders guidance and feel signals instead of setup-heavy badges', async ()
     <p data-search-results></p>
     <div data-active-filters>
       <span data-active-filters-status></span>
-      <button data-active-filters-clear type="button">Clear all</button>
+      <button data-active-filters-clear type="button">Reset view</button>
     </div>
     <form data-search-form>
       <input id="toy-search" type="search" />
       <button data-search-clear type="button">Clear</button>
       <datalist id="toy-search-suggestions"></datalist>
     </form>
-    <button data-filter-reset type="button">Reset</button>
+    <button data-filter-reset type="button">Reset view</button>
     <select data-sort-control>
       <option value="featured">Featured</option>
     </select>
@@ -297,14 +359,14 @@ test('falls back to interaction guidance for motion-led toys', async () => {
     <p data-search-results></p>
     <div data-active-filters>
       <span data-active-filters-status></span>
-      <button data-active-filters-clear type="button">Clear all</button>
+      <button data-active-filters-clear type="button">Reset view</button>
     </div>
     <form data-search-form>
       <input id="toy-search" type="search" />
       <button data-search-clear type="button">Clear</button>
       <datalist id="toy-search-suggestions"></datalist>
     </form>
-    <button data-filter-reset type="button">Reset</button>
+    <button data-filter-reset type="button">Reset view</button>
     <select data-sort-control>
       <option value="featured">Featured</option>
     </select>
