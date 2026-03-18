@@ -30,11 +30,12 @@ interface PreviewItem {
   camera: PerspectiveCamera;
   mesh: Mesh;
   isVisible: boolean;
+  isActive: boolean;
   dispose: () => void;
 }
 
-const BACKGROUND_FRAME_INTERVAL_MS = 1000 / 30;
-const PREVIEW_FRAME_INTERVAL_MS = 1000 / 24;
+const BACKGROUND_FRAME_INTERVAL_MS = 1000 / 20;
+const PREVIEW_FRAME_INTERVAL_MS = 1000 / 12;
 
 export function createLibraryThreeEffects() {
   let backgroundRenderer: WebGLRenderer | null = null;
@@ -72,7 +73,7 @@ export function createLibraryThreeEffects() {
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const previewLimit = prefersReducedMotion ? 0 : isCompactViewport ? 2 : 4;
+  const previewLimit = prefersReducedMotion ? 0 : isCompactViewport ? 1 : 2;
 
   const shouldRender = () =>
     typeof document === 'undefined' ? true : !document.hidden;
@@ -105,7 +106,7 @@ export function createLibraryThreeEffects() {
     if (now - lastPreviewRenderAt >= PREVIEW_FRAME_INTERVAL_MS) {
       lastPreviewRenderAt = now;
       previews.forEach((item) => {
-        if (!item.isVisible) return;
+        if (!item.isVisible || !item.isActive) return;
         item.mesh.rotation.x += 0.004 + pulse * 0.01;
         item.mesh.rotation.y += 0.007 + pulse * 0.01;
         item.renderer.render(item.scene, item.camera);
@@ -116,10 +117,10 @@ export function createLibraryThreeEffects() {
   };
 
   const createAmbientLayer = () => {
-    if (!webglAvailable) return;
+    if (!webglAvailable || prefersReducedMotion || isCompactViewport) return;
     try {
       const renderer = new WebGLRenderer({ alpha: true, antialias: false });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setPixelRatio(1);
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.domElement.className = 'library-three-ambient';
 
@@ -200,6 +201,22 @@ export function createLibraryThreeEffects() {
     previewRoot.dataset.previewKey = key;
     host.prepend(previewRoot);
 
+    let isActive = index === 0;
+    const activate = () => {
+      isActive = true;
+      const item = previews.get(key);
+      if (item) item.isActive = true;
+    };
+    const deactivate = () => {
+      isActive = false;
+      const item = previews.get(key);
+      if (item) item.isActive = false;
+    };
+    previewRoot.addEventListener('pointerenter', activate);
+    previewRoot.addEventListener('focusin', activate);
+    previewRoot.addEventListener('pointerleave', deactivate);
+    previewRoot.addEventListener('focusout', deactivate);
+
     let renderer: WebGLRenderer;
     try {
       renderer = new WebGLRenderer({ alpha: true, antialias: false });
@@ -238,9 +255,14 @@ export function createLibraryThreeEffects() {
     const light = new DirectionalLight(0xffffff, 1.1);
     light.position.copy(new Vector3(2, 3, 3));
     scene.add(light);
+    renderer.render(scene, camera);
 
     const dispose = () => {
       previewObserver?.unobserve(previewRoot);
+      previewRoot.removeEventListener('pointerenter', activate);
+      previewRoot.removeEventListener('focusin', activate);
+      previewRoot.removeEventListener('pointerleave', deactivate);
+      previewRoot.removeEventListener('focusout', deactivate);
       (mesh.geometry as BufferGeometry).dispose();
       (mesh.material as Material).dispose();
       renderer.dispose();
@@ -256,6 +278,7 @@ export function createLibraryThreeEffects() {
       camera,
       mesh,
       isVisible: true,
+      isActive,
       dispose,
     });
   };

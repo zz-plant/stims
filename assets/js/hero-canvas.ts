@@ -74,6 +74,19 @@ export function initHeroCanvas(
     colorScheme = 'cosmic',
   } = config;
 
+  const hardwareConcurrency =
+    typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency ?? 4) : 4;
+  const lowPowerMode = hardwareConcurrency <= 4;
+  const effectiveParticleCount = lowPowerMode
+    ? Math.max(32, Math.round(particleCount * 0.65))
+    : particleCount;
+  const effectiveOrbCount = lowPowerMode
+    ? Math.max(2, Math.round(orbCount * 0.75))
+    : orbCount;
+  const effectiveConnectionDistance = lowPowerMode
+    ? connectionDistance * 0.8
+    : connectionDistance;
+  const maxConnectionsPerFrame = lowPowerMode ? 90 : 180;
   const scheme = COLOR_SCHEMES[colorScheme];
   const particles: Particle[] = [];
   const orbs: GlowOrb[] = [];
@@ -98,7 +111,7 @@ export function initHeroCanvas(
   }
 
   function resize() {
-    const dpr = Math.min(window.devicePixelRatio, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, lowPowerMode ? 1 : 1.5);
     const rect = canvas.getBoundingClientRect();
     width = rect.width;
     height = rect.height;
@@ -114,7 +127,7 @@ export function initHeroCanvas(
 
   function initParticles() {
     particles.length = 0;
-    for (let i = 0; i < particleCount; i++) {
+    for (let i = 0; i < effectiveParticleCount; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -133,7 +146,7 @@ export function initHeroCanvas(
 
   function initOrbs() {
     orbs.length = 0;
-    for (let i = 0; i < orbCount; i++) {
+    for (let i = 0; i < effectiveOrbCount; i++) {
       const x = Math.random() * width;
       const y = Math.random() * height;
       orbs.push({
@@ -142,7 +155,9 @@ export function initHeroCanvas(
         targetX: x,
         targetY: y,
         radius: 150 + Math.random() * 200,
-        hue: scheme.baseHue + (i / orbCount) * scheme.hueRange * 2,
+        hue:
+          scheme.baseHue +
+          (i / Math.max(effectiveOrbCount, 1)) * scheme.hueRange * 2,
         alpha: 0.08 + Math.random() * 0.08,
         speed: 0.001 + Math.random() * 0.002,
       });
@@ -212,6 +227,14 @@ export function initHeroCanvas(
   function drawOrbs() {
     if (!ctx) return;
     for (const orb of orbs) {
+      if (lowPowerMode) {
+        ctx.beginPath();
+        ctx.arc(orb.x, orb.y, orb.radius * 0.65, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${orb.hue}, 75%, 56%, ${orb.alpha * 0.45})`;
+        ctx.fill();
+        continue;
+      }
+
       const gradient = ctx.createRadialGradient(
         orb.x,
         orb.y,
@@ -240,8 +263,9 @@ export function initHeroCanvas(
   function drawConnections() {
     if (!ctx) return;
     ctx.lineWidth = 0.5;
-    const cellSize = connectionDistance;
-    const connectionDistanceSquared = connectionDistance * connectionDistance;
+    const cellSize = effectiveConnectionDistance;
+    const connectionDistanceSquared =
+      effectiveConnectionDistance * effectiveConnectionDistance;
     particleGrid.clear();
 
     for (const particle of particles) {
@@ -256,6 +280,7 @@ export function initHeroCanvas(
       }
     }
 
+    let renderedConnections = 0;
     for (const [key, bucket] of particleGrid) {
       const [cellX, cellY] = key.split(',').map(Number);
       for (const particle of bucket) {
@@ -266,6 +291,9 @@ export function initHeroCanvas(
           if (!neighborBucket) continue;
 
           for (const neighbor of neighborBucket) {
+            if (renderedConnections >= maxConnectionsPerFrame) {
+              return;
+            }
             if (neighbor === particle) continue;
             if (
               neighbor.x < particle.x ||
@@ -280,13 +308,14 @@ export function initHeroCanvas(
             if (distSquared >= connectionDistanceSquared) continue;
 
             const dist = Math.sqrt(distSquared);
-            const alpha = (1 - dist / connectionDistance) * 0.15;
+            const alpha = (1 - dist / effectiveConnectionDistance) * 0.15;
             const hue = (particle.hue + neighbor.hue) / 2;
             ctx.strokeStyle = `hsla(${hue}, ${scheme.saturation}%, ${scheme.lightness}%, ${alpha})`;
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(neighbor.x, neighbor.y);
             ctx.stroke();
+            renderedConnections += 1;
           }
         }
       }
@@ -300,34 +329,34 @@ export function initHeroCanvas(
       const radius = p.radius * pulse;
       const alpha = p.alpha * (0.7 + pulse * 0.3);
 
-      // Glow effect
-      const gradient = ctx.createRadialGradient(
-        p.x,
-        p.y,
-        0,
-        p.x,
-        p.y,
-        radius * 3,
-      );
-      gradient.addColorStop(
-        0,
-        `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${alpha})`,
-      );
-      gradient.addColorStop(
-        0.4,
-        `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${alpha * 0.4})`,
-      );
-      gradient.addColorStop(1, 'transparent');
+      if (!lowPowerMode) {
+        const gradient = ctx.createRadialGradient(
+          p.x,
+          p.y,
+          0,
+          p.x,
+          p.y,
+          radius * 3,
+        );
+        gradient.addColorStop(
+          0,
+          `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${alpha})`,
+        );
+        gradient.addColorStop(
+          0.4,
+          `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${alpha * 0.4})`,
+        );
+        gradient.addColorStop(1, 'transparent');
 
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, radius * 3, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
-      ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius * 3, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
 
-      // Core
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness + 20}%, ${alpha + 0.2})`;
+      ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness + 20}%, ${lowPowerMode ? alpha * 0.85 : alpha + 0.2})`;
       ctx.fill();
     }
   }
@@ -346,7 +375,9 @@ export function initHeroCanvas(
     }
 
     drawOrbs();
-    drawConnections();
+    if (!lowPowerMode || time % 2 === 0) {
+      drawConnections();
+    }
     drawParticles();
   }
 

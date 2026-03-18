@@ -179,7 +179,6 @@ export function createUnifiedInput({
   let lastPrimary: UnifiedPointer | null = null;
   let isPressed = false;
   let inputFrameId: number | null = null;
-  let gamepadFrameId: number | null = null;
   let lastSource: InputSource = 'none';
   let lastGamepadConnected = false;
   let wheelDelta = 0;
@@ -699,7 +698,7 @@ export function createUnifiedInput({
     if (
       keyState.size > 0 ||
       activePointers.size > 0 ||
-      (gamepadEnabled && getPrimaryGamepad()) ||
+      canPollGamepad() ||
       Math.abs(wheelDelta) > PERFORMANCE_WHEEL_MIN ||
       Math.abs(wheelAccum) > PERFORMANCE_WHEEL_MIN ||
       Object.values(actionLastTriggeredAt).some(
@@ -726,34 +725,10 @@ export function createUnifiedInput({
     return () => subscribers.delete(handler);
   };
 
-  const stopGamepadPolling = () => {
-    if (gamepadFrameId != null) {
-      cancelAnimationFrame(gamepadFrameId);
-      gamepadFrameId = null;
-    }
-  };
-
-  const pollGamepad = () => {
-    if (!canPollGamepad()) {
-      stopGamepadPolling();
-      return;
-    }
-    scheduleFrame();
-    gamepadFrameId = requestAnimationFrame(pollGamepad);
-  };
-
-  const ensureGamepadPolling = () => {
-    if (!canPollGamepad() || gamepadFrameId != null) return;
-    gamepadFrameId = requestAnimationFrame(pollGamepad);
-  };
-
   const handleGamepadConnectionChange = () => {
     if (canPollGamepad()) {
-      ensureGamepadPolling();
       scheduleFrame();
-      return;
     }
-    stopGamepadPolling();
   };
 
   const handleVisibilityChange = () => {
@@ -763,11 +738,9 @@ export function createUnifiedInput({
         cancelAnimationFrame(inputFrameId);
         inputFrameId = null;
       }
-      stopGamepadPolling();
       return;
     }
     scheduleFrame();
-    ensureGamepadPolling();
   };
 
   if (gamepadEnabled) {
@@ -779,14 +752,12 @@ export function createUnifiedInput({
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVisibilityChange);
     }
-    ensureGamepadPolling();
   }
 
   const dispose = () => {
     if (inputFrameId != null) {
       cancelAnimationFrame(inputFrameId);
     }
-    stopGamepadPolling();
     resizeObserver?.disconnect();
     if (!resizeObserver) {
       window.removeEventListener('resize', handleWindowResize);

@@ -163,7 +163,7 @@ function createFeedbackRenderTarget(
   height: number,
   backend: 'webgl' | 'webgpu',
 ) {
-  const resolutionScale = backend === 'webgpu' ? 1.5 : 1.1;
+  const resolutionScale = backend === 'webgpu' ? 1 : 0.85;
   const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
   const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
   const target = new WebGLRenderTarget(scaledWidth, scaledHeight, {
@@ -175,7 +175,7 @@ function createFeedbackRenderTarget(
         }
       : {}),
   });
-  target.samples = backend === 'webgpu' ? 4 : 2;
+  target.samples = backend === 'webgpu' ? 2 : 0;
   return target;
 }
 
@@ -597,7 +597,7 @@ class FeedbackManager {
 
   constructor(width: number, height: number, backend: 'webgl' | 'webgpu') {
     this.camera.position.z = 1;
-    this.resolutionScale = backend === 'webgpu' ? 1.5 : 1.1;
+    this.resolutionScale = backend === 'webgpu' ? 1 : 0.85;
     this.sceneTarget = createFeedbackRenderTarget(width, height, backend);
     this.targets = [
       createFeedbackRenderTarget(width, height, backend),
@@ -816,6 +816,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly blendBorderGroup = new Group();
   private readonly blendMotionVectorGroup = new Group();
   private readonly feedback: FeedbackManager | null;
+  private readonly colorScaleScratch = new Color(1, 1, 1);
+  private readonly tintScratch = new Color(1, 1, 1);
 
   constructor({
     scene,
@@ -1067,11 +1069,13 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       payload.frameState.post.shaderControls.saturation;
     this.feedback.compositeMaterial.uniforms.contrast.value =
       payload.frameState.post.shaderControls.contrast;
-    this.feedback.compositeMaterial.uniforms.colorScale.value = new Color(
+    this.colorScaleScratch.setRGB(
       payload.frameState.post.shaderControls.colorScale.r,
       payload.frameState.post.shaderControls.colorScale.g,
       payload.frameState.post.shaderControls.colorScale.b,
     );
+    this.feedback.compositeMaterial.uniforms.colorScale.value =
+      this.colorScaleScratch;
     this.feedback.compositeMaterial.uniforms.hueShift.value =
       payload.frameState.post.shaderControls.hueShift;
     this.feedback.compositeMaterial.uniforms.brightenBoost.value =
@@ -1080,11 +1084,12 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       payload.frameState.post.shaderControls.invertBoost;
     this.feedback.compositeMaterial.uniforms.solarizeBoost.value =
       payload.frameState.post.shaderControls.solarizeBoost;
-    this.feedback.compositeMaterial.uniforms.tint.value = new Color(
+    this.tintScratch.setRGB(
       payload.frameState.post.shaderControls.tint.r,
       payload.frameState.post.shaderControls.tint.g,
       payload.frameState.post.shaderControls.tint.b,
     );
+    this.feedback.compositeMaterial.uniforms.tint.value = this.tintScratch;
 
     this.renderer.setRenderTarget(this.feedback.sceneTarget);
     this.renderer.render(this.scene, this.camera);

@@ -62,6 +62,9 @@ export default class WebToy {
   viewportResizeHandler: (() => void) | null;
   viewportWidth: number;
   viewportHeight: number;
+  viewportCssWidth: number;
+  viewportCssHeight: number;
+  resizeFrameId: number | null;
 
   constructor({
     cameraOptions = {},
@@ -128,19 +131,22 @@ export default class WebToy {
     this.viewportResizeHandler = null;
     this.viewportWidth = window.innerWidth;
     this.viewportHeight = window.innerHeight;
+    this.viewportCssWidth = window.innerWidth;
+    this.viewportCssHeight = window.innerHeight;
+    this.resizeFrameId = null;
 
     if (typeof ResizeObserver !== 'undefined' && this.container) {
       this.resizeObserver = new ResizeObserver(() => {
-        this.handleResize();
+        this.scheduleResize();
       });
       this.resizeObserver.observe(this.container);
     } else {
-      this.resizeHandler = () => this.handleResize();
+      this.resizeHandler = () => this.scheduleResize();
       window.addEventListener('resize', this.resizeHandler);
     }
 
     if (window.visualViewport) {
-      this.viewportResizeHandler = () => this.handleResize();
+      this.viewportResizeHandler = () => this.scheduleResize();
       window.visualViewport.addEventListener(
         'resize',
         this.viewportResizeHandler,
@@ -154,26 +160,51 @@ export default class WebToy {
     defaultToyLifecycle.adoptActiveToy(this);
   }
 
+  scheduleResize() {
+    if (this.resizeFrameId !== null) return;
+    this.resizeFrameId = window.requestAnimationFrame(() => {
+      this.resizeFrameId = null;
+      this.handleResize();
+    });
+  }
+
   handleResize() {
     const visualViewport = window.visualViewport;
-    const viewportWidth = visualViewport?.width ?? window.innerWidth;
-    const viewportHeight = visualViewport?.height ?? window.innerHeight;
+    const viewportWidth = Math.max(
+      1,
+      Math.round(visualViewport?.width ?? window.innerWidth),
+    );
+    const viewportHeight = Math.max(
+      1,
+      Math.round(visualViewport?.height ?? window.innerHeight),
+    );
     let width = viewportWidth;
     let height = viewportHeight;
 
     if (this.container && this.container !== document.body) {
-      width = this.container.clientWidth;
-      height = this.container.clientHeight;
+      width = Math.max(1, this.container.clientWidth);
+      height = Math.max(1, this.container.clientHeight);
     }
 
-    document.documentElement.style.setProperty(
-      '--app-height',
-      `${viewportHeight}px`,
-    );
-    document.documentElement.style.setProperty(
-      '--app-width',
-      `${viewportWidth}px`,
-    );
+    const viewportChanged =
+      viewportWidth !== this.viewportCssWidth ||
+      viewportHeight !== this.viewportCssHeight;
+    if (viewportChanged) {
+      this.viewportCssWidth = viewportWidth;
+      this.viewportCssHeight = viewportHeight;
+      document.documentElement.style.setProperty(
+        '--app-height',
+        `${viewportHeight}px`,
+      );
+      document.documentElement.style.setProperty(
+        '--app-width',
+        `${viewportWidth}px`,
+      );
+    }
+
+    if (width === this.viewportWidth && height === this.viewportHeight) {
+      return;
+    }
 
     this.viewportWidth = width;
     this.viewportHeight = height;
@@ -227,6 +258,11 @@ export default class WebToy {
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
       this.resizeHandler = null;
+    }
+
+    if (this.resizeFrameId !== null) {
+      window.cancelAnimationFrame(this.resizeFrameId);
+      this.resizeFrameId = null;
     }
 
     if (this.viewportResizeHandler && window.visualViewport) {
