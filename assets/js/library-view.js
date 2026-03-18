@@ -1376,26 +1376,6 @@ export function createLibraryView({
       });
     }
 
-    const shortcutsToggle = document.querySelector(
-      '[data-search-shortcuts-toggle]',
-    );
-    const shortcutsHint = document.getElementById('toy-search-hint');
-    if (
-      shortcutsToggle instanceof HTMLElement &&
-      shortcutsToggle.tagName === 'BUTTON' &&
-      shortcutsHint
-    ) {
-      shortcutsToggle.addEventListener('click', () => {
-        const expanded =
-          shortcutsToggle.getAttribute('aria-expanded') === 'true';
-        shortcutsToggle.setAttribute(
-          'aria-expanded',
-          expanded ? 'false' : 'true',
-        );
-        shortcutsHint.hidden = expanded;
-      });
-    }
-
     const clearButton = ensureSearchClearButton();
     if (
       clearButton instanceof HTMLElement &&

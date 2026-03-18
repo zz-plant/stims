@@ -2,7 +2,6 @@ import type { ToyEntry } from '../data/toy-schema.ts';
 import { createLibraryView } from '../library-view.js';
 import type { createLoader } from '../loader.ts';
 import { initNavigation as initTopNav } from '../ui/nav.ts';
-import { initHeroReadinessSummary } from '../utils/init-hero-readiness.ts';
 import { initLibraryView } from '../utils/init-library.ts';
 import { initMilkdropShowcase } from '../utils/init-milkdrop-showcase.ts';
 import { initNavScrollEffects } from '../utils/init-nav-scroll.ts';
@@ -66,7 +65,6 @@ export function bootLibraryPage({
 
   runInit('quickstart CTA', () => initQuickstartCta({ loadToy }));
   runInit('milkdrop showcase', initMilkdropShowcase);
-  runInit('hero readiness summary', initHeroReadinessSummary);
   runInit('nav scroll effects', initNavScrollEffects);
   runInit('system check', initSystemCheck);
   runInit('stim builder', initStimBuilder);
