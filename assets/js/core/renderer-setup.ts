@@ -50,7 +50,7 @@ export async function initRenderer(
   config: RendererInitConfig = {
     antialias: true,
     exposure: 1,
-    maxPixelRatio: 2,
+    maxPixelRatio: isMobileUserAgent ? 1.25 : 1.5,
     alpha: false,
     renderScale: 1,
   },
@@ -62,7 +62,7 @@ export async function initRenderer(
   const {
     antialias = true,
     exposure = 1,
-    maxPixelRatio = 2,
+    maxPixelRatio = isMobileUserAgent ? 1.25 : 1.5,
     alpha = false,
     renderScale = 1,
   } = config;
@@ -77,6 +77,7 @@ export async function initRenderer(
     const effectivePixelRatio = Math.min(
       (window.devicePixelRatio || 1) * renderScale,
       adaptiveMaxPixelRatio,
+      isMobileUserAgent ? 1.25 : 1.5,
     );
     renderer.setPixelRatio(effectivePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);

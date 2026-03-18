@@ -519,9 +519,9 @@ video_echo=1
     ).feedback;
 
     expect(feedback).not.toBeNull();
-    expect(feedback?.sceneTarget.width).toBe(960);
-    expect(feedback?.sceneTarget.height).toBe(540);
-    expect(feedback?.sceneTarget.samples).toBe(4);
+    expect(feedback?.sceneTarget.width).toBe(640);
+    expect(feedback?.sceneTarget.height).toBe(360);
+    expect(feedback?.sceneTarget.samples).toBe(2);
     expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
   });
 
@@ -570,9 +570,9 @@ video_echo=1
     ).feedback;
 
     expect(feedback).not.toBeNull();
-    expect(feedback?.sceneTarget.width).toBe(704);
-    expect(feedback?.sceneTarget.height).toBe(396);
-    expect(feedback?.sceneTarget.samples).toBe(2);
+    expect(feedback?.sceneTarget.width).toBe(544);
+    expect(feedback?.sceneTarget.height).toBe(306);
+    expect(feedback?.sceneTarget.samples).toBe(0);
     expect(feedback?.sceneTarget.texture.type).not.toBe(HalfFloatType);
     expect(feedback?.sceneTarget.texture.minFilter).toBe(LinearFilter);
     expect(feedback?.sceneTarget.texture.magFilter).toBe(LinearFilter);

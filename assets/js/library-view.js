@@ -43,6 +43,8 @@ export function createLibraryView({
   let lastRenderedQuery = '';
   let suggestionSignature = '';
   let renderedCardMap = new Map();
+  let toyBySlug = new Map();
+  let toySearchMetadata = new Map();
   const filterLabelCache = new Map();
   const activeFilters = new Set();
   const threeEffects = createLibraryThreeEffects();
@@ -63,6 +65,41 @@ export function createLibraryView({
   } = createLibraryDomCache(document);
 
   const getToyList = () => document.getElementById(targetId);
+  const getToyKey = (toy, index = 0) => toy?.slug ?? `toy-${index}`;
+
+  const buildToySearchMetadata = (toy) => {
+    const tags = (toy.tags ?? []).map((tag) => tag.toLowerCase());
+    const moods = (toy.moods ?? []).map((mood) => mood.toLowerCase());
+    const flags = [
+      toy.requiresWebGPU ? 'webgpu webgl gpu' : '',
+      toy.capabilities?.microphone ? 'microphone mic live audio' : '',
+      toy.capabilities?.demoAudio ? 'demo audio preview starter' : '',
+      toy.capabilities?.motion ? 'motion tilt gyro mobile' : '',
+    ]
+      .filter(Boolean)
+      .map((value) => value.toLowerCase());
+
+    const fields = {
+      title: toy.title?.toLowerCase() ?? '',
+      slug: toy.slug?.toLowerCase() ?? '',
+      description: toy.description?.toLowerCase() ?? '',
+      tags,
+      moods,
+      flags,
+    };
+
+    return {
+      fields,
+      searchHaystacks: [
+        fields.title,
+        fields.slug,
+        fields.description,
+        ...tags,
+        ...moods,
+        ...flags,
+      ].filter(Boolean),
+    };
+  };
 
   const syncRefineDisclosure = () => {
     const refine = ensureLibraryRefine();
@@ -95,7 +132,7 @@ export function createLibraryView({
     }
   };
 
-  const getOriginalIndex = (toy) => originalOrder.get(toy.slug) ?? 0;
+  const getOriginalIndex = (toy) => originalOrder.get(getToyKey(toy)) ?? 0;
   const getFeaturedRank = (toy) =>
     Number.isFinite(toy.featuredRank)
       ? toy.featuredRank
@@ -508,19 +545,21 @@ export function createLibraryView({
   const getMatchedFields = (toy, queryTokens) => {
     if (!queryTokens.length) return [];
 
+    const metadata = toySearchMetadata.get(getToyKey(toy));
+    const fields = metadata?.fields;
+    if (!fields) return [];
+
     const matchedSources = new Set();
     queryTokens.forEach((token) => {
-      if (toy.title?.toLowerCase().includes(token)) matchedSources.add('Title');
-      if (toy.slug?.toLowerCase().includes(token)) matchedSources.add('Slug');
-      if (toy.description?.toLowerCase().includes(token)) {
+      if (fields.title.includes(token)) matchedSources.add('Title');
+      if (fields.slug.includes(token)) matchedSources.add('Slug');
+      if (fields.description.includes(token)) {
         matchedSources.add('Description');
       }
-      if ((toy.tags ?? []).some((tag) => tag.toLowerCase().includes(token))) {
+      if (fields.tags.some((tag) => tag.includes(token))) {
         matchedSources.add('Tags');
       }
-      if (
-        (toy.moods ?? []).some((mood) => mood.toLowerCase().includes(token))
-      ) {
+      if (fields.moods.some((mood) => mood.includes(token))) {
         matchedSources.add('Moods');
       }
       if (toy.requiresWebGPU && 'webgpu'.includes(token)) {
@@ -540,23 +579,10 @@ export function createLibraryView({
     return Array.from(matchedSources).slice(0, 3);
   };
 
-  const matchesSearchQuery = (toy, query) => {
-    const queryTokens = getQueryTokens(query);
+  const matchesSearchQuery = (toy, queryTokens) => {
     if (queryTokens.length === 0) return true;
-
-    const searchHaystacks = [
-      toy.title,
-      toy.slug,
-      toy.description,
-      ...(toy.tags ?? []),
-      ...(toy.moods ?? []),
-      toy.requiresWebGPU ? 'webgpu webgl gpu' : '',
-      toy.capabilities?.microphone ? 'microphone mic live audio' : '',
-      toy.capabilities?.demoAudio ? 'demo audio preview starter' : '',
-      toy.capabilities?.motion ? 'motion tilt gyro mobile' : '',
-    ]
-      .filter(Boolean)
-      .map((value) => value.toLowerCase());
+    const metadata = toySearchMetadata.get(getToyKey(toy));
+    const searchHaystacks = metadata?.searchHaystacks ?? [];
 
     return queryTokens.every((token) =>
       searchHaystacks.some((field) => field.includes(token)),
@@ -564,11 +590,13 @@ export function createLibraryView({
   };
 
   const computeFilteredToys = () => {
+    const queryTokens = getQueryTokens(searchQuery);
+    const filterTokens = Array.from(activeFilters);
     const filtered = allToys.filter((toy) => {
       const matchesChips =
-        activeFilters.size === 0 ||
-        Array.from(activeFilters).every((token) => matchesFilter(toy, token));
-      return matchesChips && matchesSearchQuery(toy, searchQuery);
+        filterTokens.length === 0 ||
+        filterTokens.every((token) => matchesFilter(toy, token));
+      return matchesChips && matchesSearchQuery(toy, queryTokens);
     });
 
     return sortList(filtered);
@@ -584,7 +612,16 @@ export function createLibraryView({
   const setToys = (nextToys = []) => {
     allToys = nextToys;
     originalOrder = new Map(
-      nextToys.map((toy, index) => [toy.slug ?? `toy-${index}`, index]),
+      nextToys.map((toy, index) => [getToyKey(toy, index), index]),
+    );
+    toyBySlug = new Map(
+      nextToys.filter((toy) => toy.slug).map((toy) => [toy.slug, toy]),
+    );
+    toySearchMetadata = new Map(
+      nextToys.map((toy, index) => [
+        getToyKey(toy, index),
+        buildToySearchMetadata(toy),
+      ]),
     );
     populateSearchSuggestions();
   };
@@ -810,7 +847,7 @@ export function createLibraryView({
 
     const recentSlugs = getRecentToySlugs(3);
     const recentToys = recentSlugs
-      .map((slug) => allToys.find((toy) => toy.slug === slug))
+      .map((slug) => toyBySlug.get(slug))
       .filter(Boolean);
 
     if (recentToys.length > 0) {
@@ -837,7 +874,7 @@ export function createLibraryView({
     }
   };
 
-  const createCard = (toy) => {
+  const createCard = (toy, queryTokens = []) => {
     const card = document.createElement(cardElement);
     card.className = 'webtoy-card';
     if (toy.slug) {
@@ -896,7 +933,7 @@ export function createLibraryView({
       card.appendChild(guidanceNode);
     }
 
-    const matchedFields = getMatchedFields(toy, getQueryTokens(searchQuery));
+    const matchedFields = getMatchedFields(toy, queryTokens);
     if (matchedFields.length > 0) {
       const matches = document.createElement('p');
       matches.className = 'webtoy-card-match';
@@ -973,20 +1010,6 @@ export function createLibraryView({
       card.appendChild(actions);
     }
 
-    card.addEventListener('click', (event) => {
-      event.stopPropagation();
-      handleOpenToy(toy, event);
-    });
-
-    if (enableKeyboardHandlers) {
-      card.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          handleOpenToy(toy, event);
-        }
-      });
-    }
-
     return card;
   };
 
@@ -1014,10 +1037,37 @@ export function createLibraryView({
       if (!(card instanceof HTMLElement)) return;
       const slug = card.dataset.toySlug;
       if (!slug) return;
-      const toy = allToys.find((entry) => entry.slug === slug);
+      const toy = toyBySlug.get(slug);
       if (!toy) return;
       handleOpenToy(toy, event);
     });
+    if (enableKeyboardHandlers) {
+      list.addEventListener('keydown', (event) => {
+        const target =
+          event.target && typeof event.target === 'object'
+            ? event.target
+            : null;
+        const card =
+          target && 'closest' in target
+            ? target.closest?.('.webtoy-card')
+            : null;
+        if (!(card instanceof HTMLElement)) return;
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        if (
+          target instanceof HTMLElement &&
+          target !== card &&
+          target.closest('button, a, input, select, textarea, summary')
+        ) {
+          return;
+        }
+        const slug = card.dataset.toySlug;
+        if (!slug) return;
+        const toy = toyBySlug.get(slug);
+        if (!toy) return;
+        event.preventDefault();
+        handleOpenToy(toy, event);
+      });
+    }
   };
 
   const createEmptyState = () => {
@@ -1132,9 +1182,10 @@ export function createLibraryView({
     renderGrowthPanels(fragment);
     const nextCardMap = new Map();
     const cards = [];
+    const queryTokens = getQueryTokens(searchQuery);
     listToRender.forEach((toy, index) => {
-      const key = toy.slug ?? `toy-${index}`;
-      const card = renderedCardMap.get(key) ?? createCard(toy);
+      const key = getToyKey(toy, index);
+      const card = renderedCardMap.get(key) ?? createCard(toy, queryTokens);
       applyCardMotionVariant(card, index);
       nextCardMap.set(key, card);
       cards.push(card);
