@@ -23,7 +23,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Theme toggle**: A dark-mode toggle persists preference in local storage and uses view transitions when available.
 
 ### Intro hero
-- **Quickstart CTA**: Primary launch deep-links to `toy.html?toy=milkdrop`.
+- **Quickstart CTA**: One primary homepage launch CTA deep-links to `toy.html?toy=milkdrop` and sets expectation that a short system check opens first.
 - **Readiness summary**: “Ready • <performance> • <compatibility>” reacts to performance settings and renderer compatibility.
 - **System check entry**: “Adjust performance” button opens the preflight dialog and deep-links to the system check section.
 - **Claim posture**: Copy uses careful lineage language and does not claim blanket legacy compatibility.
@@ -41,9 +41,10 @@ This document captures the **current, shipped feature set** of Stims as implemen
 ### Search, filters, and sorting
 - **Search**: Broader toy-lab input supports keyword matching across title, slug, description, tags, moods, and capability terms.
 - **Suggestions**: Datalist is populated from toy metadata (title, tags, moods, capability terms, WebGPU).
-- **Filters**: Chips for moods (Calm/Energetic), capabilities (Microphone/Motion/Demo audio), and WebGPU feature.
+- **Filters**: Quick chips and disclosure-based refinement share one state model, with applied search/filter/sort chips rendered into a sticky rail while scrolling.
 - **Sort controls**: Featured, Newest, Most immersive, and A → Z.
-- **Empty state**: If no matches, a reset button clears search + filters.
+- **Canonical reset**: Discovery uses one consistent “Reset view” action for sticky rail recovery and empty-state recovery.
+- **Empty state**: If no matches, a reset button clears the current discovery state and keeps suggestion chips secondary on narrow screens.
 - **State persistence**: Search, filters, and sort persist in session storage and URL query params (`q`, `filters`, `sort`).
 
 ### Toy cards
@@ -69,12 +70,18 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Back to library**: Returns to the library view.
 
 ### Audio controls
-- **Primary options**: Live mic or curated demo audio.
+- **Primary options**: Live mic or demo audio, with one focused path visually emphasized at a time.
+- **First-run hinting**: A single dismissible “Try this first” recommendation is synthesized from toy metadata (`firstRunHint`, `starterPreset`, `wowControl`, `recommendedCapability`).
 - **Advanced options**:
   - Tab capture (share current tab audio).
   - YouTube capture (load a YouTube URL, then capture tab audio).
-- **Status feedback**: Inline status area shows success/error states.
+- **Status feedback**: Inline status area uses the same launch/status vocabulary as the homepage and preflight flow.
 - **Preference persistence**: Stores last-used source in session storage (`stims-audio-source`), advanced panel state in `stims-audio-advanced-open`.
+
+### Capability preflight
+- **Linear launch step**: The toy shell preflight is framed as “Step 1 of 2 · System check” with one primary CTA (`Continue to audio setup`) when the toy can run.
+- **Progressive disclosure**: Diagnostics remain collapsed behind a disclosure by default.
+- **Fallback path**: Blocking states surface one clear library return path and keep compatible-browsing recovery obvious.
 
 ### YouTube capture
 - **Iframe API loader**: Lazy-loads the YouTube API script.

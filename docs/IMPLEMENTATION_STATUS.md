@@ -14,8 +14,8 @@ This document is the consolidated source for implementation progress across road
 
 ## Active priorities
 
-- [ ] Toy onboarding quick wins (presets / first-time hints).
-- [ ] Toy-page touch polish (clearer gesture hints and affordances).
+- [x] Toy onboarding quick wins (presets / first-time hints).
+- [x] Toy-page touch polish (clearer gesture hints and affordances).
 
 ## Refactor milestone tracking
 
@@ -46,20 +46,20 @@ This document is the consolidated source for implementation progress across road
 
 ### Now (1 sprint)
 
-- [ ] Keep filter/refine state obvious on mobile and during scroll.
-- [ ] Reduce first-view library control density.
-- [ ] Simplify preflight/error states to one primary CTA.
+- [x] Keep filter/refine state obvious on mobile and during scroll.
+- [x] Reduce first-view library control density.
+- [x] Simplify preflight/error states to one primary CTA.
 
 ### Next (1–2 sprints)
 
-- [ ] Move diagnostics/technical language behind progressive disclosure.
-- [ ] Reorder mobile layout to prioritize delight/launch before utility rails.
-- [ ] Normalize status taxonomy across home and toy shell.
+- [x] Move diagnostics/technical language behind progressive disclosure.
+- [x] Reorder mobile layout to prioritize delight/launch before utility rails.
+- [x] Normalize status taxonomy across home and toy shell.
 
 ### Later
 
 - [ ] Personalize launch defaults from prior successful sessions.
-- [ ] Add lightweight dismissible onboarding hints.
+- [x] Add lightweight dismissible onboarding hints.
 - [ ] A/B test hero-only launch vs hero + quick-start variants.
 
 ## Maintenance notes

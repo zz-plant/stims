@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { initAudioControls } from '../assets/js/ui/audio-controls.ts';
+import {
+  buildTryThisFirstRecommendation,
+  initAudioControls,
+} from '../assets/js/ui/audio-controls.ts';
 import { YouTubeController } from '../assets/js/ui/youtube-controller.ts';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -88,7 +91,9 @@ describe('audio controls primary emphasis', () => {
       onRequestDemoAudio: async () => {},
     });
 
-    expect(container.textContent).toContain('Mic is live. Demo is instant.');
+    expect(container.textContent).toContain(
+      'Live mic is responsive. Demo audio is instant.',
+    );
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
     const demoBadge = container.querySelector('[data-recommended-for="demo"]');
@@ -115,7 +120,7 @@ describe('audio controls primary emphasis', () => {
 
     expect(onboardingHelp.open).toBe(false);
     expect(advancedInputs.open).toBe(false);
-    expect(onboardingHelp.textContent).toContain('Tips');
+    expect(onboardingHelp.textContent).toContain('More guidance');
     expect(advancedInputs.textContent).toContain('Advanced inputs');
   });
 
@@ -212,7 +217,7 @@ describe('audio controls primary emphasis', () => {
     expect(desktopHints?.textContent).toContain('Move to steer');
     expect(touchHints?.hidden).toBe(true);
   });
-  test('does not auto-hide first steps before user dismisses it', () => {
+  test('does not auto-hide the try-this-first spotlight before user dismisses it', () => {
     const container = document.createElement('section');
     const originalSetTimeout = window.setTimeout;
     let timeoutCalls = 0;
@@ -227,7 +232,7 @@ describe('audio controls primary emphasis', () => {
     });
 
     const firstSteps = container.querySelector(
-      '[data-first-steps]',
+      '[data-quickstart-spotlight]',
     ) as HTMLElement;
     expect(firstSteps.hidden).toBe(false);
     expect(timeoutCalls).toBe(0);
@@ -235,7 +240,7 @@ describe('audio controls primary emphasis', () => {
     window.setTimeout = originalSetTimeout;
   });
 
-  test('renders and dismisses the first-steps onboarding strip', () => {
+  test('renders and dismisses the try-this-first spotlight', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -245,16 +250,16 @@ describe('audio controls primary emphasis', () => {
     });
 
     const firstSteps = container.querySelector(
-      '[data-first-steps]',
+      '[data-quickstart-spotlight]',
     ) as HTMLElement;
     expect(firstSteps.hidden).toBe(false);
-    expect(firstSteps.textContent).toContain('First steps');
+    expect(firstSteps.textContent).toContain('Try this first');
     expect(firstSteps.textContent).toContain(
       'Try turning the main knob slowly for smoother motion.',
     );
 
     const dismiss = container.querySelector(
-      '[data-dismiss-first-steps]',
+      '[data-dismiss-quickstart-spotlight]',
     ) as HTMLButtonElement;
     dismiss.click();
 
@@ -298,7 +303,21 @@ describe('audio controls primary emphasis', () => {
       value: mediaDevices,
     });
   });
-  test('renders quick-start tips with a dismiss action and persists dismissal', () => {
+  test('builds one concise try-this-first recommendation from toy metadata', () => {
+    expect(
+      buildTryThisFirstRecommendation({
+        recommendedCapability: 'demoAudio',
+        starterPresetLabel: 'Aurora starter',
+        wowControl: 'Q/E mood cycling',
+      }),
+    ).toEqual({
+      summary: 'Start with demo audio for the fastest first run.',
+      detail:
+        'Try Aurora starter once the toy opens. Then explore Q/E mood cycling.',
+    });
+  });
+
+  test('keeps a single visible try-this-first prompt instead of stacked quick-start tips', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -308,19 +327,18 @@ describe('audio controls primary emphasis', () => {
     });
 
     const quickstart = container.querySelector(
-      '[data-quickstart-panel]',
+      '[data-quickstart-spotlight]',
     ) as HTMLElement;
     const dismiss = container.querySelector(
-      '[data-dismiss-quickstart]',
+      '[data-dismiss-quickstart-spotlight]',
     ) as HTMLButtonElement;
 
     expect(quickstart.hidden).toBe(false);
+    expect(container.querySelector('[data-quickstart-panel]')).toBeNull();
     dismiss.click();
 
     expect(quickstart.hidden).toBe(true);
-    expect(sessionStorage.getItem('stims-quickstart-tips-dismissed')).toBe(
-      'true',
-    );
+    expect(sessionStorage.getItem('stims-first-steps-dismissed')).toBe('true');
   });
 
   test('applies low-motion starter preset from first-steps quick action', () => {
@@ -475,7 +493,7 @@ describe('audio controls primary emphasis', () => {
 
     const sourceStep = container.querySelector('[data-first-step-source]');
     expect(sourceStep?.textContent).toContain(
-      'Start with demo for instant sound',
+      'Demo audio is the focused path for an instant first run.',
     );
   });
 
@@ -629,7 +647,7 @@ describe('audio controls primary emphasis', () => {
     const micRow = container.querySelector('[data-audio-row="mic"]');
     const demoRow = container.querySelector('[data-audio-row="demo"]');
     const firstSteps = container.querySelector(
-      '[data-first-steps]',
+      '[data-quickstart-spotlight]',
     ) as HTMLElement;
 
     expect(micRow?.classList.contains('control-panel__row--primary')).toBe(
