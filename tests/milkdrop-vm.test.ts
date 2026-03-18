@@ -437,6 +437,32 @@ wave_4_per_point1=y=y+0.02;
     expect(frameState.customWaves).toHaveLength(1);
   });
 
+  test('renders legacy max-slot custom wave and shape aliases at runtime', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Legacy Max Runtime Slots
+wavecode_32_enabled=1
+wavecode_32_samples=64
+wave_32_per_point1=x=x+0.02;
+shapecode_32_enabled=1
+shapecode_32_sides=6
+shape_32_per_frame1=rad=0.24;
+      `.trim(),
+      { id: 'legacy-max-runtime-slots' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 9 }));
+
+    expect(frameState.customWaves).toHaveLength(1);
+    expect(frameState.customWaves[0]?.positions.length).toBeGreaterThan(0);
+    expect(frameState.shapes.some((shape) => shape.key === 'shape_32')).toBe(
+      true,
+    );
+    expect(
+      frameState.shapes.find((shape) => shape.key === 'shape_32')?.sides,
+    ).toBe(6);
+  });
+
   test('accumulates and caps trail history across steps', () => {
     const preset = compileMilkdropPresetSource('title=Trail Test', {
       id: 'trail-test',

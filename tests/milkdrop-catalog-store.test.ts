@@ -80,8 +80,8 @@ describe('milkdrop catalog store', () => {
 
     expect(imported?.isFavorite).toBe(true);
     expect(imported?.rating).toBe(5);
-    expect(imported?.supports.webgl.status).toBe('unsupported');
-    expect(imported?.supports.webgpu.status).toBe('unsupported');
+    expect(imported?.supports.webgl.status).toBe('partial');
+    expect(imported?.supports.webgpu.status).toBe('partial');
     expect(imported?.featuresUsed).toContain('unsupported-shader-text');
 
     const history = await store.getHistory();

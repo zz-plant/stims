@@ -291,6 +291,19 @@ const shaderFieldPattern =
   /^(?:warp_[0-9]+|comp_[0-9]+|warp_shader|comp_shader|shader_text|warp_code|comp_code)$/u;
 const hardUnsupportedKeys = new Set<string>([]);
 
+function resolveLegacyCustomSlotIndex(rawIndex: number, maxSlots: number) {
+  if (!Number.isFinite(rawIndex)) {
+    return null;
+  }
+  if (rawIndex >= 0 && rawIndex < maxSlots) {
+    return rawIndex + 1;
+  }
+  if (rawIndex === maxSlots) {
+    return maxSlots;
+  }
+  return null;
+}
+
 function createDefaultShaderControls(): MilkdropShaderControls {
   return {
     warpScale: 0,
@@ -1759,14 +1772,24 @@ function normalizeFieldKey(field: MilkdropPresetField) {
 
   const wavecodeMatch = rawKey.match(wavecodeFieldPattern);
   if (wavecodeMatch) {
-    const index = Number.parseInt(wavecodeMatch[1] ?? '0', 10) + 1;
-    return `custom_wave_${index}_${normalizeFieldSuffix(wavecodeMatch[2] ?? '')}`;
+    const index = resolveLegacyCustomSlotIndex(
+      Number.parseInt(wavecodeMatch[1] ?? '0', 10),
+      MAX_CUSTOM_WAVES,
+    );
+    if (index !== null) {
+      return `custom_wave_${index}_${normalizeFieldSuffix(wavecodeMatch[2] ?? '')}`;
+    }
   }
 
   const shapecodeMatch = rawKey.match(shapecodeFieldPattern);
   if (shapecodeMatch) {
-    const index = Number.parseInt(shapecodeMatch[1] ?? '0', 10) + 1;
-    return `shape_${index}_${normalizeFieldSuffix(shapecodeMatch[2] ?? '')}`;
+    const index = resolveLegacyCustomSlotIndex(
+      Number.parseInt(shapecodeMatch[1] ?? '0', 10),
+      MAX_CUSTOM_SHAPES,
+    );
+    if (index !== null) {
+      return `shape_${index}_${normalizeFieldSuffix(shapecodeMatch[2] ?? '')}`;
+    }
   }
 
   if (rawKey in aliasMap) {
@@ -1858,9 +1881,11 @@ function compileProgramsFromField(
 
   const waveMatch = rawKey.match(customWaveProgramPattern);
   if (waveMatch) {
-    const zeroIndex = Number.parseInt(waveMatch[1] ?? '0', 10);
-    const index = zeroIndex + 1;
-    if (index >= 1 && index <= MAX_CUSTOM_WAVES) {
+    const index = resolveLegacyCustomSlotIndex(
+      Number.parseInt(waveMatch[1] ?? '0', 10),
+      MAX_CUSTOM_WAVES,
+    );
+    if (index !== null) {
       const wave = ensureWaveDefinition(customWaves, index);
       const block = getProgramBlock(
         waveMatch[2] as 'init' | 'per_frame' | 'per_point',
@@ -1879,9 +1904,11 @@ function compileProgramsFromField(
 
   const shapeMatch = rawKey.match(customShapeProgramPattern);
   if (shapeMatch) {
-    const zeroIndex = Number.parseInt(shapeMatch[1] ?? '0', 10);
-    const index = zeroIndex + 1;
-    if (index >= 1 && index <= MAX_CUSTOM_SHAPES) {
+    const index = resolveLegacyCustomSlotIndex(
+      Number.parseInt(shapeMatch[1] ?? '0', 10),
+      MAX_CUSTOM_SHAPES,
+    );
+    if (index !== null) {
       const shape = ensureShapeDefinition(customShapes, index);
       const block = getProgramBlock(shapeMatch[2] as 'init' | 'per_frame', {
         init: shape.programs.init,
