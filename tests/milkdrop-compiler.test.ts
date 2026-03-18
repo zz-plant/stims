@@ -358,6 +358,57 @@ shape_4_per_frame1=rad=0.16+bass_att*0.03;
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
   });
 
+  test('supports legacy max-slot custom wave aliases without warnings', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Legacy Max Wave Slot
+wavecode_32_enabled=1
+wavecode_32_samples=64
+wave_32_per_point1=x=x+0.02;
+video_echo=1
+      `.trim(),
+      { id: 'legacy-max-wave-slot' },
+    );
+
+    expect(compiled.ir.customWaves).toHaveLength(1);
+    expect(compiled.ir.customWaves[0]?.index).toBe(32);
+    expect(compiled.ir.customWaves[0]?.fields.enabled).toBe(1);
+    expect(compiled.ir.customWaves[0]?.fields.samples).toBe(64);
+    expect(
+      compiled.ir.customWaves[0]?.programs.perPoint.statements.length,
+    ).toBe(1);
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+  });
+
+  test('supports legacy max-slot custom shape aliases without warnings', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Legacy Max Shape Slot
+shapecode_32_enabled=1
+shapecode_32_sides=6
+shape_32_per_frame1=rad=0.24;
+ob_border=1
+fOuterBorderSize=0.01
+      `.trim(),
+      { id: 'legacy-max-shape-slot' },
+    );
+
+    expect(compiled.ir.customShapes).toHaveLength(1);
+    expect(compiled.ir.customShapes[0]?.index).toBe(32);
+    expect(compiled.ir.customShapes[0]?.fields.enabled).toBe(1);
+    expect(compiled.ir.customShapes[0]?.fields.sides).toBe(6);
+    expect(
+      compiled.ir.customShapes[0]?.programs.perFrame.statements.length,
+    ).toBe(1);
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+  });
+
   test('surfaces diagnostics for invalid scalar expressions', () => {
     const compiled = compileMilkdropPresetSource(
       `
