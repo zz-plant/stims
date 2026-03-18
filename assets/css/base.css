@@ -1066,6 +1066,14 @@ body {
   color: rgba(245, 245, 245, 0.76);
 }
 
+.control-panel__eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(233, 251, 255, 0.72);
+}
+
 .control-panel__stage-label {
   margin: 6px 0 8px;
   font-size: 0.73rem;
@@ -1088,6 +1096,19 @@ body {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.control-panel__quickstart-spotlight {
+  margin: 0 0 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  background: linear-gradient(
+    145deg,
+    rgba(125, 211, 252, 0.14),
+    rgba(15, 23, 42, 0.5)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .control-panel__first-steps-header {
@@ -1873,10 +1894,23 @@ body {
   .control-panel__description,
   .control-panel__comparison,
   .control-panel__advanced-helper,
-  .control-panel__quickstart,
   .control-panel__gesture-hints,
   .control-panel__tips {
     display: none;
+  }
+
+  .control-panel__quickstart-spotlight,
+  .control-panel__quickstart {
+    display: block;
+  }
+
+  .control-panel__quickstart-spotlight .control-panel__comparison {
+    display: block;
+  }
+
+  .control-panel__quickstart-spotlight .control-panel__tips,
+  .control-panel__quickstart .control-panel__tips {
+    display: grid;
   }
 
   .control-panel__row {
@@ -1927,6 +1961,11 @@ body {
   .control-panel__description {
     font-size: 0.78rem;
     margin-bottom: 6px;
+  }
+
+  .control-panel__quickstart-spotlight {
+    padding: 10px;
+    margin-bottom: 8px;
   }
 
   .control-panel__value {

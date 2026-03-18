@@ -162,8 +162,8 @@
             <p class="eyebrow">Flagship visualizer</p>
             <h1>Music visualizers and interactive scenes, in your browser.</h1>
             <p class="tagline">
-              Start with MilkDrop Visualizer, or jump straight to touch,
-              motion, and mic-reactive toys.
+              Start with MilkDrop Visualizer. A quick system check opens first,
+              then you move straight into audio setup.
             </p>
             <div class="intro-highlights" aria-label="What you can do here">
               <article class="intro-highlight-card">
@@ -208,10 +208,7 @@
               >
                 Launch MilkDrop Visualizer
               </a>
-              <a href="#library" class="cta-button ghost">Browse all toys</a>
-              <a href="#proof" class="cta-button cta-button--muted"
-                >See key features</a
-              >
+              <a href="#library" class="cta-button ghost">Browse with filters</a>
             </div>
             <p class="cta-helper intro-helper">
               Built with clear credit to Ryan Geiss's MilkDrop, preset authors,
@@ -415,17 +412,18 @@
             </button>
           </div>
           <div class="active-filters" data-active-filters>
-            <span class="active-filters__label">Active view</span>
+            <span class="active-filters__label">Applied view</span>
             <span class="active-filters__status" data-active-filters-status>
-              All toys
+              Showing all toys
             </span>
             <div class="active-filters__chips" data-active-filters-chips></div>
             <button
               type="button"
               class="active-filters__clear"
               data-active-filters-clear
+              data-filter-reset
             >
-              Clear all
+              Reset view
             </button>
           </div>
           <p
@@ -437,7 +435,7 @@
             Loading toy lab…
           </p>
           <details class="library-refine" data-library-refine>
-            <summary>Filters</summary>
+            <summary>More filters</summary>
             <p class="search-meta__note" data-search-note>
               Start with a mood, audio input, or device support.
             </p>

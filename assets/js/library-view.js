@@ -68,6 +68,7 @@ export function createLibraryView({
     const refine = ensureLibraryRefine();
     if (!(refine instanceof HTMLElement) || refine.tagName !== 'DETAILS')
       return;
+    const summary = refine.querySelector('summary');
 
     const hasActiveRefinement =
       searchQuery.trim().length > 0 ||
@@ -76,6 +77,9 @@ export function createLibraryView({
 
     if (hasActiveRefinement) {
       refine.open = true;
+      if (summary instanceof HTMLElement) {
+        summary.textContent = 'Hide filters';
+      }
       return;
     }
 
@@ -85,6 +89,10 @@ export function createLibraryView({
       window.matchMedia('(max-width: 680px)').matches;
 
     refine.open = !shouldCollapseByViewport;
+
+    if (summary instanceof HTMLElement) {
+      summary.textContent = refine.open ? 'Hide filters' : 'More filters';
+    }
   };
 
   const getOriginalIndex = (toy) => originalOrder.get(toy.slug) ?? 0;
@@ -179,19 +187,64 @@ export function createLibraryView({
     }
 
     const tokens = Array.from(activeFilters);
+    const hasQuery = searchQuery.trim().length > 0;
     const hasTokens = tokens.length > 0;
-    const canClear =
-      hasTokens || sortBy !== 'featured' || searchQuery.trim().length > 0;
-    const tokenLabels = tokens.map((token) => formatTokenLabel(token));
+    const hasSort = sortBy !== 'featured';
+    const canClear = hasTokens || hasSort || hasQuery;
+    const chipItems = [
+      ...(hasQuery
+        ? [
+            {
+              label: `Search: ${searchQuery.trim()}`,
+              onClick: () => clearSearch(),
+            },
+          ]
+        : []),
+      ...tokens.map((token) => ({
+        label: formatTokenLabel(token),
+        onClick: () => {
+          activeFilters.delete(token);
+          syncFilterTokenState(token, false);
+          emitFilterStateChange();
+          commitState({ replace: false });
+          renderToys(applyFilters());
+          updateFilterResetState();
+          updateActiveFiltersSummary();
+        },
+      })),
+      ...(hasSort
+        ? [
+            {
+              label: `Sort: ${getSortLabel()}`,
+              onClick: () => {
+                sortBy = 'featured';
+                const sortControl = ensureSortControl();
+                if (
+                  sortControl instanceof HTMLElement &&
+                  sortControl.tagName === 'SELECT'
+                ) {
+                  sortControl.value = sortBy;
+                }
+                commitState({ replace: false });
+                renderToys(applyFilters());
+                updateFilterResetState();
+                updateActiveFiltersSummary();
+              },
+            },
+          ]
+        : []),
+    ];
 
     const summaryTextParts = [];
-    if (searchQuery.trim().length > 0) {
+    if (hasQuery) {
       summaryTextParts.push(`Search: ${searchQuery.trim()}`);
     }
-    if (tokenLabels.length > 0) {
-      summaryTextParts.push(`Filters: ${tokenLabels.join(', ')}`);
+    if (tokens.length > 0) {
+      summaryTextParts.push(
+        `Filters: ${tokens.map((token) => formatTokenLabel(token)).join(', ')}`,
+      );
     }
-    if (sortBy !== 'featured') {
+    if (hasSort) {
       summaryTextParts.push(`Sort: ${getSortLabel()}`);
     }
 
@@ -201,31 +254,22 @@ export function createLibraryView({
 
     const status = ensureActiveFiltersStatus();
     if (status instanceof HTMLElement) {
-      status.textContent = summaryTextParts.join(' • ') || 'Featured';
+      status.textContent = summaryTextParts.join(' • ') || 'Showing all toys';
     }
 
     const chips = ensureActiveFiltersChips();
     if (chips instanceof HTMLElement) {
       chips.replaceChildren();
-      tokenLabels.forEach((label, index) => {
-        const token = tokens[index];
+      chipItems.forEach(({ label, onClick }) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'active-filter-chip';
         button.textContent = label;
-        button.setAttribute('aria-label', `Remove ${label} filter`);
-        button.addEventListener('click', () => {
-          activeFilters.delete(token);
-          syncFilterTokenState(token, false);
-          emitFilterStateChange();
-          commitState({ replace: false });
-          renderToys(applyFilters());
-          updateFilterResetState();
-          updateActiveFiltersSummary();
-        });
+        button.setAttribute('aria-label', `Remove ${label}`);
+        button.addEventListener('click', onClick);
         chips.appendChild(button);
       });
-      chips.hidden = tokenLabels.length === 0;
+      chips.hidden = chipItems.length === 0;
     }
 
     const clearButton = ensureActiveFiltersClear();
@@ -253,9 +297,12 @@ export function createLibraryView({
     const resetButton = ensureFilterResetButton();
     if (!(resetButton instanceof HTMLElement)) return;
     if (resetButton.tagName !== 'BUTTON') return;
-    const hasFilters = activeFilters.size > 0;
-    resetButton.disabled = !hasFilters;
-    resetButton.setAttribute('aria-disabled', String(!hasFilters));
+    const hasRefinements =
+      activeFilters.size > 0 ||
+      sortBy !== 'featured' ||
+      searchQuery.trim().length > 0;
+    resetButton.disabled = !hasRefinements;
+    resetButton.setAttribute('aria-disabled', String(!hasRefinements));
   };
 
   const updateFilterChipA11y = (chip, isActive) => {
@@ -987,7 +1034,7 @@ export function createLibraryView({
     const resetButton = document.createElement('button');
     resetButton.type = 'button';
     resetButton.className = 'cta-button';
-    resetButton.textContent = 'Reset search and filters';
+    resetButton.textContent = 'Reset view';
     resetButton.addEventListener('click', () => resetFiltersAndSearch());
 
     const quickActions = document.createElement('div');
@@ -1125,19 +1172,6 @@ export function createLibraryView({
     updateActiveFiltersSummary();
   };
 
-  const clearFilters = () => {
-    Array.from(activeFilters).forEach((token) => {
-      syncFilterTokenState(token, false);
-    });
-    activeFilters.clear();
-    emitFilterStateChange();
-    commitState({ replace: false });
-    syncRefineDisclosure();
-    renderToys(applyFilters());
-    updateFilterResetState();
-    updateActiveFiltersSummary();
-  };
-
   const clearAllFilters = () => {
     resetFiltersAndSearch();
   };
@@ -1235,14 +1269,24 @@ export function createLibraryView({
       resetButton instanceof HTMLElement &&
       resetButton.tagName === 'BUTTON'
     ) {
-      resetButton.addEventListener('click', () => clearFilters());
+      resetButton.addEventListener('click', () => resetFiltersAndSearch());
       updateFilterResetState();
+    }
+
+    const refine = ensureLibraryRefine();
+    if (refine instanceof HTMLElement && refine.tagName === 'DETAILS') {
+      refine.addEventListener('toggle', () => {
+        const summary = refine.querySelector('summary');
+        if (!(summary instanceof HTMLElement)) return;
+        summary.textContent = refine.open ? 'Hide filters' : 'More filters';
+      });
     }
 
     const clearButton = ensureActiveFiltersClear();
     if (
       clearButton instanceof HTMLElement &&
-      clearButton.tagName === 'BUTTON'
+      clearButton.tagName === 'BUTTON' &&
+      clearButton !== resetButton
     ) {
       clearButton.addEventListener('click', () => resetFiltersAndSearch());
     }
