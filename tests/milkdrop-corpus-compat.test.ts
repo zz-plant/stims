@@ -78,12 +78,12 @@ describe('milkdrop legacy fixture corpus', () => {
 
     const expected = {
       'legacy-partial-extra-custom-shape.milk': {
-        webgl: 'partial',
-        webgpu: 'partial',
+        webgl: 'supported',
+        webgpu: 'supported',
       },
       'legacy-partial-extra-custom-wave.milk': {
-        webgl: 'partial',
-        webgpu: 'partial',
+        webgl: 'supported',
+        webgpu: 'supported',
       },
       'legacy-supported-feedback-subset.milk': {
         webgl: 'supported',
@@ -111,7 +111,7 @@ describe('milkdrop legacy fixture corpus', () => {
     });
   });
 
-  test('keeps the harder legacy fixture tier split across supported and partial', () => {
+  test('keeps the harder legacy fixture tier fully supported on both backends', () => {
     const corpus = loadLegacyFixtureCorpus();
     const stats = {
       supported: 0,
@@ -124,8 +124,8 @@ describe('milkdrop legacy fixture corpus', () => {
     });
 
     expect(stats).toEqual({
-      supported: 3,
-      partial: 2,
+      supported: 5,
+      partial: 0,
       unsupported: 0,
     });
   });
