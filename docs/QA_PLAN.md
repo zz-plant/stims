@@ -5,8 +5,8 @@ This guide captures the highest-impact flows to validate and how we keep them co
 ## High-value flows
 
 - **Flagship launch and broader discovery**
-  - What to verify: the landing page can launch `milkdrop` as the primary path, toy cards still render, search filters the list, and launching a toy routes module-based entries without breaking external HTML links.
-  - Automation: `tests/app-shell.test.js` exercises card rendering, search filtering, and routing logic under happy-dom.
+  - What to verify: the landing page keeps one clear primary launch CTA, the toy preflight shows one primary action for the happy path, toy cards still render, search filters the list, and launching a toy routes module-based entries without breaking external HTML links.
+  - Automation: `tests/app-shell.test.js` plus `tests/capability-preflight.test.ts` exercise card rendering, discovery state, routing logic, and the linear preflight CTA under happy-dom.
   - Supporting checks: `bun run dev:check` confirms the Vite dev server wiring without opening a browser.
 - **Shared quality preset persistence**
   - What to verify: the reusable settings panel remembers the user-selected quality preset across toy switches and notifies subscribers exactly when the user changes presets.
@@ -19,10 +19,11 @@ This guide captures the highest-impact flows to validate and how we keep them co
 
 When you touch the landing page or toy shell UI, run this short manual pass:
 
-1. **Landing page**: Starter packs render, and their links open the expected toys.
-2. **Library search**: Search input filters cards and clearing filters restores all results.
-3. **Toy launch**: Open a toy from the library, start demo audio, and confirm visuals respond.
-4. **Performance panel**: Open system check, toggle a quality preset, and verify the selection persists when switching toys.
+1. **Landing page**: The hero shows one primary launch CTA, and the secondary browse action stays visible without competing labels.
+2. **Library discovery**: Search + filters add chips to the sticky applied-view rail, and `Reset view` clears the state in one tap.
+3. **Toy launch**: Open a toy from the library, confirm preflight shows one primary CTA, start demo audio, and verify visuals respond.
+4. **Touch affordances**: On a narrow/touch viewport, confirm the top-row back action is visible before launch and gesture hints appear after audio starts.
+5. **Performance panel**: Open system check, toggle a quality preset, and verify the selection persists when switching toys.
 
 ## How to run the QA automation
 
@@ -34,8 +35,9 @@ Use Bun to match the repository tooling:
   ```
 
 - Run the happy-dom suites for the app shell, settings panel, and microphone flows:
+- Run the focused launch/discovery/touch regression suites:
   ```bash
-  bun run test tests/app-shell.test.js tests/settings-panel.test.ts tests/microphone-flow.test.ts
+  bun run test tests/audio-controls.test.ts tests/library-filter-state.test.ts tests/capability-preflight.test.ts
   ```
 
 - For a quick server wiring check before pushing UI changes:
@@ -50,5 +52,5 @@ quality gate and then the focused QA suite:
 
 ```bash
 bun run check
-bun run test tests/app-shell.test.js tests/settings-panel.test.ts tests/microphone-flow.test.ts
+bun run test tests/audio-controls.test.ts tests/library-filter-state.test.ts tests/capability-preflight.test.ts
 ```

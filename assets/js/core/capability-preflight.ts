@@ -121,7 +121,7 @@ function updatePermissionFlow(
 
   const heading = document.createElement('p');
   heading.className = 'preflight-panel__eyebrow';
-  heading.textContent = 'Set up audio access';
+  heading.textContent = 'What happens next';
   container.appendChild(heading);
 
   const list = document.createElement('ol');
@@ -134,21 +134,23 @@ function updatePermissionFlow(
   };
 
   if (!result.microphone.supported) {
-    addStep('Microphone capture is unavailable in this browser.');
-    addStep('Choose demo audio to continue without permissions.');
+    addStep('Audio setup will default to demo audio in the next step.');
+    addStep('Live mic is unavailable in this browser.');
   } else if (result.microphone.state === 'granted') {
-    addStep('Microphone permission is already granted.');
-    addStep('Start live mic mode to react to room audio instantly.');
-  } else if (result.microphone.state === 'denied') {
-    addStep('Continue now with demo audio, no permission needed.');
+    addStep('Audio setup can start with live mic immediately.');
     addStep(
-      'When you are ready, open site settings and allow microphone access.',
+      'Demo audio will still stay available as the no-permission fallback.',
     );
-    addStep('Return to this page and rerun checks for live mic mode.');
+  } else if (result.microphone.state === 'denied') {
+    addStep('Audio setup will recommend demo audio first.');
+    addStep('When you are ready, allow microphone access in site settings.');
+    addStep('Rerun this check later if you want live mic mode.');
   } else {
-    addStep('Microphone access has not been granted yet.');
-    addStep('Use “Grant microphone access” to trigger the browser prompt.');
-    addStep('If you skip, demo audio still works with no prompt.');
+    addStep('Audio setup will offer live mic and demo audio side by side.');
+    addStep(
+      'Use “Grant microphone access” if you want the browser prompt now.',
+    );
+    addStep('You can skip the prompt and still start with demo audio.');
   }
 
   container.appendChild(list);
@@ -180,12 +182,12 @@ function updateStatusList(
     className: string;
   }> = [
     {
-      label: 'Performance check',
+      label: 'System check',
       summary: getPerformanceCheckSummary(result),
       className: 'preflight-status--primary',
     },
     {
-      label: 'Audio input',
+      label: 'Audio setup',
       summary: getAudioInputSummary(result),
       className: 'preflight-status--supporting',
     },
@@ -354,7 +356,7 @@ export function attachCapabilityPreflight({
   openOnAttach = true,
   allowCloseWhenBlocked = false,
   showCloseButton = false,
-  onStartWithDemoAudio,
+  runPreflight = runCapabilityPreflight,
 }: {
   host?: HTMLElement;
   heading?: string;
@@ -364,7 +366,7 @@ export function attachCapabilityPreflight({
   openOnAttach?: boolean;
   allowCloseWhenBlocked?: boolean;
   showCloseButton?: boolean;
-  onStartWithDemoAudio?: (() => void) | null;
+  runPreflight?: () => Promise<CapabilityPreflightResult>;
 } = {}) {
   const panel = document.createElement('dialog');
   panel.className =
@@ -502,13 +504,13 @@ export function attachCapabilityPreflight({
   const description = document.createElement('p');
   description.className = 'control-panel__description';
   description.textContent =
-    'Quick performance check so your audio options open with fewer surprises.';
+    'Quick system check now, then a focused audio setup step.';
   panel.appendChild(description);
 
   const sequenceHint = document.createElement('p');
   sequenceHint.className = 'control-panel__microcopy';
   sequenceHint.textContent =
-    'Tip: demo audio is usually the fastest way to begin.';
+    'Advanced diagnostics stay tucked away unless you need them.';
   panel.appendChild(sequenceHint);
 
   const statusContainer = document.createElement('div');
@@ -527,7 +529,7 @@ export function attachCapabilityPreflight({
   details.className = 'preflight-panel__details';
   const summary = document.createElement('summary');
   summary.className = 'preflight-panel__details-summary';
-  summary.textContent = 'Diagnostic details';
+  summary.textContent = 'Diagnostics';
   details.appendChild(summary);
   const detailsContent = document.createElement('div');
   detailsContent.className = 'preflight-panel__details-content';
@@ -569,18 +571,17 @@ export function attachCapabilityPreflight({
 
   const actions = document.createElement('div');
   actions.className = 'control-panel__actions control-panel__actions--inline';
-  const startWithDemoButton = document.createElement('button');
-  startWithDemoButton.className = 'cta-button primary';
-  startWithDemoButton.type = 'button';
-  startWithDemoButton.dataset.demoAudioBtn = 'true';
-  startWithDemoButton.textContent = 'Start with demo audio';
-  startWithDemoButton.hidden = true;
-  startWithDemoButton.addEventListener('click', () => {
+  const continueButton = document.createElement('button');
+  continueButton.className = 'cta-button primary';
+  continueButton.type = 'button';
+  continueButton.dataset.preflightPrimaryAction = 'true';
+  continueButton.textContent = 'Continue to audio setup';
+  continueButton.hidden = true;
+  continueButton.addEventListener('click', () => {
     setRememberPreference(rememberToggle.checked);
-    onStartWithDemoAudio?.();
     closePanel();
   });
-  actions.appendChild(startWithDemoButton);
+  actions.appendChild(continueButton);
 
   let closeButton: HTMLButtonElement | null = null;
   if (showCloseButton) {
@@ -622,19 +623,27 @@ export function attachCapabilityPreflight({
 
   const applyActionPriority = (result: CapabilityPreflightResult | null) => {
     if (!result) {
-      startWithDemoButton.hidden = true;
+      continueButton.hidden = true;
       if (closeButton) closeButton.hidden = false;
       performanceButton.hidden = true;
-      if (backLink) backLink.hidden = true;
+      if (backLink) {
+        backLink.hidden = true;
+        backLink.classList.add('ghost');
+        backLink.classList.remove('primary');
+      }
       return;
     }
 
     if (result.canProceed) {
-      startWithDemoButton.hidden = false;
-      if (backLink) backLink.hidden = true;
+      continueButton.hidden = false;
+      if (backLink) {
+        backLink.hidden = true;
+        backLink.classList.add('ghost');
+        backLink.classList.remove('primary');
+      }
       if (closeButton) {
         closeButton.hidden = false;
-        closeButton.textContent = 'Continue';
+        closeButton.textContent = 'Close';
       }
       performanceButton.hidden = !result.performance.lowPower;
       return;
@@ -643,10 +652,12 @@ export function attachCapabilityPreflight({
     if (closeButton) {
       closeButton.textContent = 'Close';
     }
-    startWithDemoButton.hidden = true;
+    continueButton.hidden = true;
     performanceButton.hidden = true;
     if (backLink) {
       backLink.hidden = false;
+      backLink.classList.add('primary');
+      backLink.classList.remove('ghost');
       if (closeButton) closeButton.hidden = true;
     } else if (closeButton) {
       closeButton.hidden = false;
@@ -694,7 +705,7 @@ export function attachCapabilityPreflight({
     panel.dataset.state = 'running';
     applyActionPriority(null);
     retryButton.disabled = true;
-    const result = await runCapabilityPreflight();
+    const result = await runPreflight();
     panel.dataset.state = result.canProceed ? 'ready' : 'blocked';
     retryButton.disabled = false;
     applyActionPriority(result);

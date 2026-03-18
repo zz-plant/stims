@@ -203,6 +203,8 @@ export function bootToyPage({
       touchHints,
       starterPresetId,
       starterPresetLabel,
+      wowControl: toyMeta?.wowControl,
+      recommendedCapability: toyMeta?.recommendedCapability,
       onApplyStarterPreset: starterPresetId
         ? () => {
             requestMilkdropPresetSelection(starterPresetId);
@@ -241,21 +243,14 @@ export function bootToyPage({
     setupSystemControls();
   };
 
-  const handleStartWithDemoAudio = () => {
-    startLoaderIfNeeded();
-    setupAudio(null, { forcePreferDemoAudio: true });
-    setupSystemControls();
-  };
-
   const preflight = attachCapabilityPreflight({
-    heading: 'Ready to start?',
+    heading: 'Step 1 of 2 · System check',
     backHref: router.getLibraryHref(),
     openOnAttach: !shouldSkipPreflightForSession,
     onComplete: handlePreflightReady,
     onRetry: handlePreflightReady,
     host: document.body,
     showCloseButton: true,
-    onStartWithDemoAudio: handleStartWithDemoAudio,
   });
 
   if (shouldSkipPreflightForSession) {

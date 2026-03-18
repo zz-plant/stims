@@ -21,8 +21,54 @@ export interface AudioControlsOptions {
   touchHints?: string[];
   starterPresetLabel?: string;
   starterPresetId?: string;
+  wowControl?: string;
+  recommendedCapability?: 'demoAudio' | 'microphone' | 'motion' | 'touch';
   onApplyStarterPreset?: () => void;
   autoStartMicrophoneWhenGranted?: boolean;
+}
+
+export function buildTryThisFirstRecommendation({
+  recommendedCapability,
+  starterPresetLabel,
+  wowControl,
+  firstRunHint,
+}: {
+  recommendedCapability?: AudioControlsOptions['recommendedCapability'];
+  starterPresetLabel?: string;
+  wowControl?: string;
+  firstRunHint?: string;
+}) {
+  const steps: string[] = [];
+
+  if (recommendedCapability === 'microphone') {
+    steps.push('Start with live mic for the most responsive version.');
+  } else if (recommendedCapability === 'demoAudio') {
+    steps.push('Start with demo audio for the fastest first run.');
+  }
+
+  if (starterPresetLabel?.trim()) {
+    steps.push(`Try ${starterPresetLabel.trim()} once the toy opens.`);
+  }
+
+  if (wowControl?.trim()) {
+    steps.push(`Then explore ${wowControl.trim()}.`);
+  }
+
+  if (steps.length === 0 && firstRunHint?.trim()) {
+    steps.push(firstRunHint.trim());
+  }
+
+  const summary =
+    steps[0] ??
+    'Start with demo audio or live mic, then interact with the canvas once sound begins.';
+  const detail =
+    steps.length > 1
+      ? steps.slice(1).join(' ')
+      : firstRunHint?.trim() && firstRunHint.trim() !== summary
+        ? firstRunHint.trim()
+        : '';
+
+  return { summary, detail };
 }
 
 export function initAudioControls(
@@ -73,17 +119,29 @@ export function initAudioControls(
   const starterPresetLabel =
     options.starterPresetLabel?.trim() || 'calm starter preset';
   const starterPresetId = options.starterPresetId?.trim() || 'low-motion';
+  const tryThisFirst = buildTryThisFirstRecommendation({
+    recommendedCapability: options.recommendedCapability,
+    starterPresetLabel: options.starterPresetLabel,
+    wowControl: options.wowControl,
+    firstRunHint,
+  });
 
   container.innerHTML = `
-    <p class="control-panel__description">Pick an audio source to start.</p>
+    <p class="control-panel__eyebrow">Step 2 of 2 · Audio setup</p>
+    <p class="control-panel__description">Choose how this toy should listen.</p>
     ${renderPrimaryAudioChoice()}
+    ${renderQuickstartSpotlight({
+      summary: tryThisFirst.summary,
+      detail: tryThisFirst.detail,
+      starterPresetLabel,
+      showStarterPresetAction: true,
+    })}
     ${renderOnboardingHelp({
       firstRunHint,
       desktopHints,
       touchHints,
       supportsTouchLikeInput,
       starterTips: options.starterTips,
-      starterPresetLabel,
     })}
     ${renderAdvancedSources(options)}
     <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
@@ -105,7 +163,6 @@ export function initAudioControls(
   const FIRST_STEPS_KEY = 'stims-first-steps-dismissed';
   const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
   const QUICK_START_PRESET_KEY = 'stims-quick-start-preset';
-  const QUICKSTART_TIPS_KEY = 'stims-quickstart-tips-dismissed';
 
   const setPrimaryRow = (row: Element | null, isPrimary: boolean): void => {
     row?.classList.toggle('control-panel__row--primary', isPrimary);
@@ -131,8 +188,8 @@ export function initAudioControls(
     if (!(firstStepSource instanceof HTMLElement)) return;
     firstStepSource.textContent =
       source === 'microphone'
-        ? 'Start with mic for live response from your room in real time.'
-        : 'Start with demo for instant sound with no permission prompts.';
+        ? 'Live mic is the focused path for room audio and instruments.'
+        : 'Demo audio is the focused path for an instant first run.';
   };
 
   const setPending = (button: Element | null, pending: boolean) => {
@@ -149,12 +206,12 @@ export function initAudioControls(
     if (!(micBtn instanceof HTMLButtonElement)) return;
 
     if (microphonePermissionState === 'granted') {
-      micBtn.textContent = 'Start mic-reactive mode';
+      micBtn.textContent = 'Start with live mic';
       return;
     }
 
     if (microphonePermissionState === 'denied') {
-      micBtn.textContent = 'Mic blocked — retry permission';
+      micBtn.textContent = 'Mic blocked — retry';
       return;
     }
 
@@ -215,13 +272,13 @@ export function initAudioControls(
     setMicrophoneButtonState();
     if (state === 'denied') {
       updateStatus(
-        'Microphone is currently blocked. Use demo audio now, then allow mic in site permissions when ready.',
+        'Microphone is currently blocked. Start with demo audio now, then allow mic in site permissions when ready.',
       );
       emphasizeDemoAudio();
     }
     if (state === 'unsupported') {
       updateStatus(
-        'Microphone is unavailable in this browser. Demo audio is ready to start now.',
+        'Microphone is unavailable in this browser. Start with demo audio now.',
       );
       emphasizeDemoAudio();
     }
@@ -229,15 +286,15 @@ export function initAudioControls(
     maybeAutoStartMicrophone();
   });
 
-  const firstStepsPanel = container.querySelector(
-    '[data-first-steps]',
+  const quickstartSpotlight = container.querySelector(
+    '[data-quickstart-spotlight]',
   ) as HTMLElement | null;
-  const dismissFirstSteps = container.querySelector(
-    '[data-dismiss-first-steps]',
+  const dismissQuickstartSpotlight = container.querySelector(
+    '[data-dismiss-quickstart-spotlight]',
   ) as HTMLButtonElement | null;
 
   let hideFirstSteps = () => {};
-  if (firstStepsPanel) {
+  if (quickstartSpotlight) {
     let isDismissed = false;
     try {
       isDismissed = window.sessionStorage.getItem(FIRST_STEPS_KEY) === 'true';
@@ -246,7 +303,7 @@ export function initAudioControls(
     }
 
     hideFirstSteps = () => {
-      firstStepsPanel.hidden = true;
+      quickstartSpotlight.hidden = true;
       try {
         window.sessionStorage.setItem(FIRST_STEPS_KEY, 'true');
       } catch (_error) {
@@ -255,10 +312,10 @@ export function initAudioControls(
     };
 
     if (isDismissed) {
-      firstStepsPanel.hidden = true;
+      quickstartSpotlight.hidden = true;
     }
 
-    dismissFirstSteps?.addEventListener('click', hideFirstSteps);
+    dismissQuickstartSpotlight?.addEventListener('click', hideFirstSteps);
   }
 
   const quickStartPresetButton = container.querySelector(
@@ -284,36 +341,6 @@ export function initAudioControls(
     }
     updateStatus(`${starterPresetLabel} applied.`, 'success');
   });
-
-  const quickstartPanel = container.querySelector(
-    '[data-quickstart-panel]',
-  ) as HTMLElement | null;
-  const dismissQuickstart = container.querySelector(
-    '[data-dismiss-quickstart]',
-  ) as HTMLButtonElement | null;
-
-  if (quickstartPanel) {
-    let quickstartDismissed = false;
-    try {
-      quickstartDismissed =
-        window.sessionStorage.getItem(QUICKSTART_TIPS_KEY) === 'true';
-    } catch (_error) {
-      quickstartDismissed = false;
-    }
-
-    if (quickstartDismissed) {
-      quickstartPanel.hidden = true;
-    }
-
-    dismissQuickstart?.addEventListener('click', () => {
-      quickstartPanel.hidden = true;
-      try {
-        window.sessionStorage.setItem(QUICKSTART_TIPS_KEY, 'true');
-      } catch (_error) {
-        // Ignore storage errors.
-      }
-    });
-  }
 
   const gestureHintsPanel = container.querySelector(
     '[data-gesture-hints]',
@@ -425,8 +452,8 @@ export function initAudioControls(
         emphasizeDemoAudio();
         updateStatus(buildMicrophoneErrorMessage(message));
       },
-      'Mic connected.',
-      'Starting microphone…',
+      'Live mic connected.',
+      'Starting live mic…',
     );
   };
 
@@ -472,9 +499,9 @@ export function initAudioControls(
         emphasizeDemoAudio();
         updateStatus(buildMicrophoneErrorMessage(message));
       },
-      'Mic connected.',
+      'Live mic connected.',
       microphonePermissionState === 'granted'
-        ? 'Starting microphone…'
+        ? 'Starting live mic…'
         : 'Requesting microphone permission…',
     );
   });
@@ -536,21 +563,54 @@ function renderPrimaryAudioChoice() {
     <div class="control-panel__row" data-audio-row="mic">
       <div class="control-panel__text">
         <span class="control-panel__label">Live mic</span>
-        <span class="control-panel__pill" data-recommended-for="mic" hidden>Recommended first try</span>
+        <span class="control-panel__pill" data-recommended-for="mic" hidden>Focused path</span>
         <span class="control-panel__subtext">Use your room, voice, or instrument as input.</span>
         <span class="control-panel__microcopy">Requires microphone permission.</span>
       </div>
-      <button id="start-audio-btn" class="cta-button ghost" type="button">Start mic-reactive mode</button>
+      <button id="start-audio-btn" class="cta-button ghost" type="button">Start with live mic</button>
     </div>
     <div class="control-panel__row" data-audio-row="demo">
       <div class="control-panel__text">
-        <span class="control-panel__label">Curated demo</span>
-        <span class="control-panel__pill" data-recommended-for="demo" hidden>Recommended first try</span>
+        <span class="control-panel__label">Demo audio</span>
+        <span class="control-panel__pill" data-recommended-for="demo" hidden>Focused path</span>
         <span class="control-panel__subtext">Start instantly with built-in audio.</span>
         <span class="control-panel__microcopy">No permission prompt.</span>
       </div>
-      <button id="use-demo-audio" class="cta-button primary" type="button">Preview with demo audio</button>
+      <button id="use-demo-audio" class="cta-button primary" type="button">Start with demo audio</button>
     </div>
+  `;
+}
+
+function renderQuickstartSpotlight({
+  summary,
+  detail,
+  starterPresetLabel,
+  showStarterPresetAction,
+}: {
+  summary: string;
+  detail: string;
+  starterPresetLabel: string;
+  showStarterPresetAction: boolean;
+}) {
+  return `
+    <section class="control-panel__quickstart-spotlight" data-quickstart-spotlight role="note" aria-label="Try this first">
+      <div class="control-panel__first-steps-header">
+        <span class="control-panel__label">Try this first</span>
+        <div class="control-panel__first-steps-actions">
+          ${
+            showStarterPresetAction
+              ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Apply ${starterPresetLabel}</button>`
+              : ''
+          }
+          <button type="button" class="control-panel__dismiss" data-dismiss-quickstart-spotlight>Dismiss</button>
+        </div>
+      </div>
+      <p class="control-panel__comparison" data-audio-comparison>${summary}</p>
+      ${detail ? `<p class="control-panel__microcopy">${detail}</p>` : ''}
+      <ul class="control-panel__tips control-panel__tips--compact">
+        <li data-first-step-source>Start with live mic for room audio, or demo audio for the fastest first run.</li>
+      </ul>
+    </section>
   `;
 }
 
@@ -560,35 +620,24 @@ function renderOnboardingHelp({
   touchHints,
   supportsTouchLikeInput,
   starterTips,
-  starterPresetLabel,
 }: {
   firstRunHint?: string;
   desktopHints: string[];
   touchHints: string[];
   supportsTouchLikeInput: boolean;
   starterTips?: string[];
-  starterPresetLabel: string;
 }) {
   return `
     <details class="control-panel__details" data-onboarding-help>
-      <summary class="control-panel__label">Tips</summary>
+      <summary class="control-panel__label">More guidance</summary>
       <p class="control-panel__comparison" data-audio-comparison>
-        Mic is live. Demo is instant.
+        Live mic is responsive. Demo audio is instant.
       </p>
-      <section class="control-panel__first-steps" data-first-steps role="note" aria-label="First steps">
-        <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">First steps</span>
-          <div class="control-panel__first-steps-actions">
-            <button type="button" class="control-panel__dismiss" data-apply-starter-preset>Try ${starterPresetLabel}</button>
-            <button type="button" class="control-panel__dismiss" data-dismiss-first-steps>Dismiss</button>
-          </div>
-        </div>
-        <ul class="control-panel__tips control-panel__tips--compact">
-          <li data-first-step-source>Start with mic for live input, or demo for instant audio.</li>
-          <li>Pick <strong>Low motion</strong> in Controls if you want a calmer feel.</li>
-          <li>${firstRunHint ?? 'Click or drag in the canvas once audio starts to quickly feel the response.'}</li>
-        </ul>
-      </section>
+      ${
+        firstRunHint
+          ? `<p class="control-panel__microcopy">${firstRunHint}</p>`
+          : ''
+      }
       ${
         desktopHints.length > 0 && !supportsTouchLikeInput
           ? `
@@ -623,10 +672,9 @@ function renderOnboardingHelp({
       ${
         starterTips && starterTips.length > 0
           ? `
-      <div class="control-panel__quickstart" data-quickstart-panel>
+      <div class="control-panel__quickstart">
         <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">More tips</span>
-          <button type="button" class="control-panel__dismiss" data-dismiss-quickstart>Dismiss</button>
+          <span class="control-panel__label">What reacts</span>
         </div>
         <ul class="control-panel__tips">
           ${starterTips
