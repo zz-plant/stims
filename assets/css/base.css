@@ -1761,6 +1761,10 @@ body {
     border-top: 1px solid rgba(148, 165, 180, 0.3);
   }
 
+  .active-toy-nav__actions-secondary .toy-nav__back {
+    display: none;
+  }
+
   .active-toy-nav__actions[data-toy-actions-expanded="true"] {
     display: grid;
     gap: 6px;
