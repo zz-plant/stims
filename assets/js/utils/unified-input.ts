@@ -213,6 +213,11 @@ export function createUnifiedInput({
   const updateBounds = () => {
     bounds = boundsSource.getBoundingClientRect();
   };
+  const canPollGamepad = () =>
+    gamepadEnabled &&
+    typeof document !== 'undefined' &&
+    !document.hidden &&
+    !!getPrimaryGamepad();
 
   let resizeObserver: ResizeObserver | null = null;
   const handleWindowResize = () => updateBounds();
@@ -706,7 +711,12 @@ export function createUnifiedInput({
   };
 
   const scheduleFrame = () => {
-    if (inputFrameId != null) return;
+    if (
+      inputFrameId != null ||
+      (typeof document !== 'undefined' && document.hidden)
+    ) {
+      return;
+    }
     inputFrameId = requestAnimationFrame(emitState);
   };
 
@@ -716,23 +726,67 @@ export function createUnifiedInput({
     return () => subscribers.delete(handler);
   };
 
-  if (gamepadEnabled) {
-    const pollGamepad = () => {
-      if (getPrimaryGamepad()) {
-        scheduleFrame();
-      }
-      gamepadFrameId = requestAnimationFrame(pollGamepad);
-    };
+  const stopGamepadPolling = () => {
+    if (gamepadFrameId != null) {
+      cancelAnimationFrame(gamepadFrameId);
+      gamepadFrameId = null;
+    }
+  };
+
+  const pollGamepad = () => {
+    if (!canPollGamepad()) {
+      stopGamepadPolling();
+      return;
+    }
+    scheduleFrame();
     gamepadFrameId = requestAnimationFrame(pollGamepad);
+  };
+
+  const ensureGamepadPolling = () => {
+    if (!canPollGamepad() || gamepadFrameId != null) return;
+    gamepadFrameId = requestAnimationFrame(pollGamepad);
+  };
+
+  const handleGamepadConnectionChange = () => {
+    if (canPollGamepad()) {
+      ensureGamepadPolling();
+      scheduleFrame();
+      return;
+    }
+    stopGamepadPolling();
+  };
+
+  const handleVisibilityChange = () => {
+    if (typeof document === 'undefined') return;
+    if (document.hidden) {
+      if (inputFrameId != null) {
+        cancelAnimationFrame(inputFrameId);
+        inputFrameId = null;
+      }
+      stopGamepadPolling();
+      return;
+    }
+    scheduleFrame();
+    ensureGamepadPolling();
+  };
+
+  if (gamepadEnabled) {
+    window.addEventListener('gamepadconnected', handleGamepadConnectionChange);
+    window.addEventListener(
+      'gamepaddisconnected',
+      handleGamepadConnectionChange,
+    );
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    ensureGamepadPolling();
   }
 
   const dispose = () => {
     if (inputFrameId != null) {
       cancelAnimationFrame(inputFrameId);
     }
-    if (gamepadFrameId != null) {
-      cancelAnimationFrame(gamepadFrameId);
-    }
+    stopGamepadPolling();
     resizeObserver?.disconnect();
     if (!resizeObserver) {
       window.removeEventListener('resize', handleWindowResize);
@@ -748,6 +802,22 @@ export function createUnifiedInput({
     target.removeEventListener('wheel', handleWheel);
     target.removeEventListener('keydown', handleKeyDown);
     target.removeEventListener('keyup', handleKeyUp);
+    if (gamepadEnabled) {
+      window.removeEventListener(
+        'gamepadconnected',
+        handleGamepadConnectionChange,
+      );
+      window.removeEventListener(
+        'gamepaddisconnected',
+        handleGamepadConnectionChange,
+      );
+      if (typeof document !== 'undefined') {
+        document.removeEventListener(
+          'visibilitychange',
+          handleVisibilityChange,
+        );
+      }
+    }
     subscribers.clear();
     activePointers.clear();
     hoverPointer = null;

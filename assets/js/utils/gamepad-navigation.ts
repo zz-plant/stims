@@ -439,6 +439,8 @@ export const initGamepadNavigation = (
   let lastDirection: FocusDirection | null = null;
   let nextMoveTime = 0;
   let rafId: number | null = null;
+  const canRun = () =>
+    typeof document === 'undefined' ? true : !document.hidden;
 
   const setActive = () => {
     if (!body.classList.contains(resolved.activeClass)) {
@@ -548,6 +550,13 @@ export const initGamepadNavigation = (
   };
 
   const tick = (now: number) => {
+    if (!canRun()) {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      return;
+    }
     const pad = getPrimaryGamepad();
     if (pad) {
       handleDirectional(now, pad);
@@ -557,6 +566,7 @@ export const initGamepadNavigation = (
   };
 
   const handleConnect = () => {
+    if (!canRun()) return;
     if (!doc.activeElement || doc.activeElement === doc.body) {
       if (resolved.restoreFocus) {
         restoreLastFocusedElement(
@@ -570,6 +580,20 @@ export const initGamepadNavigation = (
 
     if (rafId === null) {
       rafId = window.requestAnimationFrame(tick);
+    }
+  };
+
+  const handleVisibilityChange = () => {
+    if (!canRun()) {
+      body.classList.remove(resolved.activeClass);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      return;
+    }
+    if (getPrimaryGamepad()) {
+      handleConnect();
     }
   };
 
@@ -633,6 +657,7 @@ export const initGamepadNavigation = (
   window.addEventListener('gamepadconnected', handleConnect);
   window.addEventListener('gamepaddisconnected', handleDisconnect);
   window.addEventListener('keydown', handleKeydown);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
   doc.addEventListener('focusin', onDocumentFocusIn);
 
   if (
@@ -658,6 +683,7 @@ export const initGamepadNavigation = (
     window.removeEventListener('gamepadconnected', handleConnect);
     window.removeEventListener('gamepaddisconnected', handleDisconnect);
     window.removeEventListener('keydown', handleKeydown);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
     doc.removeEventListener('focusin', onDocumentFocusIn);
     if (rafId !== null) {
       window.cancelAnimationFrame(rafId);

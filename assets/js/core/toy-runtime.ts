@@ -305,6 +305,7 @@ export function createToyRuntime({
   let previewActive = false;
   let previewStart = 0;
   let previewLastFrame = 0;
+  let previewVisibilityCleanup: (() => void) | null = null;
 
   const updatePreviewFrequencyData = (time: number) => {
     for (let i = 0; i < previewFrequencyData.length; i += 1) {
@@ -334,7 +335,13 @@ export function createToyRuntime({
   };
 
   const startPreviewLoop = () => {
-    if (!previewOptions.enabled || previewActive) return;
+    if (
+      !previewOptions.enabled ||
+      previewActive ||
+      (typeof document !== 'undefined' && document.hidden)
+    ) {
+      return;
+    }
     previewActive = true;
     const timeSource = globalThis.performance ?? {
       now: () => Date.now(),
@@ -359,6 +366,28 @@ export function createToyRuntime({
 
     previewAnimationId = requestAnimationFrame(tick);
   };
+
+  if (typeof document !== 'undefined') {
+    const handlePreviewVisibilityChange = () => {
+      if (document.hidden) {
+        stopPreviewLoop();
+        return;
+      }
+      if (!analyser) {
+        startPreviewLoop();
+      }
+    };
+    document.addEventListener(
+      'visibilitychange',
+      handlePreviewVisibilityChange,
+    );
+    previewVisibilityCleanup = () => {
+      document.removeEventListener(
+        'visibilitychange',
+        handlePreviewVisibilityChange,
+      );
+    };
+  }
 
   const startAudio = async (request?: ToyAudioRequest) => {
     stopPreviewLoop();
@@ -426,6 +455,7 @@ export function createToyRuntime({
       pluginManager.dispose();
       inputController.dispose();
       performanceController.dispose();
+      previewVisibilityCleanup?.();
       unregisterGlobals();
       toy.dispose();
     },

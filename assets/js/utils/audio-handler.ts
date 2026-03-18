@@ -14,10 +14,12 @@ export class FrequencyAnalyser {
   private rms = 0;
   private readonly historySize = 64;
   private energyHistory: { bass: number[]; mid: number[]; treble: number[] } = {
-    bass: [],
-    mid: [],
-    treble: [],
+    bass: new Array(this.historySize).fill(0),
+    mid: new Array(this.historySize).fill(0),
+    treble: new Array(this.historySize).fill(0),
   };
+  private historyIndex = 0;
+  private historyCount = 0;
   private readonly sourceNode: MediaStreamAudioSourceNode;
   private readonly silentGain: GainNode;
   private readonly workletNode?: AudioWorkletNode;
@@ -47,7 +49,15 @@ export class FrequencyAnalyser {
       this.workletNode.port.onmessage = (event: MessageEvent) => {
         const { frequencyData, rms } = event.data ?? {};
         if (frequencyData) {
-          this.frequencyData = new Uint8Array(frequencyData);
+          const nextData =
+            frequencyData instanceof Uint8Array
+              ? frequencyData
+              : new Uint8Array(frequencyData);
+          if (this.frequencyData.length !== nextData.length) {
+            this.frequencyData = new Uint8Array(nextData.length);
+            this.frequencyBinCount = nextData.length;
+          }
+          this.frequencyData.set(nextData);
           this.updateEnergyHistory();
         }
         if (typeof rms === 'number') {
@@ -129,16 +139,11 @@ export class FrequencyAnalyser {
 
   private updateEnergyHistory() {
     const { bass, mid, treble } = this.getMultiBandEnergy();
-
-    this.energyHistory.bass.push(bass);
-    this.energyHistory.mid.push(mid);
-    this.energyHistory.treble.push(treble);
-
-    if (this.energyHistory.bass.length > this.historySize) {
-      this.energyHistory.bass.shift();
-      this.energyHistory.mid.shift();
-      this.energyHistory.treble.shift();
-    }
+    this.energyHistory.bass[this.historyIndex] = bass;
+    this.energyHistory.mid[this.historyIndex] = mid;
+    this.energyHistory.treble[this.historyIndex] = treble;
+    this.historyIndex = (this.historyIndex + 1) % this.historySize;
+    this.historyCount = Math.min(this.historyCount + 1, this.historySize);
   }
 
   getMultiBandEnergy() {
@@ -167,8 +172,14 @@ export class FrequencyAnalyser {
   }
 
   getEnergyAverages() {
-    const avg = (arr: number[]) =>
-      arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+    const avg = (arr: number[]) => {
+      if (this.historyCount === 0) return 0;
+      let total = 0;
+      for (let i = 0; i < this.historyCount; i += 1) {
+        total += arr[i] ?? 0;
+      }
+      return total / this.historyCount;
+    };
     return {
       bass: avg(this.energyHistory.bass),
       mid: avg(this.energyHistory.mid),

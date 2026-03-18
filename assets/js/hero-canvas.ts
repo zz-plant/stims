@@ -39,6 +39,20 @@ interface HeroCanvasConfig {
   colorScheme?: 'cosmic' | 'aurora' | 'sunset';
 }
 
+type ParticleGrid = Map<string, Particle[]>;
+
+const CONNECTION_NEIGHBOR_OFFSETS = [
+  [-1, -1],
+  [0, -1],
+  [1, -1],
+  [-1, 0],
+  [0, 0],
+  [1, 0],
+  [-1, 1],
+  [0, 1],
+  [1, 1],
+] as const;
+
 const COLOR_SCHEMES = {
   cosmic: { baseHue: 240, hueRange: 60, saturation: 70, lightness: 55 },
   aurora: { baseHue: 160, hueRange: 80, saturation: 75, lightness: 50 },
@@ -63,6 +77,7 @@ export function initHeroCanvas(
   const scheme = COLOR_SCHEMES[colorScheme];
   const particles: Particle[] = [];
   const orbs: GlowOrb[] = [];
+  const particleGrid: ParticleGrid = new Map();
   let animationId: number | null = null;
   let width = 0;
   let height = 0;
@@ -89,6 +104,7 @@ export function initHeroCanvas(
     height = rect.height;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
+    ctx?.setTransform(1, 0, 0, 1, 0, 0);
     ctx?.scale(dpr, dpr);
 
     // Reinitialize particles on resize
@@ -151,6 +167,9 @@ export function initHeroCanvas(
   }
 
   function updateParticles() {
+    const interactionRadius = 150;
+    const interactionRadiusSquared = interactionRadius * interactionRadius;
+
     for (const p of particles) {
       // Move
       p.x += p.vx;
@@ -162,9 +181,13 @@ export function initHeroCanvas(
       // Mouse interaction - gentle push
       const dx = p.x - mouseX;
       const dy = p.y - mouseY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 150 && dist > 0) {
-        const force = (150 - dist) / 150;
+      const distSquared = dx * dx + dy * dy;
+      if (
+        distSquared < interactionRadiusSquared &&
+        distSquared > Number.EPSILON
+      ) {
+        const dist = Math.sqrt(distSquared);
+        const force = (interactionRadius - dist) / interactionRadius;
         const angle = Math.atan2(dy, dx);
         p.vx += Math.cos(angle) * force * 0.02;
         p.vy += Math.sin(angle) * force * 0.02;
@@ -217,23 +240,54 @@ export function initHeroCanvas(
   function drawConnections() {
     if (!ctx) return;
     ctx.lineWidth = 0.5;
+    const cellSize = connectionDistance;
+    const connectionDistanceSquared = connectionDistance * connectionDistance;
+    particleGrid.clear();
 
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const p1 = particles[i];
-        const p2 = particles[j];
-        const dx = p1.x - p2.x;
-        const dy = p1.y - p2.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+    for (const particle of particles) {
+      const cellX = Math.floor(particle.x / cellSize);
+      const cellY = Math.floor(particle.y / cellSize);
+      const key = `${cellX},${cellY}`;
+      const bucket = particleGrid.get(key);
+      if (bucket) {
+        bucket.push(particle);
+      } else {
+        particleGrid.set(key, [particle]);
+      }
+    }
 
-        if (dist < connectionDistance) {
-          const alpha = (1 - dist / connectionDistance) * 0.15;
-          const hue = (p1.hue + p2.hue) / 2;
-          ctx.strokeStyle = `hsla(${hue}, ${scheme.saturation}%, ${scheme.lightness}%, ${alpha})`;
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.stroke();
+    for (const [key, bucket] of particleGrid) {
+      const [cellX, cellY] = key.split(',').map(Number);
+      for (const particle of bucket) {
+        for (const [offsetX, offsetY] of CONNECTION_NEIGHBOR_OFFSETS) {
+          const neighborBucket = particleGrid.get(
+            `${cellX + offsetX},${cellY + offsetY}`,
+          );
+          if (!neighborBucket) continue;
+
+          for (const neighbor of neighborBucket) {
+            if (neighbor === particle) continue;
+            if (
+              neighbor.x < particle.x ||
+              (neighbor.x === particle.x && neighbor.y <= particle.y)
+            ) {
+              continue;
+            }
+
+            const dx = particle.x - neighbor.x;
+            const dy = particle.y - neighbor.y;
+            const distSquared = dx * dx + dy * dy;
+            if (distSquared >= connectionDistanceSquared) continue;
+
+            const dist = Math.sqrt(distSquared);
+            const alpha = (1 - dist / connectionDistance) * 0.15;
+            const hue = (particle.hue + neighbor.hue) / 2;
+            ctx.strokeStyle = `hsla(${hue}, ${scheme.saturation}%, ${scheme.lightness}%, ${alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(neighbor.x, neighbor.y);
+            ctx.stroke();
+          }
         }
       }
     }
