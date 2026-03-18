@@ -752,6 +752,7 @@ export function createUnifiedInput({
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVisibilityChange);
     }
+    handleGamepadConnectionChange();
   }
 
   const dispose = () => {
