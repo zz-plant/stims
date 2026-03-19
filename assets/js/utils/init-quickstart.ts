@@ -26,14 +26,19 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
   const isMobile = isMobileDevice();
 
   quickstarts.forEach((quickstart) => {
-    if (!(quickstart instanceof HTMLElement)) return;
-
-    const quickstartSlug = quickstart.dataset[DATASET_KEYS.quickstartSlug];
-    const quickstartMode = quickstart.dataset[DATASET_KEYS.quickstartMode];
-    const quickstartPool = quickstart.dataset[DATASET_KEYS.quickstartPool];
-    const quickstartAudio = quickstart.dataset[DATASET_KEYS.quickstartAudio];
-    const quickstartFlow = quickstart.dataset[DATASET_KEYS.quickstartFlow];
-    const quickstartParty = quickstart.dataset[DATASET_KEYS.quickstartParty];
+    const quickstartElement = quickstart as HTMLElement;
+    const quickstartSlug =
+      quickstartElement.dataset[DATASET_KEYS.quickstartSlug];
+    const quickstartMode =
+      quickstartElement.dataset[DATASET_KEYS.quickstartMode];
+    const quickstartPool =
+      quickstartElement.dataset[DATASET_KEYS.quickstartPool];
+    const quickstartAudio =
+      quickstartElement.dataset[DATASET_KEYS.quickstartAudio];
+    const quickstartFlow =
+      quickstartElement.dataset[DATASET_KEYS.quickstartFlow];
+    const quickstartParty =
+      quickstartElement.dataset[DATASET_KEYS.quickstartParty];
 
     const resolveFlowState = () => {
       if (quickstartFlow === undefined) return undefined;
@@ -107,7 +112,10 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
           ? pool
           : quickstartToys;
       if (!fallbackPool.length) return null;
-      const index = Math.floor(Math.random() * fallbackPool.length);
+      const index = Math.min(
+        fallbackPool.length - 1,
+        Math.floor(Math.random() * fallbackPool.length),
+      );
       return fallbackPool[index]?.slug ?? null;
     };
 
@@ -117,7 +125,7 @@ export const initQuickstartCta = ({ loadToy }: InitQuickstartOptions) => {
       return resolveRandomSlug();
     };
 
-    quickstart.addEventListener('click', (event) => {
+    quickstartElement.addEventListener('click', (event) => {
       const isModifiedClick =
         event.metaKey ||
         event.ctrlKey ||

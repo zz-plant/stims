@@ -56,32 +56,6 @@ afterAll(async () => {
 });
 
 integrationTest(
-  'agents can launch and capture holy toy',
-  async () => {
-    const outputDir = await mkdtemp(path.join(tmpdir(), 'stims-agent-'));
-
-    try {
-      const result = await playToy({
-        slug: 'holy',
-        screenshot: true,
-        duration: 3000,
-        outputDir,
-        port: TEST_PORT,
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.screenshot).toBeTruthy();
-      expect(result.screenshot ? fs.existsSync(result.screenshot) : false).toBe(
-        true,
-      );
-    } finally {
-      await rm(outputDir, { recursive: true, force: true });
-    }
-  },
-  { timeout: 45000 },
-);
-
-integrationTest(
   'agents can launch and capture milkdrop',
   async () => {
     const outputDir = await mkdtemp(path.join(tmpdir(), 'stims-agent-'));

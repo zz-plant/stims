@@ -1,3 +1,4 @@
+import { bootLibraryPage } from './bootstrap/library-page.ts';
 import { bootToyPage } from './bootstrap/toy-page.ts';
 import { initAgentAPI } from './core/agent-api.ts';
 import { setRendererTelemetryHandler } from './core/renderer-capabilities.ts';
@@ -88,6 +89,9 @@ const startApp = async () => {
   const settingsContainer = document.querySelector<HTMLElement>(
     '[data-settings-panel]',
   );
+  const navContainer = document.querySelector<HTMLElement>(
+    '[data-top-nav-container]',
+  );
   const pageType = document.body?.dataset?.page;
 
   Promise.resolve().then(() => initGamepadNavigation());
@@ -103,8 +107,12 @@ const startApp = async () => {
       persistentBackLink,
     });
   } else {
-    initNavigation();
-    void loadFromQuery();
+    bootLibraryPage({
+      navContainer,
+      loadToy: loader.loadToy ?? defaultLoader.loadToy,
+      initNavigation,
+      loadFromQuery,
+    });
   }
 };
 

@@ -691,18 +691,12 @@ export function createLibraryView({
     updateActiveFiltersSummary();
   };
 
-  const waitForLaunchTransition = () =>
-    new Promise((resolve) => {
-      globalThis.setTimeout(resolve, 220);
-    });
-
-  const openToy = async (
+  const openToy = (
     toy,
     { preferDemoAudio = false, launchCard = null } = {},
   ) => {
     threeEffects.triggerLaunchTransition();
     threeEffects.startLaunchTransition(launchCard);
-    await waitForLaunchTransition();
     if (toy.type === 'module' && typeof loadToy === 'function') {
       loadToy(toy.slug, { pushState: true, preferDemoAudio });
     } else if (toy.module) {
