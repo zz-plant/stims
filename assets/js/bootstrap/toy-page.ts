@@ -30,7 +30,7 @@ type ToyWithControls = Pick<
 >;
 
 const resolveToyTitle = (slug: string | null, toys: Toy[]) => {
-  if (!slug) return 'Web toy';
+  if (!slug) return 'MilkDrop Visualizer';
   return toys.find((toy) => toy.slug === slug)?.title ?? slug;
 };
 
@@ -91,7 +91,7 @@ export function shouldPreferDemoAudio({
 }
 
 export function isPresetFirstToySession(toySlug: string | null) {
-  return toySlug === 'milkdrop';
+  return (toySlug ?? 'milkdrop') === 'milkdrop';
 }
 
 export function shouldOpenPreflightModal({
@@ -139,10 +139,11 @@ export function bootToyPage({
   };
 
   const toyWindow = window as unknown as ToyWindow;
-  const toySlug = new URLSearchParams(window.location.search).get('toy');
+  const toySlug =
+    new URLSearchParams(window.location.search).get('toy') ?? 'milkdrop';
   const shouldCollapseShellPanelsAfterAudio = isPresetFirstToySession(toySlug);
   const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
-  document.title = toySlug ? `${toyTitle} · Stim Webtoy` : document.title;
+  document.title = `${toyTitle} · Stims`;
 
   const collapseFocusedSessionPanels = () => {
     if (!shouldCollapseShellPanelsAfterAudio) {
@@ -253,7 +254,7 @@ export function bootToyPage({
     if (!settingsContainer || settingsContainer.childElementCount > 0) return;
     initSystemControls(settingsContainer, {
       title: 'Tune',
-      description: 'Keep the toy comfortable and responsive.',
+      description: 'Keep the visualizer comfortable and responsive.',
       defaultPresetId:
         result?.performance.recommendedQualityPresetId ?? undefined,
       variant: 'inline',

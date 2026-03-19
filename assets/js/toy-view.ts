@@ -231,21 +231,21 @@ function buildImportErrorMessage(
   { moduleUrl, importError }: ImportErrorOptions = {},
 ) {
   if (typeof window !== 'undefined' && window.location?.protocol === 'file:') {
-    return 'This toy needs a local web server to compile its TypeScript modules. Run `bun run dev` and reload from `http://localhost:5173`.';
+    return 'This visualizer needs a local web server to compile its TypeScript modules. Run `bun run dev` and reload from `http://localhost:5173`.';
   }
 
   const message = importError?.message ?? '';
   if (typeof moduleUrl === 'string' && moduleUrl.endsWith('.ts')) {
-    return `${toy?.title ?? 'This toy'} could not start on this setup yet. Try another toy, or run through the dev server / production bundle so the TypeScript output is available.`;
+    return `${toy?.title ?? 'This visualizer'} could not start on this setup yet. Reload through the dev server or production bundle so the TypeScript output is available.`;
   }
 
   if (message.toLowerCase().includes('mime')) {
-    return `${toy?.title ?? 'This toy'} could not be loaded because the server is returning an unexpected file type. Try reloading from the dev server or production build.`;
+    return `${toy?.title ?? 'This visualizer'} could not be loaded because the server is returning an unexpected file type. Try reloading from the dev server or production build.`;
   }
 
   return toy?.title
-    ? `${toy.title} hit a snag while loading. Try again or return to the library.`
-    : 'Something went wrong while loading this toy. Try again or return to the library.';
+    ? `${toy.title} hit a snag while loading. Try again or return to Stims.`
+    : 'Something went wrong while loading this visualizer. Try again or return to Stims.';
 }
 
 function buildToyNav({
@@ -560,8 +560,8 @@ export function createToyView({
     state.activeToyMeta = toy ?? state.activeToyMeta;
     state.status = {
       variant: 'loading',
-      title: 'Preparing toy...',
-      message: toyTitle ? `${toyTitle} is loading.` : 'Loading toy...',
+      title: 'Preparing visualizer...',
+      message: toyTitle ? `${toyTitle} is loading.` : 'Loading Stims...',
     };
 
     const { status } = runViewTransition(() => render());
@@ -632,19 +632,23 @@ export function createToyView({
     state.activeToyMeta = toy ?? state.activeToyMeta;
     state.status = {
       variant: 'error',
-      title: "This toy couldn't start here yet",
+      title: "This visualizer couldn't start here yet",
       message: buildImportErrorMessage(toy, options),
       actionsClassName: 'active-toy-status__actions',
       actions: [
         {
-          label: 'Try another toy',
+          label: 'Try again',
           onClick: options.onBack,
           primary: true,
         },
-        {
-          label: 'Browse compatible toys',
-          onClick: options.onBrowseCompatible,
-        },
+        ...(options.onBrowseCompatible
+          ? [
+              {
+                label: 'Back to Stims',
+                onClick: options.onBrowseCompatible,
+              },
+            ]
+          : []),
       ],
     };
 
@@ -663,11 +667,11 @@ export function createToyView({
     state.activeToyMeta = undefined;
     state.status = {
       variant: 'error',
-      title: 'Toy unavailable',
-      message: `We couldn't find the stim "${slug}". It may have been moved or removed.`,
+      title: 'Visualizer unavailable',
+      message: `We couldn't find the visualizer entry "${slug}". It may have been moved or removed.`,
       actions: [
         {
-          label: 'Back to library',
+          label: 'Back to Stims',
           onClick: onBack,
           primary: true,
         },
@@ -697,8 +701,8 @@ export function createToyView({
       message: `${
         toy?.title
           ? `${toy.title} needs WebGPU, which is not supported in this browser.`
-          : 'This toy requires WebGPU, which is not supported in this browser.'
-      } Try a browser with WebGPU support or choose another toy.${
+          : 'This visualizer requires WebGPU, which is not supported in this browser.'
+      } Try a browser with WebGPU support or return to Stims.${
         options.details ? ` (${options.details})` : ''
       }`,
       actionsClassName: 'active-toy-actions',
@@ -713,14 +717,18 @@ export function createToyView({
             ]
           : []),
         {
-          label: 'Back to library',
+          label: 'Back to Stims',
           onClick: options.onBack,
           primary: !hasPreferredRendererAction,
         },
-        {
-          label: 'Browse compatible toys',
-          onClick: options.onBrowseCompatible,
-        },
+        ...(options.onBrowseCompatible
+          ? [
+              {
+                label: 'Show compatible options',
+                onClick: options.onBrowseCompatible,
+              },
+            ]
+          : []),
       ],
     };
 

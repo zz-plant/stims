@@ -691,8 +691,18 @@ export function createLibraryView({
     updateActiveFiltersSummary();
   };
 
-  const openToy = (toy, { preferDemoAudio = false } = {}) => {
+  const waitForLaunchTransition = () =>
+    new Promise((resolve) => {
+      globalThis.setTimeout(resolve, 220);
+    });
+
+  const openToy = async (
+    toy,
+    { preferDemoAudio = false, launchCard = null } = {},
+  ) => {
     threeEffects.triggerLaunchTransition();
+    threeEffects.startLaunchTransition(launchCard);
+    await waitForLaunchTransition();
     if (toy.type === 'module' && typeof loadToy === 'function') {
       loadToy(toy.slug, { pushState: true, preferDemoAudio });
     } else if (toy.module) {
@@ -716,7 +726,11 @@ export function createLibraryView({
       event.preventDefault();
     }
 
-    openToy(toy);
+    const launchCard =
+      event?.currentTarget instanceof HTMLElement
+        ? event.currentTarget.closest('.webtoy-card')
+        : null;
+    void openToy(toy, { launchCard });
   };
 
   const titleCaseLabel = (value = '') =>
@@ -866,7 +880,9 @@ export function createLibraryView({
         button.type = 'button';
         button.className = 'cta-button cta-button--muted';
         button.textContent = toy.title;
-        button.addEventListener('click', () => openToy(toy));
+        button.addEventListener('click', () => {
+          void openToy(toy);
+        });
         list.appendChild(button);
       });
       panel.appendChild(list);
@@ -977,7 +993,8 @@ export function createLibraryView({
       open.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        openToy(toy);
+        const launchCard = event.currentTarget.closest('.webtoy-card');
+        void openToy(toy, { launchCard });
       });
       open.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -997,7 +1014,11 @@ export function createLibraryView({
       play.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        openToy(toy, { preferDemoAudio: Boolean(toy.capabilities?.demoAudio) });
+        const launchCard = event.currentTarget.closest('.webtoy-card');
+        void openToy(toy, {
+          preferDemoAudio: Boolean(toy.capabilities?.demoAudio),
+          launchCard,
+        });
       });
       play.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -1422,7 +1443,7 @@ export function createLibraryView({
       if (!quickLaunchToy) return;
 
       event.preventDefault();
-      openToy(quickLaunchToy);
+      void openToy(quickLaunchToy);
     });
 
     document.addEventListener('keydown', (event) => {

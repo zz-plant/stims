@@ -1,6 +1,6 @@
 # Agent Guidelines (Essentials)
 
-Stim Webtoys Library is a collection of interactive, audio-reactive web toys built with Three.js/WebGL for responsive visual play.
+Stims is a browser-native MilkDrop-inspired visualizer built with Three.js/WebGL for responsive, audio-reactive visual play.
 
 ## Essentials
 

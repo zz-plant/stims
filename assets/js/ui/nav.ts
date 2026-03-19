@@ -231,11 +231,11 @@ function renderToyNav(
   doc: Document,
   options: NavOptions,
 ) {
-  const safeTitle = escapeHtml(options.title ?? 'Web toy');
+  const safeTitle = escapeHtml(options.title ?? 'Stims');
   const safeSlug = options.slug ? escapeHtml(options.slug) : '';
   const hintText = isMobileDevice()
-    ? 'Swipe or tap Back to return to the library.'
-    : 'Press Esc or use Back to return to the library.';
+    ? 'Swipe or tap Back to return to Stims.'
+    : 'Press Esc or use Back to return to Stims.';
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
@@ -249,7 +249,7 @@ function renderToyNav(
           class="toy-nav__back-quick"
           data-back-to-library-quick="true"
         >
-          <span aria-hidden="true">←</span><span>Back</span>
+          <span aria-hidden="true">←</span><span>Back to Stims</span>
         </button>
         <button
           type="button"
@@ -303,7 +303,7 @@ function renderToyNav(
         <span class="toy-nav__pip-status" role="status" aria-live="polite"></span>
       </div>
       <button type="button" class="toy-nav__back" data-back-to-library="true">
-        <span aria-hidden="true">←</span><span>Back to library</span>
+        <span aria-hidden="true">←</span><span>Back to Stims</span>
       </button>
       </div>
     </div>

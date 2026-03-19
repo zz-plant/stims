@@ -9,11 +9,13 @@ export function createRouter({
   queryParam = 'toy',
   libraryPath = 'index.html',
   toyPath = 'toy.html',
+  defaultToySlug = 'milkdrop',
 }: {
   windowRef?: WindowGetter;
   queryParam?: string;
   libraryPath?: string;
   toyPath?: string;
+  defaultToySlug?: string | null;
 } = {}) {
   let isListening = false;
 
@@ -58,7 +60,7 @@ export function createRouter({
     }
 
     if (isToyPath(url.pathname)) {
-      return { view: 'toy', slug: null };
+      return { view: 'toy', slug: defaultToySlug };
     }
 
     return { view: 'library', slug: null };

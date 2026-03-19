@@ -1,220 +1,41 @@
 # Development Guide
 
-This is the operational handbook for day-to-day contribution to Stims. Stims is an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, with a broader toy lab of related audio-reactive experiences. Use this guide to choose the right command quickly, run the right quality gates, and ship changes with predictable metadata/docs hygiene.
+This is the day-to-day implementation guide for Stims.
 
-## Toolchain baseline
+Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer changes that strengthen the shared runtime, preset workflows, and app shell over adding parallel product surfaces.
 
-- Package manager/runtime: **Bun 1.3+** (`bun@1.3.8` pinned in `package.json`).
-- Build/dev server: **Vite**.
-- Lint + format: **Biome**.
-- Typecheck: **TypeScript** (`tsc --noEmit`).
-- Tests: **Bun test** with preload/importmap wiring from package scripts.
-- Deploy tooling: **Wrangler** for Cloudflare Pages.
+## Core workflow
 
-## Environment and prerequisites
+1. Install dependencies with `bun install`.
+2. Start local development with `bun run dev`.
+3. Open `http://localhost:5173/toy.html`.
+4. Run `bun run check:quick` while iterating.
+5. Run `bun run check` before finalizing changes.
 
-- Node is supported for fallback script execution (`engines.node: ^22`), but use Bun for installs and scripts.
-- Clone the repo and install dependencies:
+## Main scripts
 
-```bash
-bun install
-```
+| Task | Command |
+| --- | --- |
+| Start dev server | `bun run dev` |
+| Start dev server on all interfaces | `bun run dev:host` |
+| WebGPU-focused local session | `bun run dev:webgpu` |
+| Full quality gate | `bun run check` |
+| Faster local quality gate | `bun run check:quick` |
+| Run tests | `bun run test` |
+| Build production assets | `bun run build` |
+| Preview production build | `bun run preview` |
 
-When dependency manifests change and lockfile updates are expected, run:
+## Product assumptions
 
-```bash
-bun install
-```
+- The primary app entrypoint is `toy.html`, which defaults to the MilkDrop visualizer.
+- `index.html` is the focused marketing/launch page for the same product.
+- Presets are part of one visualizer product, not separate first-class toys.
 
-For reproducible CI-style installs that must not modify `bun.lock`, run:
+## Docs to keep aligned
 
-```bash
-bun install --frozen-lockfile
-```
+- [`README.md`](../README.md)
+- [`LINEAGE_AND_CREDITS.md`](./LINEAGE_AND_CREDITS.md)
+- [`MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md)
 
-## Choose your workflow lane
-
-Use this to decide the minimum workflow before you start running commands.
-
-| Change type | Minimum checks before commit | Usually add |
-| --- | --- | --- |
-| Docs-only wording/link updates | Proofread + command/path validation in edited docs | `bun run check:quick` when commands/instructions changed significantly |
-| JS/TS behavior changes | `bun run check` | Targeted test run while iterating |
-| Toy addition/rename/registration edits | `bun run check` + `bun run check:toys` | `bun run health:toys` and toy docs updates |
-| SEO generation/check logic changes | `bun run check` + `bun run check:seo` | `bun run generate:seo` to refresh artifacts |
-| Deploy pipeline/workflow changes | `bun run check` + local smoke (`bun run dev:check`) | `bun run pages:dev` before deploy |
-
-## Command reference
-
-### Core local development
-
-| Task | Command | Notes |
-| --- | --- | --- |
-| Start dev server | `bun run dev` | Default local Vite dev server. |
-| Start dev server on LAN | `bun run dev:host` | Use for device testing on local network. |
-| Start WebGPU-focused dev session | `bun run dev:webgpu` | Launches localhost Vite + Chromium with WebGPU-enabling flags. |
-| Dev smoke check (no browser) | `bun run dev:check` | Scripted health check for local dev boot. |
-| Production build | `bun run build` | Uses Bun with Node fallback in script. |
-| Reuse prior build artifacts | `bun run build:reuse` | Useful in deploy/preview loops. |
-| Preview production build | `bun run preview` | Serves built output with Vite preview. |
-| Serve `dist/` directly | `bun run serve:dist` | Minimal static server for built output. |
-
-### Quality and validation
-
-| Task | Command | Notes |
-| --- | --- | --- |
-| Full quality gate | `bun run check` | Biome check + typecheck + tests. Required for JS/TS edits. |
-| Quick quality gate | `bun run check:quick` | No `@ts-nocheck` directives + Biome check + typecheck (faster iteration path). |
-| Run all tests | `bun run test` | Preserves preload/importmap setup. |
-| Run unit tests only | `bun run test:unit` | Excludes the browser-backed agent integration flow. |
-| Run compatibility-focused unit tests | `bun run test:compat` | Fast compatibility coverage for renderer preference and fallback state logic. |
-| Run full compatibility regression suite | `bun run test:compat:full` | Includes loader + toy-view flows to surface integration issues. |
-| Run tests in watch mode | `bun run test:watch` | Iterative local testing. |
-| Run browser-backed integration test | `bun run test:integration` | Boots the local Vite server and runs the Playwright agent path. |
-| Run agent integration test (alias) | `bun run test:agent` | Alias for `bun run test:integration`. |
-| Typecheck once | `bun run typecheck` | Runs `tsc --noEmit`. |
-| Typecheck watch | `bun run typecheck:watch` | Continuous TS diagnostics. |
-| Lint | `bun run lint` | Lint-only diagnostics. |
-| Lint + auto-fix | `bun run lint:fix` | Biome check with writes. |
-| Format write | `bun run format` | Applies Biome formatting. |
-| Format check | `bun run format:check` | Non-writing format validation. |
-
-### Toy and content integrity
-
-| Task | Command | Notes |
-| --- | --- | --- |
-| Toy consistency check | `bun run check:toys` | Validates toy registration/docs consistency, including behavior-derived MilkDrop interaction metadata. |
-| Toy health check | `bun run health:toys` | Runs toy runtime/metadata health diagnostics. |
-| Play a specific toy | `bun run play:toy <slug>` | Scripted toy-run helper against local dev server. |
-| Generate SEO artifacts | `bun run generate:seo` | Regenerates SEO-derived assets. |
-| Validate SEO artifacts | `bun run check:seo` | Ensures generated SEO artifacts are valid. |
-
-### Cloudflare Pages workflows
-
-| Task | Command | Notes |
-| --- | --- | --- |
-| Local Pages dev | `bun run pages:dev` | Builds first, then runs Wrangler Pages locally. |
-| Deploy Pages | `bun run pages:deploy` | Build + deploy sequence. |
-| Deploy reusing build | `bun run pages:deploy:reuse` | Faster deploy loop if build is already available. |
-
-### MCP tooling
-
-| Task | Command | Notes |
-| --- | --- | --- |
-| Start MCP server | `bun run mcp` | Starts project MCP server script. |
-
-## Golden-path recipes
-
-### 1) Implement a normal JS/TS feature
-
-```bash
-bun run dev
-# implement change
-bun run check
-```
-
-If `bun run check` is too slow during iteration, use `bun run check:quick` until final validation. Both quality gates now fail if `@ts-nocheck` appears in `assets/`, `scripts/`, or `tests/`.
-
-### 2) Add or rename a toy
-
-```bash
-bun run dev
-# implement toy + metadata + docs updates
-bun run generate:toys
-bun run check
-bun run check:toys
-```
-
-Also keep toy docs synchronized in the same change:
-
-- `docs/TOY_DEVELOPMENT.md`
-- `docs/TOY_SCRIPT_INDEX.md`
-- `docs/toys.md`
-
-### 3) Refresh SEO-derived content
-
-```bash
-bun run generate:seo
-bun run check:seo
-```
-
-Run `bun run check` as well if supporting JS/TS logic changed.
-
-### 4) Prepare a Pages deployment
-
-```bash
-bun run check
-bun run build
-bun run pages:dev
-# final verification
-bun run pages:deploy
-```
-
-Use `bun run pages:deploy:reuse` when deploying a build you already verified.
-
-## Quality gate expectations
-
-- **JS/TS edits:** run `bun run check` before commit.
-- **Docs-only edits:** tests/typecheck can be skipped unless command paths/workflows changed and need validation.
-- **Toy additions/slug changes:** run `bun run check:toys` and update toy docs together.
-
-## CI automation notes
-
-- Pull requests now run a single CI workflow for code changes: `bun run dev:check`, `bun run check`, `bun run check:toys`, and `bun run build`.
-- Markdown-only changes are ignored by CI to reduce GitHub Actions usage; validate command/path changes locally when editing workflow-critical docs.
-- Browser-backed integration tests are reserved for `merge_group` and pushes to `main`, which keeps PR action usage lower while preserving pre-merge and post-merge coverage.
-- Dependency review runs only when `package.json` or `bun.lock` changes.
-
-## Targeted testing patterns
-
-Run a single test file:
-
-```bash
-bun run test tests/path/to/spec.test.ts
-```
-
-Run tests matching a pattern:
-
-```bash
-bun run test -- --filter "toy"
-```
-
-Always prefer `bun run test` over `bun test` directly so preload/importmap flags in `package.json` are retained.
-
-## Troubleshooting quick hits
-
-- **`bun run test` behaves differently from direct `bun test`:** ensure you are invoking through package scripts so preload/importmap flags apply.
-- **Formatting/lint drift:** run `bun run lint:fix` followed by `bun run format`.
-- **Typecheck errors after dependency changes:** rerun `bun install` and then `bun run typecheck`.
-- **`check:toys` failures after renaming a slug:** verify toy docs and metadata updates landed together.
-- **Pages command failures locally:** verify Wrangler auth/context and rerun `bun run pages:dev`.
-- **`navigator.gpu` missing during local testing:** run `bun run dev:webgpu` so Chromium starts with WebGPU flags on localhost.
-
-## Commit and PR metadata checklist
-
-Before opening a PR:
-
-1. Commit title is sentence case with no trailing period.
-2. PR description includes:
-   - a short summary,
-   - explicit list of tests run,
-   - explicit list of docs touched/added.
-3. If scripts/workflows changed, linked docs are updated (`docs/README.md`, contributor/agent overlays as needed).
-
-## Suggested contribution workflow
-
-1. Create a branch from `main`.
-2. Implement the change.
-3. Run relevant validation commands for your workflow lane.
-4. Update docs when behavior, scripts, or workflow expectations change.
-5. Commit using sentence case with no trailing period.
-6. Open PR with explicit tests/docs metadata.
-
-## Related docs
-
-- Contributor onboarding: [`../CONTRIBUTING.md`](../CONTRIBUTING.md)
-- Docs map: [`README.md`](./README.md)
-- Toy implementation details: [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md)
-- Deployment details: [`DEPLOYMENT.md`](./DEPLOYMENT.md)
-- Architecture overview: [`ARCHITECTURE.md`](./ARCHITECTURE.md)
-- Agent-focused overlays: [`agents/README.md`](./agents/README.md)
+Older toy-catalog docs may still exist for historical context, but they are no longer the main operating model.
