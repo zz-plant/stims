@@ -126,9 +126,13 @@ describe('audio-handler utilities', () => {
     const track = { stop: mock() };
     const stream = { getTracks: mock(() => [track]) };
 
-    nav.mediaDevices = {
-      getUserMedia: mock().mockResolvedValue(stream),
-    };
+    Object.defineProperty(nav, 'mediaDevices', {
+      configurable: true,
+      writable: true,
+      value: {
+        getUserMedia: mock().mockResolvedValue(stream),
+      },
+    });
     global.navigator = nav;
   });
 
@@ -200,7 +204,11 @@ describe('audio-handler utilities', () => {
   });
 
   test('initAudio rejects with unsupported error when media devices are missing', async () => {
-    delete global.navigator.mediaDevices;
+    Object.defineProperty(global.navigator, 'mediaDevices', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
 
     await expect(initAudio()).rejects.toEqual(
       expect.objectContaining({
@@ -215,9 +223,15 @@ describe('audio-handler utilities', () => {
     const originalConsoleError = console.error;
     console.error = consoleErrorSpy;
 
-    global.navigator.mediaDevices.getUserMedia = mock().mockRejectedValue(
-      new DOMException('denied', 'NotAllowedError'),
-    );
+    Object.defineProperty(global.navigator, 'mediaDevices', {
+      configurable: true,
+      writable: true,
+      value: {
+        getUserMedia: mock().mockRejectedValue(
+          new DOMException('denied', 'NotAllowedError'),
+        ),
+      },
+    });
 
     try {
       await expect(initAudio()).rejects.toEqual(
