@@ -207,6 +207,76 @@ comp_shader=saturation=1+0.2; mix=0.1+0.05; tint=1, 0.4+0.2, sqrt(0.25)+0.1
     expect(compiled.ir.post.shaderControls.tint.b).toBeCloseTo(0.6, 6);
   });
 
+  test('supports named texture samplers in comp shader text', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Texture Overlay
+comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_aura, uv * 1.5 + vec2(0.1, -0.2)).rgb, 0.35)
+      `.trim(),
+      { id: 'shader-texture-overlay' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('aura');
+    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('mix');
+    expect(compiled.ir.post.shaderControls.textureLayer.amount).toBeCloseTo(
+      0.35,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.scaleX).toBeCloseTo(
+      1.5,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.scaleY).toBeCloseTo(
+      1.5,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.offsetX).toBeCloseTo(
+      0.1,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.offsetY).toBeCloseTo(
+      -0.2,
+      6,
+    );
+  });
+
+  test('supports warp texture controls in shader text', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Warp Texture
+warp_shader=warp_texture_source = sampler_noise; warp_texture_amount = bass_att * 0.05; warp_texture_scale = vec2(2.0, 1.5); warp_texture_offset = vec2(0.2, -0.1)
+      `.trim(),
+      { id: 'shader-warp-texture' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.warpTexture.source).toBe('noise');
+    expect(compiled.ir.post.shaderControls.warpTexture.amount).toBeCloseTo(
+      0,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.warpTexture.scaleX).toBeCloseTo(
+      2,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.warpTexture.scaleY).toBeCloseTo(
+      1.5,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.warpTexture.offsetX).toBeCloseTo(
+      0.2,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.warpTexture.offsetY).toBeCloseTo(
+      -0.1,
+      6,
+    );
+    expect(
+      compiled.ir.post.shaderControlExpressions.warpTexture.amount,
+    ).not.toBeNull();
+  });
+
   test('preserves runtime-driven shader expressions for vm evaluation', () => {
     const compiled = compileMilkdropPresetSource(
       `

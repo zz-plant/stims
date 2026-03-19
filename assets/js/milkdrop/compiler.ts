@@ -34,12 +34,33 @@ import type {
   MilkdropShaderControls,
   MilkdropShaderExpressionNode,
   MilkdropShaderStatement,
+  MilkdropShaderTextureBlendMode,
+  MilkdropShaderTextureSampler,
   MilkdropShapeDefinition,
   MilkdropWaveDefinition,
 } from './types';
 
 const MAX_CUSTOM_WAVES = 32;
 const MAX_CUSTOM_SHAPES = 32;
+const SHADER_TEXTURE_SAMPLERS = new Set([
+  'main',
+  'none',
+  'noise',
+  'perlin',
+  'simplex',
+  'voronoi',
+  'aura',
+  'caustics',
+  'pattern',
+  'fractal',
+]);
+const SHADER_TEXTURE_BLEND_MODES = new Set([
+  'none',
+  'replace',
+  'mix',
+  'add',
+  'multiply',
+]);
 
 function createDefaultShapeSlot(index: number): Record<string, number> {
   if (index === 1) {
@@ -539,6 +560,23 @@ function createDefaultShaderControls(): MilkdropShaderControls {
     invertBoost: 0,
     solarizeBoost: 0,
     tint: { r: 1, g: 1, b: 1 },
+    textureLayer: {
+      source: 'none',
+      mode: 'none',
+      amount: 0,
+      scaleX: 1,
+      scaleY: 1,
+      offsetX: 0,
+      offsetY: 0,
+    },
+    warpTexture: {
+      source: 'none',
+      amount: 0,
+      scaleX: 1,
+      scaleY: 1,
+      offsetX: 0,
+      offsetY: 0,
+    },
   };
 }
 
@@ -558,6 +596,20 @@ function createDefaultShaderControlExpressions(): MilkdropShaderControlExpressio
     invertBoost: null,
     solarizeBoost: null,
     tint: { r: null, g: null, b: null },
+    textureLayer: {
+      amount: null,
+      scaleX: null,
+      scaleY: null,
+      offsetX: null,
+      offsetY: null,
+    },
+    warpTexture: {
+      amount: null,
+      scaleX: null,
+      scaleY: null,
+      offsetX: null,
+      offsetY: null,
+    },
   };
 }
 
@@ -1026,6 +1078,41 @@ function parseShaderSampleMixPattern(rawValue: string) {
   };
 }
 
+function normalizeShaderSamplerName(
+  value: string,
+): MilkdropShaderTextureSampler | 'main' | null {
+  const normalized = value.trim().toLowerCase();
+  const sampler = normalized.startsWith('sampler_')
+    ? normalized.slice('sampler_'.length)
+    : normalized;
+  return SHADER_TEXTURE_SAMPLERS.has(sampler)
+    ? ((sampler === 'main'
+        ? 'main'
+        : sampler) as MilkdropShaderTextureSampler | 'main')
+    : null;
+}
+
+function normalizeShaderTextureBlendMode(
+  value: string,
+): MilkdropShaderTextureBlendMode | null {
+  const normalized = value.trim().toLowerCase();
+  return SHADER_TEXTURE_BLEND_MODES.has(normalized)
+    ? (normalized as MilkdropShaderTextureBlendMode)
+    : null;
+}
+
+function parseShaderSamplerSource(
+  rawValue: string,
+): MilkdropShaderTextureSampler | 'main' | null {
+  return normalizeShaderSamplerName(rawValue.replace(/[;,\s]+$/gu, ''));
+}
+
+function parseShaderTextureBlendMode(
+  rawValue: string,
+): MilkdropShaderTextureBlendMode | null {
+  return normalizeShaderTextureBlendMode(rawValue.replace(/[;,\s]+$/gu, ''));
+}
+
 function isKnownShaderScalarKey(key: string) {
   return new Set([
     'warp',
@@ -1057,6 +1144,24 @@ function isKnownShaderScalarKey(key: string) {
     'brighten',
     'invert',
     'solarize',
+    'texture_amount',
+    'texture_mix',
+    'texture_scale',
+    'texture_scale_x',
+    'texture_scale_y',
+    'texture_offset_x',
+    'texture_offset_y',
+    'texture_scroll_x',
+    'texture_scroll_y',
+    'warp_texture_amount',
+    'warp_texture_mix',
+    'warp_texture_scale',
+    'warp_texture_scale_x',
+    'warp_texture_scale_y',
+    'warp_texture_offset_x',
+    'warp_texture_offset_y',
+    'warp_texture_scroll_x',
+    'warp_texture_scroll_y',
   ]).has(key);
 }
 
@@ -1088,6 +1193,268 @@ function isShaderSampleRgbExpression(
     ['tex2d', 'texture'].includes(node.object.name.toLowerCase()) &&
     node.object.args.length >= 2
   );
+}
+
+function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
+  source: string;
+  uv: MilkdropShaderExpressionNode;
+} | null {
+  if (
+    node.type !== 'member' ||
+    node.property.toLowerCase() !== 'rgb' ||
+    node.object.type !== 'call' ||
+    !['tex2d', 'texture'].includes(node.object.name.toLowerCase()) ||
+    node.object.args.length < 2
+  ) {
+    return null;
+  }
+  const samplerArg = node.object.args[0];
+  const uvArg = node.object.args[1];
+  if (!samplerArg || !uvArg) {
+    return null;
+  }
+  const source =
+    samplerArg.type === 'identifier'
+      ? normalizeShaderSamplerName(samplerArg.name)
+      : 'main';
+  if (!source) {
+    return null;
+  }
+  return {
+    source,
+    uv: uvArg,
+  };
+}
+
+function isShaderMainSampleExpression(node: MilkdropShaderExpressionNode) {
+  return getShaderSampleInfo(node)?.source === 'main';
+}
+
+function isShaderAuxSampleExpression(node: MilkdropShaderExpressionNode) {
+  const source = getShaderSampleInfo(node)?.source;
+  return Boolean(source && source !== 'main' && source !== 'none');
+}
+
+function extractScaledShaderSampleExpression(
+  node: MilkdropShaderExpressionNode,
+): {
+  amountExpression: MilkdropExpressionNode | null;
+  amountValue: number;
+  sample: {
+    source: string;
+    uv: MilkdropShaderExpressionNode;
+  };
+} | null {
+  const directSample = getShaderSampleInfo(node);
+  if (
+    directSample &&
+    directSample.source !== 'main' &&
+    directSample.source !== 'none'
+  ) {
+    return {
+      amountExpression: createLiteralExpression(1),
+      amountValue: 1,
+      sample: directSample,
+    };
+  }
+
+  if (
+    node.type !== 'binary' ||
+    node.operator !== '*' ||
+    (!isShaderAuxSampleExpression(node.left) &&
+      !isShaderAuxSampleExpression(node.right))
+  ) {
+    return null;
+  }
+
+  const sampleNode = isShaderAuxSampleExpression(node.left)
+    ? node.left
+    : node.right;
+  const amountNode = sampleNode === node.left ? node.right : node.left;
+  const sample = getShaderSampleInfo(sampleNode);
+  if (!sample || sample.source === 'main' || sample.source === 'none') {
+    return null;
+  }
+
+  const scalarExpression = toMilkdropExpression(amountNode);
+  if (!scalarExpression) {
+    return null;
+  }
+
+  return {
+    amountExpression: scalarExpression,
+    amountValue: evaluateMilkdropExpression(
+      scalarExpression,
+      DEFAULT_MILKDROP_STATE,
+    ),
+    sample,
+  };
+}
+
+function analyzeShaderUvTransform(node: MilkdropShaderExpressionNode): {
+  scaleX: number;
+  scaleY: number;
+  offsetX: number;
+  offsetY: number;
+  expressions: {
+    scaleX: MilkdropExpressionNode | null;
+    scaleY: MilkdropExpressionNode | null;
+    offsetX: MilkdropExpressionNode | null;
+    offsetY: MilkdropExpressionNode | null;
+  };
+} | null {
+  if (isShaderUvIdentifier(node)) {
+    return {
+      scaleX: 1,
+      scaleY: 1,
+      offsetX: 0,
+      offsetY: 0,
+      expressions: {
+        scaleX: null,
+        scaleY: null,
+        offsetX: null,
+        offsetY: null,
+      },
+    };
+  }
+
+  if (
+    node.type === 'binary' &&
+    (node.operator === '+' || node.operator === '-')
+  ) {
+    const base = analyzeShaderUvTransform(node.left);
+    const offset = evaluateShaderVectorResult(
+      node.right,
+      2,
+      { uv: { kind: 'vec2', value: [0, 0] } },
+      DEFAULT_MILKDROP_STATE,
+      {},
+    );
+    if (!base || !offset) {
+      return null;
+    }
+    const sign = node.operator === '-' ? -1 : 1;
+    return {
+      scaleX: base.scaleX,
+      scaleY: base.scaleY,
+      offsetX: base.offsetX + offset.values[0] * sign,
+      offsetY: base.offsetY + offset.values[1] * sign,
+      expressions: {
+        scaleX: base.expressions.scaleX,
+        scaleY: base.expressions.scaleY,
+        offsetX:
+          offset.expressions[0] && sign === -1
+            ? {
+                type: 'unary',
+                operator: '-',
+                operand: offset.expressions[0],
+              }
+            : (offset.expressions[0] ?? base.expressions.offsetX),
+        offsetY:
+          offset.expressions[1] && sign === -1
+            ? {
+                type: 'unary',
+                operator: '-',
+                operand: offset.expressions[1],
+              }
+            : (offset.expressions[1] ?? base.expressions.offsetY),
+      },
+    };
+  }
+
+  if (node.type === 'binary' && node.operator === '*') {
+    const uvSide = isShaderUvIdentifier(node.left)
+      ? node.left
+      : isShaderUvIdentifier(node.right)
+        ? node.right
+        : null;
+    const scaleSide =
+      uvSide === node.left
+        ? node.right
+        : uvSide === node.right
+          ? node.left
+          : null;
+    if (!uvSide || !scaleSide) {
+      return null;
+    }
+
+    const scalar = evaluateShaderScalarResult(
+      scaleSide,
+      { uv: { kind: 'vec2', value: [0, 0] } },
+      DEFAULT_MILKDROP_STATE,
+      {},
+    );
+    if (scalar) {
+      return {
+        scaleX: scalar.value,
+        scaleY: scalar.value,
+        offsetX: 0,
+        offsetY: 0,
+        expressions: {
+          scaleX: scalar.expression,
+          scaleY: scalar.expression,
+          offsetX: null,
+          offsetY: null,
+        },
+      };
+    }
+
+    const vector = evaluateShaderVectorResult(
+      scaleSide,
+      2,
+      { uv: { kind: 'vec2', value: [0, 0] } },
+      DEFAULT_MILKDROP_STATE,
+      {},
+    );
+    if (!vector) {
+      return null;
+    }
+    return {
+      scaleX: vector.values[0],
+      scaleY: vector.values[1],
+      offsetX: 0,
+      offsetY: 0,
+      expressions: {
+        scaleX: vector.expressions[0] ?? null,
+        scaleY: vector.expressions[1] ?? null,
+        offsetX: null,
+        offsetY: null,
+      },
+    };
+  }
+
+  if (
+    node.type === 'binary' &&
+    node.operator === '+' &&
+    node.left.type === 'binary' &&
+    node.left.operator === '*'
+  ) {
+    const scaled = analyzeShaderUvTransform(node.left);
+    const offset = evaluateShaderVectorResult(
+      node.right,
+      2,
+      { uv: { kind: 'vec2', value: [0, 0] } },
+      DEFAULT_MILKDROP_STATE,
+      {},
+    );
+    if (!scaled || !offset) {
+      return null;
+    }
+    return {
+      scaleX: scaled.scaleX,
+      scaleY: scaled.scaleY,
+      offsetX: offset.values[0],
+      offsetY: offset.values[1],
+      expressions: {
+        scaleX: scaled.expressions.scaleX,
+        scaleY: scaled.expressions.scaleY,
+        offsetX: offset.expressions[0] ?? null,
+        offsetY: offset.expressions[1] ?? null,
+      },
+    };
+  }
+
+  return null;
 }
 
 function isShaderUvIdentifier(node: MilkdropShaderExpressionNode) {
@@ -1229,6 +1596,45 @@ function applyShaderAstStatement({
     return true;
   }
 
+  if (key === 'texture_source') {
+    const source =
+      resolvedExpression.type === 'identifier'
+        ? normalizeShaderSamplerName(resolvedExpression.name)
+        : parseShaderSamplerSource(statement.rawValue);
+    if (!source || source === 'main') {
+      return false;
+    }
+    controls.textureLayer.source = source;
+    if (controls.textureLayer.mode === 'none') {
+      controls.textureLayer.mode = 'mix';
+    }
+    return true;
+  }
+
+  if (key === 'texture_mode') {
+    const mode =
+      resolvedExpression.type === 'identifier'
+        ? normalizeShaderTextureBlendMode(resolvedExpression.name)
+        : parseShaderTextureBlendMode(statement.rawValue);
+    if (!mode) {
+      return false;
+    }
+    controls.textureLayer.mode = mode;
+    return true;
+  }
+
+  if (key === 'warp_texture_source') {
+    const source =
+      resolvedExpression.type === 'identifier'
+        ? normalizeShaderSamplerName(resolvedExpression.name)
+        : parseShaderSamplerSource(statement.rawValue);
+    if (!source || source === 'main') {
+      return false;
+    }
+    controls.warpTexture.source = source;
+    return true;
+  }
+
   if (key === 'uv') {
     const directVec = vec2Result();
     if ((operator === '+=' || operator === '-=') && directVec) {
@@ -1349,8 +1755,132 @@ function applyShaderAstStatement({
     }
   }
 
+  if (key === 'texture_offset' || key === 'texture_scroll') {
+    const offset = vec2Result();
+    if (offset) {
+      const nextX = applyShaderControlValue(
+        operator,
+        controls.textureLayer.offsetX,
+        expressions.textureLayer.offsetX,
+        offset.values[0],
+        offset.expressions[0] ?? null,
+      );
+      const nextY = applyShaderControlValue(
+        operator,
+        controls.textureLayer.offsetY,
+        expressions.textureLayer.offsetY,
+        offset.values[1],
+        offset.expressions[1] ?? null,
+      );
+      controls.textureLayer.offsetX = nextX.value;
+      controls.textureLayer.offsetY = nextY.value;
+      expressions.textureLayer.offsetX = nextX.expression;
+      expressions.textureLayer.offsetY = nextY.expression;
+      return true;
+    }
+  }
+
+  if (key === 'texture_scale') {
+    const scale = vec2Result();
+    if (scale) {
+      const nextX = applyShaderControlValue(
+        operator,
+        controls.textureLayer.scaleX,
+        expressions.textureLayer.scaleX,
+        scale.values[0],
+        scale.expressions[0] ?? null,
+      );
+      const nextY = applyShaderControlValue(
+        operator,
+        controls.textureLayer.scaleY,
+        expressions.textureLayer.scaleY,
+        scale.values[1],
+        scale.expressions[1] ?? null,
+      );
+      controls.textureLayer.scaleX = nextX.value;
+      controls.textureLayer.scaleY = nextY.value;
+      expressions.textureLayer.scaleX = nextX.expression;
+      expressions.textureLayer.scaleY = nextY.expression;
+      return true;
+    }
+  }
+
+  if (key === 'warp_texture_offset' || key === 'warp_texture_scroll') {
+    const offset = vec2Result();
+    if (offset) {
+      const nextX = applyShaderControlValue(
+        operator,
+        controls.warpTexture.offsetX,
+        expressions.warpTexture.offsetX,
+        offset.values[0],
+        offset.expressions[0] ?? null,
+      );
+      const nextY = applyShaderControlValue(
+        operator,
+        controls.warpTexture.offsetY,
+        expressions.warpTexture.offsetY,
+        offset.values[1],
+        offset.expressions[1] ?? null,
+      );
+      controls.warpTexture.offsetX = nextX.value;
+      controls.warpTexture.offsetY = nextY.value;
+      expressions.warpTexture.offsetX = nextX.expression;
+      expressions.warpTexture.offsetY = nextY.expression;
+      return true;
+    }
+  }
+
+  if (key === 'warp_texture_scale') {
+    const scale = vec2Result();
+    if (scale) {
+      const nextX = applyShaderControlValue(
+        operator,
+        controls.warpTexture.scaleX,
+        expressions.warpTexture.scaleX,
+        scale.values[0],
+        scale.expressions[0] ?? null,
+      );
+      const nextY = applyShaderControlValue(
+        operator,
+        controls.warpTexture.scaleY,
+        expressions.warpTexture.scaleY,
+        scale.values[1],
+        scale.expressions[1] ?? null,
+      );
+      controls.warpTexture.scaleX = nextX.value;
+      controls.warpTexture.scaleY = nextY.value;
+      expressions.warpTexture.scaleX = nextX.expression;
+      expressions.warpTexture.scaleY = nextY.expression;
+      return true;
+    }
+  }
+
   if (key === 'ret' || key === 'shader_body') {
-    if (isShaderSampleRgbExpression(resolvedExpression)) {
+    const directSample = getShaderSampleInfo(resolvedExpression);
+    if (directSample && directSample.source === 'main') {
+      return true;
+    }
+
+    if (
+      directSample &&
+      directSample.source !== 'main' &&
+      directSample.source !== 'none'
+    ) {
+      const uvTransform = analyzeShaderUvTransform(directSample.uv);
+      controls.textureLayer.source = directSample.source;
+      controls.textureLayer.mode = 'replace';
+      controls.textureLayer.amount = 1;
+      expressions.textureLayer.amount = createLiteralExpression(1);
+      if (uvTransform) {
+        controls.textureLayer.scaleX = uvTransform.scaleX;
+        controls.textureLayer.scaleY = uvTransform.scaleY;
+        controls.textureLayer.offsetX = uvTransform.offsetX;
+        controls.textureLayer.offsetY = uvTransform.offsetY;
+        expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
+        expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
+        expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
+        expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
+      }
       return true;
     }
 
@@ -1439,15 +1969,41 @@ function applyShaderAstStatement({
         resolvedExpression.args[0] as MilkdropShaderExpressionNode,
       )
     ) {
+      const baseSample = getShaderSampleInfo(
+        resolvedExpression.args[0] as MilkdropShaderExpressionNode,
+      );
       const amount = evaluateShaderScalarResult(
         resolvedExpression.args[2] as MilkdropShaderExpressionNode,
         shaderValueEnv,
         shaderEnv,
         shaderExpressionEnv,
       );
-      if (amount) {
+      if (amount && baseSample?.source === 'main') {
         const targetNode = resolvedExpression
           .args[1] as MilkdropShaderExpressionNode;
+        const auxSample = getShaderSampleInfo(targetNode);
+        if (
+          auxSample &&
+          auxSample.source !== 'main' &&
+          auxSample.source !== 'none'
+        ) {
+          const uvTransform = analyzeShaderUvTransform(auxSample.uv);
+          controls.textureLayer.source = auxSample.source;
+          controls.textureLayer.mode = 'mix';
+          controls.textureLayer.amount = amount.value;
+          expressions.textureLayer.amount = amount.expression;
+          if (uvTransform) {
+            controls.textureLayer.scaleX = uvTransform.scaleX;
+            controls.textureLayer.scaleY = uvTransform.scaleY;
+            controls.textureLayer.offsetX = uvTransform.offsetX;
+            controls.textureLayer.offsetY = uvTransform.offsetY;
+            expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
+            expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
+            expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
+            expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
+          }
+          return true;
+        }
         if (isShaderInvertSampleExpression(targetNode)) {
           const next = applyShaderControlValue(
             operator,
@@ -1529,6 +2085,72 @@ function applyShaderAstStatement({
         }
       }
     }
+
+    if (
+      resolvedExpression.type === 'binary' &&
+      resolvedExpression.operator === '+' &&
+      (isShaderMainSampleExpression(resolvedExpression.left) ||
+        isShaderMainSampleExpression(resolvedExpression.right))
+    ) {
+      const auxNode = isShaderMainSampleExpression(resolvedExpression.left)
+        ? resolvedExpression.right
+        : resolvedExpression.left;
+      const auxSample = extractScaledShaderSampleExpression(auxNode);
+      if (auxSample) {
+        const uvTransform = analyzeShaderUvTransform(auxSample.sample.uv);
+        controls.textureLayer.source = auxSample.sample.source as Exclude<
+          typeof auxSample.sample.source,
+          'main' | 'none'
+        >;
+        controls.textureLayer.mode = 'add';
+        controls.textureLayer.amount = auxSample.amountValue;
+        expressions.textureLayer.amount = auxSample.amountExpression;
+        if (uvTransform) {
+          controls.textureLayer.scaleX = uvTransform.scaleX;
+          controls.textureLayer.scaleY = uvTransform.scaleY;
+          controls.textureLayer.offsetX = uvTransform.offsetX;
+          controls.textureLayer.offsetY = uvTransform.offsetY;
+          expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
+          expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
+          expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
+          expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
+        }
+        return true;
+      }
+    }
+
+    if (
+      resolvedExpression.type === 'binary' &&
+      resolvedExpression.operator === '*' &&
+      (isShaderMainSampleExpression(resolvedExpression.left) ||
+        isShaderMainSampleExpression(resolvedExpression.right))
+    ) {
+      const auxNode = isShaderMainSampleExpression(resolvedExpression.left)
+        ? resolvedExpression.right
+        : resolvedExpression.left;
+      const auxSample = extractScaledShaderSampleExpression(auxNode);
+      if (auxSample) {
+        const uvTransform = analyzeShaderUvTransform(auxSample.sample.uv);
+        controls.textureLayer.source = auxSample.sample.source as Exclude<
+          typeof auxSample.sample.source,
+          'main' | 'none'
+        >;
+        controls.textureLayer.mode = 'multiply';
+        controls.textureLayer.amount = auxSample.amountValue;
+        expressions.textureLayer.amount = auxSample.amountExpression;
+        if (uvTransform) {
+          controls.textureLayer.scaleX = uvTransform.scaleX;
+          controls.textureLayer.scaleY = uvTransform.scaleY;
+          controls.textureLayer.offsetX = uvTransform.offsetX;
+          controls.textureLayer.offsetY = uvTransform.offsetY;
+          expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
+          expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
+          expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
+          expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
+        }
+        return true;
+      }
+    }
   }
 
   const scalarAliases = {
@@ -1547,6 +2169,16 @@ function applyShaderAstStatement({
     brightenBoost: ['brighten'],
     invertBoost: ['invert'],
     solarizeBoost: ['solarize'],
+    textureAmount: ['texture_amount', 'texture_mix'],
+    textureScaleX: ['texture_scale', 'texture_scale_x'],
+    textureScaleY: ['texture_scale', 'texture_scale_y'],
+    textureOffsetX: ['texture_offset_x', 'texture_scroll_x'],
+    textureOffsetY: ['texture_offset_y', 'texture_scroll_y'],
+    warpTextureAmount: ['warp_texture_amount', 'warp_texture_mix'],
+    warpTextureScaleX: ['warp_texture_scale', 'warp_texture_scale_x'],
+    warpTextureScaleY: ['warp_texture_scale', 'warp_texture_scale_y'],
+    warpTextureOffsetX: ['warp_texture_offset_x', 'warp_texture_scroll_x'],
+    warpTextureOffsetY: ['warp_texture_offset_y', 'warp_texture_scroll_y'],
   } as const;
   const matchesAlias = (aliases: readonly string[]) => aliases.includes(key);
   const numeric = scalarResult();
@@ -1705,6 +2337,99 @@ function applyShaderAstStatement({
       controls.solarizeBoost = next.value;
       expressions.solarizeBoost = next.expression;
       shaderEnv.solarize = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.textureAmount)) {
+      const next = updateScalarControl(
+        controls.textureLayer.amount,
+        expressions.textureLayer.amount,
+      );
+      controls.textureLayer.amount = next.value;
+      expressions.textureLayer.amount = next.expression;
+      if (controls.textureLayer.mode === 'none') {
+        controls.textureLayer.mode = 'mix';
+      }
+      return true;
+    }
+    if (matchesAlias(scalarAliases.textureScaleX)) {
+      const next = updateScalarControl(
+        controls.textureLayer.scaleX,
+        expressions.textureLayer.scaleX,
+      );
+      controls.textureLayer.scaleX = next.value;
+      expressions.textureLayer.scaleX = next.expression;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.textureScaleY)) {
+      const next = updateScalarControl(
+        controls.textureLayer.scaleY,
+        expressions.textureLayer.scaleY,
+      );
+      controls.textureLayer.scaleY = next.value;
+      expressions.textureLayer.scaleY = next.expression;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.textureOffsetX)) {
+      const next = updateScalarControl(
+        controls.textureLayer.offsetX,
+        expressions.textureLayer.offsetX,
+      );
+      controls.textureLayer.offsetX = next.value;
+      expressions.textureLayer.offsetX = next.expression;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.textureOffsetY)) {
+      const next = updateScalarControl(
+        controls.textureLayer.offsetY,
+        expressions.textureLayer.offsetY,
+      );
+      controls.textureLayer.offsetY = next.value;
+      expressions.textureLayer.offsetY = next.expression;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.warpTextureAmount)) {
+      const next = updateScalarControl(
+        controls.warpTexture.amount,
+        expressions.warpTexture.amount,
+      );
+      controls.warpTexture.amount = next.value;
+      expressions.warpTexture.amount = next.expression;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.warpTextureScaleX)) {
+      const next = updateScalarControl(
+        controls.warpTexture.scaleX,
+        expressions.warpTexture.scaleX,
+      );
+      controls.warpTexture.scaleX = next.value;
+      expressions.warpTexture.scaleX = next.expression;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.warpTextureScaleY)) {
+      const next = updateScalarControl(
+        controls.warpTexture.scaleY,
+        expressions.warpTexture.scaleY,
+      );
+      controls.warpTexture.scaleY = next.value;
+      expressions.warpTexture.scaleY = next.expression;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.warpTextureOffsetX)) {
+      const next = updateScalarControl(
+        controls.warpTexture.offsetX,
+        expressions.warpTexture.offsetX,
+      );
+      controls.warpTexture.offsetX = next.value;
+      expressions.warpTexture.offsetX = next.expression;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.warpTextureOffsetY)) {
+      const next = updateScalarControl(
+        controls.warpTexture.offsetY,
+        expressions.warpTexture.offsetY,
+      );
+      controls.warpTexture.offsetY = next.value;
+      expressions.warpTexture.offsetY = next.expression;
       return true;
     }
   }
@@ -2199,7 +2924,15 @@ function extractShaderControls(
       return;
     }
     const numeric = parseShaderScalar(rawValue, shaderEnv);
-    if (!isKnownShaderScalarKey(key) && key !== 'tint') {
+    if (
+      !isKnownShaderScalarKey(key) &&
+      !new Set([
+        'tint',
+        'texture_source',
+        'texture_mode',
+        'warp_texture_source',
+      ]).has(key)
+    ) {
       if (numeric !== null) {
         const currentValue = shaderEnv[key] ?? 0;
         const next = applyShaderExpressionOperator(
@@ -2220,6 +2953,36 @@ function extractShaderControls(
       return;
     }
     switch (key) {
+      case 'texture_source': {
+        const source = parseShaderSamplerSource(rawValue);
+        if (source && source !== 'main') {
+          controls.textureLayer.source = source;
+          if (controls.textureLayer.mode === 'none') {
+            controls.textureLayer.mode = 'mix';
+          }
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      }
+      case 'texture_mode': {
+        const mode = parseShaderTextureBlendMode(rawValue);
+        if (mode) {
+          controls.textureLayer.mode = mode;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      }
+      case 'warp_texture_source': {
+        const source = parseShaderSamplerSource(rawValue);
+        if (source && source !== 'main') {
+          controls.warpTexture.source = source;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      }
       case 'warp':
       case 'warp_scale':
         if (numeric !== null) {
@@ -2488,6 +3251,175 @@ function extractShaderControls(
           return;
         }
         break;
+      case 'texture_amount':
+      case 'texture_mix':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.textureLayer.amount,
+            expressions.textureLayer.amount,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.textureLayer.amount = next.value;
+          expressions.textureLayer.amount = next.expression;
+          if (controls.textureLayer.mode === 'none') {
+            controls.textureLayer.mode = 'mix';
+          }
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'texture_scale':
+      case 'texture_scale_x':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.textureLayer.scaleX,
+            expressions.textureLayer.scaleX,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.textureLayer.scaleX = next.value;
+          expressions.textureLayer.scaleX = next.expression;
+          supportedLineCount += 1;
+          if (key === 'texture_scale') {
+            controls.textureLayer.scaleY = next.value;
+            expressions.textureLayer.scaleY = next.expression;
+          }
+          return;
+        }
+        break;
+      case 'texture_scale_y':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.textureLayer.scaleY,
+            expressions.textureLayer.scaleY,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.textureLayer.scaleY = next.value;
+          expressions.textureLayer.scaleY = next.expression;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'texture_offset_x':
+      case 'texture_scroll_x':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.textureLayer.offsetX,
+            expressions.textureLayer.offsetX,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.textureLayer.offsetX = next.value;
+          expressions.textureLayer.offsetX = next.expression;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'texture_offset_y':
+      case 'texture_scroll_y':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.textureLayer.offsetY,
+            expressions.textureLayer.offsetY,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.textureLayer.offsetY = next.value;
+          expressions.textureLayer.offsetY = next.expression;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'warp_texture_amount':
+      case 'warp_texture_mix':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.warpTexture.amount,
+            expressions.warpTexture.amount,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.warpTexture.amount = next.value;
+          expressions.warpTexture.amount = next.expression;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'warp_texture_scale':
+      case 'warp_texture_scale_x':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.warpTexture.scaleX,
+            expressions.warpTexture.scaleX,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.warpTexture.scaleX = next.value;
+          expressions.warpTexture.scaleX = next.expression;
+          supportedLineCount += 1;
+          if (key === 'warp_texture_scale') {
+            controls.warpTexture.scaleY = next.value;
+            expressions.warpTexture.scaleY = next.expression;
+          }
+          return;
+        }
+        break;
+      case 'warp_texture_scale_y':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.warpTexture.scaleY,
+            expressions.warpTexture.scaleY,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.warpTexture.scaleY = next.value;
+          expressions.warpTexture.scaleY = next.expression;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'warp_texture_offset_x':
+      case 'warp_texture_scroll_x':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.warpTexture.offsetX,
+            expressions.warpTexture.offsetX,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.warpTexture.offsetX = next.value;
+          expressions.warpTexture.offsetX = next.expression;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
+      case 'warp_texture_offset_y':
+      case 'warp_texture_scroll_y':
+        if (numeric !== null) {
+          const next = applyShaderExpressionOperator(
+            operator,
+            controls.warpTexture.offsetY,
+            expressions.warpTexture.offsetY,
+            numeric.value,
+            numeric.expression,
+          );
+          controls.warpTexture.offsetY = next.value;
+          expressions.warpTexture.offsetY = next.expression;
+          supportedLineCount += 1;
+          return;
+        }
+        break;
       case 'tint': {
         const tint = parseShaderTintList(rawValue, shaderEnv);
         if (tint) {
@@ -2704,6 +3636,76 @@ function mergeShaderControlAnalysis(
       1,
     ),
   };
+  const textureLayerAmount = pickShaderScalar(
+    compAnalysis.controls.textureLayer.amount,
+    compAnalysis.expressions.textureLayer.amount,
+    warpAnalysis.controls.textureLayer.amount,
+    warpAnalysis.expressions.textureLayer.amount,
+    0,
+  );
+  const textureLayerScaleX = pickShaderScalar(
+    compAnalysis.controls.textureLayer.scaleX,
+    compAnalysis.expressions.textureLayer.scaleX,
+    warpAnalysis.controls.textureLayer.scaleX,
+    warpAnalysis.expressions.textureLayer.scaleX,
+    1,
+  );
+  const textureLayerScaleY = pickShaderScalar(
+    compAnalysis.controls.textureLayer.scaleY,
+    compAnalysis.expressions.textureLayer.scaleY,
+    warpAnalysis.controls.textureLayer.scaleY,
+    warpAnalysis.expressions.textureLayer.scaleY,
+    1,
+  );
+  const textureLayerOffsetX = pickShaderScalar(
+    compAnalysis.controls.textureLayer.offsetX,
+    compAnalysis.expressions.textureLayer.offsetX,
+    warpAnalysis.controls.textureLayer.offsetX,
+    warpAnalysis.expressions.textureLayer.offsetX,
+    0,
+  );
+  const textureLayerOffsetY = pickShaderScalar(
+    compAnalysis.controls.textureLayer.offsetY,
+    compAnalysis.expressions.textureLayer.offsetY,
+    warpAnalysis.controls.textureLayer.offsetY,
+    warpAnalysis.expressions.textureLayer.offsetY,
+    0,
+  );
+  const warpTextureAmount = pickShaderScalar(
+    warpAnalysis.controls.warpTexture.amount,
+    warpAnalysis.expressions.warpTexture.amount,
+    compAnalysis.controls.warpTexture.amount,
+    compAnalysis.expressions.warpTexture.amount,
+    0,
+  );
+  const warpTextureScaleX = pickShaderScalar(
+    warpAnalysis.controls.warpTexture.scaleX,
+    warpAnalysis.expressions.warpTexture.scaleX,
+    compAnalysis.controls.warpTexture.scaleX,
+    compAnalysis.expressions.warpTexture.scaleX,
+    1,
+  );
+  const warpTextureScaleY = pickShaderScalar(
+    warpAnalysis.controls.warpTexture.scaleY,
+    warpAnalysis.expressions.warpTexture.scaleY,
+    compAnalysis.controls.warpTexture.scaleY,
+    compAnalysis.expressions.warpTexture.scaleY,
+    1,
+  );
+  const warpTextureOffsetX = pickShaderScalar(
+    warpAnalysis.controls.warpTexture.offsetX,
+    warpAnalysis.expressions.warpTexture.offsetX,
+    compAnalysis.controls.warpTexture.offsetX,
+    compAnalysis.expressions.warpTexture.offsetX,
+    0,
+  );
+  const warpTextureOffsetY = pickShaderScalar(
+    warpAnalysis.controls.warpTexture.offsetY,
+    warpAnalysis.expressions.warpTexture.offsetY,
+    compAnalysis.controls.warpTexture.offsetY,
+    compAnalysis.expressions.warpTexture.offsetY,
+    0,
+  );
 
   return {
     controls: {
@@ -2729,6 +3731,32 @@ function mergeShaderControlAnalysis(
         g: tint.g.value,
         b: tint.b.value,
       },
+      textureLayer: {
+        source:
+          compAnalysis.controls.textureLayer.source !== 'none'
+            ? compAnalysis.controls.textureLayer.source
+            : warpAnalysis.controls.textureLayer.source,
+        mode:
+          compAnalysis.controls.textureLayer.mode !== 'none'
+            ? compAnalysis.controls.textureLayer.mode
+            : warpAnalysis.controls.textureLayer.mode,
+        amount: textureLayerAmount.value,
+        scaleX: textureLayerScaleX.value,
+        scaleY: textureLayerScaleY.value,
+        offsetX: textureLayerOffsetX.value,
+        offsetY: textureLayerOffsetY.value,
+      },
+      warpTexture: {
+        source:
+          warpAnalysis.controls.warpTexture.source !== 'none'
+            ? warpAnalysis.controls.warpTexture.source
+            : compAnalysis.controls.warpTexture.source,
+        amount: warpTextureAmount.value,
+        scaleX: warpTextureScaleX.value,
+        scaleY: warpTextureScaleY.value,
+        offsetX: warpTextureOffsetX.value,
+        offsetY: warpTextureOffsetY.value,
+      },
     },
     expressions: {
       warpScale: warpScale.expression,
@@ -2752,6 +3780,20 @@ function mergeShaderControlAnalysis(
         r: tint.r.expression,
         g: tint.g.expression,
         b: tint.b.expression,
+      },
+      textureLayer: {
+        amount: textureLayerAmount.expression,
+        scaleX: textureLayerScaleX.expression,
+        scaleY: textureLayerScaleY.expression,
+        offsetX: textureLayerOffsetX.expression,
+        offsetY: textureLayerOffsetY.expression,
+      },
+      warpTexture: {
+        amount: warpTextureAmount.expression,
+        scaleX: warpTextureScaleX.expression,
+        scaleY: warpTextureScaleY.expression,
+        offsetX: warpTextureOffsetX.expression,
+        offsetY: warpTextureOffsetY.expression,
       },
     },
   };

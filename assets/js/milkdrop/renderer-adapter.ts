@@ -19,10 +19,14 @@ import {
   PlaneGeometry,
   Points,
   PointsMaterial,
+  RepeatWrapping,
   ShaderMaterial,
   Shape,
   ShapeGeometry,
   Sphere,
+  SRGBColorSpace,
+  type Texture,
+  TextureLoader,
   Scene as ThreeScene,
   Vector2,
   Vector3,
@@ -57,6 +61,75 @@ const FULLSCREEN_QUAD_GEOMETRY = markSharedGeometry(new PlaneGeometry(2, 2));
 const BACKGROUND_GEOMETRY = markSharedGeometry(new PlaneGeometry(6.4, 6.4));
 const polygonFillGeometryCache = new Map<number, ShapeGeometry>();
 const polygonOutlineGeometryCache = new Map<number, BufferGeometry>();
+const MILKDROP_TEXTURE_FILES = {
+  noise: 'seamless_perlin_noise.png',
+  simplex: 'simplex_noise_3d.png',
+  voronoi: 'voronoi_cellular.png',
+  aura: 'colorful_aura_gradient.png',
+  caustics: 'water_caustics.png',
+  pattern: 'circuit_board_pattern.png',
+  fractal: 'crystal_fractal.png',
+} as const;
+
+function resolveTextureUrl(fileName: string) {
+  const baseUrl =
+    typeof import.meta.env.BASE_URL === 'string'
+      ? import.meta.env.BASE_URL
+      : '/';
+  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  return `${normalizedBaseUrl}textures/${fileName}`;
+}
+
+function configureMilkdropTexture(texture: Texture, colorTexture = false) {
+  texture.wrapS = RepeatWrapping;
+  texture.wrapT = RepeatWrapping;
+  if (colorTexture) {
+    texture.colorSpace = SRGBColorSpace;
+  }
+  return texture;
+}
+
+function loadMilkdropTexture(fileName: string, colorTexture = false) {
+  const texture = new TextureLoader().load(resolveTextureUrl(fileName));
+  return configureMilkdropTexture(texture, colorTexture);
+}
+
+function getShaderTextureSourceId(source: string) {
+  switch (source) {
+    case 'noise':
+    case 'perlin':
+      return 1;
+    case 'simplex':
+      return 2;
+    case 'voronoi':
+      return 3;
+    case 'aura':
+      return 4;
+    case 'caustics':
+      return 5;
+    case 'pattern':
+      return 6;
+    case 'fractal':
+      return 7;
+    default:
+      return 0;
+  }
+}
+
+function getShaderTextureBlendModeId(mode: string) {
+  switch (mode) {
+    case 'replace':
+      return 1;
+    case 'mix':
+      return 2;
+    case 'add':
+      return 3;
+    case 'multiply':
+      return 4;
+    default:
+      return 0;
+  }
+}
 
 function getFeedbackBackendProfile(
   backend: 'webgl' | 'webgpu',
@@ -840,12 +913,22 @@ class FeedbackManager {
   readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
   readonly resolutionScale: number;
   readonly profile: FeedbackBackendProfile;
+  readonly auxTextures: Record<string, Texture>;
   private index = 0;
 
   constructor(width: number, height: number, backend: 'webgl' | 'webgpu') {
     this.camera.position.z = 1;
     this.profile = getFeedbackBackendProfile(backend);
     this.resolutionScale = this.profile.resolutionScale;
+    this.auxTextures = {
+      noise: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.noise),
+      simplex: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.simplex),
+      voronoi: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.voronoi),
+      aura: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.aura, true),
+      caustics: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.caustics),
+      pattern: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.pattern),
+      fractal: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.fractal),
+    };
     this.sceneTarget = createFeedbackRenderTarget(width, height, backend);
     this.targets = [
       createFeedbackRenderTarget(width, height, backend),
@@ -855,6 +938,13 @@ class FeedbackManager {
       uniforms: {
         currentTex: { value: this.sceneTarget.texture },
         previousTex: { value: this.targets[0].texture },
+        noiseTex: { value: this.auxTextures.noise },
+        simplexTex: { value: this.auxTextures.simplex },
+        voronoiTex: { value: this.auxTextures.voronoi },
+        auraTex: { value: this.auxTextures.aura },
+        causticsTex: { value: this.auxTextures.caustics },
+        patternTex: { value: this.auxTextures.pattern },
+        fractalTex: { value: this.auxTextures.fractal },
         mixAlpha: { value: 0.18 },
         zoom: { value: 1.02 },
         brighten: { value: 0 },
@@ -879,6 +969,15 @@ class FeedbackManager {
         tint: { value: new Color(1, 1, 1) },
         feedbackSoftness: { value: this.profile.feedbackSoftness },
         currentFrameBoost: { value: this.profile.currentFrameBoost },
+        overlayTextureSource: { value: 0 },
+        overlayTextureMode: { value: 0 },
+        overlayTextureAmount: { value: 0 },
+        overlayTextureScale: { value: new Vector2(1, 1) },
+        overlayTextureOffset: { value: new Vector2(0, 0) },
+        warpTextureSource: { value: 0 },
+        warpTextureAmount: { value: 0 },
+        warpTextureScale: { value: new Vector2(1, 1) },
+        warpTextureOffset: { value: new Vector2(0, 0) },
         texelSize: {
           value: new Vector2(
             1 / Math.max(1, this.sceneTarget.width),
@@ -896,6 +995,13 @@ class FeedbackManager {
       fragmentShader: `
         uniform sampler2D currentTex;
         uniform sampler2D previousTex;
+        uniform sampler2D noiseTex;
+        uniform sampler2D simplexTex;
+        uniform sampler2D voronoiTex;
+        uniform sampler2D auraTex;
+        uniform sampler2D causticsTex;
+        uniform sampler2D patternTex;
+        uniform sampler2D fractalTex;
         uniform float mixAlpha;
         uniform float zoom;
         uniform float brighten;
@@ -920,6 +1026,15 @@ class FeedbackManager {
         uniform vec3 tint;
         uniform float feedbackSoftness;
         uniform float currentFrameBoost;
+        uniform float overlayTextureSource;
+        uniform float overlayTextureMode;
+        uniform float overlayTextureAmount;
+        uniform vec2 overlayTextureScale;
+        uniform vec2 overlayTextureOffset;
+        uniform float warpTextureSource;
+        uniform float warpTextureAmount;
+        uniform vec2 warpTextureScale;
+        uniform vec2 warpTextureOffset;
         uniform vec2 texelSize;
         varying vec2 vUv;
 
@@ -953,6 +1068,32 @@ class FeedbackManager {
           return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
         }
 
+        vec4 sampleAuxTexture(float source, vec2 uv) {
+          vec2 wrappedUv = fract(uv);
+          if (source < 0.5) {
+            return vec4(0.5, 0.5, 0.5, 1.0);
+          }
+          if (source < 1.5) {
+            return texture2D(noiseTex, wrappedUv);
+          }
+          if (source < 2.5) {
+            return texture2D(simplexTex, wrappedUv);
+          }
+          if (source < 3.5) {
+            return texture2D(voronoiTex, wrappedUv);
+          }
+          if (source < 4.5) {
+            return texture2D(auraTex, wrappedUv);
+          }
+          if (source < 5.5) {
+            return texture2D(causticsTex, wrappedUv);
+          }
+          if (source < 6.5) {
+            return texture2D(patternTex, wrappedUv);
+          }
+          return texture2D(fractalTex, wrappedUv);
+        }
+
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
           vec2 centered = uv - 0.5;
           float radius = length(centered);
@@ -982,6 +1123,12 @@ class FeedbackManager {
             warpScale * 0.8,
             rotation * 0.6
           );
+          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
+            vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;
+            vec2 warpVector = sampleAuxTexture(warpTextureSource, warpUv).rg - 0.5;
+            currentUv += warpVector * warpTextureAmount * 0.12;
+            prevUv += warpVector * warpTextureAmount * 0.08;
+          }
           vec4 current = texture2D(currentTex, sampleUv(currentUv, textureWrap));
           vec4 previous = texture2D(previousTex, sampleUv(prevUv, textureWrap));
           vec3 previousColor = previous.rgb;
@@ -1023,6 +1170,20 @@ class FeedbackManager {
           color = applyContrast(color, contrast);
           color *= colorScale;
           color *= tint;
+          if (overlayTextureSource > 0.5 && overlayTextureMode > 0.5 && overlayTextureAmount > 0.0001) {
+            vec2 overlayUv = vUv * overlayTextureScale + overlayTextureOffset;
+            vec3 overlayColor = sampleAuxTexture(overlayTextureSource, overlayUv).rgb;
+            float amount = clamp(overlayTextureAmount, 0.0, 1.5);
+            if (overlayTextureMode < 1.5) {
+              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
+            } else if (overlayTextureMode < 2.5) {
+              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
+            } else if (overlayTextureMode < 3.5) {
+              color = min(vec3(1.0), color + overlayColor * amount);
+            } else {
+              color *= mix(vec3(1.0), overlayColor, clamp(amount, 0.0, 1.0));
+            }
+          }
           color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           gl_FragColor = vec4(color, 1.0);
         }
@@ -1069,6 +1230,7 @@ class FeedbackManager {
   dispose() {
     this.sceneTarget.dispose();
     this.targets.forEach((target) => target.dispose());
+    Object.values(this.auxTextures).forEach((texture) => texture.dispose());
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
     this.compositeScene.clear();
@@ -1396,6 +1558,38 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       payload.frameState.post.shaderControls.tint.b,
     );
     this.feedback.compositeMaterial.uniforms.tint.value = this.tintScratch;
+    this.feedback.compositeMaterial.uniforms.overlayTextureSource.value =
+      getShaderTextureSourceId(
+        payload.frameState.post.shaderControls.textureLayer.source,
+      );
+    this.feedback.compositeMaterial.uniforms.overlayTextureMode.value =
+      getShaderTextureBlendModeId(
+        payload.frameState.post.shaderControls.textureLayer.mode,
+      );
+    this.feedback.compositeMaterial.uniforms.overlayTextureAmount.value =
+      payload.frameState.post.shaderControls.textureLayer.amount;
+    this.feedback.compositeMaterial.uniforms.overlayTextureScale.value.set(
+      payload.frameState.post.shaderControls.textureLayer.scaleX,
+      payload.frameState.post.shaderControls.textureLayer.scaleY,
+    );
+    this.feedback.compositeMaterial.uniforms.overlayTextureOffset.value.set(
+      payload.frameState.post.shaderControls.textureLayer.offsetX,
+      payload.frameState.post.shaderControls.textureLayer.offsetY,
+    );
+    this.feedback.compositeMaterial.uniforms.warpTextureSource.value =
+      getShaderTextureSourceId(
+        payload.frameState.post.shaderControls.warpTexture.source,
+      );
+    this.feedback.compositeMaterial.uniforms.warpTextureAmount.value =
+      payload.frameState.post.shaderControls.warpTexture.amount;
+    this.feedback.compositeMaterial.uniforms.warpTextureScale.value.set(
+      payload.frameState.post.shaderControls.warpTexture.scaleX,
+      payload.frameState.post.shaderControls.warpTexture.scaleY,
+    );
+    this.feedback.compositeMaterial.uniforms.warpTextureOffset.value.set(
+      payload.frameState.post.shaderControls.warpTexture.offsetX,
+      payload.frameState.post.shaderControls.warpTexture.offsetY,
+    );
 
     this.renderer.setRenderTarget(this.feedback.sceneTarget);
     this.renderer.render(this.scene, this.camera);

@@ -18,7 +18,15 @@ type ShaderValue =
   | { kind: 'scalar'; value: number }
   | { kind: 'vec2'; value: [number, number] }
   | { kind: 'vec3'; value: [number, number, number] }
-  | { kind: 'sample'; source: 'main'; uv: ShaderValue };
+  | { kind: 'sample'; source: string; uv: ShaderValue };
+
+function normalizeShaderSamplerName(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized.startsWith('sampler_')) {
+    return normalized.slice('sampler_'.length);
+  }
+  return normalized;
+}
 
 const operatorTokens = ['<=', '>=', '==', '!=', '&&', '||'];
 
@@ -525,7 +533,12 @@ export function evaluateMilkdropShaderExpression(
         return vec3(args[0].value, args[1].value, args[2].value);
       }
       if ((name === 'tex2d' || name === 'texture') && args.length >= 2) {
-        return { kind: 'sample', source: 'main', uv: args[1] };
+        const samplerArg = node.args[0];
+        const source =
+          samplerArg?.type === 'identifier'
+            ? normalizeShaderSamplerName(samplerArg.name)
+            : 'main';
+        return { kind: 'sample', source, uv: args[1] };
       }
       if (name === 'mix' && args.length >= 3 && isScalar(args[2])) {
         const blend = args[2].value;

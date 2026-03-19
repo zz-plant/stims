@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=flat-square)](./LICENSE)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=flat-square&logo=bun)](https://bun.sh)
 
-Stims is a browser-native MilkDrop-inspired visualizer. The product now centers on one shared runtime with curated presets, live source editing, and preset import/export instead of a broader multi-toy catalog.
+Stims is an independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop. It centers on one shared runtime with curated presets, live source editing, and preset import/export, delivered through a responsive Three.js/WebGL app with WebGPU support where available.
 
 Quick links:
 
@@ -16,40 +16,77 @@ Quick links:
 - Docs hub: [docs/README.md](./docs/README.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
-## What it includes
+## Why Stims exists
 
-- A browser-native MilkDrop-inspired runtime built with Three.js and WebGL, with WebGPU support where available.
-- Bundled presets and a preset browser.
-- Live source editing without interrupting playback.
-- Preset import/export workflows.
-- Shared audio and performance controls.
+Stims aims to make MilkDrop-style visual play feel native to the browser instead of a desktop nostalgia port. The repository is organized around a single flagship visualizer experience rather than a broad toy catalog, so most implementation work lands in the shared runtime, preset workflows, and app shell.
 
-## Local setup
+## What you get
 
-1. Install dependencies with `bun install`.
-2. Start the dev server with `bun run dev`.
-3. Open `http://localhost:5173/toy.html`.
+- A browser-native visualizer runtime built with Three.js, WebGL, and optional WebGPU rendering.
+- Curated presets with a preset browser and smooth visual transitions.
+- Live preset source editing without interrupting playback.
+- Preset import/export flows for compatibility and experimentation.
+- Shared controls for audio input, rendering capability, and performance.
+- A focused marketing/launch page at `index.html` and the main app at `toy.html`.
 
-Useful commands:
+## Quickstart
 
-- `bun run dev`
-- `bun run build`
-- `bun run preview`
-- `bun run check`
-- `bun run check:quick`
-- `bun run test`
+1. Install dependencies:
+
+   ```bash
+   bun install
+   ```
+
+2. Start the local dev server:
+
+   ```bash
+   bun run dev
+   ```
+
+3. Open the visualizer:
+
+   ```text
+   http://localhost:5173/toy.html
+   ```
+
+4. Use `index.html` at the same host if you want to review the launch/marketing surface.
+
+## Common commands
+
+| Task | Command |
+| --- | --- |
+| Start dev server | `bun run dev` |
+| Start dev server on all interfaces | `bun run dev:host` |
+| Start a WebGPU-focused local session | `bun run dev:webgpu` |
+| Run the fast local quality gate | `bun run check:quick` |
+| Run the full quality gate | `bun run check` |
+| Run all tests | `bun run test` |
+| Build production assets | `bun run build` |
+| Preview the production build | `bun run preview` |
+| Deploy to Cloudflare Pages | `bun run pages:deploy` |
+
+For JavaScript or TypeScript changes, `bun run check` is the repository quality gate.
+
+## Project shape
+
+- `toy.html` is the primary visualizer entrypoint.
+- `index.html` is the focused launch page for the same product.
+- `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
+- `tests/` contains unit, integration, and compatibility coverage.
+- `docs/` is the canonical contributor documentation set.
 
 ## Docs
 
 Use [docs/README.md](./docs/README.md) as the canonical docs index.
 
-The most relevant docs are:
+Start with:
 
 - [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
 - [docs/MILKDROP_PRESET_RUNTIME.md](./docs/MILKDROP_PRESET_RUNTIME.md)
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - [docs/LINEAGE_AND_CREDITS.md](./docs/LINEAGE_AND_CREDITS.md)
 - [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
 
 ## Lineage
 
-Stims is not an official MilkDrop or Winamp release. It is an independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop. When preset packs, fixtures, or compatibility work draw from the wider ecosystem, credit should remain explicit for preset authors, curators, and projectM contributors where relevant.
+Stims is not an official MilkDrop or Winamp release. When presets, fixtures, screenshots, or compatibility work draw from the wider MilkDrop or projectM ecosystem, credits should remain explicit for original authors, curators, and contributors. See [docs/LINEAGE_AND_CREDITS.md](./docs/LINEAGE_AND_CREDITS.md) for the repository's attribution rules.

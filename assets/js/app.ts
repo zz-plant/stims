@@ -79,13 +79,9 @@ const startApp = async () => {
     ...loaderOverrides,
   };
 
-  const loadToy = loader.loadToy ?? defaultLoader.loadToy;
   const loadFromQuery = loader.loadFromQuery ?? defaultLoader.loadFromQuery;
   const initNavigation = loader.initNavigation ?? defaultLoader.initNavigation;
 
-  const navContainer = document.querySelector<HTMLElement>(
-    '[data-top-nav-container]',
-  );
   const audioControlsContainer = document.querySelector<HTMLElement>(
     '[data-audio-controls]',
   );

@@ -227,6 +227,59 @@ export type MilkdropShaderColorControls = {
   b: number;
 };
 
+export type MilkdropShaderTextureSampler =
+  | 'none'
+  | 'noise'
+  | 'perlin'
+  | 'simplex'
+  | 'voronoi'
+  | 'aura'
+  | 'caustics'
+  | 'pattern'
+  | 'fractal';
+
+export type MilkdropShaderTextureBlendMode =
+  | 'none'
+  | 'replace'
+  | 'mix'
+  | 'add'
+  | 'multiply';
+
+export type MilkdropShaderTextureLayerControls = {
+  source: MilkdropShaderTextureSampler;
+  mode: MilkdropShaderTextureBlendMode;
+  amount: number;
+  scaleX: number;
+  scaleY: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+export type MilkdropShaderTextureWarpControls = {
+  source: MilkdropShaderTextureSampler;
+  amount: number;
+  scaleX: number;
+  scaleY: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+export type MilkdropShaderTextureLayerExpressions = {
+  amount: MilkdropExpressionNode | null;
+  scaleX: MilkdropExpressionNode | null;
+  scaleY: MilkdropExpressionNode | null;
+  offsetX: MilkdropExpressionNode | null;
+  offsetY: MilkdropExpressionNode | null;
+};
+
+export type MilkdropShaderTextureWarpExpressions = {
+  amount: MilkdropExpressionNode | null;
+  scaleX: MilkdropExpressionNode | null;
+  scaleY: MilkdropExpressionNode | null;
+  offsetX: MilkdropExpressionNode | null;
+  offsetY: MilkdropExpressionNode | null;
+};
+
 export type MilkdropShaderExpressionNode =
   | { type: 'literal'; value: number }
   | { type: 'identifier'; name: string }
@@ -284,6 +337,8 @@ export type MilkdropShaderControlExpressions = {
     g: MilkdropExpressionNode | null;
     b: MilkdropExpressionNode | null;
   };
+  textureLayer: MilkdropShaderTextureLayerExpressions;
+  warpTexture: MilkdropShaderTextureWarpExpressions;
 };
 
 export type MilkdropShaderControls = {
@@ -301,6 +356,8 @@ export type MilkdropShaderControls = {
   invertBoost: number;
   solarizeBoost: number;
   tint: MilkdropShaderColorControls;
+  textureLayer: MilkdropShaderTextureLayerControls;
+  warpTexture: MilkdropShaderTextureWarpControls;
 };
 
 export type MilkdropPostEffects = {

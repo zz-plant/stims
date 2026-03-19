@@ -753,4 +753,78 @@ comp_shader=saturation=1.4; contrast=1.2; r=1.1; g=0.85; b=0.65
       6,
     );
   });
+
+  test('forwards texture sampler controls into composite uniforms', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Texture Uniforms
+comp_shader=ret = tex2d(sampler_pattern, uv * 1.4 + vec2(0.2, -0.15)).rgb
+warp_shader=warp_texture_source = sampler_noise; warp_texture_amount = 0.08; warp_texture_scale = vec2(2.2, 1.7); warp_texture_offset = vec2(0.05, 0.1)
+      `.trim(),
+      { id: 'shader-texture-uniforms' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => fakeRenderer;
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: { compositeMaterial: ShaderMaterial } | null;
+      }
+    ).feedback;
+
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureSource.value,
+    ).toBe(6);
+    expect(feedback?.compositeMaterial.uniforms.overlayTextureMode.value).toBe(
+      1,
+    );
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureAmount.value,
+    ).toBeCloseTo(1, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureScale.value.x,
+    ).toBeCloseTo(1.4, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureScale.value.y,
+    ).toBeCloseTo(1.4, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureOffset.value.x,
+    ).toBeCloseTo(0.2, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureOffset.value.y,
+    ).toBeCloseTo(-0.15, 6);
+    expect(feedback?.compositeMaterial.uniforms.warpTextureSource.value).toBe(
+      1,
+    );
+    expect(
+      feedback?.compositeMaterial.uniforms.warpTextureAmount.value,
+    ).toBeCloseTo(0.08, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.warpTextureScale.value.x,
+    ).toBeCloseTo(2.2, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.warpTextureScale.value.y,
+    ).toBeCloseTo(1.7, 6);
+  });
 });
