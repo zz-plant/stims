@@ -96,6 +96,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Quality presets** (stored under `stims:quality-preset`):
   - Battery saver
   - Low motion
+  - TV balanced
   - Balanced (default)
   - Hi-fi visuals
 - **Compatibility mode**: Force WebGL for older GPUs.

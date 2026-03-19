@@ -1,17 +1,21 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import type {
+  MilkdropFidelityClass,
+  MilkdropParityAllowlistEntry,
+  MilkdropVisualEvidenceTier,
+} from '../assets/js/milkdrop/types.ts';
 
 type CorpusTier = 'bundled' | 'certified' | 'exploratory';
-type FidelityClass = 'exact' | 'near-exact' | 'partial' | 'fallback';
-type VisualEvidenceTier = 'none' | 'compile' | 'runtime' | 'visual';
 
 type CorpusDefaults = {
   provenance?: string;
   license?: string;
   usage?: string;
   corpusTier?: CorpusTier;
-  expectedFidelityClass?: FidelityClass;
-  visualEvidenceTier?: VisualEvidenceTier;
+  expectedFidelityClass?: MilkdropFidelityClass;
+  visualEvidenceTier?: MilkdropVisualEvidenceTier;
 };
 
 type CorpusWaiver = {
@@ -31,19 +35,64 @@ type CorpusEntry = {
   license?: string;
   usage?: string;
   corpusTier?: CorpusTier;
-  expectedFidelityClass?: FidelityClass;
-  visualEvidenceTier?: VisualEvidenceTier;
+  expectedFidelityClass?: MilkdropFidelityClass;
+  visualEvidenceTier?: MilkdropVisualEvidenceTier;
   visualFixtures?: string[];
   waivers?: CorpusWaiver[];
 };
 
 type CorpusManifest = {
   version: number;
+  parityTarget?: string;
+  backendTarget?: 'webgl' | 'webgpu';
+  fallbackBackend?: 'webgl' | 'webgpu';
   minimumPresetCount: number;
   presetCount: number;
   presets: CorpusEntry[];
   canonicalVisualSuite: string[];
   defaults?: CorpusDefaults;
+};
+
+type AllowlistDocument = {
+  entries?: MilkdropParityAllowlistEntry[];
+};
+
+export type MilkdropParityPresetReport = {
+  id: string;
+  title: string;
+  expectedFidelityClass: MilkdropFidelityClass;
+  actualFidelityClass: MilkdropFidelityClass;
+  parityReady: boolean;
+  blockedConstructs: string[];
+  allowlistedBlockedConstructs: string[];
+  degradationCategories: string[];
+  backendStatuses: {
+    webgl: string;
+    webgpu: string;
+  };
+};
+
+export type MilkdropParityAggregateReport = {
+  manifestPath: string;
+  issues: string[];
+  fidelityCounts: Record<MilkdropFidelityClass, number>;
+  canonicalVisualSuite: {
+    total: number;
+    regressions: MilkdropParityPresetReport[];
+  };
+  blockedConstructFrequency: Array<{
+    blockedConstruct: string;
+    count: number;
+    presetIds: string[];
+  }>;
+  expiredWaivers: Array<{
+    presetId: string;
+    blockedConstruct: string;
+    owner: string;
+    expiry: string;
+    source: 'manifest' | 'allowlist';
+  }>;
+  presets: MilkdropParityPresetReport[];
 };
 
 function readJson<T>(path: string) {
@@ -52,6 +101,55 @@ function readJson<T>(path: string) {
 
 function isIsoDate(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/u.test(value);
+}
+
+function resolveExpectedFidelity(
+  entry: CorpusEntry,
+  defaults?: CorpusDefaults,
+): MilkdropFidelityClass | null {
+  return entry.expectedFidelityClass ?? defaults?.expectedFidelityClass ?? null;
+}
+
+function fidelityRank(value: MilkdropFidelityClass) {
+  switch (value) {
+    case 'exact':
+      return 4;
+    case 'near-exact':
+      return 3;
+    case 'partial':
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+function loadCorpusManifest(root: string) {
+  const manifestPath = join(
+    root,
+    'assets',
+    'data',
+    'milkdrop-parity',
+    'corpus-manifest.json',
+  );
+  return {
+    manifestPath,
+    manifest: readJson<CorpusManifest>(manifestPath),
+  };
+}
+
+function loadParityAllowlist(root: string) {
+  const allowlistPath = join(
+    root,
+    'assets',
+    'data',
+    'milkdrop-parity',
+    'allowlist.json',
+  );
+  const allowlist = readJson<AllowlistDocument>(allowlistPath);
+  return {
+    allowlistPath,
+    allowlist: allowlist.entries ?? [],
+  };
 }
 
 export function validateMilkdropCorpusManifest(manifest: CorpusManifest) {
@@ -148,25 +246,210 @@ export function validateMilkdropCorpusManifest(manifest: CorpusManifest) {
   return issues;
 }
 
-export function runMilkdropCorpusCheck(root = process.cwd()) {
-  const manifestPath = join(
-    root,
-    'assets',
-    'data',
-    'milkdrop-parity',
-    'corpus-manifest.json',
-  );
-  const manifest = readJson<CorpusManifest>(manifestPath);
+export function generateMilkdropParityReport(root = process.cwd()) {
+  const { manifestPath, manifest } = loadCorpusManifest(root);
   const issues = validateMilkdropCorpusManifest(manifest);
-  return { manifestPath, issues };
+  const { allowlist } = loadParityAllowlist(root);
+  const corpusDir = join(
+    root,
+    'tests',
+    'fixtures',
+    'milkdrop',
+    'parity-corpus',
+  );
+  const fidelityCounts: Record<MilkdropFidelityClass, number> = {
+    exact: 0,
+    'near-exact': 0,
+    partial: 0,
+    fallback: 0,
+  };
+  const blockedConstructMap = new Map<
+    string,
+    { blockedConstruct: string; count: number; presetIds: string[] }
+  >();
+  const today = new Date().toISOString().slice(0, 10);
+  const expiredWaivers: MilkdropParityAggregateReport['expiredWaivers'] = [];
+
+  manifest.presets.forEach((entry) => {
+    entry.waivers?.forEach((waiver) => {
+      if (waiver.expiry < today) {
+        expiredWaivers.push({
+          presetId: entry.id,
+          blockedConstruct: waiver.blockedConstruct,
+          owner: waiver.owner,
+          expiry: waiver.expiry,
+          source: 'manifest',
+        });
+      }
+    });
+  });
+
+  allowlist.forEach((entry) => {
+    if (entry.expiry < today) {
+      expiredWaivers.push({
+        presetId: entry.presetId,
+        blockedConstruct: entry.blockedConstruct,
+        owner: entry.owner,
+        expiry: entry.expiry,
+        source: 'allowlist',
+      });
+    }
+  });
+
+  const presets = manifest.presets.map((entry) => {
+    const raw = readFileSync(join(corpusDir, entry.file), 'utf8');
+    const compiled = compileMilkdropPresetSource(
+      raw,
+      {
+        id: entry.id,
+        title: entry.title,
+        origin: 'user',
+      },
+      {
+        fidelityMode: 'compat',
+        parityAllowlist: allowlist,
+      },
+    );
+    const parity = compiled.ir.compatibility.parity;
+    fidelityCounts[parity.fidelityClass] += 1;
+
+    parity.blockedConstructs.forEach((blockedConstruct) => {
+      const existing = blockedConstructMap.get(blockedConstruct);
+      if (existing) {
+        existing.count += 1;
+        existing.presetIds.push(entry.id);
+        return;
+      }
+      blockedConstructMap.set(blockedConstruct, {
+        blockedConstruct,
+        count: 1,
+        presetIds: [entry.id],
+      });
+    });
+
+    return {
+      id: entry.id,
+      title: entry.title,
+      expectedFidelityClass:
+        resolveExpectedFidelity(entry, manifest.defaults) ?? 'near-exact',
+      actualFidelityClass: parity.fidelityClass,
+      parityReady: parity.parityReady,
+      blockedConstructs: parity.blockedConstructs,
+      allowlistedBlockedConstructs: parity.allowlistedBlockedConstructs,
+      degradationCategories: [
+        ...new Set(parity.degradationReasons.map((reason) => reason.category)),
+      ],
+      backendStatuses: {
+        webgl: compiled.ir.compatibility.backends.webgl.status,
+        webgpu: compiled.ir.compatibility.backends.webgpu.status,
+      },
+    } satisfies MilkdropParityPresetReport;
+  });
+
+  const byId = new Map(presets.map((preset) => [preset.id, preset]));
+  const regressions = manifest.canonicalVisualSuite.flatMap((id) => {
+    const preset = byId.get(id);
+    if (!preset) {
+      return [];
+    }
+    return fidelityRank(preset.actualFidelityClass) <
+      fidelityRank(preset.expectedFidelityClass)
+      ? [preset]
+      : [];
+  });
+
+  return {
+    manifestPath,
+    issues,
+    fidelityCounts,
+    canonicalVisualSuite: {
+      total: manifest.canonicalVisualSuite.length,
+      regressions,
+    },
+    blockedConstructFrequency: [...blockedConstructMap.values()].sort(
+      (left, right) => {
+        if (left.count !== right.count) {
+          return right.count - left.count;
+        }
+        return left.blockedConstruct.localeCompare(right.blockedConstruct);
+      },
+    ),
+    expiredWaivers,
+    presets,
+  } satisfies MilkdropParityAggregateReport;
+}
+
+export function runMilkdropCorpusCheck(root = process.cwd()) {
+  const report = generateMilkdropParityReport(root);
+  return {
+    manifestPath: report.manifestPath,
+    issues: report.issues,
+    report,
+  };
+}
+
+function printReport(report: MilkdropParityAggregateReport) {
+  console.log('MilkDrop parity report');
+  console.log(`Manifest: ${report.manifestPath}`);
+  console.log(
+    `Fidelity: exact ${report.fidelityCounts.exact}, near-exact ${report.fidelityCounts['near-exact']}, partial ${report.fidelityCounts.partial}, fallback ${report.fidelityCounts.fallback}`,
+  );
+  console.log(
+    `Canonical suite: ${report.canonicalVisualSuite.total} presets, ${report.canonicalVisualSuite.regressions.length} regression${report.canonicalVisualSuite.regressions.length === 1 ? '' : 's'}`,
+  );
+
+  if (report.blockedConstructFrequency.length > 0) {
+    console.log('Top blocked constructs:');
+    report.blockedConstructFrequency.slice(0, 5).forEach((entry) => {
+      console.log(
+        `- ${entry.blockedConstruct}: ${entry.count} preset${entry.count === 1 ? '' : 's'}`,
+      );
+    });
+  } else {
+    console.log('Top blocked constructs: none');
+  }
+
+  if (report.expiredWaivers.length > 0) {
+    console.log('Expired waivers:');
+    report.expiredWaivers.forEach((waiver) => {
+      console.log(
+        `- ${waiver.presetId} ${waiver.blockedConstruct} (${waiver.owner}, ${waiver.expiry}, ${waiver.source})`,
+      );
+    });
+  } else {
+    console.log('Expired waivers: none');
+  }
+
+  if (report.canonicalVisualSuite.regressions.length > 0) {
+    console.log('Canonical suite regressions:');
+    report.canonicalVisualSuite.regressions.forEach((preset) => {
+      console.log(
+        `- ${preset.id}: expected ${preset.expectedFidelityClass}, got ${preset.actualFidelityClass}`,
+      );
+    });
+  }
 }
 
 if (import.meta.main) {
-  const { issues } = runMilkdropCorpusCheck();
-  if (issues.length > 0) {
-    console.error('MilkDrop corpus check failed:\n');
-    issues.forEach((issue) => console.error(`- ${issue}`));
+  const reportOnly = process.argv.includes('--report');
+  const json = process.argv.includes('--json');
+  const result = runMilkdropCorpusCheck();
+
+  if (json) {
+    console.log(JSON.stringify(result.report, null, 2));
+  } else if (reportOnly) {
+    printReport(result.report);
+  }
+
+  if (result.issues.length > 0) {
+    if (!json && !reportOnly) {
+      console.error('MilkDrop corpus check failed:\n');
+      result.issues.forEach((issue) => console.error(`- ${issue}`));
+    }
     process.exit(1);
   }
-  console.log('MilkDrop corpus check passed.');
+
+  if (!json && !reportOnly) {
+    console.log('MilkDrop corpus check passed.');
+  }
 }

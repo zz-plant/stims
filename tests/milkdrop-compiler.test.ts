@@ -502,6 +502,21 @@ warp_shader=this is unsupported
       'shader:this is unsupported',
     ]);
     expect(compiled.ir.compatibility.parity.parityReady).toBe(false);
+    expect(
+      compiled.ir.compatibility.parity.degradationReasons.map(
+        (reason) => reason.category,
+      ),
+    ).toContain('unsupported-shader');
+    expect(
+      compiled.ir.compatibility.parity.degradationReasons.map(
+        (reason) => reason.category,
+      ),
+    ).toContain('backend-degradation');
+    expect(
+      compiled.ir.compatibility.parity.degradationReasons.map(
+        (reason) => reason.category,
+      ),
+    ).toContain('runtime-divergence');
     expect(compiled.formattedSource).toContain('wavecode_0_enabled=1');
     expect(compiled.formattedSource).toContain('shapecode_0_enabled=1');
   });
