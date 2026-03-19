@@ -6,7 +6,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 
 | Area | Current state | Primary sources in repo |
 | --- | --- | --- |
-| Homepage (`index.html`) | MilkDrop-led hero path, system check, broader toy-lab search + filters, and toy grid are live. | `index.html`, `assets/js/library-view.js` |
+| Homepage (`index.html`) | MilkDrop-led hero path, quick-check/performance entry, broader toy-lab search + filters, and toy grid are live. | `index.html`, `assets/js/library-view.js` |
 | System readiness & performance | Readiness probes + performance controls + preflight dialog are wired. | `assets/js/readiness-probe.ts`, `assets/js/utils/init-system-check.ts`, `assets/js/core/capability-preflight.ts` |
 | Toy runtime shell | Loader, toy nav, status/errors, audio prompt, and settings panel are live. | `assets/js/loader.ts`, `assets/js/toy-view.ts`, `assets/js/ui/*` |
 | Audio input options | Mic, demo audio, tab capture, and YouTube capture are available. | `assets/js/ui/audio-controls.ts`, `assets/js/ui/youtube-controller.ts` |
@@ -24,9 +24,9 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Theme toggle**: A dark-mode toggle persists preference in local storage and uses view transitions when available.
 
 ### Intro hero
-- **Quickstart CTA**: One primary homepage launch CTA deep-links to `toy.html?toy=milkdrop` and sets expectation that a short system check opens first.
+- **Quickstart CTA**: One primary homepage launch CTA deep-links to `toy.html?toy=milkdrop` and sets expectation that a short quick check opens first.
 - **Readiness summary**: “Ready • <performance> • <compatibility>” reacts to performance settings and renderer compatibility.
-- **System check entry**: “Adjust performance” button opens the preflight dialog and deep-links to the system check section.
+- **Quick check entry**: Secondary CTA opens the preflight dialog and deep-links to the readiness/performance section.
 - **Claim posture**: Copy uses careful lineage language and does not claim blanket legacy compatibility.
 
 ### MilkDrop flagship proof
@@ -37,8 +37,8 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Live readiness panel**: Displays status for graphics acceleration, microphone, motion input, and reduced motion preference.
 - **Details toggle**: Expands/collapses the system check detail state while syncing the URL hash.
 - **Performance controls**: Inline settings panel with quality presets, compatibility mode (force WebGL), motion enable toggle, and sliders for resolution scale + pixel ratio.
-- **Fast actions**: Visible homepage buttons open the system-check modal or reveal extra readiness detail without leaving the page.
-- **Preflight dialog**: Modal with readiness badges for rendering, mic, and performance warnings.
+- **Fast actions**: Visible homepage buttons open the quick-check modal or reveal extra readiness detail without leaving the page.
+- **Preflight dialog**: Modal focuses on readiness, one clear next step, and optional technical details.
 
 ### Search, filters, and sorting
 - **Browse shortcuts**: A visible shortcut row links directly to the `/moods/`, `/capabilities/`, `/tags/`, and `/toys/` pages.
@@ -83,8 +83,8 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Preference persistence**: Stores last-used source in session storage (`stims-audio-source`), advanced panel state in `stims-audio-advanced-open`.
 
 ### Capability preflight
-- **Linear launch step**: The toy shell preflight is framed as “Step 1 of 2 · System check” with one primary CTA (`Continue to audio setup`) when the toy can run.
-- **Progressive disclosure**: Diagnostics remain collapsed behind a disclosure by default.
+- **Linear launch step**: The toy shell preflight is framed as “Step 1 of 2 · Quick check” with one primary CTA (`Continue to audio setup`) when the toy can run.
+- **Progressive disclosure**: Technical details remain collapsed behind a disclosure by default.
 - **Fallback path**: Blocking states surface one clear library return path and keep compatible-browsing recovery obvious.
 
 ### YouTube capture

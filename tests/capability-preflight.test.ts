@@ -71,7 +71,7 @@ describe('capability preflight launch flow', () => {
     sessionStorage.clear();
   });
 
-  test('shows one primary CTA for the success step and keeps diagnostics collapsed', async () => {
+  test('shows one primary CTA for the success step and keeps technical details collapsed', async () => {
     setTestUrl();
 
     const preflight = attachCapabilityPreflight({
@@ -88,7 +88,7 @@ describe('capability preflight launch flow', () => {
     const dialog = document.querySelector('dialog') as HTMLDialogElement | null;
     expect(dialog).not.toBeNull();
     expect(dialog?.textContent).toContain(
-      'Quick system check now, then a focused audio setup step.',
+      'We check visuals and audio, then point you to the next step.',
     );
 
     const primaryButtons = Array.from(
@@ -102,6 +102,7 @@ describe('capability preflight launch flow', () => {
       '.preflight-panel__details',
     ) as HTMLDetailsElement | null;
     expect(diagnostics?.open).toBe(false);
+    expect(diagnostics?.textContent).toContain('Technical details');
 
     preflight.destroy();
   });
