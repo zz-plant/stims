@@ -11,13 +11,23 @@ let resetRendererCapabilities;
 
 const originalNavigator = global.navigator;
 
-function mockNavigatorWithGPU({ device = {} } = {}) {
+function mockNavigatorWithGPU({ device = {}, adapter = {} } = {}) {
   const requestDevice = mock(async () => device);
-  const requestAdapter = mock(async () => ({ requestDevice }));
+  const requestAdapter = mock(async () => ({
+    features: new Set(),
+    limits: {},
+    requestDevice,
+    ...adapter,
+  }));
   Object.defineProperty(global, 'navigator', {
     writable: true,
     configurable: true,
-    value: { gpu: { requestAdapter } },
+    value: {
+      gpu: {
+        requestAdapter,
+        getPreferredCanvasFormat: () => 'bgra8unorm',
+      },
+    },
   });
   return { requestAdapter, requestDevice };
 }
@@ -35,6 +45,7 @@ beforeEach(async () => {
 afterEach(() => {
   resetRendererCapabilities();
   mock.restore();
+  window.localStorage.removeItem('stims:compatibility-mode');
   Object.defineProperty(global, 'navigator', {
     writable: true,
     configurable: true,
@@ -56,6 +67,7 @@ describe('renderer capabilities', () => {
     expect(first.adapter).toBe(second.adapter);
     expect(first.device).toBe(second.device);
     expect(second.preferredBackend).toBe('webgpu');
+    expect(second.webgpu?.preferredCanvasFormat).toBe('bgra8unorm');
   });
 
   test('probes WebGPU on mobile user agents when GPU APIs are present', async () => {
@@ -137,5 +149,44 @@ describe('renderer capabilities', () => {
     const replay = await getRendererCapabilities();
     expect(replay.fallbackReason).toContain('Renderer creation failed.');
     expect(replay.shouldRetryWebGPU).toBe(true);
+  });
+
+  test('captures high-end WebGPU feature support for richer defaults', async () => {
+    const { resetRenderPreferencesState } = await import(
+      '../assets/js/core/render-preferences.ts'
+    );
+    resetRenderPreferencesState();
+    mockNavigatorWithGPU({
+      device: { label: 'device' },
+      adapter: {
+        features: new Set([
+          'shader-f16',
+          'subgroups',
+          'timestamp-query',
+          'float32-blendable',
+          'float32-filterable',
+          'bgra8unorm-storage',
+        ]),
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1024,
+          maxStorageBufferBindingSize: 4294967292,
+          maxTextureDimension2D: 16384,
+        },
+      },
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(result.webgpu).toMatchObject({
+      performanceTier: 'high-end',
+      recommendedQualityPreset: 'hi-fi',
+      preferredCanvasFormat: 'bgra8unorm',
+      features: {
+        shaderF16: true,
+        subgroups: true,
+        timestampQuery: true,
+      },
+    });
   });
 });

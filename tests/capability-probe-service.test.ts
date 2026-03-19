@@ -12,6 +12,7 @@ describe('capability probe service', () => {
         reasonMessage: 'Renderer unavailable',
         canRetryWebGPU: false,
       },
+      rendererCapabilities: null,
       microphone: getMicrophoneCapabilityFromState('granted'),
       environment: {
         secureContext: true,
@@ -39,6 +40,7 @@ describe('capability probe service', () => {
         reasonMessage: 'WebGPU unsupported',
         canRetryWebGPU: false,
       },
+      rendererCapabilities: null,
       microphone: getMicrophoneCapabilityFromState('denied'),
       environment: {
         secureContext: true,
@@ -62,7 +64,9 @@ describe('capability probe service', () => {
       rendererBackend: 'webgl',
       shouldRetryWebGPU: false,
       webgpuFallbackReason: 'WebGPU unsupported',
+      webgpuCapabilities: null,
     });
+    expect(result.performance.recommendedQualityPresetId).toBe('performance');
   });
 
   test('keeps output shape stable for unsupported microphone state', () => {
@@ -73,6 +77,32 @@ describe('capability probe service', () => {
         reasonCode: null,
         reasonMessage: null,
         canRetryWebGPU: false,
+      },
+      rendererCapabilities: {
+        webgpu: {
+          features: {
+            bgra8unormStorage: true,
+            float32Blendable: true,
+            float32Filterable: true,
+            shaderF16: true,
+            subgroups: true,
+            timestampQuery: true,
+          },
+          limits: {
+            maxColorAttachments: 8,
+            maxComputeInvocationsPerWorkgroup: 1024,
+            maxStorageBufferBindingSize: 4294967292,
+            maxTextureDimension2D: 16384,
+          },
+          workers: {
+            workers: true,
+            offscreenCanvas: true,
+            transferControlToOffscreen: true,
+          },
+          preferredCanvasFormat: 'bgra8unorm',
+          performanceTier: 'high-end',
+          recommendedQualityPreset: 'hi-fi',
+        },
       },
       microphone: getMicrophoneCapabilityFromState('unsupported'),
       environment: {
@@ -91,12 +121,37 @@ describe('capability probe service', () => {
       rendererBackend: 'webgpu',
       webgpuFallbackReason: null,
       shouldRetryWebGPU: false,
+      webgpuCapabilities: {
+        features: {
+          bgra8unormStorage: true,
+          float32Blendable: true,
+          float32Filterable: true,
+          shaderF16: true,
+          subgroups: true,
+          timestampQuery: true,
+        },
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1024,
+          maxStorageBufferBindingSize: 4294967292,
+          maxTextureDimension2D: 16384,
+        },
+        workers: {
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+        },
+        preferredCanvasFormat: 'bgra8unorm',
+        performanceTier: 'high-end',
+        recommendedQualityPreset: 'hi-fi',
+      },
     });
     expect(result.performance).toEqual({
       lowPower: true,
       reason: 'mobile device detected',
       recommendedMaxPixelRatio: 1.25,
       recommendedRenderScale: 0.9,
+      recommendedQualityPresetId: 'performance',
     });
     expect(result.environment).toEqual({
       secureContext: false,
@@ -106,5 +161,61 @@ describe('capability probe service', () => {
     expect(result.warnings).toContain(
       'Microphone APIs are unavailable in this browser.',
     );
+  });
+
+  test('recommends hi-fi defaults for high-end WebGPU devices without low-power constraints', () => {
+    const result = buildCapabilityPreflightResult({
+      renderingSupport: { hasWebGL: true },
+      rendererPlan: {
+        backend: 'webgpu',
+        reasonCode: null,
+        reasonMessage: null,
+        canRetryWebGPU: false,
+      },
+      rendererCapabilities: {
+        webgpu: {
+          features: {
+            bgra8unormStorage: true,
+            float32Blendable: true,
+            float32Filterable: true,
+            shaderF16: true,
+            subgroups: true,
+            timestampQuery: true,
+          },
+          limits: {
+            maxColorAttachments: 8,
+            maxComputeInvocationsPerWorkgroup: 1024,
+            maxStorageBufferBindingSize: 4294967292,
+            maxTextureDimension2D: 16384,
+          },
+          workers: {
+            workers: true,
+            offscreenCanvas: true,
+            transferControlToOffscreen: true,
+          },
+          preferredCanvasFormat: 'bgra8unorm',
+          performanceTier: 'high-end',
+          recommendedQualityPreset: 'hi-fi',
+        },
+      },
+      microphone: getMicrophoneCapabilityFromState('granted'),
+      environment: {
+        secureContext: true,
+        hardwareConcurrency: 10,
+      },
+      performanceProfile: {
+        lowPower: false,
+        reason: null,
+        reducedMotion: false,
+      },
+    });
+
+    expect(result.performance).toEqual({
+      lowPower: false,
+      reason: null,
+      recommendedMaxPixelRatio: 2.5,
+      recommendedRenderScale: 1,
+      recommendedQualityPresetId: 'hi-fi',
+    });
   });
 });
