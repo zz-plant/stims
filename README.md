@@ -8,6 +8,8 @@
 
 Stims is an independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop. It centers on one shared runtime with curated presets, live source editing, and preset import/export, delivered through a responsive Three.js/WebGL app with WebGPU support where available.
 
+It is built to feel like a first-class browser experience rather than a nostalgic desktop clone: quick preflight checks, multiple audio input paths, renderer fallback, and a visualizer shell that stays usable across desktop, laptop, touch, and TV-style setups.
+
 Quick links:
 
 - Live site: [no.toil.fyi](https://no.toil.fyi)
@@ -27,7 +29,20 @@ Stims aims to make MilkDrop-style visual play feel native to the browser instead
 - Live preset source editing without interrupting playback.
 - Preset import/export flows for compatibility and experimentation.
 - Shared controls for audio input, rendering capability, and performance.
+- A launch flow with readiness checks before microphone prompts and renderer-heavy startup.
+- Multiple audio paths including microphone, demo audio, tab capture, and YouTube-backed tab capture.
+- Renderer preference handling with WebGPU-first startup and direct WebGL fallback when needed.
 - A focused marketing/launch page at `index.html` and the main app at `toy.html`.
+
+## Shipped experience
+
+At the product level, Stims currently ships one flagship MilkDrop-led visualizer experience with:
+
+- A quick-check preflight that surfaces graphics, microphone, motion, and compatibility status.
+- A preset-led playback flow designed for immediate experimentation.
+- A settings panel for quality presets, compatibility mode, motion preferences, render scale, and pixel ratio.
+- Library and toy-shell behavior that supports keyboard, gamepad, and TV-style remote navigation.
+- Persistent session and local settings so the app can recover your last-used audio and rendering preferences.
 
 ## Quickstart
 
@@ -51,6 +66,8 @@ Stims aims to make MilkDrop-style visual play feel native to the browser instead
 
 4. Use `index.html` at the same host if you want to review the launch/marketing surface.
 
+If you want to validate the production bundle locally, run `bun run build` and then `bun run preview`.
+
 ## Common commands
 
 | Task | Command |
@@ -67,11 +84,22 @@ Stims aims to make MilkDrop-style visual play feel native to the browser instead
 
 For JavaScript or TypeScript changes, `bun run check` is the repository quality gate.
 
+## Contributing at a glance
+
+- Package manager: `bun`
+- Runtime target: browser-first Three.js/WebGL app with optional WebGPU
+- Main quality gate: `bun run check`
+- Faster iteration gate: `bun run check:quick`
+- Main contributor docs: [CONTRIBUTING.md](./CONTRIBUTING.md) and [docs/README.md](./docs/README.md)
+
+If you change workflows, scripts, or documentation structure, keep the doc entry points aligned per [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md).
+
 ## Project shape
 
 - `toy.html` is the primary visualizer entrypoint.
 - `index.html` is the focused launch page for the same product.
 - `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
+- `assets/data/toys.json` is the checked-in toy and capability manifest source.
 - `tests/` contains unit, integration, and compatibility coverage.
 - `docs/` is the canonical contributor documentation set.
 
@@ -84,6 +112,7 @@ Start with:
 - [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
 - [docs/MILKDROP_PRESET_RUNTIME.md](./docs/MILKDROP_PRESET_RUNTIME.md)
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- [docs/FEATURE_SPECIFICATIONS.md](./docs/FEATURE_SPECIFICATIONS.md)
 - [docs/LINEAGE_AND_CREDITS.md](./docs/LINEAGE_AND_CREDITS.md)
 - [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
 
