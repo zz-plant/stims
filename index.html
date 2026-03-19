@@ -5,27 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
-      content="Stims is a browser-native MilkDrop-inspired visualizer with curated presets, live editing, and preset import/export."
+      content="Launch Stims, a browser-native MilkDrop-inspired visualizer with curated presets, live editing, and focused performance controls."
     />
-    <meta
-      name="keywords"
-      content="milkdrop-inspired visualizer, browser visualizer, preset editor, audio visualizer, webgl, webgpu, stims"
-    />
-    <meta name="application-name" content="Stims" />
-    <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#0b0f1a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="canonical" href="https://no.toil.fyi/" />
     <link rel="alternate" href="https://no.toil.fyi/" hreflang="en" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <title>Stims | Browser-native MilkDrop-inspired visualizer</title>
-    <meta property="og:title" content="Stims | Browser-native MilkDrop-inspired visualizer" />
+    <title>Stims</title>
+    <meta property="og:title" content="Stims" />
     <meta
       property="og:description"
       content="Launch Stims instantly for curated presets, live editing, and preset import/export in one browser-native visualizer."
@@ -40,149 +28,48 @@
     <meta property="og:site_name" content="Stims" />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Stims | Browser-native MilkDrop-inspired visualizer" />
+    <meta name="twitter:title" content="Stims" />
     <meta
       name="twitter:description"
       content="Launch Stims instantly for curated presets, live editing, and preset import/export in one browser-native visualizer."
     />
     <meta name="twitter:image" content="https://no.toil.fyi/og/milkdrop.svg" />
     <meta name="twitter:image:alt" content="Stims visualizer preview" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="preload" href="assets/css/base.css" as="style" />
     <link rel="preload" href="assets/css/index.css" as="style" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="assets/css/base.css" />
     <link rel="stylesheet" href="assets/css/index.css" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "Organization",
-            "@id": "https://no.toil.fyi/#organization",
-            "name": "Stims",
-            "url": "https://no.toil.fyi/",
-            "sameAs": ["https://github.com/zz-plant/stims"]
-          },
-          {
-            "@type": "WebSite",
-            "@id": "https://no.toil.fyi/#website",
-            "url": "https://no.toil.fyi/",
-            "name": "Stims",
-            "publisher": { "@id": "https://no.toil.fyi/#organization" },
-            "inLanguage": "en",
-            "description": "Browser-native MilkDrop-inspired visualizer with curated presets, live editing, and import/export."
-          },
-          {
-            "@type": "WebPage",
-            "@id": "https://no.toil.fyi/#webpage",
-            "url": "https://no.toil.fyi/",
-            "name": "Stims",
-            "headline": "A browser-native MilkDrop-inspired visualizer.",
-            "description": "Launch Stims instantly, browse curated presets, edit them live, and import or export preset files in the browser.",
-            "isPartOf": { "@id": "https://no.toil.fyi/#website" },
-            "publisher": { "@id": "https://no.toil.fyi/#organization" },
-            "inLanguage": "en"
-          }
-        ]
-      }
-    </script>
   </head>
-  <body>
+  <body data-page="toy">
     <div class="content">
       <header class="shell-header">
-        <div data-top-nav-container>
-          <nav class="top-nav top-nav--static" aria-label="Primary">
-            <a class="nav-link" href="#launch">Launch</a>
-            <a class="nav-link" href="#features">Features</a>
-            <a class="nav-link" href="#credits">Credits</a>
-            <a
-              class="nav-link"
-              href="https://github.com/zz-plant/stims"
-              target="_blank"
-              rel="noopener noreferrer"
-              >GitHub</a
-            >
-          </nav>
+        <div class="toy-shell-escape" role="navigation" aria-label="App navigation">
+          <a
+            class="toy-shell-escape__link"
+            data-back-to-library-persistent
+            href="index.html"
+          >
+            <span aria-hidden="true">←</span>
+            <span>Back to Stims</span>
+          </a>
+        </div>
+        <div data-top-nav-container hidden></div>
+        <div class="shell-panels">
+          <section class="shell-panel shell-panel--start" aria-label="Audio">
+            <div data-audio-controls></div>
+          </section>
+          <section class="shell-panel shell-panel--tune" aria-label="Tune">
+            <div data-settings-panel></div>
+          </section>
         </div>
       </header>
-
-      <section class="hero" id="launch" aria-label="Stims launch">
-        <div class="hero-grid">
-          <div class="hero-copy">
-            <p class="eyebrow">MilkDrop-inspired visualizer</p>
-            <h1>One browser-native visualizer, not a toy shelf.</h1>
-            <p class="tagline">
-              Stims now centers fully on its MilkDrop-inspired runtime: curated presets,
-              live source editing, and import/export in a single focused visualizer.
-            </p>
-            <div class="hero-cta-row" role="group" aria-label="Launch actions">
-              <a href="/toy.html" class="cta-button primary">Launch Stims</a>
-              <a href="/toys/milkdrop/" class="cta-button ghost">Open product page</a>
-            </div>
-            <p class="cta-helper intro-helper">
-              Built with explicit credit to Ryan Geiss, MilkDrop, preset authors,
-              and the wider ecosystem that informed the lineage.
-            </p>
-          </div>
-          <div class="hero-visual">
-            <div class="milkdrop-stage">
-              <div class="milkdrop-stage__frame">
-                <div class="milkdrop-stage__halo"></div>
-                <div class="milkdrop-stage__mesh"></div>
-                <div class="milkdrop-stage__wave"></div>
-                <div class="milkdrop-stage__core"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="feature-bands" id="features">
-        <div class="feature-card-grid">
-          <article class="feature-card">
-            <h2>Curated presets</h2>
-            <p>Start from bundled looks instead of browsing a catalog of separate mini-products.</p>
-          </article>
-          <article class="feature-card">
-            <h2>Live editing</h2>
-            <p>Edit the active preset in-browser, keep playback running, and iterate quickly.</p>
-          </article>
-          <article class="feature-card">
-            <h2>Import and export</h2>
-            <p>Round-trip presets without leaving the visualizer or switching tools.</p>
-          </article>
-        </div>
-      </section>
-
-      <section id="credits">
-        <div class="section-heading">
-          <p class="eyebrow">Lineage</p>
-          <h2>Clear about what this is</h2>
-          <p class="section-description">
-            Stims is an independent browser-native visualizer built in the lineage of
-            Ryan Geiss&apos;s MilkDrop. It is not an official MilkDrop, Winamp, or projectM release.
-          </p>
-        </div>
-        <div class="cta-row">
-          <a
-            href="https://github.com/zz-plant/stims/blob/main/docs/LINEAGE_AND_CREDITS.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="cta-button ghost"
-            >Read lineage notes</a
-          >
-          <a
-            href="https://github.com/zz-plant/stims/blob/main/README.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="cta-button ghost"
-            >Read the README</a
-          >
-        </div>
-      </section>
     </div>
+    <script type="module" src="assets/js/app.ts"></script>
   </body>
 </html>
