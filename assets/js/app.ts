@@ -1,3 +1,4 @@
+import { bootHomePage } from './bootstrap/home-page.ts';
 import { bootLibraryPage } from './bootstrap/library-page.ts';
 import { bootToyPage } from './bootstrap/toy-page.ts';
 import { initAgentAPI } from './core/agent-api.ts';
@@ -106,12 +107,17 @@ const startApp = async () => {
       settingsContainer,
       persistentBackLink,
     });
-  } else {
+  } else if (pageType === 'library') {
     bootLibraryPage({
       navContainer,
       loadToy: loader.loadToy ?? defaultLoader.loadToy,
       initNavigation,
       loadFromQuery,
+    });
+  } else {
+    bootHomePage({
+      navContainer,
+      loadToy: loader.loadToy ?? defaultLoader.loadToy,
     });
   }
 };

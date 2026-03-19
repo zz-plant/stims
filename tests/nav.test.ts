@@ -44,7 +44,7 @@ function createMatchMediaStub(matches = true) {
   };
 }
 
-describe('library navigation interactions', () => {
+describe('site navigation interactions', () => {
   const originalMatchMedia = window.matchMedia;
 
   beforeEach(() => {
@@ -110,7 +110,7 @@ describe('library navigation interactions', () => {
     expect(actions.hasAttribute('inert')).toBeFalse();
   });
 
-  test('library nav exposes primary discovery hubs in the main link set', () => {
+  test('site nav exposes primary launch and discovery hubs in the main link set', () => {
     const { matchMedia } = createMatchMediaStub(false);
     window.matchMedia = matchMedia;
 
@@ -122,16 +122,17 @@ describe('library navigation interactions', () => {
     ).map((link) => (link as HTMLAnchorElement).getAttribute('href'));
 
     expect(hrefs).toContain('#milkdrop');
-    expect(hrefs).toContain('#library');
+    expect(hrefs).toContain('#proof');
+    expect(hrefs).toContain('#system-check');
     expect(hrefs).toContain('/toys/');
     expect(hrefs).toContain('/moods/');
     expect(hrefs).toContain('/capabilities/');
     expect(hrefs).toContain('/tags/');
     expect(hrefs).toContain('https://github.com/zz-plant/stims');
-    expect(hrefs).toHaveLength(7);
+    expect(hrefs).toHaveLength(8);
   });
 
-  test('re-rendering library nav cleans up previous media-query listener', () => {
+  test('re-rendering site nav cleans up previous media-query listener', () => {
     const { matchMedia, getListenerCount } = createMatchMediaStub();
     window.matchMedia = matchMedia;
 
