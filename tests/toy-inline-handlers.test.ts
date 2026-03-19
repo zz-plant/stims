@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const TOYS_DIR = path.resolve('toys');
+const TOYS_DIR = path.resolve('public/toys');
 
 const INLINE_HANDLER_PATTERN = /\son[a-z]+\s*=/i;
 
@@ -16,7 +16,7 @@ describe('toy HTML markup safety', () => {
       const filePath = path.join(TOYS_DIR, file);
       const content = await fs.readFile(filePath, 'utf8');
       if (INLINE_HANDLER_PATTERN.test(content)) {
-        offenders.push(`toys/${file}`);
+        offenders.push(`public/toys/${file}`);
       }
     }
 

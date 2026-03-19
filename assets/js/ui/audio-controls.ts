@@ -143,13 +143,16 @@ export function initAudioControls(
       supportsTouchLikeInput,
       starterTips: options.starterTips,
     })}
+    ${renderBrowserAudioShortcuts(options)}
     ${renderAdvancedSources(options)}
     <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
   `;
 
   const micBtn = container.querySelector('#start-audio-btn');
   const demoBtn = container.querySelector('#use-demo-audio');
-  const tabBtn = container.querySelector('#use-tab-audio');
+  const tabBtn = container.querySelector(
+    '#use-tab-audio',
+  ) as HTMLButtonElement | null;
   const micRow = container.querySelector('[data-audio-row="mic"]');
   const demoRow = container.querySelector('[data-audio-row="demo"]');
   const statusEl = (options.statusElement ||
@@ -159,6 +162,12 @@ export function initAudioControls(
   const advancedInputs = container.querySelector(
     '[data-advanced-inputs]',
   ) as HTMLDetailsElement | null;
+  const revealTabAudioBtn = container.querySelector(
+    '[data-reveal-tab-audio]',
+  ) as HTMLButtonElement | null;
+  const revealYouTubeAudioBtn = container.querySelector(
+    '[data-reveal-youtube-audio]',
+  ) as HTMLButtonElement | null;
   const ADVANCED_KEY = 'stims-audio-advanced-open';
   const FIRST_STEPS_KEY = 'stims-first-steps-dismissed';
   const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
@@ -406,6 +415,16 @@ export function initAudioControls(
     );
   }
 
+  const persistAdvancedState = (nextState: boolean) => {
+    if (!advancedInputs) return;
+    advancedInputs.open = nextState;
+    try {
+      window.sessionStorage.setItem(ADVANCED_KEY, String(nextState));
+    } catch (_error) {
+      // Ignore storage errors.
+    }
+  };
+
   if (advancedInputs) {
     let isOpen = false;
     try {
@@ -413,14 +432,6 @@ export function initAudioControls(
     } catch (_error) {
       isOpen = false;
     }
-    const persistAdvancedState = (nextState: boolean) => {
-      advancedInputs.open = nextState;
-      try {
-        window.sessionStorage.setItem(ADVANCED_KEY, String(nextState));
-      } catch (_error) {
-        // Ignore storage errors.
-      }
-    };
 
     persistAdvancedState(isOpen);
 
@@ -428,6 +439,19 @@ export function initAudioControls(
       persistAdvancedState(advancedInputs.open);
     });
   }
+
+  revealTabAudioBtn?.addEventListener('click', () => {
+    persistAdvancedState(true);
+    tabBtn?.focus();
+  });
+
+  revealYouTubeAudioBtn?.addEventListener('click', () => {
+    persistAdvancedState(true);
+    const youtubeField = container.querySelector(
+      '#youtube-url',
+    ) as HTMLInputElement | null;
+    youtubeField?.focus();
+  });
 
   const maybeAutoStartMicrophone = () => {
     if (
@@ -687,6 +711,38 @@ function renderOnboardingHelp({
           : ''
       }
     </details>
+  `;
+}
+
+function renderBrowserAudioShortcuts(options: AudioControlsOptions) {
+  const hasTabCapture = Boolean(options.onRequestTabAudio);
+  const hasYouTubeCapture = Boolean(options.onRequestYouTubeAudio);
+
+  if (!hasTabCapture && !hasYouTubeCapture) {
+    return '';
+  }
+
+  return `
+    <div class="control-panel__quickstart control-panel__quickstart--utility" data-browser-audio-shortcuts>
+      <div class="control-panel__first-steps-header">
+        <span class="control-panel__label">Browser audio tools</span>
+      </div>
+      <p class="control-panel__microcopy">
+        Drive visuals from music or videos already playing in your browser without switching apps.
+      </p>
+      <div class="control-panel__actions control-panel__actions--inline">
+        ${
+          hasTabCapture
+            ? '<button type="button" class="cta-button ghost" data-reveal-tab-audio>Open tab capture</button>'
+            : ''
+        }
+        ${
+          hasYouTubeCapture
+            ? '<button type="button" class="cta-button ghost" data-reveal-youtube-audio>Open YouTube capture</button>'
+            : ''
+        }
+      </div>
+    </div>
   `;
 }
 
