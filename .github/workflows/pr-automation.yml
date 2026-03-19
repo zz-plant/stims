@@ -1,15 +1,26 @@
-name: PR metadata guard
+name: PR automation
 
 on:
   pull_request_target:
-    types: [opened, edited, synchronize, reopened]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
 
 permissions:
   pull-requests: read
 
 jobs:
+  label:
+    name: Apply path labels
+    if: contains(fromJson('["opened","synchronize","reopened","ready_for_review"]'), github.event.action)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label pull request by changed files
+        uses: actions/labeler@v5
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+
   validate-pr-body:
     name: Validate PR summary/testing/docs sections
+    if: contains(fromJson('["opened","edited","synchronize","reopened"]'), github.event.action)
     runs-on: ubuntu-latest
     steps:
       - name: Enforce PR metadata sections

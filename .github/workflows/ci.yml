@@ -2,9 +2,15 @@ name: CI
 
 on:
   pull_request:
+    paths-ignore:
+      - '**/*.md'
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
   merge_group:
+    paths-ignore:
+      - '**/*.md'
 
 permissions:
   contents: read
@@ -14,22 +20,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: ${{ matrix.task.name }}
+  quality:
+    name: Quality and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        task:
-          - name: Quick quality gate
-            command: bun run check:quick
-          - name: Unit tests
-            command: bun run test:unit
-          - name: Toy consistency
-            command: bun run check:toys
-          - name: Build
-            command: bun run build
 
     steps:
       - name: Checkout
@@ -56,13 +50,20 @@ jobs:
       - name: Dev server check
         run: bun run dev:check
 
-      - name: Run task
-        run: ${{ matrix.task.command }}
+      - name: Run full quality gate
+        run: bun run check
+
+      - name: Run toy consistency checks
+        run: bun run check:toys
+
+      - name: Build production bundle
+        run: bun run build
 
   integration:
     name: Agent integration tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    if: github.event_name != 'pull_request'
 
     steps:
       - name: Checkout
