@@ -10,6 +10,8 @@ import {
   Group,
   IcosahedronGeometry,
   InstancedMesh,
+  LinearFilter,
+  LinearMipmapLinearFilter,
   type Material,
   Mesh,
   MeshBasicMaterial,
@@ -104,7 +106,11 @@ const AMBIENT_AURA_TEXTURE = 'colorful_aura_gradient.png';
 const AMBIENT_PARTICLE_TEXTURE = 'radial_rainbow_gradient.png';
 
 type TextureConfig = {
+  anisotropy?: number;
   colorSpace?: typeof SRGBColorSpace;
+  generateMipmaps?: boolean;
+  magFilter?: Texture['magFilter'];
+  minFilter?: Texture['minFilter'];
   repeatX?: number;
   repeatY?: number;
   wrapping?: Texture['wrapS'];
@@ -261,6 +267,11 @@ export function createLibraryThreeEffects() {
   let lastBackgroundRenderAt = 0;
   let lastPreviewRenderAt = 0;
 
+  const getTextureAnisotropy = (renderer?: WebGLRenderer | null) => {
+    if (!renderer) return 1;
+    return Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+  };
+
   const resolveTextureUrl = (fileName: string) => {
     const baseUrl =
       typeof import.meta.env.BASE_URL === 'string'
@@ -272,14 +283,22 @@ export function createLibraryThreeEffects() {
 
   const getTexture = (fileName: string, config: TextureConfig = {}) => {
     const {
+      anisotropy = 1,
       colorSpace,
+      generateMipmaps = true,
+      magFilter = LinearFilter,
+      minFilter = generateMipmaps ? LinearMipmapLinearFilter : LinearFilter,
       repeatX = 1,
       repeatY = repeatX,
       wrapping = RepeatWrapping,
     } = config;
     const cacheKey = JSON.stringify({
+      anisotropy,
       colorSpace: colorSpace ?? 'default',
       fileName,
+      generateMipmaps,
+      magFilter,
+      minFilter,
       repeatX,
       repeatY,
       wrapping,
@@ -291,6 +310,10 @@ export function createLibraryThreeEffects() {
     texture.wrapS = wrapping;
     texture.wrapT = wrapping;
     texture.repeat.set(repeatX, repeatY);
+    texture.anisotropy = anisotropy;
+    texture.generateMipmaps = generateMipmaps;
+    texture.magFilter = magFilter;
+    texture.minFilter = minFilter;
     if (colorSpace) {
       texture.colorSpace = colorSpace;
     }
@@ -397,11 +420,13 @@ export function createLibraryThreeEffects() {
         uAura: {
           value: getTexture(AMBIENT_AURA_TEXTURE, {
             colorSpace: SRGBColorSpace,
+            generateMipmaps: false,
             wrapping: MirroredRepeatWrapping,
           }),
         },
         uNoise: {
           value: getTexture('seamless_perlin_noise.png', {
+            anisotropy: getTextureAnisotropy(backgroundRenderer),
             repeatX: 1.5,
             repeatY: 1.5,
           }),
@@ -647,6 +672,11 @@ export function createLibraryThreeEffects() {
         color: 0x88aaff,
         map: getTexture(AMBIENT_PARTICLE_TEXTURE, {
           colorSpace: SRGBColorSpace,
+          generateMipmaps: false,
+          wrapping: ClampToEdgeWrapping,
+        }),
+        alphaMap: getTexture(AMBIENT_PARTICLE_TEXTURE, {
+          generateMipmaps: false,
           wrapping: ClampToEdgeWrapping,
         }),
         transparent: true,
@@ -777,24 +807,25 @@ export function createLibraryThreeEffects() {
     scene.add(group);
 
     const materialColor = new Color(style.baseColor);
+    const surfaceTexture = getTexture(style.surfaceTexture, {
+      anisotropy: getTextureAnisotropy(renderer),
+      colorSpace: SRGBColorSpace,
+      repeatX: 1.8,
+      repeatY: 1.8,
+    });
+    const detailTexture = getTexture(style.detailTexture, {
+      anisotropy: getTextureAnisotropy(renderer),
+      repeatX: 2.6,
+      repeatY: 2.6,
+    });
     const material = new MeshStandardMaterial({
       color: materialColor,
       emissive: materialColor.clone().multiplyScalar(style.emissiveMultiplier),
-      map: getTexture(style.surfaceTexture, {
-        colorSpace: SRGBColorSpace,
-        repeatX: 1.8,
-        repeatY: 1.8,
-      }),
-      emissiveMap: getTexture(style.surfaceTexture, {
-        colorSpace: SRGBColorSpace,
-        repeatX: 1.8,
-        repeatY: 1.8,
-      }),
-      bumpMap: getTexture(style.detailTexture, {
-        repeatX: 2.6,
-        repeatY: 2.6,
-      }),
+      map: surfaceTexture,
+      emissiveMap: surfaceTexture,
+      bumpMap: detailTexture,
       bumpScale: 0.08,
+      roughnessMap: detailTexture,
       roughness: style.roughness,
       metalness: style.metalness,
     });
@@ -807,6 +838,11 @@ export function createLibraryThreeEffects() {
         color: materialColor.clone().offsetHSL(0.08, 0, 0.08),
         map: getTexture(AMBIENT_AURA_TEXTURE, {
           colorSpace: SRGBColorSpace,
+          generateMipmaps: false,
+          wrapping: MirroredRepeatWrapping,
+        }),
+        alphaMap: getTexture(AMBIENT_AURA_TEXTURE, {
+          generateMipmaps: false,
           wrapping: MirroredRepeatWrapping,
         }),
         transparent: true,

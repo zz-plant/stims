@@ -141,7 +141,10 @@ async function isAudioActive(page: Page) {
   });
 }
 
-async function waitForAudioActive(page: Page, timeout = AUDIO_ACTIVATION_TIMEOUT_MS) {
+async function waitForAudioActive(
+  page: Page,
+  timeout = AUDIO_ACTIVATION_TIMEOUT_MS,
+) {
   try {
     await page.waitForFunction(
       () => {
