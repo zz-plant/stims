@@ -43,7 +43,17 @@ const DEFAULT_OPTIONS = {
 const SHELL_DEMO_SELECTOR = '[data-demo-audio-btn]';
 const CONTROL_DEMO_SELECTOR = '#use-demo-audio';
 const CONTROL_MIC_SELECTOR = '#start-audio-btn';
+const AUDIO_DEMO_LABEL = 'Start with demo audio';
+const PREFLIGHT_CONTINUE_LABEL = 'Continue to audio setup';
+const PREFLIGHT_LIGHTER_LABEL = 'Enable lighter visual mode';
 const WEBGL_FALLBACK_LABEL = 'Continue with WebGL';
+const PLAYWRIGHT_RENDERER_ARGS = [
+  '--use-angle=swiftshader',
+  '--use-gl=angle',
+  '--enable-webgl',
+  '--enable-unsafe-swiftshader',
+  '--ignore-gpu-blocklist',
+];
 
 function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
   return {
@@ -117,7 +127,10 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
   const consoleErrors: string[] = [];
 
   try {
-    browser = await chromium.launch({ headless: normalizedOptions.headless });
+    browser = await chromium.launch({
+      headless: normalizedOptions.headless,
+      args: PLAYWRIGHT_RENDERER_ARGS,
+    });
     const context = await browser.newContext({
       viewport: { width: 1280, height: 720 }, // Standard 720p
       recordVideo: options.video
@@ -142,6 +155,13 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     console.log(`Navigating to ${url}...`);
 
     await page.goto(url);
+
+    if (await clickVisibleButtonByText(page, PREFLIGHT_LIGHTER_LABEL)) {
+      console.log('Using lighter visual mode from capability preflight...');
+    }
+    if (await clickVisibleButtonByText(page, PREFLIGHT_CONTINUE_LABEL)) {
+      console.log('Advancing through capability preflight...');
+    }
 
     // Wait for either an already-loaded toy or the shell audio controls
     await page.waitForFunction(
@@ -170,6 +190,9 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     // Click demo audio button if present
     if (await clickVisibleButton(page, SHELL_DEMO_SELECTOR)) {
       console.log('Advancing through preflight with demo audio...');
+    }
+    if (await clickVisibleButtonByText(page, AUDIO_DEMO_LABEL)) {
+      console.log('Starting demo audio from audio setup...');
     }
 
     await page.waitForFunction(

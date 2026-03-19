@@ -3,6 +3,7 @@ import {
   isAgentMode,
   setDebugSnapshot,
 } from '../core/agent-api.ts';
+import type { ShaderQuality } from '../core/performance-panel';
 import {
   isCompatibilityModeEnabled,
   setCompatibilityMode,
@@ -124,14 +125,21 @@ export function getMilkdropDetailScale({
   backend,
   particleScale,
   particleBudget,
+  shaderQuality = 'balanced',
 }: {
   backend: 'webgl' | 'webgpu';
   particleScale?: number;
   particleBudget: number;
+  shaderQuality?: ShaderQuality;
 }) {
   const baseScale = (particleScale ?? 1) * particleBudget;
   const backendBoost = backend === 'webgpu' ? 1.35 : 1.1;
-  return Math.min(2, Math.max(0.5, baseScale * backendBoost));
+  const shaderQualityScale =
+    shaderQuality === 'low' ? 0.72 : shaderQuality === 'high' ? 1.15 : 1;
+  return Math.min(
+    2,
+    Math.max(0.5, baseScale * backendBoost * shaderQualityScale),
+  );
 }
 
 export function buildMilkdropInputSignalOverrides(
@@ -1014,12 +1022,11 @@ export function createMilkdropExperience({
     const requestedPresetId = consumeRequestedMilkdropPresetSelection();
     const startupPresetId =
       requestedPresetId ?? initialPresetId ?? prefs.lastPresetId;
-    if (
-      startupPresetId &&
-      catalogEntries.some((entry) => entry.id === startupPresetId)
-    ) {
+    if (startupPresetId) {
       await selectPreset(startupPresetId, { recordHistory: false });
-      return;
+      if (activePresetId === startupPresetId) {
+        return;
+      }
     }
     const first = catalogEntries[0];
     if (first) {
@@ -1084,6 +1091,7 @@ export function createMilkdropExperience({
         backend: activeBackend,
         particleScale: quality.activeQuality.particleScale,
         particleBudget: frame.performance.particleBudget,
+        shaderQuality: frame.performance.shaderQuality,
       });
       vm.setDetailScale(detailScale);
       const baseSignals = signalTracker.update({
@@ -1112,6 +1120,7 @@ export function createMilkdropExperience({
       updateAgentDebugSnapshot();
       const activeBlendState =
         transitionMode === 'blend' &&
+        frame.performance.shaderQuality !== 'low' &&
         blendState &&
         performance.now() < blendEndAtMs
           ? {
@@ -1123,8 +1132,22 @@ export function createMilkdropExperience({
             }
           : null;
 
+      const renderFrameState =
+        frame.performance.shaderQuality === 'low' &&
+        (currentFrameState.post.shaderEnabled ||
+          currentFrameState.post.videoEchoEnabled)
+          ? {
+              ...currentFrameState,
+              post: {
+                ...currentFrameState.post,
+                shaderEnabled: false,
+                videoEchoEnabled: false,
+              },
+            }
+          : currentFrameState;
+
       adapter.render({
-        frameState: currentFrameState,
+        frameState: renderFrameState,
         blendState: activeBlendState,
       });
       runtime.toy.render();

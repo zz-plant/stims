@@ -87,4 +87,43 @@ describe('milkdrop catalog store', () => {
     const history = await store.getHistory();
     expect(history[0]).toBe('local-shader');
   });
+
+  test('falls back to memory storage when indexedDB open stalls', async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/milkdrop-presets/catalog.json')) {
+        return {
+          ok: true,
+          json: async () => ({ presets: [] }),
+        };
+      }
+
+      return { ok: false };
+    }) as unknown as typeof fetch;
+
+    (globalThis as { indexedDB?: IDBFactory }).indexedDB = {
+      open: () => ({}) as IDBOpenDBRequest,
+    } as unknown as IDBFactory;
+
+    const store = createMilkdropCatalogStore({
+      dbName: 'milkdrop-catalog-store-timeout-test',
+      catalogUrl: '/milkdrop-presets/catalog.json',
+    });
+
+    const startedAt = Date.now();
+    const entries = await store.listPresets();
+
+    expect(entries).toEqual([]);
+    expect(Date.now() - startedAt).toBeLessThan(2000);
+
+    await store.savePreset({
+      id: 'memory-only',
+      title: 'Memory Only',
+      raw: 'title=Memory Only\n',
+      origin: 'user',
+    });
+
+    const saved = await store.getPresetSource('memory-only');
+    expect(saved?.id).toBe('memory-only');
+  });
 });

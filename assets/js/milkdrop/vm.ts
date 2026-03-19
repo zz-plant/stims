@@ -997,7 +997,7 @@ class MilkdropPresetVM implements MilkdropVM {
       waveform: mainWave,
       mainWave,
       customWaves: this.buildCustomWaves(signals),
-      trails: this.trails.map(clonePolyline),
+      trails: this.trails,
       mesh: this.buildMesh(signals),
       shapes: this.buildShapes(signals),
       borders: this.buildBorders(),

@@ -34,6 +34,7 @@ type BundledCatalogDocument =
     };
 
 const HISTORY_RECORD_ID = '__history__';
+const DB_OPEN_TIMEOUT_MS = 750;
 
 function slugify(value: string) {
   return (
@@ -77,6 +78,39 @@ function openDb(name: string) {
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
+  });
+}
+
+function openDbWithTimeout(name: string, timeoutMs = DB_OPEN_TIMEOUT_MS) {
+  return new Promise<IDBDatabase | null>((resolve, reject) => {
+    let settled = false;
+    const timeout = globalThis.setTimeout(() => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve(null);
+    }, timeoutMs);
+
+    openDb(name).then(
+      (db) => {
+        if (settled) {
+          db?.close();
+          return;
+        }
+        settled = true;
+        clearTimeout(timeout);
+        resolve(db);
+      },
+      (error) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timeout);
+        reject(error);
+      },
+    );
   });
 }
 
@@ -199,7 +233,7 @@ export function createMilkdropCatalogStore({
 
   const getDb = () => {
     if (!dbPromise) {
-      dbPromise = openDb(dbName).catch(() => null);
+      dbPromise = openDbWithTimeout(dbName).catch(() => null);
     }
     return dbPromise;
   };

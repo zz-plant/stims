@@ -100,7 +100,7 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
       <div class="nav-actions" id="nav-actions">
         <div class="nav-section nav-section--primary" aria-label="Primary links">
           <a class="nav-link nav-link--section" data-section-link href="#milkdrop">MilkDrop</a>
-          <a class="nav-link nav-link--section" data-section-link href="#library">Toy lab</a>
+          <a class="nav-link nav-link--section" data-section-link href="#library">Library</a>
           <a class="nav-link" href="/toys/">Toy pages</a>
           <a class="nav-link" href="/moods/">Moods</a>
           <a class="nav-link" href="/capabilities/">Capabilities</a>

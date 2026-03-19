@@ -135,30 +135,6 @@ html.light {
   color-scheme: light;
 }
 
-/* Hero Background Canvas */
-.hero-background-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.35;
-  transition: opacity 0.5s ease;
-}
-
-html.light .hero-background-canvas {
-  opacity: 0.25;
-  filter: saturate(1.05) brightness(1.05);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-background-canvas {
-    opacity: 0.4;
-  }
-}
-
 .sr-only {
   /* biome-ignore lint/complexity/noImportantStyles: a11y utility */
   position: absolute !important;

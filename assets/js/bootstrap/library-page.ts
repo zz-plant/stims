@@ -7,7 +7,6 @@ import { initMilkdropShowcase } from '../utils/init-milkdrop-showcase.ts';
 import { initNavScrollEffects } from '../utils/init-nav-scroll.ts';
 import { initQuickstartCta } from '../utils/init-quickstart.ts';
 import { initSystemCheck } from '../utils/init-system-check.ts';
-import { initStimBuilder } from '../utils/stim-builder.ts';
 
 type LoaderApi = ReturnType<typeof createLoader>;
 type Toy = Pick<ToyEntry, 'slug' | 'title'>;
@@ -67,5 +66,4 @@ export function bootLibraryPage({
   runInit('milkdrop showcase', initMilkdropShowcase);
   runInit('nav scroll effects', initNavScrollEffects);
   runInit('system check', initSystemCheck);
-  runInit('stim builder', initStimBuilder);
 }

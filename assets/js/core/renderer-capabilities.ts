@@ -110,13 +110,32 @@ function getFallbackBackend(): RendererBackend | null {
   return getRenderingSupport().hasWebGL ? 'webgl' : null;
 }
 
+function probeCanvasWebGLContext() {
+  if (typeof document === 'undefined') {
+    return false;
+  }
+
+  try {
+    const canvas = document.createElement('canvas');
+    if (typeof canvas.getContext !== 'function') {
+      return false;
+    }
+    return Boolean(
+      canvas.getContext('webgl') || canvas.getContext('experimental-webgl'),
+    );
+  } catch (_error) {
+    return false;
+  }
+}
+
 export function getRenderingSupport(): RenderingSupport {
   const hasWebGPU =
     typeof navigator !== 'undefined' &&
     Boolean((navigator as Navigator & { gpu?: GPU }).gpu);
-  const hasWebGL =
+  const libraryWebGLSupport =
     typeof WebGL !== 'undefined' &&
     (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
+  const hasWebGL = Boolean(libraryWebGLSupport) || probeCanvasWebGLContext();
 
   return {
     hasWebGPU,

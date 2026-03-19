@@ -283,6 +283,60 @@ ob_size=0.03
     expect(borderGroup.children[0]).toBe(firstBorderObject);
   });
 
+  test('reuses shape groups and wave position attributes across renders', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Stable Shapes
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_thickoutline=1
+      `.trim(),
+      { id: 'stable-shapes' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    const firstFrame = createMilkdropVM(preset).step(makeSignals());
+    const secondFrame = createMilkdropVM(preset).step(makeSignals());
+
+    adapter.attach();
+    adapter.render({
+      frameState: firstFrame,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ children?: unknown[] }>;
+    };
+    const mainWaveGroup = root.children[2] as {
+      children: Array<{
+        geometry?: { getAttribute: (name: string) => unknown };
+      }>;
+    };
+    const shapesGroup = root.children[5] as {
+      children: Array<{ children?: Array<{ geometry?: unknown }> }>;
+    };
+    const firstWaveAttribute =
+      mainWaveGroup.children[0]?.geometry?.getAttribute('position');
+    const firstShapeGroup = shapesGroup.children[0];
+
+    adapter.render({
+      frameState: secondFrame,
+      blendState: null,
+    });
+
+    const secondWaveAttribute =
+      mainWaveGroup.children[0]?.geometry?.getAttribute('position');
+    expect(shapesGroup.children[0]).toBe(firstShapeGroup);
+    expect(secondWaveAttribute).toBe(firstWaveAttribute);
+  });
+
   test('forwards gamma-adjusted post state into feedback uniforms', () => {
     const preset = compileMilkdropPresetSource(
       `

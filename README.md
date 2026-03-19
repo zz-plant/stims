@@ -1,4 +1,4 @@
-# Stim Webtoys (Stims)
+# Stims
 
 [![Live site](https://img.shields.io/badge/live-no.toil.fyi-5a67d8?style=flat-square&logo=cloudflare)](https://no.toil.fyi)
 [![GitHub stars](https://img.shields.io/github/stars/zz-plant/stims?style=flat-square)](https://github.com/zz-plant/stims/stargazers)
@@ -6,11 +6,11 @@
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=flat-square)](./LICENSE)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=flat-square&logo=bun)](https://bun.sh)
 
-Welcome to **Stim Webtoys (Stims)**, hosted at [no.toil.fyi](https://no.toil.fyi). Stims is an independent browser-native visualizer and toy lab built in the lineage of **Ryan Geiss's MilkDrop**, with **Three.js** + **WebGL** (and WebGPU support where available).
+Welcome to **Stims**, hosted at [no.toil.fyi](https://no.toil.fyi). Stims is an independent browser-native visualizer built in the lineage of **Ryan Geiss's MilkDrop**. It centers on a shared MilkDrop-style runtime, curated presets, browser editing, import/export, and a searchable library of preset-driven variants, built with **Three.js** + **WebGL** (and WebGPU support where available).
 
-**Keywords for discovery:** MilkDrop-inspired visualizer, browser-native visualizer, audio-reactive visuals, Three.js/WebGL experiments, preset-driven visuals, generative art playground.
+**Keywords for discovery:** MilkDrop-inspired visualizer, browser-native visualizer, preset editor, preset library, audio-reactive visuals, Three.js/WebGL experiments.
 
-**If this project sparks joy, please ⭐ star the repo and share the live site.** It helps more people find the toys and keeps new experiments flowing.
+**If this project sparks joy, please ⭐ star the repo and share the live site.** It helps more people find the visualizer and keeps new preset work flowing.
 
 **Quick links**
 - 🎮 **Play now**: https://no.toil.fyi
@@ -45,7 +45,7 @@ Welcome to **Stim Webtoys (Stims)**, hosted at [no.toil.fyi](https://no.toil.fyi
 - [Quick Start](#quick-start)
 - [Getting Started](#getting-started)
 - [Repository Layout](#repository-layout)
-- [Toys in the Collection](#toys-in-the-collection)
+- [Preset Variants in the Library](#preset-variants-in-the-library)
 - [Roadmap](#roadmap)
 - [Local Setup](#local-setup)
 - [Troubleshooting](#troubleshooting)
@@ -84,7 +84,7 @@ When docs are added, renamed, moved, or deleted, update `docs/README.md` in the 
 
 ## Lineage and credits
 
-Stims is not an official MilkDrop or Winamp release. It is an independent browser-native visualizer and toy lab built in the lineage of Ryan Geiss's MilkDrop and the preset-driven workflows that grew around it.
+Stims is not an official MilkDrop or Winamp release. It is an independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop and the preset-driven workflows that grew around it.
 
 - Credit **Ryan Geiss** and **MilkDrop** when describing the lineage of the flagship visualizer.
 - Credit **Winamp/Nullsoft** when referring to MilkDrop's original public product context.
@@ -138,7 +138,7 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 
 ## Getting Started
 
-### Why people use Stim Webtoys
+### Why people use Stims
 
 - **MilkDrop Visualizer first**: start with a preset-driven browser flow built in the lineage of MilkDrop, with live editing and import/export.
 - **Self-regulation moments**: settle into repeatable rhythm of sound + visuals without claiming a specific outcome.
@@ -146,7 +146,7 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 - **Clear control surfaces**: adjust intensity with the shared settings panel and its [performance/quality presets](./docs/DEVELOPMENT.md#performance-tips).
 - **Fallback audio**: switch to demo audio when mic access is hard or you just want to listen.
 - **Short, contained sessions**: jump in for a few minutes and return whenever you want.
-- **Broader toy lab**: branch into other Stims toys after MilkDrop, using shared controls and discovery filters.
+- **Preset library**: browse preset variants after launch, using shared controls and discovery filters.
 
 ### What You’ll Need
 
@@ -158,12 +158,12 @@ See the [Deployment Guide](./docs/DEPLOYMENT.md) for build, preview, static host
 
 Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond to sound, touch, and other inputs to create a chill or stimulating experience. If you’d rather play locally, follow the steps in **Local Setup** to run the dev server and open the toys at `http://localhost:5173`.
 
-### What the broader toy lab includes
+### What the preset library includes
 
-- **MilkDrop-led homepage**: the landing page prioritizes MilkDrop launch, then routes into broader discovery.
-- **Searchable discovery**: the toy grid matches titles, tags, moods, and capability terms, plus badges for microphone, motion, demo audio, and WebGPU requirements. A no-JS fallback renders the same data from `toys.json` when needed.
-- **Guided toy start**: the shared toy shell runs a capability preflight before loading a toy, auto-falls back to WebGL when a toy allows it, and then offers microphone, demo audio, and YouTube tab-capture audio flows with status messaging.
-- **Consistent performance controls**: quality presets and pixel-ratio caps persist between toys, while pooled renderer/audio services keep toy switching fast without re-prompting for microphone access.
+- **MilkDrop-led homepage**: the landing page prioritizes MilkDrop launch, then routes into preset discovery.
+- **Searchable discovery**: the library grid matches titles, tags, moods, and capability terms, plus badges for microphone, motion, demo audio, and WebGPU requirements. A no-JS fallback renders the same data from `toys.json` when needed.
+- **Guided launch flow**: the shared toy shell runs a capability preflight before loading a preset variant, auto-falls back to WebGL when a variant allows it, and then offers microphone, demo audio, and YouTube tab-capture audio flows with status messaging.
+- **Consistent performance controls**: quality presets and pixel-ratio caps persist between variants, while pooled renderer/audio services keep switching fast without re-prompting for microphone access.
 
 ### Accessibility & comfort notes
 
@@ -175,7 +175,7 @@ Head to [no.toil.fyi](https://no.toil.fyi) and jump right in. The toys respond t
 
 This project is organized so you can find the visuals, core utilities, and shared assets quickly:
 
-- `assets/js/toys/`: Individual toy implementations such as `cube-wave.ts`, `spiral-burst.ts`, and other sound-reactive scenes.
+- `assets/js/toys/`: MilkDrop entrypoints, mostly thin preset-variant starters such as `cube-wave.ts`, `spiral-burst.ts`, and other behavior-backed scene wrappers.
 - `assets/js/core/`: Rendering and input helpers used by multiple toys (for example, renderer initialization and audio analyzers).
 - `assets/js/utils/`: Small utility modules that support the core helpers and toys.
 - `assets/css/`: Shared styling for the various HTML entry points.
@@ -185,33 +185,33 @@ This project is organized so you can find the visuals, core utilities, and share
 
 If you add a new toy, place the implementation in `assets/js/toys/`, register it in `assets/data/toys.json`, and make sure there’s an entry point (often `toy.html?toy=<slug>`) that can load it.
 
-## Toys in the Collection
+## Preset Variants in the Library
 
 | Toy                                                       | Description                                                                           |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [3D Toy](https://no.toil.fyi/toy.html?toy=3dtoy)                            | A twisting 3D tunnel that responds to sound.                                          |
-| [Aurora Painter](https://no.toil.fyi/toy.html?toy=aurora-painter)           | Paint flowing aurora ribbons that react to your microphone in layered waves.          |
-| [Pottery Wheel Sculptor](https://no.toil.fyi/toy.html?toy=clay)             | Spin and shape a 3D clay vessel with smoothing, carving, and pinching tools.          |
-| [Evolutionary Weirdcore](https://no.toil.fyi/toy.html?toy=evol)             | Watch surreal landscapes evolve with fractals and glitches that react to music.       |
-| [Microphone Geometry Visualizer](https://no.toil.fyi/toy.html?toy=geom)     | Push shifting geometric forms directly from live mic input with responsive controls.  |
-| [Halo Visualizer](https://no.toil.fyi/toy.html?toy=holy)                    | Layered halos, particles, and shapes that respond to your music.                      |
-| [Multi-Capability Visualizer](https://no.toil.fyi/toy.html?toy=multi)       | Shapes and lights move with both sound and device motion. (Requires WebGPU.)          |
-| [Synesthetic Visualizer](https://no.toil.fyi/toy.html?toy=seary)            | Blend audio and visuals into linked patterns.                                         |
-| [Terminal Word Grid](https://no.toil.fyi/toy.html?toy=legible)              | A retro green text grid that pulses to audio and surfaces fresh words as you play.    |
-| [Spectrograph](https://no.toil.fyi/toy.html?toy=symph)                     | A spectrograph that moves gently with your audio.                                     |
-| [Grid Visualizer](https://no.toil.fyi/toy.html?toy=cube-wave)               | Swap between cube waves and bouncing spheres without stopping the music.              |
-| [Bubble Harmonics](https://no.toil.fyi/toy.html?toy=bubble-harmonics)       | Translucent, audio-inflated bubbles that split into harmonics on high frequencies.    |
-| [Pocket Pulse](https://no.toil.fyi/toy.html?toy=pocket-pulse)               | A mobile-optimized pulse field that responds to audio and touch gestures.             |
-| [Mobile Ripples](https://no.toil.fyi/toy.html?toy=mobile-ripples)           | Low-power neon ripples tuned for touch-first screens and pocket GPUs.                 |
-| [Cosmic Particles](https://no.toil.fyi/toy.html?toy=cosmic-particles)       | Jump between orbiting swirls and nebula fly-throughs with a single toggle.            |
-| [Audio Light Show](https://no.toil.fyi/toy.html?toy=lights)                 | Swap shader styles and color palettes while lights ripple with your microphone input. |
-| [Spiral Burst](https://no.toil.fyi/toy.html?toy=spiral-burst)               | Colorful spirals rotate and expand with every beat.                                   |
-| [Rainbow Tunnel](https://no.toil.fyi/toy.html?toy=rainbow-tunnel)           | Fly through colorful rings that spin to your music.                                   |
-| [Star Field](https://no.toil.fyi/toy.html?toy=star-field)                   | A field of shimmering stars reacts to the beat.                                       |
-| [Fractal Kite Garden](https://no.toil.fyi/toy.html?toy=fractal-kite-garden) | Grow branching kite fractals that sway with mids and shimmer with crisp highs.        |
-| [Tactile Sand Table](https://no.toil.fyi/toy.html?toy=tactile-sand-table)   | Heightfield sand ripples that respond to bass, mids, and device tilt.                 |
-| [Bioluminescent Tidepools](https://no.toil.fyi/toy.html?toy=bioluminescent-tidepools) | Sketch glowing currents that bloom with high-frequency sparkle from your music. |
-| [Neon Wave](https://no.toil.fyi/toy.html?toy=neon-wave)                     | Retro-wave visualizer with bloom effects, custom shaders, and four color themes.      |
+| [3D Toy](https://no.toil.fyi/toy.html?toy=3dtoy)                            | A twisting tunnel preset variant with chrome hues and audio-driven spin.              |
+| [Aurora Painter](https://no.toil.fyi/toy.html?toy=aurora-painter)           | A gestural aurora preset variant with drag-steered ribbons and layered waves.         |
+| [Pottery Wheel Sculptor](https://no.toil.fyi/toy.html?toy=clay)             | An earthy sculptural preset variant with kiln-glow waves and grounded motion.         |
+| [Evolutionary Weirdcore](https://no.toil.fyi/toy.html?toy=evol)             | A glitch-fractal preset variant with unstable colors, warped mesh lines, and flashes. |
+| [Microphone Geometry Visualizer](https://no.toil.fyi/toy.html?toy=geom)     | A geometry-first preset variant with reactive rings and shifting symmetry.             |
+| [Halo Visualizer](https://no.toil.fyi/toy.html?toy=holy)                    | A halo preset variant with luminous rings, suspended shapes, and gentle bloom.        |
+| [Multi-Capability Visualizer](https://no.toil.fyi/toy.html?toy=multi)       | A dense hybrid preset variant that folds old multi-capability ideas into one scene.   |
+| [Synesthetic Visualizer](https://no.toil.fyi/toy.html?toy=seary)            | A synesthetic preset variant with mapped color shifts and looping forms.              |
+| [Terminal Word Grid](https://no.toil.fyi/toy.html?toy=legible)              | A retro terminal preset variant with phosphor greens and measured pulse trails.       |
+| [Spectrograph](https://no.toil.fyi/toy.html?toy=symph)                     | A spectrograph-inspired preset variant with calm bands and soft trails.               |
+| [Grid Visualizer](https://no.toil.fyi/toy.html?toy=cube-wave)               | A grid preset variant with stacked wave motion and squared silhouettes.               |
+| [Bubble Harmonics](https://no.toil.fyi/toy.html?toy=bubble-harmonics)       | A bubble preset variant with translucent rings and harmonic pulse motion.             |
+| [Pocket Pulse](https://no.toil.fyi/toy.html?toy=pocket-pulse)               | A compact pulse preset variant tuned for quick reactions and mobile-friendly motion.  |
+| [Mobile Ripples](https://no.toil.fyi/toy.html?toy=mobile-ripples)           | A low-motion ripple preset variant tuned for touch-first screens and pocket GPUs.     |
+| [Cosmic Particles](https://no.toil.fyi/toy.html?toy=cosmic-particles)       | A cosmic preset variant with orbiting particle lines and reactive depth.              |
+| [Audio Light Show](https://no.toil.fyi/toy.html?toy=lights)                 | A lighting preset variant with palette sweeps and punchy audio-driven contrast.       |
+| [Spiral Burst](https://no.toil.fyi/toy.html?toy=spiral-burst)               | A spiral preset variant with blooming coils and emphatic beat pulses.                 |
+| [Rainbow Tunnel](https://no.toil.fyi/toy.html?toy=rainbow-tunnel)           | A tunnel preset variant with prism rings, color cycling, and forward drift.           |
+| [Star Field](https://no.toil.fyi/toy.html?toy=star-field)                   | A star-field preset variant with drifting spark trails and gentle beat shimmer.       |
+| [Fractal Kite Garden](https://no.toil.fyi/toy.html?toy=fractal-kite-garden) | A kite-garden preset variant with branching polygon clusters and airy shimmer.        |
+| [Tactile Sand Table](https://no.toil.fyi/toy.html?toy=tactile-sand-table)   | A sand-table preset variant with earthy ripples, tilt steering, and grounded texture. |
+| [Bioluminescent Tidepools](https://no.toil.fyi/toy.html?toy=bioluminescent-tidepools) | A tidepool preset variant with caustic glow and bright treble sparkle. |
+| [Neon Wave](https://no.toil.fyi/toy.html?toy=neon-wave)                     | A synthwave preset variant with horizon glow and saturated beat response.             |
 | [MilkDrop Visualizer](https://no.toil.fyi/toy.html?toy=milkdrop)            | Preset-driven feedback visualizer with blend transitions, live source editing, and import/export flows. |
 
 ---

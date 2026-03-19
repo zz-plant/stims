@@ -22,8 +22,10 @@ import {
   ShaderMaterial,
   Shape,
   ShapeGeometry,
+  Sphere,
   Scene as ThreeScene,
   Vector2,
+  Vector3,
   WebGLRenderTarget,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
@@ -43,6 +45,7 @@ type RendererLike = {
 };
 
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
+const SHARED_BOUNDS_RADIUS = 4;
 const FULLSCREEN_QUAD_GEOMETRY = markSharedGeometry(new PlaneGeometry(2, 2));
 const BACKGROUND_GEOMETRY = markSharedGeometry(new PlaneGeometry(6.4, 6.4));
 const polygonFillGeometryCache = new Map<number, ShapeGeometry>();
@@ -126,8 +129,27 @@ function ensureGeometryPositions(
   geometry: BufferGeometry,
   positions: number[],
 ) {
-  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
-  geometry.computeBoundingSphere();
+  const existing = geometry.getAttribute('position');
+  if (
+    existing instanceof Float32BufferAttribute &&
+    existing.itemSize === 3 &&
+    existing.array.length === positions.length
+  ) {
+    existing.array.set(positions);
+    existing.needsUpdate = true;
+  } else {
+    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  }
+
+  if (!geometry.boundingSphere) {
+    geometry.boundingSphere = new Sphere(
+      new Vector3(0, 0, 0),
+      SHARED_BOUNDS_RADIUS,
+    );
+  } else {
+    geometry.boundingSphere.center.set(0, 0, 0);
+    geometry.boundingSphere.radius = SHARED_BOUNDS_RADIUS;
+  }
 }
 
 function clearGroup(group: Group) {
@@ -321,6 +343,196 @@ function createShapeObject(shape: MilkdropShapeVisual, alphaMultiplier = 1) {
   return group;
 }
 
+function syncShapeFillMaterial(
+  mesh: Mesh,
+  shape: MilkdropShapeVisual,
+  alphaMultiplier: number,
+) {
+  const wantsGradient = Boolean(shape.secondaryColor);
+  const existingMaterial = mesh.material;
+
+  if (wantsGradient) {
+    if (!(existingMaterial instanceof ShaderMaterial)) {
+      disposeMaterial(existingMaterial);
+      mesh.material = new ShaderMaterial({
+        uniforms: {
+          primaryColor: {
+            value: new Color(shape.color.r, shape.color.g, shape.color.b),
+          },
+          secondaryColor: {
+            value: new Color(
+              shape.secondaryColor?.r ?? 0,
+              shape.secondaryColor?.g ?? 0,
+              shape.secondaryColor?.b ?? 0,
+            ),
+          },
+          primaryAlpha: {
+            value: (shape.color.a ?? 0.4) * alphaMultiplier,
+          },
+          secondaryAlpha: {
+            value: (shape.secondaryColor?.a ?? 0) * alphaMultiplier,
+          },
+        },
+        transparent: true,
+        side: DoubleSide,
+        ...(shape.additive ? { blending: AdditiveBlending } : {}),
+        vertexShader: `
+          varying vec2 vLocal;
+          void main() {
+            vLocal = position.xy;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 primaryColor;
+          uniform vec3 secondaryColor;
+          uniform float primaryAlpha;
+          uniform float secondaryAlpha;
+          varying vec2 vLocal;
+
+          void main() {
+            float blend = clamp(length(vLocal), 0.0, 1.0);
+            vec3 color = mix(primaryColor, secondaryColor, blend);
+            float alpha = mix(primaryAlpha, secondaryAlpha, blend);
+            gl_FragColor = vec4(color, alpha);
+          }
+        `,
+      });
+    }
+
+    const material = mesh.material as ShaderMaterial;
+    material.uniforms.primaryColor.value.setRGB(
+      shape.color.r,
+      shape.color.g,
+      shape.color.b,
+    );
+    material.uniforms.secondaryColor.value.setRGB(
+      shape.secondaryColor?.r ?? 0,
+      shape.secondaryColor?.g ?? 0,
+      shape.secondaryColor?.b ?? 0,
+    );
+    material.uniforms.primaryAlpha.value =
+      (shape.color.a ?? 0.4) * alphaMultiplier;
+    material.uniforms.secondaryAlpha.value =
+      (shape.secondaryColor?.a ?? 0) * alphaMultiplier;
+    material.blending = shape.additive ? AdditiveBlending : NormalBlending;
+    material.needsUpdate = true;
+    return;
+  }
+
+  if (!(existingMaterial instanceof MeshBasicMaterial)) {
+    disposeMaterial(existingMaterial);
+    mesh.material = new MeshBasicMaterial({
+      color: new Color(shape.color.r, shape.color.g, shape.color.b),
+      opacity: (shape.color.a ?? 0.4) * alphaMultiplier,
+      transparent: true,
+      side: DoubleSide,
+      ...(shape.additive ? { blending: AdditiveBlending } : {}),
+    });
+  }
+
+  const material = mesh.material as MeshBasicMaterial;
+  material.blending = shape.additive ? AdditiveBlending : NormalBlending;
+  setMaterialColor(
+    material,
+    shape.color,
+    (shape.color.a ?? 0.4) * alphaMultiplier,
+  );
+}
+
+function syncShapeOutline(
+  object: LineLoop,
+  shape: MilkdropShapeVisual,
+  alphaMultiplier: number,
+  opacity: number,
+) {
+  if (object.geometry !== getUnitPolygonOutlineGeometry(shape.sides)) {
+    object.geometry = getUnitPolygonOutlineGeometry(shape.sides);
+  }
+  object.position.set(shape.x, shape.y, 0.16);
+  object.scale.set(shape.radius, shape.radius, 1);
+  object.rotation.z = shape.rotation;
+  const material = object.material as LineBasicMaterial;
+  material.blending = shape.additive ? AdditiveBlending : NormalBlending;
+  setMaterialColor(material, shape.borderColor, opacity * alphaMultiplier);
+}
+
+function syncShapeObject(
+  existing: Group | undefined,
+  shape: MilkdropShapeVisual,
+  alphaMultiplier: number,
+) {
+  const wantsAccent = shape.thickOutline;
+  const fillZ = 0.14;
+  const accentZ = 0.15;
+  const borderZ = 0.16;
+
+  if (!(existing instanceof Group)) {
+    if (existing) {
+      disposeObject(existing);
+    }
+    return createShapeObject(shape, alphaMultiplier);
+  }
+
+  const fill = existing.children[0];
+  const accent = existing.children[1];
+  const border = existing.children[wantsAccent ? 2 : 1];
+
+  if (
+    !(fill instanceof Mesh) ||
+    !(border instanceof LineLoop) ||
+    (wantsAccent && !(accent instanceof LineLoop))
+  ) {
+    disposeObject(existing);
+    return createShapeObject(shape, alphaMultiplier);
+  }
+
+  if (fill.geometry !== getUnitPolygonFillGeometry(shape.sides)) {
+    fill.geometry = getUnitPolygonFillGeometry(shape.sides);
+  }
+  fill.position.set(shape.x, shape.y, fillZ);
+  fill.scale.set(shape.radius, shape.radius, 1);
+  fill.rotation.z = shape.rotation;
+  syncShapeFillMaterial(fill, shape, alphaMultiplier);
+
+  if (wantsAccent && accent instanceof LineLoop) {
+    syncShapeOutline(
+      accent,
+      shape,
+      alphaMultiplier,
+      Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45),
+    );
+    accent.scale.set(shape.radius * 1.045, shape.radius * 1.045, 1);
+    accent.position.z = accentZ;
+  }
+
+  syncShapeOutline(border, shape, alphaMultiplier, shape.borderColor.a ?? 1);
+  border.position.z = borderZ;
+
+  if (!wantsAccent && accent) {
+    disposeObject(accent as { children?: unknown[] });
+    existing.remove(accent);
+  } else if (wantsAccent && !(accent instanceof LineLoop)) {
+    const nextAccent = new LineLoop(
+      getUnitPolygonOutlineGeometry(shape.sides),
+      new LineBasicMaterial({
+        transparent: true,
+      }),
+    );
+    existing.add(nextAccent);
+    syncShapeOutline(
+      nextAccent,
+      shape,
+      alphaMultiplier,
+      Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45),
+    );
+    nextAccent.scale.set(shape.radius * 1.045, shape.radius * 1.045, 1);
+    nextAccent.position.z = accentZ;
+  }
+
+  return existing;
+}
+
 function createBorderObject(border: MilkdropBorderVisual, alphaMultiplier = 1) {
   const inset = border.key === 'outer' ? border.size : border.size + 0.08;
   const left = -1 + inset * 2;
@@ -481,20 +693,24 @@ function updateBorderLine(
   const right = 1 - inset * 2;
   const top = 1 - inset * 2;
   const bottom = -1 + inset * 2;
-  ensureGeometryPositions(object.geometry, [
-    left,
-    top,
-    0.3,
-    right,
-    top,
-    0.3,
-    right,
-    bottom,
-    0.3,
-    left,
-    bottom,
-    0.3,
-  ]);
+  const previousInset = object.userData.borderInset as number | undefined;
+  if (previousInset !== inset) {
+    ensureGeometryPositions(object.geometry, [
+      left,
+      top,
+      0.3,
+      right,
+      top,
+      0.3,
+      right,
+      bottom,
+      0.3,
+      left,
+      bottom,
+      0.3,
+    ]);
+    object.userData.borderInset = inset;
+  }
   setMaterialColor(
     object.material as LineBasicMaterial,
     border.color,
@@ -508,28 +724,32 @@ function updateBorderFill(
   alphaMultiplier: number,
 ) {
   const inset = border.key === 'outer' ? border.size : border.size + 0.08;
-  const left = -1 + inset * 2;
-  const right = 1 - inset * 2;
-  const top = 1 - inset * 2;
-  const bottom = -1 + inset * 2;
-  const fillShape = new Shape();
-  fillShape.moveTo(-1, 1);
-  fillShape.lineTo(1, 1);
-  fillShape.lineTo(1, -1);
-  fillShape.lineTo(-1, -1);
-  fillShape.lineTo(-1, 1);
-  const hole = new Path();
-  hole.moveTo(left, top);
-  hole.lineTo(left, bottom);
-  hole.lineTo(right, bottom);
-  hole.lineTo(right, top);
-  hole.lineTo(left, top);
-  fillShape.holes.push(hole);
+  const previousInset = object.userData.borderInset as number | undefined;
+  if (previousInset !== inset) {
+    const left = -1 + inset * 2;
+    const right = 1 - inset * 2;
+    const top = 1 - inset * 2;
+    const bottom = -1 + inset * 2;
+    const fillShape = new Shape();
+    fillShape.moveTo(-1, 1);
+    fillShape.lineTo(1, 1);
+    fillShape.lineTo(1, -1);
+    fillShape.lineTo(-1, -1);
+    fillShape.lineTo(-1, 1);
+    const hole = new Path();
+    hole.moveTo(left, top);
+    hole.lineTo(left, bottom);
+    hole.lineTo(right, bottom);
+    hole.lineTo(right, top);
+    hole.lineTo(left, top);
+    fillShape.holes.push(hole);
 
-  if (!isSharedGeometry(object.geometry)) {
-    disposeGeometry(object.geometry);
+    if (!isSharedGeometry(object.geometry)) {
+      disposeGeometry(object.geometry);
+    }
+    object.geometry = new ShapeGeometry(fillShape);
+    object.userData.borderInset = inset;
   }
-  object.geometry = new ShapeGeometry(fillShape);
   setMaterialColor(
     object.material as MeshBasicMaterial,
     border.color,
@@ -912,9 +1132,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier = 1,
   ) {
-    clearGroup(group);
-    shapes.forEach((shape) => {
-      group.add(createShapeObject(shape, alphaMultiplier));
+    shapes.forEach((shape, index) => {
+      const existing = group.children[index] as Group | undefined;
+      const synced = syncShapeObject(existing, shape, alphaMultiplier);
+      if (!existing) {
+        group.add(synced);
+      } else if (synced !== existing) {
+        group.remove(existing);
+        group.add(synced);
+      }
+    });
+    group.children.slice(shapes.length).forEach((child) => {
+      disposeObject(child as { children?: unknown[] });
+      group.remove(child);
     });
   }
 

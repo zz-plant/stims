@@ -14,7 +14,7 @@
 - `assets/data/toys.json` (or `assets/data/toys.yaml` / `assets/data/toys.yml`) — toy metadata source of truth.
 - `assets/js/loader.ts` — loader/query param routing.
 - `assets/js/core/toy-runtime.ts` — shared toy runtime plumbing.
-- `assets/js/utils/start-audio.ts` — mic/demo audio unlock path.
+- `assets/js/core/toy-audio.ts` — shared audio-start contracts for toy runtimes.
 - `public/toys/` — generated public toy detail pages.
 
 ## Config and entry points
@@ -27,5 +27,5 @@
 
 1. Toy missing in UI → verify `assets/data/toys.json` entry.
 2. Toy not loading → inspect loader behavior in `assets/js/loader.ts`.
-3. No audio response → inspect `start-audio.ts` and runtime wiring.
+3. No audio response → inspect `assets/js/core/toy-audio.ts` and runtime wiring.
 4. Docs mismatch → refresh `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md`.
