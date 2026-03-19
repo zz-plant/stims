@@ -7,7 +7,10 @@ import {
 } from './expression';
 import { formatMilkdropPreset } from './formatter';
 import { parseMilkdropPreset } from './preset-parser';
-import { parseMilkdropShaderStatement } from './shader-ast';
+import {
+  evaluateMilkdropShaderExpression,
+  parseMilkdropShaderStatement,
+} from './shader-ast';
 import type {
   MilkdropBackendSupport,
   MilkdropCompiledPreset,
@@ -27,6 +30,7 @@ import type {
   MilkdropProgramBlock,
   MilkdropShaderControlExpressions,
   MilkdropShaderControls,
+  MilkdropShaderExpressionNode,
   MilkdropShaderStatement,
   MilkdropShapeDefinition,
   MilkdropWaveDefinition,
@@ -439,6 +443,257 @@ function createDefaultShaderControlExpressions(): MilkdropShaderControlExpressio
   };
 }
 
+type ShaderRuntimeValue = Exclude<
+  ReturnType<typeof evaluateMilkdropShaderExpression>,
+  null
+>;
+type ShaderRuntimeEnv = Record<string, ShaderRuntimeValue>;
+type ShaderExpressionEnv = Record<string, MilkdropShaderExpressionNode>;
+
+function isShaderScalarValue(
+  value: ReturnType<typeof evaluateMilkdropShaderExpression>,
+): value is Extract<ShaderRuntimeValue, { kind: 'scalar' }> {
+  return value?.kind === 'scalar';
+}
+
+function resolveShaderExpressionIdentifiers(
+  node: MilkdropShaderExpressionNode,
+  env: ShaderExpressionEnv,
+  visited = new Set<string>(),
+): MilkdropShaderExpressionNode {
+  switch (node.type) {
+    case 'identifier': {
+      const key = node.name.toLowerCase();
+      const resolved = env[key];
+      if (!resolved || visited.has(key)) {
+        return {
+          ...node,
+          name: key,
+        };
+      }
+      const nextVisited = new Set(visited);
+      nextVisited.add(key);
+      return resolveShaderExpressionIdentifiers(resolved, env, nextVisited);
+    }
+    case 'unary':
+      return {
+        ...node,
+        operand: resolveShaderExpressionIdentifiers(node.operand, env, visited),
+      };
+    case 'binary':
+      return {
+        ...node,
+        left: resolveShaderExpressionIdentifiers(node.left, env, visited),
+        right: resolveShaderExpressionIdentifiers(node.right, env, visited),
+      };
+    case 'call':
+      return {
+        ...node,
+        name: node.name.toLowerCase(),
+        args: node.args.map((arg) =>
+          resolveShaderExpressionIdentifiers(arg, env, visited),
+        ),
+      };
+    case 'member':
+      return {
+        ...node,
+        property: node.property.toLowerCase(),
+        object: resolveShaderExpressionIdentifiers(node.object, env, visited),
+      };
+    case 'literal':
+      return node;
+  }
+}
+
+function toMilkdropExpression(
+  node: MilkdropShaderExpressionNode,
+): MilkdropExpressionNode | null {
+  switch (node.type) {
+    case 'literal':
+      return { type: 'literal', value: node.value };
+    case 'identifier':
+      return { type: 'identifier', name: node.name.toLowerCase() };
+    case 'unary': {
+      const operand = toMilkdropExpression(node.operand);
+      if (!operand) {
+        return null;
+      }
+      return {
+        type: 'unary',
+        operator: node.operator,
+        operand,
+      };
+    }
+    case 'binary': {
+      const left = toMilkdropExpression(node.left);
+      const right = toMilkdropExpression(node.right);
+      if (!left || !right) {
+        return null;
+      }
+      return {
+        type: 'binary',
+        operator: node.operator,
+        left,
+        right,
+      };
+    }
+    case 'call': {
+      const name = node.name.toLowerCase();
+      if (
+        name === 'vec2' ||
+        name === 'vec3' ||
+        name === 'tex2d' ||
+        name === 'texture'
+      ) {
+        return null;
+      }
+      const args = node.args
+        .map((arg) => toMilkdropExpression(arg))
+        .filter((arg): arg is MilkdropExpressionNode => arg !== null);
+      if (args.length !== node.args.length) {
+        return null;
+      }
+      return {
+        type: 'call',
+        name,
+        args,
+      };
+    }
+    case 'member':
+      return null;
+  }
+}
+
+function cloneShaderNode(node: MilkdropShaderExpressionNode) {
+  return resolveShaderExpressionIdentifiers(node, {});
+}
+
+function createShaderUnaryNode(
+  operator: '+' | '-',
+  operand: MilkdropShaderExpressionNode,
+): MilkdropShaderExpressionNode {
+  return {
+    type: 'unary',
+    operator,
+    operand: cloneShaderNode(operand),
+  };
+}
+
+function createShaderBinaryNode(
+  operator: '+' | '-' | '*' | '/',
+  left: MilkdropShaderExpressionNode,
+  right: MilkdropShaderExpressionNode,
+): MilkdropShaderExpressionNode {
+  return {
+    type: 'binary',
+    operator,
+    left: cloneShaderNode(left),
+    right: cloneShaderNode(right),
+  };
+}
+
+function expandShaderVectorComponents(
+  node: MilkdropShaderExpressionNode,
+  size: 2 | 3,
+  expressionEnv: ShaderExpressionEnv,
+): MilkdropShaderExpressionNode[] | null {
+  const resolved = resolveShaderExpressionIdentifiers(node, expressionEnv);
+  if (resolved.type === 'call') {
+    const name = resolved.name.toLowerCase();
+    if (name === `vec${size}` && resolved.args.length >= size) {
+      return resolved.args.slice(0, size).map((arg) => cloneShaderNode(arg));
+    }
+  }
+  if (resolved.type === 'unary') {
+    const operand = expandShaderVectorComponents(
+      resolved.operand,
+      size,
+      expressionEnv,
+    );
+    if (!operand) {
+      return null;
+    }
+    return operand.map((component) =>
+      createShaderUnaryNode(resolved.operator, component),
+    );
+  }
+  if (resolved.type === 'binary') {
+    const leftVector = expandShaderVectorComponents(
+      resolved.left,
+      size,
+      expressionEnv,
+    );
+    const rightVector = expandShaderVectorComponents(
+      resolved.right,
+      size,
+      expressionEnv,
+    );
+    const leftScalar = toMilkdropExpression(resolved.left)
+      ? Array.from({ length: size }, () => cloneShaderNode(resolved.left))
+      : null;
+    const rightScalar = toMilkdropExpression(resolved.right)
+      ? Array.from({ length: size }, () => cloneShaderNode(resolved.right))
+      : null;
+    const left = leftVector ?? leftScalar;
+    const right = rightVector ?? rightScalar;
+    if (!left || !right) {
+      return null;
+    }
+    return left.map((component, index) =>
+      createShaderBinaryNode(
+        resolved.operator,
+        component,
+        right[index] as MilkdropShaderExpressionNode,
+      ),
+    );
+  }
+  return null;
+}
+
+function evaluateShaderScalarResult(
+  node: MilkdropShaderExpressionNode,
+  valueEnv: ShaderRuntimeEnv,
+  scalarEnv: Record<string, number>,
+  expressionEnv: ShaderExpressionEnv,
+) {
+  const resolved = resolveShaderExpressionIdentifiers(node, expressionEnv);
+  const value = evaluateMilkdropShaderExpression(resolved, valueEnv, scalarEnv);
+  if (!isShaderScalarValue(value)) {
+    return null;
+  }
+  return {
+    value: value.value,
+    expression: toMilkdropExpression(resolved),
+  };
+}
+
+function evaluateShaderVectorResult(
+  node: MilkdropShaderExpressionNode,
+  size: 2 | 3,
+  valueEnv: ShaderRuntimeEnv,
+  scalarEnv: Record<string, number>,
+  expressionEnv: ShaderExpressionEnv,
+) {
+  const components = expandShaderVectorComponents(node, size, expressionEnv);
+  if (!components) {
+    return null;
+  }
+  const values = components
+    .map((component) =>
+      evaluateMilkdropShaderExpression(component, valueEnv, scalarEnv),
+    )
+    .filter((value): value is Extract<ShaderRuntimeValue, { kind: 'scalar' }> =>
+      isShaderScalarValue(value),
+    );
+  if (values.length !== size) {
+    return null;
+  }
+  return {
+    values: values.map((value) => value.value),
+    expressions: components.map((component) => toMilkdropExpression(component)),
+  };
+}
+
 function parseShaderScalar(
   rawValue: string,
   env: Record<string, number> = DEFAULT_MILKDROP_STATE,
@@ -696,6 +951,669 @@ function isIdentityTextureSampleExpression(rawValue: string) {
     normalized === 'tex2d(sampler_main,uv).rgb' ||
     normalized === 'texture(sampler_main,uv).rgb'
   );
+}
+
+function isShaderLiteralNumber(
+  node: MilkdropShaderExpressionNode,
+  value: number,
+) {
+  return node.type === 'literal' && Math.abs(node.value - value) < 0.000_001;
+}
+
+function isShaderSampleRgbExpression(
+  node: MilkdropShaderExpressionNode,
+): boolean {
+  return (
+    node.type === 'member' &&
+    node.property.toLowerCase() === 'rgb' &&
+    node.object.type === 'call' &&
+    ['tex2d', 'texture'].includes(node.object.name.toLowerCase()) &&
+    node.object.args.length >= 2
+  );
+}
+
+function isShaderUvIdentifier(node: MilkdropShaderExpressionNode) {
+  return node.type === 'identifier' && node.name.toLowerCase() === 'uv';
+}
+
+function isShaderInvertSampleExpression(
+  node: MilkdropShaderExpressionNode,
+): boolean {
+  return (
+    node.type === 'binary' &&
+    node.operator === '-' &&
+    isShaderLiteralNumber(node.left, 1) &&
+    isShaderSampleRgbExpression(node.right)
+  );
+}
+
+function isShaderSolarizeSampleExpression(
+  node: MilkdropShaderExpressionNode,
+): boolean {
+  if (
+    node.type !== 'binary' ||
+    node.operator !== '*' ||
+    !isShaderLiteralNumber(node.right, 1.5)
+  ) {
+    return false;
+  }
+  const absCall = node.left;
+  if (
+    absCall.type !== 'call' ||
+    absCall.name.toLowerCase() !== 'abs' ||
+    absCall.args.length < 1
+  ) {
+    return false;
+  }
+  const arg = absCall.args[0];
+  if (arg?.type !== 'binary' || arg.operator !== '-') {
+    return false;
+  }
+  const right = arg.right;
+  const centeredSample =
+    isShaderSampleRgbExpression(arg.left) &&
+    (isShaderLiteralNumber(right, 0.5) ||
+      (right?.type === 'call' &&
+        right.name.toLowerCase() === 'vec3' &&
+        right.args.length >= 1 &&
+        right.args.every((entry) => isShaderLiteralNumber(entry, 0.5))));
+  return centeredSample;
+}
+
+function buildTintBlendExpression(
+  tintExpression: MilkdropExpressionNode | null,
+  amountExpression: MilkdropExpressionNode | null,
+) {
+  if (!tintExpression || !amountExpression) {
+    return tintExpression;
+  }
+  return {
+    type: 'binary',
+    operator: '+',
+    left: createLiteralExpression(1),
+    right: {
+      type: 'binary',
+      operator: '*',
+      left: {
+        type: 'binary',
+        operator: '-',
+        left: tintExpression,
+        right: createLiteralExpression(1),
+      },
+      right: amountExpression,
+    },
+  } satisfies MilkdropExpressionNode;
+}
+
+function applyShaderAstStatement({
+  statement,
+  controls,
+  expressions,
+  shaderEnv,
+  shaderValueEnv,
+  shaderExpressionEnv,
+}: {
+  statement: MilkdropShaderStatement;
+  controls: MilkdropShaderControls;
+  expressions: MilkdropShaderControlExpressions;
+  shaderEnv: Record<string, number>;
+  shaderValueEnv: ShaderRuntimeEnv;
+  shaderExpressionEnv: ShaderExpressionEnv;
+}) {
+  const key = statement.target.toLowerCase();
+  const operator = statement.operator;
+  const resolvedExpression = resolveShaderExpressionIdentifiers(
+    statement.expression,
+    shaderExpressionEnv,
+  );
+
+  const scalarResult = () =>
+    evaluateShaderScalarResult(
+      resolvedExpression,
+      shaderValueEnv,
+      shaderEnv,
+      shaderExpressionEnv,
+    );
+  const vec2Result = () =>
+    evaluateShaderVectorResult(
+      resolvedExpression,
+      2,
+      shaderValueEnv,
+      shaderEnv,
+      shaderExpressionEnv,
+    );
+  const vec3Result = () =>
+    evaluateShaderVectorResult(
+      resolvedExpression,
+      3,
+      shaderValueEnv,
+      shaderEnv,
+      shaderExpressionEnv,
+    );
+
+  if (
+    (statement.declaration === 'vec2' || statement.declaration === 'vec3') &&
+    key !== 'uv' &&
+    key !== 'tint' &&
+    key !== 'ret' &&
+    key !== 'shader_body'
+  ) {
+    const evaluatedValue = evaluateMilkdropShaderExpression(
+      resolvedExpression,
+      shaderValueEnv,
+      shaderEnv,
+    );
+    if (!evaluatedValue) {
+      return false;
+    }
+    shaderValueEnv[key] = evaluatedValue;
+    shaderExpressionEnv[key] = resolvedExpression;
+    return true;
+  }
+
+  if (key === 'uv') {
+    const directVec = vec2Result();
+    if ((operator === '+=' || operator === '-=') && directVec) {
+      const sign = operator === '-=' ? -1 : 1;
+      const nextX = applyShaderControlValue(
+        '=',
+        controls.offsetX,
+        expressions.offsetX,
+        directVec.values[0] * sign,
+        directVec.expressions[0] ?? null,
+      );
+      const nextY = applyShaderControlValue(
+        '=',
+        controls.offsetY,
+        expressions.offsetY,
+        directVec.values[1] * sign,
+        directVec.expressions[1] ?? null,
+      );
+      controls.offsetX = nextX.value;
+      controls.offsetY = nextY.value;
+      expressions.offsetX = nextX.expression;
+      expressions.offsetY = nextY.expression;
+      shaderEnv.offset_x = nextX.value;
+      shaderEnv.offset_y = nextY.value;
+      shaderEnv.dx = nextX.value;
+      shaderEnv.dy = nextY.value;
+      shaderValueEnv.uv = {
+        kind: 'vec2',
+        value: [nextX.value, nextY.value],
+      };
+      return true;
+    }
+
+    if (
+      operator === '=' &&
+      resolvedExpression.type === 'binary' &&
+      ['+', '-'].includes(resolvedExpression.operator) &&
+      isShaderUvIdentifier(resolvedExpression.left)
+    ) {
+      const offset = evaluateShaderVectorResult(
+        resolvedExpression.right,
+        2,
+        shaderValueEnv,
+        shaderEnv,
+        shaderExpressionEnv,
+      );
+      if (offset) {
+        const sign = resolvedExpression.operator === '-' ? -1 : 1;
+        const nextX = applyShaderControlValue(
+          '=',
+          controls.offsetX,
+          expressions.offsetX,
+          offset.values[0] * sign,
+          offset.expressions[0] ?? null,
+        );
+        const nextY = applyShaderControlValue(
+          '=',
+          controls.offsetY,
+          expressions.offsetY,
+          offset.values[1] * sign,
+          offset.expressions[1] ?? null,
+        );
+        controls.offsetX = nextX.value;
+        controls.offsetY = nextY.value;
+        expressions.offsetX = nextX.expression;
+        expressions.offsetY = nextY.expression;
+        shaderEnv.offset_x = nextX.value;
+        shaderEnv.offset_y = nextY.value;
+        shaderEnv.dx = nextX.value;
+        shaderEnv.dy = nextY.value;
+        shaderValueEnv.uv = {
+          kind: 'vec2',
+          value: [nextX.value, nextY.value],
+        };
+        return true;
+      }
+    }
+  }
+
+  if (key === 'tint') {
+    const tint = vec3Result();
+    if (tint) {
+      const nextR = applyShaderControlValue(
+        operator,
+        controls.tint.r,
+        expressions.tint.r,
+        tint.values[0],
+        tint.expressions[0] ?? null,
+      );
+      const nextG = applyShaderControlValue(
+        operator,
+        controls.tint.g,
+        expressions.tint.g,
+        tint.values[1],
+        tint.expressions[1] ?? null,
+      );
+      const nextB = applyShaderControlValue(
+        operator,
+        controls.tint.b,
+        expressions.tint.b,
+        tint.values[2],
+        tint.expressions[2] ?? null,
+      );
+      controls.tint = {
+        r: nextR.value,
+        g: nextG.value,
+        b: nextB.value,
+      };
+      expressions.tint = {
+        r: nextR.expression,
+        g: nextG.expression,
+        b: nextB.expression,
+      };
+      shaderEnv.tint_r = nextR.value;
+      shaderEnv.tint_g = nextG.value;
+      shaderEnv.tint_b = nextB.value;
+      return true;
+    }
+  }
+
+  if (key === 'ret' || key === 'shader_body') {
+    if (isShaderSampleRgbExpression(resolvedExpression)) {
+      return true;
+    }
+
+    if (
+      resolvedExpression.type === 'binary' &&
+      resolvedExpression.operator === '*' &&
+      (isShaderSampleRgbExpression(resolvedExpression.left) ||
+        isShaderSampleRgbExpression(resolvedExpression.right))
+    ) {
+      const scaleNode = isShaderSampleRgbExpression(resolvedExpression.left)
+        ? resolvedExpression.right
+        : resolvedExpression.left;
+      const colorScale = evaluateShaderVectorResult(
+        scaleNode,
+        3,
+        shaderValueEnv,
+        shaderEnv,
+        shaderExpressionEnv,
+      );
+      if (colorScale) {
+        const nextR = applyShaderControlValue(
+          operator,
+          controls.colorScale.r,
+          expressions.colorScale.r,
+          colorScale.values[0],
+          colorScale.expressions[0] ?? null,
+        );
+        const nextG = applyShaderControlValue(
+          operator,
+          controls.colorScale.g,
+          expressions.colorScale.g,
+          colorScale.values[1],
+          colorScale.expressions[1] ?? null,
+        );
+        const nextB = applyShaderControlValue(
+          operator,
+          controls.colorScale.b,
+          expressions.colorScale.b,
+          colorScale.values[2],
+          colorScale.expressions[2] ?? null,
+        );
+        controls.colorScale = {
+          r: nextR.value,
+          g: nextG.value,
+          b: nextB.value,
+        };
+        expressions.colorScale = {
+          r: nextR.expression,
+          g: nextG.expression,
+          b: nextB.expression,
+        };
+        shaderEnv.r = nextR.value;
+        shaderEnv.g = nextG.value;
+        shaderEnv.b = nextB.value;
+        return true;
+      }
+
+      const scalarScale = evaluateShaderScalarResult(
+        scaleNode,
+        shaderValueEnv,
+        shaderEnv,
+        shaderExpressionEnv,
+      );
+      if (scalarScale) {
+        (['r', 'g', 'b'] as const).forEach((channel) => {
+          const next = applyShaderControlValue(
+            operator,
+            controls.colorScale[channel],
+            expressions.colorScale[channel],
+            scalarScale.value,
+            scalarScale.expression,
+          );
+          controls.colorScale[channel] = next.value;
+          expressions.colorScale[channel] = next.expression;
+          shaderEnv[channel] = next.value;
+        });
+        return true;
+      }
+    }
+
+    if (
+      resolvedExpression.type === 'call' &&
+      resolvedExpression.name.toLowerCase() === 'mix' &&
+      resolvedExpression.args.length >= 3 &&
+      isShaderSampleRgbExpression(
+        resolvedExpression.args[0] as MilkdropShaderExpressionNode,
+      )
+    ) {
+      const amount = evaluateShaderScalarResult(
+        resolvedExpression.args[2] as MilkdropShaderExpressionNode,
+        shaderValueEnv,
+        shaderEnv,
+        shaderExpressionEnv,
+      );
+      if (amount) {
+        const targetNode = resolvedExpression
+          .args[1] as MilkdropShaderExpressionNode;
+        if (isShaderInvertSampleExpression(targetNode)) {
+          const next = applyShaderControlValue(
+            operator,
+            controls.invertBoost,
+            expressions.invertBoost,
+            amount.value,
+            amount.expression,
+          );
+          controls.invertBoost = next.value;
+          expressions.invertBoost = next.expression;
+          shaderEnv.invert = next.value;
+          return true;
+        }
+        if (isShaderSolarizeSampleExpression(targetNode)) {
+          const next = applyShaderControlValue(
+            operator,
+            controls.solarizeBoost,
+            expressions.solarizeBoost,
+            amount.value,
+            amount.expression,
+          );
+          controls.solarizeBoost = next.value;
+          expressions.solarizeBoost = next.expression;
+          shaderEnv.solarize = next.value;
+          return true;
+        }
+        const tint = evaluateShaderVectorResult(
+          targetNode,
+          3,
+          shaderValueEnv,
+          shaderEnv,
+          shaderExpressionEnv,
+        );
+        if (tint) {
+          const nextR = applyShaderControlValue(
+            operator,
+            controls.tint.r,
+            expressions.tint.r,
+            1 + (tint.values[0] - 1) * amount.value,
+            buildTintBlendExpression(
+              tint.expressions[0] ?? null,
+              amount.expression,
+            ),
+          );
+          const nextG = applyShaderControlValue(
+            operator,
+            controls.tint.g,
+            expressions.tint.g,
+            1 + (tint.values[1] - 1) * amount.value,
+            buildTintBlendExpression(
+              tint.expressions[1] ?? null,
+              amount.expression,
+            ),
+          );
+          const nextB = applyShaderControlValue(
+            operator,
+            controls.tint.b,
+            expressions.tint.b,
+            1 + (tint.values[2] - 1) * amount.value,
+            buildTintBlendExpression(
+              tint.expressions[2] ?? null,
+              amount.expression,
+            ),
+          );
+          controls.tint = {
+            r: nextR.value,
+            g: nextG.value,
+            b: nextB.value,
+          };
+          expressions.tint = {
+            r: nextR.expression,
+            g: nextG.expression,
+            b: nextB.expression,
+          };
+          shaderEnv.tint_r = nextR.value;
+          shaderEnv.tint_g = nextG.value;
+          shaderEnv.tint_b = nextB.value;
+          return true;
+        }
+      }
+    }
+  }
+
+  const scalarAliases = {
+    warp: ['warp', 'warp_scale'],
+    offsetX: ['dx', 'offset_x', 'translate_x'],
+    offsetY: ['dy', 'offset_y', 'translate_y'],
+    rotation: ['rot', 'rotation'],
+    zoom: ['zoom', 'scale'],
+    saturation: ['saturation', 'sat'],
+    contrast: ['contrast'],
+    colorScaleR: ['r', 'red'],
+    colorScaleG: ['g', 'green'],
+    colorScaleB: ['b', 'blue'],
+    hueShift: ['hue', 'hue_shift'],
+    mixAlpha: ['mix', 'feedback', 'feedback_alpha'],
+    brightenBoost: ['brighten'],
+    invertBoost: ['invert'],
+    solarizeBoost: ['solarize'],
+  } as const;
+  const matchesAlias = (aliases: readonly string[]) => aliases.includes(key);
+  const numeric = scalarResult();
+  if (numeric) {
+    const updateScalarControl = (
+      currentValue: number,
+      currentExpression: MilkdropExpressionNode | null,
+    ) => {
+      return applyShaderExpressionOperator(
+        operator,
+        currentValue,
+        currentExpression,
+        numeric.value,
+        numeric.expression,
+      );
+    };
+
+    if (matchesAlias(scalarAliases.warp)) {
+      const next = updateScalarControl(
+        controls.warpScale,
+        expressions.warpScale,
+      );
+      controls.warpScale = next.value;
+      expressions.warpScale = next.expression;
+      shaderEnv.warp = next.value;
+      shaderEnv.warp_scale = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.offsetX)) {
+      const next = updateScalarControl(controls.offsetX, expressions.offsetX);
+      controls.offsetX = next.value;
+      expressions.offsetX = next.expression;
+      shaderEnv.dx = next.value;
+      shaderEnv.offset_x = next.value;
+      shaderEnv.translate_x = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.offsetY)) {
+      const next = updateScalarControl(controls.offsetY, expressions.offsetY);
+      controls.offsetY = next.value;
+      expressions.offsetY = next.expression;
+      shaderEnv.dy = next.value;
+      shaderEnv.offset_y = next.value;
+      shaderEnv.translate_y = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.rotation)) {
+      const next = updateScalarControl(controls.rotation, expressions.rotation);
+      controls.rotation = next.value;
+      expressions.rotation = next.expression;
+      shaderEnv.rot = next.value;
+      shaderEnv.rotation = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.zoom)) {
+      const next = updateScalarControl(controls.zoom, expressions.zoom);
+      controls.zoom = next.value;
+      expressions.zoom = next.expression;
+      shaderEnv.zoom = next.value;
+      shaderEnv.scale = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.saturation)) {
+      const next = updateScalarControl(
+        controls.saturation,
+        expressions.saturation,
+      );
+      controls.saturation = next.value;
+      expressions.saturation = next.expression;
+      shaderEnv.saturation = next.value;
+      shaderEnv.sat = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.contrast)) {
+      const next = updateScalarControl(controls.contrast, expressions.contrast);
+      controls.contrast = next.value;
+      expressions.contrast = next.expression;
+      shaderEnv.contrast = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.colorScaleR)) {
+      const next = updateScalarControl(
+        controls.colorScale.r,
+        expressions.colorScale.r,
+      );
+      controls.colorScale.r = next.value;
+      expressions.colorScale.r = next.expression;
+      shaderEnv.r = next.value;
+      shaderEnv.red = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.colorScaleG)) {
+      const next = updateScalarControl(
+        controls.colorScale.g,
+        expressions.colorScale.g,
+      );
+      controls.colorScale.g = next.value;
+      expressions.colorScale.g = next.expression;
+      shaderEnv.g = next.value;
+      shaderEnv.green = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.colorScaleB)) {
+      const next = updateScalarControl(
+        controls.colorScale.b,
+        expressions.colorScale.b,
+      );
+      controls.colorScale.b = next.value;
+      expressions.colorScale.b = next.expression;
+      shaderEnv.b = next.value;
+      shaderEnv.blue = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.hueShift)) {
+      const next = updateScalarControl(controls.hueShift, expressions.hueShift);
+      controls.hueShift = next.value;
+      expressions.hueShift = next.expression;
+      shaderEnv.hue = next.value;
+      shaderEnv.hue_shift = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.mixAlpha)) {
+      const next = updateScalarControl(controls.mixAlpha, expressions.mixAlpha);
+      controls.mixAlpha = next.value;
+      expressions.mixAlpha = next.expression;
+      shaderEnv.mix = next.value;
+      shaderEnv.feedback = next.value;
+      shaderEnv.feedback_alpha = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.brightenBoost)) {
+      const next = updateScalarControl(
+        controls.brightenBoost,
+        expressions.brightenBoost,
+      );
+      controls.brightenBoost = next.value;
+      expressions.brightenBoost = next.expression;
+      shaderEnv.brighten = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.invertBoost)) {
+      const next = updateScalarControl(
+        controls.invertBoost,
+        expressions.invertBoost,
+      );
+      controls.invertBoost = next.value;
+      expressions.invertBoost = next.expression;
+      shaderEnv.invert = next.value;
+      return true;
+    }
+    if (matchesAlias(scalarAliases.solarizeBoost)) {
+      const next = updateScalarControl(
+        controls.solarizeBoost,
+        expressions.solarizeBoost,
+      );
+      controls.solarizeBoost = next.value;
+      expressions.solarizeBoost = next.expression;
+      shaderEnv.solarize = next.value;
+      return true;
+    }
+  }
+
+  const evaluatedValue = evaluateMilkdropShaderExpression(
+    resolvedExpression,
+    shaderValueEnv,
+    shaderEnv,
+  );
+  if (
+    key === 'uv' ||
+    key === 'ret' ||
+    key === 'shader_body' ||
+    key === 'tint' ||
+    isKnownShaderScalarKey(key)
+  ) {
+    return false;
+  }
+  if (!evaluatedValue) {
+    return false;
+  }
+  shaderValueEnv[key] = evaluatedValue;
+  shaderExpressionEnv[key] = resolvedExpression;
+  if (isShaderScalarValue(evaluatedValue)) {
+    shaderEnv[key] = evaluatedValue.value;
+  }
+  return true;
 }
 
 function applyShaderProgramHeuristicLine({
@@ -1082,6 +2000,13 @@ function extractShaderControls(
     tint_g: controls.tint.g,
     tint_b: controls.tint.b,
   };
+  const shaderValueEnv: ShaderRuntimeEnv = {
+    uv: {
+      kind: 'vec2',
+      value: [0, 0],
+    },
+  };
+  const shaderExpressionEnv: ShaderExpressionEnv = {};
   const unsupportedLines: string[] = [];
   const statements: MilkdropShaderStatement[] = [];
 
@@ -1090,18 +2015,59 @@ function extractShaderControls(
     const parsedStatement = parseMilkdropShaderStatement(line);
     if (parsedStatement) {
       statements.push(parsedStatement);
+      if (
+        applyShaderAstStatement({
+          statement: parsedStatement,
+          controls,
+          expressions,
+          shaderEnv,
+          shaderValueEnv,
+          shaderExpressionEnv,
+        })
+      ) {
+        supportedLineCount += 1;
+        return;
+      }
+      if (
+        applyShaderProgramHeuristicLine({
+          key: parsedStatement.target.toLowerCase(),
+          operator: parsedStatement.operator,
+          rawValue: parsedStatement.rawValue,
+          controls,
+          expressions,
+          shaderEnv,
+        })
+      ) {
+        supportedLineCount += 1;
+        return;
+      }
     }
-    const assignment = line.match(
-      /^(?:(?:const|float)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
-    );
-    if (!assignment) {
+
+    const fallbackAssignment = !parsedStatement
+      ? line.match(
+          /^(?:(?:const|float|vec2|vec3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
+        )
+      : null;
+    if (!parsedStatement && !fallbackAssignment) {
       unsupportedLines.push(line);
       return;
     }
-    const key = assignment[1]?.toLowerCase() ?? '';
-    const operator = (assignment[2] ?? '=') as '=' | '+=' | '-=' | '*=' | '/=';
-    const rawValue = assignment[3]?.trim() ?? '';
+    const key =
+      parsedStatement?.target.toLowerCase() ??
+      fallbackAssignment?.[1]?.toLowerCase() ??
+      '';
+    const operator =
+      ((parsedStatement?.operator ?? fallbackAssignment?.[2]) as
+        | '='
+        | '+='
+        | '-='
+        | '*='
+        | '/=') ?? '=';
+    const rawValue =
+      parsedStatement?.rawValue ?? fallbackAssignment?.[3]?.trim() ?? '';
+
     if (
+      !parsedStatement &&
       applyShaderProgramHeuristicLine({
         key,
         operator,
@@ -1126,6 +2092,9 @@ function extractShaderControls(
           numeric.expression,
         );
         shaderEnv[key] = next.value;
+        if (parsedStatement) {
+          shaderExpressionEnv[key] = parsedStatement.expression;
+        }
         supportedLineCount += 1;
         return;
       }

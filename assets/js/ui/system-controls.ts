@@ -158,7 +158,7 @@ export function initSystemControls(
   options: SystemControlOptions = {},
 ): SystemControlsHandle {
   const {
-    title = 'Controls',
+    title = 'Tune',
     description = 'Adjust quality, motion, and compatibility for this toy.',
     qualityPresets = DEFAULT_QUALITY_PRESETS,
     defaultPresetId,
@@ -184,6 +184,8 @@ export function initSystemControls(
   panel.setQualityPresets({
     presets: qualityPresets,
     defaultPresetId: resolvedDefaultPresetId,
+    label: 'Look',
+    hint: 'Balance fidelity and frame rate.',
     showScopeHint: showDetailedQualitySummary,
     showChangeSummary: showDetailedQualitySummary,
     onChange: onQualityPresetChange,
@@ -239,7 +241,7 @@ export function initSystemControls(
   }
 
   panel.addToggle({
-    label: 'Compatibility mode',
+    label: 'Safe mode',
     description: 'Use safer rendering for older hardware.',
     defaultValue: renderPreferences.compatibilityMode,
     onChange: (value) => {
@@ -248,7 +250,7 @@ export function initSystemControls(
   });
 
   panel.addToggle({
-    label: 'Motion input',
+    label: 'Tilt',
     description: 'Enable tilt controls on supported toys.',
     defaultValue: getActiveMotionPreference().enabled,
     onChange: (value) => {
@@ -259,7 +261,7 @@ export function initSystemControls(
   if (includeAdvancedControls) {
     const advancedHost = createSectionHost(
       panel,
-      'Advanced',
+      'Rendering',
       'Fine-tune rendering when needed.',
       true,
     );

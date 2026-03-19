@@ -216,7 +216,7 @@ export type MilkdropShaderExpressionNode =
     };
 
 export type MilkdropShaderStatement = {
-  declaration: 'const' | 'float' | null;
+  declaration: 'const' | 'float' | 'vec2' | 'vec3' | null;
   target: string;
   operator: '=' | '+=' | '-=' | '*=' | '/=';
   rawValue: string;

@@ -314,6 +314,45 @@ comp_shader=ret=mix(tex2d(sampler_main,uv).rgb,1.0-tex2d(sampler_main,uv).rgb,0.
     expect(compiled.ir.post.shaderControls.invertBoost).toBeCloseTo(0.35, 6);
   });
 
+  test('supports vec2 and vec3 temp variables in shader programs', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Vector Temps
+warp_shader=vec2 drift = vec2(0.03, -0.02); uv += drift;
+comp_shader=vec3 scale = vec3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).rgb * scale;
+      `.trim(),
+      { id: 'shader-vector-temps' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0.03, 6);
+    expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(-0.02, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.r).toBeCloseTo(1.2, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.g).toBeCloseTo(0.9, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(0.7, 6);
+  });
+
+  test('supports resolved temp shader outputs for invert and runtime tint mixes', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Resolved Temp Outputs
+warp_shader=vec2 drift = vec2(bass_att * 0.03, -treb_att * 0.02); uv = uv + drift;
+comp_shader=float pulse = 0.35; vec3 inverted = 1.0 - tex2d(sampler_main, uv).rgb; ret = mix(tex2d(sampler_main, uv).rgb, inverted, pulse); vec3 wash = vec3(1.4, 1.1, 0.8); tint = wash;
+      `.trim(),
+      { id: 'shader-resolved-temp-outputs' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.post.shaderControls.invertBoost).toBeCloseTo(0.35, 6);
+    expect(compiled.ir.post.shaderControlExpressions.offsetX).not.toBeNull();
+    expect(compiled.ir.post.shaderControlExpressions.offsetY).not.toBeNull();
+    expect(compiled.ir.post.shaderControls.tint.r).toBeCloseTo(1.4, 6);
+    expect(compiled.ir.post.shaderControls.tint.g).toBeCloseTo(1.1, 6);
+    expect(compiled.ir.post.shaderControls.tint.b).toBeCloseTo(0.8, 6);
+  });
+
   test('supports ninth custom wave and shape definitions', () => {
     const compiled = compileMilkdropPresetSource(
       `

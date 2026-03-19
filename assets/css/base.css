@@ -404,6 +404,26 @@ body {
   outline-offset: 2px;
 }
 
+.shell-panels {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  width: min(380px, calc(100vw - 24px));
+  display: grid;
+  gap: 10px;
+  z-index: 1125;
+  pointer-events: none;
+}
+
+.shell-panel {
+  pointer-events: auto;
+}
+
+.shell-panel > [data-audio-controls]:empty,
+.shell-panel > [data-settings-panel]:empty {
+  display: none;
+}
+
 .active-toy-nav {
   position: fixed;
   top: max(8px, env(safe-area-inset-top));
@@ -1031,6 +1051,20 @@ body {
     ),
     90vh
   );
+  overflow: auto;
+}
+
+.control-panel--inline,
+.shell-panel > [data-audio-controls] > .control-panel,
+.shell-panel > [data-settings-panel] > .control-panel {
+  position: relative;
+  inset: auto;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  width: 100%;
+  max-height: min(42dvh, 360px);
   overflow: auto;
 }
 
@@ -1747,6 +1781,8 @@ body {
   .active-toy-nav__actions {
     width: 100%;
     margin-top: 2px;
+    display: grid;
+    gap: 6px;
   }
 
   .active-toy-nav__actions-primary,
@@ -1765,16 +1801,16 @@ body {
     display: none;
   }
 
-  .active-toy-nav__actions[data-toy-actions-expanded="true"] {
-    display: grid;
-    gap: 6px;
-    max-height: min(24svh, 220px);
+  .active-toy-nav__actions[data-toy-actions-expanded="true"]
+    .active-toy-nav__actions-secondary {
+    max-height: min(16svh, 148px);
     overflow-y: auto;
     padding-right: 2px;
     -webkit-overflow-scrolling: touch;
   }
 
-  .active-toy-nav__actions[data-toy-actions-expanded="false"] {
+  .active-toy-nav__actions[data-toy-actions-expanded="false"]
+    .active-toy-nav__actions-secondary {
     display: none;
   }
 
@@ -1843,6 +1879,7 @@ body {
 
   :root[data-toy-controls-expanded="false"]
     body[data-audio-active="true"]
+    .active-toy-container
     .control-panel--audio {
     display: none;
   }
@@ -1891,7 +1928,9 @@ body {
     max-height: min(28svh, calc(100dvh - env(safe-area-inset-bottom) - 12px));
   }
 
-  :root[data-toy-controls-expanded="true"] .control-panel--audio {
+  :root[data-toy-controls-expanded="true"]
+    .active-toy-container
+    .control-panel--audio {
     display: block;
   }
 
@@ -1920,6 +1959,20 @@ body {
   .control-panel__row {
     margin: 4px 0;
     padding: 6px 0;
+  }
+
+  .shell-panels {
+    left: max(6px, env(safe-area-inset-left));
+    right: max(6px, env(safe-area-inset-right));
+    bottom: max(6px, env(safe-area-inset-bottom));
+    width: auto;
+    gap: 8px;
+  }
+
+  .control-panel--inline,
+  .shell-panel > [data-audio-controls] > .control-panel,
+  .shell-panel > [data-settings-panel] > .control-panel {
+    max-height: min(28svh, calc(100dvh - env(safe-area-inset-bottom) - 12px));
   }
 
   .control-panel::after {

@@ -44,12 +44,37 @@ type RendererLike = {
   setRenderTarget?: (target: WebGLRenderTarget | null) => void;
 };
 
+type FeedbackBackendProfile = {
+  currentFrameBoost: number;
+  feedbackSoftness: number;
+  resolutionScale: number;
+  samples: number;
+};
+
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
 const SHARED_BOUNDS_RADIUS = 4;
 const FULLSCREEN_QUAD_GEOMETRY = markSharedGeometry(new PlaneGeometry(2, 2));
 const BACKGROUND_GEOMETRY = markSharedGeometry(new PlaneGeometry(6.4, 6.4));
 const polygonFillGeometryCache = new Map<number, ShapeGeometry>();
 const polygonOutlineGeometryCache = new Map<number, BufferGeometry>();
+
+function getFeedbackBackendProfile(
+  backend: 'webgl' | 'webgpu',
+): FeedbackBackendProfile {
+  return backend === 'webgpu'
+    ? {
+        currentFrameBoost: 0.1,
+        feedbackSoftness: 0.65,
+        resolutionScale: 1.1,
+        samples: 4,
+      }
+    : {
+        currentFrameBoost: 0,
+        feedbackSoftness: 0,
+        resolutionScale: 0.85,
+        samples: 0,
+      };
+}
 
 function markSharedGeometry<T extends BufferGeometry>(geometry: T) {
   geometry.userData[SHARED_GEOMETRY_FLAG] = true;
@@ -185,7 +210,8 @@ function createFeedbackRenderTarget(
   height: number,
   backend: 'webgl' | 'webgpu',
 ) {
-  const resolutionScale = backend === 'webgpu' ? 1 : 0.85;
+  const profile = getFeedbackBackendProfile(backend);
+  const resolutionScale = profile.resolutionScale;
   const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
   const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
   const target = new WebGLRenderTarget(scaledWidth, scaledHeight, {
@@ -197,7 +223,7 @@ function createFeedbackRenderTarget(
         }
       : {}),
   });
-  target.samples = backend === 'webgpu' ? 2 : 0;
+  target.samples = profile.samples;
   return target;
 }
 
@@ -813,11 +839,13 @@ class FeedbackManager {
   readonly sceneTarget: WebGLRenderTarget;
   readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
   readonly resolutionScale: number;
+  readonly profile: FeedbackBackendProfile;
   private index = 0;
 
   constructor(width: number, height: number, backend: 'webgl' | 'webgpu') {
     this.camera.position.z = 1;
-    this.resolutionScale = backend === 'webgpu' ? 1 : 0.85;
+    this.profile = getFeedbackBackendProfile(backend);
+    this.resolutionScale = this.profile.resolutionScale;
     this.sceneTarget = createFeedbackRenderTarget(width, height, backend);
     this.targets = [
       createFeedbackRenderTarget(width, height, backend),
@@ -849,6 +877,14 @@ class FeedbackManager {
         invertBoost: { value: 0 },
         solarizeBoost: { value: 0 },
         tint: { value: new Color(1, 1, 1) },
+        feedbackSoftness: { value: this.profile.feedbackSoftness },
+        currentFrameBoost: { value: this.profile.currentFrameBoost },
+        texelSize: {
+          value: new Vector2(
+            1 / Math.max(1, this.sceneTarget.width),
+            1 / Math.max(1, this.sceneTarget.height),
+          ),
+        },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -882,6 +918,9 @@ class FeedbackManager {
         uniform float invertBoost;
         uniform float solarizeBoost;
         uniform vec3 tint;
+        uniform float feedbackSoftness;
+        uniform float currentFrameBoost;
+        uniform vec2 texelSize;
         varying vec2 vUv;
 
         vec3 hueRotate(vec3 color, float angle) {
@@ -929,11 +968,28 @@ class FeedbackManager {
           }
           vec4 current = texture2D(currentTex, vUv);
           vec4 previous = texture2D(previousTex, clamp(prevUv, 0.0, 1.0));
+          vec3 previousColor = previous.rgb;
+          if (feedbackSoftness > 0.01) {
+            vec2 sampleOffset = texelSize * (0.75 + feedbackSoftness * 0.5);
+            vec3 softened = (
+              previous.rgb +
+              texture2D(previousTex, clamp(prevUv + vec2(sampleOffset.x, 0.0), 0.0, 1.0)).rgb +
+              texture2D(previousTex, clamp(prevUv - vec2(sampleOffset.x, 0.0), 0.0, 1.0)).rgb +
+              texture2D(previousTex, clamp(prevUv + vec2(0.0, sampleOffset.y), 0.0, 1.0)).rgb +
+              texture2D(previousTex, clamp(prevUv - vec2(0.0, sampleOffset.y), 0.0, 1.0)).rgb
+            ) / 5.0;
+            previousColor = mix(
+              previousColor,
+              softened,
+              clamp(feedbackSoftness * 0.45, 0.0, 0.5)
+            );
+          }
           vec3 color = mix(
             current.rgb,
-            previous.rgb,
+            previousColor,
             clamp(mixAlpha + feedbackTexture * 0.2, 0.0, 1.0)
           );
+          color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, 0.3));
           if (brighten > 0.01 || brightenBoost > 0.01) {
             color = min(vec3(1.0), color * (1.0 + 0.18 + brightenBoost * 0.35));
           }
@@ -988,6 +1044,10 @@ class FeedbackManager {
     const scaledHeight = Math.max(1, Math.round(height * this.resolutionScale));
     this.sceneTarget.setSize(scaledWidth, scaledHeight);
     this.targets.forEach((target) => target.setSize(scaledWidth, scaledHeight));
+    this.compositeMaterial.uniforms.texelSize.value.set(
+      1 / Math.max(1, scaledWidth),
+      1 / Math.max(1, scaledHeight),
+    );
   }
 
   dispose() {

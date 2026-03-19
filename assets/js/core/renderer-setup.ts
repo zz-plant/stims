@@ -18,6 +18,7 @@ import {
   RENDERER_FALLBACK_REASON_CODES,
 } from './renderer-fallback-reasons.ts';
 import { deriveRendererPlan } from './renderer-plan.ts';
+import { getRendererBackendMaxPixelRatioCap } from './renderer-settings.ts';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
 
 export type RendererInitResult = {
@@ -50,7 +51,7 @@ export async function initRenderer(
   config: RendererInitConfig = {
     antialias: true,
     exposure: 1,
-    maxPixelRatio: isMobileUserAgent ? 1.25 : 1.5,
+    maxPixelRatio: isMobileUserAgent ? 1.25 : 2,
     alpha: false,
     renderScale: 1,
   },
@@ -62,7 +63,7 @@ export async function initRenderer(
   const {
     antialias = true,
     exposure = 1,
-    maxPixelRatio = isMobileUserAgent ? 1.25 : 1.5,
+    maxPixelRatio = isMobileUserAgent ? 1.25 : 2,
     alpha = false,
     renderScale = 1,
   } = config;
@@ -74,10 +75,14 @@ export async function initRenderer(
     device: GPUDevice | null,
   ): RendererInitResult => {
     const adaptiveMaxPixelRatio = getAdaptiveMaxPixelRatio(maxPixelRatio);
+    const backendPixelRatioCap = getRendererBackendMaxPixelRatioCap({
+      backend,
+      isMobile: isMobileUserAgent,
+    });
     const effectivePixelRatio = Math.min(
       (window.devicePixelRatio || 1) * renderScale,
       adaptiveMaxPixelRatio,
-      isMobileUserAgent ? 1.25 : 1.5,
+      backendPixelRatioCap,
     );
     renderer.setPixelRatio(effectivePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);

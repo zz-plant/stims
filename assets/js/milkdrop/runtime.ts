@@ -135,9 +135,9 @@ export function getMilkdropDetailScale({
   shaderQuality?: ShaderQuality;
 }) {
   const baseScale = (particleScale ?? 1) * particleBudget;
-  const backendBoost = backend === 'webgpu' ? 1.35 : 1.1;
+  const backendBoost = backend === 'webgpu' ? 1.55 : 1.1;
   const shaderQualityScale =
-    shaderQuality === 'low' ? 0.72 : shaderQuality === 'high' ? 1.15 : 1;
+    shaderQuality === 'low' ? 0.72 : shaderQuality === 'high' ? 1.2 : 1;
   return Math.min(
     2,
     Math.max(0.5, baseScale * backendBoost * shaderQualityScale),

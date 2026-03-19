@@ -65,6 +65,8 @@ type QualityOptions = {
   storageKey?: string;
   showScopeHint?: boolean;
   showChangeSummary?: boolean;
+  label?: string;
+  hint?: string;
 };
 
 type ToggleOptions = {
@@ -223,6 +225,8 @@ export class PersistentSettingsPanel {
       storageKey = QUALITY_STORAGE_KEY,
       showScopeHint = true,
       showChangeSummary = true,
+      label: qualityLabel = 'Quality preset',
+      hint: qualityHint = DEFAULT_QUALITY_HINT,
     } = options;
 
     const hadActivePreset =
@@ -240,14 +244,14 @@ export class PersistentSettingsPanel {
       text.className = 'control-panel__text';
 
       const selectId = 'quality-preset-select';
-      const label = document.createElement('label');
-      label.className = 'control-panel__label';
-      label.textContent = 'Quality preset';
-      label.htmlFor = selectId;
+      const labelElement = document.createElement('label');
+      labelElement.className = 'control-panel__label';
+      labelElement.textContent = qualityLabel;
+      labelElement.htmlFor = selectId;
 
-      const hint = document.createElement('small');
-      hint.textContent = DEFAULT_QUALITY_HINT;
-      this.qualityHint = hint;
+      const hintElement = document.createElement('small');
+      hintElement.textContent = qualityHint;
+      this.qualityHint = hintElement;
 
       if (showScopeHint) {
         const scopeHint = document.createElement('small');
@@ -261,7 +265,7 @@ export class PersistentSettingsPanel {
         this.qualityChangeSummary = changeSummary;
       }
 
-      text.append(label, hint);
+      text.append(labelElement, hintElement);
       if (this.qualityScopeHint) {
         text.append(this.qualityScopeHint);
       }

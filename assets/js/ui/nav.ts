@@ -255,10 +255,10 @@ function renderToyNav(
           type="button"
           class="toy-nav__mobile-toggle"
           data-toy-actions-toggle="true"
-          aria-controls="toy-nav-actions"
+          aria-controls="toy-nav-secondary-actions"
           aria-expanded="false"
         >
-          Controls
+          More
         </button>
       </div>
     </div>
@@ -269,7 +269,7 @@ function renderToyNav(
           options.onNextToy
             ? `<div class="toy-nav__next-wrapper">
                 <button type="button" class="toy-nav__next" data-next-toy="true">
-                  Next stim
+                  Next
                 </button>
                 <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
               </div>`
@@ -277,17 +277,20 @@ function renderToyNav(
         }
         <div class="toy-nav__share-wrapper">
           <button type="button" class="toy-nav__share" data-share-toy="true">
-            Copy share link
+            Share
           </button>
           <span class="toy-nav__share-status" role="status" aria-live="polite"></span>
         </div>
       </div>
-      <div class="active-toy-nav__actions-secondary">
+      <div
+        class="active-toy-nav__actions-secondary"
+        id="toy-nav-secondary-actions"
+      >
       ${
         options.onToggleHaptics && options.hapticsSupported
           ? `<div class="toy-nav__flow-wrapper">
               <button type="button" class="toy-nav__flow" data-haptics-toggle="true" aria-pressed="${options.hapticsActive ? 'true' : 'false'}">
-                ${options.hapticsActive ? 'Beat haptics on' : 'Beat haptics'}
+                ${options.hapticsActive ? 'Pulse on' : 'Pulse'}
               </button>
               <span class="toy-nav__flow-status" data-haptics-status role="status" aria-live="polite"></span>
             </div>`
@@ -295,7 +298,7 @@ function renderToyNav(
       }
       <div class="toy-nav__pip-wrapper">
         <button type="button" class="toy-nav__pip" data-toy-pip="true" aria-pressed="false">
-          Picture in picture
+          Mini player
         </button>
         <span class="toy-nav__pip-status" role="status" aria-live="polite"></span>
       </div>
@@ -330,6 +333,9 @@ function renderToyNav(
   const actionsContainer = container.querySelector(
     '.active-toy-nav__actions',
   ) as HTMLElement | null;
+  const secondaryActionsContainer = container.querySelector(
+    '.active-toy-nav__actions-secondary',
+  ) as HTMLElement | null;
   const actionsToggleBtn = container.querySelector(
     '[data-toy-actions-toggle="true"]',
   ) as HTMLButtonElement | null;
@@ -344,16 +350,16 @@ function renderToyNav(
       expanded ? 'true' : 'false',
     );
     const isCompactViewport = isBelowBreakpoint(BREAKPOINTS.md);
-    if (actionsContainer) {
-      actionsContainer.hidden = isCompactViewport && !expanded;
-      actionsContainer.setAttribute(
+    if (secondaryActionsContainer) {
+      secondaryActionsContainer.hidden = isCompactViewport && !expanded;
+      secondaryActionsContainer.setAttribute(
         'aria-hidden',
         isCompactViewport && !expanded ? 'true' : 'false',
       );
       if (isCompactViewport && !expanded) {
-        actionsContainer.setAttribute('inert', '');
+        secondaryActionsContainer.setAttribute('inert', '');
       } else {
-        actionsContainer.removeAttribute('inert');
+        secondaryActionsContainer.removeAttribute('inert');
       }
     }
     doc.documentElement.setAttribute(
@@ -365,9 +371,7 @@ function renderToyNav(
       expanded ? 'true' : 'false',
     );
     if (actionsToggleBtn) {
-      actionsToggleBtn.textContent = expanded
-        ? 'Hide controls'
-        : 'Open controls';
+      actionsToggleBtn.textContent = expanded ? 'Hide extras' : 'More';
     }
   };
 
@@ -445,7 +449,7 @@ function renderToyNav(
   const updateHapticsUI = () => {
     if (!hapticsBtn) return;
     hapticsBtn.setAttribute('aria-pressed', String(hapticsActive));
-    hapticsBtn.textContent = hapticsActive ? 'Beat haptics on' : 'Beat haptics';
+    hapticsBtn.textContent = hapticsActive ? 'Pulse on' : 'Pulse';
   };
 
   const handleNextToy = async () => {

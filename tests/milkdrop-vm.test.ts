@@ -385,6 +385,27 @@ comp_shader=const pulse = beat_pulse * 0.4; mix = pulse; tint = 1, pulse + 0.2, 
     expect(frameState.post.shaderControls.tint.b).toBeCloseTo(0.52, 6);
   });
 
+  test('evaluates vector shader temp variables against live signal values', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Vector Temp VM
+warp_shader=vec2 drift = vec2(bass_att * 0.05, -treb_att * 0.04); uv += drift;
+comp_shader=vec3 wash = vec3(1 + bass_att * 0.2, 0.8 + mid * 0.1, 0.6 + beat_pulse * 0.2); ret = tex2d(sampler_main, uv).rgb * wash;
+      `.trim(),
+      { id: 'shader-vector-temp-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({ frame: 12, time: 0.5, beatPulse: 0.3 }),
+    );
+
+    expect(frameState.post.shaderControls.offsetX).toBeCloseTo(0.03, 6);
+    expect(frameState.post.shaderControls.offsetY).toBeCloseTo(-0.014, 6);
+    expect(frameState.post.shaderControls.colorScale.r).toBeCloseTo(1.12, 6);
+    expect(frameState.post.shaderControls.colorScale.g).toBeCloseTo(0.85, 6);
+    expect(frameState.post.shaderControls.colorScale.b).toBeCloseTo(0.66, 6);
+  });
+
   test('renders ninth shape slot beyond the previous ceiling', () => {
     const preset = compileMilkdropPresetSource(
       `

@@ -223,7 +223,11 @@ export function bootToyPage({
 
   const setupSystemControls = () => {
     if (!settingsContainer || settingsContainer.childElementCount > 0) return;
-    initSystemControls(settingsContainer);
+    initSystemControls(settingsContainer, {
+      title: 'Tune',
+      description: 'Keep the toy comfortable and responsive.',
+      variant: 'inline',
+    });
   };
 
   const shouldSkipPreflightForSession = (() => {

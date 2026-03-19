@@ -127,8 +127,9 @@ export function initAudioControls(
   });
 
   container.innerHTML = `
-    <p class="control-panel__eyebrow">Step 2 of 2 · Audio setup</p>
-    <p class="control-panel__description">Choose how this toy should listen.</p>
+    <p class="control-panel__eyebrow">Start</p>
+    <div class="control-panel__heading">Pick an input</div>
+    <p class="control-panel__description">Mic reacts to your room. Demo starts instantly.</p>
     ${renderPrimaryAudioChoice()}
     ${renderQuickstartSpotlight({
       summary: tryThisFirst.summary,
@@ -143,7 +144,6 @@ export function initAudioControls(
       supportsTouchLikeInput,
       starterTips: options.starterTips,
     })}
-    ${renderBrowserAudioShortcuts(options)}
     ${renderAdvancedSources(options)}
     <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
   `;
@@ -197,8 +197,8 @@ export function initAudioControls(
     if (!(firstStepSource instanceof HTMLElement)) return;
     firstStepSource.textContent =
       source === 'microphone'
-        ? 'Live mic is the focused path for room audio and instruments.'
-        : 'Demo audio is the focused path for an instant first run.';
+        ? 'Mic is best for room audio, voice, and instruments.'
+        : 'Demo is best for the fastest first run.';
   };
 
   const setPending = (button: Element | null, pending: boolean) => {
@@ -215,22 +215,22 @@ export function initAudioControls(
     if (!(micBtn instanceof HTMLButtonElement)) return;
 
     if (microphonePermissionState === 'granted') {
-      micBtn.textContent = 'Start with live mic';
+      micBtn.textContent = 'Use mic';
       return;
     }
 
     if (microphonePermissionState === 'denied') {
-      micBtn.textContent = 'Mic blocked — retry';
+      micBtn.textContent = 'Retry mic';
       return;
     }
 
     if (microphonePermissionState === 'unsupported') {
-      micBtn.textContent = 'Microphone unavailable';
+      micBtn.textContent = 'Mic unavailable';
       micBtn.disabled = true;
       return;
     }
 
-    micBtn.textContent = 'Grant mic access and start';
+    micBtn.textContent = 'Allow mic';
   };
 
   const updateStatus = (
@@ -586,21 +586,21 @@ function renderPrimaryAudioChoice() {
   return `
     <div class="control-panel__row" data-audio-row="mic">
       <div class="control-panel__text">
-        <span class="control-panel__label">Live mic</span>
+        <span class="control-panel__label">Mic</span>
         <span class="control-panel__pill" data-recommended-for="mic" hidden>Focused path</span>
-        <span class="control-panel__subtext">Use your room, voice, or instrument as input.</span>
-        <span class="control-panel__microcopy">Requires microphone permission.</span>
+        <span class="control-panel__subtext">Room, voice, or instrument.</span>
+        <span class="control-panel__microcopy">Needs microphone permission.</span>
       </div>
-      <button id="start-audio-btn" class="cta-button ghost" type="button">Start with live mic</button>
+      <button id="start-audio-btn" class="cta-button ghost" type="button">Use mic</button>
     </div>
     <div class="control-panel__row" data-audio-row="demo">
       <div class="control-panel__text">
-        <span class="control-panel__label">Demo audio</span>
+        <span class="control-panel__label">Demo</span>
         <span class="control-panel__pill" data-recommended-for="demo" hidden>Focused path</span>
-        <span class="control-panel__subtext">Start instantly with built-in audio.</span>
+        <span class="control-panel__subtext">Built-in soundtrack.</span>
         <span class="control-panel__microcopy">No permission prompt.</span>
       </div>
-      <button id="use-demo-audio" class="cta-button primary" type="button">Start with demo audio</button>
+      <button id="use-demo-audio" class="cta-button primary" type="button">Use demo</button>
     </div>
   `;
 }
@@ -632,7 +632,7 @@ function renderQuickstartSpotlight({
       <p class="control-panel__comparison" data-audio-comparison>${summary}</p>
       ${detail ? `<p class="control-panel__microcopy">${detail}</p>` : ''}
       <ul class="control-panel__tips control-panel__tips--compact">
-        <li data-first-step-source>Start with live mic for room audio, or demo audio for the fastest first run.</li>
+        <li data-first-step-source>Use mic for room audio, or demo for the fastest first run.</li>
       </ul>
     </section>
   `;
@@ -653,9 +653,9 @@ function renderOnboardingHelp({
 }) {
   return `
     <details class="control-panel__details" data-onboarding-help>
-      <summary class="control-panel__label">More guidance</summary>
+      <summary class="control-panel__label">Tips</summary>
       <p class="control-panel__comparison" data-audio-comparison>
-        Live mic is responsive. Demo audio is instant.
+        Mic is responsive. Demo is instant.
       </p>
       ${
         firstRunHint
@@ -714,38 +714,6 @@ function renderOnboardingHelp({
   `;
 }
 
-function renderBrowserAudioShortcuts(options: AudioControlsOptions) {
-  const hasTabCapture = Boolean(options.onRequestTabAudio);
-  const hasYouTubeCapture = Boolean(options.onRequestYouTubeAudio);
-
-  if (!hasTabCapture && !hasYouTubeCapture) {
-    return '';
-  }
-
-  return `
-    <div class="control-panel__quickstart control-panel__quickstart--utility" data-browser-audio-shortcuts>
-      <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">Browser audio tools</span>
-      </div>
-      <p class="control-panel__microcopy">
-        Drive visuals from music or videos already playing in your browser without switching apps.
-      </p>
-      <div class="control-panel__actions control-panel__actions--inline">
-        ${
-          hasTabCapture
-            ? '<button type="button" class="cta-button ghost" data-reveal-tab-audio>Open tab capture</button>'
-            : ''
-        }
-        ${
-          hasYouTubeCapture
-            ? '<button type="button" class="cta-button ghost" data-reveal-youtube-audio>Open YouTube capture</button>'
-            : ''
-        }
-      </div>
-    </div>
-  `;
-}
-
 function renderAdvancedSources(options: AudioControlsOptions) {
   if (!options.onRequestTabAudio && !options.onRequestYouTubeAudio) {
     return '';
@@ -753,7 +721,7 @@ function renderAdvancedSources(options: AudioControlsOptions) {
 
   return `
     <details class="control-panel__details" data-advanced-inputs>
-      <summary class="control-panel__label">Advanced inputs</summary>
+      <summary class="control-panel__label">Other sources</summary>
       <p class="control-panel__advanced-helper">Use these when you want visuals to react to music or videos already playing in your browser.</p>
       <div id="advanced-audio-panel" class="control-panel__advanced" data-advanced-panel>
         ${

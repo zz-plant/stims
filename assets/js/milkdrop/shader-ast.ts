@@ -1,4 +1,6 @@
+import { evaluateMilkdropExpression } from './expression';
 import type {
+  MilkdropExpressionNode,
   MilkdropShaderExpressionNode,
   MilkdropShaderStatement,
 } from './types';
@@ -272,7 +274,7 @@ export function parseMilkdropShaderStatement(
   line: string,
 ): MilkdropShaderStatement | null {
   const assignment = line.match(
-    /^(?:(const|float)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
+    /^(?:(const|float|vec2|vec3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
   );
   if (!assignment) {
     return null;
@@ -287,7 +289,12 @@ export function parseMilkdropShaderStatement(
   }
   return {
     declaration:
-      (assignment[1]?.toLowerCase() as 'const' | 'float' | undefined) ?? null,
+      (assignment[1]?.toLowerCase() as
+        | 'const'
+        | 'float'
+        | 'vec2'
+        | 'vec3'
+        | undefined) ?? null,
     target: assignment[2]?.toLowerCase() ?? '',
     operator: (assignment[3] ?? '=') as '=' | '+=' | '-=' | '*=' | '/=',
     rawValue: assignment[4]?.trim() ?? '',
@@ -387,6 +394,65 @@ function applyBinary(
   return null;
 }
 
+function toScalarMilkdropExpression(
+  node: MilkdropShaderExpressionNode,
+): MilkdropExpressionNode | null {
+  switch (node.type) {
+    case 'literal':
+      return { type: 'literal', value: node.value };
+    case 'identifier':
+      return { type: 'identifier', name: node.name.toLowerCase() };
+    case 'unary': {
+      const operand = toScalarMilkdropExpression(node.operand);
+      if (!operand) {
+        return null;
+      }
+      return {
+        type: 'unary',
+        operator: node.operator,
+        operand,
+      };
+    }
+    case 'binary': {
+      const left = toScalarMilkdropExpression(node.left);
+      const right = toScalarMilkdropExpression(node.right);
+      if (!left || !right) {
+        return null;
+      }
+      return {
+        type: 'binary',
+        operator: node.operator,
+        left,
+        right,
+      };
+    }
+    case 'call': {
+      const name = node.name.toLowerCase();
+      if (
+        name === 'vec2' ||
+        name === 'vec3' ||
+        name === 'tex2d' ||
+        name === 'texture'
+      ) {
+        return null;
+      }
+      const args = node.args
+        .map((arg) => toScalarMilkdropExpression(arg))
+        .filter((arg): arg is MilkdropExpressionNode => arg !== null);
+      if (args.length !== node.args.length) {
+        return null;
+      }
+      return {
+        type: 'call',
+        name,
+        args,
+      };
+    }
+    case 'member':
+      return null;
+  }
+}
+
 export function evaluateMilkdropShaderExpression(
   node: MilkdropShaderExpressionNode,
   env: Record<string, ShaderValue>,
@@ -396,6 +462,12 @@ export function evaluateMilkdropShaderExpression(
     case 'literal':
       return scalar(node.value);
     case 'identifier':
+      if (node.name.toLowerCase() === 'pi') {
+        return scalar(Math.PI);
+      }
+      if (node.name.toLowerCase() === 'e') {
+        return scalar(Math.E);
+      }
       return (
         env[node.name] ??
         env[node.name.toLowerCase()] ??
@@ -486,6 +558,16 @@ export function evaluateMilkdropShaderExpression(
       if (name === 'pow' && args.length >= 2) {
         const left = args[0];
         const right = args[1];
+        if (isScalar(left) && isScalar(right)) {
+          return scalar(left.value ** right.value);
+        }
+        if (isVec3(left) && isScalar(right)) {
+          return vec3(
+            left.value[0] ** right.value,
+            left.value[1] ** right.value,
+            left.value[2] ** right.value,
+          );
+        }
         if (isVec3(left) && isVec3(right)) {
           return vec3(
             left.value[0] ** right.value[0],
@@ -493,6 +575,10 @@ export function evaluateMilkdropShaderExpression(
             left.value[2] ** right.value[2],
           );
         }
+      }
+      const scalarExpression = toScalarMilkdropExpression(node);
+      if (scalarExpression) {
+        return scalar(evaluateMilkdropExpression(scalarExpression, scalarEnv));
       }
       return null;
     }

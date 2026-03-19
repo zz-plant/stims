@@ -5,6 +5,20 @@ import type {
 } from './renderer-setup.ts';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
 
+export function getRendererBackendMaxPixelRatioCap({
+  backend,
+  isMobile,
+}: {
+  backend: 'webgl' | 'webgpu';
+  isMobile: boolean;
+}) {
+  if (isMobile) {
+    return backend === 'webgpu' ? 1.5 : 1.25;
+  }
+
+  return backend === 'webgpu' ? 2.5 : 1.5;
+}
+
 export type RendererViewport = {
   width: number;
   height: number;

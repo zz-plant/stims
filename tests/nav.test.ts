@@ -164,19 +164,22 @@ describe('toy navigation visibility states', () => {
     initNavigation(container, { mode: 'toy', title: 'Spectrum Bloom' });
 
     const actions = container.querySelector('#toy-nav-actions') as HTMLElement;
+    const secondary = container.querySelector(
+      '#toy-nav-secondary-actions',
+    ) as HTMLElement;
     const toggle = container.querySelector(
       '[data-toy-actions-toggle="true"]',
     ) as HTMLButtonElement;
     const primary = container.querySelector('.active-toy-nav__actions-primary');
-    const secondary = container.querySelector(
-      '.active-toy-nav__actions-secondary',
-    );
 
     expect(actions.dataset.toyActionsExpanded).toBe('false');
-    expect(actions.hidden).toBe(true);
-    expect(actions.getAttribute('aria-hidden')).toBe('true');
-    expect(actions.hasAttribute('inert')).toBe(true);
-    expect(toggle.textContent).toBe('Open controls');
+    expect(actions.hidden).toBe(false);
+    expect(actions.getAttribute('aria-hidden')).toBeNull();
+    expect(actions.hasAttribute('inert')).toBe(false);
+    expect(secondary.hidden).toBe(true);
+    expect(secondary.getAttribute('aria-hidden')).toBe('true');
+    expect(secondary.hasAttribute('inert')).toBe(true);
+    expect(toggle.textContent).toBe('More');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
     expect(document.documentElement.dataset.toyControlsExpanded).toBe('false');
@@ -195,10 +198,14 @@ describe('toy navigation visibility states', () => {
 
     toggle.click();
 
-    expect(toggle.textContent).toBe('Hide controls');
+    expect(toggle.textContent).toBe('Hide extras');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-controls')).toBe(
+      'toy-nav-secondary-actions',
+    );
     expect(
-      (container.querySelector('#toy-nav-actions') as HTMLElement).hidden,
+      (container.querySelector('#toy-nav-secondary-actions') as HTMLElement)
+        .hidden,
     ).toBe(false);
   });
 });
