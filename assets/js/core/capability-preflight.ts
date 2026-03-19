@@ -63,6 +63,14 @@ function getPerformanceCheckSummary(
     };
   }
 
+  if (result.performance.recommendedQualityPresetId === 'hi-fi') {
+    return {
+      value: 'Ready for hi-fi visuals',
+      note: 'This GPU can handle the richer WebGPU preset by default.',
+      variant: 'ok',
+    };
+  }
+
   if (result.rendering.rendererBackend === 'webgl') {
     return {
       value: 'Ready in compatibility mode',
@@ -226,6 +234,29 @@ function updateWhyDetails(
     items.push('No GPU acceleration detected; try another browser or device.');
   }
 
+  const webgpuCapabilities = result.rendering.webgpuCapabilities;
+  if (webgpuCapabilities) {
+    if (webgpuCapabilities.features.shaderF16) {
+      items.push(
+        'Half-precision shaders are available for denser feedback and particle effects.',
+      );
+    }
+    if (webgpuCapabilities.features.timestampQuery) {
+      items.push(
+        'GPU timestamp queries are available for deeper frame profiling.',
+      );
+    }
+    if (
+      webgpuCapabilities.workers.workers &&
+      webgpuCapabilities.workers.offscreenCanvas &&
+      webgpuCapabilities.workers.transferControlToOffscreen
+    ) {
+      items.push(
+        'This browser can support off-main-thread WebGPU rendering with OffscreenCanvas.',
+      );
+    }
+  }
+
   if (!result.microphone.supported) {
     items.push(
       'Microphone capture is unavailable; use demo, tab, or YouTube audio.',
@@ -256,6 +287,14 @@ function updateWhyDetails(
     result.environment.reducedMotion
       ? 'Reduced motion preference is enabled; effects will soften.'
       : 'Standard motion effects are enabled.',
+  );
+
+  items.push(
+    result.performance.recommendedQualityPresetId === 'hi-fi'
+      ? 'Hi-fi visuals are recommended for this device.'
+      : result.performance.recommendedQualityPresetId === 'performance'
+        ? 'Battery saver visuals are recommended for smoother playback.'
+        : 'Balanced visuals are recommended for this device.',
   );
 
   if (result.performance.lowPower) {

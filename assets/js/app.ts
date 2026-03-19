@@ -25,7 +25,25 @@ const recordRendererTelemetry = () => {
         webglFallback:
           Number(existing.webglFallback ?? 0) +
           Number(!detail.isWebGPUSupported),
+        hiFiReady:
+          Number(existing.hiFiReady ?? 0) +
+          Number(detail.webgpu?.recommendedQualityPreset === 'hi-fi'),
+        timestampQuery:
+          Number(existing.timestampQuery ?? 0) +
+          Number(detail.webgpu?.features.timestampQuery === true),
+        shaderF16:
+          Number(existing.shaderF16 ?? 0) +
+          Number(detail.webgpu?.features.shaderF16 === true),
+        workerOffscreenReady:
+          Number(existing.workerOffscreenReady ?? 0) +
+          Number(
+            detail.webgpu?.workers.workers === true &&
+              detail.webgpu?.workers.offscreenCanvas === true &&
+              detail.webgpu?.workers.transferControlToOffscreen === true,
+          ),
         lastFallbackReason: detail.fallbackReason,
+        lastPreferredCanvasFormat: detail.webgpu?.preferredCanvasFormat ?? null,
+        lastPerformanceTier: detail.webgpu?.performanceTier ?? null,
         lastUpdatedAt: new Date().toISOString(),
       };
       window.localStorage.setItem(key, JSON.stringify(stats));

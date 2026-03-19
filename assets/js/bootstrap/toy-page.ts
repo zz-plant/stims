@@ -221,11 +221,13 @@ export function bootToyPage({
     });
   };
 
-  const setupSystemControls = () => {
+  const setupSystemControls = (result: CapabilityPreflightResult | null) => {
     if (!settingsContainer || settingsContainer.childElementCount > 0) return;
     initSystemControls(settingsContainer, {
       title: 'Tune',
       description: 'Keep the toy comfortable and responsive.',
+      defaultPresetId:
+        result?.performance.recommendedQualityPresetId ?? undefined,
       variant: 'inline',
     });
   };
@@ -244,7 +246,7 @@ export function bootToyPage({
     if (!result.canProceed) return;
     startLoaderIfNeeded();
     setupAudio(result);
-    setupSystemControls();
+    setupSystemControls(result);
   };
 
   const preflight = attachCapabilityPreflight({

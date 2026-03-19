@@ -17,6 +17,30 @@ const readyResult: CapabilityPreflightResult = {
     rendererBackend: 'webgpu',
     webgpuFallbackReason: null,
     shouldRetryWebGPU: false,
+    webgpuCapabilities: {
+      features: {
+        bgra8unormStorage: true,
+        float32Blendable: true,
+        float32Filterable: true,
+        shaderF16: true,
+        subgroups: true,
+        timestampQuery: true,
+      },
+      limits: {
+        maxColorAttachments: 8,
+        maxComputeInvocationsPerWorkgroup: 1024,
+        maxStorageBufferBindingSize: 4294967292,
+        maxTextureDimension2D: 16384,
+      },
+      workers: {
+        workers: true,
+        offscreenCanvas: true,
+        transferControlToOffscreen: true,
+      },
+      preferredCanvasFormat: 'bgra8unorm',
+      performanceTier: 'high-end',
+      recommendedQualityPreset: 'hi-fi',
+    },
   },
   microphone: {
     supported: true,
@@ -31,8 +55,9 @@ const readyResult: CapabilityPreflightResult = {
   performance: {
     lowPower: false,
     reason: null,
-    recommendedMaxPixelRatio: 1.25,
-    recommendedRenderScale: 0.9,
+    recommendedMaxPixelRatio: 2.5,
+    recommendedRenderScale: 1,
+    recommendedQualityPresetId: 'hi-fi',
   },
   blockingIssues: [],
   warnings: [],

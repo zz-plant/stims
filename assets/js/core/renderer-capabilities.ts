@@ -12,6 +12,39 @@ import {
 
 export type RendererBackend = 'webgl' | 'webgpu';
 
+export type WebGPUCapabilityTier = 'baseline' | 'enhanced' | 'high-end';
+
+export type WebGPUFeatureSupport = {
+  bgra8unormStorage: boolean;
+  float32Blendable: boolean;
+  float32Filterable: boolean;
+  shaderF16: boolean;
+  subgroups: boolean;
+  timestampQuery: boolean;
+};
+
+export type WebGPULimitSnapshot = {
+  maxColorAttachments: number | null;
+  maxComputeInvocationsPerWorkgroup: number | null;
+  maxStorageBufferBindingSize: number | null;
+  maxTextureDimension2D: number | null;
+};
+
+export type WebGPUWorkerSupport = {
+  workers: boolean;
+  offscreenCanvas: boolean;
+  transferControlToOffscreen: boolean;
+};
+
+export type WebGPUCapabilitySummary = {
+  features: WebGPUFeatureSupport;
+  limits: WebGPULimitSnapshot;
+  workers: WebGPUWorkerSupport;
+  preferredCanvasFormat: string | null;
+  performanceTier: WebGPUCapabilityTier;
+  recommendedQualityPreset: 'balanced' | 'hi-fi';
+};
+
 export type RendererCapabilities = {
   preferredBackend: RendererBackend | null;
   adapter: GPUAdapter | null;
@@ -20,6 +53,7 @@ export type RendererCapabilities = {
   fallbackReasonCode: RendererFallbackReasonCode | null;
   shouldRetryWebGPU: boolean;
   forceWebGL: boolean;
+  webgpu: WebGPUCapabilitySummary | null;
 };
 
 export type RendererTelemetryEvent = {
@@ -28,6 +62,7 @@ export type RendererTelemetryEvent = {
   fallbackReasonCode: RendererFallbackReasonCode | null;
   isWebGPUSupported: boolean;
   forceWebGL: boolean;
+  webgpu: WebGPUCapabilitySummary | null;
 };
 
 export type RendererTelemetryHandler = (
@@ -67,6 +102,7 @@ const buildFallback = (
   fallbackReasonCode: inferRendererFallbackReasonCode(fallbackReason),
   shouldRetryWebGPU,
   forceWebGL,
+  webgpu: null,
 });
 
 const reportRendererTelemetry = (result: RendererCapabilities) => {
@@ -79,6 +115,7 @@ const reportRendererTelemetry = (result: RendererCapabilities) => {
     fallbackReasonCode: result.fallbackReasonCode,
     isWebGPUSupported: result.preferredBackend === 'webgpu',
     forceWebGL: result.forceWebGL,
+    webgpu: result.webgpu,
   };
   telemetryHandler?.('renderer_capabilities', detail);
   if (typeof window !== 'undefined' && window.dispatchEvent) {
@@ -126,6 +163,121 @@ function probeCanvasWebGLContext() {
   } catch (_error) {
     return false;
   }
+}
+
+function hasFeature(
+  features: GPUSupportedFeatures | Set<string> | undefined,
+  name: string,
+) {
+  return Boolean(features && 'has' in features && features.has(name));
+}
+
+function getNumericLimit(
+  limits: GPUSupportedLimits | Record<string, unknown> | undefined,
+  key: keyof WebGPULimitSnapshot,
+) {
+  const value = limits?.[key];
+  return typeof value === 'number' ? value : null;
+}
+
+function getPreferredCanvasFormat() {
+  if (typeof navigator === 'undefined') {
+    return null;
+  }
+
+  const gpuNavigator = navigator as Navigator & {
+    gpu?: GPU & { getPreferredCanvasFormat?: () => string };
+  };
+  return gpuNavigator.gpu?.getPreferredCanvasFormat?.() ?? null;
+}
+
+function getWorkerSupport(): WebGPUWorkerSupport {
+  const transferControlToOffscreen =
+    typeof HTMLCanvasElement !== 'undefined' &&
+    typeof HTMLCanvasElement.prototype?.transferControlToOffscreen ===
+      'function';
+
+  return {
+    workers: typeof Worker !== 'undefined',
+    offscreenCanvas: typeof OffscreenCanvas !== 'undefined',
+    transferControlToOffscreen,
+  };
+}
+
+function getWebGPUPerformanceTier({
+  features,
+  limits,
+}: {
+  features: WebGPUFeatureSupport;
+  limits: WebGPULimitSnapshot;
+}): WebGPUCapabilityTier {
+  const hasLargeStorageBuffer =
+    (limits.maxStorageBufferBindingSize ?? 0) >= 1_073_741_824;
+  const hasStrongComputeBudget =
+    (limits.maxComputeInvocationsPerWorkgroup ?? 0) >= 512;
+  const hasMultiPassHeadroom = (limits.maxColorAttachments ?? 0) >= 8;
+
+  if (
+    features.shaderF16 &&
+    features.subgroups &&
+    features.timestampQuery &&
+    features.float32Blendable &&
+    hasLargeStorageBuffer &&
+    hasStrongComputeBudget &&
+    hasMultiPassHeadroom
+  ) {
+    return 'high-end';
+  }
+
+  if (
+    features.shaderF16 ||
+    features.timestampQuery ||
+    features.float32Blendable ||
+    features.float32Filterable
+  ) {
+    return 'enhanced';
+  }
+
+  return 'baseline';
+}
+
+function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
+  const features: WebGPUFeatureSupport = {
+    bgra8unormStorage: hasFeature(adapter.features, 'bgra8unorm-storage'),
+    float32Blendable: hasFeature(adapter.features, 'float32-blendable'),
+    float32Filterable: hasFeature(adapter.features, 'float32-filterable'),
+    shaderF16: hasFeature(adapter.features, 'shader-f16'),
+    subgroups: hasFeature(adapter.features, 'subgroups'),
+    timestampQuery: hasFeature(adapter.features, 'timestamp-query'),
+  };
+
+  const limits: WebGPULimitSnapshot = {
+    maxColorAttachments: getNumericLimit(adapter.limits, 'maxColorAttachments'),
+    maxComputeInvocationsPerWorkgroup: getNumericLimit(
+      adapter.limits,
+      'maxComputeInvocationsPerWorkgroup',
+    ),
+    maxStorageBufferBindingSize: getNumericLimit(
+      adapter.limits,
+      'maxStorageBufferBindingSize',
+    ),
+    maxTextureDimension2D: getNumericLimit(
+      adapter.limits,
+      'maxTextureDimension2D',
+    ),
+  };
+
+  const performanceTier = getWebGPUPerformanceTier({ features, limits });
+
+  return {
+    features,
+    limits,
+    workers: getWorkerSupport(),
+    preferredCanvasFormat: getPreferredCanvasFormat(),
+    performanceTier,
+    recommendedQualityPreset:
+      performanceTier === 'high-end' ? 'hi-fi' : 'balanced',
+  } satisfies WebGPUCapabilitySummary;
 }
 
 export function getRenderingSupport(): RenderingSupport {
@@ -227,6 +379,7 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
       fallbackReasonCode: null,
       shouldRetryWebGPU: false,
       forceWebGL: false,
+      webgpu: summarizeWebGPUCapabilities(adapter),
     });
   } catch (error) {
     console.warn('WebGPU initialization failed. Falling back to WebGL.', error);
@@ -282,6 +435,7 @@ export function rememberRendererFallback(
     fallbackReasonCode:
       fallbackReasonCode ??
       inferRendererFallbackReasonCode(resolvedFallbackReason),
+    webgpu: cachedCapabilities?.webgpu ?? null,
   });
   capabilitiesPromise = Promise.resolve(result);
   return result;

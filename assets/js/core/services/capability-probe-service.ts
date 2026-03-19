@@ -2,7 +2,10 @@ import {
   type DevicePerformanceProfile,
   getDevicePerformanceProfile,
 } from '../device-profile.ts';
-import { getRenderingSupport } from '../renderer-capabilities.ts';
+import {
+  getRenderingSupport,
+  type RendererCapabilities,
+} from '../renderer-capabilities.ts';
 import { getRendererPlan, type RendererPlan } from '../renderer-plan.ts';
 import {
   type MicrophoneCapability,
@@ -15,6 +18,7 @@ export type CapabilityPreflightResult = {
     rendererBackend: 'webgl' | 'webgpu' | null;
     webgpuFallbackReason: string | null;
     shouldRetryWebGPU: boolean;
+    webgpuCapabilities: RendererCapabilities['webgpu'];
   };
   microphone: MicrophoneCapability;
   environment: {
@@ -27,6 +31,7 @@ export type CapabilityPreflightResult = {
     reason: string | null;
     recommendedMaxPixelRatio: number;
     recommendedRenderScale: number;
+    recommendedQualityPresetId: 'performance' | 'balanced' | 'hi-fi';
   };
   blockingIssues: string[];
   warnings: string[];
@@ -36,6 +41,7 @@ export type CapabilityPreflightResult = {
 type CapabilityProbeInputs = {
   renderingSupport: { hasWebGL: boolean };
   rendererPlan: RendererPlan;
+  rendererCapabilities?: Pick<RendererCapabilities, 'webgpu'> | null;
   microphone: MicrophoneCapability;
   environment: {
     secureContext: boolean;
@@ -48,15 +54,69 @@ export function getPerformanceProfile(): DevicePerformanceProfile {
   return getDevicePerformanceProfile();
 }
 
+function getRecommendedQualityPresetId({
+  rendererPlan,
+  rendererCapabilities,
+  performanceProfile,
+}: Pick<
+  CapabilityProbeInputs,
+  'rendererPlan' | 'rendererCapabilities' | 'performanceProfile'
+>): 'performance' | 'balanced' | 'hi-fi' {
+  if (performanceProfile.lowPower) {
+    return 'performance';
+  }
+
+  if (
+    rendererPlan.backend === 'webgpu' &&
+    rendererCapabilities?.webgpu?.recommendedQualityPreset === 'hi-fi'
+  ) {
+    return 'hi-fi';
+  }
+
+  return 'balanced';
+}
+
+function getRecommendedRenderTuning(
+  recommendedQualityPresetId: 'performance' | 'balanced' | 'hi-fi',
+) {
+  if (recommendedQualityPresetId === 'performance') {
+    return {
+      recommendedMaxPixelRatio: 1.25,
+      recommendedRenderScale: 0.9,
+    };
+  }
+
+  if (recommendedQualityPresetId === 'hi-fi') {
+    return {
+      recommendedMaxPixelRatio: 2.5,
+      recommendedRenderScale: 1,
+    };
+  }
+
+  return {
+    recommendedMaxPixelRatio: 2,
+    recommendedRenderScale: 1,
+  };
+}
+
 export function buildCapabilityPreflightResult({
   renderingSupport,
   rendererPlan,
+  rendererCapabilities,
   microphone,
   environment,
   performanceProfile,
 }: CapabilityProbeInputs): CapabilityPreflightResult {
   const blockingIssues: string[] = [];
   const warnings: string[] = [];
+  const recommendedQualityPresetId = getRecommendedQualityPresetId({
+    rendererPlan,
+    rendererCapabilities,
+    performanceProfile,
+  });
+  const recommendedRenderTuning = getRecommendedRenderTuning(
+    recommendedQualityPresetId,
+  );
 
   if (!rendererPlan.backend) {
     blockingIssues.push('Graphics acceleration is unavailable (WebGL/WebGPU).');
@@ -84,6 +144,7 @@ export function buildCapabilityPreflightResult({
       rendererBackend: rendererPlan.backend,
       webgpuFallbackReason: rendererPlan.reasonMessage,
       shouldRetryWebGPU: rendererPlan.canRetryWebGPU,
+      webgpuCapabilities: rendererCapabilities?.webgpu ?? null,
     },
     microphone,
     environment: {
@@ -94,8 +155,8 @@ export function buildCapabilityPreflightResult({
     performance: {
       lowPower: performanceProfile.lowPower,
       reason: performanceProfile.reason,
-      recommendedMaxPixelRatio: 1.25,
-      recommendedRenderScale: 0.9,
+      ...recommendedRenderTuning,
+      recommendedQualityPresetId,
     },
     blockingIssues,
     warnings,
@@ -123,6 +184,7 @@ export async function runCapabilityProbe(): Promise<CapabilityPreflightResult> {
   return buildCapabilityPreflightResult({
     renderingSupport: getRenderingSupport(),
     rendererPlan: rendererPlanResult.plan,
+    rendererCapabilities: rendererPlanResult.capabilities,
     microphone,
     environment: {
       secureContext:
