@@ -19,7 +19,6 @@ This document captures the **current, shipped feature set** of Stims as implemen
 
 ### Global navigation
 - **Brand + jump links**: MilkDrop/start and broader toy-lab discovery are shown alongside the brand mark.
-- **Discovery hubs**: Static links to `/toys/`, `/moods/`, `/capabilities/`, and `/tags/` surface the generated browse pages directly from the main nav.
 - **Utilities**: Open GitHub and toggle light/dark theme.
 - **Theme toggle**: A dark-mode toggle persists preference in local storage and uses view transitions when available.
 
@@ -41,7 +40,6 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Preflight dialog**: Modal focuses on readiness, one clear next step, and optional technical details.
 
 ### Search, filters, and sorting
-- **Browse shortcuts**: A visible shortcut row links directly to the `/moods/`, `/capabilities/`, `/tags/`, and `/toys/` pages.
 - **Search**: Broader toy-lab input supports keyword matching across title, slug, description, tags, moods, and capability terms.
 - **Suggestions**: Datalist is populated from toy metadata (title, tags, moods, capability terms, WebGPU).
 - **Filters**: Quick chips and disclosure-based refinement share one state model, with applied search/filter/sort chips rendered into a sticky rail while scrolling.

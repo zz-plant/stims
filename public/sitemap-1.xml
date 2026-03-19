@@ -18,13 +18,4 @@
       <image:loc>https://no.toil.fyi/og/milkdrop.svg</image:loc>
     </image:image>
   </url>
-  <url>
-    <loc>https://no.toil.fyi/toys/milkdrop/</loc>
-    <lastmod>2026-03-19</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://no.toil.fyi/og/milkdrop.svg</image:loc>
-    </image:image>
-  </url>
 </urlset>

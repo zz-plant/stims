@@ -158,12 +158,7 @@ function createPresetCard(
     requestMilkdropPresetSelection(entry.id);
   });
 
-  const browse = documentRef.createElement('a');
-  browse.href = '/toys/milkdrop/';
-  browse.className = 'cta-button ghost';
-  browse.textContent = 'MilkDrop page';
-
-  actions.append(launch, browse);
+  actions.append(launch);
   card.append(eyebrow, title, meta, description, tagRow, actions);
   return card;
 }
