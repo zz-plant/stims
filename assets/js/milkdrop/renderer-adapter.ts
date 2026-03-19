@@ -949,6 +949,20 @@ class FeedbackManager {
           return clamp((color - 0.5) * amount + 0.5, 0.0, 1.0);
         }
 
+        vec2 sampleUv(vec2 uv, float wrapMode) {
+          return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
+        }
+
+        vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
+          vec2 centered = uv - 0.5;
+          float radius = length(centered);
+          float angle = atan(centered.y, centered.x);
+          float spiral = sin(radius * 18.0 - angle * 4.0) * amount * 0.08;
+          angle += spiral + rotationAmount * 0.22;
+          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * amount * 0.05;
+          return vec2(cos(angle), sin(angle)) * radius + 0.5;
+        }
+
         void main() {
           vec2 centeredUv = vUv - 0.5;
           float rotSin = sin(rotation);
@@ -958,25 +972,27 @@ class FeedbackManager {
             centeredUv.x * rotSin + centeredUv.y * rotCos
           );
           vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
-          vec2 warpUv = transformedUv + 0.5 + vec2(
-            sin((vUv.y - 0.5) * 6.2831) * warpScale * 0.04,
-            cos((vUv.x - 0.5) * 6.2831) * warpScale * 0.04
+          vec2 currentUv = applyFeedbackWarp(
+            transformedUv + 0.5,
+            warpScale,
+            rotation
           );
-          vec2 prevUv = (warpUv - 0.5) / max(zoom, 0.0001) + 0.5;
-          if (textureWrap > 0.5) {
-            prevUv = fract(prevUv);
-          }
-          vec4 current = texture2D(currentTex, vUv);
-          vec4 previous = texture2D(previousTex, clamp(prevUv, 0.0, 1.0));
+          vec2 prevUv = applyFeedbackWarp(
+            (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
+            warpScale * 0.8,
+            rotation * 0.6
+          );
+          vec4 current = texture2D(currentTex, sampleUv(currentUv, textureWrap));
+          vec4 previous = texture2D(previousTex, sampleUv(prevUv, textureWrap));
           vec3 previousColor = previous.rgb;
           if (feedbackSoftness > 0.01) {
             vec2 sampleOffset = texelSize * (0.75 + feedbackSoftness * 0.5);
             vec3 softened = (
               previous.rgb +
-              texture2D(previousTex, clamp(prevUv + vec2(sampleOffset.x, 0.0), 0.0, 1.0)).rgb +
-              texture2D(previousTex, clamp(prevUv - vec2(sampleOffset.x, 0.0), 0.0, 1.0)).rgb +
-              texture2D(previousTex, clamp(prevUv + vec2(0.0, sampleOffset.y), 0.0, 1.0)).rgb +
-              texture2D(previousTex, clamp(prevUv - vec2(0.0, sampleOffset.y), 0.0, 1.0)).rgb
+              texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(previousTex, sampleUv(prevUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(previousTex, sampleUv(prevUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
+              texture2D(previousTex, sampleUv(prevUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb
             ) / 5.0;
             previousColor = mix(
               previousColor,

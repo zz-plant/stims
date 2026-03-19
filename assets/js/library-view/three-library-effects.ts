@@ -2,18 +2,26 @@ import {
   AmbientLight,
   BoxGeometry,
   type BufferGeometry,
+  ClampToEdgeWrapping,
   Color,
   DirectionalLight,
   Float32BufferAttribute,
   Group,
   type Material,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
+  MirroredRepeatWrapping,
   PerspectiveCamera,
+  PlaneGeometry,
   Points,
   PointsMaterial,
+  RepeatWrapping,
   Scene,
   SphereGeometry,
+  SRGBColorSpace,
+  type Texture,
+  TextureLoader,
   TorusKnotGeometry,
   Vector3,
   WebGLRenderer,
@@ -36,12 +44,32 @@ interface PreviewItem {
 
 const BACKGROUND_FRAME_INTERVAL_MS = 1000 / 20;
 const PREVIEW_FRAME_INTERVAL_MS = 1000 / 12;
+const PREVIEW_SURFACE_TEXTURES = [
+  'circuit_board_pattern.png',
+  'water_caustics.png',
+  'crystal_fractal.png',
+] as const;
+const PREVIEW_DETAIL_TEXTURES = [
+  'seamless_perlin_noise.png',
+  'simplex_noise_3d.png',
+  'voronoi_cellular.png',
+] as const;
+const AMBIENT_AURA_TEXTURE = 'colorful_aura_gradient.png';
+const AMBIENT_PARTICLE_TEXTURE = 'radial_rainbow_gradient.png';
+
+type TextureConfig = {
+  repeatX?: number;
+  repeatY?: number;
+  wrapping?: Texture['wrapS'];
+  colorSpace?: typeof SRGBColorSpace;
+};
 
 export function createLibraryThreeEffects() {
   let backgroundRenderer: WebGLRenderer | null = null;
   let backgroundScene: Scene | null = null;
   let backgroundCamera: PerspectiveCamera | null = null;
   let backgroundParticles: Points | null = null;
+  let ambientBackdrop: Mesh | null = null;
   let animationFrame = 0;
   let pulse = 0;
   let resizeHandler: (() => void) | null = null;
@@ -49,8 +77,67 @@ export function createLibraryThreeEffects() {
   let visibilityHandler: (() => void) | null = null;
   const backgroundColor = new Color(0x0b0d16);
   const previews = new Map<string, PreviewItem>();
+  const textureLoader = new TextureLoader();
+  const loadedTextures = new Map<string, Texture>();
   let lastBackgroundRenderAt = 0;
   let lastPreviewRenderAt = 0;
+
+  const resolveTextureUrl = (fileName: string) => {
+    const baseUrl =
+      typeof import.meta.env.BASE_URL === 'string'
+        ? import.meta.env.BASE_URL
+        : '/';
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    return `${normalizedBaseUrl}textures/${fileName}`;
+  };
+
+  const getTexture = (fileName: string, config: TextureConfig = {}) => {
+    const {
+      repeatX = 1,
+      repeatY = repeatX,
+      wrapping = RepeatWrapping,
+      colorSpace,
+    } = config;
+    const cacheKey = JSON.stringify({
+      colorSpace: colorSpace ?? 'default',
+      fileName,
+      repeatX,
+      repeatY,
+      wrapping,
+    });
+    const cachedTexture = loadedTextures.get(cacheKey);
+    if (cachedTexture) return cachedTexture;
+
+    const texture = textureLoader.load(resolveTextureUrl(fileName));
+    texture.wrapS = wrapping;
+    texture.wrapT = wrapping;
+    texture.repeat.set(repeatX, repeatY);
+    if (colorSpace) {
+      texture.colorSpace = colorSpace;
+    }
+    loadedTextures.set(cacheKey, texture);
+    return texture;
+  };
+
+  const hashSlug = (value: string) => {
+    let hash = 0;
+    for (let index = 0; index < value.length; index += 1) {
+      hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+    }
+    return hash;
+  };
+
+  const getPreviewTextureSet = (toy: ToyLike, index: number) => {
+    const seed = hashSlug(toy.slug ?? `toy-${index}`);
+    return {
+      surface: PREVIEW_SURFACE_TEXTURES[seed % PREVIEW_SURFACE_TEXTURES.length],
+      detail:
+        PREVIEW_DETAIL_TEXTURES[
+          Math.floor(seed / PREVIEW_SURFACE_TEXTURES.length) %
+            PREVIEW_DETAIL_TEXTURES.length
+        ],
+    };
+  };
 
   const canUseWebGL = () => {
     try {
@@ -93,6 +180,11 @@ export function createLibraryThreeEffects() {
       if (backgroundParticles) {
         backgroundParticles.rotation.y = time * (0.18 + pulse * 0.6);
         backgroundParticles.rotation.x = Math.sin(time * 2) * 0.07;
+      }
+      if (ambientBackdrop) {
+        ambientBackdrop.rotation.z = Math.sin(time * 1.7) * 0.08;
+        ambientBackdrop.position.x = Math.sin(time * 1.3) * 0.8;
+        ambientBackdrop.position.y = Math.cos(time * 1.1) * 0.5;
       }
       backgroundColor.setHSL(
         0.68 + Math.sin(time) * 0.05,
@@ -137,8 +229,14 @@ export function createLibraryThreeEffects() {
       const material = new PointsMaterial({
         size: 0.1,
         color: 0x88aaff,
+        map: getTexture(AMBIENT_PARTICLE_TEXTURE, {
+          colorSpace: SRGBColorSpace,
+          wrapping: ClampToEdgeWrapping,
+        }),
         transparent: true,
         opacity: 0.4,
+        alphaTest: 0.08,
+        depthWrite: false,
       });
       const points = new Points(geometry, material);
       const positions: number[] = [];
@@ -154,6 +252,22 @@ export function createLibraryThreeEffects() {
         new Float32BufferAttribute(positions, 3),
       );
 
+      const backdrop = new Mesh(
+        new PlaneGeometry(34, 20, 1, 1),
+        new MeshBasicMaterial({
+          color: 0xffffff,
+          map: getTexture(AMBIENT_AURA_TEXTURE, {
+            colorSpace: SRGBColorSpace,
+            wrapping: MirroredRepeatWrapping,
+          }),
+          transparent: true,
+          opacity: 0.18,
+          depthWrite: false,
+        }),
+      );
+      backdrop.position.z = -8;
+
+      scene.add(backdrop);
       scene.add(points);
       scene.add(new AmbientLight(0x8899ff, 0.35));
 
@@ -162,6 +276,7 @@ export function createLibraryThreeEffects() {
       backgroundScene = scene;
       backgroundCamera = camera;
       backgroundParticles = points;
+      ambientBackdrop = backdrop;
 
       resizeHandler = () => {
         if (!backgroundRenderer || !backgroundCamera) return;
@@ -242,9 +357,25 @@ export function createLibraryThreeEffects() {
     else geometry = new BoxGeometry(1.1, 1.1, 1.1, 5, 5, 5);
 
     const color = new Color().setHSL(((index * 0.13) % 1) + 0.05, 0.8, 0.6);
+    const textureSet = getPreviewTextureSet(toy, index);
     const material = new MeshStandardMaterial({
       color,
       emissive: color.clone().multiplyScalar(0.24),
+      map: getTexture(textureSet.surface, {
+        colorSpace: SRGBColorSpace,
+        repeatX: 1.8,
+        repeatY: 1.8,
+      }),
+      emissiveMap: getTexture(textureSet.surface, {
+        colorSpace: SRGBColorSpace,
+        repeatX: 1.8,
+        repeatY: 1.8,
+      }),
+      bumpMap: getTexture(textureSet.detail, {
+        repeatX: 2.6,
+        repeatY: 2.6,
+      }),
+      bumpScale: 0.08,
       roughness: 0.38,
       metalness: 0.62,
     });
@@ -333,12 +464,23 @@ export function createLibraryThreeEffects() {
         window.removeEventListener('resize', resizeHandler);
         resizeHandler = null;
       }
+      if (backgroundParticles) {
+        (backgroundParticles.geometry as BufferGeometry).dispose();
+        (backgroundParticles.material as Material).dispose();
+      }
+      if (ambientBackdrop) {
+        (ambientBackdrop.geometry as BufferGeometry).dispose();
+        (ambientBackdrop.material as Material).dispose();
+      }
       backgroundRenderer?.dispose();
       backgroundRenderer?.domElement.remove();
       backgroundRenderer = null;
       backgroundScene = null;
       backgroundCamera = null;
       backgroundParticles = null;
+      ambientBackdrop = null;
+      loadedTextures.forEach((texture) => texture.dispose());
+      loadedTextures.clear();
     },
   };
 }

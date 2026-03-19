@@ -204,6 +204,16 @@ function sampleFrequencyData(signals: MilkdropRuntimeSignals, t: number) {
 }
 
 type MutableState = Record<string, number>;
+type MeshFieldPoint = {
+  sourceX: number;
+  sourceY: number;
+  x: number;
+  y: number;
+};
+type MeshField = {
+  density: number;
+  points: MeshFieldPoint[];
+};
 
 class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
@@ -213,8 +223,10 @@ class MilkdropPresetVM implements MilkdropVM {
   private detailScale = 1;
   private trails: MilkdropPolyline[] = [];
   private lastWaveform: MilkdropWaveVisual | null = null;
+  private lastWaveSamples: number[] = [];
   private customWaveState: MutableState[] = [];
   private customShapeState: MutableState[] = [];
+  private lastMeshField: MeshField | null = null;
 
   constructor(preset: MilkdropCompiledPreset) {
     this.preset = preset;
@@ -243,12 +255,14 @@ class MilkdropPresetVM implements MilkdropVM {
       hashSeed(this.preset.source.id || this.preset.title || 'milkdrop') || 1;
     this.trails = [];
     this.lastWaveform = null;
+    this.lastWaveSamples = [];
     this.customWaveState = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
     );
     this.customShapeState = this.preset.ir.customShapes.map((shape) =>
       this.seedCustomShapeState(shape),
     );
+    this.lastMeshField = null;
 
     const zeroSignals = defaultSignalEnv();
     this.runProgram(this.preset.ir.programs.init, this.createEnv(zeroSignals));
@@ -470,24 +484,53 @@ class MilkdropPresetVM implements MilkdropVM {
       0,
       1,
     );
+    const liveSamples = Array.from({ length: samples }, (_, index) =>
+      sampleFrequencyData(signals, index / Math.max(1, samples - 1)),
+    );
+    const previousSamples = this.lastWaveSamples;
+    const historyBlend = clamp(
+      0.26 + signals.beatPulse * 0.48 + signals.deltaMs / 120,
+      0.24,
+      0.92,
+    );
+    const smoothedSamples = liveSamples.map((value, index) =>
+      mix(previousSamples[index] ?? value, value, historyBlend),
+    );
+    this.lastWaveSamples = [...smoothedSamples];
 
     for (let index = 0; index < samples; index += 1) {
       const t = index / Math.max(1, samples - 1);
-      const sampleValue = sampleFrequencyData(signals, t);
+      const sampleValue =
+        smoothedSamples[index] ?? sampleFrequencyData(signals, t);
+      const previousSample = previousSamples[index] ?? sampleValue;
+      const velocity = sampleValue - previousSample;
+      const centeredSample = sampleValue - 0.5;
       let x = 0;
       let y = 0;
 
       switch (mode) {
         case 1: {
-          const angle = t * Math.PI * 2 + signals.time * 0.32;
-          const radius = 0.22 + sampleValue * scale + signals.beatPulse * 0.08;
+          const angle =
+            t * Math.PI * 2 +
+            signals.time * 0.32 +
+            centeredSample * 0.8 +
+            velocity * 2.5;
+          const radius =
+            0.22 +
+            sampleValue * scale +
+            signals.beatPulse * 0.08 +
+            Math.sin(t * Math.PI * 4 + signals.time) * 0.015;
           x = centerX + Math.cos(angle) * radius;
           y = centerY + Math.sin(angle) * radius;
           break;
         }
         case 2: {
-          const angle = t * Math.PI * 5 + signals.time * (0.4 + mystery * 0.2);
-          const radius = 0.08 + t * 0.6 + sampleValue * scale * 0.6;
+          const angle =
+            t * Math.PI * 5 +
+            signals.time * (0.4 + mystery * 0.2) +
+            centeredSample * 0.65;
+          const radius =
+            0.08 + t * 0.6 + sampleValue * scale * 0.6 + velocity * 0.12;
           x = centerX + Math.cos(angle) * radius;
           y = centerY + Math.sin(angle) * radius;
           break;
@@ -497,7 +540,8 @@ class MilkdropPresetVM implements MilkdropVM {
           const spoke =
             0.2 +
             sampleValue * scale * 1.05 +
-            Math.sin(t * Math.PI * 12 + mysteryPhase) * 0.05;
+            Math.sin(t * Math.PI * 12 + mysteryPhase) * 0.05 +
+            velocity * 0.09;
           const pinch = 0.55 + Math.cos(t * Math.PI * 6 + signals.time) * 0.2;
           x = centerX + Math.cos(angle) * spoke;
           y = centerY + Math.sin(angle) * spoke * pinch;
@@ -508,7 +552,7 @@ class MilkdropPresetVM implements MilkdropVM {
             centerX +
             (sampleValue - 0.5) * scale * 1.85 +
             Math.sin(t * Math.PI * 10 + signals.time * 0.5) * 0.04;
-          y = 1.08 - t * 2.16;
+          y = 1.08 - t * 2.16 + velocity * 0.22;
           break;
         }
         case 5: {
@@ -518,7 +562,8 @@ class MilkdropPresetVM implements MilkdropVM {
           x =
             centerX +
             Math.sin(angle * (2 + mystery * 0.6)) * xAmp +
-            Math.cos(angle * 4 + mysteryPhase) * 0.04;
+            Math.cos(angle * 4 + mysteryPhase) * 0.04 +
+            velocity * 0.16;
           y =
             centerY +
             Math.sin(angle * (3 + mystery * 0.5) + Math.PI / 2) * yAmp;
@@ -530,7 +575,8 @@ class MilkdropPresetVM implements MilkdropVM {
           y =
             centerY +
             (index % 2 === 0 ? band : -band) +
-            Math.sin(t * Math.PI * 8 + signals.time * 0.55) * 0.03;
+            Math.sin(t * Math.PI * 8 + signals.time * 0.55) * 0.03 +
+            velocity * 0.18;
           break;
         }
         case 7: {
@@ -539,7 +585,8 @@ class MilkdropPresetVM implements MilkdropVM {
           const radius =
             0.12 +
             (0.2 + sampleValue * scale * 0.9) *
-              Math.cos(petals * angle + mysteryPhase);
+              Math.cos(petals * angle + mysteryPhase) +
+            velocity * 0.14;
           x = centerX + Math.cos(angle) * radius;
           y = centerY + Math.sin(angle) * radius;
           break;
@@ -550,10 +597,11 @@ class MilkdropPresetVM implements MilkdropVM {
             centerY +
             Math.sin(t * Math.PI * 2 + signals.time * (0.55 + mystery)) *
               (0.06 + signals.trebleAtt * 0.08) +
-            (sampleValue - 0.5) * scale * 1.7;
+            centeredSample * scale * 1.7 +
+            velocity * 0.12;
       }
 
-      positions.push(x, y, 0.25);
+      positions.push(x, y, 0.22 + velocity * 0.08);
     }
 
     const waveColor = color(
@@ -713,36 +761,54 @@ class MilkdropPresetVM implements MilkdropVM {
     };
   }
 
-  private buildMesh(signals: MilkdropRuntimeSignals): MilkdropMeshVisual {
+  private buildMeshField(signals: MilkdropRuntimeSignals): MeshField {
     const density = clamp(
       Math.round((this.state.mesh_density ?? 16) * this.detailScale),
       8,
       36,
     );
-    const positions: number[] = [];
+    const points: MeshFieldPoint[] = [];
 
     for (let row = 0; row < density; row += 1) {
       for (let col = 0; col < density; col += 1) {
         const x = (col / Math.max(1, density - 1)) * 2 - 1;
         const y = (row / Math.max(1, density - 1)) * 2 - 1;
         const point = this.transformMeshPoint(signals, x, y);
+        points.push({
+          sourceX: x,
+          sourceY: y,
+          x: point.x,
+          y: point.y,
+        });
+      }
+    }
 
-        if (col + 1 < density) {
-          const next = this.transformMeshPoint(
-            signals,
-            ((col + 1) / Math.max(1, density - 1)) * 2 - 1,
-            y,
-          );
-          positions.push(point.x, point.y, -0.25, next.x, next.y, -0.25);
+    return { density, points };
+  }
+
+  private buildMesh(meshField: MeshField): MilkdropMeshVisual {
+    const positions: number[] = [];
+
+    for (let row = 0; row < meshField.density; row += 1) {
+      for (let col = 0; col < meshField.density; col += 1) {
+        const index = row * meshField.density + col;
+        const point = meshField.points[index];
+        if (!point) {
+          continue;
         }
 
-        if (row + 1 < density) {
-          const next = this.transformMeshPoint(
-            signals,
-            x,
-            ((row + 1) / Math.max(1, density - 1)) * 2 - 1,
-          );
-          positions.push(point.x, point.y, -0.25, next.x, next.y, -0.25);
+        if (col + 1 < meshField.density) {
+          const next = meshField.points[index + 1];
+          if (next) {
+            positions.push(point.x, point.y, -0.25, next.x, next.y, -0.25);
+          }
+        }
+
+        if (row + 1 < meshField.density) {
+          const next = meshField.points[index + meshField.density];
+          if (next) {
+            positions.push(point.x, point.y, -0.25, next.x, next.y, -0.25);
+          }
         }
       }
     }
@@ -761,6 +827,7 @@ class MilkdropPresetVM implements MilkdropVM {
 
   private buildMotionVectors(
     signals: MilkdropRuntimeSignals,
+    meshField: MeshField,
   ): MilkdropMotionVectorVisual[] {
     if ((this.state.motion_vectors ?? 0) < 0.5) {
       return [];
@@ -776,20 +843,48 @@ class MilkdropPresetVM implements MilkdropVM {
     );
     const alpha = clamp(this.state.mv_a ?? 0.35, 0.02, 1);
     const vectors: MilkdropMotionVectorVisual[] = [];
+    const previousField = this.lastMeshField;
+    const density = meshField.density;
+    const hasPerPixelPrograms =
+      this.preset.ir.programs.perPixel.statements.length > 0;
 
     for (let row = 0; row < countY; row += 1) {
       for (let col = 0; col < countX; col += 1) {
-        const x = countX === 1 ? 0 : (col / (countX - 1)) * 2 - 1;
-        const y = countY === 1 ? 0 : (row / (countY - 1)) * 2 - 1;
-        const transformed = this.transformMeshPoint(signals, x, y);
-        const dx = clamp((transformed.x - x) * 1.35, -0.22, 0.22);
-        const dy = clamp((transformed.y - y) * 1.35, -0.22, 0.22);
+        const sourceX = countX === 1 ? 0 : (col / (countX - 1)) * 2 - 1;
+        const sourceY = countY === 1 ? 0 : (row / (countY - 1)) * 2 - 1;
+        const fieldCol = Math.round((sourceX + 1) * 0.5 * (density - 1));
+        const fieldRow = Math.round((sourceY + 1) * 0.5 * (density - 1));
+        const index = fieldRow * density + fieldCol;
+        const currentPoint = this.transformMeshPoint(signals, sourceX, sourceY);
+        const previous = previousField?.points[index] ?? {
+          sourceX,
+          sourceY,
+          x: sourceX,
+          y: sourceY,
+        };
+        const sourceDx = (currentPoint.x - sourceX) * 1.35;
+        const sourceDy = (currentPoint.y - sourceY) * 1.35;
+        const historyDx = hasPerPixelPrograms
+          ? (currentPoint.x - previous.x) * 1.1
+          : 0;
+        const historyDy = hasPerPixelPrograms
+          ? (currentPoint.y - previous.y) * 1.1
+          : 0;
+        const dx = clamp(sourceDx + historyDx, -0.24, 0.24);
+        const dy = clamp(sourceDy + historyDy, -0.24, 0.24);
         const magnitude = Math.hypot(dx, dy);
         if (magnitude < 0.002) {
           continue;
         }
         vectors.push({
-          positions: [x - dx * 0.18, y - dy * 0.18, 0.18, x + dx, y + dy, 0.18],
+          positions: [
+            currentPoint.x - dx * 0.45,
+            currentPoint.y - dy * 0.45,
+            0.18,
+            currentPoint.x + dx,
+            currentPoint.y + dy,
+            0.18,
+          ],
           color: colorValue,
           alpha: clamp(alpha * (0.75 + magnitude * 2.2), 0.02, 1),
           thickness: clamp(1 + magnitude * 18, 1, 4),
@@ -985,6 +1080,13 @@ class MilkdropPresetVM implements MilkdropVM {
       positions: [...mainWave.positions],
       color: { ...mainWave.color },
     };
+    const meshField = this.buildMeshField(signals);
+    const mesh = this.buildMesh(meshField);
+    const motionVectors = this.buildMotionVectors(signals, meshField);
+    this.lastMeshField = {
+      density: meshField.density,
+      points: meshField.points.map((point) => ({ ...point })),
+    };
 
     const frameState: MilkdropFrameState = {
       presetId: this.preset.source.id,
@@ -998,10 +1100,10 @@ class MilkdropPresetVM implements MilkdropVM {
       mainWave,
       customWaves: this.buildCustomWaves(signals),
       trails: this.trails,
-      mesh: this.buildMesh(signals),
+      mesh,
       shapes: this.buildShapes(signals),
       borders: this.buildBorders(),
-      motionVectors: this.buildMotionVectors(signals),
+      motionVectors,
       post: this.buildPost(signals),
       signals,
       variables: this.getStateSnapshot(),

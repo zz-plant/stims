@@ -90,6 +90,20 @@ export function shouldPreferDemoAudio({
   );
 }
 
+export function isPresetFirstToySession(toySlug: string | null) {
+  return toySlug === 'milkdrop';
+}
+
+export function shouldOpenPreflightModal({
+  toySlug,
+  dismissedForSession,
+}: {
+  toySlug: string | null;
+  dismissedForSession: boolean;
+}) {
+  return !dismissedForSession && !isPresetFirstToySession(toySlug);
+}
+
 export function bootToyPage({
   router,
   loadFromQuery,
@@ -126,8 +140,21 @@ export function bootToyPage({
 
   const toyWindow = window as unknown as ToyWindow;
   const toySlug = new URLSearchParams(window.location.search).get('toy');
+  const shouldCollapseShellPanelsAfterAudio = isPresetFirstToySession(toySlug);
   const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
   document.title = toySlug ? `${toyTitle} · Stim Webtoy` : document.title;
+
+  const collapseFocusedSessionPanels = () => {
+    if (!shouldCollapseShellPanelsAfterAudio) {
+      return;
+    }
+    if (audioControlsContainer) {
+      audioControlsContainer.hidden = true;
+    }
+    if (settingsContainer) {
+      settingsContainer.hidden = true;
+    }
+  };
 
   if (persistentBackLink) {
     bindLibraryBackLink(persistentBackLink, {
@@ -183,6 +210,7 @@ export function bootToyPage({
         await startToyAudioFromSource(toyWindow, { source: 'demo' });
         setAudioActive(true, 'demo');
       },
+      onSuccess: collapseFocusedSessionPanels,
       onRequestYouTubeAudio: async (stream) => {
         startLoaderIfNeeded();
         await startToyAudioFromSource(toyWindow, {
@@ -245,21 +273,26 @@ export function bootToyPage({
   const handlePreflightReady = (result: CapabilityPreflightResult) => {
     if (!result.canProceed) return;
     startLoaderIfNeeded();
-    setupAudio(result);
+    setupAudio(result, {
+      forcePreferDemoAudio: isPresetFirstToySession(toySlug),
+    });
     setupSystemControls(result);
   };
 
   const preflight = attachCapabilityPreflight({
     heading: 'Step 1 of 2 · Quick check',
     backHref: router.getLibraryHref(),
-    openOnAttach: !shouldSkipPreflightForSession,
+    openOnAttach: shouldOpenPreflightModal({
+      toySlug,
+      dismissedForSession: shouldSkipPreflightForSession,
+    }),
     onComplete: handlePreflightReady,
     onRetry: handlePreflightReady,
     host: document.body,
     showCloseButton: true,
   });
 
-  if (shouldSkipPreflightForSession) {
+  if (shouldSkipPreflightForSession || isPresetFirstToySession(toySlug)) {
     void preflight.run().then(handlePreflightReady);
   }
 
