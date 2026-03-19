@@ -1,0 +1,13 @@
+title=Parity Hybrid 05
+author=Stim Legacy Corpus
+video_echo_enabled=1
+video_echo_alpha=0.170
+wavecode_0_enabled=1
+wavecode_0_samples=63
+wave_0_per_frame1=a = 0.15 + bass_att * 0.2
+wave_0_per_point1=x = x + sin(sample * pi * 4) * 0.01
+shapecode_0_enabled=1
+shapecode_0_sides=7
+shape_0_per_frame1=rad = 0.140 + beat_pulse * 0.04
+warp_shader=dx=bass_att*0.03; rot=time*0.05
+comp_shader=mix=beat_pulse*0.2; tint=1, mid, treb_att+0.2

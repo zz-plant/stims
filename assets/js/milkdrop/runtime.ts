@@ -26,7 +26,9 @@ import type {
   MilkdropBlendState,
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
+  MilkdropFidelityMode,
   MilkdropFrameState,
+  MilkdropParityAllowlistEntry,
   MilkdropPresetSource,
   MilkdropRuntimeSignals,
 } from './types';
@@ -346,23 +348,39 @@ export function createMilkdropExperience({
   container,
   quality,
   initialPresetId,
+  fidelityMode = 'compat',
+  parityAllowlist = [],
 }: {
   container?: HTMLElement | null;
   quality: QualityPresetManager;
   initialPresetId?: string;
+  fidelityMode?: MilkdropFidelityMode;
+  parityAllowlist?: MilkdropParityAllowlistEntry[];
 }) {
   const prefs = readUiPrefs();
-  const catalogStore = createMilkdropCatalogStore();
-  const defaultPreset = compileMilkdropPresetSource(DEFAULT_PRESET_SOURCE, {
-    id: 'signal-bloom',
-    title: 'Signal Bloom',
-    origin: 'bundled',
-    author: 'Stim Webtoys',
+  const catalogStore = createMilkdropCatalogStore({
+    fidelityMode,
+    parityAllowlist,
   });
+  const defaultPreset = compileMilkdropPresetSource(
+    DEFAULT_PRESET_SOURCE,
+    {
+      id: 'signal-bloom',
+      title: 'Signal Bloom',
+      origin: 'bundled',
+      author: 'Stim Webtoys',
+    },
+    {
+      fidelityMode,
+      parityAllowlist,
+    },
+  );
   const vm = createMilkdropVM(defaultPreset);
   const signalTracker = createMilkdropSignalTracker();
   const session = createMilkdropEditorSession({
     initialPreset: defaultPreset.source,
+    fidelityMode,
+    parityAllowlist,
   });
   const overlay = new MilkdropOverlay({
     host: container ?? document.body,
@@ -699,10 +717,17 @@ export function createMilkdropExperience({
   const importFiles = async (files: FileList) => {
     for (const file of Array.from(files)) {
       const raw = await file.text();
-      const compiled = compileMilkdropPresetSource(raw, {
-        title: file.name.replace(/\.[^.]+$/u, ''),
-        origin: 'imported',
-      });
+      const compiled = compileMilkdropPresetSource(
+        raw,
+        {
+          title: file.name.replace(/\.[^.]+$/u, ''),
+          origin: 'imported',
+        },
+        {
+          fidelityMode,
+          parityAllowlist,
+        },
+      );
       const saved = await catalogStore.savePreset({
         id: `${compiled.source.id}-${Date.now()}`,
         title: compiled.title,

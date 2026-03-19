@@ -96,6 +96,33 @@ export type MilkdropFeatureKey =
 
 export type MilkdropSupportStatus = 'supported' | 'partial' | 'unsupported';
 
+export type MilkdropFidelityMode = 'compat' | 'parity';
+
+export type MilkdropParityAllowlistEntry = {
+  presetId: string;
+  blockedConstruct: string;
+  owner: string;
+  expiry: string;
+  note?: string;
+};
+
+export type MilkdropParityReport = {
+  fidelityMode: MilkdropFidelityMode;
+  ignoredFields: string[];
+  approximatedShaderLines: string[];
+  missingAliasesOrFunctions: string[];
+  backendDivergence: string[];
+  visualFallbacks: string[];
+  blockedConstructs: string[];
+  allowlistedBlockedConstructs: string[];
+  parityReady: boolean;
+};
+
+export type MilkdropCompileOptions = {
+  fidelityMode?: MilkdropFidelityMode;
+  parityAllowlist?: MilkdropParityAllowlistEntry[];
+};
+
 export type MilkdropBackendSupport = {
   status: MilkdropSupportStatus;
   reasons: string[];
@@ -119,6 +146,7 @@ export type MilkdropCompatibilityReport = {
     webgl: MilkdropBackendSupport;
     webgpu: MilkdropBackendSupport;
   };
+  parity: MilkdropParityReport;
   featureAnalysis: MilkdropFeatureAnalysis;
   warnings: string[];
   blockingReasons: string[];
@@ -566,6 +594,7 @@ export type MilkdropCatalogEntry = {
     webgl: MilkdropBackendSupport;
     webgpu: MilkdropBackendSupport;
   };
+  parity: MilkdropParityReport;
   bundledFile?: string;
 };
 

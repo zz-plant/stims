@@ -1,0 +1,6 @@
+title=Parity Shader 04
+author=Stim Legacy Corpus
+texture_wrap=1
+feedback_texture=1
+warp_shader=dx=0.020; dy=-0.012; rot=0.080; zoom=1.040
+comp_shader=saturation=1.080; contrast=1.060; mix=0.090; tint=1, 0.520, 0.580

@@ -4,6 +4,8 @@ import type {
   MilkdropCompiledPreset,
   MilkdropEditorSession,
   MilkdropEditorSessionState,
+  MilkdropFidelityMode,
+  MilkdropParityAllowlistEntry,
   MilkdropPresetSource,
 } from './types';
 
@@ -12,6 +14,8 @@ type WorkerRequest = {
   type: 'compile';
   source: string;
   preset: Partial<MilkdropPresetSource>;
+  fidelityMode: MilkdropFidelityMode;
+  parityAllowlist: MilkdropParityAllowlistEntry[];
 };
 
 type WorkerResponse = {
@@ -27,14 +31,26 @@ function hasErrors(compiled: MilkdropCompiledPreset) {
 
 export function createMilkdropEditorSession({
   initialPreset,
+  fidelityMode = 'compat',
+  parityAllowlist = [],
 }: {
   initialPreset: MilkdropPresetSource;
+  fidelityMode?: MilkdropFidelityMode;
+  parityAllowlist?: MilkdropParityAllowlistEntry[];
 }): MilkdropEditorSession {
+  const compileOptions = {
+    fidelityMode,
+    parityAllowlist,
+  } as const;
   const listeners = new Set<(state: MilkdropEditorSessionState) => void>();
   let worker: Worker | null = null;
   let requestId = 0;
   let sourceMeta: MilkdropPresetSource = initialPreset;
-  let lastGood = compileMilkdropPresetSource(initialPreset.raw, initialPreset);
+  let lastGood = compileMilkdropPresetSource(
+    initialPreset.raw,
+    initialPreset,
+    compileOptions,
+  );
   let state: MilkdropEditorSessionState = {
     source: initialPreset.raw,
     latestCompiled: lastGood,
@@ -60,7 +76,9 @@ export function createMilkdropEditorSession({
   const compile = (source: string) => {
     const activeWorker = ensureWorker();
     if (!activeWorker) {
-      return Promise.resolve(compileMilkdropPresetSource(source, sourceMeta));
+      return Promise.resolve(
+        compileMilkdropPresetSource(source, sourceMeta, compileOptions),
+      );
     }
 
     return new Promise<MilkdropCompiledPreset>((resolve, reject) => {
@@ -84,9 +102,13 @@ export function createMilkdropEditorSession({
         type: 'compile',
         source,
         preset: sourceMeta,
+        fidelityMode,
+        parityAllowlist,
       };
       activeWorker.postMessage(payload);
-    }).catch(() => compileMilkdropPresetSource(source, sourceMeta));
+    }).catch(() =>
+      compileMilkdropPresetSource(source, sourceMeta, compileOptions),
+    );
   };
 
   const commit = async (source: string) => {

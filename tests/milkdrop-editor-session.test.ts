@@ -43,4 +43,29 @@ describe('milkdrop editor session', () => {
 
     session.dispose();
   });
+
+  test('treats parity gaps as compile errors in parity mode', async () => {
+    const session = createMilkdropEditorSession({
+      initialPreset: {
+        id: 'editor-session-parity',
+        title: 'Editor Session Parity',
+        raw: 'title=Editor Session Parity\nwave_r=0.4\n',
+        origin: 'user',
+      },
+      fidelityMode: 'parity',
+    });
+
+    const blocked = await session.applySource(
+      'title=Editor Session Parity\nwarp_shader=unsupported\n',
+    );
+    expect(
+      blocked.diagnostics.some(
+        (diagnostic) => diagnostic.code === 'preset_parity_blocked',
+      ),
+    ).toBe(true);
+    expect(blocked.activeCompiled?.title).toBe('Editor Session Parity');
+    expect(blocked.activeCompiled?.ir.numericFields.wave_r).toBeCloseTo(0.4, 6);
+
+    session.dispose();
+  });
 });

@@ -44,10 +44,10 @@ test('api state includes vibe mode alongside toy and audio state', () => {
 
 test('debug snapshots are exposed through the agent api', () => {
   const api = initAgentAPI();
-  setDebugSnapshot('milkdrop', { presetId: 'aurora-painter', status: 'ok' });
+  setDebugSnapshot('milkdrop', { presetId: 'holy', status: 'ok' });
 
   expect(api.getDebugSnapshot('milkdrop')).toEqual({
-    presetId: 'aurora-painter',
+    presetId: 'holy',
     status: 'ok',
   });
 

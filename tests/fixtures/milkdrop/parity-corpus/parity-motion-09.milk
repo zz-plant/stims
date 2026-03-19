@@ -1,0 +1,10 @@
+title=Parity Motion 09
+author=Stim Legacy Corpus
+motion_vectors=1
+motion_vectors_x=17
+motion_vectors_y=8
+mv_r=0.370
+mv_g=0.430
+mv_b=0.730
+mv_a=0.270
+per_frame_1=mv_a = 0.240 + beat_pulse * 0.1

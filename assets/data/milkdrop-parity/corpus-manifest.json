@@ -1,0 +1,739 @@
+{
+  "version": 1,
+  "parityTarget": "milkdrop-2-preset-fidelity",
+  "backendTarget": "webgpu",
+  "fallbackBackend": "webgl",
+  "minimumPresetCount": 100,
+  "presetCount": 101,
+  "presets": [
+    {
+      "id": "parity-feedback-01",
+      "title": "Parity Feedback 01",
+      "file": "parity-feedback-01.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-01",
+      "title": "Parity Per Pixel 01",
+      "file": "parity-per-pixel-01.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-01",
+      "title": "Parity Wave 01",
+      "file": "parity-wave-01.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-01",
+      "title": "Parity Shape 01",
+      "file": "parity-shape-01.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-01",
+      "title": "Parity Motion 01",
+      "file": "parity-motion-01.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-01",
+      "title": "Parity Registers 01",
+      "file": "parity-registers-01.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-01",
+      "title": "Parity Shader 01",
+      "file": "parity-shader-01.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-01",
+      "title": "Parity Hybrid 01",
+      "file": "parity-hybrid-01.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-01",
+      "title": "Parity Legacy Wave 01",
+      "file": "parity-legacy-wave-01.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-01",
+      "title": "Parity Legacy Shape 01",
+      "file": "parity-legacy-shape-01.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-02",
+      "title": "Parity Feedback 02",
+      "file": "parity-feedback-02.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-02",
+      "title": "Parity Per Pixel 02",
+      "file": "parity-per-pixel-02.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-02",
+      "title": "Parity Wave 02",
+      "file": "parity-wave-02.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-02",
+      "title": "Parity Shape 02",
+      "file": "parity-shape-02.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-02",
+      "title": "Parity Motion 02",
+      "file": "parity-motion-02.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-02",
+      "title": "Parity Registers 02",
+      "file": "parity-registers-02.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-02",
+      "title": "Parity Shader 02",
+      "file": "parity-shader-02.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-02",
+      "title": "Parity Hybrid 02",
+      "file": "parity-hybrid-02.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-02",
+      "title": "Parity Legacy Wave 02",
+      "file": "parity-legacy-wave-02.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-02",
+      "title": "Parity Legacy Shape 02",
+      "file": "parity-legacy-shape-02.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-03",
+      "title": "Parity Feedback 03",
+      "file": "parity-feedback-03.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-03",
+      "title": "Parity Per Pixel 03",
+      "file": "parity-per-pixel-03.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-03",
+      "title": "Parity Wave 03",
+      "file": "parity-wave-03.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-03",
+      "title": "Parity Shape 03",
+      "file": "parity-shape-03.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-03",
+      "title": "Parity Motion 03",
+      "file": "parity-motion-03.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-03",
+      "title": "Parity Registers 03",
+      "file": "parity-registers-03.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-03",
+      "title": "Parity Shader 03",
+      "file": "parity-shader-03.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-03",
+      "title": "Parity Hybrid 03",
+      "file": "parity-hybrid-03.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-03",
+      "title": "Parity Legacy Wave 03",
+      "file": "parity-legacy-wave-03.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-03",
+      "title": "Parity Legacy Shape 03",
+      "file": "parity-legacy-shape-03.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-04",
+      "title": "Parity Feedback 04",
+      "file": "parity-feedback-04.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-04",
+      "title": "Parity Per Pixel 04",
+      "file": "parity-per-pixel-04.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-04",
+      "title": "Parity Wave 04",
+      "file": "parity-wave-04.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-04",
+      "title": "Parity Shape 04",
+      "file": "parity-shape-04.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-04",
+      "title": "Parity Motion 04",
+      "file": "parity-motion-04.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-04",
+      "title": "Parity Registers 04",
+      "file": "parity-registers-04.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-04",
+      "title": "Parity Shader 04",
+      "file": "parity-shader-04.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-04",
+      "title": "Parity Hybrid 04",
+      "file": "parity-hybrid-04.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-04",
+      "title": "Parity Legacy Wave 04",
+      "file": "parity-legacy-wave-04.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-04",
+      "title": "Parity Legacy Shape 04",
+      "file": "parity-legacy-shape-04.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-05",
+      "title": "Parity Feedback 05",
+      "file": "parity-feedback-05.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-05",
+      "title": "Parity Per Pixel 05",
+      "file": "parity-per-pixel-05.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-05",
+      "title": "Parity Wave 05",
+      "file": "parity-wave-05.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-05",
+      "title": "Parity Shape 05",
+      "file": "parity-shape-05.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-05",
+      "title": "Parity Motion 05",
+      "file": "parity-motion-05.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-05",
+      "title": "Parity Registers 05",
+      "file": "parity-registers-05.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-05",
+      "title": "Parity Shader 05",
+      "file": "parity-shader-05.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-05",
+      "title": "Parity Hybrid 05",
+      "file": "parity-hybrid-05.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-05",
+      "title": "Parity Legacy Wave 05",
+      "file": "parity-legacy-wave-05.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-05",
+      "title": "Parity Legacy Shape 05",
+      "file": "parity-legacy-shape-05.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-06",
+      "title": "Parity Feedback 06",
+      "file": "parity-feedback-06.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-06",
+      "title": "Parity Per Pixel 06",
+      "file": "parity-per-pixel-06.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-06",
+      "title": "Parity Wave 06",
+      "file": "parity-wave-06.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-06",
+      "title": "Parity Shape 06",
+      "file": "parity-shape-06.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-06",
+      "title": "Parity Motion 06",
+      "file": "parity-motion-06.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-06",
+      "title": "Parity Registers 06",
+      "file": "parity-registers-06.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-06",
+      "title": "Parity Shader 06",
+      "file": "parity-shader-06.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-06",
+      "title": "Parity Hybrid 06",
+      "file": "parity-hybrid-06.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-06",
+      "title": "Parity Legacy Wave 06",
+      "file": "parity-legacy-wave-06.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-06",
+      "title": "Parity Legacy Shape 06",
+      "file": "parity-legacy-shape-06.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-07",
+      "title": "Parity Feedback 07",
+      "file": "parity-feedback-07.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-07",
+      "title": "Parity Per Pixel 07",
+      "file": "parity-per-pixel-07.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-07",
+      "title": "Parity Wave 07",
+      "file": "parity-wave-07.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-07",
+      "title": "Parity Shape 07",
+      "file": "parity-shape-07.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-07",
+      "title": "Parity Motion 07",
+      "file": "parity-motion-07.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-07",
+      "title": "Parity Registers 07",
+      "file": "parity-registers-07.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-07",
+      "title": "Parity Shader 07",
+      "file": "parity-shader-07.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-07",
+      "title": "Parity Hybrid 07",
+      "file": "parity-hybrid-07.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-07",
+      "title": "Parity Legacy Wave 07",
+      "file": "parity-legacy-wave-07.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-07",
+      "title": "Parity Legacy Shape 07",
+      "file": "parity-legacy-shape-07.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-08",
+      "title": "Parity Feedback 08",
+      "file": "parity-feedback-08.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-08",
+      "title": "Parity Per Pixel 08",
+      "file": "parity-per-pixel-08.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-08",
+      "title": "Parity Wave 08",
+      "file": "parity-wave-08.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-08",
+      "title": "Parity Shape 08",
+      "file": "parity-shape-08.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-08",
+      "title": "Parity Motion 08",
+      "file": "parity-motion-08.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-08",
+      "title": "Parity Registers 08",
+      "file": "parity-registers-08.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-08",
+      "title": "Parity Shader 08",
+      "file": "parity-shader-08.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-08",
+      "title": "Parity Hybrid 08",
+      "file": "parity-hybrid-08.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-08",
+      "title": "Parity Legacy Wave 08",
+      "file": "parity-legacy-wave-08.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-08",
+      "title": "Parity Legacy Shape 08",
+      "file": "parity-legacy-shape-08.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-09",
+      "title": "Parity Feedback 09",
+      "file": "parity-feedback-09.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-09",
+      "title": "Parity Per Pixel 09",
+      "file": "parity-per-pixel-09.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-09",
+      "title": "Parity Wave 09",
+      "file": "parity-wave-09.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-09",
+      "title": "Parity Shape 09",
+      "file": "parity-shape-09.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-09",
+      "title": "Parity Motion 09",
+      "file": "parity-motion-09.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-09",
+      "title": "Parity Registers 09",
+      "file": "parity-registers-09.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-09",
+      "title": "Parity Shader 09",
+      "file": "parity-shader-09.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-09",
+      "title": "Parity Hybrid 09",
+      "file": "parity-hybrid-09.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-09",
+      "title": "Parity Legacy Wave 09",
+      "file": "parity-legacy-wave-09.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-09",
+      "title": "Parity Legacy Shape 09",
+      "file": "parity-legacy-shape-09.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-10",
+      "title": "Parity Feedback 10",
+      "file": "parity-feedback-10.milk",
+      "strata": ["feedback", "video-echo", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-per-pixel-10",
+      "title": "Parity Per Pixel 10",
+      "file": "parity-per-pixel-10.milk",
+      "strata": ["per-pixel", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-wave-10",
+      "title": "Parity Wave 10",
+      "file": "parity-wave-10.milk",
+      "strata": ["custom-wave", "registers"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shape-10",
+      "title": "Parity Shape 10",
+      "file": "parity-shape-10.milk",
+      "strata": ["custom-shape", "borders"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-motion-10",
+      "title": "Parity Motion 10",
+      "file": "parity-motion-10.milk",
+      "strata": ["motion-vectors", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-registers-10",
+      "title": "Parity Registers 10",
+      "file": "parity-registers-10.milk",
+      "strata": ["registers", "per-frame"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-shader-10",
+      "title": "Parity Shader 10",
+      "file": "parity-shader-10.milk",
+      "strata": ["shader-supported", "feedback"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-hybrid-10",
+      "title": "Parity Hybrid 10",
+      "file": "parity-hybrid-10.milk",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-wave-10",
+      "title": "Parity Legacy Wave 10",
+      "file": "parity-legacy-wave-10.milk",
+      "strata": ["custom-wave", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-legacy-shape-10",
+      "title": "Parity Legacy Shape 10",
+      "file": "parity-legacy-shape-10.milk",
+      "strata": ["custom-shape", "legacy-slot"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-allowlisted-shader-gap",
+      "title": "Parity Allowlisted Shader Gap",
+      "file": "parity-allowlisted-shader-gap.milk",
+      "strata": ["shader-gap", "allowlisted"],
+      "allowlisted": true
+    }
+  ],
+  "canonicalVisualSuite": [
+    "parity-feedback-01",
+    "parity-feedback-06",
+    "parity-per-pixel-03",
+    "parity-per-pixel-08",
+    "parity-wave-02",
+    "parity-wave-09",
+    "parity-shape-01",
+    "parity-shape-07",
+    "parity-motion-04",
+    "parity-motion-10",
+    "parity-registers-05",
+    "parity-registers-10",
+    "parity-shader-02",
+    "parity-shader-09",
+    "parity-hybrid-03",
+    "parity-hybrid-08",
+    "parity-legacy-wave-04",
+    "parity-legacy-wave-10",
+    "parity-legacy-shape-05",
+    "parity-legacy-shape-10"
+  ]
+}

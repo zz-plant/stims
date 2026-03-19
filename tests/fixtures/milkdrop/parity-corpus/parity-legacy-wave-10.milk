@@ -1,0 +1,8 @@
+title=Parity Legacy Wave 10
+author=Stim Legacy Corpus
+wavecode_32_enabled=1
+wavecode_32_samples=70
+wavecode_32_spectrum=1
+wavecode_32_additive=1
+wave_32_per_frame1=a = 0.2 + bass_att * 0.15
+wave_32_per_point1=y = y + sin(sample * pi * 5) * 0.02

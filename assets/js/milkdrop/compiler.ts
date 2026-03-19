@@ -11,11 +11,15 @@ import { parseMilkdropShaderStatement } from './shader-ast';
 import type {
   MilkdropBackendSupport,
   MilkdropCompiledPreset,
+  MilkdropCompileOptions,
   MilkdropDiagnostic,
   MilkdropDiagnosticSeverity,
   MilkdropExpressionNode,
   MilkdropFeatureAnalysis,
   MilkdropFeatureKey,
+  MilkdropFidelityMode,
+  MilkdropParityAllowlistEntry,
+  MilkdropParityReport,
   MilkdropPresetAST,
   MilkdropPresetField,
   MilkdropPresetIR,
@@ -290,6 +294,99 @@ const shapecodeFieldPattern = /^shapecode_(\d+)_(.+)$/u;
 const shaderFieldPattern =
   /^(?:warp_[0-9]+|comp_[0-9]+|warp_shader|comp_shader|shader_text|warp_code|comp_code)$/u;
 const hardUnsupportedKeys = new Set<string>([]);
+const DEFAULT_FIDELITY_MODE: MilkdropFidelityMode = 'compat';
+
+function normalizeParityBlockedConstructValue(value: string) {
+  return value.trim().replace(/\s+/gu, ' ');
+}
+
+function toParityFieldConstruct(key: string) {
+  return `field:${normalizeParityBlockedConstructValue(key)}`;
+}
+
+function toParityShaderConstruct(line: string) {
+  return `shader:${normalizeParityBlockedConstructValue(line)}`;
+}
+
+function isAllowlistedBlockedConstruct({
+  allowlist,
+  presetId,
+  blockedConstruct,
+}: {
+  allowlist: MilkdropParityAllowlistEntry[];
+  presetId: string;
+  blockedConstruct: string;
+}) {
+  return allowlist.some((entry) => {
+    return (
+      entry.blockedConstruct === blockedConstruct &&
+      (entry.presetId === presetId || entry.presetId === '*')
+    );
+  });
+}
+
+function failBackendSupportForParity(
+  support: MilkdropBackendSupport,
+  reason: string,
+): MilkdropBackendSupport {
+  return {
+    ...support,
+    status: 'unsupported',
+    reasons: [...new Set([reason, ...support.reasons])],
+    recommendedFallback: undefined,
+  };
+}
+
+function buildBackendDivergence({
+  webgl,
+  webgpu,
+}: {
+  webgl: MilkdropBackendSupport;
+  webgpu: MilkdropBackendSupport;
+}) {
+  const divergence = new Set<string>();
+  if (webgl.status !== webgpu.status) {
+    divergence.add(`status:webgl=${webgl.status},webgpu=${webgpu.status}`);
+  }
+  webgl.reasons
+    .filter((reason) => !webgpu.reasons.includes(reason))
+    .forEach((reason) => divergence.add(`webgl:${reason}`));
+  webgpu.reasons
+    .filter((reason) => !webgl.reasons.includes(reason))
+    .forEach((reason) => divergence.add(`webgpu:${reason}`));
+  return [...divergence];
+}
+
+function buildVisualFallbacks({
+  approximatedShaderLines,
+  webgl,
+  webgpu,
+}: {
+  approximatedShaderLines: string[];
+  webgl: MilkdropBackendSupport;
+  webgpu: MilkdropBackendSupport;
+}) {
+  const fallbacks = new Set<string>();
+  if (approximatedShaderLines.length > 0) {
+    fallbacks.add('shader-text-control-extraction');
+  }
+  if (webgl.recommendedFallback) {
+    fallbacks.add(`webgl->${webgl.recommendedFallback}`);
+  }
+  if (webgpu.recommendedFallback) {
+    fallbacks.add(`webgpu->${webgpu.recommendedFallback}`);
+  }
+  return [...fallbacks];
+}
+
+function createParityFailureReason(blockedConstructs: string[]) {
+  const preview = blockedConstructs.slice(0, 3).join(', ');
+  const suffix =
+    blockedConstructs.length > 3
+      ? ` (+${blockedConstructs.length - 3} more)`
+      : '';
+  return `Parity mode blocked unsupported constructs: ${preview}${suffix}.`;
+}
 
 function resolveLegacyCustomSlotIndex(rawIndex: number, maxSlots: number) {
   if (!Number.isFinite(rawIndex)) {
@@ -2125,7 +2222,19 @@ function createPresetSource(
   };
 }
 
-function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
+function createIR(
+  ast: MilkdropPresetAST,
+  diagnostics: MilkdropDiagnostic[],
+  {
+    fidelityMode,
+    parityAllowlist,
+    presetId,
+  }: {
+    fidelityMode: MilkdropFidelityMode;
+    parityAllowlist: MilkdropParityAllowlistEntry[];
+    presetId: string;
+  },
+) {
   const numericFields = { ...DEFAULT_MILKDROP_STATE };
   const stringFields: Record<string, string> = {};
   const programs = {
@@ -2349,24 +2458,77 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
       unsupportedKeys: [...unsupportedKeys],
     }),
   };
+  const ignoredFields = [...unsupportedKeys].sort();
+  const approximatedShaderLines = [
+    ...shaderWarpAnalysis.unsupportedLines,
+    ...shaderCompAnalysis.unsupportedLines,
+  ].map(normalizeParityBlockedConstructValue);
+  const blockedConstructs = [
+    ...ignoredFields.map(toParityFieldConstruct),
+    ...approximatedShaderLines.map(toParityShaderConstruct),
+  ];
+  const allowlistedBlockedConstructs = blockedConstructs.filter(
+    (blockedConstruct) =>
+      isAllowlistedBlockedConstruct({
+        allowlist: parityAllowlist,
+        presetId,
+        blockedConstruct,
+      }),
+  );
+  const parityBlockingConstructs = blockedConstructs.filter(
+    (blockedConstruct) =>
+      !allowlistedBlockedConstructs.includes(blockedConstruct),
+  );
+
+  let finalBackends = backends;
+  if (fidelityMode === 'parity' && parityBlockingConstructs.length > 0) {
+    const parityReason = createParityFailureReason(parityBlockingConstructs);
+    addDiagnostic(diagnostics, 'error', 'preset_parity_blocked', parityReason);
+    finalBackends = {
+      webgl: failBackendSupportForParity(backends.webgl, parityReason),
+      webgpu: failBackendSupportForParity(backends.webgpu, parityReason),
+    };
+  }
+
+  const parity: MilkdropParityReport = {
+    fidelityMode,
+    ignoredFields,
+    approximatedShaderLines,
+    missingAliasesOrFunctions: [],
+    backendDivergence: buildBackendDivergence(finalBackends),
+    visualFallbacks: buildVisualFallbacks({
+      approximatedShaderLines,
+      webgl: finalBackends.webgl,
+      webgpu: finalBackends.webgpu,
+    }),
+    blockedConstructs,
+    allowlistedBlockedConstructs,
+    parityReady:
+      blockedConstructs.length === 0 &&
+      allowlistedBlockedConstructs.length === 0,
+  };
 
   const title = stringFields.title || 'MilkDrop Session';
   const author = stringFields.author;
   const description = stringFields.description;
 
   const compatibility = {
-    backends,
+    backends: finalBackends,
+    parity,
     featureAnalysis,
     warnings,
     blockingReasons: [
       ...new Set(
-        [...backends.webgl.reasons, ...backends.webgpu.reasons].filter(Boolean),
+        [
+          ...finalBackends.webgl.reasons,
+          ...finalBackends.webgpu.reasons,
+        ].filter(Boolean),
       ),
     ],
     supportedFeatures: featureAnalysis.featuresUsed,
     unsupportedKeys: [...unsupportedKeys],
-    webgl: backends.webgl.status === 'supported',
-    webgpu: backends.webgpu.status === 'supported',
+    webgl: finalBackends.webgl.status === 'supported',
+    webgpu: finalBackends.webgpu.status === 'supported',
   };
 
   const globals = Object.fromEntries(
@@ -2410,10 +2572,7 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
       warpAst: shaderWarpAnalysis.statements,
       compAst: shaderCompAnalysis.statements,
       supported: supportedShaderText && !unsupportedShaderText,
-      unsupportedLines: [
-        ...shaderWarpAnalysis.unsupportedLines,
-        ...shaderCompAnalysis.unsupportedLines,
-      ],
+      unsupportedLines: approximatedShaderLines,
       controls: mergedShaderControls.controls,
       controlExpressions: mergedShaderControls.expressions,
     },
@@ -2457,10 +2616,19 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
 export function compileMilkdropPresetSource(
   raw: string,
   source: Partial<MilkdropPresetSource> = {},
+  options: MilkdropCompileOptions = {},
 ): MilkdropCompiledPreset {
+  const fidelityMode = options.fidelityMode ?? DEFAULT_FIDELITY_MODE;
+  const parityAllowlist = options.parityAllowlist ?? [];
   const parsed = parseMilkdropPreset(raw);
   const diagnostics = [...parsed.diagnostics];
-  const ir = createIR(parsed.ast, diagnostics);
+  const presetId =
+    source.id ?? defaultSourceId(source.title ?? 'milkdrop-preset');
+  const ir = createIR(parsed.ast, diagnostics, {
+    fidelityMode,
+    parityAllowlist,
+    presetId,
+  });
   const presetSource = createPresetSource(source, raw, ir.title, ir.author);
 
   const compiled: MilkdropCompiledPreset = {

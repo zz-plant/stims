@@ -19,11 +19,11 @@ const requiredInIndexHtml = [
 ];
 
 const requiredInGeneratedToyPage = [
-  '<meta property="og:image" content="https://no.toil.fyi/og/cube-wave.svg"',
+  '<meta property="og:image" content="https://no.toil.fyi/og/holy.svg"',
   '<meta property="og:image:type" content="image/svg+xml"',
   '<meta property="og:image:width" content="1200"',
   '<meta property="og:image:height" content="630"',
-  '<link rel="canonical" href="https://no.toil.fyi/toys/cube-wave/" />',
+  '<link rel="canonical" href="https://no.toil.fyi/toys/holy/" />',
 ];
 
 const requiredInDiscoverPage = [
@@ -49,14 +49,14 @@ const run = async () => {
   }
 
   const toyPage = await readFile(
-    path.join(publicDir, 'toys', 'cube-wave', 'index.html'),
+    path.join(publicDir, 'toys', 'holy', 'index.html'),
     'utf8',
   );
   for (const snippet of requiredInGeneratedToyPage) {
     results.push({
       name: `Generated toy page contains ${snippet}`,
       passed: toyPage.includes(snippet),
-      details: 'public/toys/cube-wave/index.html',
+      details: 'public/toys/holy/index.html',
     });
   }
 
@@ -108,7 +108,7 @@ const run = async () => {
     'utf8',
   );
   const hasUrlLastmod =
-    sitemapChunk.includes('<loc>https://no.toil.fyi/toys/cube-wave/</loc>') &&
+    sitemapChunk.includes('<loc>https://no.toil.fyi/toys/holy/</loc>') &&
     sitemapChunk.includes('<lastmod>');
   results.push({
     name: 'Sitemap chunk includes per-URL lastmod fields',
@@ -127,9 +127,9 @@ const run = async () => {
   results.push({
     name: 'Sitemap chunk includes toy OG image entries',
     passed:
-      sitemapChunk.includes('<loc>https://no.toil.fyi/toys/cube-wave/</loc>') &&
+      sitemapChunk.includes('<loc>https://no.toil.fyi/toys/holy/</loc>') &&
       sitemapChunk.includes(
-        '<image:loc>https://no.toil.fyi/og/cube-wave.svg</image:loc>',
+        '<image:loc>https://no.toil.fyi/og/holy.svg</image:loc>',
       ),
     details: 'public/sitemap-1.xml',
   });

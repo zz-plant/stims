@@ -58,8 +58,8 @@ function createMockHistory(locationObject) {
 
 const defaultToys = [
   {
-    slug: 'aurora-painter',
-    title: 'Test Aurora Painter',
+    slug: 'holy',
+    title: 'Test Halo Visualizer',
     module: './__mocks__/fake-module.js',
     type: 'module',
     requiresWebGPU: false,
@@ -196,7 +196,7 @@ describe('loadToy', () => {
   test('loads module toy without mutating history when pushState is false', async () => {
     const { loader, manifestClient } = await buildLoader();
 
-    await loader.loadToy('aurora-painter');
+    await loader.loadToy('holy');
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
     expect(manifestClient.resolveModulePath).toHaveBeenCalledWith(
@@ -210,11 +210,11 @@ describe('loadToy', () => {
       locationHref: 'http://example.com/library',
     });
 
-    await loader.loadToy('aurora-painter', { pushState: true });
+    await loader.loadToy('holy', { pushState: true });
 
     const backControl = document.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
-    expect(window.location.search).toBe('?toy=aurora-painter');
+    expect(window.location.search).toBe('?toy=holy');
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -234,7 +234,7 @@ describe('loadToy', () => {
       locationHref: 'http://example.com/library',
     });
 
-    await loader.loadToy('aurora-painter', { pushState: true });
+    await loader.loadToy('holy', { pushState: true });
 
     const backControl = document.querySelector('[data-back-to-library]');
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
@@ -256,7 +256,7 @@ describe('loadToy', () => {
     });
 
     const { loader } = await buildLoader();
-    await loader.loadToy('aurora-painter', { pushState: true });
+    await loader.loadToy('holy', { pushState: true });
 
     const hapticsBtn = document.querySelector('[data-haptics-toggle="true"]');
     expect(hapticsBtn).not.toBeNull();
@@ -530,13 +530,13 @@ describe('WebGPU requirements', () => {
 describe('loadFromQuery routing', () => {
   test('loads from existing query param', async () => {
     const { loader, location } = await buildLoader({
-      locationHref: 'http://example.com/library?toy=aurora-painter',
+      locationHref: 'http://example.com/library?toy=holy',
     });
 
     await loader.loadFromQuery();
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
-    expect(location.search).toBe('?toy=aurora-painter');
+    expect(location.search).toBe('?toy=holy');
   });
 
   test('loads legacy three-d-toy query alias using the canonical slug', async () => {

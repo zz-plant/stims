@@ -33,8 +33,8 @@ const TOY_MICRO_GOALS: Record<string, string[]> = {
   'bubble-harmonics': [
     'Find a high-frequency moment and trigger a bubble split.',
   ],
-  'spiral-burst': ['Make the pulse feel synced to your beat for 10 seconds.'],
-  'aurora-painter': ['Draw one smooth ribbon, then thicken it with density.'],
+  lights: ['Push the palette brighter, then settle into a slower fade.'],
+  multi: ['Switch between dense feedback and calmer motion for 10 seconds.'],
   geom: ['Test quiet vs loud input and watch the shape response.'],
 };
 

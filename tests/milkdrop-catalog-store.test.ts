@@ -61,6 +61,7 @@ describe('milkdrop catalog store', () => {
 
     expect(bundled?.supports.webgl.status).toBe('supported');
     expect(bundled?.supports.webgpu.status).toBe('supported');
+    expect(bundled?.parity.parityReady).toBe(true);
     expect(bundled?.featuresUsed).toContain('video-echo');
     expect(bundled?.featuresUsed).toContain('custom-waves');
 
@@ -82,6 +83,9 @@ describe('milkdrop catalog store', () => {
     expect(imported?.rating).toBe(5);
     expect(imported?.supports.webgl.status).toBe('partial');
     expect(imported?.supports.webgpu.status).toBe('partial');
+    expect(imported?.parity.approximatedShaderLines).toEqual(['unsupported']);
+    expect(imported?.parity.blockedConstructs).toEqual(['shader:unsupported']);
+    expect(imported?.parity.parityReady).toBe(false);
     expect(imported?.featuresUsed).toContain('unsupported-shader-text');
 
     const history = await store.getHistory();

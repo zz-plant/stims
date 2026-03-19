@@ -68,6 +68,23 @@ function supportLabel(status: MilkdropSupportStatus) {
   return 'Fallback';
 }
 
+function paritySummary({
+  blockedConstructs,
+  allowlistedBlockedConstructs,
+  parityReady,
+}: MilkdropCatalogEntry['parity']) {
+  if (parityReady) {
+    return 'Parity ready';
+  }
+  if (allowlistedBlockedConstructs.length > 0) {
+    return `${allowlistedBlockedConstructs.length} allowlisted gap${allowlistedBlockedConstructs.length === 1 ? '' : 's'}`;
+  }
+  if (blockedConstructs.length > 0) {
+    return `${blockedConstructs.length} parity gap${blockedConstructs.length === 1 ? '' : 's'}`;
+  }
+  return 'Parity audit pending';
+}
+
 export class MilkdropOverlay {
   private readonly callbacks: OverlayCallbacks;
   private readonly root: HTMLElement;
@@ -580,6 +597,7 @@ export class MilkdropOverlay {
     meta.textContent = [
       preset.author,
       preset.origin,
+      paritySummary(preset.parity),
       preset.rating > 0 ? `${preset.rating}★` : null,
       preset.historyIndex !== undefined ? 'recent' : null,
       ...preset.tags
@@ -632,10 +650,15 @@ export class MilkdropOverlay {
 
     row.append(launch, actions);
 
-    if (support.reasons.length > 0) {
+    if (
+      support.reasons.length > 0 ||
+      preset.parity.blockedConstructs.length > 0
+    ) {
       const reasons = document.createElement('div');
       reasons.className = 'milkdrop-overlay__preset-warning';
-      reasons.textContent = support.reasons[0] as string;
+      reasons.textContent =
+        support.reasons[0] ??
+        `Parity gaps: ${preset.parity.blockedConstructs.join(', ')}`;
       row.appendChild(reasons);
     }
 
@@ -1009,9 +1032,16 @@ export class MilkdropOverlay {
     }
 
     const support = compiled.ir.compatibility.backends[backend];
+    const parity = compiled.ir.compatibility.parity;
     this.inspectorMetrics.innerHTML = `
       <div><strong>Backend:</strong> ${backend}</div>
       <div><strong>Support:</strong> ${supportLabel(support.status)}</div>
+      <div><strong>Fidelity mode:</strong> ${parity.fidelityMode}</div>
+      <div><strong>Parity ready:</strong> ${parity.parityReady ? 'yes' : 'no'}</div>
+      <div><strong>Ignored fields:</strong> ${parity.ignoredFields.length}</div>
+      <div><strong>Approximated shader lines:</strong> ${parity.approximatedShaderLines.length}</div>
+      <div><strong>Backend divergence:</strong> ${parity.backendDivergence.length}</div>
+      <div><strong>Visual fallbacks:</strong> ${parity.visualFallbacks.length}</div>
       <div><strong>Features:</strong> ${compiled.ir.compatibility.featureAnalysis.featuresUsed.join(', ') || 'base-globals'}</div>
       <div><strong>Frame:</strong> ${frameState.signals.frame}</div>
       <div><strong>Bass / mid / treb:</strong> ${frameState.signals.bass.toFixed(2)} / ${frameState.signals.mid.toFixed(2)} / ${frameState.signals.treb.toFixed(2)}</div>
@@ -1021,7 +1051,7 @@ export class MilkdropOverlay {
       <div><strong>Shapes:</strong> ${frameState.shapes.length}</div>
       <div><strong>Borders:</strong> ${frameState.borders.length}</div>
       <div><strong>Register pressure:</strong> q${compiled.ir.compatibility.featureAnalysis.registerUsage.q} / t${compiled.ir.compatibility.featureAnalysis.registerUsage.t}</div>
-      <div><strong>Notes:</strong> ${support.reasons[0] ?? 'Validated for the active backend.'}</div>
+      <div><strong>Notes:</strong> ${support.reasons[0] ?? parity.visualFallbacks[0] ?? 'Validated for the active backend.'}</div>
     `;
   }
 

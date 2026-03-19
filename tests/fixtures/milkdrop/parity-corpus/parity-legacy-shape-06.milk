@@ -1,0 +1,7 @@
+title=Parity Legacy Shape 06
+author=Stim Legacy Corpus
+shapecode_32_enabled=1
+shapecode_32_sides=6
+shapecode_32_rad=0.140
+shapecode_32_a=0.180
+shape_32_per_frame1=rad = 0.140 + bass_att * 0.03

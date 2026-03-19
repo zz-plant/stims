@@ -1,11 +1,17 @@
 import { compileMilkdropPresetSource } from './compiler';
-import type { MilkdropPresetSource } from './types';
+import type {
+  MilkdropFidelityMode,
+  MilkdropParityAllowlistEntry,
+  MilkdropPresetSource,
+} from './types';
 
 type CompileRequest = {
   id: number;
   type: 'compile';
   source: string;
   preset: Partial<MilkdropPresetSource>;
+  fidelityMode: MilkdropFidelityMode;
+  parityAllowlist: MilkdropParityAllowlistEntry[];
 };
 
 type CompileResponse = {
@@ -19,7 +25,10 @@ self.addEventListener('message', (event: MessageEvent<CompileRequest>) => {
     return;
   }
 
-  const compiled = compileMilkdropPresetSource(payload.source, payload.preset);
+  const compiled = compileMilkdropPresetSource(payload.source, payload.preset, {
+    fidelityMode: payload.fidelityMode,
+    parityAllowlist: payload.parityAllowlist,
+  });
   const response: CompileResponse = {
     id: payload.id,
     compiled,

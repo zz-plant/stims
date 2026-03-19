@@ -5,6 +5,8 @@ import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
+  MilkdropFidelityMode,
+  MilkdropParityAllowlistEntry,
   MilkdropPresetSource,
 } from './types';
 
@@ -212,6 +214,7 @@ function toCatalogEntry(
     featuresUsed: compiled.ir.compatibility.featureAnalysis.featuresUsed,
     warnings: compiled.ir.compatibility.warnings,
     supports: supportsFromCompiled(compiled),
+    parity: compiled.ir.compatibility.parity,
     bundledFile: options.bundledFile,
   };
 }
@@ -219,14 +222,24 @@ function toCatalogEntry(
 export function createMilkdropCatalogStore({
   dbName = 'stims-milkdrop',
   catalogUrl = '/milkdrop-presets/catalog.json',
+  fidelityMode = 'compat',
+  parityAllowlist = [],
 }: {
   dbName?: string;
   catalogUrl?: string;
+  fidelityMode?: MilkdropFidelityMode;
+  parityAllowlist?: MilkdropParityAllowlistEntry[];
 } = {}): MilkdropCatalogStore {
   const memoryPresets = new Map<string, StoredPresetRecord>();
   const memoryMeta = new Map<string, StoredMetaRecord>();
   const bundledSourceCache = new Map<string, MilkdropPresetSource>();
   const analysisCache = new Map<string, MilkdropCompiledPreset>();
+  const analysisOptionsKey = JSON.stringify({
+    fidelityMode,
+    parityAllowlist: parityAllowlist
+      .map((entry) => `${entry.presetId}:${entry.blockedConstruct}`)
+      .sort(),
+  });
   let dbPromise: Promise<IDBDatabase | null> | null = null;
   let bundledCatalogPromise: Promise<MilkdropBundledCatalogEntry[]> | null =
     null;
@@ -285,12 +298,15 @@ export function createMilkdropCatalogStore({
     (await readMeta(HISTORY_RECORD_ID)) ?? { id: HISTORY_RECORD_ID, stack: [] };
 
   const getCompiled = (source: MilkdropPresetSource) => {
-    const cacheKey = `${source.id}:${source.updatedAt ?? 0}:${source.raw}`;
+    const cacheKey = `${analysisOptionsKey}:${source.id}:${source.updatedAt ?? 0}:${source.raw}`;
     const cached = analysisCache.get(cacheKey);
     if (cached) {
       return cached;
     }
-    const compiled = compileMilkdropPresetSource(source.raw, source);
+    const compiled = compileMilkdropPresetSource(source.raw, source, {
+      fidelityMode,
+      parityAllowlist,
+    });
     analysisCache.set(cacheKey, compiled);
     return compiled;
   };
@@ -378,6 +394,17 @@ export function createMilkdropCatalogStore({
                   unsupportedFeatures: [],
                   recommendedFallback: 'webgl',
                 },
+              },
+              parity: {
+                fidelityMode,
+                ignoredFields: [],
+                approximatedShaderLines: [],
+                missingAliasesOrFunctions: [],
+                backendDivergence: [],
+                visualFallbacks: [],
+                blockedConstructs: [],
+                allowlistedBlockedConstructs: [],
+                parityReady: false,
               },
               bundledFile: entry.file,
             } satisfies MilkdropCatalogEntry;

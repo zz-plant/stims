@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "presetId": "parity-allowlisted-shader-gap",
+      "blockedConstruct": "shader:unsupported(shader)",
+      "owner": "milkdrop-parity",
+      "expiry": "2026-06-30",
+      "note": "Temporary parity allowlist entry until full shader-text execution replaces control extraction."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+title=Parity Per Pixel 04
+author=Stim Legacy Corpus
+zoom=1.032
+warp=0.120
+wave_a=0.530
+per_frame_1=wave_y = 0.5 + sin(time * 0.180) * 0.05
+per_pixel_1=warp = warp + sin(rad * pi * 2 + time * 0.190) * 0.02
