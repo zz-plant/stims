@@ -68,9 +68,7 @@ describe('milkdrop corpus manifest checks', () => {
       ],
     });
 
-    expect(issues).toContain(
-      'preset sample waiver 0 is missing owner.',
-    );
+    expect(issues).toContain('preset sample waiver 0 is missing owner.');
     expect(issues).toContain(
       'preset sample waiver 0 has invalid expiry bad-date.',
     );

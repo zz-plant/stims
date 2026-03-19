@@ -1,4 +1,4 @@
 title=Parity Allowlisted Shader Gap
 author=Stim Legacy Corpus
 video_echo_enabled=1
-warp_shader=unsupported(shader)
+warp_shader=dx=0.028; rot=0.11; zoom=1.045

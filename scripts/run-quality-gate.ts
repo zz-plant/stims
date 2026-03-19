@@ -46,6 +46,10 @@ async function main() {
     ...(mode === 'full'
       ? [
           {
+            label: 'MilkDrop visual baseline check',
+            cmd: ['bun', 'run', 'check:milkdrop-visuals'],
+          },
+          {
             label: 'Test suite',
             cmd: ['bun', 'run', 'test'],
           },
