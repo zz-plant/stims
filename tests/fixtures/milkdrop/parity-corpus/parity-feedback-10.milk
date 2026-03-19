@@ -1,0 +1,19 @@
+title=Parity Feedback 10
+author=Stim Legacy Corpus
+fDecay=0.930
+blend_duration=1.700
+zoom=1.100
+video_echo_enabled=1
+video_echo_alpha=0.200
+video_echo_zoom=1.040
+ob_size=0.018
+ob_r=0.850
+ob_g=0.650
+ob_b=0.850
+ob_a=0.78
+ib_size=0.009
+ib_r=0.550
+ib_g=0.650
+ib_b=0.850
+ib_a=0.55
+per_frame_1=rot = rot + 0.001 * 10

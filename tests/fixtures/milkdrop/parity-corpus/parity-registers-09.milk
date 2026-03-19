@@ -1,0 +1,6 @@
+title=Parity Registers 09
+author=Stim Legacy Corpus
+wave_a=0.35
+init_1=q1=0.450; t1=0.180
+per_frame_1=q1 = q1 + 0.01; t1 = if(above(bass_att, 0.5), q1, t1); wave_a = min(1, 0.2 + t1)
+per_frame_2=wave_r = 0.2 + q1 * 0.1; wave_g = 0.3 + t1 * 0.2

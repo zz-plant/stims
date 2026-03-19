@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 const toyLibrary = [
   {
-    slug: 'aurora-painter',
-    title: 'Aurora Painter',
-    description: 'Flowing auroras that react to your mic.',
-    module: 'assets/js/toys/aurora-painter.ts',
+    slug: 'holy',
+    title: 'Halo Visualizer',
+    description: 'Luminous halos that respond to your mic.',
+    module: 'assets/js/toys/holy.ts',
     type: 'module',
     requiresWebGPU: false,
     capabilities: {
@@ -127,7 +127,7 @@ describe('app shell user journeys', () => {
 
     const cards = Array.from(document.querySelectorAll('.webtoy-card'));
     const moduleCard = cards.find(
-      (card) => card.querySelector('h3')?.textContent === 'Aurora Painter',
+      (card) => card.querySelector('h3')?.textContent === 'Halo Visualizer',
     );
     expect(moduleCard).not.toBeNull();
 

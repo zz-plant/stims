@@ -1,0 +1,17 @@
+title=Parity Shape 01
+author=Stim Legacy Corpus
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_x=0.5
+shapecode_0_y=0.5
+shapecode_0_rad=0.130
+shapecode_0_a=0.170
+shapecode_0_r=0.620
+shapecode_0_g=0.430
+shapecode_0_b=0.715
+shapecode_0_border_a=0.82
+shapecode_0_border_r=1
+shapecode_0_border_g=0.9
+shapecode_0_border_b=1
+ob_border=1
+shape_0_per_frame1=ang = ang + 0.011; rad = 0.110 + bass_att * 0.02

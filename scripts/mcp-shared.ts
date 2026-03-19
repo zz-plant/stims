@@ -481,7 +481,7 @@ function registerTools(server: McpServer) {
           slug: z
             .string()
             .trim()
-            .describe('The toy slug to launch (e.g., "holy", "spiral-burst").'),
+            .describe('The toy slug to launch (e.g., "holy", "lights").'),
           port: z
             .number()
             .int()
@@ -605,15 +605,15 @@ function registerTools(server: McpServer) {
               '- Particles burst on high frequencies',
               '- Color cycles with melodic content',
             ],
-            'spiral-burst': [
-              '- Spirals expand/contract with bass',
-              '- Rotation speed follows mid frequencies',
-              '- Multiple spiral arms react independently',
+            lights: [
+              '- Brightness and bloom surge on bass hits',
+              '- Color shifts track mid-range energy',
+              '- Smaller spark-like details react to highs',
             ],
-            'neon-wave': [
-              '- Grid ripples on bass hits',
-              '- Bloom intensity pulses with volume',
-              '- Color theme affects overall palette',
+            multi: [
+              '- Dense feedback swells with bass',
+              '- Rotation and warp respond to mid frequencies',
+              '- Fine texture and shimmer lift with highs',
             ],
             geom: [
               '- 3D shapes morph with frequencies',

@@ -1,0 +1,14 @@
+title=Parity Wave 06
+author=Stim Legacy Corpus
+wavecode_0_enabled=1
+wavecode_0_samples=80
+wavecode_0_spectrum=0
+wavecode_0_additive=1
+wavecode_0_r=0.680
+wavecode_0_g=0.470
+wavecode_0_b=0.740
+wavecode_0_a=0.380
+init_1=q1=0.120
+per_frame_1=q1 = q1 + 0.01; wave_a = min(1, 0.25 + q1)
+wave_0_per_frame1=a = 0.18 + bass_att * 0.180
+wave_0_per_point1=y = y + sin(sample * pi * 5 + time * 0.220) * 0.032

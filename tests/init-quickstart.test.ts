@@ -75,7 +75,7 @@ describe('quickstart energetic pool', () => {
     expect(loadToy).toHaveBeenCalledTimes(1);
 
     const selectedSlug = loadToy.mock.calls[0]?.[0] as string;
-    expect(selectedSlug).not.toBe('aurora-painter');
+    expect(selectedSlug).not.toBe('holy');
     expect(isEnergetic(selectedSlug)).toBe(true);
   });
 });
