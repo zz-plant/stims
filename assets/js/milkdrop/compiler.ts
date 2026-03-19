@@ -1086,9 +1086,9 @@ function normalizeShaderSamplerName(
     ? normalized.slice('sampler_'.length)
     : normalized;
   return SHADER_TEXTURE_SAMPLERS.has(sampler)
-    ? ((sampler === 'main'
-        ? 'main'
-        : sampler) as MilkdropShaderTextureSampler | 'main')
+    ? ((sampler === 'main' ? 'main' : sampler) as
+        | MilkdropShaderTextureSampler
+        | 'main')
     : null;
 }
 
@@ -1111,6 +1111,12 @@ function parseShaderTextureBlendMode(
   rawValue: string,
 ): MilkdropShaderTextureBlendMode | null {
   return normalizeShaderTextureBlendMode(rawValue.replace(/[;,\s]+$/gu, ''));
+}
+
+function isAuxShaderSamplerName(
+  value: string,
+): value is MilkdropShaderTextureSampler {
+  return value !== 'main' && SHADER_TEXTURE_SAMPLERS.has(value);
 }
 
 function isKnownShaderScalarKey(key: string) {
@@ -1601,7 +1607,7 @@ function applyShaderAstStatement({
       resolvedExpression.type === 'identifier'
         ? normalizeShaderSamplerName(resolvedExpression.name)
         : parseShaderSamplerSource(statement.rawValue);
-    if (!source || source === 'main') {
+    if (!source || !isAuxShaderSamplerName(source)) {
       return false;
     }
     controls.textureLayer.source = source;
@@ -1628,7 +1634,7 @@ function applyShaderAstStatement({
       resolvedExpression.type === 'identifier'
         ? normalizeShaderSamplerName(resolvedExpression.name)
         : parseShaderSamplerSource(statement.rawValue);
-    if (!source || source === 'main') {
+    if (!source || !isAuxShaderSamplerName(source)) {
       return false;
     }
     controls.warpTexture.source = source;
@@ -1867,6 +1873,9 @@ function applyShaderAstStatement({
       directSample.source !== 'none'
     ) {
       const uvTransform = analyzeShaderUvTransform(directSample.uv);
+      if (!isAuxShaderSamplerName(directSample.source)) {
+        return false;
+      }
       controls.textureLayer.source = directSample.source;
       controls.textureLayer.mode = 'replace';
       controls.textureLayer.amount = 1;
@@ -1988,6 +1997,9 @@ function applyShaderAstStatement({
           auxSample.source !== 'none'
         ) {
           const uvTransform = analyzeShaderUvTransform(auxSample.uv);
+          if (!isAuxShaderSamplerName(auxSample.source)) {
+            return false;
+          }
           controls.textureLayer.source = auxSample.source;
           controls.textureLayer.mode = 'mix';
           controls.textureLayer.amount = amount.value;
@@ -2098,10 +2110,10 @@ function applyShaderAstStatement({
       const auxSample = extractScaledShaderSampleExpression(auxNode);
       if (auxSample) {
         const uvTransform = analyzeShaderUvTransform(auxSample.sample.uv);
-        controls.textureLayer.source = auxSample.sample.source as Exclude<
-          typeof auxSample.sample.source,
-          'main' | 'none'
-        >;
+        if (!isAuxShaderSamplerName(auxSample.sample.source)) {
+          return false;
+        }
+        controls.textureLayer.source = auxSample.sample.source;
         controls.textureLayer.mode = 'add';
         controls.textureLayer.amount = auxSample.amountValue;
         expressions.textureLayer.amount = auxSample.amountExpression;
@@ -2131,10 +2143,10 @@ function applyShaderAstStatement({
       const auxSample = extractScaledShaderSampleExpression(auxNode);
       if (auxSample) {
         const uvTransform = analyzeShaderUvTransform(auxSample.sample.uv);
-        controls.textureLayer.source = auxSample.sample.source as Exclude<
-          typeof auxSample.sample.source,
-          'main' | 'none'
-        >;
+        if (!isAuxShaderSamplerName(auxSample.sample.source)) {
+          return false;
+        }
+        controls.textureLayer.source = auxSample.sample.source;
         controls.textureLayer.mode = 'multiply';
         controls.textureLayer.amount = auxSample.amountValue;
         expressions.textureLayer.amount = auxSample.amountExpression;
@@ -2955,7 +2967,7 @@ function extractShaderControls(
     switch (key) {
       case 'texture_source': {
         const source = parseShaderSamplerSource(rawValue);
-        if (source && source !== 'main') {
+        if (source && isAuxShaderSamplerName(source)) {
           controls.textureLayer.source = source;
           if (controls.textureLayer.mode === 'none') {
             controls.textureLayer.mode = 'mix';
@@ -2976,7 +2988,7 @@ function extractShaderControls(
       }
       case 'warp_texture_source': {
         const source = parseShaderSamplerSource(rawValue);
-        if (source && source !== 'main') {
+        if (source && isAuxShaderSamplerName(source)) {
           controls.warpTexture.source = source;
           supportedLineCount += 1;
           return;
