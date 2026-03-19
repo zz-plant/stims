@@ -143,6 +143,49 @@ describe('audio controls primary emphasis', () => {
     expect(sessionStorage.getItem('stims-audio-advanced-open')).toBe('true');
   });
 
+  test('surfaces browser audio shortcuts before the advanced disclosure', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestTabAudio: async () => {},
+      onRequestYouTubeAudio: async () => {},
+    });
+
+    const shortcuts = container.querySelector(
+      '[data-browser-audio-shortcuts]',
+    ) as HTMLElement | null;
+
+    expect(shortcuts?.textContent).toContain('Browser audio tools');
+    expect(shortcuts?.textContent).toContain('Open tab capture');
+    expect(shortcuts?.textContent).toContain('Open YouTube capture');
+  });
+
+  test('browser audio shortcuts open the advanced disclosure and persist the state', () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestTabAudio: async () => {},
+      onRequestYouTubeAudio: async () => {},
+    });
+
+    const advancedInputs = container.querySelector(
+      '[data-advanced-inputs]',
+    ) as HTMLDetailsElement;
+    const revealYouTube = container.querySelector(
+      '[data-reveal-youtube-audio]',
+    ) as HTMLButtonElement;
+
+    expect(advancedInputs.open).toBe(false);
+    revealYouTube.click();
+
+    expect(advancedInputs.open).toBe(true);
+    expect(sessionStorage.getItem('stims-audio-advanced-open')).toBe('true');
+  });
+
   test('restores advanced disclosure state from session storage', () => {
     const container = document.createElement('section');
     sessionStorage.setItem('stims-audio-advanced-open', 'true');

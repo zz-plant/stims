@@ -110,7 +110,7 @@ describe('library navigation interactions', () => {
     expect(actions.hasAttribute('inert')).toBeFalse();
   });
 
-  test('library nav keeps the IA to a short primary link set', () => {
+  test('library nav exposes primary discovery hubs in the main link set', () => {
     const { matchMedia } = createMatchMediaStub(false);
     window.matchMedia = matchMedia;
 
@@ -124,8 +124,11 @@ describe('library navigation interactions', () => {
     expect(hrefs).toContain('#milkdrop');
     expect(hrefs).toContain('#library');
     expect(hrefs).toContain('/toys/');
+    expect(hrefs).toContain('/moods/');
+    expect(hrefs).toContain('/capabilities/');
+    expect(hrefs).toContain('/tags/');
     expect(hrefs).toContain('https://github.com/zz-plant/stims');
-    expect(hrefs).toHaveLength(4);
+    expect(hrefs).toHaveLength(7);
   });
 
   test('re-rendering library nav cleans up previous media-query listener', () => {
