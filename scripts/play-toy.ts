@@ -97,24 +97,28 @@ async function clickVisibleButton(page: Page, selector: string) {
 }
 
 async function clickVisibleButtonByText(page: Page, label: string) {
-  return page.evaluate((buttonLabel) => {
-    const buttons = [...document.querySelectorAll('button')];
-    const target = buttons.find((element) => {
-      if (!(element instanceof HTMLElement)) return false;
-      const style = window.getComputedStyle(element);
-      const rect = element.getBoundingClientRect();
-      const isVisible =
-        style.display !== 'none' &&
-        style.visibility !== 'hidden' &&
-        rect.width > 0 &&
-        rect.height > 0;
-      return isVisible && element.textContent?.trim() === buttonLabel;
-    });
+  try {
+    return await page.evaluate((buttonLabel) => {
+      const buttons = [...document.querySelectorAll('button')];
+      const target = buttons.find((element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        const style = window.getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        const isVisible =
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          rect.width > 0 &&
+          rect.height > 0;
+        return isVisible && element.textContent?.trim() === buttonLabel;
+      });
 
-    if (!(target instanceof HTMLElement)) return false;
-    target.click();
-    return true;
-  }, label);
+      if (!(target instanceof HTMLElement)) return false;
+      target.click();
+      return true;
+    }, label);
+  } catch (_error) {
+    return false;
+  }
 }
 
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
@@ -271,9 +275,19 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     };
 
     // Check audio state
-    const audioState = await page.evaluate(
-      () => document.body.dataset.audioActive === 'true',
-    );
+    const audioState = await page.evaluate(() => {
+      if (document.body.dataset.audioActive === 'true') {
+        return true;
+      }
+      const stimState = (
+        window as typeof window & {
+          stimState?: {
+            getState?: () => { audioActive?: boolean };
+          };
+        }
+      ).stimState;
+      return stimState?.getState?.().audioActive === true;
+    });
     result.audioActive = audioState;
     result.vibeModeActivated = vibeModeActivated;
 

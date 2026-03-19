@@ -205,6 +205,30 @@ per_pixel_1=zoom=1.08; rot=0.12; warp=0.35;
     expect(frameState.motionVectors[0]?.alpha).toBeGreaterThan(0.28);
   });
 
+  test('uses mesh history when building motion vector overlays across frames', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Motion History
+motion_vectors=1
+motion_vectors_x=5
+motion_vectors_y=3
+mv_a=0.25
+per_pixel_1=zoom=1.06 + beat_pulse * 0.05; rot=rot + 0.04; warp=0.24 + bass_att * 0.1;
+      `.trim(),
+      { id: 'motion-history' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    const first = vm.step(makeSignals({ frame: 1, beatPulse: 0.15 }));
+    const second = vm.step(makeSignals({ frame: 2, beatPulse: 0.35 }));
+
+    expect(first.motionVectors.length).toBeGreaterThan(0);
+    expect(second.motionVectors.length).toBeGreaterThan(0);
+    expect(second.motionVectors[0]?.positions).not.toEqual(
+      first.motionVectors[0]?.positions,
+    );
+  });
+
   test('warp animation speed changes per-pixel mesh deformation over time', () => {
     const slowPreset = compileMilkdropPresetSource(
       `
@@ -556,5 +580,21 @@ wave_mystery=0.42
     }
 
     expect(signatures.size).toBe(8);
+  });
+
+  test('keeps the main wave stateful across successive frames', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Wave History
+wave_mode=1
+wave_mystery=0.55
+      `.trim(),
+      { id: 'wave-history' },
+    );
+    const vm = createMilkdropVM(preset);
+    const first = vm.step(makeSignals({ frame: 1, beatPulse: 0.1 }));
+    const second = vm.step(makeSignals({ frame: 2, beatPulse: 0.3 }));
+
+    expect(second.mainWave.positions).not.toEqual(first.mainWave.positions);
   });
 });
