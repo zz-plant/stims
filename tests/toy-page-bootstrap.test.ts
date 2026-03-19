@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
   isPresetFirstToySession,
-  shouldOpenPreflightModal,
   shouldPreferDemoAudio,
 } from '../assets/js/bootstrap/toy-page.ts';
 
@@ -37,23 +36,5 @@ describe('toy page demo-audio preference', () => {
   test('treats milkdrop as a preset-first session', () => {
     expect(isPresetFirstToySession('milkdrop')).toBe(true);
     expect(isPresetFirstToySession('holy')).toBe(false);
-  });
-
-  test('keeps the preflight modal closed for preset-first milkdrop sessions', () => {
-    expect(
-      shouldOpenPreflightModal({
-        toySlug: 'milkdrop',
-        dismissedForSession: false,
-      }),
-    ).toBe(false);
-  });
-
-  test('still opens the preflight modal for non-milkdrop toys on a fresh session', () => {
-    expect(
-      shouldOpenPreflightModal({
-        toySlug: 'holy',
-        dismissedForSession: false,
-      }),
-    ).toBe(true);
   });
 });

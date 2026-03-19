@@ -28,9 +28,10 @@ describe('home shell user journeys', () => {
       <div data-milkdrop-preset-count></div>
       <div data-milkdrop-preset-filters></div>
       <div data-milkdrop-preset-list></div>
+      <section id="system-check"></section>
       <div data-readiness-panel></div>
       <div data-system-controls></div>
-      <button type="button" data-open-preflight>Open quick check</button>
+      <a href="#system-check" data-scroll-to-system-check>See device setup</a>
       <button type="button" data-details-toggle aria-expanded="false">
         <span data-details-label="open">More details</span>
         <span data-details-label="close">Less details</span>
@@ -59,7 +60,7 @@ describe('home shell user journeys', () => {
     expect(mockLoadFromQuery).not.toHaveBeenCalled();
   });
 
-  test('homepage quickstart launches milkdrop immediately', async () => {
+  test('homepage quickstart stays a native navigation instead of SPA-loading in place', async () => {
     await loadAppShell();
 
     const cta = document.querySelector('[data-quickstart-slug="milkdrop"]');
@@ -69,15 +70,6 @@ describe('home shell user journeys', () => {
       new window.MouseEvent('click', { bubbles: true, cancelable: true }),
     );
 
-    expect(mockLoadToy).toHaveBeenCalledTimes(1);
-    expect(mockLoadToy.mock.calls[0]).toEqual([
-      'milkdrop',
-      {
-        pushState: true,
-        preferDemoAudio: false,
-        startFlow: undefined,
-        startPartyMode: false,
-      },
-    ]);
+    expect(mockLoadToy).not.toHaveBeenCalled();
   });
 });
