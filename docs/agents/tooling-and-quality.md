@@ -52,12 +52,6 @@ bun run check:quick
   bun run check:toys
   ```
 
-- Generated SEO artifacts validation:
-
-  ```bash
-  bun run check:seo
-  ```
-
 - Targeted test execution:
 
   ```bash

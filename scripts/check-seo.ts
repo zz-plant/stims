@@ -18,24 +18,6 @@ const requiredInIndexHtml = [
   '<script type="application/ld+json">',
 ];
 
-const requiredInGeneratedToyPage = [
-  '<meta property="og:image" content="https://no.toil.fyi/og/holy.svg"',
-  '<meta property="og:image:type" content="image/svg+xml"',
-  '<meta property="og:image:width" content="1200"',
-  '<meta property="og:image:height" content="630"',
-  '<link rel="canonical" href="https://no.toil.fyi/toys/holy/" />',
-];
-
-const requiredInDiscoverPage = [
-  '<link rel="canonical" href="https://no.toil.fyi/discover/" />',
-  'Discover combinations | Stim Webtoys Library',
-];
-
-const requiredInDiscoverComboPage = [
-  '<link rel="canonical" href="https://no.toil.fyi/discover/calming-demo-audio/" />',
-  '<h1>calming toys with demo audio available</h1>',
-];
-
 const run = async () => {
   const results: CheckResult[] = [];
 
@@ -45,42 +27,6 @@ const run = async () => {
       name: `Homepage contains ${snippet}`,
       passed: homepage.includes(snippet),
       details: 'index.html',
-    });
-  }
-
-  const toyPage = await readFile(
-    path.join(publicDir, 'toys', 'holy', 'index.html'),
-    'utf8',
-  );
-  for (const snippet of requiredInGeneratedToyPage) {
-    results.push({
-      name: `Generated toy page contains ${snippet}`,
-      passed: toyPage.includes(snippet),
-      details: 'public/toys/holy/index.html',
-    });
-  }
-
-  const discoverPage = await readFile(
-    path.join(publicDir, 'discover', 'index.html'),
-    'utf8',
-  );
-  for (const snippet of requiredInDiscoverPage) {
-    results.push({
-      name: `Discover index contains ${snippet}`,
-      passed: discoverPage.includes(snippet),
-      details: 'public/discover/index.html',
-    });
-  }
-
-  const discoverComboPage = await readFile(
-    path.join(publicDir, 'discover', 'calming-demo-audio', 'index.html'),
-    'utf8',
-  );
-  for (const snippet of requiredInDiscoverComboPage) {
-    results.push({
-      name: `Discover combo page contains ${snippet}`,
-      passed: discoverComboPage.includes(snippet),
-      details: 'public/discover/calming-demo-audio/index.html',
     });
   }
 
@@ -108,10 +54,10 @@ const run = async () => {
     'utf8',
   );
   const hasUrlLastmod =
-    sitemapChunk.includes('<loc>https://no.toil.fyi/toys/holy/</loc>') &&
+    sitemapChunk.includes('<loc>https://no.toil.fyi/toy.html</loc>') &&
     sitemapChunk.includes('<lastmod>');
   results.push({
-    name: 'Sitemap chunk includes per-URL lastmod fields',
+    name: 'Sitemap chunk includes `toy.html` entry',
     passed: hasUrlLastmod,
     details: 'public/sitemap-1.xml',
   });
@@ -125,11 +71,11 @@ const run = async () => {
   });
 
   results.push({
-    name: 'Sitemap chunk includes toy OG image entries',
+    name: 'Sitemap chunk includes OG image entry for the launch page',
     passed:
-      sitemapChunk.includes('<loc>https://no.toil.fyi/toys/holy/</loc>') &&
+      sitemapChunk.includes('<loc>https://no.toil.fyi/toy.html</loc>') &&
       sitemapChunk.includes(
-        '<image:loc>https://no.toil.fyi/og/holy.svg</image:loc>',
+        '<image:loc>https://no.toil.fyi/og/milkdrop.svg</image:loc>',
       ),
     details: 'public/sitemap-1.xml',
   });

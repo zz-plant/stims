@@ -110,7 +110,7 @@ describe('site navigation interactions', () => {
     expect(actions.hasAttribute('inert')).toBeFalse();
   });
 
-  test('site nav exposes primary launch and discovery hubs in the main link set', () => {
+  test('site nav exposes primary launch links in the main link set', () => {
     const { matchMedia } = createMatchMediaStub(false);
     window.matchMedia = matchMedia;
 
@@ -124,12 +124,8 @@ describe('site navigation interactions', () => {
     expect(hrefs).toContain('#milkdrop');
     expect(hrefs).toContain('#proof');
     expect(hrefs).toContain('#system-check');
-    expect(hrefs).toContain('/toys/');
-    expect(hrefs).toContain('/moods/');
-    expect(hrefs).toContain('/capabilities/');
-    expect(hrefs).toContain('/tags/');
     expect(hrefs).toContain('https://github.com/zz-plant/stims');
-    expect(hrefs).toHaveLength(8);
+    expect(hrefs).toHaveLength(4);
   });
 
   test('re-rendering site nav cleans up previous media-query listener', () => {
