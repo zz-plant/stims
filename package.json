@@ -1,6 +1,6 @@
 {
   "name": "stims",
-  "description": "Browser-native MilkDrop successor with a broader collection of related audio-reactive toys.",
+  "description": "Browser-native MilkDrop-inspired visualizer with curated presets, live editing, and import/export.",
   "version": "1.0.0",
   "type": "module",
   "homepage": "https://no.toil.fyi",
@@ -21,7 +21,7 @@
     "webgpu",
     "generative-art",
     "creative-coding",
-    "web-toys"
+    "preset-browser"
   ],
   "packageManager": "bun@1.3.8",
   "scripts": {
@@ -43,8 +43,6 @@
     "setup:codex": "bash scripts/codex-setup.sh",
     "check": "bun run scripts/run-quality-gate.ts",
     "check:quick": "bun run scripts/run-quality-gate.ts --quick",
-    "check:toys": "bun run scripts/check-toys.ts",
-    "generate:seo": "bun run scripts/generate-seo.ts",
     "build": "bun scripts/build.mjs || node scripts/build.mjs",
     "build:reuse": "bun run build -- --reuse",
     "serve:dist": "bun run scripts/serve-dist.ts",
@@ -53,14 +51,10 @@
     "pages:deploy": "bun run build && bunx wrangler pages deploy dist",
     "pages:deploy:reuse": "bun run build -- --reuse && bunx wrangler pages deploy dist",
     "mcp": "bun run scripts/mcp-server.ts",
-    "play:toy": "bun run scripts/play-toy.ts",
-    "health:toys": "bun run scripts/toy-health-check.ts",
     "test:agent": "bun run test:integration",
     "prepare": "husky install",
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",
-    "check:seo": "bun run scripts/check-seo.ts",
     "dev:webgpu": "bun scripts/dev-webgpu.mjs || node scripts/dev-webgpu.mjs",
-    "generate:toys": "bun run scripts/generate-toy-manifest.ts",
     "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh"
   },
   "devDependencies": {

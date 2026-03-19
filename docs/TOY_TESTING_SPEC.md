@@ -1,94 +1,10 @@
-# Toy Testing Specification
+# Deprecated Toy Testing Spec
 
-Guidance for writing automated tests for Stims toys. Stims is MilkDrop-led but quality is enforced across the full toy lab, so this spec focuses on **repeatable lifecycle checks** and **shared test helpers** that keep module behavior consistent.
+This document is retained as historical context from the older multi-toy model.
 
-## Goals
+Stims now ships as one MilkDrop-inspired visualizer product. New tests should focus on:
 
-- Validate toy lifecycle behavior (start, render/update, cleanup).
-- Keep tests headless (Bun + happy-dom) and deterministic.
-- Favor fast, isolated tests for pure helpers and rendering utilities.
-
-## What already exists
-
-The repo already ships with shared helpers in `tests/toy-test-helpers.ts` and a working example spec in `tests/sample-toy.test.ts`.
-
-For browser-backed MilkDrop parity work, the repo also keeps integration coverage in `tests/agent-integration.test.ts` for shared drag, gesture, and motion behavior.
-
-### Shared helpers
-
-- `createToyContainer(id?)`: Creates and appends a container to `document.body` and returns `{ container, dispose }`.
-- `FakeAudioContext`: Lightweight fake with `createAnalyser()` and `close()` tracking for cleanup assertions.
-- `createMockRenderer()`: Provides a stub renderer with `renderFrame()` and a `dispose()` spy.
-
-Use these helpers as the starting point for new toy tests instead of creating ad-hoc stubs.
-
-### Example harness
-
-`tests/sample-toy.test.ts` demonstrates the expected flow for a module toy:
-
-1. Create a container + audio context.
-2. Call `start()` with the stubbed dependencies.
-3. Assert DOM mounts or other side effects.
-4. Call the cleanup function and assert cleanup behavior.
-
-## Recommended test patterns
-
-### 1) Module toys (default pattern)
-
-Use this pattern for toys that export `start({ container, canvas?, audioContext? })` and return a cleanup function (or a disposable object).
-
-```ts
-import { describe, expect, test } from 'bun:test';
-import { start } from '../assets/js/toys/my-toy.ts';
-import { createToyContainer, FakeAudioContext } from './toy-test-helpers.ts';
-
-describe('my-toy', () => {
-  test('starts and cleans up', async () => {
-    const { container, dispose } = createToyContainer('my-toy-root');
-    const audioContext = new FakeAudioContext();
-
-    const cleanup = start({ container, audioContext });
-
-    expect(typeof cleanup).toBe('function');
-    expect(container.childElementCount).toBeGreaterThan(0);
-
-    await cleanup();
-
-    expect(container.childElementCount).toBe(0);
-    expect(audioContext.closed).toBe(true);
-
-    dispose();
-  });
-});
-```
-
-Notes:
-- If a toy returns `{ dispose() }`, wrap it into a `cleanup` function inside the test.
-- Always reset `document.body` in `afterEach` when you add additional nodes.
-
-### 2) Helper utilities
-
-When adding new helpers (color math, easing, or audio utilities), write small unit tests under `tests/` and use `createMockRenderer()` or `FakeAudioContext` as needed.
-
-## Smoke checks for toy metadata
-
-If you change the toy registry (`assets/data/toys.json`) or entry points, consider updating or extending `scripts/check-toys.ts` tests so metadata stays consistent. The `tests/check-toys.test.ts` file covers this workflow with a temporary repo fixture.
-
-## Browser-backed interaction regressions
-
-Use a browser-backed integration test when a MilkDrop preset alias depends on:
-
-- drag-driven preset fields,
-- multi-touch pinch/rotate behavior,
-- device-motion permission and tilt control,
-- control-panel cycling behavior that must stay in sync with gesture rotation.
-
-The canonical place for those checks is `tests/agent-integration.test.ts` so the existing `bun run test:integration` profile keeps covering the shared toy shell and the migrated preset aliases together.
-
-## Verification checklist
-
-Before marking a toy test complete:
-
-- [ ] The new spec reuses helpers from `tests/toy-test-helpers.ts`.
-- [ ] Cleanup removes toy-added DOM nodes and closes the fake audio context when applicable.
-- [ ] `bun run check` passes (lint, typecheck, and tests).
+- the shared visualizer runtime,
+- preset loading and editing flows,
+- audio/control shell behavior,
+- import/export and compatibility behavior.

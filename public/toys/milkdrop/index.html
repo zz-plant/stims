@@ -3,185 +3,102 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Preset-driven feedback visualizer in the lineage of Ryan Geiss&#39;s MilkDrop, with blend transitions, live source editing, and import/export flows." />
+    <meta
+      name="description"
+      content="Stims is a browser-native MilkDrop-inspired visualizer with curated presets, live editing, and import/export flows."
+    />
     <meta name="robots" content="index,follow" />
-    <meta name="keywords" content="milkdrop, MilkDrop Visualizer, feedback, warp, visualizer, retro, presets, editor, immersive, psychedelic, audio-reactive toy, sensory visualizer" />
-    <meta property="og:title" content="MilkDrop Visualizer | Stim Webtoys" />
-    <meta property="og:description" content="Preset-driven feedback visualizer in the lineage of Ryan Geiss&#39;s MilkDrop, with blend transitions, live source editing, and import/export flows." />
+    <meta
+      name="keywords"
+      content="milkdrop, milkdrop-inspired, visualizer, presets, editor, import, export, webgl, webgpu"
+    />
+    <meta property="og:title" content="Stims | MilkDrop-inspired visualizer" />
+    <meta
+      property="og:description"
+      content="Launch Stims for curated presets, live editing, and preset import/export in one browser-native visualizer."
+    />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://no.toil.fyi/toys/milkdrop/" />
     <meta property="og:image" content="https://no.toil.fyi/og/milkdrop.svg" />
     <meta property="og:image:type" content="image/svg+xml" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="MilkDrop Visualizer preview image" />
-    <meta property="og:site_name" content="Stim Webtoys Library" />
+    <meta property="og:image:alt" content="Stims visualizer preview image" />
+    <meta property="og:site_name" content="Stims" />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="MilkDrop Visualizer | Stim Webtoys" />
-    <meta name="twitter:description" content="Preset-driven feedback visualizer in the lineage of Ryan Geiss&#39;s MilkDrop, with blend transitions, live source editing, and import/export flows." />
-    <meta name="twitter:image" content="https://no.toil.fyi/icons/icon-512.png" />
-    <meta name="twitter:image:alt" content="MilkDrop Visualizer preview image" />
+    <meta name="twitter:title" content="Stims | MilkDrop-inspired visualizer" />
+    <meta
+      name="twitter:description"
+      content="Launch Stims for curated presets, live editing, and preset import/export in one browser-native visualizer."
+    />
+    <meta name="twitter:image" content="https://no.toil.fyi/og/milkdrop.svg" />
+    <meta name="twitter:image:alt" content="Stims visualizer preview image" />
     <link rel="canonical" href="https://no.toil.fyi/toys/milkdrop/" />
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="stylesheet" href="/assets/css/base.css" />
     <link rel="stylesheet" href="/assets/css/index.css" />
-    <title>MilkDrop Visualizer | Stim Webtoys</title>
-
-
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MilkDrop Visualizer","description":"Preset-driven feedback visualizer in the lineage of Ryan Geiss's MilkDrop, with blend transitions, live source editing, and import/export flows.","applicationCategory":"Game","operatingSystem":"Web","url":"https://no.toil.fyi/toys/milkdrop/","image":"https://no.toil.fyi/og/milkdrop.svg","isAccessibleForFree":true,"audience":{"@type":"Audience","audienceType":"People seeking interactive audio-reactive visuals for sensory-friendly creative play"},"keywords":["feedback","warp","visualizer","retro","presets","editor","immersive","psychedelic","audio-reactive"]}</script>
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://no.toil.fyi/"},{"@type":"ListItem","position":2,"name":"All toys","item":"https://no.toil.fyi/toys/"},{"@type":"ListItem","position":3,"name":"MilkDrop Visualizer","item":"https://no.toil.fyi/toys/milkdrop/"}]}</script>
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is MilkDrop Visualizer?","acceptedAnswer":{"@type":"Answer","text":"Preset-driven feedback visualizer in the lineage of Ryan Geiss's MilkDrop, with blend transitions, live source editing, and import/export flows."}},{"@type":"Question","name":"How do I start MilkDrop Visualizer?","acceptedAnswer":{"@type":"Answer","text":"Open the toy and press Launch. Then enable microphone or demo audio options if prompted for the most reactive visuals."}},{"@type":"Question","name":"What capabilities does MilkDrop Visualizer support?","acceptedAnswer":{"@type":"Answer","text":"Supports live microphone input. Includes demo audio mode. No device motion input required. Uses WebGPU for enhanced effects and needs a compatible browser/device."}},{"@type":"Question","name":"How does this relate to MilkDrop and projectM?","acceptedAnswer":{"@type":"Answer","text":"Stims is an independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop. It is not an official MilkDrop or Winamp release, and when presets or compatibility work draw on the broader ecosystem, Stims should also credit preset authors and projectM contributors where relevant."}}]}</script>
-
-
+    <title>Stims | MilkDrop-inspired visualizer</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Stims",
+        "description": "Browser-native MilkDrop-inspired visualizer with curated presets, live editing, and import/export flows.",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Web",
+        "url": "https://no.toil.fyi/toys/milkdrop/",
+        "image": "https://no.toil.fyi/og/milkdrop.svg",
+        "isAccessibleForFree": true
+      }
+    </script>
   </head>
   <body>
     <div class="content">
-      
-      <nav aria-label="Breadcrumb" class="breadcrumb-nav">
-    <ol>
-      <li><a class="text-link" href="/">Home</a></li><li><a class="text-link" href="/toys/">All toys</a></li><li><span aria-current="page">MilkDrop Visualizer</span></li>
-    </ol>
-  </nav>
       <section class="intro">
         <div class="section-heading">
-          <p class="eyebrow">Stim Webtoys</p>
-          <h1>MilkDrop Visualizer</h1>
-          <p class="section-description">Preset-driven feedback visualizer in the lineage of Ryan Geiss&#39;s MilkDrop, with blend transitions, live source editing, and import/export flows.</p>
+          <p class="eyebrow">Stims</p>
+          <h1>MilkDrop-inspired visualizer</h1>
+          <p class="section-description">
+            One browser-native visualizer with curated presets, live source editing,
+            and preset import/export.
+          </p>
           <div class="cta-row">
-            <a class="cta-button primary" href="/toy.html?toy=milkdrop">Launch toy</a>
-            <a class="cta-button ghost" href="/index.html#toy-list">Back to library</a>
+            <a class="cta-button primary" href="/toy.html">Launch Stims</a>
+            <a class="cta-button ghost" href="/index.html">Back to home</a>
           </div>
         </div>
       </section>
+
       <section class="feature-bands">
         <div class="feature-card-grid">
-          
-      <div class="feature-card">
-        <h3>Tags</h3>
-        <ul>
-          <li><a class="text-link" href="/tags/feedback/">feedback</a></li><li><a class="text-link" href="/tags/warp/">warp</a></li><li><a class="text-link" href="/tags/visualizer/">visualizer</a></li><li><a class="text-link" href="/tags/retro/">retro</a></li><li><a class="text-link" href="/tags/presets/">presets</a></li><li><a class="text-link" href="/tags/editor/">editor</a></li>
-        </ul>
-      </div>
-    
-          
-      <div class="feature-card">
-        <h3>Moods</h3>
-        <ul>
-          <li><a class="text-link" href="/moods/immersive/">immersive</a></li><li><a class="text-link" href="/moods/psychedelic/">psychedelic</a></li>
-        </ul>
-      </div>
-    
-          
-      <div class="feature-card">
-        <h3>Capabilities</h3>
-        <ul>
-          <li><a class="text-link" href="/capabilities/microphone/">Microphone ready</a></li><li><a class="text-link" href="/capabilities/demo-audio/">Demo audio available</a></li><li><a class="text-link" href="/capabilities/webgpu/">WebGPU enhanced</a></li>
-        </ul>
-      </div>
-    
+          <article class="feature-card">
+            <h2>Preset browser</h2>
+            <p>Start from curated bundled presets instead of jumping between separate product pages.</p>
+          </article>
+          <article class="feature-card">
+            <h2>Live source editor</h2>
+            <p>Edit the active preset in-browser and keep playback running while you iterate.</p>
+          </article>
+          <article class="feature-card">
+            <h2>Import and export</h2>
+            <p>Bring presets in, tune them, and export the result from the same visualizer.</p>
+          </article>
         </div>
       </section>
-      
+
       <section>
         <div class="section-heading">
-          <p class="eyebrow">Lineage and credits</p>
-          <h2>Built in the lineage of MilkDrop, not as an official port</h2>
+          <p class="eyebrow">Lineage</p>
+          <h2>Clear about attribution</h2>
           <p class="section-description">
-            MilkDrop Visualizer is an independent browser-native implementation. The lineage, historical context, and preset ecosystem should stay visible wherever this page is shared.
+            Stims is an independent browser-native visualizer built in the lineage of
+            Ryan Geiss&apos;s MilkDrop. It is not an official MilkDrop or Winamp release.
           </p>
         </div>
-        <div class="feature-card-grid">
-          <article class="feature-card">
-            <h3>Ryan Geiss and MilkDrop</h3>
-            <p>
-              Stims owes explicit credit to Ryan Geiss and MilkDrop for the flagship visualizer lineage and the preset-driven workflows that made this form recognizable.
-            </p>
-          </article>
-          <article class="feature-card">
-            <h3>Winamp context</h3>
-            <p>
-              MilkDrop's original public home was Winamp/Nullsoft. Stims is not affiliated with Winamp and does not present itself as an official MilkDrop release.
-            </p>
-          </article>
-          <article class="feature-card">
-            <h3>Preset ecosystem</h3>
-            <p>
-              When presets, fixture packs, or compatibility work draw on the broader ecosystem, Stims should credit the original preset authors, curators, and projectM contributors where relevant.
-            </p>
-          </article>
-        </div>
       </section>
-  
-      <section>
-        <div class="section-heading">
-          <p class="eyebrow">Related</p>
-          <h2>More toys you might like</h2>
-        </div>
-        <ul class="feature-card-grid">
-        <li class="feature-card">
-          <h3>3D Toy</h3>
-          <p>A twisting MilkDrop tunnel preset with chrome hues, orbiting mesh, and audio-driven spin.</p>
-          <a class="cta-button ghost" href="/toys/3dtoy/">View details</a>
-          <a class="text-link" href="/toy.html?toy=3dtoy">Launch toy</a>
-        </li>
-      
-        <li class="feature-card">
-          <h3>Evolutionary Weirdcore</h3>
-          <p>A glitch-fractal preset that mutates between weirdcore colors, warped mesh lines, and unstable beat flashes.</p>
-          <a class="cta-button ghost" href="/toys/evol/">View details</a>
-          <a class="text-link" href="/toy.html?toy=evol">Launch toy</a>
-        </li>
-      
-        <li class="feature-card">
-          <h3>Microphone Geometry Visualizer</h3>
-          <p>A geometry-first preset with crisp polygons, reactive rings, and shifting symmetry.</p>
-          <a class="cta-button ghost" href="/toys/geom/">View details</a>
-          <a class="text-link" href="/toy.html?toy=geom">Launch toy</a>
-        </li>
-      
-        <li class="feature-card">
-          <h3>Synesthetic Visualizer</h3>
-          <p>A synesthetic pattern preset with mapped color shifts, looping forms, and responsive movement.</p>
-          <a class="cta-button ghost" href="/toys/seary/">View details</a>
-          <a class="text-link" href="/toy.html?toy=seary">Launch toy</a>
-        </li>
-      </ul>
-      </section>
-      
-  <section>
-    <div class="section-heading">
-      <p class="eyebrow">FAQ</p>
-      <h2>About this toy</h2>
-    </div>
-    <dl class="feature-card-grid">
-      
-        <div class="feature-card">
-          <dt><strong>What is MilkDrop Visualizer?</strong></dt>
-          <dd>Preset-driven feedback visualizer in the lineage of Ryan Geiss&#39;s MilkDrop, with blend transitions, live source editing, and import/export flows.</dd>
-        </div>
-      
-        <div class="feature-card">
-          <dt><strong>How do I start MilkDrop Visualizer?</strong></dt>
-          <dd>Open the toy and press Launch. Then enable microphone or demo audio options if prompted for the most reactive visuals.</dd>
-        </div>
-      
-        <div class="feature-card">
-          <dt><strong>What capabilities does MilkDrop Visualizer support?</strong></dt>
-          <dd>Supports live microphone input. Includes demo audio mode. No device motion input required. Uses WebGPU for enhanced effects and needs a compatible browser/device.</dd>
-        </div>
-      
-        <div class="feature-card">
-          <dt><strong>How does this relate to MilkDrop and projectM?</strong></dt>
-          <dd>Stims is an independent browser-native visualizer built in the lineage of Ryan Geiss&#39;s MilkDrop. It is not an official MilkDrop or Winamp release, and when presets or compatibility work draw on the broader ecosystem, Stims should also credit preset authors and projectM contributors where relevant.</dd>
-        </div>
-      
-    </dl>
-  </section>
-
-    
     </div>
   </body>
 </html>

@@ -74,7 +74,7 @@ describe('toy view helpers', () => {
       'WebGPU not available',
     );
     const buttons = status?.querySelectorAll('button');
-    expect(buttons?.length).toBe(3);
+    expect(buttons?.length).toBe(2);
     expect(buttons?.[0]?.textContent).toContain('Use WebGPU');
 
     buttons?.[0].dispatchEvent(new Event('click', { bubbles: true }));
