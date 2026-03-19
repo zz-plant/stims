@@ -158,6 +158,13 @@ Use `bun run pages:deploy:reuse` when deploying a build you already verified.
 - **Docs-only edits:** tests/typecheck can be skipped unless command paths/workflows changed and need validation.
 - **Toy additions/slug changes:** run `bun run check:toys` and update toy docs together.
 
+## CI automation notes
+
+- Pull requests now run a single CI workflow for code changes: `bun run dev:check`, `bun run check`, `bun run check:toys`, and `bun run build`.
+- Markdown-only changes are ignored by CI to reduce GitHub Actions usage; validate command/path changes locally when editing workflow-critical docs.
+- Browser-backed integration tests are reserved for `merge_group` and pushes to `main`, which keeps PR action usage lower while preserving pre-merge and post-merge coverage.
+- Dependency review runs only when `package.json` or `bun.lock` changes.
+
 ## Targeted testing patterns
 
 Run a single test file:
