@@ -91,9 +91,8 @@ describe('audio controls primary emphasis', () => {
       onRequestDemoAudio: async () => {},
     });
 
-    expect(container.textContent).toContain(
-      'Live mic is responsive. Demo audio is instant.',
-    );
+    expect(container.textContent).toContain('Mic reacts to your room.');
+    expect(container.textContent).toContain('Demo starts instantly.');
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
     const demoBadge = container.querySelector('[data-recommended-for="demo"]');
@@ -120,8 +119,8 @@ describe('audio controls primary emphasis', () => {
 
     expect(onboardingHelp.open).toBe(false);
     expect(advancedInputs.open).toBe(false);
-    expect(onboardingHelp.textContent).toContain('More guidance');
-    expect(advancedInputs.textContent).toContain('Advanced inputs');
+    expect(onboardingHelp.textContent).toContain('Tips');
+    expect(advancedInputs.textContent).toContain('Other sources');
   });
 
   test('persists advanced inputs disclosure state', () => {
@@ -143,7 +142,7 @@ describe('audio controls primary emphasis', () => {
     expect(sessionStorage.getItem('stims-audio-advanced-open')).toBe('true');
   });
 
-  test('surfaces browser audio shortcuts before the advanced disclosure', () => {
+  test('keeps the start surface focused by omitting duplicate browser shortcut cards', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -153,37 +152,9 @@ describe('audio controls primary emphasis', () => {
       onRequestYouTubeAudio: async () => {},
     });
 
-    const shortcuts = container.querySelector(
-      '[data-browser-audio-shortcuts]',
-    ) as HTMLElement | null;
-
-    expect(shortcuts?.textContent).toContain('Browser audio tools');
-    expect(shortcuts?.textContent).toContain('Open tab capture');
-    expect(shortcuts?.textContent).toContain('Open YouTube capture');
-  });
-
-  test('browser audio shortcuts open the advanced disclosure and persist the state', () => {
-    const container = document.createElement('section');
-
-    initAudioControls(container, {
-      onRequestMicrophone: async () => {},
-      onRequestDemoAudio: async () => {},
-      onRequestTabAudio: async () => {},
-      onRequestYouTubeAudio: async () => {},
-    });
-
-    const advancedInputs = container.querySelector(
-      '[data-advanced-inputs]',
-    ) as HTMLDetailsElement;
-    const revealYouTube = container.querySelector(
-      '[data-reveal-youtube-audio]',
-    ) as HTMLButtonElement;
-
-    expect(advancedInputs.open).toBe(false);
-    revealYouTube.click();
-
-    expect(advancedInputs.open).toBe(true);
-    expect(sessionStorage.getItem('stims-audio-advanced-open')).toBe('true');
+    expect(
+      container.querySelector('[data-browser-audio-shortcuts]'),
+    ).toBeNull();
   });
 
   test('restores advanced disclosure state from session storage', () => {
@@ -536,7 +507,7 @@ describe('audio controls primary emphasis', () => {
 
     const sourceStep = container.querySelector('[data-first-step-source]');
     expect(sourceStep?.textContent).toContain(
-      'Demo audio is the focused path for an instant first run.',
+      'Demo is best for the fastest first run.',
     );
   });
 

@@ -16,7 +16,7 @@ describe('milkdrop runtime detail scale', () => {
 
     expect(webgpuScale).toBeGreaterThan(webglScale);
     expect(webglScale).toBeCloseTo(1.1, 6);
-    expect(webgpuScale).toBeCloseTo(1.35, 6);
+    expect(webgpuScale).toBeCloseTo(1.55, 6);
   });
 
   test('applies shader quality multipliers to the shared detail scale', () => {
@@ -41,6 +41,7 @@ describe('milkdrop runtime detail scale', () => {
 
     expect(lowScale).toBeLessThan(balancedScale);
     expect(highScale).toBeGreaterThan(balancedScale);
+    expect(highScale).toBeCloseTo(1.86, 6);
   });
 
   test('respects the shared lower and upper bounds', () => {

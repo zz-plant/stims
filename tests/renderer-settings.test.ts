@@ -1,7 +1,40 @@
 import { describe, expect, test } from 'bun:test';
-import { applyRendererSettings } from '../assets/js/core/renderer-settings';
+import {
+  applyRendererSettings,
+  getRendererBackendMaxPixelRatioCap,
+} from '../assets/js/core/renderer-settings';
 
 describe('applyRendererSettings', () => {
+  test('allows a higher initial pixel-ratio ceiling on desktop webgpu backends', () => {
+    expect(
+      getRendererBackendMaxPixelRatioCap({
+        backend: 'webgl',
+        isMobile: false,
+      }),
+    ).toBe(1.5);
+    expect(
+      getRendererBackendMaxPixelRatioCap({
+        backend: 'webgpu',
+        isMobile: false,
+      }),
+    ).toBe(2.5);
+  });
+
+  test('keeps mobile webgpu below the desktop ceiling', () => {
+    expect(
+      getRendererBackendMaxPixelRatioCap({
+        backend: 'webgl',
+        isMobile: true,
+      }),
+    ).toBe(1.25);
+    expect(
+      getRendererBackendMaxPixelRatioCap({
+        backend: 'webgpu',
+        isMobile: true,
+      }),
+    ).toBe(1.5);
+  });
+
   test('applies explicit viewport dimensions when provided', () => {
     const calls: Array<[number, number, boolean?]> = [];
     const renderer = {

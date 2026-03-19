@@ -521,6 +521,12 @@ ob_border=1
     expect(result).toBe(true);
     expect(feedback?.compositeMaterial.uniforms.textureWrap.value).toBe(1);
     expect(feedback?.compositeMaterial.uniforms.feedbackTexture.value).toBe(1);
+    expect(feedback?.compositeMaterial.uniforms.feedbackSoftness.value).toBe(
+      0.65,
+    );
+    expect(feedback?.compositeMaterial.uniforms.currentFrameBoost.value).toBe(
+      0.1,
+    );
     expect(feedback?.compositeMaterial.uniforms.hueShift.value).toBeCloseTo(
       0.2,
       6,
@@ -573,9 +579,9 @@ video_echo=1
     ).feedback;
 
     expect(feedback).not.toBeNull();
-    expect(feedback?.sceneTarget.width).toBe(640);
-    expect(feedback?.sceneTarget.height).toBe(360);
-    expect(feedback?.sceneTarget.samples).toBe(2);
+    expect(feedback?.sceneTarget.width).toBe(704);
+    expect(feedback?.sceneTarget.height).toBe(396);
+    expect(feedback?.sceneTarget.samples).toBe(4);
     expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
   });
 
