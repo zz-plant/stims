@@ -93,7 +93,8 @@ export function validateMilkdropCorpusManifest(manifest: CorpusManifest) {
     seenIds.add(entry.id);
     seenFiles.add(entry.file);
 
-    const resolvedProvenance = entry.provenance ?? manifest.defaults?.provenance;
+    const resolvedProvenance =
+      entry.provenance ?? manifest.defaults?.provenance;
     const resolvedLicense = entry.license ?? manifest.defaults?.license;
     const resolvedUsage = entry.usage ?? manifest.defaults?.usage;
     const resolvedTier = entry.corpusTier ?? manifest.defaults?.corpusTier;
@@ -123,13 +124,17 @@ export function validateMilkdropCorpusManifest(manifest: CorpusManifest) {
 
     entry.waivers?.forEach((waiver, index) => {
       if (!waiver.blockedConstruct.trim()) {
-        issues.push(`preset ${entry.id} waiver ${index} is missing blockedConstruct.`);
+        issues.push(
+          `preset ${entry.id} waiver ${index} is missing blockedConstruct.`,
+        );
       }
       if (!waiver.owner.trim()) {
         issues.push(`preset ${entry.id} waiver ${index} is missing owner.`);
       }
       if (!isIsoDate(waiver.expiry)) {
-        issues.push(`preset ${entry.id} waiver ${index} has invalid expiry ${waiver.expiry}.`);
+        issues.push(
+          `preset ${entry.id} waiver ${index} has invalid expiry ${waiver.expiry}.`,
+        );
       }
     });
   });

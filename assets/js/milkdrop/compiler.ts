@@ -14,8 +14,8 @@ import {
 import type {
   MilkdropBackendSupport,
   MilkdropBlockingConstruct,
-  MilkdropCompiledPreset,
   MilkdropCompatibilityEvidence,
+  MilkdropCompiledPreset,
   MilkdropCompileOptions,
   MilkdropDegradationReason,
   MilkdropDiagnostic,
@@ -508,7 +508,9 @@ function classifyFidelity({
   const hasBlockingConstruct = blockedConstructDetails.some(
     (construct) => !construct.allowlisted,
   );
-  const hasBlockingReason = degradationReasons.some((reason) => reason.blocking);
+  const hasBlockingReason = degradationReasons.some(
+    (reason) => reason.blocking,
+  );
   const hasUnsupportedBackend =
     webgl.status === 'unsupported' || webgpu.status === 'unsupported';
 
