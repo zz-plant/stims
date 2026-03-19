@@ -493,6 +493,8 @@ warp_shader=this is unsupported
       'unsupported-shader-text',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
+    expect(compiled.ir.compatibility.parity.visualEvidenceTier).toBe('compile');
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
       'this is unsupported',
     ]);
@@ -526,6 +528,11 @@ definitely_not_a_real_field=1
     ]);
     expect(
       compiled.diagnostics.some(
+        (entry) => entry.code === 'preset_unknown_field',
+      ),
+    ).toBe(true);
+    expect(
+      compiled.diagnostics.some(
         (entry) => entry.code === 'preset_parity_blocked',
       ),
     ).toBe(true);
@@ -554,6 +561,7 @@ warp_shader=unsupported(shader)
     expect(compiled.ir.compatibility.parity.visualFallbacks).toContain(
       'shader-text-control-extraction',
     );
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
   });
 
   test('respects parity allowlist entries for known blocked constructs', () => {
@@ -582,6 +590,7 @@ warp_shader=unsupported(shader)
       compiled.ir.compatibility.parity.allowlistedBlockedConstructs,
     ).toEqual(['shader:unsupported(shader)']);
     expect(compiled.ir.compatibility.parity.parityReady).toBe(false);
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
     expect(
       compiled.diagnostics.some(
         (entry) => entry.code === 'preset_parity_blocked',

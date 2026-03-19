@@ -44,6 +44,7 @@
     "check": "bun run scripts/run-quality-gate.ts",
     "check:quick": "bun run scripts/run-quality-gate.ts --quick",
     "check:toys": "bun run scripts/check-toys.ts",
+    "check:milkdrop-corpus": "bun run scripts/check-milkdrop-corpus.ts",
     "generate:seo": "bun run scripts/generate-seo.ts",
     "build": "bun scripts/build.mjs || node scripts/build.mjs",
     "build:reuse": "bun run build -- --reuse",

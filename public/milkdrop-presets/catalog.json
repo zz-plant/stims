@@ -1,6 +1,10 @@
 {
   "version": 2,
   "generatedAt": "2026-03-16",
+  "certification": "bundled",
+  "corpusTier": "bundled",
+  "expectedFidelityClass": "exact",
+  "visualEvidenceTier": "visual",
   "presets": [
     {
       "id": "3dtoy",
