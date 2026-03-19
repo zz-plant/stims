@@ -63,7 +63,7 @@ export const initSystemCheck = () => {
   if (triggers.length === 0) return;
 
   const preflight = attachCapabilityPreflight({
-    heading: 'System check',
+    heading: 'Quick check',
     host: document.body,
     openOnAttach: false,
     allowCloseWhenBlocked: true,

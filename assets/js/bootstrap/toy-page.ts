@@ -250,7 +250,7 @@ export function bootToyPage({
   };
 
   const preflight = attachCapabilityPreflight({
-    heading: 'Step 1 of 2 · System check',
+    heading: 'Step 1 of 2 · Quick check',
     backHref: router.getLibraryHref(),
     openOnAttach: !shouldSkipPreflightForSession,
     onComplete: handlePreflightReady,

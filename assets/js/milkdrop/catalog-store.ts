@@ -5,8 +5,6 @@ import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
-  MilkdropFidelityMode,
-  MilkdropParityAllowlistEntry,
   MilkdropPresetSource,
 } from './types';
 
@@ -239,24 +237,15 @@ function toCatalogEntry(
 export function createMilkdropCatalogStore({
   dbName = 'stims-milkdrop',
   catalogUrl = '/milkdrop-presets/catalog.json',
-  fidelityMode = 'compat',
-  parityAllowlist = [],
 }: {
   dbName?: string;
   catalogUrl?: string;
-  fidelityMode?: MilkdropFidelityMode;
-  parityAllowlist?: MilkdropParityAllowlistEntry[];
 } = {}): MilkdropCatalogStore {
   const memoryPresets = new Map<string, StoredPresetRecord>();
   const memoryMeta = new Map<string, StoredMetaRecord>();
   const bundledSourceCache = new Map<string, MilkdropPresetSource>();
   const analysisCache = new Map<string, MilkdropCompiledPreset>();
-  const analysisOptionsKey = JSON.stringify({
-    fidelityMode,
-    parityAllowlist: parityAllowlist
-      .map((entry) => `${entry.presetId}:${entry.blockedConstruct}`)
-      .sort(),
-  });
+  const analysisOptionsKey = 'compat';
   let dbPromise: Promise<IDBDatabase | null> | null = null;
   let bundledCatalogPromise: Promise<MilkdropBundledCatalogEntry[]> | null =
     null;
@@ -330,10 +319,7 @@ export function createMilkdropCatalogStore({
     if (cached) {
       return cached;
     }
-    const compiled = compileMilkdropPresetSource(source.raw, source, {
-      fidelityMode,
-      parityAllowlist,
-    });
+    const compiled = compileMilkdropPresetSource(source.raw, source);
     analysisCache.set(cacheKey, compiled);
     return compiled;
   };
@@ -436,14 +422,12 @@ export function createMilkdropCatalogStore({
               certification: entry.certification ?? 'bundled',
               corpusTier: entry.corpusTier ?? 'bundled',
               parity: {
-                fidelityMode,
                 ignoredFields: [],
                 approximatedShaderLines: [],
                 missingAliasesOrFunctions: [],
                 backendDivergence: [],
                 visualFallbacks: [],
                 blockedConstructs: [],
-                allowlistedBlockedConstructs: [],
                 blockingConstructDetails: [],
                 degradationReasons: [
                   {
@@ -461,7 +445,6 @@ export function createMilkdropCatalogStore({
                   visual: 'not-captured',
                 },
                 visualEvidenceTier: entry.visualEvidenceTier ?? 'none',
-                parityReady: false,
               },
               bundledFile: entry.file,
             } satisfies MilkdropCatalogEntry;

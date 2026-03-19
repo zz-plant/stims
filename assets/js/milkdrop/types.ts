@@ -103,8 +103,6 @@ export type MilkdropFeatureKey =
 
 export type MilkdropSupportStatus = 'supported' | 'partial' | 'unsupported';
 
-export type MilkdropFidelityMode = 'compat' | 'parity';
-
 export type MilkdropFidelityClass =
   | 'exact'
   | 'near-exact'
@@ -116,14 +114,6 @@ export type MilkdropVisualEvidenceTier =
   | 'compile'
   | 'runtime'
   | 'visual';
-
-export type MilkdropParityAllowlistEntry = {
-  presetId: string;
-  blockedConstruct: string;
-  owner: string;
-  expiry: string;
-  note?: string;
-};
 
 export type MilkdropBlockingConstruct = {
   kind: 'field' | 'shader';
@@ -155,26 +145,20 @@ export type MilkdropCompatibilityEvidence = {
 };
 
 export type MilkdropParityReport = {
-  fidelityMode: MilkdropFidelityMode;
   ignoredFields: string[];
   approximatedShaderLines: string[];
   missingAliasesOrFunctions: string[];
   backendDivergence: string[];
   visualFallbacks: string[];
   blockedConstructs: string[];
-  allowlistedBlockedConstructs: string[];
   blockingConstructDetails: MilkdropBlockingConstruct[];
   degradationReasons: MilkdropDegradationReason[];
   fidelityClass: MilkdropFidelityClass;
   evidence: MilkdropCompatibilityEvidence;
   visualEvidenceTier: MilkdropVisualEvidenceTier;
-  parityReady: boolean;
 };
 
-export type MilkdropCompileOptions = {
-  fidelityMode?: MilkdropFidelityMode;
-  parityAllowlist?: MilkdropParityAllowlistEntry[];
-};
+export type MilkdropCompileOptions = Record<string, never>;
 
 export type MilkdropBackendSupport = {
   status: MilkdropSupportStatus;

@@ -120,16 +120,83 @@ function getAudioInputSummary(
   };
 }
 
-function updatePermissionFlow(
+type NextStepContent = {
+  title: string;
+  steps: string[];
+  showGrantAction: boolean;
+};
+
+function getNextStepContent(
+  result: CapabilityPreflightResult,
+): NextStepContent {
+  if (!result.canProceed) {
+    return {
+      title: 'Best next step',
+      steps: result.blockingIssues.length
+        ? [
+            'Use a browser or device with graphics acceleration enabled.',
+            'Or head back to compatible toys that can run without this setup.',
+          ]
+        : ['Review the guidance below before continuing.'],
+      showGrantAction: false,
+    };
+  }
+
+  if (!result.microphone.supported) {
+    return {
+      title: 'Best next step',
+      steps: [
+        'Continue to audio setup.',
+        'Start with demo audio, tab audio, or YouTube audio in the next step.',
+      ],
+      showGrantAction: false,
+    };
+  }
+
+  if (result.microphone.state === 'granted') {
+    return {
+      title: 'Best next step',
+      steps: [
+        'Continue to audio setup.',
+        'Live microphone mode is ready immediately.',
+      ],
+      showGrantAction: false,
+    };
+  }
+
+  if (result.microphone.state === 'denied') {
+    return {
+      title: 'Best next step',
+      steps: [
+        'Continue with demo audio now.',
+        'Turn microphone access back on in site settings whenever you want live input.',
+      ],
+      showGrantAction: false,
+    };
+  }
+
+  return {
+    title: 'Best next step',
+    steps: [
+      'Continue to audio setup.',
+      'You can allow microphone access there, or skip it and start with demo audio.',
+    ],
+    showGrantAction: true,
+  };
+}
+
+function updateNextStep(
   container: HTMLElement,
   result: CapabilityPreflightResult,
   onGrantMicrophone: (() => void) | null,
 ) {
   container.innerHTML = '';
 
+  const content = getNextStepContent(result);
+
   const heading = document.createElement('p');
   heading.className = 'preflight-panel__eyebrow';
-  heading.textContent = 'What happens next';
+  heading.textContent = content.title;
   container.appendChild(heading);
 
   const list = document.createElement('ol');
@@ -141,34 +208,11 @@ function updatePermissionFlow(
     list.appendChild(item);
   };
 
-  if (!result.microphone.supported) {
-    addStep('Audio setup will default to demo audio in the next step.');
-    addStep('Live mic is unavailable in this browser.');
-  } else if (result.microphone.state === 'granted') {
-    addStep('Audio setup can start with live mic immediately.');
-    addStep(
-      'Demo audio will still stay available as the no-permission fallback.',
-    );
-  } else if (result.microphone.state === 'denied') {
-    addStep('Audio setup will recommend demo audio first.');
-    addStep('When you are ready, allow microphone access in site settings.');
-    addStep('Rerun this check later if you want live mic mode.');
-  } else {
-    addStep('Audio setup will offer live mic and demo audio side by side.');
-    addStep(
-      'Use “Grant microphone access” if you want the browser prompt now.',
-    );
-    addStep('You can skip the prompt and still start with demo audio.');
-  }
+  content.steps.forEach(addStep);
 
   container.appendChild(list);
 
-  if (
-    onGrantMicrophone &&
-    result.microphone.supported &&
-    result.microphone.state !== 'granted' &&
-    result.microphone.state !== 'denied'
-  ) {
+  if (onGrantMicrophone && content.showGrantAction) {
     const grantButton = document.createElement('button');
     grantButton.type = 'button';
     grantButton.className = 'cta-button ghost';
@@ -190,12 +234,12 @@ function updateStatusList(
     className: string;
   }> = [
     {
-      label: 'System check',
+      label: 'Visuals',
       summary: getPerformanceCheckSummary(result),
       className: 'preflight-status--primary',
     },
     {
-      label: 'Audio setup',
+      label: 'Audio',
       summary: getAudioInputSummary(result),
       className: 'preflight-status--supporting',
     },
@@ -223,64 +267,40 @@ function updateWhyDetails(
   const items: string[] = [];
 
   if (result.rendering.rendererBackend === 'webgpu') {
-    items.push('WebGPU is available for the highest fidelity visuals.');
+    items.push('High-fidelity visuals are available on this device.');
   } else if (result.rendering.rendererBackend === 'webgl') {
     items.push(
       result.rendering.webgpuFallbackReason
-        ? `High-fidelity mode is unavailable (${result.rendering.webgpuFallbackReason}).`
-        : 'WebGPU is unavailable, so WebGL is used for compatibility.',
+        ? `Compatibility mode is active because ${result.rendering.webgpuFallbackReason}.`
+        : 'Compatibility mode is active for broader browser support.',
     );
   } else {
-    items.push('No GPU acceleration detected; try another browser or device.');
-  }
-
-  const webgpuCapabilities = result.rendering.webgpuCapabilities;
-  if (webgpuCapabilities) {
-    if (webgpuCapabilities.features.shaderF16) {
-      items.push(
-        'Half-precision shaders are available for denser feedback and particle effects.',
-      );
-    }
-    if (webgpuCapabilities.features.timestampQuery) {
-      items.push(
-        'GPU timestamp queries are available for deeper frame profiling.',
-      );
-    }
-    if (
-      webgpuCapabilities.workers.workers &&
-      webgpuCapabilities.workers.offscreenCanvas &&
-      webgpuCapabilities.workers.transferControlToOffscreen
-    ) {
-      items.push(
-        'This browser can support off-main-thread WebGPU rendering with OffscreenCanvas.',
-      );
-    }
+    items.push('Graphics acceleration was not detected on this device.');
   }
 
   if (!result.microphone.supported) {
     items.push(
-      'Microphone capture is unavailable; use demo, tab, or YouTube audio.',
+      'Microphone capture is unavailable here, so alternate audio options are recommended.',
     );
   } else if (result.microphone.state === 'denied') {
     items.push(
-      'Microphone access is blocked; update permissions or use demo audio.',
+      'Microphone access is off right now; demo audio is the easiest fallback.',
     );
-  } else if (result.microphone.state === 'unknown') {
+  } else if (
+    result.microphone.state === 'prompt' ||
+    result.microphone.state === 'unknown'
+  ) {
     items.push(
-      'Permission state could not be read; the browser will still prompt when needed.',
+      'Microphone access has not been confirmed yet and may prompt on start.',
     );
-  } else if (result.microphone.state === 'prompt') {
-    items.push('You will be prompted for microphone access when starting.');
   } else {
-    items.push('Microphone permission is granted for live audio.');
+    items.push('Microphone access is already available for live input.');
   }
 
   if (!result.environment.secureContext) {
     items.push(
-      'This page is not in a secure context, so some APIs may be limited.',
+      'This page is not running in a secure browser context, so some features may stay limited.',
     );
-  } else {
-    items.push('Secure browsing mode is active, so modern features can run.');
   }
 
   items.push(
@@ -293,21 +313,13 @@ function updateWhyDetails(
     result.performance.recommendedQualityPresetId === 'hi-fi'
       ? 'Hi-fi visuals are recommended for this device.'
       : result.performance.recommendedQualityPresetId === 'performance'
-        ? 'Battery saver visuals are recommended for smoother playback.'
+        ? 'Lighter visuals are recommended for smoother playback.'
         : 'Balanced visuals are recommended for this device.',
   );
 
-  if (result.performance.lowPower) {
-    items.push(
-      `Performance mode is recommended due to ${result.performance.reason ?? 'lower-power hardware'}.`,
-    );
-  } else {
-    items.push('Device should handle full-quality rendering.');
-  }
-
   const list = document.createElement('ul');
   list.className = 'preflight-panel__details-list';
-  items.forEach((item) => {
+  items.slice(0, 4).forEach((item) => {
     const li = document.createElement('li');
     li.textContent = item;
     list.appendChild(li);
@@ -388,7 +400,7 @@ function renderIssueList(
 
 export function attachCapabilityPreflight({
   host = document.body,
-  heading = 'Quick system check',
+  heading = 'Quick check',
   backHref,
   onComplete,
   onRetry,
@@ -543,13 +555,13 @@ export function attachCapabilityPreflight({
   const description = document.createElement('p');
   description.className = 'control-panel__description';
   description.textContent =
-    'Quick system check now, then a focused audio setup step.';
+    'We check visuals and audio, then point you to the next step.';
   panel.appendChild(description);
 
   const sequenceHint = document.createElement('p');
   sequenceHint.className = 'control-panel__microcopy';
   sequenceHint.textContent =
-    'Advanced diagnostics stay tucked away unless you need them.';
+    'Technical details stay hidden unless you want them.';
   panel.appendChild(sequenceHint);
 
   const statusContainer = document.createElement('div');
@@ -560,15 +572,15 @@ export function attachCapabilityPreflight({
   issueContainer.className = 'preflight-panel__issues-container';
   panel.appendChild(issueContainer);
 
-  const permissionFlowContainer = document.createElement('div');
-  permissionFlowContainer.className = 'preflight-panel__issues-container';
-  panel.appendChild(permissionFlowContainer);
+  const nextStepContainer = document.createElement('div');
+  nextStepContainer.className = 'preflight-panel__issues-container';
+  panel.appendChild(nextStepContainer);
 
   const details = document.createElement('details');
   details.className = 'preflight-panel__details';
   const summary = document.createElement('summary');
   summary.className = 'preflight-panel__details-summary';
-  summary.textContent = 'Diagnostics';
+  summary.textContent = 'Technical details';
   details.appendChild(summary);
   const detailsContent = document.createElement('div');
   detailsContent.className = 'preflight-panel__details-content';
@@ -750,7 +762,7 @@ export function attachCapabilityPreflight({
     applyActionPriority(result);
     updateStatusList(statusContainer, result);
     renderIssueList(issueContainer, result);
-    updatePermissionFlow(permissionFlowContainer, result, () => {
+    updateNextStep(nextStepContainer, result, () => {
       void (async () => {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({

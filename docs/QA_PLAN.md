@@ -23,7 +23,7 @@ When you touch the landing page or toy shell UI, run this short manual pass:
 2. **Library discovery**: Search + filters add chips to the sticky applied-view rail, and `Reset view` clears the state in one tap.
 3. **Toy launch**: Open a toy from the library, confirm preflight shows one primary CTA, start demo audio, and verify visuals respond.
 4. **Touch affordances**: On a narrow/touch viewport, confirm the top-row back action is visible before launch and gesture hints appear after audio starts.
-5. **Performance panel**: Open system check, toggle a quality preset, and verify the selection persists when switching toys.
+5. **Performance panel**: Open quick check, toggle a quality preset, and verify the selection persists when switching toys.
 
 ## How to run the QA automation
 

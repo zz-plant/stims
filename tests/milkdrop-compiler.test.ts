@@ -501,7 +501,6 @@ warp_shader=this is unsupported
     expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
       'shader:this is unsupported',
     ]);
-    expect(compiled.ir.compatibility.parity.parityReady).toBe(false);
     expect(
       compiled.ir.compatibility.parity.degradationReasons.map(
         (reason) => reason.category,
@@ -521,20 +520,17 @@ warp_shader=this is unsupported
     expect(compiled.formattedSource).toContain('shapecode_0_enabled=1');
   });
 
-  test('fails parity mode when ignored fields are encountered', () => {
+  test('records ignored unsupported fields as blocked constructs', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Parity Blocked Field
 definitely_not_a_real_field=1
       `.trim(),
       { id: 'parity-blocked-field' },
-      { fidelityMode: 'parity' },
     );
 
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('unsupported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
-    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([
       'definitely_not_a_real_field',
     ]);
@@ -546,27 +542,19 @@ definitely_not_a_real_field=1
         (entry) => entry.code === 'preset_unknown_field',
       ),
     ).toBe(true);
-    expect(
-      compiled.diagnostics.some(
-        (entry) => entry.code === 'preset_parity_blocked',
-      ),
-    ).toBe(true);
   });
 
-  test('fails parity mode when shader text is approximated', () => {
+  test('keeps shader approximation as a partial backend support path', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Parity Blocked Shader
 warp_shader=unsupported(shader)
       `.trim(),
       { id: 'parity-blocked-shader' },
-      { fidelityMode: 'parity' },
     );
 
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('unsupported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
-    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
       'unsupported(shader)',
     ]);
@@ -577,39 +565,5 @@ warp_shader=unsupported(shader)
       'shader-text-control-extraction',
     );
     expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
-  });
-
-  test('respects parity allowlist entries for known blocked constructs', () => {
-    const compiled = compileMilkdropPresetSource(
-      `
-title=Parity Allowlist
-warp_shader=unsupported(shader)
-      `.trim(),
-      { id: 'parity-allowlist' },
-      {
-        fidelityMode: 'parity',
-        parityAllowlist: [
-          {
-            presetId: 'parity-allowlist',
-            blockedConstruct: 'shader:unsupported(shader)',
-            owner: 'codex',
-            expiry: '2026-06-30',
-          },
-        ],
-      },
-    );
-
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(
-      compiled.ir.compatibility.parity.allowlistedBlockedConstructs,
-    ).toEqual(['shader:unsupported(shader)']);
-    expect(compiled.ir.compatibility.parity.parityReady).toBe(false);
-    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
-    expect(
-      compiled.diagnostics.some(
-        (entry) => entry.code === 'preset_parity_blocked',
-      ),
-    ).toBe(false);
   });
 });

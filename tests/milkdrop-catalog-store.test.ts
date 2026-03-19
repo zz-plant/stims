@@ -61,7 +61,6 @@ describe('milkdrop catalog store', () => {
 
     expect(bundled?.supports.webgl.status).toBe('supported');
     expect(bundled?.supports.webgpu.status).toBe('supported');
-    expect(bundled?.parity.parityReady).toBe(true);
     expect(bundled?.fidelityClass).toBe('exact');
     expect(bundled?.certification).toBe('bundled');
     expect(bundled?.visualEvidenceTier).toBe('visual');
@@ -98,7 +97,6 @@ describe('milkdrop catalog store', () => {
         allowlisted: false,
       },
     ]);
-    expect(imported?.parity.parityReady).toBe(false);
     expect(imported?.featuresUsed).toContain('unsupported-shader-text');
 
     const history = await store.getHistory();

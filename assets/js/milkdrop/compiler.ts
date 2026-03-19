@@ -24,8 +24,6 @@ import type {
   MilkdropFeatureAnalysis,
   MilkdropFeatureKey,
   MilkdropFidelityClass,
-  MilkdropFidelityMode,
-  MilkdropParityAllowlistEntry,
   MilkdropParityReport,
   MilkdropPresetAST,
   MilkdropPresetField,
@@ -302,47 +300,16 @@ const shapecodeFieldPattern = /^shapecode_(\d+)_(.+)$/u;
 const shaderFieldPattern =
   /^(?:warp_[0-9]+|comp_[0-9]+|warp_shader|comp_shader|shader_text|warp_code|comp_code)$/u;
 const hardUnsupportedKeys = new Set<string>([]);
-const DEFAULT_FIDELITY_MODE: MilkdropFidelityMode = 'compat';
-
-function normalizeParityBlockedConstructValue(value: string) {
+function normalizeBlockedConstructValue(value: string) {
   return value.trim().replace(/\s+/gu, ' ');
 }
 
-function toParityFieldConstruct(key: string) {
-  return `field:${normalizeParityBlockedConstructValue(key)}`;
+function toBlockedFieldConstruct(key: string) {
+  return `field:${normalizeBlockedConstructValue(key)}`;
 }
 
-function toParityShaderConstruct(line: string) {
-  return `shader:${normalizeParityBlockedConstructValue(line)}`;
-}
-
-function isAllowlistedBlockedConstruct({
-  allowlist,
-  presetId,
-  blockedConstruct,
-}: {
-  allowlist: MilkdropParityAllowlistEntry[];
-  presetId: string;
-  blockedConstruct: string;
-}) {
-  return allowlist.some((entry) => {
-    return (
-      entry.blockedConstruct === blockedConstruct &&
-      (entry.presetId === presetId || entry.presetId === '*')
-    );
-  });
-}
-
-function failBackendSupportForParity(
-  support: MilkdropBackendSupport,
-  reason: string,
-): MilkdropBackendSupport {
-  return {
-    ...support,
-    status: 'unsupported',
-    reasons: [...new Set([reason, ...support.reasons])],
-    recommendedFallback: undefined,
-  };
+function toBlockedShaderConstruct(line: string) {
+  return `shader:${normalizeBlockedConstructValue(line)}`;
 }
 
 function buildBackendDivergence({
@@ -390,28 +357,22 @@ function buildVisualFallbacks({
 function buildBlockingConstructDetails({
   ignoredFields,
   approximatedShaderLines,
-  allowlistedBlockedConstructs,
 }: {
   ignoredFields: string[];
   approximatedShaderLines: string[];
-  allowlistedBlockedConstructs: string[];
 }): MilkdropBlockingConstruct[] {
   return [
     ...ignoredFields.map((value) => ({
       kind: 'field' as const,
       value,
       system: 'preset-field' as const,
-      allowlisted: allowlistedBlockedConstructs.includes(
-        toParityFieldConstruct(value),
-      ),
+      allowlisted: false,
     })),
     ...approximatedShaderLines.map((value) => ({
       kind: 'shader' as const,
       value,
       system: 'shader-text' as const,
-      allowlisted: allowlistedBlockedConstructs.includes(
-        toParityShaderConstruct(value),
-      ),
+      allowlisted: false,
     })),
   ];
 }
@@ -419,7 +380,6 @@ function buildBlockingConstructDetails({
 function buildDegradationReasons({
   ignoredFields,
   approximatedShaderLines,
-  allowlistedBlockedConstructs,
   backendDivergence,
   visualFallbacks,
   webgl,
@@ -427,7 +387,6 @@ function buildDegradationReasons({
 }: {
   ignoredFields: string[];
   approximatedShaderLines: string[];
-  allowlistedBlockedConstructs: string[];
   backendDivergence: string[];
   visualFallbacks: string[];
   webgl: MilkdropBackendSupport;
@@ -436,32 +395,22 @@ function buildDegradationReasons({
   const reasons: MilkdropDegradationReason[] = [];
 
   ignoredFields.forEach((field) => {
-    const blockedConstruct = toParityFieldConstruct(field);
     reasons.push({
       code: 'unknown-field',
       category: 'unsupported-syntax',
-      message: allowlistedBlockedConstructs.includes(blockedConstruct)
-        ? `Field "${field}" is outside the current runtime scope but temporarily allowlisted.`
-        : `Field "${field}" is outside the current runtime scope and was ignored.`,
+      message: `Field "${field}" is outside the current runtime scope and was ignored.`,
       system: 'compiler',
-      blocking: !allowlistedBlockedConstructs.includes(blockedConstruct),
+      blocking: true,
     });
   });
 
   approximatedShaderLines.forEach((line) => {
-    const blockedConstruct = toParityShaderConstruct(line);
-    const isAllowlisted =
-      allowlistedBlockedConstructs.includes(blockedConstruct);
     reasons.push({
-      code: isAllowlisted ? 'allowlisted-gap' : 'shader-approximation',
-      category: isAllowlisted
-        ? 'acceptable-approximation'
-        : 'unsupported-shader',
-      message: isAllowlisted
-        ? `Shader line "${line}" remains allowlisted while coverage is being hardened.`
-        : `Shader line "${line}" could not be executed directly and is being approximated.`,
+      code: 'shader-approximation',
+      category: 'unsupported-shader',
+      message: `Shader line "${line}" could not be executed directly and is being approximated.`,
       system: 'shader',
-      blocking: !isAllowlisted,
+      blocking: true,
     });
   });
 
@@ -515,13 +464,13 @@ function classifyFidelity({
   degradationReasons,
   webgl,
   webgpu,
-  parityReady,
+  noBlockedConstructs,
 }: {
   blockedConstructDetails: MilkdropBlockingConstruct[];
   degradationReasons: MilkdropDegradationReason[];
   webgl: MilkdropBackendSupport;
   webgpu: MilkdropBackendSupport;
-  parityReady: boolean;
+  noBlockedConstructs: boolean;
 }): MilkdropFidelityClass {
   const hasBlockingConstruct = blockedConstructDetails.some(
     (construct) => !construct.allowlisted,
@@ -538,7 +487,7 @@ function classifyFidelity({
   if (hasBlockingConstruct) {
     return 'partial';
   }
-  if (!parityReady || degradationReasons.length > 0) {
+  if (!noBlockedConstructs || degradationReasons.length > 0) {
     return 'near-exact';
   }
   return 'exact';
@@ -559,15 +508,6 @@ function buildCompatibilityEvidence({
     visual:
       visualEvidenceTier === 'visual' ? 'reference-suite' : 'not-captured',
   };
-}
-
-function createParityFailureReason(blockedConstructs: string[]) {
-  const preview = blockedConstructs.slice(0, 3).join(', ');
-  const suffix =
-    blockedConstructs.length > 3
-      ? ` (+${blockedConstructs.length - 3} more)`
-      : '';
-  return `Parity mode blocked unsupported constructs: ${preview}${suffix}.`;
 }
 
 function resolveLegacyCustomSlotIndex(rawIndex: number, maxSlots: number) {
@@ -3369,19 +3309,7 @@ function createPresetSource(
   };
 }
 
-function createIR(
-  ast: MilkdropPresetAST,
-  diagnostics: MilkdropDiagnostic[],
-  {
-    fidelityMode,
-    parityAllowlist,
-    presetId,
-  }: {
-    fidelityMode: MilkdropFidelityMode;
-    parityAllowlist: MilkdropParityAllowlistEntry[];
-    presetId: string;
-  },
-) {
+function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
   const numericFields = { ...DEFAULT_MILKDROP_STATE };
   const stringFields: Record<string, string> = {};
   const programs = {
@@ -3609,34 +3537,12 @@ function createIR(
   const approximatedShaderLines = [
     ...shaderWarpAnalysis.unsupportedLines,
     ...shaderCompAnalysis.unsupportedLines,
-  ].map(normalizeParityBlockedConstructValue);
+  ].map(normalizeBlockedConstructValue);
   const blockedConstructs = [
-    ...ignoredFields.map(toParityFieldConstruct),
-    ...approximatedShaderLines.map(toParityShaderConstruct),
+    ...ignoredFields.map(toBlockedFieldConstruct),
+    ...approximatedShaderLines.map(toBlockedShaderConstruct),
   ];
-  const allowlistedBlockedConstructs = blockedConstructs.filter(
-    (blockedConstruct) =>
-      isAllowlistedBlockedConstruct({
-        allowlist: parityAllowlist,
-        presetId,
-        blockedConstruct,
-      }),
-  );
-  const parityBlockingConstructs = blockedConstructs.filter(
-    (blockedConstruct) =>
-      !allowlistedBlockedConstructs.includes(blockedConstruct),
-  );
-
-  let finalBackends = backends;
-  if (fidelityMode === 'parity' && parityBlockingConstructs.length > 0) {
-    const parityReason = createParityFailureReason(parityBlockingConstructs);
-    addDiagnostic(diagnostics, 'error', 'preset_parity_blocked', parityReason);
-    finalBackends = {
-      webgl: failBackendSupportForParity(backends.webgl, parityReason),
-      webgpu: failBackendSupportForParity(backends.webgpu, parityReason),
-    };
-  }
-
+  const finalBackends = backends;
   const backendDivergence = buildBackendDivergence(finalBackends);
   const visualFallbacks = buildVisualFallbacks({
     approximatedShaderLines,
@@ -3646,19 +3552,15 @@ function createIR(
   const blockingConstructDetails = buildBlockingConstructDetails({
     ignoredFields,
     approximatedShaderLines,
-    allowlistedBlockedConstructs,
   });
   const degradationReasons = buildDegradationReasons({
     ignoredFields,
     approximatedShaderLines,
-    allowlistedBlockedConstructs,
     backendDivergence,
     visualFallbacks,
     webgl: finalBackends.webgl,
     webgpu: finalBackends.webgpu,
   });
-  const parityReady =
-    blockedConstructs.length === 0 && allowlistedBlockedConstructs.length === 0;
   const visualEvidenceTier =
     blockedConstructs.length > 0
       ? 'compile'
@@ -3674,24 +3576,21 @@ function createIR(
     degradationReasons,
     webgl: finalBackends.webgl,
     webgpu: finalBackends.webgpu,
-    parityReady,
+    noBlockedConstructs: blockedConstructs.length === 0,
   });
 
   const parity: MilkdropParityReport = {
-    fidelityMode,
     ignoredFields,
     approximatedShaderLines,
     missingAliasesOrFunctions: [],
     backendDivergence,
     visualFallbacks,
     blockedConstructs,
-    allowlistedBlockedConstructs,
     blockingConstructDetails,
     degradationReasons,
     fidelityClass,
     evidence,
     visualEvidenceTier,
-    parityReady,
   };
 
   const title = stringFields.title || 'MilkDrop Session';
@@ -3802,19 +3701,11 @@ function createIR(
 export function compileMilkdropPresetSource(
   raw: string,
   source: Partial<MilkdropPresetSource> = {},
-  options: MilkdropCompileOptions = {},
+  _options: MilkdropCompileOptions = {},
 ): MilkdropCompiledPreset {
-  const fidelityMode = options.fidelityMode ?? DEFAULT_FIDELITY_MODE;
-  const parityAllowlist = options.parityAllowlist ?? [];
   const parsed = parseMilkdropPreset(raw);
   const diagnostics = [...parsed.diagnostics];
-  const presetId =
-    source.id ?? defaultSourceId(source.title ?? 'milkdrop-preset');
-  const ir = createIR(parsed.ast, diagnostics, {
-    fidelityMode,
-    parityAllowlist,
-    presetId,
-  });
+  const ir = createIR(parsed.ast, diagnostics);
   const presetSource = createPresetSource(source, raw, ir.title, ir.author);
 
   const compiled: MilkdropCompiledPreset = {

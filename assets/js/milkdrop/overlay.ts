@@ -117,23 +117,6 @@ function compatibilityCategoryPriority(
   }
 }
 
-function paritySummary({
-  blockedConstructs,
-  allowlistedBlockedConstructs,
-  parityReady,
-}: MilkdropCatalogEntry['parity']) {
-  if (parityReady) {
-    return 'Parity ready';
-  }
-  if (allowlistedBlockedConstructs.length > 0) {
-    return `${allowlistedBlockedConstructs.length} allowlisted gap${allowlistedBlockedConstructs.length === 1 ? '' : 's'}`;
-  }
-  if (blockedConstructs.length > 0) {
-    return `${blockedConstructs.length} parity gap${blockedConstructs.length === 1 ? '' : 's'}`;
-  }
-  return 'Parity audit pending';
-}
-
 function getPrimaryDegradationReason(compiled: MilkdropCompiledPreset | null) {
   if (!compiled) {
     return null;
@@ -149,40 +132,6 @@ function getPrimaryDegradationReason(compiled: MilkdropCompiledPreset | null) {
       );
     },
   )[0];
-}
-
-function buildDowngradeGuidance(compiled: MilkdropCompiledPreset | null) {
-  if (!compiled) {
-    return null;
-  }
-  const parity = compiled.ir.compatibility.parity;
-  const webgl = compiled.ir.compatibility.backends.webgl;
-  if (
-    webgl.status === 'supported' &&
-    parity.blockedConstructs.length === 0 &&
-    parity.approximatedShaderLines.length === 0
-  ) {
-    return 'Mobile/WebGL-safe now.';
-  }
-
-  const actions: string[] = [];
-  if (parity.ignoredFields.length > 0) {
-    actions.push(
-      `remove or replace ${parity.ignoredFields.length} unsupported field${parity.ignoredFields.length === 1 ? '' : 's'}`,
-    );
-  }
-  if (parity.approximatedShaderLines.length > 0) {
-    actions.push(
-      `rewrite ${parity.approximatedShaderLines.length} shader line${parity.approximatedShaderLines.length === 1 ? '' : 's'} into the supported subset`,
-    );
-  }
-  if (webgl.status !== 'supported') {
-    actions.push(`resolve WebGL ${webgl.status} limitations`);
-  }
-
-  return actions.length > 0
-    ? `Downgrade path for mobile/WebGL-safe output: ${actions.join(', ')}.`
-    : 'Downgrade path available after parity gaps are resolved.';
 }
 
 export class MilkdropOverlay {
@@ -699,7 +648,6 @@ export class MilkdropOverlay {
       preset.origin,
       preset.certification,
       fidelityLabel(preset.fidelityClass),
-      paritySummary(preset.parity),
       preset.rating > 0 ? `${preset.rating}★` : null,
       preset.historyIndex !== undefined ? 'recent' : null,
       ...preset.tags
@@ -1105,8 +1053,7 @@ export class MilkdropOverlay {
       (diagnostic) => diagnostic.severity === 'error',
     );
     const primaryReason = getPrimaryDegradationReason(state.latestCompiled);
-    const downgradeGuidance = buildDowngradeGuidance(state.latestCompiled);
-    const activeParity = state.latestCompiled?.ir.compatibility.parity;
+    const activeCompatibility = state.latestCompiled?.ir.compatibility.parity;
     const latestWebglStatus =
       state.latestCompiled?.ir.compatibility.backends.webgl.status;
     const latestWebgpuStatus =
@@ -1116,8 +1063,8 @@ export class MilkdropOverlay {
       : state.dirty
         ? 'Live preset updated from editor'
         : 'Editor synced with live preset';
-    const fidelityStatus = activeParity
-      ? `Fidelity ${fidelityLabel(activeParity.fidelityClass)} · WebGL ${latestWebglStatus} · WebGPU ${latestWebgpuStatus}`
+    const fidelityStatus = activeCompatibility
+      ? `Fidelity ${fidelityLabel(activeCompatibility.fidelityClass)} · WebGL ${latestWebglStatus} · WebGPU ${latestWebgpuStatus}`
       : null;
     this.editorStatus.textContent = [baseStatus, fidelityStatus]
       .filter(Boolean)
@@ -1129,12 +1076,6 @@ export class MilkdropOverlay {
         ? {
             severity: primaryReason.blocking ? 'warning' : 'info',
             message: `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}`,
-          }
-        : null,
-      downgradeGuidance
-        ? {
-            severity: 'info',
-            message: downgradeGuidance,
           }
         : null,
     ].filter(Boolean) as Array<{
@@ -1181,7 +1122,6 @@ export class MilkdropOverlay {
     const support = compiled.ir.compatibility.backends[backend];
     const parity = compiled.ir.compatibility.parity;
     const primaryReason = getPrimaryDegradationReason(compiled);
-    const downgradeGuidance = buildDowngradeGuidance(compiled);
     const degradationCategorySummary =
       parity.degradationReasons.length > 0
         ? [
@@ -1197,11 +1137,6 @@ export class MilkdropOverlay {
       <div><strong>Transport support:</strong> ${supportLabel(support.status)}</div>
       <div><strong>Fidelity:</strong> ${fidelityLabel(parity.fidelityClass)}</div>
       <div><strong>Certification:</strong> ${compiled.source.origin === 'bundled' ? 'bundled' : 'exploratory'}</div>
-      <div><strong>Fidelity mode:</strong> ${parity.fidelityMode}</div>
-      <div><strong>Parity ready:</strong> ${parity.parityReady ? 'yes' : 'no'}</div>
-      <div><strong>Ignored fields:</strong> ${parity.ignoredFields.length}</div>
-      <div><strong>Approximated shader lines:</strong> ${parity.approximatedShaderLines.length}</div>
-      <div><strong>Blocking constructs:</strong> ${parity.blockingConstructDetails.length}</div>
       <div><strong>Degradation categories:</strong> ${degradationCategorySummary}</div>
       <div><strong>Evidence:</strong> compile ${parity.evidence.compile}, runtime ${parity.evidence.runtime}, visual ${parity.evidence.visual}</div>
       <div><strong>Backend divergence:</strong> ${parity.backendDivergence.length}</div>
@@ -1216,7 +1151,6 @@ export class MilkdropOverlay {
       <div><strong>Borders:</strong> ${frameState.borders.length}</div>
       <div><strong>Register pressure:</strong> q${compiled.ir.compatibility.featureAnalysis.registerUsage.q} / t${compiled.ir.compatibility.featureAnalysis.registerUsage.t}</div>
       <div><strong>Primary note:</strong> ${primaryReason ? `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}` : (support.reasons[0] ?? parity.visualFallbacks[0] ?? 'Validated for the active backend.')}</div>
-      <div><strong>Downgrade path:</strong> ${downgradeGuidance ?? 'No downgrade guidance needed.'}</div>
     `;
   }
 
