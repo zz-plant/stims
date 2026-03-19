@@ -98,12 +98,51 @@ export type MilkdropSupportStatus = 'supported' | 'partial' | 'unsupported';
 
 export type MilkdropFidelityMode = 'compat' | 'parity';
 
+export type MilkdropFidelityClass =
+  | 'exact'
+  | 'near-exact'
+  | 'partial'
+  | 'fallback';
+
+export type MilkdropVisualEvidenceTier =
+  | 'none'
+  | 'compile'
+  | 'runtime'
+  | 'visual';
+
 export type MilkdropParityAllowlistEntry = {
   presetId: string;
   blockedConstruct: string;
   owner: string;
   expiry: string;
   note?: string;
+};
+
+export type MilkdropBlockingConstruct = {
+  kind: 'field' | 'shader';
+  value: string;
+  system: 'preset-field' | 'shader-text';
+  allowlisted: boolean;
+};
+
+export type MilkdropDegradationReason = {
+  code:
+    | 'unknown-field'
+    | 'unsupported-field'
+    | 'shader-approximation'
+    | 'allowlisted-gap'
+    | 'backend-partial'
+    | 'backend-unsupported'
+    | 'visual-fallback';
+  message: string;
+  system: 'compiler' | 'shader' | 'backend' | 'runtime';
+  blocking: boolean;
+};
+
+export type MilkdropCompatibilityEvidence = {
+  compile: 'verified' | 'issues';
+  runtime: 'not-run' | 'smoke-tested';
+  visual: 'not-captured' | 'reference-suite';
 };
 
 export type MilkdropParityReport = {
@@ -115,6 +154,11 @@ export type MilkdropParityReport = {
   visualFallbacks: string[];
   blockedConstructs: string[];
   allowlistedBlockedConstructs: string[];
+  blockingConstructDetails: MilkdropBlockingConstruct[];
+  degradationReasons: MilkdropDegradationReason[];
+  fidelityClass: MilkdropFidelityClass;
+  evidence: MilkdropCompatibilityEvidence;
+  visualEvidenceTier: MilkdropVisualEvidenceTier;
   parityReady: boolean;
 };
 
@@ -570,6 +614,10 @@ export type MilkdropBundledCatalogEntry = {
   file: string;
   tags?: string[];
   curatedRank?: number;
+  corpusTier?: 'bundled' | 'certified' | 'exploratory';
+  certification?: 'bundled' | 'certified' | 'exploratory';
+  expectedFidelityClass?: MilkdropFidelityClass;
+  visualEvidenceTier?: MilkdropVisualEvidenceTier;
   supports?: {
     webgl?: boolean;
     webgpu?: boolean;
@@ -594,6 +642,11 @@ export type MilkdropCatalogEntry = {
     webgl: MilkdropBackendSupport;
     webgpu: MilkdropBackendSupport;
   };
+  fidelityClass: MilkdropFidelityClass;
+  visualEvidenceTier: MilkdropVisualEvidenceTier;
+  evidence: MilkdropCompatibilityEvidence;
+  certification: 'bundled' | 'certified' | 'exploratory';
+  corpusTier: 'bundled' | 'certified' | 'exploratory';
   parity: MilkdropParityReport;
   bundledFile?: string;
 };

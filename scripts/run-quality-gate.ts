@@ -39,6 +39,10 @@ async function main() {
       label: 'TypeScript typecheck',
       cmd: ['bun', 'run', 'typecheck'],
     },
+    {
+      label: 'MilkDrop corpus check',
+      cmd: ['bun', 'run', 'check:milkdrop-corpus'],
+    },
     ...(mode === 'full'
       ? [
           {

@@ -13,13 +13,17 @@ import {
 } from './shader-ast';
 import type {
   MilkdropBackendSupport,
+  MilkdropBlockingConstruct,
   MilkdropCompiledPreset,
+  MilkdropCompatibilityEvidence,
   MilkdropCompileOptions,
+  MilkdropDegradationReason,
   MilkdropDiagnostic,
   MilkdropDiagnosticSeverity,
   MilkdropExpressionNode,
   MilkdropFeatureAnalysis,
   MilkdropFeatureKey,
+  MilkdropFidelityClass,
   MilkdropFidelityMode,
   MilkdropParityAllowlistEntry,
   MilkdropParityReport,
@@ -381,6 +385,160 @@ function buildVisualFallbacks({
     fallbacks.add(`webgpu->${webgpu.recommendedFallback}`);
   }
   return [...fallbacks];
+}
+
+function buildBlockingConstructDetails({
+  ignoredFields,
+  approximatedShaderLines,
+  allowlistedBlockedConstructs,
+}: {
+  ignoredFields: string[];
+  approximatedShaderLines: string[];
+  allowlistedBlockedConstructs: string[];
+}): MilkdropBlockingConstruct[] {
+  return [
+    ...ignoredFields.map((value) => ({
+      kind: 'field' as const,
+      value,
+      system: 'preset-field' as const,
+      allowlisted: allowlistedBlockedConstructs.includes(
+        toParityFieldConstruct(value),
+      ),
+    })),
+    ...approximatedShaderLines.map((value) => ({
+      kind: 'shader' as const,
+      value,
+      system: 'shader-text' as const,
+      allowlisted: allowlistedBlockedConstructs.includes(
+        toParityShaderConstruct(value),
+      ),
+    })),
+  ];
+}
+
+function buildDegradationReasons({
+  ignoredFields,
+  approximatedShaderLines,
+  allowlistedBlockedConstructs,
+  visualFallbacks,
+  webgl,
+  webgpu,
+}: {
+  ignoredFields: string[];
+  approximatedShaderLines: string[];
+  allowlistedBlockedConstructs: string[];
+  visualFallbacks: string[];
+  webgl: MilkdropBackendSupport;
+  webgpu: MilkdropBackendSupport;
+}): MilkdropDegradationReason[] {
+  const reasons: MilkdropDegradationReason[] = [];
+
+  ignoredFields.forEach((field) => {
+    const blockedConstruct = toParityFieldConstruct(field);
+    reasons.push({
+      code: 'unknown-field',
+      message: allowlistedBlockedConstructs.includes(blockedConstruct)
+        ? `Field "${field}" is outside the current runtime scope but temporarily allowlisted.`
+        : `Field "${field}" is outside the current runtime scope and was ignored.`,
+      system: 'compiler',
+      blocking: !allowlistedBlockedConstructs.includes(blockedConstruct),
+    });
+  });
+
+  approximatedShaderLines.forEach((line) => {
+    const blockedConstruct = toParityShaderConstruct(line);
+    reasons.push({
+      code: allowlistedBlockedConstructs.includes(blockedConstruct)
+        ? 'allowlisted-gap'
+        : 'shader-approximation',
+      message: allowlistedBlockedConstructs.includes(blockedConstruct)
+        ? `Shader line "${line}" remains allowlisted while coverage is being hardened.`
+        : `Shader line "${line}" could not be executed directly and is being approximated.`,
+      system: 'shader',
+      blocking: !allowlistedBlockedConstructs.includes(blockedConstruct),
+    });
+  });
+
+  const addBackendReason = (
+    backend: 'webgl' | 'webgpu',
+    support: MilkdropBackendSupport,
+  ) => {
+    if (support.status === 'supported') {
+      return;
+    }
+    reasons.push({
+      code:
+        support.status === 'unsupported'
+          ? 'backend-unsupported'
+          : 'backend-partial',
+      message: `${backend.toUpperCase()} is ${support.status} for this preset.`,
+      system: 'backend',
+      blocking: support.status === 'unsupported',
+    });
+  };
+
+  addBackendReason('webgl', webgl);
+  addBackendReason('webgpu', webgpu);
+
+  visualFallbacks.forEach((fallback) => {
+    reasons.push({
+      code: 'visual-fallback',
+      message: `Visual fallback active: ${fallback}.`,
+      system: 'runtime',
+      blocking: false,
+    });
+  });
+
+  return reasons;
+}
+
+function classifyFidelity({
+  blockedConstructDetails,
+  degradationReasons,
+  webgl,
+  webgpu,
+  parityReady,
+}: {
+  blockedConstructDetails: MilkdropBlockingConstruct[];
+  degradationReasons: MilkdropDegradationReason[];
+  webgl: MilkdropBackendSupport;
+  webgpu: MilkdropBackendSupport;
+  parityReady: boolean;
+}): MilkdropFidelityClass {
+  const hasBlockingConstruct = blockedConstructDetails.some(
+    (construct) => !construct.allowlisted,
+  );
+  const hasBlockingReason = degradationReasons.some((reason) => reason.blocking);
+  const hasUnsupportedBackend =
+    webgl.status === 'unsupported' || webgpu.status === 'unsupported';
+
+  if (hasUnsupportedBackend || hasBlockingReason) {
+    return 'fallback';
+  }
+  if (hasBlockingConstruct) {
+    return 'partial';
+  }
+  if (!parityReady || degradationReasons.length > 0) {
+    return 'near-exact';
+  }
+  return 'exact';
+}
+
+function buildCompatibilityEvidence({
+  diagnostics,
+  visualEvidenceTier,
+}: {
+  diagnostics: MilkdropDiagnostic[];
+  visualEvidenceTier: MilkdropParityReport['visualEvidenceTier'];
+}): MilkdropCompatibilityEvidence {
+  return {
+    compile: diagnostics.some((entry) => entry.severity === 'error')
+      ? 'issues'
+      : 'verified',
+    runtime: visualEvidenceTier === 'none' ? 'not-run' : 'smoke-tested',
+    visual:
+      visualEvidenceTier === 'visual' ? 'reference-suite' : 'not-captured',
+  };
 }
 
 function createParityFailureReason(blockedConstructs: string[]) {
@@ -3303,8 +3461,8 @@ function createIR(
         addDiagnostic(
           diagnostics,
           'warning',
-          'preset_unsupported_field',
-          `Unsupported preset field "${normalizedKey}" was ignored.`,
+          'preset_unknown_field',
+          `Unknown preset field "${normalizedKey}" was ignored.`,
           {
             line: field.line,
             field: normalizedKey,
@@ -3337,8 +3495,8 @@ function createIR(
       addDiagnostic(
         diagnostics,
         'warning',
-        'preset_unsupported_field',
-        `Unsupported preset field "${normalizedKey}" was ignored.`,
+        'preset_unknown_field',
+        `Unknown preset field "${normalizedKey}" was ignored.`,
         {
           line: field.line,
           field: normalizedKey,
@@ -3405,7 +3563,7 @@ function createIR(
   });
   const warnings = [
     ...[...unsupportedKeys].map(
-      (key) => `Unsupported preset field "${key}" was ignored.`,
+      (key) => `Unknown preset field "${key}" was ignored.`,
     ),
     ...(featureAnalysis.unsupportedShaderText
       ? [
@@ -3459,22 +3617,60 @@ function createIR(
     };
   }
 
+  const backendDivergence = buildBackendDivergence(finalBackends);
+  const visualFallbacks = buildVisualFallbacks({
+    approximatedShaderLines,
+    webgl: finalBackends.webgl,
+    webgpu: finalBackends.webgpu,
+  });
+  const blockingConstructDetails = buildBlockingConstructDetails({
+    ignoredFields,
+    approximatedShaderLines,
+    allowlistedBlockedConstructs,
+  });
+  const degradationReasons = buildDegradationReasons({
+    ignoredFields,
+    approximatedShaderLines,
+    allowlistedBlockedConstructs,
+    visualFallbacks,
+    webgl: finalBackends.webgl,
+    webgpu: finalBackends.webgpu,
+  });
+  const parityReady =
+    blockedConstructs.length === 0 && allowlistedBlockedConstructs.length === 0;
+  const visualEvidenceTier =
+    blockedConstructs.length > 0
+      ? 'compile'
+      : backendDivergence.length > 0 || visualFallbacks.length > 0
+        ? 'runtime'
+        : 'visual';
+  const evidence = buildCompatibilityEvidence({
+    diagnostics,
+    visualEvidenceTier,
+  });
+  const fidelityClass = classifyFidelity({
+    blockedConstructDetails: blockingConstructDetails,
+    degradationReasons,
+    webgl: finalBackends.webgl,
+    webgpu: finalBackends.webgpu,
+    parityReady,
+  });
+
   const parity: MilkdropParityReport = {
     fidelityMode,
     ignoredFields,
     approximatedShaderLines,
     missingAliasesOrFunctions: [],
-    backendDivergence: buildBackendDivergence(finalBackends),
-    visualFallbacks: buildVisualFallbacks({
-      approximatedShaderLines,
-      webgl: finalBackends.webgl,
-      webgpu: finalBackends.webgpu,
-    }),
+    backendDivergence,
+    visualFallbacks,
     blockedConstructs,
     allowlistedBlockedConstructs,
-    parityReady:
-      blockedConstructs.length === 0 &&
-      allowlistedBlockedConstructs.length === 0,
+    blockingConstructDetails,
+    degradationReasons,
+    fidelityClass,
+    evidence,
+    visualEvidenceTier,
+    parityReady,
   };
 
   const title = stringFields.title || 'MilkDrop Session';

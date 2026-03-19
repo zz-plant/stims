@@ -5,6 +5,14 @@
   "fallbackBackend": "webgl",
   "minimumPresetCount": 100,
   "presetCount": 101,
+  "defaults": {
+    "provenance": "Stims parity corpus",
+    "license": "Repo fixtures for compatibility testing",
+    "usage": "approved",
+    "corpusTier": "certified",
+    "expectedFidelityClass": "near-exact",
+    "visualEvidenceTier": "runtime"
+  },
   "presets": [
     {
       "id": "parity-feedback-01",
