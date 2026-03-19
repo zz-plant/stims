@@ -2,7 +2,11 @@ import { attachCapabilityPreflight } from '../core/capability-preflight.ts';
 import { initReadinessProbe } from '../readiness-probe.ts';
 import { initSystemControls } from '../ui/system-controls.ts';
 
-export const initSystemCheck = () => {
+export const initSystemCheck = ({
+  enablePreflightModal = true,
+}: {
+  enablePreflightModal?: boolean;
+} = {}) => {
   const readinessPanel = document.querySelector('[data-readiness-panel]');
   if (readinessPanel) {
     initReadinessProbe();
@@ -56,6 +60,24 @@ export const initSystemCheck = () => {
       showDetailedQualitySummary: false,
     });
   }
+
+  const scrollTriggers = Array.from(
+    document.querySelectorAll('[data-scroll-to-system-check]'),
+  ).filter((element): element is HTMLElement => element instanceof HTMLElement);
+
+  scrollTriggers.forEach((trigger) => {
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
+      setDetailsOpen(true);
+      if (window.location.hash !== '#system-check') {
+        window.location.hash = 'system-check';
+      }
+      const target = document.getElementById('system-check');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  if (!enablePreflightModal) return;
 
   const triggers = Array.from(
     document.querySelectorAll('[data-open-preflight]'),

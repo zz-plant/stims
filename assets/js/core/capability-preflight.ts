@@ -870,7 +870,7 @@ export function attachCapabilityPreflight({
 
   return {
     run,
-    open: (trigger?: HTMLElement | null) => {
+    open: (trigger?: HTMLElement | null, { rerun = true } = {}) => {
       restoreFocusTarget =
         trigger ??
         (document.activeElement instanceof HTMLElement
@@ -886,7 +886,9 @@ export function attachCapabilityPreflight({
       } else {
         updateModalParam(MODAL_VALUE, false);
       }
-      void run();
+      if (rerun) {
+        void run();
+      }
     },
     destroy: () => {
       window.removeEventListener('popstate', handlePopState);

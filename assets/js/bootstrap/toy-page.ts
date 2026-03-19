@@ -2,7 +2,6 @@ import { setAudioActive } from '../core/agent-api.ts';
 import {
   attachCapabilityPreflight,
   type CapabilityPreflightResult,
-  PREFLIGHT_SESSION_DISMISS_KEY,
 } from '../core/capability-preflight.ts';
 import { startToyAudioFromSource } from '../core/toy-audio-startup.ts';
 import type { ToyWindow } from '../core/toy-globals.ts';
@@ -94,16 +93,6 @@ export function isPresetFirstToySession(toySlug: string | null) {
   return (toySlug ?? 'milkdrop') === 'milkdrop';
 }
 
-export function shouldOpenPreflightModal({
-  toySlug,
-  dismissedForSession,
-}: {
-  toySlug: string | null;
-  dismissedForSession: boolean;
-}) {
-  return !dismissedForSession && !isPresetFirstToySession(toySlug);
-}
-
 export function bootToyPage({
   router,
   loadFromQuery,
@@ -122,18 +111,10 @@ export function bootToyPage({
   persistentBackLink: HTMLAnchorElement | null;
 }) {
   let loaderStarted = false;
-  const hidePersistentBackLink = () => {
-    const escapeShell =
-      persistentBackLink?.closest<HTMLElement>('.toy-shell-escape');
-    if (escapeShell) {
-      escapeShell.hidden = true;
-    }
-  };
 
   const startLoaderIfNeeded = () => {
     if (loaderStarted) return;
     loaderStarted = true;
-    hidePersistentBackLink();
     initNavigation();
     void loadFromQuery();
   };
@@ -261,19 +242,12 @@ export function bootToyPage({
     });
   };
 
-  const shouldSkipPreflightForSession = (() => {
-    try {
-      return (
-        window.sessionStorage.getItem(PREFLIGHT_SESSION_DISMISS_KEY) === '1'
-      );
-    } catch (_error) {
-      return false;
-    }
-  })();
-
   const handlePreflightReady = (result: CapabilityPreflightResult) => {
-    if (!result.canProceed) return;
-    startLoaderIfNeeded();
+    if (!result.canProceed) {
+      preflight.open(undefined, { rerun: false });
+      return;
+    }
+
     setupAudio(result, {
       forcePreferDemoAudio: isPresetFirstToySession(toySlug),
     });
@@ -281,21 +255,16 @@ export function bootToyPage({
   };
 
   const preflight = attachCapabilityPreflight({
-    heading: 'Step 1 of 2 · Quick check',
+    heading: 'Quick check',
     backHref: router.getLibraryHref(),
-    openOnAttach: shouldOpenPreflightModal({
-      toySlug,
-      dismissedForSession: shouldSkipPreflightForSession,
-    }),
+    openOnAttach: false,
     onComplete: handlePreflightReady,
     onRetry: handlePreflightReady,
     host: document.body,
     showCloseButton: true,
   });
 
-  if (shouldSkipPreflightForSession || isPresetFirstToySession(toySlug)) {
-    void preflight.run().then(handlePreflightReady);
-  }
+  void preflight.run();
 
   window.addEventListener('pagehide', () => {
     // Cleanup if needed

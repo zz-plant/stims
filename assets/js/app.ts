@@ -117,7 +117,6 @@ const startApp = async () => {
   } else {
     bootHomePage({
       navContainer,
-      loadToy: loader.loadToy ?? defaultLoader.loadToy,
     });
   }
 };
