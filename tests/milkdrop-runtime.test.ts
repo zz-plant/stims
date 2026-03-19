@@ -19,6 +19,30 @@ describe('milkdrop runtime detail scale', () => {
     expect(webgpuScale).toBeCloseTo(1.35, 6);
   });
 
+  test('applies shader quality multipliers to the shared detail scale', () => {
+    const lowScale = getMilkdropDetailScale({
+      backend: 'webgpu',
+      particleScale: 1,
+      particleBudget: 1,
+      shaderQuality: 'low',
+    });
+    const balancedScale = getMilkdropDetailScale({
+      backend: 'webgpu',
+      particleScale: 1,
+      particleBudget: 1,
+      shaderQuality: 'balanced',
+    });
+    const highScale = getMilkdropDetailScale({
+      backend: 'webgpu',
+      particleScale: 1,
+      particleBudget: 1,
+      shaderQuality: 'high',
+    });
+
+    expect(lowScale).toBeLessThan(balancedScale);
+    expect(highScale).toBeGreaterThan(balancedScale);
+  });
+
   test('respects the shared lower and upper bounds', () => {
     expect(
       getMilkdropDetailScale({

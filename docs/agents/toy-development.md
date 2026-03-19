@@ -5,7 +5,7 @@
 - Toy modules: `assets/js/toys/`.
 - Toy registry metadata: `assets/data/toys.json`.
 - Loader shell: `toy.html` + `assets/js/loader.ts`.
-- Runtime/audio helpers: `assets/js/core/toy-runtime.ts`, `assets/js/utils/start-audio.ts`.
+- Runtime/audio helpers: `assets/js/core/toy-runtime.ts`, `assets/js/core/toy-audio.ts`.
 
 ## Expected patterns
 

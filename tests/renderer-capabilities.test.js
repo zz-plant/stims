@@ -5,6 +5,7 @@ const freshImport = async () =>
   import(`${capabilitiesModule}?t=${Date.now()}-${Math.random()}`);
 
 let getRendererCapabilities;
+let getRenderingSupport;
 let rememberRendererFallback;
 let resetRendererCapabilities;
 
@@ -25,6 +26,7 @@ beforeEach(async () => {
   mock.restore();
   ({
     getRendererCapabilities,
+    getRenderingSupport,
     rememberRendererFallback,
     resetRendererCapabilities,
   } = await freshImport());
@@ -91,6 +93,23 @@ describe('renderer capabilities', () => {
     expect(result.forceWebGL).toBe(false);
   });
 
+  test('reports WebGL support when a canvas context is available', () => {
+    const originalCreateElement = document.createElement.bind(document);
+    const getContext = mock((kind) => (kind === 'webgl' ? {} : null));
+    document.createElement = mock((tagName, options) => {
+      const element = originalCreateElement(tagName, options);
+      if (tagName === 'canvas') {
+        element.getContext = getContext;
+      }
+      return element;
+    });
+
+    const support = getRenderingSupport();
+
+    expect(support.hasWebGL).toBe(true);
+    expect(getContext).toHaveBeenCalled();
+  });
+
   test('marks forced WebGL when compatibility mode is enabled', async () => {
     window.localStorage.setItem('stims:compatibility-mode', 'true');
     const { resetRenderPreferencesState } = await import(
@@ -100,7 +119,7 @@ describe('renderer capabilities', () => {
 
     const result = await getRendererCapabilities({ forceRetry: true });
 
-    expect(result.preferredBackend).toBeNull();
+    expect(result.preferredBackend).toBe('webgl');
     expect(result.fallbackReason).toContain('Compatibility mode');
     expect(result.forceWebGL).toBe(true);
   });

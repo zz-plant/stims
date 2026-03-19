@@ -95,13 +95,13 @@ These are the highest-value architecture changes to reduce drift, lower onboardi
 
 Status: ✅ Implemented in code (`renderer-capabilities` now owns rendering support detection, and `toy-audio-startup` centralizes toy audio start orchestration).
 
-- **Unify rendering/capability entry points** by converging `utils/rendering-support.ts`, `utils/webgl-check.ts`, and capability preflight usage into a single core-facing API (owned by `core/capability-preflight.ts` + `core/renderer-capabilities.ts`).
+- **Unify rendering/capability entry points** by converging legacy capability wrappers into `utils/webgl-check.ts` plus the core-facing APIs in `core/capability-preflight.ts` and `core/renderer-capabilities.ts`.
 - **Define one startup contract** from `app.ts` → `loader.ts` → toy module start/dispose so all toy flows (mic/demo/tab/YouTube) follow the same typed path.
 - **Why first:** startup paths are currently split across `app.ts`, loader helpers, and utility wrappers, which increases regression risk whenever permission or renderer logic changes.
 
 ### P1 — Clarify core vs utils boundaries
 
-Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option resolution, and `startToyAudio` now live in `assets/js/core/toy-audio.ts`; `utils/audio-start.ts` and `utils/start-audio.ts` remain compatibility re-exports).
+Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option resolution, and `startToyAudio` now live in `assets/js/core/toy-audio.ts`).
 
 - **Promote runtime-critical utilities into `core/`** (or create a documented `runtime/` namespace) so ownership is obvious for long-lived services.
 - **Keep `utils/` for leaf helpers only** (pure helpers/UI convenience code) and avoid placing lifecycle-critical modules there.

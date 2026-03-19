@@ -150,10 +150,10 @@ describe('runCommand', () => {
 
   test('times out long-running commands', async () => {
     const result = await runCommand(
-      'bun',
-      ['-e', 'setTimeout(() => {}, 2000)'],
+      process.execPath,
+      ['-e', 'setInterval(() => {}, 1000)'],
+      100,
       50,
-      25,
     );
 
     expect(result.exitCode).toBeNull();
