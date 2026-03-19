@@ -18,8 +18,9 @@ This document captures the **current, shipped feature set** of Stims as implemen
 ## Homepage and discovery
 
 ### Global navigation
-- **Brand + jump links**: MilkDrop/start, system check/proof, broader toy-lab discovery, and connect anchors are shown alongside the brand mark.
-- **Utilities**: Jump to the toy list, open GitHub, and toggle light/dark theme.
+- **Brand + jump links**: MilkDrop/start and broader toy-lab discovery are shown alongside the brand mark.
+- **Discovery hubs**: Static links to `/toys/`, `/moods/`, `/capabilities/`, and `/tags/` surface the generated browse pages directly from the main nav.
+- **Utilities**: Open GitHub and toggle light/dark theme.
 - **Theme toggle**: A dark-mode toggle persists preference in local storage and uses view transitions when available.
 
 ### Intro hero
@@ -34,11 +35,13 @@ This document captures the **current, shipped feature set** of Stims as implemen
 
 ### System check section
 - **Live readiness panel**: Displays status for graphics acceleration, microphone, motion input, and reduced motion preference.
-- **Details toggle**: Expands/collapses the system check description while syncing the URL hash.
+- **Details toggle**: Expands/collapses the system check detail state while syncing the URL hash.
 - **Performance controls**: Inline settings panel with quality presets, compatibility mode (force WebGL), motion enable toggle, and sliders for resolution scale + pixel ratio.
+- **Fast actions**: Visible homepage buttons open the system-check modal or reveal extra readiness detail without leaving the page.
 - **Preflight dialog**: Modal with readiness badges for rendering, mic, and performance warnings.
 
 ### Search, filters, and sorting
+- **Browse shortcuts**: A visible shortcut row links directly to the `/moods/`, `/capabilities/`, `/tags/`, and `/toys/` pages.
 - **Search**: Broader toy-lab input supports keyword matching across title, slug, description, tags, moods, and capability terms.
 - **Suggestions**: Datalist is populated from toy metadata (title, tags, moods, capability terms, WebGPU).
 - **Filters**: Quick chips and disclosure-based refinement share one state model, with applied search/filter/sort chips rendered into a sticky rail while scrolling.
@@ -72,6 +75,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 ### Audio controls
 - **Primary options**: Live mic or demo audio, with one focused path visually emphasized at a time.
 - **First-run hinting**: A single dismissible “Try this first” recommendation is synthesized from toy metadata (`firstRunHint`, `starterPreset`, `wowControl`, `recommendedCapability`).
+- **Browser audio shortcuts**: A visible utility card exposes one-tap entry points for tab capture and YouTube capture before the advanced disclosure.
 - **Advanced options**:
   - Tab capture (share current tab audio).
   - YouTube capture (load a YouTube URL, then capture tab audio).

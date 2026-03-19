@@ -5,6 +5,12 @@ import type { CapabilityPreflightResult } from '../assets/js/core/services/capab
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+const setTestUrl = () => {
+  (
+    window as Window & { happyDOM?: { setURL?: (url: string) => void } }
+  ).happyDOM?.setURL?.('https://example.com/toy.html?toy=milkdrop');
+};
+
 const readyResult: CapabilityPreflightResult = {
   rendering: {
     hasWebGL: true,
@@ -36,20 +42,12 @@ const readyResult: CapabilityPreflightResult = {
 describe('capability preflight launch flow', () => {
   afterEach(() => {
     document.body.innerHTML = '';
-    window.history.replaceState(
-      {},
-      '',
-      'https://example.com/toy.html?toy=milkdrop',
-    );
+    setTestUrl();
     sessionStorage.clear();
   });
 
   test('shows one primary CTA for the success step and keeps diagnostics collapsed', async () => {
-    window.history.replaceState(
-      {},
-      '',
-      'https://example.com/toy.html?toy=milkdrop',
-    );
+    setTestUrl();
 
     const preflight = attachCapabilityPreflight({
       host: document.body,
