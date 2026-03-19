@@ -448,6 +448,7 @@ export function createMilkdropCatalogStore({
                 degradationReasons: [
                   {
                     code: 'backend-unsupported',
+                    category: 'backend-degradation',
                     message: 'Bundled preset could not be analyzed.',
                     system: 'compiler',
                     blocking: true,

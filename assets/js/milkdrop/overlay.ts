@@ -11,6 +11,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import type {
   MilkdropCatalogEntry,
+  MilkdropCompatibilityIssueCategory,
   MilkdropCompiledPreset,
   MilkdropEditorSessionState,
   MilkdropFidelityClass,
@@ -82,6 +83,40 @@ function fidelityLabel(fidelity: MilkdropFidelityClass) {
   }
 }
 
+function compatibilityCategoryLabel(
+  category: MilkdropCompatibilityIssueCategory,
+) {
+  switch (category) {
+    case 'unsupported-syntax':
+      return 'Unsupported syntax';
+    case 'unsupported-shader':
+      return 'Unsupported shader';
+    case 'runtime-divergence':
+      return 'Runtime divergence';
+    case 'backend-degradation':
+      return 'Backend degradation';
+    default:
+      return 'Approximation';
+  }
+}
+
+function compatibilityCategoryPriority(
+  category: MilkdropCompatibilityIssueCategory,
+) {
+  switch (category) {
+    case 'unsupported-syntax':
+      return 0;
+    case 'unsupported-shader':
+      return 1;
+    case 'backend-degradation':
+      return 2;
+    case 'runtime-divergence':
+      return 3;
+    default:
+      return 4;
+  }
+}
+
 function paritySummary({
   blockedConstructs,
   allowlistedBlockedConstructs,
@@ -97,6 +132,57 @@ function paritySummary({
     return `${blockedConstructs.length} parity gap${blockedConstructs.length === 1 ? '' : 's'}`;
   }
   return 'Parity audit pending';
+}
+
+function getPrimaryDegradationReason(compiled: MilkdropCompiledPreset | null) {
+  if (!compiled) {
+    return null;
+  }
+  return [...compiled.ir.compatibility.parity.degradationReasons].sort(
+    (left, right) => {
+      if (left.blocking !== right.blocking) {
+        return left.blocking ? -1 : 1;
+      }
+      return (
+        compatibilityCategoryPriority(left.category) -
+        compatibilityCategoryPriority(right.category)
+      );
+    },
+  )[0];
+}
+
+function buildDowngradeGuidance(compiled: MilkdropCompiledPreset | null) {
+  if (!compiled) {
+    return null;
+  }
+  const parity = compiled.ir.compatibility.parity;
+  const webgl = compiled.ir.compatibility.backends.webgl;
+  if (
+    webgl.status === 'supported' &&
+    parity.blockedConstructs.length === 0 &&
+    parity.approximatedShaderLines.length === 0
+  ) {
+    return 'Mobile/WebGL-safe now.';
+  }
+
+  const actions: string[] = [];
+  if (parity.ignoredFields.length > 0) {
+    actions.push(
+      `remove or replace ${parity.ignoredFields.length} unsupported field${parity.ignoredFields.length === 1 ? '' : 's'}`,
+    );
+  }
+  if (parity.approximatedShaderLines.length > 0) {
+    actions.push(
+      `rewrite ${parity.approximatedShaderLines.length} shader line${parity.approximatedShaderLines.length === 1 ? '' : 's'} into the supported subset`,
+    );
+  }
+  if (webgl.status !== 'supported') {
+    actions.push(`resolve WebGL ${webgl.status} limitations`);
+  }
+
+  return actions.length > 0
+    ? `Downgrade path for mobile/WebGL-safe output: ${actions.join(', ')}.`
+    : 'Downgrade path available after parity gaps are resolved.';
 }
 
 export class MilkdropOverlay {
@@ -672,10 +758,20 @@ export class MilkdropOverlay {
     ) {
       const reasons = document.createElement('div');
       reasons.className = 'milkdrop-overlay__preset-warning';
-      reasons.textContent =
-        preset.parity.degradationReasons[0]?.message ??
-        support.reasons[0] ??
-        'Preset has fidelity degradations.';
+      const primaryReason = [...preset.parity.degradationReasons].sort(
+        (left, right) => {
+          if (left.blocking !== right.blocking) {
+            return left.blocking ? -1 : 1;
+          }
+          return (
+            compatibilityCategoryPriority(left.category) -
+            compatibilityCategoryPriority(right.category)
+          );
+        },
+      )[0];
+      reasons.textContent = primaryReason
+        ? `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}`
+        : (support.reasons[0] ?? 'Preset has fidelity degradations.');
       row.appendChild(reasons);
     }
 
@@ -1008,21 +1104,55 @@ export class MilkdropOverlay {
     const errors = state.diagnostics.filter(
       (diagnostic) => diagnostic.severity === 'error',
     );
-    this.editorStatus.textContent = errors.length
+    const primaryReason = getPrimaryDegradationReason(state.latestCompiled);
+    const downgradeGuidance = buildDowngradeGuidance(state.latestCompiled);
+    const activeParity = state.latestCompiled?.ir.compatibility.parity;
+    const latestWebglStatus =
+      state.latestCompiled?.ir.compatibility.backends.webgl.status;
+    const latestWebgpuStatus =
+      state.latestCompiled?.ir.compatibility.backends.webgpu.status;
+    const baseStatus = errors.length
       ? `${errors.length} issue${errors.length === 1 ? '' : 's'} keeping the last good preset live`
       : state.dirty
         ? 'Live preset updated from editor'
         : 'Editor synced with live preset';
+    const fidelityStatus = activeParity
+      ? `Fidelity ${fidelityLabel(activeParity.fidelityClass)} · WebGL ${latestWebglStatus} · WebGPU ${latestWebgpuStatus}`
+      : null;
+    this.editorStatus.textContent = [baseStatus, fidelityStatus]
+      .filter(Boolean)
+      .join(' | ');
 
     this.diagnosticsList.replaceChildren();
-    state.diagnostics.slice(0, 10).forEach((diagnostic) => {
-      const item = document.createElement('div');
-      item.className = `milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--${diagnostic.severity}`;
-      item.textContent = diagnostic.line
-        ? `Line ${diagnostic.line}: ${diagnostic.message}`
-        : diagnostic.message;
-      this.diagnosticsList.appendChild(item);
-    });
+    const derivedNotices = [
+      primaryReason
+        ? {
+            severity: primaryReason.blocking ? 'warning' : 'info',
+            message: `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}`,
+          }
+        : null,
+      downgradeGuidance
+        ? {
+            severity: 'info',
+            message: downgradeGuidance,
+          }
+        : null,
+    ].filter(Boolean) as Array<{
+      severity: 'warning' | 'info';
+      message: string;
+    }>;
+
+    [...state.diagnostics.slice(0, 8), ...derivedNotices]
+      .slice(0, 10)
+      .forEach((diagnostic) => {
+        const item = document.createElement('div');
+        item.className = `milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--${diagnostic.severity}`;
+        item.textContent =
+          'line' in diagnostic && diagnostic.line
+            ? `Line ${diagnostic.line}: ${diagnostic.message}`
+            : diagnostic.message;
+        this.diagnosticsList.appendChild(item);
+      });
 
     if (state.activeCompiled) {
       this.renderInspectorControls(state.activeCompiled);
@@ -1050,6 +1180,18 @@ export class MilkdropOverlay {
 
     const support = compiled.ir.compatibility.backends[backend];
     const parity = compiled.ir.compatibility.parity;
+    const primaryReason = getPrimaryDegradationReason(compiled);
+    const downgradeGuidance = buildDowngradeGuidance(compiled);
+    const degradationCategorySummary =
+      parity.degradationReasons.length > 0
+        ? [
+            ...new Set(
+              parity.degradationReasons.map((reason) =>
+                compatibilityCategoryLabel(reason.category),
+              ),
+            ),
+          ].join(', ')
+        : 'None';
     this.inspectorMetrics.innerHTML = `
       <div><strong>Backend:</strong> ${backend}</div>
       <div><strong>Transport support:</strong> ${supportLabel(support.status)}</div>
@@ -1060,6 +1202,7 @@ export class MilkdropOverlay {
       <div><strong>Ignored fields:</strong> ${parity.ignoredFields.length}</div>
       <div><strong>Approximated shader lines:</strong> ${parity.approximatedShaderLines.length}</div>
       <div><strong>Blocking constructs:</strong> ${parity.blockingConstructDetails.length}</div>
+      <div><strong>Degradation categories:</strong> ${degradationCategorySummary}</div>
       <div><strong>Evidence:</strong> compile ${parity.evidence.compile}, runtime ${parity.evidence.runtime}, visual ${parity.evidence.visual}</div>
       <div><strong>Backend divergence:</strong> ${parity.backendDivergence.length}</div>
       <div><strong>Visual fallbacks:</strong> ${parity.visualFallbacks.length}</div>
@@ -1072,7 +1215,8 @@ export class MilkdropOverlay {
       <div><strong>Shapes:</strong> ${frameState.shapes.length}</div>
       <div><strong>Borders:</strong> ${frameState.borders.length}</div>
       <div><strong>Register pressure:</strong> q${compiled.ir.compatibility.featureAnalysis.registerUsage.q} / t${compiled.ir.compatibility.featureAnalysis.registerUsage.t}</div>
-      <div><strong>Notes:</strong> ${parity.degradationReasons[0]?.message ?? support.reasons[0] ?? parity.visualFallbacks[0] ?? 'Validated for the active backend.'}</div>
+      <div><strong>Primary note:</strong> ${primaryReason ? `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}` : (support.reasons[0] ?? parity.visualFallbacks[0] ?? 'Validated for the active backend.')}</div>
+      <div><strong>Downgrade path:</strong> ${downgradeGuidance ?? 'No downgrade guidance needed.'}</div>
     `;
   }
 

@@ -52,7 +52,7 @@ Quality presets are global and persist across toys, so toys should respond consi
 
 - **Honor the shared settings**: call `toy.updateRendererSettings()` (or `handle.applySettings()` if you are managing a pooled renderer handle directly) when the settings panel broadcasts a change.
 - **Avoid hard-coded pixel ratios**: use the preset-provided `maxPixelRatio` and `renderScale` as the baseline; override only if a toy has a documented performance need.
-- **Scale expensive effects**: map presets to particle counts, post-processing strength, or shader iterations. Keep the “Battery saver” preset under ~65% of default costs, and let “Hi-fi visuals” increase costs modestly (around 135%) without exceeding target frame times.
+- **Scale expensive effects**: map presets to particle counts, post-processing strength, or shader iterations. Keep the “Battery saver” preset around half cost, let “Low motion” preserve clarity while reducing motion-heavy effects, and keep “Hi-fi visuals” to a modest bump (roughly 125%) without exceeding target frame times.
 - **Persist in the session**: rely on the shared settings panel to persist choices so users do not have to reconfigure on every toy switch.
 - **Match default preset intent**: align with the baseline values documented in `docs/DEVELOPMENT.md` so renderer settings stay consistent across toys.
 

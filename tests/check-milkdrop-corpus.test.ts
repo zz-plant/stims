@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  generateMilkdropParityReport,
   runMilkdropCorpusCheck,
   validateMilkdropCorpusManifest,
 } from '../scripts/check-milkdrop-corpus.ts';
@@ -72,5 +73,22 @@ describe('milkdrop corpus manifest checks', () => {
     expect(issues).toContain(
       'preset sample waiver 0 has invalid expiry bad-date.',
     );
+  });
+
+  test('produces a machine-readable parity report for the checked-in corpus', () => {
+    const report = generateMilkdropParityReport(process.cwd());
+
+    expect(report.issues).toEqual([]);
+    expect(report.presets.length).toBeGreaterThanOrEqual(100);
+    expect(
+      report.fidelityCounts.exact +
+        report.fidelityCounts['near-exact'] +
+        report.fidelityCounts.partial +
+        report.fidelityCounts.fallback,
+    ).toBe(report.presets.length);
+    expect(report.canonicalVisualSuite.total).toBe(20);
+    expect(report.expiredWaivers).toEqual([]);
+    expect(report.canonicalVisualSuite.regressions).toEqual([]);
+    expect(report.blockedConstructFrequency).toEqual([]);
   });
 });

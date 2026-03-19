@@ -2,6 +2,13 @@ export type MilkdropPresetOrigin = 'bundled' | 'imported' | 'user' | 'draft';
 
 export type MilkdropDiagnosticSeverity = 'error' | 'warning' | 'info';
 
+export type MilkdropCompatibilityIssueCategory =
+  | 'unsupported-syntax'
+  | 'unsupported-shader'
+  | 'runtime-divergence'
+  | 'backend-degradation'
+  | 'acceptable-approximation';
+
 export type MilkdropDiagnostic = {
   severity: MilkdropDiagnosticSeverity;
   code: string;
@@ -131,9 +138,11 @@ export type MilkdropDegradationReason = {
     | 'unsupported-field'
     | 'shader-approximation'
     | 'allowlisted-gap'
+    | 'backend-divergence'
     | 'backend-partial'
     | 'backend-unsupported'
     | 'visual-fallback';
+  category: MilkdropCompatibilityIssueCategory;
   message: string;
   system: 'compiler' | 'shader' | 'backend' | 'runtime';
   blocking: boolean;

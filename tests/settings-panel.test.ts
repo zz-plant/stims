@@ -112,6 +112,38 @@ describe('quality preset subscriptions', () => {
     expect(preset?.label).toBe('TV balanced');
   });
 
+  test('quality presets stay intentionally differentiated', () => {
+    const performance = DEFAULT_QUALITY_PRESETS.find(
+      (entry) => entry.id === 'performance',
+    );
+    const lowMotion = DEFAULT_QUALITY_PRESETS.find(
+      (entry) => entry.id === 'low-motion',
+    );
+    const balanced = DEFAULT_QUALITY_PRESETS.find(
+      (entry) => entry.id === 'balanced',
+    );
+    const hiFi = DEFAULT_QUALITY_PRESETS.find((entry) => entry.id === 'hi-fi');
+
+    expect(performance).toBeDefined();
+    expect(lowMotion).toBeDefined();
+    expect(balanced).toBeDefined();
+    expect(hiFi).toBeDefined();
+
+    if (!(performance && lowMotion && balanced && hiFi)) {
+      throw new Error('Expected shared quality presets to exist');
+    }
+
+    expect(performance.renderScale).toBeLessThan(balanced.renderScale ?? 1);
+    expect(performance.particleScale).toBeGreaterThan(
+      lowMotion.particleScale ?? 1,
+    );
+    expect(lowMotion.maxPixelRatio).toBeGreaterThan(performance.maxPixelRatio);
+    expect(lowMotion.renderScale).toBe(balanced.renderScale);
+    expect(hiFi.maxPixelRatio).toBeGreaterThan(balanced.maxPixelRatio);
+    expect(hiFi.renderScale).toBeGreaterThan(balanced.renderScale ?? 1);
+    expect(hiFi.particleScale).toBeGreaterThan(balanced.particleScale ?? 1);
+  });
+
   test('quality presets show profile-specific scope for custom storage keys', () => {
     const panel = getSettingsPanel();
 

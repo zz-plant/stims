@@ -420,6 +420,7 @@ function buildDegradationReasons({
   ignoredFields,
   approximatedShaderLines,
   allowlistedBlockedConstructs,
+  backendDivergence,
   visualFallbacks,
   webgl,
   webgpu,
@@ -427,6 +428,7 @@ function buildDegradationReasons({
   ignoredFields: string[];
   approximatedShaderLines: string[];
   allowlistedBlockedConstructs: string[];
+  backendDivergence: string[];
   visualFallbacks: string[];
   webgl: MilkdropBackendSupport;
   webgpu: MilkdropBackendSupport;
@@ -437,6 +439,7 @@ function buildDegradationReasons({
     const blockedConstruct = toParityFieldConstruct(field);
     reasons.push({
       code: 'unknown-field',
+      category: 'unsupported-syntax',
       message: allowlistedBlockedConstructs.includes(blockedConstruct)
         ? `Field "${field}" is outside the current runtime scope but temporarily allowlisted.`
         : `Field "${field}" is outside the current runtime scope and was ignored.`,
@@ -447,15 +450,18 @@ function buildDegradationReasons({
 
   approximatedShaderLines.forEach((line) => {
     const blockedConstruct = toParityShaderConstruct(line);
+    const isAllowlisted =
+      allowlistedBlockedConstructs.includes(blockedConstruct);
     reasons.push({
-      code: allowlistedBlockedConstructs.includes(blockedConstruct)
-        ? 'allowlisted-gap'
-        : 'shader-approximation',
-      message: allowlistedBlockedConstructs.includes(blockedConstruct)
+      code: isAllowlisted ? 'allowlisted-gap' : 'shader-approximation',
+      category: isAllowlisted
+        ? 'acceptable-approximation'
+        : 'unsupported-shader',
+      message: isAllowlisted
         ? `Shader line "${line}" remains allowlisted while coverage is being hardened.`
         : `Shader line "${line}" could not be executed directly and is being approximated.`,
       system: 'shader',
-      blocking: !allowlistedBlockedConstructs.includes(blockedConstruct),
+      blocking: !isAllowlisted,
     });
   });
 
@@ -471,6 +477,7 @@ function buildDegradationReasons({
         support.status === 'unsupported'
           ? 'backend-unsupported'
           : 'backend-partial',
+      category: 'backend-degradation',
       message: `${backend.toUpperCase()} is ${support.status} for this preset.`,
       system: 'backend',
       blocking: support.status === 'unsupported',
@@ -480,9 +487,20 @@ function buildDegradationReasons({
   addBackendReason('webgl', webgl);
   addBackendReason('webgpu', webgpu);
 
+  backendDivergence.forEach((divergence) => {
+    reasons.push({
+      code: 'backend-divergence',
+      category: 'runtime-divergence',
+      message: `Backends diverge for this preset: ${divergence}.`,
+      system: 'runtime',
+      blocking: false,
+    });
+  });
+
   visualFallbacks.forEach((fallback) => {
     reasons.push({
       code: 'visual-fallback',
+      category: 'runtime-divergence',
       message: `Visual fallback active: ${fallback}.`,
       system: 'runtime',
       blocking: false,
@@ -3634,6 +3652,7 @@ function createIR(
     ignoredFields,
     approximatedShaderLines,
     allowlistedBlockedConstructs,
+    backendDivergence,
     visualFallbacks,
     webgl: finalBackends.webgl,
     webgpu: finalBackends.webgpu,
