@@ -12,6 +12,7 @@ const toyEntries = Array.isArray(toysData) ? toysData : [];
 
 const htmlInputs = {
   index: path.resolve(rootDir, 'index.html'),
+  milkdrop: path.resolve(rootDir, 'milkdrop/index.html'),
   toy: path.resolve(rootDir, 'toy.html'),
 };
 const moduleInputs = Object.fromEntries(
