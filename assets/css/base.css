@@ -1906,12 +1906,12 @@ body {
     left: max(6px, env(safe-area-inset-left));
     right: max(6px, env(safe-area-inset-right));
     width: auto;
-    padding: 8px;
+    padding: 10px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
     clip-path: none;
     border-radius: 18px;
     max-height: min(
-      36svh,
+      44svh,
       calc(
         100dvh -
         12px -
@@ -1925,7 +1925,7 @@ body {
 
   .control-panel--audio {
     bottom: max(6px, env(safe-area-inset-bottom));
-    max-height: min(28svh, calc(100dvh - env(safe-area-inset-bottom) - 12px));
+    max-height: min(34svh, calc(100dvh - env(safe-area-inset-bottom) - 12px));
   }
 
   :root[data-toy-controls-expanded="true"]
@@ -1937,13 +1937,13 @@ body {
   .control-panel__description,
   .control-panel__comparison,
   .control-panel__advanced-helper,
-  .control-panel__gesture-hints,
   .control-panel__tips {
     display: none;
   }
 
   .control-panel__quickstart-spotlight,
-  .control-panel__quickstart {
+  .control-panel__quickstart,
+  .control-panel__gesture-hints {
     display: block;
   }
 
@@ -2110,7 +2110,7 @@ body {
       calc(env(safe-area-inset-top) + 72px)
     );
     max-height: min(
-      32svh,
+      40svh,
       calc(
         100dvh -
         var(--toy-nav-floating-offset, 108px) -
@@ -2122,7 +2122,7 @@ body {
 
   :root[data-toy-controls-expanded="true"] .control-panel--floating {
     max-height: min(
-      38svh,
+      44svh,
       calc(
         100dvh -
         var(--toy-nav-floating-offset, 108px) -
@@ -2133,9 +2133,9 @@ body {
   }
 
   .control-panel {
-    padding: 6px;
+    padding: 8px;
     max-height: min(
-      32svh,
+      40svh,
       calc(
         100dvh -
         var(--toy-nav-floating-offset, 102px) -
@@ -2146,7 +2146,7 @@ body {
   }
 
   .control-panel--audio {
-    max-height: min(24svh, calc(100dvh - env(safe-area-inset-bottom) - 10px));
+    max-height: min(30svh, calc(100dvh - env(safe-area-inset-bottom) - 10px));
   }
 
   .control-panel__actions--inline {

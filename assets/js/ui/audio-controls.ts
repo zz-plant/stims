@@ -129,7 +129,7 @@ export function initAudioControls(
   container.innerHTML = `
     <p class="control-panel__eyebrow">Start</p>
     <div class="control-panel__heading">Pick an input</div>
-    <p class="control-panel__description">Mic reacts to your room. Demo starts instantly.</p>
+    <p class="control-panel__description">Start instantly with demo, or switch to mic when you want live response.</p>
     ${renderPrimaryAudioChoice()}
     ${renderQuickstartSpotlight({
       summary: tryThisFirst.summary,
@@ -169,7 +169,6 @@ export function initAudioControls(
     '[data-reveal-youtube-audio]',
   ) as HTMLButtonElement | null;
   const ADVANCED_KEY = 'stims-audio-advanced-open';
-  const FIRST_STEPS_KEY = 'stims-first-steps-dismissed';
   const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
   const QUICK_START_PRESET_KEY = 'stims-quick-start-preset';
 
@@ -298,34 +297,11 @@ export function initAudioControls(
   const quickstartSpotlight = container.querySelector(
     '[data-quickstart-spotlight]',
   ) as HTMLElement | null;
-  const dismissQuickstartSpotlight = container.querySelector(
-    '[data-dismiss-quickstart-spotlight]',
-  ) as HTMLButtonElement | null;
-
-  let hideFirstSteps = () => {};
-  if (quickstartSpotlight) {
-    let isDismissed = false;
-    try {
-      isDismissed = window.sessionStorage.getItem(FIRST_STEPS_KEY) === 'true';
-    } catch (_error) {
-      isDismissed = false;
-    }
-
-    hideFirstSteps = () => {
-      quickstartSpotlight.hidden = true;
-      try {
-        window.sessionStorage.setItem(FIRST_STEPS_KEY, 'true');
-      } catch (_error) {
-        // Ignore storage errors.
-      }
-    };
-
-    if (isDismissed) {
+  const hideFirstSteps = () => {
+    if (quickstartSpotlight) {
       quickstartSpotlight.hidden = true;
     }
-
-    dismissQuickstartSpotlight?.addEventListener('click', hideFirstSteps);
-  }
+  };
 
   const quickStartPresetButton = container.querySelector(
     '[data-apply-starter-preset]',
@@ -587,7 +563,7 @@ function renderPrimaryAudioChoice() {
     <div class="control-panel__row" data-audio-row="mic">
       <div class="control-panel__text">
         <span class="control-panel__label">Mic</span>
-        <span class="control-panel__pill" data-recommended-for="mic" hidden>Focused path</span>
+        <span class="control-panel__pill" data-recommended-for="mic" hidden>Recommended</span>
         <span class="control-panel__subtext">Room, voice, or instrument.</span>
         <span class="control-panel__microcopy">Needs microphone permission.</span>
       </div>
@@ -596,7 +572,7 @@ function renderPrimaryAudioChoice() {
     <div class="control-panel__row" data-audio-row="demo">
       <div class="control-panel__text">
         <span class="control-panel__label">Demo</span>
-        <span class="control-panel__pill" data-recommended-for="demo" hidden>Focused path</span>
+        <span class="control-panel__pill" data-recommended-for="demo" hidden>Recommended</span>
         <span class="control-panel__subtext">Built-in soundtrack.</span>
         <span class="control-panel__microcopy">No permission prompt.</span>
       </div>
@@ -617,16 +593,15 @@ function renderQuickstartSpotlight({
   showStarterPresetAction: boolean;
 }) {
   return `
-    <section class="control-panel__quickstart-spotlight" data-quickstart-spotlight role="note" aria-label="Try this first">
+    <section class="control-panel__quickstart-spotlight" data-quickstart-spotlight role="note" aria-label="Start here">
       <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">Try this first</span>
+        <span class="control-panel__label">Start here</span>
         <div class="control-panel__first-steps-actions">
           ${
             showStarterPresetAction
               ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Apply ${starterPresetLabel}</button>`
               : ''
           }
-          <button type="button" class="control-panel__dismiss" data-dismiss-quickstart-spotlight>Dismiss</button>
         </div>
       </div>
       <p class="control-panel__comparison" data-audio-comparison>${summary}</p>
@@ -653,7 +628,7 @@ function renderOnboardingHelp({
 }) {
   return `
     <details class="control-panel__details" data-onboarding-help>
-      <summary class="control-panel__label">Tips</summary>
+      <summary class="control-panel__label">How to interact</summary>
       <p class="control-panel__comparison" data-audio-comparison>
         Mic is responsive. Demo is instant.
       </p>
@@ -696,17 +671,17 @@ function renderOnboardingHelp({
       ${
         starterTips && starterTips.length > 0
           ? `
-      <div class="control-panel__quickstart">
+      <section class="control-panel__gesture-hints" aria-live="polite">
         <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">What reacts</span>
+          <span class="control-panel__label">What changes first</span>
         </div>
-        <ul class="control-panel__tips">
+        <ul class="control-panel__tips control-panel__tips--compact">
           ${starterTips
-            .slice(0, 3)
+            .slice(0, 2)
             .map((tip) => `<li>${tip}</li>`)
             .join('')}
         </ul>
-      </div>
+      </section>
       `
           : ''
       }

@@ -147,7 +147,7 @@ function getNextStepContent(
       title: 'Best next step',
       steps: [
         'Continue to audio setup.',
-        'Start with demo audio, tab audio, or YouTube audio in the next step.',
+        'Start with demo audio, tab audio, or YouTube audio.',
       ],
       showGrantAction: false,
     };
@@ -156,10 +156,7 @@ function getNextStepContent(
   if (result.microphone.state === 'granted') {
     return {
       title: 'Best next step',
-      steps: [
-        'Continue to audio setup.',
-        'Live microphone mode is ready immediately.',
-      ],
+      steps: ['Continue to audio setup.', 'Mic mode is ready immediately.'],
       showGrantAction: false,
     };
   }
@@ -179,7 +176,7 @@ function getNextStepContent(
     title: 'Best next step',
     steps: [
       'Continue to audio setup.',
-      'You can allow microphone access there, or skip it and start with demo audio.',
+      'Allow microphone access there, or skip it and start with demo audio.',
     ],
     showGrantAction: true,
   };
@@ -555,13 +552,13 @@ export function attachCapabilityPreflight({
   const description = document.createElement('p');
   description.className = 'control-panel__description';
   description.textContent =
-    'We check visuals and audio, then point you to the next step.';
+    'We check whether visuals and audio can start here.';
   panel.appendChild(description);
 
   const sequenceHint = document.createElement('p');
   sequenceHint.className = 'control-panel__microcopy';
   sequenceHint.textContent =
-    'Technical details stay hidden unless you want them.';
+    'If something is blocked, we will point you to the fastest fallback.';
   panel.appendChild(sequenceHint);
 
   const statusContainer = document.createElement('div');
@@ -594,7 +591,7 @@ export function attachCapabilityPreflight({
   rememberToggle.name = 'preflight-remember';
   rememberToggle.className = 'preflight-panel__remember-toggle';
   const rememberLabel = document.createElement('span');
-  rememberLabel.textContent = 'Skip preflight for this session';
+  rememberLabel.textContent = "Don't show this again this session";
   rememberWrap.append(rememberToggle, rememberLabel);
   panel.appendChild(rememberWrap);
 
@@ -626,7 +623,7 @@ export function attachCapabilityPreflight({
   continueButton.className = 'cta-button primary';
   continueButton.type = 'button';
   continueButton.dataset.preflightPrimaryAction = 'true';
-  continueButton.textContent = 'Continue to audio setup';
+  continueButton.textContent = 'Continue';
   continueButton.hidden = true;
   continueButton.addEventListener('click', () => {
     setRememberPreference(rememberToggle.checked);

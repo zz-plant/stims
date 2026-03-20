@@ -89,7 +89,7 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
       <div class="brand">
         <span class="brand-mark"></span>
         <div class="brand-copy">
-          <p class="eyebrow">Stim Webtoys</p>
+          <p class="eyebrow">Stims</p>
           <p class="brand-title">Stims ✦</p>
         </div>
       </div>
