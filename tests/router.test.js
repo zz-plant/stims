@@ -57,11 +57,7 @@ describe('router utilities', () => {
       observedRoute = route;
     });
 
-    windowStub.history.pushState(
-      {},
-      '',
-      'http://example.com/milkdrop/',
-    );
+    windowStub.history.pushState({}, '', 'http://example.com/milkdrop/');
     listeners.get('popstate')?.();
 
     expect(observedRoute).toEqual({ view: 'toy', slug: 'milkdrop' });
