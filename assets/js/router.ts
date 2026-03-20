@@ -12,7 +12,15 @@ const DEFAULT_SLUG_PATHS: SlugPathMap = {
 
 const normalizePath = (pathname: string) => {
   const normalized = pathname.replace(/\/index\.html$/u, '/');
-  return normalized === '' ? '/' : normalized;
+  if (normalized === '') return '/';
+  if (
+    normalized !== '/' &&
+    !normalized.endsWith('/') &&
+    !normalized.split('/').pop()?.includes('.')
+  ) {
+    return `${normalized}/`;
+  }
+  return normalized;
 };
 
 export function createRouter({

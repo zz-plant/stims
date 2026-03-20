@@ -121,11 +121,12 @@ describe('site navigation interactions', () => {
       container.querySelectorAll('.nav-section--primary .nav-link'),
     ).map((link) => (link as HTMLAnchorElement).getAttribute('href'));
 
-    expect(hrefs).toContain('#milkdrop');
-    expect(hrefs).toContain('#proof');
-    expect(hrefs).toContain('#system-check');
+    expect(hrefs).toContain('#experience');
+    expect(hrefs).toContain('#presets');
+    expect(hrefs).toContain('#lineage');
+    expect(hrefs).toContain('/milkdrop/');
     expect(hrefs).toContain('https://github.com/zz-plant/stims');
-    expect(hrefs).toHaveLength(4);
+    expect(hrefs).toHaveLength(5);
   });
 
   test('re-rendering site nav cleans up previous media-query listener', () => {

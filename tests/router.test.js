@@ -34,15 +34,17 @@ describe('router utilities', () => {
     });
 
     router.pushToyState('milkdrop');
-    expect(location.search).toBe('?toy=milkdrop');
+    expect(location.pathname).toBe('/milkdrop/');
+    expect(location.search).toBe('');
 
     router.goToLibrary();
+    expect(location.pathname).toBe('/');
     expect(location.search).toBe('');
   });
 
   test('notifies listeners on popstate', () => {
     const { windowStub, listeners, location } = createWindowStub(
-      'http://example.com/library?toy=milkdrop',
+      'http://example.com/milkdrop/',
     );
     const originalHref = location.href;
     const router = createRouter({
@@ -58,7 +60,7 @@ describe('router utilities', () => {
     windowStub.history.pushState(
       {},
       '',
-      'http://example.com/library?toy=milkdrop',
+      'http://example.com/milkdrop/',
     );
     listeners.get('popstate')?.();
 

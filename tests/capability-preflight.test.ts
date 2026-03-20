@@ -8,7 +8,7 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const setTestUrl = () => {
   (
     window as Window & { happyDOM?: { setURL?: (url: string) => void } }
-  ).happyDOM?.setURL?.('https://example.com/toy.html?toy=milkdrop');
+  ).happyDOM?.setURL?.('https://example.com/milkdrop/');
 };
 
 const readyResult: CapabilityPreflightResult = {
@@ -76,7 +76,7 @@ describe('capability preflight launch flow', () => {
 
     const preflight = attachCapabilityPreflight({
       host: document.body,
-      backHref: 'index.html',
+      backHref: '/',
       openOnAttach: true,
       showCloseButton: true,
       runPreflight: async () => readyResult,

@@ -54,10 +54,10 @@ const run = async () => {
     'utf8',
   );
   const hasUrlLastmod =
-    sitemapChunk.includes('<loc>https://no.toil.fyi/toy.html</loc>') &&
+    sitemapChunk.includes('<loc>https://no.toil.fyi/milkdrop/</loc>') &&
     sitemapChunk.includes('<lastmod>');
   results.push({
-    name: 'Sitemap chunk includes `toy.html` entry',
+    name: 'Sitemap chunk includes `/milkdrop/` entry',
     passed: hasUrlLastmod,
     details: 'public/sitemap-1.xml',
   });
@@ -71,9 +71,9 @@ const run = async () => {
   });
 
   results.push({
-    name: 'Sitemap chunk includes OG image entry for the launch page',
+    name: 'Sitemap chunk includes OG image entry for the launch route',
     passed:
-      sitemapChunk.includes('<loc>https://no.toil.fyi/toy.html</loc>') &&
+      sitemapChunk.includes('<loc>https://no.toil.fyi/milkdrop/</loc>') &&
       sitemapChunk.includes(
         '<image:loc>https://no.toil.fyi/og/milkdrop.svg</image:loc>',
       ),
