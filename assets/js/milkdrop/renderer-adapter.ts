@@ -131,15 +131,17 @@ function getShaderTextureBlendModeId(mode: string) {
   }
 }
 
-function getFeedbackBackendProfile(
+export function getFeedbackBackendProfile(
   backend: 'webgl' | 'webgpu',
 ): FeedbackBackendProfile {
   return backend === 'webgpu'
     ? {
         currentFrameBoost: 0.1,
         feedbackSoftness: 0.65,
-        resolutionScale: 1.1,
-        samples: 4,
+        // Three offscreen feedback targets make 4x MSAA here disproportionately
+        // expensive, and the composite blur already softens aliasing enough.
+        resolutionScale: 1,
+        samples: 2,
       }
     : {
         currentFrameBoost: 0,

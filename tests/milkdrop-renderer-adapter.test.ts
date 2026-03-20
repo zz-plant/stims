@@ -534,7 +534,7 @@ ob_border=1
     expect(borderGroup.children[0]?.type ?? 'Group').toBe('Group');
   });
 
-  test('uses higher-quality feedback targets on webgpu backends', () => {
+  test('uses lighter feedback targets on webgpu backends', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback Quality
@@ -579,9 +579,9 @@ video_echo=1
     ).feedback;
 
     expect(feedback).not.toBeNull();
-    expect(feedback?.sceneTarget.width).toBe(704);
-    expect(feedback?.sceneTarget.height).toBe(396);
-    expect(feedback?.sceneTarget.samples).toBe(4);
+    expect(feedback?.sceneTarget.width).toBe(640);
+    expect(feedback?.sceneTarget.height).toBe(360);
+    expect(feedback?.sceneTarget.samples).toBe(2);
     expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
   });
 

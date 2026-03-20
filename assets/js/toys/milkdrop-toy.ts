@@ -25,7 +25,7 @@ export function start({ container }: ToyStartOptions = {}) {
     toyOptions: {
       cameraOptions: { position: { x: 0, y: 0, z: 5 } },
       rendererOptions: {
-        antialias: true,
+        antialias: false,
       },
     },
     audio: {
