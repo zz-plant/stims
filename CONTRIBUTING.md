@@ -30,7 +30,7 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
 ## Where to look first
 
 - Current command/reference docs: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
-- Toy implementation guidance: [`docs/TOY_DEVELOPMENT.md`](./docs/TOY_DEVELOPMENT.md)
+- MilkDrop runtime guidance: [`docs/MILKDROP_PRESET_RUNTIME.md`](./docs/MILKDROP_PRESET_RUNTIME.md)
 - Canonical docs index: [`docs/README.md`](./docs/README.md)
 - Repo-local agent capabilities in `.agent/`: [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md)
 
@@ -50,7 +50,7 @@ Use these commands before opening a PR:
   bun run check:quick
   ```
 
-- Toy registry/docs consistency check when adding or renaming toys:
+- Manifest/generated-artifact consistency check:
 
   ```bash
   bun run check:toys
@@ -91,17 +91,11 @@ When workflows or structure change, update docs in the same PR (including deploy
 - Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) as the canonical docs synchronization contract.
 - Treat [`docs/README.md`](./docs/README.md) as the canonical docs index and update it whenever docs are added, renamed, moved, or deleted.
 
-## Toy-specific changes
+## MilkDrop product changes
 
-For new or renamed toys, update all of the following together:
+For product-facing work, keep these areas aligned together:
 
-- Toy implementation in `assets/js/toys/`.
-- Toy metadata in `assets/data/toys.json`.
-- `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md`.
-- Tests in `tests/` where behavior changed.
-
-Scaffold helper:
-
-```bash
-bun run scripts/scaffold-toy.ts --slug my-toy --title "My Toy" --with-test
-```
+- MilkDrop runtime and shell code in `assets/js/milkdrop/`, `assets/js/core/`, and `assets/js/toys/milkdrop-toy.ts`.
+- The shipped manifest entry in `assets/data/toys.json`.
+- Generated artifacts in `assets/js/data/toy-manifest.ts` and `public/toys.json`.
+- Tests in `tests/` where runtime behavior changed.

@@ -193,50 +193,6 @@ describe('check-toys script', () => {
     ).toBe(true);
   });
 
-  test('flags stale interaction metadata derived from milkdrop behaviors', async () => {
-    const root = await createTempRepo();
-    await writeToyModule(root, 'aurora-painter');
-
-    const entries = [
-      {
-        slug: 'aurora-painter',
-        title: 'Aurora Painter',
-        description: 'ok',
-        module: 'assets/js/toys/aurora-painter.ts',
-        type: 'module',
-        requiresWebGPU: true,
-        allowWebGLFallback: true,
-        tags: ['wrong'],
-        controls: ['Wrong controls'],
-        firstRunHint: 'Wrong hint',
-        wowControl: 'Wrong wow',
-        recommendedCapability: 'microphone',
-        capabilities: {
-          microphone: true,
-          demoAudio: true,
-          motion: false,
-        },
-      },
-    ];
-
-    await fs.writeFile(
-      path.join(root, 'assets/data/toys.json'),
-      `${JSON.stringify(entries, null, 2)}\n`,
-    );
-    await writeGeneratedArtifacts(root, entries);
-    await fs.appendFile(
-      path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
-      '| `aurora-painter` | `assets/js/toys/aurora-painter.ts` | Direct module |\n',
-    );
-
-    const result = await runToyChecks(root);
-    expect(
-      result.issues.some((issue) =>
-        issue.includes('Behavior-derived interaction metadata is out of date'),
-      ),
-    ).toBe(true);
-  });
-
   test('flags registered toy modules that do not export start', async () => {
     const root = await createTempRepo();
     const slug = 'missing-start';

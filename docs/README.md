@@ -24,7 +24,7 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 
 ## Historical or transitional docs
 
-The following docs may still describe the older multi-toy model. Keep them only as migration context unless they are actively rewritten:
+The following docs still describe the retired multi-toy model. Keep them only as archival context unless they are actively rewritten:
 
 - [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md)
 - [`TOY_TESTING_SPEC.md`](./TOY_TESTING_SPEC.md)

@@ -99,7 +99,7 @@ If you change workflows, scripts, or documentation structure, keep the doc entry
 - `toy.html` is the primary visualizer entrypoint.
 - `index.html` is the focused launch page for the same product.
 - `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
-- `assets/data/toys.json` is the checked-in toy and capability manifest source.
+- `assets/data/toys.json` is the checked-in app manifest source for the shipped MilkDrop entry.
 - `tests/` contains unit, integration, and compatibility coverage.
 - `docs/` is the canonical contributor documentation set.
 

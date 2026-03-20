@@ -17,12 +17,12 @@ describe('growth metrics', () => {
 
   test('tracks active days and toy opens', () => {
     recordLibraryVisit();
-    recordToyOpen('holy', 'library');
+    recordToyOpen('milkdrop', 'library');
 
     const snapshot = getGrowthSnapshot();
     expect(snapshot.weeklyActiveDays).toBeGreaterThanOrEqual(1);
     expect(snapshot.toyOpens).toBe(1);
-    expect(snapshot.recentToySlugs).toEqual(['holy']);
+    expect(snapshot.recentToySlugs).toEqual(['milkdrop']);
   });
 
   test('emits non-persistent opportunity signals', () => {

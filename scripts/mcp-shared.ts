@@ -490,7 +490,7 @@ function registerTools(server: McpServer) {
           slug: z
             .string()
             .trim()
-            .describe('The toy slug to launch (e.g., "holy", "lights").'),
+            .describe('The toy slug to launch (for example, "milkdrop").'),
           port: z
             .number()
             .int()
@@ -607,27 +607,12 @@ function registerTools(server: McpServer) {
           guide.push('', `## Specific to "${toy.title}"`, '');
           guide.push(`**Description:** ${toy.description}`);
 
-          // Add slug-specific hints based on known toys
+          // Add slug-specific hints for the shipped MilkDrop experience.
           const slugHints: Record<string, string[]> = {
-            holy: [
-              '- Watch for halos expanding on bass',
-              '- Particles burst on high frequencies',
-              '- Color cycles with melodic content',
-            ],
-            lights: [
-              '- Brightness and bloom surge on bass hits',
-              '- Color shifts track mid-range energy',
-              '- Smaller spark-like details react to highs',
-            ],
-            multi: [
-              '- Dense feedback swells with bass',
-              '- Rotation and warp respond to mid frequencies',
-              '- Fine texture and shimmer lift with highs',
-            ],
-            geom: [
-              '- 3D shapes morph with frequencies',
-              '- Camera movement reacts to bass',
-              '- Geometry complexity changes with energy',
+            milkdrop: [
+              '- Blend transitions and warp density should swell with bass energy',
+              '- Palette shifts, motion, and preset layering should stay responsive through mids',
+              '- Fine shimmer, mesh detail, and edge activity should lift with highs',
             ],
           };
 

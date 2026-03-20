@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers how to build Stims, validate the production bundle locally, and ship it to production. Stims leads with the MilkDrop Visualizer as its flagship experience while continuing to ship a broader toy lab, and the deployment workflow below applies to that full surface. Commands reference the scripts in `package.json` so you can copy/paste without drift.
+This guide covers how to build Stims, validate the production bundle locally, and ship it to production. Stims now ships a single MilkDrop-led visualizer product, and the deployment workflow below applies to that surface. Commands reference the scripts in `package.json` so you can copy/paste without drift.
 
 ## Choose your deployment track
 
@@ -21,7 +21,7 @@ Use this baseline sequence when shipping the site:
    bun run check
    ```
 
-2. Confirm toy metadata and docs registration remain aligned:
+2. Confirm manifest and generated artifacts remain aligned:
 
    ```bash
    bun run check:toys
@@ -179,9 +179,9 @@ Cloudflare Pages issues a unique preview deployment for each pull request. Every
 
 ## Validate shell and generated routes before merge
 
-The project ships two source HTML shells (`index.html` and `toy.html`) plus generated public toy detail routes under `/toys/<slug>/`. Validate representative routes locally and on the PR preview:
+The project ships two source HTML shells (`index.html` and `toy.html`) plus generated public detail routes for the shipped MilkDrop experience. Validate representative routes locally and on the PR preview:
 
-1. Run `bun run build` followed by `bun run preview` and open representative routes manually (for example, `http://localhost:4173/`, `http://localhost:4173/toy.html?toy=milkdrop`, and `http://localhost:4173/toys/cube-wave/`).
+1. Run `bun run build` followed by `bun run preview` and open representative routes manually (for example, `http://localhost:4173/`, `http://localhost:4173/toy.html?toy=milkdrop`, and `http://localhost:4173/toys/milkdrop/`).
 2. Repeat the checks against the PR’s Cloudflare Pages preview URL to ensure CDN caching and hashed asset references behave the same as local preview.
 3. If any route relies on audio or interaction-specific features, perform at least one interaction test (mic input, pointer/touch) to confirm runtime permissions and event handling.
 

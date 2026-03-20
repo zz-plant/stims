@@ -16,7 +16,6 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 
 - [`tooling-and-quality.md`](./tooling-and-quality.md)
 - [`custom-capabilities.md`](./custom-capabilities.md)
-- [`toy-development.md`](./toy-development.md) for historical toy-model context only
 - [`visualizer-workflows.md`](./visualizer-workflows.md) (includes `/ship-visualizer-change` for end-to-end product updates)
 - [`reference-docs.md`](./reference-docs.md)
 
@@ -32,7 +31,7 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 - `toy.html` — primary app entrypoint for the flagship visualizer.
 - `assets/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
 - `assets/js/milkdrop/` — preset runtime, editor, compiler, catalog, and VM behavior.
-- `assets/data/toys.json` — loader manifest source that still exists for routing and compatibility, not as the main product model.
+- `assets/data/toys.json` — loader manifest source for the shipped MilkDrop entry.
 - `tests/` — automated test suite.
 - `docs/` — contributor and architecture docs.
 - `.agent/workflows/` + `.agent/skills/` — reusable automation workflows.

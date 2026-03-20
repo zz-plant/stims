@@ -29,13 +29,9 @@ type Toy = ToyEntry;
 const TOY_QUERY_PARAM = 'toy';
 
 const TOY_MICRO_GOALS: Record<string, string[]> = {
-  holy: ['Boost intensity, then settle into a calmer palette.'],
-  'bubble-harmonics': [
-    'Find a high-frequency moment and trigger a bubble split.',
+  milkdrop: [
+    'Start a preset, switch source or use autoplay, then confirm the shell stays responsive.',
   ],
-  lights: ['Push the palette brighter, then settle into a slower fade.'],
-  multi: ['Switch between dense feedback and calmer motion for 10 seconds.'],
-  geom: ['Test quiet vs loud input and watch the shape response.'],
 };
 
 export { getFlowIntervalMs } from './loader/toy-session-controller.ts';

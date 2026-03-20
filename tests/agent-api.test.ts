@@ -30,11 +30,11 @@ test('activateVibeMode toggles state and root dataset', async () => {
 
 test('api state includes vibe mode alongside toy and audio state', () => {
   const api = initAgentAPI();
-  setCurrentToy('holy');
+  setCurrentToy('milkdrop');
   setAudioActive(true, 'demo');
 
   expect(api.getState()).toMatchObject({
-    currentToy: 'holy',
+    currentToy: 'milkdrop',
     toyLoaded: true,
     audioActive: true,
     audioSource: 'demo',
@@ -44,10 +44,10 @@ test('api state includes vibe mode alongside toy and audio state', () => {
 
 test('debug snapshots are exposed through the agent api', () => {
   const api = initAgentAPI();
-  setDebugSnapshot('milkdrop', { presetId: 'holy', status: 'ok' });
+  setDebugSnapshot('milkdrop', { presetId: 'milkdrop', status: 'ok' });
 
   expect(api.getDebugSnapshot('milkdrop')).toEqual({
-    presetId: 'holy',
+    presetId: 'milkdrop',
     status: 'ok',
   });
 

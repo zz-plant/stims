@@ -476,6 +476,28 @@ export type MilkdropMotionVectorVisual = {
   additive: boolean;
 };
 
+export type MilkdropProceduralFieldVisual = {
+  density: number;
+  zoom: number;
+  rotation: number;
+  warp: number;
+  warpAnimSpeed: number;
+};
+
+export type MilkdropProceduralMotionVectorFieldVisual = {
+  countX: number;
+  countY: number;
+  zoom: number;
+  rotation: number;
+  warp: number;
+  warpAnimSpeed: number;
+};
+
+export type MilkdropGpuGeometryHints = {
+  meshField: MilkdropProceduralFieldVisual | null;
+  motionVectorField: MilkdropProceduralMotionVectorFieldVisual | null;
+};
+
 export type MilkdropPostVisual = {
   shaderEnabled: boolean;
   textureWrap: boolean;
@@ -620,6 +642,7 @@ export type MilkdropFrameState = {
   signals: MilkdropRuntimeSignals;
   variables: Record<string, number>;
   compatibility: MilkdropCompatibilityReport;
+  gpuGeometry: MilkdropGpuGeometryHints;
 };
 
 export type MilkdropBlendState = {
@@ -643,6 +666,7 @@ export type MilkdropRenderPayload = {
 export interface MilkdropVM {
   setPreset(preset: MilkdropCompiledPreset): void;
   setDetailScale(scale: number): void;
+  setRenderBackend(backend: 'webgl' | 'webgpu'): void;
   reset(): void;
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState;
   getStateSnapshot(): Record<string, number>;

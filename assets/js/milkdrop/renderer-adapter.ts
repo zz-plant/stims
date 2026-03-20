@@ -6,36 +6,31 @@ import {
   DoubleSide,
   Float32BufferAttribute,
   Group,
-  HalfFloatType,
   Line,
-  LinearFilter,
   LineBasicMaterial,
   LineLoop,
+  LineSegments,
   Mesh,
   MeshBasicMaterial,
   NormalBlending,
-  OrthographicCamera,
   Path,
   PlaneGeometry,
   Points,
   PointsMaterial,
-  RepeatWrapping,
   ShaderMaterial,
   Shape,
   ShapeGeometry,
   Sphere,
-  SRGBColorSpace,
-  type Texture,
-  TextureLoader,
-  Scene as ThreeScene,
   Vector2,
   Vector3,
-  WebGLRenderTarget,
+  type WebGLRenderTarget,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import type { MilkdropFeedbackManager } from './feedback-manager-shared.ts';
 import type {
   MilkdropBorderVisual,
   MilkdropCompiledPreset,
+  MilkdropGpuGeometryHints,
   MilkdropRendererAdapter,
   MilkdropRenderPayload,
   MilkdropShapeVisual,
@@ -52,52 +47,197 @@ type RendererSetRenderTarget = {
   bivarianceHack(target: WebGLRenderTarget | null): void;
 }['bivarianceHack'];
 
-type FeedbackBackendProfile = {
+export type MilkdropRendererAdapterConfig = {
+  scene: Scene;
+  camera: Camera;
+  renderer?: RendererLike | null;
+  backend: 'webgl' | 'webgpu';
+  behavior?: MilkdropBackendBehavior;
+  createFeedbackManager?: MilkdropFeedbackManagerFactory;
+};
+
+export type FeedbackBackendProfile = {
   currentFrameBoost: number;
   feedbackSoftness: number;
   resolutionScale: number;
   samples: number;
 };
 
+export type MilkdropFeedbackManagerFactory = (
+  width: number,
+  height: number,
+) => MilkdropFeedbackManager;
+
+export type MilkdropBackendBehavior = {
+  feedbackProfile: FeedbackBackendProfile;
+  useHalfFloatFeedback: boolean;
+  closeLinesManually: boolean;
+  useLineLoopPrimitives: boolean;
+  supportsShapeGradient: boolean;
+};
+
+export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
+  feedbackProfile: {
+    currentFrameBoost: 0,
+    feedbackSoftness: 0,
+    resolutionScale: 0.85,
+    samples: 0,
+  },
+  useHalfFloatFeedback: false,
+  closeLinesManually: false,
+  useLineLoopPrimitives: true,
+  supportsShapeGradient: true,
+};
+
+export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
+  feedbackProfile: {
+    currentFrameBoost: 0.1,
+    feedbackSoftness: 0.65,
+    resolutionScale: 1,
+    samples: 0,
+  },
+  useHalfFloatFeedback: true,
+  closeLinesManually: true,
+  useLineLoopPrimitives: false,
+  supportsShapeGradient: false,
+};
+
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
 const SHARED_BOUNDS_RADIUS = 4;
-const FULLSCREEN_QUAD_GEOMETRY = markSharedGeometry(new PlaneGeometry(2, 2));
 const BACKGROUND_GEOMETRY = markSharedGeometry(new PlaneGeometry(6.4, 6.4));
 const polygonFillGeometryCache = new Map<number, ShapeGeometry>();
 const polygonOutlineGeometryCache = new Map<string, BufferGeometry>();
-const MILKDROP_TEXTURE_FILES = {
-  noise: 'seamless_perlin_noise.png',
-  simplex: 'simplex_noise_3d.png',
-  voronoi: 'voronoi_cellular.png',
-  aura: 'colorful_aura_gradient.png',
-  caustics: 'water_caustics.png',
-  pattern: 'circuit_board_pattern.png',
-  fractal: 'crystal_fractal.png',
-} as const;
+const proceduralMeshGeometryCache = new Map<number, BufferGeometry>();
+const proceduralMotionVectorGeometryCache = new Map<string, BufferGeometry>();
 
-function resolveTextureUrl(fileName: string) {
-  const baseUrl =
-    typeof import.meta.env.BASE_URL === 'string'
-      ? import.meta.env.BASE_URL
-      : '/';
-  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  return `${normalizedBaseUrl}textures/${fileName}`;
+type ProceduralFieldUniformState = {
+  zoom: { value: number };
+  rotation: { value: number };
+  warp: { value: number };
+  warpAnimSpeed: { value: number };
+  time: { value: number };
+  trebleAtt: { value: number };
+  tint: { value: Color };
+  alpha: { value: number };
+};
+
+function createProceduralFieldUniformState() {
+  return {
+    zoom: { value: 1 },
+    rotation: { value: 0 },
+    warp: { value: 0 },
+    warpAnimSpeed: { value: 1 },
+    time: { value: 0 },
+    trebleAtt: { value: 0 },
+    tint: { value: new Color(1, 1, 1) },
+    alpha: { value: 1 },
+  } satisfies ProceduralFieldUniformState;
 }
 
-function configureMilkdropTexture(texture: Texture, colorTexture = false) {
-  texture.wrapS = RepeatWrapping;
-  texture.wrapT = RepeatWrapping;
-  if (colorTexture) {
-    texture.colorSpace = SRGBColorSpace;
+const PROCEDURAL_FIELD_SHADER_CHUNK = `
+  vec2 milkdropTransformPoint(vec2 source) {
+    float radius = length(source);
+    float angle = atan(source.y, source.x) + rotation;
+    float ripple = sin(
+      radius * 12.0 +
+      time * (0.6 + trebleAtt) * (0.35 + warpAnimSpeed)
+    ) * warp * 0.08;
+    vec2 warped = vec2(
+      (source.x + cos(angle * 3.0) * ripple) * zoom,
+      (source.y + sin(angle * 4.0) * ripple) * zoom
+    );
+    float cosRot = cos(rotation);
+    float sinRot = sin(rotation);
+    return vec2(
+      warped.x * cosRot - warped.y * sinRot,
+      warped.x * sinRot + warped.y * cosRot
+    );
   }
-  return texture;
+`;
+
+function createProceduralMeshMaterial() {
+  const uniforms = createProceduralFieldUniformState();
+  return new ShaderMaterial({
+    uniforms,
+    transparent: true,
+    vertexShader: `
+      attribute vec3 sourcePosition;
+      uniform float zoom;
+      uniform float rotation;
+      uniform float warp;
+      uniform float warpAnimSpeed;
+      uniform float time;
+      uniform float trebleAtt;
+      ${PROCEDURAL_FIELD_SHADER_CHUNK}
+
+      void main() {
+        vec2 transformed = milkdropTransformPoint(sourcePosition.xy);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(
+          transformed.xy,
+          sourcePosition.z,
+          1.0
+        );
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 tint;
+      uniform float alpha;
+
+      void main() {
+        gl_FragColor = vec4(tint, alpha);
+      }
+    `,
+  });
 }
 
-function loadMilkdropTexture(fileName: string, colorTexture = false) {
-  const texture = new TextureLoader().load(resolveTextureUrl(fileName));
-  return configureMilkdropTexture(texture, colorTexture);
-}
+function createProceduralMotionVectorMaterial() {
+  const uniforms = createProceduralFieldUniformState();
+  return new ShaderMaterial({
+    uniforms,
+    transparent: true,
+    vertexShader: `
+      attribute vec3 sourcePosition;
+      attribute float endpointWeight;
+      uniform float zoom;
+      uniform float rotation;
+      uniform float warp;
+      uniform float warpAnimSpeed;
+      uniform float time;
+      uniform float trebleAtt;
+      varying float vAlpha;
+      ${PROCEDURAL_FIELD_SHADER_CHUNK}
 
+      void main() {
+        vec2 source = sourcePosition.xy;
+        vec2 current = milkdropTransformPoint(source);
+        vec2 delta = clamp((current - source) * 1.35, vec2(-0.24), vec2(0.24));
+        float magnitude = length(delta);
+        vec2 renderPoint = mix(
+          current - delta * 0.45,
+          current + delta,
+          endpointWeight
+        );
+        vAlpha = alpha * clamp(0.75 + magnitude * 2.2, 0.02, 1.0) * step(0.002, magnitude);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(
+          renderPoint.xy,
+          sourcePosition.z,
+          1.0
+        );
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 tint;
+      varying float vAlpha;
+
+      void main() {
+        if (vAlpha <= 0.0) {
+          discard;
+        }
+        gl_FragColor = vec4(tint, vAlpha);
+      }
+    `,
+  });
+}
 function getShaderTextureSourceId(source: string) {
   switch (source) {
     case 'noise':
@@ -139,20 +279,8 @@ export function getFeedbackBackendProfile(
   backend: 'webgl' | 'webgpu',
 ): FeedbackBackendProfile {
   return backend === 'webgpu'
-    ? {
-        currentFrameBoost: 0.1,
-        feedbackSoftness: 0.65,
-        // Some WebGPU implementations reject multisampled float feedback targets.
-        // The composite blur already softens aliasing enough for this path.
-        resolutionScale: 1,
-        samples: 0,
-      }
-    : {
-        currentFrameBoost: 0,
-        feedbackSoftness: 0,
-        resolutionScale: 0.85,
-        samples: 0,
-      };
+    ? WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile
+    : WEBGL_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
 }
 
 function markSharedGeometry<T extends BufferGeometry>(geometry: T) {
@@ -230,6 +358,81 @@ function getUnitPolygonClosedLineGeometry(sides: number) {
   return geometry;
 }
 
+function getProceduralMeshGeometry(density: number) {
+  const safeDensity = Math.max(2, Math.round(density));
+  const cached = proceduralMeshGeometryCache.get(safeDensity);
+  if (cached) {
+    return cached;
+  }
+
+  const sourcePositions: number[] = [];
+  for (let row = 0; row < safeDensity; row += 1) {
+    for (let col = 0; col < safeDensity; col += 1) {
+      const x = (col / Math.max(1, safeDensity - 1)) * 2 - 1;
+      const y = (row / Math.max(1, safeDensity - 1)) * 2 - 1;
+
+      if (col + 1 < safeDensity) {
+        const nextX = ((col + 1) / Math.max(1, safeDensity - 1)) * 2 - 1;
+        sourcePositions.push(x, y, -0.25, nextX, y, -0.25);
+      }
+
+      if (row + 1 < safeDensity) {
+        const nextY = ((row + 1) / Math.max(1, safeDensity - 1)) * 2 - 1;
+        sourcePositions.push(x, y, -0.25, x, nextY, -0.25);
+      }
+    }
+  }
+
+  const geometry = markSharedGeometry(new BufferGeometry());
+  geometry.setAttribute(
+    'position',
+    new Float32BufferAttribute(sourcePositions, 3),
+  );
+  geometry.setAttribute(
+    'sourcePosition',
+    new Float32BufferAttribute(sourcePositions, 3),
+  );
+  proceduralMeshGeometryCache.set(safeDensity, geometry);
+  return geometry;
+}
+
+function getProceduralMotionVectorGeometry(countX: number, countY: number) {
+  const safeCountX = Math.max(1, Math.round(countX));
+  const safeCountY = Math.max(1, Math.round(countY));
+  const cacheKey = `${safeCountX}x${safeCountY}`;
+  const cached = proceduralMotionVectorGeometryCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const sourcePositions: number[] = [];
+  const endpointWeights: number[] = [];
+  for (let row = 0; row < safeCountY; row += 1) {
+    for (let col = 0; col < safeCountX; col += 1) {
+      const sourceX = safeCountX === 1 ? 0 : (col / (safeCountX - 1)) * 2 - 1;
+      const sourceY = safeCountY === 1 ? 0 : (row / (safeCountY - 1)) * 2 - 1;
+      sourcePositions.push(sourceX, sourceY, 0.18, sourceX, sourceY, 0.18);
+      endpointWeights.push(0, 1);
+    }
+  }
+
+  const geometry = markSharedGeometry(new BufferGeometry());
+  geometry.setAttribute(
+    'position',
+    new Float32BufferAttribute(sourcePositions, 3),
+  );
+  geometry.setAttribute(
+    'sourcePosition',
+    new Float32BufferAttribute(sourcePositions, 3),
+  );
+  geometry.setAttribute(
+    'endpointWeight',
+    new Float32BufferAttribute(endpointWeights, 1),
+  );
+  proceduralMotionVectorGeometryCache.set(cacheKey, geometry);
+  return geometry;
+}
+
 function closeLinePositions(positions: number[]) {
   if (positions.length < 6) {
     return positions;
@@ -250,9 +453,9 @@ function closeLinePositions(positions: number[]) {
 
 function getWaveLinePositions(
   wave: MilkdropWaveVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
 ) {
-  return wave.closed && backend === 'webgpu'
+  return wave.closed && behavior.closeLinesManually
     ? closeLinePositions(wave.positions)
     : wave.positions;
 }
@@ -260,7 +463,7 @@ function getWaveLinePositions(
 function getBorderLinePositions(
   border: MilkdropBorderVisual,
   z: number,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
 ) {
   const inset = border.key === 'outer' ? border.size : border.size + 0.08;
   const left = -1 + inset * 2;
@@ -281,11 +484,9 @@ function getBorderLinePositions(
     bottom,
     z,
   ];
-  return backend === 'webgpu' ? closeLinePositions(positions) : positions;
-}
-
-function supportsShapeGradient(backend: 'webgl' | 'webgpu') {
-  return backend === 'webgl';
+  return behavior.closeLinesManually
+    ? closeLinePositions(positions)
+    : positions;
 }
 
 function getShapeFillFallbackColor(shape: MilkdropShapeVisual) {
@@ -298,6 +499,38 @@ function getShapeFillFallbackColor(shape: MilkdropShapeVisual) {
     b: (shape.color.b + shape.secondaryColor.b) * 0.5,
     a: Math.max(shape.color.a ?? 0.4, shape.secondaryColor.a ?? 0),
   };
+}
+
+function syncProceduralFieldUniforms(
+  material: ShaderMaterial,
+  {
+    zoom,
+    rotation,
+    warp,
+    warpAnimSpeed,
+    time,
+    trebleAtt,
+    tint,
+    alpha,
+  }: {
+    zoom: number;
+    rotation: number;
+    warp: number;
+    warpAnimSpeed: number;
+    time: number;
+    trebleAtt: number;
+    tint: { r: number; g: number; b: number };
+    alpha: number;
+  },
+) {
+  material.uniforms.zoom.value = zoom;
+  material.uniforms.rotation.value = rotation;
+  material.uniforms.warp.value = warp;
+  material.uniforms.warpAnimSpeed.value = warpAnimSpeed;
+  material.uniforms.time.value = time;
+  material.uniforms.trebleAtt.value = trebleAtt;
+  material.uniforms.tint.value.setRGB(tint.r, tint.g, tint.b);
+  material.uniforms.alpha.value = alpha;
 }
 
 function isFeedbackCapableRenderer(
@@ -374,31 +607,9 @@ function disposeObject(object: { children?: unknown[] }) {
   }
 }
 
-function createFeedbackRenderTarget(
-  width: number,
-  height: number,
-  backend: 'webgl' | 'webgpu',
-) {
-  const profile = getFeedbackBackendProfile(backend);
-  const resolutionScale = profile.resolutionScale;
-  const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
-  const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
-  const target = new WebGLRenderTarget(scaledWidth, scaledHeight, {
-    minFilter: LinearFilter,
-    magFilter: LinearFilter,
-    ...(backend === 'webgpu'
-      ? {
-          type: HalfFloatType,
-        }
-      : {}),
-  });
-  target.samples = profile.samples;
-  return target;
-}
-
 function createWaveObject(
   wave: MilkdropWaveVisual | null,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier = 1,
 ) {
   if (!wave || wave.positions.length === 0) {
@@ -421,7 +632,8 @@ function createWaveObject(
     return object;
   }
 
-  const ObjectType = wave.closed && backend === 'webgl' ? LineLoop : Line;
+  const ObjectType =
+    wave.closed && behavior.useLineLoopPrimitives ? LineLoop : Line;
   const object = new ObjectType(
     new BufferGeometry(),
     new LineBasicMaterial({
@@ -430,7 +642,10 @@ function createWaveObject(
       ...(wave.additive ? { blending: AdditiveBlending } : {}),
     }),
   );
-  ensureGeometryPositions(object.geometry, getWaveLinePositions(wave, backend));
+  ensureGeometryPositions(
+    object.geometry,
+    getWaveLinePositions(wave, behavior),
+  );
   setMaterialColor(object.material, wave.color, wave.alpha * alphaMultiplier);
   object.position.z = 0.24;
   return object;
@@ -438,12 +653,12 @@ function createWaveObject(
 
 function createShapeObject(
   shape: MilkdropShapeVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier = 1,
 ) {
   const group = new Group();
   const fillMaterial =
-    shape.secondaryColor && supportsShapeGradient(backend)
+    shape.secondaryColor && behavior.supportsShapeGradient
       ? new ShaderMaterial({
           uniforms: {
             primaryColor: {
@@ -508,8 +723,8 @@ function createShapeObject(
   group.add(fill);
 
   if (shape.thickOutline) {
-    const accentBorder = new (backend === 'webgl' ? LineLoop : Line)(
-      backend === 'webgl'
+    const accentBorder = new (behavior.useLineLoopPrimitives ? LineLoop : Line)(
+      behavior.useLineLoopPrimitives
         ? getUnitPolygonOutlineGeometry(shape.sides)
         : getUnitPolygonClosedLineGeometry(shape.sides),
       new LineBasicMaterial({
@@ -530,8 +745,8 @@ function createShapeObject(
     group.add(accentBorder);
   }
 
-  const border = new (backend === 'webgl' ? LineLoop : Line)(
-    backend === 'webgl'
+  const border = new (behavior.useLineLoopPrimitives ? LineLoop : Line)(
+    behavior.useLineLoopPrimitives
       ? getUnitPolygonOutlineGeometry(shape.sides)
       : getUnitPolygonClosedLineGeometry(shape.sides),
     new LineBasicMaterial({
@@ -556,11 +771,11 @@ function createShapeObject(
 function syncShapeFillMaterial(
   mesh: Mesh,
   shape: MilkdropShapeVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier: number,
 ) {
   const wantsGradient =
-    Boolean(shape.secondaryColor) && supportsShapeGradient(backend);
+    Boolean(shape.secondaryColor) && behavior.supportsShapeGradient;
   const existingMaterial = mesh.material;
 
   if (wantsGradient) {
@@ -653,14 +868,13 @@ function syncShapeFillMaterial(
 function syncShapeOutline(
   object: Line | LineLoop,
   shape: MilkdropShapeVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier: number,
   opacity: number,
 ) {
-  const nextGeometry =
-    backend === 'webgl'
-      ? getUnitPolygonOutlineGeometry(shape.sides)
-      : getUnitPolygonClosedLineGeometry(shape.sides);
+  const nextGeometry = behavior.useLineLoopPrimitives
+    ? getUnitPolygonOutlineGeometry(shape.sides)
+    : getUnitPolygonClosedLineGeometry(shape.sides);
   if (object.geometry !== nextGeometry) {
     object.geometry = nextGeometry;
   }
@@ -675,7 +889,7 @@ function syncShapeOutline(
 function syncShapeObject(
   existing: Group | undefined,
   shape: MilkdropShapeVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier: number,
 ) {
   const wantsAccent = shape.thickOutline;
@@ -687,13 +901,13 @@ function syncShapeObject(
     if (existing) {
       disposeObject(existing);
     }
-    return createShapeObject(shape, backend, alphaMultiplier);
+    return createShapeObject(shape, behavior, alphaMultiplier);
   }
 
   const fill = existing.children[0];
   const accent = existing.children[1];
   const border = existing.children[wantsAccent ? 2 : 1];
-  const expectsLoop = backend === 'webgl';
+  const expectsLoop = behavior.useLineLoopPrimitives;
   const hasSupportedBorder = expectsLoop
     ? border instanceof LineLoop
     : border instanceof Line;
@@ -707,7 +921,7 @@ function syncShapeObject(
     (wantsAccent && !hasSupportedAccent)
   ) {
     disposeObject(existing);
-    return createShapeObject(shape, backend, alphaMultiplier);
+    return createShapeObject(shape, behavior, alphaMultiplier);
   }
 
   if (fill.geometry !== getUnitPolygonFillGeometry(shape.sides)) {
@@ -716,13 +930,13 @@ function syncShapeObject(
   fill.position.set(shape.x, shape.y, fillZ);
   fill.scale.set(shape.radius, shape.radius, 1);
   fill.rotation.z = shape.rotation;
-  syncShapeFillMaterial(fill, shape, backend, alphaMultiplier);
+  syncShapeFillMaterial(fill, shape, behavior, alphaMultiplier);
 
   if (wantsAccent && (accent instanceof LineLoop || accent instanceof Line)) {
     syncShapeOutline(
       accent,
       shape,
-      backend,
+      behavior,
       alphaMultiplier,
       Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45),
     );
@@ -733,7 +947,7 @@ function syncShapeObject(
   syncShapeOutline(
     border as Line | LineLoop,
     shape,
-    backend,
+    behavior,
     alphaMultiplier,
     shape.borderColor.a ?? 1,
   );
@@ -747,8 +961,8 @@ function syncShapeObject(
     !(accent instanceof LineLoop) &&
     !(accent instanceof Line)
   ) {
-    const nextAccent = new (backend === 'webgl' ? LineLoop : Line)(
-      backend === 'webgl'
+    const nextAccent = new (behavior.useLineLoopPrimitives ? LineLoop : Line)(
+      behavior.useLineLoopPrimitives
         ? getUnitPolygonOutlineGeometry(shape.sides)
         : getUnitPolygonClosedLineGeometry(shape.sides),
       new LineBasicMaterial({
@@ -759,7 +973,7 @@ function syncShapeObject(
     syncShapeOutline(
       nextAccent,
       shape,
-      backend,
+      behavior,
       alphaMultiplier,
       Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45),
     );
@@ -772,7 +986,7 @@ function syncShapeObject(
 
 function createBorderObject(
   border: MilkdropBorderVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier = 1,
 ) {
   const inset = border.key === 'outer' ? border.size : border.size + 0.08;
@@ -811,7 +1025,7 @@ function createBorderObject(
   fill.position.z = 0.285;
   group.add(fill);
 
-  const outline = new (backend === 'webgl' ? LineLoop : Line)(
+  const outline = new (behavior.useLineLoopPrimitives ? LineLoop : Line)(
     new BufferGeometry(),
     new LineBasicMaterial({
       transparent: true,
@@ -820,7 +1034,7 @@ function createBorderObject(
   );
   ensureGeometryPositions(
     outline.geometry,
-    getBorderLinePositions(border, 0.3, backend),
+    getBorderLinePositions(border, 0.3, behavior),
   );
   setMaterialColor(
     outline.material,
@@ -834,7 +1048,7 @@ function createBorderObject(
     return group;
   }
 
-  const accent = new (backend === 'webgl' ? LineLoop : Line)(
+  const accent = new (behavior.useLineLoopPrimitives ? LineLoop : Line)(
     new BufferGeometry(),
     new LineBasicMaterial({
       transparent: true,
@@ -843,7 +1057,7 @@ function createBorderObject(
   );
   ensureGeometryPositions(
     accent.geometry,
-    getBorderLinePositions(border, 0.3, backend),
+    getBorderLinePositions(border, 0.3, behavior),
   );
   setMaterialColor(
     accent.material,
@@ -863,10 +1077,13 @@ function createBorderObject(
 function updateWaveObject(
   object: Line | LineLoop | Points,
   wave: MilkdropWaveVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier: number,
 ) {
-  ensureGeometryPositions(object.geometry, getWaveLinePositions(wave, backend));
+  ensureGeometryPositions(
+    object.geometry,
+    getWaveLinePositions(wave, behavior),
+  );
   if (object instanceof Points) {
     const material = object.material as PointsMaterial;
     material.size = wave.pointSize;
@@ -883,11 +1100,12 @@ function updateWaveObject(
 function syncWaveObject(
   existing: Line | LineLoop | Points | undefined,
   wave: MilkdropWaveVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier: number,
 ) {
   const wantsPoints = wave.drawMode === 'dots';
-  const wantsLoop = wave.closed && !wantsPoints && backend === 'webgl';
+  const wantsLoop =
+    wave.closed && !wantsPoints && behavior.useLineLoopPrimitives;
   const matches =
     !!existing &&
     ((wantsPoints && existing instanceof Points) ||
@@ -898,18 +1116,18 @@ function syncWaveObject(
     if (existing) {
       disposeObject(existing);
     }
-    const created = createWaveObject(wave, backend, alphaMultiplier);
+    const created = createWaveObject(wave, behavior, alphaMultiplier);
     return created;
   }
 
-  updateWaveObject(existing, wave, backend, alphaMultiplier);
+  updateWaveObject(existing, wave, behavior, alphaMultiplier);
   return existing;
 }
 
 function updateBorderLine(
   object: Line | LineLoop,
   border: MilkdropBorderVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier: number,
 ) {
   const inset = border.key === 'outer' ? border.size : border.size + 0.08;
@@ -917,7 +1135,7 @@ function updateBorderLine(
   if (previousInset !== inset) {
     ensureGeometryPositions(
       object.geometry,
-      getBorderLinePositions(border, 0.3, backend),
+      getBorderLinePositions(border, 0.3, behavior),
     );
     object.userData.borderInset = inset;
   }
@@ -971,21 +1189,21 @@ function updateBorderFill(
 function syncBorderObject(
   existing: Group | undefined,
   border: MilkdropBorderVisual,
-  backend: 'webgl' | 'webgpu',
+  behavior: MilkdropBackendBehavior,
   alphaMultiplier: number,
 ) {
   if (!(existing instanceof Group)) {
     if (existing) {
       disposeObject(existing);
     }
-    return createBorderObject(border, backend, alphaMultiplier);
+    return createBorderObject(border, behavior, alphaMultiplier);
   }
 
   const fill = existing.children[0];
   const outline = existing.children[1];
   const accent = existing.children[2];
   const wantsAccent = border.styled;
-  const expectsLoop = backend === 'webgl';
+  const expectsLoop = behavior.useLineLoopPrimitives;
   const hasSupportedOutline = expectsLoop
     ? outline instanceof LineLoop
     : outline instanceof Line;
@@ -998,19 +1216,19 @@ function syncBorderObject(
     (wantsAccent && !hasSupportedAccent)
   ) {
     disposeObject(existing);
-    return createBorderObject(border, backend, alphaMultiplier);
+    return createBorderObject(border, behavior, alphaMultiplier);
   }
 
   updateBorderFill(fill, border, alphaMultiplier);
   updateBorderLine(
     outline as Line | LineLoop,
     border,
-    backend,
+    behavior,
     alphaMultiplier,
   );
   outline.position.z = 0.3;
   if (wantsAccent && (accent instanceof LineLoop || accent instanceof Line)) {
-    updateBorderLine(accent, border, backend, alphaMultiplier);
+    updateBorderLine(accent, border, behavior, alphaMultiplier);
     accent.scale.set(
       border.key === 'outer' ? 0.985 : 1.015,
       border.key === 'outer' ? 0.985 : 1.015,
@@ -1027,343 +1245,10 @@ function syncBorderObject(
   return existing;
 }
 
-class FeedbackManager {
-  readonly compositeScene = new ThreeScene();
-  readonly presentScene = new ThreeScene();
-  readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
-  readonly compositeMaterial: ShaderMaterial;
-  readonly presentMaterial: MeshBasicMaterial;
-  readonly sceneTarget: WebGLRenderTarget;
-  readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
-  readonly resolutionScale: number;
-  readonly profile: FeedbackBackendProfile;
-  readonly auxTextures: Record<string, Texture>;
-  private index = 0;
-
-  constructor(width: number, height: number, backend: 'webgl' | 'webgpu') {
-    this.camera.position.z = 1;
-    this.profile = getFeedbackBackendProfile(backend);
-    this.resolutionScale = this.profile.resolutionScale;
-    this.auxTextures = {
-      noise: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.noise),
-      simplex: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.simplex),
-      voronoi: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.voronoi),
-      aura: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.aura, true),
-      caustics: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.caustics),
-      pattern: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.pattern),
-      fractal: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.fractal),
-    };
-    this.sceneTarget = createFeedbackRenderTarget(width, height, backend);
-    this.targets = [
-      createFeedbackRenderTarget(width, height, backend),
-      createFeedbackRenderTarget(width, height, backend),
-    ];
-    this.compositeMaterial = new ShaderMaterial({
-      uniforms: {
-        currentTex: { value: this.sceneTarget.texture },
-        previousTex: { value: this.targets[0].texture },
-        noiseTex: { value: this.auxTextures.noise },
-        simplexTex: { value: this.auxTextures.simplex },
-        voronoiTex: { value: this.auxTextures.voronoi },
-        auraTex: { value: this.auxTextures.aura },
-        causticsTex: { value: this.auxTextures.caustics },
-        patternTex: { value: this.auxTextures.pattern },
-        fractalTex: { value: this.auxTextures.fractal },
-        mixAlpha: { value: 0.18 },
-        zoom: { value: 1.02 },
-        brighten: { value: 0 },
-        darken: { value: 0 },
-        solarize: { value: 0 },
-        invert: { value: 0 },
-        gammaAdj: { value: 1 },
-        textureWrap: { value: 0 },
-        feedbackTexture: { value: 0 },
-        warpScale: { value: 0 },
-        offsetX: { value: 0 },
-        offsetY: { value: 0 },
-        rotation: { value: 0 },
-        zoomMul: { value: 1 },
-        saturation: { value: 1 },
-        contrast: { value: 1 },
-        colorScale: { value: new Color(1, 1, 1) },
-        hueShift: { value: 0 },
-        brightenBoost: { value: 0 },
-        invertBoost: { value: 0 },
-        solarizeBoost: { value: 0 },
-        tint: { value: new Color(1, 1, 1) },
-        feedbackSoftness: { value: this.profile.feedbackSoftness },
-        currentFrameBoost: { value: this.profile.currentFrameBoost },
-        overlayTextureSource: { value: 0 },
-        overlayTextureMode: { value: 0 },
-        overlayTextureAmount: { value: 0 },
-        overlayTextureScale: { value: new Vector2(1, 1) },
-        overlayTextureOffset: { value: new Vector2(0, 0) },
-        warpTextureSource: { value: 0 },
-        warpTextureAmount: { value: 0 },
-        warpTextureScale: { value: new Vector2(1, 1) },
-        warpTextureOffset: { value: new Vector2(0, 0) },
-        texelSize: {
-          value: new Vector2(
-            1 / Math.max(1, this.sceneTarget.width),
-            1 / Math.max(1, this.sceneTarget.height),
-          ),
-        },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = vec4(position.xy, 0.0, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D currentTex;
-        uniform sampler2D previousTex;
-        uniform sampler2D noiseTex;
-        uniform sampler2D simplexTex;
-        uniform sampler2D voronoiTex;
-        uniform sampler2D auraTex;
-        uniform sampler2D causticsTex;
-        uniform sampler2D patternTex;
-        uniform sampler2D fractalTex;
-        uniform float mixAlpha;
-        uniform float zoom;
-        uniform float brighten;
-        uniform float darken;
-        uniform float solarize;
-        uniform float invert;
-        uniform float gammaAdj;
-        uniform float textureWrap;
-        uniform float feedbackTexture;
-        uniform float warpScale;
-        uniform float offsetX;
-        uniform float offsetY;
-        uniform float rotation;
-        uniform float zoomMul;
-        uniform float saturation;
-        uniform float contrast;
-        uniform vec3 colorScale;
-        uniform float hueShift;
-        uniform float brightenBoost;
-        uniform float invertBoost;
-        uniform float solarizeBoost;
-        uniform vec3 tint;
-        uniform float feedbackSoftness;
-        uniform float currentFrameBoost;
-        uniform float overlayTextureSource;
-        uniform float overlayTextureMode;
-        uniform float overlayTextureAmount;
-        uniform vec2 overlayTextureScale;
-        uniform vec2 overlayTextureOffset;
-        uniform float warpTextureSource;
-        uniform float warpTextureAmount;
-        uniform vec2 warpTextureScale;
-        uniform vec2 warpTextureOffset;
-        uniform vec2 texelSize;
-        varying vec2 vUv;
-
-        vec3 hueRotate(vec3 color, float angle) {
-          float s = sin(angle);
-          float c = cos(angle);
-          mat3 mat = mat3(
-            0.213 + c * 0.787 - s * 0.213,
-            0.715 - c * 0.715 - s * 0.715,
-            0.072 - c * 0.072 + s * 0.928,
-            0.213 - c * 0.213 + s * 0.143,
-            0.715 + c * 0.285 + s * 0.140,
-            0.072 - c * 0.072 - s * 0.283,
-            0.213 - c * 0.213 - s * 0.787,
-            0.715 - c * 0.715 + s * 0.715,
-            0.072 + c * 0.928 + s * 0.072
-          );
-          return clamp(mat * color, 0.0, 1.0);
-        }
-
-        vec3 applySaturation(vec3 color, float amount) {
-          float luminance = dot(color, vec3(0.299, 0.587, 0.114));
-          return mix(vec3(luminance), color, amount);
-        }
-
-        vec3 applyContrast(vec3 color, float amount) {
-          return clamp((color - 0.5) * amount + 0.5, 0.0, 1.0);
-        }
-
-        vec2 sampleUv(vec2 uv, float wrapMode) {
-          return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
-        }
-
-        vec4 sampleAuxTexture(float source, vec2 uv) {
-          vec2 wrappedUv = fract(uv);
-          if (source < 0.5) {
-            return vec4(0.5, 0.5, 0.5, 1.0);
-          }
-          if (source < 1.5) {
-            return texture2D(noiseTex, wrappedUv);
-          }
-          if (source < 2.5) {
-            return texture2D(simplexTex, wrappedUv);
-          }
-          if (source < 3.5) {
-            return texture2D(voronoiTex, wrappedUv);
-          }
-          if (source < 4.5) {
-            return texture2D(auraTex, wrappedUv);
-          }
-          if (source < 5.5) {
-            return texture2D(causticsTex, wrappedUv);
-          }
-          if (source < 6.5) {
-            return texture2D(patternTex, wrappedUv);
-          }
-          return texture2D(fractalTex, wrappedUv);
-        }
-
-        vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
-          vec2 centered = uv - 0.5;
-          float radius = length(centered);
-          float angle = atan(centered.y, centered.x);
-          float spiral = sin(radius * 18.0 - angle * 4.0) * amount * 0.08;
-          angle += spiral + rotationAmount * 0.22;
-          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * amount * 0.05;
-          return vec2(cos(angle), sin(angle)) * radius + 0.5;
-        }
-
-        void main() {
-          vec2 centeredUv = vUv - 0.5;
-          float rotSin = sin(rotation);
-          float rotCos = cos(rotation);
-          vec2 rotatedUv = vec2(
-            centeredUv.x * rotCos - centeredUv.y * rotSin,
-            centeredUv.x * rotSin + centeredUv.y * rotCos
-          );
-          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
-          vec2 currentUv = applyFeedbackWarp(
-            transformedUv + 0.5,
-            warpScale,
-            rotation
-          );
-          vec2 prevUv = applyFeedbackWarp(
-            (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
-            warpScale * 0.8,
-            rotation * 0.6
-          );
-          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
-            vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;
-            vec2 warpVector = sampleAuxTexture(warpTextureSource, warpUv).rg - 0.5;
-            currentUv += warpVector * warpTextureAmount * 0.12;
-            prevUv += warpVector * warpTextureAmount * 0.08;
-          }
-          vec4 current = texture2D(currentTex, sampleUv(currentUv, textureWrap));
-          vec4 previous = texture2D(previousTex, sampleUv(prevUv, textureWrap));
-          vec3 previousColor = previous.rgb;
-          if (feedbackSoftness > 0.01) {
-            vec2 sampleOffset = texelSize * (0.75 + feedbackSoftness * 0.5);
-            vec3 softened = (
-              previous.rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb
-            ) / 5.0;
-            previousColor = mix(
-              previousColor,
-              softened,
-              clamp(feedbackSoftness * 0.45, 0.0, 0.5)
-            );
-          }
-          vec3 color = mix(
-            current.rgb,
-            previousColor,
-            clamp(mixAlpha + feedbackTexture * 0.2, 0.0, 1.0)
-          );
-          color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, 0.3));
-          if (brighten > 0.01 || brightenBoost > 0.01) {
-            color = min(vec3(1.0), color * (1.0 + 0.18 + brightenBoost * 0.35));
-          }
-          if (darken > 0.5) {
-            color = color * 0.82;
-          }
-          if (solarize > 0.01 || solarizeBoost > 0.01) {
-            color = mix(color, abs(color - 0.5) * 1.5, clamp(max(solarize, solarizeBoost), 0.0, 1.0));
-          }
-          if (invert > 0.01 || invertBoost > 0.01) {
-            color = mix(color, 1.0 - color, clamp(max(invert, invertBoost), 0.0, 1.0));
-          }
-          color = hueRotate(color, hueShift);
-          color = applySaturation(color, saturation);
-          color = applyContrast(color, contrast);
-          color *= colorScale;
-          color *= tint;
-          if (overlayTextureSource > 0.5 && overlayTextureMode > 0.5 && overlayTextureAmount > 0.0001) {
-            vec2 overlayUv = vUv * overlayTextureScale + overlayTextureOffset;
-            vec3 overlayColor = sampleAuxTexture(overlayTextureSource, overlayUv).rgb;
-            float amount = clamp(overlayTextureAmount, 0.0, 1.5);
-            if (overlayTextureMode < 1.5) {
-              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
-            } else if (overlayTextureMode < 2.5) {
-              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
-            } else if (overlayTextureMode < 3.5) {
-              color = min(vec3(1.0), color + overlayColor * amount);
-            } else {
-              color *= mix(vec3(1.0), overlayColor, clamp(amount, 0.0, 1.0));
-            }
-          }
-          color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
-          gl_FragColor = vec4(color, 1.0);
-        }
-      `,
-    });
-
-    this.presentMaterial = new MeshBasicMaterial({
-      map: this.targets[0].texture,
-    });
-    const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
-    const presentQuad = new Mesh(
-      FULLSCREEN_QUAD_GEOMETRY,
-      this.presentMaterial,
-    );
-    this.compositeScene.add(quad);
-    this.presentScene.add(presentQuad);
-  }
-
-  get readTarget() {
-    return this.targets[this.index];
-  }
-
-  get writeTarget() {
-    return this.targets[(this.index + 1) % 2];
-  }
-
-  swap() {
-    this.index = (this.index + 1) % 2;
-    this.presentMaterial.map = this.readTarget.texture;
-    this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
-  }
-
-  resize(width: number, height: number) {
-    const scaledWidth = Math.max(1, Math.round(width * this.resolutionScale));
-    const scaledHeight = Math.max(1, Math.round(height * this.resolutionScale));
-    this.sceneTarget.setSize(scaledWidth, scaledHeight);
-    this.targets.forEach((target) => target.setSize(scaledWidth, scaledHeight));
-    this.compositeMaterial.uniforms.texelSize.value.set(
-      1 / Math.max(1, scaledWidth),
-      1 / Math.max(1, scaledHeight),
-    );
-  }
-
-  dispose() {
-    this.sceneTarget.dispose();
-    this.targets.forEach((target) => target.dispose());
-    Object.values(this.auxTextures).forEach((texture) => texture.dispose());
-    disposeMaterial(this.compositeMaterial);
-    disposeMaterial(this.presentMaterial);
-    this.compositeScene.clear();
-    this.presentScene.clear();
-  }
-}
-
 class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   readonly backend: 'webgl' | 'webgpu';
+  private readonly behavior: MilkdropBackendBehavior;
+  private readonly createFeedbackManager: MilkdropFeedbackManagerFactory | null;
   private readonly scene: Scene;
   private readonly camera: Camera;
   private readonly renderer: RendererLike | null;
@@ -1378,7 +1263,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       depthTest: false,
     }),
   );
-  private readonly meshLines = new Line(
+  private readonly meshLines: LineSegments<
+    BufferGeometry,
+    LineBasicMaterial | ShaderMaterial
+  > = new LineSegments(
     new BufferGeometry(),
     new LineBasicMaterial({
       color: 0x4d66f2,
@@ -1392,12 +1280,17 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly shapesGroup = new Group();
   private readonly borderGroup = new Group();
   private readonly motionVectorGroup = new Group();
+  private readonly motionVectorCpuGroup = new Group();
+  private readonly proceduralMotionVectors = new LineSegments(
+    new BufferGeometry(),
+    createProceduralMotionVectorMaterial(),
+  );
   private readonly blendWaveGroup = new Group();
   private readonly blendCustomWaveGroup = new Group();
   private readonly blendShapeGroup = new Group();
   private readonly blendBorderGroup = new Group();
   private readonly blendMotionVectorGroup = new Group();
-  private readonly feedback: FeedbackManager | null;
+  private readonly feedback: MilkdropFeedbackManager | null;
   private readonly colorScaleScratch = new Color(1, 1, 1);
   private readonly tintScratch = new Color(1, 1, 1);
 
@@ -1406,16 +1299,22 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     camera,
     renderer,
     backend,
+    behavior,
+    createFeedbackManager,
   }: {
     scene: Scene;
     camera: Camera;
     renderer: RendererLike | null;
     backend: 'webgl' | 'webgpu';
+    behavior: MilkdropBackendBehavior;
+    createFeedbackManager: MilkdropFeedbackManagerFactory | null;
   }) {
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
     this.backend = backend;
+    this.behavior = behavior;
+    this.createFeedbackManager = createFeedbackManager;
 
     this.background.position.z = -1.2;
     this.meshLines.position.z = -0.3;
@@ -1426,6 +1325,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.trailGroup);
     this.root.add(this.shapesGroup);
     this.root.add(this.borderGroup);
+    this.motionVectorGroup.add(this.motionVectorCpuGroup);
+    this.proceduralMotionVectors.visible = false;
+    this.motionVectorGroup.add(this.proceduralMotionVectors);
     this.root.add(this.motionVectorGroup);
     this.root.add(this.blendWaveGroup);
     this.root.add(this.blendCustomWaveGroup);
@@ -1433,12 +1335,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.blendBorderGroup);
     this.root.add(this.blendMotionVectorGroup);
 
-    if (isFeedbackCapableRenderer(renderer)) {
+    if (isFeedbackCapableRenderer(renderer) && this.createFeedbackManager) {
       const size = renderer.getSize(new Vector2());
-      this.feedback = new FeedbackManager(
+      this.feedback = this.createFeedbackManager(
         Math.max(1, Math.round(size.x)),
         Math.max(1, Math.round(size.y)),
-        backend,
       );
     } else {
       this.feedback = null;
@@ -1475,7 +1376,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       const synced = syncWaveObject(
         existing,
         wave,
-        this.backend,
+        this.behavior,
         alphaMultiplier,
       );
       if (!synced) {
@@ -1504,7 +1405,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       const synced = syncShapeObject(
         existing,
         shape,
-        this.backend,
+        this.behavior,
         alphaMultiplier,
       );
       if (!existing) {
@@ -1530,7 +1431,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       const synced = syncBorderObject(
         existing,
         border,
-        this.backend,
+        this.behavior,
         alphaMultiplier,
       );
       if (!existing) {
@@ -1546,19 +1447,105 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     });
   }
 
+  private renderMesh(
+    mesh: MilkdropRenderPayload['frameState']['mesh'],
+    gpuGeometry: MilkdropGpuGeometryHints,
+    signals: MilkdropRenderPayload['frameState']['signals'],
+  ) {
+    const proceduralMesh =
+      this.backend === 'webgpu' ? gpuGeometry.meshField : null;
+    if (proceduralMesh) {
+      if (!(this.meshLines.material instanceof ShaderMaterial)) {
+        disposeMaterial(this.meshLines.material);
+        this.meshLines.material = createProceduralMeshMaterial();
+      }
+      this.meshLines.geometry = getProceduralMeshGeometry(
+        proceduralMesh.density,
+      );
+      syncProceduralFieldUniforms(this.meshLines.material as ShaderMaterial, {
+        zoom: proceduralMesh.zoom,
+        rotation: proceduralMesh.rotation,
+        warp: proceduralMesh.warp,
+        warpAnimSpeed: proceduralMesh.warpAnimSpeed,
+        time: signals.time,
+        trebleAtt: signals.trebleAtt,
+        tint: mesh.color,
+        alpha: mesh.alpha,
+      });
+      this.meshLines.visible = mesh.alpha > 0.001;
+      return;
+    }
+
+    if (!(this.meshLines.material instanceof LineBasicMaterial)) {
+      disposeMaterial(this.meshLines.material);
+      this.meshLines.material = new LineBasicMaterial({
+        color: 0x4d66f2,
+        transparent: true,
+        opacity: 0.24,
+      });
+    }
+
+    const meshMaterial = this.meshLines.material as LineBasicMaterial;
+    ensureGeometryPositions(this.meshLines.geometry, mesh.positions);
+    setMaterialColor(meshMaterial, mesh.color, mesh.alpha);
+    this.meshLines.visible = mesh.positions.length > 0;
+  }
+
+  private renderMotionVectors(
+    payload: MilkdropRenderPayload['frameState'],
+    alphaMultiplier = 1,
+  ) {
+    const proceduralField =
+      this.backend === 'webgpu' ? payload.gpuGeometry.motionVectorField : null;
+    if (proceduralField) {
+      clearGroup(this.motionVectorCpuGroup);
+      this.proceduralMotionVectors.visible = true;
+      this.proceduralMotionVectors.geometry = getProceduralMotionVectorGeometry(
+        proceduralField.countX,
+        proceduralField.countY,
+      );
+      syncProceduralFieldUniforms(
+        this.proceduralMotionVectors.material as ShaderMaterial,
+        {
+          zoom: proceduralField.zoom,
+          rotation: proceduralField.rotation,
+          warp: proceduralField.warp,
+          warpAnimSpeed: proceduralField.warpAnimSpeed,
+          time: payload.signals.time,
+          trebleAtt: payload.signals.trebleAtt,
+          tint: {
+            r: Math.min(Math.max(payload.variables.mv_r ?? 1, 0), 1),
+            g: Math.min(Math.max(payload.variables.mv_g ?? 1, 0), 1),
+            b: Math.min(Math.max(payload.variables.mv_b ?? 1, 0), 1),
+          },
+          alpha:
+            Math.min(Math.max(payload.variables.mv_a ?? 0.35, 0.02), 1) *
+            alphaMultiplier,
+        },
+      );
+      return;
+    }
+
+    this.proceduralMotionVectors.visible = false;
+    this.renderWaveGroup(
+      this.motionVectorCpuGroup,
+      payload.motionVectors.map((vector) => ({
+        ...vector,
+        drawMode: 'line',
+        pointSize: 1,
+      })),
+      alphaMultiplier,
+    );
+  }
+
   render(payload: MilkdropRenderPayload) {
     const backgroundMaterial = this.background.material as MeshBasicMaterial;
     setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
 
-    const meshMaterial = this.meshLines.material as LineBasicMaterial;
-    ensureGeometryPositions(
-      this.meshLines.geometry,
-      payload.frameState.mesh.positions,
-    );
-    setMaterialColor(
-      meshMaterial,
-      payload.frameState.mesh.color,
-      payload.frameState.mesh.alpha,
+    this.renderMesh(
+      payload.frameState.mesh,
+      payload.frameState.gpuGeometry,
+      payload.frameState.signals,
     );
 
     this.renderWaveGroup(this.mainWaveGroup, [payload.frameState.mainWave]);
@@ -1574,14 +1561,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     );
     this.renderShapeGroup(this.shapesGroup, payload.frameState.shapes);
     this.renderBorderGroup(this.borderGroup, payload.frameState.borders);
-    this.renderWaveGroup(
-      this.motionVectorGroup,
-      payload.frameState.motionVectors.map((vector) => ({
-        ...vector,
-        drawMode: 'line',
-        pointSize: 1,
-      })),
-    );
+    this.renderMotionVectors(payload.frameState);
 
     const blend = payload.blendState;
     this.renderWaveGroup(
@@ -1729,6 +1709,18 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       payload.frameState.post.shaderControls.warpTexture.offsetX,
       payload.frameState.post.shaderControls.warpTexture.offsetY,
     );
+    this.feedback.compositeMaterial.uniforms.signalBass.value =
+      payload.frameState.signals.bass;
+    this.feedback.compositeMaterial.uniforms.signalMid.value =
+      payload.frameState.signals.mid;
+    this.feedback.compositeMaterial.uniforms.signalTreb.value =
+      payload.frameState.signals.treb;
+    this.feedback.compositeMaterial.uniforms.signalBeat.value =
+      payload.frameState.signals.beatPulse;
+    this.feedback.compositeMaterial.uniforms.signalEnergy.value =
+      payload.frameState.signals.weightedEnergy;
+    this.feedback.compositeMaterial.uniforms.signalTime.value =
+      payload.frameState.signals.time;
 
     this.renderer.setRenderTarget(this.feedback.sceneTarget);
     this.renderer.render(this.scene, this.camera);
@@ -1756,28 +1748,35 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       disposeGeometry(this.background.geometry);
     }
     disposeMaterial(this.background.material);
-    disposeGeometry(this.meshLines.geometry);
+    if (!isSharedGeometry(this.meshLines.geometry)) {
+      disposeGeometry(this.meshLines.geometry);
+    }
     disposeMaterial(this.meshLines.material);
     this.feedback?.dispose();
     this.scene.remove(this.root);
   }
 }
 
-export function createMilkdropRendererAdapter({
+export function createMilkdropRendererAdapterCore({
   scene,
   camera,
   renderer,
   backend,
-}: {
-  scene: Scene;
-  camera: Camera;
-  renderer?: RendererLike | null;
-  backend: 'webgl' | 'webgpu';
-}) {
+  behavior,
+  createFeedbackManager,
+}: MilkdropRendererAdapterConfig) {
   return new ThreeMilkdropAdapter({
     scene,
     camera,
     renderer: renderer ?? null,
     backend,
+    behavior:
+      behavior ??
+      (backend === 'webgpu'
+        ? WEBGPU_MILKDROP_BACKEND_BEHAVIOR
+        : WEBGL_MILKDROP_BACKEND_BEHAVIOR),
+    createFeedbackManager: createFeedbackManager ?? null,
   });
 }
+
+export const createMilkdropRendererAdapter = createMilkdropRendererAdapterCore;

@@ -8,10 +8,13 @@ import type {
   MilkdropColor,
   MilkdropCompiledPreset,
   MilkdropFrameState,
+  MilkdropGpuGeometryHints,
   MilkdropMeshVisual,
   MilkdropMotionVectorVisual,
   MilkdropPolyline,
   MilkdropPostVisual,
+  MilkdropProceduralFieldVisual,
+  MilkdropProceduralMotionVectorFieldVisual,
   MilkdropRuntimeSignals,
   MilkdropShapeDefinition,
   MilkdropShapeVisual,
@@ -221,6 +224,7 @@ class MilkdropPresetVM implements MilkdropVM {
   private registers: MutableState = {};
   private randomState = 1;
   private detailScale = 1;
+  private renderBackend: 'webgl' | 'webgpu' = 'webgl';
   private trails: MilkdropPolyline[] = [];
   private lastWaveform: MilkdropWaveVisual | null = null;
   private lastWaveSamples: number[] = [];
@@ -240,6 +244,10 @@ class MilkdropPresetVM implements MilkdropVM {
 
   setDetailScale(scale: number) {
     this.detailScale = clamp(scale, 0.5, 2);
+  }
+
+  setRenderBackend(backend: 'webgl' | 'webgpu') {
+    this.renderBackend = backend;
   }
 
   reset() {
@@ -825,6 +833,53 @@ class MilkdropPresetVM implements MilkdropVM {
     };
   }
 
+  private getProceduralMeshFieldVisual(): MilkdropProceduralFieldVisual | null {
+    if (
+      this.renderBackend !== 'webgpu' ||
+      this.preset.ir.programs.perPixel.statements.length > 0
+    ) {
+      return null;
+    }
+
+    return {
+      density: clamp(
+        Math.round((this.state.mesh_density ?? 16) * this.detailScale),
+        8,
+        36,
+      ),
+      zoom: this.state.zoom ?? 1,
+      rotation: this.state.rot ?? 0,
+      warp: this.state.warp ?? 0,
+      warpAnimSpeed: clamp(this.state.warpanimspeed ?? 1, 0, 4),
+    };
+  }
+
+  private getProceduralMotionVectorFieldVisual(): MilkdropProceduralMotionVectorFieldVisual | null {
+    if (
+      this.renderBackend !== 'webgpu' ||
+      this.preset.ir.programs.perPixel.statements.length > 0 ||
+      (this.state.motion_vectors ?? 0) < 0.5
+    ) {
+      return null;
+    }
+
+    return {
+      countX: clamp(Math.round(this.state.motion_vectors_x ?? 16), 1, 64),
+      countY: clamp(Math.round(this.state.motion_vectors_y ?? 12), 1, 64),
+      zoom: this.state.zoom ?? 1,
+      rotation: this.state.rot ?? 0,
+      warp: this.state.warp ?? 0,
+      warpAnimSpeed: clamp(this.state.warpanimspeed ?? 1, 0, 4),
+    };
+  }
+
+  private buildGpuGeometryHints(): MilkdropGpuGeometryHints {
+    return {
+      meshField: this.getProceduralMeshFieldVisual(),
+      motionVectorField: this.getProceduralMotionVectorFieldVisual(),
+    };
+  }
+
   private buildMotionVectors(
     signals: MilkdropRuntimeSignals,
     meshField: MeshField,
@@ -1080,13 +1135,34 @@ class MilkdropPresetVM implements MilkdropVM {
       positions: [...mainWave.positions],
       color: { ...mainWave.color },
     };
-    const meshField = this.buildMeshField(signals);
-    const mesh = this.buildMesh(meshField);
-    const motionVectors = this.buildMotionVectors(signals, meshField);
-    this.lastMeshField = {
-      density: meshField.density,
-      points: meshField.points.map((point) => ({ ...point })),
-    };
+    const gpuGeometry = this.buildGpuGeometryHints();
+    const shouldUseProceduralMesh =
+      this.renderBackend === 'webgpu' && gpuGeometry.meshField !== null;
+    const meshField = shouldUseProceduralMesh
+      ? null
+      : this.buildMeshField(signals);
+    const mesh = meshField
+      ? this.buildMesh(meshField)
+      : {
+          positions: [],
+          color: color(
+            this.state.mesh_r ?? 0.4,
+            this.state.mesh_g ?? 0.6,
+            this.state.mesh_b ?? 1,
+            this.state.mesh_alpha ?? 0.2,
+          ),
+          alpha: clamp(this.state.mesh_alpha ?? 0.2, 0.02, 0.9),
+        };
+    const motionVectors =
+      meshField && gpuGeometry.motionVectorField === null
+        ? this.buildMotionVectors(signals, meshField)
+        : [];
+    this.lastMeshField = meshField
+      ? {
+          density: meshField.density,
+          points: meshField.points.map((point) => ({ ...point })),
+        }
+      : null;
 
     const frameState: MilkdropFrameState = {
       presetId: this.preset.source.id,
@@ -1108,6 +1184,7 @@ class MilkdropPresetVM implements MilkdropVM {
       signals,
       variables: this.getStateSnapshot(),
       compatibility: this.preset.ir.compatibility,
+      gpuGeometry,
     };
 
     return frameState;

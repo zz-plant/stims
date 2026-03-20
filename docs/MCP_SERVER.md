@@ -46,7 +46,7 @@ All tools are registered on the logical MCP server name `stim-webtoys-mcp` and u
   - **Output:** `text` response with step-by-step instructions for launching the toy, enabling demo audio, and observing audio-reactive visual effects. Includes the toy URL, description, controls, and guidance on what to observe.
 - **`get_toy_audio_reactivity_guide`**
   - **Input:** optional `slug` (string) to get toy-specific guidance.
-  - **Output:** `text` response explaining how toys respond to different audio frequencies (bass, mids, highs), what visual effects to expect, and slug-specific behavioral hints for known toys like "holy", "spiral-burst", "neon-wave", and "geom".
+  - **Output:** `text` response explaining how the shipped MilkDrop visualizer responds to different audio frequencies (bass, mids, highs) and what visual effects to expect while it is playing.
 
 ## Stdio-only automation tools
 

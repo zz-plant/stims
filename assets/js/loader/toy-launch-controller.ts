@@ -8,13 +8,8 @@ import type { ToyEntry } from '../data/toy-schema.ts';
 import { createManifestClient } from '../utils/manifest-client.ts';
 import { loadToyModuleStarter } from '../utils/toy-module-loader.ts';
 
-const TOY_SLUG_ALIASES: Record<string, string> = {
-  'three-d-toy': '3dtoy',
-};
-
 export function resolveToySlug(slug: string) {
-  const normalized = slug.trim().toLowerCase();
-  return TOY_SLUG_ALIASES[normalized] ?? normalized;
+  return slug.trim().toLowerCase();
 }
 
 export function createToyLaunchController({

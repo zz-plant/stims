@@ -205,6 +205,45 @@ per_pixel_1=zoom=1.08; rot=0.12; warp=0.35;
     expect(frameState.motionVectors[0]?.alpha).toBeGreaterThan(0.28);
   });
 
+  test('emits procedural gpu geometry hints for mesh and motion vectors on webgpu-safe presets', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural GPU Hints
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mesh_density=14
+zoom=1.1
+rot=0.14
+warp=0.2
+warpanimspeed=1.5
+      `.trim(),
+      { id: 'procedural-gpu-hints' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals({ frame: 3 }));
+
+    expect(frameState.mesh.positions).toHaveLength(0);
+    expect(frameState.motionVectors).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField).toEqual({
+      density: 14,
+      zoom: 1.1,
+      rotation: 0.14,
+      warp: 0.2,
+      warpAnimSpeed: 1.5,
+    });
+    expect(frameState.gpuGeometry.motionVectorField).toEqual({
+      countX: 6,
+      countY: 4,
+      zoom: 1.1,
+      rotation: 0.14,
+      warp: 0.2,
+      warpAnimSpeed: 1.5,
+    });
+  });
+
   test('uses mesh history when building motion vector overlays across frames', () => {
     const preset = compileMilkdropPresetSource(
       `
