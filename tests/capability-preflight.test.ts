@@ -106,4 +106,36 @@ describe('capability preflight launch flow', () => {
 
     preflight.destroy();
   });
+
+  test('tracks preflight open state on the document root', async () => {
+    setTestUrl();
+
+    const preflight = attachCapabilityPreflight({
+      host: document.body,
+      openOnAttach: false,
+      showCloseButton: true,
+      runPreflight: async () => readyResult,
+    });
+
+    expect(document.documentElement.dataset.preflightOpen).toBeUndefined();
+
+    preflight.open();
+    await flush();
+    await flush();
+
+    expect(document.documentElement.dataset.preflightOpen).toBe('true');
+
+    const closeButton = Array.from(
+      document.querySelectorAll('dialog .cta-button.ghost'),
+    ).find((button) => button.textContent?.includes('Close')) as
+      | HTMLButtonElement
+      | undefined;
+
+    closeButton?.click();
+    await flush();
+
+    expect(document.documentElement.dataset.preflightOpen).toBeUndefined();
+
+    preflight.destroy();
+  });
 });
