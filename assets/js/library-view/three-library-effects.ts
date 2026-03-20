@@ -90,8 +90,8 @@ type AmbientShardState = {
   scale: number;
 };
 
-const BACKGROUND_FRAME_INTERVAL_MS = 1000 / 16;
-const PREVIEW_FRAME_INTERVAL_MS = 1000 / 12;
+const BACKGROUND_FRAME_INTERVAL_MS = 1000 / 12;
+const PREVIEW_FRAME_INTERVAL_MS = 1000 / 10;
 const PREVIEW_SURFACE_TEXTURES = [
   'circuit_board_pattern.png',
   'water_caustics.png',
@@ -702,7 +702,7 @@ export function createLibraryThreeEffects() {
       });
       const points = new Points(geometry, material);
       const positions: number[] = [];
-      for (let i = 0; i < 1000; i += 1) {
+      for (let i = 0; i < 600; i += 1) {
         positions.push(
           (Math.random() - 0.5) * 25,
           (Math.random() - 0.5) * 16,

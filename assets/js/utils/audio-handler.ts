@@ -24,6 +24,9 @@ export class FrequencyAnalyser {
   private readonly silentGain: GainNode;
   private readonly workletNode?: AudioWorkletNode;
   private readonly analyserNode?: AnalyserNode;
+  private dataVersion = 0;
+  private energyVersion = -1;
+  private cachedEnergy = { bass: 0, mid: 0, treble: 0 };
 
   private constructor({
     sourceNode,
@@ -58,7 +61,10 @@ export class FrequencyAnalyser {
             this.frequencyBinCount = nextData.length;
           }
           this.frequencyData.set(nextData);
-          this.updateEnergyHistory();
+          this.dataVersion += 1;
+          this.cachedEnergy = this.calculateMultiBandEnergy(this.frequencyData);
+          this.energyVersion = this.dataVersion;
+          this.updateEnergyHistory(this.cachedEnergy);
         }
         if (typeof rms === 'number') {
           this.rms = rms;
@@ -88,7 +94,10 @@ export class FrequencyAnalyser {
             numberOfInputs: 1,
             numberOfOutputs: 1,
             outputChannelCount: [1],
-            processorOptions: { fftSize },
+            processorOptions: {
+              fftSize,
+              messageEvery: fftSize >= 512 ? 2 : 1,
+            },
           },
         );
 
@@ -132,13 +141,36 @@ export class FrequencyAnalyser {
       this.analyserNode.getByteFrequencyData(
         this.frequencyData as Uint8Array<ArrayBuffer>,
       );
+      this.dataVersion += 1;
     }
 
     return this.frequencyData;
   }
 
-  private updateEnergyHistory() {
-    const { bass, mid, treble } = this.getMultiBandEnergy();
+  private calculateMultiBandEnergy(data: Uint8Array) {
+    const len = data.length;
+
+    const bassEnd = Math.floor(len * 0.1);
+    const midEnd = Math.floor(len * 0.5);
+
+    let bassSum = 0;
+    for (let i = 0; i < bassEnd; i += 1) bassSum += data[i] ?? 0;
+
+    let midSum = 0;
+    for (let i = bassEnd; i < midEnd; i += 1) midSum += data[i] ?? 0;
+
+    let trebleSum = 0;
+    for (let i = midEnd; i < len; i += 1) trebleSum += data[i] ?? 0;
+
+    return {
+      bass: bassSum / (bassEnd || 1) / 255,
+      mid: midSum / (midEnd - bassEnd || 1) / 255,
+      treble: trebleSum / (len - midEnd || 1) / 255,
+    };
+  }
+
+  private updateEnergyHistory(energy = this.getMultiBandEnergy()) {
+    const { bass, mid, treble } = energy;
     this.energyHistory.bass[this.historyIndex] = bass;
     this.energyHistory.mid[this.historyIndex] = mid;
     this.energyHistory.treble[this.historyIndex] = treble;
@@ -148,27 +180,11 @@ export class FrequencyAnalyser {
 
   getMultiBandEnergy() {
     const data = this.getFrequencyData();
-    const len = data.length;
-
-    // Traditional bands: Bass (20-200Hz), Mid (200-2kHz), Treble (2k-20kHz)
-    // Approximation based on index:
-    const bassEnd = Math.floor(len * 0.1);
-    const midEnd = Math.floor(len * 0.5);
-
-    let bassSum = 0;
-    for (let i = 0; i < bassEnd; i++) bassSum += data[i];
-
-    let midSum = 0;
-    for (let i = bassEnd; i < midEnd; i++) midSum += data[i];
-
-    let trebleSum = 0;
-    for (let i = midEnd; i < len; i++) trebleSum += data[i];
-
-    return {
-      bass: bassSum / (bassEnd || 1) / 255,
-      mid: midSum / (midEnd - bassEnd || 1) / 255,
-      treble: trebleSum / (len - midEnd || 1) / 255,
-    };
+    if (this.energyVersion !== this.dataVersion) {
+      this.cachedEnergy = this.calculateMultiBandEnergy(data);
+      this.energyVersion = this.dataVersion;
+    }
+    return this.cachedEnergy;
   }
 
   getEnergyAverages() {

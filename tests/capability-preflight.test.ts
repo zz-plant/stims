@@ -1,9 +1,13 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { attachCapabilityPreflight } from '../assets/js/core/capability-preflight.ts';
 import type { CapabilityPreflightResult } from '../assets/js/core/services/capability-probe-service.ts';
 
+const freshImport = async <T>(path: string): Promise<T> =>
+  import(`${path}?t=${Date.now()}-${Math.random()}`) as Promise<T>;
+
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+let attachCapabilityPreflight: typeof import('../assets/js/core/capability-preflight.ts').attachCapabilityPreflight;
 
 const setTestUrl = () => {
   (
@@ -65,6 +69,13 @@ const readyResult: CapabilityPreflightResult = {
 };
 
 describe('capability preflight launch flow', () => {
+  beforeEach(async () => {
+    const preflightModule = await freshImport<
+      typeof import('../assets/js/core/capability-preflight.ts')
+    >('../assets/js/core/capability-preflight.ts');
+    attachCapabilityPreflight = preflightModule.attachCapabilityPreflight;
+  });
+
   afterEach(() => {
     document.body.innerHTML = '';
     setTestUrl();

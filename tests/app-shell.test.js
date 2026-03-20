@@ -15,6 +15,7 @@ async function loadAppShell() {
   };
 
   await freshImport('../assets/js/app.ts');
+  await globalThis.__stimsAppReady;
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 

@@ -11,13 +11,13 @@ describe('applyRendererSettings', () => {
         backend: 'webgl',
         isMobile: false,
       }),
-    ).toBe(1.5);
+    ).toBe(1.35);
     expect(
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgpu',
         isMobile: false,
       }),
-    ).toBe(2.5);
+    ).toBe(2);
   });
 
   test('keeps mobile webgpu below the desktop ceiling', () => {

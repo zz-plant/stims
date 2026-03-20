@@ -23,7 +23,7 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     label: 'Low motion',
     description:
       'Keep the scene crisp while reducing shimmer and particle churn.',
-    maxPixelRatio: 1.6,
+    maxPixelRatio: 1.4,
     renderScale: 1,
     particleScale: 0.4,
   },
@@ -40,7 +40,7 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     id: 'balanced',
     label: 'Balanced (default)',
     description: 'Default quality target for most laptops and desktops.',
-    maxPixelRatio: 1.75,
+    maxPixelRatio: 1.5,
     renderScale: 1,
     particleScale: 1,
   },
@@ -48,8 +48,8 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     id: 'hi-fi',
     label: 'Hi-fi visuals',
     description: 'Sharper output and denser effects for stronger GPUs.',
-    maxPixelRatio: 2.25,
-    renderScale: 1.1,
+    maxPixelRatio: 1.9,
+    renderScale: 1.05,
     particleScale: 1.25,
   },
 ];
