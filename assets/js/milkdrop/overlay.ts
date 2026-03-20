@@ -185,6 +185,7 @@ export class MilkdropOverlay {
   private suppressEditorChange = false;
   private editorDebounceId: number | null = null;
   private lastInspectorSignature = '';
+  private activeTab: 'browse' | 'editor' | 'inspector' = 'browse';
 
   constructor({
     host = document.body,
@@ -628,7 +629,12 @@ export class MilkdropOverlay {
     this.toggleOpen(true);
   }
 
+  shouldRenderInspectorMetrics() {
+    return this.isOpen() && this.activeTab === 'inspector';
+  }
+
   private setActiveTab(tab: string) {
+    this.activeTab = tab === 'editor' || tab === 'inspector' ? tab : 'browse';
     Object.entries(this.tabPanels).forEach(([id, panel]) => {
       panel.hidden = id !== tab;
     });
@@ -1301,7 +1307,13 @@ export class MilkdropOverlay {
     }
 
     if (!frameState || !compiled) {
-      this.inspectorMetrics.textContent = 'Waiting for preview frames...';
+      if (this.shouldRenderInspectorMetrics()) {
+        this.inspectorMetrics.textContent = 'Waiting for preview frames...';
+      }
+      return;
+    }
+
+    if (!this.shouldRenderInspectorMetrics()) {
       return;
     }
 
