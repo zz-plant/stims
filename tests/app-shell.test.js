@@ -47,7 +47,9 @@ describe('home shell user journeys', () => {
 
     expect(document.querySelector('[data-top-nav]')).not.toBeNull();
     expect(document.querySelector('.nav-link[href="#presets"]')).not.toBeNull();
-    expect(document.querySelector('.nav-link[href="/milkdrop/"]')).not.toBeNull();
+    expect(
+      document.querySelector('.nav-link[href="/milkdrop/"]'),
+    ).not.toBeNull();
     expect(mockLoadFromQuery).not.toHaveBeenCalled();
   });
 
