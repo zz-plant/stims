@@ -54,7 +54,9 @@ export function createRouter({
 
   const getSlugFromPath = (pathname: string) =>
     Object.entries(slugPaths).find(([, target]) => {
-      return normalizePath(pathname) === resolveNormalizedPath(pathname, target);
+      return (
+        normalizePath(pathname) === resolveNormalizedPath(pathname, target)
+      );
     })?.[0] ?? null;
 
   const getCurrentSlug = () => {
