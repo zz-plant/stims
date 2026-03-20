@@ -1,16 +1,16 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/types.js';
 import { z } from 'zod';
-import agentCreateToySkill from '../.agent/skills/create-toy/SKILL.md?raw';
-import agentModifyToySkill from '../.agent/skills/modify-toy/SKILL.md?raw';
-import agentPlayToySkill from '../.agent/skills/play-toy/SKILL.md?raw';
-import agentShipToyChangeSkill from '../.agent/skills/ship-toy-change/SKILL.md?raw';
-import agentTestToySkill from '../.agent/skills/test-toy/SKILL.md?raw';
-import agentCreateToyWorkflow from '../.agent/workflows/create-toy.md?raw';
-import agentModifyToyWorkflow from '../.agent/workflows/modify-toy.md?raw';
-import agentPlayToyWorkflow from '../.agent/workflows/play-toy.md?raw';
-import agentShipToyChangeWorkflow from '../.agent/workflows/ship-toy-change.md?raw';
-import agentTestToyWorkflow from '../.agent/workflows/test-toy.md?raw';
+import agentModifyPresetWorkflowSkill from '../.agent/skills/modify-preset-workflow/SKILL.md?raw';
+import agentModifyVisualizerRuntimeSkill from '../.agent/skills/modify-visualizer-runtime/SKILL.md?raw';
+import agentPlayVisualizerSkill from '../.agent/skills/play-visualizer/SKILL.md?raw';
+import agentShipVisualizerChangeSkill from '../.agent/skills/ship-visualizer-change/SKILL.md?raw';
+import agentTestVisualizerSkill from '../.agent/skills/test-visualizer/SKILL.md?raw';
+import agentModifyPresetWorkflowWorkflow from '../.agent/workflows/modify-preset-workflow.md?raw';
+import agentModifyVisualizerRuntimeWorkflow from '../.agent/workflows/modify-visualizer-runtime.md?raw';
+import agentPlayVisualizerWorkflow from '../.agent/workflows/play-visualizer.md?raw';
+import agentShipVisualizerChangeWorkflow from '../.agent/workflows/ship-visualizer-change.md?raw';
+import agentTestVisualizerWorkflow from '../.agent/workflows/test-visualizer.md?raw';
 import toyManifest from '../assets/js/data/toy-manifest.ts';
 import docsAgentsReadme from '../docs/agents/README.md?raw';
 import docsDevelopment from '../docs/DEVELOPMENT.md?raw';
@@ -33,16 +33,22 @@ const markdownSources = {
   'docs/TOY_SCRIPT_INDEX.md': docsToyScriptIndex,
   'docs/toys.md': docsToys,
   'docs/agents/README.md': docsAgentsReadme,
-  '.agent/skills/create-toy/SKILL.md': agentCreateToySkill,
-  '.agent/skills/modify-toy/SKILL.md': agentModifyToySkill,
-  '.agent/skills/play-toy/SKILL.md': agentPlayToySkill,
-  '.agent/skills/ship-toy-change/SKILL.md': agentShipToyChangeSkill,
-  '.agent/skills/test-toy/SKILL.md': agentTestToySkill,
-  '.agent/workflows/create-toy.md': agentCreateToyWorkflow,
-  '.agent/workflows/modify-toy.md': agentModifyToyWorkflow,
-  '.agent/workflows/play-toy.md': agentPlayToyWorkflow,
-  '.agent/workflows/ship-toy-change.md': agentShipToyChangeWorkflow,
-  '.agent/workflows/test-toy.md': agentTestToyWorkflow,
+  '.agent/skills/modify-preset-workflow/SKILL.md':
+    agentModifyPresetWorkflowSkill,
+  '.agent/skills/modify-visualizer-runtime/SKILL.md':
+    agentModifyVisualizerRuntimeSkill,
+  '.agent/skills/play-visualizer/SKILL.md': agentPlayVisualizerSkill,
+  '.agent/skills/ship-visualizer-change/SKILL.md':
+    agentShipVisualizerChangeSkill,
+  '.agent/skills/test-visualizer/SKILL.md': agentTestVisualizerSkill,
+  '.agent/workflows/modify-preset-workflow.md':
+    agentModifyPresetWorkflowWorkflow,
+  '.agent/workflows/modify-visualizer-runtime.md':
+    agentModifyVisualizerRuntimeWorkflow,
+  '.agent/workflows/play-visualizer.md': agentPlayVisualizerWorkflow,
+  '.agent/workflows/ship-visualizer-change.md':
+    agentShipVisualizerChangeWorkflow,
+  '.agent/workflows/test-visualizer.md': agentTestVisualizerWorkflow,
 } as const;
 
 type MarkdownSourceKey = keyof typeof markdownSources;
@@ -86,80 +92,83 @@ type AgentCapability = {
 
 const agentCapabilities: AgentCapability[] = [
   {
-    name: 'create-toy',
+    name: 'modify-preset-workflow',
     kind: 'skill',
-    path: '.agent/skills/create-toy/SKILL.md',
+    path: '.agent/skills/modify-preset-workflow/SKILL.md',
     description:
-      'Scaffold a new toy and wire metadata/docs updates with guardrails.',
-    command: '/create-toy',
+      'Modify bundled presets, editor/catalog behavior, and compatibility workflows.',
+    command: '/modify-preset-workflow',
   },
   {
-    name: 'modify-toy',
+    name: 'modify-visualizer-runtime',
     kind: 'skill',
-    path: '.agent/skills/modify-toy/SKILL.md',
+    path: '.agent/skills/modify-visualizer-runtime/SKILL.md',
     description:
-      'Modify an existing toy while keeping metadata, checks, and docs aligned.',
-    command: '/modify-toy',
+      'Modify shared runtime, loader, shell, renderer, audio, or capability behavior.',
+    command: '/modify-visualizer-runtime',
   },
   {
-    name: 'play-toy',
+    name: 'play-visualizer',
     kind: 'skill',
-    path: '.agent/skills/play-toy/SKILL.md',
-    description: 'Launch a toy locally and perform manual interaction checks.',
-    command: '/play-toy',
+    path: '.agent/skills/play-visualizer/SKILL.md',
+    description:
+      'Launch the flagship visualizer locally and perform manual interaction checks.',
+    command: '/play-visualizer',
   },
   {
-    name: 'ship-toy-change',
+    name: 'ship-visualizer-change',
     kind: 'skill',
-    path: '.agent/skills/ship-toy-change/SKILL.md',
+    path: '.agent/skills/ship-visualizer-change/SKILL.md',
     description:
-      'Run end-to-end toy change workflow including checks and metadata.',
-    command: '/ship-toy-change',
+      'Run end-to-end visualizer change workflow including checks and docs sync.',
+    command: '/ship-visualizer-change',
   },
   {
-    name: 'test-toy',
+    name: 'test-visualizer',
     kind: 'skill',
-    path: '.agent/skills/test-toy/SKILL.md',
-    description: 'Execute toy-focused test passes and report failures quickly.',
-    command: '/test-toy',
-  },
-  {
-    name: 'create-toy',
-    kind: 'workflow',
-    path: '.agent/workflows/create-toy.md',
-    description: 'Workflow checklist for introducing a brand new toy slug.',
-    command: '/create-toy',
-  },
-  {
-    name: 'modify-toy',
-    kind: 'workflow',
-    path: '.agent/workflows/modify-toy.md',
+    path: '.agent/skills/test-visualizer/SKILL.md',
     description:
-      'Workflow checklist for implementing and validating existing toy changes.',
-    command: '/modify-toy',
+      'Execute visualizer-focused test passes and report failures quickly.',
+    command: '/test-visualizer',
   },
   {
-    name: 'play-toy',
+    name: 'modify-preset-workflow',
     kind: 'workflow',
-    path: '.agent/workflows/play-toy.md',
+    path: '.agent/workflows/modify-preset-workflow.md',
     description:
-      'Workflow checklist for launching and manually validating toys.',
-    command: '/play-toy',
+      'Workflow checklist for bundled preset, editor, import/export, and compatibility changes.',
+    command: '/modify-preset-workflow',
   },
   {
-    name: 'ship-toy-change',
+    name: 'modify-visualizer-runtime',
     kind: 'workflow',
-    path: '.agent/workflows/ship-toy-change.md',
+    path: '.agent/workflows/modify-visualizer-runtime.md',
     description:
-      'Workflow checklist for implementation, quality gate, and metadata sync.',
-    command: '/ship-toy-change',
+      'Workflow checklist for implementing and validating shared visualizer runtime changes.',
+    command: '/modify-visualizer-runtime',
   },
   {
-    name: 'test-toy',
+    name: 'play-visualizer',
     kind: 'workflow',
-    path: '.agent/workflows/test-toy.md',
-    description: 'Workflow checklist for toy-specific automated checks.',
-    command: '/test-toy',
+    path: '.agent/workflows/play-visualizer.md',
+    description:
+      'Workflow checklist for launching and manually validating the flagship visualizer.',
+    command: '/play-visualizer',
+  },
+  {
+    name: 'ship-visualizer-change',
+    kind: 'workflow',
+    path: '.agent/workflows/ship-visualizer-change.md',
+    description:
+      'Workflow checklist for implementation, quality gate, and docs sync.',
+    command: '/ship-visualizer-change',
+  },
+  {
+    name: 'test-visualizer',
+    kind: 'workflow',
+    path: '.agent/workflows/test-visualizer.md',
+    description: 'Workflow checklist for visualizer-specific automated checks.',
+    command: '/test-visualizer',
   },
 ];
 
@@ -389,7 +398,7 @@ function registerTools(server: McpServer) {
             .trim()
             .min(1)
             .describe(
-              'Capability name such as create-toy, play-toy, test-toy.',
+              'Capability name such as modify-visualizer-runtime, play-visualizer, or test-visualizer.',
             ),
         })
         .strict(),

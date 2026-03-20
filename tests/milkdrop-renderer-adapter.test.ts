@@ -3,6 +3,7 @@ import type { Vector2 } from 'three';
 import {
   HalfFloatType,
   LinearFilter,
+  MeshBasicMaterial,
   OrthographicCamera,
   Scene,
   ShaderMaterial,
@@ -129,7 +130,7 @@ function makeSignals(): MilkdropRuntimeSignals {
 }
 
 describe('milkdrop renderer adapter', () => {
-  test('renders polygon shape fills with secondary-color shader and thick outlines', () => {
+  test('uses WebGPU-safe shape fills and thick outlines', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Shape Fidelity
@@ -185,10 +186,8 @@ shapecode_0_thickoutline=1
       (child) => child.geometry?.type === 'ShapeGeometry',
     );
     expect(fill).toBeDefined();
-    expect(fill?.material).toBeInstanceOf(ShaderMaterial);
-    expect(
-      (fill?.material as ShaderMaterial).uniforms.secondaryColor?.value,
-    ).toBeDefined();
+    expect(fill?.material).toBeInstanceOf(MeshBasicMaterial);
+    expect(fill?.material).not.toBeInstanceOf(ShaderMaterial);
   });
 
   test('reuses cached polygon geometries for same-sided shapes', () => {
@@ -469,7 +468,7 @@ video_echo=1
     expect(fakeRenderer.setRenderTargetCalls).toBe(0);
   });
 
-  test('supports feedback composite path on webgpu backends with target-capable renderers', () => {
+  test('skips the feedback composite path on webgpu backends', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback
@@ -506,11 +505,6 @@ ob_border=1
       blendState: null,
     });
 
-    const feedback = (
-      adapter as unknown as {
-        feedback: { compositeMaterial: ShaderMaterial } | null;
-      }
-    ).feedback;
     const root = scene.children[0] as {
       children: Array<{ children?: Array<{ type?: string }> }>;
     };
@@ -518,19 +512,7 @@ ob_border=1
       children: Array<{ type?: string; children?: Array<{ type?: string }> }>;
     };
 
-    expect(result).toBe(true);
-    expect(feedback?.compositeMaterial.uniforms.textureWrap.value).toBe(1);
-    expect(feedback?.compositeMaterial.uniforms.feedbackTexture.value).toBe(1);
-    expect(feedback?.compositeMaterial.uniforms.feedbackSoftness.value).toBe(
-      0.65,
-    );
-    expect(feedback?.compositeMaterial.uniforms.currentFrameBoost.value).toBe(
-      0.1,
-    );
-    expect(feedback?.compositeMaterial.uniforms.hueShift.value).toBeCloseTo(
-      0.2,
-      6,
-    );
+    expect(result).toBe(false);
     expect(borderGroup.children[0]?.type ?? 'Group').toBe('Group');
   });
 
@@ -581,7 +563,7 @@ video_echo=1
     expect(feedback).not.toBeNull();
     expect(feedback?.sceneTarget.width).toBe(640);
     expect(feedback?.sceneTarget.height).toBe(360);
-    expect(feedback?.sceneTarget.samples).toBe(2);
+    expect(feedback?.sceneTarget.samples).toBe(0);
     expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
   });
 

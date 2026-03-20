@@ -96,16 +96,17 @@ describe('searchMarkdownSources', () => {
 describe('agent capability markdown availability', () => {
   test('exposes skill and workflow markdown files for MCP reads', () => {
     expect(
-      markdownSources['.agent/skills/play-toy/SKILL.md'].length,
+      markdownSources['.agent/skills/play-visualizer/SKILL.md'].length,
     ).toBeGreaterThan(0);
     expect(
-      markdownSources['.agent/workflows/play-toy.md'].length,
+      markdownSources['.agent/workflows/play-visualizer.md'].length,
     ).toBeGreaterThan(0);
     expect(
-      markdownSources['.agent/skills/modify-toy/SKILL.md'].length,
+      markdownSources['.agent/skills/modify-visualizer-runtime/SKILL.md']
+        .length,
     ).toBeGreaterThan(0);
     expect(
-      markdownSources['.agent/workflows/modify-toy.md'].length,
+      markdownSources['.agent/workflows/modify-visualizer-runtime.md'].length,
     ).toBeGreaterThan(0);
   });
 
