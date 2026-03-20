@@ -90,8 +90,8 @@ type AmbientShardState = {
   scale: number;
 };
 
-const BACKGROUND_FRAME_INTERVAL_MS = 1000 / 20;
-const PREVIEW_FRAME_INTERVAL_MS = 1000 / 16;
+const BACKGROUND_FRAME_INTERVAL_MS = 1000 / 16;
+const PREVIEW_FRAME_INTERVAL_MS = 1000 / 12;
 const PREVIEW_SURFACE_TEXTURES = [
   'circuit_board_pattern.png',
   'water_caustics.png',
@@ -409,7 +409,7 @@ export function createLibraryThreeEffects() {
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const previewLimit = prefersReducedMotion ? 0 : isCompactViewport ? 1 : 2;
+  const previewLimit = prefersReducedMotion ? 0 : 1;
 
   const shouldRender = () =>
     typeof document === 'undefined' ? true : !document.hidden;
@@ -625,25 +625,41 @@ export function createLibraryThreeEffects() {
 
     if (now - lastPreviewRenderAt >= PREVIEW_FRAME_INTERVAL_MS) {
       lastPreviewRenderAt = now;
-      previews.forEach((item) => {
-        if (!item.isVisible || !item.isActive) return;
-        item.hoverStrength += (1 - item.hoverStrength) * 0.16;
-        item.group.rotation.x =
-          pointerState.currentY * 0.18 + item.hoverStrength * 0.04;
-        item.group.rotation.y = pointerState.currentX * 0.22;
-        item.mesh.rotation.x += item.style.motionX + pulse * 0.008;
-        item.mesh.rotation.y += item.style.motionY + pulse * 0.01;
-        item.overlay.rotation.z -= item.style.motionY * 0.6;
-        item.overlay.position.x = pointerState.currentX * 0.08;
-        item.overlay.position.y = -pointerState.currentY * 0.06;
-        item.camera.position.x +=
-          (pointerState.currentX * 0.18 - item.camera.position.x) * 0.12;
-        item.camera.position.y +=
-          (-pointerState.currentY * 0.12 - item.camera.position.y) * 0.12;
-        item.camera.lookAt(0, 0, 0);
-        if (item.composer) item.composer.render();
-        else item.renderer.render(item.scene, item.camera);
-      });
+      const visiblePreviews = Array.from(previews.values()).filter(
+        (item) => item.isVisible,
+      );
+      const previewToRender =
+        visiblePreviews.find((item) => item.isActive) ??
+        visiblePreviews[0] ??
+        null;
+      if (previewToRender) {
+        previewToRender.hoverStrength +=
+          (1 - previewToRender.hoverStrength) * 0.16;
+        previewToRender.group.rotation.x =
+          pointerState.currentY * 0.18 + previewToRender.hoverStrength * 0.04;
+        previewToRender.group.rotation.y = pointerState.currentX * 0.22;
+        previewToRender.mesh.rotation.x +=
+          previewToRender.style.motionX + pulse * 0.008;
+        previewToRender.mesh.rotation.y +=
+          previewToRender.style.motionY + pulse * 0.01;
+        previewToRender.overlay.rotation.z -=
+          previewToRender.style.motionY * 0.6;
+        previewToRender.overlay.position.x = pointerState.currentX * 0.08;
+        previewToRender.overlay.position.y = -pointerState.currentY * 0.06;
+        previewToRender.camera.position.x +=
+          (pointerState.currentX * 0.18 - previewToRender.camera.position.x) *
+          0.12;
+        previewToRender.camera.position.y +=
+          (-pointerState.currentY * 0.12 - previewToRender.camera.position.y) *
+          0.12;
+        previewToRender.camera.lookAt(0, 0, 0);
+        if (previewToRender.composer) previewToRender.composer.render();
+        else
+          previewToRender.renderer.render(
+            previewToRender.scene,
+            previewToRender.camera,
+          );
+      }
     }
 
     pulse = Math.max(0, pulse * 0.93 - 0.003);

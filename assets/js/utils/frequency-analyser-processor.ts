@@ -18,7 +18,22 @@ function reverseBits(value: number, bits: number): number {
   return reversed;
 }
 
-function fft(real: Float32Array, imag: Float32Array): void {
+function buildTwiddleTable(length: number) {
+  const cos = new Float32Array(length / 2);
+  const sin = new Float32Array(length / 2);
+  for (let index = 0; index < length / 2; index += 1) {
+    const phase = (-TWO_PI * index) / length;
+    cos[index] = Math.cos(phase);
+    sin[index] = Math.sin(phase);
+  }
+  return { cos, sin };
+}
+
+function fft(
+  real: Float32Array,
+  imag: Float32Array,
+  twiddles: ReturnType<typeof buildTwiddleTable>,
+): void {
   const n = real.length;
   const bits = Math.log2(n);
 
@@ -32,13 +47,13 @@ function fft(real: Float32Array, imag: Float32Array): void {
 
   for (let size = 2; size <= n; size <<= 1) {
     const halfSize = size >> 1;
-    const phaseStep = -TWO_PI / size;
+    const tableStep = n / size;
 
     for (let start = 0; start < n; start += size) {
       for (let i = 0; i < halfSize; i += 1) {
-        const phase = phaseStep * i;
-        const cos = Math.cos(phase);
-        const sin = Math.sin(phase);
+        const twiddleIndex = i * tableStep;
+        const cos = twiddles.cos[twiddleIndex] ?? 1;
+        const sin = twiddles.sin[twiddleIndex] ?? 0;
 
         const evenReal = real[start + i];
         const evenImag = imag[start + i];
@@ -65,6 +80,8 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private bufferIndex = 0;
   private readonly outputReal: Float32Array;
   private readonly outputImag: Float32Array;
+  private readonly frequencyData: Uint8Array;
+  private readonly twiddles: ReturnType<typeof buildTwiddleTable>;
 
   constructor(options?: AudioWorkletNodeOptions) {
     super();
@@ -75,6 +92,8 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     this.buffer = new Float32Array(this.fftSize);
     this.outputReal = new Float32Array(this.fftSize);
     this.outputImag = new Float32Array(this.fftSize);
+    this.frequencyData = new Uint8Array(this.frequencyBinCount);
+    this.twiddles = buildTwiddleTable(this.fftSize);
   }
 
   private analyse() {
@@ -90,22 +109,21 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     }
     const rms = Math.sqrt(sumSquares / this.fftSize);
 
-    fft(this.outputReal, this.outputImag);
+    fft(this.outputReal, this.outputImag, this.twiddles);
 
-    const frequencyData = new Uint8Array(this.frequencyBinCount);
     for (let i = 0; i < this.frequencyBinCount; i += 1) {
       const magnitude =
         Math.sqrt(
           this.outputReal[i] * this.outputReal[i] +
             this.outputImag[i] * this.outputImag[i],
         ) / this.frequencyBinCount;
-      frequencyData[i] = Math.min(
+      this.frequencyData[i] = Math.min(
         255,
         Math.max(0, Math.round(magnitude * 255)),
       );
     }
 
-    this.port.postMessage({ frequencyData, rms }, [frequencyData.buffer]);
+    this.port.postMessage({ frequencyData: this.frequencyData.slice(), rms });
   }
 
   process(inputs: Float32Array[][], outputs: Float32Array[][]) {

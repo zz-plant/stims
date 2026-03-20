@@ -185,6 +185,7 @@ export class MilkdropOverlay {
   private suppressEditorChange = false;
   private editorDebounceId: number | null = null;
   private lastInspectorSignature = '';
+  private lastInspectorRenderAt = 0;
   private activeTab: 'browse' | 'editor' | 'inspector' = 'browse';
 
   constructor({
@@ -1330,7 +1331,7 @@ export class MilkdropOverlay {
             ),
           ].join(', ')
         : 'None';
-    this.inspectorMetrics.innerHTML = `
+    const metricsMarkup = `
       <div><strong>Backend:</strong> ${backend}</div>
       <div><strong>Transport support:</strong> ${supportLabel(support.status)}</div>
       <div><strong>Fidelity:</strong> ${fidelityLabel(parity.fidelityClass)}</div>
@@ -1350,6 +1351,17 @@ export class MilkdropOverlay {
       <div><strong>Register pressure:</strong> q${compiled.ir.compatibility.featureAnalysis.registerUsage.q} / t${compiled.ir.compatibility.featureAnalysis.registerUsage.t}</div>
       <div><strong>Primary note:</strong> ${primaryReason ? `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}` : (support.reasons[0] ?? parity.visualFallbacks[0] ?? 'Validated for the active backend.')}</div>
     `;
+    const now =
+      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (
+      metricsMarkup === this.lastInspectorSignature &&
+      now - this.lastInspectorRenderAt < 240
+    ) {
+      return;
+    }
+    this.lastInspectorSignature = metricsMarkup;
+    this.lastInspectorRenderAt = now;
+    this.inspectorMetrics.innerHTML = metricsMarkup;
   }
 
   setStatus(message: string) {
