@@ -34,6 +34,67 @@ per_pixel_1=zoom = zoom + 0.0;
     expect(compiled.formattedSource).toContain('title="Smoke Preset"');
   });
 
+  test('preserves source titles when untitled presets are imported', () => {
+    const compiled = compileMilkdropPresetSource('wave_r=1\n', {
+      id: 'imported-projectm',
+      title: '250-wavecode',
+      origin: 'imported',
+      fileName: '250-wavecode.milk',
+    });
+
+    expect(compiled.source.title).toBe('250-wavecode');
+    expect(compiled.title).toBe('250-wavecode');
+  });
+
+  test('normalizes legacy projectm preset aliases and wavecode fields', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+[preset00]
+fDecay=0.98
+nWaveMode=0
+bMaximizeWaveColor=1
+fWaveAlpha=4.4
+fWaveScale=1.5
+fZoomExponent=1
+sx=1
+sy=1
+wavecode_0_enabled=1
+wavecode_0_mode=0
+wavecode_0_bDrawThick=0
+wavecode_0_bAdditive=1
+wavecode_0_scaling=1
+wavecode_0_smoothing=0.5
+wavecode_0_r=0
+wavecode_0_g=1
+wavecode_0_b=1
+wavecode_0_a=1
+      `.trim(),
+      { id: 'legacy-projectm-wavecode' },
+    );
+
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.numericFields.decay).toBeCloseTo(0.98, 6);
+    expect(compiled.ir.numericFields.wave_mode).toBe(0);
+    expect(compiled.ir.numericFields.wave_brighten).toBe(1);
+    expect(compiled.ir.numericFields.wave_a).toBeCloseTo(4.4, 6);
+    expect(compiled.ir.numericFields.wave_scale).toBeCloseTo(1.5, 6);
+    expect(compiled.ir.numericFields.zoom).toBeCloseTo(1, 6);
+    expect(compiled.ir.numericFields.sx).toBeCloseTo(1, 6);
+    expect(compiled.ir.numericFields.sy).toBeCloseTo(1, 6);
+    expect(compiled.ir.customWaves[0]?.fields).toMatchObject({
+      enabled: 1,
+      spectrum: 0,
+      thick: 0,
+      additive: 1,
+      scaling: 1,
+      smoothing: 0.5,
+      r: 0,
+      g: 1,
+      b: 1,
+      a: 1,
+    });
+  });
+
   test('classifies backend support and feature usage for feedback presets', () => {
     const compiled = compileMilkdropPresetSource(
       `
