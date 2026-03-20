@@ -14,9 +14,6 @@ import type {
   MilkdropPolyline,
   MilkdropPostVisual,
   MilkdropProceduralCustomWaveVisual,
-  MilkdropProceduralFieldVisual,
-  MilkdropProceduralMotionVectorFieldVisual,
-  MilkdropProceduralWaveVisual,
   MilkdropRuntimeSignals,
   MilkdropShapeDefinition,
   MilkdropShapeVisual,
@@ -233,11 +230,8 @@ class MilkdropPresetVM implements MilkdropVM {
   private registers: MutableState = {};
   private randomState = 1;
   private detailScale = 1;
-  private renderBackend: 'webgl' | 'webgpu' = 'webgl';
   private trails: MilkdropPolyline[] = [];
-  private proceduralTrailWaves: MilkdropProceduralWaveVisual[] = [];
   private lastWaveform: MilkdropWaveVisual | null = null;
-  private lastProceduralWave: MilkdropProceduralWaveVisual | null = null;
   private lastWaveSamples: number[] = [];
   private customWaveState: MutableState[] = [];
   private customShapeState: MutableState[] = [];
@@ -258,7 +252,7 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   setRenderBackend(backend: 'webgl' | 'webgpu') {
-    this.renderBackend = backend;
+    void backend;
   }
 
   reset() {
@@ -273,9 +267,7 @@ class MilkdropPresetVM implements MilkdropVM {
     this.randomState =
       hashSeed(this.preset.source.id || this.preset.title || 'milkdrop') || 1;
     this.trails = [];
-    this.proceduralTrailWaves = [];
     this.lastWaveform = null;
-    this.lastProceduralWave = null;
     this.lastWaveSamples = [];
     this.customWaveState = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
@@ -647,32 +639,11 @@ class MilkdropPresetVM implements MilkdropVM {
     const thickness = clamp(this.state.wave_thick ?? 1, 1, 5);
     const pointSize = clamp((this.state.wave_thick ?? 1) * 3, 1, 12);
 
-    const procedural =
-      this.renderBackend === 'webgpu' && drawMode === 'line'
-        ? {
-            samples: [...smoothedSamples],
-            velocities: smoothedSamples.map((sampleValue, index) => {
-              const previousSample = previousSamples[index] ?? sampleValue;
-              return sampleValue - previousSample;
-            }),
-            mode,
-            centerX,
-            centerY,
-            scale,
-            mystery,
-            time: signals.time,
-            beatPulse: signals.beatPulse,
-            trebleAtt: signals.trebleAtt,
-            color: finalWaveColor,
-            alpha,
-            additive,
-            thickness,
-          }
-        : null;
+    const procedural = null;
 
     return {
       visual: {
-        positions: procedural ? [] : positions,
+        positions,
         color: finalWaveColor,
         alpha,
         thickness,
@@ -723,12 +694,7 @@ class MilkdropPresetVM implements MilkdropVM {
         frameLocals.a ?? 0.4,
       );
       const waveAlpha = clamp(frameLocals.a ?? 0.4, 0.02, 1);
-      const canUseProcedural =
-        this.renderBackend === 'webgpu' &&
-        drawMode === 'line' &&
-        wave.programs.perPoint.statements.length === 0;
       const positions: number[] = [];
-      const proceduralSamples: number[] = [];
 
       for (let point = 0; point < sampleCount; point += 1) {
         const sample = point / Math.max(1, sampleCount - 1);
@@ -737,7 +703,6 @@ class MilkdropPresetVM implements MilkdropVM {
           Math.max(0, Math.round(sample * (signals.frequencyData.length - 1))),
         );
         const spectrumValue = (signals.frequencyData[sampleIndex] ?? 0) / 255;
-        proceduralSamples.push(spectrumValue);
         const baseY =
           centerY +
           (spectrumValue - 0.5) *
@@ -769,28 +734,11 @@ class MilkdropPresetVM implements MilkdropVM {
           this.createEnv(signals, pointLocals),
           pointLocals,
         );
-        if (!canUseProcedural) {
-          positions.push(pointLocals.x, pointLocals.y, 0.28);
-        }
-      }
-
-      if (canUseProcedural) {
-        proceduralWaves.push({
-          samples: proceduralSamples,
-          spectrum: (frameLocals.spectrum ?? 0) >= 0.5,
-          centerX,
-          centerY,
-          scaling,
-          mystery: frameLocals.mystery ?? 0,
-          time: signals.time,
-          color: waveColor,
-          alpha: waveAlpha,
-          additive,
-        });
+        positions.push(pointLocals.x, pointLocals.y, 0.28);
       }
 
       waves.push({
-        positions: canUseProcedural ? [] : positions,
+        positions,
         color: waveColor,
         alpha: waveAlpha,
         thickness: clamp(frameLocals.thick ?? 1, 1, 6),
@@ -924,44 +872,12 @@ class MilkdropPresetVM implements MilkdropVM {
     };
   }
 
-  private getProceduralMeshFieldVisual(): MilkdropProceduralFieldVisual | null {
-    if (
-      this.renderBackend !== 'webgpu' ||
-      this.preset.ir.programs.perPixel.statements.length > 0
-    ) {
-      return null;
-    }
-
-    return {
-      density: clamp(
-        Math.round((this.state.mesh_density ?? 16) * this.detailScale),
-        8,
-        36,
-      ),
-      zoom: this.state.zoom ?? 1,
-      rotation: this.state.rot ?? 0,
-      warp: this.state.warp ?? 0,
-      warpAnimSpeed: clamp(this.state.warpanimspeed ?? 1, 0, 4),
-    };
+  private getProceduralMeshFieldVisual() {
+    return null;
   }
 
-  private getProceduralMotionVectorFieldVisual(): MilkdropProceduralMotionVectorFieldVisual | null {
-    if (
-      this.renderBackend !== 'webgpu' ||
-      this.preset.ir.programs.perPixel.statements.length > 0 ||
-      (this.state.motion_vectors ?? 0) < 0.5
-    ) {
-      return null;
-    }
-
-    return {
-      countX: clamp(Math.round(this.state.motion_vectors_x ?? 16), 1, 64),
-      countY: clamp(Math.round(this.state.motion_vectors_y ?? 12), 1, 64),
-      zoom: this.state.zoom ?? 1,
-      rotation: this.state.rot ?? 0,
-      warp: this.state.warp ?? 0,
-      warpAnimSpeed: clamp(this.state.warpanimspeed ?? 1, 0, 4),
-    };
+  private getProceduralMotionVectorFieldVisual() {
+    return null;
   }
 
   private buildGpuGeometryHints(): MilkdropGpuGeometryHints {
@@ -1219,72 +1135,22 @@ class MilkdropPresetVM implements MilkdropVM {
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
-    const { visual: mainWave, procedural: proceduralMainWave } =
-      this.buildMainWave(signals);
+    const { visual: mainWave } = this.buildMainWave(signals);
     const gpuGeometry = this.buildGpuGeometryHints();
     const customWaves = this.buildCustomWaves(signals);
-    if (proceduralMainWave) {
-      if (this.lastProceduralWave) {
-        this.proceduralTrailWaves.unshift({
-          ...this.lastProceduralWave,
-          samples: [...this.lastProceduralWave.samples],
-          velocities: [...this.lastProceduralWave.velocities],
-          color: { ...this.lastProceduralWave.color },
-        });
-        this.proceduralTrailWaves = this.proceduralTrailWaves.slice(
-          0,
-          MAX_TRAILS,
-        );
-      }
-      this.lastProceduralWave = {
-        ...proceduralMainWave,
-        samples: [...proceduralMainWave.samples],
-        velocities: [...proceduralMainWave.velocities],
-        color: { ...proceduralMainWave.color },
-      };
-      this.trails = [];
-      this.lastWaveform = null;
-      gpuGeometry.mainWave = proceduralMainWave;
-      gpuGeometry.trailWaves = this.proceduralTrailWaves.map((wave) => ({
-        ...wave,
-        samples: [...wave.samples],
-        velocities: [...wave.velocities],
-        color: { ...wave.color },
-      }));
-    } else {
-      if (this.lastWaveform) {
-        this.trails.unshift(clonePolyline(this.lastWaveform));
-        this.trails = this.trails.slice(0, MAX_TRAILS);
-      }
-      this.lastWaveform = {
-        ...mainWave,
-        positions: [...mainWave.positions],
-        color: { ...mainWave.color },
-      };
-      this.proceduralTrailWaves = [];
-      this.lastProceduralWave = null;
+    if (this.lastWaveform) {
+      this.trails.unshift(clonePolyline(this.lastWaveform));
+      this.trails = this.trails.slice(0, MAX_TRAILS);
     }
-    const shouldUseProceduralMesh =
-      this.renderBackend === 'webgpu' && gpuGeometry.meshField !== null;
-    const meshField = shouldUseProceduralMesh
-      ? null
-      : this.buildMeshField(signals);
-    const mesh = meshField
-      ? this.buildMesh(meshField)
-      : {
-          positions: [],
-          color: color(
-            this.state.mesh_r ?? 0.4,
-            this.state.mesh_g ?? 0.6,
-            this.state.mesh_b ?? 1,
-            this.state.mesh_alpha ?? 0.2,
-          ),
-          alpha: clamp(this.state.mesh_alpha ?? 0.2, 0.02, 0.9),
-        };
-    const motionVectors =
-      meshField && gpuGeometry.motionVectorField === null
-        ? this.buildMotionVectors(signals, meshField)
-        : [];
+    this.lastWaveform = {
+      ...mainWave,
+      positions: [...mainWave.positions],
+      color: { ...mainWave.color },
+    };
+
+    const meshField = this.buildMeshField(signals);
+    const mesh = this.buildMesh(meshField);
+    const motionVectors = this.buildMotionVectors(signals, meshField);
     this.lastMeshField = meshField
       ? {
           density: meshField.density,

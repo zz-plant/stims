@@ -1,4 +1,5 @@
 import {
+  type Camera,
   Color,
   HalfFloatType,
   LinearFilter,
@@ -6,6 +7,7 @@ import {
   MeshBasicMaterial,
   OrthographicCamera,
   PlaneGeometry,
+  type RenderTarget,
   RepeatWrapping,
   Scene,
   ShaderMaterial,
@@ -20,24 +22,10 @@ import type {
   FeedbackBackendProfile,
   MilkdropBackendBehavior,
 } from './renderer-adapter.ts';
-
-export interface MilkdropFeedbackManager {
-  readonly compositeScene: Scene;
-  readonly presentScene: Scene;
-  readonly camera: OrthographicCamera;
-  readonly compositeMaterial: ShaderMaterial;
-  readonly presentMaterial: MeshBasicMaterial;
-  readonly sceneTarget: WebGLRenderTarget;
-  readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
-  readonly resolutionScale: number;
-  readonly profile: FeedbackBackendProfile;
-  readonly auxTextures: Record<string, Texture>;
-  readonly readTarget: WebGLRenderTarget;
-  readonly writeTarget: WebGLRenderTarget;
-  swap(): void;
-  resize(width: number, height: number): void;
-  dispose(): void;
-}
+import type {
+  MilkdropFeedbackCompositeState,
+  MilkdropFeedbackManager,
+} from './types';
 
 export type MilkdropCompositeShaderConfig = {
   enhancedFeedbackBlur?: boolean;
@@ -481,6 +469,87 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.index = (this.index + 1) % 2;
     this.presentMaterial.map = this.readTarget.texture;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
+  }
+
+  applyCompositeState(state: MilkdropFeedbackCompositeState) {
+    const uniforms = this.compositeMaterial.uniforms;
+    uniforms.currentTex.value = this.sceneTarget.texture;
+    uniforms.previousTex.value = this.readTarget.texture;
+    uniforms.mixAlpha.value = state.mixAlpha;
+    uniforms.zoom.value = state.zoom;
+    uniforms.brighten.value = state.brighten;
+    uniforms.darken.value = state.darken;
+    uniforms.solarize.value = state.solarize;
+    uniforms.invert.value = state.invert;
+    uniforms.gammaAdj.value = state.gammaAdj;
+    uniforms.textureWrap.value = state.textureWrap;
+    uniforms.feedbackTexture.value = state.feedbackTexture;
+    uniforms.warpScale.value = state.warpScale;
+    uniforms.offsetX.value = state.offsetX;
+    uniforms.offsetY.value = state.offsetY;
+    uniforms.rotation.value = state.rotation;
+    uniforms.zoomMul.value = state.zoomMul;
+    uniforms.saturation.value = state.saturation;
+    uniforms.contrast.value = state.contrast;
+    uniforms.colorScale.value.setRGB(
+      state.colorScale.r,
+      state.colorScale.g,
+      state.colorScale.b,
+    );
+    uniforms.hueShift.value = state.hueShift;
+    uniforms.brightenBoost.value = state.brightenBoost;
+    uniforms.invertBoost.value = state.invertBoost;
+    uniforms.solarizeBoost.value = state.solarizeBoost;
+    uniforms.tint.value.setRGB(state.tint.r, state.tint.g, state.tint.b);
+    uniforms.overlayTextureSource.value = state.overlayTextureSource;
+    uniforms.overlayTextureMode.value = state.overlayTextureMode;
+    uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
+    uniforms.overlayTextureScale.value.set(
+      state.overlayTextureScale.x,
+      state.overlayTextureScale.y,
+    );
+    uniforms.overlayTextureOffset.value.set(
+      state.overlayTextureOffset.x,
+      state.overlayTextureOffset.y,
+    );
+    uniforms.warpTextureSource.value = state.warpTextureSource;
+    uniforms.warpTextureAmount.value = state.warpTextureAmount;
+    uniforms.warpTextureScale.value.set(
+      state.warpTextureScale.x,
+      state.warpTextureScale.y,
+    );
+    uniforms.warpTextureOffset.value.set(
+      state.warpTextureOffset.x,
+      state.warpTextureOffset.y,
+    );
+    uniforms.signalBass.value = state.signalBass;
+    uniforms.signalMid.value = state.signalMid;
+    uniforms.signalTreb.value = state.signalTreb;
+    uniforms.signalBeat.value = state.signalBeat;
+    uniforms.signalEnergy.value = state.signalEnergy;
+    uniforms.signalTime.value = state.signalTime;
+  }
+
+  render(
+    renderer: {
+      render(scene: Scene, camera: Camera): void;
+      setRenderTarget?: (target: RenderTarget | null) => void;
+    },
+    sourceScene: Scene,
+    sourceCamera: Camera,
+  ) {
+    if (!renderer.setRenderTarget) {
+      return false;
+    }
+
+    renderer.setRenderTarget(this.sceneTarget);
+    renderer.render(sourceScene, sourceCamera);
+    renderer.setRenderTarget(this.writeTarget);
+    renderer.render(this.compositeScene, this.camera);
+    renderer.setRenderTarget(null);
+    renderer.render(this.presentScene, this.camera);
+    this.swap();
+    return true;
   }
 
   resize(width: number, height: number) {

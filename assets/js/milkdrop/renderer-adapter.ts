@@ -23,13 +23,14 @@ import {
   Sphere,
   Vector2,
   Vector3,
-  type WebGLRenderTarget,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
-import type { MilkdropFeedbackManager } from './feedback-manager-shared.ts';
 import type {
   MilkdropBorderVisual,
   MilkdropCompiledPreset,
+  MilkdropFeedbackCompositeState,
+  MilkdropFeedbackManager,
+  MilkdropFeedbackSetRenderTarget,
   MilkdropGpuGeometryHints,
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralWaveVisual,
@@ -46,7 +47,7 @@ type RendererLike = {
 };
 
 type RendererSetRenderTarget = {
-  bivarianceHack(target: WebGLRenderTarget | null): void;
+  bivarianceHack: MilkdropFeedbackSetRenderTarget;
 }['bivarianceHack'];
 
 export type MilkdropRendererAdapterConfig = {
@@ -104,7 +105,7 @@ export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   closeLinesManually: true,
   useLineLoopPrimitives: false,
   supportsShapeGradient: false,
-  supportsFeedbackPass: false,
+  supportsFeedbackPass: true,
 };
 
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
@@ -1616,8 +1617,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly blendBorderGroup = new Group();
   private readonly blendMotionVectorGroup = new Group();
   private readonly feedback: MilkdropFeedbackManager | null;
-  private readonly colorScaleScratch = new Color(1, 1, 1);
-  private readonly tintScratch = new Color(1, 1, 1);
 
   constructor({
     scene,
@@ -1912,6 +1911,79 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     );
   }
 
+  private buildFeedbackCompositeState(
+    frameState: MilkdropRenderPayload['frameState'],
+  ): MilkdropFeedbackCompositeState {
+    const controls = frameState.post.shaderControls;
+    return {
+      mixAlpha: frameState.post.videoEchoEnabled
+        ? frameState.post.videoEchoAlpha + controls.mixAlpha
+        : controls.mixAlpha,
+      zoom: frameState.post.videoEchoEnabled
+        ? frameState.post.videoEchoZoom + controls.warpScale * 0.04
+        : 1,
+      brighten: frameState.post.brighten ? 1 : 0,
+      darken: frameState.post.darken ? 1 : 0,
+      solarize: frameState.post.solarize ? 1 : 0,
+      invert: frameState.post.invert ? 1 : 0,
+      gammaAdj: frameState.post.gammaAdj,
+      textureWrap: frameState.post.textureWrap ? 1 : 0,
+      feedbackTexture: frameState.post.feedbackTexture ? 1 : 0,
+      warpScale: controls.warpScale,
+      offsetX: controls.offsetX,
+      offsetY: controls.offsetY,
+      rotation: controls.rotation,
+      zoomMul: controls.zoom,
+      saturation: controls.saturation,
+      contrast: controls.contrast,
+      colorScale: {
+        r: controls.colorScale.r,
+        g: controls.colorScale.g,
+        b: controls.colorScale.b,
+      },
+      hueShift: controls.hueShift,
+      brightenBoost: controls.brightenBoost,
+      invertBoost: controls.invertBoost,
+      solarizeBoost: controls.solarizeBoost,
+      tint: {
+        r: controls.tint.r,
+        g: controls.tint.g,
+        b: controls.tint.b,
+      },
+      overlayTextureSource: getShaderTextureSourceId(
+        controls.textureLayer.source,
+      ),
+      overlayTextureMode: getShaderTextureBlendModeId(
+        controls.textureLayer.mode,
+      ),
+      overlayTextureAmount: controls.textureLayer.amount,
+      overlayTextureScale: {
+        x: controls.textureLayer.scaleX,
+        y: controls.textureLayer.scaleY,
+      },
+      overlayTextureOffset: {
+        x: controls.textureLayer.offsetX,
+        y: controls.textureLayer.offsetY,
+      },
+      warpTextureSource: getShaderTextureSourceId(controls.warpTexture.source),
+      warpTextureAmount: controls.warpTexture.amount,
+      warpTextureScale: {
+        x: controls.warpTexture.scaleX,
+        y: controls.warpTexture.scaleY,
+      },
+      warpTextureOffset: {
+        x: controls.warpTexture.offsetX,
+        y: controls.warpTexture.offsetY,
+      },
+      signalBass: frameState.signals.bass,
+      signalMid: frameState.signals.mid,
+      signalTreb: frameState.signals.treb,
+      signalBeat: frameState.signals.beatPulse,
+      signalEnergy: frameState.signals.weightedEnergy,
+      signalTime: frameState.signals.time,
+    };
+  }
+
   render(payload: MilkdropRenderPayload) {
     const backgroundMaterial = this.background.material as MeshBasicMaterial;
     setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
@@ -2005,134 +2077,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       return false;
     }
 
-    this.feedback.compositeMaterial.uniforms.currentTex.value =
-      this.feedback.sceneTarget.texture;
-    this.feedback.compositeMaterial.uniforms.previousTex.value =
-      this.feedback.readTarget.texture;
-    this.feedback.compositeMaterial.uniforms.mixAlpha.value = payload.frameState
-      .post.videoEchoEnabled
-      ? payload.frameState.post.videoEchoAlpha +
-        payload.frameState.post.shaderControls.mixAlpha
-      : payload.frameState.post.shaderControls.mixAlpha;
-    this.feedback.compositeMaterial.uniforms.zoom.value = payload.frameState
-      .post.videoEchoEnabled
-      ? payload.frameState.post.videoEchoZoom +
-        payload.frameState.post.shaderControls.warpScale * 0.04
-      : 1;
-    this.feedback.compositeMaterial.uniforms.brighten.value = payload.frameState
-      .post.brighten
-      ? 1
-      : 0;
-    this.feedback.compositeMaterial.uniforms.darken.value = payload.frameState
-      .post.darken
-      ? 1
-      : 0;
-    this.feedback.compositeMaterial.uniforms.solarize.value = payload.frameState
-      .post.solarize
-      ? 1
-      : 0;
-    this.feedback.compositeMaterial.uniforms.invert.value = payload.frameState
-      .post.invert
-      ? 1
-      : 0;
-    this.feedback.compositeMaterial.uniforms.gammaAdj.value =
-      payload.frameState.post.gammaAdj;
-    this.feedback.compositeMaterial.uniforms.textureWrap.value = payload
-      .frameState.post.textureWrap
-      ? 1
-      : 0;
-    this.feedback.compositeMaterial.uniforms.feedbackTexture.value = payload
-      .frameState.post.feedbackTexture
-      ? 1
-      : 0;
-    this.feedback.compositeMaterial.uniforms.warpScale.value =
-      payload.frameState.post.shaderControls.warpScale;
-    this.feedback.compositeMaterial.uniforms.offsetX.value =
-      payload.frameState.post.shaderControls.offsetX;
-    this.feedback.compositeMaterial.uniforms.offsetY.value =
-      payload.frameState.post.shaderControls.offsetY;
-    this.feedback.compositeMaterial.uniforms.rotation.value =
-      payload.frameState.post.shaderControls.rotation;
-    this.feedback.compositeMaterial.uniforms.zoomMul.value =
-      payload.frameState.post.shaderControls.zoom;
-    this.feedback.compositeMaterial.uniforms.saturation.value =
-      payload.frameState.post.shaderControls.saturation;
-    this.feedback.compositeMaterial.uniforms.contrast.value =
-      payload.frameState.post.shaderControls.contrast;
-    this.colorScaleScratch.setRGB(
-      payload.frameState.post.shaderControls.colorScale.r,
-      payload.frameState.post.shaderControls.colorScale.g,
-      payload.frameState.post.shaderControls.colorScale.b,
+    this.feedback.applyCompositeState(
+      this.buildFeedbackCompositeState(payload.frameState),
     );
-    this.feedback.compositeMaterial.uniforms.colorScale.value =
-      this.colorScaleScratch;
-    this.feedback.compositeMaterial.uniforms.hueShift.value =
-      payload.frameState.post.shaderControls.hueShift;
-    this.feedback.compositeMaterial.uniforms.brightenBoost.value =
-      payload.frameState.post.shaderControls.brightenBoost;
-    this.feedback.compositeMaterial.uniforms.invertBoost.value =
-      payload.frameState.post.shaderControls.invertBoost;
-    this.feedback.compositeMaterial.uniforms.solarizeBoost.value =
-      payload.frameState.post.shaderControls.solarizeBoost;
-    this.tintScratch.setRGB(
-      payload.frameState.post.shaderControls.tint.r,
-      payload.frameState.post.shaderControls.tint.g,
-      payload.frameState.post.shaderControls.tint.b,
-    );
-    this.feedback.compositeMaterial.uniforms.tint.value = this.tintScratch;
-    this.feedback.compositeMaterial.uniforms.overlayTextureSource.value =
-      getShaderTextureSourceId(
-        payload.frameState.post.shaderControls.textureLayer.source,
-      );
-    this.feedback.compositeMaterial.uniforms.overlayTextureMode.value =
-      getShaderTextureBlendModeId(
-        payload.frameState.post.shaderControls.textureLayer.mode,
-      );
-    this.feedback.compositeMaterial.uniforms.overlayTextureAmount.value =
-      payload.frameState.post.shaderControls.textureLayer.amount;
-    this.feedback.compositeMaterial.uniforms.overlayTextureScale.value.set(
-      payload.frameState.post.shaderControls.textureLayer.scaleX,
-      payload.frameState.post.shaderControls.textureLayer.scaleY,
-    );
-    this.feedback.compositeMaterial.uniforms.overlayTextureOffset.value.set(
-      payload.frameState.post.shaderControls.textureLayer.offsetX,
-      payload.frameState.post.shaderControls.textureLayer.offsetY,
-    );
-    this.feedback.compositeMaterial.uniforms.warpTextureSource.value =
-      getShaderTextureSourceId(
-        payload.frameState.post.shaderControls.warpTexture.source,
-      );
-    this.feedback.compositeMaterial.uniforms.warpTextureAmount.value =
-      payload.frameState.post.shaderControls.warpTexture.amount;
-    this.feedback.compositeMaterial.uniforms.warpTextureScale.value.set(
-      payload.frameState.post.shaderControls.warpTexture.scaleX,
-      payload.frameState.post.shaderControls.warpTexture.scaleY,
-    );
-    this.feedback.compositeMaterial.uniforms.warpTextureOffset.value.set(
-      payload.frameState.post.shaderControls.warpTexture.offsetX,
-      payload.frameState.post.shaderControls.warpTexture.offsetY,
-    );
-    this.feedback.compositeMaterial.uniforms.signalBass.value =
-      payload.frameState.signals.bass;
-    this.feedback.compositeMaterial.uniforms.signalMid.value =
-      payload.frameState.signals.mid;
-    this.feedback.compositeMaterial.uniforms.signalTreb.value =
-      payload.frameState.signals.treb;
-    this.feedback.compositeMaterial.uniforms.signalBeat.value =
-      payload.frameState.signals.beatPulse;
-    this.feedback.compositeMaterial.uniforms.signalEnergy.value =
-      payload.frameState.signals.weightedEnergy;
-    this.feedback.compositeMaterial.uniforms.signalTime.value =
-      payload.frameState.signals.time;
-
-    this.renderer.setRenderTarget(this.feedback.sceneTarget);
-    this.renderer.render(this.scene, this.camera);
-    this.renderer.setRenderTarget(this.feedback.writeTarget);
-    this.renderer.render(this.feedback.compositeScene, this.feedback.camera);
-    this.renderer.setRenderTarget(null);
-    this.renderer.render(this.feedback.presentScene, this.feedback.camera);
-    this.feedback.swap();
-    return true;
+    return this.feedback.render(this.renderer, this.scene, this.camera);
   }
 
   dispose() {

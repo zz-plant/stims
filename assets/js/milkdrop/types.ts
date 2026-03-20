@@ -1,3 +1,5 @@
+import type { Camera, Scene } from 'three';
+
 export type MilkdropPresetOrigin = 'bundled' | 'imported' | 'user' | 'draft';
 
 export type MilkdropDiagnosticSeverity = 'error' | 'warning' | 'info';
@@ -695,6 +697,85 @@ export type MilkdropRenderPayload = {
   frameState: MilkdropFrameState;
   blendState?: MilkdropBlendState | null;
 };
+
+export type MilkdropFeedbackCompositeState = {
+  mixAlpha: number;
+  zoom: number;
+  brighten: number;
+  darken: number;
+  solarize: number;
+  invert: number;
+  gammaAdj: number;
+  textureWrap: number;
+  feedbackTexture: number;
+  warpScale: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+  zoomMul: number;
+  saturation: number;
+  contrast: number;
+  colorScale: {
+    r: number;
+    g: number;
+    b: number;
+  };
+  hueShift: number;
+  brightenBoost: number;
+  invertBoost: number;
+  solarizeBoost: number;
+  tint: {
+    r: number;
+    g: number;
+    b: number;
+  };
+  overlayTextureSource: number;
+  overlayTextureMode: number;
+  overlayTextureAmount: number;
+  overlayTextureScale: {
+    x: number;
+    y: number;
+  };
+  overlayTextureOffset: {
+    x: number;
+    y: number;
+  };
+  warpTextureSource: number;
+  warpTextureAmount: number;
+  warpTextureScale: {
+    x: number;
+    y: number;
+  };
+  warpTextureOffset: {
+    x: number;
+    y: number;
+  };
+  signalBass: number;
+  signalMid: number;
+  signalTreb: number;
+  signalBeat: number;
+  signalEnergy: number;
+  signalTime: number;
+};
+
+export type MilkdropFeedbackSetRenderTarget = {
+  bivarianceHack(target: unknown | null): void;
+}['bivarianceHack'];
+
+export interface MilkdropFeedbackManager {
+  applyCompositeState(state: MilkdropFeedbackCompositeState): void;
+  render(
+    renderer: {
+      render(scene: Scene, camera: Camera): void;
+      setRenderTarget?: MilkdropFeedbackSetRenderTarget;
+    },
+    sourceScene: Scene,
+    sourceCamera: Camera,
+  ): boolean;
+  swap(): void;
+  resize(width: number, height: number): void;
+  dispose(): void;
+}
 
 export interface MilkdropVM {
   setPreset(preset: MilkdropCompiledPreset): void;
