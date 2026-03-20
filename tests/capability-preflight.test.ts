@@ -88,7 +88,7 @@ describe('capability preflight launch flow', () => {
     const dialog = document.querySelector('dialog') as HTMLDialogElement | null;
     expect(dialog).not.toBeNull();
     expect(dialog?.textContent).toContain(
-      'We check visuals and audio, then point you to the next step.',
+      'We check whether visuals and audio can start here.',
     );
 
     const primaryButtons = Array.from(
@@ -96,7 +96,7 @@ describe('capability preflight launch flow', () => {
     ).filter((button) => !(button as HTMLElement).hidden);
 
     expect(primaryButtons).toHaveLength(1);
-    expect(primaryButtons[0]?.textContent).toContain('Continue to audio setup');
+    expect(primaryButtons[0]?.textContent).toContain('Continue');
 
     const diagnostics = dialog?.querySelector(
       '.preflight-panel__details',

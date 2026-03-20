@@ -255,7 +255,7 @@ const buildCollectionJsonLd = ({
   url: canonical,
   isPartOf: {
     '@type': 'WebSite',
-    name: 'Stim Webtoys',
+    name: 'Stims',
     url: baseUrl,
   },
   mainEntity: {
@@ -300,8 +300,8 @@ const buildFaqJsonLd = (items: FaqEntry[]) => ({
 const renderFaqSection = (items: FaqEntry[]) => `
   <section>
     <div class="section-heading">
-      <p class="eyebrow">Questions</p>
-      <h2>Quick answers</h2>
+      <p class="eyebrow">Before you open it</p>
+      <h2>What to expect</h2>
     </div>
     <div class="feature-card-grid">
       ${items
@@ -317,34 +317,6 @@ const renderFaqSection = (items: FaqEntry[]) => `
     </div>
   </section>
 `;
-
-const buildRelatedToys = (toy: ToyEntry, toys: ToyEntry[]) => {
-  const currentTags = new Set(toy.tags ?? []);
-  const currentMoods = new Set(toy.moods ?? []);
-
-  return toys
-    .filter((candidate) => candidate.slug !== toy.slug)
-    .map((candidate) => {
-      let score = 0;
-      for (const tag of candidate.tags ?? []) {
-        if (currentTags.has(tag)) {
-          score += 2;
-        }
-      }
-      for (const mood of candidate.moods ?? []) {
-        if (currentMoods.has(mood)) {
-          score += 1;
-        }
-      }
-      return { candidate, score };
-    })
-    .sort(
-      (a, b) =>
-        b.score - a.score || a.candidate.title.localeCompare(b.candidate.title),
-    )
-    .slice(0, 3)
-    .map(({ candidate }) => candidate);
-};
 
 const generateSeo = async () => {
   const toysRaw = await readFile(path.join(publicDir, 'toys.json'), 'utf8');
@@ -391,12 +363,12 @@ const generateSeo = async () => {
     <section class="intro">
       <div class="section-heading">
         <p class="eyebrow">Stims</p>
-        <h1>Toy library</h1>
+        <h1>Library</h1>
         <p class="section-description">
-          Browse the curated visualizer collection, then launch the shared player when you find something interesting.
+          Open MilkDrop directly, or browse the rest of the visualizer library first.
         </p>
         <div class="cta-row">
-          <a class="cta-button primary" href="/toy.html?toy=milkdrop">Launch MilkDrop</a>
+          <a class="cta-button primary" href="/toy.html?toy=milkdrop">Open MilkDrop</a>
           <a class="cta-button ghost" href="/index.html#toy-list">Browse on homepage</a>
         </div>
       </div>
@@ -443,7 +415,6 @@ const generateSeo = async () => {
       { label: toy.title, href: `/toys/${toy.slug}/` },
     ];
     const faqItems = buildFaqItems(toy);
-    const relatedToys = buildRelatedToys(toy, toys);
     const ogFile = `${toy.slug}.svg`;
 
     await writeFile(
@@ -484,11 +455,11 @@ const generateSeo = async () => {
       ${renderBreadcrumbs(breadcrumbs)}
       <section class="intro">
         <div class="section-heading">
-          <p class="eyebrow">Stims toy</p>
+          <p class="eyebrow">Stims visualizer</p>
           <h1>${escapeHtml(toy.title)}</h1>
           <p class="section-description">${escapeHtml(toy.description)}</p>
           <div class="cta-row">
-            <a class="cta-button primary" href="/toy.html?toy=${toy.slug}">Launch toy</a>
+            <a class="cta-button primary" href="/toy.html?toy=${toy.slug}">Open visualizer</a>
             <a class="cta-button ghost" href="/toys/">Back to library</a>
           </div>
         </div>
@@ -498,13 +469,6 @@ const generateSeo = async () => {
           ${renderMetaList('Tags', toy.tags ?? [])}
           ${renderMetaList('Moods', toy.moods ?? [])}
         </div>
-      </section>
-      <section>
-        <div class="section-heading">
-          <p class="eyebrow">Related</p>
-          <h2>More toys you might like</h2>
-        </div>
-        ${renderToyList(relatedToys)}
       </section>
       ${renderFaqSection(faqItems)}
     `;

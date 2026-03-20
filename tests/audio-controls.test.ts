@@ -91,8 +91,9 @@ describe('audio controls primary emphasis', () => {
       onRequestDemoAudio: async () => {},
     });
 
-    expect(container.textContent).toContain('Mic reacts to your room.');
-    expect(container.textContent).toContain('Demo starts instantly.');
+    expect(container.textContent).toContain(
+      'Start instantly with demo, or switch to mic when you want live response.',
+    );
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
     const demoBadge = container.querySelector('[data-recommended-for="demo"]');
@@ -119,7 +120,7 @@ describe('audio controls primary emphasis', () => {
 
     expect(onboardingHelp.open).toBe(false);
     expect(advancedInputs.open).toBe(false);
-    expect(onboardingHelp.textContent).toContain('Tips');
+    expect(onboardingHelp.textContent).toContain('How to interact');
     expect(advancedInputs.textContent).toContain('Other sources');
   });
 
@@ -254,7 +255,7 @@ describe('audio controls primary emphasis', () => {
     window.setTimeout = originalSetTimeout;
   });
 
-  test('renders and dismisses the try-this-first spotlight', () => {
+  test('renders the start-here spotlight with concise first-run guidance', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -267,18 +268,10 @@ describe('audio controls primary emphasis', () => {
       '[data-quickstart-spotlight]',
     ) as HTMLElement;
     expect(firstSteps.hidden).toBe(false);
-    expect(firstSteps.textContent).toContain('Try this first');
+    expect(firstSteps.textContent).toContain('Start here');
     expect(firstSteps.textContent).toContain(
       'Try turning the main knob slowly for smoother motion.',
     );
-
-    const dismiss = container.querySelector(
-      '[data-dismiss-quickstart-spotlight]',
-    ) as HTMLButtonElement;
-    dismiss.click();
-
-    expect(firstSteps.hidden).toBe(true);
-    expect(sessionStorage.getItem('stims-first-steps-dismissed')).toBe('true');
   });
 
   test('auto-starts microphone when permission is already granted', async () => {
@@ -331,7 +324,7 @@ describe('audio controls primary emphasis', () => {
     });
   });
 
-  test('keeps a single visible try-this-first prompt instead of stacked quick-start tips', () => {
+  test('keeps a single visible start-here prompt instead of stacked quick-start tips', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -343,16 +336,9 @@ describe('audio controls primary emphasis', () => {
     const quickstart = container.querySelector(
       '[data-quickstart-spotlight]',
     ) as HTMLElement;
-    const dismiss = container.querySelector(
-      '[data-dismiss-quickstart-spotlight]',
-    ) as HTMLButtonElement;
-
     expect(quickstart.hidden).toBe(false);
     expect(container.querySelector('[data-quickstart-panel]')).toBeNull();
-    dismiss.click();
-
-    expect(quickstart.hidden).toBe(true);
-    expect(sessionStorage.getItem('stims-first-steps-dismissed')).toBe('true');
+    expect(quickstart.textContent).toContain('Start here');
   });
 
   test('applies low-motion starter preset from first-steps quick action', () => {
