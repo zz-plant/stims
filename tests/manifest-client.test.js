@@ -6,10 +6,12 @@ describe('manifest client', () => {
 
   beforeEach(() => {
     window.location.href = 'http://example.com/';
+    document.head.innerHTML = '';
   });
 
   afterEach(() => {
     mock.restore();
+    document.head.innerHTML = '';
   });
 
   test('uses manifest entry with provided base URL', async () => {
@@ -40,6 +42,23 @@ describe('manifest client', () => {
     });
     const modulePath = await client.resolveModulePath(moduleEntry);
 
+    expect(modulePath).toBe('/assets/js/toys/example.ts');
+  });
+
+  test('falls back to the app root on nested routes when the entry script is rooted at /assets', async () => {
+    window.location.href = 'http://example.com/milkdrop/?audio=demo';
+    document.head.innerHTML = '';
+    const entryScript = document.createElement('script');
+    entryScript.type = 'module';
+    entryScript.src = '/assets/js/app.ts';
+    document.head.appendChild(entryScript);
+
+    const fetchImpl = mock(() => Promise.resolve({ ok: false }));
+
+    const client = createManifestClient({ fetchImpl });
+    const modulePath = await client.resolveModulePath(moduleEntry);
+
+    expect(fetchImpl).toHaveBeenCalledWith('/.vite/manifest.json');
     expect(modulePath).toBe('/assets/js/toys/example.ts');
   });
 
