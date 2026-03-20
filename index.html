@@ -51,7 +51,7 @@
     <link rel="preload" href="assets/css/base.css" as="style" />
     <link rel="preload" href="assets/css/index.css" as="style" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="assets/css/base.css" />
@@ -92,6 +92,7 @@
     </script>
   </head>
   <body data-page="home">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="content">
       <header class="shell-header">
         <div data-top-nav-container></div>
@@ -101,44 +102,42 @@
         </div>
       </header>
 
-      <main class="home-shell">
+      <main class="home-shell" id="main-content">
         <header class="hero home-hero" id="home" aria-label="Stims overview">
           <div class="home-hero__grid">
             <div class="home-hero__copy">
-              <p class="eyebrow">Browser-native visualizer</p>
-              <h1>MilkDrop&rsquo;s browser future, reduced to the routes that matter.</h1>
+              <p class="eyebrow">Start here</p>
+              <h1>Choose the quickest way into Stims.</h1>
               <p class="tagline">
-                Stims now has a cleaner split. This page explains the experience,
-                the presets, and the lineage. <code>/milkdrop/</code> is the launch
-                route for quick checks, audio setup, live editing, and the actual session.
+                If you are new, start with demo audio and get visuals moving immediately.
+                If you want the visuals to react to your own sound, jump into mic or tab audio.
+                If you already know what you want, head straight to presets or the editor.
               </p>
               <div class="hero-cta-row" role="group" aria-label="Primary actions">
                 <a href="/milkdrop/?audio=demo" class="cta-button primary">
-                  Launch with demo audio
+                  Launch demo visuals
                 </a>
                 <a href="/milkdrop/" class="cta-button ghost">Open launchpad</a>
               </div>
               <p class="home-hero__support">
-                Want a specific start?
-                <a href="/milkdrop/?audio=demo&panel=browse">Browse presets first</a>
-                or
-                <a href="/milkdrop/?audio=demo&panel=editor">jump straight to the editor</a>.
+                Once the session starts, you can switch audio source, browse presets,
+                change quality, and edit without leaving <code>/milkdrop/</code>.
               </p>
               <div class="home-stat-grid" aria-label="Core product signals">
                 <article class="home-stat">
-                  <p class="home-stat__label">Route model</p>
-                  <h2><code>/</code> explains. <code>/milkdrop/</code> runs.</h2>
-                  <p>Discovery and launch no longer compete for the same page.</p>
+                  <p class="home-stat__label">Fastest start</p>
+                  <h2>Demo audio gets you to motion immediately.</h2>
+                  <p>No permissions, no dead air, and a much better first impression.</p>
                 </article>
                 <article class="home-stat">
-                  <p class="home-stat__label">First session</p>
-                  <h2>Start moving before you ask for permissions.</h2>
-                  <p>Demo audio gets the visuals alive fast, then mic or tab audio can take over.</p>
+                  <p class="home-stat__label">Bring your own sound</p>
+                  <h2>Mic and tab audio are right there when you want live response.</h2>
+                  <p>The launchpad handles setup friction where it is actually useful.</p>
                 </article>
                 <article class="home-stat">
-                  <p class="home-stat__label">Live control</p>
-                  <h2>Presets, quality, and source editing stay in one flow.</h2>
-                  <p>The preset browser and editor are part of the runtime, not separate products.</p>
+                  <p class="home-stat__label">Keep tweaking</p>
+                  <h2>Preset browsing and editing stay in the same session.</h2>
+                  <p>You do not need to hop between pages just to get from play to customization.</p>
                 </article>
               </div>
             </div>
@@ -151,21 +150,37 @@
                   <div class="milkdrop-stage__wave"></div>
                   <div class="milkdrop-stage__core"></div>
                 </div>
-                <div class="home-route-strip" aria-label="Suggested routes">
+                <div class="home-route-strip" aria-label="Suggested starting paths">
                   <article class="home-route-card">
-                    <p class="home-route-card__label">Launch</p>
-                    <h2><code>/milkdrop/</code></h2>
-                    <p>Quick check, audio choices, and quality tuning.</p>
+                    <p class="home-route-card__label">Fastest first run</p>
+                    <h2>Start with demo audio.</h2>
+                    <p>Instant motion and no permissions. Best if you just want to see Stims working.</p>
+                    <div class="home-route-card__actions">
+                      <a href="/milkdrop/?audio=demo" class="cta-button primary">
+                        Launch demo visuals
+                      </a>
+                    </div>
                   </article>
                   <article class="home-route-card">
-                    <p class="home-route-card__label">Preset browser</p>
-                    <h2><code>/milkdrop/?panel=browse</code></h2>
-                    <p>Open into the curated catalog with demo audio ready.</p>
+                    <p class="home-route-card__label">Live response</p>
+                    <h2>Bring your own audio.</h2>
+                    <p>Open the launchpad when you want mic or tab audio and a clearer setup flow.</p>
+                    <div class="home-route-card__actions">
+                      <a href="/milkdrop/" class="cta-button ghost">Open launchpad</a>
+                    </div>
                   </article>
                   <article class="home-route-card">
-                    <p class="home-route-card__label">Editor</p>
-                    <h2><code>/milkdrop/?panel=editor</code></h2>
-                    <p>Go straight to preset editing once you want to tweak the source.</p>
+                    <p class="home-route-card__label">Customize</p>
+                    <h2>Browse presets or jump straight into editing.</h2>
+                    <p>Use the preset browser if you want a curated starting point, or open the editor when you are ready to tweak source.</p>
+                    <div class="home-route-card__actions">
+                      <a href="/milkdrop/?audio=demo&panel=browse" class="cta-button ghost">
+                        Open preset browser
+                      </a>
+                      <a href="/milkdrop/?audio=demo&panel=editor" class="cta-button ghost">
+                        Open editor
+                      </a>
+                    </div>
                   </article>
                 </div>
               </div>
@@ -175,36 +190,36 @@
 
         <section class="home-proof" id="experience" aria-labelledby="experience-title">
           <div class="section-heading">
-            <p class="eyebrow">Experience model</p>
-            <h2 id="experience-title">One product, two jobs.</h2>
+            <p class="eyebrow">After launch</p>
+            <h2 id="experience-title">Everything you need stays in one session.</h2>
             <p class="section-description">
-              The old homepage was trying to market, launch, and catalog at the same time.
-              Stims works better when those jobs are separated.
+              You should not have to relearn the product after the first click.
+              Start audio, change the look, and edit presets from the same runtime.
             </p>
           </div>
           <div class="home-proof-grid">
             <article class="home-proof-card">
-              <p class="home-proof-card__eyebrow">Home route</p>
-              <h3>Explain the visualizer and set expectations.</h3>
+              <p class="home-proof-card__eyebrow">Audio setup</p>
+              <h3>Choose the source that matches your situation.</h3>
               <p>
-                This route handles narrative: what Stims is, why it follows MilkDrop&rsquo;s
-                lineage, and which entry points make sense for a first session.
+                Start with demo audio when you want instant feedback, then switch to microphone
+                or tab audio when you want the visuals to follow live sound.
               </p>
             </article>
             <article class="home-proof-card">
-              <p class="home-proof-card__eyebrow">Launch route</p>
-              <h3>Own setup friction instead of leaking it into the homepage.</h3>
+              <p class="home-proof-card__eyebrow">Preset control</p>
+              <h3>Browse a curated catalog without leaving the visualizer.</h3>
               <p>
-                Compatibility checks, audio choices, quality presets, and runtime UI live
-                on <code>/milkdrop/</code>, where they are immediately actionable.
+                Favorites, recent picks, and collection filters live inside the runtime,
+                so the preset browser feels like part of the instrument instead of a detour.
               </p>
             </article>
             <article class="home-proof-card">
-              <p class="home-proof-card__eyebrow">Deep links</p>
-              <h3>Open straight into the browser or editor without extra pages.</h3>
+              <p class="home-proof-card__eyebrow">Live editing</p>
+              <h3>Move from playing to tweaking without a mode switch.</h3>
               <p>
-                Query params now tune the launch route instead of forcing a fake site hierarchy
-                around one flagship visualizer.
+                Open the editor, inspect diagnostics, and keep adjusting the session while the
+                visualizer is already running.
               </p>
             </article>
           </div>
@@ -213,7 +228,7 @@
         <section class="home-showcase" id="presets" aria-labelledby="presets-title">
           <div class="section-heading">
             <p class="eyebrow">Bundled presets</p>
-            <h2 id="presets-title">Curated launch points, not a dead gallery.</h2>
+            <h2 id="presets-title">Pick a preset and start there.</h2>
             <p class="section-description" data-milkdrop-preset-count>
               Loading bundled preset collections…
             </p>

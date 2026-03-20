@@ -344,8 +344,8 @@ test('renders guidance and feel signals instead of setup-heavy badges', async ()
   expect(cardText).toContain('Start with: Halo glow starter • Halo intensity');
   expect(cardText).toContain('Serene');
   expect(cardText).toContain('Ethereal');
-  expect(cardText).toContain('Open');
-  expect(cardText).toContain('Preview');
+  expect(cardText).toContain('Open controls');
+  expect(cardText).toContain('Start demo');
   expect(card?.querySelector('.webtoy-card-signals')).not.toBeNull();
   expect(card?.querySelector('.capability-badge')).toBeNull();
 });
