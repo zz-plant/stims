@@ -228,6 +228,12 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   zoom: 1,
   rot: 0,
   warp: 0.08,
+  cx: 0.5,
+  cy: 0.5,
+  sx: 1,
+  sy: 1,
+  dx: 0,
+  dy: 0,
   warpanimspeed: 1,
   shader: 1,
   modwavealphastart: 1,
@@ -309,7 +315,6 @@ const FEATURE_ORDER: MilkdropFeatureKey[] = [
 ];
 
 const metadataKeys = new Set(['title', 'author', 'description']);
-const presetSectionNames = new Set(['preset', 'preset00']);
 const waveformSectionNames = new Set(['wave', 'waveform']);
 const rootProgramPattern = /^(init|per_frame|per_pixel)_(\d+)$/u;
 const customWaveProgramPattern =
@@ -3821,6 +3826,7 @@ const aliasMap: Record<string, string | null> = {
   fwavealpha: 'wave_a',
   fwavescale: 'wave_scale',
   fwavesmoothing: 'wave_smoothing',
+  nwavemode: 'wave_mode',
   fmodwavealphastart: 'modwavealphastart',
   fmodwavealphaend: 'modwavealphaend',
   fwarpscale: 'warp',
@@ -3831,6 +3837,7 @@ const aliasMap: Record<string, string | null> = {
   fdarken: 'darken',
   fsolarize: 'solarize',
   finvert: 'invert',
+  bmaximizewavecolor: 'wave_brighten',
   bbrighten: 'brighten',
   bdarken: 'darken',
   bsolarize: 'solarize',
@@ -3854,6 +3861,13 @@ const aliasMap: Record<string, string | null> = {
   finnerborderb: 'ib_b',
   finnerbordera: 'ib_a',
   video_echo: 'video_echo_enabled',
+};
+
+const legacyCustomWaveSuffixMap: Record<string, string | null> = {
+  mode: 'spectrum',
+  bspectrum: 'spectrum',
+  bdrawthick: 'thick',
+  badditive: 'additive',
 };
 
 function defaultSourceId(rawTitle: string) {
@@ -3881,6 +3895,14 @@ function normalizeFieldSuffix(value: string) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9_]+/gu, '_');
+}
+
+function normalizeLegacyCustomWaveSuffix(value: string) {
+  const normalized = normalizeFieldSuffix(value);
+  if (normalized in legacyCustomWaveSuffixMap) {
+    return legacyCustomWaveSuffixMap[normalized];
+  }
+  return normalized;
 }
 
 function createProgramBlock(): MilkdropProgramBlock {
@@ -4003,9 +4025,6 @@ function normalizeFieldKey(field: MilkdropPresetField) {
     if (shapeSectionPattern.test(field.section)) {
       return `${field.section}_${rawKey}`;
     }
-    if (presetSectionNames.has(field.section)) {
-      return rawKey;
-    }
   }
 
   const wavecodeMatch = rawKey.match(wavecodeFieldPattern);
@@ -4015,7 +4034,10 @@ function normalizeFieldKey(field: MilkdropPresetField) {
       MAX_CUSTOM_WAVES,
     );
     if (index !== null) {
-      return `custom_wave_${index}_${normalizeFieldSuffix(wavecodeMatch[2] ?? '')}`;
+      const suffix = normalizeLegacyCustomWaveSuffix(wavecodeMatch[2] ?? '');
+      if (suffix !== null) {
+        return `custom_wave_${index}_${suffix}`;
+      }
     }
   }
 
@@ -4768,8 +4790,8 @@ export function compileMilkdropPresetSource(
     ir,
     diagnostics,
     formattedSource: '',
-    title: ir.title,
-    author: ir.author,
+    title: presetSource.title,
+    author: presetSource.author,
   };
 
   compiled.formattedSource = formatMilkdropPreset(compiled);

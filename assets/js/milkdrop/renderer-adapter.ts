@@ -76,6 +76,7 @@ export type MilkdropBackendBehavior = {
   closeLinesManually: boolean;
   useLineLoopPrimitives: boolean;
   supportsShapeGradient: boolean;
+  supportsFeedbackPass: boolean;
 };
 
 export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
@@ -89,6 +90,7 @@ export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   closeLinesManually: false,
   useLineLoopPrimitives: true,
   supportsShapeGradient: true,
+  supportsFeedbackPass: true,
 };
 
 export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
@@ -102,6 +104,7 @@ export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   closeLinesManually: true,
   useLineLoopPrimitives: false,
   supportsShapeGradient: false,
+  supportsFeedbackPass: false,
 };
 
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
@@ -1596,9 +1599,16 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly borderGroup = new Group();
   private readonly motionVectorGroup = new Group();
   private readonly motionVectorCpuGroup = new Group();
-  private readonly proceduralMotionVectors = new LineSegments(
+  private readonly proceduralMotionVectors: LineSegments<
+    BufferGeometry,
+    LineBasicMaterial | ShaderMaterial
+  > = new LineSegments(
     new BufferGeometry(),
-    createProceduralMotionVectorMaterial(),
+    new LineBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.35,
+    }),
   );
   private readonly blendWaveGroup = new Group();
   private readonly blendCustomWaveGroup = new Group();
@@ -1650,7 +1660,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.blendBorderGroup);
     this.root.add(this.blendMotionVectorGroup);
 
-    if (isFeedbackCapableRenderer(renderer) && this.createFeedbackManager) {
+    if (
+      this.behavior.supportsFeedbackPass &&
+      isFeedbackCapableRenderer(renderer) &&
+      this.createFeedbackManager
+    ) {
       const size = renderer.getSize(new Vector2());
       this.feedback = this.createFeedbackManager(
         Math.max(1, Math.round(size.x)),
@@ -1855,6 +1869,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     if (proceduralField) {
       clearGroup(this.motionVectorCpuGroup);
       this.proceduralMotionVectors.visible = true;
+      if (!(this.proceduralMotionVectors.material instanceof ShaderMaterial)) {
+        disposeMaterial(this.proceduralMotionVectors.material);
+        this.proceduralMotionVectors.material =
+          createProceduralMotionVectorMaterial();
+      }
       this.proceduralMotionVectors.geometry = getProceduralMotionVectorGeometry(
         proceduralField.countX,
         proceduralField.countY,

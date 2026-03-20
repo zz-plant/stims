@@ -674,7 +674,7 @@ video_echo=1
     expect(fakeRenderer.setRenderTargetCalls).toBe(0);
   });
 
-  test('runs the feedback composite path on webgpu backends', () => {
+  test('skips the legacy feedback composite path on webgpu backends', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback
@@ -717,20 +717,19 @@ ob_border=1
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: Array<{ type?: string }> }>;
-    };
-    const borderGroup = root.children[6] as {
-      children: Array<{ type?: string; children?: Array<{ type?: string }> }>;
-    };
+    const feedback = (
+      adapter as unknown as {
+        feedback: unknown | null;
+      }
+    ).feedback;
 
-    expect(result).toBe(true);
-    expect(fakeRenderer.setRenderTargetCalls).toBe(3);
-    expect(fakeRenderer.renderCalls).toBe(3);
-    expect(borderGroup.children[0]?.type ?? 'Group').toBe('Group');
+    expect(result).toBe(false);
+    expect(fakeRenderer.setRenderTargetCalls).toBe(0);
+    expect(fakeRenderer.renderCalls).toBe(0);
+    expect(feedback).toBeNull();
   });
 
-  test('forwards gamma-adjusted post state into feedback uniforms on webgpu', () => {
+  test('does not allocate legacy feedback uniforms on webgpu', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Gamma Feedback WebGPU
@@ -764,20 +763,14 @@ video_echo=1
 
     const feedback = (
       adapter as unknown as {
-        feedback: {
-          compositeMaterial: ShaderMaterial;
-        } | null;
+        feedback: unknown | null;
       }
     ).feedback;
 
-    expect(feedback).not.toBeNull();
-    expect(feedback?.compositeMaterial.uniforms.gammaAdj.value).toBeCloseTo(
-      1.85,
-      6,
-    );
+    expect(feedback).toBeNull();
   });
 
-  test('forwards live audio signal uniforms into the webgpu feedback layer', () => {
+  test('keeps webgpu audio-only presets on the direct scene render path', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Signal Field WebGPU
@@ -810,40 +803,14 @@ video_echo=1
 
     const feedback = (
       adapter as unknown as {
-        feedback: {
-          compositeMaterial: ShaderMaterial;
-        } | null;
+        feedback: unknown | null;
       }
     ).feedback;
 
-    expect(feedback).not.toBeNull();
-    expect(feedback?.compositeMaterial.uniforms.signalBass.value).toBeCloseTo(
-      frameState.signals.bass,
-      6,
-    );
-    expect(feedback?.compositeMaterial.uniforms.signalMid.value).toBeCloseTo(
-      frameState.signals.mid,
-      6,
-    );
-    expect(feedback?.compositeMaterial.uniforms.signalTreb.value).toBeCloseTo(
-      frameState.signals.treb,
-      6,
-    );
-    expect(feedback?.compositeMaterial.uniforms.signalBeat.value).toBeCloseTo(
-      frameState.signals.beatPulse,
-      6,
-    );
-    expect(feedback?.compositeMaterial.uniforms.signalEnergy.value).toBeCloseTo(
-      frameState.signals.weightedEnergy,
-      6,
-    );
-    expect(feedback?.compositeMaterial.uniforms.signalTime.value).toBeCloseTo(
-      frameState.signals.time,
-      6,
-    );
+    expect(feedback).toBeNull();
   });
 
-  test('uses lighter feedback targets on webgpu backends', () => {
+  test('does not allocate feedback targets on webgpu backends', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback Quality
@@ -876,22 +843,11 @@ video_echo=1
 
     const feedback = (
       adapter as unknown as {
-        feedback: {
-          sceneTarget: {
-            width: number;
-            height: number;
-            samples: number;
-            texture: { type: number };
-          };
-        } | null;
+        feedback: unknown | null;
       }
     ).feedback;
 
-    expect(feedback).not.toBeNull();
-    expect(feedback?.sceneTarget.width).toBe(640);
-    expect(feedback?.sceneTarget.height).toBe(360);
-    expect(feedback?.sceneTarget.samples).toBe(0);
-    expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
+    expect(feedback).toBeNull();
   });
 
   test('uses tuned feedback targets on webgl backends', () => {

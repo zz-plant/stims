@@ -147,6 +147,12 @@ export function getMilkdropDetailScale({
   );
 }
 
+function resolveMilkdropVmBackend(backend: 'webgl' | 'webgpu') {
+  // Keep CPU-authored geometry on the WebGPU renderer until the procedural
+  // ShaderMaterial paths are migrated to WebGPU-compatible materials.
+  return backend === 'webgpu' ? 'webgl' : backend;
+}
+
 export function buildMilkdropInputSignalOverrides(
   input: UnifiedInputState | null,
 ): Partial<MilkdropRuntimeSignals> {
@@ -522,7 +528,7 @@ export function createMilkdropExperience({
     activeCompiled = compiled;
     activePresetId = compiled.source.id;
     vm.setPreset(compiled);
-    vm.setRenderBackend(activeBackend);
+    vm.setRenderBackend(resolveMilkdropVmBackend(activeBackend));
     adapter?.setPreset(compiled);
     overlay.setSessionState(session.getState());
     overlay.setInspectorState({
@@ -1088,7 +1094,7 @@ export function createMilkdropExperience({
       installKeyboardShortcuts();
       nextRuntime.toy.rendererReady.then((handle) => {
         activeBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
-        vm.setRenderBackend(activeBackend);
+        vm.setRenderBackend(resolveMilkdropVmBackend(activeBackend));
         adapter = createMilkdropRendererAdapter({
           scene: nextRuntime.toy.scene,
           camera: nextRuntime.toy.camera,

@@ -205,6 +205,50 @@ per_pixel_1=zoom=1.08; rot=0.12; warp=0.35;
     expect(frameState.motionVectors[0]?.alpha).toBeGreaterThan(0.28);
   });
 
+  test('applies legacy cx/cy/sx/sy/dx/dy mesh transforms', () => {
+    const baseline = createMilkdropVM(
+      compileMilkdropPresetSource(
+        `
+title=Mesh Baseline
+mesh_density=8
+zoom=1
+warp=0
+rot=0
+        `.trim(),
+        { id: 'mesh-baseline' },
+      ),
+    ).step(makeSignals({ frame: 2 }));
+
+    const transformed = createMilkdropVM(
+      compileMilkdropPresetSource(
+        `
+title=Mesh Transform
+mesh_density=8
+zoom=1
+warp=0
+rot=0
+cx=0.5
+cy=0.5
+sx=0.5
+sy=1.4
+dx=0.1
+dy=-0.1
+        `.trim(),
+        { id: 'mesh-transform' },
+      ),
+    ).step(makeSignals({ frame: 2 }));
+
+    expect(transformed.mesh.positions[0]).toBeGreaterThan(
+      baseline.mesh.positions[0] ?? -Infinity,
+    );
+    expect(transformed.mesh.positions[1]).toBeLessThan(
+      baseline.mesh.positions[1] ?? Infinity,
+    );
+    expect(transformed.mesh.positions[10]).toBeLessThan(
+      baseline.mesh.positions[10] ?? Infinity,
+    );
+  });
+
   test('emits procedural gpu geometry hints for mesh and motion vectors on webgpu-safe presets', () => {
     const preset = compileMilkdropPresetSource(
       `

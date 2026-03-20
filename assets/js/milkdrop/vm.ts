@@ -208,6 +208,13 @@ function sampleFrequencyData(signals: MilkdropRuntimeSignals, t: number) {
   return (signals.frequencyData[sampleIndex] ?? 0) / 255;
 }
 
+function normalizeTransformCenter(value: number) {
+  if (value >= 0 && value <= 1) {
+    return value * 2 - 1;
+  }
+  return value;
+}
+
 type MutableState = Record<string, number>;
 type MeshFieldPoint = {
   sourceX: number;
@@ -813,6 +820,12 @@ class MilkdropPresetVM implements MilkdropVM {
       zoom: this.state.zoom ?? 1,
       rot: this.state.rot ?? 0,
       warp: this.state.warp ?? 0,
+      cx: this.state.cx ?? 0.5,
+      cy: this.state.cy ?? 0.5,
+      sx: this.state.sx ?? 1,
+      sy: this.state.sy ?? 1,
+      dx: this.state.dx ?? 0,
+      dy: this.state.dy ?? 0,
     };
     this.runProgram(
       this.preset.ir.programs.perPixel,
@@ -822,6 +835,14 @@ class MilkdropPresetVM implements MilkdropVM {
 
     const warpAnimSpeed = clamp(this.state.warpanimspeed ?? 1, 0, 4);
     const angle = local.ang + local.rot;
+    const centerX = normalizeTransformCenter(local.cx ?? 0.5);
+    const centerY = normalizeTransformCenter(local.cy ?? 0.5);
+    const scaleX = local.sx ?? 1;
+    const scaleY = local.sy ?? 1;
+    const translateX = (local.dx ?? 0) * 2;
+    const translateY = (local.dy ?? 0) * 2;
+    const transformedX = (local.x - centerX) * scaleX + centerX + translateX;
+    const transformedY = (local.y - centerY) * scaleY + centerY + translateY;
     const ripple =
       Math.sin(
         local.rad * 12 +
@@ -829,8 +850,8 @@ class MilkdropPresetVM implements MilkdropVM {
       ) *
       local.warp *
       0.08;
-    const px = (local.x + Math.cos(angle * 3) * ripple) * local.zoom;
-    const py = (local.y + Math.sin(angle * 4) * ripple) * local.zoom;
+    const px = (transformedX + Math.cos(angle * 3) * ripple) * local.zoom;
+    const py = (transformedY + Math.sin(angle * 4) * ripple) * local.zoom;
     const cos = Math.cos(local.rot);
     const sin = Math.sin(local.rot);
     return {
