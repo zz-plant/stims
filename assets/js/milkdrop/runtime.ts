@@ -1201,11 +1201,13 @@ export function createMilkdropExperience({
             }
           : currentFrameState;
 
-      adapter.render({
+      const adapterPresentedFrame = adapter.render({
         frameState: renderFrameState,
         blendState: activeBlendState,
       });
-      runtime.toy.render();
+      if (!adapterPresentedFrame) {
+        runtime.toy.render();
+      }
       overlay.setInspectorState({
         compiled: activeCompiled,
         frameState: currentFrameState,
