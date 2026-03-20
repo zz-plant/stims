@@ -468,7 +468,7 @@ video_echo=1
     expect(fakeRenderer.setRenderTargetCalls).toBe(0);
   });
 
-  test('skips the feedback composite path on webgpu backends', () => {
+  test('runs the feedback composite path on webgpu backends', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback
@@ -487,9 +487,15 @@ ob_border=1
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
     const fakeRenderer = {
+      setRenderTargetCalls: 0,
+      renderCalls: 0,
       getSize: (target: Vector2) => target.set(640, 360),
-      setRenderTarget: () => {},
-      render: () => {},
+      setRenderTarget: () => {
+        fakeRenderer.setRenderTargetCalls += 1;
+      },
+      render: () => {
+        fakeRenderer.renderCalls += 1;
+      },
     };
 
     const adapter = createMilkdropRendererAdapter({
@@ -512,8 +518,57 @@ ob_border=1
       children: Array<{ type?: string; children?: Array<{ type?: string }> }>;
     };
 
-    expect(result).toBe(false);
+    expect(result).toBe(true);
+    expect(fakeRenderer.setRenderTargetCalls).toBe(3);
+    expect(fakeRenderer.renderCalls).toBe(3);
     expect(borderGroup.children[0]?.type ?? 'Group').toBe('Group');
+  });
+
+  test('forwards gamma-adjusted post state into feedback uniforms on webgpu', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Gamma Feedback WebGPU
+fGammaAdj=1.85
+video_echo=1
+      `.trim(),
+      { id: 'gamma-feedback-webgpu' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          compositeMaterial: ShaderMaterial;
+        } | null;
+      }
+    ).feedback;
+
+    expect(feedback).not.toBeNull();
+    expect(feedback?.compositeMaterial.uniforms.gammaAdj.value).toBeCloseTo(
+      1.85,
+      6,
+    );
   });
 
   test('uses lighter feedback targets on webgpu backends', () => {
