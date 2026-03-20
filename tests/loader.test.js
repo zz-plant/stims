@@ -214,7 +214,8 @@ describe('loadToy', () => {
 
     const backControl = document.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
-    expect(window.location.search).toBe('?toy=milkdrop');
+    expect(new URL(window.location.href).pathname).toBe('/milkdrop/');
+    expect(window.location.search).toBe('');
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -222,6 +223,7 @@ describe('loadToy', () => {
     expect(
       document.getElementById('toy-list')?.classList.contains('is-hidden'),
     ).toBe(false);
+    expect(new URL(window.location.href).pathname).toBe('/');
     expect(window.location.search).toBe('');
     expect(servicesMock.resetAudioPool).toHaveBeenCalled();
   });
@@ -530,13 +532,14 @@ describe('WebGPU requirements', () => {
 describe('loadFromQuery routing', () => {
   test('loads from existing query param', async () => {
     const { loader, location } = await buildLoader({
-      locationHref: 'http://example.com/library?toy=milkdrop',
+      locationHref: 'http://example.com/milkdrop/',
     });
 
     await loader.loadFromQuery();
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
-    expect(location.search).toBe('?toy=milkdrop');
+    expect(new URL(location.href).pathname).toBe('/milkdrop/');
+    expect(location.search).toBe('');
   });
 
   test('returns to library when query param is missing', async () => {

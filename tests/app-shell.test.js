@@ -24,18 +24,10 @@ describe('home shell user journeys', () => {
     window.location.href = 'https://example.com/';
     document.body.innerHTML = `
       <div data-top-nav-container></div>
-      <a href="toy.html?toy=milkdrop" data-quickstart-slug="milkdrop">Launch</a>
+      <a href="/milkdrop/?audio=demo" data-quickstart-slug="milkdrop">Launch</a>
       <div data-milkdrop-preset-count></div>
       <div data-milkdrop-preset-filters></div>
       <div data-milkdrop-preset-list></div>
-      <section id="system-check"></section>
-      <div data-readiness-panel></div>
-      <div data-system-controls></div>
-      <a href="#system-check" data-scroll-to-system-check>See device setup</a>
-      <button type="button" data-details-toggle aria-expanded="false">
-        <span data-details-label="open">More details</span>
-        <span data-details-label="close">Less details</span>
-      </button>
     `;
     document.body.dataset.page = 'home';
     mockLoadToy = mock();
@@ -54,9 +46,8 @@ describe('home shell user journeys', () => {
     await loadAppShell();
 
     expect(document.querySelector('[data-top-nav]')).not.toBeNull();
-    expect(
-      document.querySelector('.nav-link[href="#system-check"]'),
-    ).not.toBeNull();
+    expect(document.querySelector('.nav-link[href="#presets"]')).not.toBeNull();
+    expect(document.querySelector('.nav-link[href="/milkdrop/"]')).not.toBeNull();
     expect(mockLoadFromQuery).not.toHaveBeenCalled();
   });
 

@@ -4,7 +4,7 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 
 ## Architecture at a Glance
 
-- **Entry shells** (`index.html`, `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `toy.html` passes a `toy=<slug>` query param.
+- **Entry shells** (`index.html`, `milkdrop/index.html`, and legacy `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` explains the product and `/milkdrop/` is the canonical launch route.
 - **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
 - **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
 - **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.
@@ -21,7 +21,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 ## Runtime Layers
 
-- **HTML entry points** (`index.html`, `toy.html`) load `assets/js/app.ts`; toy pages provide `?toy=<slug>` query params.
+- **HTML entry points** (`index.html`, `milkdrop/index.html`, plus legacy `toy.html`) load `assets/js/app.ts`; the canonical launch path is `/milkdrop/`, while query params refine launch state.
 - **App bootstrap** (`assets/js/app.ts`) detects library vs toy pages, wires controls, runs capability preflight, and starts loader flows.
 - **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, active toy lifecycle, and dynamic module loading.
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
@@ -35,7 +35,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 | Concern | Primary files | Notes |
 | --- | --- | --- |
-| Entry points | `index.html`, `toy.html` | Public HTML shells are intentionally slim; runtime logic starts in `app.ts`. |
+| Entry points | `index.html`, `milkdrop/index.html`, `toy.html` | Public HTML shells are intentionally slim; runtime logic starts in `app.ts`. |
 | App bootstrap | `assets/js/app.ts` | Chooses library vs toy boot flow, connects controls, and runs capability preflight before toy start. |
 | Loader + routing | `assets/js/loader.ts`, `assets/js/router.ts` | Navigation, lifecycle, and dynamic imports live here. |
 | Views | `assets/js/toy-view.ts`, `assets/js/library-view.js` | UI for the library grid, toy container, loading, and error states. |
@@ -49,12 +49,12 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 ```mermaid
 flowchart TD
   Entry[HTML shell
-  index.html, toy.html] --> App[app.ts
+  index.html, milkdrop/index.html] --> App[app.ts
   startApp()]
   App --> Loader[loader.ts
   createLoader()]
   Loader --> Router[router.ts
-  query param sync]
+  route + path sync]
   App --> Preflight[capability-preflight.ts
   gate/start hints]
   App --> Controls[ui/audio-controls.ts
@@ -82,7 +82,7 @@ Last verified against the current runtime structure: **2026-03-16**.
 
 Verification checks performed:
 
-- Confirmed active source entry pages are `index.html` and `toy.html` and that they bootstrap `assets/js/app.ts`.
+- Confirmed active source entry pages are `index.html` and `milkdrop/index.html` and that they bootstrap `assets/js/app.ts`.
 - Confirmed runtime boot orchestration now starts in `assets/js/app.ts`, which then initializes loader/router plus capability and control wiring.
 - Confirmed architecture-critical modules documented here still exist (`loader.ts`, `router.ts`, `toy-view.ts`, `core/*`, and `core/services/*`).
 
@@ -108,8 +108,8 @@ Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option r
 
 ### P2 — Shrink shell and toy entry fragmentation
 
-- **Standardize shell responsibilities** across `index.html` and `toy.html` with a single documented shell contract and minimal per-page variation.
-- **Document generated/static page boundaries** (`public/toys/*` and capability/tag/mood pages) so contributors know which entry points are authoritative vs generated artifacts.
+- **Standardize shell responsibilities** across `index.html` and `milkdrop/index.html` with a single documented shell contract and minimal per-page variation.
+- **Document canonical vs legacy launch pages** (`milkdrop/index.html` vs `toy.html`) so contributors know which route is authoritative.
 - **Why this matters:** reducing entry ambiguity helps avoid accidental fixes in generated or non-authoritative pages.
 
 ### Cross-cutting implementation guardrails
@@ -131,7 +131,7 @@ Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option r
 
 | Phase | Owner | Notes |
 | --- | --- | --- |
-| Navigation | `router.ts` | Syncs query params and back/forward navigation. |
+| Navigation | `router.ts` | Syncs canonical launch paths, legacy query params, and back/forward navigation. |
 | UI scaffolding | `toy-view.ts` | Shows loader, active toy shell, and status badges. |
 | Module load | `loader.ts` + `manifest-client.ts` | Resolves module URLs for both dev and build. |
 | Runtime init | `web-toy.ts` | Builds scene, camera, renderer, and audio loop wiring. |
@@ -200,7 +200,7 @@ graph LR
 
 ## Adding or Debugging Toys
 
-- **Start from a slug**: register the module in `assets/data/toys.json` and ensure there is an HTML entry point (often `toy.html?toy=<slug>`).
+- **Start from a slug**: register the module in `assets/data/toys.json` and ensure there is a canonical HTML entry point or route mapping (for the shipped product, `/milkdrop/`).
 - **Use the core**: instantiate `WebToy` (or its helpers) to get camera/scene/renderer/audio defaults and return a `dispose` function for safe teardown.
 - **Respect presets**: honor `updateRendererSettings` for max pixel ratio and render scale; avoid hard-coding devicePixelRatio.
 - **Surface errors**: throw or log during init so the loader’s import error UI can respond; avoid swallowing dynamic import failures silently.

@@ -10,7 +10,7 @@ describe('library back navigation', () => {
     const historyBack = mock();
     const win = {
       history: { back: historyBack },
-      location: { href: 'https://example.com/toys/milkdrop/' },
+      location: { href: 'https://example.com/milkdrop/' },
     } as unknown as Window & typeof globalThis;
     const doc = {
       referrer: 'https://example.com/',
@@ -20,11 +20,11 @@ describe('library back navigation', () => {
       shouldUseHistoryBackToLibrary({
         doc,
         win,
-        backHref: '/index.html',
+        backHref: '/',
       }),
     ).toBe(true);
 
-    navigateBackToLibrary({ doc, win, backHref: '/index.html' });
+    navigateBackToLibrary({ doc, win, backHref: '/' });
 
     expect(historyBack).toHaveBeenCalledTimes(1);
   });
@@ -33,29 +33,29 @@ describe('library back navigation', () => {
     const historyBack = mock();
     const win = {
       history: { back: historyBack },
-      location: { href: 'https://example.com/toys/milkdrop/' },
+      location: { href: 'https://example.com/milkdrop/' },
     } as unknown as Window & typeof globalThis;
     const doc = {
       referrer: '',
     } as Document;
 
-    navigateBackToLibrary({ doc, win, backHref: '../index.html' });
+    navigateBackToLibrary({ doc, win, backHref: '/' });
 
     expect(historyBack).not.toHaveBeenCalled();
-    expect(win.location.href).toBe('../index.html');
+    expect(win.location.href).toBe('/');
   });
 
-  test('intercepts library back links so toy.html and public toy pages share behavior', () => {
+  test('intercepts library back links so launch routes share behavior', () => {
     const link = document.createElement('a');
-    link.href = 'https://example.com/index.html';
+    link.href = 'https://example.com/';
 
     const historyBack = mock();
     const win = {
       history: { back: historyBack },
-      location: { href: 'https://example.com/toy.html?toy=milkdrop' },
+      location: { href: 'https://example.com/milkdrop/' },
     } as unknown as Window & typeof globalThis;
     const doc = {
-      referrer: 'https://example.com/index.html',
+      referrer: 'https://example.com/',
     } as Document;
 
     bindLibraryBackLink(link, {
