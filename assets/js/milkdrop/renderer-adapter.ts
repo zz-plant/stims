@@ -27,6 +27,7 @@ import {
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import type {
   MilkdropBorderVisual,
+  MilkdropColor,
   MilkdropCompiledPreset,
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -1443,6 +1444,61 @@ function syncWaveObject(
   return existing;
 }
 
+function createLineObject(
+  positions: number[],
+  color: MilkdropColor,
+  alpha: number,
+  additive: boolean,
+) {
+  const object = new Line(
+    new BufferGeometry(),
+    new LineBasicMaterial({
+      transparent: true,
+      opacity: alpha,
+      ...(additive ? { blending: AdditiveBlending } : {}),
+    }),
+  );
+  ensureGeometryPositions(object.geometry, positions);
+  setMaterialColor(object.material, color, alpha);
+  object.position.z = 0.24;
+  return object;
+}
+
+function syncLineObject(
+  existing: Line | undefined,
+  {
+    positions,
+    color,
+    alpha,
+    additive,
+  }: {
+    positions: number[];
+    color: MilkdropColor;
+    alpha: number;
+    additive: boolean;
+  },
+  alphaMultiplier: number,
+) {
+  if (!(existing instanceof Line) || existing instanceof LineLoop) {
+    if (existing) {
+      disposeObject(existing);
+    }
+    return createLineObject(
+      positions,
+      color,
+      alpha * alphaMultiplier,
+      additive,
+    );
+  }
+
+  ensureGeometryPositions(existing.geometry, positions);
+  const material = existing.material as LineBasicMaterial;
+  material.blending = additive ? AdditiveBlending : NormalBlending;
+  setMaterialColor(material, color, alpha * alphaMultiplier);
+  existing.position.z = 0.24;
+  return existing;
+}
+
 function updateBorderLine(
   object: Line | LineLoop,
   border: MilkdropBorderVisual,
@@ -1815,6 +1871,41 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     });
   }
 
+  private renderLineVisualGroup(
+    group: Group,
+    lines: Array<{
+      positions: number[];
+      color: MilkdropColor;
+      alpha: number;
+      additive?: boolean;
+    }>,
+    alphaMultiplier = 1,
+  ) {
+    lines.forEach((line, index) => {
+      const existing = group.children[index] as Line | undefined;
+      const synced = syncLineObject(
+        existing,
+        {
+          positions: line.positions,
+          color: line.color,
+          alpha: line.alpha,
+          additive: line.additive ?? false,
+        },
+        alphaMultiplier,
+      );
+      if (!existing) {
+        group.add(synced);
+      } else if (synced !== existing) {
+        group.remove(existing);
+        group.add(synced);
+      }
+    });
+    group.children.slice(lines.length).forEach((child) => {
+      disposeObject(child as { children?: unknown[] });
+      group.remove(child);
+    });
+  }
+
   private renderMesh(
     mesh: MilkdropRenderPayload['frameState']['mesh'],
     gpuGeometry: MilkdropGpuGeometryHints,
@@ -1900,13 +1991,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
 
     this.proceduralMotionVectors.visible = false;
-    this.renderWaveGroup(
+    this.renderLineVisualGroup(
       this.motionVectorCpuGroup,
-      payload.motionVectors.map((vector) => ({
-        ...vector,
-        drawMode: 'line',
-        pointSize: 1,
-      })),
+      payload.motionVectors,
       alphaMultiplier,
     );
   }
@@ -2024,15 +2111,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         payload.frameState.gpuGeometry.trailWaves,
       );
     } else {
-      this.renderWaveGroup(
-        this.trailGroup,
-        payload.frameState.trails.map((trail) => ({
-          ...trail,
-          drawMode: 'line',
-          additive: false,
-          pointSize: 2,
-        })),
-      );
+      this.renderLineVisualGroup(this.trailGroup, payload.frameState.trails);
     }
     this.renderShapeGroup(this.shapesGroup, payload.frameState.shapes);
     this.renderBorderGroup(this.borderGroup, payload.frameState.borders);
@@ -2059,13 +2138,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       blend?.borders ?? [],
       blend?.alpha ?? 0,
     );
-    this.renderWaveGroup(
+    this.renderLineVisualGroup(
       this.blendMotionVectorGroup,
-      (blend?.motionVectors ?? []).map((vector) => ({
-        ...vector,
-        drawMode: 'line',
-        pointSize: 1,
-      })),
+      blend?.motionVectors ?? [],
       blend?.alpha ?? 0,
     );
 

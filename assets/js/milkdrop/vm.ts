@@ -48,14 +48,6 @@ function hashSeed(input: string) {
   return hash >>> 0;
 }
 
-function clonePolyline(polyline: MilkdropPolyline): MilkdropPolyline {
-  return {
-    ...polyline,
-    positions: [...polyline.positions],
-    color: { ...polyline.color },
-  };
-}
-
 function defaultSignalEnv(): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
   return {
@@ -224,6 +216,11 @@ type MeshField = {
   points: MeshFieldPoint[];
 };
 
+type WaveFrameBuffers = {
+  liveSamples: number[];
+  smoothedSamples: number[];
+};
+
 class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
   private state: MutableState = {};
@@ -236,6 +233,14 @@ class MilkdropPresetVM implements MilkdropVM {
   private customWaveState: MutableState[] = [];
   private customShapeState: MutableState[] = [];
   private lastMeshField: MeshField | null = null;
+  private readonly waveBuffers: WaveFrameBuffers = {
+    liveSamples: [],
+    smoothedSamples: [],
+  };
+  private readonly frameTransformCache = new Map<
+    string,
+    { x: number; y: number }
+  >();
 
   constructor(preset: MilkdropCompiledPreset) {
     this.preset = preset;
@@ -276,6 +281,9 @@ class MilkdropPresetVM implements MilkdropVM {
       this.seedCustomShapeState(shape),
     );
     this.lastMeshField = null;
+    this.waveBuffers.liveSamples.length = 0;
+    this.waveBuffers.smoothedSamples.length = 0;
+    this.frameTransformCache.clear();
 
     const zeroSignals = defaultSignalEnv();
     this.runProgram(this.preset.ir.programs.init, this.createEnv(zeroSignals));
@@ -455,13 +463,13 @@ class MilkdropPresetVM implements MilkdropVM {
     env: MutableState,
     locals: MutableState | null = null,
   ) {
+    const scopedEnv = {
+      ...env,
+      ...this.state,
+      ...this.registers,
+      ...(locals ?? {}),
+    };
     block.statements.forEach((statement) => {
-      const scopedEnv = {
-        ...env,
-        ...this.state,
-        ...this.registers,
-        ...(locals ?? {}),
-      };
       const value = evaluateMilkdropExpression(
         statement.expression,
         scopedEnv,
@@ -471,6 +479,7 @@ class MilkdropPresetVM implements MilkdropVM {
       );
       this.setValue(statement.target, value, locals);
       env[statement.target] = value;
+      scopedEnv[statement.target] = value;
     });
   }
 
@@ -480,7 +489,7 @@ class MilkdropPresetVM implements MilkdropVM {
       24,
       192,
     );
-    const positions: number[] = [];
+    const positions = new Array<number>(samples * 3);
     const mode = normalizeWaveMode(this.state.wave_mode ?? 0);
     const centerX = ((this.state.wave_x ?? 0.5) - 0.5) * 2;
     const centerY = (0.5 - (this.state.wave_y ?? 0.5)) * 2;
@@ -497,19 +506,29 @@ class MilkdropPresetVM implements MilkdropVM {
       0,
       1,
     );
-    const liveSamples = Array.from({ length: samples }, (_, index) =>
-      sampleFrequencyData(signals, index / Math.max(1, samples - 1)),
-    );
+    const liveSamples = this.waveBuffers.liveSamples;
+    const smoothedSamples = this.waveBuffers.smoothedSamples;
+    liveSamples.length = samples;
+    smoothedSamples.length = samples;
     const previousSamples = this.lastWaveSamples;
     const historyBlend = clamp(
       0.26 + signals.beatPulse * 0.48 + signals.deltaMs / 120,
       0.24,
       0.92,
     );
-    const smoothedSamples = liveSamples.map((value, index) =>
-      mix(previousSamples[index] ?? value, value, historyBlend),
-    );
-    this.lastWaveSamples = [...smoothedSamples];
+    for (let index = 0; index < samples; index += 1) {
+      const value = sampleFrequencyData(
+        signals,
+        index / Math.max(1, samples - 1),
+      );
+      liveSamples[index] = value;
+      smoothedSamples[index] = mix(
+        previousSamples[index] ?? value,
+        value,
+        historyBlend,
+      );
+    }
+    this.lastWaveSamples = smoothedSamples.slice(0, samples);
 
     for (let index = 0; index < samples; index += 1) {
       const t = index / Math.max(1, samples - 1);
@@ -614,7 +633,10 @@ class MilkdropPresetVM implements MilkdropVM {
             velocity * 0.12;
       }
 
-      positions.push(x, y, 0.22 + velocity * 0.08);
+      const writeIndex = index * 3;
+      positions[writeIndex] = x;
+      positions[writeIndex + 1] = y;
+      positions[writeIndex + 2] = 0.22 + velocity * 0.08;
     }
 
     const waveColor = color(
@@ -760,6 +782,11 @@ class MilkdropPresetVM implements MilkdropVM {
     gridX: number,
     gridY: number,
   ) {
+    const cacheKey = `${gridX},${gridY}`;
+    const cached = this.frameTransformCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
     const local: MutableState = {
       x: gridX,
       y: gridY,
@@ -802,10 +829,12 @@ class MilkdropPresetVM implements MilkdropVM {
     const py = (transformedY + Math.sin(angle * 4) * ripple) * local.zoom;
     const cos = Math.cos(local.rot);
     const sin = Math.sin(local.rot);
-    return {
+    const transformed = {
       x: px * cos - py * sin,
       y: px * sin + py * cos,
     };
+    this.frameTransformCache.set(cacheKey, transformed);
+    return transformed;
   }
 
   private buildMeshField(signals: MilkdropRuntimeSignals): MeshField {
@@ -1133,30 +1162,22 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
+    this.frameTransformCache.clear();
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
     const { visual: mainWave } = this.buildMainWave(signals);
     const gpuGeometry = this.buildGpuGeometryHints();
     const customWaves = this.buildCustomWaves(signals);
     if (this.lastWaveform) {
-      this.trails.unshift(clonePolyline(this.lastWaveform));
+      this.trails.unshift(this.lastWaveform);
       this.trails = this.trails.slice(0, MAX_TRAILS);
     }
-    this.lastWaveform = {
-      ...mainWave,
-      positions: [...mainWave.positions],
-      color: { ...mainWave.color },
-    };
+    this.lastWaveform = mainWave;
 
     const meshField = this.buildMeshField(signals);
     const mesh = this.buildMesh(meshField);
     const motionVectors = this.buildMotionVectors(signals, meshField);
-    this.lastMeshField = meshField
-      ? {
-          density: meshField.density,
-          points: meshField.points.map((point) => ({ ...point })),
-        }
-      : null;
+    this.lastMeshField = meshField;
 
     const frameState: MilkdropFrameState = {
       presetId: this.preset.source.id,
@@ -1181,6 +1202,7 @@ class MilkdropPresetVM implements MilkdropVM {
       gpuGeometry,
     };
     gpuGeometry.customWaves = customWaves.procedural;
+    this.frameTransformCache.clear();
 
     return frameState;
   }

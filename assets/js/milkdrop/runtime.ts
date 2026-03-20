@@ -314,7 +314,7 @@ function cloneBlendState(
     color: { ...frameState.mainWave.color },
   };
   return {
-    background: { ...frameState.background },
+    background: frameState.background,
     waveform,
     mainWave: waveform,
     customWaves: frameState.customWaves.map((wave) => ({
@@ -322,11 +322,7 @@ function cloneBlendState(
       positions: [...wave.positions],
       color: { ...wave.color },
     })),
-    trails: frameState.trails.map((trail) => ({
-      ...trail,
-      positions: [...trail.positions],
-      color: { ...trail.color },
-    })),
+    trails: frameState.trails,
     shapes: frameState.shapes.map((shape) => ({
       ...shape,
       color: { ...shape.color },
@@ -342,7 +338,7 @@ function cloneBlendState(
       positions: [...vector.positions],
       color: { ...vector.color },
     })),
-    post: { ...frameState.post },
+    post: frameState.post,
     alpha: 1,
   };
 }
