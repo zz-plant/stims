@@ -92,7 +92,7 @@ describe('audio controls primary emphasis', () => {
     });
 
     expect(container.textContent).toContain(
-      'Start instantly with demo, or switch to mic when you want live response.',
+      'Use demo for the fastest first run. Switch to mic once you want live response.',
     );
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
@@ -102,7 +102,7 @@ describe('audio controls primary emphasis', () => {
     expect((demoBadge as HTMLElement | null)?.hidden).toBe(true);
   });
 
-  test('keeps onboarding and advanced disclosures collapsed by default', () => {
+  test('keeps advanced sources collapsed and post-start guidance hidden by default', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -111,17 +111,17 @@ describe('audio controls primary emphasis', () => {
       onRequestTabAudio: async () => {},
     });
 
-    const onboardingHelp = container.querySelector(
-      '[data-onboarding-help]',
-    ) as HTMLDetailsElement;
+    const postStartGuidance = container.querySelector(
+      '[data-post-start-guidance]',
+    ) as HTMLElement;
     const advancedInputs = container.querySelector(
       '[data-advanced-inputs]',
     ) as HTMLDetailsElement;
 
-    expect(onboardingHelp.open).toBe(false);
+    expect(postStartGuidance.hidden).toBe(true);
     expect(advancedInputs.open).toBe(false);
-    expect(onboardingHelp.textContent).toContain('How to interact');
-    expect(advancedInputs.textContent).toContain('More audio sources');
+    expect(postStartGuidance.textContent).toContain('Next');
+    expect(advancedInputs.textContent).toContain('Other audio sources');
   });
 
   test('persists advanced inputs disclosure state', () => {
