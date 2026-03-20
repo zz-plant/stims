@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="serene + WebGPU enhanced">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c1930" />
+      <stop offset="100%" stop-color="#144657" />
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.25)" />
+      <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="0" y="0" width="1200" height="630" fill="url(#shine)" opacity="0.4" />
+  <circle cx="1035" cy="540" r="160" fill="rgba(255,255,255,0.12)" />
+  <circle cx="160" cy="100" r="120" fill="rgba(255,255,255,0.1)" />
+  <rect x="90" y="92" width="255" height="56" rx="28" fill="rgba(255,255,255,0.14)" />
+  <text x="120" y="128" font-size="30" fill="#f7f9ff" font-family="Inter, Arial, sans-serif">Mood + capability</text>
+  <text x="90" y="220" font-size="40" fill="#dbe4ff" font-family="Inter, Arial, sans-serif">Stim Webtoys discover page</text>
+  <text x="90" y="322" font-size="72" font-weight="700" fill="#ffffff" font-family="Inter, Arial, sans-serif">serene + WebGPU enhanced</text>
+  <text x="90" y="392" font-size="32" fill="#e2e8ff" font-family="Inter, Arial, sans-serif">5 matching toys</text>
+</svg>
