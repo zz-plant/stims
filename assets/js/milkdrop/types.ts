@@ -484,6 +484,36 @@ export type MilkdropProceduralFieldVisual = {
   warpAnimSpeed: number;
 };
 
+export type MilkdropProceduralWaveVisual = {
+  samples: number[];
+  velocities: number[];
+  mode: number;
+  centerX: number;
+  centerY: number;
+  scale: number;
+  mystery: number;
+  time: number;
+  beatPulse: number;
+  trebleAtt: number;
+  color: MilkdropColor;
+  alpha: number;
+  additive: boolean;
+  thickness: number;
+};
+
+export type MilkdropProceduralCustomWaveVisual = {
+  samples: number[];
+  spectrum: boolean;
+  centerX: number;
+  centerY: number;
+  scaling: number;
+  mystery: number;
+  time: number;
+  color: MilkdropColor;
+  alpha: number;
+  additive: boolean;
+};
+
 export type MilkdropProceduralMotionVectorFieldVisual = {
   countX: number;
   countY: number;
@@ -494,6 +524,9 @@ export type MilkdropProceduralMotionVectorFieldVisual = {
 };
 
 export type MilkdropGpuGeometryHints = {
+  mainWave: MilkdropProceduralWaveVisual | null;
+  trailWaves: MilkdropProceduralWaveVisual[];
+  customWaves: MilkdropProceduralCustomWaveVisual[];
   meshField: MilkdropProceduralFieldVisual | null;
   motionVectorField: MilkdropProceduralMotionVectorFieldVisual | null;
 };

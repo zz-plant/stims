@@ -162,8 +162,8 @@ function buildOverlay(content: OverlayContent) {
   actions.className = 'rendering-overlay__actions';
   const backLink = document.createElement('a');
   backLink.className = 'rendering-overlay__button';
-  backLink.href = 'index.html';
-  backLink.textContent = 'Back to library';
+  backLink.href = '/';
+  backLink.textContent = 'Back to Stims';
   actions.appendChild(backLink);
   panel.appendChild(actions);
 

@@ -104,6 +104,10 @@ export function bootToyPage({
   settingsContainer,
 }: {
   router: {
+    getCurrentRoute: () => {
+      view: 'library' | 'toy';
+      slug: string | null;
+    };
     getLibraryHref: () => string;
   };
   loadFromQuery: LoaderApi['loadFromQuery'];
@@ -113,6 +117,7 @@ export function bootToyPage({
 }) {
   let loaderStarted = false;
   const searchParams = new URLSearchParams(window.location.search);
+  const currentRoute = router.getCurrentRoute();
 
   const startLoaderIfNeeded = () => {
     if (loaderStarted) return;
@@ -122,7 +127,10 @@ export function bootToyPage({
   };
 
   const toyWindow = window as unknown as ToyWindow;
-  const toySlug = searchParams.get('toy') ?? 'milkdrop';
+  const toySlug =
+    searchParams.get('toy') ??
+    (currentRoute.view === 'toy' ? currentRoute.slug : null) ??
+    'milkdrop';
   const requestedAudioSource = searchParams.get('audio')?.trim().toLowerCase();
   const requestedOverlayTab = (() => {
     const value = searchParams.get('panel')?.trim().toLowerCase();

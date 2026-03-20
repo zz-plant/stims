@@ -16,19 +16,10 @@ export function createToyCapabilityController({
   const browseCompatibleToys = () => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
-    const currentFilters = (url.searchParams.get('filters') ?? '')
-      .split(',')
-      .map((token) => token.trim())
-      .filter(Boolean)
-      .filter((token) => token.toLowerCase() !== 'feature:webgpu');
-    url.searchParams.set(
-      'filters',
-      Array.from(new Set([...currentFilters, 'feature:compatible'])).join(','),
-    );
     url.searchParams.delete('toy');
-    url.pathname = url.pathname.endsWith('/toy.html')
-      ? url.pathname.replace(/\/toy\.html$/, '/index.html')
-      : url.pathname;
+    url.searchParams.delete('filters');
+    url.pathname = '/';
+    url.hash = 'experience';
     try {
       window.sessionStorage.setItem('stims-compatibility-mode', 'true');
     } catch (_error) {

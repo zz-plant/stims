@@ -156,7 +156,7 @@ function getNextStepContent(
       steps: result.blockingIssues.length
         ? [
             'Use a browser or device with graphics acceleration enabled.',
-            'Or head back to compatible toys that can run without this setup.',
+            'Or head back to Stims to review the browser requirements first.',
           ]
         : ['Review the guidance below before continuing.'],
       showGrantAction: false,
@@ -389,7 +389,7 @@ function renderIssueList(
     const supportText = document.createElement('p');
     supportText.className = 'preflight-panel__support-text';
     supportText.textContent =
-      'This device cannot access WebGL/WebGPU, so 3D visuals cannot render. Try a supported browser or jump back to toys that can run with demo audio.';
+      'This device cannot access WebGL/WebGPU, so 3D visuals cannot render. Try a supported browser or head back to Stims for the browser requirements and launch notes.';
     support.appendChild(supportText);
 
     const linkList = document.createElement('ul');
@@ -406,8 +406,8 @@ function renderIssueList(
 
     const fallbackItem = document.createElement('li');
     const fallbackLink = document.createElement('a');
-    fallbackLink.href = 'index.html?filters=capability:demoAudio';
-    fallbackLink.textContent = 'Browse demo-audio toys';
+    fallbackLink.href = '/#experience';
+    fallbackLink.textContent = 'Review supported-browser guidance';
     fallbackItem.appendChild(fallbackLink);
     linkList.appendChild(fallbackItem);
 
@@ -701,7 +701,7 @@ export function attachCapabilityPreflight({
     backLink = document.createElement('a');
     backLink.className = 'cta-button ghost';
     backLink.href = backHref;
-    backLink.textContent = 'Back to library';
+    backLink.textContent = 'Back to Stims';
     bindLibraryBackLink(backLink, { backHref });
     backLink.hidden = true;
     actions.appendChild(backLink);

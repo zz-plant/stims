@@ -31,6 +31,8 @@ import type {
   MilkdropBorderVisual,
   MilkdropCompiledPreset,
   MilkdropGpuGeometryHints,
+  MilkdropProceduralCustomWaveVisual,
+  MilkdropProceduralWaveVisual,
   MilkdropRendererAdapter,
   MilkdropRenderPayload,
   MilkdropShapeVisual,
@@ -109,6 +111,7 @@ const polygonFillGeometryCache = new Map<number, ShapeGeometry>();
 const polygonOutlineGeometryCache = new Map<string, BufferGeometry>();
 const proceduralMeshGeometryCache = new Map<number, BufferGeometry>();
 const proceduralMotionVectorGeometryCache = new Map<string, BufferGeometry>();
+const proceduralWaveGeometryCache = new Map<number, BufferGeometry>();
 
 type ProceduralFieldUniformState = {
   zoom: { value: number };
@@ -234,6 +237,188 @@ function createProceduralMotionVectorMaterial() {
           discard;
         }
         gl_FragColor = vec4(tint, vAlpha);
+      }
+    `,
+  });
+}
+
+function createProceduralWaveMaterial() {
+  return new ShaderMaterial({
+    uniforms: {
+      mode: { value: 0 },
+      centerX: { value: 0 },
+      centerY: { value: 0 },
+      scale: { value: 0.34 },
+      mystery: { value: 0 },
+      signalTime: { value: 0 },
+      beatPulse: { value: 0 },
+      trebleAtt: { value: 0 },
+      tint: { value: new Color(1, 1, 1) },
+      alpha: { value: 1 },
+    },
+    transparent: true,
+    vertexShader: `
+      attribute float sampleT;
+      attribute float sampleValue;
+      attribute float sampleVelocity;
+      uniform float mode;
+      uniform float centerX;
+      uniform float centerY;
+      uniform float scale;
+      uniform float mystery;
+      uniform float signalTime;
+      uniform float beatPulse;
+      uniform float trebleAtt;
+
+      vec2 milkdropWavePoint(float t, float sampleValue, float velocity) {
+        float centeredSample = sampleValue - 0.5;
+        float mysteryPhase = mystery * 3.141592653589793;
+        float x = 0.0;
+        float y = 0.0;
+
+        if (mode < 0.5) {
+          x = -1.1 + t * 2.2;
+          y =
+            centerY +
+            sin(t * 3.141592653589793 * 2.0 + signalTime * (0.55 + mystery)) *
+              (0.06 + trebleAtt * 0.08) +
+            centeredSample * scale * 1.7 +
+            velocity * 0.12;
+        } else if (mode < 1.5) {
+          float angle =
+            t * 3.141592653589793 * 2.0 +
+            signalTime * 0.32 +
+            centeredSample * 0.8 +
+            velocity * 2.5;
+          float radius =
+            0.22 +
+            sampleValue * scale +
+            beatPulse * 0.08 +
+            sin(t * 3.141592653589793 * 4.0 + signalTime) * 0.015;
+          x = centerX + cos(angle) * radius;
+          y = centerY + sin(angle) * radius;
+        } else if (mode < 2.5) {
+          float angle =
+            t * 3.141592653589793 * 5.0 +
+            signalTime * (0.4 + mystery * 0.2) +
+            centeredSample * 0.65;
+          float radius =
+            0.08 + t * 0.6 + sampleValue * scale * 0.6 + velocity * 0.12;
+          x = centerX + cos(angle) * radius;
+          y = centerY + sin(angle) * radius;
+        } else if (mode < 3.5) {
+          float angle = t * 3.141592653589793 * 2.0 + signalTime * 0.22;
+          float spoke =
+            0.2 +
+            sampleValue * scale * 1.05 +
+            sin(t * 3.141592653589793 * 12.0 + mysteryPhase) * 0.05 +
+            velocity * 0.09;
+          float pinch = 0.55 + cos(t * 3.141592653589793 * 6.0 + signalTime) * 0.2;
+          x = centerX + cos(angle) * spoke;
+          y = centerY + sin(angle) * spoke * pinch;
+        } else if (mode < 4.5) {
+          x =
+            centerX +
+            (sampleValue - 0.5) * scale * 1.85 +
+            sin(t * 3.141592653589793 * 10.0 + signalTime * 0.5) * 0.04;
+          y = 1.08 - t * 2.16 + velocity * 0.22;
+        } else if (mode < 5.5) {
+          float angle = t * 3.141592653589793 * 2.0 + signalTime * 0.18;
+          float xAmp = 0.26 + sampleValue * scale * 0.75;
+          float yAmp = 0.18 + sampleValue * scale;
+          x =
+            centerX +
+            sin(angle * (2.0 + mystery * 0.6)) * xAmp +
+            cos(angle * 4.0 + mysteryPhase) * 0.04 +
+            velocity * 0.16;
+          y =
+            centerY +
+            sin(angle * (3.0 + mystery * 0.5) + 3.141592653589793 / 2.0) * yAmp;
+        } else if (mode < 6.5) {
+          float band = (sampleValue - 0.5) * scale * 1.4;
+          x = -1.05 + t * 2.1;
+          y =
+            centerY +
+            (mod(floor(t * 512.0), 2.0) < 0.5 ? band : -band) +
+            sin(t * 3.141592653589793 * 8.0 + signalTime * 0.55) * 0.03 +
+            velocity * 0.18;
+        } else {
+          float angle = t * 3.141592653589793 * 2.0 + signalTime * (0.24 + mystery * 0.1);
+          float petals = 3.0 + floor(clamp(mystery * 3.0, 0.0, 3.0) + 0.5);
+          float radius =
+            0.12 +
+            (0.2 + sampleValue * scale * 0.9) *
+              cos(petals * angle + mysteryPhase) +
+            velocity * 0.14;
+          x = centerX + cos(angle) * radius;
+          y = centerY + sin(angle) * radius;
+        }
+
+        return vec2(x, y);
+      }
+
+      void main() {
+        vec2 point = milkdropWavePoint(sampleT, sampleValue, sampleVelocity);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(point, 0.24, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 tint;
+      uniform float alpha;
+
+      void main() {
+        gl_FragColor = vec4(tint, alpha);
+      }
+    `,
+  });
+}
+
+function createProceduralCustomWaveMaterial() {
+  return new ShaderMaterial({
+    uniforms: {
+      centerX: { value: 0 },
+      centerY: { value: 0 },
+      scaling: { value: 1 },
+      mystery: { value: 0 },
+      signalTime: { value: 0 },
+      spectrum: { value: 0 },
+      tint: { value: new Color(1, 1, 1) },
+      alpha: { value: 1 },
+    },
+    transparent: true,
+    vertexShader: `
+      attribute float sampleT;
+      attribute float sampleValue;
+      uniform float centerX;
+      uniform float centerY;
+      uniform float scaling;
+      uniform float mystery;
+      uniform float signalTime;
+      uniform float spectrum;
+
+      void main() {
+        float x = centerX + (-1.0 + sampleT * 2.0) * 0.85;
+        float baseY =
+          centerY +
+          (sampleValue - 0.5) *
+            0.55 *
+            scaling *
+            (1.0 + mystery * 0.25);
+        float orbitalY =
+          centerY +
+          sin(sampleT * 3.141592653589793 * 2.0 * (1.0 + mystery) + signalTime) *
+            0.18 *
+            scaling;
+        float y = mix(orbitalY, baseY, spectrum);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(x, y, 0.28, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 tint;
+      uniform float alpha;
+
+      void main() {
+        gl_FragColor = vec4(tint, alpha);
       }
     `,
   });
@@ -433,6 +618,26 @@ function getProceduralMotionVectorGeometry(countX: number, countY: number) {
   return geometry;
 }
 
+function getProceduralWaveGeometry(sampleCount: number) {
+  const safeCount = Math.max(2, Math.round(sampleCount));
+  const cached = proceduralWaveGeometryCache.get(safeCount);
+  if (cached) {
+    return cached;
+  }
+
+  const positions = new Array(safeCount * 3).fill(0);
+  const sampleT = Array.from(
+    { length: safeCount },
+    (_, index) => index / Math.max(1, safeCount - 1),
+  );
+
+  const geometry = markSharedGeometry(new BufferGeometry());
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('sampleT', new Float32BufferAttribute(sampleT, 1));
+  proceduralWaveGeometryCache.set(safeCount, geometry);
+  return geometry;
+}
+
 function closeLinePositions(positions: number[]) {
   if (positions.length < 6) {
     return positions;
@@ -531,6 +736,116 @@ function syncProceduralFieldUniforms(
   material.uniforms.trebleAtt.value = trebleAtt;
   material.uniforms.tint.value.setRGB(tint.r, tint.g, tint.b);
   material.uniforms.alpha.value = alpha;
+}
+
+function syncProceduralWaveObject(
+  object: Line | undefined,
+  wave: MilkdropProceduralWaveVisual,
+) {
+  const next =
+    object ?? new Line(getProceduralWaveGeometry(wave.samples.length));
+  if (!(next.material instanceof ShaderMaterial)) {
+    if ('material' in next) {
+      disposeMaterial(next.material);
+    }
+    next.material = createProceduralWaveMaterial();
+  }
+
+  if (next.geometry !== getProceduralWaveGeometry(wave.samples.length)) {
+    next.geometry = getProceduralWaveGeometry(wave.samples.length);
+  }
+
+  const sampleValueAttribute = next.geometry.getAttribute('sampleValue');
+  if (
+    !(
+      sampleValueAttribute instanceof Float32BufferAttribute &&
+      sampleValueAttribute.array.length === wave.samples.length
+    )
+  ) {
+    next.geometry.setAttribute(
+      'sampleValue',
+      new Float32BufferAttribute(wave.samples, 1),
+    );
+  } else {
+    sampleValueAttribute.array.set(wave.samples);
+    sampleValueAttribute.needsUpdate = true;
+  }
+
+  const sampleVelocityAttribute = next.geometry.getAttribute('sampleVelocity');
+  if (
+    !(
+      sampleVelocityAttribute instanceof Float32BufferAttribute &&
+      sampleVelocityAttribute.array.length === wave.velocities.length
+    )
+  ) {
+    next.geometry.setAttribute(
+      'sampleVelocity',
+      new Float32BufferAttribute(wave.velocities, 1),
+    );
+  } else {
+    sampleVelocityAttribute.array.set(wave.velocities);
+    sampleVelocityAttribute.needsUpdate = true;
+  }
+
+  const material = next.material as ShaderMaterial;
+  material.uniforms.mode.value = wave.mode;
+  material.uniforms.centerX.value = wave.centerX;
+  material.uniforms.centerY.value = wave.centerY;
+  material.uniforms.scale.value = wave.scale;
+  material.uniforms.mystery.value = wave.mystery;
+  material.uniforms.signalTime.value = wave.time;
+  material.uniforms.beatPulse.value = wave.beatPulse;
+  material.uniforms.trebleAtt.value = wave.trebleAtt;
+  material.uniforms.tint.value.setRGB(wave.color.r, wave.color.g, wave.color.b);
+  material.uniforms.alpha.value = wave.alpha;
+  material.blending = wave.additive ? AdditiveBlending : NormalBlending;
+  return next;
+}
+
+function syncProceduralCustomWaveObject(
+  object: Line | undefined,
+  wave: MilkdropProceduralCustomWaveVisual,
+) {
+  const next =
+    object ?? new Line(getProceduralWaveGeometry(wave.samples.length));
+  if (!(next.material instanceof ShaderMaterial)) {
+    if ('material' in next) {
+      disposeMaterial(next.material);
+    }
+    next.material = createProceduralCustomWaveMaterial();
+  }
+
+  if (next.geometry !== getProceduralWaveGeometry(wave.samples.length)) {
+    next.geometry = getProceduralWaveGeometry(wave.samples.length);
+  }
+
+  const sampleValueAttribute = next.geometry.getAttribute('sampleValue');
+  if (
+    !(
+      sampleValueAttribute instanceof Float32BufferAttribute &&
+      sampleValueAttribute.array.length === wave.samples.length
+    )
+  ) {
+    next.geometry.setAttribute(
+      'sampleValue',
+      new Float32BufferAttribute(wave.samples, 1),
+    );
+  } else {
+    sampleValueAttribute.array.set(wave.samples);
+    sampleValueAttribute.needsUpdate = true;
+  }
+
+  const material = next.material as ShaderMaterial;
+  material.uniforms.centerX.value = wave.centerX;
+  material.uniforms.centerY.value = wave.centerY;
+  material.uniforms.scaling.value = wave.scaling;
+  material.uniforms.mystery.value = wave.mystery;
+  material.uniforms.signalTime.value = wave.time;
+  material.uniforms.spectrum.value = wave.spectrum ? 1 : 0;
+  material.uniforms.tint.value.setRGB(wave.color.r, wave.color.g, wave.color.b);
+  material.uniforms.alpha.value = wave.alpha;
+  material.blending = wave.additive ? AdditiveBlending : NormalBlending;
+  return next;
 }
 
 function isFeedbackCapableRenderer(
@@ -1395,6 +1710,46 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     });
   }
 
+  private renderProceduralWaveGroup(
+    group: Group,
+    waves: MilkdropProceduralWaveVisual[],
+  ) {
+    waves.forEach((wave, index) => {
+      const existing = group.children[index] as Line | undefined;
+      const synced = syncProceduralWaveObject(existing, wave);
+      if (!existing) {
+        group.add(synced);
+      } else if (synced !== existing) {
+        group.remove(existing);
+        group.add(synced);
+      }
+    });
+    group.children.slice(waves.length).forEach((child) => {
+      disposeObject(child as { children?: unknown[] });
+      group.remove(child);
+    });
+  }
+
+  private renderProceduralCustomWaveGroup(
+    group: Group,
+    waves: MilkdropProceduralCustomWaveVisual[],
+  ) {
+    waves.forEach((wave, index) => {
+      const existing = group.children[index] as Line | undefined;
+      const synced = syncProceduralCustomWaveObject(existing, wave);
+      if (!existing) {
+        group.add(synced);
+      } else if (synced !== existing) {
+        group.remove(existing);
+        group.add(synced);
+      }
+    });
+    group.children.slice(waves.length).forEach((child) => {
+      disposeObject(child as { children?: unknown[] });
+      group.remove(child);
+    });
+  }
+
   private renderShapeGroup(
     group: Group,
     shapes: MilkdropShapeVisual[],
@@ -1548,17 +1903,46 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       payload.frameState.signals,
     );
 
-    this.renderWaveGroup(this.mainWaveGroup, [payload.frameState.mainWave]);
-    this.renderWaveGroup(this.customWaveGroup, payload.frameState.customWaves);
-    this.renderWaveGroup(
-      this.trailGroup,
-      payload.frameState.trails.map((trail) => ({
-        ...trail,
-        drawMode: 'line',
-        additive: false,
-        pointSize: 2,
-      })),
-    );
+    if (this.backend === 'webgpu' && payload.frameState.gpuGeometry.mainWave) {
+      this.renderProceduralWaveGroup(this.mainWaveGroup, [
+        payload.frameState.gpuGeometry.mainWave,
+      ]);
+    } else {
+      this.renderWaveGroup(this.mainWaveGroup, [payload.frameState.mainWave]);
+    }
+    if (
+      this.backend === 'webgpu' &&
+      payload.frameState.gpuGeometry.customWaves.length > 0
+    ) {
+      this.renderProceduralCustomWaveGroup(
+        this.customWaveGroup,
+        payload.frameState.gpuGeometry.customWaves,
+      );
+    } else {
+      this.renderWaveGroup(
+        this.customWaveGroup,
+        payload.frameState.customWaves,
+      );
+    }
+    if (
+      this.backend === 'webgpu' &&
+      payload.frameState.gpuGeometry.trailWaves.length > 0
+    ) {
+      this.renderProceduralWaveGroup(
+        this.trailGroup,
+        payload.frameState.gpuGeometry.trailWaves,
+      );
+    } else {
+      this.renderWaveGroup(
+        this.trailGroup,
+        payload.frameState.trails.map((trail) => ({
+          ...trail,
+          drawMode: 'line',
+          additive: false,
+          pointSize: 2,
+        })),
+      );
+    }
     this.renderShapeGroup(this.shapesGroup, payload.frameState.shapes);
     this.renderBorderGroup(this.borderGroup, payload.frameState.borders);
     this.renderMotionVectors(payload.frameState);

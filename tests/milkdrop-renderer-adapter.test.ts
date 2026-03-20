@@ -524,6 +524,113 @@ warpanimspeed=1.25
     expect(proceduralMotionVectors?.material).toBeInstanceOf(ShaderMaterial);
   });
 
+  test('uses procedural main wave and trail generation on webgpu line-wave presets', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Wave Renderer
+wave_mode=5
+wave_usedots=0
+wave_scale=1.2
+wave_mystery=0.35
+wave_x=0.58
+wave_y=0.42
+mesh_density=16
+      `.trim(),
+      { id: 'procedural-wave-renderer' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const firstFrame = vm.step(makeSignals());
+    const secondSignals = makeSignals();
+    secondSignals.frame = 2;
+    secondSignals.time = 0.3;
+    const secondFrame = vm.step(secondSignals);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: firstFrame,
+      blendState: null,
+    });
+    adapter.render({
+      frameState: secondFrame,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ children?: Array<{ material?: unknown }> }>;
+    };
+    const mainWaveGroup = root.children[2] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const trailGroup = root.children[4] as {
+      children: Array<{ material?: unknown }>;
+    };
+
+    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
+    expect(trailGroup.children.length).toBeGreaterThan(0);
+    expect(trailGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
+  });
+
+  test('uses procedural custom wave generation on webgpu-safe custom waves', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Custom Wave Renderer
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_scaling=1.15
+wavecode_0_mystery=0.25
+wavecode_0_usedots=0
+wavecode_0_x=0.55
+wavecode_0_y=0.45
+wavecode_0_r=0.8
+wavecode_0_g=0.4
+wavecode_0_b=1
+wavecode_0_a=0.35
+      `.trim(),
+      { id: 'procedural-custom-wave-renderer' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals());
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ children?: Array<{ material?: unknown }> }>;
+    };
+    const customWaveGroup = root.children[3] as {
+      children: Array<{ material?: unknown }>;
+    };
+
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+    expect(customWaveGroup.children[0]?.material).toBeInstanceOf(
+      ShaderMaterial,
+    );
+  });
+
   test('skips feedback composite rendering when shader mode is disabled', () => {
     const preset = compileMilkdropPresetSource(
       `

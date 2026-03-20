@@ -4,18 +4,31 @@ export type Route =
   | { view: 'library'; slug: null }
   | { view: 'toy'; slug: string | null };
 
+type SlugPathMap = Record<string, string>;
+
+const DEFAULT_SLUG_PATHS: SlugPathMap = {
+  milkdrop: '/milkdrop/',
+};
+
+const normalizePath = (pathname: string) => {
+  const normalized = pathname.replace(/\/index\.html$/u, '/');
+  return normalized === '' ? '/' : normalized;
+};
+
 export function createRouter({
   windowRef = () => (typeof window === 'undefined' ? null : window),
   queryParam = 'toy',
-  libraryPath = 'index.html',
+  libraryPath = '/',
   toyPath = 'toy.html',
   defaultToySlug = 'milkdrop',
+  slugPaths = DEFAULT_SLUG_PATHS,
 }: {
   windowRef?: WindowGetter;
   queryParam?: string;
   libraryPath?: string;
   toyPath?: string;
   defaultToySlug?: string | null;
+  slugPaths?: SlugPathMap;
 } = {}) {
   let isListening = false;
 
@@ -36,12 +49,25 @@ export function createRouter({
   const getUrl = (win: Window & typeof globalThis) =>
     new URL(win.location.href);
 
+  const resolveNormalizedPath = (pathname: string, target: string) =>
+    normalizePath(resolvePath(pathname, target));
+
+  const getSlugFromPath = (pathname: string) =>
+    Object.entries(slugPaths).find(([, target]) => {
+      return normalizePath(pathname) === resolveNormalizedPath(pathname, target);
+    })?.[0] ?? null;
+
   const getCurrentSlug = () => {
     const win = getWindow();
     if (!win) return null;
 
     const params = new URLSearchParams(win.location.search);
-    return params.get(queryParam);
+    const querySlug = params.get(queryParam);
+    if (querySlug) {
+      return querySlug;
+    }
+
+    return getSlugFromPath(win.location.pathname);
   };
 
   const isToyPath = (pathname: string) =>
@@ -59,6 +85,11 @@ export function createRouter({
       return { view: 'toy', slug };
     }
 
+    const pathSlug = getSlugFromPath(url.pathname);
+    if (pathSlug) {
+      return { view: 'toy', slug: pathSlug };
+    }
+
     if (isToyPath(url.pathname)) {
       return { view: 'toy', slug: defaultToySlug };
     }
@@ -71,7 +102,13 @@ export function createRouter({
     if (!win?.history) return;
 
     const url = getUrl(win);
-    url.searchParams.set(queryParam, slug);
+    const targetPath = slugPaths[slug];
+    if (targetPath) {
+      url.searchParams.delete(queryParam);
+      url.pathname = resolvePath(url.pathname, targetPath);
+    } else {
+      url.searchParams.set(queryParam, slug);
+    }
     win.history.pushState({ [queryParam]: slug }, '', url);
   };
 

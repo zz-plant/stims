@@ -99,9 +99,10 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
       </button>
       <div class="nav-actions" id="nav-actions">
         <div class="nav-section nav-section--primary" aria-label="Primary links">
-          <a class="nav-link nav-link--section" data-section-link href="#milkdrop">MilkDrop</a>
-          <a class="nav-link nav-link--section" data-section-link href="#proof">Why MilkDrop</a>
-          <a class="nav-link nav-link--section" data-section-link href="#system-check">Quick check</a>
+          <a class="nav-link nav-link--section" data-section-link href="#experience">Experience</a>
+          <a class="nav-link nav-link--section" data-section-link href="#presets">Presets</a>
+          <a class="nav-link nav-link--section" data-section-link href="#lineage">Lineage</a>
+          <a class="nav-link" href="/milkdrop/">Launch</a>
           <a class="nav-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a>
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
             <span class="theme-toggle__icon" aria-hidden="true">🌙</span>

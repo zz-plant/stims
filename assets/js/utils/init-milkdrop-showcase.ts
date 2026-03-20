@@ -151,7 +151,7 @@ function createPresetCard(
   actions.className = 'milkdrop-showcase__card-actions';
 
   const launch = documentRef.createElement('a');
-  launch.href = '/toy.html?toy=milkdrop';
+  launch.href = '/milkdrop/';
   launch.className = 'cta-button primary';
   launch.textContent = 'Open visualizer';
   launch.addEventListener('click', () => {
