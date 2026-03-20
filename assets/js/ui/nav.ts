@@ -343,7 +343,7 @@ function renderToyNav(
   const mobileActionsMediaQuery = getMediaQueryList(
     maxWidthQuery(BREAKPOINTS.md),
   );
-  let actionsExpanded = true;
+  let actionsExpanded = !isBelowBreakpoint(BREAKPOINTS.md);
 
   const applyActionsState = (expanded: boolean) => {
     actionsContainer?.setAttribute(
@@ -379,7 +379,7 @@ function renderToyNav(
   };
 
   const syncActionsForViewport = () => {
-    actionsExpanded = true;
+    actionsExpanded = !isBelowBreakpoint(BREAKPOINTS.md);
     applyActionsState(actionsExpanded);
   };
 

@@ -537,6 +537,14 @@ export function attachCapabilityPreflight({
   };
 
   const isPanelOpen = () => panel.open || panel.hasAttribute('open');
+  const setPreflightOpenState = (open: boolean) => {
+    if (open) {
+      document.documentElement.dataset.preflightOpen = 'true';
+    } else {
+      delete document.documentElement.dataset.preflightOpen;
+    }
+  };
+
   const openPanel = () => {
     if (isPanelOpen()) return;
     rememberToggle.checked = readRememberPreference();
@@ -545,6 +553,7 @@ export function attachCapabilityPreflight({
     } else {
       panel.setAttribute('open', 'true');
     }
+    setPreflightOpenState(true);
     focusCleanup?.();
     focusCleanup = trapFocus(panel);
     const focusables = getFocusableElements(panel);
@@ -561,6 +570,7 @@ export function attachCapabilityPreflight({
     } else {
       panel.removeAttribute('open');
     }
+    setPreflightOpenState(false);
     focusCleanup?.();
     focusCleanup = null;
   };
@@ -957,6 +967,7 @@ export function attachCapabilityPreflight({
       window.removeEventListener('popstate', handlePopState);
       closingFromHistory = true;
       closePanel();
+      setPreflightOpenState(false);
       panel.remove();
       const params = new URLSearchParams(window.location.search);
       if (params.get(MODAL_PARAM) === MODAL_VALUE) {
