@@ -3,6 +3,7 @@ import type { Vector2 } from 'three';
 import {
   HalfFloatType,
   LinearFilter,
+  LineBasicMaterial,
   LineSegments,
   MeshBasicMaterial,
   OrthographicCamera,
@@ -11,8 +12,13 @@ import {
   WebGLRenderer,
 } from 'three';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import { createMilkdropRendererAdapterCore } from '../assets/js/milkdrop/renderer-adapter.ts';
 import { createMilkdropRendererAdapter } from '../assets/js/milkdrop/renderer-adapter-factory.ts';
-import type { MilkdropRuntimeSignals } from '../assets/js/milkdrop/types.ts';
+import type {
+  MilkdropFeedbackCompositeState,
+  MilkdropFeedbackManager,
+  MilkdropRuntimeSignals,
+} from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 
 function makeSignals(): MilkdropRuntimeSignals {
@@ -427,7 +433,7 @@ per_pixel_1=zoom=1.08; rot=0.15; warp=0.3;
     expect(motionVectorGroup.children[0]?.children?.[0]?.type).toBe('Line');
   });
 
-  test('uses procedural mesh generation on webgpu when per-pixel VM work is absent', () => {
+  test('renders mesh geometry directly on webgpu when per-pixel VM work is absent', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Mesh
@@ -444,8 +450,8 @@ warpanimspeed=1.4
     vm.setRenderBackend('webgpu');
     const frameState = vm.step(makeSignals());
 
-    expect(frameState.mesh.positions).toHaveLength(0);
-    expect(frameState.gpuGeometry.meshField).not.toBeNull();
+    expect(frameState.mesh.positions.length).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.meshField).toBeNull();
 
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
@@ -469,11 +475,11 @@ warpanimspeed=1.4
       geometry?: unknown;
     };
 
-    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.material).toBeInstanceOf(LineBasicMaterial);
     expect(meshLines.geometry).toBeDefined();
   });
 
-  test('uses procedural motion vectors on webgpu when per-pixel VM work is absent', () => {
+  test('renders motion vectors directly on webgpu when per-pixel VM work is absent', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Motion Vectors
@@ -493,8 +499,8 @@ warpanimspeed=1.25
     vm.setRenderBackend('webgpu');
     const frameState = vm.step(makeSignals());
 
-    expect(frameState.motionVectors).toHaveLength(0);
-    expect(frameState.gpuGeometry.motionVectorField).not.toBeNull();
+    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
 
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
@@ -516,15 +522,79 @@ warpanimspeed=1.25
       }>;
     };
     const motionVectorGroup = root.children[7] as {
-      children: Array<{ type?: string; material?: unknown }>;
+      children: Array<{
+        type?: string;
+        visible?: boolean;
+        material?: unknown;
+        children?: Array<{ type?: string }>;
+      }>;
     };
-    const proceduralMotionVectors = motionVectorGroup.children[1];
+    const cpuMotionVectors = motionVectorGroup.children[0];
+    const proceduralMotionVectors = motionVectorGroup.children[1] as {
+      visible?: boolean;
+    };
 
+    expect(cpuMotionVectors?.children?.[0]?.type).toBe('Line');
     expect(proceduralMotionVectors).toBeInstanceOf(LineSegments);
-    expect(proceduralMotionVectors?.material).toBeInstanceOf(ShaderMaterial);
+    expect(proceduralMotionVectors?.visible).toBe(false);
   });
 
-  test('uses procedural main wave and trail generation on webgpu line-wave presets', () => {
+  test('passes semantic feedback state to the feedback manager', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Contract
+video_echo=1
+      `.trim(),
+      { id: 'feedback-contract' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    let renderCalls = 0;
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        renderCalls += 1;
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const renderer = {
+      getSize: (target: Vector2) => target.set(320, 180),
+      render() {},
+      setRenderTarget() {},
+    };
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      renderer,
+      backend: 'webgl',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+    expect(renderCalls).toBe(1);
+    expect(compositeStates[0]?.mixAlpha).toBeGreaterThan(0);
+    expect(compositeStates[0]?.signalTime).toBeCloseTo(
+      frameState.signals.time,
+      6,
+    );
+  });
+
+  test('renders main wave and trails directly on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Wave Renderer
@@ -575,12 +645,16 @@ mesh_density=16
       children: Array<{ material?: unknown }>;
     };
 
-    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
+    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
+    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(
+      LineBasicMaterial,
+    );
     expect(trailGroup.children.length).toBeGreaterThan(0);
-    expect(trailGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
+    expect(trailGroup.children[0]?.material).toBeInstanceOf(LineBasicMaterial);
   });
 
-  test('uses procedural custom wave generation on webgpu-safe custom waves', () => {
+  test('renders custom waves directly on webgpu-safe custom waves', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Custom Wave Renderer
@@ -625,9 +699,9 @@ wavecode_0_a=0.35
       children: Array<{ material?: unknown }>;
     };
 
-    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(0);
     expect(customWaveGroup.children[0]?.material).toBeInstanceOf(
-      ShaderMaterial,
+      LineBasicMaterial,
     );
   });
 
@@ -674,7 +748,7 @@ video_echo=1
     expect(fakeRenderer.setRenderTargetCalls).toBe(0);
   });
 
-  test('skips the legacy feedback composite path on webgpu backends', () => {
+  test('renders the feedback composite path on webgpu backends', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback
@@ -719,17 +793,24 @@ ob_border=1
 
     const feedback = (
       adapter as unknown as {
-        feedback: unknown | null;
+        feedback: {
+          sceneTarget: {
+            width: number;
+            height: number;
+            samples: number;
+            texture: { type: number; minFilter: number; magFilter: number };
+          };
+        } | null;
       }
     ).feedback;
 
-    expect(result).toBe(false);
-    expect(fakeRenderer.setRenderTargetCalls).toBe(0);
-    expect(fakeRenderer.renderCalls).toBe(0);
-    expect(feedback).toBeNull();
+    expect(result).toBe(true);
+    expect(fakeRenderer.setRenderTargetCalls).toBe(3);
+    expect(fakeRenderer.renderCalls).toBe(3);
+    expect(feedback).not.toBeNull();
   });
 
-  test('does not allocate legacy feedback uniforms on webgpu', () => {
+  test('allocates a feedback manager on webgpu when shader mode is enabled', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Gamma Feedback WebGPU
@@ -763,14 +844,21 @@ video_echo=1
 
     const feedback = (
       adapter as unknown as {
-        feedback: unknown | null;
+        feedback: {
+          sceneTarget: {
+            width: number;
+            height: number;
+            samples: number;
+            texture: { type: number; minFilter: number; magFilter: number };
+          };
+        } | null;
       }
     ).feedback;
 
-    expect(feedback).toBeNull();
+    expect(feedback).not.toBeNull();
   });
 
-  test('keeps webgpu audio-only presets on the direct scene render path', () => {
+  test('routes webgpu audio-only presets through the feedback composite path', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Signal Field WebGPU
@@ -783,9 +871,15 @@ video_echo=1
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
     const fakeRenderer = {
+      setRenderTargetCalls: 0,
+      renderCalls: 0,
       getSize: (target: Vector2) => target.set(640, 360),
-      setRenderTarget: () => {},
-      render: () => {},
+      setRenderTarget: () => {
+        fakeRenderer.setRenderTargetCalls += 1;
+      },
+      render: () => {
+        fakeRenderer.renderCalls += 1;
+      },
     };
 
     const adapter = createMilkdropRendererAdapter({
@@ -796,21 +890,35 @@ video_echo=1
     });
 
     adapter.attach();
-    adapter.render({
+    const result = adapter.render({
       frameState,
       blendState: null,
     });
 
     const feedback = (
       adapter as unknown as {
-        feedback: unknown | null;
+        feedback: {
+          sceneTarget: {
+            width: number;
+            height: number;
+            samples: number;
+            texture: {
+              type: number;
+              minFilter: number;
+              magFilter: number;
+            };
+          };
+        } | null;
       }
     ).feedback;
 
-    expect(feedback).toBeNull();
+    expect(result).toBe(true);
+    expect(fakeRenderer.setRenderTargetCalls).toBe(3);
+    expect(fakeRenderer.renderCalls).toBe(3);
+    expect(feedback).not.toBeNull();
   });
 
-  test('does not allocate feedback targets on webgpu backends', () => {
+  test('uses full-resolution half-float feedback targets on webgpu backends', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback Quality
@@ -843,11 +951,28 @@ video_echo=1
 
     const feedback = (
       adapter as unknown as {
-        feedback: unknown | null;
+        feedback: {
+          sceneTarget: {
+            width: number;
+            height: number;
+            samples: number;
+            texture: {
+              type: number;
+              minFilter: number;
+              magFilter: number;
+            };
+          };
+        } | null;
       }
     ).feedback;
 
-    expect(feedback).toBeNull();
+    expect(feedback).not.toBeNull();
+    expect(feedback?.sceneTarget.width).toBe(640);
+    expect(feedback?.sceneTarget.height).toBe(360);
+    expect(feedback?.sceneTarget.samples).toBe(0);
+    expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
+    expect(feedback?.sceneTarget.texture.minFilter).toBe(LinearFilter);
+    expect(feedback?.sceneTarget.texture.magFilter).toBe(LinearFilter);
   });
 
   test('uses tuned feedback targets on webgl backends', () => {

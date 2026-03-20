@@ -249,7 +249,7 @@ dy=-0.1
     );
   });
 
-  test('emits procedural gpu geometry hints for mesh and motion vectors on webgpu-safe presets', () => {
+  test('keeps cpu mesh and motion-vector geometry on webgpu-safe presets', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural GPU Hints
@@ -269,26 +269,13 @@ warpanimspeed=1.5
     vm.setRenderBackend('webgpu');
     const frameState = vm.step(makeSignals({ frame: 3 }));
 
-    expect(frameState.mesh.positions).toHaveLength(0);
-    expect(frameState.motionVectors).toHaveLength(0);
-    expect(frameState.gpuGeometry.meshField).toEqual({
-      density: 14,
-      zoom: 1.1,
-      rotation: 0.14,
-      warp: 0.2,
-      warpAnimSpeed: 1.5,
-    });
-    expect(frameState.gpuGeometry.motionVectorField).toEqual({
-      countX: 6,
-      countY: 4,
-      zoom: 1.1,
-      rotation: 0.14,
-      warp: 0.2,
-      warpAnimSpeed: 1.5,
-    });
+    expect(frameState.mesh.positions.length).toBeGreaterThan(0);
+    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.meshField).toBeNull();
+    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
   });
 
-  test('emits procedural main wave and trail hints on webgpu line-wave presets', () => {
+  test('keeps main wave and trails as cpu polylines on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Wave Hints
@@ -308,16 +295,16 @@ mesh_density=16
     const firstFrame = vm.step(makeSignals({ frame: 1, time: 0.15 }));
     const secondFrame = vm.step(makeSignals({ frame: 2, time: 0.3 }));
 
-    expect(firstFrame.mainWave.positions).toHaveLength(0);
-    expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
+    expect(firstFrame.mainWave.positions.length).toBeGreaterThan(0);
+    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
     expect(firstFrame.gpuGeometry.trailWaves).toHaveLength(0);
-    expect(secondFrame.mainWave.positions).toHaveLength(0);
-    expect(secondFrame.gpuGeometry.mainWave?.mode).toBe(5);
-    expect(secondFrame.gpuGeometry.trailWaves.length).toBeGreaterThan(0);
-    expect(secondFrame.trails).toHaveLength(0);
+    expect(secondFrame.mainWave.positions.length).toBeGreaterThan(0);
+    expect(secondFrame.gpuGeometry.mainWave).toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
+    expect(secondFrame.trails.length).toBeGreaterThan(0);
   });
 
-  test('emits procedural custom wave hints for webgpu-safe custom waves', () => {
+  test('keeps custom waves as cpu geometry on webgpu-safe custom waves', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Custom Wave Hints
@@ -342,10 +329,8 @@ wavecode_0_a=0.35
     const frameState = vm.step(makeSignals({ frame: 4, time: 0.2 }));
 
     expect(frameState.customWaves).toHaveLength(1);
-    expect(frameState.customWaves[0]?.positions).toHaveLength(0);
-    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
-    expect(frameState.gpuGeometry.customWaves[0]?.spectrum).toBe(true);
-    expect(frameState.gpuGeometry.customWaves[0]?.samples.length).toBe(40);
+    expect(frameState.customWaves[0]?.positions.length).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(0);
   });
 
   test('uses mesh history when building motion vector overlays across frames', () => {
