@@ -1,0 +1,4 @@
+[ 2266507ms] Transition was skipped
+[ 2266506ms] [WARNING] Error fetching manifest from /.vite/manifest.json SyntaxError: Unexpected token '<', "<!doctype "... is not valid JSON @ http://127.0.0.1:4173/assets/js/utils/manifest-client.ts?t=1773979201580:185
+[ 2267954ms] [ERROR] THREE.NodeMaterial: Material "ShaderMaterial" is not compatible. @ http://127.0.0.1:4173/node_modules/.vite/deps/chunk-LHVUQBBK.js?v=5186f421:282
+[ 2267959ms] [ERROR] THREE.NodeMaterial: Material "ShaderMaterial" is not compatible. @ http://127.0.0.1:4173/node_modules/.vite/deps/chunk-LHVUQBBK.js?v=5186f421:282

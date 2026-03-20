@@ -26,6 +26,7 @@ Avoid language like:
 ## Contributor rules
 
 - If you import presets, fixture packs, or screenshots, record provenance and license details in the same change.
+- Vendored upstream preset fixtures should carry a local README beside the corpus with source repo, commit, and license notes.
 - If you reuse projectM code, assets, or corpora, keep license obligations and acknowledgments explicit.
 - If a public page or README calls Stims a "successor," pair that claim with explicit lineage language and avoid implying official affiliation.
 - Prefer precise compatibility claims over broad parity claims.
