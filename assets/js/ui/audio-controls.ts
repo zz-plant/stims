@@ -25,6 +25,7 @@ export interface AudioControlsOptions {
   recommendedCapability?: 'demoAudio' | 'microphone' | 'motion' | 'touch';
   onApplyStarterPreset?: () => void;
   autoStartMicrophoneWhenGranted?: boolean;
+  initialShortcut?: 'tab' | 'youtube';
 }
 
 export function buildTryThisFirstRecommendation({
@@ -457,6 +458,29 @@ export function initAudioControls(
       'Starting live mic…',
     );
   };
+
+  if (options.initialShortcut === 'tab') {
+    persistAdvancedState(true);
+    updateStatus(
+      'Tab audio is ready below. Choose Capture tab to continue.',
+      'success',
+    );
+    requestAnimationFrame(() => {
+      tabBtn?.focus();
+    });
+  } else if (options.initialShortcut === 'youtube') {
+    persistAdvancedState(true);
+    updateStatus(
+      'YouTube audio is ready below. Paste a link or load a recent video to continue.',
+      'success',
+    );
+    requestAnimationFrame(() => {
+      const youtubeField = container.querySelector(
+        '#youtube-url',
+      ) as HTMLInputElement | null;
+      youtubeField?.focus();
+    });
+  }
 
   const handleRequest = async (
     button: Element | null,

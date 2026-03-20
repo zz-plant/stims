@@ -1,4 +1,5 @@
 import { attachCapabilityPreflight } from '../core/capability-preflight.ts';
+import { setQualityPresetById } from '../core/settings-panel.ts';
 import { initReadinessProbe } from '../readiness-probe.ts';
 import { initSystemControls } from '../ui/system-controls.ts';
 
@@ -68,6 +69,23 @@ export const initSystemCheck = ({
   scrollTriggers.forEach((trigger) => {
     trigger.addEventListener('click', (event) => {
       event.preventDefault();
+      setDetailsOpen(true);
+      if (window.location.hash !== '#system-check') {
+        window.location.hash = 'system-check';
+      }
+      const target = document.getElementById('system-check');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  const lighterVisualTriggers = Array.from(
+    document.querySelectorAll('[data-enable-lighter-visuals]'),
+  ).filter((element): element is HTMLElement => element instanceof HTMLElement);
+
+  lighterVisualTriggers.forEach((trigger) => {
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
+      setQualityPresetById('performance');
       setDetailsOpen(true);
       if (window.location.hash !== '#system-check') {
         window.location.hash = 'system-check';

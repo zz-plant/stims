@@ -8,6 +8,10 @@ import type { ToyWindow } from '../core/toy-globals.ts';
 import toyManifest from '../data/toy-manifest.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
 import type { createLoader } from '../loader.ts';
+import {
+  type MilkdropOverlayTab,
+  requestMilkdropOverlayTab,
+} from '../milkdrop/overlay-intent.ts';
 import { requestMilkdropPresetSelection } from '../milkdrop/preset-selection.ts';
 import { initAudioControls } from '../ui/audio-controls.ts';
 import { initSystemControls } from '../ui/system-controls.ts';
@@ -111,6 +115,7 @@ export function bootToyPage({
   persistentBackLink: HTMLAnchorElement | null;
 }) {
   let loaderStarted = false;
+  const searchParams = new URLSearchParams(window.location.search);
 
   const startLoaderIfNeeded = () => {
     if (loaderStarted) return;
@@ -120,11 +125,22 @@ export function bootToyPage({
   };
 
   const toyWindow = window as unknown as ToyWindow;
-  const toySlug =
-    new URLSearchParams(window.location.search).get('toy') ?? 'milkdrop';
+  const toySlug = searchParams.get('toy') ?? 'milkdrop';
+  const requestedAudioSource = searchParams.get('audio')?.trim().toLowerCase();
+  const requestedOverlayTab = (() => {
+    const value = searchParams.get('panel')?.trim().toLowerCase();
+    if (value === 'browse' || value === 'editor' || value === 'inspector') {
+      return value as MilkdropOverlayTab;
+    }
+    return null;
+  })();
   const shouldCollapseShellPanelsAfterAudio = isPresetFirstToySession(toySlug);
   const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
   document.title = `${toyTitle} · Stims`;
+
+  if (requestedOverlayTab && toySlug === 'milkdrop') {
+    requestMilkdropOverlayTab(requestedOverlayTab);
+  }
 
   const collapseFocusedSessionPanels = () => {
     if (!shouldCollapseShellPanelsAfterAudio) {
@@ -215,6 +231,10 @@ export function bootToyPage({
       starterPresetLabel,
       wowControl: toyMeta?.wowControl,
       recommendedCapability: toyMeta?.recommendedCapability,
+      initialShortcut:
+        requestedAudioSource === 'tab' || requestedAudioSource === 'youtube'
+          ? requestedAudioSource
+          : undefined,
       onApplyStarterPreset: starterPresetId
         ? () => {
             requestMilkdropPresetSelection(starterPresetId);
@@ -223,11 +243,13 @@ export function bootToyPage({
         : undefined,
       ...audioInitState,
       preferDemoAudio:
+        requestedAudioSource === 'demo' ||
         shouldPreferDemoAudio({
           forcePreferDemoAudio,
           audioInitPrefersDemoAudio: audioInitState.preferDemoAudio,
           recommendedCapability: toyMeta?.recommendedCapability,
-        }) || undefined,
+        }) ||
+        undefined,
     });
   };
 

@@ -547,6 +547,11 @@ export class MilkdropOverlay {
     return this.root.classList.contains('is-open');
   }
 
+  openTab(tab: string) {
+    this.setActiveTab(tab);
+    this.toggleOpen(true);
+  }
+
   private setActiveTab(tab: string) {
     Object.entries(this.tabPanels).forEach(([id, panel]) => {
       panel.hidden = id !== tab;

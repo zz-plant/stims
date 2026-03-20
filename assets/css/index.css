@@ -1012,6 +1012,21 @@ header.hero {
     color-mix(in srgb, var(--accent-color) 12%, var(--surface-border));
 }
 
+.hero-utility-row,
+.experience-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.hero-utility-row {
+  margin-top: 0.8rem;
+}
+
+.experience-shortcuts {
+  margin-top: 1rem;
+}
+
 .hero-visual {
   position: relative;
   display: grid;
@@ -3761,6 +3776,16 @@ footer {
   .hero-cta-row {
     width: 100%;
     grid-template-columns: 1fr;
+  }
+
+  .hero-utility-row,
+  .experience-shortcuts {
+    width: 100%;
+  }
+
+  .hero-utility-row .cta-button,
+  .experience-shortcuts .cta-button {
+    flex: 1 1 100%;
   }
 }
 

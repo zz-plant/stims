@@ -17,6 +17,11 @@ import { createMilkdropEditorSession } from './editor-session';
 import { upsertMilkdropFields } from './formatter';
 import { MilkdropOverlay } from './overlay';
 import {
+  consumeRequestedMilkdropOverlayTab,
+  MILKDROP_OVERLAY_TAB_EVENT,
+  type MilkdropOverlayTab,
+} from './overlay-intent';
+import {
   consumeRequestedMilkdropPresetSelection,
   MILKDROP_PRESET_SELECTION_EVENT,
 } from './preset-selection';
@@ -443,6 +448,7 @@ export function createMilkdropExperience({
   let lastStatusMessage: string | null = null;
   let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
   let requestedPresetListener: ((event: Event) => void) | null = null;
+  let requestedOverlayTabListener: ((event: Event) => void) | null = null;
 
   const updateAgentDebugSnapshot = () => {
     if (!isAgentMode()) {
@@ -994,6 +1000,24 @@ export function createMilkdropExperience({
     );
   };
 
+  const installRequestedOverlayTabListener = () => {
+    if (requestedOverlayTabListener || typeof window === 'undefined') {
+      return;
+    }
+    requestedOverlayTabListener = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: MilkdropOverlayTab }>).detail
+        ?.tab;
+      if (!tab) {
+        return;
+      }
+      overlay.openTab(tab);
+    };
+    window.addEventListener(
+      MILKDROP_OVERLAY_TAB_EVENT,
+      requestedOverlayTabListener,
+    );
+  };
+
   session.subscribe((state) => {
     overlay.setSessionState(state);
     const nextCompiled = state.activeCompiled;
@@ -1018,7 +1042,12 @@ export function createMilkdropExperience({
   });
 
   installRequestedPresetListener();
+  installRequestedOverlayTabListener();
   void syncCatalog().then(async () => {
+    const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
+    if (requestedOverlayTab) {
+      overlay.openTab(requestedOverlayTab);
+    }
     const requestedPresetId = consumeRequestedMilkdropPresetSelection();
     const startupPresetId =
       requestedPresetId ?? initialPresetId ?? prefs.lastPresetId;
@@ -1175,6 +1204,13 @@ export function createMilkdropExperience({
           requestedPresetListener,
         );
         requestedPresetListener = null;
+      }
+      if (requestedOverlayTabListener) {
+        window.removeEventListener(
+          MILKDROP_OVERLAY_TAB_EVENT,
+          requestedOverlayTabListener,
+        );
+        requestedOverlayTabListener = null;
       }
     },
   };
