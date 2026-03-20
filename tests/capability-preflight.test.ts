@@ -96,7 +96,7 @@ describe('capability preflight launch flow', () => {
     ).filter((button) => !(button as HTMLElement).hidden);
 
     expect(primaryButtons).toHaveLength(1);
-    expect(primaryButtons[0]?.textContent).toContain('Continue');
+    expect(primaryButtons[0]?.textContent).toContain('Choose audio');
 
     const diagnostics = dialog?.querySelector(
       '.preflight-panel__details',
