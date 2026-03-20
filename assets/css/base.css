@@ -2613,9 +2613,9 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__panel {
   display: none;
   pointer-events: auto;
-  width: min(96vw, 680px);
-  max-height: min(82vh, 820px);
-  margin-top: 12px;
+  width: min(94vw, 620px);
+  max-height: min(78vh, 760px);
+  margin-top: 10px;
   overflow: hidden;
   border: 1px solid rgba(125, 211, 252, 0.2);
   border-radius: 24px;
@@ -2639,29 +2639,34 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__toolbar,
 .milkdrop-overlay__tabs {
   display: grid;
-  gap: 10px;
-  padding: 16px 20px;
+  gap: 8px;
+  padding: 12px 16px;
 }
 
 .milkdrop-overlay__header {
   grid-template-columns: 1fr auto;
-  align-items: center;
+  align-items: start;
   border-bottom: 1px solid rgba(148, 163, 184, 0.14);
 }
 
+.milkdrop-overlay__title-block {
+  display: grid;
+  gap: 4px;
+}
+
 .milkdrop-overlay__title {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
 .milkdrop-overlay__status {
-  grid-column: 1 / -1;
   color: rgba(191, 219, 254, 0.82);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
 }
 
 .milkdrop-overlay__close,
 .milkdrop-overlay__toolbar button,
+.milkdrop-overlay__editor-actions button,
 .milkdrop-overlay__preset-launch,
 .milkdrop-overlay__favorite,
 .milkdrop-overlay__tabs button,
@@ -2674,25 +2679,53 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__close,
 .milkdrop-overlay__toolbar button,
+.milkdrop-overlay__editor-actions button,
 .milkdrop-overlay__favorite,
 .milkdrop-overlay__tabs button,
 .milkdrop-overlay__rating-select {
-  min-height: 40px;
-  padding: 8px 12px;
+  min-height: 36px;
+  padding: 7px 11px;
 }
 
 .milkdrop-overlay__toolbar {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   align-items: center;
   border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.milkdrop-overlay__toolbar-group {
+  display: grid;
+  gap: 8px;
+  align-items: center;
+}
+
+.milkdrop-overlay__toolbar-group:first-child {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.milkdrop-overlay__toolbar-group--transport {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.milkdrop-overlay__toolbar-field {
+  display: grid;
+  gap: 6px;
+}
+
+.milkdrop-overlay__toolbar-field span {
+  color: rgba(186, 230, 253, 0.76);
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .milkdrop-overlay__checkbox,
 .milkdrop-overlay__blend {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.92rem;
+  gap: 8px;
+  font-size: 0.88rem;
 }
 
 .milkdrop-overlay__blend {
@@ -2721,21 +2754,21 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__body {
   display: grid;
-  padding: 0 20px 20px;
+  padding: 0 16px 16px;
 }
 
 .milkdrop-overlay__tab-panel {
-  min-height: 320px;
+  min-height: 280px;
 }
 
 .milkdrop-overlay__browse-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
-  gap: 14px;
-  margin-top: 2px;
-  padding: 16px;
+  gap: 10px;
+  margin-top: 0;
+  padding: 12px;
   border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 20px;
+  border-radius: 16px;
   background:
     linear-gradient(145deg, rgba(8, 15, 31, 0.82), rgba(14, 22, 41, 0.68)),
     radial-gradient(
@@ -2747,7 +2780,7 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__browse-copy {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   align-content: start;
 }
 
@@ -2763,7 +2796,7 @@ body.tv-mode .control-panel input {
 }
 
 .milkdrop-overlay__browse-active {
-  font-size: 1.15rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: #f8fafc;
 }
@@ -2771,16 +2804,16 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__browse-meta {
   margin: 0;
   color: rgba(191, 219, 254, 0.78);
-  font-size: 0.92rem;
+  font-size: 0.84rem;
 }
 
 .milkdrop-overlay__quality {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   align-content: start;
-  padding: 14px;
+  padding: 10px 12px;
   border: 1px solid rgba(125, 211, 252, 0.16);
-  border-radius: 18px;
+  border-radius: 14px;
   background: rgba(10, 19, 36, 0.74);
 }
 
@@ -2797,20 +2830,20 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__quality-meta {
   margin: 0;
   color: rgba(226, 232, 240, 0.84);
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .milkdrop-overlay__browse-controls {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .milkdrop-overlay__browse-control {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .milkdrop-overlay__browse-control--search {
@@ -2830,13 +2863,13 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__collection-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .milkdrop-overlay__collection-filter {
-  min-height: 34px;
-  padding: 7px 12px;
+  min-height: 30px;
+  padding: 5px 10px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.56);
@@ -2852,16 +2885,16 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__browse {
   display: grid;
-  gap: 18px;
-  margin-top: 16px;
-  max-height: 430px;
+  gap: 14px;
+  margin-top: 12px;
+  max-height: 360px;
   overflow: auto;
   padding-right: 4px;
 }
 
 .milkdrop-overlay__browse-section {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   padding: 0;
 }
 
@@ -2871,7 +2904,7 @@ body.tv-mode .control-panel input {
   justify-content: space-between;
   gap: 12px;
   color: rgba(226, 232, 240, 0.92);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2892,7 +2925,7 @@ body.tv-mode .control-panel input {
 }
 
 .milkdrop-overlay__browse-empty {
-  padding: 18px;
+  padding: 14px;
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 18px;
   background: rgba(15, 23, 42, 0.42);
@@ -2903,9 +2936,9 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__preset {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 14px;
+  gap: 10px;
   align-items: start;
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
 
@@ -2920,7 +2953,7 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__preset-launch {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   text-align: left;
   padding: 0;
   border: 0;
@@ -2931,7 +2964,7 @@ body.tv-mode .control-panel input {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .milkdrop-overlay__preset-title {
@@ -2947,14 +2980,14 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__preset-meta {
   color: rgba(191, 219, 254, 0.74);
-  font-size: 0.83rem;
-  line-height: 1.45;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .milkdrop-overlay__preset-actions {
   display: inline-grid;
   grid-template-columns: repeat(2, minmax(88px, auto));
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   justify-items: stretch;
 }
@@ -3006,12 +3039,12 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__preset-warning {
   grid-column: 1 / -1;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   color: rgba(253, 230, 138, 0.9);
   background: rgba(120, 53, 15, 0.18);
   border: 1px solid rgba(245, 158, 11, 0.16);
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 10px;
+  padding: 7px 9px;
 }
 
 .milkdrop-overlay__preset-flag {
@@ -3021,8 +3054,8 @@ body.tv-mode .control-panel input {
 }
 
 .milkdrop-overlay__editor {
-  min-height: 280px;
-  margin: 12px 0;
+  min-height: 240px;
+  margin: 10px 0;
   overflow: hidden;
   border: 1px solid rgba(125, 211, 252, 0.16);
   border-radius: 18px;
@@ -3030,25 +3063,32 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__editor .cm-editor {
   height: 100%;
-  min-height: 280px;
+  min-height: 240px;
 }
 
 .milkdrop-overlay__editor-status {
-  margin-top: 4px;
+  margin-top: 2px;
   color: rgba(191, 219, 254, 0.82);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
+}
+
+.milkdrop-overlay__editor-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .milkdrop-overlay__diagnostics {
   display: grid;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .milkdrop-overlay__diagnostic {
-  border-radius: 12px;
-  padding: 10px 12px;
-  font-size: 0.88rem;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
 }
 
 .milkdrop-overlay__diagnostic--error {
@@ -3101,7 +3141,7 @@ body.tv-mode .control-panel input {
 
   .milkdrop-overlay__panel {
     width: auto;
-    max-height: min(82vh, 840px);
+    max-height: min(80vh, 760px);
   }
 
   .milkdrop-overlay__browse-hero {
@@ -3110,6 +3150,14 @@ body.tv-mode .control-panel input {
 
   .milkdrop-overlay__browse-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .milkdrop-overlay__toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .milkdrop-overlay__editor-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -3127,12 +3175,16 @@ body.tv-mode .control-panel input {
 
   .milkdrop-overlay__panel {
     width: 100vw;
-    max-height: 88vh;
+    max-height: 84vh;
     border-radius: 24px 24px 0 0;
     margin: 0;
   }
 
   .milkdrop-overlay__toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .milkdrop-overlay__toolbar-group--transport {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -3149,6 +3201,10 @@ body.tv-mode .control-panel input {
   }
 
   .milkdrop-overlay__preset-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .milkdrop-overlay__editor-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

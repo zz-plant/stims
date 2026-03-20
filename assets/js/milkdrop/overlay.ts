@@ -170,7 +170,6 @@ export class MilkdropOverlay {
   private readonly blendValue: HTMLElement;
   private readonly fileInput: HTMLInputElement;
   private readonly deleteButton: HTMLButtonElement;
-  private readonly activeRating: HTMLSelectElement;
   private readonly tabPanels: Record<string, HTMLElement>;
   private readonly tabButtons: HTMLButtonElement[];
   private editor: EditorView;
@@ -209,6 +208,8 @@ export class MilkdropOverlay {
 
     const header = document.createElement('div');
     header.className = 'milkdrop-overlay__header';
+    const titleBlock = document.createElement('div');
+    titleBlock.className = 'milkdrop-overlay__title-block';
     this.currentPresetLabel = document.createElement('div');
     this.currentPresetLabel.className = 'milkdrop-overlay__title';
     this.currentPresetLabel.textContent = 'MilkDrop Visualizer';
@@ -222,10 +223,14 @@ export class MilkdropOverlay {
     closeButton.addEventListener('click', () =>
       this.root.classList.remove('is-open'),
     );
-    header.append(this.currentPresetLabel, this.statusLabel, closeButton);
+    titleBlock.append(this.currentPresetLabel, this.statusLabel);
+    header.append(titleBlock, closeButton);
 
     const toolbar = document.createElement('div');
     toolbar.className = 'milkdrop-overlay__toolbar';
+
+    const sessionGroup = document.createElement('div');
+    sessionGroup.className = 'milkdrop-overlay__toolbar-group';
 
     this.autoplayToggle = document.createElement('input');
     this.autoplayToggle.type = 'checkbox';
@@ -239,6 +244,7 @@ export class MilkdropOverlay {
       this.autoplayToggle,
       document.createTextNode('Autoplay'),
     );
+    sessionGroup.appendChild(autoplayLabel);
 
     this.transitionModeSelect = document.createElement('select');
     this.transitionModeSelect.className = 'milkdrop-overlay__rating-select';
@@ -258,10 +264,22 @@ export class MilkdropOverlay {
       this.callbacks.onTransitionModeChange(mode);
     });
 
+    const transitionWrap = document.createElement('label');
+    transitionWrap.className = 'milkdrop-overlay__toolbar-field';
+    const transitionLabel = document.createElement('span');
+    transitionLabel.textContent = 'Transition';
+    transitionWrap.append(transitionLabel, this.transitionModeSelect);
+    sessionGroup.appendChild(transitionWrap);
+
+    const navigationGroup = document.createElement('div');
+    navigationGroup.className =
+      'milkdrop-overlay__toolbar-group milkdrop-overlay__toolbar-group--transport';
+
     const backButton = document.createElement('button');
     backButton.type = 'button';
     backButton.textContent = 'Back';
     backButton.addEventListener('click', () => this.callbacks.onGoBackPreset());
+    navigationGroup.appendChild(backButton);
 
     const previousButton = document.createElement('button');
     previousButton.type = 'button';
@@ -269,23 +287,19 @@ export class MilkdropOverlay {
     previousButton.addEventListener('click', () =>
       this.callbacks.onPreviousPreset(),
     );
+    navigationGroup.appendChild(previousButton);
 
     const nextButton = document.createElement('button');
     nextButton.type = 'button';
     nextButton.textContent = 'Next';
     nextButton.addEventListener('click', () => this.callbacks.onNextPreset());
+    navigationGroup.appendChild(nextButton);
 
     const randomButton = document.createElement('button');
     randomButton.type = 'button';
     randomButton.textContent = 'Random';
     randomButton.addEventListener('click', () => this.callbacks.onRandomize());
-
-    const duplicateButton = document.createElement('button');
-    duplicateButton.type = 'button';
-    duplicateButton.textContent = 'Duplicate';
-    duplicateButton.addEventListener('click', () =>
-      this.callbacks.onDuplicatePreset(),
-    );
+    navigationGroup.appendChild(randomButton);
 
     const importButton = document.createElement('button');
     importButton.type = 'button';
@@ -304,24 +318,6 @@ export class MilkdropOverlay {
     this.deleteButton.addEventListener('click', () =>
       this.callbacks.onDeletePreset(),
     );
-
-    this.activeRating = document.createElement('select');
-    this.activeRating.className = 'milkdrop-overlay__rating-select';
-    [0, 1, 2, 3, 4, 5].forEach((value) => {
-      const option = document.createElement('option');
-      option.value = String(value);
-      option.textContent = value === 0 ? 'Rate' : `${value}★`;
-      this.activeRating.appendChild(option);
-    });
-    this.activeRating.addEventListener('change', () => {
-      if (!this.activePresetId) {
-        return;
-      }
-      this.callbacks.onSetRating(
-        this.activePresetId,
-        Number.parseInt(this.activeRating.value, 10),
-      );
-    });
 
     this.blendSlider = document.createElement('input');
     this.blendSlider.type = 'range';
@@ -346,20 +342,7 @@ export class MilkdropOverlay {
       this.blendValue,
     );
 
-    toolbar.append(
-      autoplayLabel,
-      this.transitionModeSelect,
-      backButton,
-      previousButton,
-      nextButton,
-      randomButton,
-      duplicateButton,
-      importButton,
-      exportButton,
-      this.deleteButton,
-      this.activeRating,
-      blendWrap,
-    );
+    toolbar.append(sessionGroup, navigationGroup, blendWrap);
 
     const tabs = document.createElement('div');
     tabs.className = 'milkdrop-overlay__tabs';
@@ -536,17 +519,33 @@ export class MilkdropOverlay {
     this.editorStatus = document.createElement('div');
     this.editorStatus.className = 'milkdrop-overlay__editor-status';
     this.editorStatus.textContent = 'Editor ready';
+
+    const editorActions = document.createElement('div');
+    editorActions.className = 'milkdrop-overlay__editor-actions';
+
     const revertButton = document.createElement('button');
     revertButton.type = 'button';
     revertButton.textContent = 'Revert to live';
     revertButton.addEventListener('click', () =>
       this.callbacks.onRevertToActive(),
     );
+    editorActions.appendChild(revertButton);
+
+    const duplicateButton = document.createElement('button');
+    duplicateButton.type = 'button';
+    duplicateButton.textContent = 'Duplicate';
+    duplicateButton.addEventListener('click', () =>
+      this.callbacks.onDuplicatePreset(),
+    );
+    editorActions.appendChild(duplicateButton);
+
+    editorActions.append(importButton, exportButton, this.deleteButton);
+
     this.diagnosticsList = document.createElement('div');
     this.diagnosticsList.className = 'milkdrop-overlay__diagnostics';
     this.tabPanels.editor.append(
       this.editorStatus,
-      revertButton,
+      editorActions,
       editorHost,
       this.diagnosticsList,
     );
@@ -1206,7 +1205,6 @@ export class MilkdropOverlay {
     );
     this.deleteButton.hidden =
       !activePreset || activePreset.origin === 'bundled';
-    this.activeRating.value = String(activePreset?.rating ?? 0);
   }
 
   setAutoplay(enabled: boolean) {
