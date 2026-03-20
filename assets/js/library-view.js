@@ -11,8 +11,18 @@ import {
 } from './library-view/filter-state.js';
 import { ensureIconSymbol, SVG_NS } from './library-view/icon-sprite.js';
 import { setupDarkModeToggle } from './library-view/theme-toggle.js';
-import { createLibraryThreeEffects } from './library-view/three-library-effects.ts';
 import { getRecentToySlugs } from './utils/growth-metrics.ts';
+
+const LIBRARY_RENDER_BATCH_SIZE = 24;
+const LIBRARY_INITIAL_RENDER_COUNT = 24;
+
+const createNoopThreeEffects = () => ({
+  init() {},
+  syncCardPreviews() {},
+  triggerLaunchTransition() {},
+  startLaunchTransition() {},
+  dispose() {},
+});
 
 export function createLibraryView({
   toys = [],
@@ -37,7 +47,6 @@ export function createLibraryView({
   let searchQuery = '';
   let sortBy = 'featured';
   let lastCommittedQuery = '';
-  let pendingCommit;
   let pendingRenderFrame = 0;
   let lastFilteredToys = [];
   let lastRenderedQuery = '';
@@ -45,9 +54,14 @@ export function createLibraryView({
   let renderedCardMap = new Map();
   let toyBySlug = new Map();
   let toySearchMetadata = new Map();
+  let pendingBatchHandle = 0;
+  let activeRenderToken = 0;
+  let threeEffects = createNoopThreeEffects();
+  let threeEffectsLoader = null;
+  let threeEffectsInitialized = false;
+  let pendingPreviewSync = null;
   const filterLabelCache = new Map();
   const activeFilters = new Set();
-  const threeEffects = createLibraryThreeEffects();
   const {
     ensureMetaNode,
     ensureSearchForm,
@@ -66,6 +80,59 @@ export function createLibraryView({
 
   const getToyList = () => document.getElementById(targetId);
   const getToyKey = (toy, index = 0) => toy?.slug ?? `toy-${index}`;
+
+  const cancelPendingBatch = () => {
+    if (!pendingBatchHandle) return;
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.cancelIdleCallback === 'function'
+    ) {
+      window.cancelIdleCallback(pendingBatchHandle);
+    } else {
+      window.clearTimeout(pendingBatchHandle);
+    }
+    pendingBatchHandle = 0;
+  };
+
+  const flushPendingPreviewSync = () => {
+    if (!pendingPreviewSync) return;
+    threeEffects.syncCardPreviews(
+      pendingPreviewSync.cards,
+      pendingPreviewSync.toys,
+    );
+    pendingPreviewSync = null;
+  };
+
+  const ensureThreeEffects = async () => {
+    if (threeEffectsLoader) return threeEffectsLoader;
+    threeEffectsLoader = import('./library-view/three-library-effects.ts')
+      .then(({ createLibraryThreeEffects }) => {
+        threeEffects = createLibraryThreeEffects();
+        if (threeEffectsInitialized) {
+          threeEffects.init();
+        }
+        flushPendingPreviewSync();
+        return threeEffects;
+      })
+      .catch((error) => {
+        console.warn('Failed to initialize library Three.js effects', error);
+        threeEffects = createNoopThreeEffects();
+        return threeEffects;
+      });
+    return threeEffectsLoader;
+  };
+
+  const requestThreeEffects = () => {
+    if (typeof window === 'undefined') return;
+    const start = () => {
+      void ensureThreeEffects();
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(start, { timeout: 600 });
+      return;
+    }
+    window.setTimeout(start, 120);
+  };
 
   const buildToySearchMetadata = (toy) => {
     const tags = (toy.tags ?? []).map((tag) => tag.toLowerCase());
@@ -1184,22 +1251,26 @@ export function createLibraryView({
   const renderToys = (listToRender) => {
     const list = getToyList();
     if (!list) return;
+    cancelPendingBatch();
+    activeRenderToken += 1;
+    const renderToken = activeRenderToken;
     const shouldRebuildCards = lastRenderedQuery !== searchQuery;
     if (shouldRebuildCards) {
       renderedCardMap = new Map();
     }
 
-    const fragment = document.createDocumentFragment();
     if (listToRender.length === 0) {
       renderedCardMap.clear();
+      pendingPreviewSync = { cards: [], toys: [] };
+      const fragment = document.createDocumentFragment();
       fragment.appendChild(createEmptyState());
       list.replaceChildren(fragment);
+      flushPendingPreviewSync();
       updateResultsMeta(0);
       updateActiveFiltersSummary();
       return;
     }
 
-    renderGrowthPanels(fragment);
     const nextCardMap = new Map();
     const cards = [];
     const queryTokens = getQueryTokens(searchQuery);
@@ -1209,16 +1280,65 @@ export function createLibraryView({
       applyCardMotionVariant(card, index);
       nextCardMap.set(key, card);
       cards.push(card);
-      fragment.appendChild(card);
     });
 
     renderedCardMap = nextCardMap;
     lastRenderedQuery = searchQuery;
-    list.replaceChildren(fragment);
 
-    threeEffects.syncCardPreviews(cards, listToRender);
-    updateResultsMeta(listToRender.length);
-    updateActiveFiltersSummary();
+    const appendBatch = (count) => {
+      if (renderToken !== activeRenderToken) return;
+      const fragment = document.createDocumentFragment();
+      renderGrowthPanels(fragment);
+      cards.slice(0, count).forEach((card) => {
+        fragment.appendChild(card);
+      });
+      list.replaceChildren(fragment);
+      pendingPreviewSync = {
+        cards: cards.slice(0, count),
+        toys: listToRender.slice(0, count),
+      };
+      flushPendingPreviewSync();
+      updateResultsMeta(listToRender.length);
+      updateActiveFiltersSummary();
+    };
+
+    const scheduleRemainingBatches = (count) => {
+      if (count >= cards.length) return;
+      const nextCount = Math.min(
+        cards.length,
+        count + LIBRARY_RENDER_BATCH_SIZE,
+      );
+      const commit = () => {
+        pendingBatchHandle = 0;
+        if (renderToken !== activeRenderToken) return;
+        const fragment = document.createDocumentFragment();
+        cards.slice(count, nextCount).forEach((card) => {
+          fragment.appendChild(card);
+        });
+        list.appendChild(fragment);
+        pendingPreviewSync = {
+          cards: cards.slice(0, nextCount),
+          toys: listToRender.slice(0, nextCount),
+        };
+        flushPendingPreviewSync();
+        scheduleRemainingBatches(nextCount);
+      };
+
+      if (
+        typeof window !== 'undefined' &&
+        typeof window.requestIdleCallback === 'function'
+      ) {
+        pendingBatchHandle = window.requestIdleCallback(commit, {
+          timeout: 300,
+        });
+        return;
+      }
+      pendingBatchHandle = window.setTimeout(commit, 32);
+    };
+
+    const initialCount = Math.min(cards.length, LIBRARY_INITIAL_RENDER_COUNT);
+    appendBatch(initialCount);
+    scheduleRemainingBatches(initialCount);
   };
 
   const filterToys = (query) => {
@@ -1381,15 +1501,6 @@ export function createLibraryView({
       search.addEventListener('input', (e) => {
         filterToys(e.target.value);
         commitState({ replace: true });
-        if (pendingCommit) {
-          window.clearTimeout(pendingCommit);
-        }
-        pendingCommit = window.setTimeout(() => {
-          if (searchQuery.trim() !== lastCommittedQuery) {
-            lastCommittedQuery = searchQuery.trim();
-            commitState({ replace: false });
-          }
-        }, 500);
       });
 
       search.addEventListener('blur', () => {
@@ -1528,8 +1639,9 @@ export function createLibraryView({
     }
 
     syncRefineDisclosure();
-    threeEffects.init();
+    threeEffectsInitialized = true;
     renderToys(applyFilters());
+    requestThreeEffects();
 
     if (enableDarkModeToggle) {
       setupDarkModeToggle(themeToggleId);

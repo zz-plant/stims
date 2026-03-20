@@ -847,7 +847,7 @@ class MilkdropPresetVM implements MilkdropVM {
     const density = clamp(
       Math.round((this.state.mesh_density ?? 16) * this.detailScale),
       8,
-      36,
+      28,
     );
     const points: MeshFieldPoint[] = [];
 
@@ -933,8 +933,8 @@ class MilkdropPresetVM implements MilkdropVM {
       return [];
     }
 
-    const countX = clamp(Math.round(this.state.motion_vectors_x ?? 16), 1, 64);
-    const countY = clamp(Math.round(this.state.motion_vectors_y ?? 12), 1, 64);
+    const countX = clamp(Math.round(this.state.motion_vectors_x ?? 16), 1, 40);
+    const countY = clamp(Math.round(this.state.motion_vectors_y ?? 12), 1, 32);
     const colorValue = color(
       this.state.mv_r ?? 1,
       this.state.mv_g ?? 1,

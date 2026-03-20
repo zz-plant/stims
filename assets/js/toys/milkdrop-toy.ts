@@ -34,7 +34,7 @@ export function start({ container }: ToyStartOptions = {}) {
       },
     },
     audio: {
-      fftSize: 1024,
+      fftSize: 512,
     },
     plugins: [
       {

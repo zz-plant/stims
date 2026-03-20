@@ -1,17 +1,11 @@
-import { bootHomePage } from './bootstrap/home-page.ts';
-import { bootLibraryPage } from './bootstrap/library-page.ts';
-import { bootToyPage } from './bootstrap/toy-page.ts';
-import { initAgentAPI } from './core/agent-api.ts';
 import { setRendererTelemetryHandler } from './core/renderer-capabilities.ts';
-import { createLoader } from './loader.ts';
-import { createRouter } from './router.ts';
 import { isSmartTvDevice } from './utils/device-detect.ts';
-import { initGamepadNavigation } from './utils/gamepad-navigation.ts';
 
+type LoaderModule = typeof import('./loader.ts');
 type LoaderOverrides = {
-  loadToy?: typeof import('./loader.ts').loadToy;
-  loadFromQuery?: typeof import('./loader.ts').loadFromQuery;
-  initNavigation?: typeof import('./loader.ts').initNavigation;
+  loadToy?: LoaderModule['loadToy'];
+  loadFromQuery?: LoaderModule['loadFromQuery'];
+  initNavigation?: LoaderModule['initNavigation'];
 };
 
 const recordRendererTelemetry = () => {
@@ -61,22 +55,6 @@ const startApp = async () => {
     document.body.classList.toggle('tv-mode', isSmartTvDevice());
   }
 
-  const router = createRouter();
-  const defaultLoader = createLoader({ router });
-  const loaderOverrides =
-    (
-      globalThis as unknown as {
-        __stimsLoaderOverrides?: LoaderOverrides;
-      }
-    ).__stimsLoaderOverrides ?? {};
-  const loader = {
-    ...defaultLoader,
-    ...loaderOverrides,
-  };
-
-  const loadFromQuery = loader.loadFromQuery ?? defaultLoader.loadFromQuery;
-  const initNavigation = loader.initNavigation ?? defaultLoader.initNavigation;
-
   const audioControlsContainer = document.querySelector<HTMLElement>(
     '[data-audio-controls]',
   );
@@ -88,41 +66,85 @@ const startApp = async () => {
   );
   const pageType = document.body?.dataset?.page;
 
-  Promise.resolve().then(() => initGamepadNavigation());
+  Promise.resolve().then(async () => {
+    const { initGamepadNavigation } = await import(
+      './utils/gamepad-navigation.ts'
+    );
+    initGamepadNavigation();
+  });
 
-  if (pageType === 'toy') {
-    initAgentAPI();
-    bootToyPage({
-      router,
-      loadFromQuery,
-      initNavigation,
-      audioControlsContainer,
-      settingsContainer,
-    });
-  } else if (pageType === 'library') {
+  if (pageType === 'toy' || pageType === 'library') {
+    const [{ createLoader }, { createRouter }] = await Promise.all([
+      import('./loader.ts'),
+      import('./router.ts'),
+    ]);
+    const router = createRouter();
+    const defaultLoader = createLoader({ router });
+    const loaderOverrides =
+      (
+        globalThis as unknown as {
+          __stimsLoaderOverrides?: LoaderOverrides;
+        }
+      ).__stimsLoaderOverrides ?? {};
+    const loader = {
+      ...defaultLoader,
+      ...loaderOverrides,
+    };
+    const loadFromQuery = loader.loadFromQuery ?? defaultLoader.loadFromQuery;
+    const initNavigation =
+      loader.initNavigation ?? defaultLoader.initNavigation;
+
+    if (pageType === 'toy') {
+      const [{ bootToyPage }, { initAgentAPI }] = await Promise.all([
+        import('./bootstrap/toy-page.ts'),
+        import('./core/agent-api.ts'),
+      ]);
+      initAgentAPI();
+      bootToyPage({
+        router,
+        loadFromQuery,
+        initNavigation,
+        audioControlsContainer,
+        settingsContainer,
+      });
+      return;
+    }
+
+    const { bootLibraryPage } = await import('./bootstrap/library-page.ts');
     bootLibraryPage({
       navContainer,
       loadToy: loader.loadToy ?? defaultLoader.loadToy,
       initNavigation,
       loadFromQuery,
     });
-  } else {
-    bootHomePage({
-      navContainer,
-    });
+    return;
   }
+
+  const { bootHomePage } = await import('./bootstrap/home-page.ts');
+  bootHomePage({
+    navContainer,
+  });
 };
 
 let appStarted = false;
 
-const startAppOnce = () => {
-  if (appStarted) return;
-  appStarted = true;
-  void startApp();
-};
+const appReady = new Promise<void>((resolve) => {
+  const startAppOnce = () => {
+    if (appStarted) {
+      resolve();
+      return;
+    }
+    appStarted = true;
+    void startApp().finally(resolve);
+  };
 
-if (document.readyState === 'loading' && !document.body) {
-  document.addEventListener('DOMContentLoaded', startAppOnce, { once: true });
-} else {
-  startAppOnce();
-}
+  if (document.readyState === 'loading' && !document.body) {
+    document.addEventListener('DOMContentLoaded', startAppOnce, { once: true });
+  } else {
+    startAppOnce();
+  }
+});
+
+(
+  globalThis as typeof globalThis & { __stimsAppReady?: Promise<void> }
+).__stimsAppReady = appReady;

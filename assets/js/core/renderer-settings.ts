@@ -16,7 +16,7 @@ export function getRendererBackendMaxPixelRatioCap({
     return backend === 'webgpu' ? 1.5 : 1.25;
   }
 
-  return backend === 'webgpu' ? 2.5 : 1.5;
+  return backend === 'webgpu' ? 2 : 1.35;
 }
 
 export type RendererViewport = {
@@ -25,7 +25,7 @@ export type RendererViewport = {
 };
 
 const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
-  maxPixelRatio: 1.75,
+  maxPixelRatio: 1.5,
   renderScale: 1,
   exposure: 1,
   antialias: true,
