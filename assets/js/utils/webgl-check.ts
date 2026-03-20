@@ -1,3 +1,4 @@
+import type { RenderingSupport } from '../core/renderer-capabilities.ts';
 import { getRenderingSupport } from '../core/renderer-capabilities.ts';
 
 const OVERLAY_ID = 'rendering-capability-overlay';
@@ -8,6 +9,7 @@ const FOCUSABLE_SELECTOR =
 
 let restoreFocusTarget: HTMLElement | null = null;
 let overlayCleanup: (() => void) | null = null;
+let renderingSupportResolver: () => RenderingSupport = getRenderingSupport;
 
 function getFocusableElements(container: HTMLElement) {
   return Array.from(
@@ -278,7 +280,7 @@ export function ensureWebGL(options: EnsureOptions = {}) {
     return false;
   }
 
-  const { hasWebGPU, hasWebGL } = getRenderingSupport();
+  const { hasWebGPU, hasWebGL } = renderingSupportResolver();
 
   if (hasWebGPU || hasWebGL) {
     removeExistingOverlay();
@@ -287,4 +289,10 @@ export function ensureWebGL(options: EnsureOptions = {}) {
 
   addCapabilityOverlay(content);
   return false;
+}
+
+export function setRenderingSupportResolverForTests(
+  resolver: (() => RenderingSupport) | null,
+) {
+  renderingSupportResolver = resolver ?? getRenderingSupport;
 }
