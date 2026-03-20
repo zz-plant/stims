@@ -285,6 +285,15 @@ export function bootToyPage({
     showCloseButton: true,
   });
 
+  document
+    .querySelectorAll<HTMLElement>('[data-open-preflight]')
+    .forEach((trigger) => {
+      trigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        preflight.open(trigger);
+      });
+    });
+
   void preflight.run();
 
   window.addEventListener('pagehide', () => {

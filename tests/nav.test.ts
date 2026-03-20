@@ -177,7 +177,7 @@ describe('toy navigation visibility states', () => {
     expect(secondary.hidden).toBe(false);
     expect(secondary.getAttribute('aria-hidden')).toBe('false');
     expect(secondary.hasAttribute('inert')).toBe(false);
-    expect(toggle.textContent).toBe('Hide tools');
+    expect(toggle.textContent).toBe('Hide audio & settings');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
     expect(document.documentElement.dataset.toyControlsExpanded).toBe('true');
@@ -196,7 +196,7 @@ describe('toy navigation visibility states', () => {
 
     toggle.click();
 
-    expect(toggle.textContent).toBe('Tools');
+    expect(toggle.textContent).toBe('Audio & settings');
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(toggle.getAttribute('aria-controls')).toBe(
       'toy-nav-secondary-actions',

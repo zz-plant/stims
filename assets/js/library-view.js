@@ -212,11 +212,11 @@ export function createLibraryView({
 
     if (baseActiveLabels.length === 0) {
       note.textContent =
-        'Quick filters include demo audio, microphone, mobile-friendly, and motion.';
+        'Press / to search, then press Enter to launch a single matching visual.';
       return;
     }
 
-    note.textContent = `Quick filters active: ${baseActiveLabels.join(' + ')}`;
+    note.textContent = `Quick filters active: ${baseActiveLabels.join(' + ')}. Press / to search.`;
   };
 
   const updateActiveFiltersSummary = () => {
@@ -406,9 +406,9 @@ export function createLibraryView({
       parts.push(getSortLabel());
     }
 
-    const quickLaunchToy = resolveQuickLaunchToy(lastFilteredToys, '');
+    const quickLaunchToy = resolveQuickLaunchToy(lastFilteredToys, searchQuery);
     if (quickLaunchToy) {
-      parts.push(`↵ ${quickLaunchToy.title}`);
+      parts.push(`↵ Launch ${quickLaunchToy.title}`);
     }
 
     meta.textContent = parts.join(' • ');
@@ -985,7 +985,7 @@ export function createLibraryView({
       const open = document.createElement('button');
       open.type = 'button';
       open.className = 'cta-button cta-button--accent';
-      open.textContent = 'Open';
+      open.textContent = 'Open controls';
       open.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -1003,10 +1003,10 @@ export function createLibraryView({
       play.type = 'button';
       play.className = 'cta-button cta-button--muted';
       play.textContent = toy.capabilities?.demoAudio
-        ? 'Preview'
+        ? 'Start demo'
         : toy.capabilities?.microphone
-          ? 'Use mic'
-          : 'Open';
+          ? 'Start mic'
+          : 'Launch';
       play.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -1107,30 +1107,33 @@ export function createLibraryView({
     const quickActions = document.createElement('div');
     quickActions.className = 'webtoy-card-actions';
 
-    const applySuggestedSearch = (query) => {
-      searchQuery = query;
-      if (searchInputId) {
-        const search = document.getElementById(searchInputId);
-        if (search && 'value' in search) {
-          search.value = query;
-        }
-      }
+    const applySuggestedState = ({ query = '', filters = [] }) => {
+      applyState(
+        {
+          query,
+          filters,
+          sort: 'featured',
+        },
+        { render: true },
+      );
       commitState({ replace: false });
-      renderToys(applyFilters());
       updateSearchClearState();
+      updateFilterResetState();
       updateActiveFiltersSummary();
     };
 
     [
-      { label: 'Try demo audio', query: 'demo audio' },
-      { label: 'Try mobile', query: 'mobile' },
-      { label: 'Try webgpu', query: 'webgpu' },
-    ].forEach(({ label, query }) => {
+      { label: 'Show demo-ready', query: 'demo audio' },
+      { label: 'Show mobile-friendly', query: 'mobile' },
+      { label: 'Show broader device support', filters: ['feature:compatible'] },
+    ].forEach(({ label, query, filters }) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'cta-button cta-button--muted';
       button.textContent = label;
-      button.addEventListener('click', () => applySuggestedSearch(query));
+      button.addEventListener('click', () =>
+        applySuggestedState({ query, filters }),
+      );
       quickActions.appendChild(button);
     });
 
@@ -1365,6 +1368,15 @@ export function createLibraryView({
   const initSearch = () => {
     if (!searchInputId) return;
     const search = document.getElementById(searchInputId);
+    if (search instanceof HTMLInputElement) {
+      if (!search.placeholder) {
+        search.placeholder = 'Search visuals, moods, audio modes, or controls';
+      }
+      search.setAttribute(
+        'aria-label',
+        'Search visuals by title, mood, audio mode, or interaction',
+      );
+    }
     if (search) {
       search.addEventListener('input', (e) => {
         filterToys(e.target.value);

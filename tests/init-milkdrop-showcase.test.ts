@@ -66,7 +66,7 @@ describe('initMilkdropShowcase', () => {
     ).map((card) => card.textContent?.trim());
 
     expect(count?.textContent).toBe(
-      '3 bundled presets. 3 quick collections. Showing 1 launchable presets from Classic MilkDrop.',
+      '3 bundled presets. 3 quick collections. Showing 1 presets from Classic MilkDrop.',
     );
     expect(filters).toEqual([
       'All presets3',

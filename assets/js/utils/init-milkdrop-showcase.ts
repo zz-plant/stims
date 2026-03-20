@@ -151,9 +151,9 @@ function createPresetCard(
   actions.className = 'milkdrop-showcase__card-actions';
 
   const launch = documentRef.createElement('a');
-  launch.href = '/milkdrop/';
+  launch.href = '/milkdrop/?audio=demo';
   launch.className = 'cta-button primary';
-  launch.textContent = 'Open visualizer';
+  launch.textContent = 'Launch preset';
   launch.addEventListener('click', () => {
     requestMilkdropPresetSelection(entry.id);
   });
@@ -218,7 +218,7 @@ export async function initMilkdropShowcase() {
         ),
       );
 
-      presetCount.textContent = `${entries.length} bundled presets. ${collectionTags.length} quick collections. Showing ${featuredEntries.length} launchable presets from ${collectionLabel}.`;
+      presetCount.textContent = `${entries.length} bundled presets. ${collectionTags.length} quick collections. Showing ${featuredEntries.length} presets from ${collectionLabel}.`;
 
       presetFilters.replaceChildren(
         createCollectionButton(document, {
