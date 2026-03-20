@@ -32,12 +32,46 @@ function formatResolvedUrl(resolved: URL) {
   return resolved.toString();
 }
 
+function resolveDocumentAssetBaseUrl() {
+  if (typeof document === 'undefined') return null;
+
+  const scripts = Array.from(
+    document.querySelectorAll<HTMLScriptElement>('script[type="module"][src]'),
+  );
+  for (const script of scripts) {
+    const src = script.getAttribute('src')?.trim();
+    if (!src) continue;
+
+    try {
+      const resolvedScriptUrl = new URL(
+        src,
+        typeof window !== 'undefined' ? window.location.href : undefined,
+      );
+      const assetMarker = '/assets/';
+      const markerIndex = resolvedScriptUrl.pathname.indexOf(assetMarker);
+      if (markerIndex === -1) continue;
+
+      const basePath = resolvedScriptUrl.pathname.slice(0, markerIndex + 1);
+      return new URL(basePath, resolvedScriptUrl.origin);
+    } catch (error) {
+      console.warn('Unable to resolve document asset base URL', error);
+    }
+  }
+
+  return null;
+}
+
 function resolveBaseUrl(input?: BaseUrlInput): URL | null {
   if (typeof input === 'function') {
     return resolveBaseUrl(input());
   }
 
   if (!input) {
+    const documentAssetBaseUrl = resolveDocumentAssetBaseUrl();
+    if (documentAssetBaseUrl) {
+      return documentAssetBaseUrl;
+    }
+
     const win = typeof window !== 'undefined' ? window : null;
     const href = win?.location?.href;
     if (href) return new URL(href);

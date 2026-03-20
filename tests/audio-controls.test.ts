@@ -310,6 +310,39 @@ describe('audio controls primary emphasis', () => {
       value: mediaDevices,
     });
   });
+
+  test('auto-starts demo audio when requested by the route', async () => {
+    const container = document.createElement('section');
+    const onRequestDemoAudio = mock(async () => {});
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio,
+      autoStartSource: 'demo',
+      preferDemoAudio: true,
+    });
+
+    await flush();
+
+    expect(onRequestDemoAudio).toHaveBeenCalledTimes(1);
+    expect(
+      (
+        container.querySelector('[data-audio-row="demo"]') as HTMLElement | null
+      )?.classList.contains('control-panel__row--primary'),
+    ).toBe(true);
+    expect(
+      (container.querySelector('#audio-status') as HTMLElement | null)
+        ?.textContent,
+    ).toContain('Demo audio started.');
+    expect(
+      (
+        container.querySelector(
+          '[data-post-start-guidance]',
+        ) as HTMLElement | null
+      )?.hidden,
+    ).toBe(false);
+  });
+
   test('builds one concise try-this-first recommendation from toy metadata', () => {
     expect(
       buildTryThisFirstRecommendation({

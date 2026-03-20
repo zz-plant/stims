@@ -25,6 +25,7 @@ export interface AudioControlsOptions {
   recommendedCapability?: 'demoAudio' | 'microphone' | 'motion' | 'touch';
   onApplyStarterPreset?: () => void;
   autoStartMicrophoneWhenGranted?: boolean;
+  autoStartSource?: 'demo';
   initialShortcut?: 'tab' | 'youtube';
 }
 
@@ -275,13 +276,13 @@ export function initAudioControls(
   void queryMicrophonePermissionState().then((state) => {
     microphonePermissionState = state;
     setMicrophoneButtonState();
-    if (state === 'denied') {
+    if (state === 'denied' && !hasStartedAudio) {
       updateStatus(
         'Microphone is currently blocked. Start with demo audio now, then allow mic in site permissions when ready.',
       );
       emphasizeDemoAudio();
     }
-    if (state === 'unsupported') {
+    if (state === 'unsupported' && !hasStartedAudio) {
       updateStatus(
         'Microphone is unavailable in this browser. Start with demo audio now.',
       );
@@ -533,6 +534,21 @@ export function initAudioControls(
       'Starting demo audio…',
     );
   });
+
+  if (options.autoStartSource === 'demo') {
+    void handleRequest(
+      demoBtn,
+      async () => {
+        await options.onRequestDemoAudio();
+        writeStoredSource('demo');
+        setPreferredSource('demo');
+      },
+      'Demo audio failed to load.',
+      undefined,
+      'Demo audio started.',
+      'Starting demo audio…',
+    );
+  }
 
   tabBtn?.addEventListener('click', () => {
     if (!requestTabAudio) return;

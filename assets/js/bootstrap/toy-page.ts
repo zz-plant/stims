@@ -234,6 +234,7 @@ export function bootToyPage({
         requestedAudioSource === 'tab' || requestedAudioSource === 'youtube'
           ? requestedAudioSource
           : undefined,
+      autoStartSource: requestedAudioSource === 'demo' ? 'demo' : undefined,
       onApplyStarterPreset: starterPresetId
         ? () => {
             requestMilkdropPresetSelection(starterPresetId);
