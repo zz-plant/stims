@@ -3,15 +3,15 @@ import {
   isAgentMode,
   setDebugSnapshot,
 } from '../core/agent-api.ts';
-import {
-  setQualityPresetById,
-  type QualityPreset,
-} from '../core/settings-panel.ts';
 import type { ShaderQuality } from '../core/performance-panel';
 import {
   isCompatibilityModeEnabled,
   setCompatibilityMode,
 } from '../core/render-preferences';
+import {
+  type QualityPreset,
+  setQualityPresetById,
+} from '../core/settings-panel.ts';
 import type { ToyRuntimeFrame, ToyRuntimeInstance } from '../core/toy-runtime';
 import type { QualityPresetManager } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';

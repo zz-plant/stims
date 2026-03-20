@@ -515,7 +515,7 @@ export class MilkdropOverlay {
     browseControls.className = 'milkdrop-overlay__browse-controls';
     browseControls.append(
       this.buildBrowseControl('Search', this.searchInput, true),
-      this.buildBrowseControl('Collection', this.browseModeSelect),
+      this.buildBrowseControl('View', this.browseModeSelect),
       this.buildBrowseControl('Fidelity', this.browseSupportSelect),
       this.buildBrowseControl('Sort', this.browseSortSelect),
     );
@@ -653,7 +653,9 @@ export class MilkdropOverlay {
   }
 
   private updateBrowseQualityDetails(presetId: string) {
-    const preset = this.browseQualityPresets.find((entry) => entry.id === presetId);
+    const preset = this.browseQualityPresets.find(
+      (entry) => entry.id === presetId,
+    );
     if (!preset) {
       return;
     }

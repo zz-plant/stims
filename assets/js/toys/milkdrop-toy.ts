@@ -1,6 +1,6 @@
+import { DEFAULT_QUALITY_PRESETS } from '../core/settings-panel';
 import type { ToyStartOptions } from '../core/toy-interface';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
-import { DEFAULT_QUALITY_PRESETS } from '../core/settings-panel';
 import { createMilkdropExperience } from '../milkdrop/runtime';
 import { createToyRuntimeStarter } from '../utils/toy-runtime-starter';
 import { createRendererQualityManager } from '../utils/toy-settings';
