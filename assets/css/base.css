@@ -506,6 +506,10 @@ body {
   justify-content: flex-end;
 }
 
+.active-toy-nav__mobile-actions {
+  display: none;
+}
+
 .active-toy-nav__actions-primary,
 .active-toy-nav__actions-secondary {
   display: contents;
@@ -1145,6 +1149,21 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
+.control-panel__source-shortcuts {
+  margin: 0 0 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.control-panel__shortcut-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .control-panel__first-steps-header {
   display: flex;
   align-items: center;
@@ -1734,7 +1753,7 @@ body {
     border-color: rgba(148, 165, 180, 0.3);
     background: rgba(6, 11, 22, 0.92);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
-    max-height: min(18svh, calc(100dvh - env(safe-area-inset-top) - 6px));
+    max-height: min(34svh, calc(100dvh - env(safe-area-inset-top) - 6px));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -1803,7 +1822,7 @@ body {
 
   .active-toy-nav__actions[data-toy-actions-expanded="true"]
     .active-toy-nav__actions-secondary {
-    max-height: min(16svh, 148px);
+    max-height: min(18svh, 172px);
     overflow-y: auto;
     padding-right: 2px;
     -webkit-overflow-scrolling: touch;
@@ -2353,7 +2372,7 @@ body {
 .preflight-dialog .control-panel__actions {
   flex-wrap: wrap;
   gap: 10px;
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-top: 12px;
 }
 

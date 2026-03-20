@@ -123,12 +123,14 @@ export function createLibraryView({
     const shouldCollapseByViewport =
       typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&
-      window.matchMedia('(max-width: 680px)').matches;
+      window.matchMedia('(max-width: 520px)').matches;
 
     refine.open = !shouldCollapseByViewport;
 
     if (summary instanceof HTMLElement) {
-      summary.textContent = refine.open ? 'Hide filters' : 'More filters';
+      summary.textContent = refine.open
+        ? 'Hide all filters'
+        : 'Show all filters';
     }
   };
 
@@ -1344,7 +1346,9 @@ export function createLibraryView({
       refine.addEventListener('toggle', () => {
         const summary = refine.querySelector('summary');
         if (!(summary instanceof HTMLElement)) return;
-        summary.textContent = refine.open ? 'Hide filters' : 'More filters';
+        summary.textContent = refine.open
+          ? 'Hide all filters'
+          : 'Show all filters';
       });
     }
 

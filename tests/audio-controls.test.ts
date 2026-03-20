@@ -121,7 +121,7 @@ describe('audio controls primary emphasis', () => {
     expect(onboardingHelp.open).toBe(false);
     expect(advancedInputs.open).toBe(false);
     expect(onboardingHelp.textContent).toContain('How to interact');
-    expect(advancedInputs.textContent).toContain('Other sources');
+    expect(advancedInputs.textContent).toContain('More audio sources');
   });
 
   test('persists advanced inputs disclosure state', () => {

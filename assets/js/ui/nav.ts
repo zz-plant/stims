@@ -253,9 +253,9 @@ function renderToyNav(
           class="toy-nav__mobile-toggle"
           data-toy-actions-toggle="true"
           aria-controls="toy-nav-secondary-actions"
-          aria-expanded="false"
+          aria-expanded="true"
         >
-          More
+          Tools
         </button>
       </div>
     </div>
@@ -339,7 +339,7 @@ function renderToyNav(
   const mobileActionsMediaQuery = getMediaQueryList(
     maxWidthQuery(BREAKPOINTS.md),
   );
-  let actionsExpanded = !isBelowBreakpoint(BREAKPOINTS.md);
+  let actionsExpanded = true;
 
   const applyActionsState = (expanded: boolean) => {
     actionsContainer?.setAttribute(
@@ -368,12 +368,12 @@ function renderToyNav(
       expanded ? 'true' : 'false',
     );
     if (actionsToggleBtn) {
-      actionsToggleBtn.textContent = expanded ? 'Hide extras' : 'More';
+      actionsToggleBtn.textContent = expanded ? 'Hide tools' : 'Tools';
     }
   };
 
   const syncActionsForViewport = () => {
-    actionsExpanded = !isBelowBreakpoint(BREAKPOINTS.md);
+    actionsExpanded = true;
     applyActionsState(actionsExpanded);
   };
 

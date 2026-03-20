@@ -126,6 +126,27 @@ type NextStepContent = {
   showGrantAction: boolean;
 };
 
+function focusAfterClose(
+  target: string,
+  options: { expandSelector?: string } = {},
+) {
+  const win = typeof window !== 'undefined' ? window : null;
+  const doc = typeof document !== 'undefined' ? document : null;
+  if (!win || !doc) return;
+  win.requestAnimationFrame(() => {
+    if (options.expandSelector) {
+      const expandable = doc.querySelector(options.expandSelector);
+      if (expandable instanceof HTMLDetailsElement) {
+        expandable.open = true;
+      }
+    }
+    const element = doc.querySelector(target);
+    if (element instanceof HTMLElement) {
+      element.focus();
+    }
+  });
+}
+
 function getNextStepContent(
   result: CapabilityPreflightResult,
 ): NextStepContent {
@@ -623,13 +644,39 @@ export function attachCapabilityPreflight({
   continueButton.className = 'cta-button primary';
   continueButton.type = 'button';
   continueButton.dataset.preflightPrimaryAction = 'true';
-  continueButton.textContent = 'Continue';
+  continueButton.textContent = 'Choose audio';
   continueButton.hidden = true;
   continueButton.addEventListener('click', () => {
     setRememberPreference(rememberToggle.checked);
     closePanel();
   });
   actions.appendChild(continueButton);
+
+  const demoButton = document.createElement('button');
+  demoButton.className = 'cta-button ghost';
+  demoButton.type = 'button';
+  demoButton.textContent = 'Start with demo';
+  demoButton.hidden = true;
+  demoButton.addEventListener('click', () => {
+    setRememberPreference(rememberToggle.checked);
+    closePanel();
+    focusAfterClose('#use-demo-audio');
+  });
+  actions.appendChild(demoButton);
+
+  const browserAudioButton = document.createElement('button');
+  browserAudioButton.className = 'cta-button ghost';
+  browserAudioButton.type = 'button';
+  browserAudioButton.textContent = 'Open browser audio';
+  browserAudioButton.hidden = true;
+  browserAudioButton.addEventListener('click', () => {
+    setRememberPreference(rememberToggle.checked);
+    closePanel();
+    focusAfterClose('#use-tab-audio', {
+      expandSelector: '[data-advanced-inputs]',
+    });
+  });
+  actions.appendChild(browserAudioButton);
 
   let closeButton: HTMLButtonElement | null = null;
   if (showCloseButton) {
@@ -672,6 +719,8 @@ export function attachCapabilityPreflight({
   const applyActionPriority = (result: CapabilityPreflightResult | null) => {
     if (!result) {
       continueButton.hidden = true;
+      demoButton.hidden = true;
+      browserAudioButton.hidden = true;
       if (closeButton) closeButton.hidden = false;
       performanceButton.hidden = true;
       if (backLink) {
@@ -683,7 +732,22 @@ export function attachCapabilityPreflight({
     }
 
     if (result.canProceed) {
+      const hasInlineAudioPanel =
+        document.querySelector('#use-demo-audio') instanceof HTMLElement ||
+        document.querySelector('#start-audio-btn') instanceof HTMLElement;
+      const canShowBrowserAudioShortcut =
+        hasInlineAudioPanel &&
+        typeof navigator !== 'undefined' &&
+        typeof navigator.mediaDevices?.getDisplayMedia === 'function' &&
+        (document.querySelector('#use-tab-audio') instanceof HTMLElement ||
+          document.querySelector('#youtube-url') instanceof HTMLElement);
       continueButton.hidden = false;
+      continueButton.textContent =
+        result.microphone.state === 'granted'
+          ? 'Use mic or demo'
+          : 'Choose audio';
+      demoButton.hidden = !hasInlineAudioPanel;
+      browserAudioButton.hidden = !canShowBrowserAudioShortcut;
       if (backLink) {
         backLink.hidden = true;
         backLink.classList.add('ghost');
@@ -701,6 +765,8 @@ export function attachCapabilityPreflight({
       closeButton.textContent = 'Close';
     }
     continueButton.hidden = true;
+    demoButton.hidden = true;
+    browserAudioButton.hidden = true;
     performanceButton.hidden = true;
     if (backLink) {
       backLink.hidden = false;

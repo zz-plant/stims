@@ -137,6 +137,7 @@ export function initAudioControls(
       starterPresetLabel,
       showStarterPresetAction: true,
     })}
+    ${renderSourceShortcuts(options)}
     ${renderOnboardingHelp({
       firstRunHint,
       desktopHints,
@@ -581,6 +582,33 @@ function renderPrimaryAudioChoice() {
   `;
 }
 
+function renderSourceShortcuts(options: AudioControlsOptions) {
+  if (!options.onRequestTabAudio && !options.onRequestYouTubeAudio) {
+    return '';
+  }
+
+  return `
+    <section class="control-panel__source-shortcuts" aria-label="More audio entry points">
+      <p class="control-panel__label">Browser audio</p>
+      <p class="control-panel__advanced-helper">
+        Use these when you want the visuals to react to music or videos already playing in your browser.
+      </p>
+      <div class="control-panel__shortcut-actions">
+        ${
+          options.onRequestTabAudio
+            ? '<button type="button" class="cta-button ghost" data-reveal-tab-audio>Tab audio</button>'
+            : ''
+        }
+        ${
+          options.onRequestYouTubeAudio
+            ? '<button type="button" class="cta-button ghost" data-reveal-youtube-audio>YouTube</button>'
+            : ''
+        }
+      </div>
+    </section>
+  `;
+}
+
 function renderQuickstartSpotlight({
   summary,
   detail,
@@ -607,7 +635,7 @@ function renderQuickstartSpotlight({
       <p class="control-panel__comparison" data-audio-comparison>${summary}</p>
       ${detail ? `<p class="control-panel__microcopy">${detail}</p>` : ''}
       <ul class="control-panel__tips control-panel__tips--compact">
-        <li data-first-step-source>Use mic for room audio, or demo for the fastest first run.</li>
+        <li data-first-step-source>Demo is the fastest path. Mic is best once you want live response.</li>
       </ul>
     </section>
   `;
@@ -696,7 +724,7 @@ function renderAdvancedSources(options: AudioControlsOptions) {
 
   return `
     <details class="control-panel__details" data-advanced-inputs>
-      <summary class="control-panel__label">Other sources</summary>
+      <summary class="control-panel__label">More audio sources</summary>
       <p class="control-panel__advanced-helper">Use these when you want visuals to react to music or videos already playing in your browser.</p>
       <div id="advanced-audio-panel" class="control-panel__advanced" data-advanced-panel>
         ${

@@ -153,7 +153,7 @@ describe('toy navigation visibility states', () => {
     window.matchMedia = originalMatchMedia;
   });
 
-  test('mobile view collapses the toy action drawer by default', () => {
+  test('mobile view keeps the toy action drawer visible by default', () => {
     const { matchMedia } = createMatchMediaStub();
     window.matchMedia = matchMedia;
 
@@ -169,20 +169,20 @@ describe('toy navigation visibility states', () => {
     ) as HTMLButtonElement;
     const primary = container.querySelector('.active-toy-nav__actions-primary');
 
-    expect(actions.dataset.toyActionsExpanded).toBe('false');
+    expect(actions.dataset.toyActionsExpanded).toBe('true');
     expect(actions.hidden).toBe(false);
     expect(actions.getAttribute('aria-hidden')).toBeNull();
     expect(actions.hasAttribute('inert')).toBe(false);
-    expect(secondary.hidden).toBe(true);
-    expect(secondary.getAttribute('aria-hidden')).toBe('true');
-    expect(secondary.hasAttribute('inert')).toBe(true);
-    expect(toggle.textContent).toBe('More');
+    expect(secondary.hidden).toBe(false);
+    expect(secondary.getAttribute('aria-hidden')).toBe('false');
+    expect(secondary.hasAttribute('inert')).toBe(false);
+    expect(toggle.textContent).toBe('Hide tools');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
-    expect(document.documentElement.dataset.toyControlsExpanded).toBe('false');
+    expect(document.documentElement.dataset.toyControlsExpanded).toBe('true');
   });
 
-  test('mobile toy nav toggle updates to a clearer control label when expanded', () => {
+  test('mobile toy nav toggle updates its tools label as the drawer closes', () => {
     const { matchMedia } = createMatchMediaStub();
     window.matchMedia = matchMedia;
 
@@ -195,14 +195,14 @@ describe('toy navigation visibility states', () => {
 
     toggle.click();
 
-    expect(toggle.textContent).toBe('Hide extras');
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.textContent).toBe('Tools');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(toggle.getAttribute('aria-controls')).toBe(
       'toy-nav-secondary-actions',
     );
     expect(
       (container.querySelector('#toy-nav-secondary-actions') as HTMLElement)
         .hidden,
-    ).toBe(false);
+    ).toBe(true);
   });
 });
