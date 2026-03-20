@@ -16,7 +16,6 @@ import { requestMilkdropPresetSelection } from '../milkdrop/preset-selection.ts'
 import { initAudioControls } from '../ui/audio-controls.ts';
 import { initSystemControls } from '../ui/system-controls.ts';
 import { isSmartTvDevice } from '../utils/device-detect.ts';
-import { bindLibraryBackLink } from '../utils/library-back-navigation.ts';
 
 type LoaderApi = ReturnType<typeof createLoader>;
 type Toy = Pick<ToyEntry, 'slug' | 'title'>;
@@ -103,7 +102,6 @@ export function bootToyPage({
   initNavigation,
   audioControlsContainer,
   settingsContainer,
-  persistentBackLink,
 }: {
   router: {
     getLibraryHref: () => string;
@@ -112,7 +110,6 @@ export function bootToyPage({
   initNavigation: LoaderApi['initNavigation'];
   audioControlsContainer: HTMLElement | null;
   settingsContainer: HTMLElement | null;
-  persistentBackLink: HTMLAnchorElement | null;
 }) {
   let loaderStarted = false;
   const searchParams = new URLSearchParams(window.location.search);
@@ -153,12 +150,6 @@ export function bootToyPage({
       settingsContainer.hidden = true;
     }
   };
-
-  if (persistentBackLink) {
-    bindLibraryBackLink(persistentBackLink, {
-      backHref: router.getLibraryHref(),
-    });
-  }
 
   const setupAudio = (
     result: CapabilityPreflightResult | null,

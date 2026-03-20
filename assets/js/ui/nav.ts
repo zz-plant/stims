@@ -231,7 +231,7 @@ function renderToyNav(
   const safeTitle = escapeHtml(options.title ?? 'Stims');
   const safeSlug = options.slug ? escapeHtml(options.slug) : '';
   const hintText = isMobileDevice()
-    ? 'Swipe or tap Back to return to Stims.'
+    ? 'Back returns to Stims. Open audio and settings when needed.'
     : 'Press Esc or use Back to return to Stims.';
   container.className = 'active-toy-nav';
   container.innerHTML = `
@@ -255,7 +255,7 @@ function renderToyNav(
           aria-controls="toy-nav-secondary-actions"
           aria-expanded="true"
         >
-          Tools
+          Audio & settings
         </button>
       </div>
     </div>
@@ -368,7 +368,9 @@ function renderToyNav(
       expanded ? 'true' : 'false',
     );
     if (actionsToggleBtn) {
-      actionsToggleBtn.textContent = expanded ? 'Hide tools' : 'Tools';
+      actionsToggleBtn.textContent = expanded
+        ? 'Hide audio & settings'
+        : 'Audio & settings';
     }
   };
 

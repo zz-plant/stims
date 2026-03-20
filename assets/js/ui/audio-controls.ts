@@ -129,24 +129,25 @@ export function initAudioControls(
 
   container.innerHTML = `
     <p class="control-panel__eyebrow">Start</p>
-    <div class="control-panel__heading">Pick an input</div>
-    <p class="control-panel__description">Start instantly with demo, or switch to mic when you want live response.</p>
+    <div class="control-panel__heading">Start the visuals</div>
+    <p class="control-panel__description">Use demo for the fastest first run. Switch to mic once you want live response.</p>
     ${renderPrimaryAudioChoice()}
     ${renderQuickstartSpotlight({
       summary: tryThisFirst.summary,
       detail: tryThisFirst.detail,
       starterPresetLabel,
-      showStarterPresetAction: true,
+      showStarterPresetAction: false,
     })}
-    ${renderSourceShortcuts(options)}
-    ${renderOnboardingHelp({
+    ${renderAdvancedSources(options)}
+    ${renderPostStartGuidance({
       firstRunHint,
       desktopHints,
       touchHints,
       supportsTouchLikeInput,
       starterTips: options.starterTips,
+      starterPresetLabel,
+      showStarterPresetAction: true,
     })}
-    ${renderAdvancedSources(options)}
     <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
   `;
 
@@ -164,12 +165,6 @@ export function initAudioControls(
   const advancedInputs = container.querySelector(
     '[data-advanced-inputs]',
   ) as HTMLDetailsElement | null;
-  const revealTabAudioBtn = container.querySelector(
-    '[data-reveal-tab-audio]',
-  ) as HTMLButtonElement | null;
-  const revealYouTubeAudioBtn = container.querySelector(
-    '[data-reveal-youtube-audio]',
-  ) as HTMLButtonElement | null;
   const ADVANCED_KEY = 'stims-audio-advanced-open';
   const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
   const QUICK_START_PRESET_KEY = 'stims-quick-start-preset';
@@ -299,9 +294,15 @@ export function initAudioControls(
   const quickstartSpotlight = container.querySelector(
     '[data-quickstart-spotlight]',
   ) as HTMLElement | null;
+  const postStartGuidance = container.querySelector(
+    '[data-post-start-guidance]',
+  ) as HTMLElement | null;
   const hideFirstSteps = () => {
     if (quickstartSpotlight) {
       quickstartSpotlight.hidden = true;
+    }
+    if (postStartGuidance) {
+      postStartGuidance.hidden = false;
     }
   };
 
@@ -417,19 +418,6 @@ export function initAudioControls(
       persistAdvancedState(advancedInputs.open);
     });
   }
-
-  revealTabAudioBtn?.addEventListener('click', () => {
-    persistAdvancedState(true);
-    tabBtn?.focus();
-  });
-
-  revealYouTubeAudioBtn?.addEventListener('click', () => {
-    persistAdvancedState(true);
-    const youtubeField = container.querySelector(
-      '#youtube-url',
-    ) as HTMLInputElement | null;
-    youtubeField?.focus();
-  });
 
   const maybeAutoStartMicrophone = () => {
     if (
@@ -606,33 +594,6 @@ function renderPrimaryAudioChoice() {
   `;
 }
 
-function renderSourceShortcuts(options: AudioControlsOptions) {
-  if (!options.onRequestTabAudio && !options.onRequestYouTubeAudio) {
-    return '';
-  }
-
-  return `
-    <section class="control-panel__source-shortcuts" aria-label="More audio entry points">
-      <p class="control-panel__label">Browser audio</p>
-      <p class="control-panel__advanced-helper">
-        Use these when you want the visuals to react to music or videos already playing in your browser.
-      </p>
-      <div class="control-panel__shortcut-actions">
-        ${
-          options.onRequestTabAudio
-            ? '<button type="button" class="cta-button ghost" data-reveal-tab-audio>Tab audio</button>'
-            : ''
-        }
-        ${
-          options.onRequestYouTubeAudio
-            ? '<button type="button" class="cta-button ghost" data-reveal-youtube-audio>YouTube</button>'
-            : ''
-        }
-      </div>
-    </section>
-  `;
-}
-
 function renderQuickstartSpotlight({
   summary,
   detail,
@@ -659,31 +620,40 @@ function renderQuickstartSpotlight({
       <p class="control-panel__comparison" data-audio-comparison>${summary}</p>
       ${detail ? `<p class="control-panel__microcopy">${detail}</p>` : ''}
       <ul class="control-panel__tips control-panel__tips--compact">
-        <li data-first-step-source>Demo is the fastest path. Mic is best once you want live response.</li>
+        <li data-first-step-source>Demo gets you to motion fastest. Mic is better once you want live response.</li>
       </ul>
     </section>
   `;
 }
 
-function renderOnboardingHelp({
+function renderPostStartGuidance({
   firstRunHint,
   desktopHints,
   touchHints,
   supportsTouchLikeInput,
   starterTips,
+  starterPresetLabel,
+  showStarterPresetAction,
 }: {
   firstRunHint?: string;
   desktopHints: string[];
   touchHints: string[];
   supportsTouchLikeInput: boolean;
   starterTips?: string[];
+  starterPresetLabel: string;
+  showStarterPresetAction: boolean;
 }) {
   return `
-    <details class="control-panel__details" data-onboarding-help>
-      <summary class="control-panel__label">How to interact</summary>
-      <p class="control-panel__comparison" data-audio-comparison>
-        Mic is responsive. Demo is instant.
-      </p>
+    <section class="control-panel__post-start" data-post-start-guidance hidden aria-label="Next steps">
+      <div class="control-panel__first-steps-header">
+        <span class="control-panel__label">Next</span>
+        ${
+          showStarterPresetAction
+            ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Apply ${starterPresetLabel}</button>`
+            : ''
+        }
+      </div>
+      <p class="control-panel__comparison">Audio is live. Now tune the look or change how you interact.</p>
       ${
         firstRunHint
           ? `<p class="control-panel__microcopy">${firstRunHint}</p>`
@@ -737,7 +707,7 @@ function renderOnboardingHelp({
       `
           : ''
       }
-    </details>
+    </section>
   `;
 }
 
@@ -748,8 +718,8 @@ function renderAdvancedSources(options: AudioControlsOptions) {
 
   return `
     <details class="control-panel__details" data-advanced-inputs>
-      <summary class="control-panel__label">More audio sources</summary>
-      <p class="control-panel__advanced-helper">Use these when you want visuals to react to music or videos already playing in your browser.</p>
+      <summary class="control-panel__label">Other audio sources</summary>
+      <p class="control-panel__advanced-helper">Use these when you want the visuals to react to music or videos already playing in your browser.</p>
       <div id="advanced-audio-panel" class="control-panel__advanced" data-advanced-panel>
         ${
           options.onRequestTabAudio

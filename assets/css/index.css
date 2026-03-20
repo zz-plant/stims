@@ -1845,6 +1845,39 @@ html.light .cta-helper {
   line-height: 1.45;
 }
 
+.hero-supporting-links {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.hero-supporting-links a,
+.hero-supporting-links__button {
+  color: var(--link-color);
+  font: inherit;
+}
+
+.hero-supporting-links__button {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.hero-supporting-links a:hover,
+.hero-supporting-links__button:hover {
+  color: var(--link-hover);
+}
+
+.hero-supporting-links a:focus-visible,
+.hero-supporting-links__button:focus-visible {
+  outline: var(--tv-focus-outline-width) solid var(--accent-color);
+  outline-offset: var(--tv-focus-outline-offset);
+}
+
 .details-panel {
   display: none;
 }

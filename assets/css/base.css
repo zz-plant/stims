@@ -1149,6 +1149,12 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
+.control-panel__post-start {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
 .control-panel__source-shortcuts {
   margin: 0 0 10px;
   padding: 12px;
@@ -1795,6 +1801,11 @@ body {
     padding: 8px 10px;
     border-radius: 12px;
     font-size: 0.8rem;
+  }
+
+  .toy-nav__mobile-toggle {
+    white-space: normal;
+    line-height: 1.2;
   }
 
   .active-toy-nav__actions {
