@@ -166,6 +166,19 @@ export function setQualityPresetById(
   return preset;
 }
 
+export function getQualityPresetScopeHint(storageKey: string): string {
+  if (storageKey === QUALITY_STORAGE_KEY) {
+    return 'Saved on this device and shared across toys.';
+  }
+  return 'Saved on this device for this toy profile.';
+}
+
+export function describeQualityPresetImpact(preset: QualityPreset): string {
+  const render = preset.renderScale ?? 1;
+  const particles = preset.particleScale ?? 1;
+  return `What changes: pixel ratio up to ${preset.maxPixelRatio.toFixed(2)}x, render scale ${render.toFixed(2)}x, particle density ${particles.toFixed(2)}x.`;
+}
+
 export class PersistentSettingsPanel {
   private container: HTMLDivElement;
   private heading: HTMLDivElement;
@@ -393,10 +406,7 @@ export class PersistentSettingsPanel {
   }
 
   private getScopeHint(storageKey: string): string {
-    if (storageKey === QUALITY_STORAGE_KEY) {
-      return 'Saved on this device and shared across toys.';
-    }
-    return 'Saved on this device for this toy profile.';
+    return getQualityPresetScopeHint(storageKey);
   }
 
   private createHint(content: string): HTMLElement {
@@ -406,9 +416,7 @@ export class PersistentSettingsPanel {
   }
 
   private describePresetImpact(preset: QualityPreset): string {
-    const render = preset.renderScale ?? 1;
-    const particles = preset.particleScale ?? 1;
-    return `What changes: pixel ratio up to ${preset.maxPixelRatio.toFixed(2)}x, render scale ${render.toFixed(2)}x, particle density ${particles.toFixed(2)}x.`;
+    return describeQualityPresetImpact(preset);
   }
 
   private handleQualityChange(presetId: string) {

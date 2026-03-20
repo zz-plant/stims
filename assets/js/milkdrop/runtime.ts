@@ -3,6 +3,10 @@ import {
   isAgentMode,
   setDebugSnapshot,
 } from '../core/agent-api.ts';
+import {
+  setQualityPresetById,
+  type QualityPreset,
+} from '../core/settings-panel.ts';
 import type { ShaderQuality } from '../core/performance-panel';
 import {
   isCompatibilityModeEnabled,
@@ -350,10 +354,15 @@ function isEditablePreset(entry: MilkdropCatalogEntry | undefined | null) {
 export function createMilkdropExperience({
   container,
   quality,
+  qualityControl,
   initialPresetId,
 }: {
   container?: HTMLElement | null;
   quality: QualityPresetManager;
+  qualityControl: {
+    presets: QualityPreset[];
+    storageKey: string;
+  };
   initialPresetId?: string;
 }) {
   const prefs = readUiPrefs();
@@ -374,6 +383,16 @@ export function createMilkdropExperience({
     callbacks: {
       onSelectPreset: (id) => {
         void selectPreset(id);
+      },
+      onSelectQualityPreset: (presetId) => {
+        const preset = setQualityPresetById(presetId, {
+          presets: qualityControl.presets,
+          storageKey: qualityControl.storageKey,
+        });
+        if (!preset) {
+          return;
+        }
+        quality.applyQualityPreset(preset);
       },
       onToggleFavorite: (id, favorite) => {
         void catalogStore.setFavorite(id, favorite).then(syncCatalog);
@@ -480,6 +499,11 @@ export function createMilkdropExperience({
   overlay.setAutoplay(autoplay);
   overlay.setBlendDuration(blendDuration);
   overlay.setTransitionMode(transitionMode);
+  overlay.setQualityPresets({
+    presets: qualityControl.presets,
+    activePresetId: quality.activeQuality.id,
+    storageKey: qualityControl.storageKey,
+  });
   overlay.setSessionState(session.getState());
   if (prefs.fallbackNotice) {
     setOverlayStatus(prefs.fallbackNotice);

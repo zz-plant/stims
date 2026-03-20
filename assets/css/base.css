@@ -2613,8 +2613,8 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__panel {
   display: none;
   pointer-events: auto;
-  width: min(92vw, 540px);
-  max-height: min(78vh, 760px);
+  width: min(96vw, 680px);
+  max-height: min(82vh, 820px);
   margin-top: 12px;
   overflow: hidden;
   border: 1px solid rgba(125, 211, 252, 0.2);
@@ -2640,7 +2640,7 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__tabs {
   display: grid;
   gap: 10px;
-  padding: 16px 18px;
+  padding: 16px 20px;
 }
 
 .milkdrop-overlay__header {
@@ -2682,7 +2682,7 @@ body.tv-mode .control-panel input {
 }
 
 .milkdrop-overlay__toolbar {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   border-bottom: 1px solid rgba(148, 163, 184, 0.14);
 }
