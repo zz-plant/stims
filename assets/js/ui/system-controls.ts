@@ -303,7 +303,7 @@ export function initSystemControls(
     const pixelRatioSlider = document.createElement('input');
     pixelRatioSlider.type = 'range';
     pixelRatioSlider.min = '0.75';
-    pixelRatioSlider.max = '3';
+    pixelRatioSlider.max = '2.5';
     pixelRatioSlider.step = '0.05';
     pixelRatioSlider.value = String(
       renderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,

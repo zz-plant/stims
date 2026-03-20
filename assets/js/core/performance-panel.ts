@@ -13,14 +13,14 @@ export type PerformancePanelOptions = {
 };
 
 const DEFAULT_SETTINGS: PerformanceSettings = {
-  maxPixelRatio: 2,
+  maxPixelRatio: 1.75,
   particleBudget: 1,
   shaderQuality: 'balanced',
 };
 
 const STORAGE_KEY = 'stims:performance-settings';
 const MIN_PIXEL_RATIO = 1;
-const MAX_PIXEL_RATIO = 3;
+const MAX_PIXEL_RATIO = 2.5;
 const MIN_PARTICLE_BUDGET = 0.4;
 const MAX_PARTICLE_BUDGET = 1.6;
 

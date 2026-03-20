@@ -238,7 +238,7 @@ class MilkdropPresetVM implements MilkdropVM {
     smoothedSamples: [],
   };
   private readonly frameTransformCache = new Map<
-    string,
+    number,
     { x: number; y: number }
   >();
 
@@ -481,6 +481,12 @@ class MilkdropPresetVM implements MilkdropVM {
       env[statement.target] = value;
       scopedEnv[statement.target] = value;
     });
+  }
+
+  private getTransformCacheKey(x: number, y: number) {
+    const quantizedX = Math.round((x + 1) * 2048);
+    const quantizedY = Math.round((y + 1) * 2048);
+    return quantizedX * 4096 + quantizedY;
   }
 
   private buildMainWave(signals: MilkdropRuntimeSignals) {
@@ -782,7 +788,7 @@ class MilkdropPresetVM implements MilkdropVM {
     gridX: number,
     gridY: number,
   ) {
-    const cacheKey = `${gridX},${gridY}`;
+    const cacheKey = this.getTransformCacheKey(gridX, gridY);
     const cached = this.frameTransformCache.get(cacheKey);
     if (cached) {
       return cached;

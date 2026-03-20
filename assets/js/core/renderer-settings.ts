@@ -25,7 +25,7 @@ export type RendererViewport = {
 };
 
 const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
-  maxPixelRatio: 2,
+  maxPixelRatio: 1.75,
   renderScale: 1,
   exposure: 1,
   antialias: true,
