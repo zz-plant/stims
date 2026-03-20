@@ -244,6 +244,66 @@ warpanimspeed=1.5
     });
   });
 
+  test('emits procedural main wave and trail hints on webgpu line-wave presets', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Wave Hints
+wave_mode=5
+wave_usedots=0
+wave_scale=1.2
+wave_mystery=0.35
+wave_x=0.58
+wave_y=0.42
+mesh_density=16
+      `.trim(),
+      { id: 'procedural-wave-hints' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const firstFrame = vm.step(makeSignals({ frame: 1, time: 0.15 }));
+    const secondFrame = vm.step(makeSignals({ frame: 2, time: 0.3 }));
+
+    expect(firstFrame.mainWave.positions).toHaveLength(0);
+    expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
+    expect(firstFrame.gpuGeometry.trailWaves).toHaveLength(0);
+    expect(secondFrame.mainWave.positions).toHaveLength(0);
+    expect(secondFrame.gpuGeometry.mainWave?.mode).toBe(5);
+    expect(secondFrame.gpuGeometry.trailWaves.length).toBeGreaterThan(0);
+    expect(secondFrame.trails).toHaveLength(0);
+  });
+
+  test('emits procedural custom wave hints for webgpu-safe custom waves', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Custom Wave Hints
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_scaling=1.15
+wavecode_0_mystery=0.25
+wavecode_0_usedots=0
+wavecode_0_x=0.55
+wavecode_0_y=0.45
+wavecode_0_r=0.8
+wavecode_0_g=0.4
+wavecode_0_b=1
+wavecode_0_a=0.35
+      `.trim(),
+      { id: 'procedural-custom-wave-hints' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals({ frame: 4, time: 0.2 }));
+
+    expect(frameState.customWaves).toHaveLength(1);
+    expect(frameState.customWaves[0]?.positions).toHaveLength(0);
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+    expect(frameState.gpuGeometry.customWaves[0]?.spectrum).toBe(true);
+    expect(frameState.gpuGeometry.customWaves[0]?.samples.length).toBe(40);
+  });
+
   test('uses mesh history when building motion vector overlays across frames', () => {
     const preset = compileMilkdropPresetSource(
       `

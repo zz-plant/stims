@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Launch the Stims MilkDrop visualizer. This route owns compatibility checks, audio setup, quality tuning, the preset browser, and live editing."
+    />
+    <meta name="robots" content="index,follow" />
+    <meta name="theme-color" content="#0b0f1a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="canonical" href="https://no.toil.fyi/milkdrop/" />
+    <meta property="og:title" content="MilkDrop Visualizer | Stims" />
+    <meta
+      property="og:description"
+      content="Open the dedicated Stims launch route for quick checks, audio setup, preset browsing, and live editing."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://no.toil.fyi/milkdrop/" />
+    <meta property="og:image" content="https://no.toil.fyi/og/milkdrop.svg" />
+    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MilkDrop visualizer preview image" />
+    <meta property="og:site_name" content="Stims" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MilkDrop Visualizer | Stims" />
+    <meta
+      name="twitter:description"
+      content="Open the dedicated Stims launch route for quick checks, audio setup, preset browsing, and live editing."
+    />
+    <meta name="twitter:image" content="https://no.toil.fyi/icons/icon-512.png" />
+    <meta name="twitter:image:alt" content="MilkDrop visualizer preview image" />
+    <title>MilkDrop Visualizer | Stims</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="preload" href="/assets/css/base.css" as="style" />
+    <link rel="preload" href="/assets/css/index.css" as="style" />
+    <link rel="stylesheet" href="/assets/css/base.css" />
+    <link rel="stylesheet" href="/assets/css/index.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "MilkDrop Visualizer",
+        "description": "Dedicated Stims launch route for compatibility checks, audio setup, quality tuning, preset browsing, and live editing.",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Web",
+        "url": "https://no.toil.fyi/milkdrop/",
+        "image": "https://no.toil.fyi/og/milkdrop.svg",
+        "isAccessibleForFree": true
+      }
+    </script>
+  </head>
+  <body data-page="toy">
+    <div class="content">
+      <section class="intro launch-intro">
+        <div class="section-heading">
+          <p class="eyebrow">MilkDrop launchpad</p>
+          <h1>Start the visualizer, then shape the session.</h1>
+          <p class="section-description">
+            This route owns the runtime work: compatibility checks, audio setup,
+            quality tuning, preset browsing, and live editing.
+          </p>
+          <div class="cta-row">
+            <a class="cta-button ghost" href="/">Back to Stims</a>
+            <a class="cta-button ghost" href="/milkdrop/?audio=demo&panel=browse">
+              Open preset browser
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <header class="shell-header shell-header--launch">
+        <div data-top-nav-container hidden></div>
+        <div class="shell-panels">
+          <section class="shell-panel shell-panel--start" aria-label="Audio">
+            <div data-audio-controls></div>
+          </section>
+          <section class="shell-panel shell-panel--tune" aria-label="Tune">
+            <div data-settings-panel></div>
+          </section>
+        </div>
+      </header>
+    </div>
+    <script type="module" src="/assets/js/app.ts"></script>
+  </body>
+</html>
