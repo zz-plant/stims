@@ -4,7 +4,7 @@ This document captures what the public Stims docs communicate, so repository doc
 
 ## Core product message
 
-Stim Webtoys is positioned as an **independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop**, with a broader collection of related audio-reactive toys and WebGPU paths for capable browsers.
+Stim Webtoys is positioned as an **independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop**, with one flagship launch flow, one browse surface, and a smaller set of canonical toy detail pages.
 
 ## Public docs information architecture
 
@@ -20,12 +20,10 @@ Stim Webtoys is positioned as an **independent browser-native visualizer in the 
   - `guides/audio-setup`
   - `guides/accessibility`
   - `guides/performance`
-- **Toy Catalog**
-  - `toys/overview`
-  - `toys/featured`
-  - `toys/audio-visualizers`
-  - `toys/interactive-tools`
-  - `toys/webgpu-toys`
+- **Browse**
+  - `browse/overview`
+  - `browse/featured`
+  - `toys/:slug`
 
 ### Development tab
 
@@ -51,14 +49,14 @@ Stim Webtoys is positioned as an **independent browser-native visualizer in the 
 ## What each public page emphasizes
 
 - **Introduction**: MilkDrop-led value proposition, lineage framing, and quick links to launch + browse.
-- **Quickstart**: launch MilkDrop first, then explore the broader toy lab.
+- **Quickstart**: launch MilkDrop first, then explore the broader library from one browse surface.
 - **Browser support**: feature-level compatibility and troubleshooting for WebGL, microphone, and WebGPU.
 - **MilkDrop visualizer guide**: presets, blending, editor flow, import/export, and compatibility guardrails.
-- **Playing toys**: broader toy-lab browse/launch flow, filters, badges, and discovery utilities.
+- **Playing toys**: browse/launch flow, filters, badges, and the toy detail path.
 - **Audio setup**: microphone, demo audio, and tab-capture paths plus troubleshooting.
 - **Accessibility**: motion comfort defaults, reduced-motion handling, and fallback controls.
 - **Performance**: quality presets, persistent settings, and performance panel details.
-- **Toy overview / category pages**: toy taxonomy by lifecycle, moods, tags, capabilities, and category-specific guidance.
+- **Browse overview / toy pages**: one browse hub plus canonical toy detail pages instead of large taxonomy matrices.
 - **Contributing getting started**: quality checks, commit/PR expectations, and docs consistency guidance.
 - **Competitive messaging handoff**: external-safe value propositions derived from internal battlecards, avoiding direct competitor callouts.
 
@@ -70,6 +68,6 @@ When updating user-facing copy (README, landing copy, docs hubs), keep these the
 2. MilkDrop-led lineage framing with careful language (no blanket compatibility claims).
 3. Clear onboarding path (`introduction` -> `quickstart` -> `browser-support`).
 4. Explicit mention of accessibility and performance controls.
-5. Discovery vocabulary for the broader toy lab (moods, tags, capabilities, featured/audio/interactive/WebGPU).
+5. Discovery vocabulary for the broader toy library, without relying on large standalone taxonomy hubs.
 6. Contributor expectations (quality gates, commit/PR metadata, docs consistency).
 7. External copy should use internal battlecard outputs without public competitor callouts.

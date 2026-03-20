@@ -179,7 +179,7 @@ Cloudflare Pages issues a unique preview deployment for each pull request. Every
 
 ## Validate shell and generated routes before merge
 
-The project ships two source HTML shells (`index.html` and `toy.html`) plus generated public routes such as `/toys/<slug>/` and `/discover/*`. Validate representative routes locally and on the PR preview:
+The project ships two source HTML shells (`index.html` and `toy.html`) plus generated public toy detail routes under `/toys/<slug>/`. Validate representative routes locally and on the PR preview:
 
 1. Run `bun run build` followed by `bun run preview` and open representative routes manually (for example, `http://localhost:4173/`, `http://localhost:4173/toy.html?toy=milkdrop`, and `http://localhost:4173/toys/cube-wave/`).
 2. Repeat the checks against the PR’s Cloudflare Pages preview URL to ensure CDN caching and hashed asset references behave the same as local preview.

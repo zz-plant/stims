@@ -44,19 +44,19 @@
 
 - Large card set with repeated generic CTAs encourages random clicking over informed selection.
 
-## Route 3: Capabilities ➜ Microphone category ➜ toy launch
+## Route 3: Toys index ➜ browse/filter intent ➜ toy launch
 
-1. Enter `/capabilities/`.
-2. Choose `/capabilities/microphone/`.
-3. Open first toy card.
+1. Enter `/toys/`.
+2. Use browse/filter controls to narrow toward microphone-ready toys.
+3. Open first matching toy card.
 
 ### Observed friction
 
-- Category-to-toy route still lands in capability modal again, which duplicates context the user already signaled by choosing a capability page.
+- Filter-to-toy route still lands in capability modal again, which duplicates context the user already signaled by narrowing the browse view first.
 
 ### Streamline opportunities
 
-- Treat capability pages as pre-qualified context and suppress redundant warnings unless there is a hard blocker.
+- Treat browse filters as pre-qualified context and suppress redundant warnings unless there is a hard blocker.
 - Preselect “demo audio” or persist prior source preference to reduce repeated setup prompts.
 
 ### Extraneous / distracting

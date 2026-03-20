@@ -17,12 +17,23 @@ const sitemapChunkSize = 5000;
 const ogWidth = 1200;
 const ogHeight = 630;
 
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+type ToyEntry = {
+  slug: string;
+  title: string;
+  description: string;
+  tags?: string[];
+  moods?: string[];
+};
+
+type BreadcrumbEntry = {
+  label: string;
+  href: string;
+};
+
+type FaqEntry = {
+  question: string;
+  answer: string;
+};
 
 const escapeHtml = (value: string) =>
   value
@@ -46,7 +57,7 @@ const truncateOgText = (value: string, maxChars: number) =>
 const buildOgSvg = ({
   title,
   subtitle,
-  eyebrow = 'Stim Webtoys Library',
+  eyebrow = 'Stim Webtoys',
   accentStart = '#0b1024',
   accentEnd = '#26377f',
   chip,
@@ -101,7 +112,7 @@ const renderPage = ({
   keywords,
   extraHead = '',
   socialImage = iconUrl,
-  socialImageAlt = 'Stim Webtoys Library icon',
+  socialImageAlt = 'Stim Webtoys icon',
   socialImageType = 'image/png',
   socialImageWidth = 512,
   socialImageHeight = 512,
@@ -144,7 +155,7 @@ const renderPage = ({
     <meta property="og:image:width" content="${socialImageWidth}" />
     <meta property="og:image:height" content="${socialImageHeight}" />
     <meta property="og:image:alt" content="${escapeHtml(socialImageAlt)}" />
-    <meta property="og:site_name" content="Stim Webtoys Library" />
+    <meta property="og:site_name" content="Stim Webtoys" />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
@@ -169,272 +180,51 @@ ${extraHead}
 `;
 };
 
-type ToyEntry = {
-  slug: string;
-  title: string;
-  description: string;
-  tags?: string[];
-  moods?: string[];
-  capabilities?: {
-    microphone?: boolean;
-    demoAudio?: boolean;
-    motion?: boolean;
-  };
-  requiresWebGPU?: boolean;
-};
-
-type BreadcrumbEntry = {
-  label: string;
-  href: string;
-};
-
-const buildTagIndex = (toys: ToyEntry[]) => {
-  const tagMap = new Map<
-    string,
-    { slug: string; label: string; toys: ToyEntry[] }
-  >();
-  for (const toy of toys) {
-    for (const tag of toy.tags ?? []) {
-      const slug = slugify(tag);
-      if (!tagMap.has(slug)) {
-        tagMap.set(slug, { slug, label: tag, toys: [] });
-      }
-      tagMap.get(slug)?.toys.push(toy);
-    }
-  }
-  return Array.from(tagMap.values()).sort((a, b) =>
-    a.label.localeCompare(b.label),
-  );
-};
-
-const buildMoodIndex = (toys: ToyEntry[]) => {
-  const moodMap = new Map<
-    string,
-    { slug: string; label: string; toys: ToyEntry[] }
-  >();
-  for (const toy of toys) {
-    for (const mood of toy.moods ?? []) {
-      const slug = slugify(mood);
-      if (!moodMap.has(slug)) {
-        moodMap.set(slug, { slug, label: mood, toys: [] });
-      }
-      moodMap.get(slug)?.toys.push(toy);
-    }
-  }
-  return Array.from(moodMap.values()).sort((a, b) =>
-    a.label.localeCompare(b.label),
-  );
-};
-
-const buildCapabilityIndex = (toys: ToyEntry[]) => {
-  const capabilities = [
-    {
-      slug: 'microphone',
-      label: 'Microphone ready',
-      summary: 'toys that support live microphone input',
-      match: (toy: ToyEntry) => !!toy.capabilities?.microphone,
-    },
-    {
-      slug: 'demo-audio',
-      label: 'Demo audio available',
-      summary: 'toys with built-in demo audio playback',
-      match: (toy: ToyEntry) => !!toy.capabilities?.demoAudio,
-    },
-    {
-      slug: 'motion',
-      label: 'Device motion support',
-      summary: 'toys that respond to device tilt and movement',
-      match: (toy: ToyEntry) => !!toy.capabilities?.motion,
-    },
-    {
-      slug: 'webgpu',
-      label: 'WebGPU enhanced',
-      summary: 'toys with enhanced WebGPU visual effects',
-      match: (toy: ToyEntry) => !!toy.requiresWebGPU,
-    },
-  ];
-  return capabilities.map((capability) => ({
-    ...capability,
-    toys: toys.filter(capability.match),
-  }));
-};
-
-const buildMoodCapabilityCombos = (
-  moodEntries: { slug: string; label: string; toys: ToyEntry[] }[],
-  capabilityEntries: {
-    slug: string;
-    label: string;
-    summary: string;
-    toys: ToyEntry[];
-  }[],
-) =>
-  moodEntries
-    .flatMap((moodEntry) =>
-      capabilityEntries.map((capabilityEntry) => {
-        const capabilitySlugs = new Set(
-          capabilityEntry.toys.map((toy) => toy.slug),
-        );
-        const toys = moodEntry.toys.filter((toy) =>
-          capabilitySlugs.has(toy.slug),
-        );
-        return {
-          slug: `${moodEntry.slug}-${capabilityEntry.slug}`,
-          moodEntry,
-          capabilityEntry,
-          toys,
-        };
-      }),
-    )
-    .filter((entry) => entry.toys.length > 0)
-    .sort(
-      (a, b) => b.toys.length - a.toys.length || a.slug.localeCompare(b.slug),
-    );
-
-const uniqueToysBySlug = (toys: ToyEntry[]) => {
-  const bySlug = new Map<string, ToyEntry>();
-  for (const toy of toys) {
-    if (!bySlug.has(toy.slug)) {
-      bySlug.set(toy.slug, toy);
-    }
-  }
-  return Array.from(bySlug.values());
-};
-
-const renderToyList = (toys: ToyEntry[]) =>
-  `<ul class="feature-card-grid">${toys
-    .map(
-      (toy) => `
-        <li class="feature-card">
-          <h3>${escapeHtml(toy.title)}</h3>
-          <p>${escapeHtml(toy.description)}</p>
-          <a class="cta-button ghost" href="/toys/${toy.slug}/">View details</a>
-          <a class="text-link" href="/toy.html?toy=${toy.slug}">Launch toy</a>
-        </li>
-      `,
-    )
-    .join('')}</ul>`;
-
-const renderTagLinks = (
-  entries: { slug: string; label: string; toys: ToyEntry[] }[],
-) =>
-  `<ul class="feature-card-grid">${entries
-    .map(
-      (entry) => `
-        <li class="feature-card">
-          <h3>${escapeHtml(entry.label)}</h3>
-          <p>${entry.toys.length} toys</p>
-          <a class="cta-button ghost" href="/tags/${entry.slug}/">View toys</a>
-        </li>
-      `,
-    )
-    .join('')}</ul>`;
-
-const renderMoodLinks = (
-  entries: { slug: string; label: string; toys: ToyEntry[] }[],
-) =>
-  `<ul class="feature-card-grid">${entries
-    .map(
-      (entry) => `
-        <li class="feature-card">
-          <h3>${escapeHtml(entry.label)}</h3>
-          <p>${entry.toys.length} toys</p>
-          <a class="cta-button ghost" href="/moods/${entry.slug}/">View toys</a>
-        </li>
-      `,
-    )
-    .join('')}</ul>`;
-
-const renderCapabilityLinks = (
-  entries: { slug: string; label: string; toys: ToyEntry[] }[],
-) =>
-  `<ul class="feature-card-grid">${entries
-    .map(
-      (entry) => `
-        <li class="feature-card">
-          <h3>${escapeHtml(entry.label)}</h3>
-          <p>${entry.toys.length} toys</p>
-          <a class="cta-button ghost" href="/capabilities/${entry.slug}/">View toys</a>
-        </li>
-      `,
-    )
-    .join('')}</ul>`;
-
-const renderDiscoverLinks = (
-  entries: {
-    slug: string;
-    moodEntry: { label: string };
-    capabilityEntry: { label: string };
-    toys: ToyEntry[];
-  }[],
-) =>
-  `<ul class="feature-card-grid">${entries
-    .map(
-      (entry) => `
-        <li class="feature-card">
-          <h3>${escapeHtml(entry.moodEntry.label)} + ${escapeHtml(entry.capabilityEntry.label)}</h3>
-          <p>${entry.toys.length} toys</p>
-          <a class="cta-button ghost" href="/discover/${entry.slug}/">View toys</a>
-        </li>
-      `,
-    )
-    .join('')}</ul>`;
-
-const renderToyMetaList = (label: string, items: string[], basePath: string) =>
-  items.length
-    ? `
-      <div class="feature-card">
-        <h3>${escapeHtml(label)}</h3>
-        <ul>
-          ${items
-            .map(
-              (item) =>
-                `<li><a class="text-link" href="/${basePath}/${slugify(item)}/">${escapeHtml(
-                  item,
-                )}</a></li>`,
-            )
-            .join('')}
-        </ul>
-      </div>
-    `
-    : '';
-
-const renderCapabilityMetaList = (
-  label: string,
-  items: { label: string; slug: string }[],
-) =>
-  items.length
-    ? `
-      <div class="feature-card">
-        <h3>${escapeHtml(label)}</h3>
-        <ul>
-          ${items
-            .map(
-              (item) =>
-                `<li><a class="text-link" href="/capabilities/${item.slug}/">${escapeHtml(
-                  item.label,
-                )}</a></li>`,
-            )
-            .join('')}
-        </ul>
-      </div>
-    `
-    : '';
-
-const renderBreadcrumbs = (entries: BreadcrumbEntry[]) =>
-  `<nav aria-label="Breadcrumb" class="breadcrumb-nav">
-    <ol>
+const renderBreadcrumbs = (entries: BreadcrumbEntry[]) => `
+  <nav aria-label="Breadcrumb">
+    <ol class="breadcrumb-list">
       ${entries
-        .map(
-          (entry, index) =>
-            `<li>${
-              index === entries.length - 1
-                ? `<span aria-current="page">${escapeHtml(entry.label)}</span>`
-                : `<a class="text-link" href="${entry.href}">${escapeHtml(entry.label)}</a>`
-            }</li>`,
+        .map((entry, index) =>
+          index === entries.length - 1
+            ? `<li><span aria-current="page">${escapeHtml(entry.label)}</span></li>`
+            : `<li><a class="text-link" href="${entry.href}">${escapeHtml(entry.label)}</a></li>`,
         )
         .join('')}
     </ol>
-  </nav>`;
+  </nav>
+`;
+
+const renderToyList = (toys: ToyEntry[]) => `
+  <div class="feature-card-grid">
+    ${toys
+      .map(
+        (toy) => `
+      <article class="feature-card">
+        <h2>${escapeHtml(toy.title)}</h2>
+        <p>${escapeHtml(toy.description)}</p>
+        <div class="cta-row">
+          <a class="cta-button primary" href="/toy.html?toy=${toy.slug}">Launch toy</a>
+          <a class="cta-button ghost" href="/toys/${toy.slug}/">Details</a>
+        </div>
+      </article>
+    `,
+      )
+      .join('')}
+  </div>
+`;
+
+const renderMetaList = (label: string, items: string[]) => {
+  if (!items.length) {
+    return '';
+  }
+
+  return `
+    <article class="feature-card">
+      <h2>${escapeHtml(label)}</h2>
+      <p>${items.map(escapeHtml).join(', ')}</p>
+    </article>
+  `;
+};
 
 const buildBreadcrumbJsonLd = (entries: BreadcrumbEntry[]) => ({
   '@context': 'https://schema.org',
@@ -443,160 +233,9 @@ const buildBreadcrumbJsonLd = (entries: BreadcrumbEntry[]) => ({
     '@type': 'ListItem',
     position: index + 1,
     name: entry.label,
-    item: `${baseUrl}${entry.href}`,
+    item: `${baseUrl}${entry.href === '/' ? '/' : entry.href}`,
   })),
 });
-
-const buildFaqItems = (toy: ToyEntry) => {
-  const capabilityLines = [
-    toy.capabilities?.microphone
-      ? 'Supports live microphone input.'
-      : 'No live microphone required.',
-    toy.capabilities?.demoAudio
-      ? 'Includes demo audio mode.'
-      : 'No built-in demo audio mode.',
-    toy.capabilities?.motion
-      ? 'Supports device motion interactions.'
-      : 'No device motion input required.',
-    toy.requiresWebGPU
-      ? 'Uses WebGPU for enhanced effects and needs a compatible browser/device.'
-      : 'Runs without WebGPU requirements.',
-  ];
-  const items = [
-    {
-      question: `What is ${toy.title}?`,
-      answer: toy.description,
-    },
-    {
-      question: `How do I start ${toy.title}?`,
-      answer: `Open the toy and press Launch. Then enable microphone or demo audio options if prompted for the most reactive visuals.`,
-    },
-    {
-      question: `What capabilities does ${toy.title} support?`,
-      answer: capabilityLines.join(' '),
-    },
-  ];
-
-  if (toy.slug === 'milkdrop') {
-    items.push({
-      question: 'How does this relate to MilkDrop and projectM?',
-      answer:
-        "Stims is an independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop. It is not an official MilkDrop or Winamp release, and when presets or compatibility work draw on the broader ecosystem, Stims should also credit preset authors and projectM contributors where relevant.",
-    });
-  }
-
-  return items;
-};
-
-const renderLineageSection = (toy: ToyEntry) => {
-  if (toy.slug !== 'milkdrop') {
-    return '';
-  }
-
-  return `
-      <section>
-        <div class="section-heading">
-          <p class="eyebrow">Lineage and credits</p>
-          <h2>Built in the lineage of MilkDrop, not as an official port</h2>
-          <p class="section-description">
-            MilkDrop Visualizer is an independent browser-native implementation. The lineage, historical context, and preset ecosystem should stay visible wherever this page is shared.
-          </p>
-        </div>
-        <div class="feature-card-grid">
-          <article class="feature-card">
-            <h3>Ryan Geiss and MilkDrop</h3>
-            <p>
-              Stims owes explicit credit to Ryan Geiss and MilkDrop for the flagship visualizer lineage and the preset-driven workflows that made this form recognizable.
-            </p>
-          </article>
-          <article class="feature-card">
-            <h3>Winamp context</h3>
-            <p>
-              MilkDrop's original public home was Winamp/Nullsoft. Stims is not affiliated with Winamp and does not present itself as an official MilkDrop release.
-            </p>
-          </article>
-          <article class="feature-card">
-            <h3>Preset ecosystem</h3>
-            <p>
-              When presets, fixture packs, or compatibility work draw on the broader ecosystem, Stims should credit the original preset authors, curators, and projectM contributors where relevant.
-            </p>
-          </article>
-        </div>
-      </section>
-  `;
-};
-
-const buildFaqJsonLd = (
-  items: {
-    question: string;
-    answer: string;
-  }[],
-) => ({
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: items.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-});
-
-const renderFaqSection = (
-  items: {
-    question: string;
-    answer: string;
-  }[],
-) => `
-  <section>
-    <div class="section-heading">
-      <p class="eyebrow">FAQ</p>
-      <h2>About this toy</h2>
-    </div>
-    <dl class="feature-card-grid">
-      ${items
-        .map(
-          (item) => `
-        <div class="feature-card">
-          <dt><strong>${escapeHtml(item.question)}</strong></dt>
-          <dd>${escapeHtml(item.answer)}</dd>
-        </div>
-      `,
-        )
-        .join('')}
-    </dl>
-  </section>
-`;
-
-const buildRelatedToys = (toy: ToyEntry, toys: ToyEntry[]) => {
-  const currentTags = new Set(toy.tags ?? []);
-  const currentMoods = new Set(toy.moods ?? []);
-  return toys
-    .filter((candidate) => candidate.slug !== toy.slug)
-    .map((candidate) => {
-      let score = 0;
-      for (const tag of candidate.tags ?? []) {
-        if (currentTags.has(tag)) score += 2;
-      }
-      for (const mood of candidate.moods ?? []) {
-        if (currentMoods.has(mood)) score += 2;
-      }
-      if (toy.capabilities?.microphone === candidate.capabilities?.microphone)
-        score += 1;
-      if (toy.capabilities?.demoAudio === candidate.capabilities?.demoAudio)
-        score += 1;
-      if (toy.capabilities?.motion === candidate.capabilities?.motion)
-        score += 1;
-      if (toy.requiresWebGPU === candidate.requiresWebGPU) score += 1;
-      return { candidate, score };
-    })
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 4)
-    .map((entry) => entry.candidate);
-};
 
 const buildCollectionJsonLd = ({
   canonical,
@@ -616,7 +255,7 @@ const buildCollectionJsonLd = ({
   url: canonical,
   isPartOf: {
     '@type': 'WebSite',
-    name: 'Stim Webtoys Library',
+    name: 'Stim Webtoys',
     url: baseUrl,
   },
   mainEntity: {
@@ -630,6 +269,83 @@ const buildCollectionJsonLd = ({
   },
 });
 
+const buildFaqItems = (toy: ToyEntry): FaqEntry[] => [
+  {
+    question: `What is ${toy.title}?`,
+    answer: `${toy.title} is an interactive browser-native visual toy in Stims.`,
+  },
+  {
+    question: `How do I launch ${toy.title}?`,
+    answer: `Open the Stims player at /toy.html?toy=${toy.slug} to start ${toy.title}.`,
+  },
+  {
+    question: `What kind of experience does ${toy.title} offer?`,
+    answer: toy.description,
+  },
+];
+
+const buildFaqJsonLd = (items: FaqEntry[]) => ({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: items.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.answer,
+    },
+  })),
+});
+
+const renderFaqSection = (items: FaqEntry[]) => `
+  <section>
+    <div class="section-heading">
+      <p class="eyebrow">Questions</p>
+      <h2>Quick answers</h2>
+    </div>
+    <div class="feature-card-grid">
+      ${items
+        .map(
+          (item) => `
+        <article class="feature-card">
+          <h3>${escapeHtml(item.question)}</h3>
+          <p>${escapeHtml(item.answer)}</p>
+        </article>
+      `,
+        )
+        .join('')}
+    </div>
+  </section>
+`;
+
+const buildRelatedToys = (toy: ToyEntry, toys: ToyEntry[]) => {
+  const currentTags = new Set(toy.tags ?? []);
+  const currentMoods = new Set(toy.moods ?? []);
+
+  return toys
+    .filter((candidate) => candidate.slug !== toy.slug)
+    .map((candidate) => {
+      let score = 0;
+      for (const tag of candidate.tags ?? []) {
+        if (currentTags.has(tag)) {
+          score += 2;
+        }
+      }
+      for (const mood of candidate.moods ?? []) {
+        if (currentMoods.has(mood)) {
+          score += 1;
+        }
+      }
+      return { candidate, score };
+    })
+    .sort(
+      (a, b) =>
+        b.score - a.score || a.candidate.title.localeCompare(b.candidate.title),
+    )
+    .slice(0, 3)
+    .map(({ candidate }) => candidate);
+};
+
 const generateSeo = async () => {
   const toysRaw = await readFile(path.join(publicDir, 'toys.json'), 'utf8');
   const toys: ToyEntry[] = JSON.parse(toysRaw);
@@ -639,130 +355,80 @@ const generateSeo = async () => {
   }
 
   const toyDir = path.join(publicDir, 'toys');
-  const tagsDir = path.join(publicDir, 'tags');
-  const moodsDir = path.join(publicDir, 'moods');
-  const capabilitiesDir = path.join(publicDir, 'capabilities');
-  const discoverDir = path.join(publicDir, 'discover');
   const ogDir = path.join(publicDir, 'og');
   await mkdir(toyDir, { recursive: true });
-  await mkdir(tagsDir, { recursive: true });
-  await mkdir(moodsDir, { recursive: true });
-  await mkdir(capabilitiesDir, { recursive: true });
-  await mkdir(discoverDir, { recursive: true });
   await mkdir(ogDir, { recursive: true });
 
-  const defaultOgSvg = buildOgSvg({
-    title: 'Stim Webtoys',
-    subtitle: 'Audio-reactive sensory visual play',
-    eyebrow: 'Stim Webtoys Library',
-    accentStart: '#0b1024',
-    accentEnd: '#26377f',
-  });
-  await writeFile(path.join(ogDir, 'default.svg'), defaultOgSvg);
+  await writeFile(
+    path.join(ogDir, 'default.svg'),
+    buildOgSvg({
+      title: 'Stims',
+      subtitle: 'Browser-native MilkDrop-inspired visualizer',
+      eyebrow: 'Launch Stims',
+      accentStart: '#0b1024',
+      accentEnd: '#26377f',
+    }),
+  );
 
   const toysIndexOgFile = 'toys.svg';
-  const tagsIndexOgFile = 'tags.svg';
-  const moodsIndexOgFile = 'moods.svg';
-  const capabilitiesIndexOgFile = 'capabilities.svg';
   await writeFile(
     path.join(ogDir, toysIndexOgFile),
     buildOgSvg({
-      title: 'All toys',
-      subtitle: 'Browse every interactive audio-reactive visual toy',
-      eyebrow: 'Stim Webtoys collection',
+      title: 'Toy library',
+      subtitle: 'Browse the curated Stims visualizer collection',
+      eyebrow: 'Stims browse',
       accentStart: '#22113f',
       accentEnd: '#3b82f6',
-      chip: 'SEO collection page',
-    }),
-  );
-  await writeFile(
-    path.join(ogDir, tagsIndexOgFile),
-    buildOgSvg({
-      title: 'Tags',
-      subtitle: 'Explore themes, interactions, and visual styles',
-      eyebrow: 'Stim Webtoys discovery',
-      accentStart: '#0b3b35',
-      accentEnd: '#0ea5a0',
-      chip: 'Browse by tag',
-    }),
-  );
-  await writeFile(
-    path.join(ogDir, moodsIndexOgFile),
-    buildOgSvg({
-      title: 'Moods',
-      subtitle: 'Find visuals that match your sensory flow',
-      eyebrow: 'Stim Webtoys discovery',
-      accentStart: '#3b1027',
-      accentEnd: '#9333ea',
-      chip: 'Browse by mood',
-    }),
-  );
-  await writeFile(
-    path.join(ogDir, capabilitiesIndexOgFile),
-    buildOgSvg({
-      title: 'Capabilities',
-      subtitle: 'Filter toys by microphone, motion, audio, and WebGPU',
-      eyebrow: 'Stim Webtoys discovery',
-      accentStart: '#1f2937',
-      accentEnd: '#2563eb',
-      chip: 'Browse by capability',
+      chip: 'Curated collection',
     }),
   );
 
-  const tagEntries = buildTagIndex(toys);
-  const moodEntries = buildMoodIndex(toys);
-  const capabilityEntries = buildCapabilityIndex(toys);
-  const comboEntries = buildMoodCapabilityCombos(
-    moodEntries,
-    capabilityEntries,
-  );
-  const discoverUniqueToys = uniqueToysBySlug(
-    comboEntries.flatMap((entry) => entry.toys),
-  );
-
+  const toyIndexCanonical = `${baseUrl}/toys/`;
+  const toyIndexTitle = 'Toy library | Stims';
+  const toyIndexDescription =
+    'Browse the curated Stims visualizer collection and open any toy directly in the shared player.';
   const toyIndexBody = `
     <section class="intro">
       <div class="section-heading">
-        <p class="eyebrow">Stim Webtoys</p>
-        <h1>All toys</h1>
+        <p class="eyebrow">Stims</p>
+        <h1>Toy library</h1>
         <p class="section-description">
-          Browse every audio-reactive toy in the Stim library. Launch any toy or open its detail page for more context.
+          Browse the curated visualizer collection, then launch the shared player when you find something interesting.
         </p>
-        <a class="text-link" href="/index.html">Back to library</a>
+        <div class="cta-row">
+          <a class="cta-button primary" href="/toy.html?toy=milkdrop">Launch MilkDrop</a>
+          <a class="cta-button ghost" href="/index.html#toy-list">Browse on homepage</a>
+        </div>
       </div>
     </section>
     <section>
       ${renderToyList(toys)}
     </section>
   `;
-
   await writeFile(
     path.join(toyDir, 'index.html'),
     renderPage({
-      title: 'All toys | Stim Webtoys Library',
-      description:
-        'Browse every audio-reactive visual toy for sensory play, calming exploration, and responsive creative visuals.',
-      canonical: `${baseUrl}/toys/`,
+      title: toyIndexTitle,
+      description: toyIndexDescription,
+      canonical: toyIndexCanonical,
       body: toyIndexBody,
       keywords: [
-        'audio-reactive visual toys',
-        'sensory play',
-        'interactive web toys',
-        'three.js webgl toys',
+        'browser visualizer',
+        'audio-reactive toys',
+        'milkdrop inspired visualizer',
       ],
       extraHead: `
     <script type="application/ld+json">${JSON.stringify(
       buildCollectionJsonLd({
-        canonical: `${baseUrl}/toys/`,
-        title: 'All toys | Stim Webtoys Library',
-        description:
-          'Browse every audio-reactive visual toy for sensory play, calming exploration, and responsive creative visuals.',
+        canonical: toyIndexCanonical,
+        title: toyIndexTitle,
+        description: toyIndexDescription,
         toys,
       }),
     )}</script>
 `,
       socialImage: `${baseUrl}/og/${toysIndexOgFile}`,
-      socialImageAlt: 'Stim Webtoys collection preview image',
+      socialImageAlt: 'Stims toy library preview image',
       socialImageType: 'image/svg+xml',
       socialImageWidth: ogWidth,
       socialImageHeight: ogHeight,
@@ -771,71 +437,68 @@ const generateSeo = async () => {
 
   for (const toy of toys) {
     const canonical = `${baseUrl}/toys/${toy.slug}/`;
-    const capabilityMeta = capabilityEntries
-      .filter((entry) => entry.match(toy))
-      .map((entry) => ({ label: entry.label, slug: entry.slug }));
     const breadcrumbs = [
       { label: 'Home', href: '/' },
-      { label: 'All toys', href: '/toys/' },
+      { label: 'Toy library', href: '/toys/' },
       { label: toy.title, href: `/toys/${toy.slug}/` },
     ];
     const faqItems = buildFaqItems(toy);
     const relatedToys = buildRelatedToys(toy, toys);
-    const ogSvg = buildOgSvg({
-      title: toy.title,
-      subtitle: 'Interactive audio-reactive web toy',
-      eyebrow: 'Stim Webtoys toy page',
-      accentStart: '#1a0c33',
-      accentEnd: '#1d4ed8',
-      chip: 'Launch now',
-    });
-    await writeFile(path.join(ogDir, `${toy.slug}.svg`), ogSvg);
+    const ogFile = `${toy.slug}.svg`;
+
+    await writeFile(
+      path.join(ogDir, ogFile),
+      buildOgSvg({
+        title: toy.title,
+        subtitle: 'Interactive browser-native visualizer page',
+        eyebrow: 'Stims toy page',
+        accentStart: '#1a0c33',
+        accentEnd: '#1d4ed8',
+        chip: 'Launch now',
+      }),
+    );
 
     const jsonLd = {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
       name: toy.title,
       description: toy.description,
-      applicationCategory: 'Game',
+      applicationCategory: 'MultimediaApplication',
       operatingSystem: 'Web',
       url: canonical,
-      image: `${baseUrl}/og/${toy.slug}.svg`,
+      image: `${baseUrl}/og/${ogFile}`,
       isAccessibleForFree: true,
-      audience: {
-        '@type': 'Audience',
-        audienceType:
-          'People seeking interactive audio-reactive visuals for sensory-friendly creative play',
-      },
       keywords: Array.from(
-        new Set([...(toy.tags ?? []), ...(toy.moods ?? []), 'audio-reactive']),
+        new Set([
+          toy.slug,
+          toy.title,
+          ...(toy.tags ?? []),
+          ...(toy.moods ?? []),
+          'audio-reactive',
+          'browser visualizer',
+        ]),
       ),
     };
-    const extraHead = `
-    <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
-    <script type="application/ld+json">${JSON.stringify(buildBreadcrumbJsonLd(breadcrumbs))}</script>
-    <script type="application/ld+json">${JSON.stringify(buildFaqJsonLd(faqItems))}</script>
-`;
+
     const body = `
       ${renderBreadcrumbs(breadcrumbs)}
       <section class="intro">
         <div class="section-heading">
-          <p class="eyebrow">Stim Webtoys</p>
+          <p class="eyebrow">Stims toy</p>
           <h1>${escapeHtml(toy.title)}</h1>
           <p class="section-description">${escapeHtml(toy.description)}</p>
           <div class="cta-row">
             <a class="cta-button primary" href="/toy.html?toy=${toy.slug}">Launch toy</a>
-            <a class="cta-button ghost" href="/index.html#toy-list">Back to library</a>
+            <a class="cta-button ghost" href="/toys/">Back to library</a>
           </div>
         </div>
       </section>
       <section class="feature-bands">
         <div class="feature-card-grid">
-          ${renderToyMetaList('Tags', toy.tags ?? [], 'tags')}
-          ${renderToyMetaList('Moods', toy.moods ?? [], 'moods')}
-          ${renderCapabilityMetaList('Capabilities', capabilityMeta)}
+          ${renderMetaList('Tags', toy.tags ?? [])}
+          ${renderMetaList('Moods', toy.moods ?? [])}
         </div>
       </section>
-      ${renderLineageSection(toy)}
       <section>
         <div class="section-heading">
           <p class="eyebrow">Related</p>
@@ -851,7 +514,7 @@ const generateSeo = async () => {
     await writeFile(
       path.join(toyPath, 'index.html'),
       renderPage({
-        title: `${toy.title} | Stim Webtoys`,
+        title: `${toy.title} | Stims`,
         description: toy.description,
         canonical,
         body,
@@ -861,443 +524,17 @@ const generateSeo = async () => {
             toy.title,
             ...(toy.tags ?? []),
             ...(toy.moods ?? []),
+            'browser visualizer',
             'audio-reactive toy',
-            'sensory visualizer',
           ]),
         ),
         extraHead: `
-${extraHead}
-`,
-        socialImage: `${baseUrl}/og/${toy.slug}.svg`,
-        socialImageAlt: `${toy.title} preview image`,
-        socialImageType: 'image/svg+xml',
-        socialImageWidth: ogWidth,
-        socialImageHeight: ogHeight,
-      }),
-    );
-  }
-
-  const tagsIndexBody = `
-    <section class="intro">
-      <div class="section-heading">
-        <p class="eyebrow">Stim Webtoys</p>
-        <h1>Tags</h1>
-        <p class="section-description">Explore toys by theme, visuals, and interaction style.</p>
-        <a class="text-link" href="/index.html">Back to library</a>
-      </div>
-    </section>
-    <section>
-      ${renderTagLinks(tagEntries)}
-    </section>
-  `;
-  await writeFile(
-    path.join(tagsDir, 'index.html'),
-    renderPage({
-      title: 'Tags | Stim Webtoys Library',
-      description:
-        'Browse audio-reactive toys by visual theme, interaction style, and sensory-friendly tags.',
-      canonical: `${baseUrl}/tags/`,
-      body: tagsIndexBody,
-      keywords: [
-        'visual toy tags',
-        'audio reactive themes',
-        'sensory friendly toys',
-      ],
-      socialImage: `${baseUrl}/og/${tagsIndexOgFile}`,
-      socialImageAlt: 'Stim Webtoys tags page preview image',
-      socialImageType: 'image/svg+xml',
-      socialImageWidth: ogWidth,
-      socialImageHeight: ogHeight,
-    }),
-  );
-
-  for (const entry of tagEntries) {
-    const canonical = `${baseUrl}/tags/${entry.slug}/`;
-    const body = `
-      ${renderBreadcrumbs([
-        { label: 'Home', href: '/' },
-        { label: 'Tags', href: '/tags/' },
-        { label: entry.label, href: `/tags/${entry.slug}/` },
-      ])}
-      <section class="intro">
-        <div class="section-heading">
-          <p class="eyebrow">Tag</p>
-          <h1>${escapeHtml(entry.label)}</h1>
-          <p class="section-description">${entry.toys.length} toys with this tag.</p>
-          <a class="text-link" href="/tags/">All tags</a>
-        </div>
-      </section>
-      <section>
-        ${renderToyList(entry.toys)}
-      </section>
-    `;
-    const tagPath = path.join(tagsDir, entry.slug);
-    const tagOgFile = `tag-${entry.slug}.svg`;
-    await writeFile(
-      path.join(ogDir, tagOgFile),
-      buildOgSvg({
-        title: `${entry.label} toys`,
-        subtitle: `${entry.toys.length} toy${entry.toys.length === 1 ? '' : 's'} in this tag`,
-        eyebrow: 'Stim Webtoys tag collection',
-        accentStart: '#0f2f4f',
-        accentEnd: '#2563eb',
-        chip: `Tag: ${entry.label}`,
-      }),
-    );
-    await mkdir(tagPath, { recursive: true });
-    await writeFile(
-      path.join(tagPath, 'index.html'),
-      renderPage({
-        title: `${entry.label} toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} Stim Webtoys tagged ${entry.label}.`,
-        canonical,
-        body,
-        keywords: [
-          `${entry.label} toys`,
-          `${entry.label} visualizers`,
-          'audio-reactive web toys',
-        ],
-        extraHead: `
-    <script type="application/ld+json">${JSON.stringify(
-      buildBreadcrumbJsonLd([
-        { label: 'Home', href: '/' },
-        { label: 'Tags', href: '/tags/' },
-        { label: entry.label, href: `/tags/${entry.slug}/` },
-      ]),
-    )}</script>
-    <script type="application/ld+json">${JSON.stringify(
-      buildCollectionJsonLd({
-        canonical,
-        title: `${entry.label} toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} Stim Webtoys tagged ${entry.label}.`,
-        toys: entry.toys,
-      }),
-    )}</script>
-`,
-        socialImage: `${baseUrl}/og/${tagOgFile}`,
-        socialImageAlt: `${entry.label} tag page preview image`,
-        socialImageType: 'image/svg+xml',
-        socialImageWidth: ogWidth,
-        socialImageHeight: ogHeight,
-      }),
-    );
-  }
-
-  const moodsIndexBody = `
-    <section class="intro">
-      <div class="section-heading">
-        <p class="eyebrow">Stim Webtoys</p>
-        <h1>Moods</h1>
-        <p class="section-description">Find the mood that matches your sensory flow.</p>
-        <a class="text-link" href="/index.html">Back to library</a>
-      </div>
-    </section>
-    <section>
-      ${renderMoodLinks(moodEntries)}
-    </section>
-  `;
-  await writeFile(
-    path.join(moodsDir, 'index.html'),
-    renderPage({
-      title: 'Moods | Stim Webtoys Library',
-      description:
-        'Browse toys by mood and sensory vibe, from calming visuals to playful, energetic stims.',
-      canonical: `${baseUrl}/moods/`,
-      body: moodsIndexBody,
-      keywords: ['mood visualizer', 'calming visuals', 'sensory vibe toys'],
-      socialImage: `${baseUrl}/og/${moodsIndexOgFile}`,
-      socialImageAlt: 'Stim Webtoys moods page preview image',
-      socialImageType: 'image/svg+xml',
-      socialImageWidth: ogWidth,
-      socialImageHeight: ogHeight,
-    }),
-  );
-
-  for (const entry of moodEntries) {
-    const canonical = `${baseUrl}/moods/${entry.slug}/`;
-    const body = `
-      ${renderBreadcrumbs([
-        { label: 'Home', href: '/' },
-        { label: 'Moods', href: '/moods/' },
-        { label: entry.label, href: `/moods/${entry.slug}/` },
-      ])}
-      <section class="intro">
-        <div class="section-heading">
-          <p class="eyebrow">Mood</p>
-          <h1>${escapeHtml(entry.label)}</h1>
-          <p class="section-description">${entry.toys.length} toys that match this mood.</p>
-          <a class="text-link" href="/moods/">All moods</a>
-        </div>
-      </section>
-      <section>
-        ${renderToyList(entry.toys)}
-      </section>
-    `;
-    const moodPath = path.join(moodsDir, entry.slug);
-    const moodOgFile = `mood-${entry.slug}.svg`;
-    await writeFile(
-      path.join(ogDir, moodOgFile),
-      buildOgSvg({
-        title: `${entry.label} mood`,
-        subtitle: `${entry.toys.length} toy${entry.toys.length === 1 ? '' : 's'} with this vibe`,
-        eyebrow: 'Stim Webtoys mood collection',
-        accentStart: '#3f1239',
-        accentEnd: '#c026d3',
-        chip: `Mood: ${entry.label}`,
-      }),
-    );
-    await mkdir(moodPath, { recursive: true });
-    await writeFile(
-      path.join(moodPath, 'index.html'),
-      renderPage({
-        title: `${entry.label} mood toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} toys with a ${entry.label} vibe.`,
-        canonical,
-        body,
-        keywords: [
-          `${entry.label} mood toys`,
-          `${entry.label} sensory visuals`,
-          'audio-reactive web toys',
-        ],
-        extraHead: `
-    <script type="application/ld+json">${JSON.stringify(
-      buildBreadcrumbJsonLd([
-        { label: 'Home', href: '/' },
-        { label: 'Moods', href: '/moods/' },
-        { label: entry.label, href: `/moods/${entry.slug}/` },
-      ]),
-    )}</script>
-    <script type="application/ld+json">${JSON.stringify(
-      buildCollectionJsonLd({
-        canonical,
-        title: `${entry.label} mood toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} toys with a ${entry.label} vibe.`,
-        toys: entry.toys,
-      }),
-    )}</script>
-`,
-        socialImage: `${baseUrl}/og/${moodOgFile}`,
-        socialImageAlt: `${entry.label} mood page preview image`,
-        socialImageType: 'image/svg+xml',
-        socialImageWidth: ogWidth,
-        socialImageHeight: ogHeight,
-      }),
-    );
-  }
-
-  const capabilitiesIndexBody = `
-    <section class="intro">
-      <div class="section-heading">
-        <p class="eyebrow">Stim Webtoys</p>
-        <h1>Capabilities</h1>
-        <p class="section-description">Match toys to microphone, demo audio, motion, or WebGPU support.</p>
-        <a class="text-link" href="/index.html">Back to library</a>
-      </div>
-    </section>
-    <section>
-      ${renderCapabilityLinks(capabilityEntries)}
-    </section>
-  `;
-  await writeFile(
-    path.join(capabilitiesDir, 'index.html'),
-    renderPage({
-      title: 'Capabilities | Stim Webtoys Library',
-      description:
-        'Find toys by microphone support, demo audio, device motion, and WebGPU so you can play with the setup you have.',
-      canonical: `${baseUrl}/capabilities/`,
-      body: capabilitiesIndexBody,
-      keywords: [
-        'microphone visualizer',
-        'demo audio toys',
-        'webgpu visual toys',
-      ],
-      socialImage: `${baseUrl}/og/${capabilitiesIndexOgFile}`,
-      socialImageAlt: 'Stim Webtoys capabilities page preview image',
-      socialImageType: 'image/svg+xml',
-      socialImageWidth: ogWidth,
-      socialImageHeight: ogHeight,
-    }),
-  );
-
-  for (const entry of capabilityEntries) {
-    const canonical = `${baseUrl}/capabilities/${entry.slug}/`;
-    const body = `
-      ${renderBreadcrumbs([
-        { label: 'Home', href: '/' },
-        { label: 'Capabilities', href: '/capabilities/' },
-        { label: entry.label, href: `/capabilities/${entry.slug}/` },
-      ])}
-      <section class="intro">
-        <div class="section-heading">
-          <p class="eyebrow">Capability</p>
-          <h1>${escapeHtml(entry.label)}</h1>
-          <p class="section-description">${entry.toys.length} toys support this capability.</p>
-          <a class="text-link" href="/capabilities/">All capabilities</a>
-        </div>
-      </section>
-      <section>
-        ${renderToyList(entry.toys)}
-      </section>
-    `;
-    const capPath = path.join(capabilitiesDir, entry.slug);
-    const capabilityOgFile = `capability-${entry.slug}.svg`;
-    await writeFile(
-      path.join(ogDir, capabilityOgFile),
-      buildOgSvg({
-        title: `${entry.label} toys`,
-        subtitle: `${entry.toys.length} toy${entry.toys.length === 1 ? '' : 's'} support this`,
-        eyebrow: 'Stim Webtoys capability collection',
-        accentStart: '#1f2937',
-        accentEnd: '#0ea5e9',
-        chip: `Capability: ${entry.label}`,
-      }),
-    );
-    await mkdir(capPath, { recursive: true });
-    await writeFile(
-      path.join(capPath, 'index.html'),
-      renderPage({
-        title: `${entry.label} toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} ${entry.summary}.`,
-        canonical,
-        body,
-        keywords: [
-          `${entry.label} toys`,
-          `${entry.label} support`,
-          'audio-reactive web toys',
-        ],
-        extraHead: `
-    <script type="application/ld+json">${JSON.stringify(
-      buildBreadcrumbJsonLd([
-        { label: 'Home', href: '/' },
-        { label: 'Capabilities', href: '/capabilities/' },
-        { label: entry.label, href: `/capabilities/${entry.slug}/` },
-      ]),
-    )}</script>
-    <script type="application/ld+json">${JSON.stringify(
-      buildCollectionJsonLd({
-        canonical,
-        title: `${entry.label} toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} ${entry.summary}.`,
-        toys: entry.toys,
-      }),
-    )}</script>
-`,
-        socialImage: `${baseUrl}/og/${capabilityOgFile}`,
-        socialImageAlt: `${entry.label} capability page preview image`,
-        socialImageType: 'image/svg+xml',
-        socialImageWidth: ogWidth,
-        socialImageHeight: ogHeight,
-      }),
-    );
-  }
-
-  const discoverIndexBody = `
-    <section class="intro">
-      <div class="section-heading">
-        <p class="eyebrow">Stim Webtoys</p>
-        <h1>Discover combinations</h1>
-        <p class="section-description">Find toys by combining mood and capability filters for high-intent exploration paths.</p>
-        <a class="text-link" href="/index.html">Back to library</a>
-      </div>
-    </section>
-    <section>
-      ${renderDiscoverLinks(comboEntries)}
-    </section>
-  `;
-  await writeFile(
-    path.join(discoverDir, 'index.html'),
-    renderPage({
-      title: 'Discover combinations | Stim Webtoys Library',
-      description:
-        'Discover audio-reactive toys by combining mood and capability filters such as calming + demo audio or cosmic + motion.',
-      canonical: `${baseUrl}/discover/`,
-      body: discoverIndexBody,
-      keywords: [
-        'discover interactive web toys',
-        'mood and capability visualizers',
-        'audio-reactive toy combinations',
-      ],
-      extraHead: `
-    <script type="application/ld+json">${JSON.stringify(
-      buildCollectionJsonLd({
-        canonical: `${baseUrl}/discover/`,
-        title: 'Discover combinations | Stim Webtoys Library',
-        description:
-          'Discover audio-reactive toys by combining mood and capability filters such as calming + demo audio or cosmic + motion.',
-        toys: discoverUniqueToys,
-      }),
-    )}</script>
-`,
-    }),
-  );
-
-  for (const entry of comboEntries) {
-    const canonical = `${baseUrl}/discover/${entry.slug}/`;
-    const breadcrumbs = [
-      { label: 'Home', href: '/' },
-      { label: 'Discover', href: '/discover/' },
-      {
-        label: `${entry.moodEntry.label} + ${entry.capabilityEntry.label}`,
-        href: `/discover/${entry.slug}/`,
-      },
-    ];
-    const comboOgFile = `discover-${entry.slug}.svg`;
-    const ogSvg = buildOgSvg({
-      title: `${entry.moodEntry.label} + ${entry.capabilityEntry.label}`,
-      subtitle: `${entry.toys.length} matching toys`,
-      eyebrow: 'Stim Webtoys discover page',
-      accentStart: '#0c1930',
-      accentEnd: '#144657',
-      chip: 'Mood + capability',
-    });
-    await writeFile(path.join(ogDir, comboOgFile), ogSvg);
-
-    const body = `
-      ${renderBreadcrumbs(breadcrumbs)}
-      <section class="intro">
-        <div class="section-heading">
-          <p class="eyebrow">Stim Webtoys</p>
-          <h1>${escapeHtml(entry.moodEntry.label)} toys with ${escapeHtml(entry.capabilityEntry.label.toLowerCase())}</h1>
-          <p class="section-description">Explore ${entry.toys.length} toys in the ${escapeHtml(entry.moodEntry.label.toLowerCase())} mood that are ${escapeHtml(entry.capabilityEntry.summary)}.</p>
-          <div class="cta-row">
-            <a class="cta-button ghost" href="/moods/${entry.moodEntry.slug}/">Browse ${escapeHtml(entry.moodEntry.label)} mood</a>
-            <a class="cta-button ghost" href="/capabilities/${entry.capabilityEntry.slug}/">Browse ${escapeHtml(entry.capabilityEntry.label)}</a>
-          </div>
-        </div>
-      </section>
-      <section>
-        ${renderToyList(entry.toys)}
-      </section>
-    `;
-
-    const discoverPath = path.join(discoverDir, entry.slug);
-    await mkdir(discoverPath, { recursive: true });
-    await writeFile(
-      path.join(discoverPath, 'index.html'),
-      renderPage({
-        title: `${entry.moodEntry.label} + ${entry.capabilityEntry.label} toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} ${entry.moodEntry.label.toLowerCase()} toys that are ${entry.capabilityEntry.summary}.`,
-        canonical,
-        body,
-        keywords: [
-          `${entry.moodEntry.label} toys`,
-          `${entry.capabilityEntry.label} toys`,
-          `${entry.moodEntry.label} ${entry.capabilityEntry.label}`,
-          'audio-reactive web toys',
-        ],
-        extraHead: `
+    <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
     <script type="application/ld+json">${JSON.stringify(buildBreadcrumbJsonLd(breadcrumbs))}</script>
-    <script type="application/ld+json">${JSON.stringify(
-      buildCollectionJsonLd({
-        canonical,
-        title: `${entry.moodEntry.label} + ${entry.capabilityEntry.label} toys | Stim Webtoys`,
-        description: `Explore ${entry.toys.length} ${entry.moodEntry.label.toLowerCase()} toys that are ${entry.capabilityEntry.summary}.`,
-        toys: entry.toys,
-      }),
-    )}</script>
+    <script type="application/ld+json">${JSON.stringify(buildFaqJsonLd(faqItems))}</script>
 `,
-        socialImage: `${baseUrl}/og/${comboOgFile}`,
-        socialImageAlt: `${entry.moodEntry.label} and ${entry.capabilityEntry.label} discover page preview image`,
+        socialImage: `${baseUrl}/og/${ogFile}`,
+        socialImageAlt: `${toy.title} preview image`,
         socialImageType: 'image/svg+xml',
         socialImageWidth: ogWidth,
         socialImageHeight: ogHeight,
@@ -1309,36 +546,11 @@ ${extraHead}
   const urls = [
     { loc: `${baseUrl}/`, image: `${baseUrl}/og/default.svg` },
     { loc: `${baseUrl}/index.html`, image: `${baseUrl}/og/default.svg` },
-    { loc: `${baseUrl}/toys/`, image: `${baseUrl}/og/${toysIndexOgFile}` },
-    { loc: `${baseUrl}/tags/`, image: `${baseUrl}/og/${tagsIndexOgFile}` },
-    { loc: `${baseUrl}/moods/`, image: `${baseUrl}/og/${moodsIndexOgFile}` },
-    {
-      loc: `${baseUrl}/capabilities/`,
-      image: `${baseUrl}/og/${capabilitiesIndexOgFile}`,
-    },
-    {
-      loc: `${baseUrl}/discover/`,
-      image: `${baseUrl}/og/${capabilitiesIndexOgFile}`,
-    },
+    { loc: `${baseUrl}/toy.html`, image: `${baseUrl}/og/default.svg` },
+    { loc: toyIndexCanonical, image: `${baseUrl}/og/${toysIndexOgFile}` },
     ...toys.map((toy) => ({
       loc: `${baseUrl}/toys/${toy.slug}/`,
       image: `${baseUrl}/og/${toy.slug}.svg`,
-    })),
-    ...tagEntries.map((entry) => ({
-      loc: `${baseUrl}/tags/${entry.slug}/`,
-      image: `${baseUrl}/og/tag-${entry.slug}.svg`,
-    })),
-    ...moodEntries.map((entry) => ({
-      loc: `${baseUrl}/moods/${entry.slug}/`,
-      image: `${baseUrl}/og/mood-${entry.slug}.svg`,
-    })),
-    ...capabilityEntries.map((entry) => ({
-      loc: `${baseUrl}/capabilities/${entry.slug}/`,
-      image: `${baseUrl}/og/capability-${entry.slug}.svg`,
-    })),
-    ...comboEntries.map((entry) => ({
-      loc: `${baseUrl}/discover/${entry.slug}/`,
-      image: `${baseUrl}/og/discover-${entry.slug}.svg`,
     })),
   ];
 
@@ -1367,6 +579,7 @@ ${chunk
     await writeFile(path.join(publicDir, sitemapName), sitemapBody);
     sitemapChunks.push(sitemapName);
   }
+
   const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${sitemapChunks

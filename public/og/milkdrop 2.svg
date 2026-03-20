@@ -15,7 +15,7 @@
   <circle cx="160" cy="100" r="120" fill="rgba(255,255,255,0.1)" />
   <rect x="90" y="92" width="220" height="56" rx="28" fill="rgba(255,255,255,0.14)" />
   <text x="120" y="128" font-size="30" fill="#f7f9ff" font-family="Inter, Arial, sans-serif">Launch now</text>
-  <text x="90" y="220" font-size="40" fill="#dbe4ff" font-family="Inter, Arial, sans-serif">Stims toy page</text>
+  <text x="90" y="220" font-size="40" fill="#dbe4ff" font-family="Inter, Arial, sans-serif">Stim Webtoys toy page</text>
   <text x="90" y="322" font-size="72" font-weight="700" fill="#ffffff" font-family="Inter, Arial, sans-serif">MilkDrop Visualizer</text>
-  <text x="90" y="392" font-size="32" fill="#e2e8ff" font-family="Inter, Arial, sans-serif">Interactive browser-native visualizer page</text>
+  <text x="90" y="392" font-size="32" fill="#e2e8ff" font-family="Inter, Arial, sans-serif">Interactive audio-reactive web toy</text>
 </svg>
