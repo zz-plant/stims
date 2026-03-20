@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import {
-  buildTryThisFirstRecommendation,
-  initAudioControls,
-} from '../assets/js/ui/audio-controls.ts';
 import { YouTubeController } from '../assets/js/ui/youtube-controller.ts';
+
+const freshImport = async <T>(path: string): Promise<T> =>
+  import(`${path}?t=${Date.now()}-${Math.random()}`) as Promise<T>;
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+let initAudioControls: typeof import('../assets/js/ui/audio-controls.ts').initAudioControls;
+let buildTryThisFirstRecommendation: typeof import('../assets/js/ui/audio-controls.ts').buildTryThisFirstRecommendation;
+
 describe('audio controls primary emphasis', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     document.body.innerHTML = '';
     sessionStorage.clear();
     localStorage.clear();
@@ -27,6 +29,12 @@ describe('audio controls primary emphasis', () => {
         removeEventListener: () => {},
         dispatchEvent: () => false,
       }) as MediaQueryList) as typeof window.matchMedia;
+    const audioControlsModule = await freshImport<
+      typeof import('../assets/js/ui/audio-controls.ts')
+    >('../assets/js/ui/audio-controls.ts');
+    initAudioControls = audioControlsModule.initAudioControls;
+    buildTryThisFirstRecommendation =
+      audioControlsModule.buildTryThisFirstRecommendation;
   });
 
   test('highlights demo row when preferDemoAudio is true', () => {
