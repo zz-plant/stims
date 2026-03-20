@@ -2589,7 +2589,7 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay {
   position: fixed;
   inset: auto 20px 20px auto;
-  z-index: 70;
+  z-index: 1250;
   pointer-events: none;
 }
 

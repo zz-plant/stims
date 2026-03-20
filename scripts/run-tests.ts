@@ -8,13 +8,17 @@ const INTEGRATION_TEST = 'tests/agent-integration.test.ts';
 const PROFILE_FILE_LISTS: Record<string, string[]> = {
   integration: [INTEGRATION_TEST],
   compat: [
+    'tests/milkdrop-corpus-compat.test.ts',
     'tests/milkdrop-parity.test.ts',
+    'tests/milkdrop-projectm-compat.test.ts',
     'tests/render-preferences.test.ts',
     'tests/postprocessing.test.ts',
     'tests/party-mode.test.ts',
   ],
   'compat-full': [
+    'tests/milkdrop-corpus-compat.test.ts',
     'tests/milkdrop-parity.test.ts',
+    'tests/milkdrop-projectm-compat.test.ts',
     'tests/loader.test.js',
     'tests/toy-view.test.js',
     'tests/render-preferences.test.ts',
