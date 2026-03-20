@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document summarizes how the Stims app is assembled, from the entry HTML shells through module loading, rendering, audio, and quality controls. Stims is positioned as an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, with a broader toy lab, and this guide maps the runtime layers that support both the flagship `milkdrop` flow and the preset-alias toy catalog around it.
+This document summarizes how the Stims app is assembled, from the entry HTML shells through module loading, rendering, audio, and quality controls. Stims is positioned as an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, and this guide maps the runtime layers that support the shipped `milkdrop` flow.
 
 ## Architecture at a Glance
 
@@ -8,7 +8,7 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 - **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
 - **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
 - **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.
-- **Toy modules** (`assets/js/toys/*.ts`) provide toy-specific scenes and a cleanup hook (`dispose`) that the loader can call safely.
+- **Toy module** (`assets/js/toys/milkdrop-toy.ts`) provides the shipped visualizer start/dispose entrypoint.
 
 Use this section as a quick compass: if you need to change how a toy starts or stops, look at the loader and core runtime; if you need to change UI state or status messaging, look at the views; if you need to change toy behavior, look at the toy modules and `WebToy` helpers.
 
@@ -26,10 +26,10 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 - **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, active toy lifecycle, and dynamic module loading.
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
 - **Manifest resolution** (`assets/js/utils/manifest-client.ts`) maps logical module paths to the correct dev/build URLs for dynamic `import()`.
-- **Core runtime** (`assets/js/core/*`) initializes the scene, camera, renderer (WebGPU or WebGL), audio pipeline, quality controls, and handles linting/formatting via **Biome**. Helpers such as `animation-loop.ts`, `settings-panel.ts`, and `iframe-quality-sync.ts` manage per-frame work and preset propagation.
+- **Core runtime** (`assets/js/core/*`) initializes the scene, camera, renderer (WebGPU or WebGL), audio pipeline, and quality controls. Helpers such as `animation-loop.ts` and `settings-panel.ts` manage per-frame work and preset propagation.
 - **Capability + startup contracts** (`assets/js/core/renderer-capabilities.ts`, `assets/js/core/capability-preflight.ts`, `assets/js/core/toy-audio-startup.ts`) provide the unified rendering-support probe and typed toy-audio start flow used by both `app.ts` and `loader.ts`.
 - **Shared services** (`assets/js/core/services/*`) pool renderers and microphone streams so toys can hand off resources without re-allocating (and re-prompting for mic access).
-- **Toys** (`assets/js/toys/*.ts`) export either the flagship MilkDrop module or thin preset-alias starters that select a bundled preset and then reuse the shared MilkDrop runtime/editor shell.
+- **Toy module** (`assets/js/toys/milkdrop-toy.ts`) exports the shipped MilkDrop visualizer entrypoint.
 
 ## Source Map (Where Things Live)
 
@@ -42,7 +42,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 | Core runtime | `assets/js/core/web-toy.ts` + `assets/js/core/*` | Rendering, audio, settings, and the animation loop. |
 | Pools/services | `assets/js/core/services/*` | Renderer and microphone pooling. |
 | Toy registry | `assets/data/toys.json` | Toy metadata and slug registration. |
-| Toy implementations | `assets/js/toys/*.ts` | Per-toy scenes, materials, and audio mappings. |
+| Toy implementation | `assets/js/toys/milkdrop-toy.ts` | Shipped MilkDrop visualizer entrypoint. |
 
 ## App Shell and Loader Flow
 
@@ -70,8 +70,7 @@ flowchart TD
   detect WebGPU/WebGL]
   WebToy --> Audio[microphone-flow.ts
   utils/audio-handler.ts]
-  WebToy --> Settings[settings-panel.ts
-  iframe-quality-sync.ts]
+  WebToy --> Settings[settings-panel.ts]
   Views -->|back/escape| Loader
   Preflight --> Loader
   Controls --> Loader
@@ -156,7 +155,7 @@ flowchart LR
 
 - **Capability probe**: `renderer-capabilities.ts` caches the adapter/device decision and records fallback reasons so the UI can surface retry prompts. WebGPU probing is feature-based (`navigator.gpu`) rather than user-agent gated, so supported mobile browsers can use WebGPU.
 - **Initialization**: `renderer-setup.ts` builds a renderer using the preferred backend, applies tone mapping, sets pixel ratio/size, and returns metadata consumed by `web-toy.ts`.
-- **Quality presets**: `settings-panel.ts` and `iframe-quality-sync.ts` broadcast max pixel ratio, render scale, and exposure; `WebToy.updateRendererSettings` re-applies them without a reload.
+- **Quality presets**: `settings-panel.ts` broadcasts max pixel ratio, render scale, and exposure; `WebToy.updateRendererSettings` re-applies them without a reload.
 - **Renderer settings**: `renderer-settings.ts` merges quality presets, render preferences, and per-toy overrides so pooled renderers can be reconfigured on the fly.
 
 ## WebToy Composition
@@ -173,8 +172,7 @@ graph LR
   WebToy --> Audio[services/audio-service.ts
   pooled microphone]
   WebToy --> Loop[animation-loop.ts]
-  Settings[settings-panel.ts
-  iframe-quality-sync.ts] --> WebToy
+  Settings[settings-panel.ts] --> WebToy
 ```
 
 - **Renderer pooling**: `services/render-service.ts` initializes WebGPU/WebGL once, applies the active quality preset from `settings-panel.ts`, and hands a typed handle (`renderer`, `canvas`, `backend`, `applySettings`, `release`) to toys. Returning the handle releases the canvas back into the pool without disposing the renderer, so switching toys avoids expensive re-creation.
@@ -186,7 +184,7 @@ graph LR
 - **Active toy state**: the loader owns the active toy reference and is responsible for calling `dispose`. The toy should only manage its own scene resources (geometries, materials, textures).
 - **Renderer state**: pooled renderers are configured by `renderer-settings.ts`; toys can layer overrides via `handle.applySettings` but should not mutate shared renderer state permanently.
 - **Audio state**: the audio service owns the shared `MediaStream`, while each toy owns its `AudioAnalyser` instance. Release the handle so the pool can reuse the stream.
-- **Settings propagation**: `settings-panel.ts` updates propagate to `web-toy.ts` through `iframe-quality-sync.ts`, keeping both the shell UI and toy renderer in sync.
+- **Settings propagation**: `settings-panel.ts` updates propagate to `web-toy.ts`, keeping both the shell UI and toy renderer in sync.
 
 ## Audio Path
 
@@ -216,6 +214,6 @@ graph LR
 
 ## Common Extension Points
 
-- **New toy modules**: register the slug in `assets/data/toys.json`, create the module in `assets/js/toys/*.ts`, and return a `dispose` to clean up.
+- **Shipped entrypoint changes**: keep `assets/data/toys.json` aligned with `assets/js/toys/milkdrop-toy.ts` and return a `dispose` for safe cleanup.
 - **New runtime services**: add to `assets/js/core/services/*` and thread through `web-toy.ts` so toys can request handles consistently.
-- **New settings controls**: extend `settings-panel.ts` and `renderer-settings.ts`, then ensure `iframe-quality-sync.ts` forwards updates to running toys.
+- **New settings controls**: extend `settings-panel.ts` and `renderer-settings.ts`, then ensure updates flow through `web-toy.ts` for running sessions.

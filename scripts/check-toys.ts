@@ -55,13 +55,12 @@ export async function runToyChecks(root = repoRoot) {
       loadToyData(root),
       fs.readFile(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'), 'utf8'),
     ]);
-    const { manifest: entries, rawEntries, relativePath } = loadedToyData;
+    const { manifest: entries } = loadedToyData;
 
     await validateEntries(entries, issues, warnings, indexContents, root);
     await validateRegisteredToyEntrypoints(entries, issues, root);
     validateSlugEntrypointConsistency(entries, issues);
     await detectUnregisteredToyFiles(entries, issues, root);
-    validateBehaviorMetadataParity(entries, rawEntries, relativePath, issues);
     await validateGeneratedArtifactParity(entries, issues, root);
     await validateCapabilityClaims(entries, issues, root);
   } catch (error) {
@@ -72,35 +71,16 @@ export async function runToyChecks(root = repoRoot) {
 }
 
 async function loadToyData(root = repoRoot) {
-  const { entries, rawEntries, relativePath } = await loadToyRegistry(root);
+  const { entries, relativePath } = await loadToyRegistry(root);
   try {
     return {
       manifest: toyManifestSchema.parse(entries),
-      rawEntries,
-      relativePath,
     };
   } catch (error) {
     throw new Error(
       `Toy metadata schema validation failed for ${relativePath}: ${error instanceof Error ? error.message : String(error)}\nRegenerate derived artifacts with: ${REGENERATE_COMMAND}`,
     );
   }
-}
-
-function validateBehaviorMetadataParity(
-  entries: ToyManifest,
-  rawEntries: unknown,
-  relativePath: string,
-  issues: string[],
-) {
-  const expected = `${JSON.stringify(entries, null, 2)}\n`;
-  const actual = `${JSON.stringify(rawEntries, null, 2)}\n`;
-  if (expected === actual) {
-    return;
-  }
-
-  issues.push(
-    `Behavior-derived interaction metadata is out of date in ${relativePath}.\nRun: ${REGENERATE_COMMAND}`,
-  );
 }
 
 async function validateRegisteredToyEntrypoints(

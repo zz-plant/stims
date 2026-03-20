@@ -3,6 +3,7 @@ import type { Vector2 } from 'three';
 import {
   HalfFloatType,
   LinearFilter,
+  LineSegments,
   MeshBasicMaterial,
   OrthographicCamera,
   Scene,
@@ -10,7 +11,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
-import { createMilkdropRendererAdapter } from '../assets/js/milkdrop/renderer-adapter.ts';
+import { createMilkdropRendererAdapter } from '../assets/js/milkdrop/renderer-adapter-factory.ts';
 import type { MilkdropRuntimeSignals } from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 
@@ -418,11 +419,109 @@ per_pixel_1=zoom=1.08; rot=0.15; warp=0.3;
       children: Array<{ children?: Array<{ type?: string }> }>;
     };
     const motionVectorGroup = root.children[7] as {
-      children: Array<{ type?: string }>;
+      children: Array<{ type?: string; children?: Array<{ type?: string }> }>;
     };
 
     expect(motionVectorGroup.children.length).toBeGreaterThan(0);
-    expect(motionVectorGroup.children[0]?.type).toBe('Line');
+    expect(motionVectorGroup.children[0]?.type ?? 'Group').toBe('Group');
+    expect(motionVectorGroup.children[0]?.children?.[0]?.type).toBe('Line');
+  });
+
+  test('uses procedural mesh generation on webgpu when per-pixel VM work is absent', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Mesh
+mesh_density=14
+zoom=1.12
+rot=0.18
+warp=0.22
+warpanimspeed=1.4
+      `.trim(),
+      { id: 'procedural-mesh' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals());
+
+    expect(frameState.mesh.positions).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField).not.toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ material?: unknown; geometry?: unknown }>;
+    };
+    const meshLines = root.children[1] as {
+      material?: unknown;
+      geometry?: unknown;
+    };
+
+    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.geometry).toBeDefined();
+  });
+
+  test('uses procedural motion vectors on webgpu when per-pixel VM work is absent', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Motion Vectors
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mv_a=0.3
+zoom=1.05
+rot=0.12
+warp=0.26
+warpanimspeed=1.25
+      `.trim(),
+      { id: 'procedural-motion-vectors' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals());
+
+    expect(frameState.motionVectors).toHaveLength(0);
+    expect(frameState.gpuGeometry.motionVectorField).not.toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        children?: Array<{ type?: string; material?: unknown }>;
+      }>;
+    };
+    const motionVectorGroup = root.children[7] as {
+      children: Array<{ type?: string; material?: unknown }>;
+    };
+    const proceduralMotionVectors = motionVectorGroup.children[1];
+
+    expect(proceduralMotionVectors).toBeInstanceOf(LineSegments);
+    expect(proceduralMotionVectors?.material).toBeInstanceOf(ShaderMaterial);
   });
 
   test('skips feedback composite rendering when shader mode is disabled', () => {
@@ -567,6 +666,72 @@ video_echo=1
     expect(feedback).not.toBeNull();
     expect(feedback?.compositeMaterial.uniforms.gammaAdj.value).toBeCloseTo(
       1.85,
+      6,
+    );
+  });
+
+  test('forwards live audio signal uniforms into the webgpu feedback layer', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Signal Field WebGPU
+video_echo=1
+      `.trim(),
+      { id: 'signal-field-webgpu' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          compositeMaterial: ShaderMaterial;
+        } | null;
+      }
+    ).feedback;
+
+    expect(feedback).not.toBeNull();
+    expect(feedback?.compositeMaterial.uniforms.signalBass.value).toBeCloseTo(
+      frameState.signals.bass,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.signalMid.value).toBeCloseTo(
+      frameState.signals.mid,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.signalTreb.value).toBeCloseTo(
+      frameState.signals.treb,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.signalBeat.value).toBeCloseTo(
+      frameState.signals.beatPulse,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.signalEnergy.value).toBeCloseTo(
+      frameState.signals.weightedEnergy,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.signalTime.value).toBeCloseTo(
+      frameState.signals.time,
       6,
     );
   });

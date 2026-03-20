@@ -35,6 +35,6 @@ describe('toy page demo-audio preference', () => {
 
   test('treats milkdrop as a preset-first session', () => {
     expect(isPresetFirstToySession('milkdrop')).toBe(true);
-    expect(isPresetFirstToySession('holy')).toBe(false);
+    expect(isPresetFirstToySession(null)).toBe(true);
   });
 });

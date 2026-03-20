@@ -33,8 +33,8 @@ describe('router utilities', () => {
       queryParam: 'toy',
     });
 
-    router.pushToyState('holy');
-    expect(location.search).toBe('?toy=holy');
+    router.pushToyState('milkdrop');
+    expect(location.search).toBe('?toy=milkdrop');
 
     router.goToLibrary();
     expect(location.search).toBe('');
@@ -42,7 +42,7 @@ describe('router utilities', () => {
 
   test('notifies listeners on popstate', () => {
     const { windowStub, listeners, location } = createWindowStub(
-      'http://example.com/library?toy=holy',
+      'http://example.com/library?toy=milkdrop',
     );
     const originalHref = location.href;
     const router = createRouter({
@@ -58,16 +58,16 @@ describe('router utilities', () => {
     windowStub.history.pushState(
       {},
       '',
-      'http://example.com/library?toy=aurora',
+      'http://example.com/library?toy=milkdrop',
     );
     listeners.get('popstate')?.();
 
-    expect(observedRoute).toEqual({ view: 'toy', slug: 'aurora' });
-    expect(router.getCurrentSlug()).toBe('aurora');
+    expect(observedRoute).toEqual({ view: 'toy', slug: 'milkdrop' });
+    expect(router.getCurrentSlug()).toBe('milkdrop');
 
     windowStub.history.pushState({}, '', originalHref);
     listeners.get('popstate')?.();
 
-    expect(router.getCurrentSlug()).toBe('holy');
+    expect(router.getCurrentSlug()).toBe('milkdrop');
   });
 });

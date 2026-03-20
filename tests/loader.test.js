@@ -58,8 +58,8 @@ function createMockHistory(locationObject) {
 
 const defaultToys = [
   {
-    slug: 'holy',
-    title: 'Test Halo Visualizer',
+    slug: 'milkdrop',
+    title: 'Test MilkDrop Visualizer',
     module: './__mocks__/fake-module.js',
     type: 'module',
     requiresWebGPU: false,
@@ -196,7 +196,7 @@ describe('loadToy', () => {
   test('loads module toy without mutating history when pushState is false', async () => {
     const { loader, manifestClient } = await buildLoader();
 
-    await loader.loadToy('holy');
+    await loader.loadToy('milkdrop');
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
     expect(manifestClient.resolveModulePath).toHaveBeenCalledWith(
@@ -210,11 +210,11 @@ describe('loadToy', () => {
       locationHref: 'http://example.com/library',
     });
 
-    await loader.loadToy('holy', { pushState: true });
+    await loader.loadToy('milkdrop', { pushState: true });
 
     const backControl = document.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
-    expect(window.location.search).toBe('?toy=holy');
+    expect(window.location.search).toBe('?toy=milkdrop');
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -234,7 +234,7 @@ describe('loadToy', () => {
       locationHref: 'http://example.com/library',
     });
 
-    await loader.loadToy('holy', { pushState: true });
+    await loader.loadToy('milkdrop', { pushState: true });
 
     const backControl = document.querySelector('[data-back-to-library]');
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));
@@ -256,7 +256,7 @@ describe('loadToy', () => {
     });
 
     const { loader } = await buildLoader();
-    await loader.loadToy('holy', { pushState: true });
+    await loader.loadToy('milkdrop', { pushState: true });
 
     const hapticsBtn = document.querySelector('[data-haptics-toggle="true"]');
     expect(hapticsBtn).not.toBeNull();
@@ -530,32 +530,13 @@ describe('WebGPU requirements', () => {
 describe('loadFromQuery routing', () => {
   test('loads from existing query param', async () => {
     const { loader, location } = await buildLoader({
-      locationHref: 'http://example.com/library?toy=holy',
+      locationHref: 'http://example.com/library?toy=milkdrop',
     });
 
     await loader.loadFromQuery();
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
-    expect(location.search).toBe('?toy=holy');
-  });
-
-  test('loads legacy three-d-toy query alias using the canonical slug', async () => {
-    const { loader } = await buildLoader({
-      toys: [
-        {
-          slug: '3dtoy',
-          title: '3D Toy',
-          module: './__mocks__/fake-module.js',
-          type: 'module',
-          requiresWebGPU: false,
-        },
-      ],
-      locationHref: 'http://example.com/library?toy=three-d-toy',
-    });
-
-    await loader.loadFromQuery();
-
-    expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
+    expect(location.search).toBe('?toy=milkdrop');
   });
 
   test('returns to library when query param is missing', async () => {

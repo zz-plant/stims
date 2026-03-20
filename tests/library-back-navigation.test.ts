@@ -10,7 +10,7 @@ describe('library back navigation', () => {
     const historyBack = mock();
     const win = {
       history: { back: historyBack },
-      location: { href: 'https://example.com/toys/evol/' },
+      location: { href: 'https://example.com/toys/milkdrop/' },
     } as unknown as Window & typeof globalThis;
     const doc = {
       referrer: 'https://example.com/',
@@ -33,7 +33,7 @@ describe('library back navigation', () => {
     const historyBack = mock();
     const win = {
       history: { back: historyBack },
-      location: { href: 'https://example.com/toys/evol/' },
+      location: { href: 'https://example.com/toys/milkdrop/' },
     } as unknown as Window & typeof globalThis;
     const doc = {
       referrer: '',
@@ -52,7 +52,7 @@ describe('library back navigation', () => {
     const historyBack = mock();
     const win = {
       history: { back: historyBack },
-      location: { href: 'https://example.com/toy.html?toy=holy' },
+      location: { href: 'https://example.com/toy.html?toy=milkdrop' },
     } as unknown as Window & typeof globalThis;
     const doc = {
       referrer: 'https://example.com/index.html',
