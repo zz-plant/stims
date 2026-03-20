@@ -48,7 +48,7 @@ type UiPrefs = {
 };
 
 const DEFAULT_PRESET_SOURCE = `title=Signal Bloom
-author=Stim Webtoys
+author=Stims
 description=Curated fallback preset used before the bundled catalog loads.
 
 fRating=4
@@ -362,7 +362,7 @@ export function createMilkdropExperience({
     id: 'signal-bloom',
     title: 'Signal Bloom',
     origin: 'bundled',
-    author: 'Stim Webtoys',
+    author: 'Stims',
   });
   const vm = createMilkdropVM(defaultPreset);
   const signalTracker = createMilkdropSignalTracker();
@@ -496,7 +496,7 @@ export function createMilkdropExperience({
 
   const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
     activeBackend === 'webgpu' &&
-    compiled.ir.compatibility.backends.webgpu.status !== 'supported' &&
+    compiled.ir.compatibility.backends.webgpu.status === 'unsupported' &&
     !isCompatibilityModeEnabled();
 
   const triggerWebglFallback = ({
@@ -567,7 +567,7 @@ export function createMilkdropExperience({
     if (shouldFallbackToWebgl(nextCompiled)) {
       triggerWebglFallback({
         presetId: id,
-        reason: `${nextCompiled.title} needs WebGL for validated feedback/post rendering.`,
+        reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
       });
       return;
     }
@@ -1027,7 +1027,7 @@ export function createMilkdropExperience({
     if (shouldFallbackToWebgl(nextCompiled)) {
       triggerWebglFallback({
         presetId: nextCompiled.source.id,
-        reason: `${nextCompiled.title} needs WebGL for validated feedback/post rendering.`,
+        reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
       });
       return;
     }
@@ -1098,7 +1098,7 @@ export function createMilkdropExperience({
         if (shouldFallbackToWebgl(activeCompiled)) {
           triggerWebglFallback({
             presetId: activeCompiled.source.id,
-            reason: `${activeCompiled.title} needs WebGL for validated feedback/post rendering.`,
+            reason: `${activeCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
           });
           return;
         }

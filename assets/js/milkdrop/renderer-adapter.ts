@@ -45,8 +45,12 @@ import type {
 type RendererLike = {
   getSize?: (target: Vector2) => Vector2;
   render: (scene: Scene, camera: Camera) => void;
-  setRenderTarget?: (target: WebGLRenderTarget | null) => void;
+  setRenderTarget?: RendererSetRenderTarget;
 };
+
+type RendererSetRenderTarget = {
+  bivarianceHack(target: WebGLRenderTarget | null): void;
+}['bivarianceHack'];
 
 type FeedbackBackendProfile = {
   currentFrameBoost: number;
@@ -300,7 +304,7 @@ function isFeedbackCapableRenderer(
   renderer: RendererLike | null,
 ): renderer is RendererLike & {
   getSize: (target: Vector2) => Vector2;
-  setRenderTarget: (target: WebGLRenderTarget | null) => void;
+  setRenderTarget: RendererSetRenderTarget;
 } {
   return !!renderer && !!renderer.getSize && !!renderer.setRenderTarget;
 }
@@ -1611,7 +1615,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     );
 
     if (
-      this.backend === 'webgpu' ||
       !isFeedbackCapableRenderer(this.renderer) ||
       !this.feedback ||
       !payload.frameState.post.shaderEnabled

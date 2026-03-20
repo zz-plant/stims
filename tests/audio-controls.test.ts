@@ -92,7 +92,7 @@ describe('audio controls primary emphasis', () => {
     });
 
     expect(container.textContent).toContain(
-      'Use demo for the fastest first run. Switch to mic once you want live response.',
+      'Start with demo audio for the quickest setup. Switch to mic when you want live input.',
     );
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
@@ -318,7 +318,7 @@ describe('audio controls primary emphasis', () => {
         wowControl: 'Q/E mood cycling',
       }),
     ).toEqual({
-      summary: 'Start with demo audio for the fastest first run.',
+      summary: 'Start with demo audio for the quickest start.',
       detail:
         'Try Aurora starter once the toy opens. Then explore Q/E mood cycling.',
     });
@@ -493,7 +493,7 @@ describe('audio controls primary emphasis', () => {
 
     const sourceStep = container.querySelector('[data-first-step-source]');
     expect(sourceStep?.textContent).toContain(
-      'Demo is best for the fastest first run.',
+      'Demo is the quickest way to get started.',
     );
   });
 

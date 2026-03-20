@@ -153,7 +153,7 @@ function createPresetCard(
   const launch = documentRef.createElement('a');
   launch.href = '/toy.html?toy=milkdrop';
   launch.className = 'cta-button primary';
-  launch.textContent = 'Open in MilkDrop';
+  launch.textContent = 'Open visualizer';
   launch.addEventListener('click', () => {
     requestMilkdropPresetSelection(entry.id);
   });

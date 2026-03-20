@@ -212,7 +212,7 @@ export function createLibraryView({
 
     if (baseActiveLabels.length === 0) {
       note.textContent =
-        'Quick filters: demo audio, microphone, mobile-friendly, and motion.';
+        'Quick filters include demo audio, microphone, mobile-friendly, and motion.';
       return;
     }
 
@@ -842,7 +842,7 @@ export function createLibraryView({
     const guides = [primaryGuide, secondaryGuide].filter(Boolean);
 
     if (guides.length > 0) {
-      return `Try first: ${guides.join(' • ')}`;
+      return `Start with: ${guides.join(' • ')}`;
     }
 
     if (toy.firstRunHint) {
@@ -866,7 +866,7 @@ export function createLibraryView({
 
       const heading = document.createElement('h3');
       heading.className = 'webtoy-growth-panel__title';
-      heading.textContent = 'Continue where you left off';
+      heading.textContent = 'Pick up where you left off';
       panel.appendChild(heading);
 
       const list = document.createElement('div');
@@ -951,7 +951,7 @@ export function createLibraryView({
       matches.className = 'webtoy-card-match';
 
       const label = document.createElement('strong');
-      label.textContent = 'Matched in';
+      label.textContent = 'Matches:';
       matches.appendChild(label);
 
       matchedFields.forEach((field) => {
@@ -1096,7 +1096,7 @@ export function createLibraryView({
     const message = document.createElement('p');
     message.className = 'empty-state__message';
     message.textContent =
-      'No stims match your search or filters. Try clearing your search or removing filters.';
+      'No visuals match your search or filters. Try clearing your search or removing filters.';
 
     const resetButton = document.createElement('button');
     resetButton.type = 'button';

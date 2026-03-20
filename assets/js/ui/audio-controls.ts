@@ -42,9 +42,9 @@ export function buildTryThisFirstRecommendation({
   const steps: string[] = [];
 
   if (recommendedCapability === 'microphone') {
-    steps.push('Start with live mic for the most responsive version.');
+    steps.push('Start with live mic for the most responsive visuals.');
   } else if (recommendedCapability === 'demoAudio') {
-    steps.push('Start with demo audio for the fastest first run.');
+    steps.push('Start with demo audio for the quickest start.');
   }
 
   if (starterPresetLabel?.trim()) {
@@ -129,8 +129,8 @@ export function initAudioControls(
 
   container.innerHTML = `
     <p class="control-panel__eyebrow">Start</p>
-    <div class="control-panel__heading">Start the visuals</div>
-    <p class="control-panel__description">Use demo for the fastest first run. Switch to mic once you want live response.</p>
+    <div class="control-panel__heading">Start the visualizer</div>
+    <p class="control-panel__description">Start with demo audio for the quickest setup. Switch to mic when you want live input.</p>
     ${renderPrimaryAudioChoice()}
     ${renderQuickstartSpotlight({
       summary: tryThisFirst.summary,
@@ -193,8 +193,8 @@ export function initAudioControls(
     if (!(firstStepSource instanceof HTMLElement)) return;
     firstStepSource.textContent =
       source === 'microphone'
-        ? 'Mic is best for room audio, voice, and instruments.'
-        : 'Demo is best for the fastest first run.';
+        ? 'Mic works best for room audio, voice, and instruments.'
+        : 'Demo is the quickest way to get started.';
   };
 
   const setPending = (button: Element | null, pending: boolean) => {
@@ -620,7 +620,7 @@ function renderQuickstartSpotlight({
       <p class="control-panel__comparison" data-audio-comparison>${summary}</p>
       ${detail ? `<p class="control-panel__microcopy">${detail}</p>` : ''}
       <ul class="control-panel__tips control-panel__tips--compact">
-        <li data-first-step-source>Demo gets you to motion fastest. Mic is better once you want live response.</li>
+        <li data-first-step-source>Demo is the quickest way to get started. Mic is better when you want live input.</li>
       </ul>
     </section>
   `;
@@ -666,7 +666,7 @@ function renderPostStartGuidance({
         <div class="control-panel__first-steps-header">
           <span class="control-panel__label">Desktop controls</span>
         </div>
-        <p class="control-panel__microcopy">Laptop play is tuned as a live performance surface:</p>
+        <p class="control-panel__microcopy">On desktop, try these controls:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
           ${desktopHints.map((tip) => `<li>${tip}</li>`).join('')}
         </ul>
@@ -778,7 +778,7 @@ function renderAdvancedSources(options: AudioControlsOptions) {
             />
             <button id="load-youtube" class="cta-button" type="button">Load</button>
           </div>
-          <p id="youtube-url-feedback" class="control-panel__microcopy" data-youtube-url-feedback role="status" aria-live="polite">Paste a full YouTube link to enable Load.</p>
+          <p id="youtube-url-feedback" class="control-panel__microcopy" data-youtube-url-feedback role="status" aria-live="polite">Paste a full YouTube link to load it.</p>
           <div id="recent-youtube" class="control-panel__recent" hidden>
             <span class="control-panel__label small">Recent</span>
             <div id="recent-list" class="control-panel__chip-list"></div>
@@ -840,7 +840,7 @@ function setupYouTubeLogic(
     input.setAttribute('aria-invalid', value ? String(!isValid) : 'false');
     if (urlFeedback) {
       if (!value) {
-        urlFeedback.textContent = 'Paste a full YouTube link to enable Load.';
+        urlFeedback.textContent = 'Paste a full YouTube link to load it.';
       } else if (!isValid) {
         urlFeedback.textContent =
           'That link was not recognized. Try a full youtube.com/watch URL.';
