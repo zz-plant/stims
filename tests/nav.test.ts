@@ -154,7 +154,7 @@ describe('toy navigation visibility states', () => {
     window.matchMedia = originalMatchMedia;
   });
 
-  test('mobile view keeps the toy action drawer visible by default', () => {
+  test('mobile view starts with the toy action drawer collapsed', () => {
     const { matchMedia } = createMatchMediaStub();
     window.matchMedia = matchMedia;
 
@@ -170,20 +170,20 @@ describe('toy navigation visibility states', () => {
     ) as HTMLButtonElement;
     const primary = container.querySelector('.active-toy-nav__actions-primary');
 
-    expect(actions.dataset.toyActionsExpanded).toBe('true');
+    expect(actions.dataset.toyActionsExpanded).toBe('false');
     expect(actions.hidden).toBe(false);
     expect(actions.getAttribute('aria-hidden')).toBeNull();
     expect(actions.hasAttribute('inert')).toBe(false);
-    expect(secondary.hidden).toBe(false);
-    expect(secondary.getAttribute('aria-hidden')).toBe('false');
-    expect(secondary.hasAttribute('inert')).toBe(false);
-    expect(toggle.textContent).toBe('Hide audio & settings');
+    expect(secondary.hidden).toBe(true);
+    expect(secondary.getAttribute('aria-hidden')).toBe('true');
+    expect(secondary.hasAttribute('inert')).toBe(true);
+    expect(toggle.textContent).toBe('Audio & settings');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
-    expect(document.documentElement.dataset.toyControlsExpanded).toBe('true');
+    expect(document.documentElement.dataset.toyControlsExpanded).toBe('false');
   });
 
-  test('mobile toy nav toggle updates its tools label as the drawer closes', () => {
+  test('mobile toy nav toggle updates its tools label as the drawer opens', () => {
     const { matchMedia } = createMatchMediaStub();
     window.matchMedia = matchMedia;
 
@@ -196,14 +196,14 @@ describe('toy navigation visibility states', () => {
 
     toggle.click();
 
-    expect(toggle.textContent).toBe('Audio & settings');
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.textContent).toBe('Hide audio & settings');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(toggle.getAttribute('aria-controls')).toBe(
       'toy-nav-secondary-actions',
     );
     expect(
       (container.querySelector('#toy-nav-secondary-actions') as HTMLElement)
         .hidden,
-    ).toBe(true);
+    ).toBe(false);
   });
 });
