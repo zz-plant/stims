@@ -1848,7 +1848,8 @@ body {
     display: none;
   }
 
-  :root[data-preflight-open="true"] .control-panel--floating,
+  :root[data-preflight-open="true"]
+    .control-panel--floating:not(.preflight-panel),
   :root[data-preflight-open="true"] .milkdrop-overlay__toggle {
     display: none;
   }
