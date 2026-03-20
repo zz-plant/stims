@@ -26,20 +26,25 @@ describe('ensureWebGL overlay', () => {
   });
 
   test('shows capability overlay when neither WebGL nor WebGPU are available', async () => {
-    mock.module('three/examples/jsm/capabilities/WebGL.js', () => ({
-      default: { isWebGLAvailable: () => false },
-    }));
+    const { ensureWebGL, setRenderingSupportResolverForTests } =
+      await freshImport();
+    try {
+      setRenderingSupportResolverForTests(() => ({
+        hasWebGPU: false,
+        hasWebGL: false,
+      }));
 
-    const { ensureWebGL } = await freshImport();
+      const supported = ensureWebGL({ previewLabel: 'Static check' });
 
-    const supported = ensureWebGL({ previewLabel: 'Static check' });
-
-    expect(supported).toBe(false);
-    const overlay = document.getElementById('rendering-capability-overlay');
-    expect(overlay).toBeTruthy();
-    expect(overlay?.textContent).toContain('WebGL');
-    expect(
-      overlay?.querySelector('.rendering-overlay__preview-pane'),
-    ).not.toBeNull();
+      expect(supported).toBe(false);
+      const overlay = document.getElementById('rendering-capability-overlay');
+      expect(overlay).toBeTruthy();
+      expect(overlay?.textContent).toContain('WebGL');
+      expect(
+        overlay?.querySelector('.rendering-overlay__preview-pane'),
+      ).not.toBeNull();
+    } finally {
+      setRenderingSupportResolverForTests(null);
+    }
   });
 });
