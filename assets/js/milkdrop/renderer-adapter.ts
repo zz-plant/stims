@@ -40,6 +40,7 @@ import type {
   MilkdropRenderPayload,
   MilkdropShapeVisual,
   MilkdropWaveVisual,
+  MilkdropWebGpuDescriptorPlan,
 } from './types';
 
 type RendererLike = {
@@ -57,6 +58,7 @@ export type MilkdropRendererAdapterConfig = {
   camera: Camera;
   renderer?: RendererLike | null;
   backend: 'webgl' | 'webgpu';
+  preset?: MilkdropCompiledPreset | null;
   behavior?: MilkdropBackendBehavior;
   createFeedbackManager?: MilkdropFeedbackManagerFactory;
 };
@@ -1798,6 +1800,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly blendBorderGroup = markAlwaysOnscreen(new Group());
   private readonly blendMotionVectorGroup = markAlwaysOnscreen(new Group());
   private readonly feedback: MilkdropFeedbackManager | null;
+  private webgpuDescriptorPlan: MilkdropWebGpuDescriptorPlan | null = null;
 
   constructor({
     scene,
@@ -1862,7 +1865,12 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
   }
 
-  setPreset(_preset: MilkdropCompiledPreset) {}
+  setPreset(preset: MilkdropCompiledPreset) {
+    this.webgpuDescriptorPlan =
+      this.backend === 'webgpu'
+        ? preset.ir.compatibility.gpuDescriptorPlans.webgpu
+        : null;
+  }
 
   assessSupport(preset: MilkdropCompiledPreset) {
     return preset.ir.compatibility.backends[this.backend];
@@ -2031,7 +2039,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     signals: MilkdropRenderPayload['frameState']['signals'],
   ) {
     const proceduralMesh =
-      this.backend === 'webgpu' ? gpuGeometry.meshField : null;
+      this.backend === 'webgpu' &&
+      this.webgpuDescriptorPlan?.proceduralMesh !== null
+        ? gpuGeometry.meshField
+        : null;
     if (proceduralMesh) {
       if (!(this.meshLines.material instanceof ShaderMaterial)) {
         disposeMaterial(this.meshLines.material);
@@ -2075,7 +2086,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     alphaMultiplier = 1,
   ) {
     const proceduralField =
-      this.backend === 'webgpu' ? payload.gpuGeometry.motionVectorField : null;
+      this.backend === 'webgpu' &&
+      this.webgpuDescriptorPlan?.proceduralMesh?.supportsMotionVectors
+        ? payload.gpuGeometry.motionVectorField
+        : null;
     if (proceduralField) {
       clearGroup(this.motionVectorCpuGroup);
       this.proceduralMotionVectors.visible = true;
@@ -2124,15 +2138,23 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   ): MilkdropFeedbackCompositeState {
     const controls = frameState.post.shaderControls;
     const shaderPrograms = frameState.post.shaderPrograms;
+    const plannedShaderExecution =
+      this.backend === 'webgpu'
+        ? this.webgpuDescriptorPlan?.feedback?.shaderExecution
+        : null;
     const usesDirectShaderPrograms =
-      (shaderPrograms.warp?.execution.supportedBackends.includes(
-        this.backend,
-      ) ??
-        false) ||
-      (shaderPrograms.comp?.execution.supportedBackends.includes(
-        this.backend,
-      ) ??
-        false);
+      plannedShaderExecution === 'direct'
+        ? true
+        : plannedShaderExecution === 'controls'
+          ? false
+          : (shaderPrograms.warp?.execution.supportedBackends.includes(
+              this.backend,
+            ) ??
+              false) ||
+            (shaderPrograms.comp?.execution.supportedBackends.includes(
+              this.backend,
+            ) ??
+              false);
     return {
       shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
       shaderPrograms,
@@ -2227,7 +2249,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       payload.frameState.signals,
     );
 
-    if (this.backend === 'webgpu' && payload.frameState.gpuGeometry.mainWave) {
+    const proceduralWavePlans =
+      this.webgpuDescriptorPlan?.proceduralWaves ?? [];
+    const canUseProceduralMainWave =
+      this.backend === 'webgpu' &&
+      proceduralWavePlans.some((plan) => plan.target === 'main-wave');
+    const canUseProceduralCustomWaves =
+      this.backend === 'webgpu' &&
+      proceduralWavePlans.some((plan) => plan.target === 'custom-wave');
+    const canUseProceduralTrailWaves =
+      this.backend === 'webgpu' &&
+      proceduralWavePlans.some((plan) => plan.target === 'trail-waves');
+
+    if (canUseProceduralMainWave && payload.frameState.gpuGeometry.mainWave) {
       this.renderProceduralWaveGroup(this.mainWaveGroup, [
         payload.frameState.gpuGeometry.mainWave,
       ]);
@@ -2235,7 +2269,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.renderWaveGroup(this.mainWaveGroup, [payload.frameState.mainWave]);
     }
     if (
-      this.backend === 'webgpu' &&
+      canUseProceduralCustomWaves &&
       payload.frameState.gpuGeometry.customWaves.length > 0
     ) {
       this.renderProceduralCustomWaveGroup(
@@ -2249,7 +2283,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       );
     }
     if (
-      this.backend === 'webgpu' &&
+      canUseProceduralTrailWaves &&
       payload.frameState.gpuGeometry.trailWaves.length > 0
     ) {
       this.renderProceduralWaveGroup(
@@ -2334,10 +2368,11 @@ export function createMilkdropRendererAdapterCore({
   camera,
   renderer,
   backend,
+  preset,
   behavior,
   createFeedbackManager,
 }: MilkdropRendererAdapterConfig) {
-  return new ThreeMilkdropAdapter({
+  const adapter = new ThreeMilkdropAdapter({
     scene,
     camera,
     renderer: renderer ?? null,
@@ -2349,6 +2384,10 @@ export function createMilkdropRendererAdapterCore({
         : WEBGL_MILKDROP_BACKEND_BEHAVIOR),
     createFeedbackManager: createFeedbackManager ?? null,
   });
+  if (preset) {
+    adapter.setPreset(preset);
+  }
+  return adapter;
 }
 
 export const createMilkdropRendererAdapter = createMilkdropRendererAdapterCore;

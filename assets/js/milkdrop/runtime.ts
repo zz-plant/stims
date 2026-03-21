@@ -832,7 +832,9 @@ export function createMilkdropExperience({
 
   const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
     activeBackend === 'webgpu' &&
-    compiled.ir.compatibility.backends.webgpu.status === 'unsupported' &&
+    (compiled.ir.compatibility.backends.webgpu.status === 'unsupported' ||
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing ===
+        'fallback-webgl') &&
     !isCompatibilityModeEnabled();
 
   const triggerWebglFallback = ({
@@ -1435,9 +1437,9 @@ export function createMilkdropExperience({
           camera: nextRuntime.toy.camera,
           renderer: handle?.renderer,
           backend: activeBackend,
+          preset: activeCompiled,
         });
         adapter.attach();
-        adapter.setPreset(activeCompiled);
         if (shouldFallbackToWebgl(activeCompiled)) {
           triggerWebglFallback({
             presetId: activeCompiled.source.id,

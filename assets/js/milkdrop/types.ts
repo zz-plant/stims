@@ -212,10 +212,55 @@ export type MilkdropFeatureAnalysis = {
   };
 };
 
+export type MilkdropGpuDescriptorRouting =
+  | 'generic-frame-payload'
+  | 'descriptor-plan'
+  | 'fallback-webgl';
+
+export type MilkdropProceduralWaveDescriptorPlan = {
+  kind: 'procedural-wave';
+  target: 'main-wave' | 'trail-waves' | 'custom-wave';
+  slotIndex: number | null;
+  sampleSource: 'waveform' | 'spectrum';
+};
+
+export type MilkdropProceduralMeshDescriptorPlan = {
+  kind: 'procedural-mesh';
+  requiresPerPixelProgram: boolean;
+  supportsMotionVectors: boolean;
+};
+
+export type MilkdropFeedbackPostEffectDescriptorPlan = {
+  kind: 'feedback-post-effect';
+  shaderExecution: 'none' | 'controls' | 'direct';
+  usesFeedbackTexture: boolean;
+  usesVideoEcho: boolean;
+  usesPostEffects: boolean;
+  fallbackToLegacyFeedback: boolean;
+};
+
+export type MilkdropGpuDescriptorUnsupportedMarker = {
+  kind: 'unsupported-feature';
+  feature: MilkdropCompatibilityFeatureKey;
+  reason: string;
+  recommendedFallback: MilkdropRenderBackend;
+};
+
+export type MilkdropWebGpuDescriptorPlan = {
+  routing: MilkdropGpuDescriptorRouting;
+  proceduralWaves: MilkdropProceduralWaveDescriptorPlan[];
+  proceduralMesh: MilkdropProceduralMeshDescriptorPlan | null;
+  feedback: MilkdropFeedbackPostEffectDescriptorPlan | null;
+  unsupported: MilkdropGpuDescriptorUnsupportedMarker[];
+};
+
 export type MilkdropCompatibilityReport = {
   backends: {
     webgl: MilkdropBackendSupport;
     webgpu: MilkdropBackendSupport;
+  };
+  gpuDescriptorPlans: {
+    webgpu: MilkdropWebGpuDescriptorPlan;
   };
   parity: MilkdropParityReport;
   featureAnalysis: MilkdropFeatureAnalysis;

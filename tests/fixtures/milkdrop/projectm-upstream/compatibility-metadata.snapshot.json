@@ -13,6 +13,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -47,6 +71,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -81,6 +129,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "borders"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -115,6 +187,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -153,6 +249,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -191,6 +311,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -225,6 +369,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -259,6 +427,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -302,6 +494,26 @@
         "per-pixel-equations",
         "borders"
       ],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": null,
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -336,6 +548,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -370,6 +606,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -404,6 +664,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -438,6 +722,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -472,6 +780,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -506,6 +838,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -540,6 +896,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -574,6 +954,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -608,6 +1012,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -642,6 +1070,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -676,6 +1128,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -710,6 +1186,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -744,6 +1244,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -778,6 +1302,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -812,6 +1360,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -846,6 +1418,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -887,6 +1483,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -928,6 +1548,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -969,6 +1613,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -1010,6 +1678,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -1051,6 +1743,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -1092,6 +1808,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -1133,6 +1873,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "per-frame-equations", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -1180,6 +1944,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -1242,6 +2030,30 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -1278,6 +2090,30 @@
         "WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution."
       ],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -1324,6 +2160,30 @@
         "WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution."
       ],
       "featuresUsed": ["base-globals"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "supportsMotionVectors": false
+        },
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
@@ -1387,6 +2247,26 @@
       "unsupportedKeys": [],
       "warnings": [],
       "featuresUsed": ["base-globals", "per-pixel-equations", "custom-waves"],
+      "gpuDescriptorPlan": {
+        "routing": "descriptor-plan",
+        "proceduralWaves": [
+          {
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform"
+          }
+        ],
+        "proceduralMesh": null,
+        "feedback": null,
+        "unsupported": []
+      },
       "backends": {
         "webgl": {
           "status": "supported",
