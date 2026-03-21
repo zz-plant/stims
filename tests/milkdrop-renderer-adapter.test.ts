@@ -667,7 +667,7 @@ video_echo=1
     });
   });
 
-  test('prefers translated shader controls when direct shader programs are unavailable', () => {
+  test('keeps translated shader-only feedback state on controls when no direct program payload exists', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Direct Shader Program Feedback
@@ -1205,8 +1205,8 @@ video_echo=1
     expect(feedback).not.toBeNull();
     expect(feedback?.sceneTarget.width).toBe(640);
     expect(feedback?.sceneTarget.height).toBe(360);
-    expect(feedback?.targets[0]?.width).toBe(544);
-    expect(feedback?.targets[0]?.height).toBe(306);
+    expect(feedback?.targets[0]?.width).toBe(640);
+    expect(feedback?.targets[0]?.height).toBe(360);
     expect(feedback?.sceneTarget.samples).toBe(0);
     expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
     expect(feedback?.sceneTarget.texture.minFilter).toBe(LinearFilter);
