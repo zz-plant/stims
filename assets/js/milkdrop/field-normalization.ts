@@ -45,6 +45,12 @@ const aliasMap: Record<string, string | null> = {
   finnerbordera: 'ib_a',
   video_echo: 'video_echo_enabled',
   echo_orient: 'video_echo_orientation',
+  motionvectorsx: 'motion_vectors_x',
+  motionvectorsy: 'motion_vectors_y',
+  nmotionvectorsx: 'motion_vectors_x',
+  nmotionvectorsy: 'motion_vectors_y',
+  mv_x: 'motion_vectors_x',
+  mv_y: 'motion_vectors_y',
 };
 
 export function normalizeFieldSuffix(value: string) {

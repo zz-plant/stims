@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import type { MilkdropRuntimeSignals } from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
@@ -248,6 +250,66 @@ per_pixel_1=zoom=1.08; rot=0.12; warp=0.35;
     expect(frameState.motionVectors[0]?.positions).toHaveLength(6);
     expect(frameState.motionVectors[0]?.color.b).toBeCloseTo(1, 6);
     expect(frameState.motionVectors[0]?.alpha).toBeGreaterThan(0.28);
+  });
+
+  test('uses legacy motion vector counts and spacing controls without canonical enable flags', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Legacy Motion Overlay
+nMotionVectorsX=3
+nMotionVectorsY=2
+mv_dx=0.1
+mv_dy=-0.05
+mv_l=0.15
+mv_r=0.4
+mv_g=0.8
+mv_b=1
+mv_a=0.5
+per_frame_init_1=mv_x=4;mv_y=3;
+per_pixel_1=zoom=1.1; rot=0.08; warp=0.2;
+      `.trim(),
+      { id: 'legacy-motion-overlay' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 2 }));
+
+    expect(frameState.variables.motion_vectors_x).toBeCloseTo(4, 6);
+    expect(frameState.variables.motion_vectors_y).toBeCloseTo(3, 6);
+    expect(frameState.motionVectors).toHaveLength(12);
+    expect(frameState.motionVectors[0]?.color.g).toBeCloseTo(0.8, 6);
+    expect(frameState.motionVectors[0]?.alpha).toBeCloseTo(0.5, 6);
+    expect(frameState.motionVectors[0]?.positions[0]).toBeGreaterThan(-0.95);
+    expect(frameState.motionVectors[0]?.positions[1]).toBeLessThan(0.95);
+    const firstVectorDx =
+      (frameState.motionVectors[0]?.positions[3] ?? 0) -
+      (frameState.motionVectors[0]?.positions[0] ?? 0);
+    const firstVectorDy =
+      (frameState.motionVectors[0]?.positions[4] ?? 0) -
+      (frameState.motionVectors[0]?.positions[1] ?? 0);
+    expect(Math.hypot(firstVectorDx, firstVectorDy)).toBeCloseTo(0.2175, 3);
+  });
+
+  test('applies bundled mv_x/mv_y init aliases for legacy motion-vector presets', () => {
+    const source = readFileSync(
+      join(
+        process.cwd(),
+        'public',
+        'milkdrop-presets',
+        'eos-glowsticks-v2-03-music.milk',
+      ),
+      'utf8',
+    );
+    const preset = compileMilkdropPresetSource(source, {
+      id: 'eos-glowsticks-v2-03-music',
+      title: 'eos-glowsticks-v2-03-music.milk',
+      origin: 'bundled',
+    });
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 2 }));
+
+    expect(frameState.variables.motion_vectors_x).toBeCloseTo(64, 6);
+    expect(frameState.variables.motion_vectors_y).toBeCloseTo(48, 6);
+    expect(frameState.motionVectors.length).toBeGreaterThan(0);
   });
 
   test('preserves prior frame wave samples for velocity-driven main wave animation', () => {
