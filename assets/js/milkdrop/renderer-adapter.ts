@@ -120,6 +120,7 @@ const proceduralWaveGeometryCache = new Map<number, BufferGeometry>();
 
 type ProceduralFieldUniformState = {
   zoom: { value: number };
+  zoomExponent: { value: number };
   rotation: { value: number };
   warp: { value: number };
   warpAnimSpeed: { value: number };
@@ -132,6 +133,7 @@ type ProceduralFieldUniformState = {
 function createProceduralFieldUniformState() {
   return {
     zoom: { value: 1 },
+    zoomExponent: { value: 1 },
     rotation: { value: 0 },
     warp: { value: 0 },
     warpAnimSpeed: { value: 1 },
@@ -150,9 +152,14 @@ const PROCEDURAL_FIELD_SHADER_CHUNK = `
       radius * 12.0 +
       time * (0.6 + trebleAtt) * (0.35 + warpAnimSpeed)
     ) * warp * 0.08;
+    float radiusNormalized = clamp(radius / 1.41421356237, 0.0, 1.0);
+    float zoomScale = pow(
+      max(zoom, 0.0001),
+      pow(max(zoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
+    );
     vec2 warped = vec2(
-      (source.x + cos(angle * 3.0) * ripple) * zoom,
-      (source.y + sin(angle * 4.0) * ripple) * zoom
+      (source.x + cos(angle * 3.0) * ripple) * zoomScale,
+      (source.y + sin(angle * 4.0) * ripple) * zoomScale
     );
     float cosRot = cos(rotation);
     float sinRot = sin(rotation);
@@ -171,6 +178,7 @@ function createProceduralMeshMaterial() {
     vertexShader: `
       attribute vec3 sourcePosition;
       uniform float zoom;
+      uniform float zoomExponent;
       uniform float rotation;
       uniform float warp;
       uniform float warpAnimSpeed;
@@ -207,6 +215,7 @@ function createProceduralMotionVectorMaterial() {
       attribute vec3 sourcePosition;
       attribute float endpointWeight;
       uniform float zoom;
+      uniform float zoomExponent;
       uniform float rotation;
       uniform float warp;
       uniform float warpAnimSpeed;
@@ -715,6 +724,7 @@ function syncProceduralFieldUniforms(
   material: ShaderMaterial,
   {
     zoom,
+    zoomExponent,
     rotation,
     warp,
     warpAnimSpeed,
@@ -724,6 +734,7 @@ function syncProceduralFieldUniforms(
     alpha,
   }: {
     zoom: number;
+    zoomExponent: number;
     rotation: number;
     warp: number;
     warpAnimSpeed: number;
@@ -734,6 +745,7 @@ function syncProceduralFieldUniforms(
   },
 ) {
   material.uniforms.zoom.value = zoom;
+  material.uniforms.zoomExponent.value = zoomExponent;
   material.uniforms.rotation.value = rotation;
   material.uniforms.warp.value = warp;
   material.uniforms.warpAnimSpeed.value = warpAnimSpeed;
@@ -1925,6 +1937,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       );
       syncProceduralFieldUniforms(this.meshLines.material as ShaderMaterial, {
         zoom: proceduralMesh.zoom,
+        zoomExponent: proceduralMesh.zoomExponent,
         rotation: proceduralMesh.rotation,
         warp: proceduralMesh.warp,
         warpAnimSpeed: proceduralMesh.warpAnimSpeed,
@@ -1974,6 +1987,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         this.proceduralMotionVectors.material as ShaderMaterial,
         {
           zoom: proceduralField.zoom,
+          zoomExponent: proceduralField.zoomExponent,
           rotation: proceduralField.rotation,
           warp: proceduralField.warp,
           warpAnimSpeed: proceduralField.warpAnimSpeed,

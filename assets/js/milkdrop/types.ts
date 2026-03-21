@@ -510,6 +510,7 @@ export type MilkdropMotionVectorVisual = {
 export type MilkdropProceduralFieldVisual = {
   density: number;
   zoom: number;
+  zoomExponent: number;
   rotation: number;
   warp: number;
   warpAnimSpeed: number;
@@ -549,6 +550,7 @@ export type MilkdropProceduralMotionVectorFieldVisual = {
   countX: number;
   countY: number;
   zoom: number;
+  zoomExponent: number;
   rotation: number;
   warp: number;
   warpAnimSpeed: number;
