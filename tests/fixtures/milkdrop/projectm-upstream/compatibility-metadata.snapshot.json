@@ -1149,7 +1149,7 @@
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],
-        "missingAliasesOrFunctions": ["value2"]
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1258,7 +1258,7 @@
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],
-        "missingAliasesOrFunctions": ["value2"]
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1407,7 +1407,7 @@
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],
-        "missingAliasesOrFunctions": ["value2"]
+        "missingAliasesOrFunctions": []
       }
     }
   }
