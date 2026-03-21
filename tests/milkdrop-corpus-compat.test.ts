@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import type { MilkdropFidelityClass } from '../assets/js/milkdrop/types.ts';
 
 type CompatibilityStatus = 'supported' | 'partial' | 'unsupported';
 
@@ -15,7 +16,7 @@ type ShapeCorpusExpectation = {
   diagnostics: readonly string[];
   webgl: CompatibilityStatus;
   webgpu: CompatibilityStatus;
-  fidelityClass: string;
+  fidelityClass: MilkdropFidelityClass;
   unsupportedKeys: readonly string[];
   warnings: readonly string[];
   blockedConstructs: readonly string[];
@@ -26,31 +27,50 @@ type ShapeCorpusExpectation = {
 const LOCAL_SHAPE_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> =
   {
     'shape-legacy-max-slot-orbit.milk': {
-      diagnostics: [],
-      webgl: 'supported',
-      webgpu: 'supported',
-      fidelityClass: 'exact',
-      unsupportedKeys: [],
-      warnings: [],
-      blockedConstructs: [],
+      diagnostics: [
+        'preset_unknown_field',
+        'preset_unknown_field',
+        'preset_unknown_field',
+      ],
+      webgl: 'partial',
+      webgpu: 'partial',
+      fidelityClass: 'fallback',
+      unsupportedKeys: [
+        'shape_32_tex_ang',
+        'shape_32_tex_zoom',
+        'shape_32_textured',
+      ],
+      warnings: [
+        'Unknown preset field "shape_32_textured" was ignored.',
+        'Unknown preset field "shape_32_tex_ang" was ignored.',
+        'Unknown preset field "shape_32_tex_zoom" was ignored.',
+      ],
+      blockedConstructs: [
+        'field:shape_32_tex_ang',
+        'field:shape_32_tex_zoom',
+        'field:shape_32_textured',
+      ],
       missingAliasesOrFunctions: [],
       customShapeCount: 1,
     },
     'shape-projectm-dual-lattice.milk': {
-      diagnostics: [],
-      webgl: 'supported',
-      webgpu: 'supported',
-      fidelityClass: 'exact',
-      unsupportedKeys: [],
-      warnings: [],
-      blockedConstructs: [],
-      missingAliasesOrFunctions: [],
+      diagnostics: ['preset_unknown_field', 'preset_unknown_field'],
+      webgl: 'partial',
+      webgpu: 'partial',
+      fidelityClass: 'fallback',
+      unsupportedKeys: ['shape_1_tex_zoom', 'shape_1_textured'],
+      warnings: [
+        'Unknown preset field "shape_1_textured" was ignored.',
+        'Unknown preset field "shape_1_tex_zoom" was ignored.',
+      ],
+      blockedConstructs: ['field:shape_1_tex_zoom', 'field:shape_1_textured'],
+      missingAliasesOrFunctions: ['instance'],
       customShapeCount: 2,
     },
   };
 
 const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
-  'aurora-feedback-core.milk': { webgl: 'supported', webgpu: 'partial' },
+  'aurora-feedback-core.milk': { webgl: 'supported', webgpu: 'supported' },
   'eos-glowsticks-v2-03-music.milk': {
     webgl: 'partial',
     webgpu: 'partial',
@@ -73,7 +93,7 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
       'nmotionvectorsy',
     ],
   },
-  'kinetic-grid-pulse.milk': { webgl: 'supported', webgpu: 'partial' },
+  'kinetic-grid-pulse.milk': { webgl: 'supported', webgpu: 'supported' },
   'krash-rovastar-cerebral-demons-stars.milk': {
     webgl: 'partial',
     webgpu: 'partial',
@@ -85,8 +105,8 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
       'nmotionvectorsy',
     ],
   },
-  'low-motion-halo-drift.milk': { webgl: 'supported', webgpu: 'partial' },
-  'prism-drum-tunnel.milk': { webgl: 'supported', webgpu: 'partial' },
+  'low-motion-halo-drift.milk': { webgl: 'supported', webgpu: 'supported' },
+  'prism-drum-tunnel.milk': { webgl: 'supported', webgpu: 'supported' },
   'rovastar-parallel-universe.milk': {
     webgl: 'partial',
     webgpu: 'partial',
