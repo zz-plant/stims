@@ -3,11 +3,51 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 
+type CompatibilityStatus = 'supported' | 'partial' | 'unsupported';
+
 type BundledPresetExpectation = {
-  webgl: 'supported' | 'partial' | 'unsupported';
-  webgpu: 'supported' | 'partial' | 'unsupported';
+  webgl: CompatibilityStatus;
+  webgpu: CompatibilityStatus;
   forbiddenUnsupportedKeys?: readonly string[];
 };
+
+type ShapeCorpusExpectation = {
+  diagnostics: readonly string[];
+  webgl: CompatibilityStatus;
+  webgpu: CompatibilityStatus;
+  fidelityClass: string;
+  unsupportedKeys: readonly string[];
+  warnings: readonly string[];
+  blockedConstructs: readonly string[];
+  missingAliasesOrFunctions: readonly string[];
+  customShapeCount: number;
+};
+
+const LOCAL_SHAPE_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> =
+  {
+    'shape-legacy-max-slot-orbit.milk': {
+      diagnostics: [],
+      webgl: 'supported',
+      webgpu: 'supported',
+      fidelityClass: 'exact',
+      unsupportedKeys: [],
+      warnings: [],
+      blockedConstructs: [],
+      missingAliasesOrFunctions: [],
+      customShapeCount: 1,
+    },
+    'shape-projectm-dual-lattice.milk': {
+      diagnostics: [],
+      webgl: 'supported',
+      webgpu: 'supported',
+      fidelityClass: 'exact',
+      unsupportedKeys: [],
+      warnings: [],
+      blockedConstructs: [],
+      missingAliasesOrFunctions: [],
+      customShapeCount: 2,
+    },
+  };
 
 const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
   'aurora-feedback-core.milk': { webgl: 'supported', webgpu: 'partial' },
@@ -88,6 +128,13 @@ function loadLegacyFixtureCorpus() {
   );
 }
 
+function loadLocalShapeFixtureCorpus() {
+  return loadPresetCorpus(
+    join(process.cwd(), 'tests', 'fixtures', 'milkdrop', 'local-shape-corpus'),
+    'user',
+  );
+}
+
 describe('milkdrop bundled preset corpus', () => {
   test('keeps the bundled preset corpus fully supported on both backends in compat mode', () => {
     const corpus = loadBundledPresetCorpus();
@@ -141,6 +188,53 @@ describe('milkdrop legacy fixture corpus', () => {
       expect(
         compiled.diagnostics.some((entry) => entry.severity === 'error'),
       ).toBe(false);
+    });
+  });
+});
+
+describe('milkdrop local shape fixture corpus', () => {
+  test('keeps dedicated custom-shape fixtures on stable compatibility metadata', () => {
+    const corpus = loadLocalShapeFixtureCorpus();
+
+    expect(corpus.length).toBe(2);
+    expect(corpus.map(({ file }) => file)).toEqual(
+      Object.keys(LOCAL_SHAPE_CORPUS_EXPECTATIONS),
+    );
+
+    corpus.forEach(({ file, compiled }) => {
+      const expected = LOCAL_SHAPE_CORPUS_EXPECTATIONS[file];
+      const actualDiagnosticCodes = compiled.diagnostics.map(
+        (entry) => entry.code,
+      );
+
+      expect(expected).toBeDefined();
+      expect(actualDiagnosticCodes).toEqual([...expected.diagnostics]);
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe(
+        expected.webgl,
+      );
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        expected.webgpu,
+      );
+      expect(compiled.ir.compatibility.parity.fidelityClass).toBe(
+        expected.fidelityClass,
+      );
+      expect(compiled.ir.compatibility.unsupportedKeys).toEqual([
+        ...expected.unsupportedKeys,
+      ]);
+      expect(compiled.ir.compatibility.warnings).toEqual([
+        ...expected.warnings,
+      ]);
+      expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
+        ...expected.blockedConstructs,
+      ]);
+      expect(
+        compiled.ir.compatibility.parity.missingAliasesOrFunctions,
+      ).toEqual([...expected.missingAliasesOrFunctions]);
+      expect(compiled.ir.customShapes).toHaveLength(expected.customShapeCount);
+      compiled.ir.customShapes.forEach((shape) => {
+        expect(shape.programs.init.sourceLines.length).toBeGreaterThan(0);
+        expect(shape.programs.perFrame.sourceLines.length).toBeGreaterThan(0);
+      });
     });
   });
 });
