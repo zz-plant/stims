@@ -184,6 +184,44 @@ mv_a=0.3
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
   });
 
+  test('normalizes legacy motion vector aliases and keeps init aliases wired', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Legacy Motion Vectors
+nMotionVectorsX=3
+nMotionVectorsY=2
+mv_dx=0.02
+mv_dy=-0.02
+mv_l=0.15
+per_frame_init_1=mv_x=64;mv_y=48;q1=mv_x+mv_y;
+      `.trim(),
+      { id: 'legacy-motion-vectors' },
+    );
+
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.numericFields.motion_vectors_x).toBe(3);
+    expect(compiled.ir.numericFields.motion_vectors_y).toBe(2);
+    expect(compiled.ir.numericFields.mv_dx).toBeCloseTo(0.02, 6);
+    expect(compiled.ir.numericFields.mv_dy).toBeCloseTo(-0.02, 6);
+    expect(compiled.ir.numericFields.mv_l).toBeCloseTo(0.15, 6);
+    expect(compiled.ir.programs.init.statements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'motion_vectors_x' }),
+        expect.objectContaining({ target: 'motion_vectors_y' }),
+        expect.objectContaining({ target: 'q1' }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'motion-vectors',
+    );
+    expect(
+      compiled.ir.compatibility.parity.missingAliasesOrFunctions,
+    ).not.toContain('mv_x');
+    expect(
+      compiled.ir.compatibility.parity.missingAliasesOrFunctions,
+    ).not.toContain('mv_y');
+  });
+
   test('maps warp animation speed into numeric fields', () => {
     const compiled = compileMilkdropPresetSource(
       `
