@@ -348,6 +348,10 @@ type HardUnsupportedFieldSpec = {
   aliases?: readonly string[];
 };
 
+type PendingHardUnsupportedField = HardUnsupportedFieldSpec & {
+  line: number;
+};
+
 /**
  * Inventory of MilkDrop2 preset fields that map to features Stims does not
  * currently emulate safely. These are treated as hard blockers instead of
@@ -557,6 +561,16 @@ function createBackendEvidence(
 
 function getHardUnsupportedField(key: string) {
   return hardUnsupportedKeys.get(key);
+}
+
+function isHardUnsupportedFieldBlocking(
+  spec: HardUnsupportedFieldSpec,
+  numericFields: Partial<Record<string, number>>,
+) {
+  if (spec.feature === 'video-echo-orientation') {
+    return (numericFields.video_echo_enabled ?? 0) > 0.5;
+  }
+  return true;
 }
 
 function buildBackendDivergence({
@@ -4911,11 +4925,14 @@ function createIR(
   const customShapeMap = new Map<number, MilkdropShapeDefinition>();
   const softUnknownKeys = new Set<string>();
   const hardUnsupportedFields = new Map<string, HardUnsupportedFieldSpec>();
+  const pendingHardUnsupportedFields = new Map<
+    string,
+    PendingHardUnsupportedField
+  >();
   const pendingProgramSources = new Map<
     MilkdropProgramBlock,
     { sourceLine: string; line: number }
   >();
-  const unsupportedKeys = new Set<string>();
   let unsupportedShaderText = false;
   let supportedShaderText = false;
   let warpShaderText: string | null = null;
@@ -5011,21 +5028,12 @@ function createIR(
       }
       if (!(normalizedKey in DEFAULT_MILKDROP_STATE)) {
         if (hardUnsupportedField) {
-          hardUnsupportedFields.set(normalizedKey, {
+          pendingHardUnsupportedFields.set(normalizedKey, {
             key: normalizedKey,
             feature: hardUnsupportedField.feature,
             message: hardUnsupportedField.message,
+            line: field.line,
           });
-          addDiagnostic(
-            diagnostics,
-            'warning',
-            'preset_unsupported_field',
-            `Unsupported MilkDrop feature "${hardUnsupportedField.feature}" uses preset field "${normalizedKey}". ${hardUnsupportedField.message}`,
-            {
-              line: field.line,
-              field: normalizedKey,
-            },
-          );
           return;
         }
         softUnknownKeys.add(normalizedKey);
@@ -5066,21 +5074,12 @@ function createIR(
 
     if (!(normalizedKey in DEFAULT_MILKDROP_STATE)) {
       if (hardUnsupportedField) {
-        hardUnsupportedFields.set(normalizedKey, {
+        pendingHardUnsupportedFields.set(normalizedKey, {
           key: normalizedKey,
           feature: hardUnsupportedField.feature,
           message: hardUnsupportedField.message,
+          line: field.line,
         });
-        addDiagnostic(
-          diagnostics,
-          'warning',
-          'preset_unsupported_field',
-          `Unsupported MilkDrop feature "${hardUnsupportedField.feature}" uses preset field "${normalizedKey}". ${hardUnsupportedField.message}`,
-          {
-            line: field.line,
-            field: normalizedKey,
-          },
-        );
         return;
       }
       softUnknownKeys.add(normalizedKey);
@@ -5115,6 +5114,27 @@ function createIR(
       parsedExpressions.push(compiledScalar.expression);
     }
     numericFields[normalizedKey] = compiledScalar.value;
+  });
+
+  pendingHardUnsupportedFields.forEach((pendingField, normalizedKey) => {
+    if (!isHardUnsupportedFieldBlocking(pendingField, numericFields)) {
+      return;
+    }
+    hardUnsupportedFields.set(normalizedKey, {
+      key: normalizedKey,
+      feature: pendingField.feature,
+      message: pendingField.message,
+    });
+    addDiagnostic(
+      diagnostics,
+      'warning',
+      'preset_unsupported_field',
+      `Unsupported MilkDrop feature "${pendingField.feature}" uses preset field "${normalizedKey}". ${pendingField.message}`,
+      {
+        line: pendingField.line,
+        field: normalizedKey,
+      },
+    );
   });
 
   pendingProgramSources.forEach(({ sourceLine, line }, block) => {
