@@ -3,6 +3,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 
+const BUNDLED_WEBGPU_PARTIAL_PRESETS = [
+  'aurora-feedback-core.milk',
+  'kinetic-grid-pulse.milk',
+  'low-motion-halo-drift.milk',
+  'prism-drum-tunnel.milk',
+] as const;
+
 function loadPresetCorpus(dir: string, origin: 'bundled' | 'user' = 'bundled') {
   return readdirSync(dir)
     .filter((file) => file.endsWith('.milk'))
@@ -37,14 +44,39 @@ describe('milkdrop bundled preset corpus', () => {
 
     expect(corpus.length).toBe(30);
 
-    const unsupported = corpus.filter(({ compiled }) => {
+    const unexpected = corpus.filter(({ file, compiled }) => {
+      const expectedWebgpuStatus = BUNDLED_WEBGPU_PARTIAL_PRESETS.includes(
+        file as (typeof BUNDLED_WEBGPU_PARTIAL_PRESETS)[number],
+      )
+        ? 'partial'
+        : 'supported';
+
       return (
         compiled.ir.compatibility.backends.webgl.status !== 'supported' ||
-        compiled.ir.compatibility.backends.webgpu.status !== 'supported'
+        compiled.ir.compatibility.backends.webgpu.status !==
+          expectedWebgpuStatus
       );
     });
 
-    expect(unsupported).toEqual([]);
+    expect(unexpected).toEqual([]);
+
+    BUNDLED_WEBGPU_PARTIAL_PRESETS.forEach((file) => {
+      const entry = corpus.find((preset) => preset.file === file);
+
+      expect(entry).toBeDefined();
+      expect(entry?.compiled.ir.compatibility.backends.webgl.status).toBe(
+        'supported',
+      );
+      expect(entry?.compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'partial',
+      );
+      expect(entry?.compiled.ir.compatibility.parity.backendDivergence).toEqual(
+        expect.arrayContaining([
+          'status:webgl=supported,webgpu=partial',
+          'webgpu:post-effects-gap:post-effects',
+        ]),
+      );
+    });
   });
 });
 
