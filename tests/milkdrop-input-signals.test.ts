@@ -249,6 +249,7 @@ describe('milkdrop input signal overrides', () => {
             source: 'none',
             mode: 'add',
             sampleDimension: '2d',
+            inverted: false,
             amount: 0,
             scaleX: 1,
             scaleY: 1,
