@@ -224,10 +224,59 @@ export type MilkdropProceduralWaveDescriptorPlan = {
   sampleSource: 'waveform' | 'spectrum';
 };
 
+export type MilkdropGpuFieldExpression =
+  | { type: 'literal'; value: number }
+  | { type: 'identifier'; name: string }
+  | {
+      type: 'unary';
+      operator: '+' | '-' | '!';
+      operand: MilkdropGpuFieldExpression;
+    }
+  | {
+      type: 'binary';
+      operator:
+        | '+'
+        | '-'
+        | '*'
+        | '/'
+        | '%'
+        | '^'
+        | '|'
+        | '&'
+        | '<'
+        | '<='
+        | '>'
+        | '>='
+        | '=='
+        | '!='
+        | '&&'
+        | '||';
+      left: MilkdropGpuFieldExpression;
+      right: MilkdropGpuFieldExpression;
+    }
+  | {
+      type: 'call';
+      name: string;
+      args: MilkdropGpuFieldExpression[];
+    };
+
+export type MilkdropGpuFieldStatement = {
+  target: string;
+  expression: MilkdropGpuFieldExpression;
+};
+
+export type MilkdropGpuFieldProgramDescriptor = {
+  kind: 'gpu-field-program';
+  statements: MilkdropGpuFieldStatement[];
+  temporaries: string[];
+  signature: string;
+};
+
 export type MilkdropProceduralMeshDescriptorPlan = {
   kind: 'procedural-mesh';
   requiresPerPixelProgram: boolean;
   supportsMotionVectors: boolean;
+  fieldProgram: MilkdropGpuFieldProgramDescriptor | null;
 };
 
 export type MilkdropFeedbackPostEffectDescriptorPlan = {
@@ -638,9 +687,31 @@ export type MilkdropProceduralFieldTransformVisual = {
   translateY: number;
 };
 
+export type MilkdropGpuFieldSignalInputs = {
+  time: number;
+  frame: number;
+  fps: number;
+  bass: number;
+  mid: number;
+  mids: number;
+  treble: number;
+  bassAtt: number;
+  midAtt: number;
+  midsAtt: number;
+  trebleAtt: number;
+  beat: number;
+  beatPulse: number;
+  rms: number;
+  vol: number;
+  music: number;
+  weightedEnergy: number;
+};
+
 export type MilkdropProceduralMeshFieldVisual =
   MilkdropProceduralFieldTransformVisual & {
     density: number;
+    program: MilkdropGpuFieldProgramDescriptor | null;
+    signals: MilkdropGpuFieldSignalInputs;
   };
 
 export type MilkdropProceduralWaveVisual = {
@@ -681,6 +752,8 @@ export type MilkdropProceduralMotionVectorFieldVisual =
     sourceOffsetY: number;
     explicitLength: number;
     legacyControls: boolean;
+    program: MilkdropGpuFieldProgramDescriptor | null;
+    signals: MilkdropGpuFieldSignalInputs;
   };
 
 export type MilkdropGpuGeometryHints = {

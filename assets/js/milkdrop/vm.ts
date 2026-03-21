@@ -8,12 +8,14 @@ import type {
   MilkdropColor,
   MilkdropCompiledPreset,
   MilkdropFrameState,
+  MilkdropGpuFieldSignalInputs,
   MilkdropGpuGeometryHints,
   MilkdropMeshVisual,
   MilkdropMotionVectorVisual,
   MilkdropPolyline,
   MilkdropPostVisual,
   MilkdropProceduralCustomWaveVisual,
+  MilkdropProceduralMeshDescriptorPlan,
   MilkdropProceduralMeshFieldVisual,
   MilkdropProceduralMotionVectorFieldVisual,
   MilkdropProceduralWaveVisual,
@@ -296,6 +298,8 @@ type MeshFieldPoint = {
 type MeshField = {
   density: number;
   points: MeshFieldPoint[];
+  program: MilkdropProceduralMeshDescriptorPlan['fieldProgram'];
+  signals: MilkdropGpuFieldSignalInputs | null;
 };
 
 type MotionVectorDescriptorContext = {
@@ -619,11 +623,10 @@ class MilkdropPresetVM implements MilkdropVM {
     );
   }
 
-  private supportsProceduralFieldGeometry() {
-    return (
-      this.renderBackend === 'webgpu' &&
-      this.preset.ir.programs.perPixel.statements.length === 0
-    );
+  private getProceduralMeshDescriptorPlan() {
+    return this.renderBackend === 'webgpu'
+      ? this.preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh
+      : null;
   }
 
   private buildProceduralFieldTransform() {
@@ -639,6 +642,30 @@ class MilkdropPresetVM implements MilkdropVM {
       scaleY: this.state.sy ?? 1,
       translateX: (this.state.dx ?? 0) * 2,
       translateY: (this.state.dy ?? 0) * 2,
+    };
+  }
+
+  private buildProceduralFieldSignals(
+    signals: MilkdropRuntimeSignals,
+  ): MilkdropGpuFieldSignalInputs {
+    return {
+      time: signals.time,
+      frame: signals.frame,
+      fps: signals.fps,
+      bass: signals.bass,
+      mid: signals.mid,
+      mids: signals.mids,
+      treble: signals.treble,
+      bassAtt: signals.bassAtt,
+      midAtt: signals.mid_att,
+      midsAtt: signals.midsAtt,
+      trebleAtt: signals.trebleAtt,
+      beat: signals.beat,
+      beatPulse: signals.beatPulse,
+      rms: signals.rms,
+      vol: signals.vol,
+      music: signals.music,
+      weightedEnergy: signals.weightedEnergy,
     };
   }
 
@@ -1128,8 +1155,14 @@ class MilkdropPresetVM implements MilkdropVM {
 
   private buildMeshField(signals: MilkdropRuntimeSignals): MeshField {
     const density = this.getMeshDensity();
-    if (this.supportsProceduralFieldGeometry()) {
-      return { density, points: [] };
+    const proceduralMeshPlan = this.getProceduralMeshDescriptorPlan();
+    if (proceduralMeshPlan) {
+      return {
+        density,
+        points: [],
+        program: proceduralMeshPlan.fieldProgram,
+        signals: this.buildProceduralFieldSignals(signals),
+      };
     }
 
     const points = new Array<MeshFieldPoint>(density * density);
@@ -1148,7 +1181,7 @@ class MilkdropPresetVM implements MilkdropVM {
       }
     }
 
-    return { density, points };
+    return { density, points, program: null, signals: null };
   }
 
   private buildMesh(meshField: MeshField): MilkdropMeshVisual {
@@ -1216,19 +1249,25 @@ class MilkdropPresetVM implements MilkdropVM {
     };
   }
 
-  private getProceduralMeshFieldVisual(): MilkdropProceduralMeshFieldVisual | null {
-    if (!this.supportsProceduralFieldGeometry()) {
+  private getProceduralMeshFieldVisual(
+    meshField: MeshField,
+  ): MilkdropProceduralMeshFieldVisual | null {
+    if (!meshField.signals) {
       return null;
     }
 
     return {
-      density: this.getMeshDensity(),
+      density: meshField.density,
+      program: meshField.program,
+      signals: meshField.signals,
       ...this.buildProceduralFieldTransform(),
     };
   }
 
-  private getProceduralMotionVectorFieldVisual(): MilkdropProceduralMotionVectorFieldVisual | null {
-    if (!this.supportsProceduralFieldGeometry()) {
+  private getProceduralMotionVectorFieldVisual(
+    meshField: MeshField,
+  ): MilkdropProceduralMotionVectorFieldVisual | null {
+    if (!meshField.signals) {
       return null;
     }
 
@@ -1256,17 +1295,21 @@ class MilkdropPresetVM implements MilkdropVM {
       explicitLength:
         legacyLength <= 1 ? legacyLength : legacyLength * legacyCellScale,
       legacyControls: motionVectorContext.legacyControls,
+      program: meshField.program,
+      signals: meshField.signals,
       ...this.buildProceduralFieldTransform(),
     };
   }
 
-  private buildGpuGeometryHints(): MilkdropGpuGeometryHints {
+  private buildGpuGeometryHints(
+    meshField: MeshField,
+  ): MilkdropGpuGeometryHints {
     return {
       mainWave: null,
       trailWaves: this.proceduralTrailWaves.slice(),
       customWaves: [],
-      meshField: this.getProceduralMeshFieldVisual(),
-      motionVectorField: this.getProceduralMotionVectorFieldVisual(),
+      meshField: this.getProceduralMeshFieldVisual(meshField),
+      motionVectorField: this.getProceduralMotionVectorFieldVisual(meshField),
     };
   }
 
@@ -1279,7 +1322,7 @@ class MilkdropPresetVM implements MilkdropVM {
       return [];
     }
 
-    if (this.getProceduralMotionVectorFieldVisual()) {
+    if (meshField.signals) {
       return [];
     }
 
@@ -1583,11 +1626,10 @@ class MilkdropPresetVM implements MilkdropVM {
     this.lastWaveform = mainWave;
     this.lastProceduralWave = proceduralMainWave;
 
-    const gpuGeometry = this.buildGpuGeometryHints();
+    const meshField = this.buildMeshField(signals);
+    const gpuGeometry = this.buildGpuGeometryHints(meshField);
     gpuGeometry.mainWave = proceduralMainWave;
     const customWaves = this.buildCustomWaves(signals);
-
-    const meshField = this.buildMeshField(signals);
     const mesh = this.buildMesh(meshField);
     const motionVectors = this.buildMotionVectors(signals, meshField);
     this.lastMeshField = meshField;

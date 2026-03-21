@@ -466,6 +466,36 @@ warpanimspeed=1.5
     expect(frameState.gpuGeometry.motionVectorField?.countX).toBe(6);
   });
 
+  test('emits lowered per-pixel field descriptors on supported webgpu presets', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural GPU Per Pixel
+motion_vectors=1
+motion_vectors_x=5
+motion_vectors_y=3
+mesh_density=12
+per_pixel_1=q1=sin(time+x*3);
+per_pixel_2=x=x+q1*0.04;
+per_pixel_3=warp=warp+abs(y)*0.1;
+      `.trim(),
+      { id: 'procedural-gpu-per-pixel' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals({ frame: 7, time: 1.25 }));
+
+    expect(frameState.mesh.positions).toHaveLength(0);
+    expect(frameState.motionVectors).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField?.program?.temporaries).toEqual([
+      'q1',
+    ]);
+    expect(frameState.gpuGeometry.meshField?.signals.time).toBeCloseTo(1.25, 6);
+    expect(
+      frameState.gpuGeometry.motionVectorField?.program?.statements,
+    ).toHaveLength(3);
+  });
+
   test('keeps waveform-driven main-wave geometry on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `
