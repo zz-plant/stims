@@ -21,6 +21,7 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 - [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md)
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md)
 - [`DOCS_MAINTENANCE.md`](./DOCS_MAINTENANCE.md)
+- [`FRONTEND_PERFORMANCE_BOTTLENECKS.md`](./FRONTEND_PERFORMANCE_BOTTLENECKS.md)
 
 ## Historical or transitional docs
 

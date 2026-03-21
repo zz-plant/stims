@@ -184,6 +184,7 @@ export class MilkdropOverlay {
   private browseQualityStorageKey = QUALITY_STORAGE_KEY;
   private suppressEditorChange = false;
   private editorDebounceId: number | null = null;
+  private browseRenderDebounceId: number | null = null;
   private lastInspectorSignature = '';
   private lastInspectorRenderAt = 0;
   private activeTab: 'browse' | 'editor' | 'inspector' = 'browse';
@@ -432,7 +433,9 @@ export class MilkdropOverlay {
     this.searchInput.className = 'milkdrop-overlay__search';
     this.searchInput.placeholder = 'Search presets';
     this.searchInput.setAttribute('aria-label', 'Search presets');
-    this.searchInput.addEventListener('input', () => this.renderBrowseList());
+    this.searchInput.addEventListener('input', () =>
+      this.scheduleBrowseRender(),
+    );
 
     this.browseModeSelect = document.createElement('select');
     this.browseModeSelect.className = 'milkdrop-overlay__rating-select';
@@ -451,7 +454,7 @@ export class MilkdropOverlay {
     });
     this.browseModeSelect.addEventListener('change', () => {
       this.browseMode = this.browseModeSelect.value as BrowseMode;
-      this.renderBrowseList();
+      this.scheduleBrowseRender(0);
     });
 
     this.browseSupportSelect = document.createElement('select');
@@ -473,7 +476,7 @@ export class MilkdropOverlay {
     this.browseSupportSelect.addEventListener('change', () => {
       this.browseSupportFilter = this.browseSupportSelect
         .value as BrowseFidelityFilter;
-      this.renderBrowseList();
+      this.scheduleBrowseRender(0);
     });
 
     this.browseSortSelect = document.createElement('select');
@@ -493,7 +496,7 @@ export class MilkdropOverlay {
     });
     this.browseSortSelect.addEventListener('change', () => {
       this.browseSort = this.browseSortSelect.value as BrowseSort;
-      this.renderBrowseList();
+      this.scheduleBrowseRender(0);
     });
 
     const browseControls = document.createElement('div');
@@ -903,6 +906,16 @@ export class MilkdropOverlay {
       section.appendChild(this.buildPresetRow(preset));
     });
     this.browseList.appendChild(section);
+  }
+
+  private scheduleBrowseRender(delayMs = 120) {
+    if (this.browseRenderDebounceId !== null) {
+      window.clearTimeout(this.browseRenderDebounceId);
+    }
+    this.browseRenderDebounceId = window.setTimeout(() => {
+      this.browseRenderDebounceId = null;
+      this.renderBrowseList();
+    }, delayMs);
   }
 
   private renderBrowseList() {
@@ -1372,6 +1385,9 @@ export class MilkdropOverlay {
     this.editor.destroy();
     if (this.editorDebounceId !== null) {
       window.clearTimeout(this.editorDebounceId);
+    }
+    if (this.browseRenderDebounceId !== null) {
+      window.clearTimeout(this.browseRenderDebounceId);
     }
     this.root.remove();
   }

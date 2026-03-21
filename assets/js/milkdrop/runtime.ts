@@ -153,13 +153,18 @@ export function getMilkdropDetailScale({
 
 export function buildMilkdropInputSignalOverrides(
   input: UnifiedInputState | null,
+  target: Partial<MilkdropRuntimeSignals> = {},
 ): Partial<MilkdropRuntimeSignals> {
   const gesture = input?.gesture;
   const performance = input?.performance;
   const sourceFlags = performance?.sourceFlags;
   const actions = performance?.actions;
+  const inputSpeed = Math.hypot(
+    input?.dragDelta.x ?? 0,
+    input?.dragDelta.y ?? 0,
+  );
 
-  return {
+  return Object.assign(target, {
     inputX: input?.normalizedCentroid.x ?? 0,
     inputY: input?.normalizedCentroid.y ?? 0,
     input_x: input?.normalizedCentroid.x ?? 0,
@@ -168,8 +173,8 @@ export function buildMilkdropInputSignalOverrides(
     inputDy: input?.dragDelta.y ?? 0,
     input_dx: input?.dragDelta.x ?? 0,
     input_dy: input?.dragDelta.y ?? 0,
-    inputSpeed: Math.hypot(input?.dragDelta.x ?? 0, input?.dragDelta.y ?? 0),
-    input_speed: Math.hypot(input?.dragDelta.x ?? 0, input?.dragDelta.y ?? 0),
+    inputSpeed: inputSpeed,
+    input_speed: inputSpeed,
     inputPressed: input?.isPressed ? 1 : 0,
     input_pressed: input?.isPressed ? 1 : 0,
     inputJustPressed: input?.justPressed ? 1 : 0,
@@ -232,7 +237,7 @@ export function buildMilkdropInputSignalOverrides(
     input_source_touch: sourceFlags?.touch ? 1 : 0,
     inputSourcePen: sourceFlags?.pen ? 1 : 0,
     input_source_pen: sourceFlags?.pen ? 1 : 0,
-  };
+  });
 }
 
 function buildAgentMilkdropDebugSnapshot({
@@ -464,6 +469,13 @@ export function createMilkdropExperience({
   let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
   let requestedPresetListener: ((event: Event) => void) | null = null;
   let requestedOverlayTabListener: ((event: Event) => void) | null = null;
+  let catalogSyncPromise: Promise<void> | null = null;
+  let catalogSyncFrameId: number | null = null;
+  const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
+  const lowQualityPostOverride = {
+    shaderEnabled: false,
+    videoEchoEnabled: false,
+  };
 
   const updateAgentDebugSnapshot = () => {
     if (!isAgentMode()) {
@@ -509,6 +521,24 @@ export function createMilkdropExperience({
   const syncCatalog = async () => {
     catalogEntries = await catalogStore.listPresets();
     overlay.setCatalog(catalogEntries, activePresetId, activeBackend);
+  };
+
+  const scheduleCatalogSync = () => {
+    if (catalogSyncPromise || catalogSyncFrameId !== null) {
+      return catalogSyncPromise ?? Promise.resolve();
+    }
+
+    catalogSyncPromise = new Promise((resolve) => {
+      catalogSyncFrameId = window.requestAnimationFrame(() => {
+        catalogSyncFrameId = null;
+        void syncCatalog().finally(() => {
+          catalogSyncPromise = null;
+          resolve();
+        });
+      });
+    });
+
+    return catalogSyncPromise;
   };
 
   const getActiveCatalogEntry = () =>
@@ -609,7 +639,7 @@ export function createMilkdropExperience({
     writeUiPrefs({ lastPresetId: id });
     applyCompiledPreset(nextCompiled);
     setOverlayStatus(`Loaded ${nextCompiled.title}.`);
-    await syncCatalog();
+    await scheduleCatalogSync();
   };
 
   const applyFieldValues = async (updates: Record<string, string | number>) => {
@@ -739,7 +769,7 @@ export function createMilkdropExperience({
         fileName: file.name,
       });
       await catalogStore.saveDraft(saved.id, compiled.formattedSource);
-      await syncCatalog();
+      await scheduleCatalogSync();
       await selectPreset(saved.id);
     }
   };
@@ -753,7 +783,7 @@ export function createMilkdropExperience({
       origin: 'user',
       author: compiled.author,
     });
-    await syncCatalog();
+    await scheduleCatalogSync();
     await selectPreset(saved.id);
   };
 
@@ -764,7 +794,7 @@ export function createMilkdropExperience({
     }
     const deletedId = entry.id;
     await catalogStore.deletePreset(deletedId);
-    await syncCatalog();
+    await scheduleCatalogSync();
     const replacement = catalogEntries.find(
       (candidate) => candidate.id !== deletedId,
     );
@@ -1059,12 +1089,12 @@ export function createMilkdropExperience({
       applyCompiledPreset(nextCompiled);
       void catalogStore.saveDraft(nextCompiled.source.id, state.source);
     }
-    void syncCatalog();
+    void scheduleCatalogSync();
   });
 
   installRequestedPresetListener();
   installRequestedOverlayTabListener();
-  void syncCatalog().then(async () => {
+  void scheduleCatalogSync().then(async () => {
     const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
     if (requestedOverlayTab) {
       overlay.openTab(requestedOverlayTab);
@@ -1124,7 +1154,7 @@ export function createMilkdropExperience({
           });
           return;
         }
-        void syncCatalog();
+        void scheduleCatalogSync();
       });
     },
 
@@ -1151,12 +1181,16 @@ export function createMilkdropExperience({
         analyser: frame.analyser,
         frequencyData: frame.frequencyData,
       });
-      const inputOverrides = buildMilkdropInputSignalOverrides(frame.input);
-      const signals = {
-        ...baseSignals,
-        ...inputOverrides,
-        ...options.signalOverrides,
-      };
+      const inputOverrides = buildMilkdropInputSignalOverrides(
+        frame.input,
+        mergedSignals,
+      );
+      const signals = Object.assign(
+        mergedSignals,
+        baseSignals,
+        inputOverrides,
+        options.signalOverrides,
+      );
 
       if (
         autoplay &&
@@ -1189,11 +1223,14 @@ export function createMilkdropExperience({
           currentFrameState.post.videoEchoEnabled)
           ? {
               ...currentFrameState,
-              post: {
-                ...currentFrameState.post,
-                shaderEnabled: false,
-                videoEchoEnabled: false,
-              },
+              post: Object.assign(
+                lowQualityPostOverride,
+                currentFrameState.post,
+                {
+                  shaderEnabled: false,
+                  videoEchoEnabled: false,
+                },
+              ),
             }
           : currentFrameState;
 
@@ -1236,6 +1273,11 @@ export function createMilkdropExperience({
         );
         requestedOverlayTabListener = null;
       }
+      if (catalogSyncFrameId !== null) {
+        window.cancelAnimationFrame(catalogSyncFrameId);
+        catalogSyncFrameId = null;
+      }
+      catalogSyncPromise = null;
     },
   };
 }

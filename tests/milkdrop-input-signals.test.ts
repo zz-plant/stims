@@ -64,4 +64,60 @@ describe('milkdrop input signal overrides', () => {
     expect(overrides.inputSourceMouse).toBe(1);
     expect(overrides.input_source_touch).toBe(0);
   });
+
+  test('can reuse a target object without recomputing divergent aliases', () => {
+    const input: UnifiedInputState = {
+      time: 100,
+      deltaMs: 16,
+      pointers: [],
+      pointerCount: 0,
+      centroid: { x: 0, y: 0 },
+      normalizedCentroid: { x: 0.25, y: -0.4 },
+      primary: null,
+      isPressed: true,
+      justPressed: false,
+      justReleased: false,
+      dragDelta: { x: 0.3, y: 0.4 },
+      source: 'pointer',
+      gesture: null,
+      mic: { level: 0.4, available: true },
+      performance: {
+        hoverActive: false,
+        hover: null,
+        wheelDelta: 0,
+        wheelAccum: 0,
+        dragIntensity: 0,
+        dragAngle: 0,
+        accentPulse: 0,
+        sourceFlags: {
+          pointer: true,
+          keyboard: false,
+          gamepad: false,
+          mouse: true,
+          touch: false,
+          pen: false,
+        },
+        actions: {
+          accent: 0,
+          modeNext: 0,
+          modePrevious: 0,
+          presetNext: 0,
+          presetPrevious: 0,
+          quickLook1: 0,
+          quickLook2: 0,
+          quickLook3: 0,
+          remix: 0,
+        },
+      },
+    };
+
+    const target = { stale: 1 } as Partial<
+      ReturnType<typeof buildMilkdropInputSignalOverrides>
+    >;
+    const overrides = buildMilkdropInputSignalOverrides(input, target);
+
+    expect(overrides).toBe(target);
+    expect(overrides.inputSpeed).toBeCloseTo(0.5, 6);
+    expect(overrides.input_speed).toBeCloseTo(0.5, 6);
+  });
 });
