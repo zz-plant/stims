@@ -2056,6 +2056,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       overlayTextureSource: getShaderTextureSourceId(
         controls.textureLayer.source,
       ),
+      overlayTextureIs3D:
+        controls.textureLayer.sampleDimension === '3d' ? 1 : 0,
+      overlayTextureZ: controls.textureLayer.z,
       overlayTextureMode: getShaderTextureBlendModeId(
         controls.textureLayer.mode,
       ),
@@ -2069,6 +2072,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         y: controls.textureLayer.offsetY,
       },
       warpTextureSource: getShaderTextureSourceId(controls.warpTexture.source),
+      warpTextureIs3D: controls.warpTexture.sampleDimension === '3d' ? 1 : 0,
+      warpTextureZ: controls.warpTexture.z,
       warpTextureAmount: controls.warpTexture.amount,
       warpTextureScale: {
         x: controls.warpTexture.scaleX,

@@ -1217,4 +1217,57 @@ warp_shader=warp_texture_source = sampler_noise; warp_texture_amount = 0.08; war
       feedback?.compositeMaterial.uniforms.warpTextureScale.value.y,
     ).toBeCloseTo(1.7, 6);
   });
+
+  test('forwards tex3D auxiliary sampling state into composite uniforms', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Texture Volume Uniforms
+comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz
+      `.trim(),
+      { id: 'shader-texture-volume-uniforms' },
+    );
+
+    const signals = makeSignals();
+    const frameState = createMilkdropVM(preset).step(signals);
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => fakeRenderer;
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: { compositeMaterial: ShaderMaterial } | null;
+      }
+    ).feedback;
+
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureSource.value,
+    ).toBe(2);
+    expect(feedback?.compositeMaterial.uniforms.overlayTextureIs3D.value).toBe(
+      1,
+    );
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureZ.value,
+    ).toBeCloseTo(signals.time / 10, 6);
+    expect(feedback?.compositeMaterial.uniforms.overlayTextureMode.value).toBe(
+      1,
+    );
+  });
 });

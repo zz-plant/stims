@@ -31,6 +31,7 @@ const {
   dot,
   Fn,
   float,
+  floor,
   fract,
   If,
   length,
@@ -176,7 +177,7 @@ function createSampleAuxTextureNode(
   patternTexNode: ReturnType<typeof texture>,
   fractalTexNode: ReturnType<typeof texture>,
 ) {
-  return Fn(([source, sampleUv]: [any, any]) => {
+  const sampleAuxTexture2DNode = Fn(([source, sampleUv]: [any, any]) => {
     const wrappedUv = fract(sampleUv);
     const flat = vec4(0.5, 0.5, 0.5, 1);
     return select(
@@ -207,6 +208,46 @@ function createSampleAuxTextureNode(
           ),
         ),
       ),
+    );
+  });
+
+  const volumeSliceOffsetNode = Fn(
+    ([source, zValue, phase]: [any, any, any]) => {
+      const wrappedZ = fract(zValue);
+      const seedUv = fract(
+        vec2(
+          wrappedZ.mul(0.137).add(source.mul(0.071)).add(phase.mul(0.19)),
+          wrappedZ.mul(0.293).add(source.mul(0.113)).sub(phase.mul(0.17)),
+        ),
+      );
+      const noiseWarp = simplexTexNode.sample(seedUv).rg.sub(0.5);
+      const angle = wrappedZ
+        .mul(6.28318530718)
+        .add(phase)
+        .add(source.mul(0.43));
+      const radius = float(0.035).add(wrappedZ.mul(0.045));
+      return vec2(cos(angle), sin(angle)).mul(radius).add(noiseWarp.mul(0.08));
+    },
+  );
+
+  return Fn(([source, sampleUv, sampleIs3D, zValue]: [any, any, any, any]) => {
+    const slicePosition = fract(zValue).mul(16);
+    const sliceA = floor(slicePosition).div(16);
+    const sliceB = fract(sliceA.add(1 / 16));
+    const sliceMix = fract(slicePosition);
+    const sampleA = sampleAuxTexture2DNode(
+      source,
+      sampleUv.add(volumeSliceOffsetNode(source, sliceA, 0)),
+    );
+    const sampleB = sampleAuxTexture2DNode(
+      source,
+      sampleUv.add(volumeSliceOffsetNode(source, sliceB, 1.57079632679)),
+    );
+    const volumeSample = mix(sampleA, sampleB, sliceMix);
+    return select(
+      sampleIs3D.lessThan(0.5),
+      sampleAuxTexture2DNode(source, sampleUv),
+      volumeSample,
     );
   });
 }
@@ -255,11 +296,15 @@ function createCompositeUniforms(
       WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.currentFrameBoost,
     ),
     overlayTextureSource: uniform(0),
+    overlayTextureIs3D: uniform(0),
+    overlayTextureZ: uniform(0),
     overlayTextureMode: uniform(0),
     overlayTextureAmount: uniform(0),
     overlayTextureScale: uniform(new Vector2(1, 1)),
     overlayTextureOffset: uniform(new Vector2(0, 0)),
     warpTextureSource: uniform(0),
+    warpTextureIs3D: uniform(0),
+    warpTextureZ: uniform(0),
     warpTextureAmount: uniform(0),
     warpTextureScale: uniform(new Vector2(1, 1)),
     warpTextureOffset: uniform(new Vector2(0, 0)),
@@ -317,7 +362,12 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
     const warpUv = baseUv
       .mul(uniforms.warpTextureScale)
       .add(uniforms.warpTextureOffset);
-    const warpVector = sampleAuxTextureNode(uniforms.warpTextureSource, warpUv)
+    const warpVector = sampleAuxTextureNode(
+      uniforms.warpTextureSource,
+      warpUv,
+      uniforms.warpTextureIs3D,
+      uniforms.warpTextureZ.add(uniforms.signalTime.mul(0.1)),
+    )
       .rg.sub(0.5)
       .toVar();
     currentUv.addAssign(
@@ -456,6 +506,8 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
     const overlayColor = sampleAuxTextureNode(
       uniforms.overlayTextureSource,
       overlayUv,
+      uniforms.overlayTextureIs3D,
+      uniforms.overlayTextureZ.add(uniforms.signalTime.mul(0.1)),
     ).rgb;
     const overlayAmount = clamp(uniforms.overlayTextureAmount, 0, 1.5);
     const overlayMixAmount = clamp(overlayAmount, 0, 1);
@@ -495,8 +547,18 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
       .sub(
         vec2(uniforms.signalTime.mul(0.018), uniforms.signalTime.mul(-0.026)),
       );
-    const spectralA = sampleAuxTextureNode(float(2), spectralUvA).rgb;
-    const spectralB = sampleAuxTextureNode(float(5), spectralUvB).rgb;
+    const spectralA = sampleAuxTextureNode(
+      float(2),
+      spectralUvA,
+      float(0),
+      0,
+    ).rgb;
+    const spectralB = sampleAuxTextureNode(
+      float(5),
+      spectralUvB,
+      float(0),
+      0,
+    ).rgb;
     const spectralPulse = sin(
       baseUv.x
         .add(baseUv.y)
@@ -644,6 +706,10 @@ class WebGPUMilkdropFeedbackManager {
     );
     this.compositeMaterial.uniforms.overlayTextureSource.value =
       state.overlayTextureSource;
+    this.compositeMaterial.uniforms.overlayTextureIs3D.value =
+      state.overlayTextureIs3D;
+    this.compositeMaterial.uniforms.overlayTextureZ.value =
+      state.overlayTextureZ;
     this.compositeMaterial.uniforms.overlayTextureMode.value =
       state.overlayTextureMode;
     this.compositeMaterial.uniforms.overlayTextureAmount.value =
@@ -658,6 +724,9 @@ class WebGPUMilkdropFeedbackManager {
     );
     this.compositeMaterial.uniforms.warpTextureSource.value =
       state.warpTextureSource;
+    this.compositeMaterial.uniforms.warpTextureIs3D.value =
+      state.warpTextureIs3D;
+    this.compositeMaterial.uniforms.warpTextureZ.value = state.warpTextureZ;
     this.compositeMaterial.uniforms.warpTextureAmount.value =
       state.warpTextureAmount;
     this.compositeMaterial.uniforms.warpTextureScale.value.set(

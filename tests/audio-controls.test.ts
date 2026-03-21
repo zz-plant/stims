@@ -18,6 +18,14 @@ describe('audio controls primary emphasis', () => {
     document.body.appendChild(bootstrapScript);
     globalThis.HTMLButtonElement =
       window.HTMLButtonElement as unknown as typeof HTMLButtonElement;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(navigator, 'permissions', {
+      configurable: true,
+      value: undefined,
+    });
     window.matchMedia = ((query: string) =>
       ({
         media: query,

@@ -862,6 +862,8 @@ function createDefaultShaderControls(): MilkdropShaderControls {
     tint: { r: 1, g: 1, b: 1 },
     textureLayer: {
       source: 'none',
+      sampleDimension: '2d',
+      z: 0,
       mode: 'none',
       amount: 0,
       scaleX: 1,
@@ -871,6 +873,8 @@ function createDefaultShaderControls(): MilkdropShaderControls {
     },
     warpTexture: {
       source: 'none',
+      sampleDimension: '2d',
+      z: 0,
       amount: 0,
       scaleX: 1,
       scaleY: 1,
@@ -897,6 +901,7 @@ function createDefaultShaderControlExpressions(): MilkdropShaderControlExpressio
     solarizeBoost: null,
     tint: { r: null, g: null, b: null },
     textureLayer: {
+      z: null,
       amount: null,
       scaleX: null,
       scaleY: null,
@@ -904,6 +909,7 @@ function createDefaultShaderControlExpressions(): MilkdropShaderControlExpressio
       offsetY: null,
     },
     warpTexture: {
+      z: null,
       amount: null,
       scaleX: null,
       scaleY: null,
@@ -1493,34 +1499,88 @@ function isShaderSampleRgbExpression(
   );
 }
 
+function buildShaderVec2Node(
+  x: MilkdropShaderExpressionNode,
+  y: MilkdropShaderExpressionNode,
+): MilkdropShaderExpressionNode {
+  return {
+    type: 'call',
+    name: 'vec2',
+    args: [cloneShaderNode(x), cloneShaderNode(y)],
+  };
+}
+
+function extractShaderSampleCoordinate(
+  coordinate: MilkdropShaderExpressionNode,
+): {
+  sampleDimension: '2d' | '3d';
+  uv: MilkdropShaderExpressionNode;
+  z: MilkdropShaderExpressionNode | null;
+} | null {
+  if (
+    coordinate.type === 'call' &&
+    ['vec3', 'float3'].includes(coordinate.name.toLowerCase())
+  ) {
+    if (coordinate.args.length >= 2) {
+      const [first, second, third] = coordinate.args;
+      if (first && second && !third) {
+        return {
+          sampleDimension: '3d',
+          uv: cloneShaderNode(first),
+          z: cloneShaderNode(second),
+        };
+      }
+      if (first && second && third) {
+        return {
+          sampleDimension: '3d',
+          uv: buildShaderVec2Node(first, second),
+          z: cloneShaderNode(third),
+        };
+      }
+    }
+    return null;
+  }
+
+  return {
+    sampleDimension: '2d',
+    uv: cloneShaderNode(coordinate),
+    z: null,
+  };
+}
+
 function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
   source: string;
+  sampleDimension: '2d' | '3d';
   uv: MilkdropShaderExpressionNode;
+  z: MilkdropShaderExpressionNode | null;
 } | null {
   if (
     node.type !== 'member' ||
     !['rgb', 'xyz'].includes(node.property.toLowerCase()) ||
     node.object.type !== 'call' ||
-    !['tex2d', 'texture'].includes(node.object.name.toLowerCase()) ||
+    !['tex2d', 'texture', 'tex3d'].includes(node.object.name.toLowerCase()) ||
     node.object.args.length < 2
   ) {
     return null;
   }
   const samplerArg = node.object.args[0];
-  const uvArg = node.object.args[1];
-  if (!samplerArg || !uvArg) {
+  const coordinateArg = node.object.args[1];
+  if (!samplerArg || !coordinateArg) {
     return null;
   }
   const source =
     samplerArg.type === 'identifier'
       ? normalizeShaderSamplerName(samplerArg.name)
       : 'main';
-  if (!source) {
+  const coordinate = extractShaderSampleCoordinate(coordinateArg);
+  if (!source || !coordinate) {
     return null;
   }
   return {
     source,
-    uv: uvArg,
+    sampleDimension: coordinate.sampleDimension,
+    uv: coordinate.uv,
+    z: coordinate.z,
   };
 }
 
@@ -1540,7 +1600,9 @@ function extractScaledShaderSampleExpression(
   amountValue: number;
   sample: {
     source: string;
+    sampleDimension: '2d' | '3d';
     uv: MilkdropShaderExpressionNode;
+    z: MilkdropShaderExpressionNode | null;
   };
 } | null {
   const directSample = getShaderSampleInfo(node);
@@ -2169,8 +2231,19 @@ function applyShaderAstStatement({
         return false;
       }
       controls.textureLayer.source = directSample.source;
+      controls.textureLayer.sampleDimension = directSample.sampleDimension;
       controls.textureLayer.mode = 'replace';
       controls.textureLayer.amount = 1;
+      if (directSample.z) {
+        const zExpression = toMilkdropExpression(directSample.z);
+        controls.textureLayer.z = zExpression
+          ? evaluateMilkdropExpression(zExpression, shaderEnv)
+          : 0;
+        expressions.textureLayer.z = zExpression;
+      } else {
+        controls.textureLayer.z = 0;
+        expressions.textureLayer.z = null;
+      }
       expressions.textureLayer.amount = createLiteralExpression(1);
       if (uvTransform) {
         controls.textureLayer.scaleX = uvTransform.scaleX;
@@ -2406,8 +2479,20 @@ function applyShaderAstStatement({
           return false;
         }
         controls.textureLayer.source = auxSample.sample.source;
+        controls.textureLayer.sampleDimension =
+          auxSample.sample.sampleDimension;
         controls.textureLayer.mode = 'add';
         controls.textureLayer.amount = auxSample.amountValue;
+        if (auxSample.sample.z) {
+          const zExpression = toMilkdropExpression(auxSample.sample.z);
+          controls.textureLayer.z = zExpression
+            ? evaluateMilkdropExpression(zExpression, shaderEnv)
+            : 0;
+          expressions.textureLayer.z = zExpression;
+        } else {
+          controls.textureLayer.z = 0;
+          expressions.textureLayer.z = null;
+        }
         expressions.textureLayer.amount = auxSample.amountExpression;
         if (uvTransform) {
           controls.textureLayer.scaleX = uvTransform.scaleX;
@@ -2439,8 +2524,20 @@ function applyShaderAstStatement({
           return false;
         }
         controls.textureLayer.source = auxSample.sample.source;
+        controls.textureLayer.sampleDimension =
+          auxSample.sample.sampleDimension;
         controls.textureLayer.mode = 'multiply';
         controls.textureLayer.amount = auxSample.amountValue;
+        if (auxSample.sample.z) {
+          const zExpression = toMilkdropExpression(auxSample.sample.z);
+          controls.textureLayer.z = zExpression
+            ? evaluateMilkdropExpression(zExpression, shaderEnv)
+            : 0;
+          expressions.textureLayer.z = zExpression;
+        } else {
+          controls.textureLayer.z = 0;
+          expressions.textureLayer.z = null;
+        }
         expressions.textureLayer.amount = auxSample.amountExpression;
         if (uvTransform) {
           controls.textureLayer.scaleX = uvTransform.scaleX;
@@ -3975,6 +4072,13 @@ function mergeShaderControlAnalysis(
     warpAnalysis.expressions.textureLayer.offsetY,
     0,
   );
+  const textureLayerZ = pickShaderScalar(
+    compAnalysis.controls.textureLayer.z,
+    compAnalysis.expressions.textureLayer.z,
+    warpAnalysis.controls.textureLayer.z,
+    warpAnalysis.expressions.textureLayer.z,
+    0,
+  );
   const warpTextureAmount = pickShaderScalar(
     warpAnalysis.controls.warpTexture.amount,
     warpAnalysis.expressions.warpTexture.amount,
@@ -4010,6 +4114,21 @@ function mergeShaderControlAnalysis(
     compAnalysis.expressions.warpTexture.offsetY,
     0,
   );
+  const warpTextureZ = pickShaderScalar(
+    warpAnalysis.controls.warpTexture.z,
+    warpAnalysis.expressions.warpTexture.z,
+    compAnalysis.controls.warpTexture.z,
+    compAnalysis.expressions.warpTexture.z,
+    0,
+  );
+  const textureLayerSource =
+    compAnalysis.controls.textureLayer.source !== 'none'
+      ? compAnalysis.controls.textureLayer.source
+      : warpAnalysis.controls.textureLayer.source;
+  const warpTextureSource =
+    warpAnalysis.controls.warpTexture.source !== 'none'
+      ? warpAnalysis.controls.warpTexture.source
+      : compAnalysis.controls.warpTexture.source;
 
   return {
     controls: {
@@ -4036,10 +4155,12 @@ function mergeShaderControlAnalysis(
         b: tint.b.value,
       },
       textureLayer: {
-        source:
+        source: textureLayerSource,
+        sampleDimension:
           compAnalysis.controls.textureLayer.source !== 'none'
-            ? compAnalysis.controls.textureLayer.source
-            : warpAnalysis.controls.textureLayer.source,
+            ? compAnalysis.controls.textureLayer.sampleDimension
+            : warpAnalysis.controls.textureLayer.sampleDimension,
+        z: textureLayerZ.value,
         mode:
           compAnalysis.controls.textureLayer.mode !== 'none'
             ? compAnalysis.controls.textureLayer.mode
@@ -4051,10 +4172,12 @@ function mergeShaderControlAnalysis(
         offsetY: textureLayerOffsetY.value,
       },
       warpTexture: {
-        source:
+        source: warpTextureSource,
+        sampleDimension:
           warpAnalysis.controls.warpTexture.source !== 'none'
-            ? warpAnalysis.controls.warpTexture.source
-            : compAnalysis.controls.warpTexture.source,
+            ? warpAnalysis.controls.warpTexture.sampleDimension
+            : compAnalysis.controls.warpTexture.sampleDimension,
+        z: warpTextureZ.value,
         amount: warpTextureAmount.value,
         scaleX: warpTextureScaleX.value,
         scaleY: warpTextureScaleY.value,
@@ -4086,6 +4209,7 @@ function mergeShaderControlAnalysis(
         b: tint.b.expression,
       },
       textureLayer: {
+        z: textureLayerZ.expression,
         amount: textureLayerAmount.expression,
         scaleX: textureLayerScaleX.expression,
         scaleY: textureLayerScaleY.expression,
@@ -4093,6 +4217,7 @@ function mergeShaderControlAnalysis(
         offsetY: textureLayerOffsetY.expression,
       },
       warpTexture: {
+        z: warpTextureZ.expression,
         amount: warpTextureAmount.expression,
         scaleX: warpTextureScaleX.expression,
         scaleY: warpTextureScaleY.expression,
@@ -5106,6 +5231,9 @@ function createIR(
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
+  const hasVolumeShaderSampling =
+    mergedShaderControls.controls.textureLayer.sampleDimension === '3d' ||
+    mergedShaderControls.controls.warpTexture.sampleDimension === '3d';
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();
@@ -5172,6 +5300,11 @@ function createIR(
     supportedShaderText,
   });
   const sharedWarnings = [
+    ...(hasVolumeShaderSampling
+      ? [
+          'tex3D auxiliary sampling is approximated with deterministic animated 2D slices, so exact MilkDrop2 parity is not guaranteed.',
+        ]
+      : []),
     ...[...softUnknownKeys].map(
       (key) => `Unknown preset field "${key}" was ignored.`,
     ),

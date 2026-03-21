@@ -354,6 +354,44 @@ comp_shader=ret = tex2d(sampler_fw_noise_lq, uv).rgb
     );
   });
 
+  test('preserves tex3D auxiliary sampling coordinates in shader controls', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Framebuffer Noise Volume Alias
+comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv * 1.25 + vec2(0.1, -0.2), time / 10.0)).xyz
+      `.trim(),
+      { id: 'framebuffer-noise-volume-alias' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
+    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+      '3d',
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.scaleX).toBeCloseTo(
+      1.25,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.scaleY).toBeCloseTo(
+      1.25,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.offsetX).toBeCloseTo(
+      0.1,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.offsetY).toBeCloseTo(
+      -0.2,
+      6,
+    );
+    expect(
+      compiled.ir.post.shaderControlExpressions.textureLayer.z,
+    ).not.toBeNull();
+    expect(compiled.ir.compatibility.warnings).toContain(
+      'tex3D auxiliary sampling is approximated with deterministic animated 2D slices, so exact MilkDrop2 parity is not guaranteed.',
+    );
+  });
+
   test('supports warp texture controls in shader text', () => {
     const compiled = compileMilkdropPresetSource(
       `

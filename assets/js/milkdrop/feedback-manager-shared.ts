@@ -213,11 +213,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         feedbackSoftness: { value: this.profile.feedbackSoftness },
         currentFrameBoost: { value: this.profile.currentFrameBoost },
         overlayTextureSource: { value: 0 },
+        overlayTextureIs3D: { value: 0 },
+        overlayTextureZ: { value: 0 },
         overlayTextureMode: { value: 0 },
         overlayTextureAmount: { value: 0 },
         overlayTextureScale: { value: new Vector2(1, 1) },
         overlayTextureOffset: { value: new Vector2(0, 0) },
         warpTextureSource: { value: 0 },
+        warpTextureIs3D: { value: 0 },
+        warpTextureZ: { value: 0 },
         warpTextureAmount: { value: 0 },
         warpTextureScale: { value: new Vector2(1, 1) },
         warpTextureOffset: { value: new Vector2(0, 0) },
@@ -276,11 +280,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float feedbackSoftness;
         uniform float currentFrameBoost;
         uniform float overlayTextureSource;
+        uniform float overlayTextureIs3D;
+        uniform float overlayTextureZ;
         uniform float overlayTextureMode;
         uniform float overlayTextureAmount;
         uniform vec2 overlayTextureScale;
         uniform vec2 overlayTextureOffset;
         uniform float warpTextureSource;
+        uniform float warpTextureIs3D;
+        uniform float warpTextureZ;
         uniform float warpTextureAmount;
         uniform vec2 warpTextureScale;
         uniform vec2 warpTextureOffset;
@@ -323,7 +331,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
         }
 
-        vec4 sampleAuxTexture(float source, vec2 uv) {
+        vec4 sampleAuxTexture2D(float source, vec2 uv) {
           vec2 wrappedUv = fract(uv);
           if (source < 0.5) {
             return vec4(0.5, 0.5, 0.5, 1.0);
@@ -347,6 +355,33 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             return texture2D(patternTex, wrappedUv);
           }
           return texture2D(fractalTex, wrappedUv);
+        }
+
+        vec2 volumeSliceOffset(float source, float z, float phase) {
+          float wrappedZ = fract(z);
+          vec2 seedUv = fract(vec2(
+            wrappedZ * 0.137 + source * 0.071 + phase * 0.19,
+            wrappedZ * 0.293 + source * 0.113 - phase * 0.17
+          ));
+          vec2 noiseWarp = texture2D(simplexTex, seedUv).rg - 0.5;
+          float angle = wrappedZ * 6.28318530718 + phase + source * 0.43;
+          float radius = 0.035 + 0.045 * wrappedZ;
+          return vec2(cos(angle), sin(angle)) * radius + noiseWarp * 0.08;
+        }
+
+        vec4 sampleAuxTexture(float source, vec2 uv, float sampleIs3D, float z) {
+          if (sampleIs3D < 0.5) {
+            return sampleAuxTexture2D(source, uv);
+          }
+          float slicePosition = fract(z) * 16.0;
+          float sliceA = floor(slicePosition) / 16.0;
+          float sliceB = fract(sliceA + (1.0 / 16.0));
+          float sliceMix = fract(slicePosition);
+          vec2 offsetA = volumeSliceOffset(source, sliceA, 0.0);
+          vec2 offsetB = volumeSliceOffset(source, sliceB, 1.57079632679);
+          vec4 sampleA = sampleAuxTexture2D(source, uv + offsetA);
+          vec4 sampleB = sampleAuxTexture2D(source, uv + offsetB);
+          return mix(sampleA, sampleB, sliceMix);
         }
 
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
@@ -380,7 +415,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           );
           if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
             vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;
-            vec2 warpVector = sampleAuxTexture(warpTextureSource, warpUv).rg - 0.5;
+            vec2 warpVector = sampleAuxTexture(
+              warpTextureSource,
+              warpUv,
+              warpTextureIs3D,
+              warpTextureZ + signalTime * 0.1
+            ).rg - 0.5;
             currentUv += warpVector * warpTextureAmount * 0.12;
             prevUv += warpVector * warpTextureAmount * 0.08;
           }
@@ -427,7 +467,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           color *= tint;
           if (overlayTextureSource > 0.5 && overlayTextureMode > 0.5 && overlayTextureAmount > 0.0001) {
             vec2 overlayUv = vUv * overlayTextureScale + overlayTextureOffset;
-            vec3 overlayColor = sampleAuxTexture(overlayTextureSource, overlayUv).rgb;
+            vec3 overlayColor = sampleAuxTexture(
+              overlayTextureSource,
+              overlayUv,
+              overlayTextureIs3D,
+              overlayTextureZ + signalTime * 0.1
+            ).rgb;
             float amount = clamp(overlayTextureAmount, 0.0, 1.5);
             if (overlayTextureMode < 1.5) {
               color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
@@ -502,6 +547,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.solarizeBoost.value = state.solarizeBoost;
     uniforms.tint.value.setRGB(state.tint.r, state.tint.g, state.tint.b);
     uniforms.overlayTextureSource.value = state.overlayTextureSource;
+    uniforms.overlayTextureIs3D.value = state.overlayTextureIs3D;
+    uniforms.overlayTextureZ.value = state.overlayTextureZ;
     uniforms.overlayTextureMode.value = state.overlayTextureMode;
     uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
     uniforms.overlayTextureScale.value.set(
@@ -513,6 +560,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       state.overlayTextureOffset.y,
     );
     uniforms.warpTextureSource.value = state.warpTextureSource;
+    uniforms.warpTextureIs3D.value = state.warpTextureIs3D;
+    uniforms.warpTextureZ.value = state.warpTextureZ;
     uniforms.warpTextureAmount.value = state.warpTextureAmount;
     uniforms.warpTextureScale.value.set(
       state.warpTextureScale.x,

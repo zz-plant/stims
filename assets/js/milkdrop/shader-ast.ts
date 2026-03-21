@@ -441,7 +441,10 @@ function toScalarMilkdropExpression(
       if (
         name === 'vec2' ||
         name === 'vec3' ||
+        name === 'float2' ||
+        name === 'float3' ||
         name === 'tex2d' ||
+        name === 'tex3d' ||
         name === 'texture'
       ) {
         return null;
@@ -518,7 +521,7 @@ export function evaluateMilkdropShaderExpression(
       }
       const name = node.name.toLowerCase();
       if (
-        name === 'vec2' &&
+        (name === 'vec2' || name === 'float2') &&
         args.length >= 2 &&
         isScalar(args[0]) &&
         isScalar(args[1])
@@ -526,15 +529,28 @@ export function evaluateMilkdropShaderExpression(
         return vec2(args[0].value, args[1].value);
       }
       if (
-        name === 'vec3' &&
-        args.length >= 3 &&
-        isScalar(args[0]) &&
-        isScalar(args[1]) &&
-        isScalar(args[2])
+        (name === 'vec3' || name === 'float3') &&
+        ((args.length >= 3 &&
+          isScalar(args[0]) &&
+          isScalar(args[1]) &&
+          isScalar(args[2])) ||
+          (args.length >= 2 && isVec2(args[0]) && isScalar(args[1])))
       ) {
-        return vec3(args[0].value, args[1].value, args[2].value);
+        if (isVec2(args[0]) && isScalar(args[1])) {
+          return vec3(args[0].value[0], args[0].value[1], args[1].value);
+        }
+        const x = args[0];
+        const y = args[1];
+        const z = args[2];
+        if (isScalar(x) && isScalar(y) && isScalar(z)) {
+          return vec3(x.value, y.value, z.value);
+        }
+        return null;
       }
-      if ((name === 'tex2d' || name === 'texture') && args.length >= 2) {
+      if (
+        (name === 'tex2d' || name === 'tex3d' || name === 'texture') &&
+        args.length >= 2
+      ) {
         const samplerArg = node.args[0];
         const source =
           samplerArg?.type === 'identifier'

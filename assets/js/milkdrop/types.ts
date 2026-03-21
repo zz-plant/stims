@@ -276,8 +276,12 @@ export type MilkdropShaderTextureBlendMode =
   | 'add'
   | 'multiply';
 
+export type MilkdropShaderTextureSampleDimension = '2d' | '3d';
+
 export type MilkdropShaderTextureLayerControls = {
   source: MilkdropShaderTextureSampler;
+  sampleDimension: MilkdropShaderTextureSampleDimension;
+  z: number;
   mode: MilkdropShaderTextureBlendMode;
   amount: number;
   scaleX: number;
@@ -288,6 +292,8 @@ export type MilkdropShaderTextureLayerControls = {
 
 export type MilkdropShaderTextureWarpControls = {
   source: MilkdropShaderTextureSampler;
+  sampleDimension: MilkdropShaderTextureSampleDimension;
+  z: number;
   amount: number;
   scaleX: number;
   scaleY: number;
@@ -296,6 +302,7 @@ export type MilkdropShaderTextureWarpControls = {
 };
 
 export type MilkdropShaderTextureLayerExpressions = {
+  z: MilkdropExpressionNode | null;
   amount: MilkdropExpressionNode | null;
   scaleX: MilkdropExpressionNode | null;
   scaleY: MilkdropExpressionNode | null;
@@ -304,6 +311,7 @@ export type MilkdropShaderTextureLayerExpressions = {
 };
 
 export type MilkdropShaderTextureWarpExpressions = {
+  z: MilkdropExpressionNode | null;
   amount: MilkdropExpressionNode | null;
   scaleX: MilkdropExpressionNode | null;
   scaleY: MilkdropExpressionNode | null;
@@ -761,6 +769,8 @@ export type MilkdropFeedbackCompositeState = {
     b: number;
   };
   overlayTextureSource: number;
+  overlayTextureIs3D: number;
+  overlayTextureZ: number;
   overlayTextureMode: number;
   overlayTextureAmount: number;
   overlayTextureScale: {
@@ -772,6 +782,8 @@ export type MilkdropFeedbackCompositeState = {
     y: number;
   };
   warpTextureSource: number;
+  warpTextureIs3D: number;
+  warpTextureZ: number;
   warpTextureAmount: number;
   warpTextureScale: {
     x: number;
