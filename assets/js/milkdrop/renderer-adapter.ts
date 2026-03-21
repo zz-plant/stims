@@ -900,10 +900,11 @@ function ensureGeometryPositions(
 }
 
 function clearGroup(group: Group) {
-  group.children.slice().forEach((child) => {
+  for (let index = group.children.length - 1; index >= 0; index -= 1) {
+    const child = group.children[index];
     disposeObject(child);
     group.remove(child);
-  });
+  }
 }
 
 function disposeObject(object: { children?: unknown[] }) {
@@ -924,6 +925,14 @@ function disposeObject(object: { children?: unknown[] }) {
   }
   if ('material' in object) {
     disposeMaterial((object as Line | Mesh | Points).material);
+  }
+}
+
+function trimGroupChildren(group: Group, keepCount: number) {
+  for (let index = group.children.length - 1; index >= keepCount; index -= 1) {
+    const child = group.children[index];
+    disposeObject(child as { children?: unknown[] });
+    group.remove(child);
   }
 }
 
@@ -1751,7 +1760,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     waves: MilkdropWaveVisual[],
     alphaMultiplier = 1,
   ) {
-    waves.forEach((wave, index) => {
+    for (let index = 0; index < waves.length; index += 1) {
+      const wave = waves[index] as MilkdropWaveVisual;
       const existing = group.children[index] as
         | Line
         | LineLoop
@@ -1772,18 +1782,16 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         group.remove(existing);
         group.add(synced);
       }
-    });
-    group.children.slice(waves.length).forEach((child) => {
-      disposeObject(child as { children?: unknown[] });
-      group.remove(child);
-    });
+    }
+    trimGroupChildren(group, waves.length);
   }
 
   private renderProceduralWaveGroup(
     group: Group,
     waves: MilkdropProceduralWaveVisual[],
   ) {
-    waves.forEach((wave, index) => {
+    for (let index = 0; index < waves.length; index += 1) {
+      const wave = waves[index] as MilkdropProceduralWaveVisual;
       const existing = group.children[index] as Line | undefined;
       const synced = syncProceduralWaveObject(existing, wave);
       if (!existing) {
@@ -1792,18 +1800,16 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         group.remove(existing);
         group.add(synced);
       }
-    });
-    group.children.slice(waves.length).forEach((child) => {
-      disposeObject(child as { children?: unknown[] });
-      group.remove(child);
-    });
+    }
+    trimGroupChildren(group, waves.length);
   }
 
   private renderProceduralCustomWaveGroup(
     group: Group,
     waves: MilkdropProceduralCustomWaveVisual[],
   ) {
-    waves.forEach((wave, index) => {
+    for (let index = 0; index < waves.length; index += 1) {
+      const wave = waves[index] as MilkdropProceduralCustomWaveVisual;
       const existing = group.children[index] as Line | undefined;
       const synced = syncProceduralCustomWaveObject(existing, wave);
       if (!existing) {
@@ -1812,11 +1818,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         group.remove(existing);
         group.add(synced);
       }
-    });
-    group.children.slice(waves.length).forEach((child) => {
-      disposeObject(child as { children?: unknown[] });
-      group.remove(child);
-    });
+    }
+    trimGroupChildren(group, waves.length);
   }
 
   private renderShapeGroup(
@@ -1824,7 +1827,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier = 1,
   ) {
-    shapes.forEach((shape, index) => {
+    for (let index = 0; index < shapes.length; index += 1) {
+      const shape = shapes[index] as MilkdropShapeVisual;
       const existing = group.children[index] as Group | undefined;
       const synced = syncShapeObject(
         existing,
@@ -1838,11 +1842,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         group.remove(existing);
         group.add(synced);
       }
-    });
-    group.children.slice(shapes.length).forEach((child) => {
-      disposeObject(child as { children?: unknown[] });
-      group.remove(child);
-    });
+    }
+    trimGroupChildren(group, shapes.length);
   }
 
   private renderBorderGroup(
@@ -1850,7 +1851,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     borders: MilkdropBorderVisual[],
     alphaMultiplier = 1,
   ) {
-    borders.forEach((border, index) => {
+    for (let index = 0; index < borders.length; index += 1) {
+      const border = borders[index] as MilkdropBorderVisual;
       const existing = group.children[index] as Group | undefined;
       const synced = syncBorderObject(
         existing,
@@ -1864,11 +1866,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         group.remove(existing);
         group.add(synced);
       }
-    });
-    group.children.slice(borders.length).forEach((child) => {
-      disposeObject(child as { children?: unknown[] });
-      group.remove(child);
-    });
+    }
+    trimGroupChildren(group, borders.length);
   }
 
   private renderLineVisualGroup(
@@ -1881,7 +1880,13 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }>,
     alphaMultiplier = 1,
   ) {
-    lines.forEach((line, index) => {
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index] as {
+        positions: number[];
+        color: MilkdropColor;
+        alpha: number;
+        additive?: boolean;
+      };
       const existing = group.children[index] as Line | undefined;
       const synced = syncLineObject(
         existing,
@@ -1899,11 +1904,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         group.remove(existing);
         group.add(synced);
       }
-    });
-    group.children.slice(lines.length).forEach((child) => {
-      disposeObject(child as { children?: unknown[] });
-      group.remove(child);
-    });
+    }
+    trimGroupChildren(group, lines.length);
   }
 
   private renderMesh(
