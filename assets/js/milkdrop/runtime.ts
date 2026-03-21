@@ -348,6 +348,28 @@ function cloneBlendState(
   };
 }
 
+function estimateFrameBlendWorkload(frameState: MilkdropFrameState | null) {
+  if (!frameState) {
+    return 0;
+  }
+
+  const customWavePoints = frameState.customWaves.reduce(
+    (total, wave) => total + Math.floor(wave.positions.length / 3),
+    0,
+  );
+  const motionVectorSegments = frameState.motionVectors.length;
+
+  return (
+    Math.floor(frameState.mainWave.positions.length / 3) +
+    customWavePoints +
+    Math.floor(frameState.mesh.positions.length / 6) * 0.5 +
+    motionVectorSegments * 2 +
+    frameState.shapes.length * 10 +
+    frameState.borders.length * 12 +
+    frameState.trails.length * 8
+  );
+}
+
 function isEditablePreset(entry: MilkdropCatalogEntry | undefined | null) {
   return entry?.origin === 'imported' || entry?.origin === 'user';
 }
@@ -471,6 +493,7 @@ export function createMilkdropExperience({
   let requestedOverlayTabListener: ((event: Event) => void) | null = null;
   let catalogSyncPromise: Promise<void> | null = null;
   let catalogSyncFrameId: number | null = null;
+  let lastInspectorOverlaySyncAt = 0;
   const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
   const lowQualityPostOverride = {
     shaderEnabled: false,
@@ -574,6 +597,7 @@ export function createMilkdropExperience({
     vm.setPreset(compiled);
     vm.setRenderBackend(activeBackend);
     adapter?.setPreset(compiled);
+    overlay.setCurrentPresetTitle(compiled.title);
     overlay.setSessionState(session.getState());
     overlay.setInspectorState({
       compiled: activeCompiled,
@@ -623,7 +647,11 @@ export function createMilkdropExperience({
       return;
     }
 
-    if (transitionMode === 'blend' && blendDuration > 0) {
+    if (
+      transitionMode === 'blend' &&
+      blendDuration > 0 &&
+      estimateFrameBlendWorkload(currentFrameState) < 900
+    ) {
       blendState = cloneBlendState(currentFrameState);
       blendEndAtMs = performance.now() + blendDuration * 1000;
     } else {
@@ -1168,6 +1196,8 @@ export function createMilkdropExperience({
         return;
       }
 
+      const now = performance.now();
+
       const detailScale = getMilkdropDetailScale({
         backend: activeBackend,
         particleScale: quality.activeQuality.particleScale,
@@ -1195,24 +1225,26 @@ export function createMilkdropExperience({
       if (
         autoplay &&
         catalogEntries.length > 1 &&
-        performance.now() - lastPresetSwitchAt >
-          Math.max(12000, blendDuration * 1000 + 6000)
+        now - lastPresetSwitchAt > Math.max(12000, blendDuration * 1000 + 6000)
       ) {
         void selectRandomPreset();
       }
 
       currentFrameState = vm.step(signals);
       updateAgentDebugSnapshot();
+      const canBlendCurrentFrame =
+        estimateFrameBlendWorkload(currentFrameState) < 900;
       const activeBlendState =
         transitionMode === 'blend' &&
         frame.performance.shaderQuality !== 'low' &&
+        canBlendCurrentFrame &&
         blendState &&
-        performance.now() < blendEndAtMs
+        now < blendEndAtMs
           ? {
               ...blendState,
               alpha:
                 1 -
-                (performance.now() - (blendEndAtMs - blendDuration * 1000)) /
+                (now - (blendEndAtMs - blendDuration * 1000)) /
                   (blendDuration * 1000),
             }
           : null;
@@ -1241,11 +1273,17 @@ export function createMilkdropExperience({
       if (!adapterPresentedFrame) {
         runtime.toy.render();
       }
-      overlay.setInspectorState({
-        compiled: activeCompiled,
-        frameState: currentFrameState,
-        backend: activeBackend,
-      });
+      if (
+        overlay.shouldRenderInspectorMetrics() &&
+        now - lastInspectorOverlaySyncAt >= 180
+      ) {
+        lastInspectorOverlaySyncAt = now;
+        overlay.setInspectorState({
+          compiled: activeCompiled,
+          frameState: currentFrameState,
+          backend: activeBackend,
+        });
+      }
     },
 
     dispose() {

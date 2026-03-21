@@ -326,6 +326,13 @@ class MilkdropPresetVM implements MilkdropVM {
     };
   }
 
+  private syncLastWaveSamples(samples: number[], count: number) {
+    this.lastWaveSamples.length = count;
+    for (let index = 0; index < count; index += 1) {
+      this.lastWaveSamples[index] = samples[index] ?? 0;
+    }
+  }
+
   private nextRandom = () => {
     this.randomState = (1664525 * this.randomState + 1013904223) >>> 0;
     return this.randomState / 0xffffffff;
@@ -534,7 +541,7 @@ class MilkdropPresetVM implements MilkdropVM {
         historyBlend,
       );
     }
-    this.lastWaveSamples = smoothedSamples.slice(0, samples);
+    this.syncLastWaveSamples(smoothedSamples, samples);
 
     for (let index = 0; index < samples; index += 1) {
       const t = index / Math.max(1, samples - 1);
@@ -722,7 +729,8 @@ class MilkdropPresetVM implements MilkdropVM {
         frameLocals.a ?? 0.4,
       );
       const waveAlpha = clamp(frameLocals.a ?? 0.4, 0.02, 1);
-      const positions: number[] = [];
+      const positions = new Array<number>(sampleCount * 3);
+      const pointLocals: MutableState = { ...frameLocals };
 
       for (let point = 0; point < sampleCount; point += 1) {
         const sample = point / Math.max(1, sampleCount - 1);
@@ -737,8 +745,7 @@ class MilkdropPresetVM implements MilkdropVM {
             0.55 *
             scaling *
             (1 + (frameLocals.mystery ?? 0) * 0.25);
-        const pointLocals: MutableState = {
-          ...frameLocals,
+        Object.assign(pointLocals, frameLocals, {
           sample,
           value: spectrumValue,
           x: centerX + (-1 + sample * 2) * 0.85,
@@ -752,7 +759,7 @@ class MilkdropPresetVM implements MilkdropVM {
                 ) *
                   0.18 *
                   scaling,
-        };
+        });
         pointLocals.rad = Math.sqrt(
           pointLocals.x * pointLocals.x + pointLocals.y * pointLocals.y,
         );
@@ -762,7 +769,10 @@ class MilkdropPresetVM implements MilkdropVM {
           this.createEnv(signals, pointLocals),
           pointLocals,
         );
-        positions.push(pointLocals.x, pointLocals.y, 0.28);
+        const writeIndex = point * 3;
+        positions[writeIndex] = pointLocals.x;
+        positions[writeIndex + 1] = pointLocals.y;
+        positions[writeIndex + 2] = 0.28;
       }
 
       waves.push({
@@ -849,19 +859,19 @@ class MilkdropPresetVM implements MilkdropVM {
       8,
       28,
     );
-    const points: MeshFieldPoint[] = [];
+    const points = new Array<MeshFieldPoint>(density * density);
 
     for (let row = 0; row < density; row += 1) {
       for (let col = 0; col < density; col += 1) {
         const x = (col / Math.max(1, density - 1)) * 2 - 1;
         const y = (row / Math.max(1, density - 1)) * 2 - 1;
         const point = this.transformMeshPoint(signals, x, y);
-        points.push({
+        points[row * density + col] = {
           sourceX: x,
           sourceY: y,
           x: point.x,
           y: point.y,
-        });
+        };
       }
     }
 
@@ -869,7 +879,10 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   private buildMesh(meshField: MeshField): MilkdropMeshVisual {
-    const positions: number[] = [];
+    const positions = new Array<number>(
+      meshField.density * Math.max(0, meshField.density - 1) * 12,
+    );
+    let writeIndex = 0;
 
     for (let row = 0; row < meshField.density; row += 1) {
       for (let col = 0; col < meshField.density; col += 1) {
@@ -882,21 +895,33 @@ class MilkdropPresetVM implements MilkdropVM {
         if (col + 1 < meshField.density) {
           const next = meshField.points[index + 1];
           if (next) {
-            positions.push(point.x, point.y, -0.25, next.x, next.y, -0.25);
+            positions[writeIndex] = point.x;
+            positions[writeIndex + 1] = point.y;
+            positions[writeIndex + 2] = -0.25;
+            positions[writeIndex + 3] = next.x;
+            positions[writeIndex + 4] = next.y;
+            positions[writeIndex + 5] = -0.25;
+            writeIndex += 6;
           }
         }
 
         if (row + 1 < meshField.density) {
           const next = meshField.points[index + meshField.density];
           if (next) {
-            positions.push(point.x, point.y, -0.25, next.x, next.y, -0.25);
+            positions[writeIndex] = point.x;
+            positions[writeIndex + 1] = point.y;
+            positions[writeIndex + 2] = -0.25;
+            positions[writeIndex + 3] = next.x;
+            positions[writeIndex + 4] = next.y;
+            positions[writeIndex + 5] = -0.25;
+            writeIndex += 6;
           }
         }
       }
     }
 
     return {
-      positions,
+      positions: positions.slice(0, writeIndex),
       color: color(
         this.state.mesh_r ?? 0.4,
         this.state.mesh_g ?? 0.6,
@@ -1017,12 +1042,15 @@ class MilkdropPresetVM implements MilkdropVM {
       );
     });
 
+    const customShapeIndices = new Set(
+      this.preset.ir.customShapes.map((shape) => shape.index),
+    );
     const built = builtFromCustom.filter(
       (shape): shape is MilkdropShapeVisual => shape !== null,
     );
 
     for (let index = 1; index <= MAX_CUSTOM_SHAPE_SLOTS; index += 1) {
-      if (this.preset.ir.customShapes.some((shape) => shape.index === index)) {
+      if (customShapeIndices.has(index)) {
         continue;
       }
       const prefix = `shape_${index}`;

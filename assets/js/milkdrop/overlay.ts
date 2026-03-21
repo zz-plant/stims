@@ -185,6 +185,13 @@ export class MilkdropOverlay {
   private suppressEditorChange = false;
   private editorDebounceId: number | null = null;
   private browseRenderDebounceId: number | null = null;
+  private browseDirty = true;
+  private lastCatalogSignature = '';
+  private lastBrowseRenderSignature = '';
+  private readonly presetRowCache = new Map<
+    string,
+    { signature: string; row: HTMLElement }
+  >();
   private lastInspectorSignature = '';
   private lastInspectorRenderAt = 0;
   private activeTab: 'browse' | 'editor' | 'inspector' = 'browse';
@@ -637,12 +644,22 @@ export class MilkdropOverlay {
     return this.isOpen() && this.activeTab === 'inspector';
   }
 
+  setCurrentPresetTitle(title: string) {
+    if (this.currentPresetLabel.textContent !== title) {
+      this.currentPresetLabel.textContent = title;
+    }
+  }
+
   private setActiveTab(tab: string) {
     this.activeTab = tab === 'editor' || tab === 'inspector' ? tab : 'browse';
     Object.entries(this.tabPanels).forEach(([id, panel]) => {
       panel.hidden = id !== tab;
     });
     setButtonActive(this.tabButtons, tab);
+    if (this.activeTab === 'browse' && this.browseDirty) {
+      this.renderCollectionFilters();
+      this.renderBrowseList();
+    }
   }
 
   private buildBrowseControl(
@@ -888,7 +905,54 @@ export class MilkdropOverlay {
     return row;
   }
 
-  private appendPresetSection(title: string, presets: MilkdropCatalogEntry[]) {
+  private getPresetRowSignature(preset: MilkdropCatalogEntry) {
+    const support = preset.supports[this.activeBackend];
+    const primaryReason = [...preset.parity.degradationReasons].sort(
+      (left, right) => {
+        if (left.blocking !== right.blocking) {
+          return left.blocking ? -1 : 1;
+        }
+        return (
+          compatibilityCategoryPriority(left.category) -
+          compatibilityCategoryPriority(right.category)
+        );
+      },
+    )[0];
+    return [
+      preset.id,
+      preset.title,
+      preset.author ?? '',
+      preset.origin,
+      preset.certification,
+      preset.rating,
+      preset.isFavorite ? 1 : 0,
+      preset.historyIndex ?? -1,
+      preset.tags.join(','),
+      this.activePresetId === preset.id ? 1 : 0,
+      this.activeBackend,
+      support.status,
+      support.reasons[0] ?? '',
+      primaryReason?.category ?? '',
+      primaryReason?.message ?? '',
+    ].join('|');
+  }
+
+  private getPresetRow(preset: MilkdropCatalogEntry) {
+    const signature = this.getPresetRowSignature(preset);
+    const cached = this.presetRowCache.get(preset.id);
+    if (cached && cached.signature === signature) {
+      return cached.row;
+    }
+    const row = this.buildPresetRow(preset);
+    this.presetRowCache.set(preset.id, { signature, row });
+    return row;
+  }
+
+  private appendPresetSection(
+    title: string,
+    presets: MilkdropCatalogEntry[],
+    target: DocumentFragment | HTMLElement = this.browseList,
+  ) {
     if (presets.length === 0) {
       return;
     }
@@ -903,12 +967,16 @@ export class MilkdropOverlay {
     heading.appendChild(count);
     section.appendChild(heading);
     presets.forEach((preset) => {
-      section.appendChild(this.buildPresetRow(preset));
+      section.appendChild(this.getPresetRow(preset));
     });
-    this.browseList.appendChild(section);
+    target.appendChild(section);
   }
 
   private scheduleBrowseRender(delayMs = 120) {
+    this.browseDirty = true;
+    if (this.activeTab !== 'browse') {
+      return;
+    }
     if (this.browseRenderDebounceId !== null) {
       window.clearTimeout(this.browseRenderDebounceId);
     }
@@ -920,17 +988,35 @@ export class MilkdropOverlay {
 
   private renderBrowseList() {
     const query = this.searchInput.value.trim().toLowerCase();
+    const renderSignature = [
+      this.lastCatalogSignature,
+      this.activePresetId ?? '',
+      this.activeBackend,
+      this.activeCollectionTag,
+      this.browseMode,
+      this.browseSupportFilter,
+      this.browseSort,
+      query,
+    ].join('|');
+    if (
+      renderSignature === this.lastBrowseRenderSignature &&
+      !this.browseDirty
+    ) {
+      return;
+    }
+    this.lastBrowseRenderSignature = renderSignature;
+    this.browseDirty = false;
     const filtered = this.sortBrowsePresets(
       this.presets.filter((preset) => this.matchesBrowseFilters(preset, query)),
     );
 
-    this.browseList.replaceChildren();
+    const fragment = document.createDocumentFragment();
     this.renderBrowseSummary(filtered.length);
     if (filtered.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'milkdrop-overlay__browse-empty';
       empty.textContent = 'No presets match the current filters.';
-      this.browseList.appendChild(empty);
+      this.browseList.replaceChildren(empty);
       return;
     }
 
@@ -943,8 +1029,9 @@ export class MilkdropOverlay {
 
     if (!useSections) {
       filtered.forEach((preset) => {
-        this.browseList.appendChild(this.buildPresetRow(preset));
+        fragment.appendChild(this.getPresetRow(preset));
       });
+      this.browseList.replaceChildren(fragment);
       return;
     }
 
@@ -974,12 +1061,17 @@ export class MilkdropOverlay {
         return true;
       });
 
-    this.appendPresetSection('Jump back in', dedupe(recent));
-    this.appendPresetSection('Favorites', dedupe(favorites));
-    this.appendPresetSection('Classic MilkDrop', dedupe(classic));
-    this.appendPresetSection('Feedback Lab', dedupe(feedback));
-    this.appendPresetSection('Low Motion', dedupe(lowMotion));
-    this.appendPresetSection('More presets', dedupe(filtered).slice(0, 12));
+    this.appendPresetSection('Jump back in', dedupe(recent), fragment);
+    this.appendPresetSection('Favorites', dedupe(favorites), fragment);
+    this.appendPresetSection('Classic MilkDrop', dedupe(classic), fragment);
+    this.appendPresetSection('Feedback Lab', dedupe(feedback), fragment);
+    this.appendPresetSection('Low Motion', dedupe(lowMotion), fragment);
+    this.appendPresetSection(
+      'More presets',
+      dedupe(filtered).slice(0, 12),
+      fragment,
+    );
+    this.browseList.replaceChildren(fragment);
   }
 
   private renderCollectionFilters() {
@@ -995,7 +1087,7 @@ export class MilkdropOverlay {
       );
     });
 
-    this.collectionFilters.replaceChildren();
+    const fragment = document.createDocumentFragment();
     const options = [
       { tag: '', label: 'All presets' },
       ...collectionTags.map((tag) => ({
@@ -1014,11 +1106,13 @@ export class MilkdropOverlay {
       button.dataset.active = String(option.tag === this.activeCollectionTag);
       button.addEventListener('click', () => {
         this.activeCollectionTag = option.tag;
+        this.browseDirty = true;
         this.renderCollectionFilters();
         this.renderBrowseList();
       });
-      this.collectionFilters.appendChild(button);
+      fragment.appendChild(button);
     });
+    this.collectionFilters.replaceChildren(fragment);
   }
 
   private buildInspectorField(
@@ -1215,11 +1309,38 @@ export class MilkdropOverlay {
     activePresetId: string | null,
     backend: 'webgl' | 'webgpu',
   ) {
+    const catalogSignature = presets
+      .map((preset) =>
+        [
+          preset.id,
+          preset.rating,
+          preset.isFavorite ? 1 : 0,
+          preset.historyIndex ?? -1,
+          preset.tags.join(','),
+          preset.supports[backend].status,
+        ].join(':'),
+      )
+      .join('|');
+    const activeChanged =
+      this.activePresetId !== activePresetId || this.activeBackend !== backend;
     this.presets = presets;
     this.activePresetId = activePresetId;
     this.activeBackend = backend;
-    this.renderCollectionFilters();
-    this.renderBrowseList();
+    this.browseDirty =
+      this.browseDirty ||
+      activeChanged ||
+      this.lastCatalogSignature !== catalogSignature;
+    this.lastCatalogSignature = catalogSignature;
+    const validIds = new Set(presets.map((preset) => preset.id));
+    Array.from(this.presetRowCache.keys()).forEach((id) => {
+      if (!validIds.has(id)) {
+        this.presetRowCache.delete(id);
+      }
+    });
+    if (this.activeTab === 'browse') {
+      this.renderCollectionFilters();
+      this.renderBrowseList();
+    }
     const activePreset = this.presets.find(
       (entry) => entry.id === activePresetId,
     );
@@ -1317,7 +1438,7 @@ export class MilkdropOverlay {
   }) {
     this.activeBackend = backend;
     if (compiled) {
-      this.currentPresetLabel.textContent = compiled.title;
+      this.setCurrentPresetTitle(compiled.title);
     }
 
     if (!frameState || !compiled) {
