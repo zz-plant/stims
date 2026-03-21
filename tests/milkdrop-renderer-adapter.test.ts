@@ -46,7 +46,9 @@ function getGeometryInstanceCount(node: RenderTreeNode | undefined) {
   )?.instanceCount;
 }
 
-function makeSignals(): MilkdropRuntimeSignals {
+function makeSignals(
+  overrides: Partial<MilkdropRuntimeSignals> = {},
+): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
   frequencyData.fill(160);
   const waveformData = new Uint8Array(64);
@@ -166,6 +168,7 @@ function makeSignals(): MilkdropRuntimeSignals {
     motion_strength: 0,
     frequencyData,
     waveformData,
+    ...overrides,
   };
 }
 
@@ -202,6 +205,7 @@ shapecode_0_thickoutline=1
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -244,6 +248,7 @@ shapecode_1_sides=6
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -518,6 +523,52 @@ warpanimspeed=1.4
 
     expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
     expect(meshLines.geometry).toBeDefined();
+  });
+
+  test('renders lowered per-pixel mesh programs directly on webgpu', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Mesh Per Pixel
+mesh_density=10
+per_pixel_1=q1=sin(time+x*2.5);
+per_pixel_2=x=x+q1*0.04;
+per_pixel_3=zoom=zoom+abs(y)*0.08;
+      `.trim(),
+      { id: 'procedural-mesh-per-pixel' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals({ time: 0.75 }));
+
+    expect(frameState.mesh.positions).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField?.program).not.toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const meshLines = root.children[1] as {
+      material?: ShaderMaterial;
+    };
+
+    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.material?.userData.fieldProgramSignature).toBe(
+      frameState.gpuGeometry.meshField?.program?.signature,
+    );
   });
 
   test('renders motion vectors directly on webgpu when per-pixel VM work is absent', () => {

@@ -1420,9 +1420,35 @@ motion_vectors_y=5
         kind: 'procedural-mesh',
         requiresPerPixelProgram: false,
         supportsMotionVectors: true,
+        fieldProgram: null,
       },
       feedback: null,
       unsupported: [],
+    });
+  });
+
+  test('lowers a supported per-pixel subset into the WebGPU descriptor plan', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Descriptor Plan Per Pixel
+per_pixel_1=q1=sin(time*0.5+x*2);
+per_pixel_2=x=x+q1*0.05;
+per_pixel_3=zoom=zoom+abs(y)*0.1;
+      `.trim(),
+      { id: 'descriptor-plan-per-pixel' },
+    );
+
+    expect(
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh,
+    ).toMatchObject({
+      kind: 'procedural-mesh',
+      requiresPerPixelProgram: true,
+      supportsMotionVectors: false,
+      fieldProgram: {
+        kind: 'gpu-field-program',
+        temporaries: ['q1'],
+        statements: [{ target: 'q1' }, { target: 'x' }, { target: 'zoom' }],
+      },
     });
   });
 
