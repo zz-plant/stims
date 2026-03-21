@@ -36,6 +36,8 @@ import type {
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
   MilkdropFrameState,
+  MilkdropGpuGeometryHints,
+  MilkdropPostVisual,
   MilkdropPresetSource,
   MilkdropRuntimeSignals,
 } from './types';
@@ -128,6 +130,267 @@ shape_0_per_frame1=rad = 0.14 + beat_pulse * 0.08
 function sanitizeRuntimeSignals(signals: MilkdropRuntimeSignals) {
   const { frequencyData: _frequencyData, ...rest } = signals;
   return rest;
+}
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
+
+function normalizeSceneTranslation(value: number) {
+  return clamp(value, -0.22, 0.22);
+}
+
+function transformScenePositions(
+  positions: number[],
+  {
+    offsetX,
+    offsetY,
+    rotation,
+    scale,
+  }: { offsetX: number; offsetY: number; rotation: number; scale: number },
+) {
+  if (
+    positions.length === 0 ||
+    (Math.abs(offsetX) < 0.0001 &&
+      Math.abs(offsetY) < 0.0001 &&
+      Math.abs(rotation) < 0.0001 &&
+      Math.abs(scale - 1) < 0.0001)
+  ) {
+    return positions;
+  }
+
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const transformed = [...positions];
+
+  for (let index = 0; index < transformed.length; index += 3) {
+    const x = transformed[index] ?? 0;
+    const y = transformed[index + 1] ?? 0;
+    const scaledX = x * scale;
+    const scaledY = y * scale;
+    transformed[index] = scaledX * cos - scaledY * sin + offsetX;
+    transformed[index + 1] = scaledX * sin + scaledY * cos + offsetY;
+  }
+
+  return transformed;
+}
+
+function nudgeCenter(value: number, offset: number) {
+  return clamp(value + offset * 0.5, 0, 1);
+}
+
+function enhancePostEffects(
+  post: MilkdropPostVisual,
+  {
+    offsetX,
+    offsetY,
+    rotation,
+    pinchDelta,
+    dragBoost,
+  }: {
+    offsetX: number;
+    offsetY: number;
+    rotation: number;
+    pinchDelta: number;
+    dragBoost: number;
+  },
+): MilkdropPostVisual {
+  return {
+    ...post,
+    warp: clamp(
+      post.warp + dragBoost * 0.28 + Math.abs(pinchDelta) * 0.12,
+      0,
+      1,
+    ),
+    videoEchoZoom: clamp(post.videoEchoZoom + pinchDelta * 0.12, 0.85, 1.35),
+    shaderControls: {
+      ...post.shaderControls,
+      offsetX: clamp(post.shaderControls.offsetX + offsetX * 0.5, -0.3, 0.3),
+      offsetY: clamp(post.shaderControls.offsetY + offsetY * 0.5, -0.3, 0.3),
+      rotation: clamp(
+        post.shaderControls.rotation + rotation * 0.85,
+        -1.6,
+        1.6,
+      ),
+      zoom: clamp(post.shaderControls.zoom + pinchDelta * 0.3, 0.72, 1.45),
+      warpScale: clamp(
+        post.shaderControls.warpScale + pinchDelta * 0.24 + dragBoost * 0.16,
+        0,
+        2,
+      ),
+    },
+  };
+}
+
+function enhanceGpuGeometry(
+  gpuGeometry: MilkdropGpuGeometryHints,
+  {
+    offsetX,
+    offsetY,
+    rotation,
+    scale,
+    pinchDelta,
+  }: {
+    offsetX: number;
+    offsetY: number;
+    rotation: number;
+    scale: number;
+    pinchDelta: number;
+  },
+): MilkdropGpuGeometryHints {
+  return {
+    ...gpuGeometry,
+    mainWave: gpuGeometry.mainWave
+      ? {
+          ...gpuGeometry.mainWave,
+          centerX: nudgeCenter(gpuGeometry.mainWave.centerX, offsetX),
+          centerY: nudgeCenter(gpuGeometry.mainWave.centerY, -offsetY),
+          scale: clamp(gpuGeometry.mainWave.scale * scale, 0.45, 2.4),
+        }
+      : null,
+    trailWaves: gpuGeometry.trailWaves.map((wave) => ({
+      ...wave,
+      centerX: nudgeCenter(wave.centerX, offsetX),
+      centerY: nudgeCenter(wave.centerY, -offsetY),
+      scale: clamp(wave.scale * scale, 0.45, 2.4),
+    })),
+    customWaves: gpuGeometry.customWaves.map((wave) => ({
+      ...wave,
+      centerX: nudgeCenter(wave.centerX, offsetX),
+      centerY: nudgeCenter(wave.centerY, -offsetY),
+      scaling: clamp(wave.scaling * scale, 0.45, 2.4),
+    })),
+    meshField: gpuGeometry.meshField
+      ? {
+          ...gpuGeometry.meshField,
+          rotation: gpuGeometry.meshField.rotation + rotation * 0.9,
+          zoom: clamp(gpuGeometry.meshField.zoom - pinchDelta * 0.2, 0.5, 2.6),
+          warp: clamp(
+            gpuGeometry.meshField.warp + Math.abs(pinchDelta) * 0.1,
+            0,
+            1.4,
+          ),
+        }
+      : null,
+    motionVectorField: gpuGeometry.motionVectorField
+      ? {
+          ...gpuGeometry.motionVectorField,
+          rotation: gpuGeometry.motionVectorField.rotation + rotation * 0.9,
+          zoom: clamp(
+            gpuGeometry.motionVectorField.zoom - pinchDelta * 0.2,
+            0.5,
+            2.6,
+          ),
+          warp: clamp(
+            gpuGeometry.motionVectorField.warp + Math.abs(pinchDelta) * 0.1,
+            0,
+            1.4,
+          ),
+        }
+      : null,
+  };
+}
+
+export function applyMilkdropInteractionResponse(
+  frameState: MilkdropFrameState,
+  input: UnifiedInputState | null,
+): MilkdropFrameState {
+  if (!input) {
+    return frameState;
+  }
+
+  const gesture = input.gesture;
+  const dragBoost = clamp(input.performance.dragIntensity, 0, 1);
+  const pinchDelta = clamp((gesture?.scale ?? 1) - 1, -0.45, 0.7);
+  const rotation = clamp(gesture?.rotation ?? 0, -Math.PI / 2, Math.PI / 2);
+  const offsetX = normalizeSceneTranslation(
+    input.dragDelta.x * 0.9 + (gesture?.translation.x ?? 0) * 0.45,
+  );
+  const offsetY = normalizeSceneTranslation(
+    input.dragDelta.y * 0.9 + (gesture?.translation.y ?? 0) * 0.45,
+  );
+  const scale = clamp(1 + pinchDelta * 0.45, 0.7, 1.55);
+
+  if (
+    dragBoost < 0.001 &&
+    Math.abs(pinchDelta) < 0.001 &&
+    Math.abs(rotation) < 0.001 &&
+    Math.abs(offsetX) < 0.001 &&
+    Math.abs(offsetY) < 0.001
+  ) {
+    return frameState;
+  }
+
+  return {
+    ...frameState,
+    mainWave: {
+      ...frameState.mainWave,
+      positions: transformScenePositions(frameState.mainWave.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
+      thickness: clamp(frameState.mainWave.thickness + dragBoost * 0.8, 1, 12),
+    },
+    customWaves: frameState.customWaves.map((wave) => ({
+      ...wave,
+      positions: transformScenePositions(wave.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
+    })),
+    trails: frameState.trails.map((trail) => ({
+      ...trail,
+      positions: transformScenePositions(trail.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
+    })),
+    mesh: {
+      ...frameState.mesh,
+      positions: transformScenePositions(frameState.mesh.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
+      alpha: clamp(frameState.mesh.alpha + Math.abs(pinchDelta) * 0.12, 0, 1),
+    },
+    shapes: frameState.shapes.map((shape) => ({
+      ...shape,
+      x: nudgeCenter(shape.x, offsetX),
+      y: nudgeCenter(shape.y, -offsetY),
+      radius: clamp(shape.radius * scale, 0.02, 0.6),
+      rotation: shape.rotation + rotation,
+    })),
+    motionVectors: frameState.motionVectors.map((vector) => ({
+      ...vector,
+      positions: transformScenePositions(vector.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
+    })),
+    post: enhancePostEffects(frameState.post, {
+      offsetX,
+      offsetY,
+      rotation,
+      pinchDelta,
+      dragBoost,
+    }),
+    gpuGeometry: enhanceGpuGeometry(frameState.gpuGeometry, {
+      offsetX,
+      offsetY,
+      rotation,
+      scale,
+      pinchDelta,
+    }),
+  };
 }
 
 export function getMilkdropDetailScale({
@@ -1230,7 +1493,10 @@ export function createMilkdropExperience({
         void selectRandomPreset();
       }
 
-      currentFrameState = vm.step(signals);
+      currentFrameState = applyMilkdropInteractionResponse(
+        vm.step(signals),
+        frame.input,
+      );
       updateAgentDebugSnapshot();
       const canBlendCurrentFrame =
         estimateFrameBlendWorkload(currentFrameState) < 900;

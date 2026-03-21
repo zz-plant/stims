@@ -8,6 +8,7 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 let initAudioControls: typeof import('../assets/js/ui/audio-controls.ts').initAudioControls;
 let buildTryThisFirstRecommendation: typeof import('../assets/js/ui/audio-controls.ts').buildTryThisFirstRecommendation;
+let resolveTouchGestureHints: typeof import('../assets/js/ui/audio-controls.ts').resolveTouchGestureHints;
 
 const baselineNavigator = globalThis.navigator;
 const baselineNavigatorPermissions = baselineNavigator.permissions;
@@ -68,6 +69,7 @@ describe('audio controls primary emphasis', () => {
     initAudioControls = audioControlsModule.initAudioControls;
     buildTryThisFirstRecommendation =
       audioControlsModule.buildTryThisFirstRecommendation;
+    resolveTouchGestureHints = audioControlsModule.resolveTouchGestureHints;
   });
 
   test('highlights demo row when preferDemoAudio is true', () => {
@@ -240,6 +242,32 @@ describe('audio controls primary emphasis', () => {
     expect(hintPanel.textContent).toContain('Pinch/rotate gestures');
   });
 
+  test('falls back to shared touch gestures instead of filtering starter tips', async () => {
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      starterTips: ['Press Q/E for mode changes', 'Import preset files'],
+    });
+
+    const demoButton = container.querySelector(
+      '#use-demo-audio',
+    ) as HTMLButtonElement;
+    demoButton.click();
+    await flush();
+
+    const hintPanel = container.querySelector(
+      '[data-gesture-hints]',
+    ) as HTMLElement;
+    expect(hintPanel.hidden).toBe(false);
+    expect(hintPanel.textContent).toContain('Drag to bend the scene.');
+    expect(hintPanel.textContent).toContain(
+      'Pinch to swell or compress the depth.',
+    );
+    expect(hintPanel.textContent).not.toContain('Press Q/E');
+  });
+
   test('shows desktop control legend by default on laptop-like devices', () => {
     window.matchMedia = ((query: string) =>
       ({
@@ -396,6 +424,31 @@ describe('audio controls primary emphasis', () => {
       detail:
         'Try Aurora starter once the toy opens. Then explore Q/E mood cycling.',
     });
+  });
+
+  test('builds touch-first recommendation when mobile guidance is preferred', () => {
+    expect(
+      buildTryThisFirstRecommendation({
+        recommendedCapability: 'touch',
+        firstRunHint: 'Open the preset browser after the first gesture burst.',
+      }),
+    ).toEqual({
+      summary:
+        'Start audio, then use touch gestures to bend, scale, and twist the scene.',
+      detail: 'Open the preset browser after the first gesture burst.',
+    });
+  });
+
+  test('keeps explicit touch hints ahead of shared fallback hints', () => {
+    expect(
+      resolveTouchGestureHints({
+        touchHints: [
+          'Drag to bend the scene hard.',
+          'Rotate to twist the image.',
+        ],
+        gestureHints: ['Pinch to change scale'],
+      }),
+    ).toEqual(['Drag to bend the scene hard.', 'Rotate to twist the image.']);
   });
 
   test('keeps a single visible start-here prompt instead of stacked quick-start tips', () => {

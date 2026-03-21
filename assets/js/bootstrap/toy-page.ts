@@ -36,6 +36,45 @@ const resolveToyTitle = (slug: string | null, toys: Toy[]) => {
   return toys.find((toy) => toy.slug === slug)?.title ?? slug;
 };
 
+const DEFAULT_TOUCH_HINTS = [
+  'Drag to bend the scene.',
+  'Pinch to swell or compress the depth.',
+  'Rotate with two fingers to twist the image.',
+];
+
+function supportsTouchLikeInput() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  if (typeof window.matchMedia === 'function') {
+    if (
+      window.matchMedia('(pointer: coarse)').matches ||
+      window.matchMedia('(hover: none)').matches
+    ) {
+      return true;
+    }
+  }
+
+  return navigator.maxTouchPoints > 0;
+}
+
+function normalizeHints(hints: string[] | undefined, limit = 3) {
+  return (hints ?? [])
+    .map((hint) => hint.trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+function resolveTouchHints(toyMeta: ToyWithControls | null) {
+  const explicitHints = normalizeHints(toyMeta?.touchHints);
+  if (explicitHints.length > 0) {
+    return explicitHints;
+  }
+
+  return DEFAULT_TOUCH_HINTS;
+}
+
 function buildAudioInitState(result: CapabilityPreflightResult | null) {
   if (isSmartTvDevice()) {
     return {
@@ -179,9 +218,7 @@ export function bootToyPage({
         : []),
     ];
     const firstRunHint = toyMeta?.firstRunHint ?? starterTips[0];
-    const touchHints = (toyMeta?.touchHints ?? starterTips).filter((tip) =>
-      /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip),
-    );
+    const touchHints = resolveTouchHints(toyMeta ?? null);
     const desktopHints = (
       toyMeta?.desktopHints ?? [
         'Move to steer the scene.',
@@ -229,7 +266,10 @@ export function bootToyPage({
       starterPresetId,
       starterPresetLabel,
       wowControl: toyMeta?.wowControl,
-      recommendedCapability: toyMeta?.recommendedCapability,
+      recommendedCapability:
+        supportsTouchLikeInput() && !isSmartTvDevice() && touchHints.length > 0
+          ? 'touch'
+          : toyMeta?.recommendedCapability,
       initialShortcut:
         requestedAudioSource === 'tab' || requestedAudioSource === 'youtube'
           ? requestedAudioSource
