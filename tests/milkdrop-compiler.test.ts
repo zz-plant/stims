@@ -1012,6 +1012,29 @@ ${programLine}
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
   });
 
+  test.each([
+    ['init', 'init_1=echo_orient=3;', 'init'],
+    ['per-frame', 'per_frame_1=echo_orient=3;', 'perFrame'],
+  ] as const)('normalizes echo_orient assignment targets in %s programs', (_label, programLine, blockKey) => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Echo Orientation Program Alias
+video_echo=1
+${programLine}
+        `.trim(),
+      { id: 'echo-orientation-program-alias', origin: 'imported' },
+    );
+
+    expect(compiled.ir.programs[blockKey].statements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          target: 'video_echo_orientation',
+        }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+  });
+
   test('classifies echo orientation as supported backend input after implementation', () => {
     const compiled = compileMilkdropPresetSource(
       `
