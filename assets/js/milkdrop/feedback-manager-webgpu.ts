@@ -17,6 +17,10 @@ import {
 // @ts-expect-error - 'three/tsl' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, RenderTarget, TSL } from 'three/webgpu';
 import { disposeMaterial } from '../utils/three-dispose';
+import {
+  AUX_TEXTURE_ATLAS_GRID_SIZE,
+  AUX_TEXTURE_ATLAS_SLICE_COUNT,
+} from './feedback-volume-sampling.ts';
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './renderer-adapter.ts';
 import type {
   MilkdropFeedbackCompositeState,
@@ -62,10 +66,6 @@ const MILKDROP_TEXTURE_FILES = {
   pattern: 'circuit_board_pattern.png',
   fractal: 'crystal_fractal.png',
 } as const;
-const AUX_TEXTURE_ATLAS_GRID_SIZE = 8;
-const AUX_TEXTURE_ATLAS_SLICE_COUNT =
-  AUX_TEXTURE_ATLAS_GRID_SIZE * AUX_TEXTURE_ATLAS_GRID_SIZE;
-
 type FeedbackRendererLike = {
   render: (scene: Scene, camera: Camera) => void;
   setRenderTarget: (target: RenderTarget | null) => void;
@@ -226,15 +226,13 @@ function createSampleAuxTextureNode(
     ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) => {
       const wrappedUv = fract(sampleUv);
       const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
-      const sliceInRange = sliceZ
-        .greaterThanEqual(0)
-        .and(sliceZ.lessThanEqual(1));
-      const wrappedSliceZ = select(sliceInRange, sliceZ, fract(sliceZ));
-      // Keep the original 0..1 mapping for in-range phases, but let wrapped cycles span the
-      // full atlas count so the last segment blends the final slice back to slice 0.
-      const sliceScale = select(sliceInRange, sliceCount.sub(1), sliceCount);
-      const scaledSlice = wrappedSliceZ.mul(sliceScale);
-      const sliceIndexA = floor(scaledSlice);
+      // Keep tex3D phases fully periodic so modulo-equivalent values stay aligned while the
+      // last atlas segment blends the final slice back to slice 0.
+      const wrappedSliceZ = fract(sliceZ);
+      const scaledSlice = wrappedSliceZ.mul(sliceCount);
+      const sliceIndexA = fract(floor(scaledSlice).div(sliceCount)).mul(
+        sliceCount,
+      );
       const sliceIndexB = fract(sliceIndexA.add(1).div(sliceCount)).mul(
         sliceCount,
       );
