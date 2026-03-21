@@ -99,9 +99,21 @@ describe('worker renderer track messaging', () => {
     window.localStorage.clear();
   });
 
-  test('boots the experimental worker track and forwards the minimal protocol', () => {
+  test('queues outbound messages until the worker reports ready, then flushes them in order', () => {
     const postMessage = mock();
-    const addEventListener = mock();
+    let messageListener: ((event: MessageEvent<unknown>) => void) | null = null;
+    const emitMessage = (event: MessageEvent<unknown>) => {
+      if (!messageListener) {
+        throw new Error('Expected worker message listener to be registered.');
+      }
+
+      messageListener(event);
+    };
+    const addEventListener = mock((type: string, listener: EventListener) => {
+      if (type === 'message') {
+        messageListener = listener as (event: MessageEvent<unknown>) => void;
+      }
+    });
     const removeEventListener = mock();
     const terminate = mock();
     const fakeWorker = {
@@ -130,6 +142,7 @@ describe('worker renderer track messaging', () => {
 
     expect(track).not.toBeNull();
     expect(workerFactory).toHaveBeenCalledTimes(1);
+    expect(postMessage).toHaveBeenCalledTimes(1);
     expect(postMessage).toHaveBeenNthCalledWith(
       1,
       {
@@ -164,7 +177,20 @@ describe('worker renderer track messaging', () => {
       energy: { bass: 0.6, mids: 0.5, treble: 0.7 },
       pointer: { x: 0.25, y: 0.75, down: true },
     });
-    track?.dispose();
+
+    expect(postMessage).toHaveBeenCalledTimes(1);
+
+    expect(messageListener).not.toBeNull();
+    emitMessage({
+      data: {
+        type: RENDERER_WORKER_MESSAGE_TYPES.ready,
+        payload: {
+          backend: 'webgpu',
+          width: 1280,
+          height: 720,
+        },
+      },
+    } as MessageEvent<unknown>);
 
     expect(postMessage).toHaveBeenNthCalledWith(2, {
       type: RENDERER_WORKER_MESSAGE_TYPES.resize,
@@ -201,10 +227,65 @@ describe('worker renderer track messaging', () => {
         pointer: { x: 0.25, y: 0.75, down: true },
       },
     });
+
+    track?.dispose();
+
     expect(postMessage).toHaveBeenNthCalledWith(6, {
       type: RENDERER_WORKER_MESSAGE_TYPES.dispose,
     });
     expect(removeEventListener).toHaveBeenCalledTimes(1);
     expect(terminate).toHaveBeenCalledTimes(1);
+  });
+
+  test('forwards worker response messages to the optional callback', () => {
+    const postMessage = mock();
+    let messageListener: ((event: MessageEvent<unknown>) => void) | null = null;
+    const emitMessage = (event: MessageEvent<unknown>) => {
+      if (!messageListener) {
+        throw new Error('Expected worker message listener to be registered.');
+      }
+
+      messageListener(event);
+    };
+    const addEventListener = mock((type: string, listener: EventListener) => {
+      if (type === 'message') {
+        messageListener = listener as (event: MessageEvent<unknown>) => void;
+      }
+    });
+    const fakeWorker = {
+      postMessage,
+      addEventListener,
+      removeEventListener: mock(),
+      terminate: mock(),
+    } as unknown as Worker;
+    const canvas = document.createElement('canvas');
+    const offscreenCanvas = {
+      marker: 'offscreen',
+    } as unknown as OffscreenCanvas;
+    canvas.transferControlToOffscreen = mock(() => offscreenCanvas);
+    const onMessage = mock();
+
+    createExperimentalWorkerRendererTrack({
+      canvas,
+      capabilities: webgpuCapabilities,
+      width: 640,
+      height: 360,
+      enabled: true,
+      workerFactory: () => fakeWorker,
+      onMessage,
+    });
+
+    expect(messageListener).not.toBeNull();
+    emitMessage({
+      data: {
+        type: RENDERER_WORKER_MESSAGE_TYPES.status,
+        payload: { phase: 'initialized' },
+      },
+    } as MessageEvent<unknown>);
+
+    expect(onMessage).toHaveBeenCalledWith({
+      type: RENDERER_WORKER_MESSAGE_TYPES.status,
+      payload: { phase: 'initialized' },
+    });
   });
 });
