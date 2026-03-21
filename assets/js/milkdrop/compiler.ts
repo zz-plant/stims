@@ -42,6 +42,9 @@ import type {
   MilkdropFeedbackPostEffectDescriptorPlan,
   MilkdropFidelityClass,
   MilkdropGpuDescriptorUnsupportedMarker,
+  MilkdropGpuFieldExpression,
+  MilkdropGpuFieldProgramDescriptor,
+  MilkdropGpuFieldStatement,
   MilkdropParityReport,
   MilkdropPresetAST,
   MilkdropPresetField,
@@ -376,12 +379,7 @@ const BACKEND_PARTIAL_FEATURE_GAPS: Record<
   Partial<Record<MilkdropFeatureKey, string>>
 > = {
   webgl: {},
-  webgpu: {
-    'video-echo':
-      'WebGPU still composites and presents video echo through the lower-resolution feedback ping-pong target, so echo-heavy presets remain visibly softer than WebGL.',
-    'post-effects':
-      'WebGPU still applies post effects through the lower-resolution feedback ping-pong target, so gamma, brighten/invert, and related post-processing remain visibly softer than WebGL.',
-  },
+  webgpu: {},
 };
 const BACKEND_SHADER_TEXT_GAPS: Record<
   MilkdropRenderBackend,
@@ -396,7 +394,7 @@ const BACKEND_SHADER_TEXT_GAPS: Record<
   },
   webgpu: {
     supportedSubset:
-      'WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution.',
+      'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
     unsupportedSubset:
       'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
   },
@@ -476,6 +474,216 @@ function buildSupportedExpressionIdentifierSet() {
     'thickoutline',
   ]);
   return supported;
+}
+
+const GPU_FIELD_STATE_IDENTIFIERS = new Set([
+  'x',
+  'y',
+  'rad',
+  'ang',
+  'zoom',
+  'zoomexp',
+  'rot',
+  'warp',
+  'cx',
+  'cy',
+  'sx',
+  'sy',
+  'dx',
+  'dy',
+]);
+
+const GPU_FIELD_SIGNAL_ALIAS_MAP = new Map<string, string>([
+  ['time', 'time'],
+  ['frame', 'frame'],
+  ['fps', 'fps'],
+  ['bass', 'bass'],
+  ['mid', 'mid'],
+  ['mids', 'mids'],
+  ['treb', 'treble'],
+  ['treble', 'treble'],
+  ['bass_att', 'bassAtt'],
+  ['bassatt', 'bassAtt'],
+  ['mid_att', 'midAtt'],
+  ['mids_att', 'midsAtt'],
+  ['midsatt', 'midsAtt'],
+  ['treb_att', 'trebleAtt'],
+  ['treble_att', 'trebleAtt'],
+  ['trebleatt', 'trebleAtt'],
+  ['beat', 'beat'],
+  ['beat_pulse', 'beatPulse'],
+  ['beatpulse', 'beatPulse'],
+  ['rms', 'rms'],
+  ['vol', 'vol'],
+  ['music', 'music'],
+  ['weighted_energy', 'weightedEnergy'],
+]);
+
+const GPU_FIELD_FUNCTIONS = new Set([
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'abs',
+  'sqrt',
+  'pow',
+  'mod',
+  'fmod',
+  'min',
+  'max',
+  'mix',
+  'lerp',
+  'floor',
+  'int',
+  'ceil',
+  'sqr',
+  'clamp',
+  'step',
+  'smoothstep',
+  'log',
+  'exp',
+  'sigmoid',
+  'sign',
+  'bor',
+  'band',
+  'bnot',
+  'atan2',
+  'frac',
+  'if',
+  'above',
+  'below',
+  'equal',
+]);
+
+function isGpuFieldTemporary(identifier: string) {
+  return /^q\d+$/u.test(identifier) || /^t\d+$/u.test(identifier);
+}
+
+function lowerGpuFieldIdentifier(identifier: string) {
+  const normalized = identifier.toLowerCase();
+  if (normalized === 'pi' || normalized === 'e') {
+    return normalized;
+  }
+  if (GPU_FIELD_SIGNAL_ALIAS_MAP.has(normalized)) {
+    return GPU_FIELD_SIGNAL_ALIAS_MAP.get(normalized) ?? normalized;
+  }
+  return normalized;
+}
+
+function isSupportedGpuFieldTarget(identifier: string) {
+  return (
+    GPU_FIELD_STATE_IDENTIFIERS.has(identifier) ||
+    isGpuFieldTemporary(identifier)
+  );
+}
+
+function lowerGpuFieldExpression(
+  expression: MilkdropExpressionNode,
+  allowedIdentifiers: Set<string>,
+): MilkdropGpuFieldExpression | null {
+  switch (expression.type) {
+    case 'literal':
+      return expression;
+    case 'identifier': {
+      const identifier = lowerGpuFieldIdentifier(expression.name);
+      return allowedIdentifiers.has(identifier)
+        ? { type: 'identifier', name: identifier }
+        : null;
+    }
+    case 'unary': {
+      const operand = lowerGpuFieldExpression(
+        expression.operand,
+        allowedIdentifiers,
+      );
+      return operand
+        ? {
+            type: 'unary',
+            operator: expression.operator,
+            operand,
+          }
+        : null;
+    }
+    case 'binary': {
+      const left = lowerGpuFieldExpression(expression.left, allowedIdentifiers);
+      const right = lowerGpuFieldExpression(
+        expression.right,
+        allowedIdentifiers,
+      );
+      return left && right
+        ? {
+            type: 'binary',
+            operator: expression.operator,
+            left,
+            right,
+          }
+        : null;
+    }
+    case 'call': {
+      const name = expression.name.toLowerCase();
+      if (!GPU_FIELD_FUNCTIONS.has(name)) {
+        return null;
+      }
+      const args = expression.args
+        .map((arg) => lowerGpuFieldExpression(arg, allowedIdentifiers))
+        .filter((arg): arg is MilkdropGpuFieldExpression => arg !== null);
+      if (args.length !== expression.args.length) {
+        return null;
+      }
+      return { type: 'call', name, args };
+    }
+    default:
+      return null;
+  }
+}
+
+function lowerGpuFieldProgram(
+  program: MilkdropProgramBlock,
+): MilkdropGpuFieldProgramDescriptor | null {
+  if (program.statements.length === 0) {
+    return null;
+  }
+
+  const allowedIdentifiers = new Set<string>([
+    ...GPU_FIELD_STATE_IDENTIFIERS,
+    ...GPU_FIELD_SIGNAL_ALIAS_MAP.values(),
+    'pi',
+    'e',
+  ]);
+  const temporaries = new Set<string>();
+  const statements: MilkdropGpuFieldStatement[] = [];
+
+  for (const statement of program.statements) {
+    const target = lowerGpuFieldIdentifier(statement.target);
+    if (!isSupportedGpuFieldTarget(target)) {
+      return null;
+    }
+
+    const expression = lowerGpuFieldExpression(
+      statement.expression,
+      allowedIdentifiers,
+    );
+    if (!expression) {
+      return null;
+    }
+
+    statements.push({ target, expression });
+    allowedIdentifiers.add(target);
+    if (isGpuFieldTemporary(target)) {
+      temporaries.add(target);
+    }
+  }
+
+  return {
+    kind: 'gpu-field-program',
+    statements,
+    temporaries: [...temporaries].sort(),
+    signature: JSON.stringify({
+      temporaries: [...temporaries].sort(),
+      statements,
+    }),
+  };
 }
 
 function hasLegacyMotionVectorControls(
@@ -5436,13 +5644,15 @@ function buildWebGpuDescriptorPlan({
       ),
   ];
 
+  const loweredPerPixelProgram = lowerGpuFieldProgram(programs.perPixel);
   const proceduralMesh: MilkdropProceduralMeshDescriptorPlan | null =
-    programs.perPixel.statements.length === 0
+    programs.perPixel.statements.length === 0 || loweredPerPixelProgram
       ? {
           kind: 'procedural-mesh',
-          requiresPerPixelProgram: false,
+          requiresPerPixelProgram: programs.perPixel.statements.length > 0,
           supportsMotionVectors:
             featureAnalysis.featuresUsed.includes('motion-vectors'),
+          fieldProgram: loweredPerPixelProgram,
         }
       : null;
 
@@ -5450,6 +5660,12 @@ function buildWebGpuDescriptorPlan({
     post.shaderPrograms.warp !== null || post.shaderPrograms.comp !== null;
   const feedbackUsesPostEffects =
     post.brighten || post.darken || post.solarize || post.invert;
+  const shaderExecution =
+    featureAnalysis.shaderTextExecution.webgpu === 'direct'
+      ? 'direct'
+      : featureAnalysis.shaderTextExecution.webgpu === 'none'
+        ? 'none'
+        : 'controls';
   const feedback: MilkdropFeedbackPostEffectDescriptorPlan | null =
     post.videoEchoEnabled ||
     post.feedbackTexture ||
@@ -5457,15 +5673,17 @@ function buildWebGpuDescriptorPlan({
     feedbackUsesPostEffects
       ? {
           kind: 'feedback-post-effect',
-          shaderExecution:
-            featureAnalysis.shaderTextExecution.webgpu === 'direct'
-              ? 'direct'
-              : featureAnalysis.shaderTextExecution.webgpu === 'none'
-                ? 'none'
-                : 'controls',
+          shaderExecution,
           usesFeedbackTexture: post.feedbackTexture,
           usesVideoEcho: post.videoEchoEnabled,
           usesPostEffects: feedbackUsesPostEffects,
+          targetResolution:
+            shaderExecution === 'direct' ||
+            post.videoEchoEnabled ||
+            post.feedbackTexture ||
+            feedbackUsesPostEffects
+              ? 'scene'
+              : 'adaptive',
           fallbackToLegacyFeedback: webgpu.evidence.some(
             (entry) =>
               entry.code === 'video-echo-gap' ||

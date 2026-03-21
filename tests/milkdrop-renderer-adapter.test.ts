@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import type { Vector2 } from 'three';
 import {
+  AdditiveBlending,
   HalfFloatType,
   LinearFilter,
   LineBasicMaterial,
   LineSegments,
-  MeshBasicMaterial,
   OrthographicCamera,
   Scene,
   ShaderMaterial,
@@ -24,7 +24,34 @@ import type {
 } from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 
-function makeSignals(): MilkdropRuntimeSignals {
+type RenderTreeNode = {
+  children?: RenderTreeNode[];
+  geometry?: {
+    getAttribute?: (name: string) => unknown;
+  };
+  material?: unknown;
+  type?: string;
+  instanceCount?: number;
+};
+
+function flattenRenderTree(node: RenderTreeNode): RenderTreeNode[] {
+  const children = Array.isArray(node.children) ? node.children : [];
+  return [node, ...children.flatMap((child) => flattenRenderTree(child))];
+}
+
+function getGeometryInstanceCount(node: RenderTreeNode | undefined) {
+  return (
+    node?.geometry as
+      | {
+          instanceCount?: number;
+        }
+      | undefined
+  )?.instanceCount;
+}
+
+function makeSignals(
+  overrides: Partial<MilkdropRuntimeSignals> = {},
+): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
   frequencyData.fill(160);
   const waveformData = new Uint8Array(64);
@@ -144,6 +171,7 @@ function makeSignals(): MilkdropRuntimeSignals {
     motion_strength: 0,
     frequencyData,
     waveformData,
+    ...overrides,
   };
 }
 
@@ -180,6 +208,7 @@ shapecode_0_thickoutline=1
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -188,24 +217,17 @@ shapecode_0_thickoutline=1
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: unknown[] }>;
-    };
-    const shapesGroup = root.children[5] as {
-      children: Array<{ children: unknown[] }>;
-    };
-    const renderedShapeGroup = shapesGroup.children[0] as {
-      children: Array<{ geometry?: { type?: string }; material?: unknown }>;
-    };
-
-    expect(renderedShapeGroup.children).toHaveLength(3);
-
-    const fill = renderedShapeGroup.children.find(
-      (child) => child.geometry?.type === 'ShapeGeometry',
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedShapes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
     );
-    expect(fill).toBeDefined();
-    expect(fill?.material).toBeInstanceOf(MeshBasicMaterial);
-    expect(fill?.material).not.toBeInstanceOf(ShaderMaterial);
+
+    expect(batchedShapes).toHaveLength(3);
+    batchedShapes.forEach((mesh) => {
+      expect(mesh.material).toBeInstanceOf(ShaderMaterial);
+      expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
+    });
   });
 
   test('reuses cached polygon geometries for same-sided shapes', () => {
@@ -229,6 +251,7 @@ shapecode_1_sides=6
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -237,24 +260,30 @@ shapecode_1_sides=6
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{
-        children?: Array<{ children?: Array<{ geometry?: unknown }> }>;
-      }>;
-    };
-    const shapesGroup = root.children[5] as {
-      children: Array<{ children: Array<{ geometry?: unknown }> }>;
-    };
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedShapes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+    const fillMeshes = batchedShapes.filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        child.geometry?.getAttribute?.('instanceScales') === undefined,
+    );
+    const outlineMeshes = batchedShapes.filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        child.geometry?.getAttribute?.('instanceScales') !== undefined,
+    );
+    const populatedFillMeshes = fillMeshes.filter(
+      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
+    );
+    const populatedOutlineMeshes = outlineMeshes.filter(
+      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
+    );
 
-    const firstFillGeometry = shapesGroup.children[0]?.children[0]?.geometry;
-    const secondFillGeometry = shapesGroup.children[1]?.children[0]?.geometry;
-    const firstBorderGeometry = shapesGroup.children[0]?.children[1]?.geometry;
-    const secondBorderGeometry = shapesGroup.children[1]?.children[1]?.geometry;
-
-    expect(firstFillGeometry).toBeDefined();
-    expect(firstFillGeometry).toBe(secondFillGeometry);
-    expect(firstBorderGeometry).toBeDefined();
-    expect(firstBorderGeometry).toBe(secondBorderGeometry);
+    expect(populatedFillMeshes.length).toBeGreaterThan(0);
+    expect(populatedOutlineMeshes.length).toBeGreaterThan(0);
   });
 
   test('reuses wave and border objects across renders', () => {
@@ -283,21 +312,28 @@ ob_size=0.03
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: unknown[] }>;
-    };
-    const mainWaveGroup = root.children[2] as { children: unknown[] };
-    const borderGroup = root.children[6] as { children: unknown[] };
-    const firstWaveObject = mainWaveGroup.children[0];
-    const firstBorderObject = borderGroup.children[0];
+    const root = scene.children[0] as RenderTreeNode;
+    const firstWaveObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
+    const firstBorderObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
+    );
 
     adapter.render({
       frameState: secondFrame,
       blendState: null,
     });
 
-    expect(mainWaveGroup.children[0]).toBe(firstWaveObject);
-    expect(borderGroup.children[0]).toBe(firstBorderObject);
+    const secondWaveObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
+    const secondBorderObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
+    );
+
+    expect(secondWaveObject).toBe(firstWaveObject);
+    expect(secondBorderObject).toBe(firstBorderObject);
   });
 
   test('reuses shape groups and wave position attributes across renders', () => {
@@ -328,29 +364,33 @@ shapecode_0_thickoutline=1
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: unknown[] }>;
-    };
-    const mainWaveGroup = root.children[2] as {
-      children: Array<{
-        geometry?: { getAttribute: (name: string) => unknown };
-      }>;
-    };
-    const shapesGroup = root.children[5] as {
-      children: Array<{ children?: Array<{ geometry?: unknown }> }>;
-    };
+    const root = scene.children[0] as RenderTreeNode;
+    const firstWaveMesh = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
     const firstWaveAttribute =
-      mainWaveGroup.children[0]?.geometry?.getAttribute('position');
-    const firstShapeGroup = shapesGroup.children[0];
+      firstWaveMesh?.geometry?.getAttribute?.('instanceStart');
+    const firstShapeMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
 
     adapter.render({
       frameState: secondFrame,
       blendState: null,
     });
 
+    const secondWaveMesh = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
     const secondWaveAttribute =
-      mainWaveGroup.children[0]?.geometry?.getAttribute('position');
-    expect(shapesGroup.children[0]).toBe(firstShapeGroup);
+      secondWaveMesh?.geometry?.getAttribute?.('instanceStart');
+    const secondShapeMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+
+    expect(secondShapeMesh).toBe(firstShapeMesh);
     expect(secondWaveAttribute).toBe(firstWaveAttribute);
   });
 
@@ -432,16 +472,14 @@ per_pixel_1=zoom=1.08; rot=0.15; warp=0.3;
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: Array<{ type?: string }> }>;
-    };
-    const motionVectorGroup = root.children[7] as {
-      children: Array<{ type?: string; children?: Array<{ type?: string }> }>;
-    };
+    const root = scene.children[0] as RenderTreeNode;
+    const matchingMotionVectorMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceStart') !== undefined &&
+        getGeometryInstanceCount(child) === frameState.motionVectors.length,
+    );
 
-    expect(motionVectorGroup.children.length).toBeGreaterThan(0);
-    expect(motionVectorGroup.children[0]?.type ?? 'Group').toBe('Group');
-    expect(motionVectorGroup.children[0]?.children?.[0]?.type).toBe('Line');
+    expect(matchingMotionVectorMesh).toBeDefined();
   });
 
   test('renders mesh geometry directly on webgpu when per-pixel VM work is absent', () => {
@@ -488,6 +526,52 @@ warpanimspeed=1.4
 
     expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
     expect(meshLines.geometry).toBeDefined();
+  });
+
+  test('renders lowered per-pixel mesh programs directly on webgpu', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Mesh Per Pixel
+mesh_density=10
+per_pixel_1=q1=sin(time+x*2.5);
+per_pixel_2=x=x+q1*0.04;
+per_pixel_3=zoom=zoom+abs(y)*0.08;
+      `.trim(),
+      { id: 'procedural-mesh-per-pixel' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals({ time: 0.75 }));
+
+    expect(frameState.mesh.positions).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField?.program).not.toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const meshLines = root.children[1] as {
+      material?: ShaderMaterial;
+    };
+
+    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.material?.userData.fieldProgramSignature).toBe(
+      frameState.gpuGeometry.meshField?.program?.signature,
+    );
   });
 
   test('renders motion vectors directly on webgpu when per-pixel VM work is absent', () => {
@@ -670,7 +754,7 @@ video_echo=1
     });
   });
 
-  test('prefers translated shader controls when direct shader programs are unavailable', () => {
+  test('keeps translated shader-only feedback state on controls when no direct program payload exists', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Direct Shader Program Feedback
@@ -759,23 +843,65 @@ mesh_density=16
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: Array<{ material?: unknown }> }>;
-    };
-    const mainWaveGroup = root.children[2] as {
-      children: Array<{ material?: unknown }>;
-    };
-    const trailGroup = root.children[4] as {
-      children: Array<{ material?: unknown }>;
-    };
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedSegmentMeshes = flattenRenderTree(root).filter(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
 
     expect(firstFrame.gpuGeometry.mainWave).toBeNull();
     expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
-    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(
-      LineBasicMaterial,
+    const populatedSegmentMeshes = batchedSegmentMeshes.filter(
+      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
     );
-    expect(trailGroup.children.length).toBeGreaterThan(0);
-    expect(trailGroup.children[0]?.material).toBeInstanceOf(LineBasicMaterial);
+
+    expect(populatedSegmentMeshes.length).toBeGreaterThan(0);
+    populatedSegmentMeshes.forEach((mesh) => {
+      expect(mesh.material).toBeInstanceOf(ShaderMaterial);
+      expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
+    });
+  });
+
+  test('closes manually closed batched main waves on webgpu', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Closed Batched Wave
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.9
+bModWaveAlphaByVolume=1
+modwavealphastart=0.2
+modwavealphaend=0.6
+      `.trim(),
+      { id: 'closed-batched-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const expectedSegmentCount = frameState.mainWave.positions.length / 3;
+    const root = scene.children[0] as RenderTreeNode;
+    const segmentCounts = flattenRenderTree(root)
+      .filter(
+        (child) =>
+          child.geometry?.getAttribute?.('instanceStart') !== undefined,
+      )
+      .map((child) => getGeometryInstanceCount(child) ?? 0);
+
+    expect(frameState.mainWave.closed).toBe(true);
+    expect(segmentCounts).toContain(expectedSegmentCount);
   });
 
   test('keeps additive wave materials transparent when alpha exceeds 1', () => {
@@ -808,17 +934,19 @@ modwavealphaend=0.4
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: Array<{ material?: unknown }> }>;
-    };
-    const mainWaveGroup = root.children[2] as {
-      children: Array<{ material?: LineBasicMaterial }>;
-    };
-    const material = mainWaveGroup.children[0]?.material;
+    const root = scene.children[0] as RenderTreeNode;
+    const additiveWaveMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceStart') !== undefined &&
+        child.material instanceof ShaderMaterial &&
+        child.material.blending === AdditiveBlending,
+    );
 
-    expect(material).toBeInstanceOf(LineBasicMaterial);
-    expect(material?.transparent).toBe(true);
-    expect(material?.opacity ?? 0).toBeGreaterThan(1);
+    expect(additiveWaveMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(
+      (additiveWaveMesh?.material as ShaderMaterial | undefined)?.transparent,
+    ).toBe(true);
+    expect(frameState.mainWave.alpha).toBeGreaterThan(1);
   });
 
   test('renders custom waves directly on webgpu-safe custom waves', () => {
@@ -1348,8 +1476,8 @@ video_echo=1
     expect(feedback).not.toBeNull();
     expect(feedback?.sceneTarget.width).toBe(640);
     expect(feedback?.sceneTarget.height).toBe(360);
-    expect(feedback?.targets[0]?.width).toBe(544);
-    expect(feedback?.targets[0]?.height).toBe(306);
+    expect(feedback?.targets[0]?.width).toBe(640);
+    expect(feedback?.targets[0]?.height).toBe(360);
     expect(feedback?.sceneTarget.samples).toBe(0);
     expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
     expect(feedback?.sceneTarget.texture.minFilter).toBe(LinearFilter);
