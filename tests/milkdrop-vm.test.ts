@@ -10,11 +10,27 @@ function makeSignals({
   beatPulse = 0.1,
   frequencyValue = 160,
   time = frame / 60,
+  bass = 0.7,
+  bassAtt = 0.6,
+  mid = 0.5,
+  mids = 0.5,
+  midsAtt = 0.45,
+  treb = 0.4,
+  treble = 0.4,
+  trebleAtt = 0.35,
 }: {
   frame?: number;
   beatPulse?: number;
   frequencyValue?: number;
   time?: number;
+  bass?: number;
+  bassAtt?: number;
+  mid?: number;
+  mids?: number;
+  midsAtt?: number;
+  treb?: number;
+  treble?: number;
+  trebleAtt?: number;
 } = {}): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
   frequencyData.fill(frequencyValue);
@@ -24,19 +40,19 @@ function makeSignals({
     deltaMs: 16.67,
     frame,
     fps: 60,
-    bass: 0.7,
-    mid: 0.5,
-    mids: 0.5,
-    treb: 0.4,
-    treble: 0.4,
-    bassAtt: 0.6,
-    bass_att: 0.6,
-    mid_att: 0.45,
-    midsAtt: 0.45,
-    mids_att: 0.45,
-    treb_att: 0.35,
-    trebleAtt: 0.35,
-    treble_att: 0.35,
+    bass,
+    mid,
+    mids,
+    treb,
+    treble,
+    bassAtt,
+    bass_att: bassAtt,
+    mid_att: midsAtt,
+    midsAtt,
+    mids_att: midsAtt,
+    treb_att: trebleAtt,
+    trebleAtt,
+    treble_att: trebleAtt,
     rms: 0.5,
     vol: 0.5,
     music: 0.58,
@@ -533,6 +549,63 @@ per_pixel_1=zoom=1.06 + beat_pulse * 0.05; rot=rot + 0.04; warp=0.24 + bass_att 
     expect(second.motionVectors[0]?.positions).not.toEqual(
       first.motionVectors[0]?.positions,
     );
+  });
+
+  test('builds Rovastar legacy motion vectors from the declared lattice without mesh-history drift', () => {
+    const source = readFileSync(
+      join(
+        process.cwd(),
+        'public',
+        'milkdrop-presets',
+        'rovastar-parallel-universe.milk',
+      ),
+      'utf8',
+    );
+    const preset = compileMilkdropPresetSource(source, {
+      id: 'rovastar-parallel-universe',
+      title: 'Rovastar - Parallel Universe',
+      origin: 'bundled',
+    });
+
+    const warmedVm = createMilkdropVM(preset);
+    warmedVm.step(
+      makeSignals({
+        frame: 1,
+        bass: 0.2,
+        bassAtt: 0.2,
+      }),
+    );
+    const warmedFrame = warmedVm.step(
+      makeSignals({
+        frame: 2,
+        bass: 1.4,
+        bassAtt: 1.35,
+      }),
+    );
+
+    const freshFrame = createMilkdropVM(preset).step(
+      makeSignals({
+        frame: 2,
+        bass: 1.4,
+        bassAtt: 1.35,
+      }),
+    );
+
+    expect(warmedFrame.variables.motion_vectors_x).toBeCloseTo(12, 6);
+    expect(warmedFrame.variables.motion_vectors_y).toBeCloseTo(9, 6);
+    expect(warmedFrame.variables.mv_l).toBeCloseTo(4.4, 6);
+    expect(warmedFrame.motionVectors.length).toBeGreaterThan(100);
+    expect(warmedFrame.motionVectors).toEqual(freshFrame.motionVectors);
+
+    const sampleVector = warmedFrame.motionVectors[40];
+    expect(sampleVector?.color.r).toBeCloseTo(1, 6);
+    expect(sampleVector?.alpha).toBeCloseTo(0, 6);
+
+    const dx =
+      (sampleVector?.positions[3] ?? 0) - (sampleVector?.positions[0] ?? 0);
+    const dy =
+      (sampleVector?.positions[4] ?? 0) - (sampleVector?.positions[1] ?? 0);
+    expect(Math.hypot(dx, dy)).toBeGreaterThan(0.4);
   });
 
   test('warp animation speed changes per-pixel mesh deformation over time', () => {

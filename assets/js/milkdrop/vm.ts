@@ -972,21 +972,8 @@ class MilkdropPresetVM implements MilkdropVM {
     return null;
   }
 
-  private buildGpuGeometryHints(): MilkdropGpuGeometryHints {
-    return {
-      mainWave: null,
-      trailWaves: [],
-      customWaves: [],
-      meshField: this.getProceduralMeshFieldVisual(),
-      motionVectorField: this.getProceduralMotionVectorFieldVisual(),
-    };
-  }
-
-  private buildMotionVectors(
-    signals: MilkdropRuntimeSignals,
-    meshField: MeshField,
-  ): MilkdropMotionVectorVisual[] {
-    const hasLegacyMotionVectorControls =
+  private hasLegacyMotionVectorControls() {
+    return (
       Math.abs(this.state.mv_dx ?? 0) > 0.0001 ||
       Math.abs(this.state.mv_dy ?? 0) > 0.0001 ||
       Math.abs(this.state.mv_l ?? 0) > 0.0001 ||
@@ -999,25 +986,26 @@ class MilkdropPresetVM implements MilkdropVM {
         (statement) =>
           statement.target === 'motion_vectors_x' ||
           statement.target === 'motion_vectors_y',
-      );
-
-    if (
-      (this.state.motion_vectors ?? 0) < 0.5 &&
-      !hasLegacyMotionVectorControls
-    ) {
-      return [];
-    }
-
-    const countX = clamp(
-      Math.round(this.state.motion_vectors_x ?? 16),
-      1,
-      MAX_MOTION_VECTOR_COLUMNS,
+      )
     );
-    const countY = clamp(
-      Math.round(this.state.motion_vectors_y ?? 12),
-      1,
-      MAX_MOTION_VECTOR_ROWS,
-    );
+  }
+
+  private getMotionVectorGridCounts() {
+    return {
+      countX: clamp(
+        Math.round(this.state.motion_vectors_x ?? 16),
+        1,
+        MAX_MOTION_VECTOR_COLUMNS,
+      ),
+      countY: clamp(
+        Math.round(this.state.motion_vectors_y ?? 12),
+        1,
+        MAX_MOTION_VECTOR_ROWS,
+      ),
+    };
+  }
+
+  private getMotionVectorStyle(hasLegacyMotionVectorControls: boolean) {
     const colorValue = color(
       this.state.mv_r ?? 1,
       this.state.mv_g ?? 1,
@@ -1029,11 +1017,15 @@ class MilkdropPresetVM implements MilkdropVM {
       hasLegacyMotionVectorControls ? 0 : 0.02,
       1,
     );
-    const vectors: MilkdropMotionVectorVisual[] = [];
-    const previousField = this.lastMeshField;
-    const density = meshField.density;
-    const hasPerPixelPrograms =
-      this.preset.ir.programs.perPixel.statements.length > 0;
+
+    return { alpha, colorValue };
+  }
+
+  private buildLegacyMotionVectors(
+    signals: MilkdropRuntimeSignals,
+  ): MilkdropMotionVectorVisual[] {
+    const { countX, countY } = this.getMotionVectorGridCounts();
+    const { alpha, colorValue } = this.getMotionVectorStyle(true);
     const legacyOffsetX = clamp(this.state.mv_dx ?? 0, -1, 1);
     const legacyOffsetY = clamp(this.state.mv_dy ?? 0, -1, 1);
     const legacyLength = Math.max(0, this.state.mv_l ?? 0);
@@ -1041,17 +1033,72 @@ class MilkdropPresetVM implements MilkdropVM {
       Math.min(2 / Math.max(countX, 1), 2 / Math.max(countY, 1)) * 0.625;
     const explicitLegacyMagnitude =
       legacyLength <= 1 ? legacyLength : legacyLength * legacyCellScale;
+    const vectors: MilkdropMotionVectorVisual[] = [];
 
     for (let row = 0; row < countY; row += 1) {
       for (let col = 0; col < countX; col += 1) {
         const sourceBaseX = countX === 1 ? 0 : (col / (countX - 1)) * 2 - 1;
         const sourceBaseY = countY === 1 ? 0 : (row / (countY - 1)) * 2 - 1;
-        const sourceX = hasLegacyMotionVectorControls
-          ? clamp(sourceBaseX + legacyOffsetX, -1, 1)
-          : sourceBaseX;
-        const sourceY = hasLegacyMotionVectorControls
-          ? clamp(sourceBaseY + legacyOffsetY, -1, 1)
-          : sourceBaseY;
+        const sourceX = clamp(sourceBaseX + legacyOffsetX, -1, 1);
+        const sourceY = clamp(sourceBaseY + legacyOffsetY, -1, 1);
+        const currentPoint = this.transformMeshPoint(signals, sourceX, sourceY);
+        const baseDx = (currentPoint.x - sourceX) * 1.35;
+        const baseDy = (currentPoint.y - sourceY) * 1.35;
+        const baseMagnitude = Math.hypot(baseDx, baseDy);
+        let dx = clamp(baseDx, -0.24, 0.24);
+        let dy = clamp(baseDy, -0.24, 0.24);
+
+        if (explicitLegacyMagnitude > 0.0001) {
+          if (baseMagnitude < 0.0001) {
+            continue;
+          }
+          const normalizedX = baseDx / baseMagnitude;
+          const normalizedY = baseDy / baseMagnitude;
+          dx = normalizedX * explicitLegacyMagnitude;
+          dy = normalizedY * explicitLegacyMagnitude;
+        }
+
+        const magnitude = Math.hypot(dx, dy);
+        if (magnitude < 0.002) {
+          continue;
+        }
+
+        vectors.push({
+          positions: [
+            currentPoint.x - dx * 0.45,
+            currentPoint.y - dy * 0.45,
+            0.18,
+            currentPoint.x + dx,
+            currentPoint.y + dy,
+            0.18,
+          ],
+          color: colorValue,
+          alpha,
+          thickness: clamp(1 + magnitude * 10, 1, 4),
+          additive: false,
+        });
+      }
+    }
+
+    return vectors;
+  }
+
+  private buildDerivedMotionVectors(
+    signals: MilkdropRuntimeSignals,
+    meshField: MeshField,
+  ): MilkdropMotionVectorVisual[] {
+    const { countX, countY } = this.getMotionVectorGridCounts();
+    const { alpha, colorValue } = this.getMotionVectorStyle(false);
+    const vectors: MilkdropMotionVectorVisual[] = [];
+    const previousField = this.lastMeshField;
+    const density = meshField.density;
+    const hasPerPixelPrograms =
+      this.preset.ir.programs.perPixel.statements.length > 0;
+
+    for (let row = 0; row < countY; row += 1) {
+      for (let col = 0; col < countX; col += 1) {
+        const sourceX = countX === 1 ? 0 : (col / (countX - 1)) * 2 - 1;
+        const sourceY = countY === 1 ? 0 : (row / (countY - 1)) * 2 - 1;
         const fieldCol = Math.round((sourceX + 1) * 0.5 * (density - 1));
         const fieldRow = Math.round((sourceY + 1) * 0.5 * (density - 1));
         const index = fieldRow * density + fieldCol;
@@ -1070,26 +1117,14 @@ class MilkdropPresetVM implements MilkdropVM {
         const historyDy = hasPerPixelPrograms
           ? (currentPoint.y - previous.y) * 1.1
           : 0;
-        const baseDx = sourceDx + historyDx;
-        const baseDy = sourceDy + historyDy;
-        const baseMagnitude = Math.hypot(baseDx, baseDy);
-        let dx = clamp(baseDx, -0.24, 0.24);
-        let dy = clamp(baseDy, -0.24, 0.24);
-
-        if (hasLegacyMotionVectorControls && explicitLegacyMagnitude > 0.0001) {
-          if (baseMagnitude < 0.0001) {
-            continue;
-          }
-          const normalizedX = baseDx / baseMagnitude;
-          const normalizedY = baseDy / baseMagnitude;
-          dx = normalizedX * explicitLegacyMagnitude;
-          dy = normalizedY * explicitLegacyMagnitude;
-        }
-
+        const dx = clamp(sourceDx + historyDx, -0.24, 0.24);
+        const dy = clamp(sourceDy + historyDy, -0.24, 0.24);
         const magnitude = Math.hypot(dx, dy);
+
         if (magnitude < 0.002) {
           continue;
         }
+
         vectors.push({
           positions: [
             currentPoint.x - dx * 0.45,
@@ -1100,18 +1135,44 @@ class MilkdropPresetVM implements MilkdropVM {
             0.18,
           ],
           color: colorValue,
-          alpha: hasLegacyMotionVectorControls
-            ? alpha
-            : clamp(alpha * (0.75 + magnitude * 2.2), 0.02, 1),
-          thickness: hasLegacyMotionVectorControls
-            ? clamp(1 + magnitude * 10, 1, 4)
-            : clamp(1 + magnitude * 18, 1, 4),
+          alpha: clamp(alpha * (0.75 + magnitude * 2.2), 0.02, 1),
+          thickness: clamp(1 + magnitude * 18, 1, 4),
           additive: false,
         });
       }
     }
 
     return vectors;
+  }
+
+  private buildGpuGeometryHints(): MilkdropGpuGeometryHints {
+    return {
+      mainWave: null,
+      trailWaves: [],
+      customWaves: [],
+      meshField: this.getProceduralMeshFieldVisual(),
+      motionVectorField: this.getProceduralMotionVectorFieldVisual(),
+    };
+  }
+
+  private buildMotionVectors(
+    signals: MilkdropRuntimeSignals,
+    meshField: MeshField,
+  ): MilkdropMotionVectorVisual[] {
+    const hasLegacyMotionVectorControls = this.hasLegacyMotionVectorControls();
+
+    if (
+      (this.state.motion_vectors ?? 0) < 0.5 &&
+      !hasLegacyMotionVectorControls
+    ) {
+      return [];
+    }
+
+    if (hasLegacyMotionVectorControls) {
+      return this.buildLegacyMotionVectors(signals);
+    }
+
+    return this.buildDerivedMotionVectors(signals, meshField);
   }
 
   private buildShapes(signals: MilkdropRuntimeSignals): MilkdropShapeVisual[] {
