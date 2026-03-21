@@ -353,6 +353,36 @@ function buildCompatibilitySnapshot(
       unsupportedKeys: compiled.ir.compatibility.unsupportedKeys,
       warnings: compiled.ir.compatibility.warnings,
       featuresUsed: compiled.ir.compatibility.featureAnalysis.featuresUsed,
+      gpuDescriptorPlan: {
+        routing: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
+        proceduralWaves:
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralWaves,
+        proceduralMesh:
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh,
+        feedback: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+          ? {
+              kind: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+                .kind,
+              shaderExecution:
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+                  .shaderExecution,
+              usesFeedbackTexture:
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+                  .usesFeedbackTexture,
+              usesVideoEcho:
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+                  .usesVideoEcho,
+              usesPostEffects:
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+                  .usesPostEffects,
+              fallbackToLegacyFeedback:
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+                  .fallbackToLegacyFeedback,
+            }
+          : null,
+        unsupported:
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.unsupported,
+      },
       backends: {
         webgl: {
           status: compiled.ir.compatibility.backends.webgl.status,
