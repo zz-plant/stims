@@ -113,9 +113,11 @@ function sampleProceduralAudioSource(
   signals: MilkdropRuntimeSignals,
   source: MilkdropProceduralAudioSource,
   sampleT: number,
+  audioData?: Uint8Array,
 ) {
   const waveformData = signals.waveformData ?? signals.frequencyData;
-  const data = source === 'spectrum' ? signals.frequencyData : waveformData;
+  const data =
+    audioData ?? (source === 'spectrum' ? signals.frequencyData : waveformData);
   if (data.length === 0) {
     return source === 'spectrum' ? 0 : 0.5;
   }
@@ -156,6 +158,7 @@ function updateProceduralAudioBuffer(
   sampleCount: number,
   source: MilkdropProceduralAudioSource,
   signals: MilkdropRuntimeSignals,
+  audioData?: Uint8Array,
 ) {
   const safeCount = Math.max(2, Math.round(sampleCount));
   const array = buffer.array as Float32Array;
@@ -165,6 +168,7 @@ function updateProceduralAudioBuffer(
       signals,
       source,
       index / Math.max(1, safeCount - 1),
+      audioData,
     );
     const previousValue = array[offset] ?? nextValue;
     array[offset] = nextValue;
@@ -478,6 +482,7 @@ class ProceduralWaveLineObject {
       wave.sampleCount,
       wave.audioSource,
       signals,
+      wave.audioData,
     );
     this.uniforms.centerX.value = wave.centerX;
     this.uniforms.centerY.value = wave.centerY;

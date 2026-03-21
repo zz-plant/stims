@@ -604,8 +604,8 @@ class MilkdropPresetVM implements MilkdropVM {
     return quantizedX * 4096 + quantizedY;
   }
 
-  private supportsProceduralWave(drawMode: 'line' | 'dots') {
-    return this.renderBackend === 'webgpu' && drawMode === 'line';
+  private supportsProceduralWave(_drawMode: 'line' | 'dots') {
+    return false;
   }
 
   private supportsProceduralCustomWave(
@@ -905,6 +905,7 @@ class MilkdropPresetVM implements MilkdropVM {
           scale,
           mystery,
           audioSource: 'waveform',
+          audioData: new Uint8Array(waveformData),
           color: finalWaveColor,
           alpha,
           additive,

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Vector2 } from 'three';
 import {
   AdditiveBlending,
+  Group,
   HalfFloatType,
   LinearFilter,
   LineBasicMaterial,
@@ -29,6 +30,26 @@ type RenderTreeNode = {
   material?: unknown;
   type?: string;
   instanceCount?: number;
+};
+
+type TestProceduralWaveBatcher = {
+  renderProceduralWaveGroup: (
+    target: 'main-wave' | 'trail-waves',
+    group: Group,
+    waves: Array<{ audioData?: Uint8Array }>,
+    signals: MilkdropRuntimeSignals,
+    interaction?: null,
+  ) => boolean;
+  proceduralWaveTargets: Map<
+    string,
+    {
+      objects: Array<{
+        audioBuffer: {
+          array: Float32Array;
+        };
+      }>;
+    }
+  >;
 };
 
 function flattenRenderTree(node: RenderTreeNode): RenderTreeNode[] {
@@ -748,7 +769,7 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(0.1, 0.0, 0.0);
     expect(compositeStates[0]?.shaderPrograms.comp).toBeNull();
   });
 
-  test('renders waveform-driven main wave and trails on webgpu line-wave presets', () => {
+  test('keeps webgpu line-wave presets on cpu-expanded main-wave geometry', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Wave Renderer
@@ -792,9 +813,76 @@ mesh_density=16
     const root = scene.children[0] as RenderTreeNode;
     const sceneNodes = flattenRenderTree(root);
 
-    expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
-    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(1);
+    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
     expect(sceneNodes.length).toBeGreaterThan(0);
+  });
+
+  test('preserves saved audio snapshots for webgpu procedural trail waves', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Trail Audio Snapshot
+wave_mode=0
+wave_usedots=0
+      `.trim(),
+      { id: 'trail-audio-snapshot' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const savedWaveform = new Uint8Array([0, 255, 0, 255]);
+    frameState.gpuGeometry.trailWaves = [
+      {
+        mode: 0,
+        sampleCount: savedWaveform.length,
+        centerX: 0,
+        centerY: 0,
+        scale: 1,
+        mystery: 0,
+        audioSource: 'waveform',
+        audioData: savedWaveform,
+        color: { r: 1, g: 1, b: 1 },
+        alpha: 1,
+        additive: false,
+      },
+    ];
+
+    const currentSignals = makeSignals();
+    currentSignals.waveformData = new Uint8Array(savedWaveform.length);
+    currentSignals.waveformData.fill(255);
+    frameState.signals = currentSignals;
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    const batcher = (
+      adapter as unknown as {
+        batcher: TestProceduralWaveBatcher;
+      }
+    ).batcher;
+    batcher.renderProceduralWaveGroup(
+      'trail-waves',
+      new Group(),
+      frameState.gpuGeometry.trailWaves,
+      currentSignals,
+      null,
+    );
+    const trailTarget = batcher?.proceduralWaveTargets?.get?.(
+      'procedural-wave:trail-waves',
+    );
+    const audioBuffer = trailTarget?.objects?.[0]?.audioBuffer;
+
+    expect(audioBuffer).toBeDefined();
+    if (!audioBuffer) {
+      throw new Error('Expected procedural trail audio buffer');
+    }
+    expect(Array.from(audioBuffer.array.slice(0, 8))).toEqual([
+      0, 0, 1, 0, 0, 0, 1, 0,
+    ]);
   });
 
   test('keeps additive wave materials transparent when alpha exceeds 1', () => {

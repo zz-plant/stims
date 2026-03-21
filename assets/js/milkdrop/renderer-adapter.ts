@@ -1247,7 +1247,11 @@ function syncProceduralInteractionUniforms(
 
 function syncProceduralWavePayloadMetadata(
   object: Line,
-  payload: { sampleCount: number; audioSource: string },
+  payload: {
+    sampleCount: number;
+    audioSource: string;
+    audioData?: Uint8Array;
+  },
 ) {
   object.userData.proceduralAudioPayload = payload;
 }
@@ -1303,6 +1307,7 @@ function syncProceduralWaveObject(
   syncProceduralWavePayloadMetadata(next, {
     sampleCount: wave.sampleCount,
     audioSource: wave.audioSource,
+    audioData: wave.audioData,
   });
 
   const material = next.material as ShaderMaterial;
@@ -1363,6 +1368,7 @@ function syncProceduralCustomWaveObject(
   syncProceduralWavePayloadMetadata(next, {
     sampleCount: wave.sampleCount,
     audioSource: wave.audioSource,
+    audioData: wave.audioData,
   });
 
   const material = next.material as ShaderMaterial;

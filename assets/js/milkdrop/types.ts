@@ -653,6 +653,7 @@ export type MilkdropProceduralWaveVisual = {
   scale: number;
   mystery: number;
   audioSource: MilkdropProceduralAudioSource;
+  audioData?: Uint8Array;
   color: MilkdropColor;
   alpha: number;
   additive: boolean;
@@ -665,6 +666,7 @@ export type MilkdropProceduralCustomWaveVisual = {
   scale: number;
   mystery: number;
   audioSource: MilkdropProceduralAudioSource;
+  audioData?: Uint8Array;
   color: MilkdropColor;
   alpha: number;
   additive: boolean;

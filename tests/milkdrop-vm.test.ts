@@ -466,7 +466,7 @@ warpanimspeed=1.5
     expect(frameState.gpuGeometry.motionVectorField?.countX).toBe(6);
   });
 
-  test('keeps waveform-driven main-wave geometry on webgpu line-wave presets', () => {
+  test('keeps main-wave procedural descriptors disabled until webgpu mode parity lands', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Wave Hints
@@ -486,14 +486,14 @@ mesh_density=16
     const firstFrame = vm.step(makeSignals({ frame: 1, time: 0.15 }));
     const secondFrame = vm.step(makeSignals({ frame: 2, time: 0.3 }));
 
-    expect(firstFrame.mainWave.positions).toHaveLength(0);
-    expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
+    expect(firstFrame.mainWave.positions.length).toBeGreaterThan(0);
+    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
     expect(firstFrame.gpuGeometry.trailWaves).toHaveLength(0);
-    expect(secondFrame.mainWave.positions).toHaveLength(0);
-    expect(secondFrame.gpuGeometry.mainWave).not.toBeNull();
-    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(1);
+    expect(secondFrame.mainWave.positions.length).toBeGreaterThan(0);
+    expect(secondFrame.gpuGeometry.mainWave).toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
     expect(secondFrame.trails.length).toBeGreaterThan(0);
-    expect(secondFrame.trails[0]?.positions).toHaveLength(0);
+    expect(secondFrame.trails[0]?.positions.length).toBeGreaterThan(0);
   });
 
   test('builds closed waveform loops from time-domain data and volume-modulated alpha', () => {
