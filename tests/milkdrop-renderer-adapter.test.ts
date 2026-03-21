@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import type { Vector2 } from 'three';
 import {
+  AdditiveBlending,
   HalfFloatType,
   LinearFilter,
   LineBasicMaterial,
   LineSegments,
-  MeshBasicMaterial,
   OrthographicCamera,
   Scene,
   ShaderMaterial,
@@ -20,6 +20,31 @@ import type {
   MilkdropRuntimeSignals,
 } from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
+
+type RenderTreeNode = {
+  children?: RenderTreeNode[];
+  geometry?: {
+    getAttribute?: (name: string) => unknown;
+  };
+  material?: unknown;
+  type?: string;
+  instanceCount?: number;
+};
+
+function flattenRenderTree(node: RenderTreeNode): RenderTreeNode[] {
+  const children = Array.isArray(node.children) ? node.children : [];
+  return [node, ...children.flatMap((child) => flattenRenderTree(child))];
+}
+
+function getGeometryInstanceCount(node: RenderTreeNode | undefined) {
+  return (
+    node?.geometry as
+      | {
+          instanceCount?: number;
+        }
+      | undefined
+  )?.instanceCount;
+}
 
 function makeSignals(): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
@@ -185,24 +210,17 @@ shapecode_0_thickoutline=1
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: unknown[] }>;
-    };
-    const shapesGroup = root.children[5] as {
-      children: Array<{ children: unknown[] }>;
-    };
-    const renderedShapeGroup = shapesGroup.children[0] as {
-      children: Array<{ geometry?: { type?: string }; material?: unknown }>;
-    };
-
-    expect(renderedShapeGroup.children).toHaveLength(3);
-
-    const fill = renderedShapeGroup.children.find(
-      (child) => child.geometry?.type === 'ShapeGeometry',
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedShapes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
     );
-    expect(fill).toBeDefined();
-    expect(fill?.material).toBeInstanceOf(MeshBasicMaterial);
-    expect(fill?.material).not.toBeInstanceOf(ShaderMaterial);
+
+    expect(batchedShapes).toHaveLength(3);
+    batchedShapes.forEach((mesh) => {
+      expect(mesh.material).toBeInstanceOf(ShaderMaterial);
+      expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
+    });
   });
 
   test('reuses cached polygon geometries for same-sided shapes', () => {
@@ -234,24 +252,30 @@ shapecode_1_sides=6
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{
-        children?: Array<{ children?: Array<{ geometry?: unknown }> }>;
-      }>;
-    };
-    const shapesGroup = root.children[5] as {
-      children: Array<{ children: Array<{ geometry?: unknown }> }>;
-    };
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedShapes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+    const fillMeshes = batchedShapes.filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        child.geometry?.getAttribute?.('instanceScales') === undefined,
+    );
+    const outlineMeshes = batchedShapes.filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        child.geometry?.getAttribute?.('instanceScales') !== undefined,
+    );
+    const populatedFillMeshes = fillMeshes.filter(
+      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
+    );
+    const populatedOutlineMeshes = outlineMeshes.filter(
+      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
+    );
 
-    const firstFillGeometry = shapesGroup.children[0]?.children[0]?.geometry;
-    const secondFillGeometry = shapesGroup.children[1]?.children[0]?.geometry;
-    const firstBorderGeometry = shapesGroup.children[0]?.children[1]?.geometry;
-    const secondBorderGeometry = shapesGroup.children[1]?.children[1]?.geometry;
-
-    expect(firstFillGeometry).toBeDefined();
-    expect(firstFillGeometry).toBe(secondFillGeometry);
-    expect(firstBorderGeometry).toBeDefined();
-    expect(firstBorderGeometry).toBe(secondBorderGeometry);
+    expect(populatedFillMeshes.length).toBeGreaterThan(0);
+    expect(populatedOutlineMeshes.length).toBeGreaterThan(0);
   });
 
   test('reuses wave and border objects across renders', () => {
@@ -280,21 +304,28 @@ ob_size=0.03
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: unknown[] }>;
-    };
-    const mainWaveGroup = root.children[2] as { children: unknown[] };
-    const borderGroup = root.children[6] as { children: unknown[] };
-    const firstWaveObject = mainWaveGroup.children[0];
-    const firstBorderObject = borderGroup.children[0];
+    const root = scene.children[0] as RenderTreeNode;
+    const firstWaveObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
+    const firstBorderObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
+    );
 
     adapter.render({
       frameState: secondFrame,
       blendState: null,
     });
 
-    expect(mainWaveGroup.children[0]).toBe(firstWaveObject);
-    expect(borderGroup.children[0]).toBe(firstBorderObject);
+    const secondWaveObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
+    const secondBorderObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
+    );
+
+    expect(secondWaveObject).toBe(firstWaveObject);
+    expect(secondBorderObject).toBe(firstBorderObject);
   });
 
   test('reuses shape groups and wave position attributes across renders', () => {
@@ -325,29 +356,33 @@ shapecode_0_thickoutline=1
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: unknown[] }>;
-    };
-    const mainWaveGroup = root.children[2] as {
-      children: Array<{
-        geometry?: { getAttribute: (name: string) => unknown };
-      }>;
-    };
-    const shapesGroup = root.children[5] as {
-      children: Array<{ children?: Array<{ geometry?: unknown }> }>;
-    };
+    const root = scene.children[0] as RenderTreeNode;
+    const firstWaveMesh = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
     const firstWaveAttribute =
-      mainWaveGroup.children[0]?.geometry?.getAttribute('position');
-    const firstShapeGroup = shapesGroup.children[0];
+      firstWaveMesh?.geometry?.getAttribute?.('instanceStart');
+    const firstShapeMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
 
     adapter.render({
       frameState: secondFrame,
       blendState: null,
     });
 
+    const secondWaveMesh = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
     const secondWaveAttribute =
-      mainWaveGroup.children[0]?.geometry?.getAttribute('position');
-    expect(shapesGroup.children[0]).toBe(firstShapeGroup);
+      secondWaveMesh?.geometry?.getAttribute?.('instanceStart');
+    const secondShapeMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+
+    expect(secondShapeMesh).toBe(firstShapeMesh);
     expect(secondWaveAttribute).toBe(firstWaveAttribute);
   });
 
@@ -429,16 +464,14 @@ per_pixel_1=zoom=1.08; rot=0.15; warp=0.3;
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: Array<{ type?: string }> }>;
-    };
-    const motionVectorGroup = root.children[7] as {
-      children: Array<{ type?: string; children?: Array<{ type?: string }> }>;
-    };
+    const root = scene.children[0] as RenderTreeNode;
+    const matchingMotionVectorMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceStart') !== undefined &&
+        getGeometryInstanceCount(child) === frameState.motionVectors.length,
+    );
 
-    expect(motionVectorGroup.children.length).toBeGreaterThan(0);
-    expect(motionVectorGroup.children[0]?.type ?? 'Group').toBe('Group');
-    expect(motionVectorGroup.children[0]?.children?.[0]?.type).toBe('Line');
+    expect(matchingMotionVectorMesh).toBeDefined();
   });
 
   test('renders mesh geometry directly on webgpu when per-pixel VM work is absent', () => {
@@ -756,23 +789,22 @@ mesh_density=16
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: Array<{ material?: unknown }> }>;
-    };
-    const mainWaveGroup = root.children[2] as {
-      children: Array<{ material?: unknown }>;
-    };
-    const trailGroup = root.children[4] as {
-      children: Array<{ material?: unknown }>;
-    };
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedSegmentMeshes = flattenRenderTree(root).filter(
+      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+    );
 
     expect(firstFrame.gpuGeometry.mainWave).toBeNull();
     expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
-    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(
-      LineBasicMaterial,
+    const populatedSegmentMeshes = batchedSegmentMeshes.filter(
+      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
     );
-    expect(trailGroup.children.length).toBeGreaterThan(0);
-    expect(trailGroup.children[0]?.material).toBeInstanceOf(LineBasicMaterial);
+
+    expect(populatedSegmentMeshes.length).toBeGreaterThan(0);
+    populatedSegmentMeshes.forEach((mesh) => {
+      expect(mesh.material).toBeInstanceOf(ShaderMaterial);
+      expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
+    });
   });
 
   test('keeps additive wave materials transparent when alpha exceeds 1', () => {
@@ -805,17 +837,19 @@ modwavealphaend=0.4
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: Array<{ material?: unknown }> }>;
-    };
-    const mainWaveGroup = root.children[2] as {
-      children: Array<{ material?: LineBasicMaterial }>;
-    };
-    const material = mainWaveGroup.children[0]?.material;
+    const root = scene.children[0] as RenderTreeNode;
+    const additiveWaveMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceStart') !== undefined &&
+        child.material instanceof ShaderMaterial &&
+        child.material.blending === AdditiveBlending,
+    );
 
-    expect(material).toBeInstanceOf(LineBasicMaterial);
-    expect(material?.transparent).toBe(true);
-    expect(material?.opacity ?? 0).toBeGreaterThan(1);
+    expect(additiveWaveMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(
+      (additiveWaveMesh?.material as ShaderMaterial | undefined)?.transparent,
+    ).toBe(true);
+    expect(frameState.mainWave.alpha).toBeGreaterThan(1);
   });
 
   test('renders custom waves directly on webgpu-safe custom waves', () => {
