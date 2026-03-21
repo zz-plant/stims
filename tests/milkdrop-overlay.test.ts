@@ -407,6 +407,119 @@ describe('milkdrop overlay browse rendering', () => {
     overlay.dispose();
   });
 
+  test('keeps the simplified default browse state focused on search and featured results', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const featuredPreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    featuredPreset.historyIndex = 0;
+    const discoveryPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
+
+    overlay.setCatalog(
+      [featuredPreset, discoveryPreset],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const search = document.querySelector(
+      '.milkdrop-overlay__search',
+    ) as HTMLInputElement | null;
+    const modeTabs = [
+      ...document.querySelectorAll('.milkdrop-overlay__browse-mode-tab'),
+    ] as HTMLButtonElement[];
+    const optionsDisclosure = document.querySelector(
+      '.milkdrop-overlay__browse-options',
+    ) as HTMLDetailsElement | null;
+    const collectionFilters = document.querySelector(
+      '.milkdrop-overlay__collection-filters',
+    ) as HTMLElement | null;
+    const browse = document.querySelector(
+      '.milkdrop-overlay__browse',
+    ) as HTMLElement | null;
+
+    expect(search?.placeholder).toBe('Search presets');
+    expect(modeTabs.map((tab) => tab.textContent?.trim())).toEqual([
+      'Featured',
+      'All presets',
+      'Recent',
+      'Favorites',
+    ]);
+    expect(
+      modeTabs
+        .find((tab) => tab.dataset.active === 'true')
+        ?.textContent?.trim(),
+    ).toBe('Featured');
+    expect(optionsDisclosure?.open).toBe(false);
+    expect(collectionFilters?.hidden).toBe(true);
+    expect(browse?.textContent).toContain('Signal Bloom');
+    expect(browse?.textContent).toContain('Aurora Drift');
+
+    overlay.dispose();
+  });
+
+  test('reveals advanced browse filters on demand and shows collections for all presets', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const classicPreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    classicPreset.tags = ['collection:classic-milkdrop'];
+    const feedbackPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
+    feedbackPreset.tags = ['collection:feedback-lab'];
+
+    overlay.setCatalog(
+      [classicPreset, feedbackPreset],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const optionsDisclosure = document.querySelector(
+      '.milkdrop-overlay__browse-options',
+    ) as HTMLDetailsElement | null;
+    const collectionFilters = document.querySelector(
+      '.milkdrop-overlay__collection-filters',
+    ) as HTMLElement | null;
+    const fidelitySelect = document.querySelector(
+      '.milkdrop-overlay__browse-options .milkdrop-overlay__rating-select',
+    ) as HTMLSelectElement | null;
+    const allPresetsTab = document.querySelector(
+      '.milkdrop-overlay__browse-mode-tab[data-mode="all"]',
+    ) as HTMLButtonElement | null;
+
+    expect(fidelitySelect?.value).toBe('all');
+    expect(collectionFilters?.hidden).toBe(true);
+
+    if (!optionsDisclosure || !allPresetsTab) {
+      throw new Error('Expected browse options disclosure and mode tabs.');
+    }
+
+    optionsDisclosure.open = true;
+    optionsDisclosure.dispatchEvent(new Event('toggle'));
+    expect(collectionFilters?.hidden).toBe(false);
+
+    optionsDisclosure.open = false;
+    optionsDisclosure.dispatchEvent(new Event('toggle'));
+    expect(collectionFilters?.hidden).toBe(true);
+
+    allPresetsTab.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(collectionFilters?.hidden).toBe(false);
+    expect(collectionFilters?.textContent).toContain('Classic MilkDrop');
+    expect(collectionFilters?.textContent).toContain('Feedback Lab');
+
+    overlay.dispose();
+  });
+
   test('keeps preset rows focused on launch metadata and compact secondary actions', () => {
     globalThis.MutationObserver = class {
       disconnect() {}
