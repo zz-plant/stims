@@ -579,8 +579,8 @@ per_pixel_3=zoom=zoom+abs(y)*0.08;
       `
 title=Procedural Mesh Center
 mesh_density=10
-per_pixel_1=cx=0.75;
-per_pixel_2=cy=0.25;
+per_pixel_1=cx=x;
+per_pixel_2=cy=y;
 per_pixel_3=sx=2;
       `.trim(),
       { id: 'procedural-mesh-center' },
@@ -626,6 +626,12 @@ per_pixel_3=sx=2;
     );
     expect(meshLines.material?.vertexShader).toContain(
       'float normalizedCenterY = milkdropNormalizeTransformCenterY(fieldCenterY);',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      'return value >= 0.0 && value <= 1.0 ? (value - 0.5) * 2.0 : value;',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      'return value >= 0.0 && value <= 1.0 ? (0.5 - value) * 2.0 : value;',
     );
     expect(meshLines.material?.vertexShader).toContain(
       '(field_x - normalizedCenterX) * fieldScaleX',

@@ -352,11 +352,11 @@ const PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS = `
   }
 
   float milkdropNormalizeTransformCenterX(float value) {
-    return (value - 0.5) * 2.0;
+    return value >= 0.0 && value <= 1.0 ? (value - 0.5) * 2.0 : value;
   }
 
   float milkdropNormalizeTransformCenterY(float value) {
-    return (0.5 - value) * 2.0;
+    return value >= 0.0 && value <= 1.0 ? (0.5 - value) * 2.0 : value;
   }
 
   float milkdropDenormalizeTransformCenterX(float value) {
