@@ -645,50 +645,13 @@ function downloadPresetFile(name: string, contents: string) {
 
 function cloneBlendState(
   frameState: MilkdropFrameState | null,
-  backend: 'webgl' | 'webgpu',
 ): MilkdropBlendState | null {
   if (!frameState) {
     return null;
   }
-  if (backend === 'webgpu') {
-    return {
-      mode: 'gpu',
-      previousFrame: frameState,
-      alpha: 1,
-    };
-  }
-  const waveform = {
-    ...frameState.mainWave,
-    positions: [...frameState.mainWave.positions],
-    color: { ...frameState.mainWave.color },
-  };
   return {
-    mode: 'cpu',
-    background: frameState.background,
-    waveform,
-    mainWave: waveform,
-    customWaves: frameState.customWaves.map((wave) => ({
-      ...wave,
-      positions: [...wave.positions],
-      color: { ...wave.color },
-    })),
-    trails: frameState.trails,
-    shapes: frameState.shapes.map((shape) => ({
-      ...shape,
-      color: { ...shape.color },
-      secondaryColor: shape.secondaryColor ? { ...shape.secondaryColor } : null,
-      borderColor: { ...shape.borderColor },
-    })),
-    borders: frameState.borders.map((border) => ({
-      ...border,
-      color: { ...border.color },
-    })),
-    motionVectors: frameState.motionVectors.map((vector) => ({
-      ...vector,
-      positions: [...vector.positions],
-      color: { ...vector.color },
-    })),
-    post: frameState.post,
+    mode: 'gpu',
+    previousFrame: frameState,
     alpha: 1,
   };
 }
@@ -821,7 +784,7 @@ export function createMilkdropExperience({
   let activePresetId = defaultPreset.source.id;
   let activeBackend: 'webgl' | 'webgpu' = 'webgl';
   let currentFrameState: MilkdropFrameState | null = null;
-  let blendState = cloneBlendState(currentFrameState, activeBackend);
+  let blendState = cloneBlendState(currentFrameState);
   let blendEndAtMs = 0;
   let autoplay = prefs.autoplay ?? false;
   let blendDuration =
@@ -1001,7 +964,7 @@ export function createMilkdropExperience({
       blendDuration > 0 &&
       estimateFrameBlendWorkload(currentFrameState) < 900
     ) {
-      blendState = cloneBlendState(currentFrameState, activeBackend);
+      blendState = cloneBlendState(currentFrameState);
       blendEndAtMs = performance.now() + blendDuration * 1000;
     } else {
       blendState = null;
@@ -1718,3 +1681,7 @@ export function createMilkdropExperience({
     },
   };
 }
+
+export const __milkdropRuntimeTestUtils = {
+  cloneBlendState,
+};

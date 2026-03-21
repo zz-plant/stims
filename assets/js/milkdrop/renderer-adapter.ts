@@ -3662,7 +3662,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.renderMotionVectors(payload.frameState);
 
     const blend = payload.blendState;
-    if (blend?.mode === 'gpu' && this.backend === 'webgpu') {
+    if (blend?.mode === 'gpu') {
       const previousFrame = blend.previousFrame;
       const blendMix = 1 - blend.alpha;
       if (
