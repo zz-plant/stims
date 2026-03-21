@@ -1,0 +1,40 @@
+MILKDROP_PRESET_VERSION=201
+TITLE=Shape Legacy Max Slot Orbit
+AUTHOR=Fixture
+zoom=1.015000
+rot=0.010000
+ob_border=1
+fOuterBorderSize=0.012000
+fOuterBorderA=0.650000
+fOuterBorderR=0.950000
+fOuterBorderG=0.850000
+fOuterBorderB=1.000000
+shapecode_32_enabled=1
+shapecode_32_sides=8
+shapecode_32_textured=1
+shapecode_32_x=0.500000
+shapecode_32_y=0.520000
+shapecode_32_rad=0.180000
+shapecode_32_ang=0.000000
+shapecode_32_tex_ang=0.150000
+shapecode_32_tex_zoom=1.100000
+shapecode_32_a=0.280000
+shapecode_32_r=0.800000
+shapecode_32_g=0.450000
+shapecode_32_b=1.000000
+shapecode_32_a2=0.050000
+shapecode_32_r2=0.200000
+shapecode_32_g2=0.100000
+shapecode_32_b2=0.600000
+shapecode_32_border_a=0.900000
+shapecode_32_border_r=1.000000
+shapecode_32_border_g=0.800000
+shapecode_32_border_b=1.000000
+shapecode_32_additive=1
+shapecode_32_thickoutline=1
+shape_32_init1=ang=0.08; x=0.50+q1*0.02; y=0.50-q2*0.02;
+shape_32_init2=tex_ang=0.12; border_a=0.84;
+shape_32_per_frame1=ang=ang+0.015+treb_att*0.01; rad=0.15+bass_att*0.05;
+shape_32_per_frame2=border_a=0.65+beat_pulse*0.25; tex_ang=tex_ang+0.02;
+per_frame_1=q1=sin(time*0.31);
+per_frame_2=q2=cos(time*0.27);

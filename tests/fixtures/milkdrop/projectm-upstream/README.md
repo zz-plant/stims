@@ -14,9 +14,11 @@ upstream `projectM` regression preset corpus.
 - Upstream license context: projectM ships `COPYING` and `LICENSE.txt` under
   the GNU LGPL 2.1-or-later terms
 - Coverage note: the upstream regression corpus at this commit does not include
-  any presets that exercise custom shape slots; Stims keeps using dedicated
-  local shape fixtures for that gap while vendoring the full upstream wave/
-  shader-oriented suite here.
+  any presets that exercise custom shape slots; Stims closes that gap with the
+  dedicated local corpus under `tests/fixtures/milkdrop/local-shape-corpus/`,
+  where shape-heavy fixtures cover shape scalar fields, init/per-frame programs,
+  legacy slot spellings, and border/thick/additive metadata while this folder
+  remains the vendored upstream wave/shader-oriented suite.
 
 Selected fixture files and hashes:
 
