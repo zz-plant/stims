@@ -687,6 +687,14 @@ function lowerGpuFieldProgram(
   };
 }
 
+const LEGACY_MOTION_VECTOR_CONTROL_TARGETS = new Set([
+  'motion_vectors_x',
+  'motion_vectors_y',
+  'mv_dx',
+  'mv_dy',
+  'mv_l',
+]);
+
 function hasLegacyMotionVectorControls(
   numericFields: Record<string, number>,
   programs?: Pick<MilkdropPresetIR['programs'], 'init' | 'perFrame'>,
@@ -704,10 +712,8 @@ function hasLegacyMotionVectorControls(
   }
 
   return [programs.init, programs.perFrame].some((block) =>
-    block.statements.some(
-      (statement) =>
-        statement.target === 'motion_vectors_x' ||
-        statement.target === 'motion_vectors_y',
+    block.statements.some((statement) =>
+      LEGACY_MOTION_VECTOR_CONTROL_TARGETS.has(statement.target),
     ),
   );
 }
