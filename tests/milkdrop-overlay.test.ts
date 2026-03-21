@@ -497,10 +497,25 @@ describe('milkdrop overlay browse rendering', () => {
     const collectionFilters = document.querySelector(
       '.milkdrop-overlay__collection-filters',
     ) as HTMLElement | null;
+    const sentinelButton = document.createElement('button');
+    sentinelButton.type = 'button';
+    sentinelButton.textContent = 'Sentinel';
+    document.body.appendChild(sentinelButton);
 
     if (!featuredTab || !allPresetsTab || !favoritesTab || !collectionFilters) {
       throw new Error('Expected browse mode tabs and collection filters.');
     }
+
+    let globalArrowHandlerTriggered = false;
+    const handleWindowArrowKey = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowRight') {
+        return;
+      }
+
+      globalArrowHandlerTriggered = true;
+      sentinelButton.focus();
+    };
+    window.addEventListener('keydown', handleWindowArrowKey);
 
     expect(featuredTab.tabIndex).toBe(0);
     expect(allPresetsTab.tabIndex).toBe(-1);
@@ -517,6 +532,8 @@ describe('milkdrop overlay browse rendering', () => {
     expect(allPresetsTab.getAttribute('aria-selected')).toBe('true');
     expect(featuredTab.tabIndex).toBe(-1);
     expect(collectionFilters.hidden).toBe(false);
+    expect(document.activeElement).toBe(allPresetsTab);
+    expect(globalArrowHandlerTriggered).toBe(false);
 
     allPresetsTab.dispatchEvent(
       new window.KeyboardEvent('keydown', {
@@ -529,6 +546,7 @@ describe('milkdrop overlay browse rendering', () => {
     expect(favoritesTab.getAttribute('aria-selected')).toBe('true');
     expect(collectionFilters.hidden).toBe(true);
 
+    window.removeEventListener('keydown', handleWindowArrowKey);
     overlay.dispose();
   });
 

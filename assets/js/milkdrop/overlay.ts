@@ -799,6 +799,7 @@ export class MilkdropOverlay {
     }
 
     event.preventDefault();
+    event.stopPropagation();
     const nextButton = this.browseModeButtons[nextIndex];
     const nextMode = nextButton?.dataset.mode as BrowseMode | undefined;
     if (!nextButton || !nextMode) {
