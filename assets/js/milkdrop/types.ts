@@ -785,6 +785,7 @@ export type MilkdropFeedbackCompositeState = {
   };
   overlayTextureSource: number;
   overlayTextureMode: number;
+  overlayTextureSampleDimension: number;
   overlayTextureAmount: number;
   overlayTextureScale: {
     x: number;
@@ -794,7 +795,9 @@ export type MilkdropFeedbackCompositeState = {
     x: number;
     y: number;
   };
+  overlayTextureVolumeSliceZ: number;
   warpTextureSource: number;
+  warpTextureSampleDimension: number;
   warpTextureAmount: number;
   warpTextureScale: {
     x: number;
@@ -804,6 +807,7 @@ export type MilkdropFeedbackCompositeState = {
     x: number;
     y: number;
   };
+  warpTextureVolumeSliceZ: number;
   signalBass: number;
   signalMid: number;
   signalTreb: number;

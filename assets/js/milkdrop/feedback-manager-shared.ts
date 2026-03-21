@@ -42,6 +42,9 @@ const MILKDROP_TEXTURE_FILES = {
   pattern: 'circuit_board_pattern.png',
   fractal: 'crystal_fractal.png',
 } as const;
+const AUX_TEXTURE_ATLAS_GRID_SIZE = 8;
+const AUX_TEXTURE_ATLAS_SLICE_COUNT =
+  AUX_TEXTURE_ATLAS_GRID_SIZE * AUX_TEXTURE_ATLAS_GRID_SIZE;
 
 function resolveTextureUrl(fileName: string) {
   const baseUrl =
@@ -214,13 +217,17 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         currentFrameBoost: { value: this.profile.currentFrameBoost },
         overlayTextureSource: { value: 0 },
         overlayTextureMode: { value: 0 },
+        overlayTextureSampleDimension: { value: 0 },
         overlayTextureAmount: { value: 0 },
         overlayTextureScale: { value: new Vector2(1, 1) },
         overlayTextureOffset: { value: new Vector2(0, 0) },
+        overlayTextureVolumeSliceZ: { value: 0 },
         warpTextureSource: { value: 0 },
+        warpTextureSampleDimension: { value: 0 },
         warpTextureAmount: { value: 0 },
         warpTextureScale: { value: new Vector2(1, 1) },
         warpTextureOffset: { value: new Vector2(0, 0) },
+        warpTextureVolumeSliceZ: { value: 0 },
         signalBass: { value: 0 },
         signalMid: { value: 0 },
         signalTreb: { value: 0 },
@@ -277,13 +284,17 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float currentFrameBoost;
         uniform float overlayTextureSource;
         uniform float overlayTextureMode;
+        uniform float overlayTextureSampleDimension;
         uniform float overlayTextureAmount;
         uniform vec2 overlayTextureScale;
         uniform vec2 overlayTextureOffset;
+        uniform float overlayTextureVolumeSliceZ;
         uniform float warpTextureSource;
+        uniform float warpTextureSampleDimension;
         uniform float warpTextureAmount;
         uniform vec2 warpTextureScale;
         uniform vec2 warpTextureOffset;
+        uniform float warpTextureVolumeSliceZ;
         uniform float signalBass;
         uniform float signalMid;
         uniform float signalTreb;
@@ -323,30 +334,53 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
         }
 
-        vec4 sampleAuxTexture(float source, vec2 uv) {
-          vec2 wrappedUv = fract(uv);
+        vec4 sampleAuxTexture2d(float source, vec2 uv) {
           if (source < 0.5) {
             return vec4(0.5, 0.5, 0.5, 1.0);
           }
           if (source < 1.5) {
-            return texture2D(noiseTex, wrappedUv);
+            return texture2D(noiseTex, uv);
           }
           if (source < 2.5) {
-            return texture2D(simplexTex, wrappedUv);
+            return texture2D(simplexTex, uv);
           }
           if (source < 3.5) {
-            return texture2D(voronoiTex, wrappedUv);
+            return texture2D(voronoiTex, uv);
           }
           if (source < 4.5) {
-            return texture2D(auraTex, wrappedUv);
+            return texture2D(auraTex, uv);
           }
           if (source < 5.5) {
-            return texture2D(causticsTex, wrappedUv);
+            return texture2D(causticsTex, uv);
           }
           if (source < 6.5) {
-            return texture2D(patternTex, wrappedUv);
+            return texture2D(patternTex, uv);
           }
-          return texture2D(fractalTex, wrappedUv);
+          return texture2D(fractalTex, uv);
+        }
+
+        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
+          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
+          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
+          vec2 tileSize = vec2(1.0 / gridSize);
+          float column = mod(sliceIndex, gridSize);
+          float row = floor(sliceIndex / gridSize);
+          return (vec2(column, row) + localUv) * tileSize;
+        }
+
+        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
+          vec2 wrappedUv = fract(uv);
+          if (sampleDimension < 0.5) {
+            return sampleAuxTexture2d(source, wrappedUv);
+          }
+          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
+          float scaledSlice = clamp(sliceZ, 0.0, 1.0) * (sliceCount - 1.0);
+          float sliceIndexA = floor(scaledSlice);
+          float sliceIndexB = min(sliceIndexA + 1.0, sliceCount - 1.0);
+          float sliceBlend = fract(scaledSlice);
+          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          return mix(sliceA, sliceB, sliceBlend);
         }
 
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
@@ -380,7 +414,13 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           );
           if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
             vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;
-            vec2 warpVector = sampleAuxTexture(warpTextureSource, warpUv).rg - 0.5;
+            vec2 warpVector =
+              sampleAuxTexture(
+                warpTextureSource,
+                warpTextureSampleDimension,
+                warpUv,
+                warpTextureVolumeSliceZ
+              ).rg - 0.5;
             currentUv += warpVector * warpTextureAmount * 0.12;
             prevUv += warpVector * warpTextureAmount * 0.08;
           }
@@ -427,7 +467,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           color *= tint;
           if (overlayTextureSource > 0.5 && overlayTextureMode > 0.5 && overlayTextureAmount > 0.0001) {
             vec2 overlayUv = vUv * overlayTextureScale + overlayTextureOffset;
-            vec3 overlayColor = sampleAuxTexture(overlayTextureSource, overlayUv).rgb;
+            vec3 overlayColor = sampleAuxTexture(
+              overlayTextureSource,
+              overlayTextureSampleDimension,
+              overlayUv,
+              overlayTextureVolumeSliceZ
+            ).rgb;
             float amount = clamp(overlayTextureAmount, 0.0, 1.5);
             if (overlayTextureMode < 1.5) {
               color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
@@ -503,6 +548,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.tint.value.setRGB(state.tint.r, state.tint.g, state.tint.b);
     uniforms.overlayTextureSource.value = state.overlayTextureSource;
     uniforms.overlayTextureMode.value = state.overlayTextureMode;
+    uniforms.overlayTextureSampleDimension.value =
+      state.overlayTextureSampleDimension;
     uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
     uniforms.overlayTextureScale.value.set(
       state.overlayTextureScale.x,
@@ -512,7 +559,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       state.overlayTextureOffset.x,
       state.overlayTextureOffset.y,
     );
+    uniforms.overlayTextureVolumeSliceZ.value =
+      state.overlayTextureVolumeSliceZ;
     uniforms.warpTextureSource.value = state.warpTextureSource;
+    uniforms.warpTextureSampleDimension.value =
+      state.warpTextureSampleDimension;
     uniforms.warpTextureAmount.value = state.warpTextureAmount;
     uniforms.warpTextureScale.value.set(
       state.warpTextureScale.x,
@@ -522,6 +573,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       state.warpTextureOffset.x,
       state.warpTextureOffset.y,
     );
+    uniforms.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
     uniforms.signalBass.value = state.signalBass;
     uniforms.signalMid.value = state.signalMid;
     uniforms.signalTreb.value = state.signalTreb;

@@ -30,6 +30,7 @@ const {
   cos,
   dot,
   Fn,
+  floor,
   float,
   fract,
   If,
@@ -61,6 +62,9 @@ const MILKDROP_TEXTURE_FILES = {
   pattern: 'circuit_board_pattern.png',
   fractal: 'crystal_fractal.png',
 } as const;
+const AUX_TEXTURE_ATLAS_GRID_SIZE = 8;
+const AUX_TEXTURE_ATLAS_SLICE_COUNT =
+  AUX_TEXTURE_ATLAS_GRID_SIZE * AUX_TEXTURE_ATLAS_GRID_SIZE;
 
 type FeedbackRendererLike = {
   render: (scene: Scene, camera: Camera) => void;
@@ -176,31 +180,30 @@ function createSampleAuxTextureNode(
   patternTexNode: ReturnType<typeof texture>,
   fractalTexNode: ReturnType<typeof texture>,
 ) {
-  return Fn(([source, sampleUv]: [any, any]) => {
-    const wrappedUv = fract(sampleUv);
+  const sampleAuxTexture2dNode = Fn(([source, sampleUv]: [any, any]) => {
     const flat = vec4(0.5, 0.5, 0.5, 1);
     return select(
       source.lessThan(0.5),
       flat,
       select(
         source.lessThan(1.5),
-        noiseTexNode.sample(wrappedUv),
+        noiseTexNode.sample(sampleUv),
         select(
           source.lessThan(2.5),
-          simplexTexNode.sample(wrappedUv),
+          simplexTexNode.sample(sampleUv),
           select(
             source.lessThan(3.5),
-            voronoiTexNode.sample(wrappedUv),
+            voronoiTexNode.sample(sampleUv),
             select(
               source.lessThan(4.5),
-              auraTexNode.sample(wrappedUv),
+              auraTexNode.sample(sampleUv),
               select(
                 source.lessThan(5.5),
-                causticsTexNode.sample(wrappedUv),
+                causticsTexNode.sample(sampleUv),
                 select(
                   source.lessThan(6.5),
-                  patternTexNode.sample(wrappedUv),
-                  fractalTexNode.sample(wrappedUv),
+                  patternTexNode.sample(sampleUv),
+                  fractalTexNode.sample(sampleUv),
                 ),
               ),
             ),
@@ -209,6 +212,44 @@ function createSampleAuxTextureNode(
       ),
     );
   });
+
+  const atlasSliceUvNode = Fn(([sampleUv, sliceIndex]: [any, any]) => {
+    const localUv = mix(vec2(0.01), vec2(0.99), fract(sampleUv));
+    const gridSize = float(AUX_TEXTURE_ATLAS_GRID_SIZE);
+    const tileSize = vec2(float(1).div(gridSize));
+    const row = floor(sliceIndex.div(gridSize));
+    const column = sliceIndex.sub(row.mul(gridSize));
+    return vec2(column, row).add(localUv).mul(tileSize);
+  });
+
+  return Fn(
+    ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) => {
+      const wrappedUv = fract(sampleUv);
+      const scaledSlice = clamp(sliceZ, 0, 1).mul(
+        AUX_TEXTURE_ATLAS_SLICE_COUNT - 1,
+      );
+      const sliceIndexA = floor(scaledSlice);
+      const sliceIndexB = min(
+        sliceIndexA.add(1),
+        float(AUX_TEXTURE_ATLAS_SLICE_COUNT - 1),
+      );
+      const sliceBlend = fract(scaledSlice);
+      const planarSample = sampleAuxTexture2dNode(source, wrappedUv);
+      const sliceA = sampleAuxTexture2dNode(
+        source,
+        atlasSliceUvNode(wrappedUv, sliceIndexA),
+      );
+      const sliceB = sampleAuxTexture2dNode(
+        source,
+        atlasSliceUvNode(wrappedUv, sliceIndexB),
+      );
+      return mix(
+        planarSample,
+        mix(sliceA, sliceB, sliceBlend),
+        step(0.5, sampleDimension),
+      );
+    },
+  );
 }
 
 function createCompositeUniforms(
@@ -256,13 +297,17 @@ function createCompositeUniforms(
     ),
     overlayTextureSource: uniform(0),
     overlayTextureMode: uniform(0),
+    overlayTextureSampleDimension: uniform(0),
     overlayTextureAmount: uniform(0),
     overlayTextureScale: uniform(new Vector2(1, 1)),
     overlayTextureOffset: uniform(new Vector2(0, 0)),
+    overlayTextureVolumeSliceZ: uniform(0),
     warpTextureSource: uniform(0),
+    warpTextureSampleDimension: uniform(0),
     warpTextureAmount: uniform(0),
     warpTextureScale: uniform(new Vector2(1, 1)),
     warpTextureOffset: uniform(new Vector2(0, 0)),
+    warpTextureVolumeSliceZ: uniform(0),
     signalBass: uniform(0),
     signalMid: uniform(0),
     signalTreb: uniform(0),
@@ -317,7 +362,12 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
     const warpUv = baseUv
       .mul(uniforms.warpTextureScale)
       .add(uniforms.warpTextureOffset);
-    const warpVector = sampleAuxTextureNode(uniforms.warpTextureSource, warpUv)
+    const warpVector = sampleAuxTextureNode(
+      uniforms.warpTextureSource,
+      uniforms.warpTextureSampleDimension,
+      warpUv,
+      uniforms.warpTextureVolumeSliceZ,
+    )
       .rg.sub(0.5)
       .toVar();
     currentUv.addAssign(
@@ -455,7 +505,9 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
       .add(uniforms.overlayTextureOffset);
     const overlayColor = sampleAuxTextureNode(
       uniforms.overlayTextureSource,
+      uniforms.overlayTextureSampleDimension,
       overlayUv,
+      uniforms.overlayTextureVolumeSliceZ,
     ).rgb;
     const overlayAmount = clamp(uniforms.overlayTextureAmount, 0, 1.5);
     const overlayMixAmount = clamp(overlayAmount, 0, 1);
@@ -495,8 +547,18 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
       .sub(
         vec2(uniforms.signalTime.mul(0.018), uniforms.signalTime.mul(-0.026)),
       );
-    const spectralA = sampleAuxTextureNode(float(2), spectralUvA).rgb;
-    const spectralB = sampleAuxTextureNode(float(5), spectralUvB).rgb;
+    const spectralA = sampleAuxTextureNode(
+      float(2),
+      float(0),
+      spectralUvA,
+      0,
+    ).rgb;
+    const spectralB = sampleAuxTextureNode(
+      float(5),
+      float(0),
+      spectralUvB,
+      0,
+    ).rgb;
     const spectralPulse = sin(
       baseUv.x
         .add(baseUv.y)
@@ -646,6 +708,8 @@ class WebGPUMilkdropFeedbackManager {
       state.overlayTextureSource;
     this.compositeMaterial.uniforms.overlayTextureMode.value =
       state.overlayTextureMode;
+    this.compositeMaterial.uniforms.overlayTextureSampleDimension.value =
+      state.overlayTextureSampleDimension;
     this.compositeMaterial.uniforms.overlayTextureAmount.value =
       state.overlayTextureAmount;
     this.compositeMaterial.uniforms.overlayTextureScale.value.set(
@@ -656,8 +720,12 @@ class WebGPUMilkdropFeedbackManager {
       state.overlayTextureOffset.x,
       state.overlayTextureOffset.y,
     );
+    this.compositeMaterial.uniforms.overlayTextureVolumeSliceZ.value =
+      state.overlayTextureVolumeSliceZ;
     this.compositeMaterial.uniforms.warpTextureSource.value =
       state.warpTextureSource;
+    this.compositeMaterial.uniforms.warpTextureSampleDimension.value =
+      state.warpTextureSampleDimension;
     this.compositeMaterial.uniforms.warpTextureAmount.value =
       state.warpTextureAmount;
     this.compositeMaterial.uniforms.warpTextureScale.value.set(
@@ -668,6 +736,8 @@ class WebGPUMilkdropFeedbackManager {
       state.warpTextureOffset.x,
       state.warpTextureOffset.y,
     );
+    this.compositeMaterial.uniforms.warpTextureVolumeSliceZ.value =
+      state.warpTextureVolumeSliceZ;
     this.compositeMaterial.uniforms.signalBass.value = state.signalBass;
     this.compositeMaterial.uniforms.signalMid.value = state.signalMid;
     this.compositeMaterial.uniforms.signalTreb.value = state.signalTreb;
