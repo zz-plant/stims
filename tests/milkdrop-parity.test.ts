@@ -314,6 +314,9 @@ describe('milkdrop parity corpus harness', () => {
         expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
           expected.webgpu,
         );
+        expect(
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
+        ).toBe('descriptor-plan');
         expect(compiled.ir.compatibility.parity.backendDivergence).toEqual(
           expect.arrayContaining(expected.divergence),
         );
@@ -364,6 +367,18 @@ test('keeps former shader-gap parity fixtures out of the allowlist when only vid
 
   expect(compiled.ir.shaderText.supported).toBe(true);
   expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([]);
+  expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
+    expect.objectContaining({
+      routing: 'descriptor-plan',
+      feedback: expect.objectContaining({
+        kind: 'feedback-post-effect',
+        shaderExecution: 'controls',
+        usesVideoEcho: true,
+        fallbackToLegacyFeedback: true,
+      }),
+      unsupported: [],
+    }),
+  );
   expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
     'status:webgl=supported,webgpu=partial',
     'webgpu:supported-shader-text-gap',
