@@ -378,8 +378,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
           bool sliceInRange = sliceZ >= 0.0 && sliceZ <= 1.0;
           float wrappedSliceZ = sliceInRange ? sliceZ : fract(sliceZ);
-          float sliceScale = sliceInRange ? (sliceCount - 1.0) : sliceCount;
-          float scaledSlice = wrappedSliceZ * sliceScale;
+          // Preserve the original 0..1 atlas mapping so modulo-equivalent tex3D phases stay periodic.
+          float scaledSlice = wrappedSliceZ * (sliceCount - 1.0);
           float sliceIndexA = floor(scaledSlice);
           float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
           float sliceBlend = fract(scaledSlice);
