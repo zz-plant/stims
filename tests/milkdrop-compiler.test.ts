@@ -189,6 +189,26 @@ fGammaAdj=1.75
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
   });
 
+  test('normalizes Rovastar feedback aliases into runtime post fields', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Rovastar Feedback Aliases
+bTexWrap=1
+bDarkenCenter=1
+      `.trim(),
+      { id: 'rovastar-feedback-aliases' },
+    );
+
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.numericFields.texture_wrap).toBe(1);
+    expect(compiled.ir.numericFields.darken_center).toBe(1);
+    expect(compiled.ir.post.textureWrap).toBe(true);
+    expect(compiled.ir.post.darkenCenter).toBe(true);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'post-effects',
+    );
+  });
+
   test('accepts motion vector fields as supported preset inputs', () => {
     const compiled = compileMilkdropPresetSource(
       `
