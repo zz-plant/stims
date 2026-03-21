@@ -271,6 +271,7 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   bg_b: 0.06,
   brighten: 0,
   darken: 0,
+  darken_center: 0,
   solarize: 0,
   invert: 0,
   gammaadj: 1,
@@ -943,6 +944,7 @@ function createDefaultShaderControls(): MilkdropShaderControls {
       source: 'none',
       mode: 'none',
       sampleDimension: '2d',
+      inverted: false,
       amount: 0,
       scaleX: 1,
       scaleY: 1,
@@ -2003,10 +2005,12 @@ function applyTextureLayerSample(
   controls: MilkdropShaderControls,
   expressions: MilkdropShaderControlExpressions,
   sample: MilkdropExtractedShaderSampleMetadata,
+  options: { inverted?: boolean } = {},
 ) {
   const coordinate = analyzeShaderSampleCoordinate(sample);
   controls.textureLayer.source = sample.source as MilkdropShaderTextureSampler;
   controls.textureLayer.sampleDimension = sample.sampleDimension;
+  controls.textureLayer.inverted = options.inverted ?? false;
   controls.textureLayer.volumeSliceZ = coordinate.volumeSlice.value;
   expressions.textureLayer.sampleDimension = sample.sampleDimension;
   expressions.textureLayer.volumeSliceZ = coordinate.volumeSlice.expression;
@@ -2583,7 +2587,9 @@ function applyShaderAstStatement({
           controls.textureLayer.mode = 'mix';
           controls.textureLayer.amount = amount.value;
           expressions.textureLayer.amount = amount.expression;
-          applyTextureLayerSample(controls, expressions, invertedSample);
+          applyTextureLayerSample(controls, expressions, invertedSample, {
+            inverted: true,
+          });
           return true;
         }
         if (isShaderSolarizeSampleExpression(targetNode)) {
@@ -4533,6 +4539,7 @@ function mergeShaderControlAnalysis(
             : warpAnalysis.controls.textureLayer.mode,
         sampleDimension:
           textureLayerSample.controls.textureLayer.sampleDimension,
+        inverted: textureLayerSample.controls.textureLayer.inverted,
         amount: textureLayerAmount.value,
         scaleX: textureLayerScaleX.value,
         scaleY: textureLayerScaleY.value,
@@ -5151,6 +5158,7 @@ function buildFeatureAnalysis({
   if (
     (numericFields.brighten ?? 0) > 0.5 ||
     (numericFields.darken ?? 0) > 0.5 ||
+    (numericFields.darken_center ?? 0) > 0.5 ||
     (numericFields.solarize ?? 0) > 0.5 ||
     (numericFields.invert ?? 0) > 0.5 ||
     Math.abs((numericFields.gammaadj ?? 1) - 1) > 0.001
@@ -5856,6 +5864,7 @@ function createIR(
         !key.startsWith('ib_') &&
         key !== 'brighten' &&
         key !== 'darken' &&
+        key !== 'darken_center' &&
         key !== 'solarize' &&
         key !== 'invert' &&
         key !== 'gammaadj' &&
@@ -5913,6 +5922,7 @@ function createIR(
     post: {
       brighten: (numericFields.brighten ?? 0) > 0.5,
       darken: (numericFields.darken ?? 0) > 0.5,
+      darkenCenter: (numericFields.darken_center ?? 0) > 0.5,
       solarize: (numericFields.solarize ?? 0) > 0.5,
       invert: (numericFields.invert ?? 0) > 0.5,
       shaderEnabled: (numericFields.shader ?? 1) > 0.5,

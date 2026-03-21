@@ -300,6 +300,7 @@ export type MilkdropShaderTextureLayerControls = {
   source: MilkdropShaderTextureSampler;
   mode: MilkdropShaderTextureBlendMode;
   sampleDimension: MilkdropShaderSampleDimension;
+  inverted: boolean;
   amount: number;
   scaleX: number;
   scaleY: number;
@@ -467,6 +468,7 @@ export type MilkdropPostEffects = {
   };
   brighten: boolean;
   darken: boolean;
+  darkenCenter: boolean;
   solarize: boolean;
   invert: boolean;
   gammaAdj: number;
@@ -646,6 +648,7 @@ export type MilkdropPostVisual = {
   };
   brighten: boolean;
   darken: boolean;
+  darkenCenter: boolean;
   solarize: boolean;
   invert: boolean;
   gammaAdj: number;
@@ -814,6 +817,7 @@ export type MilkdropFeedbackCompositeState = {
   videoEchoOrientation: MilkdropVideoEchoOrientation;
   brighten: number;
   darken: number;
+  darkenCenter: number;
   solarize: number;
   invert: number;
   gammaAdj: number;
@@ -843,6 +847,7 @@ export type MilkdropFeedbackCompositeState = {
   overlayTextureSource: number;
   overlayTextureMode: number;
   overlayTextureSampleDimension: number;
+  overlayTextureInvert: number;
   overlayTextureAmount: number;
   overlayTextureScale: {
     x: number;
