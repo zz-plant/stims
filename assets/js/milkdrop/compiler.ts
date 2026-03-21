@@ -1950,15 +1950,23 @@ function isShaderUvIdentifier(node: MilkdropShaderExpressionNode) {
   return node.type === 'identifier' && node.name.toLowerCase() === 'uv';
 }
 
-function isShaderInvertSampleExpression(
+function extractShaderInvertedSampleExpression(
   node: MilkdropShaderExpressionNode,
-): boolean {
-  return (
-    node.type === 'binary' &&
-    node.operator === '-' &&
-    isShaderLiteralNumber(node.left, 1) &&
-    isShaderMainSampleExpression(node.right)
-  );
+): MilkdropExtractedShaderSampleMetadata | 'main' | null {
+  if (
+    node.type !== 'binary' ||
+    node.operator !== '-' ||
+    !isShaderLiteralNumber(node.left, 1)
+  ) {
+    return null;
+  }
+
+  const sample = getShaderSampleInfo(node.right);
+  if (!sample) {
+    return null;
+  }
+
+  return sample.source === 'main' ? 'main' : sample;
 }
 
 function isShaderSolarizeSampleExpression(
@@ -2477,18 +2485,30 @@ function applyShaderAstStatement({
           applyTextureLayerSample(controls, expressions, auxSample);
           return true;
         }
-        if (isShaderInvertSampleExpression(targetNode)) {
-          const next = applyShaderControlValue(
-            operator,
-            controls.invertBoost,
-            expressions.invertBoost,
-            amount.value,
-            amount.expression,
-          );
-          controls.invertBoost = next.value;
-          expressions.invertBoost = next.expression;
-          shaderEnv.invert = next.value;
-          return true;
+        const invertedSample =
+          extractShaderInvertedSampleExpression(targetNode);
+        if (invertedSample) {
+          if (invertedSample === 'main') {
+            const next = applyShaderControlValue(
+              operator,
+              controls.invertBoost,
+              expressions.invertBoost,
+              amount.value,
+              amount.expression,
+            );
+            controls.invertBoost = next.value;
+            expressions.invertBoost = next.expression;
+            shaderEnv.invert = next.value;
+            return true;
+          }
+          if (!isAuxShaderSamplerName(invertedSample.source)) {
+            return false;
+          }
+          controls.textureLayer.mode = 'mix';
+          controls.textureLayer.amount = amount.value;
+          expressions.textureLayer.amount = amount.expression;
+          applyTextureLayerSample(controls, expressions, invertedSample);
+          return false;
         }
         if (isShaderSolarizeSampleExpression(targetNode)) {
           const next = applyShaderControlValue(
@@ -5282,6 +5302,16 @@ function createIR(
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
+  const usesVolumeShaderApproximation = [
+    shaderWarpAnalysis.controls.textureLayer,
+    shaderWarpAnalysis.controls.warpTexture,
+    shaderCompAnalysis.controls.textureLayer,
+    shaderCompAnalysis.controls.warpTexture,
+    mergedShaderControls.controls.textureLayer,
+    mergedShaderControls.controls.warpTexture,
+  ].some(
+    (sample) => sample.source !== 'none' && sample.sampleDimension === '3d',
+  );
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();
@@ -5339,6 +5369,14 @@ function createIR(
       'Shader-text sections include lines outside the supported subset.',
     );
   }
+  if (usesVolumeShaderApproximation) {
+    addDiagnostic(
+      diagnostics,
+      'warning',
+      'preset_shader_volume_approximation',
+      'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
+    );
+  }
   const featureAnalysis = buildFeatureAnalysis({
     programs,
     customWaves,
@@ -5355,6 +5393,11 @@ function createIR(
       ({ key, feature, message }) =>
         `Unsupported feature "${feature}" from preset field "${key}": ${message}`,
     ),
+    ...(usesVolumeShaderApproximation
+      ? [
+          'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
+        ]
+      : []),
   ];
   const backends = {
     webgl: buildBackendSupport({
