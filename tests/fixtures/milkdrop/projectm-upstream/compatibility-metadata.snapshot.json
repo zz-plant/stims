@@ -1,0 +1,1425 @@
+[
+  {
+    "file": "000-empty.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "001-line.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "100-square.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "borders"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "101-per_frame.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": ["ib_r=0.7+0.4*sin(3*time)"],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "102-per_frame3.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [
+        "ib_r=0.7+0.4*sin(3*time)",
+        "ib_g=0.7+0.4*sin(4*time)",
+        "ib_b=0.7+0.4*sin(5*time)"
+      ],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "103-multiple-eqn.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [
+        "ib_r=0.7+0.4*sin(3*time)",
+        "ib_g=0.7+0.4*sin(4*time)",
+        "ib_b=0.7+0.4*sin(5*time)"
+      ],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "104-continued-eqn.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": ["ib_r=0.7+0.4* sin(3*time)"],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "105-per_frame_init.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": ["SPEED=10"],
+      "perFrame": ["ib_r=0.7+0.4*sin(time*SPEED)"],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "per-frame-equations", "borders"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "110-per_pixel.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [
+        "ib_r=0.7+0.4*sin(3*time)",
+        "ib_g=0.7+0.4*sin(4*time)",
+        "ib_b=0.7+0.4*sin(5*time)"
+      ],
+      "perPixel": ["zoom=0.9615-rad*0.1"],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": [
+        "base-globals",
+        "per-frame-equations",
+        "per-pixel-equations",
+        "borders"
+      ],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "200-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "201-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "202-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "203-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "204-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "205-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "206-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "207-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "208-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "209-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "210-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "211-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "212-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "213-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "214-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "215-wave.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "240-wave-smooth-00.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=sample", "y=y+value1"]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "241-wave-smooth-01.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=sample", "y=y+value1"]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "242-wave-smooth-80.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=sample", "y=y+value1"]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "243-wave-smooth-90.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=sample", "y=0.4+value1"]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "244-wave-smooth-99.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=sample", "y=y+value1"]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "245-wave-smooth-100.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=sample", "y=y+value1"]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "250-wavecode.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": ["zoom=1"],
+      "perPixel": [],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=x+value1/2", "y=y+value2/2"]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "per-frame-equations", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": ["value2"]
+      }
+    }
+  },
+  {
+    "file": "251-wavecode-spectrum.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=sample", "y=y+value1"]
+        },
+        {
+          "index": 2,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=sample", "y=0.25+value1"]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "252-wavecode-spectrum2.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": [],
+          "perPoint": ["x=sample", "y=y+value1"]
+        },
+        {
+          "index": 2,
+          "init": [],
+          "perFrame": [],
+          "perPoint": [
+            "sw = (1-sw)*below(sample,1)",
+            "osa = sample*above(sample,0)",
+            "mod = value2-value1",
+            "mod = mod*sw",
+            "y = if(sw,osa,sample)",
+            "y = (1-sample*1.6)*.4+.42",
+            "x = 0 + mod*.5+.5",
+            "mo = 3.7 + mod*6 + q1",
+            "r = .5 + sin(mo)*.5",
+            "g = .5 + sin(mo + 1.0472)*.5",
+            "b = .5 + sin(mo + 2.0944)*.5",
+            "a = 1 - abs(mod)*12",
+            "a = 1-sw",
+            "a = max(0,min(a,1))"
+          ]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": ["value2"]
+      }
+    }
+  },
+  {
+    "file": "260-compshader-noise_lq.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [
+        "WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL."
+      ],
+      "featuresUsed": ["base-globals"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "partial",
+          "evidence": [
+            {
+              "scope": "backend",
+              "status": "partial",
+              "code": "supported-shader-text-gap",
+              "feature": null
+            }
+          ]
+        }
+      },
+      "parity": {
+        "fidelityClass": "near-exact",
+        "backendDivergence": [
+          "status:webgl=supported,webgpu=partial",
+          "webgpu:supported-shader-text-gap"
+        ],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "261-compshader-noisevol_lq.milk",
+    "diagnostics": [
+      {
+        "severity": "warning",
+        "code": "preset_unsupported_shader_text",
+        "field": null
+      }
+    ],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": [],
+      "customWaves": [],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [
+        "This preset includes custom shader text outside the fully supported subset and will be approximated.",
+        "WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL."
+      ],
+      "featuresUsed": ["base-globals", "unsupported-shader-text"],
+      "backends": {
+        "webgl": {
+          "status": "partial",
+          "evidence": [
+            {
+              "scope": "backend",
+              "status": "partial",
+              "code": "unsupported-shader-text-gap",
+              "feature": "unsupported-shader-text"
+            }
+          ]
+        },
+        "webgpu": {
+          "status": "unsupported",
+          "evidence": [
+            {
+              "scope": "backend",
+              "status": "unsupported",
+              "code": "unsupported-shader-text-gap",
+              "feature": "unsupported-shader-text"
+            }
+          ]
+        }
+      },
+      "parity": {
+        "fidelityClass": "fallback",
+        "backendDivergence": ["status:webgl=partial,webgpu=unsupported"],
+        "ignoredFields": [],
+        "blockedConstructs": [
+          "shader:ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz"
+        ],
+        "approximatedShaderLines": [
+          "ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz"
+        ],
+        "missingAliasesOrFunctions": []
+      }
+    }
+  },
+  {
+    "file": "300-beatdetect-bassmidtreb.milk",
+    "diagnostics": [],
+    "normalizedPrograms": {
+      "init": [],
+      "perFrame": [],
+      "perPixel": ["cx=x"],
+      "customWaves": [
+        {
+          "index": 1,
+          "init": [],
+          "perFrame": ["t1=if(above(bass,9.5),0.95,bass/10)"],
+          "perPoint": ["x=0.01666 + 0.3*sample", "y=t1 + value1/20"]
+        },
+        {
+          "index": 2,
+          "init": [],
+          "perFrame": ["t1=if(above(mid,9.5),0.95,mid/10)"],
+          "perPoint": ["x=0.35 + 0.3*sample", "y=t1 + value2/20"]
+        },
+        {
+          "index": 3,
+          "init": [],
+          "perFrame": ["t1=if(above(treb,9.5),0.95,treb/10)"],
+          "perPoint": ["x=0.6833 + 0.3*sample", "y=t1 + value1/20"]
+        }
+      ],
+      "customShapes": []
+    },
+    "compatibility": {
+      "unsupportedKeys": [],
+      "warnings": [],
+      "featuresUsed": ["base-globals", "per-pixel-equations", "custom-waves"],
+      "backends": {
+        "webgl": {
+          "status": "supported",
+          "evidence": []
+        },
+        "webgpu": {
+          "status": "supported",
+          "evidence": []
+        }
+      },
+      "parity": {
+        "fidelityClass": "exact",
+        "backendDivergence": [],
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": ["value2"]
+      }
+    }
+  }
+]
