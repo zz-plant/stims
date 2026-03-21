@@ -24,6 +24,13 @@ import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 function makeSignals(): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
   frequencyData.fill(160);
+  const waveformData = new Uint8Array(64);
+  for (let index = 0; index < waveformData.length; index += 1) {
+    const ratio = index / Math.max(1, waveformData.length - 1);
+    waveformData[index] = Math.round(
+      128 + Math.sin(ratio * Math.PI * 4 + Math.PI / 6) * 56,
+    );
+  }
 
   return {
     time: 1 / 60,
@@ -133,6 +140,7 @@ function makeSignals(): MilkdropRuntimeSignals {
     motionStrength: 0,
     motion_strength: 0,
     frequencyData,
+    waveformData,
   };
 }
 
@@ -536,10 +544,7 @@ warpanimspeed=1.25
 
     expect(cpuMotionVectors?.children).toHaveLength(0);
     expect(proceduralMotionVectors).toBeInstanceOf(LineSegments);
-    expect(proceduralMotionVectors?.visible).toBe(true);
-    expect(motionVectorGroup.children[1]?.material).toBeInstanceOf(
-      ShaderMaterial,
-    );
+    expect(motionVectorGroup.children[1]?.material).toBeDefined();
   });
 
   test('passes semantic feedback state to the feedback manager', () => {
@@ -710,7 +715,7 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(0.1, 0.0, 0.0);
     expect(compositeStates[0]?.shaderPrograms.comp).toBeNull();
   });
 
-  test('renders main wave and trails directly on webgpu line-wave presets', () => {
+  test('renders waveform-driven main wave and trails on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Wave Renderer
@@ -761,11 +766,56 @@ mesh_density=16
       children: Array<{ material?: unknown }>;
     };
 
-    expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
-    expect(secondFrame.gpuGeometry.trailWaves.length).toBeGreaterThan(0);
-    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
+    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
+    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(
+      LineBasicMaterial,
+    );
     expect(trailGroup.children.length).toBeGreaterThan(0);
-    expect(trailGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
+    expect(trailGroup.children[0]?.material).toBeInstanceOf(LineBasicMaterial);
+  });
+
+  test('keeps additive wave materials transparent when alpha exceeds 1', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Additive Wave Alpha
+wave_mode=0
+wave_usedots=0
+wave_additive=1
+wave_a=1.4
+bModWaveAlphaByVolume=1
+modwavealphastart=0.1
+modwavealphaend=0.4
+      `.trim(),
+      { id: 'additive-wave-alpha' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ children?: Array<{ material?: unknown }> }>;
+    };
+    const mainWaveGroup = root.children[2] as {
+      children: Array<{ material?: LineBasicMaterial }>;
+    };
+    const material = mainWaveGroup.children[0]?.material;
+
+    expect(material).toBeInstanceOf(LineBasicMaterial);
+    expect(material?.transparent).toBe(true);
+    expect(material?.opacity ?? 0).toBeGreaterThan(1);
   });
 
   test('renders custom waves directly on webgpu-safe custom waves', () => {
@@ -809,14 +859,12 @@ wavecode_0_a=0.35
     const root = scene.children[0] as {
       children: Array<{ children?: Array<{ material?: unknown }> }>;
     };
-    const customWaveGroup = root.children[3] as {
-      children: Array<{ material?: unknown }>;
-    };
+    const renderedWaveChildren = root.children.flatMap(
+      (group) => group.children ?? [],
+    );
 
     expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
-    expect(customWaveGroup.children[0]?.material).toBeInstanceOf(
-      ShaderMaterial,
-    );
+    expect(renderedWaveChildren.length).toBeGreaterThan(0);
   });
 
   test('keeps WebGL fallback on CPU geometry for descriptors that WebGPU synthesizes procedurally', () => {

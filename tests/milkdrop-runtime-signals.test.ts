@@ -8,6 +8,15 @@ function highEnergyData() {
   return data;
 }
 
+function waveformData() {
+  const data = new Uint8Array(128);
+  for (let index = 0; index < data.length; index += 1) {
+    const ratio = index / Math.max(1, data.length - 1);
+    data[index] = Math.round(128 + Math.sin(ratio * Math.PI * 4) * 72);
+  }
+  return data;
+}
+
 describe('milkdrop runtime signals', () => {
   test('increments frame count and emits stable ranges with fallback data', () => {
     const tracker = createMilkdropSignalTracker();
@@ -17,12 +26,14 @@ describe('milkdrop runtime signals', () => {
       deltaMs: 16.7,
       analyser: null,
       frequencyData: highEnergyData(),
+      waveformData: waveformData(),
     });
     const second = tracker.update({
       time: 0.3,
       deltaMs: 16.7,
       analyser: null,
       frequencyData: highEnergyData(),
+      waveformData: waveformData(),
     });
 
     expect(first.frame).toBe(1);
@@ -34,6 +45,8 @@ describe('milkdrop runtime signals', () => {
     expect(second.beat_pulse).toBe(second.beatPulse);
     expect(second.vol).toBeCloseTo(second.rms, 6);
     expect(second.music).toBeCloseTo(second.weightedEnergy, 6);
+    expect(second.waveformData).toBeInstanceOf(Uint8Array);
+    expect(second.waveformData?.length).toBe(128);
   });
 
   test('uses analyser-provided bands and smoothed RMS when available', () => {
@@ -48,6 +61,7 @@ describe('milkdrop runtime signals', () => {
       deltaMs: 16.7,
       analyser: analyserStub,
       frequencyData: new Uint8Array(64),
+      waveformData: waveformData(),
     });
 
     expect(update.bass).toBeCloseTo(0.75, 6);
@@ -69,12 +83,14 @@ describe('milkdrop runtime signals', () => {
       deltaMs: 16.7,
       analyser: null,
       frequencyData: highEnergyData(),
+      waveformData: waveformData(),
     });
     tracker.update({
       time: 0.35,
       deltaMs: 16.7,
       analyser: null,
       frequencyData: highEnergyData(),
+      waveformData: waveformData(),
     });
 
     tracker.reset();
@@ -84,6 +100,7 @@ describe('milkdrop runtime signals', () => {
       deltaMs: 16.7,
       analyser: null,
       frequencyData: highEnergyData(),
+      waveformData: waveformData(),
     });
     expect(afterReset.frame).toBe(1);
     expect(afterReset.bassAtt).toBeGreaterThanOrEqual(0);
