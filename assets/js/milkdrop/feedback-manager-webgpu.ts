@@ -225,13 +225,11 @@ function createSampleAuxTextureNode(
   return Fn(
     ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) => {
       const wrappedUv = fract(sampleUv);
-      const scaledSlice = clamp(sliceZ, 0, 1).mul(
-        AUX_TEXTURE_ATLAS_SLICE_COUNT - 1,
-      );
+      const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
+      const scaledSlice = fract(sliceZ).mul(sliceCount);
       const sliceIndexA = floor(scaledSlice);
-      const sliceIndexB = min(
-        sliceIndexA.add(1),
-        float(AUX_TEXTURE_ATLAS_SLICE_COUNT - 1),
+      const sliceIndexB = fract(sliceIndexA.add(1).div(sliceCount)).mul(
+        sliceCount,
       );
       const sliceBlend = fract(scaledSlice);
       const planarSample = sampleAuxTexture2dNode(source, wrappedUv);

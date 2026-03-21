@@ -374,9 +374,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             return sampleAuxTexture2d(source, wrappedUv);
           }
           float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
-          float scaledSlice = clamp(sliceZ, 0.0, 1.0) * (sliceCount - 1.0);
+          float scaledSlice = fract(sliceZ) * sliceCount;
           float sliceIndexA = floor(scaledSlice);
-          float sliceIndexB = min(sliceIndexA + 1.0, sliceCount - 1.0);
+          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
           float sliceBlend = fract(scaledSlice);
           vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
           vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
