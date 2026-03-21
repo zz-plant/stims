@@ -357,6 +357,39 @@ describe('milkdrop parity corpus harness', () => {
   });
 });
 
+test('only waive the constructs explicitly named in the allowlist', () => {
+  const compiled = compileMilkdropPresetSource(
+    `
+title=Parity Allowlisted Shader Gap
+warp_shader=unsupported(shader)
+unknown_field=2
+      `.trim(),
+    {
+      id: 'parity-allowlisted-shader-gap',
+      title: 'Parity Allowlisted Shader Gap',
+      fileName: 'parity-allowlisted-shader-gap.milk',
+      path: join(PARITY_CORPUS_DIR, 'parity-allowlisted-shader-gap.milk'),
+      origin: 'user',
+    },
+  );
+
+  expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
+    {
+      kind: 'field',
+      value: 'unknown_field',
+      system: 'preset-field',
+      allowlisted: false,
+    },
+    {
+      kind: 'shader',
+      value: 'unsupported(shader)',
+      system: 'shader-text',
+      allowlisted: true,
+    },
+  ]);
+  expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
+});
+
 describe('milkdrop parity visual baselines', () => {
   test('replays the canonical baseline suite through the VM', () => {
     const baselines = loadJson<VisualBaseline>(VISUAL_BASELINES_PATH);

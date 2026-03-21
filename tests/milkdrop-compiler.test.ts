@@ -771,6 +771,49 @@ warp_shader=unsupported(shader)
     expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
   });
 
+  test('keeps non-allowlisted regressions blocking inside allowlisted presets', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Parity Allowlisted Shader Gap
+warp_shader=unsupported(shader)
+unknown_field=2
+      `.trim(),
+      { id: 'parity-allowlisted-shader-gap' },
+    );
+
+    expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
+      'field:unknown_field',
+      'shader:unsupported(shader)',
+    ]);
+    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
+      {
+        kind: 'field',
+        value: 'unknown_field',
+        system: 'preset-field',
+        allowlisted: false,
+      },
+      {
+        kind: 'shader',
+        value: 'unsupported(shader)',
+        system: 'shader-text',
+        allowlisted: true,
+      },
+    ]);
+    expect(compiled.ir.compatibility.parity.degradationReasons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'unknown-field',
+          blocking: true,
+        }),
+        expect.objectContaining({
+          code: 'allowlisted-gap',
+          blocking: false,
+        }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
+  });
+
   test('lists missing aliases and functions from parsed expressions', () => {
     const compiled = compileMilkdropPresetSource(
       `
