@@ -125,20 +125,23 @@ describe('milkdrop shader sampler aliases', () => {
     }
   });
 
-  test('keeps 3D sampler aliases aligned across tex3D and texture3D spellings', () => {
+  test('keeps 3D sampler aliases unsupported in compiler extraction despite AST normalization', () => {
     for (const sampleCall of ['tex3D', 'texture3D'] as const) {
       const compiled = compileMilkdropPresetSource(
         `title=Volume Alias\ncomp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
         { id: `volume-${sampleCall.toLowerCase()}` },
       );
 
-      expect(compiled.ir.shaderText.supported).toBe(true);
-      expect(compiled.ir.post.shaderControls.textureLayer.source).toBe(
-        'simplex',
+      expect(compiled.ir.shaderText.supported).toBe(false);
+      expect(compiled.ir.shaderText.unsupportedLines).toEqual([
+        `ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
+      ]);
+      expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('none');
+      expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('none');
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'unsupported',
       );
-      expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     }
   });
 });

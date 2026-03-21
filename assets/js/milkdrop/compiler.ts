@@ -1527,7 +1527,7 @@ function isShaderSampleRgbExpression(
     node.type === 'member' &&
     ['rgb', 'xyz'].includes(node.property.toLowerCase()) &&
     node.object.type === 'call' &&
-    ['tex2d', 'tex3d'].includes(normalizeShaderCallName(node.object.name)) &&
+    normalizeShaderCallName(node.object.name) === 'tex2d' &&
     node.object.args.length >= 2
   );
 }
@@ -1540,7 +1540,7 @@ function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
     node.type !== 'member' ||
     !['rgb', 'xyz'].includes(node.property.toLowerCase()) ||
     node.object.type !== 'call' ||
-    !['tex2d', 'tex3d'].includes(normalizeShaderCallName(node.object.name)) ||
+    normalizeShaderCallName(node.object.name) !== 'tex2d' ||
     node.object.args.length < 2
   ) {
     return null;

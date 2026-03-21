@@ -1310,7 +1310,13 @@
   },
   {
     "file": "261-compshader-noisevol_lq.milk",
-    "diagnostics": [],
+    "diagnostics": [
+      {
+        "severity": "warning",
+        "code": "preset_unsupported_shader_text",
+        "field": null
+      }
+    ],
     "normalizedPrograms": {
       "init": [],
       "perFrame": [],
@@ -1321,35 +1327,44 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [
-        "WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL."
+        "This preset includes custom shader text outside the fully supported subset and will be approximated.",
+        "WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL."
       ],
-      "featuresUsed": ["base-globals"],
+      "featuresUsed": ["base-globals", "unsupported-shader-text"],
       "backends": {
         "webgl": {
-          "status": "supported",
-          "evidence": []
-        },
-        "webgpu": {
           "status": "partial",
           "evidence": [
             {
               "scope": "backend",
               "status": "partial",
-              "code": "supported-shader-text-gap",
-              "feature": null
+              "code": "unsupported-shader-text-gap",
+              "feature": "unsupported-shader-text"
+            }
+          ]
+        },
+        "webgpu": {
+          "status": "unsupported",
+          "evidence": [
+            {
+              "scope": "backend",
+              "status": "unsupported",
+              "code": "unsupported-shader-text-gap",
+              "feature": "unsupported-shader-text"
             }
           ]
         }
       },
       "parity": {
-        "fidelityClass": "near-exact",
-        "backendDivergence": [
-          "status:webgl=supported,webgpu=partial",
-          "webgpu:supported-shader-text-gap"
-        ],
+        "fidelityClass": "fallback",
+        "backendDivergence": ["status:webgl=partial,webgpu=unsupported"],
         "ignoredFields": [],
-        "blockedConstructs": [],
-        "approximatedShaderLines": [],
+        "blockedConstructs": [
+          "shader:ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz"
+        ],
+        "approximatedShaderLines": [
+          "ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz"
+        ],
         "missingAliasesOrFunctions": []
       }
     }
