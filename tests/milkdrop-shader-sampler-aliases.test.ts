@@ -26,6 +26,49 @@ const SAMPLER_ALIAS_CASES = [
 ] as const;
 
 describe('milkdrop shader sampler aliases', () => {
+  test('normalizes MilkDrop2 vector aliases and 3D sampler calls in shader ASTs', () => {
+    const tintStatement = parseMilkdropShaderStatement(
+      'float3 tint = float3(1.0, 0.5, 0.25)',
+    );
+    expect(tintStatement).not.toBeNull();
+    if (!tintStatement) {
+      throw new Error('Failed to parse float3 tint statement');
+    }
+
+    expect(tintStatement.declaration).toBe('vec3');
+    expect(tintStatement.expression).toMatchObject({
+      type: 'call',
+      name: 'vec3',
+    });
+
+    const volumeStatement = parseMilkdropShaderStatement(
+      'ret = texture3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz',
+    );
+    expect(volumeStatement).not.toBeNull();
+    if (!volumeStatement) {
+      throw new Error('Failed to parse texture3D volume sample');
+    }
+
+    expect(volumeStatement.expression).toMatchObject({
+      type: 'member',
+      property: 'xyz',
+      object: {
+        type: 'call',
+        name: 'tex3d',
+      },
+    });
+
+    const astValue = evaluateMilkdropShaderExpression(
+      volumeStatement.expression,
+      { uv: { kind: 'vec2', value: [0.25, 0.75] } },
+      { time: 2 },
+    );
+    expect(astValue).toMatchObject({
+      kind: 'vec3',
+      value: [1, 1, 1],
+    });
+  });
+
   test('normalizes supported aliases through the shared helper', () => {
     for (const { alias, canonical } of SAMPLER_ALIAS_CASES) {
       expect(normalizeMilkdropShaderSamplerName(alias)).toBe(canonical);
@@ -79,6 +122,23 @@ describe('milkdrop shader sampler aliases', () => {
       expect(assignedCompile.ir.post.shaderControls.textureLayer.mode).toBe(
         'mix',
       );
+    }
+  });
+
+  test('keeps 3D sampler aliases aligned across tex3D and texture3D spellings', () => {
+    for (const sampleCall of ['tex3D', 'texture3D'] as const) {
+      const compiled = compileMilkdropPresetSource(
+        `title=Volume Alias\ncomp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
+        { id: `volume-${sampleCall.toLowerCase()}` },
+      );
+
+      expect(compiled.ir.shaderText.supported).toBe(true);
+      expect(compiled.ir.post.shaderControls.textureLayer.source).toBe(
+        'simplex',
+      );
+      expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     }
   });
 });
