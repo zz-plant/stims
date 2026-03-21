@@ -884,6 +884,41 @@ video_echo=0
     );
   });
 
+  test.each([
+    ['init', 'init_1=video_echo_enabled=1;'],
+    ['per-frame', 'per_frame_1=video_echo_enabled=1;'],
+  ])('keeps video echo orientation blocked when %s programs enable echo', (_label, programLine) => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Program Echo Orientation
+video_echo_orientation=2
+${programLine}
+        `.trim(),
+      { id: 'program-echo-orientation', origin: 'imported' },
+    );
+
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([
+      'video_echo_orientation',
+    ]);
+    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([
+      'video_echo_orientation',
+    ]);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'video-echo',
+    );
+    expect(
+      compiled.diagnostics.some(
+        (entry) =>
+          entry.code === 'preset_unsupported_field' &&
+          entry.field === 'video_echo_orientation',
+      ),
+    ).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('unsupported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+  });
+
   test('keeps shader approximation as a partial backend support path', () => {
     const compiled = compileMilkdropPresetSource(
       `
