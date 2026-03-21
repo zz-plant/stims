@@ -1044,6 +1044,11 @@ export type MilkdropFeedbackSetRenderTarget = {
 
 export interface MilkdropFeedbackManager {
   applyCompositeState(state: MilkdropFeedbackCompositeState): void;
+  setAdaptiveQuality?(
+    multipliers: Partial<{
+      feedbackResolutionMultiplier: number;
+    }>,
+  ): void;
   render(
     renderer: {
       render(scene: Scene, camera: Camera): void;
@@ -1070,6 +1075,11 @@ export interface MilkdropRendererAdapter {
   readonly backend: 'webgl' | 'webgpu';
   attach(): void;
   setPreset(preset: MilkdropCompiledPreset): void;
+  setAdaptiveQuality?(
+    multipliers: Partial<{
+      feedbackResolutionMultiplier: number;
+    }>,
+  ): void;
   render(payload: MilkdropRenderPayload): boolean;
   resize(width: number, height: number): void;
   dispose(): void;

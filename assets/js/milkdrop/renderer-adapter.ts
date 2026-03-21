@@ -350,6 +350,22 @@ const PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS = `
   float milkdropEqual(float left, float right) {
     return abs(left - right) <= 0.000001 ? 1.0 : 0.0;
   }
+
+  float milkdropNormalizeTransformCenterX(float value) {
+    return (value - 0.5) * 2.0;
+  }
+
+  float milkdropNormalizeTransformCenterY(float value) {
+    return (0.5 - value) * 2.0;
+  }
+
+  float milkdropDenormalizeTransformCenterX(float value) {
+    return value * 0.5 + 0.5;
+  }
+
+  float milkdropDenormalizeTransformCenterY(float value) {
+    return 0.5 - value * 0.5;
+  }
 `;
 
 function gpuFieldVarName(name: string) {
@@ -598,8 +614,8 @@ function buildProceduralFieldProgramShaderChunk(
       float fieldZoomExponent = paramZoomExponent;
       float fieldRotation = paramRotation;
       float fieldWarp = paramWarp;
-      float fieldCenterX = paramCenterX;
-      float fieldCenterY = paramCenterY;
+      float fieldCenterX = milkdropDenormalizeTransformCenterX(paramCenterX);
+      float fieldCenterY = milkdropDenormalizeTransformCenterY(paramCenterY);
       float fieldScaleX = paramScaleX;
       float fieldScaleY = paramScaleY;
       float fieldTranslateX = paramTranslateX * 0.5;
@@ -607,14 +623,16 @@ function buildProceduralFieldProgramShaderChunk(
       ${temporaryDeclarations}
       ${statementCode}
 
+      float normalizedCenterX = milkdropNormalizeTransformCenterX(fieldCenterX);
+      float normalizedCenterY = milkdropNormalizeTransformCenterY(fieldCenterY);
       float angle = field_ang + fieldRotation;
       float translatedX =
-        (field_x - fieldCenterX) * fieldScaleX +
-        fieldCenterX +
+        (field_x - normalizedCenterX) * fieldScaleX +
+        normalizedCenterX +
         fieldTranslateX * 2.0;
       float translatedY =
-        (field_y - fieldCenterY) * fieldScaleY +
-        fieldCenterY +
+        (field_y - normalizedCenterY) * fieldScaleY +
+        normalizedCenterY +
         fieldTranslateY * 2.0;
       float ripple = sin(
         field_rad * 12.0 +
@@ -3007,6 +3025,14 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
 
   resize(width: number, height: number) {
     this.feedback?.resize(width, height);
+  }
+
+  setAdaptiveQuality(
+    multipliers: Partial<{
+      feedbackResolutionMultiplier: number;
+    }>,
+  ) {
+    this.feedback?.setAdaptiveQuality?.(multipliers);
   }
 
   private renderWaveGroup(

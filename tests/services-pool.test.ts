@@ -10,23 +10,29 @@ import {
   resetAudioPool,
 } from '../assets/js/core/services/audio-service.ts';
 import {
+  getRendererRuntimeControls,
   requestRenderer,
   resetRendererPool,
+  setRendererRuntimeControls,
+  subscribeToRendererRuntimeControls,
 } from '../assets/js/core/services/render-service.ts';
 import type { FrequencyAnalyser } from '../assets/js/utils/audio-handler.ts';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../assets/js/utils/audio-handler.ts';
 
 describe('render-service pooling', () => {
   const setPixelRatioMock = mock();
+  const setSizeMock = mock();
   const fakeRenderer = {
     setPixelRatio: setPixelRatioMock,
-    setSize: mock(),
+    setSize: setSizeMock,
     setAnimationLoop: mock(),
     dispose: mock(),
     toneMappingExposure: 1,
   } as unknown as WebGLRenderer;
 
   afterEach(() => {
+    setPixelRatioMock.mockReset();
+    setSizeMock.mockReset();
     document.body.innerHTML = '';
     resetRendererPool({ dispose: true });
     window.localStorage.clear();
@@ -43,6 +49,9 @@ describe('render-service pooling', () => {
       device: null,
       maxPixelRatio: 2,
       renderScale: 1,
+      adaptiveMaxPixelRatioMultiplier: 1,
+      adaptiveRenderScaleMultiplier: 1,
+      adaptiveDensityMultiplier: 1,
       exposure: 1,
     }));
 
@@ -55,6 +64,68 @@ describe('render-service pooling', () => {
     expect(first.canvas).toBe(second.canvas);
     expect(host.contains(second.canvas)).toBe(true);
     expect(initRendererImpl).toHaveBeenCalledTimes(1);
+  });
+
+  test('shares runtime optimization controls through the render service', async () => {
+    const updates = mock();
+    const unsubscribe = subscribeToRendererRuntimeControls(updates);
+
+    expect(updates).toHaveBeenCalledWith({
+      renderScale: 1,
+      feedbackScale: 1,
+      meshDensityMultiplier: 1,
+      waveSampleMultiplier: 1,
+      motionVectorDensityMultiplier: 1,
+    });
+
+    const next = setRendererRuntimeControls({
+      feedbackScale: 0.75,
+      meshDensityMultiplier: 1.25,
+    });
+
+    expect(next).toEqual({
+      renderScale: 1,
+      feedbackScale: 0.75,
+      meshDensityMultiplier: 1.25,
+      waveSampleMultiplier: 1,
+      motionVectorDensityMultiplier: 1,
+    });
+    expect(getRendererRuntimeControls()).toEqual(next);
+
+    unsubscribe();
+  });
+
+  test('applies runtime renderScale overrides to new and pooled renderers', async () => {
+    const initRendererImpl = mock(async () => ({
+      renderer: fakeRenderer,
+      backend: 'webgl' as const,
+      adapter: null,
+      device: null,
+      maxPixelRatio: 2,
+      renderScale: 1,
+      exposure: 1,
+    }));
+
+    setRendererRuntimeControls({ renderScale: 0.5 });
+
+    const first = await requestRenderer({ initRendererImpl });
+
+    expect(initRendererImpl).toHaveBeenCalledWith(
+      first.canvas,
+      expect.objectContaining({ renderScale: 0.5 }),
+    );
+
+    first.release();
+    setPixelRatioMock.mockClear();
+
+    const second = await requestRenderer({ initRendererImpl });
+
+    expect(second).toBe(first);
+    expect(setPixelRatioMock).toHaveBeenCalled();
+
+    setRendererRuntimeControls({ renderScale: 0.25 });
+
+    expect(setPixelRatioMock).toHaveBeenLastCalledWith(0.25);
   });
 });
 

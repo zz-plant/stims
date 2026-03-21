@@ -36,10 +36,21 @@ export type WebGPUWorkerSupport = {
   transferControlToOffscreen: boolean;
 };
 
+export type RendererOptimizationSupport = {
+  timestampQuery: boolean;
+  shaderF16: boolean;
+  subgroups: boolean;
+  workers: boolean;
+  offscreenCanvas: boolean;
+  transferControlToOffscreen: boolean;
+  workerOffscreenPipeline: boolean;
+};
+
 export type WebGPUCapabilitySummary = {
   features: WebGPUFeatureSupport;
   limits: WebGPULimitSnapshot;
   workers: WebGPUWorkerSupport;
+  optimization: RendererOptimizationSupport;
   preferredCanvasFormat: string | null;
   performanceTier: WebGPUCapabilityTier;
   recommendedQualityPreset: 'balanced' | 'hi-fi';
@@ -73,6 +84,26 @@ export type RendererTelemetryHandler = (
 export type RenderingSupport = {
   hasWebGPU: boolean;
   hasWebGL: boolean;
+};
+
+export type KnownOptimizationTelemetryCounter =
+  | 'renderScaleOverride'
+  | 'feedbackScaleOverride'
+  | 'meshDensityOverride'
+  | 'waveSampleOverride'
+  | 'motionVectorDensityOverride'
+  | 'timestampQueryUsage'
+  | 'shaderF16Usage'
+  | 'subgroupsUsage'
+  | 'workerOffscreenUsage';
+
+export type RendererOptimizationTelemetryCounterName =
+  | KnownOptimizationTelemetryCounter
+  | (string & {});
+
+export type RendererOptimizationTelemetryDetail = {
+  counter: RendererOptimizationTelemetryCounterName;
+  amount?: number;
 };
 
 type FallbackOptions = {
@@ -204,6 +235,30 @@ function getWorkerSupport(): WebGPUWorkerSupport {
   };
 }
 
+export function summarizeRendererOptimizationSupport({
+  features,
+  workers,
+}: {
+  features: Pick<
+    WebGPUFeatureSupport,
+    'timestampQuery' | 'shaderF16' | 'subgroups'
+  >;
+  workers: WebGPUWorkerSupport;
+}): RendererOptimizationSupport {
+  return {
+    timestampQuery: features.timestampQuery,
+    shaderF16: features.shaderF16,
+    subgroups: features.subgroups,
+    workers: workers.workers,
+    offscreenCanvas: workers.offscreenCanvas,
+    transferControlToOffscreen: workers.transferControlToOffscreen,
+    workerOffscreenPipeline:
+      workers.workers &&
+      workers.offscreenCanvas &&
+      workers.transferControlToOffscreen,
+  };
+}
+
 function getWebGPUPerformanceTier({
   features,
   limits,
@@ -267,17 +322,54 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
     ),
   };
 
+  const workers = getWorkerSupport();
   const performanceTier = getWebGPUPerformanceTier({ features, limits });
 
   return {
     features,
     limits,
-    workers: getWorkerSupport(),
+    workers,
+    optimization: summarizeRendererOptimizationSupport({ features, workers }),
     preferredCanvasFormat: getPreferredCanvasFormat(),
     performanceTier,
     recommendedQualityPreset:
       performanceTier === 'high-end' ? 'hi-fi' : 'balanced',
   } satisfies WebGPUCapabilitySummary;
+}
+
+export function getRendererOptimizationSupport(
+  capabilities: RendererCapabilities | null | undefined,
+): RendererOptimizationSupport {
+  if (capabilities?.webgpu) {
+    return capabilities.webgpu.optimization;
+  }
+
+  return {
+    timestampQuery: false,
+    shaderF16: false,
+    subgroups: false,
+    workers: false,
+    offscreenCanvas: false,
+    transferControlToOffscreen: false,
+    workerOffscreenPipeline: false,
+  };
+}
+
+export function recordRendererOptimizationTelemetry(
+  detail: RendererOptimizationTelemetryDetail,
+) {
+  if (typeof window === 'undefined' || !window.dispatchEvent) {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent('stims:renderer-optimization-telemetry', {
+      detail: {
+        amount: 1,
+        ...detail,
+      } satisfies RendererOptimizationTelemetryDetail,
+    }),
+  );
 }
 
 export function getRenderingSupport(): RenderingSupport {
