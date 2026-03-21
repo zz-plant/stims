@@ -94,6 +94,25 @@ function fidelityLabel(fidelity: MilkdropFidelityClass) {
   }
 }
 
+function getPresetMetaQualifier(preset: MilkdropCatalogEntry) {
+  if (preset.historyIndex !== undefined) {
+    return 'Recent';
+  }
+  if (preset.rating > 0) {
+    return `${preset.rating}★`;
+  }
+  if (preset.origin !== 'bundled') {
+    return 'Imported';
+  }
+  const firstTag = preset.tags.find(
+    (tag) => !tag.startsWith(COLLECTION_TAG_PREFIX),
+  );
+  if (firstTag) {
+    return firstTag.replace(/[-_]/gu, ' ');
+  }
+  return null;
+}
+
 function compatibilityCategoryLabel(
   category: MilkdropCompatibilityIssueCategory,
 ) {
@@ -829,13 +848,6 @@ export class MilkdropOverlay {
       badges.appendChild(activeBadge);
     }
 
-    if (preset.isFavorite) {
-      const favoriteBadge = document.createElement('span');
-      favoriteBadge.className = 'milkdrop-overlay__preset-tag';
-      favoriteBadge.textContent = 'Saved';
-      badges.appendChild(favoriteBadge);
-    }
-
     const support = preset.supports[this.activeBackend];
     const supportBadge = document.createElement('span');
     supportBadge.className = `milkdrop-overlay__support milkdrop-overlay__support--${preset.fidelityClass}`;
@@ -846,16 +858,8 @@ export class MilkdropOverlay {
 
     const meta = document.createElement('div');
     meta.className = 'milkdrop-overlay__preset-meta';
-    meta.textContent = [
-      preset.author,
-      preset.origin,
-      preset.certification,
-      preset.rating > 0 ? `${preset.rating}★` : null,
-      preset.historyIndex !== undefined ? 'recent' : null,
-      ...preset.tags
-        .filter((tag) => !tag.startsWith(COLLECTION_TAG_PREFIX))
-        .slice(0, 2),
-    ]
+    const metaQualifier = getPresetMetaQualifier(preset);
+    meta.textContent = [preset.author, metaQualifier]
       .filter(Boolean)
       .join(' · ');
 
@@ -867,7 +871,12 @@ export class MilkdropOverlay {
     const favorite = document.createElement('button');
     favorite.type = 'button';
     favorite.className = 'milkdrop-overlay__favorite';
-    favorite.textContent = preset.isFavorite ? 'Saved' : 'Save';
+    favorite.textContent = preset.isFavorite ? '★' : '☆';
+    favorite.setAttribute(
+      'aria-label',
+      preset.isFavorite ? 'Remove saved preset' : 'Save preset',
+    );
+    favorite.title = preset.isFavorite ? 'Remove saved preset' : 'Save preset';
     favorite.addEventListener('click', (event) => {
       event.stopPropagation();
       this.callbacks.onToggleFavorite(preset.id, !preset.isFavorite);
@@ -875,10 +884,12 @@ export class MilkdropOverlay {
 
     const rating = document.createElement('select');
     rating.className = 'milkdrop-overlay__rating-select';
+    rating.setAttribute('aria-label', `Rate ${preset.title}`);
+    rating.title = `Rate ${preset.title}`;
     [0, 1, 2, 3, 4, 5].forEach((value) => {
       const option = document.createElement('option');
       option.value = String(value);
-      option.textContent = value === 0 ? 'Rate' : `${value}★`;
+      option.textContent = value === 0 ? '☆' : `${value}★`;
       rating.appendChild(option);
     });
     rating.value = String(preset.rating);
@@ -898,10 +909,10 @@ export class MilkdropOverlay {
 
     row.append(launch, actions);
 
-    if (
-      preset.parity.degradationReasons.length > 0 ||
-      support.reasons.length > 0
-    ) {
+    const hasCompatibilityWarning =
+      support.status !== 'supported' ||
+      preset.parity.degradationReasons.length > 0;
+    if (hasCompatibilityWarning) {
       const reasons = document.createElement('div');
       reasons.className = 'milkdrop-overlay__preset-warning';
       const primaryReason = [...preset.parity.degradationReasons].sort(
