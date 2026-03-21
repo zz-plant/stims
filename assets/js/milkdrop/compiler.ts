@@ -940,6 +940,35 @@ function isShaderScalarValue(
   return value?.kind === 'scalar';
 }
 
+function normalizeShaderCallName(value: string) {
+  const normalized = value.toLowerCase();
+  switch (normalized) {
+    case 'float2':
+      return 'vec2';
+    case 'float3':
+      return 'vec3';
+    case 'texture':
+    case 'texture2d':
+    case 'tex2d':
+      return 'tex2d';
+    case 'texture3d':
+    case 'tex3d':
+      return 'tex3d';
+    default:
+      return normalized;
+  }
+}
+
+function normalizeShaderSyntax(value: string) {
+  return value
+    .trim()
+    .replace(/texture2d/giu, 'tex2d')
+    .replace(/texture3d/giu, 'tex3d')
+    .replace(/\btexture(?=\()/giu, 'tex2d')
+    .replace(/\bfloat2(?=\()/giu, 'vec2')
+    .replace(/\bfloat3(?=\()/giu, 'vec3');
+}
+
 function resolveShaderExpressionIdentifiers(
   node: MilkdropShaderExpressionNode,
   env: ShaderExpressionEnv,
@@ -973,7 +1002,7 @@ function resolveShaderExpressionIdentifiers(
     case 'call':
       return {
         ...node,
-        name: node.name.toLowerCase(),
+        name: normalizeShaderCallName(node.name),
         args: node.args.map((arg) =>
           resolveShaderExpressionIdentifiers(arg, env, visited),
         ),
@@ -1022,12 +1051,12 @@ function toMilkdropExpression(
       };
     }
     case 'call': {
-      const name = node.name.toLowerCase();
+      const name = normalizeShaderCallName(node.name);
       if (
         name === 'vec2' ||
         name === 'vec3' ||
         name === 'tex2d' ||
-        name === 'texture'
+        name === 'tex3d'
       ) {
         return null;
       }
@@ -1288,7 +1317,7 @@ function parseShaderVec2Constructor(
   rawValue: string,
   env: Record<string, number> = DEFAULT_MILKDROP_STATE,
 ) {
-  const match = rawValue.match(/^vec2\((.+)\)$/iu);
+  const match = normalizeShaderSyntax(rawValue).match(/^vec2\((.+)\)$/iu);
   if (!match) {
     return null;
   }
@@ -1368,7 +1397,7 @@ function parseShaderVec3Constructor(
   rawValue: string,
   env: Record<string, number>,
 ) {
-  const match = rawValue.match(/^vec3\((.+)\)$/iu);
+  const match = normalizeShaderSyntax(rawValue).match(/^vec3\((.+)\)$/iu);
   if (!match) {
     return null;
   }
@@ -1376,7 +1405,7 @@ function parseShaderVec3Constructor(
 }
 
 function parseShaderSampleMixPattern(rawValue: string) {
-  const normalized = rawValue.trim().replace(/texture2d/giu, 'tex2d');
+  const normalized = normalizeShaderSyntax(rawValue);
   const match = normalized.match(/^mix\((.+)\)$/iu);
   if (!match) {
     return null;
@@ -1478,14 +1507,10 @@ function isKnownShaderScalarKey(key: string) {
 }
 
 function isIdentityTextureSampleExpression(rawValue: string) {
-  const normalized = rawValue
+  const normalized = normalizeShaderSyntax(rawValue)
     .toLowerCase()
-    .replace(/\s+/gu, '')
-    .replace(/texture2d/gu, 'tex2d');
-  return (
-    normalized === 'tex2d(sampler_main,uv).rgb' ||
-    normalized === 'texture(sampler_main,uv).rgb'
-  );
+    .replace(/\s+/gu, '');
+  return normalized === 'tex2d(sampler_main,uv).rgb';
 }
 
 function isShaderLiteralNumber(
@@ -1502,7 +1527,7 @@ function isShaderSampleRgbExpression(
     node.type === 'member' &&
     ['rgb', 'xyz'].includes(node.property.toLowerCase()) &&
     node.object.type === 'call' &&
-    ['tex2d', 'texture'].includes(node.object.name.toLowerCase()) &&
+    ['tex2d', 'tex3d'].includes(normalizeShaderCallName(node.object.name)) &&
     node.object.args.length >= 2
   );
 }
@@ -1515,7 +1540,7 @@ function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
     node.type !== 'member' ||
     !['rgb', 'xyz'].includes(node.property.toLowerCase()) ||
     node.object.type !== 'call' ||
-    !['tex2d', 'texture'].includes(node.object.name.toLowerCase()) ||
+    !['tex2d', 'tex3d'].includes(normalizeShaderCallName(node.object.name)) ||
     node.object.args.length < 2
   ) {
     return null;
@@ -1811,7 +1836,7 @@ function isShaderSolarizeSampleExpression(
     isShaderSampleRgbExpression(arg.left) &&
     (isShaderLiteralNumber(right, 0.5) ||
       (right?.type === 'call' &&
-        right.name.toLowerCase() === 'vec3' &&
+        normalizeShaderCallName(right.name) === 'vec3' &&
         right.args.length >= 1 &&
         right.args.every((entry) => isShaderLiteralNumber(entry, 0.5))));
   return centeredSample;
@@ -2792,10 +2817,8 @@ function applyShaderProgramHeuristicLine({
   expressions: MilkdropShaderControlExpressions;
   shaderEnv: Record<string, number>;
 }) {
-  const normalizedValue = rawValue
-    .trim()
+  const normalizedValue = normalizeShaderSyntax(rawValue)
     .replace(/\s+/gu, '')
-    .replace(/texture2d/giu, 'tex2d')
     .toLowerCase();
 
   if (key === 'shader_body' && isIdentityTextureSampleExpression(rawValue)) {
@@ -3206,7 +3229,7 @@ function extractShaderControls(
 
     const fallbackAssignment = !parsedStatement
       ? line.match(
-          /^(?:(?:const|float|vec2|vec3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
+          /^(?:(?:const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
         )
       : null;
     if (!parsedStatement && !fallbackAssignment) {
