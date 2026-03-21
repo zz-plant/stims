@@ -39,9 +39,9 @@ const PROJECTM_BACKEND_EXPECTATIONS = {
     divergence: [],
   },
   '260-compshader-noise_lq.milk': {
-    webgl: 'partial',
-    webgpu: 'unsupported',
-    divergence: ['status:webgl=partial,webgpu=unsupported'],
+    webgl: 'supported',
+    webgpu: 'partial',
+    divergence: ['status:webgl=supported,webgpu=partial'],
   },
 } as const;
 

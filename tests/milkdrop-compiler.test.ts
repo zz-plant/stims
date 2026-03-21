@@ -321,6 +321,25 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_aura, uv * 1.5 
     );
   });
 
+  test('supports MilkDrop2 framebuffer noise sampler aliases in shader text', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Framebuffer Noise Alias
+comp_shader=ret = tex2d(sampler_fw_noise_lq, uv).rgb
+      `.trim(),
+      { id: 'framebuffer-noise-alias' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('noise');
+    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
+      [],
+    );
+  });
+
   test('supports warp texture controls in shader text', () => {
     const compiled = compileMilkdropPresetSource(
       `

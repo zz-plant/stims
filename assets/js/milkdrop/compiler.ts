@@ -67,6 +67,16 @@ const SHADER_TEXTURE_BLEND_MODES = new Set([
   'multiply',
 ]);
 
+const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
+  string,
+  MilkdropShaderTextureSampler | 'main'
+> = {
+  fw_noise_lq: 'noise',
+  fw_noise_hq: 'noise',
+  noise_lq: 'noise',
+  noise_hq: 'noise',
+};
+
 function createDefaultShapeSlot(index: number): Record<string, number> {
   if (index === 1) {
     return {
@@ -501,6 +511,8 @@ function collectExpressionsFromValue(
   Object.values(value).forEach((entry) =>
     collectExpressionsFromValue(entry, expressions),
   );
+}
+
 function createBackendEvidence(
   evidence: MilkdropBackendSupportEvidence,
 ): MilkdropBackendSupportEvidence {
@@ -731,16 +743,27 @@ function classifyFidelity({
   const hasBlockingConstruct = blockedConstructDetails.some(
     (construct) => !construct.allowlisted,
   );
-  const hasBlockingReason = degradationReasons.some(
+  const blockingReasons = degradationReasons.filter(
     (reason) => reason.blocking,
   );
+  const hasBlockingReason = blockingReasons.length > 0;
   const hasUnsupportedBackend =
     webgl.status === 'unsupported' || webgpu.status === 'unsupported';
   const hasBackendPartial = [...webgl.evidence, ...webgpu.evidence].some(
     (entry) => entry.status === 'partial',
   );
+  const hasOnlyAllowlistedConstructs =
+    blockedConstructDetails.length > 0 &&
+    blockedConstructDetails.every((construct) => construct.allowlisted);
+  const hasOnlyAllowlistedBackendBlockingReasons =
+    hasOnlyAllowlistedConstructs &&
+    hasBlockingReason &&
+    blockingReasons.every((reason) => reason.code === 'backend-unsupported');
 
-  if (hasUnsupportedBackend || hasBlockingReason) {
+  if (
+    (hasUnsupportedBackend || hasBlockingReason) &&
+    !hasOnlyAllowlistedBackendBlockingReasons
+  ) {
     return 'fallback';
   }
   if (hasBlockingConstruct) {
@@ -1326,8 +1349,9 @@ function normalizeShaderSamplerName(
   const sampler = normalized.startsWith('sampler_')
     ? normalized.slice('sampler_'.length)
     : normalized;
-  return SHADER_TEXTURE_SAMPLERS.has(sampler)
-    ? ((sampler === 'main' ? 'main' : sampler) as
+  const canonicalSampler = SHADER_TEXTURE_SAMPLER_ALIASES[sampler] ?? sampler;
+  return SHADER_TEXTURE_SAMPLERS.has(canonicalSampler)
+    ? ((canonicalSampler === 'main' ? 'main' : canonicalSampler) as
         | MilkdropShaderTextureSampler
         | 'main')
     : null;
@@ -1435,7 +1459,7 @@ function isShaderSampleRgbExpression(
 ): boolean {
   return (
     node.type === 'member' &&
-    node.property.toLowerCase() === 'rgb' &&
+    ['rgb', 'xyz'].includes(node.property.toLowerCase()) &&
     node.object.type === 'call' &&
     ['tex2d', 'texture'].includes(node.object.name.toLowerCase()) &&
     node.object.args.length >= 2
@@ -1448,7 +1472,7 @@ function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
 } | null {
   if (
     node.type !== 'member' ||
-    node.property.toLowerCase() !== 'rgb' ||
+    !['rgb', 'xyz'].includes(node.property.toLowerCase()) ||
     node.object.type !== 'call' ||
     !['tex2d', 'texture'].includes(node.object.name.toLowerCase()) ||
     node.object.args.length < 2
@@ -4126,6 +4150,19 @@ function normalizeString(rawValue: string) {
   return trimmed;
 }
 
+function normalizeShaderFieldChunk(rawValue: string) {
+  const normalized = normalizeString(rawValue).replace(/^`+/u, '').trim();
+  if (
+    normalized.length === 0 ||
+    normalized === '{' ||
+    normalized === '}' ||
+    normalized.toLowerCase() === 'shader_body'
+  ) {
+    return null;
+  }
+  return normalized;
+}
+
 function normalizeFieldSuffix(value: string) {
   return value
     .trim()
@@ -4755,7 +4792,10 @@ function createIR(
     }
 
     if (shaderFieldPattern.test(normalizedKey)) {
-      const rawValue = normalizeString(field.rawValue);
+      const rawValue = normalizeShaderFieldChunk(field.rawValue);
+      if (!rawValue) {
+        return;
+      }
       if (
         normalizedKey === 'warp_shader' ||
         normalizedKey === 'warp_code' ||
@@ -4897,6 +4937,16 @@ function createIR(
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
+  const ignoredFields = [...unsupportedKeys].sort();
+  const approximatedShaderLines = [
+    ...shaderWarpAnalysis.unsupportedLines,
+    ...shaderCompAnalysis.unsupportedLines,
+  ].map(normalizeBlockedConstructValue);
+  const blockingConstructDetails = buildBlockingConstructDetails({
+    sourceId: source.id,
+    ignoredFields,
+    approximatedShaderLines,
+  });
   collectExpressionsFromValue(
     mergedShaderControls.expressions,
     parsedExpressions,
@@ -4924,17 +4974,15 @@ function createIR(
     parsedExpressions,
     assignedTargets,
   );
+  const hasShaderText = Boolean(warpShaderText || compShaderText);
+  const hasBlockingShaderApproximation = blockingConstructDetails.some(
+    (construct) => construct.kind === 'shader' && !construct.allowlisted,
+  );
   supportedShaderText =
-    shaderWarpAnalysis.supported || shaderCompAnalysis.supported;
-  unsupportedShaderText =
-    (!shaderWarpAnalysis.supported &&
-      !!warpShaderText &&
-      shaderWarpAnalysis.unsupportedLines.length > 0) ||
-    (!shaderCompAnalysis.supported &&
-      !!compShaderText &&
-      shaderCompAnalysis.unsupportedLines.length > 0) ||
-    shaderWarpAnalysis.unsupportedLines.length > 0 ||
-    shaderCompAnalysis.unsupportedLines.length > 0;
+    shaderWarpAnalysis.supported ||
+    shaderCompAnalysis.supported ||
+    (hasShaderText && !hasBlockingShaderApproximation);
+  unsupportedShaderText = hasBlockingShaderApproximation;
   if (unsupportedShaderText) {
     addDiagnostic(
       diagnostics,
@@ -4970,11 +5018,6 @@ function createIR(
       unsupportedKeys: [...unsupportedKeys],
     }),
   };
-  const ignoredFields = [...unsupportedKeys].sort();
-  const approximatedShaderLines = [
-    ...shaderWarpAnalysis.unsupportedLines,
-    ...shaderCompAnalysis.unsupportedLines,
-  ].map(normalizeBlockedConstructValue);
   const blockedConstructs = [
     ...ignoredFields.map(toBlockedFieldConstruct),
     ...approximatedShaderLines.map(toBlockedShaderConstruct),
@@ -4985,11 +5028,6 @@ function createIR(
     approximatedShaderLines,
     webgl: finalBackends.webgl,
     webgpu: finalBackends.webgpu,
-  });
-  const blockingConstructDetails = buildBlockingConstructDetails({
-    sourceId: source.id,
-    ignoredFields,
-    approximatedShaderLines,
   });
   const degradationReasons = buildDegradationReasons({
     blockedConstructDetails: blockingConstructDetails,
