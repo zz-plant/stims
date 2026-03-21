@@ -30,8 +30,8 @@ export function isMilkdropParityConstructAllowlisted({
   signature,
 }: MilkdropParityAllowlistConstruct): boolean {
   return MILKDROP_PARITY_ALLOWLIST.entries.some((entry) => {
-    if (entry.id === presetId) {
-      return true;
+    if (entry.id !== presetId) {
+      return false;
     }
     return (entry.constructSignatures ?? []).includes(signature);
   });
