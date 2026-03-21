@@ -496,6 +496,37 @@ per_pixel_3=warp=warp+abs(y)*0.1;
     ).toHaveLength(3);
   });
 
+  test('keeps legacy motion-vector controls on the CPU path even when mesh descriptors stay procedural', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Legacy Motion Vector CPU Fallback
+motion_vectors=1
+motion_vectors_x=5
+motion_vectors_y=3
+mv_l=0.18
+mesh_density=12
+zoom=1.08
+rot=0.1
+warp=0.2
+      `.trim(),
+      { id: 'legacy-motion-vector-cpu-fallback' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const first = vm.step(makeSignals({ frame: 1, time: 0.2 }));
+    const second = vm.step(makeSignals({ frame: 2, time: 0.4 }));
+
+    expect(first.mesh.positions).toHaveLength(0);
+    expect(first.gpuGeometry.meshField).not.toBeNull();
+    expect(first.gpuGeometry.motionVectorField).toBeNull();
+    expect(first.motionVectors.length).toBeGreaterThan(0);
+    expect(second.motionVectors.length).toBeGreaterThan(0);
+    expect(second.motionVectors[0]?.positions).not.toEqual(
+      first.motionVectors[0]?.positions,
+    );
+  });
+
   test('keeps waveform-driven main-wave geometry on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `

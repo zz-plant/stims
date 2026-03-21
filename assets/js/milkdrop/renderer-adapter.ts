@@ -3373,7 +3373,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   ) {
     const proceduralField =
       this.backend === 'webgpu' &&
-      this.webgpuDescriptorPlan?.proceduralMesh?.supportsMotionVectors
+      this.webgpuDescriptorPlan?.proceduralMotionVectors !== null
         ? payload.gpuGeometry.motionVectorField
         : null;
     if (proceduralField) {

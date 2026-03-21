@@ -51,6 +51,7 @@ import type {
   MilkdropPresetIR,
   MilkdropPresetSource,
   MilkdropProceduralMeshDescriptorPlan,
+  MilkdropProceduralMotionVectorDescriptorPlan,
   MilkdropProceduralWaveDescriptorPlan,
   MilkdropProgramBlock,
   MilkdropRenderBackend,
@@ -5562,13 +5563,18 @@ function buildBackendSupport({
 function buildWebGpuDescriptorPlan({
   featureAnalysis,
   webgpu,
+  numericFields,
   programs,
   customWaves,
   post,
 }: {
   featureAnalysis: MilkdropFeatureAnalysis;
   webgpu: MilkdropBackendSupport;
-  programs: Pick<MilkdropPresetIR['programs'], 'perPixel'>;
+  numericFields: Record<string, number>;
+  programs: Pick<
+    MilkdropPresetIR['programs'],
+    'init' | 'perFrame' | 'perPixel'
+  >;
   customWaves: MilkdropWaveDefinition[];
   post: Pick<
     MilkdropPresetIR['post'],
@@ -5612,6 +5618,7 @@ function buildWebGpuDescriptorPlan({
       routing: 'fallback-webgl',
       proceduralWaves: [],
       proceduralMesh: null,
+      proceduralMotionVectors: null,
       feedback: null,
       unsupported,
     };
@@ -5645,13 +5652,27 @@ function buildWebGpuDescriptorPlan({
   ];
 
   const loweredPerPixelProgram = lowerGpuFieldProgram(programs.perPixel);
+  const supportsProceduralFieldEvaluation =
+    programs.perPixel.statements.length === 0 ||
+    loweredPerPixelProgram !== null;
   const proceduralMesh: MilkdropProceduralMeshDescriptorPlan | null =
-    programs.perPixel.statements.length === 0 || loweredPerPixelProgram
+    supportsProceduralFieldEvaluation
       ? {
           kind: 'procedural-mesh',
           requiresPerPixelProgram: programs.perPixel.statements.length > 0,
-          supportsMotionVectors:
-            featureAnalysis.featuresUsed.includes('motion-vectors'),
+          fieldProgram: loweredPerPixelProgram,
+        }
+      : null;
+  const proceduralMotionVectors: MilkdropProceduralMotionVectorDescriptorPlan | null =
+    featureAnalysis.featuresUsed.includes('motion-vectors') &&
+    !hasLegacyMotionVectorControls(numericFields, {
+      init: programs.init,
+      perFrame: programs.perFrame,
+    }) &&
+    supportsProceduralFieldEvaluation
+      ? {
+          kind: 'procedural-motion-vectors',
+          requiresPerPixelProgram: programs.perPixel.statements.length > 0,
           fieldProgram: loweredPerPixelProgram,
         }
       : null;
@@ -5694,11 +5715,15 @@ function buildWebGpuDescriptorPlan({
 
   return {
     routing:
-      proceduralWaves.length > 0 || proceduralMesh || feedback
+      proceduralWaves.length > 0 ||
+      proceduralMesh ||
+      proceduralMotionVectors ||
+      feedback
         ? 'descriptor-plan'
         : 'generic-frame-payload',
     proceduralWaves,
     proceduralMesh,
+    proceduralMotionVectors,
     feedback,
     unsupported: [],
   };
@@ -6214,6 +6239,7 @@ function createIR(
     webgpu: buildWebGpuDescriptorPlan({
       featureAnalysis,
       webgpu: finalBackends.webgpu,
+      numericFields,
       programs,
       customWaves,
       post,

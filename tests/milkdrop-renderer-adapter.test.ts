@@ -669,7 +669,7 @@ warpanimspeed=1.25
         children?: Array<{ type?: string; material?: unknown }>;
       }>;
     };
-    const motionVectorGroup = root.children[7] as {
+    const motionVectorGroup = root.children?.[7] as {
       children: Array<{
         type?: string;
         visible?: boolean;
@@ -685,6 +685,61 @@ warpanimspeed=1.25
     expect(cpuMotionVectors?.children).toHaveLength(0);
     expect(proceduralMotionVectors).toBeInstanceOf(LineSegments);
     expect(motionVectorGroup.children[1]?.material).toBeDefined();
+  });
+
+  test('falls back to CPU motion-vector overlays on webgpu for legacy controls', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Legacy Motion Vector Overlay
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mv_l=0.2
+zoom=1.05
+rot=0.12
+warp=0.26
+warpanimspeed=1.25
+      `.trim(),
+      { id: 'legacy-motion-vector-overlay' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals());
+
+    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const motionVectorGroup = root.children?.[7] as {
+      children: Array<{
+        type?: string;
+        visible?: boolean;
+      }>;
+    };
+
+    const matchingMotionVectorMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceStart') !== undefined &&
+        getGeometryInstanceCount(child) === frameState.motionVectors.length,
+    );
+
+    expect(matchingMotionVectorMesh).toBeDefined();
+    expect(motionVectorGroup.children[1]?.visible).toBe(false);
   });
 
   test('passes semantic feedback state to the feedback manager', () => {

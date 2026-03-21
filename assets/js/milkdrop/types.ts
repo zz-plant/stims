@@ -275,7 +275,12 @@ export type MilkdropGpuFieldProgramDescriptor = {
 export type MilkdropProceduralMeshDescriptorPlan = {
   kind: 'procedural-mesh';
   requiresPerPixelProgram: boolean;
-  supportsMotionVectors: boolean;
+  fieldProgram: MilkdropGpuFieldProgramDescriptor | null;
+};
+
+export type MilkdropProceduralMotionVectorDescriptorPlan = {
+  kind: 'procedural-motion-vectors';
+  requiresPerPixelProgram: boolean;
   fieldProgram: MilkdropGpuFieldProgramDescriptor | null;
 };
 
@@ -300,6 +305,7 @@ export type MilkdropWebGpuDescriptorPlan = {
   routing: MilkdropGpuDescriptorRouting;
   proceduralWaves: MilkdropProceduralWaveDescriptorPlan[];
   proceduralMesh: MilkdropProceduralMeshDescriptorPlan | null;
+  proceduralMotionVectors: MilkdropProceduralMotionVectorDescriptorPlan | null;
   feedback: MilkdropFeedbackPostEffectDescriptorPlan | null;
   unsupported: MilkdropGpuDescriptorUnsupportedMarker[];
 };
