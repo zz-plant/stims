@@ -230,8 +230,8 @@ function createSampleAuxTextureNode(
         .greaterThanEqual(0)
         .and(sliceZ.lessThanEqual(1));
       const wrappedSliceZ = select(sliceInRange, sliceZ, fract(sliceZ));
-      const sliceScale = select(sliceInRange, sliceCount.sub(1), sliceCount);
-      const scaledSlice = wrappedSliceZ.mul(sliceScale);
+      // Preserve the original 0..1 atlas mapping so modulo-equivalent tex3D phases stay periodic.
+      const scaledSlice = wrappedSliceZ.mul(sliceCount.sub(1));
       const sliceIndexA = floor(scaledSlice);
       const sliceIndexB = fract(sliceIndexA.add(1).div(sliceCount)).mul(
         sliceCount,

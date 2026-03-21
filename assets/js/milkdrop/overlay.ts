@@ -496,12 +496,9 @@ export class MilkdropOverlay {
       option.textContent = label;
       this.browseModeSelect.appendChild(option);
     });
-    this.browseModeSelect.addEventListener('change', () => {
-      this.browseMode = this.browseModeSelect.value as BrowseMode;
-      this.syncBrowseModeButtons();
-      this.updateBrowseFilterVisibility();
-      this.scheduleBrowseRender(0);
-    });
+    this.browseModeSelect.addEventListener('change', () =>
+      this.setBrowseMode(this.browseModeSelect.value as BrowseMode),
+    );
 
     this.browseSupportSelect = document.createElement('select');
     this.browseSupportSelect.className = 'milkdrop-overlay__rating-select';
@@ -549,6 +546,9 @@ export class MilkdropOverlay {
     this.browseModeTabs.className = 'milkdrop-overlay__browse-mode-tabs';
     this.browseModeTabs.setAttribute('role', 'tablist');
     this.browseModeTabs.setAttribute('aria-label', 'Preset browse modes');
+    this.browseModeTabs.addEventListener('keydown', (event) =>
+      this.handleBrowseModeTabsKeydown(event),
+    );
     (
       [
         ['featured', 'Featured'],
@@ -563,13 +563,7 @@ export class MilkdropOverlay {
       button.dataset.mode = value;
       button.setAttribute('role', 'tab');
       button.textContent = label;
-      button.addEventListener('click', () => {
-        this.browseModeSelect.value = value;
-        this.browseMode = value;
-        this.syncBrowseModeButtons();
-        this.updateBrowseFilterVisibility();
-        this.scheduleBrowseRender(0);
-      });
+      button.addEventListener('click', () => this.setBrowseMode(value));
       this.browseModeButtons.push(button);
       this.browseModeTabs.appendChild(button);
     });
@@ -764,6 +758,55 @@ export class MilkdropOverlay {
 
     wrap.append(title, control);
     return wrap;
+  }
+
+  private setBrowseMode(mode: BrowseMode) {
+    this.browseModeSelect.value = mode;
+    this.browseMode = mode;
+    this.syncBrowseModeButtons();
+    this.updateBrowseFilterVisibility();
+    this.scheduleBrowseRender(0);
+  }
+
+  private handleBrowseModeTabsKeydown(event: KeyboardEvent) {
+    const currentIndex = this.browseModeButtons.findIndex(
+      (button) => button.dataset.mode === this.browseMode,
+    );
+    if (currentIndex < 0) {
+      return;
+    }
+
+    let nextIndex: number | null = null;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = (currentIndex + 1) % this.browseModeButtons.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex =
+          (currentIndex - 1 + this.browseModeButtons.length) %
+          this.browseModeButtons.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = this.browseModeButtons.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    const nextButton = this.browseModeButtons[nextIndex];
+    const nextMode = nextButton?.dataset.mode as BrowseMode | undefined;
+    if (!nextButton || !nextMode) {
+      return;
+    }
+
+    this.setBrowseMode(nextMode);
+    nextButton.focus();
   }
 
   private syncBrowseModeButtons() {

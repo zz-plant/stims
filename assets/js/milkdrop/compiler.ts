@@ -7,6 +7,11 @@ import {
   splitMilkdropStatements,
   walkMilkdropExpression,
 } from './expression';
+import {
+  aliasMap,
+  normalizeFieldSuffix,
+  normalizeProgramAssignmentTarget,
+} from './field-normalization';
 import { formatMilkdropPreset } from './formatter';
 import { isMilkdropParityConstructAllowlisted } from './parity-allowlist';
 import { parseMilkdropPreset } from './preset-parser';
@@ -4314,55 +4319,6 @@ function mergeShaderControlAnalysis(
   };
 }
 
-const aliasMap: Record<string, string | null> = {
-  milkdrop_preset_version: null,
-  frating: 'fRating',
-  fdecay: 'decay',
-  fgammaadj: 'gammaadj',
-  fvideoechozoom: 'video_echo_zoom',
-  fvideoechoalpha: 'video_echo_alpha',
-  nvideoechoorientation: 'video_echo_orientation',
-  fwavealpha: 'wave_a',
-  fwavescale: 'wave_scale',
-  fwavesmoothing: 'wave_smoothing',
-  nwavemode: 'wave_mode',
-  fmodwavealphastart: 'modwavealphastart',
-  fmodwavealphaend: 'modwavealphaend',
-  fwarpscale: 'warp',
-  fwarpanimspeed: 'warpanimspeed',
-  fzoomexponent: 'zoomexp',
-  fshader: 'shader',
-  fbrighten: 'brighten',
-  fdarken: 'darken',
-  fsolarize: 'solarize',
-  finvert: 'invert',
-  bmaximizewavecolor: 'wave_brighten',
-  bbrighten: 'brighten',
-  bdarken: 'darken',
-  bsolarize: 'solarize',
-  binvert: 'invert',
-  fwaveparam: 'wave_mystery',
-  fwaver: 'wave_r',
-  fwaveg: 'wave_g',
-  fwaveb: 'wave_b',
-  fwavex: 'wave_x',
-  fwavey: 'wave_y',
-  fbeatsensitivity: 'beat_sensitivity',
-  fblendtimeseconds: 'blend_duration',
-  fouterbordersize: 'ob_size',
-  fouterborderr: 'ob_r',
-  fouterborderg: 'ob_g',
-  fouterborderb: 'ob_b',
-  fouterbordera: 'ob_a',
-  finnerbordersize: 'ib_size',
-  finnerborderr: 'ib_r',
-  finnerborderg: 'ib_g',
-  finnerborderb: 'ib_b',
-  finnerbordera: 'ib_a',
-  video_echo: 'video_echo_enabled',
-  echo_orient: 'video_echo_orientation',
-};
-
 const legacyCustomWaveSuffixMap: Record<string, string | null> = {
   mode: 'spectrum',
   bspectrum: 'spectrum',
@@ -4401,13 +4357,6 @@ function normalizeShaderFieldChunk(rawValue: string) {
     return null;
   }
   return normalized;
-}
-
-function normalizeFieldSuffix(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/gu, '_');
 }
 
 function normalizeLegacyCustomWaveSuffix(value: string) {
@@ -4641,12 +4590,6 @@ function normalizeFieldKey(field: MilkdropPresetField) {
     return 'shape_1_thickoutline';
   }
   return rawKey;
-}
-
-function normalizeProgramAssignmentTarget(target: string) {
-  const normalizedTarget = normalizeFieldSuffix(target);
-  const aliasedTarget = aliasMap[normalizedTarget];
-  return aliasedTarget ?? normalizedTarget;
 }
 
 function ensureWaveDefinition(
