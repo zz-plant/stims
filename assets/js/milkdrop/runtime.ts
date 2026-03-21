@@ -49,6 +49,11 @@ import type {
   MilkdropRuntimeSignals,
 } from './types';
 import { createMilkdropVM } from './vm';
+import {
+  getDisabledMilkdropWebGpuOptimizationFlags,
+  resolveMilkdropWebGpuOptimizationFlags,
+  shouldFallbackMilkdropPresetToWebgl,
+} from './webgpu-optimization-flags';
 
 const UI_PREFS_KEY = 'stims:milkdrop:ui';
 
@@ -704,7 +709,10 @@ export function createMilkdropExperience({
     origin: 'bundled',
     author: 'Stims',
   });
-  const vm = createMilkdropVM(defaultPreset);
+  const webgpuOptimizationFlags = resolveMilkdropWebGpuOptimizationFlags();
+  const disabledWebGpuOptimizationFlags =
+    getDisabledMilkdropWebGpuOptimizationFlags(webgpuOptimizationFlags);
+  const vm = createMilkdropVM(defaultPreset, webgpuOptimizationFlags);
   const signalTracker = createMilkdropSignalTracker();
   const session = createMilkdropEditorSession({
     initialPreset: defaultPreset.source,
@@ -880,9 +888,12 @@ export function createMilkdropExperience({
     catalogEntries.find((entry) => entry.id === activePresetId) ?? null;
 
   const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
-    activeBackend === 'webgpu' &&
-    compiled.ir.compatibility.backends.webgpu.status === 'unsupported' &&
-    !isCompatibilityModeEnabled();
+    shouldFallbackMilkdropPresetToWebgl({
+      backend: activeBackend,
+      compatibilityMode: isCompatibilityModeEnabled(),
+      descriptorPlan: compiled.ir.compatibility.gpuDescriptorPlans.webgpu,
+      flags: webgpuOptimizationFlags,
+    });
 
   const triggerWebglFallback = ({
     presetId,
@@ -1485,6 +1496,7 @@ export function createMilkdropExperience({
           renderer: handle?.renderer,
           backend: activeBackend,
           preset: activeCompiled,
+          webgpuOptimizationFlags,
         });
         adapter.attach();
         adaptiveQualityUnsubscribe?.();
@@ -1496,6 +1508,14 @@ export function createMilkdropExperience({
               ? (getCachedRendererCapabilities()?.webgpu ?? null)
               : null,
         });
+        if (
+          activeBackend === 'webgpu' &&
+          disabledWebGpuOptimizationFlags.length > 0
+        ) {
+          setOverlayStatus(
+            `WebGPU rollout flags active: ${disabledWebGpuOptimizationFlags.join(', ')}.`,
+          );
+        }
         adaptiveQualityUnsubscribe = adaptiveQualityController.subscribe(
           (state) => {
             adaptiveQualityState = state;
