@@ -767,7 +767,7 @@ warpanimspeed=1.25
 
     const matchingMotionVectorMesh = flattenRenderTree(root).find(
       (child) =>
-        child.geometry?.getAttribute?.('instanceStart') !== undefined &&
+        isWebGPUSegmentBatchNode(child) &&
         getGeometryInstanceCount(child) === frameState.motionVectors.length,
     );
 

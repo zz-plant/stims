@@ -5,6 +5,7 @@ import type {
   PositionalAudio,
   WebGLRenderer,
 } from 'three';
+import type { RendererInitConfig } from '../assets/js/core/renderer-setup.ts';
 import {
   acquireAudioHandle,
   resetAudioPool,
@@ -100,18 +101,20 @@ describe('render-service pooling', () => {
   });
 
   test('applies runtime renderScale overrides to new and pooled renderers', async () => {
-    const initRendererImpl = mock(async () => ({
-      renderer: fakeRenderer,
-      backend: 'webgl' as const,
-      adapter: null,
-      device: null,
-      maxPixelRatio: 2,
-      renderScale: 1,
-      adaptiveMaxPixelRatioMultiplier: 1,
-      adaptiveRenderScaleMultiplier: 1,
-      adaptiveDensityMultiplier: 1,
-      exposure: 1,
-    }));
+    const initRendererImpl = mock(
+      async (_canvas: HTMLCanvasElement, _config: RendererInitConfig = {}) => ({
+        renderer: fakeRenderer,
+        backend: 'webgl' as const,
+        adapter: null,
+        device: null,
+        maxPixelRatio: 2,
+        renderScale: 1,
+        adaptiveMaxPixelRatioMultiplier: 1,
+        adaptiveRenderScaleMultiplier: 1,
+        adaptiveDensityMultiplier: 1,
+        exposure: 1,
+      }),
+    );
 
     setRendererRuntimeControls({ renderScale: 0.5 });
 
