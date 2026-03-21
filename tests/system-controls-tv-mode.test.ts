@@ -6,7 +6,9 @@ import {
   resetRenderPreferencesState,
 } from '../assets/js/core/render-preferences.ts';
 import { resetSettingsPanelState } from '../assets/js/core/settings-panel.ts';
-import { initSystemControls } from '../assets/js/ui/system-controls.ts';
+
+const freshImport = async <T>(path: string): Promise<T> =>
+  import(`${path}?t=${Date.now()}-${Math.random()}`) as Promise<T>;
 
 type NavSnapshot = {
   userAgent: string;
@@ -18,6 +20,7 @@ const TV_UA =
   'Mozilla/5.0 (SMART-TV; Linux; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko)';
 
 let snapshot: NavSnapshot;
+let initSystemControls: typeof import('../assets/js/ui/system-controls.ts').initSystemControls;
 
 const setUserAgent = (userAgent: string) => {
   Object.defineProperty(navigator, 'userAgent', {
@@ -27,7 +30,7 @@ const setUserAgent = (userAgent: string) => {
 };
 
 describe('system controls tv defaults', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     snapshot = {
       userAgent: navigator.userAgent,
     };
@@ -35,6 +38,10 @@ describe('system controls tv defaults', () => {
     document.body.innerHTML = '';
     resetRenderPreferencesState();
     resetSettingsPanelState({ removePanel: true });
+    const systemControlsModule = await freshImport<
+      typeof import('../assets/js/ui/system-controls.ts')
+    >('../assets/js/ui/system-controls.ts');
+    initSystemControls = systemControlsModule.initSystemControls;
   });
 
   afterEach(() => {
