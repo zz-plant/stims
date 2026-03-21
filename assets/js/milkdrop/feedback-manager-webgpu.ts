@@ -226,12 +226,12 @@ function createSampleAuxTextureNode(
     ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) => {
       const wrappedUv = fract(sampleUv);
       const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
-      const wrappedSliceZ = select(
-        sliceZ.greaterThanEqual(0).and(sliceZ.lessThanEqual(1)),
-        sliceZ,
-        fract(sliceZ),
-      );
-      const scaledSlice = wrappedSliceZ.mul(sliceCount.sub(1));
+      const sliceInRange = sliceZ
+        .greaterThanEqual(0)
+        .and(sliceZ.lessThanEqual(1));
+      const wrappedSliceZ = select(sliceInRange, sliceZ, fract(sliceZ));
+      const sliceScale = select(sliceInRange, sliceCount.sub(1), sliceCount);
+      const scaledSlice = wrappedSliceZ.mul(sliceScale);
       const sliceIndexA = floor(scaledSlice);
       const sliceIndexB = fract(sliceIndexA.add(1).div(sliceCount)).mul(
         sliceCount,
