@@ -202,6 +202,10 @@ export type MilkdropFeatureAnalysis = {
   featuresUsed: MilkdropFeatureKey[];
   unsupportedShaderText: boolean;
   supportedShaderText: boolean;
+  shaderTextExecution: Record<
+    MilkdropRenderBackend,
+    'none' | 'translated' | 'direct' | 'unsupported'
+  >;
   registerUsage: {
     q: number;
     t: number;
@@ -369,6 +373,25 @@ export type MilkdropShaderStatement = {
   source: string;
 };
 
+export type MilkdropShaderProgramStage = 'warp' | 'comp';
+
+export type MilkdropShaderProgramExecutionDescriptor = {
+  kind: 'direct-feedback-program';
+  stage: MilkdropShaderProgramStage;
+  entryTarget: 'uv' | 'ret';
+  supportedBackends: MilkdropRenderBackend[];
+  requiresControlFallback: boolean;
+  statementTargets: string[];
+};
+
+export type MilkdropShaderProgramPayload = {
+  stage: MilkdropShaderProgramStage;
+  source: string;
+  normalizedLines: string[];
+  statements: MilkdropShaderStatement[];
+  execution: MilkdropShaderProgramExecutionDescriptor;
+};
+
 export type MilkdropShaderControlExpressions = {
   warpScale: MilkdropExpressionNode | null;
   offsetX: MilkdropExpressionNode | null;
@@ -425,6 +448,10 @@ export type MilkdropPostEffects = {
   innerBorderStyle: boolean;
   shaderControls: MilkdropShaderControls;
   shaderControlExpressions: MilkdropShaderControlExpressions;
+  shaderPrograms: {
+    warp: MilkdropShaderProgramPayload | null;
+    comp: MilkdropShaderProgramPayload | null;
+  };
   brighten: boolean;
   darken: boolean;
   solarize: boolean;
@@ -457,6 +484,8 @@ export type MilkdropPresetIR = {
     comp: string | null;
     warpAst: MilkdropShaderStatement[];
     compAst: MilkdropShaderStatement[];
+    warpProgram: MilkdropShaderProgramPayload | null;
+    compProgram: MilkdropShaderProgramPayload | null;
     supported: boolean;
     unsupportedLines: string[];
     controls: MilkdropShaderControls;
@@ -598,6 +627,10 @@ export type MilkdropPostVisual = {
   outerBorderStyle: boolean;
   innerBorderStyle: boolean;
   shaderControls: MilkdropShaderControls;
+  shaderPrograms: {
+    warp: MilkdropShaderProgramPayload | null;
+    comp: MilkdropShaderProgramPayload | null;
+  };
   brighten: boolean;
   darken: boolean;
   solarize: boolean;
@@ -758,6 +791,11 @@ export type MilkdropRenderPayload = {
 };
 
 export type MilkdropFeedbackCompositeState = {
+  shaderExecution: 'controls' | 'direct';
+  shaderPrograms: {
+    warp: MilkdropShaderProgramPayload | null;
+    comp: MilkdropShaderProgramPayload | null;
+  };
   mixAlpha: number;
   zoom: number;
   videoEchoOrientation: MilkdropVideoEchoOrientation;

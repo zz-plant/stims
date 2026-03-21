@@ -657,6 +657,57 @@ video_echo=1
     });
   });
 
+  test('prefers richer shader program payloads on supported backends', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Direct Shader Program Feedback
+video_echo=1
+warp_shader=shader_body=tex2d(sampler_main,uv).rgb;
+comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(0.1, 0.0, 0.0);
+      `.trim(),
+      { id: 'direct-shader-program-feedback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]?.shaderExecution).toBe('direct');
+    expect(compositeStates[0]?.shaderPrograms.comp?.stage).toBe('comp');
+    expect(
+      compositeStates[0]?.shaderPrograms.comp?.execution.supportedBackends,
+    ).toEqual(['webgl', 'webgpu']);
+  });
+
   test('renders main wave and trails directly on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `

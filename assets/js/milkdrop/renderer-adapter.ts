@@ -2022,7 +2022,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     frameState: MilkdropRenderPayload['frameState'],
   ): MilkdropFeedbackCompositeState {
     const controls = frameState.post.shaderControls;
+    const shaderPrograms = frameState.post.shaderPrograms;
+    const usesDirectShaderPrograms =
+      (shaderPrograms.warp?.execution.supportedBackends.includes(
+        this.backend,
+      ) ??
+        false) ||
+      (shaderPrograms.comp?.execution.supportedBackends.includes(
+        this.backend,
+      ) ??
+        false);
     return {
+      shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
+      shaderPrograms,
       mixAlpha: frameState.post.videoEchoEnabled
         ? frameState.post.videoEchoAlpha + controls.mixAlpha
         : controls.mixAlpha,
