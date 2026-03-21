@@ -2166,6 +2166,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         : 0,
       brighten: frameState.post.brighten ? 1 : 0,
       darken: frameState.post.darken ? 1 : 0,
+      darkenCenter: frameState.post.darkenCenter ? 1 : 0,
       solarize: frameState.post.solarize ? 1 : 0,
       invert: frameState.post.invert ? 1 : 0,
       gammaAdj: frameState.post.gammaAdj,
@@ -2201,6 +2202,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       overlayTextureSampleDimension: getShaderSampleDimensionId(
         controls.textureLayer.sampleDimension,
       ),
+      overlayTextureInvert: controls.textureLayer.inverted ? 1 : 0,
       overlayTextureAmount: controls.textureLayer.amount,
       overlayTextureScale: {
         x: controls.textureLayer.scaleX,

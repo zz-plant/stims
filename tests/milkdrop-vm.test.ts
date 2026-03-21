@@ -185,6 +185,26 @@ fGammaAdj=1.75
     expect(frameState.post.gammaAdj).toBeCloseTo(1.75, 6);
   });
 
+  test('applies Rovastar feedback aliases to runtime post visuals', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Rovastar Feedback Aliases VM
+bTexWrap=1
+bDarkenCenter=1
+      `.trim(),
+      { id: 'rovastar-feedback-aliases-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.post.textureWrap).toBe(true);
+    expect(frameState.post.darkenCenter).toBe(true);
+    expect(frameState.variables.texture_wrap).toBeCloseTo(1, 6);
+    expect(frameState.variables.darken_center).toBeCloseTo(1, 6);
+    expect(frameState.variables.btexwrap).toBeUndefined();
+    expect(frameState.variables.bdarkencenter).toBeUndefined();
+  });
+
   test.each([
     ['init', 'init_1=echo_orient=3;'],
     ['per-frame', 'per_frame_1=echo_orient=3;'],
@@ -733,6 +753,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     expect(frameState.post.shaderPrograms.comp).toBeNull();
     expect(frameState.post.shaderControls.textureLayer.source).toBe('simplex');
     expect(frameState.post.shaderControls.textureLayer.mode).toBe('mix');
+    expect(frameState.post.shaderControls.textureLayer.inverted).toBe(true);
     expect(frameState.post.shaderControls.textureLayer.amount).toBeCloseTo(
       0.35,
       6,
