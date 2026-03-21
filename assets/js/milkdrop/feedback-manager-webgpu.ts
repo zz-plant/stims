@@ -96,9 +96,12 @@ function loadMilkdropTexture(fileName: string, colorTexture = false) {
   return configureMilkdropTexture(loaded, colorTexture);
 }
 
-function createFeedbackRenderTarget(width: number, height: number) {
+function createFeedbackRenderTarget(
+  width: number,
+  height: number,
+  resolutionScale: number,
+) {
   const profile = WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
-  const resolutionScale = profile.resolutionScale;
   const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
   const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
   const target = new RenderTarget(scaledWidth, scaledHeight, {
@@ -625,9 +628,9 @@ class WebGPUMilkdropFeedbackManager {
   readonly presentMaterial: MeshBasicMaterial;
   readonly sceneTarget: RenderTarget;
   readonly targets: [RenderTarget, RenderTarget];
-  readonly resolutionScale =
-    WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.resolutionScale;
   readonly profile = WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
+  readonly sceneResolutionScale = this.profile.sceneResolutionScale;
+  readonly feedbackResolutionScale = this.profile.feedbackResolutionScale;
   readonly auxTextures: Record<string, Texture>;
   private index = 0;
 
@@ -642,10 +645,14 @@ class WebGPUMilkdropFeedbackManager {
       pattern: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.pattern),
       fractal: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.fractal),
     };
-    this.sceneTarget = createFeedbackRenderTarget(width, height);
+    this.sceneTarget = createFeedbackRenderTarget(
+      width,
+      height,
+      this.sceneResolutionScale,
+    );
     this.targets = [
-      createFeedbackRenderTarget(width, height),
-      createFeedbackRenderTarget(width, height),
+      createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
+      createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
     ];
 
     const uniforms = createCompositeUniforms(
@@ -654,8 +661,8 @@ class WebGPUMilkdropFeedbackManager {
       this.auxTextures,
     );
     uniforms.texelSize.value.set(
-      1 / Math.max(1, this.sceneTarget.width),
-      1 / Math.max(1, this.sceneTarget.height),
+      1 / Math.max(1, this.targets[0].width),
+      1 / Math.max(1, this.targets[0].height),
     );
 
     const compositeMaterial = new NodeMaterial();
@@ -786,13 +793,29 @@ class WebGPUMilkdropFeedbackManager {
   }
 
   resize(width: number, height: number) {
-    const scaledWidth = Math.max(1, Math.round(width * this.resolutionScale));
-    const scaledHeight = Math.max(1, Math.round(height * this.resolutionScale));
-    this.sceneTarget.setSize(scaledWidth, scaledHeight);
-    this.targets.forEach((target) => target.setSize(scaledWidth, scaledHeight));
+    const sceneWidth = Math.max(
+      1,
+      Math.round(width * this.sceneResolutionScale),
+    );
+    const sceneHeight = Math.max(
+      1,
+      Math.round(height * this.sceneResolutionScale),
+    );
+    const feedbackWidth = Math.max(
+      1,
+      Math.round(width * this.feedbackResolutionScale),
+    );
+    const feedbackHeight = Math.max(
+      1,
+      Math.round(height * this.feedbackResolutionScale),
+    );
+    this.sceneTarget.setSize(sceneWidth, sceneHeight);
+    this.targets.forEach((target) =>
+      target.setSize(feedbackWidth, feedbackHeight),
+    );
     this.compositeMaterial.uniforms.texelSize.value.set(
-      1 / Math.max(1, scaledWidth),
-      1 / Math.max(1, scaledHeight),
+      1 / Math.max(1, feedbackWidth),
+      1 / Math.max(1, feedbackHeight),
     );
   }
 
