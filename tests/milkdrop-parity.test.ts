@@ -346,6 +346,42 @@ describe('milkdrop parity corpus harness', () => {
   });
 });
 
+describe('milkdrop waveform parity fixtures', () => {
+  test('keeps Rovastar-style high-alpha wave_mode=0 output bright and circular', () => {
+    const filePath = join(
+      process.cwd(),
+      'tests',
+      'fixtures',
+      'milkdrop',
+      'parity-corpus',
+      'rovastar-parallel-universe-high-alpha.milk',
+    );
+    const preset = compileMilkdropPresetSource(readFileSync(filePath, 'utf8'), {
+      id: 'rovastar-parallel-universe-high-alpha',
+      title: 'rovastar-parallel-universe-high-alpha.milk',
+      fileName: 'rovastar-parallel-universe-high-alpha.milk',
+      path: filePath,
+      origin: 'user',
+    });
+
+    const waveformData = Float32Array.from({ length: 512 }, (_, index) => {
+      const phase = (index / 512) * Math.PI * 4;
+      return Math.sin(phase) * 0.65;
+    });
+    const frameState = createMilkdropVM(preset).step({
+      ...makeSignals({ frame: 4, time: 0.4 }),
+      waveformData,
+    });
+
+    expect(frameState.mainWave.closed).toBe(true);
+    expect(frameState.mainWave.additive).toBe(true);
+    expect(frameState.mainWave.alpha).toBeGreaterThan(4);
+    expect(frameState.mainWave.positions.length).toBeGreaterThan(500);
+    expect(frameState.mainWave.positions[0]).toBeLessThan(-0.35);
+    expect(frameState.mainWave.positions[1]).toBeLessThan(-0.35);
+  });
+});
+
 test('keeps former shader-gap parity fixtures out of the allowlist when only video echo still diverges', () => {
   const compiled = compileMilkdropPresetSource(
     readFileSync(
@@ -370,7 +406,7 @@ test('keeps former shader-gap parity fixtures out of the allowlist when only vid
         kind: 'feedback-post-effect',
         shaderExecution: 'controls',
         usesVideoEcho: true,
-        fallbackToLegacyFeedback: true,
+        fallbackToLegacyFeedback: false,
       }),
       unsupported: [],
     }),

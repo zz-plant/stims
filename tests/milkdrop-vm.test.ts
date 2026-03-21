@@ -10,14 +10,22 @@ function makeSignals({
   beatPulse = 0.1,
   frequencyValue = 160,
   time = frame / 60,
+  waveformData,
 }: {
   frame?: number;
   beatPulse?: number;
   frequencyValue?: number;
   time?: number;
+  waveformData?: Float32Array;
 } = {}): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
   frequencyData.fill(frequencyValue);
+  const resolvedWaveformData =
+    waveformData ??
+    Float32Array.from({ length: 512 }, (_, index) => {
+      const phase = (index / 512) * Math.PI * 6;
+      return Math.sin(phase) * (frequencyValue / 255);
+    });
 
   return {
     time,
@@ -127,6 +135,7 @@ function makeSignals({
     motionStrength: 0,
     motion_strength: 0,
     frequencyData,
+    waveformData: resolvedWaveformData,
   };
 }
 
@@ -332,33 +341,35 @@ per_pixel_1=zoom=1.1; rot=0.08; warp=0.2;
     expect(frameState.motionVectors.length).toBeGreaterThan(0);
   });
 
-  test('preserves prior frame wave samples for velocity-driven main wave animation', () => {
+  test('maps wave_mode=0 onto the projectM-style circular waveform path', () => {
     const preset = compileMilkdropPresetSource(
       `
-title=Wave Velocity History
-wave_mode=4
-wave_x=0.5
-wave_y=0.5
-wave_scale=1
+title=Wave Mode Circle
+wave_mode=0
+wave_x=0.045
+wave_y=0.94
+wave_scale=0.032378
+wave_mystery=-0.4
       `.trim(),
-      { id: 'wave-velocity-history' },
+      { id: 'wave-mode-circle' },
     );
 
     const vm = createMilkdropVM(preset);
-    vm.step(makeSignals({ frame: 1, frequencyValue: 32, time: 0.25 }));
-    const withHistory = vm.step(
-      makeSignals({ frame: 2, frequencyValue: 224, time: 0.25 }),
-    );
-    const withoutHistory = createMilkdropVM(preset).step(
-      makeSignals({ frame: 2, frequencyValue: 224, time: 0.25 }),
+    const frameState = vm.step(
+      makeSignals({
+        frame: 2,
+        time: 0.25,
+        waveformData: Float32Array.from(
+          { length: 512 },
+          (_, index) => Math.sin((index / 512) * Math.PI * 4) * 0.75,
+        ),
+      }),
     );
 
-    expect(withHistory.mainWave.positions).not.toEqual(
-      withoutHistory.mainWave.positions,
-    );
-    expect(withHistory.mainWave.positions[1]).toBeLessThan(
-      withoutHistory.mainWave.positions[1] ?? Number.POSITIVE_INFINITY,
-    );
+    expect(frameState.mainWave.closed).toBe(true);
+    expect(frameState.mainWave.positions.length).toBeGreaterThan(500);
+    expect(frameState.mainWave.positions[0]).toBeLessThan(-0.4);
+    expect(frameState.mainWave.positions[1]).toBeLessThan(-0.4);
   });
 
   test('maps custom-wave value aliases onto the runtime sample channels', () => {
@@ -563,13 +574,15 @@ fWarpAnimSpeed=2.2
     expect(slowState.mesh.positions).not.toEqual(fastState.mesh.positions);
   });
 
-  test('modulated wave alpha and shader flag affect frame post state', () => {
+  test('volume-modulated wave alpha and additive output keep bright wave intensity', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Wave Mod
-wave_a=0.8
-fModWaveAlphaStart=1.2
-fModWaveAlphaEnd=0.25
+wave_a=4.1
+bAdditiveWaves=1
+bModWaveAlphaByVolume=1
+fModWaveAlphaStart=0.2
+fModWaveAlphaEnd=0.8
 fShader=0
       `.trim(),
       { id: 'wave-mod' },
@@ -581,7 +594,8 @@ fShader=0
 
     expect(frameState.post.shaderEnabled).toBe(false);
     expect(frameState.mainWave.alpha).toBeGreaterThan(0.04);
-    expect(frameState.mainWave.alpha).toBeLessThan(0.8);
+    expect(frameState.mainWave.alpha).toBeGreaterThan(1);
+    expect(frameState.mainWave.additive).toBe(true);
   });
 
   test('carries shader subset, border style, and feedback flags into post visuals', () => {
@@ -909,7 +923,7 @@ wave_mystery=0.42
       );
     }
 
-    expect(signatures.size).toBe(8);
+    expect(signatures.size).toBe(7);
   });
 
   test('keeps the main wave stateful across successive frames', () => {

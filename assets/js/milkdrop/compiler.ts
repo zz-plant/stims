@@ -250,6 +250,7 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   dy: 0,
   warpanimspeed: 1,
   shader: 1,
+  modwavealphabyvolume: 0,
   modwavealphastart: 1,
   modwavealphaend: 1,
   wave_mode: 0,

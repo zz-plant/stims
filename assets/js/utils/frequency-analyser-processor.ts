@@ -131,7 +131,11 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
 
     this.analyseCount += 1;
     if (this.analyseCount % this.messageEvery === 0) {
-      this.port.postMessage({ frequencyData: this.frequencyData.slice(), rms });
+      this.port.postMessage({
+        frequencyData: this.frequencyData.slice(),
+        waveformData: this.buffer.slice(),
+        rms,
+      });
     }
   }
 

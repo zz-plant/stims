@@ -11,6 +11,7 @@ const FREQUENCY_ANALYSER_PROCESSOR = new URL(
 export class FrequencyAnalyser {
   frequencyBinCount: number;
   private frequencyData: Uint8Array;
+  private waveformData: Float32Array;
   private rms = 0;
   private readonly historySize = 64;
   private energyHistory: { bass: number[]; mid: number[]; treble: number[] } = {
@@ -46,6 +47,7 @@ export class FrequencyAnalyser {
     this.analyserNode = analyserNode;
     this.frequencyBinCount = fftSize / 2;
     this.frequencyData = new Uint8Array(this.frequencyBinCount);
+    this.waveformData = new Float32Array(fftSize);
     this.silentGain = silentGain;
 
     if (this.workletNode) {
@@ -65,6 +67,16 @@ export class FrequencyAnalyser {
           this.cachedEnergy = this.calculateMultiBandEnergy(this.frequencyData);
           this.energyVersion = this.dataVersion;
           this.updateEnergyHistory(this.cachedEnergy);
+        }
+        if (event.data?.waveformData) {
+          const nextWaveform =
+            event.data.waveformData instanceof Float32Array
+              ? event.data.waveformData
+              : new Float32Array(event.data.waveformData);
+          if (this.waveformData.length !== nextWaveform.length) {
+            this.waveformData = new Float32Array(nextWaveform.length);
+          }
+          this.waveformData.set(nextWaveform);
         }
         if (typeof rms === 'number') {
           this.rms = rms;
@@ -145,6 +157,24 @@ export class FrequencyAnalyser {
     }
 
     return this.frequencyData;
+  }
+
+  getWaveformData() {
+    if (this.analyserNode) {
+      const nextWaveform = new Float32Array(this.analyserNode.fftSize);
+      if (this.analyserNode.getFloatTimeDomainData) {
+        this.analyserNode.getFloatTimeDomainData(nextWaveform);
+      } else {
+        const byteWaveform = new Uint8Array(this.analyserNode.fftSize);
+        this.analyserNode.getByteTimeDomainData(byteWaveform);
+        for (let index = 0; index < byteWaveform.length; index += 1) {
+          nextWaveform[index] = ((byteWaveform[index] ?? 128) - 128) / 128;
+        }
+      }
+      this.waveformData = nextWaveform;
+    }
+
+    return this.waveformData;
   }
 
   private calculateMultiBandEnergy(data: Uint8Array) {

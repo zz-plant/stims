@@ -56,6 +56,10 @@ export function createMilkdropSignalTracker() {
       const midsAtt = update.smoothedBands.mid;
       const trebleAtt = update.smoothedBands.treble;
       const beatPulse = update.beatIntensity;
+      const waveformData =
+        analyser && 'getWaveformData' in analyser
+          ? analyser.getWaveformData()
+          : undefined;
 
       return {
         time,
@@ -165,6 +169,7 @@ export function createMilkdropSignalTracker() {
         motionStrength: 0,
         motion_strength: 0,
         frequencyData,
+        waveformData,
       };
     },
   };

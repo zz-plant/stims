@@ -60,6 +60,7 @@ function hashSeed(input: string) {
 
 function defaultSignalEnv(): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
+  const waveformData = new Float32Array(512);
   return {
     time: 0,
     deltaMs: 16.67,
@@ -168,6 +169,7 @@ function defaultSignalEnv(): MilkdropRuntimeSignals {
     motionStrength: 0,
     motion_strength: 0,
     frequencyData,
+    waveformData,
   };
 }
 
@@ -207,6 +209,94 @@ function sampleFrequencyData(signals: MilkdropRuntimeSignals, t: number) {
   return (signals.frequencyData[sampleIndex] ?? 0) / 255;
 }
 
+function sampleWaveformData(
+  signals: MilkdropRuntimeSignals,
+  t: number,
+  phaseOffset = 0,
+) {
+  const waveformData = signals.waveformData;
+  if (waveformData && waveformData.length > 0) {
+    const wrappedT = t + phaseOffset - Math.floor(t + phaseOffset);
+    const scaledIndex = wrappedT * Math.max(0, waveformData.length - 1);
+    const lowerIndex = Math.floor(scaledIndex);
+    const upperIndex = Math.min(waveformData.length - 1, lowerIndex + 1);
+    const mixAmount = scaledIndex - lowerIndex;
+    const lowerValue = waveformData[lowerIndex] ?? 0;
+    const upperValue = waveformData[upperIndex] ?? lowerValue;
+    return mix(lowerValue, upperValue, mixAmount);
+  }
+
+  return sampleFrequencyData(signals, t + phaseOffset) * 2 - 1;
+}
+
+function normalizeProjectMMystery(value: number) {
+  if (value >= -1 && value <= 1) {
+    return value;
+  }
+
+  let normalized = value * 0.5 + 0.5;
+  normalized -= Math.floor(normalized);
+  normalized = Math.abs(normalized);
+  return normalized * 2 - 1;
+}
+
+function smoothWavePositions(
+  points: Array<{ x: number; y: number; z: number }>,
+) {
+  if (points.length === 0) {
+    return [] as number[];
+  }
+
+  const fallbackPoint = points[0] ?? { x: 0, y: 0, z: 0 };
+
+  const c1 = -0.15;
+  const c2 = 1.15;
+  const c3 = 1.15;
+  const c4 = -0.15;
+  const inverseSum = 1 / (c1 + c2 + c3 + c4);
+  const positions = new Array<number>(Math.max(1, points.length * 2 - 1) * 3);
+
+  let outputIndex = 0;
+  let belowIndex = 0;
+  let aboveTwoIndex = 1;
+
+  for (let inputIndex = 0; inputIndex < points.length - 1; inputIndex += 1) {
+    const aboveIndex = aboveTwoIndex;
+    aboveTwoIndex = Math.min(points.length - 1, inputIndex + 2);
+    const current = points[inputIndex] ?? fallbackPoint;
+    const below = points[belowIndex] ?? current;
+    const above = points[aboveIndex] ?? current;
+    const aboveTwo = points[aboveTwoIndex] ?? above;
+
+    const baseIndex = outputIndex * 3;
+    positions[baseIndex] = current.x;
+    positions[baseIndex + 1] = current.y;
+    positions[baseIndex + 2] = current.z;
+
+    const smoothedIndex = (outputIndex + 1) * 3;
+    positions[smoothedIndex] =
+      (c1 * below.x + c2 * current.x + c3 * above.x + c4 * aboveTwo.x) *
+      inverseSum;
+    positions[smoothedIndex + 1] =
+      (c1 * below.y + c2 * current.y + c3 * above.y + c4 * aboveTwo.y) *
+      inverseSum;
+    positions[smoothedIndex + 2] =
+      (c1 * below.z + c2 * current.z + c3 * above.z + c4 * aboveTwo.z) *
+      inverseSum;
+
+    belowIndex = inputIndex;
+    outputIndex += 2;
+  }
+
+  const lastPoint = points[points.length - 1] ?? fallbackPoint;
+  const lastIndex = outputIndex * 3;
+  positions[lastIndex] = lastPoint.x;
+  positions[lastIndex + 1] = lastPoint.y;
+  positions[lastIndex + 2] = lastPoint.z;
+
+  return positions;
+}
+
 function sampleCustomWaveChannels(
   signals: MilkdropRuntimeSignals,
   sample: number,
@@ -239,12 +329,6 @@ type MeshField = {
   points: MeshFieldPoint[];
 };
 
-type WaveFrameBuffers = {
-  liveSamples: number[];
-  previousSamples: number[];
-  smoothedSamples: number[];
-};
-
 class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
   private state: MutableState = {};
@@ -253,15 +337,9 @@ class MilkdropPresetVM implements MilkdropVM {
   private detailScale = 1;
   private trails: MilkdropPolyline[] = [];
   private lastWaveform: MilkdropWaveVisual | null = null;
-  private lastWaveSamples: number[] = [];
   private customWaveState: MutableState[] = [];
   private customShapeState: MutableState[] = [];
   private lastMeshField: MeshField | null = null;
-  private readonly waveBuffers: WaveFrameBuffers = {
-    liveSamples: [],
-    previousSamples: [],
-    smoothedSamples: [],
-  };
   private readonly frameTransformCache = new Map<
     number,
     { x: number; y: number }
@@ -298,7 +376,6 @@ class MilkdropPresetVM implements MilkdropVM {
       hashSeed(this.preset.source.id || this.preset.title || 'milkdrop') || 1;
     this.trails = [];
     this.lastWaveform = null;
-    this.lastWaveSamples = [];
     this.customWaveState = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
     );
@@ -306,9 +383,6 @@ class MilkdropPresetVM implements MilkdropVM {
       this.seedCustomShapeState(shape),
     );
     this.lastMeshField = null;
-    this.waveBuffers.liveSamples.length = 0;
-    this.waveBuffers.previousSamples.length = 0;
-    this.waveBuffers.smoothedSamples.length = 0;
     this.frameTransformCache.clear();
 
     const zeroSignals = defaultSignalEnv();
@@ -350,13 +424,6 @@ class MilkdropPresetVM implements MilkdropVM {
         ),
       ),
     };
-  }
-
-  private syncLastWaveSamples(samples: number[], count: number) {
-    this.lastWaveSamples.length = count;
-    for (let index = 0; index < count; index += 1) {
-      this.lastWaveSamples[index] = samples[index] ?? 0;
-    }
   }
 
   private nextRandom = () => {
@@ -523,164 +590,215 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   private buildMainWave(signals: MilkdropRuntimeSignals) {
-    const samples = clamp(
-      Math.round((48 + this.state.mesh_density * 2) * this.detailScale),
-      24,
-      192,
-    );
-    const positions = new Array<number>(samples * 3);
     const mode = normalizeWaveMode(this.state.wave_mode ?? 0);
     const centerX = ((this.state.wave_x ?? 0.5) - 0.5) * 2;
     const centerY = (0.5 - (this.state.wave_y ?? 0.5)) * 2;
-    const scale = 0.16 + (this.state.wave_scale ?? 1) * 0.18;
-    const mystery = this.state.wave_mystery ?? 0;
-    const mysteryPhase = mystery * Math.PI;
-    const modWaveAlphaStart = clamp(this.state.modwavealphastart ?? 1, 0, 2);
-    const modWaveAlphaEnd = clamp(this.state.modwavealphaend ?? 1, 0, 2);
-    const modWaveAlphaPhase = clamp(
-      0.5 +
-        Math.sin(signals.time * (0.9 + (this.state.warpanimspeed ?? 1) * 0.4)) *
-          0.35 +
-        signals.beatPulse * 0.25,
-      0,
-      1,
+    const waveScale = this.state.wave_scale ?? 1;
+    const waveSmoothing = clamp(this.state.wave_smoothing ?? 0.72, 0, 0.98);
+    const rawMystery = this.state.wave_mystery ?? 0;
+    const normalizedMystery = normalizeProjectMMystery(rawMystery);
+    const rawSampleCount =
+      mode === 0 || mode === 1 || mode === 6 || mode === 7 ? 256 : 512;
+    const samples = clamp(
+      Math.round(rawSampleCount * this.detailScale),
+      32,
+      rawSampleCount,
     );
-    const liveSamples = this.waveBuffers.liveSamples;
-    const previousSamples = this.waveBuffers.previousSamples;
-    const smoothedSamples = this.waveBuffers.smoothedSamples;
-    liveSamples.length = samples;
-    previousSamples.length = samples;
-    smoothedSamples.length = samples;
+    const sampleOffset = Math.max(0, Math.floor((512 - samples) / 2));
+    const leftChannel = new Array<number>(samples);
+    const rightChannel = new Array<number>(samples);
+    const channelPhaseOffset =
+      signals.waveformData && signals.waveformData.length > 0 ? 0 : 0.125;
+    const scale = waveScale;
+    const mix2 = waveSmoothing;
+    const mix1 = scale * (1 - mix2);
+
     for (let index = 0; index < samples; index += 1) {
-      previousSamples[index] = this.lastWaveSamples[index] ?? 0;
-    }
-    const historyBlend = clamp(
-      0.26 + signals.beatPulse * 0.48 + signals.deltaMs / 120,
-      0.24,
-      0.92,
-    );
-    for (let index = 0; index < samples; index += 1) {
-      const value = sampleFrequencyData(
+      const sampleIndex = (index + sampleOffset) / 512;
+      const leftValue = sampleWaveformData(signals, sampleIndex, 0);
+      const rightValue = sampleWaveformData(
         signals,
-        index / Math.max(1, samples - 1),
+        sampleIndex,
+        channelPhaseOffset,
       );
-      liveSamples[index] = value;
-      smoothedSamples[index] = mix(
-        previousSamples[index] ?? value,
-        value,
-        historyBlend,
-      );
-    }
-    this.syncLastWaveSamples(smoothedSamples, samples);
 
-    for (let index = 0; index < samples; index += 1) {
-      const t = index / Math.max(1, samples - 1);
-      const sampleValue =
-        smoothedSamples[index] ?? sampleFrequencyData(signals, t);
-      const previousSample = previousSamples[index] ?? sampleValue;
-      const velocity = sampleValue - previousSample;
-      const centeredSample = sampleValue - 0.5;
-      let x = 0;
-      let y = 0;
-
-      switch (mode) {
-        case 1: {
-          const angle =
-            t * Math.PI * 2 +
-            signals.time * 0.32 +
-            centeredSample * 0.8 +
-            velocity * 2.5;
-          const radius =
-            0.22 +
-            sampleValue * scale +
-            signals.beatPulse * 0.08 +
-            Math.sin(t * Math.PI * 4 + signals.time) * 0.015;
-          x = centerX + Math.cos(angle) * radius;
-          y = centerY + Math.sin(angle) * radius;
-          break;
-        }
-        case 2: {
-          const angle =
-            t * Math.PI * 5 +
-            signals.time * (0.4 + mystery * 0.2) +
-            centeredSample * 0.65;
-          const radius =
-            0.08 + t * 0.6 + sampleValue * scale * 0.6 + velocity * 0.12;
-          x = centerX + Math.cos(angle) * radius;
-          y = centerY + Math.sin(angle) * radius;
-          break;
-        }
-        case 3: {
-          const angle = t * Math.PI * 2 + signals.time * 0.22;
-          const spoke =
-            0.2 +
-            sampleValue * scale * 1.05 +
-            Math.sin(t * Math.PI * 12 + mysteryPhase) * 0.05 +
-            velocity * 0.09;
-          const pinch = 0.55 + Math.cos(t * Math.PI * 6 + signals.time) * 0.2;
-          x = centerX + Math.cos(angle) * spoke;
-          y = centerY + Math.sin(angle) * spoke * pinch;
-          break;
-        }
-        case 4: {
-          x =
-            centerX +
-            (sampleValue - 0.5) * scale * 1.85 +
-            Math.sin(t * Math.PI * 10 + signals.time * 0.5) * 0.04;
-          y = 1.08 - t * 2.16 + velocity * 0.22;
-          break;
-        }
-        case 5: {
-          const angle = t * Math.PI * 2 + signals.time * 0.18;
-          const xAmp = 0.26 + sampleValue * scale * 0.75;
-          const yAmp = 0.18 + sampleValue * scale;
-          x =
-            centerX +
-            Math.sin(angle * (2 + mystery * 0.6)) * xAmp +
-            Math.cos(angle * 4 + mysteryPhase) * 0.04 +
-            velocity * 0.16;
-          y =
-            centerY +
-            Math.sin(angle * (3 + mystery * 0.5) + Math.PI / 2) * yAmp;
-          break;
-        }
-        case 6: {
-          const band = (sampleValue - 0.5) * scale * 1.4;
-          x = -1.05 + t * 2.1;
-          y =
-            centerY +
-            (index % 2 === 0 ? band : -band) +
-            Math.sin(t * Math.PI * 8 + signals.time * 0.55) * 0.03 +
-            velocity * 0.18;
-          break;
-        }
-        case 7: {
-          const angle = t * Math.PI * 2 + signals.time * (0.24 + mystery * 0.1);
-          const petals = 3 + Math.round(clamp(mystery * 3, 0, 3));
-          const radius =
-            0.12 +
-            (0.2 + sampleValue * scale * 0.9) *
-              Math.cos(petals * angle + mysteryPhase) +
-            velocity * 0.14;
-          x = centerX + Math.cos(angle) * radius;
-          y = centerY + Math.sin(angle) * radius;
-          break;
-        }
-        default:
-          x = -1.1 + t * 2.2;
-          y =
-            centerY +
-            Math.sin(t * Math.PI * 2 + signals.time * (0.55 + mystery)) *
-              (0.06 + signals.trebleAtt * 0.08) +
-            centeredSample * scale * 1.7 +
-            velocity * 0.12;
+      if (index === 0) {
+        leftChannel[index] = leftValue * scale;
+        rightChannel[index] = rightValue * scale;
+      } else {
+        leftChannel[index] =
+          leftValue * mix1 + (leftChannel[index - 1] ?? 0) * mix2;
+        rightChannel[index] =
+          rightValue * mix1 + (rightChannel[index - 1] ?? 0) * mix2;
       }
-
-      const writeIndex = index * 3;
-      positions[writeIndex] = x;
-      positions[writeIndex + 1] = y;
-      positions[writeIndex + 2] = 0.22 + velocity * 0.08;
     }
+
+    const points: Array<{ x: number; y: number; z: number }> = [];
+    const viewportAspect = 1;
+    const aspectX = viewportAspect >= 1 ? 1 : viewportAspect;
+    const aspectY = viewportAspect >= 1 ? 1 / viewportAspect : 1;
+    const lineAngle = 1.57 * rawMystery;
+    const distanceX = Math.cos(lineAngle);
+    const distanceY = Math.sin(lineAngle);
+    const edgeBaseX = centerX * Math.cos(lineAngle + 1.57);
+    const edgeBaseY = centerY * Math.sin(lineAngle + 1.57);
+    const startX = edgeBaseX - distanceX * 1.1;
+    const startY = edgeBaseY - distanceY * 1.1;
+    const segmentX = (distanceX * 2.2) / Math.max(1, samples - 1);
+    const segmentY = (distanceY * 2.2) / Math.max(1, samples - 1);
+    const perpendicularX = Math.cos(Math.atan2(segmentY, segmentX) + 1.57);
+    const perpendicularY = Math.sin(Math.atan2(segmentY, segmentX) + 1.57);
+
+    switch (mode) {
+      case 0: {
+        for (let index = 0; index < samples; index += 1) {
+          let radius =
+            0.5 + 0.4 * (rightChannel[index] ?? 0) + normalizedMystery;
+          const angle =
+            (index / Math.max(1, samples)) * Math.PI * 2 + signals.time * 0.2;
+
+          if (index < samples / 10) {
+            let blend = index / Math.max(1, samples * 0.1);
+            blend = 0.5 - 0.5 * Math.cos(blend * Math.PI);
+            const wrappedIndex = (index + samples) % samples;
+            const radius2 =
+              0.5 +
+              0.4 * (rightChannel[wrappedIndex] ?? rightChannel[index] ?? 0) +
+              normalizedMystery;
+            radius = mix(radius2, radius, blend);
+          }
+
+          points.push({
+            x: centerX + radius * Math.cos(angle) * aspectY,
+            y: centerY + radius * Math.sin(angle) * aspectX,
+            z: 0.22,
+          });
+        }
+        break;
+      }
+      case 1: {
+        for (let index = 0; index < samples; index += 1) {
+          const radius =
+            0.53 + 0.43 * (rightChannel[index] ?? 0) + normalizedMystery;
+          const angle =
+            (leftChannel[(index + 32) % samples] ?? 0) * 1.57 +
+            signals.time * 2.3;
+          points.push({
+            x: centerX + radius * Math.cos(angle) * aspectY,
+            y: centerY + radius * Math.sin(angle) * aspectX,
+            z: 0.22,
+          });
+        }
+        break;
+      }
+      case 2:
+      case 3: {
+        for (let index = 0; index < samples; index += 1) {
+          points.push({
+            x: centerX + (rightChannel[index] ?? 0) * aspectY,
+            y: centerY + (leftChannel[(index + 32) % samples] ?? 0) * aspectX,
+            z: 0.22,
+          });
+        }
+        break;
+      }
+      case 4: {
+        const momentum = 0.45 + 0.5 * (normalizedMystery * 0.5 + 0.5);
+        const inverseSamples = 1 / Math.max(1, samples);
+
+        for (let index = 0; index < samples; index += 1) {
+          const x =
+            -1 +
+            2 * (index * inverseSamples) +
+            centerX +
+            (rightChannel[Math.min(samples - 1, index + 25)] ?? 0) * 0.44;
+          const y = centerY + (leftChannel[index] ?? 0) * 0.47;
+          let point = { x, y, z: 0.22 };
+
+          if (index > 1) {
+            const previous = points[index - 1] ?? point;
+            const beforePrevious = points[index - 2] ?? previous;
+            const carry = 1 - momentum;
+            point = {
+              x: x * carry + momentum * (previous.x * 2 - beforePrevious.x),
+              y: y * carry + momentum * (previous.y * 2 - beforePrevious.y),
+              z: 0.22,
+            };
+          }
+
+          points.push(point);
+        }
+        break;
+      }
+      case 5: {
+        const cosRotation = Math.cos(signals.time * 0.3);
+        const sinRotation = Math.sin(signals.time * 0.3);
+        for (let index = 0; index < samples; index += 1) {
+          const currentR = rightChannel[index] ?? 0;
+          const currentL = leftChannel[index] ?? 0;
+          const nextR = rightChannel[(index + 32) % samples] ?? currentR;
+          const nextL = leftChannel[(index + 32) % samples] ?? currentL;
+          const x0 = currentR * nextL + currentL * nextR;
+          const y0 = currentR * currentR - nextL * nextL;
+          points.push({
+            x: centerX + (x0 * cosRotation - y0 * sinRotation) * aspectY,
+            y: centerY + (x0 * sinRotation + y0 * cosRotation) * aspectX,
+            z: 0.22,
+          });
+        }
+        break;
+      }
+      case 6: {
+        for (let index = 0; index < samples; index += 1) {
+          points.push({
+            x:
+              startX +
+              segmentX * index +
+              perpendicularX * 0.25 * (leftChannel[index] ?? 0),
+            y:
+              startY +
+              segmentY * index +
+              perpendicularY * 0.25 * (leftChannel[index] ?? 0),
+            z: 0.22,
+          });
+        }
+        break;
+      }
+      default: {
+        const separation = (this.state.wave_y ?? 0.5) ** 2;
+        const upperLine: Array<{ x: number; y: number; z: number }> = [];
+        const lowerLine: Array<{ x: number; y: number; z: number }> = [];
+
+        for (let index = 0; index < samples; index += 1) {
+          upperLine.push({
+            x:
+              startX +
+              segmentX * index +
+              perpendicularX * (0.25 * (leftChannel[index] ?? 0) + separation),
+            y:
+              startY +
+              segmentY * index +
+              perpendicularY * (0.25 * (leftChannel[index] ?? 0) + separation),
+            z: 0.22,
+          });
+          lowerLine.push({
+            x:
+              startX +
+              segmentX * index +
+              perpendicularX * (0.25 * (rightChannel[index] ?? 0) - separation),
+            y:
+              startY +
+              segmentY * index +
+              perpendicularY * (0.25 * (rightChannel[index] ?? 0) - separation),
+            z: 0.22,
+          });
+        }
+
+        points.push(...upperLine, ...lowerLine.reverse());
+      }
+    }
+
+    const positions = smoothWavePositions(points);
 
     const waveColor = color(
       this.state.wave_r ?? 1,
@@ -693,12 +811,30 @@ class MilkdropPresetVM implements MilkdropVM {
         ? brightenWaveColor(waveColor)
         : waveColor;
 
-    const alpha = clamp(
-      (this.state.wave_a ?? 0.9) *
-        mix(modWaveAlphaStart, modWaveAlphaEnd, modWaveAlphaPhase),
-      0.04,
-      1,
-    );
+    const modWaveAlphaStart = this.state.modwavealphastart ?? 1;
+    const modWaveAlphaEnd = this.state.modwavealphaend ?? 1;
+    const alphaRangeMin = Math.min(modWaveAlphaStart, modWaveAlphaEnd);
+    const alphaRangeMax = Math.max(modWaveAlphaStart, modWaveAlphaEnd);
+    let alpha = this.state.wave_a ?? 0.9;
+
+    if (
+      (this.state.modwavealphabyvolume ?? 0) >= 0.5 &&
+      alphaRangeMax > alphaRangeMin
+    ) {
+      if (signals.vol <= alphaRangeMin) {
+        alpha = 0;
+      } else if (signals.vol >= alphaRangeMax) {
+        alpha = this.state.wave_a ?? 0.9;
+      } else {
+        alpha =
+          (this.state.wave_a ?? 0.9) *
+          ((signals.vol - alphaRangeMin) / (alphaRangeMax - alphaRangeMin));
+      }
+    } else {
+      alpha *= modWaveAlphaEnd;
+    }
+
+    alpha = Math.max(0.04, alpha);
     const drawMode = (this.state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line';
     const additive = (this.state.wave_additive ?? 0) >= 0.5;
     const thickness = clamp(this.state.wave_thick ?? 1, 1, 5);
@@ -715,6 +851,7 @@ class MilkdropPresetVM implements MilkdropVM {
         drawMode,
         additive,
         pointSize,
+        closed: mode === 0 || mode === 1,
       } satisfies MilkdropWaveVisual,
       procedural,
     };

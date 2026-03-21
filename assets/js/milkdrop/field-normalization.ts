@@ -19,6 +19,7 @@ const aliasMap: Record<string, string | null> = {
   fbrighten: 'brighten',
   fdarken: 'darken',
   bdarkencenter: 'darken_center',
+  bmodwavealphabyvolume: 'modwavealphabyvolume',
   fsolarize: 'solarize',
   finvert: 'invert',
   bmaximizewavecolor: 'wave_brighten',
