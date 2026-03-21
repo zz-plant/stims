@@ -21,15 +21,18 @@ import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../assets/js/utils/audio-handler
 
 describe('render-service pooling', () => {
   const setPixelRatioMock = mock();
+  const setSizeMock = mock();
   const fakeRenderer = {
     setPixelRatio: setPixelRatioMock,
-    setSize: mock(),
+    setSize: setSizeMock,
     setAnimationLoop: mock(),
     dispose: mock(),
     toneMappingExposure: 1,
   } as unknown as WebGLRenderer;
 
   afterEach(() => {
+    setPixelRatioMock.mockReset();
+    setSizeMock.mockReset();
     document.body.innerHTML = '';
     resetRendererPool({ dispose: true });
     window.localStorage.clear();
@@ -90,6 +93,39 @@ describe('render-service pooling', () => {
     expect(getRendererRuntimeControls()).toEqual(next);
 
     unsubscribe();
+  });
+
+  test('applies runtime renderScale overrides to new and pooled renderers', async () => {
+    const initRendererImpl = mock(async () => ({
+      renderer: fakeRenderer,
+      backend: 'webgl' as const,
+      adapter: null,
+      device: null,
+      maxPixelRatio: 2,
+      renderScale: 1,
+      exposure: 1,
+    }));
+
+    setRendererRuntimeControls({ renderScale: 0.5 });
+
+    const first = await requestRenderer({ initRendererImpl });
+
+    expect(initRendererImpl).toHaveBeenCalledWith(
+      first.canvas,
+      expect.objectContaining({ renderScale: 0.5 }),
+    );
+
+    first.release();
+    setPixelRatioMock.mockClear();
+
+    const second = await requestRenderer({ initRendererImpl });
+
+    expect(second).toBe(first);
+    expect(setPixelRatioMock).toHaveBeenCalled();
+
+    setRendererRuntimeControls({ renderScale: 0.25 });
+
+    expect(setPixelRatioMock).toHaveBeenLastCalledWith(0.25);
   });
 });
 
