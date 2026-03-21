@@ -34,6 +34,7 @@ import { createMilkdropSignalTracker } from './runtime-signals';
 import type {
   MilkdropBlendState,
   MilkdropCatalogEntry,
+  MilkdropCatalogStore,
   MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropPresetSource,
@@ -165,6 +166,27 @@ export function shouldFallbackPresetToWebgl({
     compiled.ir.compatibility.backends.webgpu.status === 'unsupported' &&
     !compatibilityModeEnabled
   );
+}
+
+export async function persistDraftBeforeWebglFallback({
+  catalogStore,
+  presetId,
+  draftSource,
+}: {
+  catalogStore: Pick<MilkdropCatalogStore, 'saveDraft'>;
+  presetId: string;
+  draftSource?: string | null;
+}) {
+  if (typeof draftSource !== 'string') {
+    return false;
+  }
+
+  try {
+    await catalogStore.saveDraft(presetId, draftSource);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function buildMilkdropInputSignalOverrides(
@@ -590,17 +612,24 @@ export function createMilkdropExperience({
       compiled,
     });
 
-  const triggerWebglFallback = ({
+  const triggerWebglFallback = async ({
     presetId,
     reason,
+    draftSource,
   }: {
     presetId: string;
     reason: string;
+    draftSource?: string | null;
   }) => {
     if (fallbackTriggered || activeBackend !== 'webgpu') {
       return;
     }
     fallbackTriggered = true;
+    await persistDraftBeforeWebglFallback({
+      catalogStore,
+      presetId,
+      draftSource,
+    });
     writeUiPrefs({
       lastPresetId: presetId,
       fallbackNotice: reason,
@@ -658,7 +687,7 @@ export function createMilkdropExperience({
     }
 
     if (shouldFallbackToWebgl(nextCompiled)) {
-      triggerWebglFallback({
+      void triggerWebglFallback({
         presetId: id,
         reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
       });
@@ -1122,9 +1151,10 @@ export function createMilkdropExperience({
       return;
     }
     if (shouldFallbackToWebgl(nextCompiled)) {
-      triggerWebglFallback({
+      void triggerWebglFallback({
         presetId: nextCompiled.source.id,
         reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+        draftSource: state.source,
       });
       return;
     }
@@ -1194,7 +1224,7 @@ export function createMilkdropExperience({
         adapter.attach();
         adapter.setPreset(activeCompiled);
         if (shouldFallbackToWebgl(activeCompiled)) {
-          triggerWebglFallback({
+          void triggerWebglFallback({
             presetId: activeCompiled.source.id,
             reason: `${activeCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
           });

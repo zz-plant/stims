@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import {
   getMilkdropDetailScale,
+  persistDraftBeforeWebglFallback,
   shouldFallbackPresetToWebgl,
 } from '../assets/js/milkdrop/runtime.ts';
 
@@ -98,5 +99,43 @@ warp_code=shader_body=tex2d(sampler_main,uv).rgb;
         compiled,
       }),
     ).toBe(false);
+  });
+});
+
+describe('milkdrop runtime fallback draft persistence', () => {
+  test('saves the current draft before reloading into webgl compatibility mode', async () => {
+    const calls: Array<{ id: string; raw: string }> = [];
+
+    const saved = await persistDraftBeforeWebglFallback({
+      catalogStore: {
+        saveDraft: async (id, raw) => {
+          calls.push({ id, raw });
+        },
+      },
+      presetId: 'fallback-preset',
+      draftSource: 'title=Edited Preset',
+    });
+
+    expect(saved).toBe(true);
+    expect(calls).toEqual([
+      { id: 'fallback-preset', raw: 'title=Edited Preset' },
+    ]);
+  });
+
+  test('skips draft persistence when there is no in-memory editor source to preserve', async () => {
+    const calls: Array<{ id: string; raw: string }> = [];
+
+    const saved = await persistDraftBeforeWebglFallback({
+      catalogStore: {
+        saveDraft: async (id, raw) => {
+          calls.push({ id, raw });
+        },
+      },
+      presetId: 'fallback-preset',
+      draftSource: null,
+    });
+
+    expect(saved).toBe(false);
+    expect(calls).toEqual([]);
   });
 });
