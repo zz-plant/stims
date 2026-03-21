@@ -51,3 +51,9 @@ export function isMilkdropShaderSamplerName(
     value as MilkdropShaderTextureSampler | 'main',
   );
 }
+
+export function isMilkdropVolumeShaderSamplerName(
+  value: string,
+): value is 'simplex' {
+  return value === 'simplex';
+}

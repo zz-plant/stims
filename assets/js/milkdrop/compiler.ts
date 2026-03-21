@@ -16,6 +16,7 @@ import {
 } from './shader-ast';
 import {
   isMilkdropShaderSamplerName,
+  isMilkdropVolumeShaderSamplerName,
   normalizeMilkdropShaderSamplerName,
 } from './shader-samplers';
 import type {
@@ -1488,6 +1489,41 @@ function isAuxShaderSamplerName(
   value: string,
 ): value is MilkdropShaderTextureSampler {
   return value !== 'main' && isMilkdropShaderSamplerName(value);
+}
+
+function buildUnsupportedVolumeSamplerWarnings(
+  controls: Pick<MilkdropShaderControls, 'textureLayer' | 'warpTexture'>,
+) {
+  const warnings: string[] = [];
+  const appendWarning = (
+    controlName: 'textureLayer' | 'warpTexture',
+    label: string,
+    source: MilkdropShaderTextureSampler,
+  ) => {
+    if (
+      controls[controlName].sampleDimension !== '3d' ||
+      source === 'none' ||
+      isMilkdropVolumeShaderSamplerName(source)
+    ) {
+      return;
+    }
+    warnings.push(
+      `${label} uses tex3D/texture3D with aux sampler "${source}", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.`,
+    );
+  };
+
+  appendWarning(
+    'textureLayer',
+    'Texture layer shader control',
+    controls.textureLayer.source,
+  );
+  appendWarning(
+    'warpTexture',
+    'Warp texture shader control',
+    controls.warpTexture.source,
+  );
+
+  return warnings;
 }
 
 function isKnownShaderScalarKey(key: string) {
@@ -4888,12 +4924,14 @@ function buildBackendSupport({
   sharedWarnings,
   softUnknownKeys,
   hardUnsupportedFields,
+  unsupportedVolumeSamplerWarnings,
 }: {
   backend: MilkdropRenderBackend;
   featureAnalysis: MilkdropFeatureAnalysis;
   sharedWarnings: string[];
   softUnknownKeys: string[];
   hardUnsupportedFields: HardUnsupportedFieldSpec[];
+  unsupportedVolumeSamplerWarnings: string[];
 }): MilkdropBackendSupport {
   const requiredFeatures = featureAnalysis.featuresUsed.filter(
     (feature) => feature !== 'unsupported-shader-text',
@@ -4923,6 +4961,18 @@ function buildBackendSupport({
         status: 'partial',
         code: 'unknown-field',
         message: `Unknown preset field "${key}" was ignored.`,
+      }),
+    );
+  });
+
+  unsupportedVolumeSamplerWarnings.forEach((message) => {
+    evidence.push(
+      createBackendEvidence({
+        backend,
+        scope: 'backend',
+        status: 'partial',
+        code: 'volume-sampler-gap',
+        message,
       }),
     );
   });
@@ -5381,6 +5431,16 @@ function createIR(
         `Unsupported feature "${feature}" from preset field "${key}": ${message}`,
     ),
   ];
+  const unsupportedVolumeSamplerWarnings =
+    buildUnsupportedVolumeSamplerWarnings(mergedShaderControls.controls);
+  unsupportedVolumeSamplerWarnings.forEach((message) => {
+    addDiagnostic(
+      diagnostics,
+      'warning',
+      'preset_shader_volume_approximation',
+      message,
+    );
+  });
   const backends = {
     webgl: buildBackendSupport({
       backend: 'webgl',
@@ -5388,6 +5448,7 @@ function createIR(
       sharedWarnings,
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
+      unsupportedVolumeSamplerWarnings,
     }),
     webgpu: buildBackendSupport({
       backend: 'webgpu',
@@ -5395,6 +5456,7 @@ function createIR(
       sharedWarnings,
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
+      unsupportedVolumeSamplerWarnings,
     }),
   };
   const blockedConstructs = [
