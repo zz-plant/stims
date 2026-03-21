@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { YouTubeController } from '../assets/js/ui/youtube-controller.ts';
 
 const freshImport = async <T>(path: string): Promise<T> =>
@@ -9,8 +9,41 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 let initAudioControls: typeof import('../assets/js/ui/audio-controls.ts').initAudioControls;
 let buildTryThisFirstRecommendation: typeof import('../assets/js/ui/audio-controls.ts').buildTryThisFirstRecommendation;
 
+const baselineNavigator = globalThis.navigator;
+const baselineNavigatorPermissions = baselineNavigator.permissions;
+const baselineNavigatorMediaDevices = baselineNavigator.mediaDevices;
+const baselineMatchMedia = window.matchMedia;
+
+function restoreNavigatorBaseline() {
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: baselineNavigator,
+  });
+  Object.defineProperty(globalThis.navigator, 'permissions', {
+    configurable: true,
+    value: {
+      ...baselineNavigatorPermissions,
+      query: mock(async () => ({ state: 'prompt' })),
+    },
+  });
+  Object.defineProperty(globalThis.navigator, 'mediaDevices', {
+    configurable: true,
+    value: {
+      ...baselineNavigatorMediaDevices,
+      getUserMedia: mock(async () => ({}) as MediaStream),
+    },
+  });
+}
+
 describe('audio controls primary emphasis', () => {
+  afterEach(() => {
+    restoreNavigatorBaseline();
+    window.matchMedia = baselineMatchMedia;
+    document.body.innerHTML = '';
+  });
+
   beforeEach(async () => {
+    restoreNavigatorBaseline();
     document.body.innerHTML = '';
     sessionStorage.clear();
     localStorage.clear();
