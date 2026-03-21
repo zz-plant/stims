@@ -565,7 +565,20 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
       expect(
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'preset_shader_volume_approximation',
+            severity: 'warning',
+          }),
+        ]),
+      );
+      expect(compiled.ir.compatibility.warnings).toEqual(
+        expect.arrayContaining([
+          'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
+        ]),
+      );
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
@@ -584,8 +597,32 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
 
     expect(compiled.ir.shaderText.supported).toBe(false);
     expect(compiled.ir.post.shaderControls.invertBoost).toBeCloseTo(0, 6);
-    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('none');
-    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('none');
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
+    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('mix');
+    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+      '3d',
+    );
+    expect(compiled.ir.shaderText.controls.textureLayer.source).toBe('simplex');
+    expect(compiled.ir.shaderText.controls.textureLayer.mode).toBe('mix');
+    expect(
+      compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
+    ).toBeCloseTo(0, 6);
+    expect(
+      compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
+    ).not.toBeNull();
+    expect(compiled.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'preset_shader_volume_approximation',
+          severity: 'warning',
+        }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.warnings).toEqual(
+      expect.arrayContaining([
+        'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
+      ]),
+    );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
       'unsupported',
