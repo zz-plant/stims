@@ -58,6 +58,10 @@ const COLLECTION_LABELS: Record<string, string> = {
 type BrowseMode = 'featured' | 'all' | 'recent' | 'favorites';
 type BrowseSort = 'recommended' | 'title' | 'rating' | 'recent';
 type BrowseFidelityFilter = 'all' | MilkdropFidelityClass;
+type BrowseSection = {
+  title: string;
+  presets: MilkdropCatalogEntry[];
+};
 
 function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
   buttons.forEach((button) => {
@@ -998,6 +1002,56 @@ export class MilkdropOverlay {
     target.appendChild(section);
   }
 
+  private dedupeBrowsePresets(
+    presets: MilkdropCatalogEntry[],
+    seen: Set<string>,
+  ) {
+    return presets.filter((preset) => {
+      if (seen.has(preset.id)) {
+        return false;
+      }
+      seen.add(preset.id);
+      return true;
+    });
+  }
+
+  private buildFeaturedBrowseSections(filtered: MilkdropCatalogEntry[]) {
+    const sections: BrowseSection[] = [];
+    const seen = new Set<string>();
+    const recent = filtered
+      .filter((preset) => preset.historyIndex !== undefined)
+      .slice(0, 4);
+    const favoriteRecovery = filtered
+      .filter(
+        (preset) =>
+          preset.isFavorite &&
+          !recent.some((recentPreset) => recentPreset.id === preset.id),
+      )
+      .slice(0, 4);
+    const recovery = this.dedupeBrowsePresets(
+      [...recent, ...favoriteRecovery],
+      seen,
+    ).slice(0, 6);
+
+    if (recovery.length > 0) {
+      const hasRecent = recent.length > 0;
+      const hasFavorites = favoriteRecovery.length > 0;
+      const title = hasRecent
+        ? hasFavorites
+          ? 'Continue listening'
+          : 'Recent'
+        : 'Favorites';
+      sections.push({ title, presets: recovery });
+    }
+
+    const recommended = this.dedupeBrowsePresets(filtered, seen).slice(0, 12);
+    if (recommended.length > 0) {
+      sections.push({ title: 'Recommended', presets: recommended });
+    }
+
+    return sections;
+  }
+
   private scheduleBrowseRender(delayMs = 120) {
     this.browseDirty = true;
     if (this.activeTab !== 'browse') {
@@ -1061,42 +1115,9 @@ export class MilkdropOverlay {
       return;
     }
 
-    const recent = filtered
-      .filter((preset) => preset.historyIndex !== undefined)
-      .slice(0, 6);
-    const favorites = filtered
-      .filter((preset) => preset.isFavorite)
-      .slice(0, 6);
-    const classic = filtered
-      .filter((preset) => preset.tags.includes('collection:classic-milkdrop'))
-      .slice(0, 8);
-    const feedback = filtered
-      .filter((preset) => preset.tags.includes('collection:feedback-lab'))
-      .slice(0, 8);
-    const lowMotion = filtered
-      .filter((preset) => preset.tags.includes('collection:low-motion'))
-      .slice(0, 6);
-
-    const seen = new Set<string>();
-    const dedupe = (presets: MilkdropCatalogEntry[]) =>
-      presets.filter((preset) => {
-        if (seen.has(preset.id)) {
-          return false;
-        }
-        seen.add(preset.id);
-        return true;
-      });
-
-    this.appendPresetSection('Jump back in', dedupe(recent), fragment);
-    this.appendPresetSection('Favorites', dedupe(favorites), fragment);
-    this.appendPresetSection('Classic MilkDrop', dedupe(classic), fragment);
-    this.appendPresetSection('Feedback Lab', dedupe(feedback), fragment);
-    this.appendPresetSection('Low Motion', dedupe(lowMotion), fragment);
-    this.appendPresetSection(
-      'More presets',
-      dedupe(filtered).slice(0, 12),
-      fragment,
-    );
+    this.buildFeaturedBrowseSections(filtered).forEach((section) => {
+      this.appendPresetSection(section.title, section.presets, fragment);
+    });
     this.browseList.replaceChildren(fragment);
   }
 

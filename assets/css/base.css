@@ -2908,7 +2908,7 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__browse-section {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   padding: 0;
 }
 
@@ -2916,11 +2916,11 @@ body.tv-mode .control-panel input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  color: rgba(226, 232, 240, 0.92);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  gap: 8px;
+  color: rgba(226, 232, 240, 0.76);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -2928,14 +2928,14 @@ body.tv-mode .control-panel input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 30px;
-  min-height: 24px;
-  padding: 0 8px;
+  min-width: 24px;
+  min-height: 18px;
+  padding: 0 6px;
   border-radius: 999px;
-  background: rgba(56, 189, 248, 0.14);
-  color: #bae6fd;
-  font-size: 0.76rem;
-  font-weight: 700;
+  background: rgba(56, 189, 248, 0.1);
+  color: rgba(186, 230, 253, 0.8);
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .milkdrop-overlay__browse-empty {
