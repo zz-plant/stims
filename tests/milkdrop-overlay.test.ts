@@ -346,4 +346,64 @@ describe('milkdrop overlay browse rendering', () => {
 
     overlay.dispose();
   });
+
+  test('keeps featured browse focused on recovery and recommendations', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const recentFavorite = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    recentFavorite.historyIndex = 0;
+    recentFavorite.isFavorite = true;
+    recentFavorite.tags = ['collection:classic-milkdrop'];
+
+    const recentOnly = createCatalogEntry('aurora-drift', 'Aurora Drift');
+    recentOnly.historyIndex = 1;
+    recentOnly.tags = ['collection:feedback-lab'];
+
+    const favoriteOnly = createCatalogEntry('night-drive', 'Night Drive');
+    favoriteOnly.isFavorite = true;
+    favoriteOnly.tags = ['collection:low-motion'];
+
+    const discoveryOne = createCatalogEntry('prism-burst', 'Prism Burst');
+    discoveryOne.tags = ['collection:classic-milkdrop'];
+
+    const discoveryTwo = createCatalogEntry('echo-grid', 'Echo Grid');
+    discoveryTwo.tags = ['collection:feedback-lab'];
+
+    overlay.setCatalog(
+      [recentFavorite, recentOnly, favoriteOnly, discoveryOne, discoveryTwo],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const sections = [
+      ...document.querySelectorAll('.milkdrop-overlay__browse-section'),
+    ] as HTMLElement[];
+    const headings = sections.map((section) =>
+      (
+        section.querySelector('.milkdrop-overlay__browse-heading')
+          ?.childNodes[0]?.textContent ?? ''
+      ).trim(),
+    );
+
+    expect(sections).toHaveLength(2);
+    expect(headings).toEqual(['Continue listening', 'Recommended']);
+    expect(headings).not.toContain('Classic MilkDrop');
+    expect(headings).not.toContain('Feedback Lab');
+    expect(headings).not.toContain('Low Motion');
+
+    expect(sections[0]?.textContent).toContain('Signal Bloom');
+    expect(sections[0]?.textContent).toContain('Aurora Drift');
+    expect(sections[0]?.textContent).toContain('Night Drive');
+    expect(sections[1]?.textContent).toContain('Prism Burst');
+    expect(sections[1]?.textContent).toContain('Echo Grid');
+
+    overlay.dispose();
+  });
 });
