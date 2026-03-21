@@ -29,6 +29,7 @@ export type ToyRuntimeFrame = {
   deltaMs: number;
   analyser: FrequencyAnalyser | null;
   frequencyData: Uint8Array;
+  waveformData: Uint8Array;
   input: UnifiedInputState | null;
   performance: PerformanceSettings;
 };
@@ -279,6 +280,7 @@ export function createToyRuntime({
     deltaMs: 0,
     analyser: null,
     frequencyData: new Uint8Array(0),
+    waveformData: new Uint8Array(0),
     input: null,
     performance: performanceController.getSettings(),
   };
@@ -301,6 +303,7 @@ export function createToyRuntime({
     ...preview,
   };
   const previewFrequencyData = new Uint8Array(previewOptions.fftBins);
+  const previewWaveformData = new Uint8Array(previewOptions.fftBins);
   let previewAnimationId: number | null = null;
   let previewActive = false;
   let previewStart = 0;
@@ -322,6 +325,18 @@ export function createToyRuntime({
         Math.min(1, (wave * 0.5 + 0.5) * (0.6 + envelope) + shimmer),
       );
       previewFrequencyData[i] = Math.round(value * 220 + 12);
+      previewWaveformData[i] = Math.round(
+        Math.max(
+          0,
+          Math.min(
+            255,
+            128 +
+              (Math.sin(time * 3.2 + normalized * Math.PI * 6) * 0.55 +
+                Math.sin(time * 1.4 + normalized * Math.PI * 2) * 0.25) *
+                96,
+          ),
+        ),
+      );
     }
   };
 
@@ -358,6 +373,7 @@ export function createToyRuntime({
       frameState.analyser = null;
       updatePreviewFrequencyData(time);
       frameState.frequencyData = previewFrequencyData;
+      frameState.waveformData = previewWaveformData;
       frameState.input = inputController.getState();
       frameState.performance = performanceController.getSettings();
       pluginManager.update(frameState);
@@ -402,6 +418,8 @@ export function createToyRuntime({
         frameState.time = now;
         frameState.analyser = analyser;
         frameState.frequencyData = getContextFrequencyData(ctx);
+        frameState.waveformData =
+          analyser?.getWaveformData() ?? new Uint8Array(0);
         frameState.input = inputController.getState();
         frameState.performance = performanceController.getSettings();
         pluginManager.update(frameState);

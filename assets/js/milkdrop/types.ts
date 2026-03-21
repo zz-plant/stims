@@ -822,6 +822,7 @@ export type MilkdropRuntimeSignals = {
   motionStrength: number;
   motion_strength: number;
   frequencyData: Uint8Array;
+  waveformData?: Uint8Array;
 };
 
 export type MilkdropFrameState = {

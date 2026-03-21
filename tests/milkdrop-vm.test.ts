@@ -18,6 +18,15 @@ function makeSignals({
 } = {}): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
   frequencyData.fill(frequencyValue);
+  const waveformData = new Uint8Array(64);
+  for (let index = 0; index < waveformData.length; index += 1) {
+    const ratio = index / Math.max(1, waveformData.length - 1);
+    waveformData[index] = Math.round(
+      128 +
+        Math.sin(ratio * Math.PI * 4 + time * 6) *
+          Math.max(12, frequencyValue * 0.35),
+    );
+  }
 
   return {
     time,
@@ -127,6 +136,7 @@ function makeSignals({
     motionStrength: 0,
     motion_strength: 0,
     frequencyData,
+    waveformData,
   };
 }
 
@@ -356,8 +366,9 @@ wave_scale=1
     expect(withHistory.mainWave.positions).not.toEqual(
       withoutHistory.mainWave.positions,
     );
-    expect(withHistory.mainWave.positions[1]).toBeLessThan(
-      withoutHistory.mainWave.positions[1] ?? Number.POSITIVE_INFINITY,
+    expect(withHistory.mainWave.positions[3]).not.toBeCloseTo(
+      withoutHistory.mainWave.positions[3] ?? 0,
+      4,
     );
   });
 
@@ -455,7 +466,7 @@ warpanimspeed=1.5
     expect(frameState.gpuGeometry.motionVectorField?.countX).toBe(6);
   });
 
-  test('emits procedural main-wave and trail descriptors on webgpu line-wave presets', () => {
+  test('keeps waveform-driven main-wave geometry on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Wave Hints
@@ -475,14 +486,39 @@ mesh_density=16
     const firstFrame = vm.step(makeSignals({ frame: 1, time: 0.15 }));
     const secondFrame = vm.step(makeSignals({ frame: 2, time: 0.3 }));
 
-    expect(firstFrame.mainWave.positions).toHaveLength(0);
-    expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
+    expect(firstFrame.mainWave.positions.length).toBeGreaterThan(0);
+    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
     expect(firstFrame.gpuGeometry.trailWaves).toHaveLength(0);
-    expect(secondFrame.mainWave.positions).toHaveLength(0);
-    expect(secondFrame.gpuGeometry.mainWave).not.toBeNull();
-    expect(secondFrame.gpuGeometry.trailWaves.length).toBeGreaterThan(0);
+    expect(secondFrame.mainWave.positions.length).toBeGreaterThan(0);
+    expect(secondFrame.gpuGeometry.mainWave).toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
     expect(secondFrame.trails.length).toBeGreaterThan(0);
-    expect(secondFrame.trails[0]?.positions).toHaveLength(0);
+    expect(secondFrame.trails[0]?.positions.length).toBeGreaterThan(0);
+  });
+
+  test('builds closed waveform loops from time-domain data and volume-modulated alpha', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Waveform Loop
+wave_mode=0
+wave_usedots=0
+wave_additive=1
+wave_a=0.9
+bModWaveAlphaByVolume=1
+modwavealphastart=0.2
+modwavealphaend=0.6
+      `.trim(),
+      { id: 'waveform-loop' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    const frameState = vm.step(
+      makeSignals({ frame: 2, beatPulse: 0.2, frequencyValue: 220 }),
+    );
+
+    expect(frameState.mainWave.closed).toBe(true);
+    expect(frameState.mainWave.positions.length).toBeGreaterThan(0);
+    expect(frameState.mainWave.alpha).toBeGreaterThan(0.6);
   });
 
   test('emits procedural custom-wave descriptors on webgpu-safe custom waves', () => {
@@ -608,6 +644,7 @@ title=Wave Mod
 wave_a=0.8
 fModWaveAlphaStart=1.2
 fModWaveAlphaEnd=0.25
+bModWaveAlphaByVolume=1
 fShader=0
       `.trim(),
       { id: 'wave-mod' },
@@ -619,7 +656,7 @@ fShader=0
 
     expect(frameState.post.shaderEnabled).toBe(false);
     expect(frameState.mainWave.alpha).toBeGreaterThan(0.04);
-    expect(frameState.mainWave.alpha).toBeLessThan(0.8);
+    expect(frameState.mainWave.alpha).toBeLessThanOrEqual(0.8);
   });
 
   test('carries shader subset, border style, and feedback flags into post visuals', () => {

@@ -81,6 +81,7 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private readonly outputReal: Float32Array;
   private readonly outputImag: Float32Array;
   private readonly frequencyData: Uint8Array;
+  private readonly waveformData: Uint8Array;
   private readonly twiddles: ReturnType<typeof buildTwiddleTable>;
   private readonly messageEvery: number;
   private analyseCount = 0;
@@ -95,6 +96,7 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     this.outputReal = new Float32Array(this.fftSize);
     this.outputImag = new Float32Array(this.fftSize);
     this.frequencyData = new Uint8Array(this.frequencyBinCount);
+    this.waveformData = new Uint8Array(this.fftSize);
     this.twiddles = buildTwiddleTable(this.fftSize);
     this.messageEvery = Math.max(
       1,
@@ -112,6 +114,10 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     for (let i = 0; i < this.fftSize; i += 1) {
       const sample = this.buffer[i];
       sumSquares += sample * sample;
+      this.waveformData[i] = Math.min(
+        255,
+        Math.max(0, Math.round((sample * 0.5 + 0.5) * 255)),
+      );
     }
     const rms = Math.sqrt(sumSquares / this.fftSize);
 
@@ -131,7 +137,11 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
 
     this.analyseCount += 1;
     if (this.analyseCount % this.messageEvery === 0) {
-      this.port.postMessage({ frequencyData: this.frequencyData.slice(), rms });
+      this.port.postMessage({
+        frequencyData: this.frequencyData.slice(),
+        waveformData: this.waveformData.slice(),
+        rms,
+      });
     }
   }
 

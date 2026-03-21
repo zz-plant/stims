@@ -11,6 +11,7 @@ const FREQUENCY_ANALYSER_PROCESSOR = new URL(
 export class FrequencyAnalyser {
   frequencyBinCount: number;
   private frequencyData: Uint8Array;
+  private waveformData: Uint8Array;
   private rms = 0;
   private readonly historySize = 64;
   private energyHistory: { bass: number[]; mid: number[]; treble: number[] } = {
@@ -46,11 +47,13 @@ export class FrequencyAnalyser {
     this.analyserNode = analyserNode;
     this.frequencyBinCount = fftSize / 2;
     this.frequencyData = new Uint8Array(this.frequencyBinCount);
+    this.waveformData = new Uint8Array(fftSize);
+    this.waveformData.fill(128);
     this.silentGain = silentGain;
 
     if (this.workletNode) {
       this.workletNode.port.onmessage = (event: MessageEvent) => {
-        const { frequencyData, rms } = event.data ?? {};
+        const { frequencyData, waveformData, rms } = event.data ?? {};
         if (frequencyData) {
           const nextData =
             frequencyData instanceof Uint8Array
@@ -65,6 +68,17 @@ export class FrequencyAnalyser {
           this.cachedEnergy = this.calculateMultiBandEnergy(this.frequencyData);
           this.energyVersion = this.dataVersion;
           this.updateEnergyHistory(this.cachedEnergy);
+        }
+        if (waveformData) {
+          const nextWaveform =
+            waveformData instanceof Uint8Array
+              ? waveformData
+              : new Uint8Array(waveformData);
+          if (this.waveformData.length !== nextWaveform.length) {
+            this.waveformData = new Uint8Array(nextWaveform.length);
+            this.waveformData.fill(128);
+          }
+          this.waveformData.set(nextWaveform);
         }
         if (typeof rms === 'number') {
           this.rms = rms;
@@ -145,6 +159,20 @@ export class FrequencyAnalyser {
     }
 
     return this.frequencyData;
+  }
+
+  getWaveformData() {
+    if (this.analyserNode) {
+      if (this.waveformData.length !== this.analyserNode.fftSize) {
+        this.waveformData = new Uint8Array(this.analyserNode.fftSize);
+        this.waveformData.fill(128);
+      }
+      this.analyserNode.getByteTimeDomainData(
+        this.waveformData as Uint8Array<ArrayBuffer>,
+      );
+    }
+
+    return this.waveformData;
   }
 
   private calculateMultiBandEnergy(data: Uint8Array) {

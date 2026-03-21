@@ -13,6 +13,7 @@ let originalNavigatorDesc;
 let initAudio;
 let DEFAULT_MICROPHONE_CONSTRAINTS;
 let getFrequencyData;
+let FrequencyAnalyser;
 let stylizeFrequencyData;
 let originalAudioContext;
 let originalAudioWorkletNode;
@@ -40,6 +41,7 @@ class FakeAudioContext {
     fftSize: 0,
     frequencyBinCount: 128,
     getByteFrequencyData: mock(),
+    getByteTimeDomainData: mock((target) => target.fill(128)),
     connect: mock(),
     disconnect: mock(),
   }));
@@ -110,6 +112,7 @@ beforeAll(async () => {
 
   ({
     DEFAULT_MICROPHONE_CONSTRAINTS,
+    FrequencyAnalyser,
     initAudio,
     getFrequencyData,
     stylizeFrequencyData,
@@ -259,6 +262,22 @@ describe('audio-handler utilities', () => {
     expect([...data]).toEqual([8, 12, 17, 15, 10, 7, 4, 2]);
     expect(Math.max(...result)).toBeLessThan(17);
     expect(analyser.getFrequencyData).toHaveBeenCalled();
+  });
+
+  test('FrequencyAnalyser exposes time-domain waveform data', async () => {
+    const context = new FakeAudioContext();
+    context.audioWorklet = undefined;
+    const analyser = await FrequencyAnalyser.create(
+      context,
+      { getTracks: () => [] },
+      256,
+    );
+
+    const waveform = analyser.getWaveformData();
+
+    expect(waveform).toBeInstanceOf(Uint8Array);
+    expect(waveform).toHaveLength(256);
+    expect([...waveform.slice(0, 4)]).toEqual([128, 128, 128, 128]);
   });
 
   test('stylizeFrequencyData leaves silent buffers untouched', () => {
