@@ -29,6 +29,10 @@ import {
   consumeRequestedMilkdropPresetSelection,
   MILKDROP_PRESET_SELECTION_EVENT,
 } from './preset-selection';
+import {
+  captureMilkdropGpuTransitionSnapshot,
+  shouldUseMilkdropGpuTransitionBlend,
+} from './renderer-adapter';
 import { createMilkdropRendererAdapter } from './renderer-adapter-factory';
 import { createMilkdropSignalTracker } from './runtime-signals';
 import type {
@@ -633,17 +637,17 @@ function downloadPresetFile(name: string, contents: string) {
   URL.revokeObjectURL(url);
 }
 
-function cloneBlendState(
+export function cloneBlendState(
   frameState: MilkdropFrameState | null,
   backend: 'webgl' | 'webgpu',
 ): MilkdropBlendState | null {
   if (!frameState) {
     return null;
   }
-  if (backend === 'webgpu') {
+  if (shouldUseMilkdropGpuTransitionBlend(frameState, backend)) {
     return {
       mode: 'gpu',
-      previousFrame: frameState,
+      previous: captureMilkdropGpuTransitionSnapshot(frameState, backend),
       alpha: 1,
     };
   }

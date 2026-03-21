@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   applyMilkdropInteractionResponse,
+  cloneBlendState,
   getMilkdropDetailScale,
 } from '../assets/js/milkdrop/runtime.ts';
 import type { MilkdropFrameState } from '../assets/js/milkdrop/types.ts';
@@ -437,5 +438,159 @@ describe('milkdrop runtime GPU descriptor interaction response', () => {
     expect(adjusted.interaction?.waves.scale).toBeGreaterThan(1);
     expect(adjusted.interaction?.mesh.alphaMultiplier).toBeGreaterThan(1);
     expect(adjusted.interaction?.motionVectors.rotation).toBeGreaterThan(0);
+  });
+});
+
+function makeBlendFrameState(
+  webgpuStatus: 'supported' | 'partial' | 'unsupported' = 'supported',
+) {
+  return {
+    presetId: 'blend-transition-test',
+    title: 'Blend Transition Test',
+    background: { r: 0, g: 0, b: 0, a: 1 },
+    waveform: {
+      positions: [0, 0, 0.2, 0.2, 0.2, 0.2],
+      color: { r: 1, g: 1, b: 1, a: 1 },
+      alpha: 1,
+      thickness: 1,
+      drawMode: 'line',
+      additive: false,
+      pointSize: 1,
+    },
+    mainWave: {
+      positions: [0, 0, 0.2, 0.2, 0.2, 0.2],
+      color: { r: 1, g: 1, b: 1, a: 1 },
+      alpha: 1,
+      thickness: 1,
+      drawMode: 'line',
+      additive: false,
+      pointSize: 1,
+    },
+    customWaves: [],
+    trails: [],
+    mesh: {
+      positions: [],
+      color: { r: 0.2, g: 0.4, b: 0.8, a: 0.3 },
+      alpha: 0.3,
+    },
+    shapes: [],
+    borders: [],
+    motionVectors: [],
+    post: {
+      shaderEnabled: true,
+      textureWrap: false,
+      feedbackTexture: false,
+      outerBorderStyle: false,
+      innerBorderStyle: false,
+      shaderControls: {
+        mixAlpha: 0.2,
+        warpScale: 0.1,
+        offsetX: 0,
+        offsetY: 0,
+        rotation: 0,
+        zoom: 1,
+        saturation: 1,
+        contrast: 1,
+        hueShift: 0,
+        brightenBoost: 0,
+        invertBoost: 0,
+        solarizeBoost: 0,
+        colorScale: { r: 1, g: 1, b: 1 },
+        tint: { r: 0, g: 0, b: 0 },
+        textureLayer: {
+          source: 'none',
+          mode: 'add',
+          sampleDimension: '2d',
+          amount: 0,
+          scaleX: 1,
+          scaleY: 1,
+          offsetX: 0,
+          offsetY: 0,
+        },
+        warpTexture: {
+          source: 'none',
+          sampleDimension: '2d',
+          amount: 0,
+          scaleX: 1,
+          scaleY: 1,
+          offsetX: 0,
+          offsetY: 0,
+        },
+      },
+      shaderPrograms: { warp: null, comp: null },
+      brighten: false,
+      darken: false,
+      darkenCenter: false,
+      solarize: false,
+      invert: false,
+      gammaAdj: 1,
+      videoEchoEnabled: true,
+      videoEchoAlpha: 0.15,
+      videoEchoZoom: 1.02,
+      videoEchoOrientation: 0,
+    },
+    signals: {
+      time: 0,
+      bass: 0,
+      mid: 0,
+      treb: 0,
+      beatPulse: 0,
+      weightedEnergy: 0,
+    },
+    variables: {},
+    compatibility: {
+      backends: {
+        webgl: { status: 'supported' },
+        webgpu: { status: webgpuStatus },
+      },
+      gpuDescriptorPlans: {
+        webgpu: {
+          routing: 'descriptor-plan',
+          proceduralWaves: [],
+          proceduralMesh: null,
+          feedback: {
+            kind: 'feedback-post-effect',
+            shaderExecution: 'controls',
+            usesFeedbackTexture: false,
+            usesVideoEcho: true,
+            usesPostEffects: false,
+            targetResolution: 'scene',
+            fallbackToLegacyFeedback: false,
+          },
+          unsupported: [],
+        },
+      },
+    },
+    gpuGeometry: {
+      mainWave: null,
+      trailWaves: [],
+      customWaves: [],
+      meshField: null,
+      motionVectorField: null,
+    },
+    interaction: null,
+  } as unknown as MilkdropFrameState;
+}
+
+describe('milkdrop runtime transition state selection', () => {
+  test('uses compact gpu transition snapshots on supported webgpu backends', () => {
+    const frameState = makeBlendFrameState('supported');
+    const blendState = cloneBlendState(frameState, 'webgpu');
+
+    expect(blendState?.mode).toBe('gpu');
+    if (blendState?.mode !== 'gpu') {
+      throw new Error('expected gpu blend state');
+    }
+    expect(blendState.previous.feedback?.mixAlpha).toBeCloseTo(0.35, 6);
+    expect(blendState.previous.fallback.mainWave).toBe(frameState.mainWave);
+  });
+
+  test('falls back to cpu transition snapshots for webgl and unsupported webgpu presets', () => {
+    expect(
+      cloneBlendState(makeBlendFrameState('supported'), 'webgl')?.mode,
+    ).toBe('cpu');
+    expect(
+      cloneBlendState(makeBlendFrameState('unsupported'), 'webgpu')?.mode,
+    ).toBe('cpu');
   });
 });

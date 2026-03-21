@@ -14,7 +14,9 @@ import {
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import {
   __milkdropRendererAdapterTestUtils,
+  captureMilkdropGpuTransitionSnapshot,
   createMilkdropRendererAdapterCore,
+  shouldUseMilkdropGpuTransitionBlend,
 } from '../assets/js/milkdrop/renderer-adapter.ts';
 import { createMilkdropRendererAdapter } from '../assets/js/milkdrop/renderer-adapter-factory.ts';
 import type {
@@ -687,6 +689,79 @@ warpanimspeed=1.25
     expect(motionVectorGroup.children[1]?.material).toBeDefined();
   });
 
+  test('loads previous mesh and motion-vector descriptors into webgpu blend uniforms', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Descriptor Blend Uniforms
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mv_a=0.3
+zoom=1.05
+rot=0.12
+warp=0.26
+warpanimspeed=1.25
+      `.trim(),
+      { id: 'descriptor-blend-uniforms' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const previousFrame = vm.step(makeSignals({ time: 0.2, frame: 2 }));
+    const currentFrame = vm.step(makeSignals({ time: 0.8, frame: 3 }));
+
+    if (
+      !previousFrame.gpuGeometry.meshField ||
+      !previousFrame.gpuGeometry.motionVectorField ||
+      !currentFrame.gpuGeometry.meshField ||
+      !currentFrame.gpuGeometry.motionVectorField
+    ) {
+      throw new Error('expected procedural mesh and motion-vector descriptors');
+    }
+
+    previousFrame.gpuGeometry.meshField.rotation = 0.15;
+    currentFrame.gpuGeometry.meshField.rotation = 0.65;
+    previousFrame.gpuGeometry.motionVectorField.rotation = 0.2;
+    currentFrame.gpuGeometry.motionVectorField.rotation = 0.7;
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: currentFrame,
+      blendState: {
+        mode: 'gpu',
+        previous: captureMilkdropGpuTransitionSnapshot(previousFrame, 'webgpu'),
+        alpha: 0.25,
+      },
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        material?: unknown;
+        children?: Array<{ material?: unknown }>;
+      }>;
+    };
+    const meshMaterial = root.children[1]?.material as ShaderMaterial;
+    const motionVectorMaterial = root.children[12]?.children?.[1]
+      ?.material as ShaderMaterial;
+
+    expect(meshMaterial.uniforms.previousRotation.value).toBeCloseTo(0.15, 6);
+    expect(meshMaterial.uniforms.blendMix.value).toBeCloseTo(0.75, 6);
+    expect(motionVectorMaterial.uniforms.previousRotation.value).toBeCloseTo(
+      0.2,
+      6,
+    );
+    expect(motionVectorMaterial.uniforms.blendMix.value).toBeCloseTo(0.75, 6);
+  });
+
   test('passes semantic feedback state to the feedback manager', () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -740,6 +815,89 @@ video_echo=1
       frameState.signals.time,
       6,
     );
+  });
+
+  test('gates gpu transition snapshots by backend support', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Transition Gate
+video_echo=1
+      `.trim(),
+      { id: 'transition-gate' },
+    );
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+
+    expect(shouldUseMilkdropGpuTransitionBlend(frameState, 'webgl')).toBe(
+      false,
+    );
+    expect(shouldUseMilkdropGpuTransitionBlend(frameState, 'webgpu')).toBe(
+      true,
+    );
+  });
+
+  test('interpolates feedback composite state from gpu transition snapshots on webgpu', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Blend Snapshot
+video_echo=1
+warp_shader=warp=0.2
+comp_shader=mix=0.1
+      `.trim(),
+      { id: 'feedback-blend-snapshot' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const previousFrame = vm.step(makeSignals({ time: 0.2, frame: 2 }));
+    previousFrame.post.shaderControls.mixAlpha = 0.1;
+    previousFrame.post.videoEchoAlpha = 0.2;
+    const currentFrame = vm.step(makeSignals({ time: 0.8, frame: 3 }));
+    currentFrame.post.shaderControls.mixAlpha = 0.5;
+    currentFrame.post.videoEchoAlpha = 0.3;
+
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      preset,
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState: currentFrame,
+        blendState: {
+          mode: 'gpu',
+          previous: captureMilkdropGpuTransitionSnapshot(
+            previousFrame,
+            'webgpu',
+          ),
+          alpha: 0.25,
+        },
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]?.mixAlpha).toBeCloseTo(0.675, 6);
+    expect(compositeStates[0]?.signalTime).toBeCloseTo(0.65, 6);
   });
 
   test('forwards overlay and warp volume sampling metadata into feedback state', () => {

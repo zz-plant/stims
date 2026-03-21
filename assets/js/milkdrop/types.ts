@@ -947,9 +947,42 @@ export type MilkdropCpuBlendState = {
   alpha: number;
 };
 
+export type MilkdropGpuTransitionVisualFallback = {
+  mainWave: MilkdropWaveVisual;
+  customWaves: MilkdropWaveVisual[];
+  shapes: MilkdropShapeVisual[];
+  borders: MilkdropBorderVisual[];
+  motionVectors: MilkdropMotionVectorVisual[];
+};
+
+export type MilkdropGpuTransitionMeshState = {
+  field: MilkdropProceduralMeshFieldVisual;
+  color: MilkdropColor;
+  alpha: number;
+  interaction: MilkdropGpuInteractionTransform | null;
+};
+
+export type MilkdropGpuTransitionMotionVectorState = {
+  field: MilkdropProceduralMotionVectorFieldVisual;
+  color: MilkdropColor;
+  alpha: number;
+  interaction: MilkdropGpuInteractionTransform | null;
+};
+
+export type MilkdropGpuTransitionSnapshot = {
+  mainWave: MilkdropProceduralWaveVisual | null;
+  trailWaves: MilkdropProceduralWaveVisual[];
+  customWaves: MilkdropProceduralCustomWaveVisual[];
+  mesh: MilkdropGpuTransitionMeshState | null;
+  motionVectors: MilkdropGpuTransitionMotionVectorState | null;
+  feedback: MilkdropFeedbackCompositeState | null;
+  waveInteraction: MilkdropGpuInteractionTransform | null;
+  fallback: MilkdropGpuTransitionVisualFallback;
+};
+
 export type MilkdropGpuBlendState = {
   mode: 'gpu';
-  previousFrame: MilkdropFrameState;
+  previous: MilkdropGpuTransitionSnapshot;
   alpha: number;
 };
 

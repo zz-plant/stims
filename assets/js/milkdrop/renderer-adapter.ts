@@ -38,6 +38,9 @@ import type {
   MilkdropGpuFieldSignalInputs,
   MilkdropGpuGeometryHints,
   MilkdropGpuInteractionTransform,
+  MilkdropGpuTransitionMeshState,
+  MilkdropGpuTransitionMotionVectorState,
+  MilkdropGpuTransitionSnapshot,
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralFieldTransformVisual,
   MilkdropProceduralWaveVisual,
@@ -642,6 +645,35 @@ function createProceduralMeshMaterial(
 ) {
   const uniforms = {
     ...createProceduralFieldUniformState(),
+    previousZoom: { value: 1 },
+    previousZoomExponent: { value: 1 },
+    previousRotation: { value: 0 },
+    previousWarp: { value: 0 },
+    previousWarpAnimSpeed: { value: 1 },
+    previousCenterX: { value: 0 },
+    previousCenterY: { value: 0 },
+    previousScaleX: { value: 1 },
+    previousScaleY: { value: 1 },
+    previousTranslateX: { value: 0 },
+    previousTranslateY: { value: 0 },
+    previousSignalTime: { value: 0 },
+    previousSignalFrame: { value: 0 },
+    previousSignalFps: { value: 60 },
+    previousSignalBass: { value: 0 },
+    previousSignalMid: { value: 0 },
+    previousSignalMids: { value: 0 },
+    previousSignalTreble: { value: 0 },
+    previousSignalBassAtt: { value: 0 },
+    previousSignalMidAtt: { value: 0 },
+    previousSignalMidsAtt: { value: 0 },
+    previousSignalTrebleAtt: { value: 0 },
+    previousSignalBeat: { value: 0 },
+    previousSignalBeatPulse: { value: 0 },
+    previousSignalRms: { value: 0 },
+    previousSignalVol: { value: 0 },
+    previousSignalMusic: { value: 0 },
+    previousSignalWeightedEnergy: { value: 0 },
+    blendMix: { value: 1 },
     ...createProceduralInteractionUniformState(),
   };
   const fieldProgramShader = buildProceduralFieldProgramShaderChunk(program);
@@ -658,8 +690,37 @@ function createProceduralMeshMaterial(
       uniform float rotation;
       uniform float warp;
       uniform float warpAnimSpeed;
+      uniform float previousZoom;
+      uniform float previousZoomExponent;
+      uniform float previousRotation;
+      uniform float previousWarp;
+      uniform float previousWarpAnimSpeed;
       uniform float time;
       uniform float trebleAtt;
+      uniform float previousCenterX;
+      uniform float previousCenterY;
+      uniform float previousScaleX;
+      uniform float previousScaleY;
+      uniform float previousTranslateX;
+      uniform float previousTranslateY;
+      uniform float previousSignalTime;
+      uniform float previousSignalFrame;
+      uniform float previousSignalFps;
+      uniform float previousSignalBass;
+      uniform float previousSignalMid;
+      uniform float previousSignalMids;
+      uniform float previousSignalTreble;
+      uniform float previousSignalBassAtt;
+      uniform float previousSignalMidAtt;
+      uniform float previousSignalMidsAtt;
+      uniform float previousSignalTrebleAtt;
+      uniform float previousSignalBeat;
+      uniform float previousSignalBeatPulse;
+      uniform float previousSignalRms;
+      uniform float previousSignalVol;
+      uniform float previousSignalMusic;
+      uniform float previousSignalWeightedEnergy;
+      uniform float blendMix;
       uniform float interactionOffsetX;
       uniform float interactionOffsetY;
       uniform float interactionRotation;
@@ -685,7 +746,7 @@ function createProceduralMeshMaterial(
       ${PROCEDURAL_INTERACTION_SHADER_CHUNK}
 
       void main() {
-        vec2 transformed = applyMilkdropInteraction(
+        vec2 current = applyMilkdropInteraction(
           milkdropTransformPointWithParams(
             sourcePosition.xy,
             zoom,
@@ -718,6 +779,40 @@ function createProceduralMeshMaterial(
             signalWeightedEnergy
           )
         );
+        vec2 previous = applyMilkdropInteraction(
+          milkdropTransformPointWithParams(
+            sourcePosition.xy,
+            previousZoom,
+            previousZoomExponent,
+            previousRotation,
+            previousWarp,
+            previousWarpAnimSpeed,
+            previousCenterX,
+            previousCenterY,
+            previousScaleX,
+            previousScaleY,
+            previousTranslateX,
+            previousTranslateY,
+            previousSignalTime,
+            previousSignalFrame,
+            previousSignalFps,
+            previousSignalBass,
+            previousSignalMid,
+            previousSignalMids,
+            previousSignalTreble,
+            previousSignalBassAtt,
+            previousSignalMidAtt,
+            previousSignalMidsAtt,
+            previousSignalTrebleAtt,
+            previousSignalBeat,
+            previousSignalBeatPulse,
+            previousSignalRms,
+            previousSignalVol,
+            previousSignalMusic,
+            previousSignalWeightedEnergy
+          )
+        );
+        vec2 transformed = mix(previous, current, blendMix);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(
           transformed.xy,
           sourcePosition.z,
@@ -1773,6 +1868,343 @@ function resampleScalarValues(values: number[], targetLength: number) {
 
 function lerpNumber(previous: number, current: number, mix: number) {
   return previous + (current - previous) * mix;
+}
+
+function lerpVector2Like(
+  previous: { x: number; y: number },
+  current: { x: number; y: number },
+  mix: number,
+) {
+  return {
+    x: lerpNumber(previous.x, current.x, mix),
+    y: lerpNumber(previous.y, current.y, mix),
+  };
+}
+
+function buildFeedbackCompositeStateForBackend(
+  frameState: MilkdropRenderPayload['frameState'],
+  backend: 'webgl' | 'webgpu',
+): MilkdropFeedbackCompositeState {
+  const controls = frameState.post.shaderControls;
+  const shaderPrograms = {
+    warp: frameState.post.shaderPrograms.warp?.execution.supportedBackends.includes(
+      backend,
+    )
+      ? frameState.post.shaderPrograms.warp
+      : null,
+    comp: frameState.post.shaderPrograms.comp?.execution.supportedBackends.includes(
+      backend,
+    )
+      ? frameState.post.shaderPrograms.comp
+      : null,
+  };
+  const plannedShaderExecution =
+    backend === 'webgpu'
+      ? frameState.compatibility.gpuDescriptorPlans.webgpu.feedback
+          ?.shaderExecution
+      : null;
+  const usesDirectShaderPrograms =
+    plannedShaderExecution === 'direct'
+      ? true
+      : plannedShaderExecution === 'controls'
+        ? false
+        : shaderPrograms.warp !== null || shaderPrograms.comp !== null;
+  return {
+    shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
+    shaderPrograms,
+    mixAlpha: frameState.post.videoEchoEnabled
+      ? frameState.post.videoEchoAlpha + controls.mixAlpha
+      : controls.mixAlpha,
+    zoom: frameState.post.videoEchoEnabled
+      ? frameState.post.videoEchoZoom + controls.warpScale * 0.04
+      : 1,
+    videoEchoOrientation: frameState.post.videoEchoEnabled
+      ? frameState.post.videoEchoOrientation
+      : 0,
+    brighten: frameState.post.brighten ? 1 : 0,
+    darken: frameState.post.darken ? 1 : 0,
+    darkenCenter: frameState.post.darkenCenter ? 1 : 0,
+    solarize: frameState.post.solarize ? 1 : 0,
+    invert: frameState.post.invert ? 1 : 0,
+    gammaAdj: frameState.post.gammaAdj,
+    textureWrap: frameState.post.textureWrap ? 1 : 0,
+    feedbackTexture: frameState.post.feedbackTexture ? 1 : 0,
+    warpScale: controls.warpScale,
+    offsetX: controls.offsetX,
+    offsetY: controls.offsetY,
+    rotation: controls.rotation,
+    zoomMul: controls.zoom,
+    saturation: controls.saturation,
+    contrast: controls.contrast,
+    colorScale: {
+      r: controls.colorScale.r,
+      g: controls.colorScale.g,
+      b: controls.colorScale.b,
+    },
+    hueShift: controls.hueShift,
+    brightenBoost: controls.brightenBoost,
+    invertBoost: controls.invertBoost,
+    solarizeBoost: controls.solarizeBoost,
+    tint: {
+      r: controls.tint.r,
+      g: controls.tint.g,
+      b: controls.tint.b,
+    },
+    overlayTextureSource: getShaderTextureSourceId(
+      controls.textureLayer.source,
+    ),
+    overlayTextureMode: getShaderTextureBlendModeId(controls.textureLayer.mode),
+    overlayTextureSampleDimension: getShaderSampleDimensionId(
+      controls.textureLayer.sampleDimension,
+    ),
+    overlayTextureInvert: controls.textureLayer.inverted ? 1 : 0,
+    overlayTextureAmount: controls.textureLayer.amount,
+    overlayTextureScale: {
+      x: controls.textureLayer.scaleX,
+      y: controls.textureLayer.scaleY,
+    },
+    overlayTextureOffset: {
+      x: controls.textureLayer.offsetX,
+      y: controls.textureLayer.offsetY,
+    },
+    overlayTextureVolumeSliceZ: controls.textureLayer.volumeSliceZ ?? 0,
+    warpTextureSource: getShaderTextureSourceId(controls.warpTexture.source),
+    warpTextureSampleDimension: getShaderSampleDimensionId(
+      controls.warpTexture.sampleDimension,
+    ),
+    warpTextureAmount: controls.warpTexture.amount,
+    warpTextureScale: {
+      x: controls.warpTexture.scaleX,
+      y: controls.warpTexture.scaleY,
+    },
+    warpTextureOffset: {
+      x: controls.warpTexture.offsetX,
+      y: controls.warpTexture.offsetY,
+    },
+    warpTextureVolumeSliceZ: controls.warpTexture.volumeSliceZ ?? 0,
+    signalBass: frameState.signals.bass,
+    signalMid: frameState.signals.mid,
+    signalTreb: frameState.signals.treb,
+    signalBeat: frameState.signals.beatPulse,
+    signalEnergy: frameState.signals.weightedEnergy,
+    signalTime: frameState.signals.time,
+  };
+}
+
+export function shouldUseMilkdropGpuTransitionBlend(
+  frameState: MilkdropRenderPayload['frameState'] | null,
+  backend: 'webgl' | 'webgpu',
+) {
+  if (!frameState || backend !== 'webgpu') {
+    return false;
+  }
+  return frameState.compatibility.backends.webgpu.status !== 'unsupported';
+}
+
+export function captureMilkdropGpuTransitionSnapshot(
+  frameState: MilkdropRenderPayload['frameState'],
+  backend: 'webgl' | 'webgpu',
+): MilkdropGpuTransitionSnapshot {
+  const motionVectorAlpha = Math.min(
+    Math.max(
+      frameState.variables.mv_a ?? 0.35,
+      frameState.gpuGeometry.motionVectorField?.legacyControls ? 0 : 0.02,
+    ),
+    1,
+  );
+  return {
+    mainWave: frameState.gpuGeometry.mainWave,
+    trailWaves: frameState.gpuGeometry.trailWaves,
+    customWaves: frameState.gpuGeometry.customWaves,
+    mesh: frameState.gpuGeometry.meshField
+      ? {
+          field: frameState.gpuGeometry.meshField,
+          color: frameState.mesh.color,
+          alpha: frameState.mesh.alpha,
+          interaction: frameState.interaction?.mesh ?? null,
+        }
+      : null,
+    motionVectors: frameState.gpuGeometry.motionVectorField
+      ? {
+          field: frameState.gpuGeometry.motionVectorField,
+          color: {
+            r: Math.min(Math.max(frameState.variables.mv_r ?? 1, 0), 1),
+            g: Math.min(Math.max(frameState.variables.mv_g ?? 1, 0), 1),
+            b: Math.min(Math.max(frameState.variables.mv_b ?? 1, 0), 1),
+          },
+          alpha: motionVectorAlpha,
+          interaction: frameState.interaction?.motionVectors ?? null,
+        }
+      : null,
+    feedback: frameState.post.shaderEnabled
+      ? buildFeedbackCompositeStateForBackend(frameState, backend)
+      : null,
+    waveInteraction: frameState.interaction?.waves ?? null,
+    fallback: {
+      mainWave: frameState.mainWave,
+      customWaves: frameState.customWaves,
+      shapes: frameState.shapes,
+      borders: frameState.borders,
+      motionVectors: frameState.motionVectors,
+    },
+  };
+}
+
+function interpolateGpuInteractionTransform(
+  previous: MilkdropGpuInteractionTransform | null,
+  current: MilkdropGpuInteractionTransform | null,
+  mix: number,
+) {
+  if (!previous && !current) {
+    return null;
+  }
+  return {
+    offsetX: lerpNumber(previous?.offsetX ?? 0, current?.offsetX ?? 0, mix),
+    offsetY: lerpNumber(previous?.offsetY ?? 0, current?.offsetY ?? 0, mix),
+    rotation: lerpNumber(previous?.rotation ?? 0, current?.rotation ?? 0, mix),
+    scale: lerpNumber(previous?.scale ?? 1, current?.scale ?? 1, mix),
+    alphaMultiplier: lerpNumber(
+      previous?.alphaMultiplier ?? 1,
+      current?.alphaMultiplier ?? 1,
+      mix,
+    ),
+  };
+}
+
+function sameFeedbackPrograms(
+  previous: MilkdropFeedbackCompositeState,
+  current: MilkdropFeedbackCompositeState,
+) {
+  return (
+    previous.shaderExecution === current.shaderExecution &&
+    previous.shaderPrograms.warp?.source ===
+      current.shaderPrograms.warp?.source &&
+    previous.shaderPrograms.comp?.source === current.shaderPrograms.comp?.source
+  );
+}
+
+function interpolateFeedbackCompositeState(
+  previous: MilkdropFeedbackCompositeState,
+  current: MilkdropFeedbackCompositeState,
+  mix: number,
+) {
+  if (!sameFeedbackPrograms(previous, current)) {
+    return current;
+  }
+  return {
+    shaderExecution: current.shaderExecution,
+    shaderPrograms: current.shaderPrograms,
+    mixAlpha: lerpNumber(previous.mixAlpha, current.mixAlpha, mix),
+    zoom: lerpNumber(previous.zoom, current.zoom, mix),
+    videoEchoOrientation:
+      mix < 0.5 ? previous.videoEchoOrientation : current.videoEchoOrientation,
+    brighten: lerpNumber(previous.brighten, current.brighten, mix),
+    darken: lerpNumber(previous.darken, current.darken, mix),
+    darkenCenter: lerpNumber(previous.darkenCenter, current.darkenCenter, mix),
+    solarize: lerpNumber(previous.solarize, current.solarize, mix),
+    invert: lerpNumber(previous.invert, current.invert, mix),
+    gammaAdj: lerpNumber(previous.gammaAdj, current.gammaAdj, mix),
+    textureWrap: lerpNumber(previous.textureWrap, current.textureWrap, mix),
+    feedbackTexture: lerpNumber(
+      previous.feedbackTexture,
+      current.feedbackTexture,
+      mix,
+    ),
+    warpScale: lerpNumber(previous.warpScale, current.warpScale, mix),
+    offsetX: lerpNumber(previous.offsetX, current.offsetX, mix),
+    offsetY: lerpNumber(previous.offsetY, current.offsetY, mix),
+    rotation: lerpNumber(previous.rotation, current.rotation, mix),
+    zoomMul: lerpNumber(previous.zoomMul, current.zoomMul, mix),
+    saturation: lerpNumber(previous.saturation, current.saturation, mix),
+    contrast: lerpNumber(previous.contrast, current.contrast, mix),
+    colorScale: {
+      r: lerpNumber(previous.colorScale.r, current.colorScale.r, mix),
+      g: lerpNumber(previous.colorScale.g, current.colorScale.g, mix),
+      b: lerpNumber(previous.colorScale.b, current.colorScale.b, mix),
+    },
+    hueShift: lerpNumber(previous.hueShift, current.hueShift, mix),
+    brightenBoost: lerpNumber(
+      previous.brightenBoost,
+      current.brightenBoost,
+      mix,
+    ),
+    invertBoost: lerpNumber(previous.invertBoost, current.invertBoost, mix),
+    solarizeBoost: lerpNumber(
+      previous.solarizeBoost,
+      current.solarizeBoost,
+      mix,
+    ),
+    tint: {
+      r: lerpNumber(previous.tint.r, current.tint.r, mix),
+      g: lerpNumber(previous.tint.g, current.tint.g, mix),
+      b: lerpNumber(previous.tint.b, current.tint.b, mix),
+    },
+    overlayTextureSource:
+      mix < 0.5 ? previous.overlayTextureSource : current.overlayTextureSource,
+    overlayTextureMode:
+      mix < 0.5 ? previous.overlayTextureMode : current.overlayTextureMode,
+    overlayTextureSampleDimension:
+      mix < 0.5
+        ? previous.overlayTextureSampleDimension
+        : current.overlayTextureSampleDimension,
+    overlayTextureInvert: lerpNumber(
+      previous.overlayTextureInvert,
+      current.overlayTextureInvert,
+      mix,
+    ),
+    overlayTextureAmount: lerpNumber(
+      previous.overlayTextureAmount,
+      current.overlayTextureAmount,
+      mix,
+    ),
+    overlayTextureScale: lerpVector2Like(
+      previous.overlayTextureScale,
+      current.overlayTextureScale,
+      mix,
+    ),
+    overlayTextureOffset: lerpVector2Like(
+      previous.overlayTextureOffset,
+      current.overlayTextureOffset,
+      mix,
+    ),
+    overlayTextureVolumeSliceZ: lerpNumber(
+      previous.overlayTextureVolumeSliceZ,
+      current.overlayTextureVolumeSliceZ,
+      mix,
+    ),
+    warpTextureSource:
+      mix < 0.5 ? previous.warpTextureSource : current.warpTextureSource,
+    warpTextureSampleDimension:
+      mix < 0.5
+        ? previous.warpTextureSampleDimension
+        : current.warpTextureSampleDimension,
+    warpTextureAmount: lerpNumber(
+      previous.warpTextureAmount,
+      current.warpTextureAmount,
+      mix,
+    ),
+    warpTextureScale: lerpVector2Like(
+      previous.warpTextureScale,
+      current.warpTextureScale,
+      mix,
+    ),
+    warpTextureOffset: lerpVector2Like(
+      previous.warpTextureOffset,
+      current.warpTextureOffset,
+      mix,
+    ),
+    warpTextureVolumeSliceZ: lerpNumber(
+      previous.warpTextureVolumeSliceZ,
+      current.warpTextureVolumeSliceZ,
+      mix,
+    ),
+    signalBass: lerpNumber(previous.signalBass, current.signalBass, mix),
+    signalMid: lerpNumber(previous.signalMid, current.signalMid, mix),
+    signalTreb: lerpNumber(previous.signalTreb, current.signalTreb, mix),
+    signalBeat: lerpNumber(previous.signalBeat, current.signalBeat, mix),
+    signalEnergy: lerpNumber(previous.signalEnergy, current.signalEnergy, mix),
+    signalTime: lerpNumber(previous.signalTime, current.signalTime, mix),
+  };
 }
 
 function syncPreviousProceduralFieldUniforms(
@@ -3308,6 +3740,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     gpuGeometry: MilkdropGpuGeometryHints,
     signals: MilkdropRenderPayload['frameState']['signals'],
     interaction?: MilkdropGpuInteractionTransform | null,
+    previousMesh?: MilkdropGpuTransitionMeshState | null,
+    blendMix = 1,
   ) {
     const proceduralMesh =
       this.backend === 'webgpu' &&
@@ -3341,6 +3775,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         this.meshLines.material as ShaderMaterial,
         interaction,
       );
+      const meshMaterial = this.meshLines.material as ShaderMaterial;
+      const previousField = previousMesh?.field ?? proceduralMesh;
+      syncPreviousProceduralFieldUniforms(meshMaterial, previousField);
+      meshMaterial.uniforms.blendMix.value = blendMix;
       this.meshLines.visible = mesh.alpha > 0.001;
       return;
     }
@@ -3363,7 +3801,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private renderMotionVectors(
     payload: MilkdropRenderPayload['frameState'],
     alphaMultiplier = 1,
-    previousFrame?: MilkdropRenderPayload['frameState'] | null,
+    previousMotionVectors?: MilkdropGpuTransitionMotionVectorState | null,
     blendMix = 1,
     cpuGroup: Group = this.motionVectorCpuGroup,
     proceduralObject: LineSegments<
@@ -3426,8 +3864,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         proceduralField.explicitLength;
       proceduralMaterial.uniforms.legacyControls.value =
         proceduralField.legacyControls ? 1 : 0;
-      const previousField =
-        previousFrame?.gpuGeometry.motionVectorField ?? proceduralField;
+      const previousField = previousMotionVectors?.field ?? proceduralField;
       syncPreviousProceduralFieldUniforms(proceduralMaterial, previousField);
       proceduralMaterial.uniforms.previousSourceOffsetX.value =
         previousField.sourceOffsetX;
@@ -3441,8 +3878,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
 
     proceduralObject.visible = false;
     this.renderLineVisualGroup(
-      'motion-vectors',
-      this.motionVectorCpuGroup,
+      cpuGroup === this.motionVectorCpuGroup
+        ? 'motion-vectors'
+        : 'blend-motion-vectors',
+      cpuGroup,
       payload.motionVectors,
       alphaMultiplier,
     );
@@ -3451,122 +3890,34 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private buildFeedbackCompositeState(
     frameState: MilkdropRenderPayload['frameState'],
   ): MilkdropFeedbackCompositeState {
-    const controls = frameState.post.shaderControls;
-    const shaderPrograms = {
-      warp: frameState.post.shaderPrograms.warp?.execution.supportedBackends.includes(
-        this.backend,
-      )
-        ? frameState.post.shaderPrograms.warp
-        : null,
-      comp: frameState.post.shaderPrograms.comp?.execution.supportedBackends.includes(
-        this.backend,
-      )
-        ? frameState.post.shaderPrograms.comp
-        : null,
-    };
-    const plannedShaderExecution =
-      this.backend === 'webgpu'
-        ? this.webgpuDescriptorPlan?.feedback?.shaderExecution
-        : null;
-    const usesDirectShaderPrograms =
-      plannedShaderExecution === 'direct'
-        ? true
-        : plannedShaderExecution === 'controls'
-          ? false
-          : shaderPrograms.warp !== null || shaderPrograms.comp !== null;
-    return {
-      shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
-      shaderPrograms,
-      mixAlpha: frameState.post.videoEchoEnabled
-        ? frameState.post.videoEchoAlpha + controls.mixAlpha
-        : controls.mixAlpha,
-      zoom: frameState.post.videoEchoEnabled
-        ? frameState.post.videoEchoZoom + controls.warpScale * 0.04
-        : 1,
-      videoEchoOrientation: frameState.post.videoEchoEnabled
-        ? frameState.post.videoEchoOrientation
-        : 0,
-      brighten: frameState.post.brighten ? 1 : 0,
-      darken: frameState.post.darken ? 1 : 0,
-      darkenCenter: frameState.post.darkenCenter ? 1 : 0,
-      solarize: frameState.post.solarize ? 1 : 0,
-      invert: frameState.post.invert ? 1 : 0,
-      gammaAdj: frameState.post.gammaAdj,
-      textureWrap: frameState.post.textureWrap ? 1 : 0,
-      feedbackTexture: frameState.post.feedbackTexture ? 1 : 0,
-      warpScale: controls.warpScale,
-      offsetX: controls.offsetX,
-      offsetY: controls.offsetY,
-      rotation: controls.rotation,
-      zoomMul: controls.zoom,
-      saturation: controls.saturation,
-      contrast: controls.contrast,
-      colorScale: {
-        r: controls.colorScale.r,
-        g: controls.colorScale.g,
-        b: controls.colorScale.b,
-      },
-      hueShift: controls.hueShift,
-      brightenBoost: controls.brightenBoost,
-      invertBoost: controls.invertBoost,
-      solarizeBoost: controls.solarizeBoost,
-      tint: {
-        r: controls.tint.r,
-        g: controls.tint.g,
-        b: controls.tint.b,
-      },
-      overlayTextureSource: getShaderTextureSourceId(
-        controls.textureLayer.source,
-      ),
-      overlayTextureMode: getShaderTextureBlendModeId(
-        controls.textureLayer.mode,
-      ),
-      overlayTextureSampleDimension: getShaderSampleDimensionId(
-        controls.textureLayer.sampleDimension,
-      ),
-      overlayTextureInvert: controls.textureLayer.inverted ? 1 : 0,
-      overlayTextureAmount: controls.textureLayer.amount,
-      overlayTextureScale: {
-        x: controls.textureLayer.scaleX,
-        y: controls.textureLayer.scaleY,
-      },
-      overlayTextureOffset: {
-        x: controls.textureLayer.offsetX,
-        y: controls.textureLayer.offsetY,
-      },
-      overlayTextureVolumeSliceZ: controls.textureLayer.volumeSliceZ ?? 0,
-      warpTextureSource: getShaderTextureSourceId(controls.warpTexture.source),
-      warpTextureSampleDimension: getShaderSampleDimensionId(
-        controls.warpTexture.sampleDimension,
-      ),
-      warpTextureAmount: controls.warpTexture.amount,
-      warpTextureScale: {
-        x: controls.warpTexture.scaleX,
-        y: controls.warpTexture.scaleY,
-      },
-      warpTextureOffset: {
-        x: controls.warpTexture.offsetX,
-        y: controls.warpTexture.offsetY,
-      },
-      warpTextureVolumeSliceZ: controls.warpTexture.volumeSliceZ ?? 0,
-      signalBass: frameState.signals.bass,
-      signalMid: frameState.signals.mid,
-      signalTreb: frameState.signals.treb,
-      signalBeat: frameState.signals.beatPulse,
-      signalEnergy: frameState.signals.weightedEnergy,
-      signalTime: frameState.signals.time,
-    };
+    return buildFeedbackCompositeStateForBackend(frameState, this.backend);
   }
 
   render(payload: MilkdropRenderPayload) {
     const backgroundMaterial = this.background.material as MeshBasicMaterial;
     setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
+    const blend = payload.blendState;
+    const gpuBlendSnapshot =
+      blend?.mode === 'gpu' && this.backend === 'webgpu'
+        ? {
+            previous: blend.previous,
+            current: captureMilkdropGpuTransitionSnapshot(
+              payload.frameState,
+              this.backend,
+            ),
+            mix: 1 - blend.alpha,
+            alpha: blend.alpha,
+          }
+        : null;
+    const currentGpuSnapshot = gpuBlendSnapshot?.current ?? null;
 
     this.renderMesh(
       payload.frameState.mesh,
       payload.frameState.gpuGeometry,
       payload.frameState.signals,
       payload.frameState.interaction?.mesh,
+      gpuBlendSnapshot?.previous.mesh ?? null,
+      gpuBlendSnapshot?.mix ?? 1,
     );
 
     const proceduralWavePlans =
@@ -3635,69 +3986,48 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     );
     this.renderMotionVectors(payload.frameState);
 
-    const blend = payload.blendState;
-    if (blend?.mode === 'gpu' && this.backend === 'webgpu') {
-      const previousFrame = blend.previousFrame;
-      const blendMix = 1 - blend.alpha;
+    if (gpuBlendSnapshot && currentGpuSnapshot) {
+      const previousSnapshot = gpuBlendSnapshot.previous;
+      const currentSnapshot = currentGpuSnapshot;
+      const blendMix = gpuBlendSnapshot.mix;
+      const blendAlpha = gpuBlendSnapshot.alpha;
       if (
         canUseProceduralMainWave &&
-        previousFrame.gpuGeometry.mainWave &&
-        payload.frameState.gpuGeometry.mainWave
+        previousSnapshot.mainWave &&
+        currentSnapshot.mainWave
       ) {
         this.renderInterpolatedProceduralWaveGroup(
           this.blendWaveGroup,
           [
             {
-              previous: previousFrame.gpuGeometry.mainWave,
-              current: payload.frameState.gpuGeometry.mainWave,
+              previous: previousSnapshot.mainWave,
+              current: currentSnapshot.mainWave,
             },
           ],
           blendMix,
-          blend.alpha,
-          {
-            offsetX: lerpNumber(
-              previousFrame.interaction?.waves.offsetX ?? 0,
-              payload.frameState.interaction?.waves.offsetX ?? 0,
-              blendMix,
-            ),
-            offsetY: lerpNumber(
-              previousFrame.interaction?.waves.offsetY ?? 0,
-              payload.frameState.interaction?.waves.offsetY ?? 0,
-              blendMix,
-            ),
-            rotation: lerpNumber(
-              previousFrame.interaction?.waves.rotation ?? 0,
-              payload.frameState.interaction?.waves.rotation ?? 0,
-              blendMix,
-            ),
-            scale: lerpNumber(
-              previousFrame.interaction?.waves.scale ?? 1,
-              payload.frameState.interaction?.waves.scale ?? 1,
-              blendMix,
-            ),
-            alphaMultiplier: lerpNumber(
-              previousFrame.interaction?.waves.alphaMultiplier ?? 1,
-              payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
-              blendMix,
-            ),
-          },
+          blendAlpha,
+          interpolateGpuInteractionTransform(
+            previousSnapshot.waveInteraction,
+            currentSnapshot.waveInteraction,
+            blendMix,
+          ),
         );
       } else {
         this.renderWaveGroup(
           'blend-main-wave',
           this.blendWaveGroup,
-          [previousFrame.mainWave],
-          blend.alpha,
+          [previousSnapshot.fallback.mainWave],
+          blendAlpha,
         );
       }
       if (
         canUseProceduralCustomWaves &&
-        previousFrame.gpuGeometry.customWaves.length > 0 &&
-        payload.frameState.gpuGeometry.customWaves.length > 0
+        previousSnapshot.customWaves.length > 0 &&
+        currentSnapshot.customWaves.length > 0
       ) {
-        const interpolatedCustomWaves = previousFrame.gpuGeometry.customWaves
+        const interpolatedCustomWaves = previousSnapshot.customWaves
           .map((wave, index) => {
-            const current = payload.frameState.gpuGeometry.customWaves[index];
+            const current = currentSnapshot.customWaves[index];
             return current ? { previous: wave, current } : null;
           })
           .filter((wave): wave is NonNullable<typeof wave> => wave !== null);
@@ -3705,67 +4035,45 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
           this.blendCustomWaveGroup,
           interpolatedCustomWaves,
           blendMix,
-          blend.alpha,
-          {
-            offsetX: lerpNumber(
-              previousFrame.interaction?.waves.offsetX ?? 0,
-              payload.frameState.interaction?.waves.offsetX ?? 0,
-              blendMix,
-            ),
-            offsetY: lerpNumber(
-              previousFrame.interaction?.waves.offsetY ?? 0,
-              payload.frameState.interaction?.waves.offsetY ?? 0,
-              blendMix,
-            ),
-            rotation: lerpNumber(
-              previousFrame.interaction?.waves.rotation ?? 0,
-              payload.frameState.interaction?.waves.rotation ?? 0,
-              blendMix,
-            ),
-            scale: lerpNumber(
-              previousFrame.interaction?.waves.scale ?? 1,
-              payload.frameState.interaction?.waves.scale ?? 1,
-              blendMix,
-            ),
-            alphaMultiplier: lerpNumber(
-              previousFrame.interaction?.waves.alphaMultiplier ?? 1,
-              payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
-              blendMix,
-            ),
-          },
+          blendAlpha,
+          interpolateGpuInteractionTransform(
+            previousSnapshot.waveInteraction,
+            currentSnapshot.waveInteraction,
+            blendMix,
+          ),
         );
       } else {
         this.renderWaveGroup(
           'blend-custom-wave',
           this.blendCustomWaveGroup,
-          previousFrame.customWaves,
-          blend.alpha,
+          previousSnapshot.fallback.customWaves,
+          blendAlpha,
         );
       }
       this.renderInterpolatedShapeGroup(
         this.blendShapeGroup,
-        previousFrame.shapes,
+        previousSnapshot.fallback.shapes,
         payload.frameState.shapes,
         blendMix,
-        blend.alpha,
+        blendAlpha,
       );
       this.renderBorderGroup(
         'blend-borders',
         this.blendBorderGroup,
-        previousFrame.borders,
-        blend.alpha,
+        previousSnapshot.fallback.borders,
+        blendAlpha,
       );
       this.renderMotionVectors(
         payload.frameState,
-        blend.alpha,
-        previousFrame,
+        blendAlpha,
+        previousSnapshot.motionVectors,
         blendMix,
         this.blendMotionVectorCpuGroup,
         this.blendProceduralMotionVectors,
       );
       if (
         !this.blendProceduralMotionVectors.visible &&
-        previousFrame.motionVectors.length === 0
+        previousSnapshot.fallback.motionVectors.length === 0
       ) {
         clearGroup(this.blendMotionVectorCpuGroup);
       }
@@ -3811,8 +4119,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       return false;
     }
 
+    const currentFeedbackState = this.buildFeedbackCompositeState(
+      payload.frameState,
+    );
     this.feedback.applyCompositeState(
-      this.buildFeedbackCompositeState(payload.frameState),
+      gpuBlendSnapshot?.previous.feedback &&
+        currentGpuSnapshot?.feedback !== null &&
+        currentGpuSnapshot?.feedback !== undefined
+        ? interpolateFeedbackCompositeState(
+            gpuBlendSnapshot.previous.feedback,
+            currentGpuSnapshot.feedback,
+            gpuBlendSnapshot.mix,
+          )
+        : currentFeedbackState,
     );
     return this.feedback.render(this.renderer, this.scene, this.camera);
   }
