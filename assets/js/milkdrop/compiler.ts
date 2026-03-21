@@ -1155,7 +1155,7 @@ function cloneShaderNode(node: MilkdropShaderExpressionNode) {
 }
 
 function createShaderUnaryNode(
-  operator: '+' | '-',
+  operator: '+' | '-' | '!',
   operand: MilkdropShaderExpressionNode,
 ): MilkdropShaderExpressionNode {
   return {
@@ -1166,7 +1166,20 @@ function createShaderUnaryNode(
 }
 
 function createShaderBinaryNode(
-  operator: '+' | '-' | '*' | '/',
+  operator:
+    | '+'
+    | '-'
+    | '*'
+    | '/'
+    | '%'
+    | '<'
+    | '<='
+    | '>'
+    | '>='
+    | '=='
+    | '!='
+    | '&&'
+    | '||',
   left: MilkdropShaderExpressionNode,
   right: MilkdropShaderExpressionNode,
 ): MilkdropShaderExpressionNode {
@@ -3375,6 +3388,90 @@ function buildShaderProgramPayload({
       statementTargets: statements.map((statement) => statement.target),
     },
   };
+function isUnsupportedParsedShaderStatement({
+  statement,
+  shaderEnv,
+  shaderValueEnv,
+  shaderExpressionEnv,
+}: {
+  statement: MilkdropShaderStatement;
+  shaderEnv: Record<string, number>;
+  shaderValueEnv: ShaderRuntimeEnv;
+  shaderExpressionEnv: ShaderExpressionEnv;
+}) {
+  const key = statement.target.toLowerCase();
+  const resolvedExpression = resolveShaderExpressionIdentifiers(
+    statement.expression,
+    shaderExpressionEnv,
+  );
+
+  if (key === 'texture_source' || key === 'warp_texture_source') {
+    const source =
+      resolvedExpression.type === 'identifier'
+        ? normalizeShaderSamplerName(resolvedExpression.name)
+        : parseShaderSamplerSource(statement.rawValue);
+    return !source || !isAuxShaderSamplerName(source);
+  }
+
+  if (key === 'texture_mode') {
+    const mode =
+      resolvedExpression.type === 'identifier'
+        ? normalizeShaderTextureBlendMode(resolvedExpression.name)
+        : parseShaderTextureBlendMode(statement.rawValue);
+    return !mode;
+  }
+
+  if (key !== 'ret' && key !== 'shader_body') {
+    return false;
+  }
+
+  const directSample = getShaderSampleInfo(resolvedExpression);
+  if (
+    directSample &&
+    directSample.source !== 'main' &&
+    directSample.source !== 'none' &&
+    !isAuxShaderSamplerName(directSample.source)
+  ) {
+    return true;
+  }
+
+  if (
+    resolvedExpression.type !== 'call' ||
+    resolvedExpression.name.toLowerCase() !== 'mix' ||
+    resolvedExpression.args.length < 3 ||
+    !isShaderSampleRgbExpression(
+      resolvedExpression.args[0] as MilkdropShaderExpressionNode,
+    )
+  ) {
+    return false;
+  }
+
+  const baseSample = getShaderSampleInfo(
+    resolvedExpression.args[0] as MilkdropShaderExpressionNode,
+  );
+  const amount = evaluateShaderScalarResult(
+    resolvedExpression.args[2] as MilkdropShaderExpressionNode,
+    shaderValueEnv,
+    shaderEnv,
+    shaderExpressionEnv,
+  );
+  if (!amount || baseSample?.source !== 'main') {
+    return false;
+  }
+
+  const targetNode = resolvedExpression.args[1] as MilkdropShaderExpressionNode;
+  const auxSample = getShaderSampleInfo(targetNode);
+  if (
+    auxSample &&
+    auxSample.source !== 'main' &&
+    auxSample.source !== 'none' &&
+    !isAuxShaderSamplerName(auxSample.source)
+  ) {
+    return true;
+  }
+
+  const invertedSample = extractShaderInvertedSampleExpression(targetNode);
+  return invertedSample !== null && invertedSample !== 'main';
 }
 
 function extractShaderControls(
@@ -3449,33 +3546,34 @@ function extractShaderControls(
         supportedLineCount += 1;
         return;
       }
+      if (
+        isUnsupportedParsedShaderStatement({
+          statement: parsedStatement,
+          shaderEnv,
+          shaderValueEnv,
+          shaderExpressionEnv,
+        })
+      ) {
+        unsupportedLines.push(line);
+        return;
+      }
+      supportedLineCount += 1;
+      return;
     }
 
-    const fallbackAssignment = !parsedStatement
-      ? line.match(
-          /^(?:(?:const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
-        )
-      : null;
-    if (!parsedStatement && !fallbackAssignment) {
+    const fallbackAssignment = line.match(
+      /^(?:(?:const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
+    );
+    if (!fallbackAssignment) {
       unsupportedLines.push(line);
       return;
     }
-    const key =
-      parsedStatement?.target.toLowerCase() ??
-      fallbackAssignment?.[1]?.toLowerCase() ??
-      '';
+    const key = fallbackAssignment[1]?.toLowerCase() ?? '';
     const operator =
-      ((parsedStatement?.operator ?? fallbackAssignment?.[2]) as
-        | '='
-        | '+='
-        | '-='
-        | '*='
-        | '/=') ?? '=';
-    const rawValue =
-      parsedStatement?.rawValue ?? fallbackAssignment?.[3]?.trim() ?? '';
+      (fallbackAssignment[2] as '=' | '+=' | '-=' | '*=' | '/=') ?? '=';
+    const rawValue = fallbackAssignment[3]?.trim() ?? '';
 
     if (
-      !parsedStatement &&
       applyShaderProgramHeuristicLine({
         key,
         operator,
@@ -3508,9 +3606,6 @@ function extractShaderControls(
           numeric.expression,
         );
         shaderEnv[key] = next.value;
-        if (parsedStatement) {
-          shaderExpressionEnv[key] = parsedStatement.expression;
-        }
         supportedLineCount += 1;
         return;
       }

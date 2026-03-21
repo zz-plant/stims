@@ -46,6 +46,26 @@ const MILKDROP_TEXTURE_FILES = {
   pattern: 'circuit_board_pattern.png',
   fractal: 'crystal_fractal.png',
 } as const;
+const AUX_TEXTURE_SPECS = {
+  noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
+  simplex: { fileName: MILKDROP_TEXTURE_FILES.simplex, colorTexture: false },
+  voronoi: { fileName: MILKDROP_TEXTURE_FILES.voronoi, colorTexture: false },
+  aura: { fileName: MILKDROP_TEXTURE_FILES.aura, colorTexture: true },
+  caustics: { fileName: MILKDROP_TEXTURE_FILES.caustics, colorTexture: false },
+  pattern: { fileName: MILKDROP_TEXTURE_FILES.pattern, colorTexture: false },
+  fractal: { fileName: MILKDROP_TEXTURE_FILES.fractal, colorTexture: false },
+} as const satisfies Record<
+  keyof typeof MILKDROP_TEXTURE_FILES,
+  { fileName: string; colorTexture: boolean }
+>;
+
+type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
+
+type SharedAuxTextureMap = Record<AuxTextureName, Texture>;
+
+const milkdropTextureLoader = new TextureLoader();
+const sharedMilkdropTextureCache = new Map<string, Texture>();
+
 function resolveTextureUrl(fileName: string) {
   const baseUrl =
     typeof import.meta.env.BASE_URL === 'string'
@@ -64,9 +84,50 @@ function configureMilkdropTexture(texture: Texture, colorTexture = false) {
   return texture;
 }
 
-function loadMilkdropTexture(fileName: string, colorTexture = false) {
-  const texture = new TextureLoader().load(resolveTextureUrl(fileName));
-  return configureMilkdropTexture(texture, colorTexture);
+function getSharedMilkdropTexture(fileName: string, colorTexture = false) {
+  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}`;
+  let texture = sharedMilkdropTextureCache.get(cacheKey);
+  if (!texture) {
+    texture = configureMilkdropTexture(
+      milkdropTextureLoader.load(resolveTextureUrl(fileName)),
+      colorTexture,
+    );
+    sharedMilkdropTextureCache.set(cacheKey, texture);
+  }
+  return texture;
+}
+
+function getSharedAuxTextures(): SharedAuxTextureMap {
+  return {
+    noise: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.noise.fileName,
+      AUX_TEXTURE_SPECS.noise.colorTexture,
+    ),
+    simplex: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.simplex.fileName,
+      AUX_TEXTURE_SPECS.simplex.colorTexture,
+    ),
+    voronoi: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.voronoi.fileName,
+      AUX_TEXTURE_SPECS.voronoi.colorTexture,
+    ),
+    aura: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.aura.fileName,
+      AUX_TEXTURE_SPECS.aura.colorTexture,
+    ),
+    caustics: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.caustics.fileName,
+      AUX_TEXTURE_SPECS.caustics.colorTexture,
+    ),
+    pattern: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.pattern.fileName,
+      AUX_TEXTURE_SPECS.pattern.colorTexture,
+    ),
+    fractal: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.fractal.fileName,
+      AUX_TEXTURE_SPECS.fractal.colorTexture,
+    ),
+  };
 }
 
 function createFeedbackRenderTarget(
@@ -155,7 +216,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
   readonly resolutionScale: number;
   readonly profile: FeedbackBackendProfile;
-  readonly auxTextures: Record<string, Texture>;
+  readonly auxTextures: SharedAuxTextureMap;
   private index = 0;
 
   constructor(
@@ -166,15 +227,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.camera.position.z = 1;
     this.profile = behavior.feedbackProfile;
     this.resolutionScale = this.profile.resolutionScale;
-    this.auxTextures = {
-      noise: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.noise),
-      simplex: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.simplex),
-      voronoi: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.voronoi),
-      aura: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.aura, true),
-      caustics: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.caustics),
-      pattern: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.pattern),
-      fractal: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.fractal),
-    };
+    this.auxTextures = getSharedAuxTextures();
     this.sceneTarget = createFeedbackRenderTarget(width, height, behavior);
     this.targets = [
       createFeedbackRenderTarget(width, height, behavior),
@@ -637,7 +690,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   dispose() {
     this.sceneTarget.dispose();
     this.targets.forEach((target) => target.dispose());
-    Object.values(this.auxTextures).forEach((texture) => texture.dispose());
+    // Auxiliary textures are shared for the lifetime of the app.
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
     this.compositeScene.clear();

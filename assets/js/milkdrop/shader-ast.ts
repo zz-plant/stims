@@ -159,7 +159,7 @@ class ShaderExpressionParser {
   }
 
   parse() {
-    const expression = this.parseTerm();
+    const expression = this.parseLogicalOr();
     return this.peek().type === 'eof' ? expression : null;
   }
 
@@ -187,8 +187,100 @@ class ShaderExpressionParser {
     return token.type === 'paren' && token.value === value;
   }
 
-  private parseTerm(): MilkdropShaderExpressionNode | null {
-    let node = this.parseFactor();
+  private parseLogicalOr(): MilkdropShaderExpressionNode | null {
+    let node = this.parseLogicalAnd();
+    if (!node) {
+      return null;
+    }
+    while (true) {
+      const operator = this.matchOperator('||');
+      if (!operator) {
+        return node;
+      }
+      const right = this.parseLogicalAnd();
+      if (!right) {
+        return null;
+      }
+      node = {
+        type: 'binary',
+        operator: '||',
+        left: node,
+        right,
+      };
+    }
+  }
+
+  private parseLogicalAnd(): MilkdropShaderExpressionNode | null {
+    let node = this.parseEquality();
+    if (!node) {
+      return null;
+    }
+    while (true) {
+      const operator = this.matchOperator('&&');
+      if (!operator) {
+        return node;
+      }
+      const right = this.parseEquality();
+      if (!right) {
+        return null;
+      }
+      node = {
+        type: 'binary',
+        operator: '&&',
+        left: node,
+        right,
+      };
+    }
+  }
+
+  private parseEquality(): MilkdropShaderExpressionNode | null {
+    let node = this.parseComparison();
+    if (!node) {
+      return null;
+    }
+    while (true) {
+      const operator = this.matchOperator('==', '!=');
+      if (!operator) {
+        return node;
+      }
+      const right = this.parseComparison();
+      if (!right) {
+        return null;
+      }
+      node = {
+        type: 'binary',
+        operator: operator as '==' | '!=',
+        left: node,
+        right,
+      };
+    }
+  }
+
+  private parseComparison(): MilkdropShaderExpressionNode | null {
+    let node = this.parseAdditive();
+    if (!node) {
+      return null;
+    }
+    while (true) {
+      const operator = this.matchOperator('<', '<=', '>', '>=');
+      if (!operator) {
+        return node;
+      }
+      const right = this.parseAdditive();
+      if (!right) {
+        return null;
+      }
+      node = {
+        type: 'binary',
+        operator: operator as '<' | '<=' | '>' | '>=',
+        left: node,
+        right,
+      };
+    }
+  }
+
+  private parseAdditive(): MilkdropShaderExpressionNode | null {
+    let node = this.parseMultiplicative();
     if (!node) {
       return null;
     }
@@ -197,7 +289,7 @@ class ShaderExpressionParser {
       if (!operator) {
         return node;
       }
-      const right = this.parseFactor();
+      const right = this.parseMultiplicative();
       if (!right) {
         return null;
       }
@@ -210,13 +302,13 @@ class ShaderExpressionParser {
     }
   }
 
-  private parseFactor(): MilkdropShaderExpressionNode | null {
+  private parseMultiplicative(): MilkdropShaderExpressionNode | null {
     let node = this.parseUnary();
     if (!node) {
       return null;
     }
     while (true) {
-      const operator = this.matchOperator('*', '/');
+      const operator = this.matchOperator('*', '/', '%');
       if (!operator) {
         return node;
       }
@@ -226,7 +318,7 @@ class ShaderExpressionParser {
       }
       node = {
         type: 'binary',
-        operator: operator as '*' | '/',
+        operator: operator as '*' | '/' | '%',
         left: node,
         right,
       };
@@ -234,7 +326,7 @@ class ShaderExpressionParser {
   }
 
   private parseUnary(): MilkdropShaderExpressionNode | null {
-    const operator = this.matchOperator('+', '-');
+    const operator = this.matchOperator('+', '-', '!');
     if (operator) {
       const operand = this.parseUnary();
       if (!operand) {
@@ -242,7 +334,7 @@ class ShaderExpressionParser {
       }
       return {
         type: 'unary',
-        operator: operator as '+' | '-',
+        operator: operator as '+' | '-' | '!',
         operand,
       };
     }
@@ -261,7 +353,7 @@ class ShaderExpressionParser {
         this.advance();
         const args: MilkdropShaderExpressionNode[] = [];
         while (!this.isParen(')')) {
-          const arg = this.parseTerm();
+          const arg = this.parseLogicalOr();
           if (!arg) {
             return null;
           }
@@ -301,7 +393,7 @@ class ShaderExpressionParser {
     }
 
     if (token.type === 'paren' && token.value === '(') {
-      const expression = this.parseTerm();
+      const expression = this.parseLogicalOr();
       if (!expression) {
         return null;
       }
@@ -319,8 +411,28 @@ class ShaderExpressionParser {
 export function parseMilkdropShaderStatement(
   line: string,
 ): MilkdropShaderStatement | null {
+  const returnStatement = line.match(/^return\s+(.+)$/iu);
+  if (returnStatement) {
+    const expressionTokens = tokenize(returnStatement[1] ?? '');
+    if (!expressionTokens) {
+      return null;
+    }
+    const expression = new ShaderExpressionParser(expressionTokens).parse();
+    if (!expression) {
+      return null;
+    }
+    return {
+      declaration: null,
+      target: 'return',
+      operator: '=',
+      rawValue: returnStatement[1]?.trim() ?? '',
+      expression,
+      source: line,
+    };
+  }
+
   const assignment = line.match(
-    /^(?:(const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
+    /^(?:(const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
   );
   if (!assignment) {
     return null;
@@ -402,62 +514,116 @@ function isVec3(
   return value.kind === 'vec3';
 }
 
+function isTruthy(value: number) {
+  return value !== 0;
+}
+
+function mapScalarBinary(
+  operator:
+    | '+'
+    | '-'
+    | '*'
+    | '/'
+    | '%'
+    | '<'
+    | '<='
+    | '>'
+    | '>='
+    | '=='
+    | '!='
+    | '&&'
+    | '||',
+  a: number,
+  b: number,
+) {
+  switch (operator) {
+    case '+':
+      return a + b;
+    case '-':
+      return a - b;
+    case '*':
+      return a * b;
+    case '/':
+      return b === 0 ? 0 : a / b;
+    case '%':
+      return b === 0 ? 0 : a % b;
+    case '<':
+      return a < b ? 1 : 0;
+    case '<=':
+      return a <= b ? 1 : 0;
+    case '>':
+      return a > b ? 1 : 0;
+    case '>=':
+      return a >= b ? 1 : 0;
+    case '==':
+      return a === b ? 1 : 0;
+    case '!=':
+      return a !== b ? 1 : 0;
+    case '&&':
+      return isTruthy(a) && isTruthy(b) ? 1 : 0;
+    case '||':
+      return isTruthy(a) || isTruthy(b) ? 1 : 0;
+  }
+}
+
 function applyBinary(
-  operator: '+' | '-' | '*' | '/',
+  operator:
+    | '+'
+    | '-'
+    | '*'
+    | '/'
+    | '%'
+    | '<'
+    | '<='
+    | '>'
+    | '>='
+    | '=='
+    | '!='
+    | '&&'
+    | '||',
   left: ShaderValue,
   right: ShaderValue,
 ) {
-  const applyScalar = (a: number, b: number) =>
-    operator === '+'
-      ? a + b
-      : operator === '-'
-        ? a - b
-        : operator === '*'
-          ? a * b
-          : b === 0
-            ? 0
-            : a / b;
-
   if (isScalar(left) && isScalar(right)) {
-    return scalar(applyScalar(left.value, right.value));
+    return scalar(mapScalarBinary(operator, left.value, right.value));
   }
   if (isVec2(left) && isVec2(right)) {
     return vec2(
-      applyScalar(left.value[0], right.value[0]),
-      applyScalar(left.value[1], right.value[1]),
+      mapScalarBinary(operator, left.value[0], right.value[0]),
+      mapScalarBinary(operator, left.value[1], right.value[1]),
     );
   }
   if (isVec3(left) && isVec3(right)) {
     return vec3(
-      applyScalar(left.value[0], right.value[0]),
-      applyScalar(left.value[1], right.value[1]),
-      applyScalar(left.value[2], right.value[2]),
+      mapScalarBinary(operator, left.value[0], right.value[0]),
+      mapScalarBinary(operator, left.value[1], right.value[1]),
+      mapScalarBinary(operator, left.value[2], right.value[2]),
     );
   }
   if (isVec2(left) && isScalar(right)) {
     return vec2(
-      applyScalar(left.value[0], right.value),
-      applyScalar(left.value[1], right.value),
+      mapScalarBinary(operator, left.value[0], right.value),
+      mapScalarBinary(operator, left.value[1], right.value),
     );
   }
   if (isVec3(left) && isScalar(right)) {
     return vec3(
-      applyScalar(left.value[0], right.value),
-      applyScalar(left.value[1], right.value),
-      applyScalar(left.value[2], right.value),
+      mapScalarBinary(operator, left.value[0], right.value),
+      mapScalarBinary(operator, left.value[1], right.value),
+      mapScalarBinary(operator, left.value[2], right.value),
     );
   }
   if (isScalar(left) && isVec2(right)) {
     return vec2(
-      applyScalar(left.value, right.value[0]),
-      applyScalar(left.value, right.value[1]),
+      mapScalarBinary(operator, left.value, right.value[0]),
+      mapScalarBinary(operator, left.value, right.value[1]),
     );
   }
   if (isScalar(left) && isVec3(right)) {
     return vec3(
-      applyScalar(left.value, right.value[0]),
-      applyScalar(left.value, right.value[1]),
-      applyScalar(left.value, right.value[2]),
+      mapScalarBinary(operator, left.value, right.value[0]),
+      mapScalarBinary(operator, left.value, right.value[1]),
+      mapScalarBinary(operator, left.value, right.value[2]),
     );
   }
   return null;
@@ -522,6 +688,66 @@ function toScalarMilkdropExpression(
   }
 }
 
+function getVectorSize(value: ShaderValue) {
+  if (isVec2(value)) {
+    return 2;
+  }
+  if (isVec3(value)) {
+    return 3;
+  }
+  return 1;
+}
+
+function toComponents(value: ShaderValue, size: 1 | 2 | 3) {
+  if (size === 1) {
+    return isScalar(value) ? [value.value] : null;
+  }
+  if (isScalar(value)) {
+    return Array.from({ length: size }, () => value.value);
+  }
+  if (size === 2 && isVec2(value)) {
+    return [...value.value];
+  }
+  if (size === 3 && isVec3(value)) {
+    return [...value.value];
+  }
+  return null;
+}
+
+function fromComponents(values: number[]) {
+  if (values.length === 1) {
+    return scalar(values[0] ?? 0);
+  }
+  if (values.length === 2) {
+    return vec2(values[0] ?? 0, values[1] ?? 0);
+  }
+  if (values.length === 3) {
+    return vec3(values[0] ?? 0, values[1] ?? 0, values[2] ?? 0);
+  }
+  return null;
+}
+
+function mapShaderComponents(
+  values: ShaderValue[],
+  mapper: (...components: number[]) => number,
+) {
+  let size: 1 | 2 | 3 = 1;
+  for (const value of values) {
+    const nextSize = getVectorSize(value);
+    if (nextSize > size) {
+      size = nextSize;
+    }
+  }
+  const componentLists = values.map((value) => toComponents(value, size));
+  if (componentLists.some((entry) => entry === null)) {
+    return null;
+  }
+  const result = Array.from({ length: size }, (_, index) =>
+    mapper(...componentLists.map((entry) => (entry as number[])[index] ?? 0)),
+  );
+  return fromComponents(result);
+}
+
 export function evaluateMilkdropShaderExpression(
   node: MilkdropShaderExpressionNode,
   env: Record<string, ShaderValue>,
@@ -553,6 +779,25 @@ export function evaluateMilkdropShaderExpression(
       }
       if (node.operator === '+') {
         return operand;
+      }
+      if (node.operator === '!') {
+        if (isScalar(operand)) {
+          return scalar(isTruthy(operand.value) ? 0 : 1);
+        }
+        if (isVec2(operand)) {
+          return vec2(
+            isTruthy(operand.value[0]) ? 0 : 1,
+            isTruthy(operand.value[1]) ? 0 : 1,
+          );
+        }
+        if (isVec3(operand)) {
+          return vec3(
+            isTruthy(operand.value[0]) ? 0 : 1,
+            isTruthy(operand.value[1]) ? 0 : 1,
+            isTruthy(operand.value[2]) ? 0 : 1,
+          );
+        }
+        return null;
       }
       return applyBinary('*', scalar(-1), operand);
     }
@@ -643,10 +888,71 @@ export function evaluateMilkdropShaderExpression(
           );
         }
       }
+      if (name === 'lerp' && args.length >= 3) {
+        return mapShaderComponents(
+          [
+            args[0] as ShaderValue,
+            args[1] as ShaderValue,
+            args[2] as ShaderValue,
+          ],
+          (left, right, blend) => left + (right - left) * blend,
+        );
+      }
+      if (name === 'if' && args.length >= 3) {
+        return mapShaderComponents(
+          [
+            args[0] as ShaderValue,
+            args[1] as ShaderValue,
+            args[2] as ShaderValue,
+          ],
+          (condition, whenTrue, whenFalse) =>
+            isTruthy(condition) ? whenTrue : whenFalse,
+        );
+      }
+      if (name === 'step' && args.length >= 2) {
+        return mapShaderComponents(
+          [args[0] as ShaderValue, args[1] as ShaderValue],
+          (edge, value) => (value < edge ? 0 : 1),
+        );
+      }
+      if (name === 'smoothstep' && args.length >= 3) {
+        return mapShaderComponents(
+          [
+            args[0] as ShaderValue,
+            args[1] as ShaderValue,
+            args[2] as ShaderValue,
+          ],
+          (edge0, edge1, value) => {
+            if (edge0 === edge1) {
+              return value < edge0 ? 0 : 1;
+            }
+            const t = Math.min(
+              Math.max((value - edge0) / (edge1 - edge0), 0),
+              1,
+            );
+            return t * t * (3 - 2 * t);
+          },
+        );
+      }
+      if (name === 'sigmoid' && args.length >= 1) {
+        return mapShaderComponents(
+          [args[0] as ShaderValue, args[1] ?? scalar(1)],
+          (value, slope) => 1 / (1 + Math.exp(-value * slope)),
+        );
+      }
+      if ((name === 'mod' || name === 'fmod') && args.length >= 2) {
+        return mapShaderComponents(
+          [args[0] as ShaderValue, args[1] as ShaderValue],
+          (left, right) => (right === 0 ? 0 : left % right),
+        );
+      }
       if (name === 'abs' && args.length >= 1) {
         const value = args[0];
         if (isScalar(value)) {
           return scalar(Math.abs(value.value));
+        }
+        if (isVec2(value)) {
+          return vec2(Math.abs(value.value[0]), Math.abs(value.value[1]));
         }
         if (isVec3(value)) {
           return vec3(
@@ -674,6 +980,18 @@ export function evaluateMilkdropShaderExpression(
             left.value[0] ** right.value[0],
             left.value[1] ** right.value[1],
             left.value[2] ** right.value[2],
+          );
+        }
+        if (isVec2(left) && isScalar(right)) {
+          return vec2(
+            left.value[0] ** right.value,
+            left.value[1] ** right.value,
+          );
+        }
+        if (isVec2(left) && isVec2(right)) {
+          return vec2(
+            left.value[0] ** right.value[0],
+            left.value[1] ** right.value[1],
           );
         }
       }
