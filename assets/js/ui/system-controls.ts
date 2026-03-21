@@ -33,7 +33,7 @@ type SystemControlOptions = {
   description?: string;
   qualityPresets?: QualityPreset[];
   defaultPresetId?: string;
-  variant?: 'floating' | 'inline';
+  variant?: 'floating' | 'inline' | 'embedded';
   includeAdvancedControls?: boolean;
   showDetailedQualitySummary?: boolean;
   onQualityPresetChange?: (preset: QualityPreset) => void;
@@ -178,6 +178,8 @@ export function initSystemControls(
   const panelElement = panel.getElement();
   if (variant === 'inline') {
     panelElement.classList.add('control-panel--inline');
+  } else if (variant === 'embedded') {
+    panelElement.classList.add('control-panel--embedded');
   }
   panel.configure({ title, description });
 

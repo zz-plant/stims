@@ -944,6 +944,7 @@ function createDefaultShaderControls(): MilkdropShaderControls {
       source: 'none',
       mode: 'none',
       sampleDimension: '2d',
+      inverted: false,
       amount: 0,
       scaleX: 1,
       scaleY: 1,
@@ -2004,10 +2005,12 @@ function applyTextureLayerSample(
   controls: MilkdropShaderControls,
   expressions: MilkdropShaderControlExpressions,
   sample: MilkdropExtractedShaderSampleMetadata,
+  options: { inverted?: boolean } = {},
 ) {
   const coordinate = analyzeShaderSampleCoordinate(sample);
   controls.textureLayer.source = sample.source as MilkdropShaderTextureSampler;
   controls.textureLayer.sampleDimension = sample.sampleDimension;
+  controls.textureLayer.inverted = options.inverted ?? false;
   controls.textureLayer.volumeSliceZ = coordinate.volumeSlice.value;
   expressions.textureLayer.sampleDimension = sample.sampleDimension;
   expressions.textureLayer.volumeSliceZ = coordinate.volumeSlice.expression;
@@ -2584,7 +2587,9 @@ function applyShaderAstStatement({
           controls.textureLayer.mode = 'mix';
           controls.textureLayer.amount = amount.value;
           expressions.textureLayer.amount = amount.expression;
-          applyTextureLayerSample(controls, expressions, invertedSample);
+          applyTextureLayerSample(controls, expressions, invertedSample, {
+            inverted: true,
+          });
           return true;
         }
         if (isShaderSolarizeSampleExpression(targetNode)) {
@@ -4534,6 +4539,7 @@ function mergeShaderControlAnalysis(
             : warpAnalysis.controls.textureLayer.mode,
         sampleDimension:
           textureLayerSample.controls.textureLayer.sampleDimension,
+        inverted: textureLayerSample.controls.textureLayer.inverted,
         amount: textureLayerAmount.value,
         scaleX: textureLayerScaleX.value,
         scaleY: textureLayerScaleY.value,

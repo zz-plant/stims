@@ -303,6 +303,7 @@ function createCompositeUniforms(
     overlayTextureSource: uniform(0),
     overlayTextureMode: uniform(0),
     overlayTextureSampleDimension: uniform(0),
+    overlayTextureInvert: uniform(0),
     overlayTextureAmount: uniform(0),
     overlayTextureScale: uniform(new Vector2(1, 1)),
     overlayTextureOffset: uniform(new Vector2(0, 0)),
@@ -537,12 +538,17 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
     const overlayUv = baseUv
       .mul(uniforms.overlayTextureScale)
       .add(uniforms.overlayTextureOffset);
-    const overlayColor = sampleAuxTextureNode(
+    const overlaySample = sampleAuxTextureNode(
       uniforms.overlayTextureSource,
       uniforms.overlayTextureSampleDimension,
       overlayUv,
       uniforms.overlayTextureVolumeSliceZ,
     ).rgb;
+    const overlayColor = mix(
+      overlaySample,
+      vec3(1).sub(overlaySample),
+      step(0.5, uniforms.overlayTextureInvert),
+    );
     const overlayAmount = clamp(uniforms.overlayTextureAmount, 0, 1.5);
     const overlayMixAmount = clamp(overlayAmount, 0, 1);
     const overlayMix = mix(color, overlayColor, overlayMixAmount);
@@ -747,6 +753,8 @@ class WebGPUMilkdropFeedbackManager {
       state.overlayTextureMode;
     this.compositeMaterial.uniforms.overlayTextureSampleDimension.value =
       state.overlayTextureSampleDimension;
+    this.compositeMaterial.uniforms.overlayTextureInvert.value =
+      state.overlayTextureInvert;
     this.compositeMaterial.uniforms.overlayTextureAmount.value =
       state.overlayTextureAmount;
     this.compositeMaterial.uniforms.overlayTextureScale.value.set(

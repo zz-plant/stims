@@ -300,6 +300,7 @@ export type MilkdropShaderTextureLayerControls = {
   source: MilkdropShaderTextureSampler;
   mode: MilkdropShaderTextureBlendMode;
   sampleDimension: MilkdropShaderSampleDimension;
+  inverted: boolean;
   amount: number;
   scaleX: number;
   scaleY: number;
@@ -846,6 +847,7 @@ export type MilkdropFeedbackCompositeState = {
   overlayTextureSource: number;
   overlayTextureMode: number;
   overlayTextureSampleDimension: number;
+  overlayTextureInvert: number;
   overlayTextureAmount: number;
   overlayTextureScale: {
     x: number;

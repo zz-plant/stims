@@ -273,6 +273,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         overlayTextureSource: { value: 0 },
         overlayTextureMode: { value: 0 },
         overlayTextureSampleDimension: { value: 0 },
+        overlayTextureInvert: { value: 0 },
         overlayTextureAmount: { value: 0 },
         overlayTextureScale: { value: new Vector2(1, 1) },
         overlayTextureOffset: { value: new Vector2(0, 0) },
@@ -342,6 +343,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float overlayTextureSource;
         uniform float overlayTextureMode;
         uniform float overlayTextureSampleDimension;
+        uniform float overlayTextureInvert;
         uniform float overlayTextureAmount;
         uniform vec2 overlayTextureScale;
         uniform vec2 overlayTextureOffset;
@@ -550,6 +552,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
               overlayUv,
               overlayTextureVolumeSliceZ
             ).rgb;
+            if (overlayTextureInvert > 0.5) {
+              overlayColor = 1.0 - overlayColor;
+            }
             float amount = clamp(overlayTextureAmount, 0.0, 1.5);
             if (overlayTextureMode < 1.5) {
               color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
@@ -629,6 +634,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.overlayTextureMode.value = state.overlayTextureMode;
     uniforms.overlayTextureSampleDimension.value =
       state.overlayTextureSampleDimension;
+    uniforms.overlayTextureInvert.value = state.overlayTextureInvert;
     uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
     uniforms.overlayTextureScale.value.set(
       state.overlayTextureScale.x,

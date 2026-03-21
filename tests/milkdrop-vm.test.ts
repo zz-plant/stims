@@ -753,6 +753,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     expect(frameState.post.shaderPrograms.comp).toBeNull();
     expect(frameState.post.shaderControls.textureLayer.source).toBe('simplex');
     expect(frameState.post.shaderControls.textureLayer.mode).toBe('mix');
+    expect(frameState.post.shaderControls.textureLayer.inverted).toBe(true);
     expect(frameState.post.shaderControls.textureLayer.amount).toBeCloseTo(
       0.35,
       6,

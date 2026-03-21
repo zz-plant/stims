@@ -2180,6 +2180,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       overlayTextureSampleDimension: getShaderSampleDimensionId(
         controls.textureLayer.sampleDimension,
       ),
+      overlayTextureInvert: controls.textureLayer.inverted ? 1 : 0,
       overlayTextureAmount: controls.textureLayer.amount,
       overlayTextureScale: {
         x: controls.textureLayer.scaleX,
