@@ -419,6 +419,8 @@ body {
   pointer-events: auto;
 }
 
+.shell-panel[data-audio-controls]:empty,
+.shell-panel[data-settings-panel]:empty,
 .shell-panel > [data-audio-controls]:empty,
 .shell-panel > [data-settings-panel]:empty {
   display: none;
@@ -1059,6 +1061,8 @@ body {
 }
 
 .control-panel--inline,
+.shell-panel[data-audio-controls] > .control-panel,
+.shell-panel[data-settings-panel] > .control-panel,
 .shell-panel > [data-audio-controls] > .control-panel,
 .shell-panel > [data-settings-panel] > .control-panel {
   position: relative;
@@ -2010,6 +2014,8 @@ body {
   }
 
   .control-panel--inline,
+  .shell-panel[data-audio-controls] > .control-panel,
+  .shell-panel[data-settings-panel] > .control-panel,
   .shell-panel > [data-audio-controls] > .control-panel,
   .shell-panel > [data-settings-panel] > .control-panel {
     max-height: min(28svh, calc(100dvh - env(safe-area-inset-bottom) - 12px));

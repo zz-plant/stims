@@ -5760,12 +5760,15 @@ body[data-page="home"] .content {
   top: clamp(1rem, 2vw, 1.4rem);
 }
 
+.shell-header--launch .shell-panel[data-audio-controls] > .control-panel,
+.shell-header--launch .shell-panel[data-settings-panel] > .control-panel,
 .shell-header--launch .shell-panel > [data-audio-controls] > .control-panel,
 .shell-header--launch .shell-panel > [data-settings-panel] > .control-panel {
   max-height: none;
   overflow: visible;
 }
 
+.shell-header--launch .shell-panel[data-settings-panel] > .control-panel,
 .shell-header--launch .shell-panel > [data-settings-panel] > .control-panel {
   min-height: 100%;
 }
