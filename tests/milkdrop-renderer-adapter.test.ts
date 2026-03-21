@@ -858,6 +858,49 @@ mesh_density=16
     });
   });
 
+  test('closes manually closed batched main waves on webgpu', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Closed Batched Wave
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.9
+bModWaveAlphaByVolume=1
+modwavealphastart=0.2
+modwavealphaend=0.6
+      `.trim(),
+      { id: 'closed-batched-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const expectedSegmentCount = frameState.mainWave.positions.length / 3;
+    const root = scene.children[0] as RenderTreeNode;
+    const segmentCounts = flattenRenderTree(root)
+      .filter(
+        (child) =>
+          child.geometry?.getAttribute?.('instanceStart') !== undefined,
+      )
+      .map((child) => getGeometryInstanceCount(child) ?? 0);
+
+    expect(frameState.mainWave.closed).toBe(true);
+    expect(segmentCounts).toContain(expectedSegmentCount);
+  });
+
   test('keeps additive wave materials transparent when alpha exceeds 1', () => {
     const preset = compileMilkdropPresetSource(
       `

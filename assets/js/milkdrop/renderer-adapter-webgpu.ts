@@ -267,6 +267,7 @@ function appendPolylineSegments(
   color: MilkdropColor,
   alpha: number,
   width: number,
+  closeLoop = false,
 ) {
   for (let index = 0; index + 5 < positions.length; index += 3) {
     target.push({
@@ -281,6 +282,21 @@ function appendPolylineSegments(
       width,
     });
   }
+  if (!closeLoop || positions.length < 6) {
+    return;
+  }
+  const lastPointIndex = positions.length - 3;
+  target.push({
+    startX: positions[lastPointIndex] ?? 0,
+    startY: positions[lastPointIndex + 1] ?? 0,
+    startZ: positions[lastPointIndex + 2] ?? 0.24,
+    endX: positions[0] ?? 0,
+    endY: positions[1] ?? 0,
+    endZ: positions[2] ?? 0.24,
+    color,
+    alpha,
+    width,
+  });
 }
 
 function buildProceduralWavePoint(
@@ -1043,6 +1059,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
         wave.color,
         wave.alpha * alphaMultiplier,
         0.0025 * Math.max(1, wave.thickness),
+        wave.closed,
       );
     }
     this.getWaveTarget(`wave:${target}`).syncSplit(normal, additive);
