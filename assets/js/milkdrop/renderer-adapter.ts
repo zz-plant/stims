@@ -4,6 +4,7 @@ import {
   BufferGeometry,
   Color,
   DoubleSide,
+  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
   Line,
@@ -110,7 +111,9 @@ export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
 };
 
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
-const SHARED_BOUNDS_RADIUS = 4;
+const PROCEDURAL_MESH_BOUNDS_RADIUS = Math.SQRT2 * 2;
+const PROCEDURAL_MOTION_VECTOR_BOUNDS_RADIUS = Math.SQRT2 * 2.35;
+const PROCEDURAL_WAVE_BOUNDS_RADIUS = Math.SQRT2 * 2.2;
 const BACKGROUND_GEOMETRY = markSharedGeometry(new PlaneGeometry(6.4, 6.4));
 const polygonFillGeometryCache = new Map<number, ShapeGeometry>();
 const polygonOutlineGeometryCache = new Map<string, BufferGeometry>();
@@ -495,6 +498,85 @@ function isSharedGeometry(geometry: BufferGeometry) {
   return geometry.userData[SHARED_GEOMETRY_FLAG] === true;
 }
 
+function setGeometryBoundingSphere(
+  geometry: BufferGeometry,
+  center: Vector3,
+  radius: number,
+) {
+  if (!geometry.boundingSphere) {
+    geometry.boundingSphere = new Sphere(center.clone(), radius);
+    return geometry.boundingSphere;
+  }
+  geometry.boundingSphere.center.copy(center);
+  geometry.boundingSphere.radius = radius;
+  return geometry.boundingSphere;
+}
+
+function setSharedGeometryBounds(
+  geometry: BufferGeometry,
+  {
+    center = new Vector3(0, 0, 0),
+    radius,
+  }: {
+    center?: Vector3;
+    radius: number;
+  },
+) {
+  setGeometryBoundingSphere(geometry, center, radius);
+  return geometry;
+}
+
+function setGeometryBoundsFromPositions(
+  geometry: BufferGeometry,
+  positions: number[],
+) {
+  if (positions.length < 3) {
+    return setGeometryBoundingSphere(geometry, new Vector3(0, 0, 0), 0);
+  }
+
+  let minX = positions[0] ?? 0;
+  let maxX = minX;
+  let minY = positions[1] ?? 0;
+  let maxY = minY;
+  let minZ = positions[2] ?? 0;
+  let maxZ = minZ;
+
+  for (let index = 3; index < positions.length; index += 3) {
+    const x = positions[index] ?? 0;
+    const y = positions[index + 1] ?? 0;
+    const z = positions[index + 2] ?? 0;
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+    minZ = Math.min(minZ, z);
+    maxZ = Math.max(maxZ, z);
+  }
+
+  const center = new Vector3(
+    (minX + maxX) * 0.5,
+    (minY + maxY) * 0.5,
+    (minZ + maxZ) * 0.5,
+  );
+  let radiusSq = 0;
+
+  for (let index = 0; index < positions.length; index += 3) {
+    const dx = (positions[index] ?? 0) - center.x;
+    const dy = (positions[index + 1] ?? 0) - center.y;
+    const dz = (positions[index + 2] ?? 0) - center.z;
+    radiusSq = Math.max(radiusSq, dx * dx + dy * dy + dz * dz);
+  }
+
+  return setGeometryBoundingSphere(geometry, center, Math.sqrt(radiusSq));
+}
+
+function markAlwaysOnscreen<
+  T extends Group | Mesh | Line | LineSegments | Points,
+>(object: T) {
+  object.frustumCulled = false;
+  return object;
+}
+
 function getUnitPolygonVertices(sides: number) {
   const safeSides = Math.max(3, Math.round(sides));
   return Array.from({ length: safeSides }, (_, index) => {
@@ -519,6 +601,7 @@ function getUnitPolygonFillGeometry(sides: number) {
   fillShape.lineTo(firstVertex.x, firstVertex.y);
 
   const geometry = markSharedGeometry(new ShapeGeometry(fillShape));
+  setSharedGeometryBounds(geometry, { radius: 1 });
   polygonFillGeometryCache.set(safeSides, geometry);
   return geometry;
 }
@@ -595,6 +678,7 @@ function getProceduralMeshGeometry(density: number) {
     'sourcePosition',
     new Float32BufferAttribute(sourcePositions, 3),
   );
+  setSharedGeometryBounds(geometry, { radius: PROCEDURAL_MESH_BOUNDS_RADIUS });
   proceduralMeshGeometryCache.set(safeDensity, geometry);
   return geometry;
 }
@@ -632,6 +716,9 @@ function getProceduralMotionVectorGeometry(countX: number, countY: number) {
     'endpointWeight',
     new Float32BufferAttribute(endpointWeights, 1),
   );
+  setSharedGeometryBounds(geometry, {
+    radius: PROCEDURAL_MOTION_VECTOR_BOUNDS_RADIUS,
+  });
   proceduralMotionVectorGeometryCache.set(cacheKey, geometry);
   return geometry;
 }
@@ -652,6 +739,7 @@ function getProceduralWaveGeometry(sampleCount: number) {
   const geometry = markSharedGeometry(new BufferGeometry());
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
   geometry.setAttribute('sampleT', new Float32BufferAttribute(sampleT, 1));
+  setSharedGeometryBounds(geometry, { radius: PROCEDURAL_WAVE_BOUNDS_RADIUS });
   proceduralWaveGeometryCache.set(safeCount, geometry);
   return geometry;
 }
@@ -764,7 +852,11 @@ function syncProceduralWaveObject(
   wave: MilkdropProceduralWaveVisual,
 ) {
   const next =
-    object ?? new Line(getProceduralWaveGeometry(wave.samples.length));
+    object ??
+    new Line(
+      getProceduralWaveGeometry(wave.samples.length),
+      createProceduralWaveMaterial(),
+    );
   if (!(next.material instanceof ShaderMaterial)) {
     if ('material' in next) {
       disposeMaterial(next.material);
@@ -783,10 +875,9 @@ function syncProceduralWaveObject(
       sampleValueAttribute.array.length === wave.samples.length
     )
   ) {
-    next.geometry.setAttribute(
-      'sampleValue',
-      new Float32BufferAttribute(wave.samples, 1),
-    );
+    const attribute = new Float32BufferAttribute(wave.samples, 1);
+    attribute.setUsage(DynamicDrawUsage);
+    next.geometry.setAttribute('sampleValue', attribute);
   } else {
     sampleValueAttribute.array.set(wave.samples);
     sampleValueAttribute.needsUpdate = true;
@@ -799,10 +890,9 @@ function syncProceduralWaveObject(
       sampleVelocityAttribute.array.length === wave.velocities.length
     )
   ) {
-    next.geometry.setAttribute(
-      'sampleVelocity',
-      new Float32BufferAttribute(wave.velocities, 1),
-    );
+    const attribute = new Float32BufferAttribute(wave.velocities, 1);
+    attribute.setUsage(DynamicDrawUsage);
+    next.geometry.setAttribute('sampleVelocity', attribute);
   } else {
     sampleVelocityAttribute.array.set(wave.velocities);
     sampleVelocityAttribute.needsUpdate = true;
@@ -828,7 +918,11 @@ function syncProceduralCustomWaveObject(
   wave: MilkdropProceduralCustomWaveVisual,
 ) {
   const next =
-    object ?? new Line(getProceduralWaveGeometry(wave.samples.length));
+    object ??
+    new Line(
+      getProceduralWaveGeometry(wave.samples.length),
+      createProceduralCustomWaveMaterial(),
+    );
   if (!(next.material instanceof ShaderMaterial)) {
     if ('material' in next) {
       disposeMaterial(next.material);
@@ -847,10 +941,9 @@ function syncProceduralCustomWaveObject(
       sampleValueAttribute.array.length === wave.samples.length
     )
   ) {
-    next.geometry.setAttribute(
-      'sampleValue',
-      new Float32BufferAttribute(wave.samples, 1),
-    );
+    const attribute = new Float32BufferAttribute(wave.samples, 1);
+    attribute.setUsage(DynamicDrawUsage);
+    next.geometry.setAttribute('sampleValue', attribute);
   } else {
     sampleValueAttribute.array.set(wave.samples);
     sampleValueAttribute.needsUpdate = true;
@@ -901,18 +994,11 @@ function ensureGeometryPositions(
     existing.array.set(positions);
     existing.needsUpdate = true;
   } else {
-    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    const attribute = new Float32BufferAttribute(positions, 3);
+    attribute.setUsage(DynamicDrawUsage);
+    geometry.setAttribute('position', attribute);
   }
-
-  if (!geometry.boundingSphere) {
-    geometry.boundingSphere = new Sphere(
-      new Vector3(0, 0, 0),
-      SHARED_BOUNDS_RADIUS,
-    );
-  } else {
-    geometry.boundingSphere.center.set(0, 0, 0);
-    geometry.boundingSphere.radius = SHARED_BOUNDS_RADIUS;
-  }
+  setGeometryBoundsFromPositions(geometry, positions);
 }
 
 function clearGroup(group: Group) {
@@ -1188,7 +1274,6 @@ function syncShapeFillMaterial(
     material.uniforms.secondaryAlpha.value =
       (shape.secondaryColor?.a ?? 0) * alphaMultiplier;
     material.blending = shape.additive ? AdditiveBlending : NormalBlending;
-    material.needsUpdate = true;
     return;
   }
 
@@ -1339,7 +1424,7 @@ function createBorderObject(
   const right = 1 - inset * 2;
   const top = 1 - inset * 2;
   const bottom = -1 + inset * 2;
-  const group = new Group();
+  const group = markAlwaysOnscreen(new Group());
   const fillShape = new Shape();
   fillShape.moveTo(-1, 1);
   fillShape.lineTo(1, 1);
@@ -1354,13 +1439,15 @@ function createBorderObject(
   hole.lineTo(left, top);
   fillShape.holes.push(hole);
 
-  const fill = new Mesh(
-    new ShapeGeometry(fillShape),
-    new MeshBasicMaterial({
-      transparent: true,
-      opacity: Math.max(0.08, border.alpha * 0.45) * alphaMultiplier,
-      side: DoubleSide,
-    }),
+  const fill = markAlwaysOnscreen(
+    new Mesh(
+      new ShapeGeometry(fillShape),
+      new MeshBasicMaterial({
+        transparent: true,
+        opacity: Math.max(0.08, border.alpha * 0.45) * alphaMultiplier,
+        side: DoubleSide,
+      }),
+    ),
   );
   setMaterialColor(
     fill.material,
@@ -1377,6 +1464,7 @@ function createBorderObject(
       opacity: border.alpha * alphaMultiplier,
     }),
   );
+  outline.frustumCulled = false;
   ensureGeometryPositions(
     outline.geometry,
     getBorderLinePositions(border, 0.3, behavior),
@@ -1400,6 +1488,7 @@ function createBorderObject(
       opacity: Math.max(0.15, border.alpha * 0.55) * alphaMultiplier,
     }),
   );
+  accent.frustumCulled = false;
   ensureGeometryPositions(
     accent.geometry,
     getBorderLinePositions(border, 0.3, behavior),
@@ -1475,13 +1564,15 @@ function createLineObject(
   alpha: number,
   additive: boolean,
 ) {
-  const object = new Line(
-    new BufferGeometry(),
-    new LineBasicMaterial({
-      transparent: true,
-      opacity: alpha,
-      ...(additive ? { blending: AdditiveBlending } : {}),
-    }),
+  const object = markAlwaysOnscreen(
+    new Line(
+      new BufferGeometry(),
+      new LineBasicMaterial({
+        transparent: true,
+        opacity: alpha,
+        ...(additive ? { blending: AdditiveBlending } : {}),
+      }),
+    ),
   );
   ensureGeometryPositions(object.geometry, positions);
   setMaterialColor(object.material, color, alpha);
@@ -1653,50 +1744,56 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly camera: Camera;
   private readonly renderer: RendererLike | null;
   private readonly root = new Group();
-  private readonly background = new Mesh(
-    BACKGROUND_GEOMETRY,
-    new MeshBasicMaterial({
-      color: 0x000000,
-      transparent: false,
-      opacity: 1,
-      depthWrite: true,
-      depthTest: false,
-    }),
+  private readonly background = markAlwaysOnscreen(
+    new Mesh(
+      BACKGROUND_GEOMETRY,
+      new MeshBasicMaterial({
+        color: 0x000000,
+        transparent: false,
+        opacity: 1,
+        depthWrite: true,
+        depthTest: false,
+      }),
+    ),
   );
   private readonly meshLines: LineSegments<
     BufferGeometry,
     LineBasicMaterial | ShaderMaterial
-  > = new LineSegments(
-    new BufferGeometry(),
-    new LineBasicMaterial({
-      color: 0x4d66f2,
-      transparent: true,
-      opacity: 0.24,
-    }),
+  > = markAlwaysOnscreen(
+    new LineSegments(
+      new BufferGeometry(),
+      new LineBasicMaterial({
+        color: 0x4d66f2,
+        transparent: true,
+        opacity: 0.24,
+      }),
+    ),
   );
   private readonly mainWaveGroup = new Group();
   private readonly customWaveGroup = new Group();
   private readonly trailGroup = new Group();
   private readonly shapesGroup = new Group();
-  private readonly borderGroup = new Group();
-  private readonly motionVectorGroup = new Group();
-  private readonly motionVectorCpuGroup = new Group();
+  private readonly borderGroup = markAlwaysOnscreen(new Group());
+  private readonly motionVectorGroup = markAlwaysOnscreen(new Group());
+  private readonly motionVectorCpuGroup = markAlwaysOnscreen(new Group());
   private readonly proceduralMotionVectors: LineSegments<
     BufferGeometry,
     LineBasicMaterial | ShaderMaterial
-  > = new LineSegments(
-    new BufferGeometry(),
-    new LineBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.35,
-    }),
+  > = markAlwaysOnscreen(
+    new LineSegments(
+      new BufferGeometry(),
+      new LineBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.35,
+      }),
+    ),
   );
   private readonly blendWaveGroup = new Group();
   private readonly blendCustomWaveGroup = new Group();
   private readonly blendShapeGroup = new Group();
-  private readonly blendBorderGroup = new Group();
-  private readonly blendMotionVectorGroup = new Group();
+  private readonly blendBorderGroup = markAlwaysOnscreen(new Group());
+  private readonly blendMotionVectorGroup = markAlwaysOnscreen(new Group());
   private readonly feedback: MilkdropFeedbackManager | null;
 
   constructor({
@@ -1720,6 +1817,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.backend = backend;
     this.behavior = behavior;
     this.createFeedbackManager = createFeedbackManager;
+    this.root.frustumCulled = false;
 
     this.background.position.z = -1.2;
     this.meshLines.position.z = -0.3;
@@ -2022,7 +2120,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     frameState: MilkdropRenderPayload['frameState'],
   ): MilkdropFeedbackCompositeState {
     const controls = frameState.post.shaderControls;
+    const shaderPrograms = frameState.post.shaderPrograms;
+    const usesDirectShaderPrograms =
+      (shaderPrograms.warp?.execution.supportedBackends.includes(
+        this.backend,
+      ) ??
+        false) ||
+      (shaderPrograms.comp?.execution.supportedBackends.includes(
+        this.backend,
+      ) ??
+        false);
     return {
+      shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
+      shaderPrograms,
       mixAlpha: frameState.post.videoEchoEnabled
         ? frameState.post.videoEchoAlpha + controls.mixAlpha
         : controls.mixAlpha,

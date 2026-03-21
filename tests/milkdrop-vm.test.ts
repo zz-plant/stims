@@ -716,6 +716,30 @@ comp_shader=vec3 wash = vec3(1 + bass_att * 0.2, 0.8 + mid * 0.1, 0.6 + beat_pul
     expect(frameState.post.shaderControls.colorScale.b).toBeCloseTo(0.66, 6);
   });
 
+  test('preserves richer shader program payloads in post visuals', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Direct Shader Program VM
+comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz, 0.35)
+      `.trim(),
+      { id: 'direct-shader-program-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({ frame: 12 }),
+    );
+
+    expect(frameState.post.shaderPrograms.warp).toBeNull();
+    expect(frameState.post.shaderPrograms.comp).toEqual(
+      expect.objectContaining({
+        stage: 'comp',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgl', 'webgpu'],
+        }),
+      }),
+    );
+  });
+
   test('renders ninth shape slot beyond the previous ceiling', () => {
     const preset = compileMilkdropPresetSource(
       `

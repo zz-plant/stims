@@ -50,6 +50,8 @@ import type {
   MilkdropShaderControlExpressions,
   MilkdropShaderControls,
   MilkdropShaderExpressionNode,
+  MilkdropShaderProgramPayload,
+  MilkdropShaderProgramStage,
   MilkdropShaderSampleDimension,
   MilkdropShaderStatement,
   MilkdropShaderTextureBlendMode,
@@ -3357,6 +3359,33 @@ function applyShaderProgramHeuristicLine({
   return false;
 }
 
+function buildShaderProgramPayload({
+  stage,
+  statements,
+  normalizedLines,
+  requiresControlFallback,
+  supportedBackends,
+}: {
+  stage: MilkdropShaderProgramStage;
+  statements: MilkdropShaderStatement[];
+  normalizedLines: string[];
+  requiresControlFallback: boolean;
+  supportedBackends: MilkdropRenderBackend[];
+}): MilkdropShaderProgramPayload {
+  return {
+    stage,
+    source: normalizedLines.join('; '),
+    normalizedLines,
+    statements,
+    execution: {
+      kind: 'direct-feedback-program',
+      stage,
+      entryTarget: stage === 'warp' ? 'uv' : 'ret',
+      supportedBackends,
+      requiresControlFallback,
+      statementTargets: statements.map((statement) => statement.target),
+    },
+  };
 function isUnsupportedParsedShaderStatement({
   statement,
   shaderEnv,
@@ -3454,6 +3483,8 @@ function extractShaderControls(
       unsupportedLines: [],
       supported: false,
       statements: [],
+      directProgramStatements: [],
+      directProgramLines: [],
     };
   }
 
@@ -3479,6 +3510,8 @@ function extractShaderControls(
   const shaderExpressionEnv: ShaderExpressionEnv = {};
   const unsupportedLines: string[] = [];
   const statements: MilkdropShaderStatement[] = [];
+  const directProgramStatements: MilkdropShaderStatement[] = [];
+  const directProgramLines: string[] = [];
 
   let supportedLineCount = 0;
   normalized.forEach((line) => {
@@ -3572,6 +3605,11 @@ function extractShaderControls(
         );
         shaderEnv[key] = next.value;
         supportedLineCount += 1;
+        return;
+      }
+      if (parsedStatement) {
+        directProgramStatements.push(parsedStatement);
+        directProgramLines.push(line);
         return;
       }
       unsupportedLines.push(line);
@@ -4088,6 +4126,11 @@ function extractShaderControls(
         break;
       }
     }
+    if (parsedStatement) {
+      directProgramStatements.push(parsedStatement);
+      directProgramLines.push(line);
+      return;
+    }
     unsupportedLines.push(line);
   });
 
@@ -4095,8 +4138,13 @@ function extractShaderControls(
     controls,
     expressions,
     unsupportedLines,
-    supported: supportedLineCount > 0 && unsupportedLines.length === 0,
+    supported:
+      supportedLineCount > 0 &&
+      unsupportedLines.length === 0 &&
+      directProgramStatements.length === 0,
     statements,
+    directProgramStatements,
+    directProgramLines,
   };
 }
 
@@ -4112,6 +4160,108 @@ export function evaluateMilkdropShaderControlProgram({
   const warpAnalysis = extractShaderControls(warp, env);
   const compAnalysis = extractShaderControls(comp, env);
   return mergeShaderControlAnalysis(warpAnalysis, compAnalysis).controls;
+}
+
+export function evaluateMilkdropShaderControlExpressions({
+  controls,
+  expressions,
+  env,
+}: {
+  controls: MilkdropShaderControls;
+  expressions: MilkdropShaderControlExpressions;
+  env: Record<string, number>;
+}) {
+  const next: MilkdropShaderControls = structuredClone(controls);
+  const evaluateScalar = (
+    expression: MilkdropExpressionNode | null,
+    fallback: number,
+  ) => {
+    if (!expression) {
+      return fallback;
+    }
+    return evaluateMilkdropExpression(expression, env);
+  };
+
+  next.warpScale = evaluateScalar(expressions.warpScale, next.warpScale);
+  next.offsetX = evaluateScalar(expressions.offsetX, next.offsetX);
+  next.offsetY = evaluateScalar(expressions.offsetY, next.offsetY);
+  next.rotation = evaluateScalar(expressions.rotation, next.rotation);
+  next.zoom = evaluateScalar(expressions.zoom, next.zoom);
+  next.saturation = evaluateScalar(expressions.saturation, next.saturation);
+  next.contrast = evaluateScalar(expressions.contrast, next.contrast);
+  next.colorScale.r = evaluateScalar(
+    expressions.colorScale.r,
+    next.colorScale.r,
+  );
+  next.colorScale.g = evaluateScalar(
+    expressions.colorScale.g,
+    next.colorScale.g,
+  );
+  next.colorScale.b = evaluateScalar(
+    expressions.colorScale.b,
+    next.colorScale.b,
+  );
+  next.hueShift = evaluateScalar(expressions.hueShift, next.hueShift);
+  next.mixAlpha = evaluateScalar(expressions.mixAlpha, next.mixAlpha);
+  next.brightenBoost = evaluateScalar(
+    expressions.brightenBoost,
+    next.brightenBoost,
+  );
+  next.invertBoost = evaluateScalar(expressions.invertBoost, next.invertBoost);
+  next.solarizeBoost = evaluateScalar(
+    expressions.solarizeBoost,
+    next.solarizeBoost,
+  );
+  next.tint.r = evaluateScalar(expressions.tint.r, next.tint.r);
+  next.tint.g = evaluateScalar(expressions.tint.g, next.tint.g);
+  next.tint.b = evaluateScalar(expressions.tint.b, next.tint.b);
+  next.textureLayer.amount = evaluateScalar(
+    expressions.textureLayer.amount,
+    next.textureLayer.amount,
+  );
+  next.textureLayer.scaleX = evaluateScalar(
+    expressions.textureLayer.scaleX,
+    next.textureLayer.scaleX,
+  );
+  next.textureLayer.scaleY = evaluateScalar(
+    expressions.textureLayer.scaleY,
+    next.textureLayer.scaleY,
+  );
+  next.textureLayer.offsetX = evaluateScalar(
+    expressions.textureLayer.offsetX,
+    next.textureLayer.offsetX,
+  );
+  next.textureLayer.offsetY = evaluateScalar(
+    expressions.textureLayer.offsetY,
+    next.textureLayer.offsetY,
+  );
+  next.textureLayer.volumeSliceZ = expressions.textureLayer.volumeSliceZ
+    ? evaluateMilkdropExpression(expressions.textureLayer.volumeSliceZ, env)
+    : next.textureLayer.volumeSliceZ;
+  next.warpTexture.amount = evaluateScalar(
+    expressions.warpTexture.amount,
+    next.warpTexture.amount,
+  );
+  next.warpTexture.scaleX = evaluateScalar(
+    expressions.warpTexture.scaleX,
+    next.warpTexture.scaleX,
+  );
+  next.warpTexture.scaleY = evaluateScalar(
+    expressions.warpTexture.scaleY,
+    next.warpTexture.scaleY,
+  );
+  next.warpTexture.offsetX = evaluateScalar(
+    expressions.warpTexture.offsetX,
+    next.warpTexture.offsetX,
+  );
+  next.warpTexture.offsetY = evaluateScalar(
+    expressions.warpTexture.offsetY,
+    next.warpTexture.offsetY,
+  );
+  next.warpTexture.volumeSliceZ = expressions.warpTexture.volumeSliceZ
+    ? evaluateMilkdropExpression(expressions.warpTexture.volumeSliceZ, env)
+    : next.warpTexture.volumeSliceZ;
+  return next;
 }
 
 function pickShaderScalar(
@@ -4901,6 +5051,7 @@ function buildFeatureAnalysis({
   numericFields,
   unsupportedShaderText,
   supportedShaderText,
+  shaderTextExecution,
 }: {
   programs: MilkdropPresetIR['programs'];
   customWaves: MilkdropWaveDefinition[];
@@ -4908,6 +5059,7 @@ function buildFeatureAnalysis({
   numericFields: Record<string, number>;
   unsupportedShaderText: boolean;
   supportedShaderText: boolean;
+  shaderTextExecution: MilkdropFeatureAnalysis['shaderTextExecution'];
 }): MilkdropFeatureAnalysis {
   const features = new Set<MilkdropFeatureKey>(['base-globals']);
   const registerUsage = { q: 0, t: 0 };
@@ -4987,6 +5139,7 @@ function buildFeatureAnalysis({
     featuresUsed: FEATURE_ORDER.filter((feature) => features.has(feature)),
     unsupportedShaderText,
     supportedShaderText,
+    shaderTextExecution,
     registerUsage,
   };
 }
@@ -5050,7 +5203,7 @@ function buildBackendSupport({
     );
   });
 
-  if (featureAnalysis.supportedShaderText) {
+  if (featureAnalysis.shaderTextExecution[backend] === 'translated') {
     const shaderTextMessage = BACKEND_SHADER_TEXT_GAPS[backend].supportedSubset;
     if (shaderTextMessage) {
       evidence.push(
@@ -5065,7 +5218,7 @@ function buildBackendSupport({
     }
   }
 
-  if (featureAnalysis.unsupportedShaderText) {
+  if (featureAnalysis.shaderTextExecution[backend] === 'unsupported') {
     const unsupportedMessage =
       BACKEND_SHADER_TEXT_GAPS[backend].unsupportedSubset;
     if (unsupportedMessage) {
@@ -5430,6 +5583,36 @@ function createIR(
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
+  const warpShaderProgram =
+    shaderWarpAnalysis.directProgramStatements.length > 0
+      ? buildShaderProgramPayload({
+          stage: 'warp',
+          statements: shaderWarpAnalysis.directProgramStatements,
+          normalizedLines: shaderWarpAnalysis.directProgramLines,
+          requiresControlFallback:
+            shaderWarpAnalysis.directProgramStatements.length !==
+            shaderWarpAnalysis.statements.length,
+          supportedBackends:
+            shaderWarpAnalysis.unsupportedLines.length === 0
+              ? ['webgl', 'webgpu']
+              : [],
+        })
+      : null;
+  const compShaderProgram =
+    shaderCompAnalysis.directProgramStatements.length > 0
+      ? buildShaderProgramPayload({
+          stage: 'comp',
+          statements: shaderCompAnalysis.directProgramStatements,
+          normalizedLines: shaderCompAnalysis.directProgramLines,
+          requiresControlFallback:
+            shaderCompAnalysis.directProgramStatements.length !==
+            shaderCompAnalysis.statements.length,
+          supportedBackends:
+            shaderCompAnalysis.unsupportedLines.length === 0
+              ? ['webgl', 'webgpu']
+              : [],
+        })
+      : null;
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();
@@ -5487,6 +5670,28 @@ function createIR(
       'Shader-text sections include lines outside the supported subset.',
     );
   }
+  const shaderTextExecution: MilkdropFeatureAnalysis['shaderTextExecution'] =
+    hasShaderText
+      ? unsupportedShaderText
+        ? { webgl: 'unsupported', webgpu: 'unsupported' }
+        : {
+            webgl:
+              warpShaderProgram || compShaderProgram ? 'direct' : 'translated',
+            webgpu:
+              (warpShaderProgram === null ||
+                warpShaderProgram.execution.supportedBackends.includes(
+                  'webgpu',
+                )) &&
+              (compShaderProgram === null ||
+                compShaderProgram.execution.supportedBackends.includes(
+                  'webgpu',
+                ))
+                ? warpShaderProgram || compShaderProgram
+                  ? 'direct'
+                  : 'translated'
+                : 'translated',
+          }
+      : { webgl: 'none', webgpu: 'none' };
   const featureAnalysis = buildFeatureAnalysis({
     programs,
     customWaves,
@@ -5494,6 +5699,7 @@ function createIR(
     numericFields: runtimeGlobals,
     unsupportedShaderText,
     supportedShaderText,
+    shaderTextExecution,
   });
   const sharedWarnings = [
     ...[...softUnknownKeys].map(
@@ -5654,6 +5860,8 @@ function createIR(
       comp: compShaderText,
       warpAst: shaderWarpAnalysis.statements,
       compAst: shaderCompAnalysis.statements,
+      warpProgram: warpShaderProgram,
+      compProgram: compShaderProgram,
       supported: supportedShaderText && !unsupportedShaderText,
       unsupportedLines: approximatedShaderLines,
       controls: mergedShaderControls.controls,
@@ -5687,6 +5895,10 @@ function createIR(
       innerBorderStyle: (numericFields.ib_border ?? 0) > 0.5,
       shaderControls: mergedShaderControls.controls,
       shaderControlExpressions: mergedShaderControls.expressions,
+      shaderPrograms: {
+        warp: warpShaderProgram,
+        comp: compShaderProgram,
+      },
       gammaAdj: numericFields.gammaadj ?? 1,
       videoEchoEnabled: (numericFields.video_echo_enabled ?? 0) > 0.5,
       videoEchoAlpha: numericFields.video_echo_alpha ?? 0,

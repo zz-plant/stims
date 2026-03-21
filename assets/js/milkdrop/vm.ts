@@ -1276,6 +1276,7 @@ class MilkdropPresetVM implements MilkdropVM {
       outerBorderStyle: (this.state.ob_border ?? 0) > 0.5,
       innerBorderStyle: (this.state.ib_border ?? 0) > 0.5,
       shaderControls: this.buildShaderControls(signals),
+      shaderPrograms: this.preset.ir.post.shaderPrograms,
       brighten: (this.state.brighten ?? 0) > 0.5,
       darken: (this.state.darken ?? 0) > 0.5,
       solarize: (this.state.solarize ?? 0) > 0.5,

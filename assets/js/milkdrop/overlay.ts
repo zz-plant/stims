@@ -63,6 +63,31 @@ type BrowseSection = {
   presets: MilkdropCatalogEntry[];
 };
 
+type EditorSnippet = {
+  label: string;
+  description: string;
+  snippet: string;
+};
+
+const EDITOR_SNIPPETS: EditorSnippet[] = [
+  {
+    label: 'Pulse zoom',
+    description: 'Drop in a breathing zoom curve.',
+    snippet: 'zoom=1.01 + 0.035*sin(time*0.82)\n',
+  },
+  {
+    label: 'Hue drift',
+    description: 'Animate the waveform palette.',
+    snippet:
+      'wave_r=0.5 + 0.35*sin(time*0.31)\nwave_g=0.5 + 0.35*sin(time*0.47)\nwave_b=0.5 + 0.35*sin(time*0.63)\n',
+  },
+  {
+    label: 'Warp sway',
+    description: 'Add a gentle audio-reactive bend.',
+    snippet: 'warp=0.01 + bass_att*0.018 + 0.004*sin(time*0.5)\n',
+  },
+];
+
 function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
   buttons.forEach((button) => {
     const isActive = button.dataset.tab === activeId;
@@ -207,6 +232,9 @@ export class MilkdropOverlay {
   private readonly browseOptionsSummary: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly editorStatus: HTMLElement;
+  private readonly editorLiveBadge: HTMLElement;
+  private readonly editorSyncBadge: HTMLElement;
+  private readonly editorSafetyBadge: HTMLElement;
   private readonly inspectorControls: HTMLElement;
   private readonly inspectorMetrics: HTMLElement;
   private readonly searchInput: HTMLInputElement;
@@ -610,6 +638,42 @@ export class MilkdropOverlay {
 
     const editorHost = document.createElement('div');
     editorHost.className = 'milkdrop-overlay__editor';
+    const editorIntro = document.createElement('div');
+    editorIntro.className = 'milkdrop-overlay__editor-intro';
+    const editorIntroCopy = document.createElement('div');
+    editorIntroCopy.className = 'milkdrop-overlay__editor-intro-copy';
+    const editorEyebrow = document.createElement('span');
+    editorEyebrow.className = 'milkdrop-overlay__editor-eyebrow';
+    editorEyebrow.textContent = 'Live coding';
+    const editorHeading = document.createElement('strong');
+    editorHeading.className = 'milkdrop-overlay__editor-heading';
+    editorHeading.textContent =
+      'Shape the active preset while it stays on beat';
+    const editorSubheading = document.createElement('p');
+    editorSubheading.className = 'milkdrop-overlay__editor-subheading';
+    editorSubheading.textContent =
+      'Strudel-style feedback loop: edits land automatically, the current visual keeps playing, and broken drafts never interrupt the last good frame.';
+    editorIntroCopy.append(editorEyebrow, editorHeading, editorSubheading);
+    const editorBadgeRow = document.createElement('div');
+    editorBadgeRow.className = 'milkdrop-overlay__editor-badges';
+    this.editorLiveBadge = document.createElement('span');
+    this.editorLiveBadge.className =
+      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--live';
+    this.editorLiveBadge.textContent = 'Live';
+    this.editorSyncBadge = document.createElement('span');
+    this.editorSyncBadge.className =
+      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--sync';
+    this.editorSyncBadge.textContent = 'Synced';
+    this.editorSafetyBadge = document.createElement('span');
+    this.editorSafetyBadge.className =
+      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--safety';
+    this.editorSafetyBadge.textContent = 'Safety net on';
+    editorBadgeRow.append(
+      this.editorLiveBadge,
+      this.editorSyncBadge,
+      this.editorSafetyBadge,
+    );
+    editorIntro.append(editorIntroCopy, editorBadgeRow);
     this.editorStatus = document.createElement('div');
     this.editorStatus.className = 'milkdrop-overlay__editor-status';
     this.editorStatus.textContent = 'Editor ready';
@@ -635,12 +699,52 @@ export class MilkdropOverlay {
 
     editorActions.append(importButton, exportButton, this.deleteButton);
 
+    const editorQuickIdeas = document.createElement('div');
+    editorQuickIdeas.className = 'milkdrop-overlay__editor-quick-ideas';
+    const editorQuickIdeasLabel = document.createElement('span');
+    editorQuickIdeasLabel.className =
+      'milkdrop-overlay__editor-quick-ideas-label';
+    editorQuickIdeasLabel.textContent = 'Quick ideas';
+    const editorSnippetButtons = document.createElement('div');
+    editorSnippetButtons.className = 'milkdrop-overlay__editor-snippet-buttons';
+    EDITOR_SNIPPETS.forEach((snippetConfig) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'milkdrop-overlay__editor-snippet';
+      const label = document.createElement('strong');
+      label.textContent = snippetConfig.label;
+      const description = document.createElement('span');
+      description.textContent = snippetConfig.description;
+      button.append(label, description);
+      button.addEventListener('click', () => {
+        this.insertEditorSnippet(snippetConfig.snippet);
+      });
+      editorSnippetButtons.appendChild(button);
+    });
+    editorQuickIdeas.append(editorQuickIdeasLabel, editorSnippetButtons);
+
+    const editorTips = document.createElement('div');
+    editorTips.className = 'milkdrop-overlay__editor-tips';
+    [
+      'Auto-updates after 220ms of calm typing.',
+      'Errors keep the last stable preset visible.',
+      'Tab indents, undo/redo stays local to the draft.',
+    ].forEach((tip) => {
+      const item = document.createElement('div');
+      item.className = 'milkdrop-overlay__editor-tip';
+      item.textContent = tip;
+      editorTips.appendChild(item);
+    });
+
     this.diagnosticsList = document.createElement('div');
     this.diagnosticsList.className = 'milkdrop-overlay__diagnostics';
     this.tabPanels.editor.append(
+      editorIntro,
       this.editorStatus,
       editorActions,
+      editorQuickIdeas,
       editorHost,
+      editorTips,
       this.diagnosticsList,
     );
 
@@ -686,6 +790,42 @@ export class MilkdropOverlay {
           history(),
           StreamLanguage.define(properties),
           oneDark,
+          EditorView.theme({
+            '&': {
+              color: '#eff6ff',
+              background:
+                'linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(8, 47, 73, 0.68))',
+              fontSize: '0.95rem',
+            },
+            '.cm-scroller': {
+              fontFamily:
+                '"IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace',
+              lineHeight: '1.6',
+            },
+            '.cm-gutters': {
+              backgroundColor: 'rgba(8, 47, 73, 0.42)',
+              color: 'rgba(125, 211, 252, 0.65)',
+              borderRight: '1px solid rgba(125, 211, 252, 0.14)',
+            },
+            '.cm-activeLine': {
+              backgroundColor: 'rgba(34, 211, 238, 0.08)',
+            },
+            '.cm-activeLineGutter': {
+              backgroundColor: 'rgba(34, 211, 238, 0.12)',
+            },
+            '.cm-content': {
+              caretColor: '#67e8f9',
+            },
+            '&.cm-focused .cm-cursor': {
+              borderLeftColor: '#67e8f9',
+            },
+            '&.cm-focused': {
+              outline: 'none',
+            },
+            '&.cm-focused .cm-selectionBackground, ::selection': {
+              backgroundColor: 'rgba(34, 211, 238, 0.22)',
+            },
+          }),
           keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
           EditorView.lineWrapping,
           EditorView.updateListener.of((update) => {
@@ -1522,6 +1662,34 @@ export class MilkdropOverlay {
     this.blendValue.textContent = `${value.toFixed(2)}s`;
   }
 
+  private insertEditorSnippet(snippet: string) {
+    const selection = this.editor.state.selection.main;
+    const prefix =
+      selection.from > 0 &&
+      this.editor.state.doc.sliceString(selection.from - 1, selection.from) !==
+        '\n'
+        ? '\n'
+        : '';
+    const suffix =
+      selection.to < this.editor.state.doc.length &&
+      this.editor.state.doc.sliceString(selection.to, selection.to + 1) !== '\n'
+        ? '\n'
+        : '';
+    const text = `${prefix}${snippet}${suffix}`;
+    this.editor.dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: text,
+      },
+      selection: {
+        anchor: selection.from + text.length,
+      },
+      scrollIntoView: true,
+    });
+    this.editor.focus();
+  }
+
   setTransitionMode(mode: 'blend' | 'cut') {
     this.transitionModeSelect.value = mode;
     this.blendSlider.disabled = mode === 'cut';
@@ -1561,6 +1729,22 @@ export class MilkdropOverlay {
     this.editorStatus.textContent = [baseStatus, fidelityStatus]
       .filter(Boolean)
       .join(' | ');
+    const hasErrors = errors.length > 0;
+    this.editorLiveBadge.textContent = hasErrors
+      ? 'Holding last good frame'
+      : 'Live';
+    this.editorLiveBadge.dataset.tone = hasErrors ? 'warning' : 'accent';
+    this.editorSyncBadge.textContent = state.dirty ? 'Draft changed' : 'Synced';
+    this.editorSyncBadge.dataset.tone = state.dirty ? 'accent' : 'muted';
+    this.editorSafetyBadge.textContent = hasErrors
+      ? `${errors.length} issue${errors.length === 1 ? '' : 's'}`
+      : (fidelityStatus ?? 'Safety net on');
+    this.editorSafetyBadge.dataset.tone = hasErrors
+      ? 'danger'
+      : activeCompatibility?.fidelityClass === 'partial' ||
+          activeCompatibility?.fidelityClass === 'fallback'
+        ? 'warning'
+        : 'muted';
 
     this.diagnosticsList.replaceChildren();
     const derivedNotices = [
