@@ -46,6 +46,9 @@ describe('render-service pooling', () => {
       device: null,
       maxPixelRatio: 2,
       renderScale: 1,
+      adaptiveMaxPixelRatioMultiplier: 1,
+      adaptiveRenderScaleMultiplier: 1,
+      adaptiveDensityMultiplier: 1,
       exposure: 1,
     }));
 
