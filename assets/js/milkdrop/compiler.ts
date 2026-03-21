@@ -293,6 +293,9 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   motion_vectors: 0,
   motion_vectors_x: 16,
   motion_vectors_y: 12,
+  mv_dx: 0,
+  mv_dy: 0,
+  mv_l: 0,
   mv_r: 1,
   mv_g: 1,
   mv_b: 1,
@@ -405,6 +408,7 @@ function toBlockedShaderConstruct(line: string) {
 function buildSupportedExpressionIdentifierSet() {
   const supported = new Set<string>([
     ...Object.keys(DEFAULT_MILKDROP_STATE),
+    ...Object.keys(aliasMap).filter((key) => aliasMap[key] !== null),
     ...MILKDROP_INTRINSIC_IDENTIFIERS,
     'time',
     'frame',
@@ -463,6 +467,31 @@ function buildSupportedExpressionIdentifierSet() {
     'thickoutline',
   ]);
   return supported;
+}
+
+function hasLegacyMotionVectorControls(
+  numericFields: Record<string, number>,
+  programs?: Pick<MilkdropPresetIR['programs'], 'init' | 'perFrame'>,
+) {
+  const hasLegacyFieldValues =
+    Math.abs(numericFields.mv_dx ?? 0) > 0.0001 ||
+    Math.abs(numericFields.mv_dy ?? 0) > 0.0001 ||
+    Math.abs(numericFields.mv_l ?? 0) > 0.0001;
+  if (hasLegacyFieldValues) {
+    return true;
+  }
+
+  if (!programs) {
+    return false;
+  }
+
+  return [programs.init, programs.perFrame].some((block) =>
+    block.statements.some(
+      (statement) =>
+        statement.target === 'motion_vectors_x' ||
+        statement.target === 'motion_vectors_y',
+    ),
+  );
 }
 
 function isSupportedExpressionIdentifier(
@@ -4831,7 +4860,13 @@ function buildFeatureAnalysis({
     features.add('borders');
   }
 
-  if ((numericFields.motion_vectors ?? 0) > 0.5) {
+  if (
+    (numericFields.motion_vectors ?? 0) > 0.5 ||
+    hasLegacyMotionVectorControls(numericFields, {
+      init: programs.init,
+      perFrame: programs.perFrame,
+    })
+  ) {
     features.add('motion-vectors');
   }
 

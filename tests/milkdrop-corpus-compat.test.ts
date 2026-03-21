@@ -3,19 +3,62 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 
-const BUNDLED_PRESET_EXPECTATIONS = {
+type BundledPresetExpectation = {
+  webgl: 'supported' | 'partial' | 'unsupported';
+  webgpu: 'supported' | 'partial' | 'unsupported';
+  forbiddenUnsupportedKeys?: readonly string[];
+};
+
+const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
   'aurora-feedback-core.milk': { webgl: 'supported', webgpu: 'partial' },
-  'eos-glowsticks-v2-03-music.milk': { webgl: 'partial', webgpu: 'partial' },
-  'eos-phat-cubetrace-v2.milk': { webgl: 'partial', webgpu: 'partial' },
+  'eos-glowsticks-v2-03-music.milk': {
+    webgl: 'partial',
+    webgpu: 'partial',
+    forbiddenUnsupportedKeys: [
+      'mv_dx',
+      'mv_dy',
+      'mv_l',
+      'nmotionvectorsx',
+      'nmotionvectorsy',
+    ],
+  },
+  'eos-phat-cubetrace-v2.milk': {
+    webgl: 'partial',
+    webgpu: 'partial',
+    forbiddenUnsupportedKeys: [
+      'mv_dx',
+      'mv_dy',
+      'mv_l',
+      'nmotionvectorsx',
+      'nmotionvectorsy',
+    ],
+  },
   'kinetic-grid-pulse.milk': { webgl: 'supported', webgpu: 'partial' },
   'krash-rovastar-cerebral-demons-stars.milk': {
     webgl: 'partial',
     webgpu: 'partial',
+    forbiddenUnsupportedKeys: [
+      'mv_dx',
+      'mv_dy',
+      'mv_l',
+      'nmotionvectorsx',
+      'nmotionvectorsy',
+    ],
   },
   'low-motion-halo-drift.milk': { webgl: 'supported', webgpu: 'partial' },
   'prism-drum-tunnel.milk': { webgl: 'supported', webgpu: 'partial' },
-  'rovastar-parallel-universe.milk': { webgl: 'partial', webgpu: 'partial' },
-} as const;
+  'rovastar-parallel-universe.milk': {
+    webgl: 'partial',
+    webgpu: 'partial',
+    forbiddenUnsupportedKeys: [
+      'mv_dx',
+      'mv_dy',
+      'mv_l',
+      'nmotionvectorsx',
+      'nmotionvectorsy',
+    ],
+  },
+};
 
 function loadPresetCorpus(dir: string, origin: 'bundled' | 'user' = 'bundled') {
   return readdirSync(dir)
@@ -77,6 +120,11 @@ describe('milkdrop bundled preset corpus', () => {
         expect(entry?.compiled.ir.compatibility.backends.webgpu.status).toBe(
           expectation.webgpu,
         );
+        expectation.forbiddenUnsupportedKeys?.forEach((key) => {
+          expect(
+            entry?.compiled.ir.compatibility.unsupportedKeys,
+          ).not.toContain(key);
+        });
       },
     );
   });
