@@ -19,6 +19,47 @@ type ParseResult<T> = {
 
 const operatorTokens = ['<=', '>=', '==', '!=', '&&', '||'];
 
+export const MILKDROP_INTRINSIC_IDENTIFIERS = new Set(['pi', 'e']);
+
+export const MILKDROP_INTRINSIC_FUNCTIONS = new Set([
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'abs',
+  'sqrt',
+  'pow',
+  'mod',
+  'fmod',
+  'min',
+  'max',
+  'mix',
+  'lerp',
+  'floor',
+  'int',
+  'ceil',
+  'sqr',
+  'clamp',
+  'step',
+  'smoothstep',
+  'log',
+  'exp',
+  'sigmoid',
+  'sign',
+  'bor',
+  'band',
+  'bnot',
+  'atan2',
+  'frac',
+  'if',
+  'above',
+  'below',
+  'equal',
+  'rand',
+]);
+
 function toMilkdropInt(value: number) {
   return Number.isFinite(value) ? Math.trunc(value) : 0;
 }

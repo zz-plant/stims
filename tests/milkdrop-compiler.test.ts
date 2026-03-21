@@ -737,4 +737,53 @@ warp_shader=unsupported(shader)
     );
     expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
   });
+
+  test('marks allowlisted blocked constructs as visible but non-regressive', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Parity Allowlisted Shader Gap
+warp_shader=unsupported(shader)
+      `.trim(),
+      { id: 'parity-allowlisted-shader-gap' },
+    );
+
+    expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
+      'shader:unsupported(shader)',
+    ]);
+    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
+      {
+        kind: 'shader',
+        value: 'unsupported(shader)',
+        system: 'shader-text',
+        allowlisted: true,
+      },
+    ]);
+    expect(
+      compiled.ir.compatibility.parity.degradationReasons.map(
+        (reason) => reason.code,
+      ),
+    ).toContain('allowlisted-gap');
+    expect(
+      compiled.ir.compatibility.parity.degradationReasons.some(
+        (reason) => reason.code === 'allowlisted-gap' && reason.blocking,
+      ),
+    ).toBe(false);
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
+  });
+
+  test('lists missing aliases and functions from parsed expressions', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Missing Intrinsics
+wave_r=missing_alias + 0.1
+per_frame_1=zoom = missing_alias + unsupported_fn(bass_att)
+      `.trim(),
+      { id: 'missing-intrinsics' },
+    );
+
+    expect(compiled.ir.compatibility.parity.missingAliasesOrFunctions).toEqual([
+      'missing_alias',
+      'unsupported_fn',
+    ]);
+  });
 });

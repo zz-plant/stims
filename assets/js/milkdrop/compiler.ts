@@ -1,11 +1,14 @@
 import {
   evaluateMilkdropExpression,
+  MILKDROP_INTRINSIC_FUNCTIONS,
+  MILKDROP_INTRINSIC_IDENTIFIERS,
   parseMilkdropExpression,
   parseMilkdropStatement,
   splitMilkdropStatements,
   walkMilkdropExpression,
 } from './expression';
 import { formatMilkdropPreset } from './formatter';
+import { isMilkdropParityConstructAllowlisted } from './parity-allowlist';
 import { parseMilkdropPreset } from './preset-parser';
 import {
   evaluateMilkdropShaderExpression,
@@ -371,6 +374,133 @@ function toBlockedShaderConstruct(line: string) {
   return `shader:${normalizeBlockedConstructValue(line)}`;
 }
 
+function buildSupportedExpressionIdentifierSet() {
+  const supported = new Set<string>([
+    ...Object.keys(DEFAULT_MILKDROP_STATE),
+    ...MILKDROP_INTRINSIC_IDENTIFIERS,
+    'time',
+    'frame',
+    'fps',
+    'bass',
+    'mid',
+    'mids',
+    'treb',
+    'treble',
+    'bass_att',
+    'mid_att',
+    'mids_att',
+    'treb_att',
+    'treble_att',
+    'bassatt',
+    'midsatt',
+    'trebleatt',
+    'beat',
+    'beat_pulse',
+    'beatpulse',
+    'rms',
+    'vol',
+    'music',
+    'weighted_energy',
+    'progress',
+    'sample',
+    'value1',
+    'x',
+    'y',
+    'rad',
+    'ang',
+    'sides',
+    'enabled',
+    'samples',
+    'spectrum',
+    'additive',
+    'usedots',
+    'scaling',
+    'smoothing',
+    'mystery',
+    'thick',
+    'a',
+    'r',
+    'g',
+    'b',
+    'a2',
+    'r2',
+    'g2',
+    'b2',
+    'border_a',
+    'border_r',
+    'border_g',
+    'border_b',
+    'thickoutline',
+  ]);
+  return supported;
+}
+
+function isSupportedExpressionIdentifier(
+  identifier: string,
+  supportedIdentifiers: Set<string>,
+) {
+  const normalized = identifier.toLowerCase();
+  return (
+    supportedIdentifiers.has(identifier) ||
+    supportedIdentifiers.has(normalized) ||
+    /^q\d+$/u.test(normalized) ||
+    /^t\d+$/u.test(normalized)
+  );
+}
+
+function collectExpressionCompatibilityGaps(
+  expressions: MilkdropExpressionNode[],
+  assignedTargets: Iterable<string>,
+) {
+  const supportedIdentifiers = buildSupportedExpressionIdentifierSet();
+  for (const target of assignedTargets) {
+    supportedIdentifiers.add(target);
+    supportedIdentifiers.add(target.toLowerCase());
+  }
+
+  const missing = new Set<string>();
+  for (const expression of expressions) {
+    walkMilkdropExpression(expression, (node) => {
+      if (node.type === 'identifier') {
+        if (!isSupportedExpressionIdentifier(node.name, supportedIdentifiers)) {
+          missing.add(node.name.toLowerCase());
+        }
+        return;
+      }
+      if (
+        node.type === 'call' &&
+        !MILKDROP_INTRINSIC_FUNCTIONS.has(node.name.toLowerCase())
+      ) {
+        missing.add(node.name.toLowerCase());
+      }
+    });
+  }
+
+  return [...missing].sort();
+}
+
+function collectExpressionsFromValue(
+  value: unknown,
+  expressions: MilkdropExpressionNode[],
+) {
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+  if (
+    'type' in value &&
+    typeof value.type === 'string' &&
+    ['literal', 'identifier', 'unary', 'binary', 'call'].includes(value.type)
+  ) {
+    expressions.push(value as MilkdropExpressionNode);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectExpressionsFromValue(entry, expressions));
+    return;
+  }
+  Object.values(value).forEach((entry) =>
+    collectExpressionsFromValue(entry, expressions),
+  );
 function createBackendEvidence(
   evidence: MilkdropBackendSupportEvidence,
 ): MilkdropBackendSupportEvidence {
@@ -460,38 +590,50 @@ function buildVisualFallbacks({
 }
 
 function buildBlockingConstructDetails({
+  sourceId,
   ignoredFields,
   approximatedShaderLines,
 }: {
+  sourceId?: string;
   ignoredFields: string[];
   approximatedShaderLines: string[];
 }): MilkdropBlockingConstruct[] {
   return [
-    ...ignoredFields.map((value) => ({
-      kind: 'field' as const,
-      value,
-      system: 'preset-field' as const,
-      allowlisted: false,
-    })),
-    ...approximatedShaderLines.map((value) => ({
-      kind: 'shader' as const,
-      value,
-      system: 'shader-text' as const,
-      allowlisted: false,
-    })),
+    ...ignoredFields.map((value) => {
+      const signature = toBlockedFieldConstruct(value);
+      return {
+        kind: 'field' as const,
+        value,
+        system: 'preset-field' as const,
+        allowlisted: isMilkdropParityConstructAllowlisted({
+          presetId: sourceId,
+          signature,
+        }),
+      };
+    }),
+    ...approximatedShaderLines.map((value) => {
+      const signature = toBlockedShaderConstruct(value);
+      return {
+        kind: 'shader' as const,
+        value,
+        system: 'shader-text' as const,
+        allowlisted: isMilkdropParityConstructAllowlisted({
+          presetId: sourceId,
+          signature,
+        }),
+      };
+    }),
   ];
 }
 
 function buildDegradationReasons({
-  ignoredFields,
-  approximatedShaderLines,
+  blockedConstructDetails,
   backendDivergence,
   visualFallbacks,
   webgl,
   webgpu,
 }: {
-  ignoredFields: string[];
-  approximatedShaderLines: string[];
+  blockedConstructDetails: MilkdropBlockingConstruct[];
   backendDivergence: string[];
   visualFallbacks: string[];
   webgl: MilkdropBackendSupport;
@@ -499,22 +641,29 @@ function buildDegradationReasons({
 }): MilkdropDegradationReason[] {
   const reasons: MilkdropDegradationReason[] = [];
 
-  ignoredFields.forEach((field) => {
+  blockedConstructDetails.forEach((construct) => {
+    if (construct.allowlisted) {
+      reasons.push({
+        code: 'allowlisted-gap',
+        category: 'acceptable-approximation',
+        message: `Allowlisted parity gap remains visible for ${construct.kind} "${construct.value}".`,
+        system: construct.kind === 'field' ? 'compiler' : 'shader',
+        blocking: false,
+      });
+      return;
+    }
     reasons.push({
-      code: 'unknown-field',
-      category: 'unsupported-syntax',
-      message: `Field "${field}" is outside the current runtime scope and was ignored.`,
-      system: 'compiler',
-      blocking: true,
-    });
-  });
-
-  approximatedShaderLines.forEach((line) => {
-    reasons.push({
-      code: 'shader-approximation',
-      category: 'unsupported-shader',
-      message: `Shader line "${line}" could not be executed directly and is being approximated.`,
-      system: 'shader',
+      code:
+        construct.kind === 'field' ? 'unknown-field' : 'shader-approximation',
+      category:
+        construct.kind === 'field'
+          ? 'unsupported-syntax'
+          : 'unsupported-shader',
+      message:
+        construct.kind === 'field'
+          ? `Field "${construct.value}" is outside the current runtime scope and was ignored.`
+          : `Shader line "${construct.value}" could not be executed directly and is being approximated.`,
+      system: construct.kind === 'field' ? 'compiler' : 'shader',
       blocking: true,
     });
   });
@@ -4560,9 +4709,15 @@ function createPresetSource(
   };
 }
 
-function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
+function createIR(
+  ast: MilkdropPresetAST,
+  diagnostics: MilkdropDiagnostic[],
+  source: Partial<MilkdropPresetSource> = {},
+) {
   const numericFields = { ...DEFAULT_MILKDROP_STATE };
   const stringFields: Record<string, string> = {};
+  const parsedExpressions: MilkdropExpressionNode[] = [];
+  const assignedTargets = new Set<string>();
   const programs = {
     init: createProgramBlock(),
     perFrame: createProgramBlock(),
@@ -4641,6 +4796,9 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
         );
         return;
       }
+      if (compiledScalar.expression) {
+        parsedExpressions.push(compiledScalar.expression);
+      }
       numericFields[normalizedKey] = compiledScalar.value;
       ensureWaveDefinition(customWaveMap, index).fields[suffix] =
         compiledScalar.value;
@@ -4683,6 +4841,9 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
         );
         return;
       }
+      if (compiledScalar.expression) {
+        parsedExpressions.push(compiledScalar.expression);
+      }
       numericFields[normalizedKey] = compiledScalar.value;
       ensureShapeDefinition(customShapeMap, index).fields[suffix] =
         compiledScalar.value;
@@ -4718,6 +4879,9 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
       );
       return;
     }
+    if (compiledScalar.expression) {
+      parsedExpressions.push(compiledScalar.expression);
+    }
     numericFields[normalizedKey] = compiledScalar.value;
   });
 
@@ -4732,6 +4896,33 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
   const mergedShaderControls = mergeShaderControlAnalysis(
     shaderWarpAnalysis,
     shaderCompAnalysis,
+  );
+  collectExpressionsFromValue(
+    mergedShaderControls.expressions,
+    parsedExpressions,
+  );
+  for (const block of [
+    programs.init,
+    programs.perFrame,
+    programs.perPixel,
+    ...customWaves.flatMap((wave) => [
+      wave.programs.init,
+      wave.programs.perFrame,
+      wave.programs.perPoint,
+    ]),
+    ...customShapes.flatMap((shape) => [
+      shape.programs.init,
+      shape.programs.perFrame,
+    ]),
+  ]) {
+    for (const statement of block.statements) {
+      assignedTargets.add(statement.target);
+      parsedExpressions.push(statement.expression);
+    }
+  }
+  const missingAliasesOrFunctions = collectExpressionCompatibilityGaps(
+    parsedExpressions,
+    assignedTargets,
   );
   supportedShaderText =
     shaderWarpAnalysis.supported || shaderCompAnalysis.supported;
@@ -4796,12 +4987,12 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
     webgpu: finalBackends.webgpu,
   });
   const blockingConstructDetails = buildBlockingConstructDetails({
+    sourceId: source.id,
     ignoredFields,
     approximatedShaderLines,
   });
   const degradationReasons = buildDegradationReasons({
-    ignoredFields,
-    approximatedShaderLines,
+    blockedConstructDetails: blockingConstructDetails,
     backendDivergence,
     visualFallbacks,
     webgl: finalBackends.webgl,
@@ -4828,7 +5019,7 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
   const parity: MilkdropParityReport = {
     ignoredFields,
     approximatedShaderLines,
-    missingAliasesOrFunctions: [],
+    missingAliasesOrFunctions,
     backendDivergence,
     visualFallbacks,
     blockedConstructs,
@@ -4957,7 +5148,7 @@ export function compileMilkdropPresetSource(
 ): MilkdropCompiledPreset {
   const parsed = parseMilkdropPreset(raw);
   const diagnostics = [...parsed.diagnostics];
-  const ir = createIR(parsed.ast, diagnostics);
+  const ir = createIR(parsed.ast, diagnostics, source);
   const presetSource = createPresetSource(source, raw, ir.title, ir.author);
 
   const compiled: MilkdropCompiledPreset = {
