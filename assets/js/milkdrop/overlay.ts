@@ -178,8 +178,6 @@ export class MilkdropOverlay {
   private readonly browseMetaLabel: HTMLElement;
   private readonly browseQualitySelect: HTMLSelectElement;
   private readonly browseQualityHint: HTMLElement;
-  private readonly browseQualityScopeHint: HTMLElement;
-  private readonly browseQualityImpact: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly editorStatus: HTMLElement;
   private readonly inspectorControls: HTMLElement;
@@ -406,31 +404,18 @@ export class MilkdropOverlay {
     const browseCopy = document.createElement('div');
     browseCopy.className = 'milkdrop-overlay__browse-copy';
 
-    const browseEyebrow = document.createElement('p');
-    browseEyebrow.className = 'milkdrop-overlay__browse-eyebrow';
-    browseEyebrow.textContent = 'Preset chooser';
-
     this.browseActiveLabel = document.createElement('div');
     this.browseActiveLabel.className = 'milkdrop-overlay__browse-active';
     this.browseActiveLabel.textContent = 'Loading presets...';
-
-    this.browseMetaLabel = document.createElement('p');
-    this.browseMetaLabel.className = 'milkdrop-overlay__browse-meta';
-    this.browseMetaLabel.textContent =
-      'Keep playback moving while you browse and tune quality here.';
-
-    browseCopy.append(
-      browseEyebrow,
-      this.browseActiveLabel,
-      this.browseMetaLabel,
-    );
+    this.browseActiveLabel.setAttribute('aria-live', 'polite');
+    this.browseActiveLabel.setAttribute('aria-atomic', 'true');
 
     const qualityCard = document.createElement('div');
     qualityCard.className = 'milkdrop-overlay__quality';
 
     const qualityLabel = document.createElement('label');
     qualityLabel.className = 'milkdrop-overlay__quality-label';
-    qualityLabel.textContent = 'Quality preset';
+    qualityLabel.textContent = 'Quality';
 
     this.browseQualitySelect = document.createElement('select');
     this.browseQualitySelect.className =
@@ -442,23 +427,23 @@ export class MilkdropOverlay {
     });
     qualityLabel.appendChild(this.browseQualitySelect);
 
+    this.browseMetaLabel = document.createElement('p');
+    this.browseMetaLabel.className = 'milkdrop-overlay__browse-meta';
+    this.browseMetaLabel.textContent = 'Loading status…';
+    this.browseMetaLabel.setAttribute('aria-live', 'polite');
+    this.browseMetaLabel.setAttribute('role', 'status');
+
     this.browseQualityHint = document.createElement('p');
     this.browseQualityHint.className = 'milkdrop-overlay__quality-hint';
 
-    this.browseQualityScopeHint = document.createElement('p');
-    this.browseQualityScopeHint.className = 'milkdrop-overlay__quality-meta';
+    qualityCard.append(qualityLabel, this.browseQualityHint);
 
-    this.browseQualityImpact = document.createElement('p');
-    this.browseQualityImpact.className = 'milkdrop-overlay__quality-meta';
-
-    qualityCard.append(
-      qualityLabel,
-      this.browseQualityHint,
-      this.browseQualityScopeHint,
-      this.browseQualityImpact,
+    browseCopy.append(
+      this.browseActiveLabel,
+      qualityCard,
+      this.browseMetaLabel,
     );
-
-    browseHero.append(browseCopy, qualityCard);
+    browseHero.append(browseCopy);
 
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'search';
@@ -712,11 +697,12 @@ export class MilkdropOverlay {
     }
 
     this.browseQualitySelect.value = preset.id;
-    this.browseQualityHint.textContent = preset.description ?? '';
-    this.browseQualityScopeHint.textContent = getQualityPresetScopeHint(
+    const impactSummary = describeQualityPresetImpact(preset);
+    const persistenceHint = getQualityPresetScopeHint(
       this.browseQualityStorageKey,
     );
-    this.browseQualityImpact.textContent = describeQualityPresetImpact(preset);
+    this.browseQualityHint.textContent = impactSummary || persistenceHint;
+    this.browseQualityHint.hidden = !this.browseQualityHint.textContent;
   }
 
   private renderBrowseSummary(filteredCount = this.presets.length) {
@@ -725,12 +711,16 @@ export class MilkdropOverlay {
     );
     this.browseActiveLabel.textContent = activePreset
       ? `Now playing ${activePreset.title}`
-      : 'Preset chooser';
+      : 'No preset selected';
+
+    const modeLabel = this.browseModeSelect.selectedOptions[0]?.textContent;
     this.browseMetaLabel.textContent = [
       `${filteredCount} shown`,
-      `${this.presets.length} total`,
+      modeLabel,
       this.activeBackend.toUpperCase(),
-    ].join(' · ');
+    ]
+      .filter(Boolean)
+      .join(' · ');
   }
 
   private matchesBrowseFilters(preset: MilkdropCatalogEntry, query: string) {
@@ -1321,8 +1311,7 @@ export class MilkdropOverlay {
     if (!initialPreset) {
       this.browseQualitySelect.disabled = true;
       this.browseQualityHint.textContent = '';
-      this.browseQualityScopeHint.textContent = '';
-      this.browseQualityImpact.textContent = '';
+      this.browseQualityHint.hidden = true;
       return;
     }
 
