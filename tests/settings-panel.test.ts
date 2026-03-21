@@ -57,6 +57,18 @@ describe('quality preset subscriptions', () => {
     expect(cached.id).toBe('hi-fi');
   });
 
+  test('getActiveQualityPreset honors a new default when no preset is stored', () => {
+    const initial = getActiveQualityPreset();
+    expect(initial.id).toBe('balanced');
+
+    localStorage.removeItem(QUALITY_STORAGE_KEY);
+
+    const resolved = getActiveQualityPreset({
+      defaultPresetId: 'performance',
+    });
+    expect(resolved.id).toBe('performance');
+  });
+
   test('getActiveQualityPreset falls back when cached preset is unavailable', () => {
     localStorage.setItem(QUALITY_STORAGE_KEY, 'hi-fi');
     getActiveQualityPreset();
@@ -71,6 +83,22 @@ describe('quality preset subscriptions', () => {
       defaultPresetId: 'low',
     });
     expect(resolved.id).toBe('low');
+  });
+
+  test('quality panels persist their default preset when no preset is stored yet', () => {
+    const panel = getSettingsPanel();
+
+    panel.setQualityPresets({
+      presets: DEFAULT_QUALITY_PRESETS,
+      defaultPresetId: 'performance',
+    });
+
+    const select = document.querySelector(
+      '.control-panel select',
+    ) as HTMLSelectElement | null;
+
+    expect(select?.value).toBe('performance');
+    expect(localStorage.getItem(QUALITY_STORAGE_KEY)).toBe('performance');
   });
 
   test('quality presets include global scope hint and impact summary', () => {
