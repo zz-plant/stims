@@ -8,12 +8,25 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 let initAudioControls: typeof import('../assets/js/ui/audio-controls.ts').initAudioControls;
 let buildTryThisFirstRecommendation: typeof import('../assets/js/ui/audio-controls.ts').buildTryThisFirstRecommendation;
+const originalNavigator = globalThis.navigator;
 
 describe('audio controls primary emphasis', () => {
   beforeEach(async () => {
     document.body.innerHTML = '';
     sessionStorage.clear();
     localStorage.clear();
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: originalNavigator,
+    });
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: originalNavigator.mediaDevices,
+    });
+    Object.defineProperty(navigator, 'permissions', {
+      configurable: true,
+      value: originalNavigator.permissions,
+    });
     const bootstrapScript = document.createElement('script');
     document.body.appendChild(bootstrapScript);
     globalThis.HTMLButtonElement =

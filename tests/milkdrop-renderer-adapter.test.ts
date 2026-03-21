@@ -594,6 +594,69 @@ video_echo=1
     );
   });
 
+  test('forwards tex3D overlay state into feedback composite uniforms', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Volume Feedback Contract
+comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv * 1.5 + float2(0.1, -0.2), time / 10.0)).xyz
+      `.trim(),
+      { id: 'volume-feedback-contract' },
+    );
+
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const renderer = {
+      getSize: (target: Vector2) => target.set(320, 180),
+      render() {},
+      setRenderTarget() {},
+    };
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      renderer,
+      backend: 'webgl',
+      createFeedbackManager: () => feedback,
+    });
+
+    const vm = createMilkdropVM(preset);
+    const signals = makeSignals();
+    signals.time = 2;
+    signals.frame = 120;
+    const frameState = vm.step(signals);
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]).toMatchObject({
+      overlayTextureSource: 2,
+      overlayTextureMode: 1,
+      overlayTextureSampleDimension: 2,
+    });
+    expect(compositeStates[0]?.overlayTextureScale.x).toBeCloseTo(1.5, 6);
+    expect(compositeStates[0]?.overlayTextureScale.y).toBeCloseTo(1.5, 6);
+    expect(compositeStates[0]?.overlayTextureOffset.x).toBeCloseTo(0.1, 6);
+    expect(compositeStates[0]?.overlayTextureOffset.y).toBeCloseTo(-0.2, 6);
+    expect(compositeStates[0]?.overlayTextureVolumeSliceZ).toBeCloseTo(0.2, 6);
+  });
+
   test('renders main wave and trails directly on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `

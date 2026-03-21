@@ -877,19 +877,23 @@ function createDefaultShaderControls(): MilkdropShaderControls {
     textureLayer: {
       source: 'none',
       mode: 'none',
+      sampleDimension: '2d',
       amount: 0,
       scaleX: 1,
       scaleY: 1,
       offsetX: 0,
       offsetY: 0,
+      volumeSliceZ: 0,
     },
     warpTexture: {
       source: 'none',
+      sampleDimension: '2d',
       amount: 0,
       scaleX: 1,
       scaleY: 1,
       offsetX: 0,
       offsetY: 0,
+      volumeSliceZ: 0,
     },
   };
 }
@@ -916,6 +920,7 @@ function createDefaultShaderControlExpressions(): MilkdropShaderControlExpressio
       scaleY: null,
       offsetX: null,
       offsetY: null,
+      volumeSliceZ: null,
     },
     warpTexture: {
       amount: null,
@@ -923,6 +928,7 @@ function createDefaultShaderControlExpressions(): MilkdropShaderControlExpressio
       scaleY: null,
       offsetX: null,
       offsetY: null,
+      volumeSliceZ: null,
     },
   };
 }
@@ -1532,9 +1538,52 @@ function isShaderSampleRgbExpression(
   );
 }
 
+function splitShaderSampleCoordinate(node: MilkdropShaderExpressionNode): {
+  uv: MilkdropShaderExpressionNode;
+  z: MilkdropShaderExpressionNode | null;
+  dimension: '2d' | '3d';
+} | null {
+  if (
+    node.type === 'call' &&
+    normalizeShaderCallName(node.name) === 'vec3' &&
+    node.args.length >= 2
+  ) {
+    const first = node.args[0];
+    const second = node.args[1];
+    const third = node.args[2];
+    if (!first || !second) {
+      return null;
+    }
+    if (third) {
+      return {
+        uv: {
+          type: 'call',
+          name: 'vec2',
+          args: [cloneShaderNode(first), cloneShaderNode(second)],
+        },
+        z: cloneShaderNode(third),
+        dimension: '3d',
+      };
+    }
+    return {
+      uv: cloneShaderNode(first),
+      z: cloneShaderNode(second),
+      dimension: '3d',
+    };
+  }
+
+  return {
+    uv: cloneShaderNode(node),
+    z: null,
+    dimension: '2d',
+  };
+}
+
 function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
   source: string;
   uv: MilkdropShaderExpressionNode;
+  z: MilkdropShaderExpressionNode | null;
+  dimension: '2d' | '3d';
 } | null {
   if (
     node.type !== 'member' ||
@@ -1557,9 +1606,17 @@ function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
   if (!source) {
     return null;
   }
+  const dimension =
+    normalizeShaderCallName(node.object.name) === 'tex3d' ? '3d' : '2d';
+  const coordinate = splitShaderSampleCoordinate(uvArg);
+  if (!coordinate || coordinate.dimension !== dimension) {
+    return null;
+  }
   return {
     source,
-    uv: uvArg,
+    uv: coordinate.uv,
+    z: coordinate.z,
+    dimension,
   };
 }
 
@@ -1580,6 +1637,8 @@ function extractScaledShaderSampleExpression(
   sample: {
     source: string;
     uv: MilkdropShaderExpressionNode;
+    z: MilkdropShaderExpressionNode | null;
+    dimension: '2d' | '3d';
   };
 } | null {
   const directSample = getShaderSampleInfo(node);
@@ -1794,6 +1853,21 @@ function analyzeShaderUvTransform(node: MilkdropShaderExpressionNode): {
   return null;
 }
 
+function analyzeShaderVolumeSlice(
+  node: MilkdropShaderExpressionNode | null,
+  valueEnv: ShaderRuntimeEnv,
+  scalarEnv: Record<string, number>,
+  expressionEnv: ShaderExpressionEnv,
+): {
+  value: number;
+  expression: MilkdropExpressionNode | null;
+} | null {
+  if (!node) {
+    return null;
+  }
+  return evaluateShaderScalarResult(node, valueEnv, scalarEnv, expressionEnv);
+}
+
 function isShaderUvIdentifier(node: MilkdropShaderExpressionNode) {
   return node.type === 'identifier' && node.name.toLowerCase() === 'uv';
 }
@@ -1865,6 +1939,57 @@ function buildTintBlendExpression(
       right: amountExpression,
     },
   } satisfies MilkdropExpressionNode;
+}
+
+function applyTextureSampleState({
+  target,
+  targetExpressions,
+  sample,
+  shaderValueEnv,
+  shaderEnv,
+  shaderExpressionEnv,
+}: {
+  target:
+    | MilkdropShaderControls['textureLayer']
+    | MilkdropShaderControls['warpTexture'];
+  targetExpressions:
+    | MilkdropShaderControlExpressions['textureLayer']
+    | MilkdropShaderControlExpressions['warpTexture'];
+  sample: {
+    source: MilkdropShaderTextureSampler;
+    uv: MilkdropShaderExpressionNode;
+    z: MilkdropShaderExpressionNode | null;
+    dimension: '2d' | '3d';
+  };
+  shaderValueEnv: ShaderRuntimeEnv;
+  shaderEnv: Record<string, number>;
+  shaderExpressionEnv: ShaderExpressionEnv;
+}) {
+  const uvTransform = analyzeShaderUvTransform(sample.uv);
+  const volumeSlice = analyzeShaderVolumeSlice(
+    sample.z,
+    shaderValueEnv,
+    shaderEnv,
+    shaderExpressionEnv,
+  );
+
+  target.source = sample.source;
+  target.sampleDimension = sample.dimension;
+  target.volumeSliceZ = volumeSlice?.value ?? 0;
+  targetExpressions.volumeSliceZ = volumeSlice?.expression ?? null;
+
+  if (!uvTransform) {
+    return;
+  }
+
+  target.scaleX = uvTransform.scaleX;
+  target.scaleY = uvTransform.scaleY;
+  target.offsetX = uvTransform.offsetX;
+  target.offsetY = uvTransform.offsetY;
+  targetExpressions.scaleX = uvTransform.expressions.scaleX;
+  targetExpressions.scaleY = uvTransform.expressions.scaleY;
+  targetExpressions.offsetX = uvTransform.expressions.offsetX;
+  targetExpressions.offsetY = uvTransform.expressions.offsetY;
 }
 
 function applyShaderAstStatement({
@@ -2203,24 +2328,23 @@ function applyShaderAstStatement({
       directSample.source !== 'main' &&
       directSample.source !== 'none'
     ) {
-      const uvTransform = analyzeShaderUvTransform(directSample.uv);
       if (!isAuxShaderSamplerName(directSample.source)) {
         return false;
       }
-      controls.textureLayer.source = directSample.source;
+      applyTextureSampleState({
+        target: controls.textureLayer,
+        targetExpressions: expressions.textureLayer,
+        sample: {
+          ...directSample,
+          source: directSample.source,
+        },
+        shaderValueEnv,
+        shaderEnv,
+        shaderExpressionEnv,
+      });
       controls.textureLayer.mode = 'replace';
       controls.textureLayer.amount = 1;
       expressions.textureLayer.amount = createLiteralExpression(1);
-      if (uvTransform) {
-        controls.textureLayer.scaleX = uvTransform.scaleX;
-        controls.textureLayer.scaleY = uvTransform.scaleY;
-        controls.textureLayer.offsetX = uvTransform.offsetX;
-        controls.textureLayer.offsetY = uvTransform.offsetY;
-        expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
-        expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
-        expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
-        expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
-      }
       return true;
     }
 
@@ -2327,24 +2451,23 @@ function applyShaderAstStatement({
           auxSample.source !== 'main' &&
           auxSample.source !== 'none'
         ) {
-          const uvTransform = analyzeShaderUvTransform(auxSample.uv);
           if (!isAuxShaderSamplerName(auxSample.source)) {
             return false;
           }
-          controls.textureLayer.source = auxSample.source;
+          applyTextureSampleState({
+            target: controls.textureLayer,
+            targetExpressions: expressions.textureLayer,
+            sample: {
+              ...auxSample,
+              source: auxSample.source,
+            },
+            shaderValueEnv,
+            shaderEnv,
+            shaderExpressionEnv,
+          });
           controls.textureLayer.mode = 'mix';
           controls.textureLayer.amount = amount.value;
           expressions.textureLayer.amount = amount.expression;
-          if (uvTransform) {
-            controls.textureLayer.scaleX = uvTransform.scaleX;
-            controls.textureLayer.scaleY = uvTransform.scaleY;
-            controls.textureLayer.offsetX = uvTransform.offsetX;
-            controls.textureLayer.offsetY = uvTransform.offsetY;
-            expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
-            expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
-            expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
-            expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
-          }
           return true;
         }
         if (isShaderInvertSampleExpression(targetNode)) {
@@ -2440,24 +2563,23 @@ function applyShaderAstStatement({
         : resolvedExpression.left;
       const auxSample = extractScaledShaderSampleExpression(auxNode);
       if (auxSample) {
-        const uvTransform = analyzeShaderUvTransform(auxSample.sample.uv);
         if (!isAuxShaderSamplerName(auxSample.sample.source)) {
           return false;
         }
-        controls.textureLayer.source = auxSample.sample.source;
+        applyTextureSampleState({
+          target: controls.textureLayer,
+          targetExpressions: expressions.textureLayer,
+          sample: {
+            ...auxSample.sample,
+            source: auxSample.sample.source,
+          },
+          shaderValueEnv,
+          shaderEnv,
+          shaderExpressionEnv,
+        });
         controls.textureLayer.mode = 'add';
         controls.textureLayer.amount = auxSample.amountValue;
         expressions.textureLayer.amount = auxSample.amountExpression;
-        if (uvTransform) {
-          controls.textureLayer.scaleX = uvTransform.scaleX;
-          controls.textureLayer.scaleY = uvTransform.scaleY;
-          controls.textureLayer.offsetX = uvTransform.offsetX;
-          controls.textureLayer.offsetY = uvTransform.offsetY;
-          expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
-          expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
-          expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
-          expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
-        }
         return true;
       }
     }
@@ -2473,24 +2595,23 @@ function applyShaderAstStatement({
         : resolvedExpression.left;
       const auxSample = extractScaledShaderSampleExpression(auxNode);
       if (auxSample) {
-        const uvTransform = analyzeShaderUvTransform(auxSample.sample.uv);
         if (!isAuxShaderSamplerName(auxSample.sample.source)) {
           return false;
         }
-        controls.textureLayer.source = auxSample.sample.source;
+        applyTextureSampleState({
+          target: controls.textureLayer,
+          targetExpressions: expressions.textureLayer,
+          sample: {
+            ...auxSample.sample,
+            source: auxSample.sample.source,
+          },
+          shaderValueEnv,
+          shaderEnv,
+          shaderExpressionEnv,
+        });
         controls.textureLayer.mode = 'multiply';
         controls.textureLayer.amount = auxSample.amountValue;
         expressions.textureLayer.amount = auxSample.amountExpression;
-        if (uvTransform) {
-          controls.textureLayer.scaleX = uvTransform.scaleX;
-          controls.textureLayer.scaleY = uvTransform.scaleY;
-          controls.textureLayer.offsetX = uvTransform.offsetX;
-          controls.textureLayer.offsetY = uvTransform.offsetY;
-          expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
-          expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
-          expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
-          expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
-        }
         return true;
       }
     }
@@ -3843,6 +3964,21 @@ function pickShaderScalar(
   return { value: secondaryValue, expression: secondaryExpression };
 }
 
+function pickShaderTextureDimension(
+  primaryDimension: '2d' | '3d',
+  primaryExpression: MilkdropExpressionNode | null,
+  secondaryDimension: '2d' | '3d',
+  secondaryExpression: MilkdropExpressionNode | null,
+) {
+  if (primaryDimension === '3d' || primaryExpression) {
+    return primaryDimension;
+  }
+  if (secondaryDimension === '3d' || secondaryExpression) {
+    return secondaryDimension;
+  }
+  return primaryDimension;
+}
+
 function mergeShaderControlAnalysis(
   warpAnalysis: ReturnType<typeof extractShaderControls>,
   compAnalysis: ReturnType<typeof extractShaderControls>,
@@ -4012,6 +4148,19 @@ function mergeShaderControlAnalysis(
     warpAnalysis.expressions.textureLayer.offsetY,
     0,
   );
+  const textureLayerVolumeSliceZ = pickShaderScalar(
+    compAnalysis.controls.textureLayer.volumeSliceZ,
+    compAnalysis.expressions.textureLayer.volumeSliceZ,
+    warpAnalysis.controls.textureLayer.volumeSliceZ,
+    warpAnalysis.expressions.textureLayer.volumeSliceZ,
+    0,
+  );
+  const textureLayerSampleDimension = pickShaderTextureDimension(
+    compAnalysis.controls.textureLayer.sampleDimension,
+    compAnalysis.expressions.textureLayer.volumeSliceZ,
+    warpAnalysis.controls.textureLayer.sampleDimension,
+    warpAnalysis.expressions.textureLayer.volumeSliceZ,
+  );
   const warpTextureAmount = pickShaderScalar(
     warpAnalysis.controls.warpTexture.amount,
     warpAnalysis.expressions.warpTexture.amount,
@@ -4047,6 +4196,19 @@ function mergeShaderControlAnalysis(
     compAnalysis.expressions.warpTexture.offsetY,
     0,
   );
+  const warpTextureVolumeSliceZ = pickShaderScalar(
+    warpAnalysis.controls.warpTexture.volumeSliceZ,
+    warpAnalysis.expressions.warpTexture.volumeSliceZ,
+    compAnalysis.controls.warpTexture.volumeSliceZ,
+    compAnalysis.expressions.warpTexture.volumeSliceZ,
+    0,
+  );
+  const warpTextureSampleDimension = pickShaderTextureDimension(
+    warpAnalysis.controls.warpTexture.sampleDimension,
+    warpAnalysis.expressions.warpTexture.volumeSliceZ,
+    compAnalysis.controls.warpTexture.sampleDimension,
+    compAnalysis.expressions.warpTexture.volumeSliceZ,
+  );
 
   return {
     controls: {
@@ -4081,22 +4243,26 @@ function mergeShaderControlAnalysis(
           compAnalysis.controls.textureLayer.mode !== 'none'
             ? compAnalysis.controls.textureLayer.mode
             : warpAnalysis.controls.textureLayer.mode,
+        sampleDimension: textureLayerSampleDimension,
         amount: textureLayerAmount.value,
         scaleX: textureLayerScaleX.value,
         scaleY: textureLayerScaleY.value,
         offsetX: textureLayerOffsetX.value,
         offsetY: textureLayerOffsetY.value,
+        volumeSliceZ: textureLayerVolumeSliceZ.value,
       },
       warpTexture: {
         source:
           warpAnalysis.controls.warpTexture.source !== 'none'
             ? warpAnalysis.controls.warpTexture.source
             : compAnalysis.controls.warpTexture.source,
+        sampleDimension: warpTextureSampleDimension,
         amount: warpTextureAmount.value,
         scaleX: warpTextureScaleX.value,
         scaleY: warpTextureScaleY.value,
         offsetX: warpTextureOffsetX.value,
         offsetY: warpTextureOffsetY.value,
+        volumeSliceZ: warpTextureVolumeSliceZ.value,
       },
     },
     expressions: {
@@ -4128,6 +4294,7 @@ function mergeShaderControlAnalysis(
         scaleY: textureLayerScaleY.expression,
         offsetX: textureLayerOffsetX.expression,
         offsetY: textureLayerOffsetY.expression,
+        volumeSliceZ: textureLayerVolumeSliceZ.expression,
       },
       warpTexture: {
         amount: warpTextureAmount.expression,
@@ -4135,6 +4302,7 @@ function mergeShaderControlAnalysis(
         scaleY: warpTextureScaleY.expression,
         offsetX: warpTextureOffsetX.expression,
         offsetY: warpTextureOffsetY.expression,
+        volumeSliceZ: warpTextureVolumeSliceZ.expression,
       },
     },
   };
@@ -5150,6 +5318,24 @@ function createIR(
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
+  const volumeSamplingWarnings = [
+    mergedShaderControls.controls.textureLayer.source !== 'none' &&
+    mergedShaderControls.controls.textureLayer.sampleDimension === '3d'
+      ? `Auxiliary texture layer "${mergedShaderControls.controls.textureLayer.source}" uses tex3D volume sampling and will be approximated with deterministic 2D slice blending.`
+      : null,
+    mergedShaderControls.controls.warpTexture.source !== 'none' &&
+    mergedShaderControls.controls.warpTexture.sampleDimension === '3d'
+      ? `Warp auxiliary texture "${mergedShaderControls.controls.warpTexture.source}" uses tex3D volume sampling and will be approximated with deterministic 2D slice blending.`
+      : null,
+  ].filter((warning): warning is string => warning !== null);
+  volumeSamplingWarnings.forEach((message) =>
+    addDiagnostic(
+      diagnostics,
+      'warning',
+      'preset_shader_volume_approximation',
+      message,
+    ),
+  );
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();
@@ -5223,6 +5409,7 @@ function createIR(
       ({ key, feature, message }) =>
         `Unsupported feature "${feature}" from preset field "${key}": ${message}`,
     ),
+    ...volumeSamplingWarnings,
   ];
   const backends = {
     webgl: buildBackendSupport({

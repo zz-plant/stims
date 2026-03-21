@@ -211,6 +211,18 @@ function createSampleAuxTextureNode(
   });
 }
 
+function createSampleVolumeAtlasUvNode() {
+  return Fn(([wrappedUv, sliceIndex]: [any, any]) => {
+    const slicesPerAxis = float(8);
+    const tileSize = float(1).div(slicesPerAxis);
+    const maxSliceIndex = slicesPerAxis.mul(slicesPerAxis).sub(1);
+    const clampedSlice = clamp(sliceIndex, 0, maxSliceIndex);
+    const tileY = clampedSlice.div(slicesPerAxis).floor();
+    const tileX = clampedSlice.sub(tileY.mul(slicesPerAxis));
+    return fract(wrappedUv).add(vec2(tileX, tileY)).mul(tileSize);
+  });
+}
+
 function createCompositeUniforms(
   sceneTexture: Texture,
   previousTexture: Texture,
@@ -256,13 +268,17 @@ function createCompositeUniforms(
     ),
     overlayTextureSource: uniform(0),
     overlayTextureMode: uniform(0),
+    overlayTextureSampleDimension: uniform(1),
     overlayTextureAmount: uniform(0),
     overlayTextureScale: uniform(new Vector2(1, 1)),
     overlayTextureOffset: uniform(new Vector2(0, 0)),
+    overlayTextureVolumeSliceZ: uniform(0),
     warpTextureSource: uniform(0),
+    warpTextureSampleDimension: uniform(1),
     warpTextureAmount: uniform(0),
     warpTextureScale: uniform(new Vector2(1, 1)),
     warpTextureOffset: uniform(new Vector2(0, 0)),
+    warpTextureVolumeSliceZ: uniform(0),
     signalBass: uniform(0),
     signalMid: uniform(0),
     signalTreb: uniform(0),
@@ -285,6 +301,28 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
     uniforms.causticsTex,
     uniforms.patternTex,
     uniforms.fractalTex,
+  );
+  const sampleVolumeAtlasUvNode = createSampleVolumeAtlasUvNode();
+  const sampleAuxTextureWithDimensionNode = Fn(
+    ([source, sampleUv, sampleDimension, sliceZ]: [any, any, any, any]) => {
+      const wrappedUv = fract(sampleUv);
+      const totalSlices = float(64);
+      const slicePosition = fract(sliceZ).mul(totalSlices.sub(1)).toVar();
+      const lowerIndex = slicePosition.floor();
+      const upperIndex = min(lowerIndex.add(1), totalSlices.sub(1));
+      const sliceMix = fract(slicePosition);
+      const lowerSlice = sampleAuxTextureNode(
+        source,
+        sampleVolumeAtlasUvNode(wrappedUv, lowerIndex),
+      );
+      const upperSlice = sampleAuxTextureNode(
+        source,
+        sampleVolumeAtlasUvNode(wrappedUv, upperIndex),
+      );
+      const volumeSample = mix(lowerSlice, upperSlice, sliceMix);
+      const planarSample = sampleAuxTextureNode(source, wrappedUv);
+      return mix(planarSample, volumeSample, step(1.5, sampleDimension));
+    },
   );
 
   return Fn(() => {
@@ -317,7 +355,12 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
     const warpUv = baseUv
       .mul(uniforms.warpTextureScale)
       .add(uniforms.warpTextureOffset);
-    const warpVector = sampleAuxTextureNode(uniforms.warpTextureSource, warpUv)
+    const warpVector = sampleAuxTextureWithDimensionNode(
+      uniforms.warpTextureSource,
+      warpUv,
+      uniforms.warpTextureSampleDimension,
+      uniforms.warpTextureVolumeSliceZ,
+    )
       .rg.sub(0.5)
       .toVar();
     currentUv.addAssign(
@@ -453,9 +496,11 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
     const overlayUv = baseUv
       .mul(uniforms.overlayTextureScale)
       .add(uniforms.overlayTextureOffset);
-    const overlayColor = sampleAuxTextureNode(
+    const overlayColor = sampleAuxTextureWithDimensionNode(
       uniforms.overlayTextureSource,
       overlayUv,
+      uniforms.overlayTextureSampleDimension,
+      uniforms.overlayTextureVolumeSliceZ,
     ).rgb;
     const overlayAmount = clamp(uniforms.overlayTextureAmount, 0, 1.5);
     const overlayMixAmount = clamp(overlayAmount, 0, 1);
@@ -646,6 +691,8 @@ class WebGPUMilkdropFeedbackManager {
       state.overlayTextureSource;
     this.compositeMaterial.uniforms.overlayTextureMode.value =
       state.overlayTextureMode;
+    this.compositeMaterial.uniforms.overlayTextureSampleDimension.value =
+      state.overlayTextureSampleDimension;
     this.compositeMaterial.uniforms.overlayTextureAmount.value =
       state.overlayTextureAmount;
     this.compositeMaterial.uniforms.overlayTextureScale.value.set(
@@ -656,8 +703,12 @@ class WebGPUMilkdropFeedbackManager {
       state.overlayTextureOffset.x,
       state.overlayTextureOffset.y,
     );
+    this.compositeMaterial.uniforms.overlayTextureVolumeSliceZ.value =
+      state.overlayTextureVolumeSliceZ;
     this.compositeMaterial.uniforms.warpTextureSource.value =
       state.warpTextureSource;
+    this.compositeMaterial.uniforms.warpTextureSampleDimension.value =
+      state.warpTextureSampleDimension;
     this.compositeMaterial.uniforms.warpTextureAmount.value =
       state.warpTextureAmount;
     this.compositeMaterial.uniforms.warpTextureScale.value.set(
@@ -668,6 +719,8 @@ class WebGPUMilkdropFeedbackManager {
       state.warpTextureOffset.x,
       state.warpTextureOffset.y,
     );
+    this.compositeMaterial.uniforms.warpTextureVolumeSliceZ.value =
+      state.warpTextureVolumeSliceZ;
     this.compositeMaterial.uniforms.signalBass.value = state.signalBass;
     this.compositeMaterial.uniforms.signalMid.value = state.signalMid;
     this.compositeMaterial.uniforms.signalTreb.value = state.signalTreb;

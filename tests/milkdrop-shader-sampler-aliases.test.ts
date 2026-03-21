@@ -67,6 +67,21 @@ describe('milkdrop shader sampler aliases', () => {
       kind: 'vec3',
       value: [1, 1, 1],
     });
+
+    if (volumeStatement.expression.type !== 'member') {
+      throw new Error('Expected volume statement to evaluate a sampled member');
+    }
+
+    const sampleValue = evaluateMilkdropShaderExpression(
+      volumeStatement.expression.object,
+      { uv: { kind: 'vec2', value: [0.25, 0.75] } },
+      { time: 2 },
+    );
+    expect(sampleValue).toMatchObject({
+      kind: 'sample',
+      source: 'simplex',
+      dimension: '3d',
+    });
   });
 
   test('normalizes supported aliases through the shared helper', () => {
@@ -137,8 +152,14 @@ describe('milkdrop shader sampler aliases', () => {
         'simplex',
       );
       expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+        '3d',
+      );
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+      expect(compiled.ir.compatibility.warnings).toContain(
+        'Auxiliary texture layer "simplex" uses tex3D volume sampling and will be approximated with deterministic 2D slice blending.',
+      );
     }
   });
 });

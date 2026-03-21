@@ -474,6 +474,10 @@ function getShaderTextureBlendModeId(mode: string) {
   }
 }
 
+function getShaderTextureSampleDimensionId(dimension: string) {
+  return dimension === '3d' ? 2 : 1;
+}
+
 export function getFeedbackBackendProfile(
   backend: 'webgl' | 'webgpu',
 ): FeedbackBackendProfile {
@@ -2059,6 +2063,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       overlayTextureMode: getShaderTextureBlendModeId(
         controls.textureLayer.mode,
       ),
+      overlayTextureSampleDimension: getShaderTextureSampleDimensionId(
+        controls.textureLayer.sampleDimension,
+      ),
       overlayTextureAmount: controls.textureLayer.amount,
       overlayTextureScale: {
         x: controls.textureLayer.scaleX,
@@ -2068,7 +2075,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         x: controls.textureLayer.offsetX,
         y: controls.textureLayer.offsetY,
       },
+      overlayTextureVolumeSliceZ: controls.textureLayer.volumeSliceZ,
       warpTextureSource: getShaderTextureSourceId(controls.warpTexture.source),
+      warpTextureSampleDimension: getShaderTextureSampleDimensionId(
+        controls.warpTexture.sampleDimension,
+      ),
       warpTextureAmount: controls.warpTexture.amount,
       warpTextureScale: {
         x: controls.warpTexture.scaleX,
@@ -2078,6 +2089,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         x: controls.warpTexture.offsetX,
         y: controls.warpTexture.offsetY,
       },
+      warpTextureVolumeSliceZ: controls.warpTexture.volumeSliceZ,
       signalBass: frameState.signals.bass,
       signalMid: frameState.signals.mid,
       signalTreb: frameState.signals.treb,

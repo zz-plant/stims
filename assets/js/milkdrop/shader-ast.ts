@@ -23,7 +23,9 @@ type ShaderValue =
   | {
       kind: 'sample';
       source: MilkdropShaderTextureSampler | 'main' | null;
+      dimension: '2d' | '3d';
       uv: ShaderValue;
+      z: ShaderValue | null;
     };
 
 function normalizeShaderSamplerName(value: string) {
@@ -589,7 +591,23 @@ export function evaluateMilkdropShaderExpression(
           samplerArg?.type === 'identifier'
             ? normalizeShaderSamplerName(samplerArg.name)
             : 'main';
-        return { kind: 'sample', source, uv: args[1] };
+        const coordinate = args[1];
+        const isVolumeSample = name === 'tex3d';
+        let uv: ShaderValue = coordinate;
+        let z: ShaderValue | null = null;
+
+        if (isVolumeSample && coordinate.kind === 'vec3') {
+          uv = vec2(coordinate.value[0], coordinate.value[1]);
+          z = scalar(coordinate.value[2]);
+        }
+
+        return {
+          kind: 'sample',
+          source,
+          dimension: isVolumeSample ? '3d' : '2d',
+          uv,
+          z,
+        };
       }
       if (name === 'mix' && args.length >= 3 && isScalar(args[2])) {
         const blend = args[2].value;

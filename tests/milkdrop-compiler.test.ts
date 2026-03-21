@@ -553,10 +553,23 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
         'simplex',
       );
       expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+        '3d',
+      );
+      expect(compiled.ir.post.shaderControls.textureLayer.volumeSliceZ).toBe(0);
+      expect(
+        compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
+      ).toMatchObject({
+        type: 'binary',
+        operator: '/',
+      });
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
+      );
+      expect(compiled.ir.compatibility.warnings).toContain(
+        'Auxiliary texture layer "simplex" uses tex3D volume sampling and will be approximated with deterministic 2D slice blending.',
       );
     }
   });

@@ -276,23 +276,29 @@ export type MilkdropShaderTextureBlendMode =
   | 'add'
   | 'multiply';
 
+export type MilkdropShaderTextureSampleDimension = '2d' | '3d';
+
 export type MilkdropShaderTextureLayerControls = {
   source: MilkdropShaderTextureSampler;
   mode: MilkdropShaderTextureBlendMode;
+  sampleDimension: MilkdropShaderTextureSampleDimension;
   amount: number;
   scaleX: number;
   scaleY: number;
   offsetX: number;
   offsetY: number;
+  volumeSliceZ: number;
 };
 
 export type MilkdropShaderTextureWarpControls = {
   source: MilkdropShaderTextureSampler;
+  sampleDimension: MilkdropShaderTextureSampleDimension;
   amount: number;
   scaleX: number;
   scaleY: number;
   offsetX: number;
   offsetY: number;
+  volumeSliceZ: number;
 };
 
 export type MilkdropShaderTextureLayerExpressions = {
@@ -301,6 +307,7 @@ export type MilkdropShaderTextureLayerExpressions = {
   scaleY: MilkdropExpressionNode | null;
   offsetX: MilkdropExpressionNode | null;
   offsetY: MilkdropExpressionNode | null;
+  volumeSliceZ: MilkdropExpressionNode | null;
 };
 
 export type MilkdropShaderTextureWarpExpressions = {
@@ -309,6 +316,7 @@ export type MilkdropShaderTextureWarpExpressions = {
   scaleY: MilkdropExpressionNode | null;
   offsetX: MilkdropExpressionNode | null;
   offsetY: MilkdropExpressionNode | null;
+  volumeSliceZ: MilkdropExpressionNode | null;
 };
 
 export type MilkdropShaderExpressionNode =
@@ -762,6 +770,7 @@ export type MilkdropFeedbackCompositeState = {
   };
   overlayTextureSource: number;
   overlayTextureMode: number;
+  overlayTextureSampleDimension: number;
   overlayTextureAmount: number;
   overlayTextureScale: {
     x: number;
@@ -771,7 +780,9 @@ export type MilkdropFeedbackCompositeState = {
     x: number;
     y: number;
   };
+  overlayTextureVolumeSliceZ: number;
   warpTextureSource: number;
+  warpTextureSampleDimension: number;
   warpTextureAmount: number;
   warpTextureScale: {
     x: number;
@@ -781,6 +792,7 @@ export type MilkdropFeedbackCompositeState = {
     x: number;
     y: number;
   };
+  warpTextureVolumeSliceZ: number;
   signalBass: number;
   signalMid: number;
   signalTreb: number;
