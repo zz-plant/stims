@@ -1376,4 +1376,69 @@ per_frame_1=zoom = missing_alias + unsupported_fn(bass_att)
       'unsupported_fn',
     ]);
   });
+
+  test('emits explicit WebGPU descriptor plans for the optimized subset', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Descriptor Plan Smoke
+wave_mode=2
+mesh_density=20
+motion_vectors=1
+motion_vectors_x=7
+motion_vectors_y=5
+      `.trim(),
+      { id: 'descriptor-plan-smoke' },
+    );
+
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual({
+      routing: 'descriptor-plan',
+      proceduralWaves: expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'procedural-wave',
+          target: 'main-wave',
+          slotIndex: null,
+          sampleSource: 'waveform',
+        }),
+        expect.objectContaining({
+          kind: 'procedural-wave',
+          target: 'trail-waves',
+          slotIndex: null,
+          sampleSource: 'waveform',
+        }),
+      ]),
+      proceduralMesh: {
+        kind: 'procedural-mesh',
+        requiresPerPixelProgram: false,
+        supportsMotionVectors: true,
+      },
+      feedback: null,
+      unsupported: [],
+    });
+  });
+
+  test('keeps unsupported shader text explicit in WebGPU descriptor fallback markers', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Descriptor Plan Fallback
+warp_shader=unsupported(shader)
+      `.trim(),
+      { id: 'descriptor-plan-fallback' },
+    );
+
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual({
+      routing: 'fallback-webgl',
+      proceduralWaves: [],
+      proceduralMesh: null,
+      feedback: null,
+      unsupported: [
+        {
+          kind: 'unsupported-feature',
+          feature: 'unsupported-shader-text',
+          reason:
+            'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
+          recommendedFallback: 'webgl',
+        },
+      ],
+    });
+  });
 });

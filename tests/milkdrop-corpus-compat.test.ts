@@ -187,6 +187,9 @@ describe('milkdrop bundled preset corpus', () => {
         expect(entry?.compiled.ir.compatibility.backends.webgpu.status).toBe(
           expectation.webgpu,
         );
+        expect(
+          entry?.compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
+        ).toBe('descriptor-plan');
         expectation.forbiddenUnsupportedKeys?.forEach((key) => {
           expect(
             entry?.compiled.ir.compatibility.unsupportedKeys,
@@ -234,6 +237,12 @@ describe('milkdrop local shape fixture corpus', () => {
       );
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
         expected.webgpu,
+      );
+      expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
+        expect.objectContaining({
+          routing: 'descriptor-plan',
+          unsupported: [],
+        }),
       );
       expect(compiled.ir.compatibility.parity.fidelityClass).toBe(
         expected.fidelityClass,
