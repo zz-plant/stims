@@ -197,6 +197,19 @@ function sampleFrequencyData(signals: MilkdropRuntimeSignals, t: number) {
   return (signals.frequencyData[sampleIndex] ?? 0) / 255;
 }
 
+function sampleCustomWaveChannels(
+  signals: MilkdropRuntimeSignals,
+  sample: number,
+) {
+  const normalizedSample = sampleFrequencyData(signals, sample);
+  return {
+    sample,
+    value: normalizedSample,
+    value1: normalizedSample,
+    value2: normalizedSample,
+  };
+}
+
 function normalizeTransformCenter(value: number) {
   if (value >= 0 && value <= 1) {
     return value * 2 - 1;
@@ -741,11 +754,8 @@ class MilkdropPresetVM implements MilkdropVM {
 
       for (let point = 0; point < sampleCount; point += 1) {
         const sample = point / Math.max(1, sampleCount - 1);
-        const sampleIndex = Math.min(
-          signals.frequencyData.length - 1,
-          Math.max(0, Math.round(sample * (signals.frequencyData.length - 1))),
-        );
-        const spectrumValue = (signals.frequencyData[sampleIndex] ?? 0) / 255;
+        const waveChannels = sampleCustomWaveChannels(signals, sample);
+        const spectrumValue = waveChannels.value1;
         const baseY =
           centerY +
           (spectrumValue - 0.5) *
@@ -753,8 +763,7 @@ class MilkdropPresetVM implements MilkdropVM {
             scaling *
             (1 + (frameLocals.mystery ?? 0) * 0.25);
         Object.assign(pointLocals, frameLocals, {
-          sample,
-          value: spectrumValue,
+          ...waveChannels,
           x: centerX + (-1 + sample * 2) * 0.85,
           y:
             (frameLocals.spectrum ?? 0) >= 0.5
