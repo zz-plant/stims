@@ -2952,10 +2952,10 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__preset {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
   align-items: start;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
 
@@ -2970,43 +2970,48 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__preset-launch {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   text-align: left;
-  padding: 0;
+  min-width: 0;
+  padding: 2px 0;
   border: 0;
   background: transparent;
 }
 
 .milkdrop-overlay__preset-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .milkdrop-overlay__preset-title {
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .milkdrop-overlay__preset-badges {
   display: inline-flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .milkdrop-overlay__preset-meta {
   color: rgba(191, 219, 254, 0.74);
-  font-size: 0.78rem;
-  line-height: 1.35;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  min-height: 0;
 }
 
 .milkdrop-overlay__preset-actions {
   display: inline-grid;
-  grid-template-columns: repeat(2, minmax(88px, auto));
-  gap: 6px;
-  align-items: center;
-  justify-items: stretch;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 4px;
+  align-items: start;
+  justify-items: end;
 }
 
 .milkdrop-overlay__support {
@@ -3056,18 +3061,36 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__preset-warning {
   grid-column: 1 / -1;
-  font-size: 0.76rem;
+  font-size: 0.73rem;
+  line-height: 1.25;
   color: rgba(253, 230, 138, 0.9);
-  background: rgba(120, 53, 15, 0.18);
-  border: 1px solid rgba(245, 158, 11, 0.16);
-  border-radius: 10px;
-  padding: 7px 9px;
+  padding: 0;
 }
 
 .milkdrop-overlay__preset-flag {
   color: rgba(191, 219, 254, 0.66);
   font-size: 0.75rem;
   align-self: center;
+}
+
+.milkdrop-overlay__favorite,
+.milkdrop-overlay__rating-select {
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  background: rgba(15, 23, 42, 0.42);
+  color: rgba(226, 232, 240, 0.82);
+}
+
+.milkdrop-overlay__favorite {
+  min-width: 28px;
+  font-size: 0.88rem;
+  line-height: 1;
+}
+
+.milkdrop-overlay__rating-select {
+  min-width: 58px;
 }
 
 .milkdrop-overlay__editor {
@@ -3316,12 +3339,12 @@ body.tv-mode .control-panel input {
 
   .milkdrop-overlay__preset {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 6px;
     padding-top: 8px;
   }
 
   .milkdrop-overlay__preset-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: flex-start;
   }
 
   .milkdrop-overlay__editor {
