@@ -1021,6 +1021,7 @@ video_echo=1
               magFilter: number;
             };
           };
+          targets: Array<{ width: number; height: number }>;
         } | null;
       }
     ).feedback;
@@ -1031,7 +1032,7 @@ video_echo=1
     expect(feedback).not.toBeNull();
   });
 
-  test('uses full-resolution half-float feedback targets on webgpu backends', () => {
+  test('uses mixed-resolution half-float feedback targets on webgpu backends', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback Quality
@@ -1075,13 +1076,16 @@ video_echo=1
               magFilter: number;
             };
           };
+          targets: Array<{ width: number; height: number }>;
         } | null;
       }
     ).feedback;
 
     expect(feedback).not.toBeNull();
-    expect(feedback?.sceneTarget.width).toBe(544);
-    expect(feedback?.sceneTarget.height).toBe(306);
+    expect(feedback?.sceneTarget.width).toBe(640);
+    expect(feedback?.sceneTarget.height).toBe(360);
+    expect(feedback?.targets[0]?.width).toBe(544);
+    expect(feedback?.targets[0]?.height).toBe(306);
     expect(feedback?.sceneTarget.samples).toBe(0);
     expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
     expect(feedback?.sceneTarget.texture.minFilter).toBe(LinearFilter);
