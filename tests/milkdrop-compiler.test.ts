@@ -778,6 +778,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     expect(compiled.ir.post.shaderControls.invertBoost).toBeCloseTo(0, 6);
     expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
     expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('mix');
+    expect(compiled.ir.post.shaderControls.textureLayer.inverted).toBe(true);
     expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
       '3d',
     );
