@@ -76,6 +76,30 @@ const VISUAL_BASELINES_PATH = join(
   'milkdrop-parity',
   'visual-baselines.json',
 );
+const REPRESENTATIVE_BACKEND_EXPECTATIONS = {
+  'parity-feedback-01': {
+    webgl: 'supported',
+    webgpu: 'partial',
+    divergence: ['status:webgl=supported,webgpu=partial'],
+  },
+  'parity-shader-01': {
+    webgl: 'supported',
+    webgpu: 'partial',
+    divergence: [
+      'status:webgl=supported,webgpu=partial',
+      'webgpu:supported-shader-text-gap',
+    ],
+  },
+  'parity-allowlisted-shader-gap': {
+    webgl: 'supported',
+    webgpu: 'partial',
+    divergence: [
+      'status:webgl=supported,webgpu=partial',
+      'webgpu:supported-shader-text-gap',
+      'webgpu:video-echo-gap:video-echo',
+    ],
+  },
+} as const;
 
 function loadJson<T>(filePath: string): T {
   return JSON.parse(readFileSync(filePath, 'utf8')) as T;
@@ -268,12 +292,29 @@ describe('milkdrop parity corpus harness', () => {
       );
 
       expect(errorDiagnostics).toEqual([]);
-      expect(
-        compiled.ir.compatibility.backends[manifest.fallbackBackend].status,
-      ).not.toBe('unsupported');
-      expect(
-        compiled.ir.compatibility.backends[manifest.backendTarget].status,
-      ).not.toBe('unsupported');
+      const expected =
+        REPRESENTATIVE_BACKEND_EXPECTATIONS[
+          entry.id as keyof typeof REPRESENTATIVE_BACKEND_EXPECTATIONS
+        ];
+      if (!expected) {
+        expect(
+          compiled.ir.compatibility.backends[manifest.fallbackBackend].status,
+        ).not.toBe('unsupported');
+        expect(
+          compiled.ir.compatibility.backends[manifest.backendTarget].status,
+        ).not.toBe('unsupported');
+      }
+      if (expected) {
+        expect(compiled.ir.compatibility.backends.webgl.status).toBe(
+          expected.webgl,
+        );
+        expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+          expected.webgpu,
+        );
+        expect(compiled.ir.compatibility.parity.backendDivergence).toEqual(
+          expect.arrayContaining(expected.divergence),
+        );
+      }
     });
   });
 

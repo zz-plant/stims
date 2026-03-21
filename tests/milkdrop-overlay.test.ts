@@ -57,8 +57,8 @@ function createInspectorPayload() {
         customShapes: [],
         compatibility: {
           backends: {
-            webgl: { status: 'supported', reasons: [] },
-            webgpu: { status: 'supported', reasons: [] },
+            webgl: { status: 'supported', reasons: [], evidence: [] },
+            webgpu: { status: 'supported', reasons: [], evidence: [] },
           },
           parity: {
             fidelityClass: 'exact',
@@ -108,12 +108,14 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
       webgl: {
         status: 'supported',
         reasons: [],
+        evidence: [],
         requiredFeatures: [],
         unsupportedFeatures: [],
       },
       webgpu: {
         status: 'supported',
         reasons: [],
+        evidence: [],
         requiredFeatures: [],
         unsupportedFeatures: [],
       },
