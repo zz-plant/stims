@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import type { MilkdropRuntimeSignals } from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
+import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
 
 function makeSignals({
   frame = 1,
@@ -159,7 +160,11 @@ per_pixel_1=rot = rot + 0.001;
       { id: 'vm-smoke' },
     );
 
-    const vm = createMilkdropVM(preset);
+    const vm = createMilkdropVM(preset, {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      proceduralMainWave: false,
+      proceduralTrailWaves: false,
+    });
     const frameState = vm.step(makeSignals({ frame: 1 }));
 
     expect(frameState.presetId).toBe('vm-smoke');
@@ -542,7 +547,11 @@ mesh_density=16
       { id: 'procedural-wave-hints' },
     );
 
-    const vm = createMilkdropVM(preset);
+    const vm = createMilkdropVM(preset, {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      proceduralMainWave: false,
+      proceduralTrailWaves: false,
+    });
     vm.setRenderBackend('webgpu');
     const firstFrame = vm.step(makeSignals({ frame: 1, time: 0.15 }));
     const secondFrame = vm.step(makeSignals({ frame: 2, time: 0.3 }));

@@ -54,9 +54,26 @@ Both camelCase and snake_case aliases are exposed so preset equations can stay r
 
 `bun run check:toys` fails if the checked-in JSON or generated artifacts drift.
 
+## WebGPU descriptor rollout flags
+
+The MilkDrop runtime can now gate each WebGPU descriptor optimization independently. All flags default to enabled, but you can disable any step with either a query param or a `localStorage` override using the same value conventions as other repo experiments (`1`/`enabled` to enable, `0`/`disabled` to disable).
+
+| Flag | Query param | `localStorage` key | Purpose |
+| --- | --- | --- | --- |
+| Main wave | `milkdrop-webgpu-main-wave` | `stims:experiments:milkdrop-webgpu-main-wave` | Gates descriptor-backed main-wave rendering. |
+| Trail waves | `milkdrop-webgpu-trail-waves` | `stims:experiments:milkdrop-webgpu-trail-waves` | Gates descriptor-backed trail rendering. |
+| Custom waves | `milkdrop-webgpu-custom-waves` | `stims:experiments:milkdrop-webgpu-custom-waves` | Gates authored custom-wave descriptor uploads. |
+| Mesh field | `milkdrop-webgpu-mesh` | `stims:experiments:milkdrop-webgpu-mesh` | Gates procedural mesh descriptors and field programs. |
+| Motion vectors | `milkdrop-webgpu-motion-vectors` | `stims:experiments:milkdrop-webgpu-motion-vectors` | Gates procedural motion-vector descriptors. |
+| Feedback shaders | `milkdrop-webgpu-feedback` | `stims:experiments:milkdrop-webgpu-feedback` | Gates direct WebGPU feedback shader execution. |
+| WebGL fallback guard | `milkdrop-webgpu-fallback` | `stims:experiments:milkdrop-webgpu-fallback` | Controls whether unsupported descriptor cases auto-switch to WebGL. |
+
+When any flag is disabled and the runtime still starts on WebGPU, the overlay status includes a short `WebGPU rollout flags active: ...` message so test runs and manual QA can confirm which descriptor paths remain guarded.
+
 ## Testing expectations
 
 Use both layers:
 
-- Fast logic coverage in unit tests for compiler/runtime helpers and metadata scripts.
+- Fast logic coverage in unit tests for compiler/runtime helpers, rollout-flag gating, and representative descriptor fixtures.
 - Browser-backed interaction coverage in `tests/agent-integration.test.ts` for the shipped visualizer flow.
+- For compatibility-specific sweeps, run `bun run test -- --profile compat` so the descriptor rollout fixtures and guard tests execute with the broader corpus checks.

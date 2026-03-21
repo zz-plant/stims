@@ -23,6 +23,7 @@ import type {
   MilkdropRuntimeSignals,
 } from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
+import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
 
 type RenderTreeNode = {
   children?: RenderTreeNode[];
@@ -958,7 +959,12 @@ mesh_density=16
       { id: 'procedural-wave-renderer' },
     );
 
-    const vm = createMilkdropVM(preset);
+    const webgpuCpuFallbackFlags = {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      proceduralMainWave: false,
+      proceduralTrailWaves: false,
+    };
+    const vm = createMilkdropVM(preset, webgpuCpuFallbackFlags);
     vm.setRenderBackend('webgpu');
     const firstFrame = vm.step(makeSignals());
     const secondSignals = makeSignals();
@@ -972,6 +978,7 @@ mesh_density=16
       scene,
       camera,
       backend: 'webgpu',
+      webgpuOptimizationFlags: webgpuCpuFallbackFlags,
     });
 
     adapter.attach();

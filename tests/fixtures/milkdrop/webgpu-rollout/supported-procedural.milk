@@ -1,0 +1,10 @@
+title=Supported Procedural Rollout
+wave_mode=2
+mesh_density=20
+motion_vectors=1
+motion_vectors_x=7
+motion_vectors_y=5
+wavecode_0_enabled=1
+wavecode_0_samples=48
+wavecode_0_spectrum=1
+wavecode_0_additive=1
