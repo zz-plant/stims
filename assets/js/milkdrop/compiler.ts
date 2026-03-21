@@ -3388,6 +3388,8 @@ function buildShaderProgramPayload({
       statementTargets: statements.map((statement) => statement.target),
     },
   };
+}
+
 function isUnsupportedParsedShaderStatement({
   statement,
   shaderEnv,
@@ -3557,7 +3559,8 @@ function extractShaderControls(
         unsupportedLines.push(line);
         return;
       }
-      supportedLineCount += 1;
+      directProgramStatements.push(parsedStatement);
+      directProgramLines.push(line);
       return;
     }
 
@@ -5594,10 +5597,7 @@ function createIR(
           requiresControlFallback:
             shaderWarpAnalysis.directProgramStatements.length !==
             shaderWarpAnalysis.statements.length,
-          supportedBackends:
-            shaderWarpAnalysis.unsupportedLines.length === 0
-              ? ['webgl', 'webgpu']
-              : [],
+          supportedBackends: [],
         })
       : null;
   const compShaderProgram =
@@ -5609,18 +5609,20 @@ function createIR(
           requiresControlFallback:
             shaderCompAnalysis.directProgramStatements.length !==
             shaderCompAnalysis.statements.length,
-          supportedBackends:
-            shaderCompAnalysis.unsupportedLines.length === 0
-              ? ['webgl', 'webgpu']
-              : [],
+          supportedBackends: [],
         })
       : null;
+  const directProgramLines = [
+    ...shaderWarpAnalysis.directProgramLines,
+    ...shaderCompAnalysis.directProgramLines,
+  ].map(normalizeBlockedConstructValue);
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();
   const approximatedShaderLines = [
     ...shaderWarpAnalysis.unsupportedLines,
     ...shaderCompAnalysis.unsupportedLines,
+    ...directProgramLines,
   ].map(normalizeBlockedConstructValue);
   const blockingConstructDetails = buildBlockingConstructDetails({
     sourceId: source.id,
@@ -5656,13 +5658,13 @@ function createIR(
     assignedTargets,
   );
   const hasShaderText = Boolean(warpShaderText || compShaderText);
+  const hasDirectShaderPrograms =
+    warpShaderProgram !== null || compShaderProgram !== null;
   const hasBlockingShaderApproximation = blockingConstructDetails.some(
     (construct) => construct.kind === 'shader' && !construct.allowlisted,
   );
   supportedShaderText =
-    shaderWarpAnalysis.supported ||
-    shaderCompAnalysis.supported ||
-    (hasShaderText && !hasBlockingShaderApproximation);
+    shaderWarpAnalysis.supported || shaderCompAnalysis.supported;
   unsupportedShaderText = hasBlockingShaderApproximation;
   if (unsupportedShaderText) {
     addDiagnostic(
@@ -5677,21 +5679,8 @@ function createIR(
       ? unsupportedShaderText
         ? { webgl: 'unsupported', webgpu: 'unsupported' }
         : {
-            webgl:
-              warpShaderProgram || compShaderProgram ? 'direct' : 'translated',
-            webgpu:
-              (warpShaderProgram === null ||
-                warpShaderProgram.execution.supportedBackends.includes(
-                  'webgpu',
-                )) &&
-              (compShaderProgram === null ||
-                compShaderProgram.execution.supportedBackends.includes(
-                  'webgpu',
-                ))
-                ? warpShaderProgram || compShaderProgram
-                  ? 'direct'
-                  : 'translated'
-                : 'translated',
+            webgl: hasDirectShaderPrograms ? 'unsupported' : 'translated',
+            webgpu: hasDirectShaderPrograms ? 'unsupported' : 'translated',
           }
       : { webgl: 'none', webgpu: 'none' };
   const featureAnalysis = buildFeatureAnalysis({

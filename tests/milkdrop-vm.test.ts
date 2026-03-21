@@ -730,14 +730,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     );
 
     expect(frameState.post.shaderPrograms.warp).toBeNull();
-    expect(frameState.post.shaderPrograms.comp).toEqual(
-      expect.objectContaining({
-        stage: 'comp',
-        execution: expect.objectContaining({
-          supportedBackends: ['webgl', 'webgpu'],
-        }),
-      }),
-    );
+    expect(frameState.post.shaderPrograms.comp).toBeNull();
   });
 
   test('renders ninth shape slot beyond the previous ceiling', () => {

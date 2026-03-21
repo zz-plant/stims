@@ -657,7 +657,7 @@ video_echo=1
     });
   });
 
-  test('prefers richer shader program payloads on supported backends', () => {
+  test('preserves richer shader program payloads but falls back to controls', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Direct Shader Program Feedback
@@ -701,11 +701,11 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(0.1, 0.0, 0.0);
       }),
     ).toBe(true);
 
-    expect(compositeStates[0]?.shaderExecution).toBe('direct');
+    expect(compositeStates[0]?.shaderExecution).toBe('controls');
     expect(compositeStates[0]?.shaderPrograms.comp?.stage).toBe('comp');
     expect(
       compositeStates[0]?.shaderPrograms.comp?.execution.supportedBackends,
-    ).toEqual(['webgl', 'webgpu']);
+    ).toEqual([]);
   });
 
   test('renders main wave and trails directly on webgpu line-wave presets', () => {
