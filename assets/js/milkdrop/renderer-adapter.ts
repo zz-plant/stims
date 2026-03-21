@@ -575,10 +575,6 @@ function buildProceduralFieldProgramShaderChunk(
   return `
     ${PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS}
 
-    float milkdropNormalizeTransformCenter(float value) {
-      return value >= 0.0 && value <= 1.0 ? value * 2.0 - 1.0 : value;
-    }
-
     vec2 milkdropTransformPointWithParams(
       vec2 source,
       float paramZoom,
@@ -612,15 +608,13 @@ function buildProceduralFieldProgramShaderChunk(
       ${statementCode}
 
       float angle = field_ang + fieldRotation;
-      float normalizedCenterX = milkdropNormalizeTransformCenter(fieldCenterX);
-      float normalizedCenterY = milkdropNormalizeTransformCenter(fieldCenterY);
       float translatedX =
-        (field_x - normalizedCenterX) * fieldScaleX +
-        normalizedCenterX +
+        (field_x - fieldCenterX) * fieldScaleX +
+        fieldCenterX +
         fieldTranslateX * 2.0;
       float translatedY =
-        (field_y - normalizedCenterY) * fieldScaleY +
-        normalizedCenterY +
+        (field_y - fieldCenterY) * fieldScaleY +
+        fieldCenterY +
         fieldTranslateY * 2.0;
       float ripple = sin(
         field_rad * 12.0 +
