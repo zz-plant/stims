@@ -450,8 +450,8 @@ warpanimspeed=1.4
     vm.setRenderBackend('webgpu');
     const frameState = vm.step(makeSignals());
 
-    expect(frameState.mesh.positions.length).toBeGreaterThan(0);
-    expect(frameState.gpuGeometry.meshField).toBeNull();
+    expect(frameState.mesh.positions).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField).not.toBeNull();
 
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
@@ -475,7 +475,7 @@ warpanimspeed=1.4
       geometry?: unknown;
     };
 
-    expect(meshLines.material).toBeInstanceOf(LineBasicMaterial);
+    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
     expect(meshLines.geometry).toBeDefined();
   });
 
@@ -499,8 +499,8 @@ warpanimspeed=1.25
     vm.setRenderBackend('webgpu');
     const frameState = vm.step(makeSignals());
 
-    expect(frameState.motionVectors.length).toBeGreaterThan(0);
-    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
+    expect(frameState.motionVectors).toHaveLength(0);
+    expect(frameState.gpuGeometry.motionVectorField).not.toBeNull();
 
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
@@ -534,9 +534,12 @@ warpanimspeed=1.25
       visible?: boolean;
     };
 
-    expect(cpuMotionVectors?.children?.[0]?.type).toBe('Line');
+    expect(cpuMotionVectors?.children).toHaveLength(0);
     expect(proceduralMotionVectors).toBeInstanceOf(LineSegments);
-    expect(proceduralMotionVectors?.visible).toBe(false);
+    expect(proceduralMotionVectors?.visible).toBe(true);
+    expect(motionVectorGroup.children[1]?.material).toBeInstanceOf(
+      ShaderMaterial,
+    );
   });
 
   test('passes semantic feedback state to the feedback manager', () => {
@@ -756,13 +759,11 @@ mesh_density=16
       children: Array<{ material?: unknown }>;
     };
 
-    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
-    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
-    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(
-      LineBasicMaterial,
-    );
+    expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves.length).toBeGreaterThan(0);
+    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
     expect(trailGroup.children.length).toBeGreaterThan(0);
-    expect(trailGroup.children[0]?.material).toBeInstanceOf(LineBasicMaterial);
+    expect(trailGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
   });
 
   test('renders custom waves directly on webgpu-safe custom waves', () => {
@@ -810,10 +811,82 @@ wavecode_0_a=0.35
       children: Array<{ material?: unknown }>;
     };
 
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+    expect(customWaveGroup.children[0]?.material).toBeInstanceOf(
+      ShaderMaterial,
+    );
+  });
+
+  test('keeps WebGL fallback on CPU geometry for descriptors that WebGPU synthesizes procedurally', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL Fallback Renderer
+mesh_density=14
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+wave_mode=5
+wave_usedots=0
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_usedots=0
+      `.trim(),
+      { id: 'webgl-fallback-renderer' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgl');
+    const signals = makeSignals();
+    signals.frame = 2;
+    signals.time = 0.2;
+    const frameState = vm.step(signals);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        material?: unknown;
+        children?: Array<{ material?: unknown }>;
+      }>;
+    };
+    const meshLines = root.children[1] as { material?: unknown };
+    const mainWaveGroup = root.children[2] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const customWaveGroup = root.children[3] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const motionVectorGroup = root.children[7] as {
+      children: Array<{ children?: Array<{ material?: unknown }> }>;
+    };
+
+    expect(frameState.gpuGeometry.mainWave).toBeNull();
     expect(frameState.gpuGeometry.customWaves).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField).toBeNull();
+    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
+    expect(meshLines.material).toBeInstanceOf(LineBasicMaterial);
+    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(
+      LineBasicMaterial,
+    );
     expect(customWaveGroup.children[0]?.material).toBeInstanceOf(
       LineBasicMaterial,
     );
+    expect(
+      motionVectorGroup.children[0]?.children?.[0]?.material,
+    ).toBeInstanceOf(LineBasicMaterial);
   });
 
   test('skips feedback composite rendering when shader mode is disabled', () => {

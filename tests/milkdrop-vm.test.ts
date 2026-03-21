@@ -407,7 +407,7 @@ dy=-0.1
     );
   });
 
-  test('keeps cpu mesh and motion-vector geometry on webgpu-safe presets', () => {
+  test('emits procedural mesh and motion-vector descriptors on webgpu-safe presets', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural GPU Hints
@@ -427,13 +427,15 @@ warpanimspeed=1.5
     vm.setRenderBackend('webgpu');
     const frameState = vm.step(makeSignals({ frame: 3 }));
 
-    expect(frameState.mesh.positions.length).toBeGreaterThan(0);
-    expect(frameState.motionVectors.length).toBeGreaterThan(0);
-    expect(frameState.gpuGeometry.meshField).toBeNull();
-    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
+    expect(frameState.mesh.positions).toHaveLength(0);
+    expect(frameState.motionVectors).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField).not.toBeNull();
+    expect(frameState.gpuGeometry.meshField?.density).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.motionVectorField).not.toBeNull();
+    expect(frameState.gpuGeometry.motionVectorField?.countX).toBe(6);
   });
 
-  test('keeps main wave and trails as cpu polylines on webgpu line-wave presets', () => {
+  test('emits procedural main-wave and trail descriptors on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Wave Hints
@@ -453,16 +455,17 @@ mesh_density=16
     const firstFrame = vm.step(makeSignals({ frame: 1, time: 0.15 }));
     const secondFrame = vm.step(makeSignals({ frame: 2, time: 0.3 }));
 
-    expect(firstFrame.mainWave.positions.length).toBeGreaterThan(0);
-    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
+    expect(firstFrame.mainWave.positions).toHaveLength(0);
+    expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
     expect(firstFrame.gpuGeometry.trailWaves).toHaveLength(0);
-    expect(secondFrame.mainWave.positions.length).toBeGreaterThan(0);
-    expect(secondFrame.gpuGeometry.mainWave).toBeNull();
-    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
+    expect(secondFrame.mainWave.positions).toHaveLength(0);
+    expect(secondFrame.gpuGeometry.mainWave).not.toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves.length).toBeGreaterThan(0);
     expect(secondFrame.trails.length).toBeGreaterThan(0);
+    expect(secondFrame.trails[0]?.positions).toHaveLength(0);
   });
 
-  test('keeps custom waves as cpu geometry on webgpu-safe custom waves', () => {
+  test('emits procedural custom-wave descriptors on webgpu-safe custom waves', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Custom Wave Hints
@@ -487,8 +490,43 @@ wavecode_0_a=0.35
     const frameState = vm.step(makeSignals({ frame: 4, time: 0.2 }));
 
     expect(frameState.customWaves).toHaveLength(1);
+    expect(frameState.customWaves[0]?.positions).toHaveLength(0);
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+    expect(
+      frameState.gpuGeometry.customWaves[0]?.samples.length,
+    ).toBeGreaterThan(0);
+  });
+
+  test('keeps cpu geometry on webgl for presets that are procedural on webgpu', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL Fallback Geometry
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mesh_density=14
+wave_mode=5
+wave_usedots=0
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_usedots=0
+      `.trim(),
+      { id: 'webgl-fallback-geometry' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgl');
+    const frameState = vm.step(makeSignals({ frame: 2, time: 0.2 }));
+
+    expect(frameState.mainWave.positions.length).toBeGreaterThan(0);
     expect(frameState.customWaves[0]?.positions.length).toBeGreaterThan(0);
+    expect(frameState.mesh.positions.length).toBeGreaterThan(0);
+    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.mainWave).toBeNull();
     expect(frameState.gpuGeometry.customWaves).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField).toBeNull();
+    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
   });
 
   test('uses mesh history when building motion vector overlays across frames', () => {
