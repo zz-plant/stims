@@ -398,6 +398,7 @@ export function createMilkdropCatalogStore({
                   status:
                     entry.supports?.webgl === false ? 'unsupported' : 'partial',
                   reasons: ['Bundled preset could not be analyzed.'],
+                  evidence: [],
                   requiredFeatures: [],
                   unsupportedFeatures: [],
                 },
@@ -407,6 +408,7 @@ export function createMilkdropCatalogStore({
                       ? 'unsupported'
                       : 'partial',
                   reasons: ['Bundled preset could not be analyzed.'],
+                  evidence: [],
                   requiredFeatures: [],
                   unsupportedFeatures: [],
                   recommendedFallback: 'webgl',
