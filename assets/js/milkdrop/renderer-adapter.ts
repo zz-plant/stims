@@ -35,6 +35,7 @@ import type {
   MilkdropFeedbackSetRenderTarget,
   MilkdropGpuGeometryHints,
   MilkdropProceduralCustomWaveVisual,
+  MilkdropProceduralFieldTransformVisual,
   MilkdropProceduralWaveVisual,
   MilkdropRendererAdapter,
   MilkdropRenderPayload,
@@ -132,6 +133,12 @@ type ProceduralFieldUniformState = {
   rotation: { value: number };
   warp: { value: number };
   warpAnimSpeed: { value: number };
+  centerX: { value: number };
+  centerY: { value: number };
+  scaleX: { value: number };
+  scaleY: { value: number };
+  translateX: { value: number };
+  translateY: { value: number };
   time: { value: number };
   trebleAtt: { value: number };
   tint: { value: Color };
@@ -145,6 +152,12 @@ function createProceduralFieldUniformState() {
     rotation: { value: 0 },
     warp: { value: 0 },
     warpAnimSpeed: { value: 1 },
+    centerX: { value: 0 },
+    centerY: { value: 0 },
+    scaleX: { value: 1 },
+    scaleY: { value: 1 },
+    translateX: { value: 0 },
+    translateY: { value: 0 },
     time: { value: 0 },
     trebleAtt: { value: 0 },
     tint: { value: new Color(1, 1, 1) },
@@ -156,6 +169,8 @@ const PROCEDURAL_FIELD_SHADER_CHUNK = `
   vec2 milkdropTransformPoint(vec2 source) {
     float radius = length(source);
     float angle = atan(source.y, source.x) + rotation;
+    float transformedX = (source.x - centerX) * scaleX + centerX + translateX;
+    float transformedY = (source.y - centerY) * scaleY + centerY + translateY;
     float ripple = sin(
       radius * 12.0 +
       time * (0.6 + trebleAtt) * (0.35 + warpAnimSpeed)
@@ -166,8 +181,8 @@ const PROCEDURAL_FIELD_SHADER_CHUNK = `
       pow(max(zoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
     );
     vec2 warped = vec2(
-      (source.x + cos(angle * 3.0) * ripple) * zoomScale,
-      (source.y + sin(angle * 4.0) * ripple) * zoomScale
+      (transformedX + cos(angle * 3.0) * ripple) * zoomScale,
+      (transformedY + sin(angle * 4.0) * ripple) * zoomScale
     );
     float cosRot = cos(rotation);
     float sinRot = sin(rotation);
@@ -215,7 +230,13 @@ function createProceduralMeshMaterial() {
 }
 
 function createProceduralMotionVectorMaterial() {
-  const uniforms = createProceduralFieldUniformState();
+  const uniforms = {
+    ...createProceduralFieldUniformState(),
+    sourceOffsetX: { value: 0 },
+    sourceOffsetY: { value: 0 },
+    explicitLength: { value: 0 },
+    legacyControls: { value: 0 },
+  };
   return new ShaderMaterial({
     uniforms,
     transparent: true,
@@ -227,22 +248,39 @@ function createProceduralMotionVectorMaterial() {
       uniform float rotation;
       uniform float warp;
       uniform float warpAnimSpeed;
+      uniform float centerX;
+      uniform float centerY;
+      uniform float scaleX;
+      uniform float scaleY;
+      uniform float translateX;
+      uniform float translateY;
       uniform float time;
       uniform float trebleAtt;
+      uniform float sourceOffsetX;
+      uniform float sourceOffsetY;
+      uniform float explicitLength;
       varying float vAlpha;
       ${PROCEDURAL_FIELD_SHADER_CHUNK}
 
       void main() {
-        vec2 source = sourcePosition.xy;
+        vec2 source = clamp(
+          sourcePosition.xy + vec2(sourceOffsetX, sourceOffsetY),
+          vec2(-1.0),
+          vec2(1.0)
+        );
         vec2 current = milkdropTransformPoint(source);
         vec2 delta = clamp((current - source) * 1.35, vec2(-0.24), vec2(0.24));
         float magnitude = length(delta);
+        if (explicitLength > 0.0001 && magnitude > 0.0001) {
+          delta = delta / magnitude * explicitLength;
+          magnitude = length(delta);
+        }
         vec2 renderPoint = mix(
           current - delta * 0.45,
           current + delta,
           endpointWeight
         );
-        vAlpha = alpha * clamp(0.75 + magnitude * 2.2, 0.02, 1.0) * step(0.002, magnitude);
+        vAlpha = alpha * clamp(0.75 + magnitude * 2.2, 0.0, 1.0) * step(0.002, magnitude);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(
           renderPoint.xy,
           sourcePosition.z,
@@ -749,6 +787,16 @@ function getProceduralWaveGeometry(sampleCount: number) {
   return geometry;
 }
 
+function createProceduralWaveObjectGeometry(sampleCount: number) {
+  const geometry = getProceduralWaveGeometry(sampleCount).clone();
+  setGeometryBoundingSphere(
+    geometry,
+    new Vector3(0, 0, 0),
+    PROCEDURAL_WAVE_BOUNDS_RADIUS,
+  );
+  return geometry;
+}
+
 function closeLinePositions(positions: number[]) {
   if (positions.length < 6) {
     return positions;
@@ -825,16 +873,17 @@ function syncProceduralFieldUniforms(
     rotation,
     warp,
     warpAnimSpeed,
+    centerX,
+    centerY,
+    scaleX,
+    scaleY,
+    translateX,
+    translateY,
     time,
     trebleAtt,
     tint,
     alpha,
-  }: {
-    zoom: number;
-    zoomExponent: number;
-    rotation: number;
-    warp: number;
-    warpAnimSpeed: number;
+  }: MilkdropProceduralFieldTransformVisual & {
     time: number;
     trebleAtt: number;
     tint: { r: number; g: number; b: number };
@@ -846,6 +895,12 @@ function syncProceduralFieldUniforms(
   material.uniforms.rotation.value = rotation;
   material.uniforms.warp.value = warp;
   material.uniforms.warpAnimSpeed.value = warpAnimSpeed;
+  material.uniforms.centerX.value = centerX;
+  material.uniforms.centerY.value = centerY;
+  material.uniforms.scaleX.value = scaleX;
+  material.uniforms.scaleY.value = scaleY;
+  material.uniforms.translateX.value = translateX;
+  material.uniforms.translateY.value = translateY;
   material.uniforms.time.value = time;
   material.uniforms.trebleAtt.value = trebleAtt;
   material.uniforms.tint.value.setRGB(tint.r, tint.g, tint.b);
@@ -859,7 +914,7 @@ function syncProceduralWaveObject(
   const next =
     object ??
     new Line(
-      getProceduralWaveGeometry(wave.samples.length),
+      createProceduralWaveObjectGeometry(wave.samples.length),
       createProceduralWaveMaterial(),
     );
   if (!(next.material instanceof ShaderMaterial)) {
@@ -869,8 +924,17 @@ function syncProceduralWaveObject(
     next.material = createProceduralWaveMaterial();
   }
 
-  if (next.geometry !== getProceduralWaveGeometry(wave.samples.length)) {
-    next.geometry = getProceduralWaveGeometry(wave.samples.length);
+  const sampleTAttribute = next.geometry.getAttribute('sampleT');
+  if (
+    !(
+      sampleTAttribute instanceof Float32BufferAttribute &&
+      sampleTAttribute.array.length === wave.samples.length
+    )
+  ) {
+    if (!isSharedGeometry(next.geometry)) {
+      disposeGeometry(next.geometry);
+    }
+    next.geometry = createProceduralWaveObjectGeometry(wave.samples.length);
   }
 
   const sampleValueAttribute = next.geometry.getAttribute('sampleValue');
@@ -925,7 +989,7 @@ function syncProceduralCustomWaveObject(
   const next =
     object ??
     new Line(
-      getProceduralWaveGeometry(wave.samples.length),
+      createProceduralWaveObjectGeometry(wave.samples.length),
       createProceduralCustomWaveMaterial(),
     );
   if (!(next.material instanceof ShaderMaterial)) {
@@ -935,8 +999,17 @@ function syncProceduralCustomWaveObject(
     next.material = createProceduralCustomWaveMaterial();
   }
 
-  if (next.geometry !== getProceduralWaveGeometry(wave.samples.length)) {
-    next.geometry = getProceduralWaveGeometry(wave.samples.length);
+  const sampleTAttribute = next.geometry.getAttribute('sampleT');
+  if (
+    !(
+      sampleTAttribute instanceof Float32BufferAttribute &&
+      sampleTAttribute.array.length === wave.samples.length
+    )
+  ) {
+    if (!isSharedGeometry(next.geometry)) {
+      disposeGeometry(next.geometry);
+    }
+    next.geometry = createProceduralWaveObjectGeometry(wave.samples.length);
   }
 
   const sampleValueAttribute = next.geometry.getAttribute('sampleValue');
@@ -2052,11 +2125,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         proceduralMesh.density,
       );
       syncProceduralFieldUniforms(this.meshLines.material as ShaderMaterial, {
-        zoom: proceduralMesh.zoom,
-        zoomExponent: proceduralMesh.zoomExponent,
-        rotation: proceduralMesh.rotation,
-        warp: proceduralMesh.warp,
-        warpAnimSpeed: proceduralMesh.warpAnimSpeed,
+        ...proceduralMesh,
         time: signals.time,
         trebleAtt: signals.trebleAtt,
         tint: mesh.color,
@@ -2105,11 +2174,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       syncProceduralFieldUniforms(
         this.proceduralMotionVectors.material as ShaderMaterial,
         {
-          zoom: proceduralField.zoom,
-          zoomExponent: proceduralField.zoomExponent,
-          rotation: proceduralField.rotation,
-          warp: proceduralField.warp,
-          warpAnimSpeed: proceduralField.warpAnimSpeed,
+          ...proceduralField,
           time: payload.signals.time,
           trebleAtt: payload.signals.trebleAtt,
           tint: {
@@ -2118,10 +2183,25 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
             b: Math.min(Math.max(payload.variables.mv_b ?? 1, 0), 1),
           },
           alpha:
-            Math.min(Math.max(payload.variables.mv_a ?? 0.35, 0.02), 1) *
-            alphaMultiplier,
+            Math.min(
+              Math.max(
+                payload.variables.mv_a ?? 0.35,
+                proceduralField.legacyControls ? 0 : 0.02,
+              ),
+              1,
+            ) * alphaMultiplier,
         },
       );
+      const proceduralMaterial = this.proceduralMotionVectors
+        .material as ShaderMaterial;
+      proceduralMaterial.uniforms.sourceOffsetX.value =
+        proceduralField.sourceOffsetX;
+      proceduralMaterial.uniforms.sourceOffsetY.value =
+        proceduralField.sourceOffsetY;
+      proceduralMaterial.uniforms.explicitLength.value =
+        proceduralField.explicitLength;
+      proceduralMaterial.uniforms.legacyControls.value =
+        proceduralField.legacyControls ? 1 : 0;
       return;
     }
 
