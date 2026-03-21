@@ -1522,4 +1522,37 @@ mv_l=0.4
       }),
     );
   });
+
+  test('keeps scripted legacy motion-vector controls on the CPU path while retaining mesh descriptors', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Descriptor Plan Scripted Legacy Motion Vectors
+motion_vectors=1
+motion_vectors_x=7
+motion_vectors_y=5
+per_frame_init_1=mv_l=0.2;
+per_frame_1=mv_dx=0.05;
+      `.trim(),
+      { id: 'descriptor-plan-scripted-legacy-motion-vectors' },
+    );
+
+    expect(compiled.ir.programs.init.statements).toEqual(
+      expect.arrayContaining([expect.objectContaining({ target: 'mv_l' })]),
+    );
+    expect(compiled.ir.programs.perFrame.statements).toEqual(
+      expect.arrayContaining([expect.objectContaining({ target: 'mv_dx' })]),
+    );
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
+      expect.objectContaining({
+        routing: 'descriptor-plan',
+        proceduralMesh: {
+          kind: 'procedural-mesh',
+          requiresPerPixelProgram: false,
+          fieldProgram: null,
+        },
+        proceduralMotionVectors: null,
+        unsupported: [],
+      }),
+    );
+  });
 });
