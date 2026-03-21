@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import { loadMilkdropParityAllowlist } from '../assets/js/milkdrop/parity-allowlist.ts';
 import type {
   MilkdropFrameState,
   MilkdropRuntimeSignals,
@@ -27,15 +28,6 @@ type ParityManifest = {
     visualEvidenceTier: string;
   };
   presets: ParityManifestPreset[];
-};
-
-type ParityAllowlist = {
-  version: number;
-  entries: Array<{
-    id: string;
-    reason: string;
-    category: string;
-  }>;
 };
 
 type VisualBaseline = {
@@ -76,13 +68,6 @@ const PARITY_MANIFEST_PATH = join(
   'data',
   'milkdrop-parity',
   'corpus-manifest.json',
-);
-const PARITY_ALLOWLIST_PATH = join(
-  process.cwd(),
-  'assets',
-  'data',
-  'milkdrop-parity',
-  'allowlist.json',
 );
 const VISUAL_BASELINES_PATH = join(
   process.cwd(),
@@ -252,7 +237,7 @@ function buildFrameSummary(frameState: MilkdropFrameState) {
 describe('milkdrop parity corpus harness', () => {
   test('keeps the certified manifest, corpus, and allowlist in sync', () => {
     const manifest = loadJson<ParityManifest>(PARITY_MANIFEST_PATH);
-    const allowlist = loadJson<ParityAllowlist>(PARITY_ALLOWLIST_PATH);
+    const allowlist = loadMilkdropParityAllowlist();
     const allowlistedIds = new Set(allowlist.entries.map((entry) => entry.id));
 
     expect(manifest.version).toBe(1);
@@ -290,6 +275,44 @@ describe('milkdrop parity corpus harness', () => {
         compiled.ir.compatibility.backends[manifest.backendTarget].status,
       ).not.toBe('unsupported');
     });
+  });
+
+  test('treats allowlisted parity gaps as visible but non-regressive', () => {
+    const manifest = loadJson<ParityManifest>(PARITY_MANIFEST_PATH);
+    const allowlistedEntry = manifest.presets.find(
+      (entry) => entry.id === 'parity-allowlisted-shader-gap',
+    );
+
+    expect(allowlistedEntry).toBeDefined();
+    if (!allowlistedEntry) {
+      throw new Error('Missing allowlisted parity fixture in manifest.');
+    }
+
+    const compiled = compileParityPreset(allowlistedEntry);
+
+    expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
+      'shader:unsupported(shader)',
+    ]);
+    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
+      {
+        kind: 'shader',
+        value: 'unsupported(shader)',
+        system: 'shader-text',
+        allowlisted: true,
+      },
+    ]);
+    expect(
+      compiled.ir.compatibility.parity.degradationReasons.map(
+        (reason) => reason.code,
+      ),
+    ).toContain('allowlisted-gap');
+    expect(
+      compiled.ir.compatibility.parity.degradationReasons.some(
+        (reason) =>
+          reason.code === 'allowlisted-gap' && reason.blocking === false,
+      ),
+    ).toBe(true);
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
   });
 });
 
