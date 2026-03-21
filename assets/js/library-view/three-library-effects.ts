@@ -6,6 +6,7 @@ import {
   ClampToEdgeWrapping,
   Color,
   DirectionalLight,
+  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
   IcosahedronGeometry,
@@ -493,6 +494,7 @@ export function createLibraryThreeEffects() {
       }),
       count,
     );
+    mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     const dummy = new Object3D();
     const states: AmbientShardState[] = [];
     for (let index = 0; index < count; index += 1) {

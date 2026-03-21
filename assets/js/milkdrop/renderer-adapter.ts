@@ -4,6 +4,7 @@ import {
   BufferGeometry,
   Color,
   DoubleSide,
+  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
   Line,
@@ -874,10 +875,9 @@ function syncProceduralWaveObject(
       sampleValueAttribute.array.length === wave.samples.length
     )
   ) {
-    next.geometry.setAttribute(
-      'sampleValue',
-      new Float32BufferAttribute(wave.samples, 1),
-    );
+    const attribute = new Float32BufferAttribute(wave.samples, 1);
+    attribute.setUsage(DynamicDrawUsage);
+    next.geometry.setAttribute('sampleValue', attribute);
   } else {
     sampleValueAttribute.array.set(wave.samples);
     sampleValueAttribute.needsUpdate = true;
@@ -890,10 +890,9 @@ function syncProceduralWaveObject(
       sampleVelocityAttribute.array.length === wave.velocities.length
     )
   ) {
-    next.geometry.setAttribute(
-      'sampleVelocity',
-      new Float32BufferAttribute(wave.velocities, 1),
-    );
+    const attribute = new Float32BufferAttribute(wave.velocities, 1);
+    attribute.setUsage(DynamicDrawUsage);
+    next.geometry.setAttribute('sampleVelocity', attribute);
   } else {
     sampleVelocityAttribute.array.set(wave.velocities);
     sampleVelocityAttribute.needsUpdate = true;
@@ -942,10 +941,9 @@ function syncProceduralCustomWaveObject(
       sampleValueAttribute.array.length === wave.samples.length
     )
   ) {
-    next.geometry.setAttribute(
-      'sampleValue',
-      new Float32BufferAttribute(wave.samples, 1),
-    );
+    const attribute = new Float32BufferAttribute(wave.samples, 1);
+    attribute.setUsage(DynamicDrawUsage);
+    next.geometry.setAttribute('sampleValue', attribute);
   } else {
     sampleValueAttribute.array.set(wave.samples);
     sampleValueAttribute.needsUpdate = true;
@@ -996,7 +994,9 @@ function ensureGeometryPositions(
     existing.array.set(positions);
     existing.needsUpdate = true;
   } else {
-    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    const attribute = new Float32BufferAttribute(positions, 3);
+    attribute.setUsage(DynamicDrawUsage);
+    geometry.setAttribute('position', attribute);
   }
   setGeometryBoundsFromPositions(geometry, positions);
 }
@@ -1274,7 +1274,6 @@ function syncShapeFillMaterial(
     material.uniforms.secondaryAlpha.value =
       (shape.secondaryColor?.a ?? 0) * alphaMultiplier;
     material.blending = shape.additive ? AdditiveBlending : NormalBlending;
-    material.needsUpdate = true;
     return;
   }
 
@@ -2121,7 +2120,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     frameState: MilkdropRenderPayload['frameState'],
   ): MilkdropFeedbackCompositeState {
     const controls = frameState.post.shaderControls;
+    const shaderPrograms = frameState.post.shaderPrograms;
+    const usesDirectShaderPrograms =
+      (shaderPrograms.warp?.execution.supportedBackends.includes(
+        this.backend,
+      ) ??
+        false) ||
+      (shaderPrograms.comp?.execution.supportedBackends.includes(
+        this.backend,
+      ) ??
+        false);
     return {
+      shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
+      shaderPrograms,
       mixAlpha: frameState.post.videoEchoEnabled
         ? frameState.post.videoEchoAlpha + controls.mixAlpha
         : controls.mixAlpha,
