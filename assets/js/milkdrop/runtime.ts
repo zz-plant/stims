@@ -836,9 +836,7 @@ export function createMilkdropExperience({
 
   const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
     activeBackend === 'webgpu' &&
-    (compiled.ir.compatibility.backends.webgpu.status === 'unsupported' ||
-      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing ===
-        'fallback-webgl') &&
+    compiled.ir.compatibility.backends.webgpu.status === 'unsupported' &&
     !isCompatibilityModeEnabled();
 
   const triggerWebglFallback = ({

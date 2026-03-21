@@ -2217,7 +2217,18 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     frameState: MilkdropRenderPayload['frameState'],
   ): MilkdropFeedbackCompositeState {
     const controls = frameState.post.shaderControls;
-    const shaderPrograms = frameState.post.shaderPrograms;
+    const shaderPrograms = {
+      warp: frameState.post.shaderPrograms.warp?.execution.supportedBackends.includes(
+        this.backend,
+      )
+        ? frameState.post.shaderPrograms.warp
+        : null,
+      comp: frameState.post.shaderPrograms.comp?.execution.supportedBackends.includes(
+        this.backend,
+      )
+        ? frameState.post.shaderPrograms.comp
+        : null,
+    };
     const plannedShaderExecution =
       this.backend === 'webgpu'
         ? this.webgpuDescriptorPlan?.feedback?.shaderExecution
@@ -2227,14 +2238,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         ? true
         : plannedShaderExecution === 'controls'
           ? false
-          : (shaderPrograms.warp?.execution.supportedBackends.includes(
-              this.backend,
-            ) ??
-              false) ||
-            (shaderPrograms.comp?.execution.supportedBackends.includes(
-              this.backend,
-            ) ??
-              false);
+          : shaderPrograms.warp !== null || shaderPrograms.comp !== null;
     return {
       shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
       shaderPrograms,

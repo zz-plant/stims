@@ -175,7 +175,7 @@ describe('milkdrop shader sampler aliases', () => {
       ).not.toBeNull();
       expect(compiled.diagnostics).toEqual([]);
       expect(compiled.ir.compatibility.warnings).toEqual([
-        'WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution.',
+        'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
       ]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');

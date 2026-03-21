@@ -236,6 +236,7 @@ export type MilkdropFeedbackPostEffectDescriptorPlan = {
   usesFeedbackTexture: boolean;
   usesVideoEcho: boolean;
   usesPostEffects: boolean;
+  targetResolution: 'feedback' | 'scene' | 'adaptive';
   fallbackToLegacyFeedback: boolean;
 };
 
