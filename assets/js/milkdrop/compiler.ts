@@ -14,6 +14,10 @@ import {
   evaluateMilkdropShaderExpression,
   parseMilkdropShaderStatement,
 } from './shader-ast';
+import {
+  isMilkdropShaderSamplerName,
+  normalizeMilkdropShaderSamplerName,
+} from './shader-samplers';
 import type {
   MilkdropBackendSupport,
   MilkdropBackendSupportEvidence,
@@ -48,18 +52,6 @@ import type {
 
 const MAX_CUSTOM_WAVES = 32;
 const MAX_CUSTOM_SHAPES = 32;
-const SHADER_TEXTURE_SAMPLERS = new Set([
-  'main',
-  'none',
-  'noise',
-  'perlin',
-  'simplex',
-  'voronoi',
-  'aura',
-  'caustics',
-  'pattern',
-  'fractal',
-]);
 const SHADER_TEXTURE_BLEND_MODES = new Set([
   'none',
   'replace',
@@ -67,16 +59,6 @@ const SHADER_TEXTURE_BLEND_MODES = new Set([
   'add',
   'multiply',
 ]);
-
-const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
-  string,
-  MilkdropShaderTextureSampler | 'main'
-> = {
-  fw_noise_lq: 'noise',
-  fw_noise_hq: 'noise',
-  noise_lq: 'noise',
-  noise_hq: 'noise',
-};
 
 function createDefaultShapeSlot(index: number): Record<string, number> {
   if (index === 1) {
@@ -1399,16 +1381,7 @@ function parseShaderSampleMixPattern(rawValue: string) {
 function normalizeShaderSamplerName(
   value: string,
 ): MilkdropShaderTextureSampler | 'main' | null {
-  const normalized = value.trim().toLowerCase();
-  const sampler = normalized.startsWith('sampler_')
-    ? normalized.slice('sampler_'.length)
-    : normalized;
-  const canonicalSampler = SHADER_TEXTURE_SAMPLER_ALIASES[sampler] ?? sampler;
-  return SHADER_TEXTURE_SAMPLERS.has(canonicalSampler)
-    ? ((canonicalSampler === 'main' ? 'main' : canonicalSampler) as
-        | MilkdropShaderTextureSampler
-        | 'main')
-    : null;
+  return normalizeMilkdropShaderSamplerName(value);
 }
 
 function normalizeShaderTextureBlendMode(
@@ -1435,7 +1408,7 @@ function parseShaderTextureBlendMode(
 function isAuxShaderSamplerName(
   value: string,
 ): value is MilkdropShaderTextureSampler {
-  return value !== 'main' && SHADER_TEXTURE_SAMPLERS.has(value);
+  return value !== 'main' && isMilkdropShaderSamplerName(value);
 }
 
 function isKnownShaderScalarKey(key: string) {
@@ -4916,7 +4889,6 @@ function createIR(
     MilkdropProgramBlock,
     { sourceLine: string; line: number }
   >();
-  const unsupportedKeys = new Set<string>();
   let unsupportedShaderText = false;
   let supportedShaderText = false;
   let warpShaderText: string | null = null;

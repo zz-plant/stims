@@ -466,6 +466,8 @@ describe('milkdrop vendored projectM fixture corpus', () => {
 
     expect(compiled.ir.numericFields.zoom).toBeCloseTo(1, 6);
     expect(compiled.ir.numericFields.zoomexp).toBeCloseTo(0.75, 6);
+  });
+
   test('keeps compiled compatibility metadata and normalized program sources stable', () => {
     const corpus = loadProjectMPresetCorpus();
     const actualSnapshot = corpus.map(({ file, compiled }) =>
