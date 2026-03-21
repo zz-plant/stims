@@ -82,6 +82,10 @@ export const QUALITY_STORAGE_KEY = 'stims:quality-preset';
 const DEFAULT_PRESET_ID = 'balanced';
 const DEFAULT_QUALITY_HINT = 'Adjust resolution and particle density.';
 
+function getStoredPresetId(storageKey: string) {
+  return getStorage()?.getItem(storageKey) ?? null;
+}
+
 const qualitySubscribers = new Set<QualitySubscriber>();
 let activeQualityPreset: QualityPreset | null = null;
 let activeQualityPresetStorageKey: string | null = null;
@@ -106,7 +110,7 @@ export function getStoredQualityPreset({
   defaultPresetId = DEFAULT_PRESET_ID,
   storageKey = QUALITY_STORAGE_KEY,
 }: StoredPresetOptions = {}): QualityPreset {
-  const storedId = getStorage()?.getItem(storageKey);
+  const storedId = getStoredPresetId(storageKey);
   const fromStorage = presets.find((preset) => preset.id === storedId);
   if (fromStorage) return fromStorage;
 
@@ -118,7 +122,13 @@ export function getActiveQualityPreset({
   defaultPresetId = DEFAULT_PRESET_ID,
   storageKey = QUALITY_STORAGE_KEY,
 }: StoredPresetOptions = {}): QualityPreset {
-  if (activeQualityPreset && activeQualityPresetStorageKey === storageKey) {
+  const storedId = getStoredPresetId(storageKey);
+
+  if (
+    activeQualityPreset &&
+    activeQualityPresetStorageKey === storageKey &&
+    storedId
+  ) {
     const match = presets.find(
       (preset) => preset.id === activeQualityPreset?.id,
     );
@@ -243,8 +253,7 @@ export class PersistentSettingsPanel {
       hint: qualityHint = DEFAULT_QUALITY_HINT,
     } = options;
 
-    const hadActivePreset =
-      !!activeQualityPreset && activeQualityPresetStorageKey === storageKey;
+    const hadActivePreset = getStoredPresetId(storageKey) !== null;
 
     this.qualityStorageKey = storageKey;
     this.qualityPresets = presets;
