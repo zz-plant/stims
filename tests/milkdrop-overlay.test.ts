@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { DEFAULT_QUALITY_PRESETS } from '../assets/js/core/settings-panel.ts';
 import { MilkdropOverlay } from '../assets/js/milkdrop/overlay.ts';
+import type { MilkdropCatalogEntry } from '../assets/js/milkdrop/types.ts';
 
 function createOverlay({
   onSelectQualityPreset = mock(),
@@ -92,6 +93,60 @@ function createInspectorPayload() {
   } as unknown as Parameters<MilkdropOverlay['setInspectorState']>[0];
 }
 
+function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
+  return {
+    id,
+    title,
+    author: 'Stims',
+    origin: 'bundled',
+    featuresUsed: [],
+    warnings: [],
+    rating: 0,
+    isFavorite: false,
+    tags: [],
+    supports: {
+      webgl: {
+        status: 'supported',
+        reasons: [],
+        requiredFeatures: [],
+        unsupportedFeatures: [],
+      },
+      webgpu: {
+        status: 'supported',
+        reasons: [],
+        requiredFeatures: [],
+        unsupportedFeatures: [],
+      },
+    },
+    fidelityClass: 'exact',
+    visualEvidenceTier: 'none',
+    evidence: {
+      compile: 'verified',
+      runtime: 'not-run',
+      visual: 'not-captured',
+    },
+    certification: 'bundled',
+    corpusTier: 'bundled',
+    parity: {
+      ignoredFields: [],
+      approximatedShaderLines: [],
+      missingAliasesOrFunctions: [],
+      backendDivergence: [],
+      visualFallbacks: [],
+      blockedConstructs: [],
+      blockingConstructDetails: [],
+      degradationReasons: [],
+      fidelityClass: 'exact',
+      evidence: {
+        compile: 'verified',
+        runtime: 'not-run',
+        visual: 'not-captured',
+      },
+      visualEvidenceTier: 'none',
+    },
+  } as MilkdropCatalogEntry;
+}
+
 describe('milkdrop overlay quality controls', () => {
   const OriginalMutationObserver = globalThis.MutationObserver;
 
@@ -173,6 +228,60 @@ describe('milkdrop overlay inspector metrics', () => {
     expect(overlay.shouldRenderInspectorMetrics()).toBe(true);
     overlay.setInspectorState(payload);
     expect(metrics?.textContent).toContain('Backend:');
+
+    overlay.dispose();
+  });
+});
+
+describe('milkdrop overlay browse rendering', () => {
+  const OriginalMutationObserver = globalThis.MutationObserver;
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    globalThis.MutationObserver = OriginalMutationObserver;
+  });
+
+  test('debounces search-driven browse rerenders', async () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    overlay.setCatalog(
+      [
+        createCatalogEntry('signal-bloom', 'Signal Bloom'),
+        createCatalogEntry('aurora-drift', 'Aurora Drift'),
+      ],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const browse = document.querySelector(
+      '.milkdrop-overlay__browse',
+    ) as HTMLElement | null;
+    const search = document.querySelector(
+      '.milkdrop-overlay__search',
+    ) as HTMLInputElement | null;
+
+    expect(browse?.textContent).toContain('Aurora Drift');
+
+    if (!search || !browse) {
+      throw new Error('Expected overlay browse controls to exist.');
+    }
+
+    search.value = 'signal';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(browse.textContent).toContain('Aurora Drift');
+
+    await new Promise((resolve) => window.setTimeout(resolve, 150));
+
+    expect(browse.textContent).toContain('Signal Bloom');
+    expect(browse.textContent).not.toContain('Aurora Drift');
 
     overlay.dispose();
   });
