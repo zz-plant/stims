@@ -332,7 +332,7 @@ const FEATURE_ORDER: MilkdropFeatureKey[] = [
 
 const metadataKeys = new Set(['title', 'author', 'description']);
 const waveformSectionNames = new Set(['wave', 'waveform']);
-const rootProgramPattern = /^(init|per_frame|per_pixel)_(\d+)$/u;
+const rootProgramPattern = /^(init|per_frame|per_frame_init|per_pixel)_(\d+)$/u;
 const customWaveProgramPattern =
   /^wave_(\d+)_(init|per_frame|per_point)(\d+)?$/u;
 const customShapeProgramPattern = /^shape_(\d+)_(init|per_frame)(\d+)?$/u;
@@ -4281,12 +4281,13 @@ function compileScalarField(
   field: MilkdropPresetField,
   diagnostics: MilkdropDiagnostic[],
 ): { value: number | null; expression?: MilkdropExpressionNode } {
-  const numeric = Number(field.rawValue.trim());
+  const normalizedValue = field.rawValue.trim().replace(/;+\s*$/u, '');
+  const numeric = Number(normalizedValue);
   if (Number.isFinite(numeric)) {
     return { value: numeric };
   }
 
-  const expressionResult = parseMilkdropExpression(field.rawValue, field.line);
+  const expressionResult = parseMilkdropExpression(normalizedValue, field.line);
   diagnostics.push(...expressionResult.diagnostics);
   if (!expressionResult.value) {
     return { value: null };
@@ -4318,8 +4319,73 @@ function pushProgramStatement(
   });
 }
 
+function canContinueMilkdropProgramLine(sourceLine: string) {
+  const trimmed = sourceLine.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  return /(?:[+\-*/,(]|\b(?:and|or)\b)$/iu.test(trimmed);
+}
+
+function pushProgramStatementWithContinuation(
+  block: MilkdropProgramBlock,
+  sourceLine: string,
+  line: number,
+  diagnostics: MilkdropDiagnostic[],
+  pendingProgramSources: Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >,
+) {
+  const trimmedValue = sourceLine.trim();
+  const pending = pendingProgramSources.get(block);
+
+  if (pending) {
+    if (!trimmedValue) {
+      return;
+    }
+
+    if (!trimmedValue.includes('=')) {
+      const combined = `${pending.sourceLine} ${trimmedValue}`.trim();
+      if (canContinueMilkdropProgramLine(combined)) {
+        pendingProgramSources.set(block, {
+          sourceLine: combined,
+          line: pending.line,
+        });
+        return;
+      }
+      pendingProgramSources.delete(block);
+      pushProgramStatement(block, combined, pending.line, diagnostics);
+      return;
+    }
+
+    pendingProgramSources.delete(block);
+    pushProgramStatement(block, pending.sourceLine, pending.line, diagnostics);
+  }
+
+  if (!trimmedValue) {
+    return;
+  }
+
+  if (
+    trimmedValue.includes('=') &&
+    canContinueMilkdropProgramLine(trimmedValue)
+  ) {
+    pendingProgramSources.set(block, { sourceLine: trimmedValue, line });
+    return;
+  }
+
+  pushProgramStatement(block, sourceLine, line, diagnostics);
+}
+
 function getProgramBlock(
-  programType: 'init' | 'per_frame' | 'per_pixel' | 'per_point',
+  programType:
+    | 'init'
+    | 'per_frame'
+    | 'per_frame_init'
+    | 'per_pixel'
+    | 'per_point',
   blocks: {
     init: MilkdropProgramBlock;
     perFrame: MilkdropProgramBlock;
@@ -4327,7 +4393,7 @@ function getProgramBlock(
     perPoint?: MilkdropProgramBlock;
   },
 ) {
-  if (programType === 'init') {
+  if (programType === 'init' || programType === 'per_frame_init') {
     return blocks.init;
   }
   if (programType === 'per_frame') {
@@ -4417,33 +4483,40 @@ function compileProgramsFromField(
   customWaves: Map<number, MilkdropWaveDefinition>,
   customShapes: Map<number, MilkdropShapeDefinition>,
   diagnostics: MilkdropDiagnostic[],
+  pendingProgramSources: Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >,
 ) {
   if (field.section === 'init') {
-    pushProgramStatement(
+    pushProgramStatementWithContinuation(
       programs.init,
       `${field.key.trim()} = ${field.rawValue.trim()}`,
       field.line,
       diagnostics,
+      pendingProgramSources,
     );
     return true;
   }
 
   if (field.section === 'per_frame') {
-    pushProgramStatement(
+    pushProgramStatementWithContinuation(
       programs.perFrame,
       `${field.key.trim()} = ${field.rawValue.trim()}`,
       field.line,
       diagnostics,
+      pendingProgramSources,
     );
     return true;
   }
 
   if (field.section === 'per_pixel') {
-    pushProgramStatement(
+    pushProgramStatementWithContinuation(
       programs.perPixel,
       `${field.key.trim()} = ${field.rawValue.trim()}`,
       field.line,
       diagnostics,
+      pendingProgramSources,
     );
     return true;
   }
@@ -4452,7 +4525,7 @@ function compileProgramsFromField(
   const rootMatch = rawKey.match(rootProgramPattern);
   if (rootMatch) {
     const block = getProgramBlock(
-      rootMatch[1] as 'init' | 'per_frame' | 'per_pixel',
+      rootMatch[1] as 'init' | 'per_frame' | 'per_frame_init' | 'per_pixel',
       {
         init: programs.init,
         perFrame: programs.perFrame,
@@ -4460,7 +4533,13 @@ function compileProgramsFromField(
       },
     );
     if (block) {
-      pushProgramStatement(block, field.rawValue, field.line, diagnostics);
+      pushProgramStatementWithContinuation(
+        block,
+        field.rawValue,
+        field.line,
+        diagnostics,
+        pendingProgramSources,
+      );
       return true;
     }
   }
@@ -4482,7 +4561,13 @@ function compileProgramsFromField(
         },
       );
       if (block) {
-        pushProgramStatement(block, field.rawValue, field.line, diagnostics);
+        pushProgramStatementWithContinuation(
+          block,
+          field.rawValue,
+          field.line,
+          diagnostics,
+          pendingProgramSources,
+        );
         return true;
       }
     }
@@ -4501,7 +4586,13 @@ function compileProgramsFromField(
         perFrame: shape.programs.perFrame,
       });
       if (block) {
-        pushProgramStatement(block, field.rawValue, field.line, diagnostics);
+        pushProgramStatementWithContinuation(
+          block,
+          field.rawValue,
+          field.line,
+          diagnostics,
+          pendingProgramSources,
+        );
         return true;
       }
     }
@@ -4820,6 +4911,11 @@ function createIR(
   const customShapeMap = new Map<number, MilkdropShapeDefinition>();
   const softUnknownKeys = new Set<string>();
   const hardUnsupportedFields = new Map<string, HardUnsupportedFieldSpec>();
+  const pendingProgramSources = new Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >();
+  const unsupportedKeys = new Set<string>();
   let unsupportedShaderText = false;
   let supportedShaderText = false;
   let warpShaderText: string | null = null;
@@ -4833,6 +4929,7 @@ function createIR(
         customWaveMap,
         customShapeMap,
         diagnostics,
+        pendingProgramSources,
       )
     ) {
       return;
@@ -5018,6 +5115,10 @@ function createIR(
       parsedExpressions.push(compiledScalar.expression);
     }
     numericFields[normalizedKey] = compiledScalar.value;
+  });
+
+  pendingProgramSources.forEach(({ sourceLine, line }, block) => {
+    pushProgramStatement(block, sourceLine, line, diagnostics);
   });
 
   const customWaves = [...customWaveMap.values()].sort(
