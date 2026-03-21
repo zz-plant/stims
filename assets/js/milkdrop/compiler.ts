@@ -699,6 +699,41 @@ function buildBlockingConstructDetails({
   ];
 }
 
+function resolveRuntimeGlobals({
+  numericFields,
+  programs,
+}: {
+  numericFields: Record<string, number>;
+  programs: Pick<MilkdropPresetIR['programs'], 'init' | 'perFrame'>;
+}) {
+  const runtimeGlobals = {
+    ...DEFAULT_MILKDROP_STATE,
+    ...numericFields,
+  };
+  const evaluationEnv: Record<string, number> = {
+    ...runtimeGlobals,
+  };
+
+  for (let index = 1; index <= 32; index += 1) {
+    evaluationEnv[`q${index}`] = 0;
+  }
+
+  for (const block of [programs.init, programs.perFrame]) {
+    for (const statement of block.statements) {
+      const value = evaluateMilkdropExpression(
+        statement.expression,
+        evaluationEnv,
+      );
+      evaluationEnv[statement.target] = value;
+      if (statement.target in runtimeGlobals) {
+        runtimeGlobals[statement.target] = value;
+      }
+    }
+  }
+
+  return runtimeGlobals;
+}
+
 function buildDegradationReasons({
   blockedConstructDetails,
   backendDivergence,
@@ -5116,8 +5151,17 @@ function createIR(
     numericFields[normalizedKey] = compiledScalar.value;
   });
 
+  pendingProgramSources.forEach(({ sourceLine, line }, block) => {
+    pushProgramStatement(block, sourceLine, line, diagnostics);
+  });
+
+  const runtimeGlobals = resolveRuntimeGlobals({
+    numericFields,
+    programs,
+  });
+
   pendingHardUnsupportedFields.forEach((pendingField, normalizedKey) => {
-    if (!isHardUnsupportedFieldBlocking(pendingField, numericFields)) {
+    if (!isHardUnsupportedFieldBlocking(pendingField, runtimeGlobals)) {
       return;
     }
     hardUnsupportedFields.set(normalizedKey, {
@@ -5135,10 +5179,6 @@ function createIR(
         field: normalizedKey,
       },
     );
-  });
-
-  pendingProgramSources.forEach(({ sourceLine, line }, block) => {
-    pushProgramStatement(block, sourceLine, line, diagnostics);
   });
 
   const customWaves = [...customWaveMap.values()].sort(
@@ -5214,7 +5254,7 @@ function createIR(
     programs,
     customWaves,
     customShapes,
-    numericFields,
+    numericFields: runtimeGlobals,
     unsupportedShaderText,
     supportedShaderText,
   });
