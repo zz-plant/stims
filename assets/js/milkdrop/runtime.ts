@@ -128,7 +128,11 @@ shape_0_per_frame1=rad = 0.14 + beat_pulse * 0.08
 `;
 
 function sanitizeRuntimeSignals(signals: MilkdropRuntimeSignals) {
-  const { frequencyData: _frequencyData, ...rest } = signals;
+  const {
+    frequencyData: _frequencyData,
+    waveformData: _waveformData,
+    ...rest
+  } = signals;
   return rest;
 }
 
@@ -1475,6 +1479,7 @@ export function createMilkdropExperience({
         deltaMs: frame.deltaMs,
         analyser: frame.analyser,
         frequencyData: frame.frequencyData,
+        waveformData: frame.waveformData,
       });
       const inputOverrides = buildMilkdropInputSignalOverrides(
         frame.input,

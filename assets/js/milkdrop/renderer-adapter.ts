@@ -1056,7 +1056,7 @@ function setMaterialColor(
 ) {
   material.color.setRGB(value.r, value.g, value.b);
   material.opacity = opacity;
-  material.transparent = opacity < 1;
+  material.transparent = opacity < 1 || material.blending === AdditiveBlending;
 }
 
 function ensureGeometryPositions(

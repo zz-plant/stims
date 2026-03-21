@@ -27,6 +27,7 @@ const mainWaveOrder = [
   'wave_mode',
   'wave_scale',
   'wave_smoothing',
+  'bmodwavealphabyvolume',
   'wave_a',
   'wave_r',
   'wave_g',

@@ -24,12 +24,15 @@ export function createMilkdropSignalTracker() {
       deltaMs,
       analyser,
       frequencyData,
+      waveformData,
     }: {
       time: number;
       deltaMs: number;
       analyser: FrequencyAnalyser | null;
       frequencyData: Uint8Array;
+      waveformData?: Uint8Array;
     }): MilkdropRuntimeSignals {
+      const resolvedWaveformData = waveformData ?? analyser?.getWaveformData();
       frame += 1;
       const bands = getBandLevels({
         analyser,
@@ -165,6 +168,7 @@ export function createMilkdropSignalTracker() {
         motionStrength: 0,
         motion_strength: 0,
         frequencyData,
+        waveformData: resolvedWaveformData,
       };
     },
   };

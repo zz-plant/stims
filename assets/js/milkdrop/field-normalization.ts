@@ -12,6 +12,8 @@ const aliasMap: Record<string, string | null> = {
   nwavemode: 'wave_mode',
   fmodwavealphastart: 'modwavealphastart',
   fmodwavealphaend: 'modwavealphaend',
+  modwavealphabyvolume: 'bmodwavealphabyvolume',
+  bmodwavealphabyvolume: 'bmodwavealphabyvolume',
   fwarpscale: 'warp',
   fwarpanimspeed: 'warpanimspeed',
   fzoomexponent: 'zoomexp',

@@ -2,7 +2,7 @@
   "version": 1,
   "frames": [1, 2, 3, 10],
   "tolerance": 0.000001,
-  "generatedAt": "2026-03-19",
+  "generatedAt": "2026-03-21",
   "presets": [
     {
       "id": "parity-feedback-01",
@@ -11,12 +11,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 2, "checksum": 48.854 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 48.854
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.11,
@@ -27,12 +45,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 2, "checksum": 48.854 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 48.854
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.11,
@@ -43,12 +79,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 2, "checksum": 48.854 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 48.854
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.11,
@@ -59,12 +113,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 2, "checksum": 48.854 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 48.854
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.11,
@@ -82,12 +154,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 2, "checksum": 53.05 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 53.05
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.16,
@@ -98,12 +188,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 2, "checksum": 53.05 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 53.05
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.16,
@@ -114,12 +222,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 2, "checksum": 53.05 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 53.05
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.16,
@@ -130,12 +256,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 2, "checksum": 53.05 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 53.05
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.16,
@@ -153,12 +297,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.528822 },
-          "waveform": { "count": 252, "checksum": 255.528822 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.528822
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.528822
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -169,12 +331,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.331209 },
-          "waveform": { "count": 252, "checksum": 255.331209 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.331209
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.331209
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -185,12 +365,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.133594 },
-          "waveform": { "count": 252, "checksum": 255.133594 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.133594
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.133594
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -201,12 +399,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 253.750311 },
-          "waveform": { "count": 252, "checksum": 253.750311 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 253.750311
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 253.750311
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -224,12 +440,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.403989 },
-          "waveform": { "count": 252, "checksum": 255.403989 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.403989
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.403989
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -240,12 +474,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.081549 },
-          "waveform": { "count": 252, "checksum": 255.081549 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.081549
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.081549
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -256,12 +508,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 254.759115 },
-          "waveform": { "count": 252, "checksum": 254.759115 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 254.759115
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 254.759115
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -272,12 +542,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 252.502756 },
-          "waveform": { "count": 252, "checksum": 252.502756 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 252.502756
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 252.502756
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -295,12 +583,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 1, "checksum": 167.565331 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 167.565331
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -311,12 +617,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 1, "checksum": 167.563152 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 167.563152
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -327,12 +651,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 1, "checksum": 167.56103 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 167.56103
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -343,12 +685,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 1, "checksum": 167.547799 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 167.547799
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -366,12 +726,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 1, "checksum": 293.121758 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 293.121758
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -382,12 +760,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 1, "checksum": 293.123937 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 293.123937
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -398,12 +794,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 1, "checksum": 293.126113 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 293.126113
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -414,12 +828,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 1, "checksum": 293.141265 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 293.141265
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -437,12 +869,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.22149 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.22149
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -453,12 +903,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.22881 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.22881
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -469,12 +937,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.22149 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.22149
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -485,12 +971,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.22881 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.22881
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -508,12 +1012,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 29.70419 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.70419
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -524,12 +1046,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 29.71511 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.71511
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -540,12 +1080,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 29.70419 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.70419
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -556,12 +1114,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 29.71511 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.71511
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -579,12 +1155,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 66, "checksum": 210.561249 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 66,
+            "checksum": 210.561249
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -595,12 +1189,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 70, "checksum": 253.832383 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 70,
+            "checksum": 253.832383
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -611,12 +1223,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 70, "checksum": 253.829271 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 70,
+            "checksum": 253.829271
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -627,12 +1257,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 80, "checksum": 326.964411 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 80,
+            "checksum": 326.964411
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -650,12 +1298,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 122, "checksum": 484.322726 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 122,
+            "checksum": 484.322726
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -666,12 +1332,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 122, "checksum": 484.332725 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 122,
+            "checksum": 484.332725
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -682,12 +1366,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 126, "checksum": 370.213936 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 126,
+            "checksum": 370.213936
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -698,12 +1400,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 124, "checksum": 402.452295 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 124,
+            "checksum": 402.452295
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -721,12 +1441,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -737,12 +1475,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -753,12 +1509,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -769,12 +1543,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -792,12 +1584,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -808,12 +1618,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -824,12 +1652,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -840,12 +1686,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -863,12 +1727,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -879,12 +1761,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -895,12 +1795,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -911,12 +1829,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -934,12 +1870,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -950,12 +1904,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -966,12 +1938,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -982,12 +1972,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1005,12 +2013,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 1, "checksum": 155.108682 },
-          "shapes": { "count": 1, "checksum": 37.59585 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 155.108682
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 37.59585
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.15,
@@ -1021,28 +2047,64 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 1, "checksum": 155.145694 },
-          "shapes": { "count": 1, "checksum": 37.62849 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 155.145694
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 37.62849
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.15,
             "videoEchoZoom": 1.02,
-            "shaderMixAlpha": 0.07,
+            "shaderMixAlpha": 0.06999999999999999,
             "checksum": 10.774333
           }
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 1, "checksum": 155.182597 },
-          "shapes": { "count": 1, "checksum": 37.59585 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 155.182597
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 37.59585
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.15,
@@ -1053,17 +2115,35 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 1, "checksum": 155.437021 },
-          "shapes": { "count": 1, "checksum": 37.62849 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 155.437021
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 37.62849
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.15,
             "videoEchoZoom": 1.02,
-            "shaderMixAlpha": 0.07,
+            "shaderMixAlpha": 0.06999999999999999,
             "checksum": 10.807667
           }
         }
@@ -1076,12 +2156,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 1, "checksum": 184.946944 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 184.946944
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.2,
@@ -1092,28 +2190,64 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 1, "checksum": 184.943976 },
-          "shapes": { "count": 1, "checksum": 25.75269 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 184.943976
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.75269
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.2,
             "videoEchoZoom": 1.02,
-            "shaderMixAlpha": 0.07,
+            "shaderMixAlpha": 0.06999999999999999,
             "checksum": 10.874333
           }
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 1, "checksum": 184.940955 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 184.940955
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.2,
@@ -1124,17 +2258,35 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 1, "checksum": 184.918386 },
-          "shapes": { "count": 1, "checksum": 25.75269 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 184.918386
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.75269
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.2,
             "videoEchoZoom": 1.02,
-            "shaderMixAlpha": 0.07,
+            "shaderMixAlpha": 0.06999999999999999,
             "checksum": 10.907667
           }
         }
@@ -1147,12 +2299,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 1, "checksum": 209.186633 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 209.186633
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1163,12 +2333,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 1, "checksum": 209.186633 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 209.186633
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1179,12 +2367,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 1, "checksum": 209.186633 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 209.186633
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1195,12 +2401,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 1, "checksum": 209.186633 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 209.186633
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1218,12 +2442,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 1, "checksum": 223.079884 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 223.079884
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1234,12 +2476,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 1, "checksum": 223.079884 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 223.079884
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1250,12 +2510,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 1, "checksum": 223.079884 },
-          "shapes": { "count": 1, "checksum": 25.71765 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 223.079884
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.71765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1266,12 +2544,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 1, "checksum": 223.079884 },
-          "shapes": { "count": 1, "checksum": 25.72785 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 223.079884
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.72785
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1289,12 +2585,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 2, "checksum": 79.08106 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 2,
+            "checksum": 79.08106
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1305,12 +2619,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 2, "checksum": 79.11714 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 2,
+            "checksum": 79.11714
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1321,12 +2653,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 2, "checksum": 79.08106 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 2,
+            "checksum": 79.08106
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1337,12 +2687,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 2, "checksum": 79.11714 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 2,
+            "checksum": 79.11714
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1360,12 +2728,30 @@
       "frames": [
         {
           "frame": 1,
-          "mainWave": { "count": 252, "checksum": 255.728555 },
-          "waveform": { "count": 252, "checksum": 255.728555 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 2, "checksum": 79.48331 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.728555
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 2,
+            "checksum": 79.48331
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1376,12 +2762,30 @@
         },
         {
           "frame": 2,
-          "mainWave": { "count": 252, "checksum": 255.730674 },
-          "waveform": { "count": 252, "checksum": 255.730674 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 2, "checksum": 79.52239 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.730674
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 2,
+            "checksum": 79.52239
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1392,12 +2796,30 @@
         },
         {
           "frame": 3,
-          "mainWave": { "count": 252, "checksum": 255.732788 },
-          "waveform": { "count": 252, "checksum": 255.732788 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 2, "checksum": 79.48331 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.732788
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 2,
+            "checksum": 79.48331
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
@@ -1408,12 +2830,30 @@
         },
         {
           "frame": 10,
-          "mainWave": { "count": 252, "checksum": 255.747407 },
-          "waveform": { "count": 252, "checksum": 255.747407 },
-          "customWaves": { "count": 0, "checksum": 0 },
-          "shapes": { "count": 2, "checksum": 79.52239 },
-          "borders": { "count": 0, "checksum": 0 },
-          "motionVectors": { "count": 0, "checksum": 0 },
+          "mainWave": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "waveform": {
+            "count": 378,
+            "checksum": 255.747407
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 2,
+            "checksum": 79.52239
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 0
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 0
+          },
           "post": {
             "gammaAdj": 1,
             "videoEchoAlpha": 0.18,
