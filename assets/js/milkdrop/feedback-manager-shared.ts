@@ -18,6 +18,10 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { disposeMaterial } from '../utils/three-dispose';
+import {
+  AUX_TEXTURE_ATLAS_GRID_SIZE,
+  AUX_TEXTURE_ATLAS_SLICE_COUNT,
+} from './feedback-volume-sampling.ts';
 import type {
   FeedbackBackendProfile,
   MilkdropBackendBehavior,
@@ -42,10 +46,6 @@ const MILKDROP_TEXTURE_FILES = {
   pattern: 'circuit_board_pattern.png',
   fractal: 'crystal_fractal.png',
 } as const;
-const AUX_TEXTURE_ATLAS_GRID_SIZE = 8;
-const AUX_TEXTURE_ATLAS_SLICE_COUNT =
-  AUX_TEXTURE_ATLAS_GRID_SIZE * AUX_TEXTURE_ATLAS_GRID_SIZE;
-
 function resolveTextureUrl(fileName: string) {
   const baseUrl =
     typeof import.meta.env.BASE_URL === 'string'
@@ -376,13 +376,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             return sampleAuxTexture2d(source, wrappedUv);
           }
           float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
-          bool sliceInRange = sliceZ >= 0.0 && sliceZ <= 1.0;
-          float wrappedSliceZ = sliceInRange ? sliceZ : fract(sliceZ);
-          // Keep the original 0..1 mapping for in-range phases, but let wrapped cycles span the
-          // full atlas count so the last segment blends the final slice back to slice 0.
-          float sliceScale = sliceInRange ? (sliceCount - 1.0) : sliceCount;
-          float scaledSlice = wrappedSliceZ * sliceScale;
-          float sliceIndexA = floor(scaledSlice);
+          // Keep tex3D phases fully periodic so modulo-equivalent values stay aligned while the
+          // last atlas segment blends the final slice back to slice 0.
+          float wrappedSliceZ = fract(sliceZ);
+          float scaledSlice = wrappedSliceZ * sliceCount;
+          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
           float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
           float sliceBlend = fract(scaledSlice);
           vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
