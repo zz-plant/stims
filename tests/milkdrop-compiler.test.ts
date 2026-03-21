@@ -526,11 +526,24 @@ comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
 
     expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.post.shaderControls.colorScale.r).toBeCloseTo(1.2, 6);
     expect(compiled.ir.post.shaderControls.colorScale.g).toBeCloseTo(1.2, 6);
     expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(1.2, 6);
     expect(compiled.ir.shaderText.warpAst).toHaveLength(1);
     expect(compiled.ir.shaderText.compAst).toHaveLength(1);
+    expect(compiled.ir.shaderText.warpProgram).toBeNull();
+    expect(compiled.ir.shaderText.compProgram).toBeNull();
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'supported-shader-text-gap',
+        }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
+      [],
+    );
   });
 
   test('supports affine uv shader-body transforms', () => {
@@ -646,7 +659,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
       { id: 'shader-volume-invert-mix' },
     );
 
-    expect(compiled.ir.shaderText.supported).toBe(false);
+    expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.post.shaderControls.invertBoost).toBeCloseTo(0, 6);
     expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
     expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('mix');
@@ -661,23 +674,21 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     expect(
       compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
     ).not.toBeNull();
-    expect(compiled.diagnostics).toEqual([
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.compProgram).toEqual(
       expect.objectContaining({
-        code: 'preset_unsupported_shader_text',
-        severity: 'warning',
+        stage: 'comp',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgl', 'webgpu'],
+        }),
       }),
-    ]);
-    expect(compiled.ir.compatibility.warnings).toEqual([
-      'This preset includes custom shader text outside the fully supported subset and will be approximated.',
-      'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
-    ]);
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
     );
-    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
-      'ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz, 0.35)',
-    ]);
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
+      [],
+    );
   });
 
   test('keeps tex3D mix extraction attached to the selected aux sample', () => {
