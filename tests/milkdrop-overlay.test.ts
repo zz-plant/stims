@@ -182,7 +182,7 @@ describe('milkdrop overlay quality controls', () => {
     expect(select).not.toBeNull();
     expect(select?.value).toBe('balanced');
     expect(document.body.textContent).toContain(
-      'Saved on this device for this toy profile.',
+      'What changes: pixel ratio up to 1.50x, render scale 1.00x, particle density 1.00x.',
     );
 
     if (select) {
@@ -192,7 +192,7 @@ describe('milkdrop overlay quality controls', () => {
 
     expect(onSelectQualityPreset).toHaveBeenCalledWith('tv');
     expect(document.body.textContent).toContain(
-      'Comfortable 10-foot visuals with softer density and steadier frame pacing.',
+      'What changes: pixel ratio up to 1.10x, render scale 0.85x, particle density 0.70x.',
     );
 
     overlay.dispose();
