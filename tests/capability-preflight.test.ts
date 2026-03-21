@@ -149,4 +149,46 @@ describe('capability preflight launch flow', () => {
 
     preflight.destroy();
   });
+
+  test('opens the preflight as a non-modal dialog when supported', async () => {
+    setTestUrl();
+
+    const dialogConstructor = window.HTMLDialogElement;
+    expect(dialogConstructor).toBeDefined();
+
+    const originalShow = dialogConstructor.prototype.show;
+    const originalShowModal = dialogConstructor.prototype.showModal;
+    let showCalls = 0;
+    let showModalCalls = 0;
+
+    dialogConstructor.prototype.show = function showPatched() {
+      showCalls += 1;
+      this.setAttribute('open', 'true');
+    };
+    dialogConstructor.prototype.showModal = function showModalPatched() {
+      showModalCalls += 1;
+      this.setAttribute('open', 'true');
+    };
+
+    try {
+      const preflight = attachCapabilityPreflight({
+        host: document.body,
+        openOnAttach: false,
+        showCloseButton: true,
+        runPreflight: async () => readyResult,
+      });
+
+      preflight.open();
+      await flush();
+      await flush();
+
+      expect(showCalls).toBe(1);
+      expect(showModalCalls).toBe(0);
+
+      preflight.destroy();
+    } finally {
+      dialogConstructor.prototype.show = originalShow;
+      dialogConstructor.prototype.showModal = originalShowModal;
+    }
+  });
 });
