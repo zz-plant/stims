@@ -119,9 +119,12 @@ describe('render-service pooling', () => {
     setRendererRuntimeControls({ renderScale: 0.5 });
 
     const first = await requestRenderer({ initRendererImpl });
+    const firstInitCall = initRendererImpl.mock.calls[0] as unknown as
+      | [HTMLCanvasElement, { renderScale?: number }]
+      | undefined;
 
-    expect(initRendererImpl.mock.calls[0]?.[0]).toBe(first.canvas);
-    expect(initRendererImpl.mock.calls[0]?.[1]).toMatchObject({
+    expect(firstInitCall?.[0]).toBe(first.canvas);
+    expect(firstInitCall?.[1]).toMatchObject({
       renderScale: 0.5,
     });
 
