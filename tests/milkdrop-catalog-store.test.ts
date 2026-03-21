@@ -60,10 +60,10 @@ describe('milkdrop catalog store', () => {
     );
 
     expect(bundled?.supports.webgl.status).toBe('supported');
-    expect(bundled?.supports.webgpu.status).toBe('supported');
-    expect(bundled?.fidelityClass).toBe('exact');
+    expect(bundled?.supports.webgpu.status).toBe('partial');
+    expect(bundled?.fidelityClass).toBe('near-exact');
     expect(bundled?.certification).toBe('bundled');
-    expect(bundled?.visualEvidenceTier).toBe('visual');
+    expect(bundled?.visualEvidenceTier).toBe('runtime');
     expect(bundled?.featuresUsed).toContain('video-echo');
     expect(bundled?.featuresUsed).toContain('custom-waves');
 
@@ -84,7 +84,7 @@ describe('milkdrop catalog store', () => {
     expect(imported?.isFavorite).toBe(true);
     expect(imported?.rating).toBe(5);
     expect(imported?.supports.webgl.status).toBe('partial');
-    expect(imported?.supports.webgpu.status).toBe('partial');
+    expect(imported?.supports.webgpu.status).toBe('unsupported');
     expect(imported?.fidelityClass).toBe('fallback');
     expect(imported?.certification).toBe('exploratory');
     expect(imported?.parity.approximatedShaderLines).toEqual(['unsupported']);

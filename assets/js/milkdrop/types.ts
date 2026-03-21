@@ -146,6 +146,25 @@ export type MilkdropCompatibilityEvidence = {
   visual: 'not-captured' | 'reference-suite';
 };
 
+export type MilkdropRenderBackend = 'webgl' | 'webgpu';
+
+export type MilkdropBackendSupportEvidenceCode =
+  | 'unknown-field'
+  | 'unsupported-hard-feature'
+  | 'supported-shader-text-gap'
+  | 'unsupported-shader-text-gap'
+  | 'video-echo-gap'
+  | 'post-effects-gap';
+
+export type MilkdropBackendSupportEvidence = {
+  backend: MilkdropRenderBackend;
+  scope: 'shared' | 'backend';
+  status: Exclude<MilkdropSupportStatus, 'supported'>;
+  code: MilkdropBackendSupportEvidenceCode;
+  message: string;
+  feature?: MilkdropFeatureKey;
+};
+
 export type MilkdropParityReport = {
   ignoredFields: string[];
   approximatedShaderLines: string[];
@@ -165,9 +184,10 @@ export type MilkdropCompileOptions = Record<string, never>;
 export type MilkdropBackendSupport = {
   status: MilkdropSupportStatus;
   reasons: string[];
+  evidence: MilkdropBackendSupportEvidence[];
   requiredFeatures: MilkdropFeatureKey[];
   unsupportedFeatures: MilkdropFeatureKey[];
-  recommendedFallback?: 'webgl' | 'webgpu';
+  recommendedFallback?: MilkdropRenderBackend;
 };
 
 export type MilkdropFeatureAnalysis = {
