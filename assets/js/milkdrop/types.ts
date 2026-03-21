@@ -340,12 +340,25 @@ export type MilkdropShaderExpressionNode =
   | { type: 'identifier'; name: string }
   | {
       type: 'unary';
-      operator: '+' | '-';
+      operator: '+' | '-' | '!';
       operand: MilkdropShaderExpressionNode;
     }
   | {
       type: 'binary';
-      operator: '+' | '-' | '*' | '/';
+      operator:
+        | '+'
+        | '-'
+        | '*'
+        | '/'
+        | '%'
+        | '<'
+        | '<='
+        | '>'
+        | '>='
+        | '=='
+        | '!='
+        | '&&'
+        | '||';
       left: MilkdropShaderExpressionNode;
       right: MilkdropShaderExpressionNode;
     }
