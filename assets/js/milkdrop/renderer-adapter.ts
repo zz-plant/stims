@@ -3009,6 +3009,14 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.feedback?.resize(width, height);
   }
 
+  setAdaptiveQuality(
+    multipliers: Partial<{
+      feedbackResolutionMultiplier: number;
+    }>,
+  ) {
+    this.feedback?.setAdaptiveQuality?.(multipliers);
+  }
+
   private renderWaveGroup(
     target:
       | 'main-wave'

@@ -27,6 +27,9 @@ export type RendererViewport = {
 const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   maxPixelRatio: 1.5,
   renderScale: 1,
+  adaptiveMaxPixelRatioMultiplier: 1,
+  adaptiveRenderScaleMultiplier: 1,
+  adaptiveDensityMultiplier: 1,
   exposure: 1,
   antialias: true,
   alpha: false,
@@ -48,6 +51,21 @@ export function resolveRendererSettings(
       info?.renderScale ??
       defaults.renderScale ??
       BASE_RENDERER_SETTINGS.renderScale,
+    adaptiveMaxPixelRatioMultiplier:
+      options.adaptiveMaxPixelRatioMultiplier ??
+      info?.adaptiveMaxPixelRatioMultiplier ??
+      defaults.adaptiveMaxPixelRatioMultiplier ??
+      BASE_RENDERER_SETTINGS.adaptiveMaxPixelRatioMultiplier,
+    adaptiveRenderScaleMultiplier:
+      options.adaptiveRenderScaleMultiplier ??
+      info?.adaptiveRenderScaleMultiplier ??
+      defaults.adaptiveRenderScaleMultiplier ??
+      BASE_RENDERER_SETTINGS.adaptiveRenderScaleMultiplier,
+    adaptiveDensityMultiplier:
+      options.adaptiveDensityMultiplier ??
+      info?.adaptiveDensityMultiplier ??
+      defaults.adaptiveDensityMultiplier ??
+      BASE_RENDERER_SETTINGS.adaptiveDensityMultiplier,
     exposure:
       options.exposure ??
       info?.exposure ??
@@ -69,9 +87,17 @@ export function applyRendererSettings(
   viewport?: RendererViewport,
 ) {
   const merged = resolveRendererSettings(options, info, defaults);
+  const effectiveRenderScale = Math.max(
+    0.4,
+    (merged.renderScale ?? 1) * (merged.adaptiveRenderScaleMultiplier ?? 1),
+  );
+  const effectiveMaxPixelRatio = Math.max(
+    0.5,
+    (merged.maxPixelRatio ?? 2) * (merged.adaptiveMaxPixelRatioMultiplier ?? 1),
+  );
   const effectivePixelRatio = Math.min(
-    (window.devicePixelRatio || 1) * (merged.renderScale ?? 1),
-    merged.maxPixelRatio ?? 2,
+    (window.devicePixelRatio || 1) * effectiveRenderScale,
+    effectiveMaxPixelRatio,
   );
 
   renderer.setPixelRatio(effectivePixelRatio);
@@ -84,5 +110,12 @@ export function applyRendererSettings(
 
   info.maxPixelRatio = merged.maxPixelRatio ?? info.maxPixelRatio;
   info.renderScale = merged.renderScale ?? info.renderScale;
+  info.adaptiveMaxPixelRatioMultiplier =
+    merged.adaptiveMaxPixelRatioMultiplier ??
+    info.adaptiveMaxPixelRatioMultiplier;
+  info.adaptiveRenderScaleMultiplier =
+    merged.adaptiveRenderScaleMultiplier ?? info.adaptiveRenderScaleMultiplier;
+  info.adaptiveDensityMultiplier =
+    merged.adaptiveDensityMultiplier ?? info.adaptiveDensityMultiplier;
   info.exposure = merged.exposure ?? info.exposure;
 }

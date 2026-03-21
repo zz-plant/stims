@@ -1301,6 +1301,7 @@ class WebGPUMilkdropFeedbackManager {
   readonly sceneResolutionScale = this.profile.sceneResolutionScale;
   readonly feedbackResolutionScale = this.profile.feedbackResolutionScale;
   readonly auxTextures: Record<string, Texture>;
+  adaptiveFeedbackResolutionMultiplier = 1;
   currentCompositeKey = '';
   currentFeedbackResolutionScale = this.feedbackResolutionScale;
   viewportWidth: number;
@@ -1407,7 +1408,8 @@ class WebGPUMilkdropFeedbackManager {
       Math.abs(state.gammaAdj - 1) > 0.0001;
     const nextResolutionScale = needsSceneResolution
       ? this.sceneResolutionScale
-      : this.feedbackResolutionScale;
+      : this.feedbackResolutionScale *
+        this.adaptiveFeedbackResolutionMultiplier;
     if (
       Math.abs(nextResolutionScale - this.currentFeedbackResolutionScale) >
       0.0001
@@ -1492,6 +1494,29 @@ class WebGPUMilkdropFeedbackManager {
     this.compositeMaterial.uniforms.signalBeat.value = state.signalBeat;
     this.compositeMaterial.uniforms.signalEnergy.value = state.signalEnergy;
     this.compositeMaterial.uniforms.signalTime.value = state.signalTime;
+  }
+
+  setAdaptiveQuality({
+    feedbackResolutionMultiplier,
+  }: Partial<{
+    feedbackResolutionMultiplier: number;
+  }>) {
+    const nextMultiplier = Math.min(
+      1,
+      Math.max(0.45, feedbackResolutionMultiplier ?? 1),
+    );
+    if (
+      Math.abs(nextMultiplier - this.adaptiveFeedbackResolutionMultiplier) <
+      0.0001
+    ) {
+      return;
+    }
+    this.adaptiveFeedbackResolutionMultiplier = nextMultiplier;
+    this.currentFeedbackResolutionScale = Math.min(
+      this.currentFeedbackResolutionScale,
+      this.feedbackResolutionScale * this.adaptiveFeedbackResolutionMultiplier,
+    );
+    this.resize(this.viewportWidth, this.viewportHeight);
   }
 
   render(renderer: FeedbackRendererLike, scene: Scene, camera: Camera) {
