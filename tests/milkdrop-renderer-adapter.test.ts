@@ -593,15 +593,14 @@ per_pixel_3=zoom=zoom+abs(y)*0.08;
     );
   });
 
-  test('keeps lowered field shader centers in clip space without renormalizing', () => {
+  test('normalizes lowered field shader centers after per-pixel programs run', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Mesh Center
 mesh_density=10
-sx=1.15
-sy=0.9
-per_pixel_1=q1=sin(time+x*2.5);
-per_pixel_2=x=x+q1*0.04;
+per_pixel_1=cx=0.75;
+per_pixel_2=cy=0.25;
+per_pixel_3=sx=2;
       `.trim(),
       { id: 'procedural-mesh-center' },
     );
@@ -635,14 +634,23 @@ per_pixel_2=x=x+q1*0.04;
     };
 
     expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
-    expect(meshLines.material?.vertexShader).not.toContain(
-      'milkdropNormalizeTransformCenter',
+    expect(meshLines.material?.vertexShader).toContain(
+      'float fieldCenterX = milkdropDenormalizeTransformCenterX(paramCenterX);',
     );
     expect(meshLines.material?.vertexShader).toContain(
-      '(field_x - fieldCenterX) * fieldScaleX',
+      'float fieldCenterY = milkdropDenormalizeTransformCenterY(paramCenterY);',
     );
     expect(meshLines.material?.vertexShader).toContain(
-      '(field_y - fieldCenterY) * fieldScaleY',
+      'float normalizedCenterX = milkdropNormalizeTransformCenterX(fieldCenterX);',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      'float normalizedCenterY = milkdropNormalizeTransformCenterY(fieldCenterY);',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      '(field_x - normalizedCenterX) * fieldScaleX',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      '(field_y - normalizedCenterY) * fieldScaleY',
     );
   });
 
