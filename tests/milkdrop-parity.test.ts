@@ -374,18 +374,19 @@ unknown_field=2
   );
 
   expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
-    {
+    expect.objectContaining({
       kind: 'field',
       value: 'unknown_field',
       system: 'preset-field',
       allowlisted: false,
-    },
-    {
+      classification: 'soft-unknown',
+    }),
+    expect.objectContaining({
       kind: 'shader',
       value: 'unsupported(shader)',
       system: 'shader-text',
       allowlisted: true,
-    },
+    }),
   ]);
   expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
 });
