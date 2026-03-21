@@ -3386,6 +3386,8 @@ function buildShaderProgramPayload({
       statementTargets: statements.map((statement) => statement.target),
     },
   };
+}
+
 function isUnsupportedParsedShaderStatement({
   statement,
   shaderEnv,
@@ -4600,6 +4602,14 @@ const legacyCustomWaveSuffixMap: Record<string, string | null> = {
   badditive: 'additive',
 };
 
+const legacyCustomShapeSuffixMap: Record<string, string | null> = {
+  badditive: 'additive',
+  thickoutline: 'thickoutline',
+  thick_outline: 'thickoutline',
+  bthickoutline: 'thickoutline',
+  bthick_outline: 'thickoutline',
+};
+
 function defaultSourceId(rawTitle: string) {
   return (
     rawTitle
@@ -4637,6 +4647,14 @@ function normalizeLegacyCustomWaveSuffix(value: string) {
   const normalized = normalizeFieldSuffix(value);
   if (normalized in legacyCustomWaveSuffixMap) {
     return legacyCustomWaveSuffixMap[normalized];
+  }
+  return normalized;
+}
+
+function normalizeLegacyCustomShapeSuffix(value: string) {
+  const normalized = normalizeFieldSuffix(value);
+  if (normalized in legacyCustomShapeSuffixMap) {
+    return legacyCustomShapeSuffixMap[normalized];
   }
   return normalized;
 }
@@ -4853,7 +4871,10 @@ function normalizeFieldKey(field: MilkdropPresetField) {
       MAX_CUSTOM_SHAPES,
     );
     if (index !== null) {
-      return `shape_${index}_${normalizeFieldSuffix(shapecodeMatch[2] ?? '')}`;
+      const suffix = normalizeLegacyCustomShapeSuffix(shapecodeMatch[2] ?? '');
+      if (suffix !== null) {
+        return `shape_${index}_${suffix}`;
+      }
     }
   }
 
