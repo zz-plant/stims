@@ -157,6 +157,7 @@ flowchart LR
 - **Initialization**: `renderer-setup.ts` builds a renderer using the preferred backend, applies tone mapping, sets pixel ratio/size, and returns metadata consumed by `web-toy.ts`.
 - **Quality presets**: `settings-panel.ts` broadcasts max pixel ratio, render scale, and exposure; `WebToy.updateRendererSettings` re-applies them without a reload.
 - **Renderer settings**: `renderer-settings.ts` merges quality presets, render preferences, and per-toy overrides so pooled renderers can be reconfigured on the fly.
+- **Experimental worker render track**: `worker-renderer-track.ts` and `renderer-worker.ts` define an opt-in OffscreenCanvas path for future WebGPU render submission off the main thread. The gate reuses `renderer-capabilities.ts` worker/offscreen checks plus an explicit opt-in flag (`?render-worker=1` or `localStorage['stims:experiments:render-worker']='enabled'`). The current track only owns renderer initialization, resize/quality propagation, preset messages, and per-frame signal/input submission; DOM-driven overlay, catalog, and editor flows remain on the main thread until parity is proven.
 
 ## WebToy Composition
 
