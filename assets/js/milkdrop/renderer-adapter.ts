@@ -63,6 +63,54 @@ export type MilkdropRendererAdapterConfig = {
   preset?: MilkdropCompiledPreset | null;
   behavior?: MilkdropBackendBehavior;
   createFeedbackManager?: MilkdropFeedbackManagerFactory;
+  batcher?: MilkdropRendererBatcher | null;
+};
+
+export type MilkdropRendererBatcher = {
+  attach: (root: Group) => void;
+  dispose: () => void;
+  renderWaveGroup?: (
+    target:
+      | 'main-wave'
+      | 'custom-wave'
+      | 'blend-main-wave'
+      | 'blend-custom-wave',
+    group: Group,
+    waves: MilkdropWaveVisual[],
+    alphaMultiplier: number,
+  ) => boolean;
+  renderProceduralWaveGroup?: (
+    target: 'main-wave' | 'trail-waves',
+    group: Group,
+    waves: MilkdropProceduralWaveVisual[],
+  ) => boolean;
+  renderProceduralCustomWaveGroup?: (
+    group: Group,
+    waves: MilkdropProceduralCustomWaveVisual[],
+  ) => boolean;
+  renderShapeGroup?: (
+    target: 'shapes' | 'blend-shapes',
+    group: Group,
+    shapes: MilkdropShapeVisual[],
+    alphaMultiplier: number,
+  ) => boolean;
+  renderBorderGroup?: (
+    target: 'borders' | 'blend-borders',
+    group: Group,
+    borders: MilkdropBorderVisual[],
+    alphaMultiplier: number,
+  ) => boolean;
+  renderLineVisualGroup?: (
+    target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
+    group: Group,
+    lines: Array<{
+      positions: number[];
+      color: MilkdropColor;
+      alpha: number;
+      additive?: boolean;
+    }>,
+    alphaMultiplier: number,
+  ) => boolean;
 };
 
 export type FeedbackBackendProfile = {
@@ -2238,6 +2286,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   readonly backend: 'webgl' | 'webgpu';
   private readonly behavior: MilkdropBackendBehavior;
   private readonly createFeedbackManager: MilkdropFeedbackManagerFactory | null;
+  private readonly batcher: MilkdropRendererBatcher | null;
   private readonly scene: Scene;
   private readonly camera: Camera;
   private readonly renderer: RendererLike | null;
@@ -2316,6 +2365,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     backend,
     behavior,
     createFeedbackManager,
+    batcher,
   }: {
     scene: Scene;
     camera: Camera;
@@ -2323,6 +2373,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     backend: 'webgl' | 'webgpu';
     behavior: MilkdropBackendBehavior;
     createFeedbackManager: MilkdropFeedbackManagerFactory | null;
+    batcher: MilkdropRendererBatcher | null;
   }) {
     this.scene = scene;
     this.camera = camera;
@@ -2330,6 +2381,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.backend = backend;
     this.behavior = behavior;
     this.createFeedbackManager = createFeedbackManager;
+    this.batcher = batcher;
     this.root.frustumCulled = false;
 
     this.background.position.z = -1.2;
@@ -2353,6 +2405,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.blendProceduralMotionVectors.visible = false;
     this.blendMotionVectorGroup.add(this.blendProceduralMotionVectors);
     this.root.add(this.blendMotionVectorGroup);
+    this.batcher?.attach(this.root);
 
     if (
       this.behavior.supportsFeedbackPass &&
@@ -2391,10 +2444,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   private renderWaveGroup(
+    target:
+      | 'main-wave'
+      | 'custom-wave'
+      | 'blend-main-wave'
+      | 'blend-custom-wave',
     group: Group,
     waves: MilkdropWaveVisual[],
     alphaMultiplier = 1,
   ) {
+    if (
+      this.batcher?.renderWaveGroup?.(target, group, waves, alphaMultiplier)
+    ) {
+      clearGroup(group);
+      return;
+    }
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropWaveVisual;
       const existing = group.children[index] as
@@ -2422,10 +2486,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   private renderProceduralWaveGroup(
+    target: 'main-wave' | 'trail-waves',
     group: Group,
     waves: MilkdropProceduralWaveVisual[],
     interaction?: MilkdropGpuInteractionTransform | null,
   ) {
+    if (this.batcher?.renderProceduralWaveGroup?.(target, group, waves)) {
+      clearGroup(group);
+      return;
+    }
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropProceduralWaveVisual;
       const existing = group.children[index] as Line | undefined;
@@ -2445,6 +2514,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     waves: MilkdropProceduralCustomWaveVisual[],
     interaction?: MilkdropGpuInteractionTransform | null,
   ) {
+    if (this.batcher?.renderProceduralCustomWaveGroup?.(group, waves)) {
+      clearGroup(group);
+      return;
+    }
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropProceduralCustomWaveVisual;
       const existing = group.children[index] as Line | undefined;
@@ -2532,10 +2605,17 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   private renderShapeGroup(
+    target: 'shapes' | 'blend-shapes',
     group: Group,
     shapes: MilkdropShapeVisual[],
     alphaMultiplier = 1,
   ) {
+    if (
+      this.batcher?.renderShapeGroup?.(target, group, shapes, alphaMultiplier)
+    ) {
+      clearGroup(group);
+      return;
+    }
     for (let index = 0; index < shapes.length; index += 1) {
       const shape = shapes[index] as MilkdropShapeVisual;
       const existing = group.children[index] as Group | undefined;
@@ -2588,10 +2668,17 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   private renderBorderGroup(
+    target: 'borders' | 'blend-borders',
     group: Group,
     borders: MilkdropBorderVisual[],
     alphaMultiplier = 1,
   ) {
+    if (
+      this.batcher?.renderBorderGroup?.(target, group, borders, alphaMultiplier)
+    ) {
+      clearGroup(group);
+      return;
+    }
     for (let index = 0; index < borders.length; index += 1) {
       const border = borders[index] as MilkdropBorderVisual;
       const existing = group.children[index] as Group | undefined;
@@ -2612,6 +2699,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   private renderLineVisualGroup(
+    target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
     group: Group,
     lines: Array<{
       positions: number[];
@@ -2621,6 +2709,17 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }>,
     alphaMultiplier = 1,
   ) {
+    if (
+      this.batcher?.renderLineVisualGroup?.(
+        target,
+        group,
+        lines,
+        alphaMultiplier,
+      )
+    ) {
+      clearGroup(group);
+      return;
+    }
     for (let index = 0; index < lines.length; index += 1) {
       const line = lines[index] as {
         positions: number[];
@@ -2771,7 +2870,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
 
     proceduralObject.visible = false;
     this.renderLineVisualGroup(
-      cpuGroup,
+      'motion-vectors',
+      this.motionVectorCpuGroup,
       payload.motionVectors,
       alphaMultiplier,
     );
@@ -2911,13 +3011,13 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       proceduralWavePlans.some((plan) => plan.target === 'trail-waves');
 
     if (canUseProceduralMainWave && payload.frameState.gpuGeometry.mainWave) {
-      this.renderProceduralWaveGroup(
-        this.mainWaveGroup,
-        [payload.frameState.gpuGeometry.mainWave],
-        payload.frameState.interaction?.waves,
-      );
+      this.renderProceduralWaveGroup('main-wave', this.mainWaveGroup, [
+        payload.frameState.gpuGeometry.mainWave,
+      ]);
     } else {
-      this.renderWaveGroup(this.mainWaveGroup, [payload.frameState.mainWave]);
+      this.renderWaveGroup('main-wave', this.mainWaveGroup, [
+        payload.frameState.mainWave,
+      ]);
     }
     if (
       canUseProceduralCustomWaves &&
@@ -2930,6 +3030,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       );
     } else {
       this.renderWaveGroup(
+        'custom-wave',
         this.customWaveGroup,
         payload.frameState.customWaves,
       );
@@ -2939,178 +3040,61 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       payload.frameState.gpuGeometry.trailWaves.length > 0
     ) {
       this.renderProceduralWaveGroup(
+        'trail-waves',
         this.trailGroup,
         payload.frameState.gpuGeometry.trailWaves,
         payload.frameState.interaction?.waves,
       );
     } else {
-      this.renderLineVisualGroup(this.trailGroup, payload.frameState.trails);
+      this.renderLineVisualGroup(
+        'trails',
+        this.trailGroup,
+        payload.frameState.trails,
+      );
     }
-    this.renderShapeGroup(this.shapesGroup, payload.frameState.shapes);
-    this.renderBorderGroup(this.borderGroup, payload.frameState.borders);
+    this.renderShapeGroup(
+      'shapes',
+      this.shapesGroup,
+      payload.frameState.shapes,
+    );
+    this.renderBorderGroup(
+      'borders',
+      this.borderGroup,
+      payload.frameState.borders,
+    );
     this.renderMotionVectors(payload.frameState);
 
     const blend = payload.blendState;
-    if (blend?.mode === 'gpu' && this.backend === 'webgpu') {
-      const previousFrame = blend.previousFrame;
-      const blendMix = 1 - blend.alpha;
-      if (
-        canUseProceduralMainWave &&
-        previousFrame.gpuGeometry.mainWave &&
-        payload.frameState.gpuGeometry.mainWave
-      ) {
-        this.renderInterpolatedProceduralWaveGroup(
-          this.blendWaveGroup,
-          [
-            {
-              previous: previousFrame.gpuGeometry.mainWave,
-              current: payload.frameState.gpuGeometry.mainWave,
-            },
-          ],
-          blendMix,
-          blend.alpha,
-          {
-            offsetX: lerpNumber(
-              previousFrame.interaction?.waves.offsetX ?? 0,
-              payload.frameState.interaction?.waves.offsetX ?? 0,
-              blendMix,
-            ),
-            offsetY: lerpNumber(
-              previousFrame.interaction?.waves.offsetY ?? 0,
-              payload.frameState.interaction?.waves.offsetY ?? 0,
-              blendMix,
-            ),
-            rotation: lerpNumber(
-              previousFrame.interaction?.waves.rotation ?? 0,
-              payload.frameState.interaction?.waves.rotation ?? 0,
-              blendMix,
-            ),
-            scale: lerpNumber(
-              previousFrame.interaction?.waves.scale ?? 1,
-              payload.frameState.interaction?.waves.scale ?? 1,
-              blendMix,
-            ),
-            alphaMultiplier:
-              lerpNumber(
-                previousFrame.interaction?.waves.alphaMultiplier ?? 1,
-                payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
-                blendMix,
-              ) * blend.alpha,
-          },
-        );
-      } else {
-        this.renderWaveGroup(
-          this.blendWaveGroup,
-          [previousFrame.mainWave],
-          blend.alpha,
-        );
-      }
-      if (
-        canUseProceduralCustomWaves &&
-        previousFrame.gpuGeometry.customWaves.length > 0 &&
-        payload.frameState.gpuGeometry.customWaves.length > 0
-      ) {
-        const interpolatedCustomWaves = previousFrame.gpuGeometry.customWaves
-          .map((wave, index) => {
-            const current = payload.frameState.gpuGeometry.customWaves[index];
-            return current ? { previous: wave, current } : null;
-          })
-          .filter((wave): wave is NonNullable<typeof wave> => wave !== null);
-        this.renderInterpolatedProceduralCustomWaveGroup(
-          this.blendCustomWaveGroup,
-          interpolatedCustomWaves,
-          blendMix,
-          blend.alpha,
-          {
-            offsetX: lerpNumber(
-              previousFrame.interaction?.waves.offsetX ?? 0,
-              payload.frameState.interaction?.waves.offsetX ?? 0,
-              blendMix,
-            ),
-            offsetY: lerpNumber(
-              previousFrame.interaction?.waves.offsetY ?? 0,
-              payload.frameState.interaction?.waves.offsetY ?? 0,
-              blendMix,
-            ),
-            rotation: lerpNumber(
-              previousFrame.interaction?.waves.rotation ?? 0,
-              payload.frameState.interaction?.waves.rotation ?? 0,
-              blendMix,
-            ),
-            scale: lerpNumber(
-              previousFrame.interaction?.waves.scale ?? 1,
-              payload.frameState.interaction?.waves.scale ?? 1,
-              blendMix,
-            ),
-            alphaMultiplier:
-              lerpNumber(
-                previousFrame.interaction?.waves.alphaMultiplier ?? 1,
-                payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
-                blendMix,
-              ) * blend.alpha,
-          },
-        );
-      } else {
-        this.renderWaveGroup(
-          this.blendCustomWaveGroup,
-          previousFrame.customWaves,
-          blend.alpha,
-        );
-      }
-      this.renderInterpolatedShapeGroup(
-        this.blendShapeGroup,
-        previousFrame.shapes,
-        payload.frameState.shapes,
-        blendMix,
-        blend.alpha,
-      );
-      this.renderBorderGroup(
-        this.blendBorderGroup,
-        previousFrame.borders,
-        blend.alpha,
-      );
-      this.renderMotionVectors(
-        payload.frameState,
-        blend.alpha,
-        previousFrame,
-        blendMix,
-        this.blendMotionVectorCpuGroup,
-        this.blendProceduralMotionVectors,
-      );
-      if (
-        !this.blendProceduralMotionVectors.visible &&
-        previousFrame.motionVectors.length === 0
-      ) {
-        clearGroup(this.blendMotionVectorCpuGroup);
-      }
-    } else {
-      this.renderWaveGroup(
-        this.blendWaveGroup,
-        blend?.mode === 'cpu' ? [blend.mainWave] : [],
-        blend?.alpha ?? 0,
-      );
-      this.renderWaveGroup(
-        this.blendCustomWaveGroup,
-        blend?.mode === 'cpu' ? blend.customWaves : [],
-        blend?.alpha ?? 0,
-      );
-      this.renderShapeGroup(
-        this.blendShapeGroup,
-        blend?.mode === 'cpu' ? blend.shapes : [],
-        blend?.alpha ?? 0,
-      );
-      this.renderBorderGroup(
-        this.blendBorderGroup,
-        blend?.mode === 'cpu' ? blend.borders : [],
-        blend?.alpha ?? 0,
-      );
-      this.blendProceduralMotionVectors.visible = false;
-      this.renderLineVisualGroup(
-        this.blendMotionVectorCpuGroup,
-        blend?.mode === 'cpu' ? blend.motionVectors : [],
-        blend?.alpha ?? 0,
-      );
-    }
+    this.renderWaveGroup(
+      'blend-main-wave',
+      this.blendWaveGroup,
+      blend ? [blend.mainWave] : [],
+      blend?.alpha ?? 0,
+    );
+    this.renderWaveGroup(
+      'blend-custom-wave',
+      this.blendCustomWaveGroup,
+      blend?.customWaves ?? [],
+      blend?.alpha ?? 0,
+    );
+    this.renderShapeGroup(
+      'blend-shapes',
+      this.blendShapeGroup,
+      blend?.shapes ?? [],
+      blend?.alpha ?? 0,
+    );
+    this.renderBorderGroup(
+      'blend-borders',
+      this.blendBorderGroup,
+      blend?.borders ?? [],
+      blend?.alpha ?? 0,
+    );
+    this.renderLineVisualGroup(
+      'blend-motion-vectors',
+      this.blendMotionVectorGroup,
+      blend?.motionVectors ?? [],
+      blend?.alpha ?? 0,
+    );
 
     if (
       !isFeedbackCapableRenderer(this.renderer) ||
@@ -3146,6 +3130,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       disposeGeometry(this.meshLines.geometry);
     }
     disposeMaterial(this.meshLines.material);
+    this.batcher?.dispose();
     this.feedback?.dispose();
     this.scene.remove(this.root);
   }
@@ -3159,6 +3144,7 @@ export function createMilkdropRendererAdapterCore({
   preset,
   behavior,
   createFeedbackManager,
+  batcher,
 }: MilkdropRendererAdapterConfig) {
   const adapter = new ThreeMilkdropAdapter({
     scene,
@@ -3171,6 +3157,7 @@ export function createMilkdropRendererAdapterCore({
         ? WEBGPU_MILKDROP_BACKEND_BEHAVIOR
         : WEBGL_MILKDROP_BACKEND_BEHAVIOR),
     createFeedbackManager: createFeedbackManager ?? null,
+    batcher: batcher ?? null,
   });
   if (preset) {
     adapter.setPreset(preset);
