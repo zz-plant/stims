@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import type { MilkdropVideoEchoOrientation } from '../assets/js/milkdrop/types.ts';
 
 describe('milkdrop compiler', () => {
   test('compiles preset metadata, scalars, and program statements', () => {
@@ -921,55 +922,7 @@ definitely_not_a_real_field=1
     ).toBe(true);
   });
 
-  test('classifies hard-unsupported fields as backend blockers', () => {
-    const compiled = compileMilkdropPresetSource(
-      `
-title=Blocked Import
-video_echo=1
-video_echo_orientation=2
-      `.trim(),
-      { id: 'blocked-import', origin: 'imported' },
-    );
-
-    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([
-      'video_echo_orientation',
-    ]);
-    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([
-      'video_echo_orientation',
-    ]);
-    expect(compiled.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'preset_unsupported_field',
-          field: 'video_echo_orientation',
-        }),
-      ]),
-    );
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('unsupported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
-    );
-    expect(compiled.ir.compatibility.backends.webgl.evidence).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'unsupported-hard-feature',
-          feature: 'video-echo-orientation',
-          status: 'unsupported',
-        }),
-      ]),
-    );
-    expect(compiled.ir.compatibility.parity.degradationReasons).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'unsupported-hard-feature',
-          blocking: true,
-          message: expect.stringContaining('video-echo-orientation'),
-        }),
-      ]),
-    );
-  });
-
-  test('ignores dormant video echo orientation blockers when echo is disabled', () => {
+  test('ignores video echo orientation when echo is disabled', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Dormant Echo Orientation
@@ -981,10 +934,12 @@ video_echo=0
 
     expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
     expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+    expect(compiled.ir.numericFields.video_echo_orientation).toBe(2);
+    expect(compiled.ir.post.videoEchoOrientation).toBe(2);
     expect(
       compiled.diagnostics.some(
         (entry) =>
-          entry.code === 'preset_unsupported_field' &&
+          entry.code === 'preset_invalid_scalar' &&
           entry.field === 'video_echo_orientation',
       ),
     ).toBe(false);
@@ -996,37 +951,100 @@ video_echo=0
   });
 
   test.each([
-    ['init', 'init_1=video_echo_enabled=1;'],
-    ['per-frame', 'per_frame_1=video_echo_enabled=1;'],
-  ])('keeps video echo orientation blocked when %s programs enable echo', (_label, programLine) => {
+    ['canonical field', 'video_echo_orientation=0', 0],
+    ['horizontal mirror alias', 'nvideoechoorientation=1', 1],
+    ['vertical mirror alias', 'echo_orient=2', 2],
+    ['double mirror', 'video_echo_orientation=3', 3],
+  ] as const satisfies readonly [
+    string,
+    string,
+    MilkdropVideoEchoOrientation,
+  ][])('retains %s when video echo is enabled', (_label, orientationLine, expectedOrientation) => {
     const compiled = compileMilkdropPresetSource(
       `
-title=Program Echo Orientation
-video_echo_orientation=2
-${programLine}
+title=Echo Orientation Support
+video_echo=1
+${orientationLine}
         `.trim(),
-      { id: 'program-echo-orientation', origin: 'imported' },
+      { id: `echo-orientation-${expectedOrientation}`, origin: 'imported' },
     );
 
-    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([
-      'video_echo_orientation',
-    ]);
-    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([
-      'video_echo_orientation',
-    ]);
+    expect(compiled.ir.numericFields.video_echo_enabled).toBe(1);
+    expect(compiled.ir.numericFields.video_echo_orientation).toBe(
+      expectedOrientation,
+    );
+    expect(compiled.ir.post.videoEchoEnabled).toBe(true);
+    expect(compiled.ir.post.videoEchoOrientation).toBe(expectedOrientation);
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
+    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'video-echo',
     );
     expect(
       compiled.diagnostics.some(
-        (entry) =>
-          entry.code === 'preset_unsupported_field' &&
-          entry.field === 'video_echo_orientation',
+        (entry) => entry.field === 'video_echo_orientation',
       ),
-    ).toBe(true);
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('unsupported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
+    ).toBe(false);
+  });
+
+  test.each([
+    ['init', 'init_1=video_echo_enabled=1;'],
+    ['per-frame', 'per_frame_1=video_echo_enabled=1;'],
+  ])('keeps video echo orientation available when %s programs enable echo', (_label, programLine) => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Program Echo Orientation
+video_echo_orientation=2
+${programLine}
+      `.trim(),
+      { id: 'program-echo-orientation', origin: 'imported' },
+    );
+
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
+    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'video-echo',
+    );
+    expect(compiled.ir.numericFields.video_echo_orientation).toBe(2);
+    expect(compiled.ir.post.videoEchoOrientation).toBe(2);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+  });
+
+  test('classifies echo orientation as supported backend input after implementation', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Echo Orientation Backend Support
+video_echo=1
+video_echo_orientation=3
+      `.trim(),
+      { id: 'echo-orientation-backend-support', origin: 'imported' },
+    );
+
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
+    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(
+      compiled.ir.compatibility.backends.webgl.unsupportedFeatures,
+    ).toEqual([]);
+    expect(
+      compiled.ir.compatibility.backends.webgpu.unsupportedFeatures,
+    ).toEqual(['video-echo']);
+    expect(compiled.ir.compatibility.backends.webgl.evidence).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          feature: 'video-echo-orientation',
+        }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          feature: 'video-echo-orientation',
+        }),
+      ]),
     );
   });
 
