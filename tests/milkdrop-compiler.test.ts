@@ -204,6 +204,14 @@ bDarkenCenter=1
     expect(compiled.ir.numericFields.darken_center).toBe(1);
     expect(compiled.ir.post.textureWrap).toBe(true);
     expect(compiled.ir.post.darkenCenter).toBe(true);
+    expect(compiled.formattedSource).toContain('bDarkenCenter=1');
+
+    const recompiled = compileMilkdropPresetSource(compiled.formattedSource, {
+      id: 'rovastar-feedback-aliases-roundtrip',
+    });
+
+    expect(recompiled.ir.numericFields.darken_center).toBe(1);
+    expect(recompiled.ir.post.darkenCenter).toBe(true);
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'post-effects',
     );
