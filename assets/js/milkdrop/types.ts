@@ -576,14 +576,24 @@ export type MilkdropMotionVectorVisual = {
   additive: boolean;
 };
 
-export type MilkdropProceduralFieldVisual = {
-  density: number;
+export type MilkdropProceduralFieldTransformVisual = {
   zoom: number;
   zoomExponent: number;
   rotation: number;
   warp: number;
   warpAnimSpeed: number;
+  centerX: number;
+  centerY: number;
+  scaleX: number;
+  scaleY: number;
+  translateX: number;
+  translateY: number;
 };
+
+export type MilkdropProceduralMeshFieldVisual =
+  MilkdropProceduralFieldTransformVisual & {
+    density: number;
+  };
 
 export type MilkdropProceduralWaveVisual = {
   samples: number[];
@@ -615,21 +625,21 @@ export type MilkdropProceduralCustomWaveVisual = {
   additive: boolean;
 };
 
-export type MilkdropProceduralMotionVectorFieldVisual = {
-  countX: number;
-  countY: number;
-  zoom: number;
-  zoomExponent: number;
-  rotation: number;
-  warp: number;
-  warpAnimSpeed: number;
-};
+export type MilkdropProceduralMotionVectorFieldVisual =
+  MilkdropProceduralFieldTransformVisual & {
+    countX: number;
+    countY: number;
+    sourceOffsetX: number;
+    sourceOffsetY: number;
+    explicitLength: number;
+    legacyControls: boolean;
+  };
 
 export type MilkdropGpuGeometryHints = {
   mainWave: MilkdropProceduralWaveVisual | null;
   trailWaves: MilkdropProceduralWaveVisual[];
   customWaves: MilkdropProceduralCustomWaveVisual[];
-  meshField: MilkdropProceduralFieldVisual | null;
+  meshField: MilkdropProceduralMeshFieldVisual | null;
   motionVectorField: MilkdropProceduralMotionVectorFieldVisual | null;
 };
 

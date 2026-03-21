@@ -14,6 +14,9 @@ import type {
   MilkdropPolyline,
   MilkdropPostVisual,
   MilkdropProceduralCustomWaveVisual,
+  MilkdropProceduralMeshFieldVisual,
+  MilkdropProceduralMotionVectorFieldVisual,
+  MilkdropProceduralWaveVisual,
   MilkdropRuntimeSignals,
   MilkdropShapeDefinition,
   MilkdropShapeVisual,
@@ -239,6 +242,12 @@ type MeshField = {
   points: MeshFieldPoint[];
 };
 
+type MotionVectorDescriptorContext = {
+  legacyControls: boolean;
+  countX: number;
+  countY: number;
+};
+
 type WaveFrameBuffers = {
   liveSamples: number[];
   previousSamples: number[];
@@ -251,10 +260,13 @@ class MilkdropPresetVM implements MilkdropVM {
   private registers: MutableState = {};
   private randomState = 1;
   private detailScale = 1;
+  private renderBackend: 'webgl' | 'webgpu' = 'webgl';
   private trails: MilkdropPolyline[] = [];
   private lastWaveform: MilkdropWaveVisual | null = null;
+  private lastProceduralWave: MilkdropProceduralWaveVisual | null = null;
   private lastWaveSamples: number[] = [];
   private customWaveState: MutableState[] = [];
+  private proceduralTrailWaves: MilkdropProceduralWaveVisual[] = [];
   private customShapeState: MutableState[] = [];
   private lastMeshField: MeshField | null = null;
   private readonly waveBuffers: WaveFrameBuffers = {
@@ -282,7 +294,7 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   setRenderBackend(backend: 'webgl' | 'webgpu') {
-    void backend;
+    this.renderBackend = backend;
   }
 
   reset() {
@@ -298,6 +310,7 @@ class MilkdropPresetVM implements MilkdropVM {
       hashSeed(this.preset.source.id || this.preset.title || 'milkdrop') || 1;
     this.trails = [];
     this.lastWaveform = null;
+    this.lastProceduralWave = null;
     this.lastWaveSamples = [];
     this.customWaveState = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
@@ -305,6 +318,7 @@ class MilkdropPresetVM implements MilkdropVM {
     this.customShapeState = this.preset.ir.customShapes.map((shape) =>
       this.seedCustomShapeState(shape),
     );
+    this.proceduralTrailWaves = [];
     this.lastMeshField = null;
     this.waveBuffers.liveSamples.length = 0;
     this.waveBuffers.previousSamples.length = 0;
@@ -522,13 +536,93 @@ class MilkdropPresetVM implements MilkdropVM {
     return quantizedX * 4096 + quantizedY;
   }
 
+  private supportsProceduralWave(drawMode: 'line' | 'dots') {
+    return this.renderBackend === 'webgpu' && drawMode === 'line';
+  }
+
+  private supportsProceduralCustomWave(
+    wave: MilkdropWaveDefinition,
+    drawMode: 'line' | 'dots',
+  ) {
+    return (
+      this.renderBackend === 'webgpu' &&
+      drawMode === 'line' &&
+      wave.programs.perPoint.statements.length === 0
+    );
+  }
+
+  private supportsProceduralFieldGeometry() {
+    return (
+      this.renderBackend === 'webgpu' &&
+      this.preset.ir.programs.perPixel.statements.length === 0
+    );
+  }
+
+  private buildProceduralFieldTransform() {
+    return {
+      zoom: Math.max(this.state.zoom ?? 1, 0.0001),
+      zoomExponent: Math.max(this.state.zoomexp ?? 1, 0.0001),
+      rotation: this.state.rot ?? 0,
+      warp: this.state.warp ?? 0,
+      warpAnimSpeed: clamp(this.state.warpanimspeed ?? 1, 0, 4),
+      centerX: normalizeTransformCenter(this.state.cx ?? 0.5),
+      centerY: normalizeTransformCenter(this.state.cy ?? 0.5),
+      scaleX: this.state.sx ?? 1,
+      scaleY: this.state.sy ?? 1,
+      translateX: (this.state.dx ?? 0) * 2,
+      translateY: (this.state.dy ?? 0) * 2,
+    };
+  }
+
+  private getMeshDensity() {
+    return clamp(
+      Math.round((this.state.mesh_density ?? 16) * this.detailScale),
+      8,
+      28,
+    );
+  }
+
+  private getMotionVectorDescriptorContext(): MotionVectorDescriptorContext | null {
+    const legacyControls =
+      Math.abs(this.state.mv_dx ?? 0) > 0.0001 ||
+      Math.abs(this.state.mv_dy ?? 0) > 0.0001 ||
+      Math.abs(this.state.mv_l ?? 0) > 0.0001 ||
+      this.preset.ir.programs.init.statements.some(
+        (statement) =>
+          statement.target === 'motion_vectors_x' ||
+          statement.target === 'motion_vectors_y',
+      ) ||
+      this.preset.ir.programs.perFrame.statements.some(
+        (statement) =>
+          statement.target === 'motion_vectors_x' ||
+          statement.target === 'motion_vectors_y',
+      );
+
+    if ((this.state.motion_vectors ?? 0) < 0.5 && !legacyControls) {
+      return null;
+    }
+
+    return {
+      legacyControls,
+      countX: clamp(
+        Math.round(this.state.motion_vectors_x ?? 16),
+        1,
+        MAX_MOTION_VECTOR_COLUMNS,
+      ),
+      countY: clamp(
+        Math.round(this.state.motion_vectors_y ?? 12),
+        1,
+        MAX_MOTION_VECTOR_ROWS,
+      ),
+    };
+  }
+
   private buildMainWave(signals: MilkdropRuntimeSignals) {
     const samples = clamp(
       Math.round((48 + this.state.mesh_density * 2) * this.detailScale),
       24,
       192,
     );
-    const positions = new Array<number>(samples * 3);
     const mode = normalizeWaveMode(this.state.wave_mode ?? 0);
     const centerX = ((this.state.wave_x ?? 0.5) - 0.5) * 2;
     const centerY = (0.5 - (this.state.wave_y ?? 0.5)) * 2;
@@ -572,6 +666,14 @@ class MilkdropPresetVM implements MilkdropVM {
       );
     }
     this.syncLastWaveSamples(smoothedSamples, samples);
+
+    const drawMode = (this.state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line';
+    const useProcedural = this.supportsProceduralWave(drawMode);
+    const positions = useProcedural ? [] : new Array<number>(samples * 3);
+    const proceduralSamples = useProcedural ? new Array<number>(samples) : null;
+    const proceduralVelocities = useProcedural
+      ? new Array<number>(samples)
+      : null;
 
     for (let index = 0; index < samples; index += 1) {
       const t = index / Math.max(1, samples - 1);
@@ -676,6 +778,12 @@ class MilkdropPresetVM implements MilkdropVM {
             velocity * 0.12;
       }
 
+      if (useProcedural && proceduralSamples && proceduralVelocities) {
+        proceduralSamples[index] = sampleValue;
+        proceduralVelocities[index] = velocity;
+        continue;
+      }
+
       const writeIndex = index * 3;
       positions[writeIndex] = x;
       positions[writeIndex + 1] = y;
@@ -699,12 +807,28 @@ class MilkdropPresetVM implements MilkdropVM {
       0.04,
       1,
     );
-    const drawMode = (this.state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line';
     const additive = (this.state.wave_additive ?? 0) >= 0.5;
     const thickness = clamp(this.state.wave_thick ?? 1, 1, 5);
     const pointSize = clamp((this.state.wave_thick ?? 1) * 3, 1, 12);
 
-    const procedural = null;
+    const procedural = useProcedural
+      ? ({
+          samples: proceduralSamples ?? [],
+          velocities: proceduralVelocities ?? [],
+          mode,
+          centerX,
+          centerY,
+          scale,
+          mystery,
+          time: signals.time,
+          beatPulse: signals.beatPulse,
+          trebleAtt: signals.trebleAtt,
+          color: finalWaveColor,
+          alpha,
+          additive,
+          thickness,
+        } satisfies MilkdropProceduralWaveVisual)
+      : null;
 
     return {
       visual: {
@@ -759,7 +883,11 @@ class MilkdropPresetVM implements MilkdropVM {
         frameLocals.a ?? 0.4,
       );
       const waveAlpha = clamp(frameLocals.a ?? 0.4, 0.02, 1);
-      const positions = new Array<number>(sampleCount * 3);
+      const useProcedural = this.supportsProceduralCustomWave(wave, drawMode);
+      const positions = useProcedural ? [] : new Array<number>(sampleCount * 3);
+      const proceduralSamples = useProcedural
+        ? new Array<number>(sampleCount)
+        : null;
       const pointLocals: MutableState = { ...frameLocals };
 
       for (let point = 0; point < sampleCount; point += 1) {
@@ -772,6 +900,12 @@ class MilkdropPresetVM implements MilkdropVM {
             0.55 *
             scaling *
             (1 + (frameLocals.mystery ?? 0) * 0.25);
+
+        if (useProcedural && proceduralSamples) {
+          proceduralSamples[point] = spectrumValue;
+          continue;
+        }
+
         Object.assign(pointLocals, frameLocals, {
           ...waveChannels,
           x: centerX + (-1 + sample * 2) * 0.85,
@@ -811,6 +945,21 @@ class MilkdropPresetVM implements MilkdropVM {
         pointSize: clamp((frameLocals.thick ?? 1) * 3.2, 1, 14),
         spectrum: (frameLocals.spectrum ?? 0) >= 0.5,
       });
+
+      if (useProcedural) {
+        proceduralWaves.push({
+          samples: proceduralSamples ?? [],
+          spectrum: (frameLocals.spectrum ?? 0) >= 0.5,
+          centerX,
+          centerY,
+          scaling,
+          mystery: frameLocals.mystery ?? 0,
+          time: signals.time,
+          color: waveColor,
+          alpha: waveAlpha,
+          additive,
+        });
+      }
     });
 
     return {
@@ -886,11 +1035,11 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   private buildMeshField(signals: MilkdropRuntimeSignals): MeshField {
-    const density = clamp(
-      Math.round((this.state.mesh_density ?? 16) * this.detailScale),
-      8,
-      28,
-    );
+    const density = this.getMeshDensity();
+    if (this.supportsProceduralFieldGeometry()) {
+      return { density, points: [] };
+    }
+
     const points = new Array<MeshFieldPoint>(density * density);
 
     for (let row = 0; row < density; row += 1) {
@@ -911,6 +1060,22 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   private buildMesh(meshField: MeshField): MilkdropMeshVisual {
+    const colorValue = color(
+      this.state.mesh_r ?? 0.4,
+      this.state.mesh_g ?? 0.6,
+      this.state.mesh_b ?? 1,
+      this.state.mesh_alpha ?? 0.2,
+    );
+    const alpha = clamp(this.state.mesh_alpha ?? 0.2, 0.02, 0.9);
+
+    if (meshField.points.length === 0) {
+      return {
+        positions: [],
+        color: colorValue,
+        alpha,
+      };
+    }
+
     const positions = new Array<number>(
       meshField.density * Math.max(0, meshField.density - 1) * 12,
     );
@@ -954,28 +1119,59 @@ class MilkdropPresetVM implements MilkdropVM {
 
     return {
       positions: positions.slice(0, writeIndex),
-      color: color(
-        this.state.mesh_r ?? 0.4,
-        this.state.mesh_g ?? 0.6,
-        this.state.mesh_b ?? 1,
-        this.state.mesh_alpha ?? 0.2,
-      ),
-      alpha: clamp(this.state.mesh_alpha ?? 0.2, 0.02, 0.9),
+      color: colorValue,
+      alpha,
     };
   }
 
-  private getProceduralMeshFieldVisual() {
-    return null;
+  private getProceduralMeshFieldVisual(): MilkdropProceduralMeshFieldVisual | null {
+    if (!this.supportsProceduralFieldGeometry()) {
+      return null;
+    }
+
+    return {
+      density: this.getMeshDensity(),
+      ...this.buildProceduralFieldTransform(),
+    };
   }
 
-  private getProceduralMotionVectorFieldVisual() {
-    return null;
+  private getProceduralMotionVectorFieldVisual(): MilkdropProceduralMotionVectorFieldVisual | null {
+    if (!this.supportsProceduralFieldGeometry()) {
+      return null;
+    }
+
+    const motionVectorContext = this.getMotionVectorDescriptorContext();
+    if (!motionVectorContext) {
+      return null;
+    }
+
+    const legacyLength = Math.max(0, this.state.mv_l ?? 0);
+    const legacyCellScale =
+      Math.min(
+        2 / Math.max(motionVectorContext.countX, 1),
+        2 / Math.max(motionVectorContext.countY, 1),
+      ) * 0.625;
+
+    return {
+      countX: motionVectorContext.countX,
+      countY: motionVectorContext.countY,
+      sourceOffsetX: motionVectorContext.legacyControls
+        ? clamp(this.state.mv_dx ?? 0, -1, 1)
+        : 0,
+      sourceOffsetY: motionVectorContext.legacyControls
+        ? clamp(this.state.mv_dy ?? 0, -1, 1)
+        : 0,
+      explicitLength:
+        legacyLength <= 1 ? legacyLength : legacyLength * legacyCellScale,
+      legacyControls: motionVectorContext.legacyControls,
+      ...this.buildProceduralFieldTransform(),
+    };
   }
 
   private buildGpuGeometryHints(): MilkdropGpuGeometryHints {
     return {
       mainWave: null,
-      trailWaves: [],
+      trailWaves: this.proceduralTrailWaves.slice(),
       customWaves: [],
       meshField: this.getProceduralMeshFieldVisual(),
       motionVectorField: this.getProceduralMotionVectorFieldVisual(),
@@ -986,38 +1182,20 @@ class MilkdropPresetVM implements MilkdropVM {
     signals: MilkdropRuntimeSignals,
     meshField: MeshField,
   ): MilkdropMotionVectorVisual[] {
-    const hasLegacyMotionVectorControls =
-      Math.abs(this.state.mv_dx ?? 0) > 0.0001 ||
-      Math.abs(this.state.mv_dy ?? 0) > 0.0001 ||
-      Math.abs(this.state.mv_l ?? 0) > 0.0001 ||
-      this.preset.ir.programs.init.statements.some(
-        (statement) =>
-          statement.target === 'motion_vectors_x' ||
-          statement.target === 'motion_vectors_y',
-      ) ||
-      this.preset.ir.programs.perFrame.statements.some(
-        (statement) =>
-          statement.target === 'motion_vectors_x' ||
-          statement.target === 'motion_vectors_y',
-      );
-
-    if (
-      (this.state.motion_vectors ?? 0) < 0.5 &&
-      !hasLegacyMotionVectorControls
-    ) {
+    const motionVectorContext = this.getMotionVectorDescriptorContext();
+    if (!motionVectorContext) {
       return [];
     }
 
-    const countX = clamp(
-      Math.round(this.state.motion_vectors_x ?? 16),
-      1,
-      MAX_MOTION_VECTOR_COLUMNS,
-    );
-    const countY = clamp(
-      Math.round(this.state.motion_vectors_y ?? 12),
-      1,
-      MAX_MOTION_VECTOR_ROWS,
-    );
+    if (this.getProceduralMotionVectorFieldVisual()) {
+      return [];
+    }
+
+    const {
+      legacyControls: hasLegacyMotionVectorControls,
+      countX,
+      countY,
+    } = motionVectorContext;
     const colorValue = color(
       this.state.mv_r ?? 1,
       this.state.mv_g ?? 1,
@@ -1296,14 +1474,25 @@ class MilkdropPresetVM implements MilkdropVM {
     this.frameTransformCache.clear();
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
-    const { visual: mainWave } = this.buildMainWave(signals);
-    const gpuGeometry = this.buildGpuGeometryHints();
-    const customWaves = this.buildCustomWaves(signals);
+    const { visual: mainWave, procedural: proceduralMainWave } =
+      this.buildMainWave(signals);
     if (this.lastWaveform) {
       this.trails.unshift(this.lastWaveform);
       this.trails = this.trails.slice(0, MAX_TRAILS);
     }
+    if (this.lastProceduralWave) {
+      this.proceduralTrailWaves.unshift(this.lastProceduralWave);
+      this.proceduralTrailWaves = this.proceduralTrailWaves.slice(
+        0,
+        MAX_TRAILS,
+      );
+    }
     this.lastWaveform = mainWave;
+    this.lastProceduralWave = proceduralMainWave;
+
+    const gpuGeometry = this.buildGpuGeometryHints();
+    gpuGeometry.mainWave = proceduralMainWave;
+    const customWaves = this.buildCustomWaves(signals);
 
     const meshField = this.buildMeshField(signals);
     const mesh = this.buildMesh(meshField);
