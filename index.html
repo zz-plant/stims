@@ -107,11 +107,16 @@
           <div class="home-hero__grid">
             <div class="home-hero__copy">
               <p class="eyebrow">Independent browser-native visualizer</p>
-              <h1>MilkDrop-style visuals, without leaving the browser.</h1>
+              <h1>MilkDrop energy, remixed with Winamp-era chrome.</h1>
               <p class="tagline">
                 Start with demo audio now. Use <code>/milkdrop/</code> for mic or tab audio,
                 presets, and editing.
               </p>
+              <div class="home-hero__status-row" aria-label="Session indicators">
+                <span class="pill pill--accent">Demo ready</span>
+                <span class="pill">Mic + tab audio</span>
+                <span class="pill">Preset browser</span>
+              </div>
               <div class="hero-cta-row" role="group" aria-label="Primary actions">
                 <a href="/milkdrop/?audio=demo" class="cta-button primary">
                   Start with demo audio
@@ -120,18 +125,91 @@
               </div>
               <div class="home-hero__focus" aria-label="Launch flow summary">
                 <p class="home-hero__support">
-                  The homepage stays simple: launch fast here, go deeper in
-                  <code>/milkdrop/</code> when you need more control.
+                  The homepage keeps the classic player feel on the surface, then hands you the
+                  deeper controls inside <code>/milkdrop/</code> when you want them.
                 </p>
                 <ul class="home-hero__checklist">
-                  <li>Start fast with demo audio.</li>
-                  <li>Switch to mic or tab audio later.</li>
-                  <li>Open presets or the editor only when you want them.</li>
+                  <li>Boot the visualizer fast with bundled demo audio.</li>
+                  <li>Switch to microphone or tab capture when you are ready.</li>
+                  <li>Open presets and the editor without leaving the session.</li>
                 </ul>
               </div>
             </div>
 
             <div class="home-hero__visual">
+              <div class="winamp-deck" aria-hidden="true">
+                <div class="winamp-deck__titlebar">
+                  <span>STIMS v1.0 • Browser visualizer</span>
+                  <div class="winamp-deck__window-controls">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+                <div class="winamp-deck__stack">
+                  <div class="winamp-deck__body">
+                    <div class="winamp-deck__transport">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                    <div class="winamp-deck__readout">
+                      <p>PLAYING</p>
+                      <strong>Demo audio</strong>
+                      <span>Preset browser armed</span>
+                    </div>
+                    <div class="winamp-deck__meters">
+                      <div class="winamp-deck__meter-row">
+                        <span>L</span>
+                        <div class="winamp-deck__meter-bars">
+                          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                        </div>
+                      </div>
+                      <div class="winamp-deck__meter-row">
+                        <span>R</span>
+                        <div class="winamp-deck__meter-bars">
+                          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="winamp-deck__sliders">
+                      <div class="winamp-deck__slider-group">
+                        <span>VOL</span>
+                        <div class="winamp-deck__slider-track"><b></b></div>
+                      </div>
+                      <div class="winamp-deck__slider-group">
+                        <span>BAL</span>
+                        <div class="winamp-deck__slider-track"><b></b></div>
+                      </div>
+                    </div>
+                    <div class="winamp-deck__eq" aria-hidden="true">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                  <div class="winamp-playlist">
+                    <div class="winamp-playlist__titlebar">
+                      <span>Playlist</span>
+                      <span>00:01:57</span>
+                    </div>
+                    <ol class="winamp-playlist__list">
+                      <li><span>01.</span> Demo Audio — Browser Warmup</li>
+                      <li><span>02.</span> Live Input — Mic Check</li>
+                      <li><span>03.</span> Preset Browser — Classic MilkDrop</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
               <div class="milkdrop-stage">
                 <div class="milkdrop-stage__frame">
                   <div class="milkdrop-stage__halo"></div>
@@ -142,7 +220,7 @@
               </div>
               <aside class="home-hero__aside" aria-label="What opens in MilkDrop">
                 <p class="home-hero__aside-label">Inside <code>/milkdrop/</code></p>
-                <h2>Launch first. Tweak later.</h2>
+                <h2>Classic desktop feel, modern browser flow.</h2>
                 <p>Audio setup, presets, and editing live inside <code>/milkdrop/</code>.</p>
               </aside>
             </div>

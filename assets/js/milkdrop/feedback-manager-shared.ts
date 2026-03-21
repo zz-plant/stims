@@ -136,7 +136,7 @@ function createFeedbackRenderTarget(
   behavior: MilkdropBackendBehavior,
 ) {
   const profile = behavior.feedbackProfile;
-  const resolutionScale = profile.resolutionScale;
+  const resolutionScale = profile.feedbackResolutionScale;
   const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
   const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
   const target = new WebGLRenderTarget(scaledWidth, scaledHeight, {
@@ -226,7 +226,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   ) {
     this.camera.position.z = 1;
     this.profile = behavior.feedbackProfile;
-    this.resolutionScale = this.profile.resolutionScale;
+    this.resolutionScale = this.profile.feedbackResolutionScale;
     this.auxTextures = getSharedAuxTextures();
     this.sceneTarget = createFeedbackRenderTarget(width, height, behavior);
     this.targets = [

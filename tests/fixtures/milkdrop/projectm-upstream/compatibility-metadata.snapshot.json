@@ -2087,7 +2087,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [
-        "WebGPU supports the extracted shader controls here, but still uses translated shader text instead of direct shader-program execution."
+        "WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution."
       ],
       "featuresUsed": ["base-globals"],
       "gpuDescriptorPlan": {
@@ -2157,7 +2157,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [
-        "WebGPU supports the extracted shader controls here, but still uses translated shader text instead of direct shader-program execution."
+        "WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution."
       ],
       "featuresUsed": ["base-globals"],
       "gpuDescriptorPlan": {

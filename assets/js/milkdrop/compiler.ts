@@ -375,12 +375,7 @@ const BACKEND_PARTIAL_FEATURE_GAPS: Record<
   Partial<Record<MilkdropFeatureKey, string>>
 > = {
   webgl: {},
-  webgpu: {
-    'video-echo':
-      'WebGPU still routes video echo through the legacy feedback path and may diverge from WebGL output.',
-    'post-effects':
-      'WebGPU post-processing parity is still incomplete for MilkDrop post effects.',
-  },
+  webgpu: {},
 };
 const BACKEND_SHADER_TEXT_GAPS: Record<
   MilkdropRenderBackend,
@@ -395,7 +390,7 @@ const BACKEND_SHADER_TEXT_GAPS: Record<
   },
   webgpu: {
     supportedSubset:
-      'WebGPU supports the extracted shader controls here, but still uses translated shader text instead of direct shader-program execution.',
+      'WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution.',
     unsupportedSubset:
       'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
   },

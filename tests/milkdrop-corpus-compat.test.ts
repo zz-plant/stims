@@ -70,7 +70,7 @@ const LOCAL_SHAPE_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> =
   };
 
 const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
-  'aurora-feedback-core.milk': { webgl: 'supported', webgpu: 'partial' },
+  'aurora-feedback-core.milk': { webgl: 'supported', webgpu: 'supported' },
   'eos-glowsticks-v2-03-music.milk': {
     webgl: 'partial',
     webgpu: 'partial',
@@ -93,7 +93,7 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
       'nmotionvectorsy',
     ],
   },
-  'kinetic-grid-pulse.milk': { webgl: 'supported', webgpu: 'partial' },
+  'kinetic-grid-pulse.milk': { webgl: 'supported', webgpu: 'supported' },
   'krash-rovastar-cerebral-demons-stars.milk': {
     webgl: 'partial',
     webgpu: 'partial',
@@ -105,8 +105,8 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
       'nmotionvectorsy',
     ],
   },
-  'low-motion-halo-drift.milk': { webgl: 'supported', webgpu: 'partial' },
-  'prism-drum-tunnel.milk': { webgl: 'supported', webgpu: 'partial' },
+  'low-motion-halo-drift.milk': { webgl: 'supported', webgpu: 'supported' },
+  'prism-drum-tunnel.milk': { webgl: 'supported', webgpu: 'supported' },
   'rovastar-parallel-universe.milk': {
     webgl: 'partial',
     webgpu: 'partial',
