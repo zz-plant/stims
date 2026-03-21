@@ -1274,9 +1274,7 @@
     },
     "compatibility": {
       "unsupportedKeys": [],
-      "warnings": [
-        "WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL."
-      ],
+      "warnings": [],
       "featuresUsed": ["base-globals"],
       "backends": {
         "webgl": {
@@ -1284,23 +1282,13 @@
           "evidence": []
         },
         "webgpu": {
-          "status": "partial",
-          "evidence": [
-            {
-              "scope": "backend",
-              "status": "partial",
-              "code": "supported-shader-text-gap",
-              "feature": null
-            }
-          ]
+          "status": "supported",
+          "evidence": []
         }
       },
       "parity": {
-        "fidelityClass": "near-exact",
-        "backendDivergence": [
-          "status:webgl=supported,webgpu=partial",
-          "webgpu:supported-shader-text-gap"
-        ],
+        "fidelityClass": "exact",
+        "backendDivergence": [],
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],
@@ -1320,9 +1308,7 @@
     },
     "compatibility": {
       "unsupportedKeys": [],
-      "warnings": [
-        "WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL."
-      ],
+      "warnings": [],
       "featuresUsed": ["base-globals"],
       "backends": {
         "webgl": {
@@ -1330,23 +1316,13 @@
           "evidence": []
         },
         "webgpu": {
-          "status": "partial",
-          "evidence": [
-            {
-              "scope": "backend",
-              "status": "partial",
-              "code": "supported-shader-text-gap",
-              "feature": null
-            }
-          ]
+          "status": "supported",
+          "evidence": []
         }
       },
       "parity": {
-        "fidelityClass": "near-exact",
-        "backendDivergence": [
-          "status:webgl=supported,webgpu=partial",
-          "webgpu:supported-shader-text-gap"
-        ],
+        "fidelityClass": "exact",
+        "backendDivergence": [],
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],
