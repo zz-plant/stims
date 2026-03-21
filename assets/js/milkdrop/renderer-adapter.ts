@@ -1212,6 +1212,35 @@ function setOrUpdateScalarAttribute(
   geometry.setAttribute(name, attribute);
 }
 
+function resampleScalarValues(values: number[], targetLength: number) {
+  if (values.length === targetLength) {
+    return values;
+  }
+  if (targetLength <= 0) {
+    return [];
+  }
+  if (values.length === 0) {
+    return new Array<number>(targetLength).fill(0);
+  }
+  if (values.length === 1) {
+    return new Array<number>(targetLength).fill(values[0] ?? 0);
+  }
+
+  const resampled = new Array<number>(targetLength);
+  const sourceMaxIndex = values.length - 1;
+  const targetMaxIndex = Math.max(1, targetLength - 1);
+  for (let index = 0; index < targetLength; index += 1) {
+    const position = (index / targetMaxIndex) * sourceMaxIndex;
+    const lowerIndex = Math.floor(position);
+    const upperIndex = Math.min(sourceMaxIndex, lowerIndex + 1);
+    const mix = position - lowerIndex;
+    const lowerValue = values[lowerIndex] ?? 0;
+    const upperValue = values[upperIndex] ?? lowerValue;
+    resampled[index] = lerpNumber(lowerValue, upperValue, mix);
+  }
+  return resampled;
+}
+
 function lerpNumber(previous: number, current: number, mix: number) {
   return previous + (current - previous) * mix;
 }
@@ -1386,7 +1415,7 @@ function syncInterpolatedProceduralWaveObject(
   setOrUpdateScalarAttribute(
     next.geometry,
     'previousSampleValue',
-    previousWave.samples,
+    resampleScalarValues(previousWave.samples, currentWave.samples.length),
   );
   setOrUpdateScalarAttribute(
     next.geometry,
@@ -1396,7 +1425,10 @@ function syncInterpolatedProceduralWaveObject(
   setOrUpdateScalarAttribute(
     next.geometry,
     'previousSampleVelocity',
-    previousWave.velocities,
+    resampleScalarValues(
+      previousWave.velocities,
+      currentWave.velocities.length,
+    ),
   );
   const material = next.material as ShaderMaterial;
   material.uniforms.previousCenterX.value = previousWave.centerX;
@@ -1435,7 +1467,7 @@ function syncInterpolatedProceduralCustomWaveObject(
   setOrUpdateScalarAttribute(
     next.geometry,
     'previousSampleValue',
-    previousWave.samples,
+    resampleScalarValues(previousWave.samples, currentWave.samples.length),
   );
   const material = next.material as ShaderMaterial;
   material.uniforms.previousCenterX.value = previousWave.centerX;
@@ -2986,12 +3018,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
               payload.frameState.interaction?.waves.scale ?? 1,
               blendMix,
             ),
-            alphaMultiplier:
-              lerpNumber(
-                previousFrame.interaction?.waves.alphaMultiplier ?? 1,
-                payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
-                blendMix,
-              ) * blend.alpha,
+            alphaMultiplier: lerpNumber(
+              previousFrame.interaction?.waves.alphaMultiplier ?? 1,
+              payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
+              blendMix,
+            ),
           },
         );
       } else {
@@ -3038,12 +3069,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
               payload.frameState.interaction?.waves.scale ?? 1,
               blendMix,
             ),
-            alphaMultiplier:
-              lerpNumber(
-                previousFrame.interaction?.waves.alphaMultiplier ?? 1,
-                payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
-                blendMix,
-              ) * blend.alpha,
+            alphaMultiplier: lerpNumber(
+              previousFrame.interaction?.waves.alphaMultiplier ?? 1,
+              payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
+              blendMix,
+            ),
           },
         );
       } else {
@@ -3175,3 +3205,8 @@ export function createMilkdropRendererAdapterCore({
 }
 
 export const createMilkdropRendererAdapter = createMilkdropRendererAdapterCore;
+
+export const __milkdropRendererAdapterTestUtils = {
+  syncInterpolatedProceduralWaveObject,
+  syncInterpolatedProceduralCustomWaveObject,
+};
