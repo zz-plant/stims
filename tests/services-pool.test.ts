@@ -10,8 +10,11 @@ import {
   resetAudioPool,
 } from '../assets/js/core/services/audio-service.ts';
 import {
+  getRendererRuntimeControls,
   requestRenderer,
   resetRendererPool,
+  setRendererRuntimeControls,
+  subscribeToRendererRuntimeControls,
 } from '../assets/js/core/services/render-service.ts';
 import type { FrequencyAnalyser } from '../assets/js/utils/audio-handler.ts';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../assets/js/utils/audio-handler.ts';
@@ -55,6 +58,35 @@ describe('render-service pooling', () => {
     expect(first.canvas).toBe(second.canvas);
     expect(host.contains(second.canvas)).toBe(true);
     expect(initRendererImpl).toHaveBeenCalledTimes(1);
+  });
+
+  test('shares runtime optimization controls through the render service', async () => {
+    const updates = mock();
+    const unsubscribe = subscribeToRendererRuntimeControls(updates);
+
+    expect(updates).toHaveBeenCalledWith({
+      renderScale: 1,
+      feedbackScale: 1,
+      meshDensityMultiplier: 1,
+      waveSampleMultiplier: 1,
+      motionVectorDensityMultiplier: 1,
+    });
+
+    const next = setRendererRuntimeControls({
+      feedbackScale: 0.75,
+      meshDensityMultiplier: 1.25,
+    });
+
+    expect(next).toEqual({
+      renderScale: 1,
+      feedbackScale: 0.75,
+      meshDensityMultiplier: 1.25,
+      waveSampleMultiplier: 1,
+      motionVectorDensityMultiplier: 1,
+    });
+    expect(getRendererRuntimeControls()).toEqual(next);
+
+    unsubscribe();
   });
 });
 
