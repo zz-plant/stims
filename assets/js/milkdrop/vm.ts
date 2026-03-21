@@ -17,6 +17,7 @@ import type {
   MilkdropRuntimeSignals,
   MilkdropShapeDefinition,
   MilkdropShapeVisual,
+  MilkdropVideoEchoOrientation,
   MilkdropVM,
   MilkdropWaveDefinition,
   MilkdropWaveVisual,
@@ -28,6 +29,13 @@ const MAX_CUSTOM_SHAPE_SLOTS = 32;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function normalizeVideoEchoOrientation(
+  value: number,
+): MilkdropVideoEchoOrientation {
+  const truncated = Math.trunc(value);
+  return (((truncated % 4) + 4) % 4) as MilkdropVideoEchoOrientation;
 }
 
 function color(r: number, g: number, b: number, a = 1): MilkdropColor {
@@ -1213,6 +1221,9 @@ class MilkdropPresetVM implements MilkdropVM {
       videoEchoEnabled: (this.state.video_echo_enabled ?? 0) > 0.5,
       videoEchoAlpha: clamp(this.state.video_echo_alpha ?? 0.18, 0, 1),
       videoEchoZoom: clamp(this.state.video_echo_zoom ?? 1, 0.85, 1.3),
+      videoEchoOrientation: normalizeVideoEchoOrientation(
+        this.state.video_echo_orientation ?? 0,
+      ),
       warp: clamp(this.state.warp ?? 0.08, 0, 1),
     };
   }

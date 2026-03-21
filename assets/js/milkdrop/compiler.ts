@@ -269,6 +269,7 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   video_echo_enabled: 0,
   video_echo_alpha: 0.18,
   video_echo_zoom: 1.02,
+  video_echo_orientation: 0,
   ob_size: 0,
   ob_r: 0.92,
   ob_g: 0.96,
@@ -337,21 +338,7 @@ type PendingHardUnsupportedField = HardUnsupportedFieldSpec & {
   line: number;
 };
 
-/**
- * Inventory of MilkDrop2 preset fields that map to features Stims does not
- * currently emulate safely. These are treated as hard blockers instead of
- * generic unknown-field diagnostics so imports surface actionable compatibility
- * failures.
- */
-const HARD_UNSUPPORTED_FIELD_SPECS: readonly HardUnsupportedFieldSpec[] = [
-  {
-    key: 'video_echo_orientation',
-    feature: 'video-echo-orientation',
-    aliases: ['nvideoechoorientation', 'echo_orient'],
-    message:
-      'Video echo orientation is not implemented, so rotated or mirrored feedback trails cannot be reproduced.',
-  },
-];
+const HARD_UNSUPPORTED_FIELD_SPECS: readonly HardUnsupportedFieldSpec[] = [];
 const hardUnsupportedKeys = new Map<
   string,
   { feature: MilkdropCompatibilityFeatureKey; message: string }
@@ -551,13 +538,15 @@ function getHardUnsupportedField(key: string) {
 }
 
 function isHardUnsupportedFieldBlocking(
-  spec: HardUnsupportedFieldSpec,
-  numericFields: Partial<Record<string, number>>,
+  _spec: HardUnsupportedFieldSpec,
+  _numericFields: Partial<Record<string, number>>,
 ) {
-  if (spec.feature === 'video-echo-orientation') {
-    return (numericFields.video_echo_enabled ?? 0) > 0.5;
-  }
   return true;
+}
+
+function normalizeVideoEchoOrientation(value: number) {
+  const truncated = Math.trunc(value);
+  return (((truncated % 4) + 4) % 4) as 0 | 1 | 2 | 3;
 }
 
 function buildBackendDivergence({
@@ -4296,6 +4285,7 @@ const aliasMap: Record<string, string | null> = {
   fgammaadj: 'gammaadj',
   fvideoechozoom: 'video_echo_zoom',
   fvideoechoalpha: 'video_echo_alpha',
+  nvideoechoorientation: 'video_echo_orientation',
   fwavealpha: 'wave_a',
   fwavescale: 'wave_scale',
   fwavesmoothing: 'wave_smoothing',
@@ -4334,6 +4324,7 @@ const aliasMap: Record<string, string | null> = {
   finnerborderb: 'ib_b',
   finnerbordera: 'ib_a',
   video_echo: 'video_echo_enabled',
+  echo_orient: 'video_echo_orientation',
 };
 
 const legacyCustomWaveSuffixMap: Record<string, string | null> = {
@@ -5259,7 +5250,10 @@ function createIR(
     if (compiledScalar.expression) {
       parsedExpressions.push(compiledScalar.expression);
     }
-    numericFields[normalizedKey] = compiledScalar.value;
+    numericFields[normalizedKey] =
+      normalizedKey === 'video_echo_orientation'
+        ? normalizeVideoEchoOrientation(compiledScalar.value)
+        : compiledScalar.value;
   });
 
   pendingProgramSources.forEach(({ sourceLine, line }, block) => {
@@ -5513,7 +5507,8 @@ function createIR(
         key !== 'gammaadj' &&
         key !== 'video_echo_enabled' &&
         key !== 'video_echo_alpha' &&
-        key !== 'video_echo_zoom'
+        key !== 'video_echo_zoom' &&
+        key !== 'video_echo_orientation'
       );
     }),
   );
@@ -5575,6 +5570,9 @@ function createIR(
       videoEchoEnabled: (numericFields.video_echo_enabled ?? 0) > 0.5,
       videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
       videoEchoZoom: numericFields.video_echo_zoom ?? 1,
+      videoEchoOrientation: normalizeVideoEchoOrientation(
+        numericFields.video_echo_orientation ?? 0,
+      ),
     },
     compatibility,
   } satisfies MilkdropPresetIR;
