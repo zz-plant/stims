@@ -414,6 +414,8 @@ export type MilkdropShaderControls = {
   warpTexture: MilkdropShaderTextureWarpControls;
 };
 
+export type MilkdropVideoEchoOrientation = 0 | 1 | 2 | 3;
+
 export type MilkdropPostEffects = {
   shaderEnabled: boolean;
   textureWrap: boolean;
@@ -430,6 +432,7 @@ export type MilkdropPostEffects = {
   videoEchoEnabled: boolean;
   videoEchoAlpha: number;
   videoEchoZoom: number;
+  videoEchoOrientation: MilkdropVideoEchoOrientation;
 };
 
 export type MilkdropPresetIR = {
@@ -602,6 +605,7 @@ export type MilkdropPostVisual = {
   videoEchoEnabled: boolean;
   videoEchoAlpha: number;
   videoEchoZoom: number;
+  videoEchoOrientation: MilkdropVideoEchoOrientation;
   warp: number;
 };
 
@@ -755,6 +759,7 @@ export type MilkdropRenderPayload = {
 export type MilkdropFeedbackCompositeState = {
   mixAlpha: number;
   zoom: number;
+  videoEchoOrientation: MilkdropVideoEchoOrientation;
   brighten: number;
   darken: number;
   solarize: number;

@@ -267,6 +267,7 @@ function createCompositeUniforms(
     fractalTex: texture(auxTextures.fractal),
     mixAlpha: uniform(0.18),
     zoom: uniform(1.02),
+    videoEchoOrientation: uniform(0),
     brighten: uniform(0),
     darken: uniform(0),
     solarize: uniform(0),
@@ -319,6 +320,22 @@ function createCompositeUniforms(
 function createCompositeOutputNode(uniforms: CompositeUniformBag) {
   const sampleUvNode = createSampleUvNode();
   const applyFeedbackWarpNode = createApplyFeedbackWarpNode();
+  const applyVideoEchoOrientationNode = Fn(
+    ([sampleUv, orientation]: [any, any]) => {
+      const flipX = step(
+        0.5,
+        orientation.sub(floor(orientation.div(2)).mul(2)),
+      );
+      const flipY = step(
+        1.5,
+        orientation.sub(floor(orientation.div(4)).mul(4)),
+      );
+      return vec2(
+        mix(sampleUv.x, float(1).sub(sampleUv.x), flipX),
+        mix(sampleUv.y, float(1).sub(sampleUv.y), flipY),
+      );
+    },
+  );
   const sampleAuxTextureNode = createSampleAuxTextureNode(
     uniforms,
     uniforms.noiseTex,
@@ -373,6 +390,9 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
     );
     previousUv.addAssign(
       warpVector.mul(uniforms.warpTextureAmount).mul(0.08).mul(warpTextureMask),
+    );
+    previousUv.assign(
+      applyVideoEchoOrientationNode(previousUv, uniforms.videoEchoOrientation),
     );
 
     const current = uniforms.currentTex.sample(
@@ -673,6 +693,8 @@ class WebGPUMilkdropFeedbackManager {
   applyCompositeState(state: MilkdropFeedbackCompositeState) {
     this.compositeMaterial.uniforms.mixAlpha.value = state.mixAlpha;
     this.compositeMaterial.uniforms.zoom.value = state.zoom;
+    this.compositeMaterial.uniforms.videoEchoOrientation.value =
+      state.videoEchoOrientation;
     this.compositeMaterial.uniforms.brighten.value = state.brighten;
     this.compositeMaterial.uniforms.darken.value = state.darken;
     this.compositeMaterial.uniforms.solarize.value = state.solarize;

@@ -2029,6 +2029,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       zoom: frameState.post.videoEchoEnabled
         ? frameState.post.videoEchoZoom + controls.warpScale * 0.04
         : 1,
+      videoEchoOrientation: frameState.post.videoEchoEnabled
+        ? frameState.post.videoEchoOrientation
+        : 0,
       brighten: frameState.post.brighten ? 1 : 0,
       darken: frameState.post.darken ? 1 : 0,
       solarize: frameState.post.solarize ? 1 : 0,
