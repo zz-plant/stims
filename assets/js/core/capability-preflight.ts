@@ -451,55 +451,7 @@ export function attachCapabilityPreflight({
       container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
     ).filter((el) => !el.hasAttribute('aria-hidden'));
 
-  const trapFocus = (container: HTMLElement) => {
-    const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
-      const items = getFocusableElements(container);
-      if (items.length === 0) {
-        event.preventDefault();
-        container.focus();
-        return;
-      }
-
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = container.ownerDocument.activeElement;
-
-      if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-        return;
-      }
-
-      if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    const handleFocusIn = (event: FocusEvent) => {
-      if (!(event.target instanceof Node) || container.contains(event.target)) {
-        return;
-      }
-      const items = getFocusableElements(container);
-      if (items.length > 0) {
-        items[0].focus();
-      } else {
-        container.focus();
-      }
-    };
-
-    container.addEventListener('keydown', handleKeydown);
-    container.ownerDocument.addEventListener('focusin', handleFocusIn);
-
-    return () => {
-      container.removeEventListener('keydown', handleKeydown);
-      container.ownerDocument.removeEventListener('focusin', handleFocusIn);
-    };
-  };
-
   let restoreFocusTarget: HTMLElement | null = null;
-  let focusCleanup: (() => void) | null = null;
   let closingFromHistory = false;
   let isAttached = false;
 
@@ -548,14 +500,14 @@ export function attachCapabilityPreflight({
   const openPanel = () => {
     if (isPanelOpen()) return;
     rememberToggle.checked = readRememberPreference();
-    if (typeof panel.showModal === 'function') {
+    if (typeof panel.show === 'function') {
+      panel.show();
+    } else if (typeof panel.showModal === 'function') {
       panel.showModal();
     } else {
       panel.setAttribute('open', 'true');
     }
     setPreflightOpenState(true);
-    focusCleanup?.();
-    focusCleanup = trapFocus(panel);
     const focusables = getFocusableElements(panel);
     if (focusables.length > 0) {
       focusables[0].focus();
@@ -571,8 +523,6 @@ export function attachCapabilityPreflight({
       panel.removeAttribute('open');
     }
     setPreflightOpenState(false);
-    focusCleanup?.();
-    focusCleanup = null;
   };
 
   const title = document.createElement('div');
