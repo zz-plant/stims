@@ -4,7 +4,10 @@ import {
   evaluateMilkdropShaderExpression,
   parseMilkdropShaderStatement,
 } from '../assets/js/milkdrop/shader-ast.ts';
-import { normalizeMilkdropShaderSamplerName } from '../assets/js/milkdrop/shader-samplers.ts';
+import {
+  isMilkdropVolumeShaderSamplerName as isVolumeSamplerName,
+  normalizeMilkdropShaderSamplerName,
+} from '../assets/js/milkdrop/shader-samplers.ts';
 
 const SAMPLER_ALIAS_CASES = [
   {
@@ -94,6 +97,12 @@ describe('milkdrop shader sampler aliases', () => {
     expect(normalizeMilkdropShaderSamplerName('sampler_unknown_alias')).toBe(
       null,
     );
+  });
+
+  test('identifies simplex as the only runtime-backed volume sampler', () => {
+    expect(isVolumeSamplerName('simplex')).toBe(true);
+    expect(isVolumeSamplerName('noise')).toBe(false);
+    expect(isVolumeSamplerName('voronoi')).toBe(false);
   });
 
   test('keeps AST shader sampling aligned with compiler shader extraction', () => {

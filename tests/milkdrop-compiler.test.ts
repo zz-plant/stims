@@ -718,6 +718,50 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     ]);
   });
 
+  test('downgrades tex3D extraction for aux samplers without volume atlases', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Non-volume 3D Alias
+comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
+      `.trim(),
+      { id: 'shader-non-volume-3d-alias' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('noise');
+    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
+    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+      '3d',
+    );
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.diagnostics).toEqual([
+      expect.objectContaining({
+        code: 'preset_shader_volume_approximation',
+        severity: 'warning',
+        message:
+          'Texture layer shader control uses tex3D/texture3D with aux sampler "noise", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.',
+      }),
+    ]);
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      'Texture layer shader control uses tex3D/texture3D with aux sampler "noise", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.',
+      'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
+    ]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgl.evidence).toContainEqual(
+      expect.objectContaining({
+        code: 'volume-sampler-gap',
+        status: 'partial',
+      }),
+    );
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toContainEqual(
+      expect.objectContaining({
+        code: 'volume-sampler-gap',
+        status: 'partial',
+      }),
+    );
+  });
+
   test('supports resolved temp shader outputs for invert and runtime tint mixes', () => {
     const compiled = compileMilkdropPresetSource(
       `
