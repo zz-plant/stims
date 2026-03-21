@@ -6811,11 +6811,16 @@ section.intro,
 .winamp-deck {
   display: grid;
   gap: 0;
+  width: min(100%, 26rem);
+  justify-self: end;
   border-radius: 8px;
   border: 1px solid rgba(220, 231, 255, 0.38);
   overflow: hidden;
   background: linear-gradient(180deg, #6e7ea2 0%, #445476 18%, #23314f 100%);
-  box-shadow: var(--shadow-panel);
+  box-shadow: 0 12px 28px rgba(4, 8, 18, 0.24);
+  opacity: 0.82;
+  filter: saturate(0.72) brightness(0.94);
+  transform: translateX(0.6rem);
 }
 
 .winamp-deck__titlebar {
@@ -6969,6 +6974,8 @@ section.intro,
     linear-gradient(180deg, #516285, #26324e 10%, #121a2e 100%);
   border: 1px solid rgba(213, 224, 255, 0.32);
   box-shadow: var(--shadow-panel);
+  position: relative;
+  z-index: 1;
 }
 
 .milkdrop-stage__frame {
@@ -7040,6 +7047,12 @@ section.intro,
 }
 
 @media (max-width: 760px) {
+  .winamp-deck {
+    width: 100%;
+    justify-self: stretch;
+    transform: none;
+  }
+
   .winamp-deck__body {
     grid-template-columns: 1fr;
   }
@@ -7161,6 +7174,9 @@ section.intro,
     var(--winamp-metal-mid) 20%,
     var(--winamp-metal-low) 100%
   );
+  opacity: 0.7;
+  filter: saturate(0.55) brightness(0.92);
+  transform: translate(0.85rem, 0.45rem) scale(0.97);
 }
 
 .winamp-deck__titlebar,
@@ -7370,6 +7386,8 @@ section.intro,
 
 .milkdrop-stage {
   padding: 0.55rem;
+  margin-top: -1.6rem;
+  margin-left: 1.25rem;
 }
 
 .home-proof-card,
@@ -7382,6 +7400,11 @@ section.intro,
 }
 
 @media (max-width: 760px) {
+  .milkdrop-stage {
+    margin-top: -0.8rem;
+    margin-left: 0.35rem;
+  }
+
   .winamp-deck__stack {
     gap: 0.45rem;
   }
