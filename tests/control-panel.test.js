@@ -69,4 +69,20 @@ describe('control panel mobile affordances', () => {
     expect(checkboxes[0].checked).toBe(true);
     expect(checkboxes[2].checked).toBe(false);
   });
+
+  test('supports embedding system controls inside another panel', async () => {
+    const { initSystemControls } = await freshImport();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const panel = initSystemControls(host, {
+      variant: 'embedded',
+    });
+
+    expect(panel.element.classList.contains('control-panel--embedded')).toBe(
+      true,
+    );
+    expect(panel.element.classList.contains('control-panel--inline')).toBe(
+      false,
+    );
+  });
 });

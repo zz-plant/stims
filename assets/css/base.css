@@ -1080,6 +1080,7 @@ body {
 }
 
 .control-panel--inline,
+.control-panel--embedded,
 .shell-panel[data-audio-controls] > .control-panel,
 .shell-panel[data-settings-panel] > .control-panel,
 .shell-panel > [data-audio-controls] > .control-panel,
@@ -1093,6 +1094,23 @@ body {
   width: 100%;
   max-height: min(42dvh, 360px);
   overflow: auto;
+}
+
+.control-panel--embedded {
+  margin-top: 12px;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 239, 214, 0.12);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  clip-path: none;
+  max-height: none;
+}
+
+.control-panel--embedded::before,
+.control-panel--embedded::after {
+  display: none;
 }
 
 .control-panel::before,
@@ -2033,6 +2051,7 @@ body {
   }
 
   .control-panel--inline,
+  .control-panel--embedded,
   .shell-panel[data-audio-controls] > .control-panel,
   .shell-panel[data-settings-panel] > .control-panel,
   .shell-panel > [data-audio-controls] > .control-panel,
