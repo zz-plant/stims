@@ -13,6 +13,7 @@ fModWaveAlphaStart=0.88
 fModWaveAlphaEnd=0.22
 fWarpScale=0.88
 fWarpAnimSpeed=0.58
+zoom=1.00
 fZoomExponent=1.00
 fShader=1
 fBrighten=0

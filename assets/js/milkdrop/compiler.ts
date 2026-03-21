@@ -4916,7 +4916,6 @@ function createIR(
     MilkdropProgramBlock,
     { sourceLine: string; line: number }
   >();
-  const unsupportedKeys = new Set<string>();
   let unsupportedShaderText = false;
   let supportedShaderText = false;
   let warpShaderText: string | null = null;

@@ -1,15 +1,20 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
   COMPATIBILITY_MODE_KEY,
+  getActiveRenderPreferences,
   MAX_PIXEL_RATIO_KEY,
   RENDER_SCALE_KEY,
   resetRenderPreferencesState,
 } from '../assets/js/core/render-preferences.ts';
-import { resetSettingsPanelState } from '../assets/js/core/settings-panel.ts';
+import {
+  getActiveQualityPreset,
+  resetSettingsPanelState,
+} from '../assets/js/core/settings-panel.ts';
 import { initSystemControls } from '../assets/js/ui/system-controls.ts';
 
 type NavSnapshot = {
   userAgent: string;
+  href: string;
 };
 
 const DESKTOP_UA =
@@ -30,8 +35,10 @@ describe('system controls tv defaults', () => {
   beforeEach(() => {
     snapshot = {
       userAgent: navigator.userAgent,
+      href: window.location.href,
     };
     localStorage.clear();
+    window.history.replaceState({}, '', '/');
     document.body.innerHTML = '';
     resetRenderPreferencesState();
     resetSettingsPanelState({ removePanel: true });
@@ -40,6 +47,7 @@ describe('system controls tv defaults', () => {
   afterEach(() => {
     setUserAgent(snapshot.userAgent);
     localStorage.clear();
+    window.history.replaceState({}, '', snapshot.href);
     document.body.innerHTML = '';
     resetRenderPreferencesState();
     resetSettingsPanelState({ removePanel: true });
@@ -47,22 +55,22 @@ describe('system controls tv defaults', () => {
 
   test('applies tv defaults when no render preferences are stored', () => {
     setUserAgent(TV_UA);
+    localStorage.setItem('stims:tv-mode', 'on');
     const host = document.createElement('div');
     document.body.appendChild(host);
 
     initSystemControls(host);
 
-    const presetSelect = host.querySelector('select');
-    expect(presetSelect).toBeTruthy();
-    expect((presetSelect as HTMLSelectElement).value).toBe('tv');
-
     expect(localStorage.getItem(COMPATIBILITY_MODE_KEY)).toBe('true');
     expect(localStorage.getItem(MAX_PIXEL_RATIO_KEY)).toBe('1.25');
     expect(localStorage.getItem(RENDER_SCALE_KEY)).toBe('0.9');
+    expect(getActiveQualityPreset().id).toBe('tv');
+    expect(getActiveRenderPreferences().compatibilityMode).toBe(true);
   });
 
   test('does not overwrite existing stored render preferences', () => {
     setUserAgent(TV_UA);
+    localStorage.setItem('stims:tv-mode', 'on');
     localStorage.setItem(COMPATIBILITY_MODE_KEY, 'false');
     localStorage.setItem(MAX_PIXEL_RATIO_KEY, '2');
     localStorage.setItem(RENDER_SCALE_KEY, '1');
@@ -84,9 +92,6 @@ describe('system controls tv defaults', () => {
 
     initSystemControls(host);
 
-    const presetSelect = host.querySelector(
-      'select',
-    ) as HTMLSelectElement | null;
-    expect(presetSelect?.value).toBe('balanced');
+    expect(getActiveQualityPreset().id).toBe('balanced');
   });
 });

@@ -78,6 +78,20 @@ describe('milkdrop bundled preset corpus', () => {
       );
     });
   });
+
+  test('preserves bundled zoom motion when presets opt into fZoomExponent', () => {
+    const corpus = loadBundledPresetCorpus();
+
+    BUNDLED_WEBGPU_PARTIAL_PRESETS.forEach((file) => {
+      const entry = corpus.find((preset) => preset.file === file);
+
+      expect(entry).toBeDefined();
+      expect(entry?.compiled.ir.numericFields.zoom).toBeCloseTo(
+        entry?.compiled.ir.numericFields.zoomexp ?? Number.NaN,
+        6,
+      );
+    });
+  });
 });
 
 describe('milkdrop legacy fixture corpus', () => {
