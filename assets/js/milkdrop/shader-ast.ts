@@ -1,8 +1,10 @@
 import { evaluateMilkdropExpression } from './expression';
+import { normalizeMilkdropShaderSamplerName } from './shader-samplers';
 import type {
   MilkdropExpressionNode,
   MilkdropShaderExpressionNode,
   MilkdropShaderStatement,
+  MilkdropShaderTextureSampler,
 } from './types';
 
 type Token =
@@ -18,14 +20,14 @@ type ShaderValue =
   | { kind: 'scalar'; value: number }
   | { kind: 'vec2'; value: [number, number] }
   | { kind: 'vec3'; value: [number, number, number] }
-  | { kind: 'sample'; source: string; uv: ShaderValue };
+  | {
+      kind: 'sample';
+      source: MilkdropShaderTextureSampler | 'main' | null;
+      uv: ShaderValue;
+    };
 
 function normalizeShaderSamplerName(value: string) {
-  const normalized = value.trim().toLowerCase();
-  if (normalized.startsWith('sampler_')) {
-    return normalized.slice('sampler_'.length);
-  }
-  return normalized;
+  return normalizeMilkdropShaderSamplerName(value);
 }
 
 const operatorTokens = ['<=', '>=', '==', '!=', '&&', '||'];
