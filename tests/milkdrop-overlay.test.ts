@@ -463,6 +463,75 @@ describe('milkdrop overlay browse rendering', () => {
     overlay.dispose();
   });
 
+  test('keeps browse mode tabs keyboard reachable with roving focus controls', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const classicPreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    classicPreset.tags = ['collection:classic-milkdrop'];
+    classicPreset.historyIndex = 0;
+    const favoritePreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
+    favoritePreset.isFavorite = true;
+
+    overlay.setCatalog(
+      [classicPreset, favoritePreset],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const featuredTab = document.querySelector(
+      '.milkdrop-overlay__browse-mode-tab[data-mode="featured"]',
+    ) as HTMLButtonElement | null;
+    const allPresetsTab = document.querySelector(
+      '.milkdrop-overlay__browse-mode-tab[data-mode="all"]',
+    ) as HTMLButtonElement | null;
+    const favoritesTab = document.querySelector(
+      '.milkdrop-overlay__browse-mode-tab[data-mode="favorites"]',
+    ) as HTMLButtonElement | null;
+    const collectionFilters = document.querySelector(
+      '.milkdrop-overlay__collection-filters',
+    ) as HTMLElement | null;
+
+    if (!featuredTab || !allPresetsTab || !favoritesTab || !collectionFilters) {
+      throw new Error('Expected browse mode tabs and collection filters.');
+    }
+
+    expect(featuredTab.tabIndex).toBe(0);
+    expect(allPresetsTab.tabIndex).toBe(-1);
+    featuredTab.focus();
+
+    featuredTab.dispatchEvent(
+      new window.KeyboardEvent('keydown', {
+        key: 'ArrowRight',
+        bubbles: true,
+      }),
+    );
+
+    expect(allPresetsTab.tabIndex).toBe(0);
+    expect(allPresetsTab.getAttribute('aria-selected')).toBe('true');
+    expect(featuredTab.tabIndex).toBe(-1);
+    expect(collectionFilters.hidden).toBe(false);
+
+    allPresetsTab.dispatchEvent(
+      new window.KeyboardEvent('keydown', {
+        key: 'End',
+        bubbles: true,
+      }),
+    );
+
+    expect(favoritesTab.tabIndex).toBe(0);
+    expect(favoritesTab.getAttribute('aria-selected')).toBe('true');
+    expect(collectionFilters.hidden).toBe(true);
+
+    overlay.dispose();
+  });
+
   test('reveals advanced browse filters on demand and shows collections for all presets', () => {
     globalThis.MutationObserver = class {
       disconnect() {}
