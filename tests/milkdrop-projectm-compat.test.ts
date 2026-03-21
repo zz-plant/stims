@@ -96,18 +96,16 @@ const WEBGPU_SHADER_TRANSLATION_EXPECTATION = {
   unsupportedKeys: [],
 } as const satisfies ProjectMFixtureExpectation;
 
-const UNSUPPORTED_SHADER_TEXT_EXPECTATION = {
-  diagnostics: ['preset_unsupported_shader_text'],
+const VOLUME_SHADER_APPROXIMATION_EXPECTATION = {
+  diagnostics: ['preset_shader_volume_approximation'],
   webgl: 'partial',
-  webgpu: 'unsupported',
-  divergence: ['status:webgl=partial,webgpu=unsupported'],
+  webgpu: 'partial',
+  divergence: ['webgpu:supported-shader-text-gap'],
   warnings: [
-    'This preset includes custom shader text outside the fully supported subset and will be approximated.',
-    'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
+    'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
+    'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
   ],
-  blockedConstructs: [
-    'shader:ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz',
-  ],
+  blockedConstructs: [],
   unsupportedKeys: [],
 } as const satisfies ProjectMFixtureExpectation;
 
@@ -147,7 +145,7 @@ const PROJECTM_FIXTURE_EXPECTATIONS = {
   '251-wavecode-spectrum.milk': FULL_SUPPORT_EXPECTATION,
   '252-wavecode-spectrum2.milk': FULL_SUPPORT_EXPECTATION,
   '260-compshader-noise_lq.milk': WEBGPU_SHADER_TRANSLATION_EXPECTATION,
-  '261-compshader-noisevol_lq.milk': UNSUPPORTED_SHADER_TEXT_EXPECTATION,
+  '261-compshader-noisevol_lq.milk': VOLUME_SHADER_APPROXIMATION_EXPECTATION,
   '300-beatdetect-bassmidtreb.milk': FULL_SUPPORT_EXPECTATION,
 } as const satisfies Record<
   (typeof PROJECTM_PRESET_FILES)[number],

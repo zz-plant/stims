@@ -1313,7 +1313,7 @@
     "diagnostics": [
       {
         "severity": "warning",
-        "code": "preset_unsupported_shader_text",
+        "code": "preset_shader_volume_approximation",
         "field": null
       }
     ],
@@ -1327,44 +1327,33 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [
-        "This preset includes custom shader text outside the fully supported subset and will be approximated.",
-        "WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL."
+        "Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.",
+        "WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL."
       ],
-      "featuresUsed": ["base-globals", "unsupported-shader-text"],
+      "featuresUsed": ["base-globals"],
       "backends": {
         "webgl": {
+          "status": "partial",
+          "evidence": []
+        },
+        "webgpu": {
           "status": "partial",
           "evidence": [
             {
               "scope": "backend",
               "status": "partial",
-              "code": "unsupported-shader-text-gap",
-              "feature": "unsupported-shader-text"
-            }
-          ]
-        },
-        "webgpu": {
-          "status": "unsupported",
-          "evidence": [
-            {
-              "scope": "backend",
-              "status": "unsupported",
-              "code": "unsupported-shader-text-gap",
-              "feature": "unsupported-shader-text"
+              "code": "supported-shader-text-gap",
+              "feature": null
             }
           ]
         }
       },
       "parity": {
-        "fidelityClass": "fallback",
-        "backendDivergence": ["status:webgl=partial,webgpu=unsupported"],
+        "fidelityClass": "near-exact",
+        "backendDivergence": ["webgpu:supported-shader-text-gap"],
         "ignoredFields": [],
-        "blockedConstructs": [
-          "shader:ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz"
-        ],
-        "approximatedShaderLines": [
-          "ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz"
-        ],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
         "missingAliasesOrFunctions": []
       }
     }

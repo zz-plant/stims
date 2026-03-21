@@ -313,6 +313,12 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_aura, uv * 1.5 
     expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('aura');
     expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('mix');
+    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+      '2d',
+    );
+    expect(
+      compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
+    ).toBeNull();
     expect(compiled.ir.post.shaderControls.textureLayer.amount).toBeCloseTo(
       0.35,
       6,
@@ -538,7 +544,7 @@ comp_shader=float3 tintScale = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, 
     expect(compiled.ir.post.shaderControls.tint.b).toBeCloseTo(0.4, 6);
   });
 
-  test('flags tex3D and texture3D shader sampler aliases as unsupported volume lookups', () => {
+  test('extracts tex3D and texture3D shader sampler aliases as volume lookups', () => {
     for (const sampleCall of ['tex3D', 'texture3D'] as const) {
       const compiled = compileMilkdropPresetSource(
         `
@@ -548,20 +554,39 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
         { id: `shader-volume-alias-${sampleCall.toLowerCase()}` },
       );
 
-      expect(compiled.ir.shaderText.supported).toBe(false);
-      expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('none');
-      expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('none');
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-        'unsupported',
+      expect(compiled.ir.shaderText.supported).toBe(true);
+      expect(compiled.ir.post.shaderControls.textureLayer.source).toBe(
+        'simplex',
       );
-      expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
-        `ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
-      ]);
+      expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
+      expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+        '3d',
+      );
+      expect(
+        compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
+      ).toBeCloseTo(0, 6);
+      expect(compiled.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'preset_shader_volume_approximation',
+            severity: 'warning',
+          }),
+        ]),
+      );
+      expect(compiled.ir.compatibility.warnings).toEqual(
+        expect.arrayContaining([
+          'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
+        ]),
+      );
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+      expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
+        [],
+      );
     }
   });
 
-  test('does not remap tex3D inversion mixes onto invert boosts', () => {
+  test('keeps tex3D inversion mixes attached to the selected aux sample', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Shader Volume Invert Mix
@@ -572,8 +597,32 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
 
     expect(compiled.ir.shaderText.supported).toBe(false);
     expect(compiled.ir.post.shaderControls.invertBoost).toBeCloseTo(0, 6);
-    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('none');
-    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('none');
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
+    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('mix');
+    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+      '3d',
+    );
+    expect(compiled.ir.shaderText.controls.textureLayer.source).toBe('simplex');
+    expect(compiled.ir.shaderText.controls.textureLayer.mode).toBe('mix');
+    expect(
+      compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
+    ).toBeCloseTo(0, 6);
+    expect(
+      compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
+    ).not.toBeNull();
+    expect(compiled.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'preset_shader_volume_approximation',
+          severity: 'warning',
+        }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.warnings).toEqual(
+      expect.arrayContaining([
+        'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
+      ]),
+    );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
       'unsupported',
@@ -581,6 +630,49 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
       'ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz, 0.35)',
     ]);
+  });
+
+  test('keeps tex3D mix extraction attached to the selected aux sample', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Volume Mix
+comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq, float3(uv * 1.5 + vec2(0.1, -0.2), time / 10.0)).xyz, 0.35)
+      `.trim(),
+      { id: 'shader-volume-mix' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
+    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('mix');
+    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+      '3d',
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.amount).toBeCloseTo(
+      0.35,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.scaleX).toBeCloseTo(
+      1.5,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.scaleY).toBeCloseTo(
+      1.5,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.offsetX).toBeCloseTo(
+      0.1,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.offsetY).toBeCloseTo(
+      -0.2,
+      6,
+    );
+    expect(
+      compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
+    ).toBeCloseTo(0, 6);
+    expect(
+      compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
+    ).not.toBeNull();
   });
 
   test('supports resolved temp shader outputs for invert and runtime tint mixes', () => {

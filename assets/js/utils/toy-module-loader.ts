@@ -23,6 +23,17 @@ export type ToyModuleLoadSuccess = {
 
 export type ToyModuleLoadResult = ToyModuleLoadSuccess | ToyModuleLoadFailure;
 
+type ToyModuleExports = {
+  default?: { start?: unknown };
+  start?: unknown;
+};
+
+type ToyModuleImporter = () => Promise<ToyModuleExports>;
+
+const bundledToyImporters: Record<string, ToyModuleImporter> = {
+  'assets/js/toys/milkdrop-toy.ts': () => import('../toys/milkdrop-toy.ts'),
+};
+
 function resolveModuleImportUrl(moduleUrl: string) {
   if (moduleUrl.startsWith('./') || moduleUrl.startsWith('../')) {
     const moduleRootUrl = new URL(/* @vite-ignore */ '../', import.meta.url);
@@ -32,6 +43,61 @@ function resolveModuleImportUrl(moduleUrl: string) {
   return moduleUrl;
 }
 
+function getStarter(moduleExports: unknown) {
+  const startCandidate =
+    (moduleExports as { start?: unknown })?.start ??
+    (moduleExports as { default?: { start?: unknown } })?.default?.start;
+
+  return typeof startCandidate === 'function'
+    ? (startCandidate as ToyModuleStarter)
+    : null;
+}
+
+export function getBundledToyModuleImporter(
+  moduleId: string,
+): ToyModuleImporter | null {
+  if (!moduleId.startsWith('assets/js/')) {
+    return null;
+  }
+
+  return bundledToyImporters[moduleId] ?? null;
+}
+
+async function loadBundledToyModuleStarter(
+  moduleId: string,
+): Promise<ToyModuleLoadResult | null> {
+  const importer = getBundledToyModuleImporter(moduleId);
+  if (!importer) {
+    return null;
+  }
+
+  try {
+    const moduleExports = await importer();
+    const starter = getStarter(moduleExports);
+    if (!starter) {
+      return {
+        ok: false,
+        errorType: 'missing_start',
+        moduleUrl: moduleId,
+        error: new Error('Toy module did not export a start function.'),
+      };
+    }
+
+    return {
+      ok: true,
+      moduleUrl: moduleId,
+      starter,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      errorType: 'import',
+      moduleUrl: moduleId,
+      error: error as Error,
+    };
+  }
+}
+
 export async function loadToyModuleStarter({
   moduleId,
   manifestClient,
@@ -39,6 +105,11 @@ export async function loadToyModuleStarter({
   moduleId: string;
   manifestClient: ReturnType<typeof createManifestClient>;
 }): Promise<ToyModuleLoadResult> {
+  const bundledResult = await loadBundledToyModuleStarter(moduleId);
+  if (bundledResult) {
+    return bundledResult;
+  }
+
   let moduleUrl: string;
   try {
     moduleUrl = await manifestClient.resolveModulePath(moduleId);
@@ -63,13 +134,7 @@ export async function loadToyModuleStarter({
     };
   }
 
-  const startCandidate =
-    (moduleExports as { start?: unknown })?.start ??
-    (moduleExports as { default?: { start?: unknown } })?.default?.start;
-  const starter =
-    typeof startCandidate === 'function'
-      ? (startCandidate as ToyModuleStarter)
-      : null;
+  const starter = getStarter(moduleExports);
 
   if (!starter) {
     return {

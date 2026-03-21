@@ -67,6 +67,23 @@ describe('milkdrop shader sampler aliases', () => {
       kind: 'vec3',
       value: [1, 1, 1],
     });
+
+    const callValue = evaluateMilkdropShaderExpression(
+      volumeStatement.expression.type === 'member'
+        ? volumeStatement.expression.object
+        : volumeStatement.expression,
+      { uv: { kind: 'vec2', value: [0.25, 0.75] } },
+      { time: 2 },
+    );
+    expect(callValue).toMatchObject({
+      kind: 'sample',
+      source: 'simplex',
+      dimension: '3d',
+      z: {
+        kind: 'scalar',
+        value: 0.2,
+      },
+    });
   });
 
   test('normalizes supported aliases through the shared helper', () => {
@@ -125,23 +142,43 @@ describe('milkdrop shader sampler aliases', () => {
     }
   });
 
-  test('keeps 3D sampler aliases unsupported in compiler extraction despite AST normalization', () => {
+  test('keeps 3D sampler aliases aligned in compiler extraction', () => {
     for (const sampleCall of ['tex3D', 'texture3D'] as const) {
       const compiled = compileMilkdropPresetSource(
         `title=Volume Alias\ncomp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
         { id: `volume-${sampleCall.toLowerCase()}` },
       );
 
-      expect(compiled.ir.shaderText.supported).toBe(false);
-      expect(compiled.ir.shaderText.unsupportedLines).toEqual([
-        `ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
-      ]);
-      expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('none');
-      expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('none');
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-        'unsupported',
+      expect(compiled.ir.shaderText.supported).toBe(true);
+      expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+      expect(compiled.ir.post.shaderControls.textureLayer.source).toBe(
+        'simplex',
       );
+      expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
+      expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+        '3d',
+      );
+      expect(
+        compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
+      ).toBeCloseTo(0, 6);
+      expect(
+        compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
+      ).not.toBeNull();
+      expect(compiled.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'preset_shader_volume_approximation',
+            severity: 'warning',
+          }),
+        ]),
+      );
+      expect(compiled.ir.compatibility.warnings).toEqual(
+        expect.arrayContaining([
+          'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
+        ]),
+      );
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     }
   });
 });
