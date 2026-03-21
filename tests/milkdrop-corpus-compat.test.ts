@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import type { MilkdropFidelityClass } from '../assets/js/milkdrop/types.ts';
 
 type CompatibilityStatus = 'supported' | 'partial' | 'unsupported';
 
@@ -15,7 +16,7 @@ type ShapeCorpusExpectation = {
   diagnostics: readonly string[];
   webgl: CompatibilityStatus;
   webgpu: CompatibilityStatus;
-  fidelityClass: string;
+  fidelityClass: MilkdropFidelityClass;
   unsupportedKeys: readonly string[];
   warnings: readonly string[];
   blockedConstructs: readonly string[];
