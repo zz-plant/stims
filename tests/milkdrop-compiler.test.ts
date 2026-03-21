@@ -153,21 +153,12 @@ video_echo=1
 
     expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'video-echo',
     );
-    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
-      'status:webgl=supported,webgpu=partial',
-      'webgpu:video-echo-gap:video-echo',
-    ]);
-    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([
-      expect.objectContaining({
-        code: 'video-echo-gap',
-        feature: 'video-echo',
-        status: 'partial',
-      }),
-    ]);
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);
   });
 
   test('maps gamma adjustment into post state and post-effect feature usage', () => {
@@ -185,7 +176,7 @@ fGammaAdj=1.75
       'post-effects',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
   });
 
   test('normalizes Rovastar feedback aliases into runtime post fields', () => {
@@ -602,7 +593,7 @@ comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
           code: 'supported-shader-text-gap',
           status: 'partial',
           message:
-            'WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution.',
+            'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
         }),
       ]),
     );
@@ -755,7 +746,6 @@ comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).r
     expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
       'status:webgl=supported,webgpu=partial',
       'webgpu:supported-shader-text-gap',
-      'webgpu:video-echo-gap:video-echo',
     ]);
   });
 
@@ -782,7 +772,7 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
       ).toBeCloseTo(0, 6);
       expect(compiled.diagnostics).toEqual([]);
       expect(compiled.ir.compatibility.warnings).toEqual([
-        'WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution.',
+        'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
       ]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
@@ -819,7 +809,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     ).not.toBeNull();
     expect(compiled.diagnostics).toEqual([]);
     expect(compiled.ir.compatibility.warnings).toEqual([
-      'WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution.',
+      'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
     ]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
@@ -901,7 +891,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.warnings).toEqual([
-      'WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution.',
+      'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
     ]);
   });
 
@@ -931,7 +921,7 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
     ]);
     expect(compiled.ir.compatibility.warnings).toEqual([
       'Texture layer shader control uses tex3D/texture3D with aux sampler "noise", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.',
-      'WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution.',
+      'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
     ]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
@@ -1033,22 +1023,11 @@ video_echo=1
       compiled.ir.customWaves[0]?.programs.perPoint.statements.length,
     ).toBe(1);
     expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
-    expect(compiled.ir.compatibility.warnings).toEqual([
-      'WebGPU still composites and presents video echo through the lower-resolution feedback ping-pong target, so echo-heavy presets remain visibly softer than WebGL.',
-    ]);
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
-      'status:webgl=supported,webgpu=partial',
-      'webgpu:video-echo-gap:video-echo',
-    ]);
-    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([
-      expect.objectContaining({
-        code: 'video-echo-gap',
-        feature: 'video-echo',
-        status: 'partial',
-      }),
-    ]);
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);
   });
 
   test('supports legacy max-slot custom shape aliases without warnings', () => {
@@ -1272,7 +1251,7 @@ ${programLine}
     expect(compiled.ir.numericFields.video_echo_orientation).toBe(2);
     expect(compiled.ir.post.videoEchoOrientation).toBe(2);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
   });
 
   test.each([
@@ -1311,13 +1290,13 @@ video_echo_orientation=3
     expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
     expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(
       compiled.ir.compatibility.backends.webgl.unsupportedFeatures,
     ).toEqual([]);
     expect(
       compiled.ir.compatibility.backends.webgpu.unsupportedFeatures,
-    ).toEqual(['video-echo']);
+    ).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.evidence).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1441,9 +1420,35 @@ motion_vectors_y=5
         kind: 'procedural-mesh',
         requiresPerPixelProgram: false,
         supportsMotionVectors: true,
+        fieldProgram: null,
       },
       feedback: null,
       unsupported: [],
+    });
+  });
+
+  test('lowers a supported per-pixel subset into the WebGPU descriptor plan', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Descriptor Plan Per Pixel
+per_pixel_1=q1=sin(time*0.5+x*2);
+per_pixel_2=x=x+q1*0.05;
+per_pixel_3=zoom=zoom+abs(y)*0.1;
+      `.trim(),
+      { id: 'descriptor-plan-per-pixel' },
+    );
+
+    expect(
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh,
+    ).toMatchObject({
+      kind: 'procedural-mesh',
+      requiresPerPixelProgram: true,
+      supportsMotionVectors: false,
+      fieldProgram: {
+        kind: 'gpu-field-program',
+        temporaries: ['q1'],
+        statements: [{ target: 'q1' }, { target: 'x' }, { target: 'zoom' }],
+      },
     });
   });
 
