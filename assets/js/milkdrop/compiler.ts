@@ -4464,7 +4464,10 @@ function pushProgramStatement(
     const parsed = parseMilkdropStatement(statement, line);
     diagnostics.push(...parsed.diagnostics);
     if (parsed.value) {
-      block.statements.push(parsed.value);
+      block.statements.push({
+        ...parsed.value,
+        target: normalizeProgramAssignmentTarget(parsed.value.target),
+      });
       block.sourceLines.push(statement);
     }
   });
@@ -4602,6 +4605,12 @@ function normalizeFieldKey(field: MilkdropPresetField) {
     return 'shape_1_thickoutline';
   }
   return rawKey;
+}
+
+function normalizeProgramAssignmentTarget(target: string) {
+  const normalizedTarget = normalizeFieldSuffix(target);
+  const aliasedTarget = aliasMap[normalizedTarget];
+  return aliasedTarget ?? normalizedTarget;
 }
 
 function ensureWaveDefinition(
@@ -5298,16 +5307,6 @@ function createIR(
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
-  const usesVolumeShaderApproximation = [
-    shaderWarpAnalysis.controls.textureLayer,
-    shaderWarpAnalysis.controls.warpTexture,
-    shaderCompAnalysis.controls.textureLayer,
-    shaderCompAnalysis.controls.warpTexture,
-    mergedShaderControls.controls.textureLayer,
-    mergedShaderControls.controls.warpTexture,
-  ].some(
-    (sample) => sample.source !== 'none' && sample.sampleDimension === '3d',
-  );
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();
@@ -5365,14 +5364,6 @@ function createIR(
       'Shader-text sections include lines outside the supported subset.',
     );
   }
-  if (usesVolumeShaderApproximation) {
-    addDiagnostic(
-      diagnostics,
-      'warning',
-      'preset_shader_volume_approximation',
-      'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
-    );
-  }
   const featureAnalysis = buildFeatureAnalysis({
     programs,
     customWaves,
@@ -5389,11 +5380,6 @@ function createIR(
       ({ key, feature, message }) =>
         `Unsupported feature "${feature}" from preset field "${key}": ${message}`,
     ),
-    ...(usesVolumeShaderApproximation
-      ? [
-          'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
-        ]
-      : []),
   ];
   const backends = {
     webgl: buildBackendSupport({
