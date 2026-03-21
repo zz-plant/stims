@@ -1,4 +1,6 @@
 import type * as THREE from 'three';
+import { isMobileDevice } from '../utils/device-detect';
+import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import type {
   RendererInitConfig,
   RendererInitResult,
@@ -23,6 +25,8 @@ export type RendererViewport = {
   width: number;
   height: number;
 };
+
+const isMobileUserAgent = isMobileDevice();
 
 const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   maxPixelRatio: 1.5,
@@ -91,21 +95,45 @@ export function applyRendererSettings(
     0.4,
     (merged.renderScale ?? 1) * (merged.adaptiveRenderScaleMultiplier ?? 1),
   );
+  const adaptiveMaxPixelRatioCap = getAdaptiveMaxPixelRatio(
+    merged.maxPixelRatio ??
+      info.maxPixelRatio ??
+      BASE_RENDERER_SETTINGS.maxPixelRatio,
+  );
+  const backendMaxPixelRatioCap = getRendererBackendMaxPixelRatioCap({
+    backend: info.backend,
+    isMobile: isMobileUserAgent,
+  });
   const effectiveMaxPixelRatio = Math.max(
     0.5,
-    (merged.maxPixelRatio ?? 2) * (merged.adaptiveMaxPixelRatioMultiplier ?? 1),
+    Math.min(
+      (merged.maxPixelRatio ?? 2) *
+        (merged.adaptiveMaxPixelRatioMultiplier ?? 1),
+      adaptiveMaxPixelRatioCap,
+      backendMaxPixelRatioCap,
+    ),
   );
   const effectivePixelRatio = Math.min(
     (window.devicePixelRatio || 1) * effectiveRenderScale,
     effectiveMaxPixelRatio,
   );
+  const nextViewportWidth = viewport?.width ?? window.innerWidth;
+  const nextViewportHeight = viewport?.height ?? window.innerHeight;
 
-  renderer.setPixelRatio(effectivePixelRatio);
-  renderer.setSize(
-    viewport?.width ?? window.innerWidth,
-    viewport?.height ?? window.innerHeight,
-    false,
-  );
+  if (info.appliedPixelRatio !== effectivePixelRatio) {
+    renderer.setPixelRatio(effectivePixelRatio);
+    info.appliedPixelRatio = effectivePixelRatio;
+  }
+
+  if (
+    info.appliedViewportWidth !== nextViewportWidth ||
+    info.appliedViewportHeight !== nextViewportHeight
+  ) {
+    renderer.setSize(nextViewportWidth, nextViewportHeight, false);
+    info.appliedViewportWidth = nextViewportWidth;
+    info.appliedViewportHeight = nextViewportHeight;
+  }
+
   renderer.toneMappingExposure = merged.exposure ?? 1;
 
   info.maxPixelRatio = merged.maxPixelRatio ?? info.maxPixelRatio;

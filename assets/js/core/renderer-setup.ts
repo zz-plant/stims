@@ -32,6 +32,9 @@ export type RendererInitResult = {
   adaptiveRenderScaleMultiplier: number;
   adaptiveDensityMultiplier: number;
   exposure: number;
+  appliedPixelRatio?: number;
+  appliedViewportWidth?: number;
+  appliedViewportHeight?: number;
 };
 
 export type RendererInitConfig = {
@@ -109,6 +112,9 @@ export async function initRenderer(
       adaptiveRenderScaleMultiplier,
       adaptiveDensityMultiplier,
       exposure,
+      appliedPixelRatio: effectivePixelRatio,
+      appliedViewportWidth: window.innerWidth,
+      appliedViewportHeight: window.innerHeight,
     };
   };
 

@@ -842,6 +842,12 @@ export function createMilkdropExperience({
   let adaptiveQualityController: AdaptiveQualityController | null = null;
   let adaptiveQualityState: AdaptiveQualityState | null = null;
   let adaptiveQualityUnsubscribe: (() => void) | null = null;
+  let lastAppliedAdaptiveQuality: {
+    renderScaleMultiplier: number;
+    maxPixelRatioMultiplier: number;
+    densityMultiplier: number;
+    feedbackResolutionMultiplier: number;
+  } | null = null;
   const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
   const lowQualityPostOverride = {
     shaderEnabled: false,
@@ -1526,6 +1532,7 @@ export function createMilkdropExperience({
         adapter.attach();
         adaptiveQualityUnsubscribe?.();
         adaptiveQualityUnsubscribe = null;
+        lastAppliedAdaptiveQuality = null;
         adaptiveQualityController = createAdaptiveQualityController({
           backend: activeBackend,
           capabilities:
@@ -1540,14 +1547,40 @@ export function createMilkdropExperience({
               updateAgentDebugSnapshot();
               return;
             }
-            nextRuntime.toy.updateRendererSettings({
-              adaptiveRenderScaleMultiplier: state.renderScaleMultiplier,
-              adaptiveMaxPixelRatioMultiplier: state.maxPixelRatioMultiplier,
-              adaptiveDensityMultiplier: state.densityMultiplier,
-            });
-            adapter?.setAdaptiveQuality?.({
+
+            const nextAdaptiveQuality = {
+              renderScaleMultiplier: state.renderScaleMultiplier,
+              maxPixelRatioMultiplier: state.maxPixelRatioMultiplier,
+              densityMultiplier: state.densityMultiplier,
               feedbackResolutionMultiplier: state.feedbackResolutionMultiplier,
-            });
+            };
+            const adaptiveQualityChanged =
+              lastAppliedAdaptiveQuality === null ||
+              lastAppliedAdaptiveQuality.renderScaleMultiplier !==
+                nextAdaptiveQuality.renderScaleMultiplier ||
+              lastAppliedAdaptiveQuality.maxPixelRatioMultiplier !==
+                nextAdaptiveQuality.maxPixelRatioMultiplier ||
+              lastAppliedAdaptiveQuality.densityMultiplier !==
+                nextAdaptiveQuality.densityMultiplier ||
+              lastAppliedAdaptiveQuality.feedbackResolutionMultiplier !==
+                nextAdaptiveQuality.feedbackResolutionMultiplier;
+
+            if (adaptiveQualityChanged) {
+              nextRuntime.toy.updateRendererSettings({
+                adaptiveRenderScaleMultiplier:
+                  nextAdaptiveQuality.renderScaleMultiplier,
+                adaptiveMaxPixelRatioMultiplier:
+                  nextAdaptiveQuality.maxPixelRatioMultiplier,
+                adaptiveDensityMultiplier:
+                  nextAdaptiveQuality.densityMultiplier,
+              });
+              adapter?.setAdaptiveQuality?.({
+                feedbackResolutionMultiplier:
+                  nextAdaptiveQuality.feedbackResolutionMultiplier,
+              });
+              lastAppliedAdaptiveQuality = nextAdaptiveQuality;
+            }
+
             updateAgentDebugSnapshot();
           },
         );
@@ -1691,6 +1724,7 @@ export function createMilkdropExperience({
       adaptiveQualityUnsubscribe = null;
       adaptiveQualityController = null;
       adaptiveQualityState = null;
+      lastAppliedAdaptiveQuality = null;
       runtime = null;
       if (keyboardHandler) {
         document.removeEventListener('keydown', keyboardHandler);

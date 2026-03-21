@@ -71,6 +71,107 @@ describe('applyRendererSettings', () => {
     expect(pixelRatio).toBeGreaterThan(0);
   });
 
+  test('reapplies startup caps during adaptive webgpu updates', () => {
+    const pixelRatios: number[] = [];
+    const renderer = {
+      setPixelRatio: (value: number) => {
+        pixelRatios.push(value);
+      },
+      setSize: () => {},
+      toneMappingExposure: 1,
+    };
+    const info = {
+      renderer: renderer as never,
+      backend: 'webgpu' as const,
+      maxPixelRatio: 2,
+      renderScale: 1,
+      adaptiveMaxPixelRatioMultiplier: 1,
+      adaptiveRenderScaleMultiplier: 1,
+      adaptiveDensityMultiplier: 1,
+      exposure: 1,
+    };
+
+    const originalWindow = globalThis.window;
+    const originalNavigator = globalThis.navigator;
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        ...originalWindow,
+        devicePixelRatio: 2,
+        innerWidth: 800,
+        innerHeight: 600,
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        ...originalNavigator,
+        deviceMemory: 4,
+        hardwareConcurrency: 4,
+      },
+    });
+
+    try {
+      applyRendererSettings(renderer as never, info, {
+        adaptiveMaxPixelRatioMultiplier: 1,
+      });
+    } finally {
+      Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: originalWindow,
+      });
+      Object.defineProperty(globalThis, 'navigator', {
+        configurable: true,
+        value: originalNavigator,
+      });
+    }
+
+    expect(pixelRatios[pixelRatios.length - 1]).toBe(1.25);
+  });
+
+  test('skips renderer reconfiguration when effective settings are unchanged', () => {
+    const pixelRatios: number[] = [];
+    const sizes: Array<[number, number, boolean?]> = [];
+    const renderer = {
+      setPixelRatio: (value: number) => {
+        pixelRatios.push(value);
+      },
+      setSize: (width: number, height: number, updateStyle?: boolean) => {
+        sizes.push([width, height, updateStyle]);
+      },
+      toneMappingExposure: 1,
+    };
+    const info = {
+      renderer: renderer as never,
+      backend: 'webgpu' as const,
+      maxPixelRatio: 1.5,
+      renderScale: 1,
+      adaptiveMaxPixelRatioMultiplier: 1,
+      adaptiveRenderScaleMultiplier: 1,
+      adaptiveDensityMultiplier: 1,
+      exposure: 1,
+    };
+
+    applyRendererSettings(
+      renderer as never,
+      info,
+      {},
+      {},
+      { width: 640, height: 360 },
+    );
+    applyRendererSettings(
+      renderer as never,
+      info,
+      {},
+      {},
+      { width: 640, height: 360 },
+    );
+
+    expect(pixelRatios).toHaveLength(1);
+    expect(sizes).toEqual([[640, 360, false]]);
+  });
+
   test('applies adaptive multipliers without overwriting the stored base settings', () => {
     const pixelRatios: number[] = [];
     const renderer = {
