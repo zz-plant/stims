@@ -201,6 +201,10 @@ export class MilkdropOverlay {
   private readonly browseMetaLabel: HTMLElement;
   private readonly browseQualitySelect: HTMLSelectElement;
   private readonly browseQualityHint: HTMLElement;
+  private readonly browseModeTabs: HTMLElement;
+  private readonly browseModeButtons: HTMLButtonElement[] = [];
+  private readonly browseOptionsDisclosure: HTMLDetailsElement;
+  private readonly browseOptionsSummary: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly editorStatus: HTMLElement;
   private readonly inspectorControls: HTMLElement;
@@ -494,6 +498,8 @@ export class MilkdropOverlay {
     });
     this.browseModeSelect.addEventListener('change', () => {
       this.browseMode = this.browseModeSelect.value as BrowseMode;
+      this.syncBrowseModeButtons();
+      this.updateBrowseFilterVisibility();
       this.scheduleBrowseRender(0);
     });
 
@@ -539,17 +545,66 @@ export class MilkdropOverlay {
       this.scheduleBrowseRender(0);
     });
 
+    this.browseModeTabs = document.createElement('div');
+    this.browseModeTabs.className = 'milkdrop-overlay__browse-mode-tabs';
+    this.browseModeTabs.setAttribute('role', 'tablist');
+    this.browseModeTabs.setAttribute('aria-label', 'Preset browse modes');
+    (
+      [
+        ['featured', 'Featured'],
+        ['all', 'All presets'],
+        ['recent', 'Recent'],
+        ['favorites', 'Favorites'],
+      ] satisfies Array<[BrowseMode, string]>
+    ).forEach(([value, label]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'milkdrop-overlay__browse-mode-tab';
+      button.dataset.mode = value;
+      button.setAttribute('role', 'tab');
+      button.textContent = label;
+      button.addEventListener('click', () => {
+        this.browseModeSelect.value = value;
+        this.browseMode = value;
+        this.syncBrowseModeButtons();
+        this.updateBrowseFilterVisibility();
+        this.scheduleBrowseRender(0);
+      });
+      this.browseModeButtons.push(button);
+      this.browseModeTabs.appendChild(button);
+    });
+    this.syncBrowseModeButtons();
+
+    this.browseOptionsDisclosure = document.createElement('details');
+    this.browseOptionsDisclosure.className = 'milkdrop-overlay__browse-options';
+    this.browseOptionsSummary = document.createElement('summary');
+    this.browseOptionsSummary.className =
+      'milkdrop-overlay__browse-options-summary';
+    this.browseOptionsSummary.textContent = 'More filters';
+    this.browseOptionsDisclosure.appendChild(this.browseOptionsSummary);
+
+    const browseOptionsBody = document.createElement('div');
+    browseOptionsBody.className = 'milkdrop-overlay__browse-options-body';
+    browseOptionsBody.append(
+      this.buildBrowseControl('Fidelity', this.browseSupportSelect),
+      this.buildBrowseControl('Sort', this.browseSortSelect),
+    );
+    this.browseOptionsDisclosure.appendChild(browseOptionsBody);
+    this.browseOptionsDisclosure.addEventListener('toggle', () => {
+      this.updateBrowseFilterVisibility();
+    });
+
     const browseControls = document.createElement('div');
     browseControls.className = 'milkdrop-overlay__browse-controls';
     browseControls.append(
       this.buildBrowseControl('Search', this.searchInput, true),
-      this.buildBrowseControl('View', this.browseModeSelect),
-      this.buildBrowseControl('Fidelity', this.browseSupportSelect),
-      this.buildBrowseControl('Sort', this.browseSortSelect),
+      this.buildBrowseControl('Browse', this.browseModeTabs),
+      this.browseOptionsDisclosure,
     );
 
     this.collectionFilters = document.createElement('div');
     this.collectionFilters.className = 'milkdrop-overlay__collection-filters';
+    this.updateBrowseFilterVisibility();
     this.browseList = document.createElement('div');
     this.browseList.className = 'milkdrop-overlay__browse';
     this.tabPanels.browse.append(
@@ -697,7 +752,7 @@ export class MilkdropOverlay {
 
   private buildBrowseControl(
     label: string,
-    control: HTMLInputElement | HTMLSelectElement,
+    control: HTMLElement,
     isSearch = false,
   ) {
     const wrap = document.createElement('label');
@@ -709,6 +764,23 @@ export class MilkdropOverlay {
 
     wrap.append(title, control);
     return wrap;
+  }
+
+  private syncBrowseModeButtons() {
+    this.browseModeButtons.forEach((button) => {
+      const isActive = button.dataset.mode === this.browseMode;
+      button.dataset.active = String(isActive);
+      button.setAttribute('aria-selected', String(isActive));
+      button.tabIndex = isActive ? 0 : -1;
+    });
+  }
+
+  private updateBrowseFilterVisibility() {
+    const shouldShowCollections =
+      this.browseMode === 'all' ||
+      this.browseOptionsDisclosure.open ||
+      this.activeCollectionTag.length > 0;
+    this.collectionFilters.hidden = !shouldShowCollections;
   }
 
   private updateBrowseQualityDetails(presetId: string) {
@@ -1087,6 +1159,7 @@ export class MilkdropOverlay {
     }
     this.lastBrowseRenderSignature = renderSignature;
     this.browseDirty = false;
+    this.updateBrowseFilterVisibility();
     const filtered = this.sortBrowsePresets(
       this.presets.filter((preset) => this.matchesBrowseFilters(preset, query)),
     );
@@ -1155,6 +1228,7 @@ export class MilkdropOverlay {
       button.addEventListener('click', () => {
         this.activeCollectionTag = option.tag;
         this.browseDirty = true;
+        this.updateBrowseFilterVisibility();
         this.renderCollectionFilters();
         this.renderBrowseList();
       });

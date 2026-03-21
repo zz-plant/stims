@@ -4500,7 +4500,10 @@ function pushProgramStatement(
     const parsed = parseMilkdropStatement(statement, line);
     diagnostics.push(...parsed.diagnostics);
     if (parsed.value) {
-      block.statements.push(parsed.value);
+      block.statements.push({
+        ...parsed.value,
+        target: normalizeProgramAssignmentTarget(parsed.value.target),
+      });
       block.sourceLines.push(statement);
     }
   });
@@ -4638,6 +4641,12 @@ function normalizeFieldKey(field: MilkdropPresetField) {
     return 'shape_1_thickoutline';
   }
   return rawKey;
+}
+
+function normalizeProgramAssignmentTarget(target: string) {
+  const normalizedTarget = normalizeFieldSuffix(target);
+  const aliasedTarget = aliasMap[normalizedTarget];
+  return aliasedTarget ?? normalizedTarget;
 }
 
 function ensureWaveDefinition(

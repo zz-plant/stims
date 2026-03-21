@@ -2853,18 +2853,84 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__browse-controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .milkdrop-overlay__browse-control {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .milkdrop-overlay__browse-control--search {
   grid-column: 1 / -1;
+}
+
+.milkdrop-overlay__browse-mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.milkdrop-overlay__browse-mode-tab {
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.56);
+  color: rgba(226, 232, 240, 0.92);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.milkdrop-overlay__browse-mode-tab[data-active="true"] {
+  border-color: rgba(56, 189, 248, 0.38);
+  background: rgba(56, 189, 248, 0.16);
+  color: #e0f2fe;
+}
+
+.milkdrop-overlay__browse-options {
+  margin: 0;
+  align-self: end;
+}
+
+.milkdrop-overlay__browse-options > summary {
+  list-style: none;
+}
+
+.milkdrop-overlay__browse-options > summary::-webkit-details-marker {
+  display: none;
+}
+
+.milkdrop-overlay__browse-options-summary {
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.56);
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 0.78rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.milkdrop-overlay__browse-options[open]
+  .milkdrop-overlay__browse-options-summary {
+  border-color: rgba(56, 189, 248, 0.38);
+  background: rgba(56, 189, 248, 0.16);
+  color: #e0f2fe;
+}
+
+.milkdrop-overlay__browse-options-body {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.38);
 }
 
 .milkdrop-overlay__search,
@@ -2874,24 +2940,24 @@ body.tv-mode .control-panel input {
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.62);
   color: #f8fafc;
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 
 .milkdrop-overlay__collection-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 6px;
 }
 
 .milkdrop-overlay__collection-filter {
-  min-height: 30px;
-  padding: 5px 10px;
+  min-height: 26px;
+  padding: 4px 8px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.56);
   color: rgba(226, 232, 240, 0.92);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
 }
 
 .milkdrop-overlay__collection-filter[data-active="true"] {
@@ -3206,7 +3272,7 @@ body.tv-mode .control-panel input {
   }
 
   .milkdrop-overlay__browse-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .milkdrop-overlay__toolbar {
@@ -3319,13 +3385,21 @@ body.tv-mode .control-panel input {
   }
 
   .milkdrop-overlay__browse-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 6px;
     margin-top: 8px;
   }
 
   .milkdrop-overlay__browse-control--search {
     grid-column: 1 / -1;
+  }
+
+  .milkdrop-overlay__browse-mode-tabs {
+    gap: 4px;
+  }
+
+  .milkdrop-overlay__browse-options-body {
+    padding: 6px;
   }
 
   .milkdrop-overlay__collection-filters {
