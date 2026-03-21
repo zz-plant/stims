@@ -359,6 +359,9 @@ function buildCompatibilitySnapshot(
           compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralWaves,
         proceduralMesh:
           compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh,
+        proceduralMotionVectors:
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu
+            .proceduralMotionVectors,
         feedback: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
           ? {
               kind: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
