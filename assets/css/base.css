@@ -2646,8 +2646,7 @@ body.tv-mode .control-panel input {
 }
 
 .milkdrop-overlay.is-open .milkdrop-overlay__toggle {
-  opacity: 0;
-  pointer-events: none;
+  display: none;
 }
 
 .milkdrop-overlay__header,
