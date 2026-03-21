@@ -468,6 +468,7 @@ export type MilkdropPostEffects = {
   };
   brighten: boolean;
   darken: boolean;
+  darkenCenter: boolean;
   solarize: boolean;
   invert: boolean;
   gammaAdj: number;
@@ -647,6 +648,7 @@ export type MilkdropPostVisual = {
   };
   brighten: boolean;
   darken: boolean;
+  darkenCenter: boolean;
   solarize: boolean;
   invert: boolean;
   gammaAdj: number;
@@ -815,6 +817,7 @@ export type MilkdropFeedbackCompositeState = {
   videoEchoOrientation: MilkdropVideoEchoOrientation;
   brighten: number;
   darken: number;
+  darkenCenter: number;
   solarize: number;
   invert: number;
   gammaAdj: number;

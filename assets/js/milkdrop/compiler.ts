@@ -271,6 +271,7 @@ export const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   bg_b: 0.06,
   brighten: 0,
   darken: 0,
+  darken_center: 0,
   solarize: 0,
   invert: 0,
   gammaadj: 1,
@@ -5157,6 +5158,7 @@ function buildFeatureAnalysis({
   if (
     (numericFields.brighten ?? 0) > 0.5 ||
     (numericFields.darken ?? 0) > 0.5 ||
+    (numericFields.darken_center ?? 0) > 0.5 ||
     (numericFields.solarize ?? 0) > 0.5 ||
     (numericFields.invert ?? 0) > 0.5 ||
     Math.abs((numericFields.gammaadj ?? 1) - 1) > 0.001
@@ -5862,6 +5864,7 @@ function createIR(
         !key.startsWith('ib_') &&
         key !== 'brighten' &&
         key !== 'darken' &&
+        key !== 'darken_center' &&
         key !== 'solarize' &&
         key !== 'invert' &&
         key !== 'gammaadj' &&
@@ -5919,6 +5922,7 @@ function createIR(
     post: {
       brighten: (numericFields.brighten ?? 0) > 0.5,
       darken: (numericFields.darken ?? 0) > 0.5,
+      darkenCenter: (numericFields.darken_center ?? 0) > 0.5,
       solarize: (numericFields.solarize ?? 0) > 0.5,
       invert: (numericFields.invert ?? 0) > 0.5,
       shaderEnabled: (numericFields.shader ?? 1) > 0.5,

@@ -275,6 +275,7 @@ function createCompositeUniforms(
     videoEchoOrientation: uniform(0),
     brighten: uniform(0),
     darken: uniform(0),
+    darkenCenter: uniform(0),
     solarize: uniform(0),
     invert: uniform(0),
     gammaAdj: uniform(1),
@@ -501,6 +502,16 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
     );
     color.assign(mix(color, brightened, brightenMask));
     color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
+    const centerMask = clamp(uv.sub(0.5).length().mul(400), 0, 1);
+    color.assign(
+      color.mul(
+        mix(
+          float(1),
+          float(0.97).add(centerMask.mul(0.03)),
+          step(0.5, uniforms.darkenCenter),
+        ),
+      ),
+    );
     color.assign(
       mix(
         color,
@@ -708,6 +719,7 @@ class WebGPUMilkdropFeedbackManager {
       state.videoEchoOrientation;
     this.compositeMaterial.uniforms.brighten.value = state.brighten;
     this.compositeMaterial.uniforms.darken.value = state.darken;
+    this.compositeMaterial.uniforms.darkenCenter.value = state.darkenCenter;
     this.compositeMaterial.uniforms.solarize.value = state.solarize;
     this.compositeMaterial.uniforms.invert.value = state.invert;
     this.compositeMaterial.uniforms.gammaAdj.value = state.gammaAdj;
