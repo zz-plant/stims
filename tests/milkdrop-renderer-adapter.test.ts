@@ -12,7 +12,10 @@ import {
   WebGLRenderer,
 } from 'three';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
-import { createMilkdropRendererAdapterCore } from '../assets/js/milkdrop/renderer-adapter.ts';
+import {
+  __milkdropRendererAdapterTestUtils,
+  createMilkdropRendererAdapterCore,
+} from '../assets/js/milkdrop/renderer-adapter.ts';
 import { createMilkdropRendererAdapter } from '../assets/js/milkdrop/renderer-adapter-factory.ts';
 import type {
   MilkdropFeedbackCompositeState,
@@ -993,6 +996,146 @@ wavecode_0_a=0.35
 
     expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
     expect(renderedWaveChildren.length).toBeGreaterThan(0);
+  });
+
+  test('keeps procedural blend interaction alpha separate from blend alpha on webgpu', () => {
+    const currentWave = {
+      samples: [0.2, -0.1, 0.3, -0.25, 0.15],
+      velocities: [0.04, -0.02, 0.01, -0.03, 0.02],
+      mode: 0,
+      centerX: 0,
+      centerY: 0,
+      scale: 1,
+      mystery: 0,
+      time: 0.3,
+      beatPulse: 0.2,
+      trebleAtt: 0.35,
+      color: { r: 1, g: 1, b: 1, a: 1 },
+      alpha: 0.4,
+      additive: false,
+      thickness: 1,
+    };
+    const previousWave = {
+      ...currentWave,
+      time: 0.1,
+    };
+
+    const line =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralWaveObject(
+        undefined,
+        previousWave,
+        currentWave,
+        0.75,
+        0.25,
+        {
+          offsetX: 0,
+          offsetY: 0,
+          rotation: 0,
+          scale: 1,
+          alphaMultiplier: 0.675,
+        },
+      );
+    const material = line.material as ShaderMaterial;
+
+    expect(material.uniforms.alpha.value).toBeCloseTo(0.1, 6);
+    expect(material.uniforms.interactionAlpha.value).toBeCloseTo(0.675, 6);
+    expect(material.uniforms.blendMix.value).toBeCloseTo(0.75, 6);
+  });
+
+  test('resamples previous procedural wave buffers to the current vertex count during webgpu blends', () => {
+    const interpolatedMainWave =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralWaveObject(
+        undefined,
+        {
+          samples: [0.5, -0.4, 0.3],
+          velocities: [0.08, -0.06, 0.05],
+          mode: 0,
+          centerX: 0,
+          centerY: 0,
+          scale: 1,
+          mystery: 0,
+          time: 0.1,
+          beatPulse: 0.2,
+          trebleAtt: 0.35,
+          color: { r: 1, g: 1, b: 1, a: 1 },
+          alpha: 0.5,
+          additive: false,
+          thickness: 1,
+        },
+        {
+          samples: [0.2, -0.1, 0.3, -0.25, 0.15],
+          velocities: [0.04, -0.02, 0.01, -0.03, 0.02],
+          mode: 0,
+          centerX: 0,
+          centerY: 0,
+          scale: 1,
+          mystery: 0,
+          time: 0.3,
+          beatPulse: 0.2,
+          trebleAtt: 0.35,
+          color: { r: 1, g: 1, b: 1, a: 1 },
+          alpha: 0.5,
+          additive: false,
+          thickness: 1,
+        },
+        0.6,
+        0.4,
+        null,
+      );
+    const interpolatedCustomWave =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralCustomWaveObject(
+        undefined,
+        {
+          samples: [0.25, -0.15, 0.05],
+          spectrum: false,
+          centerX: 0,
+          centerY: 0,
+          scaling: 1,
+          mystery: 0,
+          time: 0.1,
+          color: { r: 1, g: 0.8, b: 0.6, a: 1 },
+          alpha: 0.35,
+          additive: false,
+        },
+        {
+          samples: Array.from({ length: 40 }, (_, index) =>
+            Math.sin(index / 8),
+          ),
+          spectrum: false,
+          centerX: 0,
+          centerY: 0,
+          scaling: 1,
+          mystery: 0,
+          time: 0.3,
+          color: { r: 0.8, g: 0.4, b: 1, a: 1 },
+          alpha: 0.35,
+          additive: false,
+        },
+        0.6,
+        0.4,
+        null,
+      );
+
+    const mainPreviousSampleValues = interpolatedMainWave.geometry.getAttribute(
+      'previousSampleValue',
+    );
+    const mainPreviousSampleVelocities =
+      interpolatedMainWave.geometry.getAttribute('previousSampleVelocity');
+    const mainSampleT = interpolatedMainWave.geometry.getAttribute('sampleT');
+    const customPreviousSampleValues =
+      interpolatedCustomWave.geometry.getAttribute('previousSampleValue');
+    const customSampleT =
+      interpolatedCustomWave.geometry.getAttribute('sampleT');
+
+    expect(mainPreviousSampleValues.array.length).toBe(
+      mainSampleT.array.length,
+    );
+    expect(mainPreviousSampleVelocities.array.length).toBe(
+      mainSampleT.array.length,
+    );
+    expect(customPreviousSampleValues.array.length).toBe(
+      customSampleT.array.length,
+    );
   });
 
   test('keeps WebGL fallback on CPU geometry for descriptors that WebGPU synthesizes procedurally', () => {
