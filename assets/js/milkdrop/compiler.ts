@@ -7,6 +7,11 @@ import {
   splitMilkdropStatements,
   walkMilkdropExpression,
 } from './expression';
+import {
+  aliasMap,
+  normalizeFieldSuffix,
+  normalizeProgramAssignmentTarget,
+} from './field-normalization';
 import { formatMilkdropPreset } from './formatter';
 import { isMilkdropParityConstructAllowlisted } from './parity-allowlist';
 import { parseMilkdropPreset } from './preset-parser';
@@ -16,6 +21,7 @@ import {
 } from './shader-ast';
 import {
   isMilkdropShaderSamplerName,
+  isMilkdropVolumeShaderSamplerName,
   normalizeMilkdropShaderSamplerName,
 } from './shader-samplers';
 import type {
@@ -1488,6 +1494,41 @@ function isAuxShaderSamplerName(
   value: string,
 ): value is MilkdropShaderTextureSampler {
   return value !== 'main' && isMilkdropShaderSamplerName(value);
+}
+
+function buildUnsupportedVolumeSamplerWarnings(
+  controls: Pick<MilkdropShaderControls, 'textureLayer' | 'warpTexture'>,
+) {
+  const warnings: string[] = [];
+  const appendWarning = (
+    controlName: 'textureLayer' | 'warpTexture',
+    label: string,
+    source: MilkdropShaderTextureSampler,
+  ) => {
+    if (
+      controls[controlName].sampleDimension !== '3d' ||
+      source === 'none' ||
+      isMilkdropVolumeShaderSamplerName(source)
+    ) {
+      return;
+    }
+    warnings.push(
+      `${label} uses tex3D/texture3D with aux sampler "${source}", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.`,
+    );
+  };
+
+  appendWarning(
+    'textureLayer',
+    'Texture layer shader control',
+    controls.textureLayer.source,
+  );
+  appendWarning(
+    'warpTexture',
+    'Warp texture shader control',
+    controls.warpTexture.source,
+  );
+
+  return warnings;
 }
 
 function isKnownShaderScalarKey(key: string) {
@@ -4278,55 +4319,6 @@ function mergeShaderControlAnalysis(
   };
 }
 
-const aliasMap: Record<string, string | null> = {
-  milkdrop_preset_version: null,
-  frating: 'fRating',
-  fdecay: 'decay',
-  fgammaadj: 'gammaadj',
-  fvideoechozoom: 'video_echo_zoom',
-  fvideoechoalpha: 'video_echo_alpha',
-  nvideoechoorientation: 'video_echo_orientation',
-  fwavealpha: 'wave_a',
-  fwavescale: 'wave_scale',
-  fwavesmoothing: 'wave_smoothing',
-  nwavemode: 'wave_mode',
-  fmodwavealphastart: 'modwavealphastart',
-  fmodwavealphaend: 'modwavealphaend',
-  fwarpscale: 'warp',
-  fwarpanimspeed: 'warpanimspeed',
-  fzoomexponent: 'zoomexp',
-  fshader: 'shader',
-  fbrighten: 'brighten',
-  fdarken: 'darken',
-  fsolarize: 'solarize',
-  finvert: 'invert',
-  bmaximizewavecolor: 'wave_brighten',
-  bbrighten: 'brighten',
-  bdarken: 'darken',
-  bsolarize: 'solarize',
-  binvert: 'invert',
-  fwaveparam: 'wave_mystery',
-  fwaver: 'wave_r',
-  fwaveg: 'wave_g',
-  fwaveb: 'wave_b',
-  fwavex: 'wave_x',
-  fwavey: 'wave_y',
-  fbeatsensitivity: 'beat_sensitivity',
-  fblendtimeseconds: 'blend_duration',
-  fouterbordersize: 'ob_size',
-  fouterborderr: 'ob_r',
-  fouterborderg: 'ob_g',
-  fouterborderb: 'ob_b',
-  fouterbordera: 'ob_a',
-  finnerbordersize: 'ib_size',
-  finnerborderr: 'ib_r',
-  finnerborderg: 'ib_g',
-  finnerborderb: 'ib_b',
-  finnerbordera: 'ib_a',
-  video_echo: 'video_echo_enabled',
-  echo_orient: 'video_echo_orientation',
-};
-
 const legacyCustomWaveSuffixMap: Record<string, string | null> = {
   mode: 'spectrum',
   bspectrum: 'spectrum',
@@ -4365,13 +4357,6 @@ function normalizeShaderFieldChunk(rawValue: string) {
     return null;
   }
   return normalized;
-}
-
-function normalizeFieldSuffix(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/gu, '_');
 }
 
 function normalizeLegacyCustomWaveSuffix(value: string) {
@@ -4605,12 +4590,6 @@ function normalizeFieldKey(field: MilkdropPresetField) {
     return 'shape_1_thickoutline';
   }
   return rawKey;
-}
-
-function normalizeProgramAssignmentTarget(target: string) {
-  const normalizedTarget = normalizeFieldSuffix(target);
-  const aliasedTarget = aliasMap[normalizedTarget];
-  return aliasedTarget ?? normalizedTarget;
 }
 
 function ensureWaveDefinition(
@@ -4888,12 +4867,14 @@ function buildBackendSupport({
   sharedWarnings,
   softUnknownKeys,
   hardUnsupportedFields,
+  unsupportedVolumeSamplerWarnings,
 }: {
   backend: MilkdropRenderBackend;
   featureAnalysis: MilkdropFeatureAnalysis;
   sharedWarnings: string[];
   softUnknownKeys: string[];
   hardUnsupportedFields: HardUnsupportedFieldSpec[];
+  unsupportedVolumeSamplerWarnings: string[];
 }): MilkdropBackendSupport {
   const requiredFeatures = featureAnalysis.featuresUsed.filter(
     (feature) => feature !== 'unsupported-shader-text',
@@ -4923,6 +4904,18 @@ function buildBackendSupport({
         status: 'partial',
         code: 'unknown-field',
         message: `Unknown preset field "${key}" was ignored.`,
+      }),
+    );
+  });
+
+  unsupportedVolumeSamplerWarnings.forEach((message) => {
+    evidence.push(
+      createBackendEvidence({
+        backend,
+        scope: 'backend',
+        status: 'partial',
+        code: 'volume-sampler-gap',
+        message,
       }),
     );
   });
@@ -5381,6 +5374,16 @@ function createIR(
         `Unsupported feature "${feature}" from preset field "${key}": ${message}`,
     ),
   ];
+  const unsupportedVolumeSamplerWarnings =
+    buildUnsupportedVolumeSamplerWarnings(mergedShaderControls.controls);
+  unsupportedVolumeSamplerWarnings.forEach((message) => {
+    addDiagnostic(
+      diagnostics,
+      'warning',
+      'preset_shader_volume_approximation',
+      message,
+    );
+  });
   const backends = {
     webgl: buildBackendSupport({
       backend: 'webgl',
@@ -5388,6 +5391,7 @@ function createIR(
       sharedWarnings,
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
+      unsupportedVolumeSamplerWarnings,
     }),
     webgpu: buildBackendSupport({
       backend: 'webgpu',
@@ -5395,6 +5399,7 @@ function createIR(
       sharedWarnings,
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
+      unsupportedVolumeSamplerWarnings,
     }),
   };
   const blockedConstructs = [
