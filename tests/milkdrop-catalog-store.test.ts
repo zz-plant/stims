@@ -15,6 +15,57 @@ describe('milkdrop catalog store', () => {
     mock.restore();
   });
 
+  test('ignores optimistic catalog metadata when compiled analysis is weaker', async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/milkdrop-presets/catalog.json')) {
+        return {
+          ok: true,
+          json: async () => ({
+            presets: [
+              {
+                id: 'optimistic-pack',
+                title: 'Optimistic Pack',
+                author: 'Curated',
+                file: '/milkdrop-presets/optimistic-pack.milk',
+                tags: ['curated'],
+                order: 1,
+                expectedFidelityClass: 'exact',
+                visualEvidenceTier: 'visual',
+                supports: { webgl: true, webgpu: true },
+              },
+            ],
+          }),
+        };
+      }
+
+      if (url.endsWith('/milkdrop-presets/optimistic-pack.milk')) {
+        return {
+          ok: true,
+          text: async () =>
+            'title=Optimistic Pack\nvideo_echo=1\nwavecode_0_enabled=1\n',
+        };
+      }
+
+      return { ok: false };
+    }) as unknown as typeof fetch;
+
+    const store = createMilkdropCatalogStore({
+      dbName: 'milkdrop-catalog-store-optimistic-test',
+      catalogUrl: '/milkdrop-presets/catalog.json',
+    });
+
+    const entries = await store.listPresets();
+    const bundled = entries.find((entry) => entry.id === 'optimistic-pack');
+
+    expect(bundled).toBeDefined();
+    expect(bundled?.supports.webgl.status).toBe('supported');
+    expect(bundled?.supports.webgpu.status).toBe('partial');
+    expect(bundled?.fidelityClass).toBe('near-exact');
+    expect(bundled?.visualEvidenceTier).toBe('runtime');
+    expect(bundled?.evidence.visual).toBe('not-captured');
+  });
+
   test('derives backend support, favorites, ratings, and history from preset analysis', async () => {
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
       const url = String(input);
