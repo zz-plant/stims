@@ -37,6 +37,7 @@ import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropGpuGeometryHints,
+  MilkdropGpuInteractionPayload,
   MilkdropPostVisual,
   MilkdropPresetSource,
   MilkdropRuntimeSignals,
@@ -297,6 +298,7 @@ function enhanceGpuGeometry(
 export function applyMilkdropInteractionResponse(
   frameState: MilkdropFrameState,
   input: UnifiedInputState | null,
+  backend: 'webgl' | 'webgpu' = 'webgl',
 ): MilkdropFrameState {
   if (!input) {
     return frameState;
@@ -313,6 +315,18 @@ export function applyMilkdropInteractionResponse(
     input.dragDelta.y * 0.9 + (gesture?.translation.y ?? 0) * 0.45,
   );
   const scale = clamp(1 + pinchDelta * 0.45, 0.7, 1.55);
+  const waveAlphaMultiplier = clamp(
+    1 + Math.abs(pinchDelta) * 0.14 + dragBoost * 0.06,
+    0.72,
+    1.35,
+  );
+  const meshAlphaMultiplier = clamp(1 + Math.abs(pinchDelta) * 0.12, 0.72, 1.3);
+  const motionVectorAlphaMultiplier = clamp(
+    1 + Math.abs(pinchDelta) * 0.16 + dragBoost * 0.08,
+    0.72,
+    1.4,
+  );
+  const usesGpuInteractionPayload = backend === 'webgpu';
 
   if (
     dragBoost < 0.001 &&
@@ -324,44 +338,86 @@ export function applyMilkdropInteractionResponse(
     return frameState;
   }
 
+  const interaction: MilkdropGpuInteractionPayload | null =
+    usesGpuInteractionPayload
+      ? {
+          waves: {
+            offsetX,
+            offsetY,
+            rotation,
+            scale,
+            alphaMultiplier: waveAlphaMultiplier,
+          },
+          mesh: {
+            offsetX,
+            offsetY,
+            rotation,
+            scale,
+            alphaMultiplier: meshAlphaMultiplier,
+          },
+          motionVectors: {
+            offsetX,
+            offsetY,
+            rotation,
+            scale,
+            alphaMultiplier: motionVectorAlphaMultiplier,
+          },
+        }
+      : null;
+
   return {
     ...frameState,
+    interaction,
     mainWave: {
       ...frameState.mainWave,
-      positions: transformScenePositions(frameState.mainWave.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
+      positions:
+        usesGpuInteractionPayload && frameState.gpuGeometry.mainWave
+          ? frameState.mainWave.positions
+          : transformScenePositions(frameState.mainWave.positions, {
+              offsetX,
+              offsetY,
+              rotation,
+              scale,
+            }),
       thickness: clamp(frameState.mainWave.thickness + dragBoost * 0.8, 1, 12),
     },
-    customWaves: frameState.customWaves.map((wave) => ({
+    customWaves: frameState.customWaves.map((wave, index) => ({
       ...wave,
-      positions: transformScenePositions(wave.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
+      positions:
+        usesGpuInteractionPayload &&
+        Boolean(frameState.gpuGeometry.customWaves[index])
+          ? wave.positions
+          : transformScenePositions(wave.positions, {
+              offsetX,
+              offsetY,
+              rotation,
+              scale,
+            }),
     })),
-    trails: frameState.trails.map((trail) => ({
+    trails: frameState.trails.map((trail, index) => ({
       ...trail,
-      positions: transformScenePositions(trail.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
+      positions:
+        usesGpuInteractionPayload &&
+        Boolean(frameState.gpuGeometry.trailWaves[index])
+          ? trail.positions
+          : transformScenePositions(trail.positions, {
+              offsetX,
+              offsetY,
+              rotation,
+              scale,
+            }),
     })),
     mesh: {
       ...frameState.mesh,
-      positions: transformScenePositions(frameState.mesh.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
+      positions:
+        usesGpuInteractionPayload && frameState.gpuGeometry.meshField
+          ? frameState.mesh.positions
+          : transformScenePositions(frameState.mesh.positions, {
+              offsetX,
+              offsetY,
+              rotation,
+              scale,
+            }),
       alpha: clamp(frameState.mesh.alpha + Math.abs(pinchDelta) * 0.12, 0, 1),
     },
     shapes: frameState.shapes.map((shape) => ({
@@ -373,12 +429,15 @@ export function applyMilkdropInteractionResponse(
     })),
     motionVectors: frameState.motionVectors.map((vector) => ({
       ...vector,
-      positions: transformScenePositions(vector.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
+      positions:
+        usesGpuInteractionPayload && frameState.gpuGeometry.motionVectorField
+          ? vector.positions
+          : transformScenePositions(vector.positions, {
+              offsetX,
+              offsetY,
+              rotation,
+              scale,
+            }),
     })),
     post: enhancePostEffects(frameState.post, {
       offsetX,
@@ -576,9 +635,17 @@ function downloadPresetFile(name: string, contents: string) {
 
 function cloneBlendState(
   frameState: MilkdropFrameState | null,
+  backend: 'webgl' | 'webgpu',
 ): MilkdropBlendState | null {
   if (!frameState) {
     return null;
+  }
+  if (backend === 'webgpu') {
+    return {
+      mode: 'gpu',
+      previousFrame: frameState,
+      alpha: 1,
+    };
   }
   const waveform = {
     ...frameState.mainWave,
@@ -586,6 +653,7 @@ function cloneBlendState(
     color: { ...frameState.mainWave.color },
   };
   return {
+    mode: 'cpu',
     background: frameState.background,
     waveform,
     mainWave: waveform,
@@ -741,8 +809,9 @@ export function createMilkdropExperience({
   let adapter: ReturnType<typeof createMilkdropRendererAdapter> | null = null;
   let activeCompiled: MilkdropCompiledPreset = defaultPreset;
   let activePresetId = defaultPreset.source.id;
+  let activeBackend: 'webgl' | 'webgpu' = 'webgl';
   let currentFrameState: MilkdropFrameState | null = null;
-  let blendState = cloneBlendState(currentFrameState);
+  let blendState = cloneBlendState(currentFrameState, activeBackend);
   let blendEndAtMs = 0;
   let autoplay = prefs.autoplay ?? false;
   let blendDuration =
@@ -750,7 +819,6 @@ export function createMilkdropExperience({
   let transitionMode: 'blend' | 'cut' = prefs.transitionMode ?? 'blend';
   let lastPresetSwitchAt = performance.now();
   let catalogEntries: MilkdropCatalogEntry[] = [];
-  let activeBackend: 'webgl' | 'webgpu' = 'webgl';
   let selectionHistory: string[] = [];
   let selectionCursor = -1;
   let fallbackTriggered = false;
@@ -921,7 +989,7 @@ export function createMilkdropExperience({
       blendDuration > 0 &&
       estimateFrameBlendWorkload(currentFrameState) < 900
     ) {
-      blendState = cloneBlendState(currentFrameState);
+      blendState = cloneBlendState(currentFrameState, activeBackend);
       blendEndAtMs = performance.now() + blendDuration * 1000;
     } else {
       blendState = null;
@@ -1503,6 +1571,7 @@ export function createMilkdropExperience({
       currentFrameState = applyMilkdropInteractionResponse(
         vm.step(signals),
         frame.input,
+        activeBackend,
       );
       updateAgentDebugSnapshot();
       const canBlendCurrentFrame =
