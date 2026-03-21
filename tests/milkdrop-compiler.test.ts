@@ -106,11 +106,22 @@ video_echo=1
 
     expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'video-echo',
     );
-    expect(compiled.ir.compatibility.blockingReasons).toEqual([]);
+    expect(compiled.ir.compatibility.parity.backendDivergence).toContain(
+      'status:webgl=supported,webgpu=partial',
+    );
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'video-echo-gap',
+          feature: 'video-echo',
+          status: 'partial',
+        }),
+      ]),
+    );
   });
 
   test('maps gamma adjustment into post state and post-effect feature usage', () => {
@@ -127,6 +138,8 @@ fGammaAdj=1.75
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'post-effects',
     );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
   });
 
   test('accepts motion vector fields as supported preset inputs', () => {
@@ -199,7 +212,7 @@ ib_border=1
     );
 
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(
       compiled.ir.compatibility.featureAnalysis.unsupportedShaderText,
     ).toBe(false);
@@ -210,6 +223,12 @@ ib_border=1
     expect(compiled.ir.post.innerBorderStyle).toBe(true);
     expect(compiled.ir.post.shaderControls.hueShift).toBeCloseTo(0.35, 6);
     expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.25, 6);
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual(
+      expect.arrayContaining([
+        'status:webgl=supported,webgpu=partial',
+        'webgpu:supported-shader-text-gap',
+      ]),
+    );
   });
 
   test('supports shader transform controls in the subset', () => {
@@ -548,9 +567,13 @@ video_echo=1
       compiled.ir.customWaves[0]?.programs.perPoint.statements.length,
     ).toBe(1);
     expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
-    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.warnings).toEqual(
+      expect.arrayContaining([
+        'WebGPU still routes video echo through the legacy feedback path and may diverge from WebGL output.',
+      ]),
+    );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
   });
 
   test('supports legacy max-slot custom shape aliases without warnings', () => {
@@ -624,6 +647,18 @@ warp_shader=this is unsupported
       'unsupported-shader-text',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'unsupported-shader-text-gap',
+          feature: 'unsupported-shader-text',
+          status: 'unsupported',
+        }),
+      ]),
+    );
     expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
     expect(compiled.ir.compatibility.parity.visualEvidenceTier).toBe('compile');
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
@@ -685,13 +720,18 @@ warp_shader=unsupported(shader)
     );
 
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
       'unsupported(shader)',
     ]);
     expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
       'shader:unsupported(shader)',
     ]);
+    expect(compiled.ir.compatibility.parity.visualFallbacks).toContain(
+      'webgpu:unsupported-shader-text-gap:unsupported-shader-text',
+    );
     expect(compiled.ir.compatibility.parity.visualFallbacks).toContain(
       'shader-text-control-extraction',
     );

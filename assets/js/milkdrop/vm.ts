@@ -218,6 +218,7 @@ type MeshField = {
 
 type WaveFrameBuffers = {
   liveSamples: number[];
+  previousSamples: number[];
   smoothedSamples: number[];
 };
 
@@ -235,6 +236,7 @@ class MilkdropPresetVM implements MilkdropVM {
   private lastMeshField: MeshField | null = null;
   private readonly waveBuffers: WaveFrameBuffers = {
     liveSamples: [],
+    previousSamples: [],
     smoothedSamples: [],
   };
   private readonly frameTransformCache = new Map<
@@ -282,6 +284,7 @@ class MilkdropPresetVM implements MilkdropVM {
     );
     this.lastMeshField = null;
     this.waveBuffers.liveSamples.length = 0;
+    this.waveBuffers.previousSamples.length = 0;
     this.waveBuffers.smoothedSamples.length = 0;
     this.frameTransformCache.clear();
 
@@ -520,10 +523,14 @@ class MilkdropPresetVM implements MilkdropVM {
       1,
     );
     const liveSamples = this.waveBuffers.liveSamples;
+    const previousSamples = this.waveBuffers.previousSamples;
     const smoothedSamples = this.waveBuffers.smoothedSamples;
     liveSamples.length = samples;
+    previousSamples.length = samples;
     smoothedSamples.length = samples;
-    const previousSamples = this.lastWaveSamples;
+    for (let index = 0; index < samples; index += 1) {
+      previousSamples[index] = this.lastWaveSamples[index] ?? 0;
+    }
     const historyBlend = clamp(
       0.26 + signals.beatPulse * 0.48 + signals.deltaMs / 120,
       0.24,

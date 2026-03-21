@@ -16,6 +16,7 @@ import {
 } from './shader-ast';
 import type {
   MilkdropBackendSupport,
+  MilkdropBackendSupportEvidence,
   MilkdropBlockingConstruct,
   MilkdropCompatibilityEvidence,
   MilkdropCompiledPreset,
@@ -33,6 +34,7 @@ import type {
   MilkdropPresetIR,
   MilkdropPresetSource,
   MilkdropProgramBlock,
+  MilkdropRenderBackend,
   MilkdropShaderControlExpressions,
   MilkdropShaderControls,
   MilkdropShaderExpressionNode,
@@ -329,6 +331,37 @@ const shapecodeFieldPattern = /^shapecode_(\d+)_(.+)$/u;
 const shaderFieldPattern =
   /^(?:warp_[0-9]+|comp_[0-9]+|warp_shader|comp_shader|shader_text|warp_code|comp_code)$/u;
 const hardUnsupportedKeys = new Set<string>([]);
+const BACKEND_PARTIAL_FEATURE_GAPS: Record<
+  MilkdropRenderBackend,
+  Partial<Record<MilkdropFeatureKey, string>>
+> = {
+  webgl: {},
+  webgpu: {
+    'video-echo':
+      'WebGPU still routes video echo through the legacy feedback path and may diverge from WebGL output.',
+    'post-effects':
+      'WebGPU post-processing parity is still incomplete for MilkDrop post effects.',
+  },
+};
+const BACKEND_SHADER_TEXT_GAPS: Record<
+  MilkdropRenderBackend,
+  {
+    supportedSubset?: string;
+    unsupportedSubset?: string;
+  }
+> = {
+  webgl: {
+    unsupportedSubset:
+      'This preset includes custom shader text outside the fully supported subset and will be approximated.',
+  },
+  webgpu: {
+    supportedSubset:
+      'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
+    unsupportedSubset:
+      'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
+  },
+};
+
 function normalizeBlockedConstructValue(value: string) {
   return value.trim().replace(/\s+/gu, ' ');
 }
@@ -468,6 +501,10 @@ function collectExpressionsFromValue(
   Object.values(value).forEach((entry) =>
     collectExpressionsFromValue(entry, expressions),
   );
+function createBackendEvidence(
+  evidence: MilkdropBackendSupportEvidence,
+): MilkdropBackendSupportEvidence {
+  return evidence;
 }
 
 function buildBackendDivergence({
@@ -481,12 +518,34 @@ function buildBackendDivergence({
   if (webgl.status !== webgpu.status) {
     divergence.add(`status:webgl=${webgl.status},webgpu=${webgpu.status}`);
   }
-  webgl.reasons
-    .filter((reason) => !webgpu.reasons.includes(reason))
-    .forEach((reason) => divergence.add(`webgl:${reason}`));
-  webgpu.reasons
-    .filter((reason) => !webgl.reasons.includes(reason))
-    .forEach((reason) => divergence.add(`webgpu:${reason}`));
+  const webglEvidenceKeys = new Set(
+    webgl.evidence.map((entry) => `${entry.code}:${entry.feature ?? 'none'}`),
+  );
+  const webgpuEvidenceKeys = new Set(
+    webgpu.evidence.map((entry) => `${entry.code}:${entry.feature ?? 'none'}`),
+  );
+  webgl.evidence
+    .filter(
+      (entry) =>
+        entry.scope === 'backend' &&
+        !webgpuEvidenceKeys.has(`${entry.code}:${entry.feature ?? 'none'}`),
+    )
+    .forEach((entry) =>
+      divergence.add(
+        `webgl:${entry.code}${entry.feature ? `:${entry.feature}` : ''}`,
+      ),
+    );
+  webgpu.evidence
+    .filter(
+      (entry) =>
+        entry.scope === 'backend' &&
+        !webglEvidenceKeys.has(`${entry.code}:${entry.feature ?? 'none'}`),
+    )
+    .forEach((entry) =>
+      divergence.add(
+        `webgpu:${entry.code}${entry.feature ? `:${entry.feature}` : ''}`,
+      ),
+    );
   return [...divergence];
 }
 
@@ -503,6 +562,24 @@ function buildVisualFallbacks({
   if (approximatedShaderLines.length > 0) {
     fallbacks.add('shader-text-control-extraction');
   }
+  webgl.evidence
+    .filter(
+      (entry) => entry.status === 'unsupported' && entry.scope === 'backend',
+    )
+    .forEach((entry) =>
+      fallbacks.add(
+        `webgl:${entry.code}${entry.feature ? `:${entry.feature}` : ''}`,
+      ),
+    );
+  webgpu.evidence
+    .filter(
+      (entry) => entry.status === 'unsupported' && entry.scope === 'backend',
+    )
+    .forEach((entry) =>
+      fallbacks.add(
+        `webgpu:${entry.code}${entry.feature ? `:${entry.feature}` : ''}`,
+      ),
+    );
   if (webgl.recommendedFallback) {
     fallbacks.add(`webgl->${webgl.recommendedFallback}`);
   }
@@ -595,18 +672,20 @@ function buildDegradationReasons({
     backend: 'webgl' | 'webgpu',
     support: MilkdropBackendSupport,
   ) => {
-    if (support.status === 'supported') {
+    if (support.evidence.length === 0) {
       return;
     }
-    reasons.push({
-      code:
-        support.status === 'unsupported'
-          ? 'backend-unsupported'
-          : 'backend-partial',
-      category: 'backend-degradation',
-      message: `${backend.toUpperCase()} is ${support.status} for this preset.`,
-      system: 'backend',
-      blocking: support.status === 'unsupported',
+    support.evidence.forEach((entry) => {
+      reasons.push({
+        code:
+          entry.status === 'unsupported'
+            ? 'backend-unsupported'
+            : 'backend-partial',
+        category: 'backend-degradation',
+        message: `${backend.toUpperCase()}: ${entry.message}`,
+        system: 'backend',
+        blocking: entry.status === 'unsupported',
+      });
     });
   };
 
@@ -657,12 +736,18 @@ function classifyFidelity({
   );
   const hasUnsupportedBackend =
     webgl.status === 'unsupported' || webgpu.status === 'unsupported';
+  const hasBackendPartial = [...webgl.evidence, ...webgpu.evidence].some(
+    (entry) => entry.status === 'partial',
+  );
 
   if (hasUnsupportedBackend || hasBlockingReason) {
     return 'fallback';
   }
   if (hasBlockingConstruct) {
     return 'partial';
+  }
+  if (hasBackendPartial) {
+    return 'near-exact';
   }
   if (!noBlockedConstructs || degradationReasons.length > 0) {
     return 'near-exact';
@@ -4459,40 +4544,126 @@ function buildFeatureAnalysis({
 function buildBackendSupport({
   backend,
   featureAnalysis,
-  warnings,
+  sharedWarnings,
   unsupportedKeys,
 }: {
-  backend: 'webgl' | 'webgpu';
+  backend: MilkdropRenderBackend;
   featureAnalysis: MilkdropFeatureAnalysis;
-  warnings: string[];
+  sharedWarnings: string[];
   unsupportedKeys: string[];
 }): MilkdropBackendSupport {
   const requiredFeatures = featureAnalysis.featuresUsed.filter(
     (feature) => feature !== 'unsupported-shader-text',
   );
-  const reasons = [...warnings];
+  const evidence: MilkdropBackendSupportEvidence[] = [];
   const unsupportedFeatures: MilkdropFeatureKey[] = [];
 
-  if (featureAnalysis.unsupportedShaderText) {
-    reasons.push(
-      'This preset includes custom shader text outside the fully supported subset and will be approximated.',
+  if (unsupportedKeys.some((key) => hardUnsupportedKeys.has(key))) {
+    evidence.push(
+      createBackendEvidence({
+        backend,
+        scope: 'shared',
+        status: 'unsupported',
+        code: 'unsupported-hard-feature',
+        message:
+          'This preset depends on unsupported MilkDrop features that are outside the current runtime scope.',
+      }),
     );
+  }
+
+  unsupportedKeys.forEach((key) => {
+    evidence.push(
+      createBackendEvidence({
+        backend,
+        scope: 'shared',
+        status: 'partial',
+        code: 'unknown-field',
+        message: `Unknown preset field "${key}" was ignored.`,
+      }),
+    );
+  });
+
+  if (featureAnalysis.supportedShaderText) {
+    const shaderTextMessage = BACKEND_SHADER_TEXT_GAPS[backend].supportedSubset;
+    if (shaderTextMessage) {
+      evidence.push(
+        createBackendEvidence({
+          backend,
+          scope: 'backend',
+          status: 'partial',
+          code: 'supported-shader-text-gap',
+          message: shaderTextMessage,
+        }),
+      );
+    }
+  }
+
+  if (featureAnalysis.unsupportedShaderText) {
+    const unsupportedMessage =
+      BACKEND_SHADER_TEXT_GAPS[backend].unsupportedSubset;
+    if (unsupportedMessage) {
+      evidence.push(
+        createBackendEvidence({
+          backend,
+          scope: 'backend',
+          status: backend === 'webgpu' ? 'unsupported' : 'partial',
+          code: 'unsupported-shader-text-gap',
+          message: unsupportedMessage,
+          feature: 'unsupported-shader-text',
+        }),
+      );
+    }
     unsupportedFeatures.push('unsupported-shader-text');
   }
 
-  if (unsupportedKeys.some((key) => hardUnsupportedKeys.has(key))) {
-    reasons.push(
-      'This preset depends on unsupported MilkDrop features that are outside the current runtime scope.',
-    );
-  }
+  Object.entries(BACKEND_PARTIAL_FEATURE_GAPS[backend]).forEach(
+    ([feature, message]) => {
+      if (
+        !message ||
+        !featureAnalysis.featuresUsed.includes(feature as MilkdropFeatureKey)
+      ) {
+        return;
+      }
+      evidence.push(
+        createBackendEvidence({
+          backend,
+          scope: 'backend',
+          status: 'partial',
+          code:
+            feature === 'video-echo' ? 'video-echo-gap' : 'post-effects-gap',
+          message,
+          feature: feature as MilkdropFeatureKey,
+        }),
+      );
+      unsupportedFeatures.push(feature as MilkdropFeatureKey);
+    },
+  );
 
-  const uniqueReasons = [...new Set(reasons)];
+  const uniqueEvidence = evidence.filter(
+    (entry, index, entries) =>
+      entries.findIndex(
+        (candidate) =>
+          candidate.backend === entry.backend &&
+          candidate.scope === entry.scope &&
+          candidate.status === entry.status &&
+          candidate.code === entry.code &&
+          candidate.feature === entry.feature &&
+          candidate.message === entry.message,
+      ) === index,
+  );
+  const uniqueReasons = [
+    ...new Set([
+      ...sharedWarnings,
+      ...uniqueEvidence.map((entry) => entry.message),
+    ]),
+  ];
   const uniqueUnsupported = [...new Set(unsupportedFeatures)];
 
-  if (unsupportedKeys.some((key) => hardUnsupportedKeys.has(key))) {
+  if (uniqueEvidence.some((entry) => entry.status === 'unsupported')) {
     return {
       status: 'unsupported',
       reasons: uniqueReasons,
+      evidence: uniqueEvidence,
       requiredFeatures,
       unsupportedFeatures: uniqueUnsupported,
       recommendedFallback: backend === 'webgpu' ? 'webgl' : undefined,
@@ -4503,6 +4674,7 @@ function buildBackendSupport({
     return {
       status: 'partial',
       reasons: uniqueReasons,
+      evidence: uniqueEvidence,
       requiredFeatures,
       unsupportedFeatures: uniqueUnsupported,
       recommendedFallback: backend === 'webgpu' ? 'webgl' : undefined,
@@ -4512,6 +4684,7 @@ function buildBackendSupport({
   return {
     status: 'supported',
     reasons: [],
+    evidence: [],
     requiredFeatures,
     unsupportedFeatures: [],
   };
@@ -4778,27 +4951,22 @@ function createIR(
     unsupportedShaderText,
     supportedShaderText,
   });
-  const warnings = [
+  const sharedWarnings = [
     ...[...unsupportedKeys].map(
       (key) => `Unknown preset field "${key}" was ignored.`,
     ),
-    ...(featureAnalysis.unsupportedShaderText
-      ? [
-          'Shader-text sections include unsupported lines and are being approximated.',
-        ]
-      : []),
   ];
   const backends = {
     webgl: buildBackendSupport({
       backend: 'webgl',
       featureAnalysis,
-      warnings,
+      sharedWarnings,
       unsupportedKeys: [...unsupportedKeys],
     }),
     webgpu: buildBackendSupport({
       backend: 'webgpu',
       featureAnalysis,
-      warnings,
+      sharedWarnings,
       unsupportedKeys: [...unsupportedKeys],
     }),
   };
@@ -4870,7 +5038,13 @@ function createIR(
     backends: finalBackends,
     parity,
     featureAnalysis,
-    warnings,
+    warnings: [
+      ...new Set([
+        ...sharedWarnings,
+        ...finalBackends.webgl.reasons,
+        ...finalBackends.webgpu.reasons,
+      ]),
+    ],
     blockingReasons: [
       ...new Set(
         [

@@ -6,14 +6,16 @@ import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 function makeSignals({
   frame = 1,
   beatPulse = 0.1,
+  frequencyValue = 160,
   time = frame / 60,
 }: {
   frame?: number;
   beatPulse?: number;
+  frequencyValue?: number;
   time?: number;
 } = {}): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
-  frequencyData.fill(160);
+  frequencyData.fill(frequencyValue);
 
   return {
     time,
@@ -203,6 +205,35 @@ per_pixel_1=zoom=1.08; rot=0.12; warp=0.35;
     expect(frameState.motionVectors[0]?.positions).toHaveLength(6);
     expect(frameState.motionVectors[0]?.color.b).toBeCloseTo(1, 6);
     expect(frameState.motionVectors[0]?.alpha).toBeGreaterThan(0.28);
+  });
+
+  test('preserves prior frame wave samples for velocity-driven main wave animation', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Wave Velocity History
+wave_mode=4
+wave_x=0.5
+wave_y=0.5
+wave_scale=1
+      `.trim(),
+      { id: 'wave-velocity-history' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.step(makeSignals({ frame: 1, frequencyValue: 32, time: 0.25 }));
+    const withHistory = vm.step(
+      makeSignals({ frame: 2, frequencyValue: 224, time: 0.25 }),
+    );
+    const withoutHistory = createMilkdropVM(preset).step(
+      makeSignals({ frame: 2, frequencyValue: 224, time: 0.25 }),
+    );
+
+    expect(withHistory.mainWave.positions).not.toEqual(
+      withoutHistory.mainWave.positions,
+    );
+    expect(withHistory.mainWave.positions[1]).toBeLessThan(
+      withoutHistory.mainWave.positions[1] ?? Number.POSITIVE_INFINITY,
+    );
   });
 
   test('applies legacy cx/cy/sx/sy/dx/dy mesh transforms', () => {

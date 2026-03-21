@@ -27,6 +27,23 @@ const PROJECTM_PRESET_FILES = [
   '260-compshader-noise_lq.milk',
   '300-beatdetect-bassmidtreb.milk',
 ] as const;
+const PROJECTM_BACKEND_EXPECTATIONS = {
+  '000-empty.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+    divergence: [],
+  },
+  '250-wavecode.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+    divergence: [],
+  },
+  '260-compshader-noise_lq.milk': {
+    webgl: 'partial',
+    webgpu: 'unsupported',
+    divergence: ['status:webgl=partial,webgpu=unsupported'],
+  },
+} as const;
 
 function makeSignals({
   frame = 1,
@@ -225,16 +242,38 @@ describe('milkdrop vendored projectM fixture corpus', () => {
 
     expect(corpus.length).toBe(PROJECTM_PRESET_FILES.length);
 
-    corpus.forEach(({ compiled }) => {
+    corpus.forEach(({ file, compiled }) => {
       expect(
         compiled.diagnostics.filter((entry) => entry.severity === 'error'),
       ).toEqual([]);
-      expect(compiled.ir.compatibility.backends.webgl.status).not.toBe(
-        'unsupported',
+
+      const expected =
+        PROJECTM_BACKEND_EXPECTATIONS[
+          file as keyof typeof PROJECTM_BACKEND_EXPECTATIONS
+        ];
+      if (!expected) {
+        expect(compiled.ir.compatibility.backends.webgl.status).not.toBe(
+          'unsupported',
+        );
+        expect(compiled.ir.compatibility.backends.webgpu.status).not.toBe(
+          'unsupported',
+        );
+        return;
+      }
+
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe(
+        expected.webgl,
       );
-      expect(compiled.ir.compatibility.backends.webgpu.status).not.toBe(
-        'unsupported',
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        expected.webgpu,
       );
+      if (expected.divergence.length > 0) {
+        expect(compiled.ir.compatibility.parity.backendDivergence).toEqual(
+          expect.arrayContaining(expected.divergence),
+        );
+      } else {
+        expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
+      }
     });
   });
 
