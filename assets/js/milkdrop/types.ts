@@ -103,6 +103,10 @@ export type MilkdropFeatureKey =
   | 'post-effects'
   | 'unsupported-shader-text';
 
+export type MilkdropCompatibilityFeatureKey =
+  | MilkdropFeatureKey
+  | 'video-echo-orientation';
+
 export type MilkdropSupportStatus = 'supported' | 'partial' | 'unsupported';
 
 export type MilkdropFidelityClass =
@@ -122,12 +126,15 @@ export type MilkdropBlockingConstruct = {
   value: string;
   system: 'preset-field' | 'shader-text';
   allowlisted: boolean;
+  feature?: MilkdropCompatibilityFeatureKey;
+  classification?: 'soft-unknown' | 'hard-unsupported';
 };
 
 export type MilkdropDegradationReason = {
   code:
     | 'unknown-field'
     | 'unsupported-field'
+    | 'unsupported-hard-feature'
     | 'shader-approximation'
     | 'allowlisted-gap'
     | 'backend-divergence'
@@ -162,7 +169,7 @@ export type MilkdropBackendSupportEvidence = {
   status: Exclude<MilkdropSupportStatus, 'supported'>;
   code: MilkdropBackendSupportEvidenceCode;
   message: string;
-  feature?: MilkdropFeatureKey;
+  feature?: MilkdropCompatibilityFeatureKey;
 };
 
 export type MilkdropParityReport = {
@@ -186,7 +193,7 @@ export type MilkdropBackendSupport = {
   reasons: string[];
   evidence: MilkdropBackendSupportEvidence[];
   requiredFeatures: MilkdropFeatureKey[];
-  unsupportedFeatures: MilkdropFeatureKey[];
+  unsupportedFeatures: MilkdropCompatibilityFeatureKey[];
   recommendedFallback?: MilkdropRenderBackend;
 };
 
@@ -211,6 +218,8 @@ export type MilkdropCompatibilityReport = {
   blockingReasons: string[];
   supportedFeatures: string[];
   unsupportedKeys: string[];
+  softUnknownKeys: string[];
+  hardUnsupportedKeys: string[];
   webgl: boolean;
   webgpu: boolean;
 };

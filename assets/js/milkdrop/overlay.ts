@@ -74,7 +74,7 @@ function supportLabel(status: MilkdropSupportStatus) {
   if (status === 'partial') {
     return 'Partial';
   }
-  return 'Fallback';
+  return 'Unsupported';
 }
 
 function fidelityLabel(fidelity: MilkdropFidelityClass) {
@@ -139,6 +139,31 @@ function getPrimaryDegradationReason(compiled: MilkdropCompiledPreset | null) {
       );
     },
   )[0];
+}
+
+function formatPrimaryCompatibilityMessage({
+  primaryReason,
+  support,
+}: {
+  primaryReason:
+    | ReturnType<typeof getPrimaryDegradationReason>
+    | undefined
+    | null;
+  support: { status: MilkdropSupportStatus; reasons: string[] };
+}) {
+  if (primaryReason) {
+    const prefix =
+      primaryReason.blocking && support.status === 'unsupported'
+        ? 'Unsupported feature'
+        : compatibilityCategoryLabel(primaryReason.category);
+    return `${prefix}: ${primaryReason.message}`;
+  }
+
+  if (support.status === 'unsupported') {
+    return `Unsupported feature: ${support.reasons[0] ?? 'This preset requires MilkDrop features Stims cannot execute yet.'}`;
+  }
+
+  return support.reasons[0] ?? 'Preset has fidelity degradations.';
 }
 
 export class MilkdropOverlay {
@@ -896,9 +921,10 @@ export class MilkdropOverlay {
           );
         },
       )[0];
-      reasons.textContent = primaryReason
-        ? `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}`
-        : (support.reasons[0] ?? 'Preset has fidelity degradations.');
+      reasons.textContent = formatPrimaryCompatibilityMessage({
+        primaryReason,
+        support,
+      });
       row.appendChild(reasons);
     }
 
@@ -1483,7 +1509,7 @@ export class MilkdropOverlay {
       <div><strong>Shapes:</strong> ${frameState.shapes.length}</div>
       <div><strong>Borders:</strong> ${frameState.borders.length}</div>
       <div><strong>Register pressure:</strong> q${compiled.ir.compatibility.featureAnalysis.registerUsage.q} / t${compiled.ir.compatibility.featureAnalysis.registerUsage.t}</div>
-      <div><strong>Primary note:</strong> ${primaryReason ? `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}` : (support.reasons[0] ?? parity.visualFallbacks[0] ?? 'Validated for the active backend.')}</div>
+      <div><strong>Primary note:</strong> ${primaryReason || support.status !== 'supported' ? formatPrimaryCompatibilityMessage({ primaryReason, support }) : (parity.visualFallbacks[0] ?? 'Validated for the active backend.')}</div>
     `;
     const now =
       typeof performance !== 'undefined' ? performance.now() : Date.now();

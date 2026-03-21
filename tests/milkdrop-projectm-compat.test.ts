@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import type {
+  MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropRuntimeSignals,
 } from '../assets/js/milkdrop/types.ts';
@@ -15,35 +16,143 @@ const PROJECTM_CORPUS_DIR = join(
   'milkdrop',
   'projectm-upstream',
 );
+const PROJECTM_COMPATIBILITY_SNAPSHOT_PATH = join(
+  PROJECTM_CORPUS_DIR,
+  'compatibility-metadata.snapshot.json',
+);
 
 const PROJECTM_PRESET_FILES = [
   '000-empty.milk',
+  '001-line.milk',
   '100-square.milk',
   '101-per_frame.milk',
+  '102-per_frame3.milk',
+  '103-multiple-eqn.milk',
+  '104-continued-eqn.milk',
+  '105-per_frame_init.milk',
   '110-per_pixel.milk',
   '200-wave.milk',
+  '201-wave.milk',
+  '202-wave.milk',
+  '203-wave.milk',
+  '204-wave.milk',
+  '205-wave.milk',
+  '206-wave.milk',
+  '207-wave.milk',
+  '208-wave.milk',
+  '209-wave.milk',
+  '210-wave.milk',
+  '211-wave.milk',
+  '212-wave.milk',
+  '213-wave.milk',
+  '214-wave.milk',
+  '215-wave.milk',
+  '240-wave-smooth-00.milk',
+  '241-wave-smooth-01.milk',
+  '242-wave-smooth-80.milk',
+  '243-wave-smooth-90.milk',
+  '244-wave-smooth-99.milk',
   '245-wave-smooth-100.milk',
   '250-wavecode.milk',
+  '251-wavecode-spectrum.milk',
+  '252-wavecode-spectrum2.milk',
   '260-compshader-noise_lq.milk',
+  '261-compshader-noisevol_lq.milk',
   '300-beatdetect-bassmidtreb.milk',
 ] as const;
-const PROJECTM_BACKEND_EXPECTATIONS = {
-  '000-empty.milk': {
-    webgl: 'supported',
-    webgpu: 'supported',
-    divergence: [],
-  },
-  '250-wavecode.milk': {
-    webgl: 'supported',
-    webgpu: 'supported',
-    divergence: [],
-  },
-  '260-compshader-noise_lq.milk': {
-    webgl: 'supported',
-    webgpu: 'partial',
-    divergence: ['status:webgl=supported,webgpu=partial'],
-  },
-} as const;
+
+type ProjectMFixtureExpectation = {
+  diagnostics: readonly string[];
+  webgl: 'supported' | 'partial' | 'unsupported';
+  webgpu: 'supported' | 'partial' | 'unsupported';
+  divergence: readonly string[];
+  warnings: readonly string[];
+  blockedConstructs: readonly string[];
+  unsupportedKeys: readonly string[];
+};
+
+const FULL_SUPPORT_EXPECTATION = {
+  diagnostics: [],
+  webgl: 'supported',
+  webgpu: 'supported',
+  divergence: [],
+  warnings: [],
+  blockedConstructs: [],
+  unsupportedKeys: [],
+} as const satisfies ProjectMFixtureExpectation;
+
+const WEBGPU_SHADER_TRANSLATION_EXPECTATION = {
+  diagnostics: [],
+  webgl: 'supported',
+  webgpu: 'partial',
+  divergence: [
+    'status:webgl=supported,webgpu=partial',
+    'webgpu:supported-shader-text-gap',
+  ],
+  warnings: [
+    'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
+  ],
+  blockedConstructs: [],
+  unsupportedKeys: [],
+} as const satisfies ProjectMFixtureExpectation;
+
+const SHADER_FALLBACK_EXPECTATION = {
+  diagnostics: ['preset_unsupported_shader_text'],
+  webgl: 'partial',
+  webgpu: 'unsupported',
+  divergence: ['status:webgl=partial,webgpu=unsupported'],
+  warnings: [
+    'This preset includes custom shader text outside the fully supported subset and will be approximated.',
+    'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
+  ],
+  blockedConstructs: [
+    'shader:ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz',
+  ],
+  unsupportedKeys: [],
+} as const satisfies ProjectMFixtureExpectation;
+
+const PROJECTM_FIXTURE_EXPECTATIONS = {
+  '000-empty.milk': FULL_SUPPORT_EXPECTATION,
+  '001-line.milk': FULL_SUPPORT_EXPECTATION,
+  '100-square.milk': FULL_SUPPORT_EXPECTATION,
+  '101-per_frame.milk': FULL_SUPPORT_EXPECTATION,
+  '102-per_frame3.milk': FULL_SUPPORT_EXPECTATION,
+  '103-multiple-eqn.milk': FULL_SUPPORT_EXPECTATION,
+  '104-continued-eqn.milk': FULL_SUPPORT_EXPECTATION,
+  '105-per_frame_init.milk': FULL_SUPPORT_EXPECTATION,
+  '110-per_pixel.milk': FULL_SUPPORT_EXPECTATION,
+  '200-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '201-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '202-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '203-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '204-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '205-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '206-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '207-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '208-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '209-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '210-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '211-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '212-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '213-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '214-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '215-wave.milk': FULL_SUPPORT_EXPECTATION,
+  '240-wave-smooth-00.milk': FULL_SUPPORT_EXPECTATION,
+  '241-wave-smooth-01.milk': FULL_SUPPORT_EXPECTATION,
+  '242-wave-smooth-80.milk': FULL_SUPPORT_EXPECTATION,
+  '243-wave-smooth-90.milk': FULL_SUPPORT_EXPECTATION,
+  '244-wave-smooth-99.milk': FULL_SUPPORT_EXPECTATION,
+  '245-wave-smooth-100.milk': FULL_SUPPORT_EXPECTATION,
+  '250-wavecode.milk': FULL_SUPPORT_EXPECTATION,
+  '251-wavecode-spectrum.milk': FULL_SUPPORT_EXPECTATION,
+  '252-wavecode-spectrum2.milk': FULL_SUPPORT_EXPECTATION,
+  '260-compshader-noise_lq.milk': WEBGPU_SHADER_TRANSLATION_EXPECTATION,
+  '261-compshader-noisevol_lq.milk': SHADER_FALLBACK_EXPECTATION,
+  '300-beatdetect-bassmidtreb.milk': FULL_SUPPORT_EXPECTATION,
+} as const satisfies Record<
+  (typeof PROJECTM_PRESET_FILES)[number],
+  ProjectMFixtureExpectation
+>;
 
 function makeSignals({
   frame = 1,
@@ -228,6 +337,75 @@ function loadProjectMPresetCorpus() {
   });
 }
 
+function buildCompatibilitySnapshot(
+  file: string,
+  compiled: MilkdropCompiledPreset,
+) {
+  return {
+    file,
+    diagnostics: compiled.diagnostics.map((entry) => ({
+      severity: entry.severity,
+      code: entry.code,
+      field: entry.field ?? null,
+    })),
+    normalizedPrograms: {
+      init: compiled.ir.programs.init.sourceLines,
+      perFrame: compiled.ir.programs.perFrame.sourceLines,
+      perPixel: compiled.ir.programs.perPixel.sourceLines,
+      customWaves: compiled.ir.customWaves.map((wave) => ({
+        index: wave.index,
+        init: wave.programs.init.sourceLines,
+        perFrame: wave.programs.perFrame.sourceLines,
+        perPoint: wave.programs.perPoint.sourceLines,
+      })),
+      customShapes: compiled.ir.customShapes.map((shape) => ({
+        index: shape.index,
+        init: shape.programs.init.sourceLines,
+        perFrame: shape.programs.perFrame.sourceLines,
+      })),
+    },
+    compatibility: {
+      unsupportedKeys: compiled.ir.compatibility.unsupportedKeys,
+      warnings: compiled.ir.compatibility.warnings,
+      featuresUsed: compiled.ir.compatibility.featureAnalysis.featuresUsed,
+      backends: {
+        webgl: {
+          status: compiled.ir.compatibility.backends.webgl.status,
+          evidence: compiled.ir.compatibility.backends.webgl.evidence.map(
+            (entry) => ({
+              scope: entry.scope,
+              status: entry.status,
+              code: entry.code,
+              feature: entry.feature ?? null,
+            }),
+          ),
+        },
+        webgpu: {
+          status: compiled.ir.compatibility.backends.webgpu.status,
+          evidence: compiled.ir.compatibility.backends.webgpu.evidence.map(
+            (entry) => ({
+              scope: entry.scope,
+              status: entry.status,
+              code: entry.code,
+              feature: entry.feature ?? null,
+            }),
+          ),
+        },
+      },
+      parity: {
+        fidelityClass: compiled.ir.compatibility.parity.fidelityClass,
+        backendDivergence: compiled.ir.compatibility.parity.backendDivergence,
+        ignoredFields: compiled.ir.compatibility.parity.ignoredFields,
+        blockedConstructs: compiled.ir.compatibility.parity.blockedConstructs,
+        approximatedShaderLines:
+          compiled.ir.compatibility.parity.approximatedShaderLines,
+        missingAliasesOrFunctions:
+          compiled.ir.compatibility.parity.missingAliasesOrFunctions,
+      },
+    },
+  };
+}
+
 describe('milkdrop vendored projectM fixture corpus', () => {
   test('keeps the vendored upstream fixture selection in sync', () => {
     const files = readdirSync(PROJECTM_CORPUS_DIR)
@@ -237,43 +415,36 @@ describe('milkdrop vendored projectM fixture corpus', () => {
     expect(files).toEqual([...PROJECTM_PRESET_FILES]);
   });
 
-  test('compiles the vendored upstream fixture corpus without errors and keeps both backends available', () => {
+  test('compiles the vendored upstream fixture corpus with explicit per-fixture compatibility expectations', () => {
     const corpus = loadProjectMPresetCorpus();
 
     expect(corpus.length).toBe(PROJECTM_PRESET_FILES.length);
 
     corpus.forEach(({ file, compiled }) => {
-      expect(
-        compiled.diagnostics.filter((entry) => entry.severity === 'error'),
-      ).toEqual([]);
+      const expected = PROJECTM_FIXTURE_EXPECTATIONS[file];
+      const actualDiagnosticCodes = compiled.diagnostics.map(
+        (entry) => entry.code,
+      );
 
-      const expected =
-        PROJECTM_BACKEND_EXPECTATIONS[
-          file as keyof typeof PROJECTM_BACKEND_EXPECTATIONS
-        ];
-      if (!expected) {
-        expect(compiled.ir.compatibility.backends.webgl.status).not.toBe(
-          'unsupported',
-        );
-        expect(compiled.ir.compatibility.backends.webgpu.status).not.toBe(
-          'unsupported',
-        );
-        return;
-      }
-
+      expect(actualDiagnosticCodes).toEqual([...expected.diagnostics]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe(
         expected.webgl,
       );
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
         expected.webgpu,
       );
-      if (expected.divergence.length > 0) {
-        expect(compiled.ir.compatibility.parity.backendDivergence).toEqual(
-          expect.arrayContaining(expected.divergence),
-        );
-      } else {
-        expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
-      }
+      expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
+        ...expected.divergence,
+      ]);
+      expect(compiled.ir.compatibility.warnings).toEqual([
+        ...expected.warnings,
+      ]);
+      expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
+        ...expected.blockedConstructs,
+      ]);
+      expect(compiled.ir.compatibility.unsupportedKeys).toEqual([
+        ...expected.unsupportedKeys,
+      ]);
     });
   });
 
@@ -295,6 +466,16 @@ describe('milkdrop vendored projectM fixture corpus', () => {
 
     expect(compiled.ir.numericFields.zoom).toBeCloseTo(1, 6);
     expect(compiled.ir.numericFields.zoomexp).toBeCloseTo(0.75, 6);
+  test('keeps compiled compatibility metadata and normalized program sources stable', () => {
+    const corpus = loadProjectMPresetCorpus();
+    const actualSnapshot = corpus.map(({ file, compiled }) =>
+      buildCompatibilitySnapshot(file, compiled),
+    );
+    const expectedSnapshot = JSON.parse(
+      readFileSync(PROJECTM_COMPATIBILITY_SNAPSHOT_PATH, 'utf8'),
+    );
+
+    expect(actualSnapshot).toEqual(expectedSnapshot);
   });
 
   test('steps the vendored upstream fixture corpus through the VM without invalid frame output', () => {

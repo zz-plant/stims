@@ -19,6 +19,7 @@ import type {
   MilkdropBackendSupportEvidence,
   MilkdropBlockingConstruct,
   MilkdropCompatibilityEvidence,
+  MilkdropCompatibilityFeatureKey,
   MilkdropCompiledPreset,
   MilkdropCompileOptions,
   MilkdropDegradationReason,
@@ -332,7 +333,7 @@ const FEATURE_ORDER: MilkdropFeatureKey[] = [
 
 const metadataKeys = new Set(['title', 'author', 'description']);
 const waveformSectionNames = new Set(['wave', 'waveform']);
-const rootProgramPattern = /^(init|per_frame|per_pixel)_(\d+)$/u;
+const rootProgramPattern = /^(init|per_frame|per_frame_init|per_pixel)_(\d+)$/u;
 const customWaveProgramPattern =
   /^wave_(\d+)_(init|per_frame|per_point)(\d+)?$/u;
 const customShapeProgramPattern = /^shape_(\d+)_(init|per_frame)(\d+)?$/u;
@@ -341,7 +342,42 @@ const wavecodeFieldPattern = /^wavecode_(\d+)_(.+)$/u;
 const shapecodeFieldPattern = /^shapecode_(\d+)_(.+)$/u;
 const shaderFieldPattern =
   /^(?:warp_[0-9]+|comp_[0-9]+|warp_shader|comp_shader|shader_text|warp_code|comp_code)$/u;
-const hardUnsupportedKeys = new Set<string>([]);
+type HardUnsupportedFieldSpec = {
+  key: string;
+  feature: MilkdropCompatibilityFeatureKey;
+  message: string;
+  aliases?: readonly string[];
+};
+
+/**
+ * Inventory of MilkDrop2 preset fields that map to features Stims does not
+ * currently emulate safely. These are treated as hard blockers instead of
+ * generic unknown-field diagnostics so imports surface actionable compatibility
+ * failures.
+ */
+const HARD_UNSUPPORTED_FIELD_SPECS: readonly HardUnsupportedFieldSpec[] = [
+  {
+    key: 'video_echo_orientation',
+    feature: 'video-echo-orientation',
+    aliases: ['nvideoechoorientation', 'echo_orient'],
+    message:
+      'Video echo orientation is not implemented, so rotated or mirrored feedback trails cannot be reproduced.',
+  },
+];
+const hardUnsupportedKeys = new Map<
+  string,
+  { feature: MilkdropCompatibilityFeatureKey; message: string }
+>(
+  HARD_UNSUPPORTED_FIELD_SPECS.flatMap((spec) =>
+    [spec.key, ...(spec.aliases ?? [])].map((key) => [
+      key,
+      {
+        feature: spec.feature,
+        message: spec.message,
+      },
+    ]),
+  ),
+);
 const BACKEND_PARTIAL_FEATURE_GAPS: Record<
   MilkdropRenderBackend,
   Partial<Record<MilkdropFeatureKey, string>>
@@ -520,6 +556,10 @@ function createBackendEvidence(
   return evidence;
 }
 
+function getHardUnsupportedField(key: string) {
+  return hardUnsupportedKeys.get(key);
+}
+
 function buildBackendDivergence({
   webgl,
   webgpu,
@@ -605,15 +645,18 @@ function buildVisualFallbacks({
 function buildBlockingConstructDetails({
   sourceId,
   ignoredFields,
+  hardUnsupportedFields,
   approximatedShaderLines,
 }: {
   sourceId?: string;
   ignoredFields: string[];
+  hardUnsupportedFields: Map<string, HardUnsupportedFieldSpec>;
   approximatedShaderLines: string[];
 }): MilkdropBlockingConstruct[] {
   return [
     ...ignoredFields.map((value) => {
       const signature = toBlockedFieldConstruct(value);
+      const hardUnsupportedField = hardUnsupportedFields.get(value);
       return {
         kind: 'field' as const,
         value,
@@ -622,6 +665,10 @@ function buildBlockingConstructDetails({
           presetId: sourceId,
           signature,
         }),
+        feature: hardUnsupportedField?.feature,
+        classification: hardUnsupportedField
+          ? ('hard-unsupported' as const)
+          : ('soft-unknown' as const),
       };
     }),
     ...approximatedShaderLines.map((value) => {
@@ -667,14 +714,20 @@ function buildDegradationReasons({
     }
     reasons.push({
       code:
-        construct.kind === 'field' ? 'unknown-field' : 'shader-approximation',
+        construct.kind === 'field'
+          ? construct.classification === 'hard-unsupported'
+            ? 'unsupported-hard-feature'
+            : 'unknown-field'
+          : 'shader-approximation',
       category:
         construct.kind === 'field'
           ? 'unsupported-syntax'
           : 'unsupported-shader',
       message:
         construct.kind === 'field'
-          ? `Field "${construct.value}" is outside the current runtime scope and was ignored.`
+          ? construct.classification === 'hard-unsupported'
+            ? `Unsupported feature "${construct.feature ?? construct.value}" is triggered by preset field "${construct.value}".`
+            : `Unknown preset field "${construct.value}" was ignored.`
           : `Shader line "${construct.value}" could not be executed directly and is being approximated.`,
       system: construct.kind === 'field' ? 'compiler' : 'shader',
       blocking: true,
@@ -4229,12 +4282,13 @@ function compileScalarField(
   field: MilkdropPresetField,
   diagnostics: MilkdropDiagnostic[],
 ): { value: number | null; expression?: MilkdropExpressionNode } {
-  const numeric = Number(field.rawValue.trim());
+  const normalizedValue = field.rawValue.trim().replace(/;+\s*$/u, '');
+  const numeric = Number(normalizedValue);
   if (Number.isFinite(numeric)) {
     return { value: numeric };
   }
 
-  const expressionResult = parseMilkdropExpression(field.rawValue, field.line);
+  const expressionResult = parseMilkdropExpression(normalizedValue, field.line);
   diagnostics.push(...expressionResult.diagnostics);
   if (!expressionResult.value) {
     return { value: null };
@@ -4266,8 +4320,73 @@ function pushProgramStatement(
   });
 }
 
+function canContinueMilkdropProgramLine(sourceLine: string) {
+  const trimmed = sourceLine.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  return /(?:[+\-*/,(]|\b(?:and|or)\b)$/iu.test(trimmed);
+}
+
+function pushProgramStatementWithContinuation(
+  block: MilkdropProgramBlock,
+  sourceLine: string,
+  line: number,
+  diagnostics: MilkdropDiagnostic[],
+  pendingProgramSources: Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >,
+) {
+  const trimmedValue = sourceLine.trim();
+  const pending = pendingProgramSources.get(block);
+
+  if (pending) {
+    if (!trimmedValue) {
+      return;
+    }
+
+    if (!trimmedValue.includes('=')) {
+      const combined = `${pending.sourceLine} ${trimmedValue}`.trim();
+      if (canContinueMilkdropProgramLine(combined)) {
+        pendingProgramSources.set(block, {
+          sourceLine: combined,
+          line: pending.line,
+        });
+        return;
+      }
+      pendingProgramSources.delete(block);
+      pushProgramStatement(block, combined, pending.line, diagnostics);
+      return;
+    }
+
+    pendingProgramSources.delete(block);
+    pushProgramStatement(block, pending.sourceLine, pending.line, diagnostics);
+  }
+
+  if (!trimmedValue) {
+    return;
+  }
+
+  if (
+    trimmedValue.includes('=') &&
+    canContinueMilkdropProgramLine(trimmedValue)
+  ) {
+    pendingProgramSources.set(block, { sourceLine: trimmedValue, line });
+    return;
+  }
+
+  pushProgramStatement(block, sourceLine, line, diagnostics);
+}
+
 function getProgramBlock(
-  programType: 'init' | 'per_frame' | 'per_pixel' | 'per_point',
+  programType:
+    | 'init'
+    | 'per_frame'
+    | 'per_frame_init'
+    | 'per_pixel'
+    | 'per_point',
   blocks: {
     init: MilkdropProgramBlock;
     perFrame: MilkdropProgramBlock;
@@ -4275,7 +4394,7 @@ function getProgramBlock(
     perPoint?: MilkdropProgramBlock;
   },
 ) {
-  if (programType === 'init') {
+  if (programType === 'init' || programType === 'per_frame_init') {
     return blocks.init;
   }
   if (programType === 'per_frame') {
@@ -4365,33 +4484,40 @@ function compileProgramsFromField(
   customWaves: Map<number, MilkdropWaveDefinition>,
   customShapes: Map<number, MilkdropShapeDefinition>,
   diagnostics: MilkdropDiagnostic[],
+  pendingProgramSources: Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >,
 ) {
   if (field.section === 'init') {
-    pushProgramStatement(
+    pushProgramStatementWithContinuation(
       programs.init,
       `${field.key.trim()} = ${field.rawValue.trim()}`,
       field.line,
       diagnostics,
+      pendingProgramSources,
     );
     return true;
   }
 
   if (field.section === 'per_frame') {
-    pushProgramStatement(
+    pushProgramStatementWithContinuation(
       programs.perFrame,
       `${field.key.trim()} = ${field.rawValue.trim()}`,
       field.line,
       diagnostics,
+      pendingProgramSources,
     );
     return true;
   }
 
   if (field.section === 'per_pixel') {
-    pushProgramStatement(
+    pushProgramStatementWithContinuation(
       programs.perPixel,
       `${field.key.trim()} = ${field.rawValue.trim()}`,
       field.line,
       diagnostics,
+      pendingProgramSources,
     );
     return true;
   }
@@ -4400,7 +4526,7 @@ function compileProgramsFromField(
   const rootMatch = rawKey.match(rootProgramPattern);
   if (rootMatch) {
     const block = getProgramBlock(
-      rootMatch[1] as 'init' | 'per_frame' | 'per_pixel',
+      rootMatch[1] as 'init' | 'per_frame' | 'per_frame_init' | 'per_pixel',
       {
         init: programs.init,
         perFrame: programs.perFrame,
@@ -4408,7 +4534,13 @@ function compileProgramsFromField(
       },
     );
     if (block) {
-      pushProgramStatement(block, field.rawValue, field.line, diagnostics);
+      pushProgramStatementWithContinuation(
+        block,
+        field.rawValue,
+        field.line,
+        diagnostics,
+        pendingProgramSources,
+      );
       return true;
     }
   }
@@ -4430,7 +4562,13 @@ function compileProgramsFromField(
         },
       );
       if (block) {
-        pushProgramStatement(block, field.rawValue, field.line, diagnostics);
+        pushProgramStatementWithContinuation(
+          block,
+          field.rawValue,
+          field.line,
+          diagnostics,
+          pendingProgramSources,
+        );
         return true;
       }
     }
@@ -4449,7 +4587,13 @@ function compileProgramsFromField(
         perFrame: shape.programs.perFrame,
       });
       if (block) {
-        pushProgramStatement(block, field.rawValue, field.line, diagnostics);
+        pushProgramStatementWithContinuation(
+          block,
+          field.rawValue,
+          field.line,
+          diagnostics,
+          pendingProgramSources,
+        );
         return true;
       }
     }
@@ -4583,33 +4727,36 @@ function buildBackendSupport({
   backend,
   featureAnalysis,
   sharedWarnings,
-  unsupportedKeys,
+  softUnknownKeys,
+  hardUnsupportedFields,
 }: {
   backend: MilkdropRenderBackend;
   featureAnalysis: MilkdropFeatureAnalysis;
   sharedWarnings: string[];
-  unsupportedKeys: string[];
+  softUnknownKeys: string[];
+  hardUnsupportedFields: HardUnsupportedFieldSpec[];
 }): MilkdropBackendSupport {
   const requiredFeatures = featureAnalysis.featuresUsed.filter(
     (feature) => feature !== 'unsupported-shader-text',
   );
   const evidence: MilkdropBackendSupportEvidence[] = [];
-  const unsupportedFeatures: MilkdropFeatureKey[] = [];
+  const unsupportedFeatures: MilkdropCompatibilityFeatureKey[] = [];
 
-  if (unsupportedKeys.some((key) => hardUnsupportedKeys.has(key))) {
+  hardUnsupportedFields.forEach(({ key, feature, message }) => {
     evidence.push(
       createBackendEvidence({
         backend,
         scope: 'shared',
         status: 'unsupported',
         code: 'unsupported-hard-feature',
-        message:
-          'This preset depends on unsupported MilkDrop features that are outside the current runtime scope.',
+        message: `Unsupported feature "${feature}" from preset field "${key}": ${message}`,
+        feature,
       }),
     );
-  }
+    unsupportedFeatures.push(feature);
+  });
 
-  unsupportedKeys.forEach((key) => {
+  softUnknownKeys.forEach((key) => {
     evidence.push(
       createBackendEvidence({
         backend,
@@ -4763,6 +4910,12 @@ function createIR(
   };
   const customWaveMap = new Map<number, MilkdropWaveDefinition>();
   const customShapeMap = new Map<number, MilkdropShapeDefinition>();
+  const softUnknownKeys = new Set<string>();
+  const hardUnsupportedFields = new Map<string, HardUnsupportedFieldSpec>();
+  const pendingProgramSources = new Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >();
   const unsupportedKeys = new Set<string>();
   let unsupportedShaderText = false;
   let supportedShaderText = false;
@@ -4777,6 +4930,7 @@ function createIR(
         customWaveMap,
         customShapeMap,
         diagnostics,
+        pendingProgramSources,
       )
     ) {
       return;
@@ -4786,6 +4940,8 @@ function createIR(
     if (normalizedKey === null) {
       return;
     }
+
+    const hardUnsupportedField = getHardUnsupportedField(normalizedKey);
 
     if (metadataKeys.has(normalizedKey)) {
       stringFields[normalizedKey] = normalizeString(field.rawValue);
@@ -4820,7 +4976,7 @@ function createIR(
       const index = Number.parseInt(customWaveFieldMatch[1] ?? '0', 10);
       const suffix = customWaveFieldMatch[2] ?? '';
       if (index < 1 || index > MAX_CUSTOM_WAVES) {
-        unsupportedKeys.add(normalizedKey);
+        softUnknownKeys.add(normalizedKey);
         return;
       }
       const compiledScalar = compileScalarField(field, diagnostics);
@@ -4851,11 +5007,29 @@ function createIR(
       const index = Number.parseInt(customShapeFieldMatch[1] ?? '0', 10);
       const suffix = customShapeFieldMatch[2] ?? '';
       if (index < 1 || index > MAX_CUSTOM_SHAPES) {
-        unsupportedKeys.add(normalizedKey);
+        softUnknownKeys.add(normalizedKey);
         return;
       }
       if (!(normalizedKey in DEFAULT_MILKDROP_STATE)) {
-        unsupportedKeys.add(normalizedKey);
+        if (hardUnsupportedField) {
+          hardUnsupportedFields.set(normalizedKey, {
+            key: normalizedKey,
+            feature: hardUnsupportedField.feature,
+            message: hardUnsupportedField.message,
+          });
+          addDiagnostic(
+            diagnostics,
+            'warning',
+            'preset_unsupported_field',
+            `Unsupported MilkDrop feature "${hardUnsupportedField.feature}" uses preset field "${normalizedKey}". ${hardUnsupportedField.message}`,
+            {
+              line: field.line,
+              field: normalizedKey,
+            },
+          );
+          return;
+        }
+        softUnknownKeys.add(normalizedKey);
         addDiagnostic(
           diagnostics,
           'warning',
@@ -4892,7 +5066,25 @@ function createIR(
     }
 
     if (!(normalizedKey in DEFAULT_MILKDROP_STATE)) {
-      unsupportedKeys.add(normalizedKey);
+      if (hardUnsupportedField) {
+        hardUnsupportedFields.set(normalizedKey, {
+          key: normalizedKey,
+          feature: hardUnsupportedField.feature,
+          message: hardUnsupportedField.message,
+        });
+        addDiagnostic(
+          diagnostics,
+          'warning',
+          'preset_unsupported_field',
+          `Unsupported MilkDrop feature "${hardUnsupportedField.feature}" uses preset field "${normalizedKey}". ${hardUnsupportedField.message}`,
+          {
+            line: field.line,
+            field: normalizedKey,
+          },
+        );
+        return;
+      }
+      softUnknownKeys.add(normalizedKey);
       addDiagnostic(
         diagnostics,
         'warning',
@@ -4926,6 +5118,10 @@ function createIR(
     numericFields[normalizedKey] = compiledScalar.value;
   });
 
+  pendingProgramSources.forEach(({ sourceLine, line }, block) => {
+    pushProgramStatement(block, sourceLine, line, diagnostics);
+  });
+
   const customWaves = [...customWaveMap.values()].sort(
     (left, right) => left.index - right.index,
   );
@@ -4938,7 +5134,9 @@ function createIR(
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
-  const ignoredFields = [...unsupportedKeys].sort();
+  const ignoredFields = [
+    ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
+  ].sort();
   const approximatedShaderLines = [
     ...shaderWarpAnalysis.unsupportedLines,
     ...shaderCompAnalysis.unsupportedLines,
@@ -4946,6 +5144,7 @@ function createIR(
   const blockingConstructDetails = buildBlockingConstructDetails({
     sourceId: source.id,
     ignoredFields,
+    hardUnsupportedFields,
     approximatedShaderLines,
   });
   collectExpressionsFromValue(
@@ -5001,8 +5200,12 @@ function createIR(
     supportedShaderText,
   });
   const sharedWarnings = [
-    ...[...unsupportedKeys].map(
+    ...[...softUnknownKeys].map(
       (key) => `Unknown preset field "${key}" was ignored.`,
+    ),
+    ...[...hardUnsupportedFields.values()].map(
+      ({ key, feature, message }) =>
+        `Unsupported feature "${feature}" from preset field "${key}": ${message}`,
     ),
   ];
   const backends = {
@@ -5010,13 +5213,15 @@ function createIR(
       backend: 'webgl',
       featureAnalysis,
       sharedWarnings,
-      unsupportedKeys: [...unsupportedKeys],
+      softUnknownKeys: [...softUnknownKeys],
+      hardUnsupportedFields: [...hardUnsupportedFields.values()],
     }),
     webgpu: buildBackendSupport({
       backend: 'webgpu',
       featureAnalysis,
       sharedWarnings,
-      unsupportedKeys: [...unsupportedKeys],
+      softUnknownKeys: [...softUnknownKeys],
+      hardUnsupportedFields: [...hardUnsupportedFields.values()],
     }),
   };
   const blockedConstructs = [
@@ -5093,7 +5298,9 @@ function createIR(
       ),
     ],
     supportedFeatures: featureAnalysis.featuresUsed,
-    unsupportedKeys: [...unsupportedKeys],
+    unsupportedKeys: ignoredFields,
+    softUnknownKeys: [...softUnknownKeys],
+    hardUnsupportedKeys: [...hardUnsupportedFields.keys()],
     webgl: finalBackends.webgl.status === 'supported',
     webgpu: finalBackends.webgpu.status === 'supported',
   };
