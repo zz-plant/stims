@@ -236,6 +236,28 @@ wave_scale=1
     );
   });
 
+  test('maps custom-wave value aliases onto the runtime sample channels', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Wave Alias Runtime
+wavecode_0_enabled=1
+wavecode_0_samples=8
+wavecode_0_spectrum=1
+wave_0_per_point1=x = value + value1;
+wave_0_per_point2=y = value2;
+      `.trim(),
+      { id: 'wave-alias-runtime' },
+    );
+
+    const normalizedValue = 160 / 255;
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+    const firstPoint = frameState.customWaves[0]?.positions;
+
+    expect(firstPoint).toBeDefined();
+    expect(firstPoint?.[0]).toBeCloseTo(normalizedValue * 2, 6);
+    expect(firstPoint?.[1]).toBeCloseTo(normalizedValue, 6);
+  });
+
   test('applies legacy cx/cy/sx/sy/dx/dy mesh transforms', () => {
     const baseline = createMilkdropVM(
       compileMilkdropPresetSource(

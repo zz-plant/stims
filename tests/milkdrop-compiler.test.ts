@@ -211,6 +211,25 @@ fShader=0
     expect(compiled.ir.post.shaderEnabled).toBe(false);
   });
 
+  test('treats custom-wave value aliases as supported identifiers', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Wave Alias Support
+wavecode_0_enabled=1
+wave_0_per_point1=x = value + value1;
+wave_0_per_point2=y = value2;
+      `.trim(),
+      { id: 'wave-alias-support' },
+    );
+
+    expect(compiled.ir.compatibility.parity.missingAliasesOrFunctions).toEqual(
+      [],
+    );
+    expect(
+      compiled.ir.customWaves[0]?.programs.perPoint.sourceLines,
+    ).toMatchObject(['x = value + value1', 'y = value2']);
+  });
+
   test('supports shader-text subset and feedback-style flags', () => {
     const compiled = compileMilkdropPresetSource(
       `

@@ -466,6 +466,24 @@ describe('milkdrop vendored projectM fixture corpus', () => {
     expect(compiled.ir.numericFields.zoomexp).toBeCloseTo(0.75, 6);
   });
 
+  test('supports projectM custom-wave value aliases in the regression fixtures', () => {
+    const corpus = loadProjectMPresetCorpus();
+    const fixtures = new Map(
+      corpus.map(({ file, compiled }) => [file, compiled]),
+    );
+
+    for (const fixture of [
+      '250-wavecode.milk',
+      '252-wavecode-spectrum2.milk',
+      '300-beatdetect-bassmidtreb.milk',
+    ] as const) {
+      expect(
+        fixtures.get(fixture)?.ir.compatibility.parity
+          .missingAliasesOrFunctions,
+      ).toEqual([]);
+    }
+  });
+
   test('keeps compiled compatibility metadata and normalized program sources stable', () => {
     const corpus = loadProjectMPresetCorpus();
     const actualSnapshot = corpus.map(({ file, compiled }) =>
