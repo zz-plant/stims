@@ -574,6 +574,59 @@ per_pixel_3=zoom=zoom+abs(y)*0.08;
     );
   });
 
+  test('keeps lowered field shader centers in clip space without renormalizing', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Mesh Center
+mesh_density=10
+sx=1.15
+sy=0.9
+per_pixel_1=q1=sin(time+x*2.5);
+per_pixel_2=x=x+q1*0.04;
+      `.trim(),
+      { id: 'procedural-mesh-center' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals({ time: 0.75 }));
+
+    expect(frameState.gpuGeometry.meshField?.centerX).toBeCloseTo(0, 6);
+    expect(frameState.gpuGeometry.meshField?.centerY).toBeCloseTo(0, 6);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const meshLines = root.children[1] as {
+      material?: ShaderMaterial;
+    };
+
+    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.material?.vertexShader).not.toContain(
+      'milkdropNormalizeTransformCenter',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      '(field_x - fieldCenterX) * fieldScaleX',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      '(field_y - fieldCenterY) * fieldScaleY',
+    );
+  });
+
   test('renders motion vectors directly on webgpu when per-pixel VM work is absent', () => {
     const preset = compileMilkdropPresetSource(
       `
