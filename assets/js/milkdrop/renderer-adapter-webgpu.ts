@@ -268,15 +268,16 @@ class CompactSegmentUploadBuffer {
   }
 
   getControlData() {
-    return this.controlData.subarray(0, this.count * 2);
+    return this.controlData.subarray(0, this.count * 3);
   }
 
   appendSegment(
     startX: number,
     startY: number,
+    startZ: number,
     endX: number,
     endY: number,
-    z: number,
+    endZ: number,
     color: MilkdropColor,
     alpha: number,
     width: number,
@@ -294,9 +295,10 @@ class CompactSegmentUploadBuffer {
     this.styleData[styleOffset + 2] = color.b;
     this.styleData[styleOffset + 3] = alpha;
 
-    const controlOffset = this.count * 2;
-    this.controlData[controlOffset] = z;
-    this.controlData[controlOffset + 1] = width * 0.5;
+    const controlOffset = this.count * 3;
+    this.controlData[controlOffset] = startZ;
+    this.controlData[controlOffset + 1] = endZ;
+    this.controlData[controlOffset + 2] = width * 0.5;
     this.count += 1;
   }
 
@@ -311,9 +313,10 @@ class CompactSegmentUploadBuffer {
       this.appendSegment(
         positions[index] ?? 0,
         positions[index + 1] ?? 0,
+        positions[index + 2] ?? 0.24,
         positions[index + 3] ?? 0,
         positions[index + 4] ?? 0,
-        positions[index + 2] ?? 0.24,
+        positions[index + 5] ?? 0.24,
         color,
         alpha,
         width,
@@ -326,9 +329,10 @@ class CompactSegmentUploadBuffer {
     this.appendSegment(
       positions[lastPointIndex] ?? 0,
       positions[lastPointIndex + 1] ?? 0,
+      positions[lastPointIndex + 2] ?? 0.24,
       positions[0] ?? 0,
       positions[1] ?? 0,
-      positions[lastPointIndex + 2] ?? 0.24,
+      positions[2] ?? 0.24,
       color,
       alpha,
       width,
@@ -352,6 +356,7 @@ class CompactSegmentUploadBuffer {
         this.appendSegment(
           previousX,
           previousY,
+          0.24,
           point.x,
           point.y,
           0.24,
@@ -387,6 +392,7 @@ class CompactSegmentUploadBuffer {
         this.appendSegment(
           previousX,
           previousY,
+          0.28,
           x,
           pointY,
           0.28,
@@ -404,7 +410,7 @@ class CompactSegmentUploadBuffer {
   private ensureCapacity(count: number) {
     this.lineData = ensureFloat32Capacity(this.lineData, count * 4);
     this.styleData = ensureFloat32Capacity(this.styleData, count * 4);
-    this.controlData = ensureFloat32Capacity(this.controlData, count * 2);
+    this.controlData = ensureFloat32Capacity(this.controlData, count * 3);
   }
 }
 
@@ -539,7 +545,7 @@ class InstancedSegmentBatch {
           attribute vec2 segmentCoord;
           attribute vec4 instanceLine;
           attribute vec4 instanceColorAlpha;
-          attribute vec2 instanceControl;
+          attribute vec3 instanceControl;
           varying vec4 vColor;
 
           void main() {
@@ -548,8 +554,8 @@ class InstancedSegmentBatch {
             vec2 direction = lengthDelta > 0.000001 ? delta / lengthDelta : vec2(1.0, 0.0);
             vec2 normal = vec2(-direction.y, direction.x);
             vec2 base = instanceLine.xy + delta * segmentCoord.x;
-            vec2 point = base + normal * segmentCoord.y * instanceControl.y;
-            float z = instanceControl.x;
+            vec2 point = base + normal * segmentCoord.y * instanceControl.z;
+            float z = mix(instanceControl.x, instanceControl.y, segmentCoord.x);
             vColor = instanceColorAlpha;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(point, z, 1.0);
           }
@@ -591,7 +597,7 @@ class InstancedSegmentBatch {
     const control = ensureInstancedAttribute(
       geometry,
       'instanceControl',
-      2,
+      3,
       instances.count,
     );
     (line.array as Float32Array).set(instances.getLineData());
