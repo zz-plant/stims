@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  __milkdropRuntimeTestUtils,
   applyMilkdropInteractionResponse,
   getMilkdropDetailScale,
 } from '../assets/js/milkdrop/runtime.ts';
@@ -64,6 +65,23 @@ describe('milkdrop runtime detail scale', () => {
         particleBudget: 2,
       }),
     ).toBe(2);
+  });
+});
+
+describe('milkdrop runtime blend state', () => {
+  test('reuses the frame reference for transition blends', () => {
+    const frameState = {
+      presetId: 'blend-state-reference',
+    } as MilkdropFrameState;
+
+    const blendState = __milkdropRuntimeTestUtils.cloneBlendState(frameState);
+
+    expect(blendState?.mode).toBe('gpu');
+    if (!blendState || blendState.mode !== 'gpu') {
+      throw new Error('Expected a GPU blend state.');
+    }
+    expect(blendState.alpha).toBe(1);
+    expect(blendState.previousFrame).toBe(frameState);
   });
 });
 

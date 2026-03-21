@@ -1398,6 +1398,53 @@ wavecode_0_a=0.35
     );
   });
 
+  test('renders GPU blend snapshots on webgl without requiring CPU-cloned wave state', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL GPU Blend
+wave_mode=0
+wave_a=1
+      `.trim(),
+      { id: 'webgl-gpu-blend' },
+    );
+    const vm = createMilkdropVM(preset);
+    const previousFrame = vm.step(makeSignals({ time: 0.1 }));
+    const frameState = vm.step(makeSignals({ time: 0.3 }));
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.5,
+      },
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ children?: Array<{ material?: unknown }> }>;
+    };
+    const blendWaveGroup = root.children[8];
+
+    expect(blendWaveGroup?.children?.length ?? 0).toBeGreaterThan(0);
+    const renderedBlendWave = blendWaveGroup?.children?.[0] as
+      | {
+          material?: LineBasicMaterial;
+        }
+      | undefined;
+    expect(renderedBlendWave?.material).toBeInstanceOf(LineBasicMaterial);
+    expect(renderedBlendWave?.material?.opacity).toBeCloseTo(0.5, 6);
+  });
+
   test('keeps WebGL fallback on CPU geometry for descriptors that WebGPU synthesizes procedurally', () => {
     const preset = compileMilkdropPresetSource(
       `
