@@ -1,4 +1,4 @@
 title=Parity Allowlisted Shader Gap
 author=Stim Legacy Corpus
 video_echo_enabled=1
-warp_shader=dx=0.028; unsupported(shader)
+warp_shader=float2 drift = float2(0.028, 0.0); uv += drift
