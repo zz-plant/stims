@@ -69,6 +69,12 @@ function createInspectorPayload() {
           },
           featureAnalysis: {
             featuresUsed: [],
+            unsupportedShaderText: false,
+            supportedShaderText: false,
+            shaderTextExecution: {
+              webgl: 'none',
+              webgpu: 'none',
+            },
             registerUsage: { q: 0, t: 0 },
           },
         },

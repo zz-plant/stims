@@ -227,6 +227,10 @@ describe('milkdrop input signal overrides', () => {
         feedbackTexture: true,
         outerBorderStyle: false,
         innerBorderStyle: false,
+        shaderPrograms: {
+          warp: null,
+          comp: null,
+        },
         shaderControls: {
           zoom: 1,
           warpScale: 0.3,
