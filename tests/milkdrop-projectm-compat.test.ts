@@ -277,6 +277,26 @@ describe('milkdrop vendored projectM fixture corpus', () => {
     });
   });
 
+  test('keeps projectM fZoomExponent fixtures distinct from zoom', () => {
+    const raw = readFileSync(
+      join(PROJECTM_CORPUS_DIR, '250-wavecode.milk'),
+      'utf8',
+    );
+    const compiled = compileMilkdropPresetSource(
+      raw.replace('fZoomExponent=1.000000', 'fZoomExponent=0.750000'),
+      {
+        id: '250-wavecode-zoomexp-regression',
+        title: '250-wavecode.milk',
+        fileName: '250-wavecode.milk',
+        path: join(PROJECTM_CORPUS_DIR, '250-wavecode.milk'),
+        origin: 'user',
+      },
+    );
+
+    expect(compiled.ir.numericFields.zoom).toBeCloseTo(1, 6);
+    expect(compiled.ir.numericFields.zoomexp).toBeCloseTo(0.75, 6);
+  });
+
   test('steps the vendored upstream fixture corpus through the VM without invalid frame output', () => {
     const corpus = loadProjectMPresetCorpus();
 

@@ -816,6 +816,7 @@ class MilkdropPresetVM implements MilkdropVM {
       rad: Math.sqrt(gridX * gridX + gridY * gridY),
       ang: Math.atan2(gridY, gridX),
       zoom: this.state.zoom ?? 1,
+      zoomexp: this.state.zoomexp ?? 1,
       rot: this.state.rot ?? 0,
       warp: this.state.warp ?? 0,
       cx: this.state.cx ?? 0.5,
@@ -848,8 +849,13 @@ class MilkdropPresetVM implements MilkdropVM {
       ) *
       local.warp *
       0.08;
-    const px = (transformedX + Math.cos(angle * 3) * ripple) * local.zoom;
-    const py = (transformedY + Math.sin(angle * 4) * ripple) * local.zoom;
+    const radiusNormalized = clamp(local.rad / Math.SQRT2, 0, 1);
+    const zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
+    const zoomScale =
+      Math.max(local.zoom ?? 1, 0.0001) **
+      (zoomExponent ** (radiusNormalized * 2 - 1));
+    const px = (transformedX + Math.cos(angle * 3) * ripple) * zoomScale;
+    const py = (transformedY + Math.sin(angle * 4) * ripple) * zoomScale;
     const cos = Math.cos(local.rot);
     const sin = Math.sin(local.rot);
     const transformed = {

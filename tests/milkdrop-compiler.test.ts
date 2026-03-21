@@ -78,7 +78,7 @@ wavecode_0_a=1
     expect(compiled.ir.numericFields.wave_brighten).toBe(1);
     expect(compiled.ir.numericFields.wave_a).toBeCloseTo(4.4, 6);
     expect(compiled.ir.numericFields.wave_scale).toBeCloseTo(1.5, 6);
-    expect(compiled.ir.numericFields.zoom).toBeCloseTo(1, 6);
+    expect(compiled.ir.numericFields.zoomexp).toBeCloseTo(1, 6);
     expect(compiled.ir.numericFields.sx).toBeCloseTo(1, 6);
     expect(compiled.ir.numericFields.sy).toBeCloseTo(1, 6);
     expect(compiled.ir.customWaves[0]?.fields).toMatchObject({
@@ -93,6 +93,20 @@ wavecode_0_a=1
       b: 1,
       a: 1,
     });
+  });
+
+  test('keeps zoom and fZoomExponent distinct in compiled numeric fields', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+[preset00]
+zoom=1.23
+fZoomExponent=0.75
+      `.trim(),
+      { id: 'zoom-exponent-distinct' },
+    );
+
+    expect(compiled.ir.numericFields.zoom).toBeCloseTo(1.23, 6);
+    expect(compiled.ir.numericFields.zoomexp).toBeCloseTo(0.75, 6);
   });
 
   test('classifies backend support and feature usage for feedback presets', () => {
